@@ -19,10 +19,12 @@ JOB_RESUBMISSION_PULSAR_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "resubm
 class _BaseResubmissionIntegerationTestCase(integration_util.IntegrationTestCase):
     framework_tool_and_types = True
 
-    def _assert_job_passes(self, tool_id="exit_code_oom", resource_parameters={}):
+    def _assert_job_passes(self, tool_id="exit_code_oom", resource_parameters=None):
+        resource_parameters = resource_parameters or {}
         self._run_tool_test(tool_id, resource_parameters=resource_parameters)
 
-    def _assert_job_fails(self, tool_id="exit_code_oom", resource_parameters={}):
+    def _assert_job_fails(self, tool_id="exit_code_oom", resource_parameters=None):
+        resource_parameters = resource_parameters or {}
         exception_thrown = False
         try:
             self._run_tool_test(tool_id, resource_parameters=resource_parameters)

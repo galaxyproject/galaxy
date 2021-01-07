@@ -10,6 +10,7 @@ import Options from "mvc/ui/ui-options";
 import Drilldown from "mvc/ui/ui-drilldown";
 import Buttons from "mvc/ui/ui-buttons";
 import Modal from "mvc/ui/ui-modal";
+import Switch from "mvc/ui/ui-switch";
 
 /** Displays messages used e.g. in the tool form */
 export var Message = Backbone.View.extend({
@@ -264,6 +265,7 @@ export default {
     RadioButton: Options.RadioButton,
     Checkbox: Options.Checkbox,
     Radio: Options.Radio,
+    Switch: Switch,
     Select: Select,
     TextSelect: TextSelect,
     Hidden: Hidden,

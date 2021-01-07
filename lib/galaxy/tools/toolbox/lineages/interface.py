@@ -1,4 +1,5 @@
 import threading
+from typing import Dict
 
 import packaging.version
 from sortedcontainers import SortedSet
@@ -35,7 +36,7 @@ class ToolLineage:
     """ Simple tool's loaded directly from file system with lineage
     determined solely by PEP 440 versioning scheme.
     """
-    lineages_by_id = {}
+    lineages_by_id: Dict[str, 'ToolLineage'] = {}
     lock = threading.Lock()
 
     def __init__(self, tool_id, **kwds):

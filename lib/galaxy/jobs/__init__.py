@@ -40,7 +40,10 @@ from galaxy.job_execution.datasets import (
     TaskPathRewriter
 )
 from galaxy.job_execution.output_collect import collect_extra_files
-from galaxy.job_execution.setup import ensure_configs_directory
+from galaxy.job_execution.setup import (
+    create_working_directory_for_job,
+    ensure_configs_directory,
+)
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.jobs.mapper import (
     JobMappingException,
@@ -467,7 +470,7 @@ class JobConfiguration(ConfiguresHandlers):
             if params is None:
                 params = {}
                 for key, value in tool.items():
-                    if key in ["environment", "handler", "id"]:
+                    if key in ["environment", "handler", "id", "resources"]:
                         continue
                     params[key] = value
                 tool["params"] = params
@@ -1190,11 +1193,7 @@ class JobWrapper(HasResourceParameters):
         return os.path.join(self.working_directory, "working")
 
     def _create_working_directory(self, job):
-        self.object_store.create(
-            job, base_dir='job_work', dir_only=True, obj_dir=True)
-        working_directory = self.object_store.get_filename(
-            job, base_dir='job_work', dir_only=True, obj_dir=True)
-        return working_directory
+        return create_working_directory_for_job(self.object_store, job)
 
     def clear_working_directory(self):
         job = self.get_job()
@@ -1536,6 +1535,8 @@ class JobWrapper(HasResourceParameters):
             # it would be quicker to just copy the metadata from the originating output dataset,
             # but somewhat trickier (need to recurse up the copied_from tree), for now we'll call set_meta()
             retry_internally = util.asbool(self.get_destination_configuration("retry_metadata_internally", True))
+            if not retry_internally and self.tool.tool_type == 'interactive':
+                retry_internally = util.asbool(self.get_destination_configuration("retry_interactivetool_metadata_internally", retry_internally))
             metadata_set_successfully = self.external_output_metadata.external_metadata_set_successfully(dataset, output_name, self.sa_session, working_directory=self.working_directory)
             if retry_internally and not metadata_set_successfully:
                 # If Galaxy was expected to sniff type and didn't - do so.
@@ -1942,7 +1943,7 @@ class JobWrapper(HasResourceParameters):
     def get_output_path(self, dataset):
         if getattr(dataset, "fake_dataset_association", False):
             return dataset.file_name
-        assert dataset.id is not None, "{} needs to be flushed to find output path".format(dataset)
+        assert dataset.id is not None, f"{dataset} needs to be flushed to find output path"
         if self.output_paths is None:
             self.compute_outputs()
         for (hda, dataset_path) in self.output_hdas_and_paths.values():

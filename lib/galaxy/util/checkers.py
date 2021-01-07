@@ -28,7 +28,7 @@ def check_html(name, file_path=True):
     """
     # Handles files if file_path is True or text if file_path is False
     if file_path:
-        temp = open(name, "r", encoding='utf-8')
+        temp = open(name, encoding='utf-8')
     else:
         temp = StringIO(util.unicodify(name))
     try:

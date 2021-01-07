@@ -85,7 +85,7 @@ def __main__():
                         quality_score_startswith = default_coding_value
                     else:
                         stop_err('Invalid fastqsolexa format at line %d: the number of quality scores ( %d ) is not the same as bases ( %d ).' % (i + 1, quality_score_length, read_length))
-                    for j, char in enumerate(line):
+                    for char in line:
                         score = ord(char) - quality_score_startswith    # 64
                         qual = "{}{} ".format(qual, str(score))
                 outfile_score.write('%s\n' % qual)

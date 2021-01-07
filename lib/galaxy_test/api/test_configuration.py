@@ -37,7 +37,8 @@ class ConfigurationApiTestCase(ApiTestCase):
         decode_response = self._get("configuration/decode/badhombre", admin=False)
         self._assert_status_code_is(decode_response, 403)
 
-    def _get_configuration(self, data={}, admin=False):
+    def _get_configuration(self, data=None, admin=False):
+        data = data or {}
         response = self._get("configuration", data=data, admin=admin)
         self._assert_status_code_is(response, 200)
         configuration = response.json()

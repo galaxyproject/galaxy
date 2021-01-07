@@ -5,6 +5,7 @@ from json import dumps, loads
 from galaxy import exceptions, managers, util, web
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
 from galaxy.tools import global_tool_errors
+from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.web import (
     expose_api,
     expose_api_anonymous,
@@ -118,9 +119,13 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         """
         if 'payload' in kwd:
             kwd = kwd.get('payload')
-        tool_version = kwd.get('tool_version', None)
+        tool_version = kwd.get('tool_version')
+        history_id = kwd.pop('history_id', None)
+        history = None
+        if history_id:
+            history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
         tool = self._get_tool(id, tool_version=tool_version, user=trans.user)
-        return tool.to_json(trans, kwd.get('inputs', kwd))
+        return tool.to_json(trans, kwd.get('inputs', kwd), history=history)
 
     @web.require_admin
     @expose_api
@@ -152,10 +157,18 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         path = tool.test_data_path(filename)
         if path:
             if os.path.isfile(path):
-                trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename
+                trans.response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
                 return open(path, mode='rb')
             elif os.path.isdir(path):
-                return util.streamball.stream_archive(trans=trans, path=path, upstream_gzip=self.app.config.upstream_gzip)
+                # Set upstream_mod_zip to false, otherwise tool data must be among allowed internal routes
+                archive = ZipstreamWrapper(
+                    upstream_mod_zip=False,
+                    upstream_gzip=self.app.config.upstream_gzip,
+                    archive_name=filename,
+                )
+                archive.write(path)
+                trans.response.headers.update(archive.get_headers())
+                return archive.response()
         raise exceptions.ObjectNotFound("Specified test data path not found.")
 
     @expose_api_anonymous_and_sessionless
@@ -170,7 +183,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         Fetch complete test data for each tool with /api/tools/{tool_id}/test_data?tool_version=<tool_version>
         """
         test_counts_by_tool = {}
-        for id, tool in self.app.toolbox.tools():
+        for _id, tool in self.app.toolbox.tools():
             if not tool.is_datatype_converter:
                 tests = tool.tests
                 if tests:
@@ -193,13 +206,25 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         internals/Pythonisms in a rough way). If this endpoint is being used from outside
         of scripts shipped with Galaxy let us know and please be prepared for the response
         from this API to change its format in some ways.
+
+        If tool version is not passed, it is assumed to be latest. Tool version can be
+        set as '*' to get tests for all configured versions.
         """
-        # TODO: eliminate copy and paste with above code.
         if 'payload' in kwd:
             kwd = kwd.get('payload')
         tool_version = kwd.get('tool_version', None)
-        tool = self._get_tool(id, tool_version=tool_version, user=trans.user)
-        return [t.to_dict() for t in tool.tests]
+        if tool_version == "*":
+            tools = self.app.toolbox.get_tool(id, get_all_versions=True)
+            for tool in tools:
+                if not tool.allow_user_access(trans.user):
+                    raise exceptions.AuthenticationFailed("Access denied, please login for tool with id '%s'." % id)
+        else:
+            tools = [self._get_tool(id, tool_version=tool_version, user=trans.user)]
+
+        test_defs = []
+        for tool in tools:
+            test_defs.extend([t.to_dict() for t in tool.tests])
+        return test_defs
 
     @web.require_admin
     @expose_api
@@ -453,6 +478,9 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         """
         POST /api/tools
         Execute tool with a given parameter payload
+
+        :param input_format: input format for the payload. Possible values are the default 'legacy' (where inputs nested inside conditionals or repeats are identified with e.g. '<conditional_name>|<input_name>') or '21.01' (where inputs inside conditionals or repeats are nested elements).
+        :type input_format:  string
         """
         tool_id = payload.get("tool_id")
         tool_uuid = payload.get("tool_uuid")
@@ -463,14 +491,14 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         return self._create(trans, payload, **kwd)
 
     def _create(self, trans, payload, **kwd):
-        action = payload.get('action', None)
+        action = payload.get('action')
         if action == 'rerun':
             raise Exception("'rerun' action has been deprecated")
 
         # Get tool.
-        tool_version = payload.get('tool_version', None)
-        tool_id = payload.get('tool_id', None)
-        tool_uuid = payload.get('tool_uuid', None)
+        tool_version = payload.get('tool_version')
+        tool_id = payload.get('tool_id')
+        tool_uuid = payload.get('tool_uuid')
         get_kwds = dict(
             tool_id=tool_id,
             tool_uuid=tool_uuid,
@@ -480,8 +508,11 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             raise exceptions.RequestParameterMissingException("Must specify either a tool_id or a tool_uuid.")
 
         tool = trans.app.toolbox.get_tool(**get_kwds)
-        if not tool or not tool.allow_user_access(trans.user):
-            raise exceptions.MessageException('Tool not found or not accessible.')
+        if not tool:
+            log.debug(f"Not found tool with kwds [{get_kwds}]")
+            raise exceptions.ToolMissingException('Tool not found.')
+        if not tool.allow_user_access(trans.user):
+            raise exceptions.ItemAccessibilityException('Tool not accessible.')
         if trans.app.config.user_activation_on:
             if not trans.user:
                 log.warning("Anonymous user attempts to execute tool, but account activation is turned on.")
@@ -491,7 +522,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         # Set running history from payload parameters.
         # History not set correctly as part of this API call for
         # dataset upload.
-        history_id = payload.get('history_id', None)
+        history_id = payload.get('history_id')
         if history_id:
             decoded_id = self.decode_id(history_id)
             target_history = self.history_manager.get_owned(decoded_id, trans.user, current_history=trans.history)
@@ -520,7 +551,10 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         # I think it should be a top-level parameter, but because the selector is implemented
         # as a regular tool parameter we accept both.
         use_cached_job = payload.get('use_cached_job', False) or util.string_as_bool(inputs.get('use_cached_job', 'false'))
-        vars = tool.handle_input(trans, incoming, history=target_history, use_cached_job=use_cached_job)
+
+        input_format = kwd.get('input_format', 'legacy')
+
+        vars = tool.handle_input(trans, incoming, history=target_history, use_cached_job=use_cached_job, input_format=input_format)
 
         # TODO: check for errors and ensure that output dataset(s) are available.
         output_datasets = vars.get('out_data', [])

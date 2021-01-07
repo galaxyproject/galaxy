@@ -3,6 +3,7 @@
 import difflib
 import filecmp
 import hashlib
+import json
 import logging
 import os
 import os.path
@@ -88,7 +89,25 @@ def verify(
     if attributes is None:
         attributes = {}
 
-    if filename is not None:
+    # expected object might be None, so don't pull unless available
+    has_expected_object = 'object' in attributes
+    if has_expected_object:
+        assert filename is None
+        expected_object = attributes.get('object')
+        actual_object = json.loads(output_content)
+
+        expected_object_type = type(expected_object)
+        actual_object_type = type(actual_object)
+
+        if expected_object_type != actual_object_type:
+            message = f"Type mismatch between expected object ({expected_object_type}) and actual object ({actual_object_type})"
+            raise AssertionError(message)
+
+        if expected_object != actual_object:
+            message = f"Expected object ({expected_object}) does not match actual object ({actual_object})"
+            raise AssertionError(message)
+
+    elif filename is not None:
         temp_name = make_temp_fname(fname=filename)
         with open(temp_name, 'wb') as f:
             f.write(output_content)
@@ -157,26 +176,25 @@ def verify(
 def make_temp_fname(fname=None):
     """Safe temp name - preserve the file extension for tools that interpret it."""
     suffix = os.path.split(fname)[-1]  # ignore full path
-    fd, temp_prefix = tempfile.mkstemp(prefix='tmp', suffix=suffix)
-    return temp_prefix
+    with tempfile.NamedTemporaryFile(prefix='tmp', suffix=suffix, delete=False) as temp:
+        return temp.name
 
 
 def _bam_to_sam(local_name, temp_name):
     temp_local = tempfile.NamedTemporaryFile(suffix='.sam', prefix='local_bam_converted_to_sam_')
-    fd, temp_temp = tempfile.mkstemp(suffix='.sam', prefix='history_bam_converted_to_sam_')
-    os.close(fd)
-    try:
-        pysam.view('-h', '-o%s' % temp_local.name, local_name)
-    except Exception as e:
-        msg = "Converting local (test-data) BAM to SAM failed: %s" % unicodify(e)
-        raise Exception(msg)
-    try:
-        pysam.view('-h', '-o%s' % temp_temp, temp_name)
-    except Exception as e:
-        msg = "Converting history BAM to SAM failed: %s" % unicodify(e)
-        raise Exception(msg)
+    with tempfile.NamedTemporaryFile(suffix='.sam', prefix='history_bam_converted_to_sam_', delete=False) as temp:
+        try:
+            pysam.view('-h', '-o%s' % temp_local.name, local_name)
+        except Exception as e:
+            msg = "Converting local (test-data) BAM to SAM failed: %s" % unicodify(e)
+            raise Exception(msg)
+        try:
+            pysam.view('-h', '-o%s' % temp.name, temp_name)
+        except Exception as e:
+            msg = "Converting history BAM to SAM failed: %s" % unicodify(e)
+            raise Exception(msg)
     os.remove(temp_name)
-    return temp_local, temp_temp
+    return temp_local, temp.name
 
 
 def _verify_checksum(data, checksum_type, expected_checksum_value):

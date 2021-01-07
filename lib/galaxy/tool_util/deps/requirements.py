@@ -19,7 +19,9 @@ class ToolRequirement:
     optionally assert a specific version.
     """
 
-    def __init__(self, name=None, type=None, version=None, specs=[]):
+    def __init__(self, name=None, type=None, version=None, specs=None):
+        if specs is None:
+            specs = []
         self.name = name
         self.type = type
         self.version = version
@@ -33,11 +35,11 @@ class ToolRequirement:
         return copy.deepcopy(self)
 
     @staticmethod
-    def from_dict(dict):
-        version = dict.get("version", None)
-        name = dict.get("name", None)
-        type = dict.get("type", None)
-        specs = [RequirementSpecification.from_dict(s) for s in dict.get("specs", [])]
+    def from_dict(d):
+        version = d.get("version")
+        name = d.get("name")
+        type = d.get("type")
+        specs = [RequirementSpecification.from_dict(s) for s in d.get("specs", [])]
         return ToolRequirement(name=name, type=type, version=version, specs=specs)
 
     def __eq__(self, other):

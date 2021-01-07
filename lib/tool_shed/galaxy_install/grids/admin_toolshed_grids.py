@@ -149,8 +149,6 @@ class InstalledRepositoryGrid(grids.Grid):
                                               key="free-text-search",
                                               visible=False,
                                               filterable="standard"))
-    global_actions = [
-    ]
     operations = [grids.GridOperation(label="Update tool shed status",
                                       condition=(lambda item: not item.deleted),
                                       allow_multiple=False),
@@ -200,7 +198,6 @@ class InstalledRepositoryGrid(grids.Grid):
                                       target='center',
                                       url_args=dict(controller='admin_toolshed',
                                                     action='purge_repository'))]
-    standard_filters = []
     default_filter = dict(deleted="False")
     num_rows_per_page = 50
     use_paging = False

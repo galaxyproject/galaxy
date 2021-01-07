@@ -1,0 +1,372 @@
+<tool name="Pick parameter value" id="pick_value" version="0.1.0" tool_type="expression">
+    <macros>
+        <xml name="booleans">
+            <repeat name="pick_from" title="Pick from">
+                <param name="value" type="boolean" optional="true" label="Value" />
+            </repeat>
+        </xml>
+        <xml name="integers">
+            <repeat name="pick_from" title="Pick from">
+                <param name="value" type="integer" label="Value" optional="true" />
+            </repeat>
+        </xml>
+        <xml name="floats">
+            <repeat name="pick_from" title="Pick from">
+                <param name="value" type="float" label="Value" optional="true" />
+            </repeat>
+        </xml>
+        <xml name="texts">
+            <repeat name="pick_from" title="Pick from">
+                <param name="value" type="text" optional="true" label="Value" />
+            </repeat>
+        </xml>
+        <xml name="datas">
+            <repeat name="pick_from" title="Pick from">
+                <param name="value" type="data" format="data" optional="true" label="Value" />
+            </repeat>
+        </xml>
+        <xml name="param_type">
+            <param name="param_type" type="select" label="Select type of parameter to select from">
+                <option value="data">Dataset</option>
+                <option value="text">Text</option>
+                <option value="integer">Integer</option>
+                <option value="float">Float</option>
+                <option value="boolean">Boolean</option>
+            </param>
+        </xml>
+        <xml name="param_pick_style">
+            <param name="pick_style" type="select" label="Picking behavior" help="How should the case when not exactly one value is non-null be handled?">
+                <option value="first">Pick first value</option>
+                <option value="first_or_default">Pick first value (or provide default)</option>
+                <option value="first_or_error">Pick first value (or fail)</option>
+                <option value="only">Pick only value</option>
+            </param>
+        </xml>
+        <xml name="type_conditional">
+            <conditional name="type_cond">
+                <expand macro="param_type" />
+                <when value="text">
+                    <expand macro="texts" />
+                </when>
+                <when value="integer">
+                    <expand macro="integers" />
+                </when>
+                <when value="float">
+                    <expand macro="floats" />
+                </when>
+                <when value="boolean">
+                    <expand macro="booleans" />
+                </when>
+                <when value="data">
+                    <expand macro="datas" />
+                </when>
+            </conditional>
+        </xml>
+        <xml name="type_conditional_with_default">
+            <conditional name="type_cond">
+                <expand macro="param_type" />
+                <when value="text">
+                    <expand macro="texts" />
+                    <param name="default_value" type="text" label="Default Value" />
+                </when>
+                <when value="integer">
+                    <expand macro="integers" />
+                    <param name="default_value" type="integer" optional="true" label="Default Value" />
+                </when>
+                <when value="float">
+                    <expand macro="floats" />
+                    <param name="default_value" type="float" optional="true" label="Default Value" />
+                </when>
+                <when value="boolean">
+                    <expand macro="booleans" />
+                    <param name="default_value" type="boolean" label="Default Value" />
+                </when>
+                <when value="data">
+                    <expand macro="datas" />
+                    <param name="default_value" type="data" format="data" label="Default Value" />
+                </when>
+            </conditional>
+        </xml>
+        <xml name="style_conditional">
+            <conditional name="style_cond">
+                <expand macro="param_pick_style" />
+                <when value="first">
+                    <expand macro="type_conditional" />
+                </when>
+                <when value="first_or_default">
+                    <expand macro="type_conditional_with_default" />
+                </when>
+                <when value="first_or_error">
+                    <expand macro="type_conditional" />
+                </when>
+                <when value="only">
+                    <expand macro="type_conditional" />
+                </when>
+            </conditional>
+        </xml>
+    </macros>
+    <expression type="ecma5.1"><![CDATA[{
+var out = null;
+var pickStyle = $job.style_cond.pick_style;
+var paramType = $job.style_cond.type_cond.param_type;
+var pickFrom = $job.style_cond.type_cond.pick_from;
+for ( var i = 0; i < pickFrom.length; i++ ) {
+    if ( pickFrom[i].value !== null ) {
+        if ( pickStyle == 'only' && out !== null ) {
+            return { '__error_message': 'Multiple null values found, only one allowed.' };
+        } else if ( out == null ) {
+            out = pickFrom[i].value;
+        }
+    }
+}
+if ( out == null && pickStyle == 'first_or_default' ) {
+    out = $job.style_cond.type_cond.default_value;
+}
+if ( paramType == "data" && out ) {
+    out = out.src;
+}
+if ( out == null && ( pickStyle == "first_or_error" || pickStyle == "only" ) ) {
+    return { '__error_message': 'No non-null values found among tool inputs.' };
+}
+return { 'output': out };
+}]]></expression>
+    <inputs>
+        <expand macro="style_conditional" />
+    </inputs>
+    <outputs>
+        <output type="text" name="text_param" from="output">
+            <filter>style_cond['type_cond']['param_type'] == 'text'</filter>
+        </output>
+        <output type="integer" name="integer_param" from="output">
+            <filter>style_cond['type_cond']['param_type'] == 'integer'</filter>
+        </output>
+        <output type="float" name="float_param" from="output">
+            <filter>style_cond['type_cond']['param_type'] == 'float'</filter>
+        </output>
+        <output type="boolean" name="boolean_param" from="output">
+            <filter>style_cond['type_cond']['param_type'] == 'boolean'</filter>
+        </output>
+        <output type="data" name="data_param" from="output">
+            <filter>style_cond['type_cond']['param_type'] == 'data'</filter>
+        </output>
+    </outputs>
+    <help>
+A "null" value is an empty value, it means some input wasn't specified or some tool produced
+an empty value or was skipped entirely. This can be thought of as an NA in Excel or a None value
+in Python. This expression tool can be fed multiple values - from parameter inputs or the
+outputs or other tools or workflows - and pick one. This allows building workflows which can
+skip steps and branch in complex ways.
+
+There are subtle but important distinctions between the selection style - though they all
+essentially pick the first value that is non-null (i.e. the first input with a real value).
+
+- "Pick first value" is the default and will just return its own null value if none of the inputs
+are non-null.
+- "Pick first value (or provide default)" allows picking a default value that will be used if none of the
+inputs are non-null.
+- "Pick first value (or fail)" will cause the tool execution to fail if none of the selections are
+non-null. This can be important because it provides a clearer indication that something went
+wrong and can prevent the further evaluation of a worklfow.
+- "Pick only value" is like "First value (or fail)" in that it will cause an error if none of the
+inputs are non-null but it will go further to ensure that exactly one value is non-null. When
+building conditonal paths through a workflow this can ensure that at most one path is
+taken.
+    </help>
+    <tests>
+        <test expect_num_outputs="1">
+            <conditional name="style_cond">
+                <param name="pick_style" value="first" />
+                <conditional name="type_cond">
+                    <param name="param_type" value="data" />
+                    <repeat name="pick_from">
+                        <param name="value" value_json="null" />
+                    </repeat>
+                    <repeat name="pick_from">
+                        <param name="value" value_json="null" />
+                    </repeat>
+                    <repeat name="pick_from">
+                        <param name="value" value="simple_line.txt" />
+                    </repeat>
+                    <repeat name="pick_from">
+                        <param name="value" value="simple_line_alternative.txt" />
+                    </repeat>
+                </conditional>
+            </conditional>
+            <output name="data_param" value="simple_line.txt" />
+        </test>
+        <test expect_num_outputs="1">
+            <conditional name="style_cond">
+                <param name="pick_style" value="first" />
+                <conditional name="type_cond">
+                    <param name="param_type" value="boolean" />
+                    <repeat name="pick_from">
+                        <param name="value" value_json="true" />
+                    </repeat>
+                </conditional>
+            </conditional>
+            <output name="boolean_param" value_json="true" />
+        </test>
+        <test expect_num_outputs="1">
+            <conditional name="style_cond">
+                <param name="pick_style" value="first" />
+                <conditional name="type_cond">
+                    <param name="param_type" value="boolean" />
+                    <repeat name="pick_from">
+                        <param name="value" value_json="null" />
+                    </repeat>
+                    <repeat name="pick_from">
+                        <param name="value" value_json="true" />
+                    </repeat>
+                </conditional>
+            </conditional>
+            <output name="boolean_param" value_json="true" />
+        </test>
+        <test expect_num_outputs="1">
+            <conditional name="style_cond">
+                <param name="pick_style" value="first" />
+                <conditional name="type_cond">
+                    <param name="param_type" value="boolean" />
+                    <repeat name="pick_from">
+                        <param name="value" value_json="false" />
+                    </repeat>
+                </conditional>
+            </conditional>
+            <output name="boolean_param" value_json="false" />
+        </test>
+        <test expect_num_outputs="1">
+            <conditional name="style_cond">
+                <param name="pick_style" value="first" />
+                <conditional name="type_cond">
+                    <param name="param_type" value="boolean" />
+                    <repeat name="pick_from">
+                        <param name="value" value_json="null" />
+                    </repeat>
+                    <repeat name="pick_from">
+                        <param name="value" value_json="false" />
+                    </repeat>
+                    <repeat name="pick_from">
+                        <param name="value" value_json="true" />
+                    </repeat>
+                </conditional>
+            </conditional>
+            <output name="boolean_param" value_json="false" />
+        </test>
+        <test expect_num_outputs="1">
+            <conditional name="style_cond">
+                <param name="pick_style" value="first" />
+                <conditional name="type_cond">
+                    <param name="param_type" value="boolean" />
+                    <repeat name="pick_from">
+                        <param name="value" value_json="null" />
+                    </repeat>
+                    <repeat name="pick_from">
+                        <param name="value" value_json="true" />
+                    </repeat>
+                    <repeat name="pick_from">
+                        <param name="value" value_json="false" />
+                    </repeat>
+                </conditional>
+            </conditional>
+            <output name="boolean_param" value_json="true" />
+        </test>
+        <test expect_failure="true">
+            <conditional name="style_cond">
+                <param name="pick_style" value="only" />
+                <conditional name="type_cond">
+                    <param name="param_type" value="boolean" />
+                    <repeat name="pick_from">
+                        <param name="value" value_json="true" />
+                    </repeat>
+                    <repeat name="pick_from">
+                        <param name="value" value_json="false" />
+                    </repeat>
+                </conditional>
+            </conditional>
+        </test>
+        <test expect_failure="true">
+            <conditional name="style_cond">
+                <param name="pick_style" value="first_or_error" />
+                <conditional name="type_cond">
+                    <param name="param_type" value="boolean" />
+                    <repeat name="pick_from">
+                        <param name="value" value_json="null" />
+                    </repeat>
+                    <repeat name="pick_from">
+                        <param name="value" value_json="null" />
+                    </repeat>
+                </conditional>
+            </conditional>
+        </test>
+        <test expect_failure="true">
+            <conditional name="style_cond">
+                <param name="pick_style" value="only" />
+                <conditional name="type_cond">
+                    <param name="param_type" value="boolean" />
+                    <repeat name="pick_from">
+                        <param name="value" value_json="null" />
+                    </repeat>
+                    <repeat name="pick_from">
+                        <param name="value" value_json="null" />
+                    </repeat>
+                </conditional>
+            </conditional>
+        </test>
+        <test expect_num_outputs="1">
+            <conditional name="style_cond">
+                <param name="pick_style" value="first" />
+                <conditional name="type_cond">
+                    <param name="param_type" value="boolean" />
+                    <repeat name="pick_from">
+                        <param name="value" value_json="null" />
+                    </repeat>
+                </conditional>
+            </conditional>
+            <output name="boolean_param" value_json="null" />
+        </test>
+        <test expect_num_outputs="1">
+            <conditional name="style_cond">
+                <param name="pick_style" value="first_or_default" />
+                <conditional name="type_cond">
+                    <param name="param_type" value="boolean" />
+                    <repeat name="pick_from">
+                        <param name="value" value_json="null" />
+                    </repeat>
+                    <param name="default_value" value_json="true" />
+                </conditional>
+            </conditional>
+            <output name="boolean_param" value_json="true" />
+        </test>
+        <test expect_num_outputs="1">
+            <conditional name="style_cond">
+                <param name="pick_style" value="first_or_default" />
+                <conditional name="type_cond">
+                    <param name="param_type" value="boolean" />
+                    <repeat name="pick_from">
+                        <param name="value" value_json="null" />
+                    </repeat>
+                    <repeat name="pick_from">
+                        <param name="value" value_json="null" />
+                    </repeat>
+                    <param name="default_value" value_json="false" />
+                </conditional>
+            </conditional>
+            <output name="boolean_param" value_json="false" />
+        </test>
+        <test expect_num_outputs="1">
+            <conditional name="style_cond">
+                <param name="pick_style" value="first_or_default" />
+                <conditional name="type_cond">
+                    <param name="param_type" value="data" />
+                    <repeat name="pick_from">
+                        <param name="value" value_json="null" />
+                    </repeat>
+                    <repeat name="pick_from">
+                        <param name="value" value_json="null" />
+                    </repeat>
+                    <param name="default_value" value="simple_line.txt" />
+                </conditional>
+            </conditional>
+            <output name="data_param" value="simple_line.txt" />
+        </test>
+    </tests>
+</tool>

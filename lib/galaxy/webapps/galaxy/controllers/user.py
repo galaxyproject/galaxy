@@ -114,10 +114,11 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         return message, user
 
     @expose_api_anonymous_and_sessionless
-    def login(self, trans, payload={}, **kwd):
+    def login(self, trans, payload=None, **kwd):
+        payload = payload or {}
         return self.__validate_login(trans, payload, **kwd)
 
-    def __validate_login(self, trans, payload={}, **kwd):
+    def __validate_login(self, trans, payload=None, **kwd):
         '''Handle Galaxy Log in'''
         if not payload:
             payload = kwd
@@ -229,7 +230,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         return {"message": "Success."}
 
     @expose_api_anonymous_and_sessionless
-    def create(self, trans, payload={}, **kwd):
+    def create(self, trans, payload=None, **kwd):
         if not payload:
             payload = kwd
         message = trans.check_csrf_token(payload)
@@ -277,7 +278,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         return
 
     @expose_api_anonymous_and_sessionless
-    def change_password(self, trans, payload={}, **kwd):
+    def change_password(self, trans, payload=None, **kwd):
         """
         Allows to change own password.
 
@@ -289,6 +290,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
             * password:         new password
             * confirm:          new password (confirmation)
         """
+        payload = payload or {}
         user, message = self.user_manager.change_password(trans, **payload)
         if user is None:
             return self.message_exception(trans, message)
@@ -296,8 +298,9 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         return {"message": "Password has been changed."}
 
     @expose_api_anonymous_and_sessionless
-    def reset_password(self, trans, payload={}, **kwd):
+    def reset_password(self, trans, payload=None, **kwd):
         """Reset the user's password. Send an email with token that allows a password change."""
+        payload = payload or {}
         message = self.user_manager.send_reset_email(trans, payload)
         if message:
             return self.message_exception(trans, message)

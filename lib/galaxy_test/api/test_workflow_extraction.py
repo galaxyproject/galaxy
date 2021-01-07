@@ -251,6 +251,29 @@ test_data:
         collection_step_state = loads(collection_step["tool_state"])
         self.assertEqual(collection_step_state["collection_type"], "list:paired")
 
+    @skip_without_tool("cat_list")
+    @skip_without_tool("collection_creates_dynamic_nested")
+    def test_subcollection_reduction(self):
+        jobs_summary = self._run_jobs("""
+class: GalaxyWorkflow
+steps:
+  creates_nested_list:
+    tool_id: collection_creates_dynamic_nested
+  reduce_nested_list:
+    tool_id: cat_list
+    in:
+      input1: creates_nested_list/list_output
+""")
+        job1_id = self._job_id_for_tool(jobs_summary.jobs, "cat_list")
+        job2_id = self._job_id_for_tool(jobs_summary.jobs, "collection_creates_dynamic_nested")
+        self._extract_and_download_workflow(
+            reimport_as="test_extract_workflows_with_subcollection_reduction",
+            dataset_collection_ids=["1"],
+            job_ids=[job1_id, job2_id],
+        )
+        # TODO: refactor workflow extraction to not rely on HID, so we can actually properly connect
+        # this workflow
+
     @skip_without_tool("collection_split_on_column")
     def test_extract_workflow_with_output_collections(self):
         jobs_summary = self._run_jobs("""
@@ -355,7 +378,7 @@ test_data:
     def _job_for_tool(self, jobs, tool_id):
         tool_jobs = [j for j in jobs if j["tool_id"] == tool_id]
         if not tool_jobs:
-            assert False, "Failed to find job for tool %s" % tool_id
+            raise ValueError(f"Failed to find job for tool {tool_id}")
         # if len( tool_jobs ) > 1:
         #     assert False, "Found multiple jobs for tool %s" % tool_id
         return tool_jobs[-1]
@@ -587,7 +610,7 @@ test_data:
     def __assert_connected(self, workflow, steps):
         disconnected_inputs = []
 
-        for key, value in steps.items():
+        for value in steps.values():
             if value['type'] == "tool":
                 input_connections = value["input_connections"]
                 if not input_connections:

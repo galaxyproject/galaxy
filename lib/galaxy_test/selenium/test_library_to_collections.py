@@ -6,7 +6,7 @@ from .framework import (
 )
 
 
-@unittest.skip
+@unittest.skip("https://github.com/galaxyproject/galaxy/pull/5754")
 class LibraryToCollectionsTestCase(SeleniumTestCase):
 
     requires_admin = True

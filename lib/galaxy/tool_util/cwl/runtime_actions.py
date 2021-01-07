@@ -105,9 +105,11 @@ def handle_outputs(job_directory=None):
         assert output["class"] == "Directory"
         output_path = _possible_uri_to_path(output["location"])
         if output_path.startswith("_:"):
+            assert "listing" in output, "Do not know how to handle output, no 'listing' found."
+            listing = output["listing"]
             # No a real path, just copy listing to target path.
             safe_makedirs(target_path)
-            for listed_file in output["listing"]:
+            for listed_file in listing:
                 # TODO: handle directories
                 assert listed_file["class"] == "File"
                 file_description = file_dict_to_description(listed_file)

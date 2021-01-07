@@ -24,17 +24,17 @@ class DisplayApplicationsController(BaseAPIController):
         response = []
         for display_app in trans.app.datatypes_registry.display_applications.values():
             response.append({
-                'id' : display_app.id,
+                'id': display_app.id,
                 'name': display_app.name,
                 'version': display_app.version,
                 'filename_': display_app._filename,
-                'links': [{'name': l.name} for l in display_app.links.values()]
+                'links': [{'name': link.name} for link in display_app.links.values()]
             })
         return response
 
     @require_admin
     @legacy_expose_api
-    def reload(self, trans, payload={}, **kwd):
+    def reload(self, trans, payload=None, **kwd):
         """
         POST /api/display_applications/reload
 
@@ -43,6 +43,7 @@ class DisplayApplicationsController(BaseAPIController):
         :param  ids:  list containing ids of display to be reloaded
         :type   ids:  list
         """
+        payload = payload or {}
         ids = payload.get('ids')
         trans.app.queue_worker.send_control_task(
             'reload_display_application',

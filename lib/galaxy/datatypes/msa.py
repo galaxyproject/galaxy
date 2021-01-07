@@ -169,6 +169,7 @@ class Stockholm_1_0(Text):
         """
         dataset.metadata.number_of_models = generic_util.count_special_lines('^#[[:space:]+]STOCKHOLM[[:space:]+]1.0', dataset.file_name)
 
+    @classmethod
     def split(cls, input_datasets, subdir_generator_function, split_params):
         """
 
@@ -218,7 +219,6 @@ class Stockholm_1_0(Text):
         except Exception as e:
             log.error('Unable to split files: %s', unicodify(e))
             raise
-    split = classmethod(split)
 
 
 @build_sniff_from_prefix

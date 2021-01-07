@@ -4,7 +4,7 @@ import { getAppRoot } from "onload";
 export function initializeUploadDefaults(propsData = {}) {
     const Galaxy = getGalaxyInstance();
     const appRoot = getAppRoot();
-    return Object.assign(propsData, {
+    return Object.assign({}, propsData, {
         uploadPath: Galaxy.config.nginx_upload_path || `${appRoot}api/tools`,
         chunkUploadSize: Galaxy.config.chunk_upload_size,
         fileSourcesConfigured: Galaxy.config.file_sources_configured,

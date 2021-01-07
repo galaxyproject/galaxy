@@ -29,6 +29,30 @@
                     <td>Format</td>
                     <td id="format">{{ dataset.file_ext }}</td>
                 </tr>
+                <tr>
+                    <td>File contents</td>
+                    <td id="file-contents"><a :href="dataset.download_url">contents</a></td>
+                </tr>
+                <tr v-if="dataset.id">
+                    <td>History Content API ID</td>
+                    <td>
+                        <div id="dataset-id">{{ dataset.id }} <decoded-id :id="dataset.id" /></div>
+                    </td>
+                </tr>
+                <tr v-if="dataset.history_id">
+                    <td>History API ID</td>
+                    <td>
+                        <div id="history_id">{{ dataset.history_id }} <decoded-id :id="dataset.history_id" /></div>
+                    </td>
+                </tr>
+                <tr v-if="dataset.uuid">
+                    <td>UUID</td>
+                    <td id="dataset-uuid">{{ dataset.uuid }}</td>
+                </tr>
+                <tr v-if="dataset.file_name">
+                    <td>Full Path</td>
+                    <td id="file_name">{{ dataset.file_name }}</td>
+                </tr>
             </tbody>
         </table>
     </div>
@@ -38,6 +62,7 @@
 import { mapCacheActions } from "vuex-cache";
 import Utils from "utils/utils";
 import UtcDate from "components/UtcDate";
+import DecodedId from "../DecodedId";
 
 export default {
     props: {
@@ -47,6 +72,7 @@ export default {
         },
     },
     components: {
+        DecodedId,
         UtcDate,
     },
     created: function () {

@@ -19,11 +19,10 @@ from galaxy.managers import (
 from galaxy.managers.collections_util import (
     api_payload_to_create_params,
     dictify_dataset_collection_instance,
-    get_hda_and_element_identifiers
 )
 from galaxy.managers.jobs import fetch_job_states, summarize_jobs_to_dict
 from galaxy.util.json import safe_dumps
-from galaxy.util.streamball import StreamBall
+from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.web import (
     expose_api,
     expose_api_anonymous,
@@ -297,24 +296,9 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             return {'error': util.unicodify(e)}
 
     def __stream_dataset_collection(self, trans, dataset_collection_instance):
-        archive_type_string = 'w|gz'
-        archive_ext = 'tgz'
-        if self.app.config.upstream_gzip:
-            archive_type_string = 'w|'
-            archive_ext = 'tar'
-        archive = StreamBall(mode=archive_type_string)
-        names, hdas = get_hda_and_element_identifiers(dataset_collection_instance)
-        for name, hda in zip(names, hdas):
-            if hda.state != hda.states.OK:
-                continue
-            for file_path, relpath in hda.datatype.to_archive(trans=trans, dataset=hda, name=name):
-                archive.add(file=file_path, relpath=relpath)
-        archive_name = f"{dataset_collection_instance.hid}: {dataset_collection_instance.name}.{archive_ext}"
-        trans.response.set_content_type("application/x-tar")
-        trans.response.headers["Content-Disposition"] = f'attachment; filename="{archive_name}"'
-        archive.wsgi_status = trans.response.wsgi_status()
-        archive.wsgi_headeritems = trans.response.wsgi_headeritems()
-        return archive.stream
+        archive = hdcas.stream_dataset_collection(dataset_collection_instance=dataset_collection_instance, upstream_mod_zip=trans.app.config.upstream_mod_zip)
+        trans.response.headers.update(archive.get_headers())
+        return archive.response()
 
     @expose_api_anonymous
     def create(self, trans, history_id, payload, **kwd):
@@ -783,7 +767,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
                 recursive = util.string_as_bool(kwd['payload'].get('recursive', recursive))
 
             trans.app.dataset_collections_service.delete(trans, "history", id, recursive=recursive, purge=purge)
-            return {'id' : id, "deleted": True}
+            return {'id': id, "deleted": True}
         else:
             return self.__handle_unknown_contents_type(trans, contents_type)
 
@@ -934,9 +918,9 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         return TYPE_ID_SEP.join((split[0], self.app.security.encode_id(split[1])))
 
     @expose_api_raw
-    def archive(self, trans, history_id, filename='', format='tgz', dry_run=True, **kwd):
+    def archive(self, trans, history_id, filename='', format='zip', dry_run=True, **kwd):
         """
-        archive( self, trans, history_id, filename='', format='tgz', dry_run=True, **kwd )
+        archive( self, trans, history_id, filename='', format='zip', dry_run=True, **kwd )
         * GET /api/histories/{history_id}/contents/archive/{id}
         * GET /api/histories/{history_id}/contents/archive/{filename}.{format}
             build and return a compressed archive of the selected history contents
@@ -1035,19 +1019,141 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             return safe_dumps(paths_and_files)
 
         # create the archive, add the dataset files, then stream the archive as a download
-        archive_type_string = 'w|gz'
-        archive_ext = 'tgz'
-        if self.app.config.upstream_gzip:
-            archive_type_string = 'w|'
-            archive_ext = 'tar'
-        archive = StreamBall(archive_type_string)
-
+        archive = ZipstreamWrapper(
+            archive_name=archive_base_name,
+            upstream_mod_zip=self.app.config.upstream_mod_zip,
+            upstream_gzip=self.app.config.upstream_gzip,
+        )
         for file_path, archive_path in paths_and_files:
-            archive.add(file_path, archive_path)
+            archive.write(file_path, archive_path)
 
-        archive_name = '.'.join((archive_base_name, archive_ext))
-        trans.response.set_content_type("application/x-tar")
-        trans.response.headers["Content-Disposition"] = f'attachment; filename="{archive_name}"'
-        archive.wsgi_status = trans.response.wsgi_status()
-        archive.wsgi_headeritems = trans.response.wsgi_headeritems()
-        return archive.stream
+        trans.response.headers.update(archive.get_headers())
+        return archive.response()
+
+    @expose_api_anonymous
+    def contents_near(self, trans, history_id, hid, limit, **kwd):
+        """
+        This endpoint provides random access to a large history without having
+        to know exactly how many pages are in the final query. Pick a target HID
+        and filters, and the endpoint will get LIMIT counts above and below that
+        target regardless of how many gaps may exist in the HID due to
+        filtering.
+
+        It does 2 queries, one up and one down from the target hid with a
+        result size of limit. Additional counts for total matches of both seeks
+        provided in the http headers.
+
+        I've also abandoned the wierd q/qv syntax.
+
+        * GET /api/histories/{history_id}/contents/near/{hid}/{limit}
+        """
+        history = self.history_manager.get_accessible(self.decode_id(history_id), trans.user, current_history=trans.history)
+        filter_params = self._parse_rest_params(kwd)
+        serialization_params = self._parse_serialization_params(kwd, 'betawebclient')
+        view = serialization_params.pop('view')
+
+        # SEEK UP, contents > hid
+        up_params = filter_params + self._parse_rest_params({'hid-gt': hid})
+        up_order = 'hid-asc'
+        contents_up, up_count = self._seek(history, up_params, up_order, limit, serialization_params)
+
+        # SEEK DOWN, contents <= hid
+        down_params = filter_params + self._parse_rest_params({'hid-le': hid})
+        down_order = 'hid-dsc'
+        contents_down, down_count = self._seek(history, down_params, down_order, limit, serialization_params)
+
+        # min/max hid values
+        min_hid, max_hid = self._get_filtered_extrema(history, filter_params)
+
+        # results
+        up = self._expand_contents(trans, contents_up, serialization_params, view)
+        up.reverse()
+        down = self._expand_contents(trans, contents_down, serialization_params, view)
+        contents = up + down
+
+        # Put stats in http headers
+        trans.response.headers['matches_up'] = len(contents_up)
+        trans.response.headers['matches_down'] = len(contents_down)
+        trans.response.headers['total_matches_up'] = up_count
+        trans.response.headers['total_matches_down'] = down_count
+        trans.response.headers['max_hid'] = max_hid
+        trans.response.headers['min_hid'] = min_hid
+
+        return contents
+
+    # Perform content query and matching count
+    def _seek(self, history, filter_params, order_by_string, limit, serialization_params):
+        filters = self.history_contents_filters.parse_filters(filter_params)
+        order_by = self._parse_order_by(manager=self.history_contents_manager, order_by_string=order_by_string)
+
+        # actual contents
+        contents = self.history_contents_manager.contents(history,
+            filters=filters,
+            limit=limit,
+            offset=0,
+            order_by=order_by,
+            serialization_params=serialization_params)
+
+        # count of same query
+        count_filter_params = [f for f in filter_params if f[0] != 'update_time']
+        count_filters = self.history_contents_filters.parse_filters(count_filter_params)
+        contents_count = self.history_contents_manager.contents_count(history, count_filters)
+
+        return contents, contents_count
+
+    # Adds subquery details to initial contents results, perhaps better realized
+    # as a proc or view.
+    def _expand_contents(self, trans, contents, serialization_params, view):
+        rval = []
+        for content in contents:
+            if isinstance(content, trans.app.model.HistoryDatasetAssociation):
+                dataset = self.hda_serializer.serialize_to_view(content,
+                    user=trans.user, trans=trans, view=view, **serialization_params)
+                rval.append(dataset)
+            elif isinstance(content, trans.app.model.HistoryDatasetCollectionAssociation):
+                collection = self.hdca_serializer.serialize_to_view(content,
+                    user=trans.user, trans=trans, view=view, **serialization_params)
+                rval.append(collection)
+        return rval
+
+    # Parsing query string according to REST standards.
+    def _parse_rest_params(self, qdict):
+        DEFAULT_OP = 'eq'
+        splitchar = '-'
+
+        result = []
+        for key, val in qdict.items():
+            attr = key
+            op = DEFAULT_OP
+            if splitchar in key:
+                attr, op = key.rsplit(splitchar, 1)
+            result.append([attr, op, val])
+
+        return result
+
+    def _get_filtered_extrema(self, history, filter_params):
+        extrema_params = self._parse_serialization_params(dict(keys='hid'), 'summary')
+        extrema_filter_params = [f for f in filter_params if f[0] != 'update_time']
+        extrema_filters = self.history_contents_filters.parse_filters(extrema_filter_params)
+
+        order_by_dsc = self._parse_order_by(manager=self.history_contents_manager, order_by_string='hid-dsc')
+        order_by_asc = self._parse_order_by(manager=self.history_contents_manager, order_by_string='hid-asc')
+
+        max_row_result = self.history_contents_manager.contents(history,
+            limit=1,
+            filters=extrema_filters,
+            order_by=order_by_dsc,
+            serialization_params=extrema_params)
+        max_row = max_row_result.pop() if len(max_row_result) else None
+
+        min_row_result = self.history_contents_manager.contents(history,
+            limit=1,
+            filters=extrema_filters,
+            order_by=order_by_asc,
+            serialization_params=extrema_params)
+        min_row = min_row_result.pop() if len(min_row_result) else None
+
+        max_hid = max_row.hid if max_row else None
+        min_hid = min_row.hid if min_row else None
+
+        return min_hid, max_hid

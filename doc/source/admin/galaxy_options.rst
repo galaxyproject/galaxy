@@ -239,7 +239,9 @@
 :Description:
     Where dataset files are stored. It must be accessible at the same
     path on any cluster nodes that will run Galaxy jobs, unless using
-    Pulsar.
+    Pulsar. The default value has been changed from 'files' to
+    'objects' as of 20.05; however, Galaxy will first check if the
+    'files' directory exists before using 'objects' as the default.
     The value of this option will be resolved with respect to
     <data_dir>.
 :Default: ``objects``
@@ -433,7 +435,7 @@
 :Description:
     conda channels to enable by default
     (https://conda.io/docs/user-guide/tasks/manage-channels.html)
-:Default: ``iuc,conda-forge,bioconda,defaults``
+:Default: ``conda-forge,bioconda,defaults``
 :Type: str
 
 
@@ -626,27 +628,6 @@
     option.
 :Default: ``false``
 :Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``legacy_eager_objectstore_initialization``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    As of 18.09, Galaxy defaults to setting up the object store
-    configuration for output datasets during the job queue step in job
-    handlers. This should generally provide for more robust job
-    submission, more configurability, and a better user experience but
-    may in some cases slightly slow down the job handler job setup
-    process. On the off chance that an admin would like to or need to
-    optimize job handlers at the expense of user experience and web
-    handling this option will remain for some time by setting this
-    option to true. This behavior however should be considered
-    deprecated and this option will likely be removed in future
-    versions of Galaxy. For more information see
-    https://github.com/galaxyproject/galaxy/issues/6513.
-:Default: ``false``
-:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1210,7 +1191,9 @@
     default will depend on how the object store is configured,
     starting with 20.05 Galaxy will try to default to 'uuid' if it can
     be sure this is a new Galaxy instance - but the default will be
-    'id' in many cases.
+    'id' in many cases. In particular, if the name of the directory
+    set in <file_path> is `objects`, the default will be set to
+    'uuid', otherwise it will be 'id'.
 :Default: ``None``
 :Type: str
 
@@ -1299,10 +1282,21 @@
 
 :Description:
     Email address to use in the 'From' field when sending emails for
-    account activations, workflow step notifications and password
-    resets. We recommend using string in the following format: Galaxy
-    Project <galaxy-no-reply@example.com> If not configured,
-    '<galaxy-no-reply@HOSTNAME>' will be used.
+    account activations, workflow step notifications, password resets,
+    and tool error reports.  We recommend using a string in the
+    following format: Galaxy Project <galaxy-no-reply@example.com>. If
+    not configured, '<galaxy-no-reply@HOSTNAME>' will be used.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``custom_activation_email_message``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    This text will be inserted at the end of the activation email's
+    message, before the 'Your Galaxy Team' signature.
 :Default: ``None``
 :Type: str
 
@@ -1488,16 +1482,6 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``interactivetools_enable``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable InteractiveTools.
-:Default: ``false``
-:Type: bool
-
-
 ~~~~~~~~~~~~~~~~
 ``aws_estimate``
 ~~~~~~~~~~~~~~~~
@@ -1507,6 +1491,16 @@
     their runtime matrices. CPU, RAM and runtime usage is mapped
     against AWS pricing table. Please note, that those numbers are
     only estimates.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``interactivetools_enable``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable InteractiveTools.
 :Default: ``false``
 :Type: bool
 
@@ -1532,6 +1526,21 @@
     <data_dir>.
 :Default: ``interactivetools_map.sqlite``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``retry_interactivetool_metadata_internally``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Galaxy Interactive Tools (GxITs) can be stopped from within the
+    Galaxy interface, killing the GxIT job without completing its
+    metadata setting post-job steps. In such a case it may be
+    desirable to set metadata on job outputs internally (in the Galaxy
+    job handler process). The default is is the value of
+    `retry_metadata_internally`, which defaults to `true`.
+:Default: ``true``
+:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1748,6 +1757,16 @@
 :Description:
     The URL linked by the "Wiki" link in the "Help" menu.
 :Default: ``https://galaxyproject.org/``
+:Type: str
+
+
+~~~~~~~~~~~~~
+``quota_url``
+~~~~~~~~~~~~~
+
+:Description:
+    The URL linked for quota information in the UI.
+:Default: ``https://galaxyproject.org/support/account-quotas/``
 :Type: str
 
 
@@ -1973,8 +1992,26 @@
 
 :Description:
     If using compression in the upstream proxy server, use this option
-    to disable gzipping of library .tar.gz and .zip archives, since
-    the proxy server will do it faster on the fly.
+    to disable gzipping of dataset collection and library archives,
+    since the upstream server will do it faster on the fly. To enable
+    compression add ``application/zip`` to the proxy's compressable
+    mimetypes.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~
+``upstream_mod_zip``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    If using the mod-zip module in nginx, use this option to assemble
+    zip archives in nginx. This is preferable over the upstream_gzip
+    option as Galaxy does not need to serve the archive. Requires
+    setting up internal nginx locations to all paths that can be
+    archived. See
+    https://docs.galaxyproject.org/en/master/admin/nginx.html#creating-archives-with-mod-zip
+    for details.
 :Default: ``false``
 :Type: bool
 
@@ -3375,10 +3412,11 @@
 ~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Master key that allows many API admin actions to be used without
-    actually having a defined admin user in the database/config.  Only
-    set this if you need to bootstrap Galaxy, you probably do not want
-    to set this on public servers.
+    API key that allows performing some admin actions without actually
+    having a real admin user in the database and config. Only set this
+    if you need to bootstrap Galaxy, in particular to create a real
+    admin user account via API. You should probably not set this on a
+    production server.
 :Default: ``None``
 :Type: str
 

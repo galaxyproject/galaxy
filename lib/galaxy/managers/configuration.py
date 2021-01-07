@@ -54,6 +54,7 @@ class ConfigSerializer(base.ModelSerializer):
             'screencasts_url'                   : _use_config,
             'citation_url'                      : _use_config,
             'support_url'                       : _use_config,
+            'quota_url'                         : _use_config,
             'helpsite_url'                      : _use_config,
             'lims_doc_url'                      : _defaults_to("https://usegalaxy.org/u/rkchak/p/sts"),
             'default_locale'                    : _use_config,
@@ -96,7 +97,7 @@ class ConfigSerializer(base.ModelSerializer):
             'message_box_class'                 : _use_config,
             'server_startttime'                 : lambda config, key, **context: server_starttime,
             'mailing_join_addr'                 : _defaults_to('galaxy-announce-join@bx.psu.edu'),  # should this be the schema default?
-            'server_mail_configured'            : lambda config, key, **context: bool(getattr(config, 'smtp_server')),
+            'server_mail_configured'            : lambda config, key, **context: bool(config.smtp_server),
             'registration_warning_message'      : _use_config,
             'welcome_url'                       : _use_config,
             'show_welcome_with_login'           : _defaults_to(True),  # schema default is False

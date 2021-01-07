@@ -1,7 +1,6 @@
 import { mount, createLocalVue } from "@vue/test-utils";
 import StatelessTags from "./StatelessTags";
 import _l from "utils/localization";
-import Vue from "vue";
 
 describe("Tags/StatelessTags.vue", () => {
     const localVue = createLocalVue();
@@ -17,7 +16,7 @@ describe("Tags/StatelessTags.vue", () => {
             value: testTags,
         });
         emitted = wrapper.emitted();
-        await Vue.nextTick();
+        await wrapper.vm.$nextTick();
     });
 
     it("should render a div for each tag", () => {

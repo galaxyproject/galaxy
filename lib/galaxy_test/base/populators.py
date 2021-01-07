@@ -111,19 +111,20 @@ def skip_without_datatype(extension):
     return method_wrapper
 
 
-def skip_if_site_down(url):
+def is_site_up(url):
+    try:
+        response = requests.get(url, timeout=10)
+        return response.status_code == 200
+    except Exception:
+        return False
 
-    def site_down():
-        try:
-            response = requests.get(url, timeout=10)
-            return response.status_code != 200
-        except Exception:
-            return False
+
+def skip_if_site_down(url):
 
     def method_wrapper(method):
         @wraps(method)
         def wrapped_method(api_test_case, *args, **kwargs):
-            _raise_skip_if(site_down(), "Test depends on [%s] being up and it appears to be down." % url)
+            _raise_skip_if(not is_site_up(url), f"Test depends on [{url}] being up and it appears to be down.")
             method(api_test_case, *args, **kwargs)
 
         return wrapped_method
@@ -208,15 +209,17 @@ class BaseDatasetPopulator:
             self.wait_for_tool_run(history_id, run_response, assert_ok=kwds.get('assert_ok', True))
         return run_response
 
-    def fetch(self, payload, assert_ok=True, timeout=DEFAULT_TIMEOUT):
+    def fetch(self, payload, assert_ok=True, timeout=DEFAULT_TIMEOUT, wait=None):
         tool_response = self._post("tools/fetch", data=payload)
-        if assert_ok:
+        if wait is None:
+            wait = assert_ok
+        if wait:
             job = self.check_run(tool_response)
             self.wait_for_job(job["id"], timeout=timeout)
-
-            job = tool_response.json()["jobs"][0]
-            details = self.get_job_details(job["id"]).json()
-            assert details["state"] == "ok", details
+            if assert_ok:
+                job = tool_response.json()["jobs"][0]
+                details = self.get_job_details(job["id"]).json()
+                assert details["state"] == "ok", details
 
         return tool_response
 
@@ -282,6 +285,10 @@ class BaseDatasetPopulator:
 
     def cancel_job(self, job_id):
         return self._delete("jobs/%s" % job_id)
+
+    def delete_history(self, history_id):
+        delete_response = self._delete(f"histories/{history_id}")
+        delete_response.raise_for_status()
 
     def delete_dataset(self, history_id, content_id):
         delete_response = self._delete(f"histories/{history_id}/contents/{content_id}")
@@ -441,9 +448,13 @@ class BaseDatasetPopulator:
 
     def get_history_dataset_details(self, history_id, **kwds):
         dataset_id = self.__history_content_id(history_id, **kwds)
-        details_response = self._get_contents_request(history_id, "/datasets/%s" % dataset_id)
-        assert details_response.status_code == 200
+        details_response = self.get_history_dataset_details_raw(history_id, dataset_id)
+        details_response.raise_for_status()
         return details_response.json()
+
+    def get_history_dataset_details_raw(self, history_id, dataset_id):
+        details_response = self._get_contents_request(history_id, f"/datasets/{dataset_id}")
+        return details_response
 
     def get_history_dataset_extra_files(self, history_id, **kwds):
         dataset_id = self.__history_content_id(history_id, **kwds)
@@ -513,6 +524,11 @@ class BaseDatasetPopulator:
             src = 'hdca'
         return dict(src=src, id=history_content["id"])
 
+    def dataset_storage_info(self, dataset_id):
+        storage_response = self.galaxy_interactor.get(f"datasets/{dataset_id}/storage")
+        storage_response.raise_for_status()
+        return storage_response.json()
+
     def get_roles(self):
         roles_response = self.galaxy_interactor.get("roles", admin=True)
         assert roles_response.status_code == 200
@@ -534,18 +550,30 @@ class BaseDatasetPopulator:
         user_email = self.user_email()
         roles = self.get_roles()
         users_roles = [r for r in roles if r["name"] == user_email]
-        assert len(users_roles) == 1
-        return users_roles[0]["id"]
+        assert len(users_roles) == 1, f"Did not find exactly one role for email {user_email} - {users_roles}"
+        role = users_roles[0]
+        assert "id" in role, role
+        return role["id"]
 
     def create_role(self, user_ids, description=None):
         payload = {
             "name": self.get_random_name(prefix="testpop"),
             "description": description or "Test Role",
-            "user_ids": json.dumps(user_ids),
+            "user_ids": user_ids,
         }
-        role_response = self.galaxy_interactor.post("roles", data=payload, admin=True)
+        role_response = self.galaxy_interactor.post("roles", data=payload, admin=True, json=True)
         assert role_response.status_code == 200
-        return role_response.json()[0]
+        return role_response.json()
+
+    def create_quota(self, quota_payload):
+        quota_response = self.galaxy_interactor.post("quotas", data=quota_payload, admin=True)
+        quota_response.raise_for_status()
+        return quota_response.json()
+
+    def get_quotas(self):
+        quota_response = self.galaxy_interactor.get("quotas", admin=True)
+        quota_response.raise_for_status()
+        return quota_response.json()
 
     def make_private(self, history_id, dataset_id):
         role_id = self.user_private_role_id()
@@ -581,19 +609,37 @@ class BaseDatasetPopulator:
             "dataset validation"
         )
 
-    def export_url(self, history_id, data, check_download=True):
+    def setup_history_for_export_testing(self, history_name):
+        history_id = self.new_history(name=history_name)
+        self.new_dataset(history_id, content="1 2 3")
+        deleted_hda = self.new_dataset(history_id, content="1 2 3", wait=True)
+        self.delete_dataset(history_id, deleted_hda["id"])
+        deleted_details = self.get_history_dataset_details(history_id, id=deleted_hda["id"])
+        assert deleted_details["deleted"]
+        return history_id
+
+    def prepare_export(self, history_id, data):
         url = "histories/%s/exports" % history_id
         put_response = self._put(url, data)
-        api_asserts.assert_status_code_is(put_response, 202)
+        put_response.raise_for_status()
 
-        def export_ready_response():
-            put_response = self._put(url)
-            if put_response.status_code == 202:
-                return None
+        if put_response.status_code == 202:
+            def export_ready_response():
+                put_response = self._put(url)
+                if put_response.status_code == 202:
+                    return None
+                return put_response
+
+            put_response = wait_on(export_ready_response, desc="export ready")
+            api_asserts.assert_status_code_is(put_response, 200)
             return put_response
+        else:
+            job_desc = put_response.json()
+            assert "job_id" in job_desc
+            return self.wait_for_job(job_desc["job_id"])
 
-        put_response = wait_on(export_ready_response, desc="export ready")
-        api_asserts.assert_status_code_is(put_response, 200)
+    def export_url(self, history_id, data, check_download=True):
+        put_response = self.prepare_export(history_id, data)
         response = put_response.json()
         api_asserts.assert_has_keys(response, "download_url")
         download_url = response["download_url"]
@@ -780,9 +826,13 @@ class BaseWorkflowPopulator:
 
         return workflow_id
 
-    def wait_for_invocation(self, workflow_id, invocation_id, timeout=DEFAULT_TIMEOUT):
+    def wait_for_invocation(self, workflow_id, invocation_id, timeout=DEFAULT_TIMEOUT, assert_ok=True):
         url = f"workflows/{workflow_id}/usage/{invocation_id}"
-        return wait_on_state(lambda: self._get(url), desc="workflow invocation state", timeout=timeout)
+
+        def workflow_state():
+            return self._get(url)
+
+        return wait_on_state(workflow_state, desc="workflow invocation state", timeout=timeout, assert_ok=assert_ok)
 
     def history_invocations(self, history_id):
         history_invocations_response = self._get("invocations", {"history_id": history_id})
@@ -805,7 +855,7 @@ class BaseWorkflowPopulator:
     def wait_for_workflow(self, workflow_id, invocation_id, history_id, assert_ok=True, timeout=DEFAULT_TIMEOUT):
         """ Wait for a workflow invocation to completely schedule and then history
         to be complete. """
-        self.wait_for_invocation(workflow_id, invocation_id, timeout=timeout)
+        self.wait_for_invocation(workflow_id, invocation_id, timeout=timeout, assert_ok=assert_ok)
         self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=assert_ok, timeout=timeout)
 
     def get_invocation(self, invocation_id):
@@ -857,10 +907,12 @@ class BaseWorkflowPopulator:
         api_asserts.assert_status_code_is(response, 200)
         return response.json()
 
-    def download_workflow(self, workflow_id, style=None):
+    def download_workflow(self, workflow_id, style=None, history_id=None):
         params = {}
         if style is not None:
             params["style"] = style
+        if history_id is not None:
+            params['history_id'] = history_id
         response = self._get("workflows/%s/download" % workflow_id, data=params)
         api_asserts.assert_status_code_is(response, 200)
         if style != "format2":
@@ -876,11 +928,24 @@ class BaseWorkflowPopulator:
         put_response = self.galaxy_interactor._put(raw_url, data=json.dumps(data))
         return put_response
 
+    def refactor_workflow(self, workflow_id, actions, dry_run=None, style=None):
+        data = dict(
+            actions=actions,
+        )
+        if style is not None:
+            data["style"] = style
+        if dry_run is not None:
+            data["dry_run"] = dry_run
+        raw_url = 'workflows/%s/refactor' % workflow_id
+        put_response = self.galaxy_interactor._put(raw_url, data=json.dumps(data))
+        return put_response
+
     @contextlib.contextmanager
     def export_for_update(self, workflow_id):
         workflow_object = self.download_workflow(workflow_id)
         yield workflow_object
-        self.update_workflow(workflow_id, workflow_object)
+        put_respose = self.update_workflow(workflow_id, workflow_object)
+        put_respose.raise_for_status()
 
     def run_workflow(self, has_workflow, test_data=None, history_id=None, wait=True, source_type=None, jobs_descriptions=None, expected_response=200, assert_ok=True, client_convert=None, round_trip_format_conversion=False, raw_yaml=False):
         """High-level wrapper around workflow API, etc. to invoke format 2 workflows."""
@@ -1492,7 +1557,7 @@ def stage_rules_example(galaxy_interactor, history_id, example):
     return inputs
 
 
-def wait_on_state(state_func, desc="state", skip_states=None, assert_ok=False, timeout=DEFAULT_TIMEOUT):
+def wait_on_state(state_func, desc="state", skip_states=None, ok_states=None, assert_ok=False, timeout=DEFAULT_TIMEOUT):
     def get_state():
         response = state_func()
         assert response.status_code == 200, "Failed to fetch state update while waiting. [%s]" % response.content
@@ -1501,11 +1566,13 @@ def wait_on_state(state_func, desc="state", skip_states=None, assert_ok=False, t
             return None
         else:
             if assert_ok:
-                assert state == "ok", "Final state - %s - not okay." % state
+                assert state in ok_states, "Final state - %s - not okay." % state
             return state
 
     if skip_states is None:
-        skip_states = ["running", "queued", "new", "ready"]
+        skip_states = ["running", "queued", "new", "ready", "stop", "stopped"]
+    if ok_states is None:
+        ok_states = ["ok", "scheduled"]
     try:
         return wait_on(get_state, desc=desc, timeout=timeout)
     except TimeoutAssertionError as e:

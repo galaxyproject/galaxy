@@ -410,7 +410,7 @@ class ExportsHistoryMixin:
         archive = trans.app.object_store.get_filename(jeha.dataset)
         return open(archive, mode='rb')
 
-    def queue_history_export(self, trans, history, gzip=True, include_hidden=False, include_deleted=False):
+    def queue_history_export(self, trans, history, gzip=True, include_hidden=False, include_deleted=False, directory_uri=None, file_name=None):
         # Convert options to booleans.
         if isinstance(gzip, str):
             gzip = (gzip in ['True', 'true', 'T', 't'])
@@ -419,8 +419,6 @@ class ExportsHistoryMixin:
         if isinstance(include_deleted, str):
             include_deleted = (include_deleted in ['True', 'true', 'T', 't'])
 
-        # Run job to do export.
-        history_exp_tool = trans.app.toolbox.get_tool('__EXPORT_HISTORY__')
         params = {
             'history_to_export': history,
             'compress': gzip,
@@ -428,7 +426,17 @@ class ExportsHistoryMixin:
             'include_deleted': include_deleted
         }
 
-        history_exp_tool.execute(trans, incoming=params, history=history, set_output_hid=True)
+        if directory_uri is None:
+            export_tool_id = '__EXPORT_HISTORY__'
+        else:
+            params['directory_uri'] = directory_uri
+            params['file_name'] = file_name or None
+            export_tool_id = '__EXPORT_HISTORY_TO_URI__'
+
+        # Run job to do export.
+        history_exp_tool = trans.app.toolbox.get_tool(export_tool_id)
+        job, _ = history_exp_tool.execute(trans, incoming=params, history=history, set_output_hid=True)
+        return job
 
 
 class ImportsHistoryMixin:
@@ -804,10 +812,11 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         return imported_visualization
 
     def create_visualization(self, trans, type, title="Untitled Visualization", slug=None,
-                             dbkey=None, annotation=None, config={}, save=True):
+                             dbkey=None, annotation=None, config=None, save=True):
         """
         Create visualiation and first revision.
         """
+        config = config or {}
         visualization = self._create_visualization(trans, title, type, dbkey, slug, annotation, save)
         # TODO: handle this error structure better either in _create or here
         if isinstance(visualization, dict):
@@ -1235,7 +1244,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
         # Copy workflow.
         imported_stored = model.StoredWorkflow()
         imported_stored.name = "imported: " + stored.name
-        workflow = stored.latest_workflow.copy()
+        workflow = stored.latest_workflow.copy(user=trans.user)
         workflow.stored_workflow = imported_stored
         imported_stored.latest_workflow = workflow
         imported_stored.user = trans.user
@@ -1251,25 +1260,6 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
                                       imported_stored.user, imported_stored.latest_workflow.steps[order_index])
         session.flush()
         return imported_stored
-
-    def _workflow_from_dict(self, trans, data, source=None, add_to_menu=False, publish=False, exact_tools=True, fill_defaults=False, from_tool_form=False):
-        """
-        Creates a workflow from a dict. Created workflow is stored in the database and returned.
-        """
-        # TODO: replace this method with direct access to manager.
-        workflow_contents_manager = workflows.WorkflowContentsManager(self.app)
-        raw_workflow_description = workflow_contents_manager.ensure_raw_description(data)
-        created_workflow = workflow_contents_manager.build_workflow_from_raw_description(
-            trans,
-            raw_workflow_description,
-            source=source,
-            add_to_menu=add_to_menu,
-            publish=publish,
-            exact_tools=exact_tools,
-            fill_defaults=fill_defaults,
-            from_tool_form=from_tool_form,
-        )
-        return created_workflow.stored_workflow, created_workflow.missing_tools
 
     def _workflow_to_dict(self, trans, stored):
         """
@@ -1424,18 +1414,18 @@ class SharableMixin:
             action = payload.get("action")
             if action == "make_accessible_via_link":
                 self._make_item_accessible(trans.sa_session, item)
-                if hasattr(item, "has_possible_members") and item.has_possible_members and payload.get("make_members_public", False):
-                    shared, skipped = self._make_members_public(trans, item)
+                if hasattr(item, "has_possible_members") and item.has_possible_members:
+                    skipped = self._make_members_public(trans, item)
             elif action == "make_accessible_and_publish":
                 self._make_item_accessible(trans.sa_session, item)
-                if hasattr(item, "has_possible_members") and item.has_possible_members and payload.get("make_members_public", False):
-                    shared, skipped = self._make_members_public(trans, item)
+                if hasattr(item, "has_possible_members") and item.has_possible_members:
+                    skipped = self._make_members_public(trans, item)
                 item.published = True
             elif action == "publish":
                 if item.importable:
                     item.published = True
-                    if hasattr(item, "has_possible_members") and item.has_possible_members and payload.get("make_members_public", False):
-                        shared, skipped = self._make_members_public(trans, item)
+                    if hasattr(item, "has_possible_members") and item.has_possible_members:
+                        skipped = self._make_members_public(trans, item)
                 else:
                     raise exceptions.MessageException("%s not importable." % class_name)
             elif action == "disable_link_access":
@@ -1482,7 +1472,7 @@ class SharableMixin:
                 else:
                     log.warning("User without permissions tried to make dataset with id: %s public", dataset.id)
                     skipped = True
-        return item, skipped
+        return skipped
 
     # -- Abstract methods. --
 

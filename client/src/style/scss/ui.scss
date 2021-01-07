@@ -282,6 +282,33 @@ $ui-margin-horizontal-large: $margin-v * 2;
     height: 100px !important;
 }
 
+.ui-switch {
+    .custom-control {
+        @extend .custom-switch;
+        @extend .b-custom-control-lg;
+        @extend .float-left;
+        @extend .no-highlight;
+        .custom-control-label:before {
+            border-color: $border-color;
+        }
+    }
+    .label {
+        line-height: 1.7rem;
+    }
+}
+
+.ui-radiobutton {
+    @extend .btn-group;
+    label {
+        @extend .btn;
+        border-color: $border-color;
+    }
+    label.active {
+        @extend .font-weight-bold;
+        background: $btn-default-bg;
+    }
+}
+
 .ui-options {
     .ui-options-list {
         @extend .ui-input;

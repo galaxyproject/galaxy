@@ -17,6 +17,7 @@ import time
 from collections import OrderedDict
 from glob import glob
 from tempfile import NamedTemporaryFile
+from typing import List
 
 import refgenconf
 import requests
@@ -240,6 +241,7 @@ class ToolDataTableManager:
 
 
 class ToolDataTable:
+    type_key: str
 
     @classmethod
     def from_elem(cls, table_elem, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=None):
@@ -743,7 +745,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
 
 class TabularToolDataField(Dictifiable):
 
-    dict_collection_visible_keys = []
+    dict_collection_visible_keys: List[str] = []
 
     def __init__(self, data):
         self.data = data

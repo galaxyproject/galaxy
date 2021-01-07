@@ -195,7 +195,7 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
                                                  label=label,
                                                  parent=invalid_tool_dependencies_root_folder)
             invalid_tool_dependencies_root_folder.folders.append(invalid_tool_dependencies_folder)
-            for td_key, requirements_dict in invalid_tool_dependencies_dict.items():
+            for requirements_dict in invalid_tool_dependencies_dict.values():
                 folder_id += 1
                 invalid_tool_dependency_id += 1
                 try:

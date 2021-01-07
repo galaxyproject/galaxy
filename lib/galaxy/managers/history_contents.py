@@ -473,7 +473,6 @@ class HistoryContentsFilters(base.ModelFilterParser,
                              tools.ToolFilterMixin):
     # surprisingly (but ominously), this works for both content classes in the union that's filtered
     model_class = model.HistoryDatasetAssociation
-    subcontainer_model_class = model.HistoryDatasetCollectionAssociation
 
     def _parse_orm_filter(self, attr, op, val):
 
@@ -545,7 +544,7 @@ class HistoryContentsFilters(base.ModelFilterParser,
         self.orm_filter_parsers.update({
             'history_content_type' : {'op': ('eq')},
             'type_id'       : {'op': ('eq', 'in'), 'val': self.parse_type_id_list},
-            'hid'           : {'op': ('eq', 'ge', 'le'), 'val': int},
+            'hid'           : {'op': ('eq', 'ge', 'le', 'gt', 'lt'), 'val': int},
             # TODO: needs a different val parser - but no way to add to the above
             # 'hid-in'        : { 'op': ( 'in' ), 'val': self.parse_int_list },
             'name'          : {'op': ('eq', 'contains', 'like')},

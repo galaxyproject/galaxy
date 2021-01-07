@@ -1,11 +1,11 @@
 <template>
     <div>
-        <b-alert :name="message" :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
+        <b-alert v-for="(message, index) in messages" :key="index" :show="3" variant="danger">{{ message }}</b-alert>
         <h2>Active Interactive Tools</h2>
         <b-row class="mb-3">
             <b-col cols="6">
                 <b-input
-                    id="workflow-search"
+                    id="interactivetool-search"
                     class="m-1"
                     name="query"
                     placeholder="Search Interactive Tool"
@@ -16,7 +16,7 @@
             </b-col>
         </b-row>
         <b-table
-            id="workflow-table"
+            id="interactive-tool-table"
             striped
             :fields="fields"
             :items="activeInteractiveTools"
@@ -111,8 +111,7 @@ export default {
                 },
             ],
             filter: "",
-            message: null,
-            messageVariant: null,
+            messages: [],
             nInteractiveTools: 0,
             activeInteractiveTools: [],
         };
@@ -126,9 +125,6 @@ export default {
         },
         isActiveToolsListEmpty() {
             return this.activeInteractiveTools.length === 0;
-        },
-        showMessage() {
-            return !!this.message;
         },
         currentHistory() {
             return getGalaxyInstance().currHistoryPanel;
@@ -155,14 +151,18 @@ export default {
             this.nInteractiveTools = items.length;
         },
         stopInteractiveToolSession() {
-            const idsToStop = this.activeInteractiveTools.filter((tool) => tool.marked).map((tool) => tool.id);
-            this.services.stopInteractiveTool(idsToStop).then((response) => {
-                if (response.status === "ok") this.messageVariant = "success";
-                else this.messageVariant = "danger";
-                this.message = response.message;
-                this.activeInteractiveTools = this.activeInteractiveTools.filter((tool) => !tool.marked);
-                this.currentHistory.loadCurrentHistory();
-            });
+            this.activeInteractiveTools
+                .filter((tool) => tool.marked)
+                .map((tool) =>
+                    this.services
+                        .stopInteractiveTool(tool.id)
+                        .then((response) => {
+                            this.activeInteractiveTools = this.activeInteractiveTools.filter((tool) => !tool.marked);
+                        })
+                        .catch((error) => {
+                            this.messages.push(`Failed to stop interactive tool ${tool.name}: ${error.message}`);
+                        })
+                );
         },
         createId(tagLabel, id) {
             return tagLabel + "-" + id;

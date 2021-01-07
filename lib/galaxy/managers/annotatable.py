@@ -20,7 +20,7 @@ def _match_by_user(item, user):
 
 class AnnotatableManagerMixin:
     #: class of AnnotationAssociation (e.g. HistoryAnnotationAssociation)
-    annotation_assoc = None
+    annotation_assoc: type
 
     def annotation(self, item):
         """

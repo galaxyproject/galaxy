@@ -12,7 +12,6 @@ from galaxy.jobs.actions.post import ActionBox
 from galaxy.model import LibraryDatasetDatasetAssociation, WorkflowRequestInputParameter
 from galaxy.model.dataset_collections.builder import CollectionBuilder
 from galaxy.model.none_like import NoneDataset
-from galaxy.objectstore import ObjectStorePopulator
 from galaxy.tools.parameters import update_dataset_ids
 from galaxy.tools.parameters.basic import DataCollectionToolParameter, DataToolParameter, RuntimeValue
 from galaxy.tools.parameters.wrapped import WrappedParameters
@@ -280,7 +279,22 @@ class DefaultToolAction:
                         preserved_tags[tag.value] = tag
         return history, inp_data, inp_dataset_collections, preserved_tags, all_permissions
 
-    def execute(self, tool, trans, incoming=None, return_job=False, set_output_hid=True, history=None, job_params=None, rerun_remap_job_id=None, execution_cache=None, dataset_collection_elements=None, completed_job=None, collection_info=None, flush_job=True):
+    def execute(self,
+                tool,
+                trans,
+                incoming=None,
+                return_job=False,
+                set_output_hid=True,
+                history=None,
+                job_params=None,
+                rerun_remap_job_id=None,
+                execution_cache=None,
+                dataset_collection_elements=None,
+                completed_job=None,
+                collection_info=None,
+                job_callback=None,
+                flush_job=True
+                ):
         """
         Executes a tool, creating job and tool outputs, associating them, and
         submitting the job to the job queue. If history is not specified, use
@@ -363,7 +377,6 @@ class DefaultToolAction:
         # datasets first, then create the associations
         parent_to_child_pairs = []
         child_dataset_names = set()
-        object_store_populator = ObjectStorePopulator(app, trans.user)
         async_tool = tool.tool_type == 'data_source_async'
 
         def handle_output(name, output, hidden=None):
@@ -413,12 +426,7 @@ class DefaultToolAction:
                 trans.sa_session.add(data)
                 if not completed_job:
                     trans.app.security_agent.set_all_dataset_permissions(data.dataset, output_permissions, new=True, flush=False)
-            data.copy_tags_to(preserved_tags)
-
-            if not completed_job and trans.app.config.legacy_eager_objectstore_initialization:
-                # Must flush before setting object store id currently.
-                trans.sa_session.flush()
-                object_store_populator.set_object_store_id(data)
+            data.copy_tags_to(preserved_tags.values())
 
             # This may not be neccesary with the new parent/child associations
             data.designation = name
@@ -517,7 +525,7 @@ class DefaultToolAction:
                         completed_job=completed_job,
                         **element_kwds
                     )
-                    log.info("Handled collection output named {} for tool {} {}".format(name, tool.id, handle_output_timer))
+                    log.info(f"Handled collection output named {name} for tool {tool.id} {handle_output_timer}")
                 else:
                     handle_output(name, output)
                     log.info(f"Handled output named {name} for tool {tool.id} {handle_output_timer}")
@@ -543,7 +551,9 @@ class DefaultToolAction:
         job, galaxy_session = self._new_job_for_session(trans, tool, history)
         self._record_inputs(trans, tool, job, incoming, inp_data, inp_dataset_collections)
         self._record_outputs(job, out_data, output_collections)
-        job.object_store_id = object_store_populator.object_store_id
+        # execute immediate post job actions and associate post job actions that are to be executed after the job is complete
+        if job_callback:
+            job_callback(job)
         if job_params:
             job.params = dumps(job_params)
         if completed_job:
@@ -554,7 +564,7 @@ class DefaultToolAction:
         if app.config.track_jobs_in_database and rerun_remap_job_id is not None:
             # We need a flush here and get hids in order to rewrite jobs parameter,
             # but remapping jobs should only affect single jobs anyway, so this is not too costly.
-            history.add_pending_datasets(set_output_hid=set_output_hid)
+            history.add_pending_items(set_output_hid=set_output_hid)
             trans.sa_session.flush()
             self._remap_job_on_rerun(trans=trans,
                                      galaxy_session=galaxy_session,
@@ -586,7 +596,7 @@ class DefaultToolAction:
         else:
             if flush_job:
                 # Set HID and add to history.
-                history.add_pending_datasets(set_output_hid=set_output_hid)
+                history.add_pending_items(set_output_hid=set_output_hid)
                 job_flush_timer = ExecutionTimer()
                 trans.sa_session.flush()
                 log.info(f"Flushed transaction for job {job.log_str()} {job_flush_timer}")

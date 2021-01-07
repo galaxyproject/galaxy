@@ -1,0 +1,68 @@
+---
+area/admin:
+  - client/src/components/admin/**/*
+  - doc/source/admin/**/*
+area/API:
+  - lib/galaxy/webapps/galaxy/api/**/*
+area/client:
+  - client/*
+area/datatypes:
+  - lib/galaxy/datatypes/**/*
+  - lib/galaxy/config/sample/datatypes_conf.xml.sample
+area/dependencies:
+  - lib/galaxy/dependencies/**/*
+area/documentation:
+  - doc/**/*
+area/jobs:
+  - lib/galaxy/jobs/**/*
+area/libraries:
+  - client/src/components/LibraryFolder/**/*
+  - lib/galaxy/webapps/galaxy/api/libraries.py
+area/objectstore:
+  - lib/galaxy/objectstore/**/*
+area/packaging:
+  - packages/**/*
+area/reports:
+  - client/src/reports/**/*
+  - lib/galaxy/webapps/reports/**/*
+  - templates/webapps/reports/**/*
+area/scripts:
+  - scripts/**/*
+area/security:
+  - lib/galaxy/security/**/*
+area/testing:
+  - lib/galaxy_test/**/*
+  - run_tests.sh
+  - test/**/*
+  - test-data/**/*
+area/testing/api:
+  - lib/galaxy_test/api/**/*
+area/testing/integration:
+  - test/integration/**/*
+  - test/integration_selenium/**/*
+area/testing/selenium:
+  - lib/galaxy/selenium/**/*
+  - lib/galaxy_test/selenium/**/*
+area/tool-dependencies:
+  - lib/galaxy/tool_util/deps/**/*
+area/tool-framework:
+  - lib/galaxy/tools/**/*
+  - lib/galaxy/tool_util/**/*
+  - lib/galaxy/webapps/galaxy/api/tools.py
+area/tools:
+  - tools/**/*
+  - tool-data/**/*
+area/toolshed:
+  - client/src/toolshed/**/*
+  - lib/galaxy/webapps/galaxy/api/toolshed.py
+  - lib/toolshed/**/*
+  - templates/webapps/tool_shed/**/*
+area/UI-UX:
+  - client/src/**/*
+  - templates/**/*
+area/util:
+  - lib/galaxy/util/**/*
+area/visualizations:
+  - config/plugins/visualizations/**/*
+area/workflows:
+  - lib/galaxy/workflow/**/*

@@ -3,7 +3,7 @@
 
 <%
     from galaxy.web.framework.helpers import time_ago
-    from galaxy.webapps.galaxy.controllers.library_common import get_containing_library_from_library_dataset
+    from galaxy.managers.libraries import get_containing_library_from_library_dataset
 %>
 
 %if message:

@@ -6,17 +6,41 @@ import Utils from "utils/utils";
 import Form from "mvc/form/form-view";
 import ToolFormBase from "mvc/tool/tool-form-base";
 import WorkflowIcons from "components/Workflow/icons";
+import Ui from "mvc/ui/ui-misc";
 
 /** Default form wrapper for non-tool modules in the workflow editor. */
 export class DefaultForm {
     constructor(options) {
         const self = this;
         const node = options.node;
-        this.workflow = options.workflow;
+        const workflow = options.workflow;
+        this.workflow = workflow;
         _addLabelAnnotation(this, node);
+        const operations = {};
+        if (node.type == "subworkflow") {
+            operations.edit_subworkflow = new Ui.Button({
+                tooltip: _l(
+                    "Edit targeted subworkflow at its newest version. You'll need to return here and upgrade this workflow step after."
+                ),
+                icon: "fa-pencil-alt",
+                onclick: function () {
+                    workflow.onEditSubworkflow(node.content_id);
+                },
+            });
+            operations.upgrade_subworkflow = new Ui.Button({
+                tooltip: _l("Attempt to upgrade this step to latest version of this subworkflow."),
+                icon: "fa-cubes",
+                onclick: function () {
+                    workflow.attemptRefactor([
+                        { action_type: "upgrade_subworkflow", step: { order_index: parseInt(node.id) } },
+                    ]);
+                },
+            });
+        }
         this.form = new Form({
             ...node.config_form,
             icon: WorkflowIcons[node.type],
+            operations: operations,
             cls: "ui-portlet-section",
             onchange() {
                 axios
@@ -116,10 +140,13 @@ function _addLabelAnnotation(self, node) {
     inputs.unshift({
         type: "text",
         name: "__annotation",
-        label: "Annotation",
+        label: "Step Annotation",
         fixed: true,
         value: node.annotation,
         area: true,
+        onchange: function (new_annotation) {
+            node.setAnnotation(new_annotation);
+        },
         help: "Add an annotation or notes to this step. Annotations are available when a workflow is viewed.",
     });
     inputs.unshift({
@@ -130,6 +157,7 @@ function _addLabelAnnotation(self, node) {
         help: _l("Add a step label."),
         fixed: true,
         onchange: function (new_label) {
+            node.setLabel(new_label);
             let duplicate = false;
             for (const i in workflow.nodes) {
                 const n = workflow.nodes[i];
@@ -145,7 +173,6 @@ function _addLabelAnnotation(self, node) {
                 "error_text",
                 duplicate && "Duplicate label. Please fix this before saving the workflow."
             );
-            self.form.trigger("change");
         },
     });
 }
@@ -245,7 +272,7 @@ function _makeSection(self, node, output) {
                 fixed: true,
                 onchange: (newLabel) => {
                     self.form.data.create();
-                    const oldLabel = node.labelOutput(output, newLabel);
+                    const oldLabel = node.labelOutput(output.name, newLabel);
                     const input_id = self.form.data.match(`__label__${output.name}`);
                     const input_element = self.form.element_list[input_id];
                     if (oldLabel) {
@@ -276,7 +303,7 @@ function _makeSection(self, node, output) {
                 options: extensions,
                 help: "This action will change the datatype of the output to the indicated datatype.",
                 onchange: function (datatype) {
-                    node.changeOutputDatatype(output, datatype);
+                    node.changeOutputDatatype(output.name, datatype);
                 },
             },
             {

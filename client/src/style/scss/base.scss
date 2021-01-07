@@ -126,6 +126,7 @@ body {
 #columns {
     @extend .position-relative;
     flex: 1;
+    overflow: hidden;
 }
 
 #background {
@@ -159,7 +160,7 @@ body {
     @extend .unified-panel;
     right: 0px;
     width: $panel-width;
-    overflow: unset !important;
+    overflow: unset;
 }
 #right > .unified-panel-footer {
     .drag {
@@ -220,6 +221,7 @@ body {
     }
     .unified-panel-header-inner {
         @extend .w-100;
+        min-width: max-content;
         align-items: center;
         justify-content: space-between;
     }
@@ -348,11 +350,9 @@ body {
             align-items: center;
             &.active {
                 background: darken($brand-masthead, 10%);
-                .nav-link {
-                    color: $brand-masthead-text-active;
-                }
             }
             .nav-link {
+                position: relative;
                 cursor: pointer;
                 text-decoration: none;
                 color: $brand-masthead-text;
@@ -361,19 +361,17 @@ body {
                 }
                 &.nav-icon {
                     font-size: 1.7em;
+                    .nav-note {
+                        @extend .font-weight-bold;
+                        @extend .position-absolute;
+                        left: 2.2rem;
+                        top: 2.2rem;
+                        font-size: 0.6rem;
+                    }
                 }
                 &.toggle {
                     color: $brand-masthead-text-hover;
                 }
-            }
-            .nav-note {
-                @extend .font-weight-bold;
-                @extend .position-relative;
-                right: 0.4rem;
-                top: 0.7rem;
-                font-size: 0.7rem;
-                color: $brand-masthead-text-hover;
-                width: 0;
             }
         }
     }
@@ -941,51 +939,57 @@ ul.manage-table-actions li {
 }
 
 // State colors
-.state-color-new {
-    border-color: $state-default-border;
-    background: $state-default-bg;
+
+$galaxy-state-border: (
+    "new": $state-default-border,
+    "upload": $state-info-border,
+    "waiting": $state-default-border,
+    "queued": $state-default-border,
+    "running": $state-running-border,
+    "ok": $state-success-border,
+    "error": $state-danger-border,
+    "deleted": darken($state-default-border, 30%),
+    "hidden": $state-default-border,
+);
+
+$galaxy-state-bg: (
+    "new": $state-default-bg,
+    "upload": $state-info-bg,
+    "waiting": $state-default-bg,
+    "queued": $state-default-bg,
+    "running": $state-running-bg,
+    "ok": $state-success-bg,
+    "error": $state-danger-bg,
+    "deleted": darken($state-default-bg, 30%),
+    "hidden": $state-default-bg,
+);
+
+@each $state in map-keys($galaxy-state-border) {
+    .state-color-#{$state},
+    [data-state="#{$state}"] {
+        border-color: map-get($galaxy-state-border, $state);
+        background-color: map-get($galaxy-state-bg, $state);
+
+        &:focus,
+        &:focus-within {
+            background-color: scale-color(map-get($galaxy-state-bg, $state), $lightness: -10%);
+        }
+
+        &.selected {
+            background-color: $state-info-bg;
+            &:focus,
+            &:focus-within {
+                background-color: scale-color($state-info-bg, $lightness: -10%);
+            }
+        }
+    }
 }
 
-.state-color-upload {
-    border-color: $state-info-border;
-    background: $state-info-bg;
-}
-
-.state-color-waiting {
-    border-color: $state-default-border;
-    background: $state-default-bg;
-}
-
-.state-color-queued {
-    border-color: $state-default-border;
-    background: $state-default-bg;
-}
-
-.state-color-running {
-    border-color: $state-running-border;
-    background: $state-running-bg;
-}
-
-.state-color-ok {
-    border-color: $state-success-border;
-    background: $state-success-bg;
-}
-
-.state-color-error {
-    border-color: $state-danger-border;
-    background: $state-danger-bg;
-}
-
-.state-color-deleted {
-    border-color: darken($state-default-border, 30%);
+.state-color-deleted,
+.state-color-hidden,
+[data-state="deleted"],
+[data-state="hidden"] {
     border-style: dotted;
-    background: darken($state-default-bg, 30%);
-}
-
-.state-color-hidden {
-    border-color: $state-default-border;
-    border-style: dotted;
-    background: $state-default-bg;
 }
 
 // Button styles

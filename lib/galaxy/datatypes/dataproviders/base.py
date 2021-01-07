@@ -9,7 +9,7 @@ Base class(es) for all DataProviders.
 
 import logging
 from collections import deque
-
+from typing import Dict
 
 from . import exceptions
 
@@ -74,7 +74,7 @@ class DataProvider(metaclass=HasSettings):
     # a definition of expected types for keyword arguments sent to __init__
     #   useful for controlling how query string dictionaries can be parsed into correct types for __init__
     #   empty in this base class
-    settings = {}
+    settings: Dict[str, str] = {}
 
     def __init__(self, source, **kwargs):
         """
@@ -179,7 +179,7 @@ class FilteredDataProvider(DataProvider):
             return either the (optionally modified) datum or None.
         """
         super().__init__(source, **kwargs)
-        self.filter_fn = filter_fn if hasattr(filter_fn, '__call__') else None
+        self.filter_fn = filter_fn if callable(filter_fn) else None
         # count how many data we got from the source
         self.num_data_read = 0
         # how many valid data have we gotten from the source
@@ -224,7 +224,7 @@ class LimitedOffsetDataProvider(FilteredDataProvider):
     """
     # define the expected types of these __init__ arguments so they can be parsed out from query strings
     settings = {
-        'limit' : 'int',
+        'limit': 'int',
         'offset': 'int'
     }
 

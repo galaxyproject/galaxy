@@ -13,7 +13,6 @@ from functools import partial, wraps
 import requests
 import yaml
 
-from galaxy.util.bunch import Bunch
 from . import sizzle
 from .data import (
     NAVIGATION,
@@ -34,26 +33,27 @@ RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAULT = 10
 
 WaitType = collections.namedtuple("WaitType", ["name", "default_length"])
 
+
 # Default wait times should make sense for a development server under low
 # load. Wait times for production servers can be scaled up with a multiplier.
-WAIT_TYPES = Bunch(
+class WAIT_TYPES:
     # Rendering a form and registering callbacks, etc...
-    UX_RENDER=WaitType("ux_render", 1),
+    UX_RENDER = WaitType("ux_render", 1)
     # Fade in, fade out, etc...
-    UX_TRANSITION=WaitType("ux_transition", 5),
+    UX_TRANSITION = WaitType("ux_transition", 5)
     # Toastr popup and dismissal, etc...
-    UX_POPUP=WaitType("ux_popup", 15),
+    UX_POPUP = WaitType("ux_popup", 15)
     # Creating a new history and loading it into the panel.
-    DATABASE_OPERATION=WaitType("database_operation", 10),
+    DATABASE_OPERATION = WaitType("database_operation", 10)
     # Wait time for jobs to complete in default environment.
-    JOB_COMPLETION=WaitType("job_completion", 30),
+    JOB_COMPLETION = WaitType("job_completion", 30)
     # Wait time for a GIE to spawn.
-    GIE_SPAWN=WaitType("gie_spawn", 30),
+    GIE_SPAWN = WaitType("gie_spawn", 30)
     # Wait time for toolshed search
-    SHED_SEARCH=WaitType('shed_search', 30),
+    SHED_SEARCH = WaitType('shed_search', 30)
     # Wait time for repository installation
-    REPO_INSTALL=WaitType('repo_install', 60),
-)
+    REPO_INSTALL = WaitType('repo_install', 60)
+
 
 # Choose a moderate wait type for operations that don't specify a type.
 DEFAULT_WAIT_TYPE = WAIT_TYPES.DATABASE_OPERATION
@@ -215,6 +215,10 @@ class NavigatesGalaxy(HasDriver):
     @retry_during_transitions
     def history_panel_name(self):
         return self.history_panel_name_element().text
+
+    def make_accessible_and_publishable(self):
+        self.components.histories.sharing.make_accessible.wait_for_and_click()
+        self.components.histories.sharing.make_publishable.wait_for_and_click()
 
     def history_contents(self, history_id=None, view='summary', datasets_only=True):
         if history_id is None:
@@ -648,10 +652,10 @@ class NavigatesGalaxy(HasDriver):
         input_type_element = upload.rule_select_input_type.wait_for_visible()
         self.select2_set_value(input_type_element, input_description)
 
-    def upload_rule_set_dataset(self, dataset_description="1:"):
+    def upload_rule_set_dataset(self, row=1):
         upload = self.components.upload
-        rule_dataset_element = upload.rule_dataset_selector.wait_for_visible()
-        self.select2_set_value(rule_dataset_element, dataset_description)
+        upload.rule_dataset_selector.wait_for_visible()
+        upload.rule_dataset_selector_row(rowindex=row).wait_for_and_click()
 
     def rule_builder_set_collection_name(self, name):
         rule_builder = self.components.rule_builder
@@ -1213,7 +1217,7 @@ class NavigatesGalaxy(HasDriver):
         selector = self.history_panel_wait_for_hid_state(collection_hid, "ok")
         self.click(selector)
         next_level_element_selector = selector
-        for i in range(len(collection_type.split(":")) - 1):
+        for _ in range(len(collection_type.split(":")) - 1):
             next_level_element_selector = next_level_element_selector.descendant(".dataset-collection-element")
             self.wait_for_and_click(next_level_element_selector)
 
@@ -1247,7 +1251,7 @@ class NavigatesGalaxy(HasDriver):
                 element.click()
                 return element
 
-        assert False, "No visualization [%s] found." % visualization_name
+        raise ValueError(f"No visualization [{visualization_name}] found.")
 
     def history_panel_item_selector(self, hid, wait=False):
         current_history_id = self.current_history_id()
@@ -1281,6 +1285,9 @@ class NavigatesGalaxy(HasDriver):
         details_component = item_component.details
         details_displayed = details_component.is_displayed
         item_component.title.wait_for_and_click()
+        # for i in range(88888):
+        #     self.sleep_for(WAIT_TYPES.UX_RENDER)
+
         if kwds.get("wait", False):
             if details_displayed:
                 details_component.wait_for_absent_or_hidden()

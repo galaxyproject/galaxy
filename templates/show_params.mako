@@ -25,72 +25,16 @@ encoded_history_id = trans.security.encode_id( hda.history_id )
 %>
 
 <div class="dataset-information" hda_id="${encoded_hda_id}"></div>
-
-<h3>Job Information</h3>
-<table class="tabletip">
-    <tbody>
-        %if job:
-            <tr><td>Galaxy Tool ID:</td><td>${ job.tool_id | h }</td></tr>
-            <tr><td>Galaxy Tool Version:</td><td>${ job.tool_version | h }</td></tr>
-        %endif
-        <tr><td>Tool Version:</td><td>${hda.tool_version | h}</td></tr>
-        <tr><td>Tool Standard Output:</td><td><a href="${h.url_for( controller='dataset', action='stdout', dataset_id=encoded_hda_id )}">stdout</a></td></tr>
-        <tr><td>Tool Standard Error:</td><td><a href="${h.url_for( controller='dataset', action='stderr', dataset_id=encoded_hda_id )}">stderr</a></td></tr>
-        %if job:
-            <tr><td>Tool Exit Code:</td><td>${ job.exit_code | h }</td></tr>
-            %if job.job_messages:
-            <tr><td>Job Messages</td><td><ul style="padding-left: 15px; margin-bottom: 0px">
-            %for job_message in job.job_messages:
-            <li>${ job_message['desc'] |h }</li>
-            %endfor
-            <ul></td></tr>
-            %endif
-        %endif
-        <tr><td>History Content API ID:</td>
-        <td>${encoded_hda_id}
-            %if trans.user_is_admin:
-                (${hda.id})
-            %endif
-        </td></tr>
-        %if job:
-            <tr><td>Job API ID:</td>
-            <td>${trans.security.encode_id( job.id )}
-                %if trans.user_is_admin:
-                    (${job.id})
-                %endif
-            </td></tr>
-            %if job.copied_from_job_id:
-            <tr><td>Copied from Job API ID:</td>
-            <td>${trans.security.encode_id( job.copied_from_job_id )}
-                %if trans.user_is_admin:
-                    (${job.copied_from_job_id})
-                %endif
-            </td></tr>
-            %endif
-        %endif
-        <tr><td>History API ID:</td>
-        <td>${encoded_history_id}
-            %if trans.user_is_admin:
-                (${hda.history_id})
-            %endif
-        </td></tr>
-        %if hda.dataset.uuid:
-        <tr><td>UUID:</td><td>${hda.dataset.uuid}</td></tr>
-        %endif
-        %if trans.user_is_admin or trans.app.config.expose_dataset_path:
-            %if not hda.purged:
-                <tr><td>Full Path:</td><td>${hda.file_name | h}</td></tr>
-            %endif
-        %endif
-    </tbody>
-</table>
-
+<p>
 %if job:
 <div class="job-parameters" dataset_id="${encoded_hda_id}" dataset_type="hda">
 </div>
+<p>
 %endif
-
-
+<div class="job-information" hda_id="${encoded_hda_id}" job_id="${trans.security.encode_id( job.id )}"></div>
+<p>
+<div class="dataset-storage" dataset_id="${encoded_hda_id}" dataset_type="hda"></div>
+<p>
 
 <h3>Inheritance Chain</h3>
 <div class="inherit" style="background-color: #fff; font-weight:bold;">${hda.name | h}</div>
@@ -101,24 +45,19 @@ encoded_history_id = trans.security.encode_id( hda.history_id )
         '${dep[0].name | h}' in ${dep[1]}<br/>
     </div>
 % endfor
-
-
-
-%if job and job.command_line and (trans.user_is_admin or trans.app.config.expose_dataset_path):
-<h3>Command Line</h3>
-<pre class="code">
-${ job.command_line | h }</pre>
-%endif
+<p>
 
 %if job and (trans.user_is_admin or trans.app.config.expose_potentially_sensitive_job_metrics):
 <div class="job-metrics" dataset_id="${encoded_hda_id}" aws_estimate="${trans.app.config.aws_estimate}" dataset_type="hda">
 </div>
+<p>
 %endif
 
 %if trans.user_is_admin:
 <h3>Destination Parameters</h3>
 <div class="job-destination-parameters" job_id="${trans.security.encode_id(job.id)}">
 </div>
+<p>
 %endif
 
 %if job and job.dependencies:
@@ -154,6 +93,7 @@ ${ job.command_line | h }</pre>
 
         </tbody>
     </table>
+    <p>
 %endif
 
 %if hda.peek:
@@ -171,9 +111,8 @@ $(function(){
             window.parent.Galaxy.currHistoryPanel.scrollToId( 'dataset-' + $( this ).data( 'hda-id' ) );
         }
     })
-    window.bundleEntries.mountJobMetrics();
-    window.bundleEntries.mountJobParameters();
-    window.bundleEntries.mountDestinationParams();
-    window.bundleEntries.mountDatasetInformation();
+
+     const mountComponents = ["mountJobMetrics", "mountJobParameters", "mountDestinationParams","mountDatasetInformation","mountJobInformation", "mountDatasetStorage"]
+     mountComponents.forEach(component => window.bundleEntries[component]())
 });
 </script>

@@ -310,8 +310,9 @@ mapper(RepositoryCategoryAssociation, RepositoryCategoryAssociation.table,
            repository=relation(Repository)))
 
 
-def init(file_path, url, engine_options={}, create_tables=False):
+def init(file_path, url, engine_options=None, create_tables=False):
     """Connect mappings to the database"""
+    engine_options = engine_options or {}
     # Create the database engine
     engine = build_engine(url, engine_options)
     # Connect the metadata to the database.

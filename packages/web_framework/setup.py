@@ -35,6 +35,7 @@ PACKAGES = [
     'galaxy.web.framework',
     'galaxy.web.framework.helpers',
     'galaxy.web.framework.middleware',
+    'galaxy.web.legacy_framework',
     'galaxy.web.proxy',
 ]
 ENTRY_POINTS = '''

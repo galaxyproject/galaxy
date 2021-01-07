@@ -1,6 +1,6 @@
-import json
-
+from galaxy.exceptions import error_codes
 from galaxy_test.base.api_asserts import (
+    assert_error_code_is,
     assert_has_keys,
     assert_status_code_is,
 )
@@ -19,7 +19,7 @@ class RolesApiTestCase(ApiTestCase):
     def test_list_and_show(self):
 
         def check_roles_response(response):
-            assert response.status_code == 200
+            assert_status_code_is(response, 200)
             as_list = response.json()
             assert isinstance(as_list, list)
             assert len(as_list) > 0
@@ -48,9 +48,50 @@ class RolesApiTestCase(ApiTestCase):
 
         # Check showing a valid, role.
         role_response = self._get("roles/%s" % user_role_id)
-        assert role_response.status_code == 200
+        assert_status_code_is(role_response, 200)
         role = role_response.json()
         RolesApiTestCase.check_role_dict(role, assert_id=user_role_id)
+
+    def test_create_invalid_params(self):
+        # In theory these low-level validation test cases could be handled in more
+        # of a unit test style but it makes sense during the transition from wsgi to
+        # asgi to have some tests that validate the whole pipeline is being integrated
+        # properly in terms of exception handling.
+
+        # Test missing description
+        name = self.dataset_populator.get_random_name()
+        description = "A test role."
+        payload = {
+            "name": name,
+            "user_ids": [self.dataset_populator.user_id()],
+        }
+        response = self._post("roles", payload, admin=True, json=True)
+        assert_status_code_is(response, 400)
+        assert_error_code_is(response, error_codes.USER_REQUEST_MISSING_PARAMETER)
+        assert "description" in response.json()["err_msg"]
+
+        # Test missing name
+        payload = {
+            "name": None,
+            "description": description,
+            "user_ids": [self.dataset_populator.user_id()],
+        }
+        response = self._post("roles", payload, admin=True, json=True)
+        assert_status_code_is(response, 400)
+        assert_error_code_is(response, error_codes.USER_REQUEST_MISSING_PARAMETER)
+        assert "name" in response.json()["err_msg"]
+
+        # Test invalid type for name
+        payload = {
+            "name": ["a test", "name"],
+            "description": description,
+            "user_ids": [self.dataset_populator.user_id()],
+        }
+        response = self._post("roles", payload, admin=True, json=True)
+        assert_status_code_is(response, 400)
+        assert_error_code_is(response, error_codes.USER_REQUEST_INVALID_PARAMETER)
+        assert "name" in response.json()["err_msg"]
+        assert "validation_errors" in response.json()
 
     def test_create_valid(self):
         name = self.dataset_populator.get_random_name()
@@ -58,13 +99,11 @@ class RolesApiTestCase(ApiTestCase):
         payload = {
             "name": name,
             "description": description,
-            "user_ids": json.dumps([self.dataset_populator.user_id()]),
+            "user_ids": [self.dataset_populator.user_id()],
         }
-        response = self._post("roles", payload, admin=True)
+        response = self._post("roles", payload, admin=True, json=True)
         assert_status_code_is(response, 200)
-        # TODO: Why does this return a singleton list - that is bad - should be deprecated
-        # and return a single role.
-        role = response.json()[0]
+        role = response.json()
         RolesApiTestCase.check_role_dict(role)
 
         assert role["name"] == name
@@ -93,7 +132,7 @@ class RolesApiTestCase(ApiTestCase):
         assert_status_code_is(response, 400)
 
     def test_create_only_admin(self):
-        response = self._post("roles")
+        response = self._post("roles", json=True)
         assert_status_code_is(response, 403)
 
     @staticmethod

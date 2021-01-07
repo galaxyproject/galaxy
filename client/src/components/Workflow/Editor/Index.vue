@@ -1,5 +1,19 @@
 <template>
     <div id="columns" class="workflow-client">
+        <StateUpgradeModal :stateMessages="stateMessages" />
+        <StateUpgradeModal
+            :stateMessages="insertedStateMessages"
+            title="Subworkflow embedded with changes"
+            message="Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save."
+        />
+        <RefactorConfirmationModal
+            :workflowId="id"
+            :refactorActions="refactorActions"
+            @onWorkflowError="onWorkflowError"
+            @onWorkflowMessage="onWorkflowMessage"
+            @onRefactor="onRefactor"
+            @onShow="hideModal()"
+        />
         <MarkdownEditor
             v-if="!isCanvas"
             :markdown-text="markdownText"
@@ -84,6 +98,7 @@
                         <div class="unified-panel-header" unselectable="on">
                             <div class="unified-panel-header-inner">
                                 <WorkflowOptions
+                                    :hasChanges="hasChanges"
                                     @onSave="onSave"
                                     @onSaveAs="onSaveAs"
                                     @onRun="onRun"
@@ -92,6 +107,7 @@
                                     @onLayout="onLayout"
                                     @onEdit="onEdit"
                                     @onAttributes="onAttributes"
+                                    @onLint="onLint"
                                 />
                             </div>
                         </div>
@@ -99,14 +115,33 @@
                             <div class="m-1">
                                 <WorkflowAttributes
                                     :id="id"
-                                    :name="name"
                                     :tags="tags"
                                     :parameters="parameters"
+                                    :annotationCurrent.sync="annotation"
                                     :annotation="annotation"
+                                    :nameCurrent.sync="name"
+                                    :name="name"
                                     :version="version"
                                     :versions="versions"
+                                    :license="license"
+                                    :creator="creator"
                                     @onVersion="onVersion"
-                                    @onRename="onRename"
+                                    @onLicense="onLicense"
+                                    @onCreator="onCreator"
+                                />
+                                <WorkflowLint
+                                    id="lint-panel"
+                                    class="right-content"
+                                    ref="lint"
+                                    style="display: none;"
+                                    :legacy-parameters="parameters"
+                                    :annotation="annotation"
+                                    :creator="creator"
+                                    :license="license"
+                                    :nodes="nodes"
+                                    @onAttributes="onAttributes"
+                                    @refactor="attemptRefactor"
+                                    @scrollTo="scrollTo"
                                 />
                                 <div id="right-content" class="right-content" />
                             </div>
@@ -120,14 +155,15 @@
 
 <script>
 import { getDatatypesMapper } from "components/Datatypes";
+import { fromSimple } from "./modules/model";
 import { getModule, getVersions, saveWorkflow, loadWorkflow } from "./modules/services";
 import {
-    showWarnings,
-    showUpgradeMessage,
+    getStateUpgradeMessages,
     copyIntoWorkflow,
-    getWorkflowParameters,
+    getLegacyWorkflowParameters,
     showAttributes,
     showForm,
+    showLint,
     saveAs,
 } from "./modules/utilities";
 import WorkflowCanvas from "./modules/canvas";
@@ -137,6 +173,9 @@ import ToolBoxWorkflow from "components/Panels/ToolBoxWorkflow";
 import SidePanel from "components/Panels/SidePanel";
 import { getAppRoot } from "onload/loadConfig";
 import reportDefault from "./reportDefault";
+import WorkflowLint from "./Lint";
+import StateUpgradeModal from "./StateUpgradeModal";
+import RefactorConfirmationModal from "./RefactorConfirmationModal";
 import { hide_modal, show_message, show_modal } from "layout/modal";
 import WorkflowAttributes from "./Attributes";
 import ZoomControl from "./ZoomControl";
@@ -147,11 +186,14 @@ export default {
     components: {
         MarkdownEditor,
         SidePanel,
+        StateUpgradeModal,
         ToolBoxWorkflow,
         WorkflowOptions,
         WorkflowAttributes,
         ZoomControl,
         WorkflowNode,
+        WorkflowLint,
+        RefactorConfirmationModal,
     },
     props: {
         id: {
@@ -162,17 +204,9 @@ export default {
             type: Number,
             required: true,
         },
-        name: {
-            type: String,
-            required: true,
-        },
         tags: {
             type: Array,
             required: true,
-        },
-        annotation: {
-            type: String,
-            default: "",
         },
         moduleSections: {
             type: Array,
@@ -197,7 +231,7 @@ export default {
             markdownConfig: null,
             markdownText: null,
             versions: [],
-            parameters: [],
+            parameters: null,
             zoomLevel: 7,
             steps: {},
             hasChanges: false,
@@ -208,6 +242,13 @@ export default {
             report: {},
             activeNode: null,
             labels: {},
+            license: null,
+            creator: null,
+            annotation: null,
+            name: null,
+            stateMessages: [],
+            insertedStateMessages: [],
+            refactorActions: [],
         };
     },
     created() {
@@ -227,6 +268,18 @@ export default {
             }
         };
     },
+    watch: {
+        annotation: function (newAnnotation, oldAnnotation) {
+            if (newAnnotation != oldAnnotation) {
+                this.hasChanges = true;
+            }
+        },
+        name: function (newName, oldName) {
+            if (newName != oldName) {
+                this.hasChanges = true;
+            }
+        },
+    },
     methods: {
         onActivate(node) {
             if (this.activeNode != node) {
@@ -239,6 +292,41 @@ export default {
             }
             showForm(this, node, this.datatypes);
             this.canvasManager.drawOverview();
+        },
+        attemptRefactor(actions) {
+            if (this.hasChanges) {
+                const r = window.confirm(
+                    "You've made changes to your workflow that need to be saved before attempting the requested action. Save those changes and continue?"
+                );
+                if (r == false) {
+                    return;
+                }
+                this.onWorkflowMessage("Saving workflow...", "progress");
+                return saveWorkflow(this)
+                    .then((data) => {
+                        this.refactorActions = actions;
+                    })
+                    .catch((response) => {
+                        this.onWorkflowError("Saving workflow failed, cannot apply requested changes...");
+                    });
+            } else {
+                this.refactorActions = actions;
+            }
+        },
+        // synchronize modal handling through this object so we can convert it to be
+        // be reactive at some point.
+        onWorkflowError(message, response) {
+            show_modal(message, response, { Ok: hide_modal });
+        },
+        onWorkflowMessage(title, body) {
+            show_message(title, body);
+        },
+        hideModal() {
+            hide_modal();
+        },
+        async onRefactor(response) {
+            await fromSimple(this, response.workflow);
+            this._loadEditorData(response);
         },
         onAdd(node) {
             this.nodes[node.id] = node;
@@ -263,6 +351,10 @@ export default {
             this.activeNode = null;
             this.hasChanges = true;
             showAttributes();
+        },
+        onEditSubworkflow(contentId) {
+            const editUrl = `${getAppRoot()}workflow/editor?workflow_id=${contentId}`;
+            this.onNavigate(editUrl);
         },
         onClone(node) {
             Vue.set(this.steps, this.nodeIndex++, {
@@ -304,16 +396,23 @@ export default {
         },
         onAttributes() {
             showAttributes();
-            this.parameters = getWorkflowParameters(this.nodes);
+            this._ensureParametersSet();
+        },
+        scrollTo(node) {
+            this.canvasManager.scrollToNode(node);
+            node.onScrollTo();
+        },
+        onLint() {
+            this._ensureParametersSet();
+            // See notes in Lint.vue about why refresh is needed.
+            this.$refs.lint.refresh();
+            showLint();
         },
         onEdit() {
             this.isCanvas = true;
         },
         onReport() {
             this.isCanvas = false;
-        },
-        onRename(name) {
-            this.name = name;
         },
         onReportUpdate(markdown) {
             this.hasChanges = true;
@@ -322,29 +421,31 @@ export default {
         },
         onRun() {
             const runUrl = `${getAppRoot()}workflows/run?id=${this.id}`;
+            this.onNavigate(runUrl);
+        },
+        onNavigate(url) {
             if (this.hasChanges) {
                 this.onSave(true).then(() => {
-                    window.location = runUrl;
+                    window.location = url;
                 });
             } else {
-                window.location = runUrl;
+                window.location = url;
             }
         },
         onZoom(zoomLevel) {
             this.zoomLevel = this.canvasManager.setZoom(zoomLevel);
         },
         onSave(hideProgress = false) {
-            !hideProgress && show_message("Saving workflow...", "progress");
+            !hideProgress && this.onWorkflowMessage("Saving workflow...", "progress");
             return saveWorkflow(this)
                 .then((data) => {
-                    showWarnings(data);
                     getVersions(this.id).then((versions) => {
                         this.versions = versions;
                         hide_modal();
                     });
                 })
                 .catch((response) => {
-                    show_modal("Saving workflow failed...", response, { Ok: hide_modal });
+                    this.onWorkflowError("Saving workflow failed...", response, { Ok: hide_modal });
                 });
         },
         onVersion(version) {
@@ -361,44 +462,69 @@ export default {
                 this._loadCurrent(this.id, version);
             }
         },
-        _insertStep(conentId, name, type) {
+        _ensureParametersSet() {
+            this.parameters = getLegacyWorkflowParameters(this.nodes);
+        },
+        _insertStep(contentId, name, type) {
             if (!this.isCanvas) {
                 this.isCanvas = true;
                 return;
             }
             Vue.set(this.steps, this.nodeIndex++, {
                 name: name,
-                content_id: conentId,
+                content_id: contentId,
                 type: type,
             });
         },
+        _loadEditorData(data) {
+            const report = data.report || {};
+            const markdown = report.markdown || reportDefault;
+            this.markdownText = markdown;
+            this.markdownConfig = report;
+            hide_modal();
+            this.stateMessages = getStateUpgradeMessages(data);
+            const has_changes = this.stateMessages.length > 0;
+            this.license = data.license;
+            this.creator = data.creator;
+            getVersions(this.id).then((versions) => {
+                this.versions = versions;
+            });
+            Vue.nextTick(() => {
+                this.canvasManager.drawOverview();
+                this.canvasManager.scrollToNodes();
+                this.hasChanges = has_changes;
+            });
+        },
         _loadCurrent(id, version) {
-            show_message("Loading workflow...", "progress");
+            this.onWorkflowMessage("Loading workflow...", "progress");
             loadWorkflow(this, id, version)
                 .then((data) => {
-                    const report = data.report || {};
-                    const markdown = report.markdown || reportDefault;
-                    this.markdownText = markdown;
-                    this.markdownConfig = report;
-                    showUpgradeMessage(data);
-                    getVersions(this.id).then((versions) => {
-                        this.versions = versions;
-                    });
-                    Vue.nextTick(() => {
-                        this.canvasManager.drawOverview();
-                        this.canvasManager.scrollToNodes();
-                        this.hasChanges = false;
-                    });
+                    this._loadEditorData(data);
                 })
                 .catch((response) => {
-                    show_modal("Loading workflow failed...", response, { Ok: hide_modal });
+                    this.onWorkflowError("Loading workflow failed...", response);
                 });
+        },
+        onLicense(license) {
+            if (this.license != license) {
+                this.hasChanges = true;
+                this.license = license;
+            }
+        },
+        onCreator(creator) {
+            if (this.creator != creator) {
+                this.hasChanges = true;
+                this.creator = creator;
+            }
         },
         getManager() {
             return this;
         },
         getCanvasManager() {
             return this.canvasManager;
+        },
+        onInsertedStateMessages(insertedStateMessages) {
+            this.insertedStateMessages = insertedStateMessages;
         },
     },
 };

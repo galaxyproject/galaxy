@@ -1,5 +1,6 @@
 # Contains parameters that are used in Display Applications
 import mimetypes
+from typing import Optional
 from urllib.parse import quote_plus
 
 from galaxy.util import string_as_bool
@@ -12,7 +13,7 @@ DEFAULT_DATASET_NAME = 'dataset'
 class DisplayApplicationParameter:
     """ Abstract Class for Display Application Parameters """
 
-    type = None
+    type: Optional[str] = None
 
     @classmethod
     def from_elem(cls, elem, link):

@@ -1,4 +1,6 @@
 import Vuex from "vuex";
+import axios from "axios";
+import MockAdapter from "axios-mock-adapter";
 import { mount, createLocalVue } from "@vue/test-utils";
 import DatasetInformation from "./DatasetInformation";
 import datasetResponse from "./testData/datasetResponse";
@@ -30,6 +32,16 @@ const testStore = new Vuex.Store({
 describe("DatasetInformation/DatasetInformation.vue", () => {
     let wrapper;
     let datasetInfoTable;
+    let axiosMock;
+
+    beforeEach(() => {
+        axiosMock = new MockAdapter(axios);
+        axiosMock.onGet(new RegExp(`api/configuration/decode/*`)).reply(200, { decoded_id: 123 });
+    });
+
+    afterEach(() => {
+        axiosMock.restore();
+    });
 
     beforeEach(async () => {
         const propsData = {
@@ -49,8 +61,8 @@ describe("DatasetInformation/DatasetInformation.vue", () => {
         // table should exist
         expect(datasetInfoTable).toBeTruthy();
         const rows = datasetInfoTable.findAll("tbody > tr");
-        // should contain 6 rows
-        expect(rows.length).toBe(6);
+        // should contain 11 rows
+        expect(rows.length).toBe(11);
     });
 
     it("filesize should be formatted", async () => {
@@ -70,11 +82,16 @@ describe("DatasetInformation/DatasetInformation.vue", () => {
             { htmlAttribute: "name", backend_key: "name" },
             { htmlAttribute: "dbkey", backend_key: "metadata_dbkey" },
             { htmlAttribute: "format", backend_key: "file_ext" },
+            { htmlAttribute: "file-contents", backend_key: "download_url" },
         ];
 
         rendered_entries.forEach((entry) => {
             const renderedText = datasetInfoTable.find(`#${entry.htmlAttribute}`).text();
-            expect(renderedText).toBe(datasetResponse[entry.backend_key].toString());
+            if (entry.htmlAttribute === "file-contents") {
+                expect(renderedText).toBe("contents");
+            } else {
+                expect(renderedText).toBe(datasetResponse[entry.backend_key].toString());
+            }
         });
     });
 });

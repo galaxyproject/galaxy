@@ -60,7 +60,7 @@ class ToolValidator(GalaxyToolValidator):
         directory to which dest_path refers.
         """
         sample_files = []
-        for root, dirs, files in os.walk(repo_files_dir):
+        for root, _dirs, files in os.walk(repo_files_dir):
             if root.find('.hg') < 0:
                 for name in files:
                     if name.endswith('.sample'):

@@ -144,7 +144,7 @@ class ToolExecutionTestCase(TestCase, tools_support.UsesApp, tools_support.UsesT
         hdca.id = id
         collection = galaxy.model.DatasetCollection()
         hdca.collection = collection
-        collection.elements = [galaxy.model.DatasetCollectionElement(element=self.__add_dataset(1))]
+        galaxy.model.DatasetCollectionElement(collection=collection, element=self.__add_dataset(1))
         collection.type = collection_type
         self.trans.sa_session.model_objects[galaxy.model.HistoryDatasetCollectionAssociation][id] = hdca
         self.history.dataset_collections.append(hdca)

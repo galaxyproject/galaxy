@@ -3,12 +3,9 @@
 import argparse
 import logging
 from glob import glob
+from html.parser import HTMLParser
 
 import requests
-try:
-    from html.parser import HTMLParser
-except ImportError:  # python 2
-    from HTMLParser import HTMLParser
 
 QUAY_API_ENDPOINT = 'https://quay.io/api/v1/repository'
 

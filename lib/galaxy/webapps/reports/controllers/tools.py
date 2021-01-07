@@ -302,7 +302,7 @@ class Tools(BaseUIController):
         if tool_name is None:
             raise ValueError("Tool can't be none")
         tool_errors = [[unicodify(a), b] for a, b in
-                       sa.select((galaxy.model.Job.table.c.stderr, galaxy.model.Job.table.c.create_time),
+                       sa.select((galaxy.model.Job.table.c.tool_stderr, galaxy.model.Job.table.c.create_time),
                         from_obj=[galaxy.model.Job.table],
                         whereclause=and_(galaxy.model.Job.table.c.tool_id == tool_name,
                                          galaxy.model.Job.table.c.state == 'error')).execute()]

@@ -1,16 +1,9 @@
 import { mount } from "@vue/test-utils";
 import InstallationSettings from "./InstallationSettings";
-import { __RewireAPI__ as rewire } from "./InstallationSettings";
+
+jest.mock("app");
 
 describe("InstallationSettings", () => {
-    beforeEach(() => {
-        rewire.__Rewire__("getGalaxyInstance", () => {
-            return {
-                config: {},
-            };
-        });
-    });
-
     it("test tool repository installer interface", () => {
         const wrapper = mount(InstallationSettings, {
             propsData: {

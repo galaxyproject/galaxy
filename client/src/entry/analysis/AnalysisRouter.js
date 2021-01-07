@@ -43,10 +43,11 @@ import PluginList from "components/PluginList.vue";
 import QueryStringParsing from "utils/query-string-parsing";
 import DatasetError from "mvc/dataset/dataset-error";
 import DatasetEditAttributes from "mvc/dataset/dataset-edit-attributes";
-import Citations from "components/Citations.vue";
+import Citations from "components/Citation/Citations.vue";
 import DisplayStructure from "components/DisplayStructured.vue";
 import { CloudAuth } from "components/User/CloudAuth";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
+import Confirmation from "components/login/Confirmation.vue";
 import Vue from "vue";
 import store from "store";
 
@@ -56,6 +57,7 @@ export const getAnalysisRouter = (Galaxy) =>
         routes: {
             "(/)(#)(_=_)": "home",
             "(/)root*": "home",
+            "(/)login/confirm": "show_new_user_confirmation",
             "(/)tools/view": "show_tools_view",
             "(/)tools/json": "show_tools_json",
             "(/)tours(/)(:tour_id)": "show_tours",
@@ -120,6 +122,10 @@ export const getAnalysisRouter = (Galaxy) =>
             } else {
                 this.page.display(new Tours.ToursView());
             }
+        },
+
+        show_new_user_confirmation: function () {
+            this._display_vue_helper(Confirmation);
         },
 
         show_user: function () {
@@ -327,6 +333,9 @@ export const getAnalysisRouter = (Galaxy) =>
                     url: "workflow/create",
                     redirect: "workflow/editor",
                     active_tab: "workflow",
+                    submit_title: "Create",
+                    submit_icon: "fa-check",
+                    cancel_redirect: "workflows/list",
                 })
             );
         },
@@ -342,9 +351,13 @@ export const getAnalysisRouter = (Galaxy) =>
         show_workflows_trs_import: function () {
             const queryTrsServer = QueryStringParsing.get("trs_server");
             const queryTrsId = QueryStringParsing.get("trs_id");
+            const queryTrsVersionId = QueryStringParsing.get("trs_version");
+            const isRun = QueryStringParsing.get("run_form") === "true";
             const propsData = {
                 queryTrsServer,
                 queryTrsId,
+                queryTrsVersionId,
+                isRun,
             };
             this._display_vue_helper(TrsImport, propsData);
         },

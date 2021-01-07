@@ -712,6 +712,11 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 for tool in self._tools_by_id.values():
                     if tool.old_id == tool_id:
                         rval.append(tool)
+                if get_all_versions and tool_id in self._tool_versions_by_id:
+                    for tool in self._tool_versions_by_id[tool_id].values():
+                        if tool not in rval:
+                            rval.append(tool)
+
                 # if we don't have a lineage_map for this tool we need to sort by version,
                 # so that the last tool in rval is the newest tool.
                 rval.sort(key=lambda t: t.version)

@@ -213,7 +213,7 @@ class StagingInterace(metaclass=abc.ABCMeta):
             assert job is None
             with open(job_path) as f:
                 job = yaml.safe_load(f)
-            job_dir = os.path.dirname(job_path)
+            job_dir = os.path.dirname(os.path.abspath(job_path))
         else:
             assert job is not None
             # Figure out what "." should be here instead.

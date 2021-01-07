@@ -88,8 +88,8 @@ class ShellJobRunner(AsynchronousJobRunner):
             return
 
         # job was deleted while we were preparing it
-        if job_wrapper.get_state() == model.Job.states.DELETED:
-            log.info("(%s) Job deleted by user before it entered the queue" % galaxy_id_tag)
+        if job_wrapper.get_state() in (model.Job.states.DELETED, model.Job.states.STOPPED):
+            log.debug("(%s) Job deleted/stopped by user before it entered the queue", galaxy_id_tag)
             if job_wrapper.cleanup_job in ("always", "onsuccess"):
                 job_wrapper.cleanup()
             return
@@ -168,12 +168,13 @@ class ShellJobRunner(AsynchronousJobRunner):
                 state = job_interface.parse_single_status(cmd_out.stdout, external_job_id)
                 if not state == model.Job.states.OK:
                     log.warning(f'({id_tag}/{external_job_id}) job not found in batch state check, but found in individual state check')
+            job_state = ajs.job_wrapper.get_state()
             if state != old_state:
                 log.debug(f"({id_tag}/{external_job_id}) state change: from {old_state} to {state}")
                 if not state == model.Job.states.OK:
                     # No need to change_state when the state is OK, this will be handled by `self.finish_job`
                     ajs.job_wrapper.change_state(state)
-                if state == model.Job.states.ERROR:
+                if state == model.Job.states.ERROR and job_state != model.Job.states.STOPPED:
                     # Try to find out the reason for exiting
                     self.__handle_out_of_memory(ajs, external_job_id)
                     self.work_queue.put((self.mark_as_failed, ajs))
@@ -182,7 +183,7 @@ class ShellJobRunner(AsynchronousJobRunner):
             if state == model.Job.states.RUNNING and not ajs.running:
                 ajs.running = True
             ajs.old_state = state
-            if state == model.Job.states.OK:
+            if state == model.Job.states.OK or job_state == model.Job.states.STOPPED:
                 external_metadata = not asbool(ajs.job_wrapper.job_destination.params.get("embed_metadata_in_job", DEFAULT_EMBED_METADATA_IN_JOB))
                 if external_metadata:
                     self.work_queue.put((self.handle_metadata_externally, ajs))
@@ -249,8 +250,8 @@ class ShellJobRunner(AsynchronousJobRunner):
         ajs.command_line = job.command_line
         ajs.job_wrapper = job_wrapper
         ajs.job_destination = job_wrapper.job_destination
-        if job.state == model.Job.states.RUNNING:
-            log.debug(f"({job.id}/{job.job_runner_external_id}) is still in running state, adding to the runner monitor queue")
+        if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
+            log.debug(f"({job.id}/{job.job_runner_external_id}) is still in {job.state} state, adding to the runner monitor queue")
             ajs.old_state = model.Job.states.RUNNING
             ajs.running = True
             self.monitor_queue.put(ajs)

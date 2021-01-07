@@ -15,6 +15,9 @@ import os
 import random
 import string
 import tempfile
+import time
+
+import yaml
 
 from galaxy.jobs.runners.util.pykube_util import (
     Job,
@@ -146,8 +149,8 @@ class KubernetesStagingContainerIntegrationTestCase(CancelsJob, BaseKubernetesSt
 
     @property
     def instance_id(self):
-        import yaml
-        config = yaml.load(open(self.job_config_file))
+        with open(self.job_config_file) as fh:
+            config = yaml.safe_load(fh)
         return config["execution"]["environments"]["pulsar_k8s_environment"]["k8s_galaxy_instance_id"]
 
     @skip_without_tool("cat_data_and_sleep")
@@ -161,7 +164,6 @@ class KubernetesStagingContainerIntegrationTestCase(CancelsJob, BaseKubernetesSt
             delete_response = self.dataset_populator.cancel_job(job_id)
             assert delete_response.json() is True
 
-            import time
             time.sleep(5)
 
             assert self._active_kubernetes_jobs == 0

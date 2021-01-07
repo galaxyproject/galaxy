@@ -2,15 +2,7 @@
 # non-submit host and using a Slurm cluster.
 from logging import getLogger
 
-try:
-    from galaxy.model import Job
-    job_states = Job.states
-except ImportError:
-    # Not in Galaxy, map Galaxy job states to Pulsar ones.
-    from pulsar.util import enum
-    job_states = enum(RUNNING='running', OK='complete', QUEUED='queued', ERROR="failed")
-
-from ..job import BaseJobExec
+from ..job import BaseJobExec, job_states
 
 log = getLogger(__name__)
 
