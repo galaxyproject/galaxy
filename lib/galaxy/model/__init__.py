@@ -5192,6 +5192,15 @@ class WorkflowStep(RepresentById):
     def log_str(self):
         return "WorkflowStep[index=%d,type=%s]" % (self.order_index, self.type)
 
+    def clear_module_extras(self):
+        # the module code adds random dynamic state to the step, this
+        # attempts to clear that.
+        for module_attribute in ["module"]:
+            try:
+                delattr(self, module_attribute)
+            except AttributeError:
+                pass
+
 
 class WorkflowStepInput(RepresentById):
     default_merge_type = None
