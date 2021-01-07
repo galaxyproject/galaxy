@@ -129,7 +129,7 @@
 </template>
 
 <script>
-import { mapState, mapGetters } from "vuex";
+import { mapGetters } from "vuex";
 import { Dataset } from "../../model";
 import { PriorityMenu, PriorityMenuItem } from "components/PriorityMenu";
 import { legacyNavigationMixin } from "components/plugins";
@@ -158,10 +158,11 @@ export default {
 
     computed: {
         ...mapGetters("user", ["currentUser"]),
+        ...mapGetters("config", ["config"]),
 
-        ...mapState("config", {
-            showViz: (state) => state.config.visualizations_visible,
-        }),
+        showViz() {
+            return this.config.visualizations_visible;
+        },
 
         displayButtonTitle() {
             if (this.dataset.purged) {

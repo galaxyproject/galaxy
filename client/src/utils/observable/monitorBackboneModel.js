@@ -1,12 +1,9 @@
-import { Observable } from "rxjs";
+import { fromEvent } from "rxjs";
+import { map, pluck } from "rxjs/operators";
 
-export function monitorBackboneModel(sourceModel, prop) {
-    return new Observable((obs) => {
-        const evtName = `change:${prop}`;
-        const changeHandler = (model) => obs.next(model);
-        sourceModel.on(evtName, changeHandler);
-        return () => {
-            sourceModel.off(evtName, changeHandler);
-        };
-    });
+export function monitorBackboneModel(sourceModel) {
+    return fromEvent(sourceModel, "change").pipe(
+        map(([model]) => model),
+        pluck("attributes")
+    );
 }
