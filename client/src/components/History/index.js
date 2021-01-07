@@ -6,5 +6,5 @@ export { default as CurrentHistoryPanel } from "./CurrentHistoryPanel";
 export { default as HistoryPanelProxy } from "./adapters/HistoryPanelProxy";
 
 // rxjs debugging panel
-import { initSpy } from "utils/observable/rxjsDebugging";
-initSpy();
+// import { initSpy } from "utils/observable/rxjsDebugging";
+// initSpy();
