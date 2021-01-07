@@ -6,7 +6,7 @@ from fastapi_utils.cbv import cbv
 
 
 from galaxy.managers.licenses import (
-    LicenseModel,
+    LicenseMetadataModel,
     LicensesManager
 )
 from galaxy.web import expose_api_anonymous_and_sessionless
@@ -14,7 +14,12 @@ from galaxy.webapps.base.controller import BaseAPIController
 
 router = APIRouter(tags=['licenses'])
 
-LicenseIdPath = Path(..., title="The SPDX identifier of the license", description="SPDX identifier", example="MIT")
+LicenseIdPath: str = Path(
+    ...,  # Mark this Path parameter as required
+    title="SPDX license short ID",
+    description="The [SPDX license short identifier](https://spdx.github.io/spdx-spec/appendix-I-SPDX-license-list/)",
+    example="Apache-2.0"
+)
 
 
 def get_licenses_manager() -> LicensesManager:
@@ -27,16 +32,19 @@ class FastAPILicenses:
 
     @router.get('/api/licenses',
         summary="Lists all available SPDX licenses",
-        response_model=List[LicenseModel])
-    async def index(self) -> List[LicenseModel]:
-        """Returns the list with all the available SPDX licenses."""
+        response_model=List[LicenseMetadataModel],
+        response_description="List of SPDX licenses")
+    async def index(self) -> List[LicenseMetadataModel]:
+        """Returns an index with all the available [SPDX licenses](https://spdx.org/licenses/)."""
         return self.licenses_manager.get_licenses()
 
     @router.get('/api/licenses/{id}',
-        summary="Gets the SPDX license with the matching short identifier",
-        response_model=LicenseModel)
-    async def get(self, id: str = LicenseIdPath) -> LicenseModel:
-        """Returns the license with the matching SPDX short identifier."""
+        summary="Gets the SPDX license metadata associated with the short identifier",
+        response_model=LicenseMetadataModel,
+        response_description="SPDX license metadata")
+    async def get(self, id=LicenseIdPath) -> LicenseMetadataModel:
+        """Returns the license metadata associated with the given
+        [SPDX license short ID](https://spdx.github.io/spdx-spec/appendix-I-SPDX-license-list/)."""
         return self.licenses_manager.get_license_by_id(id)
 
 
