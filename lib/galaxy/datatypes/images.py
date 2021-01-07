@@ -303,7 +303,7 @@ class Nifti1(Binary):
     https://nifti.nimh.nih.gov/pub/dist/src/niftilib/nifti1.h
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname('T1_top_350bytes.nii')
+    >>> fname = get_test_fname('T1_top_350bytes.nii1')
     >>> Nifti1().sniff( fname )
     True
     >>> fname = get_test_fname('2.txt')
@@ -326,10 +326,10 @@ class Nifti2(Binary):
     https://brainder.org/2015/04/03/the-nifti-2-file-format/
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname('avg152T1_LR_nifti2_top_100bytes.nii')
+    >>> fname = get_test_fname('avg152T1_LR_nifti2_top_100bytes.nii2')
     >>> Nifti2().sniff( fname )
     True
-    >>> fname = get_test_fname('T1_top_350bytes.nii')
+    >>> fname = get_test_fname('T1_top_350bytes.nii1')
     >>> Nifti2().sniff( fname )
     False
     """
