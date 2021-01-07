@@ -3504,10 +3504,61 @@ target file.</xs:documentation>
 
       <xs:documentation xml:lang="en"><![CDATA[
 
-See the
+This tag set is contained within the ``<param>`` tag set - it applies a
+validator to the containing parameter. Tool submission will fail if a
+single validator fails. See the
 [annotation_profiler](https://github.com/galaxyproject/tools-devteam/blob/master/tools/annotation_profiler/annotation_profiler.xml)
-tool for an example of how to use this tag set. This tag set is contained within
-the ``<param>`` tag set - it applies a validator to the containing parameter.
+tool for an example of how to use this tag set.
+
+Note that validators for parameters with ``optional="true"`` are not
+executed if no value is given.
+
+### Generic validators
+
+- ``expression``: Check if a one line python expression given expression
+evaluates to True. The expression is given is the content of the validator tag.
+
+### Validators for ``data`` and ``data_collection`` parameters
+
+In case of ``data_collection`` parameters and
+``data`` parameters with ``multiple="true"`` these validators are executed
+separately for each of the contained data sets. Note that, for ``data``
+parameters a ``metadata`` validator is added automatically.
+
+- ``metadata``: Check for missing metadata.
+- ``unspecified_build``: Check of a build is defined.
+- ``dataset_ok_validator``: Check if the data set is in state OK.
+- ``dataset_metadata_in_range``: Check if a numeric metadata value is within
+a given range.
+- ``dataset_metadata_in_file``: Check if a metadata value is contained in a
+specific column of another data set.
+- ``dataset_metadata_in_data_table`` (``dataset_metadata_not_in_data_table``):
+Check if a metadata value is contained in a column of a data table.
+
+### Validators for textual inputs (``text``, ``select``, ...)
+
+``regex``: Check if a regular expression **matches** the value, i.e. appears
+at the beginning of the value. To enforce a match of the complete value use
+``$`` at the end of the expression. The expression is given is the content 
+of the validator tag. Note that for ``selects`` each option is checked
+separately.
+
+For selects (in particular with dynamically defined options) the following
+validator is useful:
+
+``no_options``: Check if options are available for a ``select`` parameter.
+Useful for parameters with dynamically defined options.
+
+For ``text`` inputs the following validators are useful:
+
+``length``: Check if the length of the value is within a range.
+``empty_field``: Check if the sting is not empty
+``value_in_data_table`` (``value_not_in_data_table``): Check if the value is
+contained in a column of a given data table.
+
+### Validators for numeric inputs (``integer``, ``float``)
+
+``in_range``: Check if the value is in a given range.
 
 ### Examples
 
