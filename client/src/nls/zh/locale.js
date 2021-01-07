@@ -3,14 +3,14 @@
 define({
     // ----------------------------------------------------------------------------- masthead
     "Analyze Data": "数据分析",
-    "Workflow": "工作流程",
+    Workflow: "工作流程",
     "Shared Data": "数据共享",
     "Data Libraries": "数据库",
     "Published Histories": "历史",
     "Published Workflows": "流程",
     "Published Visualizations": "可视化",
     "Published Pages": "页面",
-    "Visualization": "可视化",
+    Visualization: "可视化",
     "New Track Browser": "创建 Track Browser",
     "Saved Visualizations": "已保存的可视化",
     "Create Visualization": "创建可视化",
@@ -35,11 +35,11 @@ define({
     "Saved Histories": "保存的历史",
     "Saved Datasets": "保存的数据集",
     "Saved Pages": "保存的页面",
-    "Datasets": "我的数据集",
-    "Histories": "我的历史",
+    Datasets: "我的数据集",
+    Histories: "我的历史",
     "Histories shared with me": "分享给我的历史",
-    "Pages": "我的页面",
-    "Visualizations": "我的可视化",
+    Pages: "我的页面",
+    Visualizations: "我的可视化",
 
     //Tooltip
     "Account and saved data": "账号及数据保存",
@@ -61,14 +61,14 @@ define({
     "Histories Shared with Me": "分享给您历史",
     "Current History": "当前历史记录",
     "Create New": "创建新的历史",
-    "Copy": "复制历史",
+    Copy: "复制历史",
     "Share or Publish": "分享或发布历史",
     "Show Structure": "展示结构",
     "Extract Workflow": "提取为工作流",
     "Set Permissions": "设置权限",
     "Make Private": "私有化数据",
     // Delete is defined elsewhere, but is also in this menu.
-    "Delete": "删除",
+    Delete: "删除",
     "Delete Permanently": "永久删除",
     "Dataset Actions": "数据集操作",
     "Copy Datasets": "复制数据集",
@@ -92,11 +92,12 @@ define({
     "An error occurred while getting updates from the server": "服务器更新时出现错误",
     "Please contact a Galaxy administrator if the problem persists": "如果问题仍然存在，请联系 Galaxy 管理员",
     //TODO:
-    "An error was encountered while <% where %>" : "当执行以下操作时: <% where %>, 出现错误",
+    "An error was encountered while <% where %>": "当执行以下操作时: <% where %>, 出现错误",
     "search datasets": "搜索数据集",
     "You are currently viewing a deleted history!": "您正在查看已删除的历史记录！",
     "You are over your disk quota": "您已超出了系统分配的磁盘配额",
-    "Tool execution is on hold until your disk usage drops below your allocated quota": "工具暂停执行，直到您的磁盘使用量低于您所分配的配额",
+    "Tool execution is on hold until your disk usage drops below your allocated quota":
+        "工具暂停执行，直到您的磁盘使用量低于您所分配的配额",
     All: "全选",
     None: "反选",
     "For all selected": "为每个选定",
@@ -112,25 +113,27 @@ define({
     "Delete datasets": "删除数据集",
     "Undelete datasets": "取消删除数据集",
     "Permanently delete datasets": "永久删除数据集",
-    "This will permanently remove the data in your datasets. Are you sure?": "本次操作将从您的数据集中用久移除数据。请再次确定？",
+    "This will permanently remove the data in your datasets. Are you sure?":
+        "本次操作将从您的数据集中用久移除数据。请再次确定？",
 
     // ---- history-view-annotated
     Dataset: "数据集",
     Annotation: "备注",
 
     // ---- history-view-edit-current
-    "This history is empty. Click 'Get Data' on the left tool menu to start": "您的历史记录为空，请单击左边窗格中‘获取数据’",
+    "This history is empty. Click 'Get Data' on the left tool menu to start":
+        "您的历史记录为空，请单击左边窗格中‘获取数据’",
     "You must be logged in to create histories": "您必须登录后才能创建历史",
     //TODO:
-    "You can <% loadYourOwn %> or <% externalSource %>" : "您可以 <% loadYourOwn %> 或者 <% externalSource %>",
+    "You can <% loadYourOwn %> or <% externalSource %>": "您可以 <% loadYourOwn %> 或者 <% externalSource %>",
     "You can ": "您可以 ",
     " or ": " 或者 ",
-    "load your own data" : "上传您的个人数据",
-    "get data from an external source" : "从其他来源上传数据.",
+    "load your own data": "上传您的个人数据",
+    "get data from an external source": "从其他来源上传数据.",
 
     // these aren't in zh/ginga.po and the template doesn't localize
-    "Include Deleted Datasets" : "包括删除数据集",
-    "Include Hidden Datasets" : "包括隐藏数据集",
+    "Include Deleted Datasets": "包括删除数据集",
+    "Include Hidden Datasets": "包括隐藏数据集",
 
     // ---------------------------------------------------------------------------- datasets
     // ---- hda-model
@@ -151,7 +154,8 @@ define({
 
     // dataset states
     // state: new
-    "This is a new dataset and not all of its data are available yet": "这是一个新的数据集，并不是所有与它关联的数据都可用",
+    "This is a new dataset and not all of its data are available yet":
+        "这是一个新的数据集，并不是所有与它关联的数据都可用",
     // state: noPermission
     "You do not have permission to view this dataset": "您无权查看此数据集",
     // state: discarded
@@ -165,7 +169,8 @@ define({
     // state: running
     "This job is currently running": "您的任务正在运行中",
     // state: paused
-    'This job is paused. Use the "Resume Paused Jobs" in the history menu to resume': '此任务已暂停。您可以使用历史菜单中的 "恢复已暂停的任务" 来恢复',
+    'This job is paused. Use the "Resume Paused Jobs" in the history menu to resume':
+        '此任务已暂停。您可以使用历史菜单中的 "恢复已暂停的任务" 来恢复',
     // state: error
     "An error occurred with this dataset": "此数据集发生错误",
     // state: empty
@@ -174,8 +179,7 @@ define({
     "An error occurred setting the metadata for this dataset": "设置此数据集的元数据时发生错误",
 
     // ajax error prefix
-    "There was an error getting the data for this dataset":  "获取此数据集的数据时出现错误",
-
+    "There was an error getting the data for this dataset": "获取此数据集的数据时出现错误",
 
     // purged'd/del'd msg
     "This dataset has been deleted and removed from disk": "此数据集已被删除且已经从系统磁盘中被清空",
@@ -252,7 +256,8 @@ define({
     Trackster: false,
     Visualize: "可视化",
     // ---------------------------------------------------------------------------- dataset-error
-    "Any additional comments you can provide regarding what you were doing at the time of the bug.": "您可以提供的关于 bug 发生时您正在做什么的任何信息。",
+    "Any additional comments you can provide regarding what you were doing at the time of the bug.":
+        "您可以提供的关于 bug 发生时您正在做什么的任何信息。",
     "Your email address": "您的邮箱地址",
     Report: "报告",
     "Error Report": "错误报告",
@@ -468,5 +473,5 @@ define({
 
     ja: true,
     fr: true,
-    zh: true
+    zh: true,
 });
