@@ -1,38 +1,47 @@
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import BaseModel
+from pydantic import (
+    BaseModel,
+    Field,
+)
 from typing_extensions import Literal
+
+LABEL_DESCRIPTION = "The unique label of the step being referenced."
+INPUT_NAME_DESCRIPTION = "The input name as defined by the workflow module corresponding to the step being referenced. For Galaxy tool steps these inputs should be normalized using '|' (e.g. 'cond|repeat_0|input')."
+input_name_field = Field(description=INPUT_NAME_DESCRIPTION)
+output_name_field = Field(description="The output name as defined by the workflow module corresponding to the step being referenced. The default is 'output', corresponding to the output defined by input step types.", default="output")
+step_target_field = Field(description="The target step for this action.")
 
 
 class StepReferenceByOrderIndex(BaseModel):
-    order_index: int
+    order_index: int = Field(description="The order_index of the step being referenced. The order indices of a workflow start at 0.")
 
 
 class StepReferenceByLabel(BaseModel):
-    label: str
+    label: str = Field(description=LABEL_DESCRIPTION)
 
 
 step_reference_union = Union[StepReferenceByOrderIndex, StepReferenceByLabel]
 
 
 class InputReferenceByOrderIndex(StepReferenceByOrderIndex):
-    input_name: str
+    input_name: str = input_name_field
 
 
 class InputReferenceByLabel(StepReferenceByLabel):
-    input_name: str
+    input_name: str = input_name_field
 
 
 input_reference_union = Union[InputReferenceByOrderIndex, InputReferenceByLabel]
 
 
 class OutputReferenceByOrderIndex(StepReferenceByOrderIndex):
-    output_name: Optional[str] = "output"
+    output_name: Optional[str] = output_name_field
 
 
 class OutputReferenceByLabel(StepReferenceByLabel):
-    output_name: Optional[str] = "output"
+    output_name: Optional[str] = output_name_field
 
 
 output_reference_union = Union[OutputReferenceByOrderIndex, OutputReferenceByLabel]
@@ -77,22 +86,28 @@ class Action(BaseAction):
 
 class UpdateStepLabelAction(BaseAction):
     action_type: Literal['update_step_label']
-    label: str
-    step: step_reference_union
+    label: str = Field(description=LABEL_DESCRIPTION)
+    step: step_reference_union = step_target_field
 
 
 class UpdateStepPositionAction(BaseAction):
     action_type: Literal['update_step_position']
-    step: step_reference_union
+    step: step_reference_union = step_target_field
     position: Position
 
 
 class AddStepAction(BaseAction):
+    """Add a new action to the workflow.
+
+    After the workflow is updated, an order_index will be assigned
+    and this step may cause other steps to have their output_index
+    adjusted.
+    """
     action_type: Literal['add_step']
-    type: str  # module.type
+    type: str = Field(description="Module type of the step to add, see galaxy.workflow.modules for available types.")
     tool_state: Optional[Dict[str, Any]]
-    label: Optional[str]
-    position: Optional[Position]
+    label: Optional[str] = Field(description="A unique label for the step being added, must be distinct from the labels already present in the workflow.")
+    position: Optional[Position] = Field(description="The location of the step in the Galaxy workflow editor.")
 
 
 class ConnectAction(BaseAction):
@@ -184,14 +199,15 @@ class FileDefaultsAction(BaseAction):
 
 class UpgradeSubworkflowAction(BaseAction):
     action_type: Literal['upgrade_subworkflow']
-    step: step_reference_union
-    # should be decoded before stuffing it into the database...
+    step: step_reference_union = step_target_field
+    # Once we start storing these actions in the database, this needs to be decoded
+    # before adding it into the database.
     content_id: Optional[str]
 
 
 class UpgradeToolAction(BaseAction):
     action_type: Literal['upgrade_tool']
-    step: step_reference_union
+    step: step_reference_union = step_target_field
     tool_version: Optional[str]
 
 
@@ -236,33 +252,32 @@ class RefactorActionExecutionMessageTypeEnum(str, Enum):
     workflow_output_drop_forced = 'workflow_output_drop_forced'
 
 
+INPUT_REFERENCE = """
+
+Messages don't have to be bound to a step, but if they are they will
+have a step_label and order_index included in the execution message.
+These are the label and order_index before applying the refactoring,
+the result of applying the action may change one or both of these.
+If connections are dropped this step reference will refer to the
+step with the previously connected input.
+"""
+
+
 class RefactorActionExecutionMessage(BaseModel):
     message: str
     message_type: RefactorActionExecutionMessageTypeEnum
-    # messages don't have to be bound to a step, but if they are should
-    # specify step_label and order_index below - these are the label and
-    # order_index before applying the refactoring. If connections are
-    # dropped this step reference should refer to the step with the
-    # previously connected input.
-    step_label: Optional[str]
-    order_index: Optional[int]
-
-    # messages don't have to be bound to a step with inputs, but if they are
-    # the input name should be specified here. Should be a prefixed name
-    # in the case of tool inputs (e.g. 'cond|repeat_0|input')
-    input_name: Optional[str]
-
-    # messages don't have to be bound to a step with inputs, but if they are
-    # the output name should be specified here.
-    output_name: Optional[str]
-
-    # For dropped connections these optional attributes refer to the output
-    # side of the connection that was dropped.
-    from_step_label: Optional[str]
-    from_order_index: Optional[int]
-
-    # For workflow_output_drop_forced, this is the output label dropped.
-    output_label: Optional[str]
+    step_label: Optional[str] = Field(description=f"Reference to the step the message refers to. ${INPUT_REFERENCE}")
+    order_index: Optional[int] = Field(description=f"Reference to the step the message refers to. ${INPUT_REFERENCE}")
+    input_name: Optional[str] = Field(description=f"""If this message is about an input to a step,
+this field describes the target input name. ${INPUT_NAME_DESCRIPTION}""")
+    output_name: Optional[str] = Field(description="""If this message is about an output to a step,
+this field describes the target output name. The output name as defined by the workflow module corresponding to the step being referenced.
+""")
+    from_step_label: Optional[str] = Field(description="""For dropped connections these optional attributes refer to the output
+side of the connection that was dropped.""")
+    from_order_index: Optional[int] = Field(description="""For dropped connections these optional attributes refer to the output
+side of the connection that was dropped.""")
+    output_label: Optional[str] = Field(description="If the message_type is workflow_output_drop_forced, this is the output label dropped.")
 
 
 class RefactorActionExecution(BaseModel):
