@@ -1,5 +1,5 @@
 /**
- * Watches for key changes in global Galaxy app variable and trnasfers them into Vuex via commits.
+ * Watches for key changes in global Galaxy app variable and transfers them into Vuex via commits.
  * This should be deleted when Galaxy is finally done, as features get moved into Vuex individual
  * sync functions can be removed from the plugin
  */
