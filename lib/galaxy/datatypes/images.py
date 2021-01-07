@@ -6,6 +6,7 @@ import logging
 import zipfile
 from urllib.parse import quote_plus
 
+from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.text import Html as HtmlFromText
 from galaxy.util import nice_size
 from galaxy.util.image_util import check_image_type
@@ -247,6 +248,98 @@ class Gmaj(data.Data):
         if not contains_gmaj_file:
             return False
         return True
+
+
+class Analyze75(Binary):
+    """
+        Mayo Analyze 7.5 files
+        http://www.imzml.org
+    """
+    file_ext = 'analyze75'
+    composite_type = 'auto_primary_file'
+
+    def __init__(self, **kwd):
+        super().__init__(**kwd)
+
+        """The header file. Provides information about dimensions, identification, and processing history."""
+        self.add_composite_file(
+            'hdr',
+            description='The Analyze75 header file.',
+            is_binary=True)
+
+        """The image file.  Image data, whose data type and ordering are described by the header file."""
+        self.add_composite_file(
+            'img',
+            description='The Analyze75 image file.',
+            is_binary=True)
+
+        """The optional t2m file."""
+        self.add_composite_file(
+            't2m',
+            description='The Analyze75 t2m file.',
+            optional=True,
+            is_binary=True)
+
+    def generate_primary_file(self, dataset=None):
+        rval = ['<html><head><title>Analyze75 Composite Dataset.</title></head><p/>']
+        rval.append('<div>This composite dataset is composed of the following files:<p/><ul>')
+        for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
+            fn = composite_name
+            opt_text = ''
+            if composite_file.optional:
+                opt_text = ' (optional)'
+            if composite_file.get('description'):
+                rval.append('<li><a href="{}" type="text/plain">{} ({})</a>{}</li>'.format(fn, fn, composite_file.get('description'), opt_text))
+            else:
+                rval.append(f'<li><a href="{fn}" type="text/plain">{fn}</a>{opt_text}</li>')
+        rval.append('</ul></div></html>')
+        return "\n".join(rval)
+
+
+@build_sniff_from_prefix
+class Nifti1(Binary):
+    """
+    Nifti1 format
+    https://nifti.nimh.nih.gov/pub/dist/src/niftilib/nifti1.h
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('T1_top_350bytes.nii1')
+    >>> Nifti1().sniff( fname )
+    True
+    >>> fname = get_test_fname('2.txt')
+    >>> Nifti1().sniff( fname )
+    False
+    """
+    file_ext = 'nii1'
+
+    def sniff_prefix(self, file_prefix):
+        magic = file_prefix.contents_header_bytes[344:348]
+        if magic == b'n+1\0':
+            return True
+        return False
+
+
+@build_sniff_from_prefix
+class Nifti2(Binary):
+    """
+    Nifti2 format
+    https://brainder.org/2015/04/03/the-nifti-2-file-format/
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('avg152T1_LR_nifti2_top_100bytes.nii2')
+    >>> Nifti2().sniff( fname )
+    True
+    >>> fname = get_test_fname('T1_top_350bytes.nii1')
+    >>> Nifti2().sniff( fname )
+    False
+    """
+    file_ext = 'nii2'
+
+    def sniff_prefix(self, file_prefix):
+        magic = file_prefix.contents_header_bytes[4:8]
+        if magic in [b'n+2\0', b'ni2\0']:
+            return True
+        return False
 
 
 @build_sniff_from_prefix

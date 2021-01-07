@@ -3389,10 +3389,11 @@
 ~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Master key that allows many API admin actions to be used without
-    actually having a defined admin user in the database/config.  Only
-    set this if you need to bootstrap Galaxy, you probably do not want
-    to set this on public servers.
+    API key that allows performing some admin actions without actually
+    having a real admin user in the database and config. Only set this
+    if you need to bootstrap Galaxy, in particular to create a real
+    admin user account via API. You should probably not set this on a
+    production server.
 :Default: ``None``
 :Type: str
 

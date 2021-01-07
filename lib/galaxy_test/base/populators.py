@@ -111,19 +111,20 @@ def skip_without_datatype(extension):
     return method_wrapper
 
 
-def skip_if_site_down(url):
+def is_site_up(url):
+    try:
+        response = requests.get(url, timeout=10)
+        return response.status_code == 200
+    except Exception:
+        return False
 
-    def site_down():
-        try:
-            response = requests.get(url, timeout=10)
-            return response.status_code != 200
-        except Exception:
-            return False
+
+def skip_if_site_down(url):
 
     def method_wrapper(method):
         @wraps(method)
         def wrapped_method(api_test_case, *args, **kwargs):
-            _raise_skip_if(site_down(), "Test depends on [%s] being up and it appears to be down." % url)
+            _raise_skip_if(not is_site_up(url), f"Test depends on [{url}] being up and it appears to be down.")
             method(api_test_case, *args, **kwargs)
 
         return wrapped_method
@@ -943,7 +944,8 @@ class BaseWorkflowPopulator:
     def export_for_update(self, workflow_id):
         workflow_object = self.download_workflow(workflow_id)
         yield workflow_object
-        self.update_workflow(workflow_id, workflow_object)
+        put_respose = self.update_workflow(workflow_id, workflow_object)
+        put_respose.raise_for_status()
 
     def run_workflow(self, has_workflow, test_data=None, history_id=None, wait=True, source_type=None, jobs_descriptions=None, expected_response=200, assert_ok=True, client_convert=None, round_trip_format_conversion=False, raw_yaml=False):
         """High-level wrapper around workflow API, etc. to invoke format 2 workflows."""

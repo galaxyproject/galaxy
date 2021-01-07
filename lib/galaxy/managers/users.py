@@ -238,7 +238,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         Find a user by API key.
         """
         if self.check_master_api_key(api_key=api_key):
-            return schema.BoostrapAdminUser()
+            return schema.BootstrapAdminUser()
         sa_session = sa_session or self.app.model.session
         try:
             provided_key = sa_session.query(self.app.model.APIKeys).filter(self.app.model.APIKeys.table.c.key == api_key).one()

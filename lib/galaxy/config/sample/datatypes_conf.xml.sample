@@ -71,6 +71,7 @@
     <datatype extension="daa" type="galaxy.datatypes.binary:DAA" display_in_upload="true"/>
     <datatype extension="rma6" type="galaxy.datatypes.binary:RMA6" display_in_upload="true"/>
     <datatype extension="dmnd" type="galaxy.datatypes.binary:DMND" display_in_upload="false"/>
+    <datatype extension="parquet" type="galaxy.datatypes.binary:Parquet" display_in_upload="true"/>
     <datatype extension="idat" type="galaxy.datatypes.binary:Idat" display_in_upload="true"/>
     <datatype extension="bigbed" type="galaxy.datatypes.binary:BigBed" mimetype="application/octet-stream" display_in_upload="true">
       <display file="ucsc/bigbed.xml"/>
@@ -304,9 +305,11 @@
     <datatype extension="hardklor" type="galaxy.datatypes.tabular:Tabular" subclass="true"/>
     <datatype extension="kronik" type="galaxy.datatypes.tabular:Tabular" subclass="true"/>
     <datatype extension="imzml" type="galaxy.datatypes.proteomics:ImzML" mimetype="application/xml" display_in_upload="true"/>
-    <datatype extension="analyze75" type="galaxy.datatypes.proteomics:Analyze75" mimetype="application/xml" display_in_upload="true"/>
+    <datatype extension="analyze75" type="galaxy.datatypes.images:Analyze75" mimetype="application/xml" display_in_upload="true"/>
+    <datatype extension="nii1" auto_compressed_types="gz" type="galaxy.datatypes.images:Nifti1" mimetype="application/octet-stream" display_in_upload="true" />
+    <datatype extension="nii2" auto_compressed_types="gz" type="galaxy.datatypes.images:Nifti2" mimetype="application/octet-stream" display_in_upload="true" />
     <datatype extension="gii" auto_compressed_types="gz" type="galaxy.datatypes.images:Gifti" mimetype="application/octet-stream" display_in_upload="true" />
-    <datatype extension="peff" type="galaxy.datatypes.proteomics:PEFF" display_in_upload="true"/>
+    <datatype extension="peff" type="galaxy.datatypes.proteomics:PEFF" display_in_upload="true" />
     <!-- End Proteomics Datatypes -->
     <datatype extension="deeptools_compute_matrix_archive" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true"/>
     <datatype extension="deeptools_coverage_matrix" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true"/>
@@ -885,6 +888,7 @@
     <sniffer type="galaxy.datatypes.binary:DAA"/>
     <sniffer type="galaxy.datatypes.binary:RMA6"/>
     <sniffer type="galaxy.datatypes.binary:DMND"/>
+    <sniffer type="galaxy.datatypes.binary:Parquet"/>
     <sniffer type="galaxy.datatypes.binary:BafTar"/>
     <sniffer type="galaxy.datatypes.binary:TdfTar"/>
     <sniffer type="galaxy.datatypes.binary:MassHunterTar"/>
@@ -1033,6 +1037,8 @@
     <sniffer type="galaxy.datatypes.images:Xpm"/>
     <sniffer type="galaxy.datatypes.images:Eps"/>
     <sniffer type="galaxy.datatypes.images:Rast"/>
+    <sniffer type="galaxy.datatypes.images:Nifti1" />
+    <sniffer type="galaxy.datatypes.images:Nifti2" />
     <sniffer type="galaxy.datatypes.media:Wav"/>
     <sniffer type="galaxy.datatypes.media:Mkv"/>
     <sniffer type="galaxy.datatypes.media:Mp3"/>
