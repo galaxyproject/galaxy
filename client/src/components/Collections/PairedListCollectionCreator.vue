@@ -431,8 +431,11 @@ import naturalSort from "utils/natural-sort";
 import "splitpanes/dist/splitpanes.css";
 import { Splitpanes, Pane } from "splitpanes";
 import draggable from "vuedraggable";
+import Vue from "vue";
+
 import BootstrapVue from "bootstrap-vue";
 
+Vue.use(BootstrapVue);
 export default {
     created() {
         this.strategy = this.autopairLCS;
