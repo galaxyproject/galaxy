@@ -4,7 +4,7 @@ from galaxy_test.driver import integration_util
 
 
 class JobOutputsToWorkingDirectoryIntegrationInstance(integration_util.IntegrationInstance):
-    """Describe a Galaxy test instance with embedded pulsar configured."""
+    """Describe a Galaxy test instance with outputs_to_working_directory enabled."""
 
     framework_tool_and_types = True
 
