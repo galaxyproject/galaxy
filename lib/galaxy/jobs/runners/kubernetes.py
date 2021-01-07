@@ -60,6 +60,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_timeout_seconds_job_deletion=dict(map=int, valid=lambda x: int > 0, default=30),
             k8s_job_api_version=dict(map=str, default=DEFAULT_JOB_API_VERSION),
             k8s_job_ttl_secs_after_finished=dict(map=int, valid=lambda x: x is None or int(x) >= 0, default=None),
+            k8s_job_metadata=dict(map=str, default=None),
             k8s_supplemental_group_id=dict(map=str),
             k8s_pull_policy=dict(map=str, default="Default"),
             k8s_run_as_user_id=dict(map=str, valid=lambda s: s == "$uid" or s.isdigit()),
@@ -242,6 +243,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         # TODO include other relevant elements that people might want to use from
         # TODO http://kubernetes.io/docs/api-reference/v1/definitions/#_v1_podspec
         k8s_spec_template["spec"]["securityContext"] = self.__get_k8s_security_context()
+        extra_metadata = yaml.safe_load(self.runner_params['k8s_job_metadata'] or "{}")
+        k8s_spec_template["metadata"]["labels"].update(extra_metadata.get('labels', {}))
+        k8s_spec_template["metadata"]["annotations"].update(extra_metadata.get('annotations', {}))
         return k8s_spec_template
 
     def __get_k8s_security_context(self):
