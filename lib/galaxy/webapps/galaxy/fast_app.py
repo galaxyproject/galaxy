@@ -41,7 +41,6 @@ def add_exception_handler(
         )
 
 
-
 def initialize_fast_app(gx_app):
     app = FastAPI()
 
