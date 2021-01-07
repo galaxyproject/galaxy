@@ -37,7 +37,6 @@
 <script>
 import _l from "utils/localization";
 import Backbone from "backbone";
-import { getGalaxyInstance } from "app";
 import UploadUtils from "mvc/upload/upload-utils";
 import { getDatatypesMapper } from "components/Datatypes";
 import Composite from "./Composite";
