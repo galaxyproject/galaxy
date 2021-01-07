@@ -1,0 +1,64 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    app: galaxy-galaxy-1584807903-128512-tsuc
+  name: galaxy-galaxy-1584807903-128512-tsuc
+  namespace: {{ k8s_namespace }}
+spec:
+  activeDeadlineSeconds: {{ k8s_walltime_limit }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ galaxy_tool_name }}
+        app.kubernetes.io/instance: {{ galaxy_instance_name }}
+        app.kubernetes.io/version: {{ galaxy_tool_version }}
+        app.kubernetes.io/component: "tool"
+        app.kubernetes.io/part-of: "galaxy"
+        app.kubernetes.io/managed-by: "galaxy"
+        app.galaxyproject.org/job_id: {{ galaxy_job_id }}
+        app.galaxyproject.org/handler: {{ galaxy_job_handler }}
+        app.galaxyproject.org/destination: {{ galaxy_tool_destination }}
+      annotations:
+        app.galaxyproject.org/tool_id": {{ galaxy_tool_id }}
+    spec:
+      affinity:
+        {{ self.runner_params['k8s_affinity'] | indent(width=12) }}
+      containers:
+      - name: {{ k8s_container_name }}
+        image: {{ k8s_container_image }}
+        imagePullPolicy: {{ k8s_container_image_pull_policy }}
+        command:
+          - {{ ajs.job_wrapper.shell }}
+        args:
+          - -c
+          - {{ ajs.job_file }}
+        workingDir: {{ ajs.job_wrapper.working_directory }}
+        env:
+        - name: GALAXY_MEMORY_MB
+          value: {{ galaxy_memory_mb }}
+        - name: GALAXY_SLOTS
+          value: {{ galaxy_slots }}
+        resources:
+          requests:
+            cpu: {{ requests_cpu }}
+            memory: {{ requests_memory }}
+          limits:
+            cpu: {{ limits_cpu }}
+            memory: {{ limits_memory }}
+        volumeMounts:
+          {{ k8s_volume_mounts | indent(width=14) }}
+      nodeSelector:
+        {{ self.runner_params['k8s_node_selector' | indent(width=12) }}
+      priorityClassName:  {{ runner_params['k8s_pod_priority_class'] }}
+      restartPolicy: "Never"
+      securityContext:
+        runAsUser: {{ k8s_run_as_user }}
+        runAsGroup: {{ k8s_run_as_group }}
+        fsGroup: {{ k8s_fs_group }}
+        supplementalGroups:
+           {{ k8s_supplemental_groups }}
+      terminationGracePeriodSeconds: 30
+      volumes:
+        {{ k8s_volumes | indent(width=14) }}
+  ttlSecondsAfterFinished: {{ k8s_job_ttl_secs_after_finished }}

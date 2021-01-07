@@ -9,6 +9,8 @@ import re
 
 import yaml
 
+import jinja2
+
 from galaxy import model
 from galaxy.jobs.runners import (
     AsynchronousJobRunner,
@@ -88,6 +90,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         self._init_monitor_thread()
         self._init_worker_threads()
         self.setup_volumes()
+        self._job_template = self.__load_job_template()
 
     def setup_volumes(self):
         if self.runner_params.get('k8s_persistent_volume_claims'):
@@ -142,6 +145,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         job_wrapper.set_external_id(job_id)
         self.monitor_queue.put(ajs)
 
+    def __load_job_template(self):
+        with open('k8s_job_manifest.yaml.j2') as f:
+            return jinja2.Template(f.read())
+
     def __get_pull_policy(self):
         return pull_policy(self.runner_params)
 
@@ -192,51 +199,46 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         return produce_k8s_job_prefix(app_prefix='gxy', instance_id=instance_id)
 
     def __get_k8s_job_spec(self, ajs):
-        """Creates the k8s Job spec. For a Job spec, the only requirement is to have a .spec.template.
-        If the job hangs around unlimited it will be ended after k8s wall time limit, which sets activeDeadlineSeconds"""
-        k8s_job_spec = {"template": self.__get_k8s_job_spec_template(ajs),
-                        "activeDeadlineSeconds": int(self.runner_params['k8s_walltime_limit'])}
+        job_params = {
+            'ajs': ajs,
+            'runner_params': self.runner_params,
+            'activeDeadlineSeconds': int(self.runner_params['k8s_walltime_limit'])
+        }
         job_ttl = self.runner_params["k8s_job_ttl_secs_after_finished"]
         if self.runner_params["k8s_cleanup_job"] != "never" and job_ttl is not None:
-            k8s_job_spec["ttlSecondsAfterFinished"] = job_ttl
-        return k8s_job_spec
+            job_params["ttlSecondsAfterFinished"] = job_ttl
+        context = {
+            'job': job_params
+        }
+        self.__add_k8s_job_spec_context(job_params)
+        rendered = self.job_template.render(context)
+        return yaml.load(rendered)
 
-    def __get_k8s_job_spec_template(self, ajs):
+    def __add_k8s_job_spec_context(self, job_params):
         """The k8s spec template is nothing but a Pod spec, except that it is nested and does not have an apiversion
         nor kind. In addition to required fields for a Pod, a pod template in a job must specify appropriate labels
         (see pod selector) and an appropriate restart policy."""
-        k8s_spec_template = {
-            "metadata": {
-                "labels": {
-                    "app.kubernetes.io/name": self.LABEL_REGEX.sub("_", ajs.job_wrapper.tool.old_id),
-                    "app.kubernetes.io/instance": self.__produce_k8s_job_prefix(),
-                    "app.kubernetes.io/version": self.LABEL_REGEX.sub("_", str(ajs.job_wrapper.tool.version)),
-                    "app.kubernetes.io/component": "tool",
-                    "app.kubernetes.io/part-of": "galaxy",
-                    "app.kubernetes.io/managed-by": "galaxy",
-                    "app.galaxyproject.org/job_id": self.LABEL_REGEX.sub("_", ajs.job_wrapper.get_id_tag()),
-                    "app.galaxyproject.org/handler": self.LABEL_REGEX.sub("_", self.app.config.server_name),
-                    "app.galaxyproject.org/destination": self.LABEL_REGEX.sub(
-                        "_", str(ajs.job_wrapper.job_destination.id))
-                },
-                "annotations": {
-                    "app.galaxyproject.org/tool_id": ajs.job_wrapper.tool.id
-                }
-            },
-            "spec": {
-                "volumes": self.runner_params['k8s_mountable_volumes'],
-                "restartPolicy": self.__get_k8s_restart_policy(ajs.job_wrapper),
-                "containers": self.__get_k8s_containers(ajs),
-                "priorityClassName": self.runner_params['k8s_pod_priority_class'],
-                "tolerations": yaml.safe_load(self.runner_params['k8s_tolerations'] or "[]"),
-                "affinity": yaml.safe_load(self.runner_params['k8s_affinity'] or "{}"),
-                "nodeSelector": yaml.safe_load(self.runner_params['k8s_node_selector'] or "{}")
-            }
+        labels = {
+            'name': self.LABEL_REGEX.sub("_", ajs.job_wrapper.tool.old_id),
+            'instance': self.__produce_k8s_job_prefix(),
+            'version': self.LABEL_REGEX.sub("_", str(ajs.job_wrapper.tool.version)),
+            'job_id': self.LABEL_REGEX.sub("_", ajs.job_wrapper.get_id_tag()),
+            'handler': self.LABEL_REGEX.sub("_", self.app.config.server_name),
+            'destination': self.LABEL_REGEX.sub("_", str(ajs.job_wrapper.job_destination.id))
         }
-        # TODO include other relevant elements that people might want to use from
-        # TODO http://kubernetes.io/docs/api-reference/v1/definitions/#_v1_podspec
-        k8s_spec_template["spec"]["securityContext"] = self.__get_k8s_security_context()
-        return k8s_spec_template
+        annotations: {
+            "tool_id": ajs.job_wrapper.tool.id
+        }
+        job_params['labels'] = labels
+        job_params['annotations'] = annotations
+        job_params['volumes'] = self.runner_params['k8s_mountable_volumes']
+        job_params['priority_class'] = self.runner_params['k8s_pod_priority_class']
+        job_params['tolerations'] = self.runner_params['k8s_tolerations'] or "[]"
+        job_params['affinity'] = self.runner_params['k8s_affinity'] or "{}"
+        job_params['node_selector'] = self.runner_params['k8s_node_selector'] or "{}"
+        job_params['security_context'] = self.__get_k8s_security_context()
+        self.__add_k8s_container_context(job_params)
+        return job_params
 
     def __get_k8s_security_context(self):
         security_context = {}
@@ -250,11 +252,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             security_context["fsGroup"] = self._fs_group
         return security_context
 
-    def __get_k8s_restart_policy(self, job_wrapper):
-        """The default Kubernetes restart policy for Jobs"""
-        return "Never"
-
-    def __get_k8s_containers(self, ajs):
+    def __add_k8s_container_context(self, job_params):
         """Fills in all required for setting up the docker containers to be used, including setting a pull policy if
            this has been set.
            $GALAXY_VIRTUAL_ENV is set to None to avoid the galaxy virtualenv inside the tool container.
@@ -262,6 +260,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
            Setting these variables changes the described behaviour in the job file shell script
            used to execute the tool inside the container.
         """
+        ajs = job_params['ajs']
         k8s_container = {
             "name": self.__get_k8s_container_name(ajs.job_wrapper),
             "image": self._find_container(ajs.job_wrapper).container_id,
@@ -295,25 +294,25 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         if self._default_pull_policy:
             k8s_container["imagePullPolicy"] = self._default_pull_policy
 
-        return [k8s_container]
+        return k8s_container
 
     def __get_resources(self, job_wrapper):
-        mem_request = self.__get_memory_request(job_wrapper)
-        cpu_request = self.__get_cpu_request(job_wrapper)
-
-        mem_limit = self.__get_memory_limit(job_wrapper)
-        cpu_limit = self.__get_cpu_limit(job_wrapper)
-
         requests = {}
         limits = {}
 
+        mem_request = job_wrapper.job_destination.params.get('requests_memory') or None
+        cpu_request = job_wrapper.job_destination.params.get('requests_cpu') or None
+
         if mem_request:
-            requests['memory'] = mem_request
+            requests['memory'] = self.__transform_memory_value(mem_request)
         if cpu_request:
             requests['cpu'] = cpu_request
 
+        mem_limit = job_wrapper.job_destination.params.get('limits_memory') or None
+        cpu_limit = job_wrapper.job_destination.params.get('limits_cpu') or None
+
         if mem_limit:
-            limits['memory'] = mem_limit
+            limits['memory'] = self.__transform_memory_value(mem_limit)
         if cpu_limit:
             limits['cpu'] = cpu_limit
 
@@ -324,38 +323,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             resources['limits'] = limits
 
         return resources
-
-    def __get_memory_request(self, job_wrapper):
-        """Obtains memory requests for job, checking if available on the destination, otherwise using the default"""
-        job_destination = job_wrapper.job_destination
-
-        if 'requests_memory' in job_destination.params:
-            return self.__transform_memory_value(job_destination.params['requests_memory'])
-        return None
-
-    def __get_memory_limit(self, job_wrapper):
-        """Obtains memory limits for job, checking if available on the destination, otherwise using the default"""
-        job_destination = job_wrapper.job_destination
-
-        if 'limits_memory' in job_destination.params:
-            return self.__transform_memory_value(job_destination.params['limits_memory'])
-        return None
-
-    def __get_cpu_request(self, job_wrapper):
-        """Obtains cpu requests for job, checking if available on the destination, otherwise using the default"""
-        job_destination = job_wrapper.job_destination
-
-        if 'requests_cpu' in job_destination.params:
-            return job_destination.params['requests_cpu']
-        return None
-
-    def __get_cpu_limit(self, job_wrapper):
-        """Obtains cpu requests for job, checking if available on the destination, otherwise using the default"""
-        job_destination = job_wrapper.job_destination
-
-        if 'limits_cpu' in job_destination.params:
-            return job_destination.params['limits_cpu']
-        return None
 
     def __transform_memory_value(self, mem_value):
         """
