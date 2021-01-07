@@ -1688,7 +1688,7 @@ class InteractiveToolEntryPoint(Dictifiable, RepresentById):
     dict_element_visible_keys = ['id', 'name', 'active', 'created_time', 'modified_time']
 
     def __init__(self, job=None, name=None, token=None, tool_port=None, host=None, port=None, protocol=None,
-                 entry_url=None, info=None, configured=False, deleted=False):
+                 entry_url=None, requires_domain=True, info=None, configured=False, deleted=False):
         self.job = job
         self.name = name
         if not token:
@@ -1699,6 +1699,7 @@ class InteractiveToolEntryPoint(Dictifiable, RepresentById):
         self.port = port
         self.protocol = protocol
         self.entry_url = entry_url
+        self.requires_domain = requires_domain
         self.info = info or {}
         self.configured = configured
         self.deleted = deleted
