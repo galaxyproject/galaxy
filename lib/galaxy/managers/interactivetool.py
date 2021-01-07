@@ -254,17 +254,14 @@ class InteractiveToolManager:
     def target_if_active(self, trans, entry_point):
         if entry_point.active and not entry_point.deleted:
             request_host = trans.request.host
+            protocol = trans.request.host_url.split('//', 1)[0]
+            entry_point_encoded_id = trans.security.encode_id(entry_point.id)
+            entry_point_class = entry_point.__class__.__name__.lower()
+            entry_point_prefix = self.app.config.interactivetools_prefix
             if entry_point.requires_domain:
-                rval = '{}//{}-{}.{}.{}.{}/'.format(trans.request.host_url.split('//', 1)[0],
-                    trans.security.encode_id(entry_point.id),
-                    entry_point.token,
-                    entry_point.__class__.__name__.lower(),
-                    self.app.config.interactivetool_prefix, request_host)
+                rval = f'{protocol}//{entry_point_encoded_id}-{entry_point.token}.{entry_point_class}.{entry_point_prefix}.{request_host}/'
             else:
-                rval = self.app.url_for('/{}/access/{}/{}/{}/'.format(entry_point_prefix,
-                    entry_point_class,
-                    entry_point_encoded_id,
-                    entry_point.token))
+                rval = self.app.url_for(f'/{entry_point_prefix}/access/{entry_point_class}/{entry_point_encoded_id}/{entry_point.token}/')
             if entry_point.entry_url:
                 rval = '{}/{}'.format(rval.rstrip('/'), entry_point.entry_url.lstrip('/'))
             return rval
