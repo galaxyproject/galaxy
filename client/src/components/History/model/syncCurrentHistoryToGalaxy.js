@@ -1,20 +1,25 @@
 // Sync Galaxy store to legacy galaxy current history
 
-import { switchMap, pluck, shareReplay, filter, distinctUntilChanged } from "rxjs/operators";
-import { monitorBackboneModel } from "utils/observable/monitorBackboneModel";
+import { fromEvent } from "rxjs";
+import { map, filter, switchMap, pluck, distinctUntilChanged } from "rxjs/operators";
 
 export function syncCurrentHistoryToGalaxy(galaxy$, store) {
+    // prettier-ignore
     const historyId$ = galaxy$.pipe(
-        pluck("currHistoryPanel", "model"),
+        pluck("currHistoryPanel"),
+        switchMap((panel) => {
+            // relationship between currHistoryPanel and its model is murky, but I don't care, I'm
+            // just going to grab the id fresh after every possible event
+            return fromEvent(panel, "all").pipe(
+                map(() => panel.model.id)
+            );
+        }),
         filter(Boolean),
-        switchMap((model) => monitorBackboneModel(model).pipe(shareReplay(1))),
-        pluck("id"),
         distinctUntilChanged()
     );
 
     return historyId$.subscribe(
         (id) => {
-            console.log("subscription id", id);
             store.commit("betaHistory/setCurrentHistoryId", id);
         },
         (err) => console.log("syncCurrentHistoryToGalaxy error", err),

@@ -1,9 +1,9 @@
 import { fromEvent } from "rxjs";
-import { map, pluck } from "rxjs/operators";
+import { map } from "rxjs/operators";
 
-export function monitorBackboneModel(sourceModel) {
-    return fromEvent(sourceModel, "change").pipe(
-        map(([model]) => model),
-        pluck("attributes")
+// prettier-ignore
+export function monitorBackboneModel(sourceModel, evtName = "change") {
+    return fromEvent(sourceModel, evtName).pipe(
+        map(([model]) => model.toJSON())
     );
 }
