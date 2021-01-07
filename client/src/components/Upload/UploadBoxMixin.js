@@ -37,7 +37,10 @@ export default {
             }
         },
         remoteFiles() {
-            return this.fileSourcesConfigured || this.ftpUploadSite;
+            // this needs to be true for the tests to pass
+            const result = !!this.fileSourcesConfigured || !!this.ftpUploadSite;
+            console.log("remoteFiles", result);
+            return result;
         },
     },
     methods: {
