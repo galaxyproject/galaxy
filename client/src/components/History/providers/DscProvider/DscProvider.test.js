@@ -20,7 +20,7 @@ jest.mock("../../caching");
 const mountProvider = async (Component, propsData) => {
     const localVue = createLocalVue();
     localVue.use(vueRxShortcutPlugin);
-    const wrapper = mountRenderless(Component, localVue, propsData);
+    const wrapper = mountRenderless(Component, { localVue, propsData });
     await wrapper.vm.$nextTick();
     return wrapper;
 };
