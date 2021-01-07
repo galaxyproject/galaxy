@@ -3,12 +3,12 @@ import logging
 import os
 import string
 import time
+import urllib.request
 from collections import (
     namedtuple,
     OrderedDict
 )
 from errno import ENOENT
-import urllib.request
 from urllib.parse import urlparse
 
 from markupsafe import escape
@@ -44,7 +44,10 @@ from .panel import (
     ToolSection,
     ToolSectionLabel
 )
-from .parser import ensure_tool_conf_item, get_toolbox_parser
+from .parser import (
+    ensure_tool_conf_item,
+    get_toolbox_parser
+)
 from .tags import tool_tag_manager
 
 log = logging.getLogger(__name__)
