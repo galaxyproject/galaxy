@@ -95,6 +95,7 @@
   <tool file="output_format_deprecated_when.xml" />
   <tool file="output_format_collection.xml" />
   <tool file="output_filter.xml" />
+  <tool file="output_empty_work_dir.xml" />
   <tool file="output_filter_with_input.xml" />
   <tool file="output_filter_exception_1.xml" />
   <tool file="output_collection_filter.xml" />
@@ -155,6 +156,7 @@
   <tool file="collection_two_paired.xml" />
   <tool file="collection_creates_pair.xml" />
   <tool file="collection_creates_pair_from_type.xml" />
+  <tool file="collection_creates_pair_from_work_dir.xml" />
   <tool file="collection_creates_list.xml" />
   <tool file="collection_creates_list_2.xml" />
   <tool file="collection_creates_list_of_pairs.xml" />
