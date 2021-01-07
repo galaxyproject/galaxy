@@ -23,7 +23,7 @@ export async function buildCollectionModal(collectionType, history_id, selectedC
     } else if (collectionType == "paired") {
         createFunc = PAIR_COLLECTION_CREATOR.createPairCollection;
     } else if (collectionType == "list:paired") {
-        createFunc = LIST_OF_PAIRS_COLLECTION_CREATOR.createListOfPairsCollection;
+        createFunc = LIST_OF_PAIRS_COLLECTION_CREATOR.createPairedListCollection;
     } else if (collectionType.startsWith("rules")) {
         createFunc = RULE_BASED_COLLECTION_CREATOR.createCollectionViaRules;
     } else {

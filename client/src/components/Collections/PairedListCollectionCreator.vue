@@ -92,9 +92,9 @@
                 <div v-if="showDuplicateError">
                     <b-alert show variant="danger">
                         {{ l("Collections cannot have duplicated names. The following list names are duplicated: ") }}
-                        <ol>
+                        <ul>
                             <li v-for="name in duplicatePairNames" :key="name">{{ name }}</li>
-                        </ol>
+                        </ul>
                         {{ l("Please fix these duplicates and try again.") }}
                     </b-alert>
                 </div>
@@ -431,7 +431,7 @@ import naturalSort from "utils/natural-sort";
 import "splitpanes/dist/splitpanes.css";
 import { Splitpanes, Pane } from "splitpanes";
 import draggable from "vuedraggable";
-import BAlert from "bootstrap-vue";
+import BootstrapVue from "bootstrap-vue";
 
 export default {
     created() {
@@ -440,7 +440,6 @@ export default {
         this._elementsSetUp();
     },
     components: {
-        BAlert,
         CollectionCreator,
         UnpairedDatasetElementView,
         PairedElementView,
@@ -474,8 +473,7 @@ export default {
             reverseFilter: "",
             selectedForwardElement: null,
             selectedReverseElement: null,
-            /** autopair by exact match */
-            autopairSimple: this.autoPairFnBuilder({
+            /** autopair by exact match */ autopairSimple: this.autoPairFnBuilder({
                 scoreThreshold: function () {
                     return 0.6;
                 },
