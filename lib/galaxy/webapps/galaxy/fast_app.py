@@ -30,7 +30,7 @@ def add_exception_handler(
         )
 
 
-def initialize_fast_app(gx_app, app=None):
+def initialize_fast_app(gx_app):
     app = FastAPI()
 
     add_exception_handler(app)
