@@ -19,12 +19,6 @@ api_tags_metadata = [
 ]
 
 
-def add_open_api_tags_metadata(app: FastAPI) -> None:
-    """Adds OpenAPI documentation to the APIRouter tags"""
-    if app:
-        app.openapi_tags = api_tags_metadata
-
-
 def add_exception_handler(
     app: FastAPI
 ) -> None:
@@ -49,9 +43,8 @@ def add_exception_handler(
 
 def initialize_fast_app(gx_app, app=None):
     if app is None:
-        app = FastAPI()
+        app = FastAPI(openapi_tags=api_tags_metadata)
 
-    add_open_api_tags_metadata(app)
     add_exception_handler(app)
     wsgi_handler = WSGIMiddleware(gx_app)
     from galaxy.webapps.galaxy.api import (
