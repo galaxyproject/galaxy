@@ -178,7 +178,7 @@ Webhooks.load({
             if (webhook.activate) {
                 webhooks_menu.push({
                     html: _l(webhook.config.title),
-                    // func: function() {},
+                    func: webhook.config.function && new Function(webhook.config.function),
                     anon: true,
                 });
             }

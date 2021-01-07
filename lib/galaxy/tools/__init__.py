@@ -2657,8 +2657,6 @@ class InteractiveTool(Tool):
     def __init__(self, config_file, tool_source, app, **kwd):
         assert app.config.interactivetools_enable, ValueError('Trying to load an InteractiveTool, but InteractiveTools are not enabled.')
         super().__init__(config_file, tool_source, app, **kwd)
-        for port in self.ports:
-            assert port.get('requires_domain', None), ValueError('InteractiveTools currently only work when requires_domain is True for each entry_point.')
 
     def __remove_interactivetool_by_job(self, job):
         if job:

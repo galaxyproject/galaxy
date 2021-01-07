@@ -25,7 +25,7 @@
     "@hirez_io/observer-spy": "^2.0.0",
     "@johmun/vue-tags-input": "^2.1.0",
     "@sentry/browser": "^5.20.1",
-    "axios": "^0.19.2",
+    "axios": "^0.21.1",
     "backbone": "1.4.0",
     "bootstrap": "4.5.0",
     "bootstrap-tour": "https://github.com/sorich87/bootstrap-tour.git#65a49742e131d19f41e3f5bf63588995f7b8a9e0",

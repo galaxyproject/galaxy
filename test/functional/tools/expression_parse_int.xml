@@ -10,5 +10,9 @@
     <outputs>
         <output type="integer" name="out1" from="output" />
     </outputs>
-    <help>Parse an integer from text.</help>
+    <tests>
+    </tests>
+    <help><![CDATA[
+Parse an integer from text.
+    ]]></help>
 </tool>

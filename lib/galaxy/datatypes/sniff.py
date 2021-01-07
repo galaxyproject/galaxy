@@ -10,6 +10,7 @@ import logging
 import os
 import re
 import shutil
+import struct
 import sys
 import tempfile
 import urllib.request
@@ -596,6 +597,19 @@ class FilePrefix:
 
     def search_str(self, query_str):
         return query_str in self.contents_header
+
+    def magic_header(self, pattern):
+        """
+        Unpack header and get first element
+        """
+        size = struct.calcsize(pattern)
+        header_bytes = self.contents_header_bytes[:size]
+        if len(header_bytes) < size:
+            return None
+        return struct.unpack(pattern, header_bytes)[0]
+
+    def startswith_bytes(self, test_bytes):
+        return self.contents_header_bytes.startswith(test_bytes)
 
 
 def build_sniff_from_prefix(klass):

@@ -31,7 +31,7 @@ describe("MastheadItem.vue", () => {
         active = "mytab";
         menu = true;
         wrapper = m();
-        expect(wrapper.vm.active).toBe(true);
+        expect(wrapper.vm.classes.active).toBe(true);
         expect(wrapper.vm.menu).toBe(true);
     });
 
@@ -39,7 +39,7 @@ describe("MastheadItem.vue", () => {
         active = "othertab";
         menu = false;
         wrapper = m();
-        expect(wrapper.vm.active).toBe(false);
+        expect(wrapper.vm.classes.active).toBe(false);
         expect(wrapper.vm.menu).toBe(false);
     });
 });

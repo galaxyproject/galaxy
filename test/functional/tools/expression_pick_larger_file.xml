@@ -16,14 +16,12 @@
         }
     ]]></expression>
     <inputs>
-        <param type="data" label="First file." optional="true" name="input1" />
-        <param type="data" label="Second file." optional="true" name="input2" />
+        <param name="input1" type="data" optional="true" label="First file" />
+        <param name="input2" type="data" optional="true" label="Second file" />
     </inputs>
     <outputs>
-        <output type="data" name="larger_file" from="output" />
+        <output name="larger_file" type="data" from="output" />
     </outputs>
-    <help>
-    </help>
     <tests>
         <test>
             <param name="input1" value="simple_line.txt" />
@@ -41,4 +39,6 @@
             <output name="larger_file" file="simple_line.txt"/>
         </test>
     </tests>
+    <help>
+    </help>
 </tool>

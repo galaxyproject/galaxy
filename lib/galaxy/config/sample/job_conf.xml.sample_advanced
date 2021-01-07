@@ -820,6 +820,10 @@
             <param id="job_memory">16000</param>
             <param id="job_cores">8</param>
             <param id="job_project">BigMem</param>
+            <!-- Exclude hosts in the LSF cluster from receiving the job. 
+                 Useful for avoiding nodes with temporal issues. 
+            -->
+            <param id="job_excluded_hosts">/path/to/file/with/hosts/to/be/excluded/one_per_line.txt</param>
         </destination>
 
         <destination id="condor" runner="condor">

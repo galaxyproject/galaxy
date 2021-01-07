@@ -646,13 +646,20 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
 
     @web.expose
     @web.require_login("edit workflows")
-    def editor(self, trans, id=None, version=None):
+    def editor(self, trans, id=None, workflow_id=None, version=None):
         """
         Render the main workflow editor interface. The canvas is embedded as
         an iframe (necessary for scrolling to work properly), which is
         rendered by `editor_canvas`.
         """
         if not id:
+            if workflow_id:
+                workflow = trans.sa_session.query(model.Workflow).get(trans.security.decode_id(workflow_id))
+                stored_workflow = workflow.stored_workflow
+                self.security_check(trans, stored_workflow, True, False)
+                stored_workflow_id = trans.security.encode_id(stored_workflow.id)
+                return trans.response.send_redirect(f'{url_for("/")}workflow/editor?id={stored_workflow_id}')
+
             error("Invalid workflow id")
         stored = self.get_stored_workflow(trans, id)
         # The following query loads all user-owned workflows,

@@ -732,6 +732,10 @@ galaxy:
   # not configured, '<galaxy-no-reply@HOSTNAME>' will be used.
   #email_from: null
 
+  # This text will be inserted at the end of the activation email's
+  # message, before the 'Your Galaxy Team' signature.
+  #custom_activation_email_message: null
+
   # URL of the support resource for the galaxy instance.  Used in
   # activation emails.
   # Example value 'https://galaxyproject.org/'
@@ -1688,10 +1692,11 @@ galaxy:
   # behalf of other users.
   #api_allow_run_as: null
 
-  # Master key that allows many API admin actions to be used without
-  # actually having a defined admin user in the database/config.  Only
-  # set this if you need to bootstrap Galaxy, you probably do not want
-  # to set this on public servers.
+  # API key that allows performing some admin actions without actually
+  # having a real admin user in the database and config. Only set this
+  # if you need to bootstrap Galaxy, in particular to create a real
+  # admin user account via API. You should probably not set this on a
+  # production server.
   #master_api_key: null
 
   # Enable access to post-authentication options via OpenID.

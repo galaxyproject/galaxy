@@ -1,20 +1,20 @@
 <tool id="dbkey_filter_input" name="dbkey_filter_input" version="0.1.0">
     <description>Filter (single) input on a dbkey</description>
-    <command>
-        cat $inputs > $output
-    </command>
+    <command><![CDATA[
+cat '$inputs' > '$output'
+    ]]></command>
     <inputs>
-        <param format="txt" name="inputs" type="data" label="Inputs" help="" />
+        <param name="inputs" type="data" format="txt" label="Inputs" help="" />
         <param name="index" type="select" label="Using reference genome">
-          <options from_data_table="test_fasta_indexes">
-            <filter type="data_meta" ref="inputs" key="dbkey" column="1" />
-            <validator type="no_options" message="No reference genome is available for the build associated with the selected input dataset" />
-          </options>
+            <options from_data_table="test_fasta_indexes">
+                <filter type="data_meta" ref="inputs" key="dbkey" column="1" />
+                <validator type="no_options" message="No reference genome is available for the build associated with the selected input dataset" />
+            </options>
         </param>
     </inputs>
 
     <outputs>
-        <data format="txt" name="output" />
+        <data name="output" format="txt" />
     </outputs>
 
     <tests>
@@ -37,7 +37,6 @@
             <output name="output" file="simple_line.txt" />
         </test>
     </tests>
-
     <help>
     </help>
 </tool>
