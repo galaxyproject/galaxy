@@ -55,7 +55,7 @@
                 ><span class="fa fa-floppy-o mr-1" />Save As...</b-dropdown-item
             >
             <b-dropdown-item href="#" @click="$emit('onLint')"
-                ><span class="fa fa-magic mr-1" />Check for Best Practices</b-dropdown-item
+                ><span class="fa fa-magic mr-1" />Validate</b-dropdown-item
             >
             <b-dropdown-item href="#" @click="$emit('onLayout')"
                 ><span class="fa fa-align-left mr-1" />Auto Layout</b-dropdown-item
