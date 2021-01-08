@@ -21,7 +21,7 @@ export default {
     components: { ClickToEdit },
     data: function () {
         return {
-            name: "this.pair.name",
+            name: this.pair.name,
             unpairButtonTitle: _l("Unpair"),
             titlePairName: _l("Click to rename"),
         };
