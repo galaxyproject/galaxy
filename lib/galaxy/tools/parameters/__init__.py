@@ -4,8 +4,8 @@ Classes encapsulating Galaxy tool parameters.
 
 from json import dumps
 
-from boltons.iterutils import remap
 import packaging
+from boltons.iterutils import remap
 
 from galaxy.util import unicodify
 from galaxy.util.expressions import ExpressionContext
@@ -19,7 +19,7 @@ REPLACE_ON_TRUTHY = object()
 __all__ = ('DataCollectionToolParameter', 'DataToolParameter', 'SelectToolParameter')
 
 
-def visit_input_values(inputs, input_values, callback, name_prefix='', label_prefix='', 
+def visit_input_values(inputs, input_values, callback, name_prefix='', label_prefix='',
                        parent_prefix='', context=None, no_replacement_value=REPLACE_ON_TRUTHY,
                        replace_optional_connections=False, profile=None):
     """
@@ -36,7 +36,7 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     >>> from galaxy.util.bunch import Bunch
     >>> from galaxy.tools.parameters.basic import TextToolParameter, BooleanToolParameter
     >>> from galaxy.tools.parameters.grouping import Repeat
-    >>> 
+    >>>
     >>> profile = packaging.version.parse("21.01")
     >>> a = TextToolParameter(None, XML('<param name="a"/>'))
     >>> b = Repeat()
@@ -119,7 +119,7 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     No value found for 'b 1 > e'.
     name=j, prefix=b_0|d|f_1|, prefixed_name=b_0|d|f_1|j, prefixed_label=b 1 > j, value=None
     No value found for 'b 1 > j'.
-    >>> 
+    >>>
     >>> profile = packaging.version.parse("20.09")
     >>> a = TextToolParameter(None, XML('<param name="a"/>'))
     >>> b = Repeat()
@@ -233,7 +233,7 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
         except (KeyError, ValueError):
             return -1
 
-    profile = packaging.version.parse(profile)
+    profile = packaging.version.parse(str(profile))
     context = ExpressionContext(input_values, context)
     payload = {'context': context, 'no_replacement_value': no_replacement_value}
     for input in inputs.values():
