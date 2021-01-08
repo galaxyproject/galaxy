@@ -473,7 +473,7 @@ mapping:
 
       file_sources_config_file:
         type: str
-        default: file_sources_conf.yml        
+        default: file_sources_conf.yml
         path_resolves_to: config_dir
         required: false
         desc: |
@@ -2356,6 +2356,22 @@ mapping:
           Enable beta workflow modules that should not yet be considered part of Galaxy's
           stable API. (The module state definitions may change and workflows built using
           these modules may not function in the future.)
+
+      enable_beta_edam_toolbox:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enable beta EDAM organised toolbox which ignores admin managed
+          sections in lieu of EDAM topics only.
+
+      beta_edam_toolbox_ontology_path:
+        type: str
+        default: EDAM.tsv
+        path_resolves_to: data_dir
+        required: false
+        desc: |
+          Sets the path to EDAM ontology file.
 
       default_workflow_export_format:
         type: str

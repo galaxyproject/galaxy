@@ -3227,6 +3227,29 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_beta_edam_toolbox``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable beta EDAM organised toolbox which ignores admin managed
+    sections in lieu of EDAM topics only.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``beta_edam_toolbox_ontology_path``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Sets the path to EDAM ontology file.
+    The value of this option will be resolved with respect to
+    <data_dir>.
+:Default: ``EDAM.tsv``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``default_workflow_export_format``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -1612,6 +1612,15 @@ galaxy:
   # workflows built using these modules may not function in the future.)
   #enable_beta_workflow_modules: false
 
+  # Enable beta EDAM organised toolbox which ignores admin managed
+  # sections in lieu of EDAM topics only.
+  #enable_beta_edam_toolbox: false
+
+  # Sets the path to EDAM ontology file.
+  # The value of this option will be resolved with respect to
+  # <data_dir>.
+  #beta_edam_toolbox_ontology_path: EDAM.tsv
+
   # Default format for the export of workflows. Possible values are 'ga'
   # or 'format2'.
   #default_workflow_export_format: ga
