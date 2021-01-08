@@ -99,6 +99,7 @@ class ExpectedValues:
         self._expected_paths = {
             'admin_tool_recommendations_path': self._in_config_dir('tool_recommendations_overwrite.yml'),
             'auth_config_file': self._in_config_dir('auth_conf.xml'),
+            'beta_edam_toolbox_ontology_path': self._in_data_dir('EDAM.tsv'),
             'build_sites_config_file': self._in_sample_dir('build_sites.yml.sample'),
             'builds_file_path': self._in_root_dir('tool-data/shared/ucsc/builds.txt'),
             'citation_cache_data_dir': self._in_data_dir('citations/data'),
