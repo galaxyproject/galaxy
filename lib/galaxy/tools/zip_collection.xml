@@ -7,8 +7,8 @@
   <action module="galaxy.tools.actions.model_operations"
           class="ModelOperationToolAction"/>
   <inputs>
-    <param type="data" name="input_forward" label="Input collection 1" help="Example: forward reads"/>
-    <param type="data" name="input_reverse" label="Input collection 2" help="Example: reverse reads"/>
+    <param type="data" name="input_forward" label="Input dataset or collection 1" help="Example: forward read(s)"/>
+    <param type="data" name="input_reverse" label="Input dataset or collection 2" help="Example: reverse read(s)"/>
   </inputs>
   <outputs>
     <collection name="output" type="paired" label="${on_string} (zipped)">
