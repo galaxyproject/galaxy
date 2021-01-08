@@ -56,23 +56,18 @@ class ToolPanelManager:
                 config_elems.append(elem)
             # Add the new elements to the in-memory list of config_elems.
             for elem_entry in elem_list:
-                # Initialize section_found to False.
-                section_found = False
                 if elem_entry.tag == 'section':
                     # Loop through section entries in the in-memory tool panel.
                     for existing_elem in config_elems:
                         # Compare the section ID for each one to the section ID for the tool being installed.
                         if existing_elem.tag == 'section' and existing_elem.attrib.get('id', None) == elem_entry.attrib.get('id', None):
                             # We've found a section, set section_found to True so the subsequent if statement won't append it to the end.
-                            section_found = True
                             for child in elem_entry:
                                 existing_elem.append(child)
-                            # Break out of the config_elems loop back to the elem_list loop so that section_found is reset to False
-                            # and we can process the next section, if any.
+                            # Break out of the config_elems loop back to the elem_list loop
                             break
-                    # If an existing section with a matching ID was not found, create that section and its tools.
-                    if not section_found:
-                        config_elems.append(elem_entry)
+                    # If we reach this point, no section was found. Create one with contents.
+                    config_elems.append(elem_entry)
                 # This is not a section, but a tool or label. No need to search for matching sections, just add it.
                 else:
                     config_elems.append(elem_entry)
