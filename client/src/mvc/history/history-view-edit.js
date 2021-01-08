@@ -383,9 +383,11 @@ var HistoryViewEdit = _super.extend(
             } else {
                 console.warn(`Unknown collectionType encountered ${collectionType}`);
             }
-            createFunc(selection, hideSourceItems).then(() => {
-                panel.model.refresh();
-            });
+            createFunc(selection, hideSourceItems)
+                .then(() => {
+                    panel.model.refresh();
+                })
+                .catch(() => {});
         },
 
         // ------------------------------------------------------------------------ sub-views

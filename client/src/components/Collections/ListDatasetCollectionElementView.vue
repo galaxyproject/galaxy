@@ -1,6 +1,6 @@
 <template>
     <div class="collection-element" @click="$emit('element-is-selected', element)">
-        <click-to-edit :element="element.name" :title="titleElementName" @renamed-element="renameElement" />
+        <click-to-edit v-model="element.name" :title="titleElementName" />
         <button class="discard-btn btn-sm" :title="titleDiscardButton" @click="clickDiscard">
             {{ l("Discard") }}
         </button>
@@ -29,10 +29,6 @@ export default {
             // _l conflicts private methods of Vue internals, expose as l instead
             return _l(str);
         },
-        renameElement: function (response) {
-            this.element.name = response;
-            return this.element.name;
-        },
         clickDiscard: function () {
             this.$emit("element-is-discarded", this.element);
         },
@@ -47,5 +43,8 @@ export default {
 <style>
 .discard-btn {
     float: right;
+}
+.collection-element {
+    height: auto;
 }
 </style>

@@ -3,25 +3,19 @@
         class="click-to-edit-input"
         v-if="editable"
         contenteditable
-        v-model="element"
-        @blur="
-            $emit('renamed-element', element);
-            editable = false;
-        "
-        @keyup.enter="
-            $emit('renamed-element', element);
-            editable = false;
-        "
+        v-model="localValue"
+        @blur="editable = false"
+        @keyup.enter="editable = false"
     />
     <label v-else @click="editable = true">
-        {{ element }}
+        {{ localValue }}
     </label>
 </template>
 
 <script>
 export default {
     props: {
-        element: {
+        value: {
             required: true,
             type: String,
         },
@@ -33,7 +27,16 @@ export default {
     data: function () {
         return {
             editable: false,
+            localValue: this.value,
         };
+    },
+    watch: {
+        localValue(newValue) {
+            this.$emit("input", newValue);
+        },
+        value(newValue) {
+            this.localValue = newValue;
+        },
     },
 };
 </script>
@@ -41,5 +44,6 @@ export default {
 <style>
 .click-to-edit-input {
     width: 600px;
+    line-height: 1 !important;
 }
 </style>

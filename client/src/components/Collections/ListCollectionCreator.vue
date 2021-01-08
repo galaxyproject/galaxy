@@ -1,6 +1,6 @@
 <template>
     <div class="list-collection-creator">
-        <div v-if="(state == error)">
+        <div v-if="(state == 'error')">
             <b-alert show variant="danger">
                 {{ errorText }}
             </b-alert>
@@ -406,7 +406,9 @@ export default {
                 this.$emit("clicked-create", this.workingElements, this.collectionName, this.defaultHideSourceItems);
                 return this.creationFn(this.workingElements, collectionName, this.defaultHideSourceItems)
                     .done(this.oncreate)
-                    .fail((this.state = "error"));
+                    .fail(() => {
+                        this.state = "error";
+                    });
             }
         },
         checkForDuplicates: function () {

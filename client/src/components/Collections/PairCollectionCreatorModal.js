@@ -1,38 +1,11 @@
-import jQuery from "jquery";
-import { getGalaxyInstance } from "app";
-import UI_MODAL from "mvc/ui/ui-modal";
 import _l from "utils/localization";
 import Vue from "vue";
-
-function collectionCreatorModalSetup(options) {
-    const deferred = jQuery.Deferred();
-    const Galaxy = getGalaxyInstance();
-    const modal = Galaxy.modal || new UI_MODAL.View();
-    options.oncancel = function () {
-        modal.hide();
-        deferred.reject("cancelled");
-    };
-    options.oncreate = function (creator, response) {
-        modal.hide();
-        deferred.resolve(response);
-    };
-    const showEl = function (el) {
-        modal.show({
-            title: options.title || _l("Create a collection"),
-            body: el,
-            width: "85%",
-            height: "100%",
-            xlarge: true,
-            closing_events: true,
-        });
-    };
-    return { deferred, showEl };
-}
+import { collectionCreatorModalSetup } from "./common/modal";
 
 function pairCollectionCreatorModal(elements, options) {
     options = options || {};
     options.title = _l("Create a collection from a pair of datasets");
-    const { deferred, showEl } = collectionCreatorModalSetup(options); // eslint-disable-line no-unused-vars
+    const { promise, showEl } = collectionCreatorModalSetup(options);
     return import(/* webpackChunkName: "PairCollectionCreator" */ "./PairCollectionCreator.vue").then((module) => {
         var pairCollectionCreatorInstance = Vue.extend(module.default);
         var vm = document.createElement("div");
@@ -46,7 +19,7 @@ function pairCollectionCreatorModal(elements, options) {
                 defaultHideSourceItems: options.defaultHideSourceItems,
             },
         }).$mount(vm);
-        return deferred;
+        return promise;
     });
 }
 function createPairCollection(contents, defaultHideSourceItems) {

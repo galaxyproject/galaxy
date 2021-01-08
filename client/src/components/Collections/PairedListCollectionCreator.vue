@@ -1,6 +1,6 @@
 <template>
     <div class="paired-list-collection-creator">
-        <div v-if="(state = error)">
+        <div v-if="(state == 'error')">
             <b-alert show variant="danger">
                 {{ errorText }}
             </b-alert>
@@ -408,6 +408,7 @@
                                                 :key="pair.id"
                                                 :pair="pair"
                                                 :unlinkFn="clickUnpair(pair)"
+                                                @onPairRename="(name) => (pair.name = name)"
                                             />
                                         </draggable>
                                     </ol>
@@ -432,7 +433,6 @@ import "splitpanes/dist/splitpanes.css";
 import { Splitpanes, Pane } from "splitpanes";
 import draggable from "vuedraggable";
 import Vue from "vue";
-
 import BootstrapVue from "bootstrap-vue";
 
 Vue.use(BootstrapVue);
@@ -986,7 +986,9 @@ export default {
                 this.$emit("clicked-create", this.workingElements, this.collectionName, this.defaultHideSourceItems);
                 return this.creationFn(this.pairedElements, collectionName, this.defaultHideSourceItems)
                     .done(this.oncreate)
-                    .fail((this.state = "error"));
+                    .fail(() => {
+                        this.state = "error";
+                    });
             }
         },
         checkForDuplicates: function () {
@@ -1129,6 +1131,7 @@ li.dataset.paired {
             margin-right: 34px;
             border: 2px solid grey;
             background: #aff1af;
+            height: auto;
             span {
                 display: inline-block;
                 overflow: visible !important;

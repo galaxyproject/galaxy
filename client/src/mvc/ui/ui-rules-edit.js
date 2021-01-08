@@ -77,10 +77,12 @@ var View = Backbone.View.extend({
             saveRulesFn: (rules) => this._handleRulesSave(rules),
             initialRules: value,
         };
-        const RuleBasedCollectionCreatorModalClass = Vue.extend(RuleBasedCollectionCreatorModal);
-        const inst = new RuleBasedCollectionCreatorModalClass();
-        inst.$mount();
-        inst.ruleBasedCollectionCreatorModal(elements, elementsType, importType, options).done(() => {});
+        RuleBasedCollectionCreatorModal.ruleBasedCollectionCreatorModal(
+            elements,
+            elementsType,
+            importType,
+            options
+        ).catch(() => {});
     },
 
     _handleRulesSave: function (rules) {

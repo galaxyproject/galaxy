@@ -1,33 +1,6 @@
-import jQuery from "jquery";
-import { getGalaxyInstance } from "app";
-import UI_MODAL from "mvc/ui/ui-modal";
 import _l from "utils/localization";
 import Vue from "vue";
-
-function collectionCreatorModalSetup(options) {
-    const deferred = jQuery.Deferred();
-    const Galaxy = getGalaxyInstance();
-    const modal = Galaxy.modal || new UI_MODAL.View();
-    options.oncancel = function () {
-        modal.hide();
-        deferred.reject("cancelled");
-    };
-    options.oncreate = function (creator, response) {
-        modal.hide();
-        deferred.resolve(response);
-    };
-    const showEl = function (el) {
-        modal.show({
-            title: options.title || _l("Create a collection"),
-            body: el,
-            width: "85%",
-            height: "100%",
-            xlarge: true,
-            closing_events: true,
-        });
-    };
-    return { deferred, showEl };
-}
+import { collectionCreatorModalSetup } from "./common/modal";
 
 function ruleBasedCollectionCreatorModal(elements, elementsType, importType, options) {
     // importType in [datasets, collection]
@@ -43,7 +16,7 @@ function ruleBasedCollectionCreatorModal(elements, elementsType, importType, opt
         title = _l("Build Rules for Uploading Collections");
     }
     options.title = title;
-    const { deferred, creatorOptions, showEl } = collectionCreatorModalSetup(options); // eslint-disable-line no-unused-vars
+    const { promise, showEl } = collectionCreatorModalSetup(options);
     return import(/* webpackChunkName: "ruleCollectionBuilder" */ "components/RuleCollectionBuilder.vue").then(
         (module) => {
             var ruleCollectionBuilderInstance = Vue.extend(module.default);
@@ -63,7 +36,7 @@ function ruleBasedCollectionCreatorModal(elements, elementsType, importType, opt
                     initialRules: options.initialRules,
                 },
             }).$mount(vm);
-            return deferred;
+            return promise;
         }
     );
 }
