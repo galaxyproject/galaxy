@@ -32,7 +32,7 @@ This tool takes two collections and creates a paired collection from them.
 If you have one collection containing only forward reads and one containing only reverse, this tools will "zip" them together into a simple paired collection. For example, given two collections with `forward` and `reverse` reads they can be "zipped" into a single paired collection:
 
 .. image:: ${static_path}/images/tools/collection_ops/zip.png
-  :width: 800
+  :width: 400
   :alt: Zipping operation
 
 

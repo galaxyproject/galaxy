@@ -39,7 +39,7 @@
 This tool takes a dataset collection and filters out empty datasets. This is useful for continuing a multi-sample analysis when downstream tools require datasets to have content.
 
 .. image:: ${static_path}/images/tools/collection_ops/filter_empty.png
-  :width: 800
+  :width: 400
   :alt: Filtering empty datasets
 
 -----
