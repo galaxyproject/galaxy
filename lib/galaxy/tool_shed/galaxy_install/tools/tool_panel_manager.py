@@ -61,10 +61,10 @@ class ToolPanelManager:
                     for existing_elem in config_elems:
                         # Compare the section ID for each one to the section ID for the tool being installed.
                         if existing_elem.tag == 'section' and existing_elem.attrib.get('id', None) == elem_entry.attrib.get('id', None):
-                            # We've found a section, set section_found to True so the subsequent if statement won't append it to the end.
+                            # We've found a section, add the incoming tools to it.
                             for child in elem_entry:
                                 existing_elem.append(child)
-                            # Break out of the config_elems loop back to the elem_list loop
+                            # Break out of the config_elems loop back to the elem_list loop.
                             break
                     # If we reach this point, no section was found. Create one with contents.
                     config_elems.append(elem_entry)
