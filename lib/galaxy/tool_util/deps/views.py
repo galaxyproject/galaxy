@@ -146,6 +146,8 @@ class DependencyResolversView:
         resolver = self._dependency_resolver(index)
         if resolver.read_only:
             raise exceptions.RequestParameterInvalidException("Attempted to install on a read_only dependency resolver.")
+        if resolver.disabled:
+            raise exceptions.RequestParameterInvalidException("Attempted to install on a disabled dependency resolver.")
 
         name, version, type, extra_kwds = self._parse_dependency_info(payload)
         return resolver.install_dependency(
