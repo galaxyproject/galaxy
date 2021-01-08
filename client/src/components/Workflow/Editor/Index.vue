@@ -148,6 +148,11 @@
                                     @onScrollTo="onScrollTo"
                                 />
                                 <div id="right-content" class="right-content" />
+                                <Form
+                                    :get-manager="getManager"
+                                    :get-node="getActiveNode"
+                                    :datatypes="datatypes"
+                                />
                             </div>
                         </div>
                     </div>
@@ -172,6 +177,7 @@ import {
 } from "./modules/utilities";
 import WorkflowCanvas from "./modules/canvas";
 import WorkflowOptions from "./Options";
+import Form from "components/Workflow/Editor/Forms/Index";
 import MarkdownEditor from "components/Markdown/MarkdownEditor";
 import ToolBoxWorkflow from "components/Panels/ToolBoxWorkflow";
 import SidePanel from "components/Panels/SidePanel";
@@ -193,6 +199,7 @@ export default {
         SidePanel,
         StateUpgradeModal,
         ToolBoxWorkflow,
+        Form,
         WorkflowOptions,
         WorkflowAttributes,
         ZoomControl,
@@ -593,6 +600,9 @@ export default {
         },
         getCanvasManager() {
             return this.canvasManager;
+        },
+        getActiveNode() {
+            return this.activeNode;
         },
         onInsertedStateMessages(insertedStateMessages) {
             this.insertedStateMessages = insertedStateMessages;
