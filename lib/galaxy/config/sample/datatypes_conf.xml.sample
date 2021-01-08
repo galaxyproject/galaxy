@@ -576,6 +576,7 @@
     <datatype extension="staden" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="swiss" type="galaxy.datatypes.data:Text" subclass="true"/>
     <!-- Alignment Formats http://emboss.sourceforge.net/docs/themes/AlignFormats.html -->
+    <datatype extension="msf" type="galaxy.datatypes.msa:Msf" />
     <datatype extension="markx0" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="markx1" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="markx10" type="galaxy.datatypes.data:Text" subclass="true"/>
