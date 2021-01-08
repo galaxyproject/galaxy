@@ -42,7 +42,7 @@ def add_exception_handler(
 
 
 def initialize_fast_app(gx_app):
-    app = FastAPI()
+    app = FastAPI(openapi_tags=api_tags_metadata)
 
     add_exception_handler(app)
     wsgi_handler = WSGIMiddleware(gx_app)
