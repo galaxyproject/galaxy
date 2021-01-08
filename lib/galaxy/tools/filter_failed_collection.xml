@@ -1,6 +1,6 @@
 <tool id="__FILTER_FAILED_DATASETS__"
       name="Filter failed"
-      version="1.0.1"
+      version="1.0.0"
       tool_type="filter_failed_datasets_collection">
     <description>datasets from a collection</description>
     <type class="FilterFailedDatasetsTool" module="galaxy.tools" />

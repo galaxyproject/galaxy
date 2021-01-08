@@ -1,6 +1,6 @@
 <tool id="__ZIP_COLLECTION__"
       name="Zip"
-      version="1.0.1"
+      version="1.0.0"
       tool_type="zip_collection">
   <description>two collections into one</description>
   <type class="ZipCollectionTool" module="galaxy.tools" />

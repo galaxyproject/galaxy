@@ -1,6 +1,6 @@
 <tool id="__FILTER_EMPTY_DATASETS__"
       name="Filter empty"
-      version="1.0.1"
+      version="1.0.0"
       tool_type="filter_empty_datasets_collection">
     <description>datasets from a collection</description>
     <type class="FilterEmptyDatasetsTool" module="galaxy.tools" />

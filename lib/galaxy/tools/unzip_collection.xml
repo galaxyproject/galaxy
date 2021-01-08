@@ -1,6 +1,6 @@
 <tool id="__UNZIP_COLLECTION__"
       name="Unzip"
-      version="1.0.1"
+      version="1.0.0"
       tool_type="unzip_collection">
   <description>collection into multiple ones</description>
   <type class="UnzipCollectionTool" module="galaxy.tools" />

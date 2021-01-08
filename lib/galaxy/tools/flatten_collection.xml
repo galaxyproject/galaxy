@@ -1,6 +1,6 @@
 <tool id="__FLATTEN__"
       name="Flatten collection"
-      version="1.0.1"
+      version="1.0.0"
       tool_type="filter_collection">
     <description>into a list of datasets</description>
     <type class="FlattenTool" module="galaxy.tools" />
