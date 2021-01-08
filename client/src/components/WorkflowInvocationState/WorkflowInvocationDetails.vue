@@ -57,7 +57,8 @@ import { getHistoryMonitor } from "./providers/monitors";
 
 import { mapGetters } from "vuex";
 import { mapCacheActions } from "vuex-cache";
-import { filter, takeUntil } from "rxjs/operators";
+import { concat } from "rxjs";
+import { take, filter, takeUntil, share } from "rxjs/operators";
 import { vueRxShortcuts } from "components/plugins";
 
 export default {
@@ -103,18 +104,28 @@ export default {
             }
             return label;
         },
+        // prettier-ignore
         monitorHistory() {
             // rework this into history or invocation subscription in the future ...
             if (!this.jobStatesTerminal) {
                 const pollHistory$ = this.watch$("invocationAndJobTerminal");
-                const stopPolling$ = pollHistory$.pipe(filter((val) => val === true));
-                const historyMonitor$ = getHistoryMonitor(this.invocation.history_id).pipe(takeUntil(stopPolling$));
-                this.listenTo(historyMonitor$, {
+                const stopPolling$ = pollHistory$.pipe(
+                    filter((val) => val === true)
+                );
+                const historyMonitor$ = getHistoryMonitor(this.invocation.history_id);
+                const primaryHistoryMonitor$ = historyMonitor$.pipe(
+                    takeUntil(stopPolling$),
+                    share()
+                );
+                const final$ = concat(primaryHistoryMonitor$, historyMonitor$.pipe(
+                    take(1)
+                ));
+                this.listenTo(final$, {
                     error: (err) => console.error("An error occured while monitoring history for datasets", err),
                     complete: () => console.log("Invocation finished, stopping history dataset monitor"),
                 });
             }
-        },
+        }
     },
 };
 </script>

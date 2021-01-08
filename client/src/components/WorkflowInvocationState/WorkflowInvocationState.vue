@@ -150,10 +150,10 @@ export default {
             );
         },
         jobStatesTerminal: function () {
-            if (this.invocationSchedulingTerminal && !this.JobStatesSummary) {
-                // no jobs for this invocation (think subworkflow or just inputs)
-                return true;
-            }
+            // if (this.invocationSchedulingTerminal && !this.JobStatesSummary) {
+            //     // no jobs for this invocation (think subworkflow or just inputs)
+            //     return true;
+            // }
             return this.jobStatesSummary && this.jobStatesSummary.terminal();
         },
         stepStatesStr: function () {

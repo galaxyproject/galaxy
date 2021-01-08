@@ -108,10 +108,15 @@ export const getHistoryMonitor = (historyId) => {
     return historyFeeds.get(historyId);
 };
 
+// prettier-ignore
 const buildHistoryMonitor = (historyId) => {
     // temporary hack until we can subscribe to invocations and their outputs.
     // set large windowSize around which to monitor (could we just monitor all updates?)
     const windowSize = 100000;
-    const monitorEvery = 50000;
-    return of([historyId, {}, 1]).pipe(loadHistoryContents(windowSize), delay(monitorEvery), repeat(), share());
+    const monitorEvery = 3000;
+    return of([historyId, {}, 1]).pipe(
+        loadHistoryContents(windowSize),
+        delay(monitorEvery),
+        repeat(),
+        share());
 };
