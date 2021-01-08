@@ -80,7 +80,9 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
     _specification_pattern = re.compile(r"https\:\/\/anaconda.org\/\w+\/\w+")
 
     def __init__(self, dependency_manager, **kwds):
-        self.can_uninstall_dependencies = True
+        read_only = _string_as_bool(kwds.get('read_only', 'false'))
+        self.read_only = read_only
+        self.can_uninstall_dependencies = not read_only
         self._setup_mapping(dependency_manager, **kwds)
         self.versionless = _string_as_bool(kwds.get('versionless', 'false'))
         self.dependency_manager = dependency_manager
@@ -167,6 +169,9 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
         return final_return_code
 
     def install_all(self, conda_targets):
+        if self.read_only:
+            return False
+
         env = self.merged_environment_name(conda_targets)
         return_code = install_conda_targets(conda_targets, conda_context=self.conda_context, env_name=env)
         if return_code != 0:
@@ -335,8 +340,11 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
             version = install_target.version
             yield self._to_requirement(name, version)
 
-    def install_dependency(self, name, version, type, **kwds):
+    def _install_dependency(self, name, version, type, **kwds):
         "Returns True on (seemingly) successfull installation"
+        # should be checked before called
+        assert not self.read_only
+
         if type != "package":
             log.warning("Cannot install dependencies of type '%s'" % type)
             return False
