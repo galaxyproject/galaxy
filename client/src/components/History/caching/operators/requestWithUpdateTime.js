@@ -35,6 +35,22 @@ export const requestWithUpdateTime = (config = {}) => {
     );
 };
 
+// prettier-ignore
+// Like request withUpdateTime but omits initial results
+export const requestWithUpdateTimeNoInitial = (config = {}) => {
+    const {
+        dateStore = requestDateStore,
+    } = config;
+    return pipe(
+        tap((url) => {
+            if (!dateStore.has(url)) {
+                dateStore.set(url,  moment.utc());
+            }
+        }),
+        requestWithUpdateTime(config)
+    );
+}
+
 /**
  * Takes a base URL appends an update_time-gt restriction based on the lst
  * time this URL was requestd as indicated by the dateStore.

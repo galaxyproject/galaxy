@@ -114,8 +114,8 @@ const buildHistoryMonitor = (historyId) => {
     // set large windowSize around which to monitor (could we just monitor all updates?)
     const windowSize = 100000;
     const monitorEvery = 3000;
-    return of([historyId, {}, 1]).pipe(
-        loadHistoryContents(windowSize),
+    return of([historyId, {showHidden: true, showVisible: true}, 1]).pipe(
+        loadHistoryContents({windowSize, noInitial: true}),
         delay(monitorEvery),
         repeat(),
         share());

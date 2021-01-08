@@ -58,7 +58,7 @@ import { getHistoryMonitor } from "./providers/monitors";
 import { mapGetters } from "vuex";
 import { mapCacheActions } from "vuex-cache";
 import { concat } from "rxjs";
-import { take, filter, takeUntil, share } from "rxjs/operators";
+import { take, filter, takeWhile, share } from "rxjs/operators";
 import { vueRxShortcuts } from "components/plugins";
 
 export default {
@@ -108,16 +108,13 @@ export default {
         monitorHistory() {
             // rework this into history or invocation subscription in the future ...
             if (!this.jobStatesTerminal) {
-                const pollHistory$ = this.watch$("invocationAndJobTerminal");
-                const stopPolling$ = pollHistory$.pipe(
-                    filter((val) => val === true)
-                );
                 const historyMonitor$ = getHistoryMonitor(this.invocation.history_id);
                 const primaryHistoryMonitor$ = historyMonitor$.pipe(
-                    takeUntil(stopPolling$),
+                    takeWhile(() => !this.invocationAndJobTerminal),
                     share()
                 );
                 const final$ = concat(primaryHistoryMonitor$, historyMonitor$.pipe(
+                    // get one more update after invocation is terminal
                     take(1)
                 ));
                 this.listenTo(final$, {
