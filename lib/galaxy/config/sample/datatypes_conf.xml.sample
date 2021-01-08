@@ -310,6 +310,8 @@
     <datatype extension="nii1" auto_compressed_types="gz" type="galaxy.datatypes.images:Nifti1" mimetype="application/octet-stream" display_in_upload="true" />
     <datatype extension="nii2" auto_compressed_types="gz" type="galaxy.datatypes.images:Nifti2" mimetype="application/octet-stream" display_in_upload="true" />
     <datatype extension="gii" auto_compressed_types="gz" type="galaxy.datatypes.images:Gifti" mimetype="application/octet-stream" display_in_upload="true" />
+    <datatype extension="tck" type="galaxy.datatypes.images:Tck" mimetype="application/octet-stream" display_in_upload="true" />
+    <datatype extension="trk" type="galaxy.datatypes.images:Trk" mimetype="application/octet-stream" display_in_upload="true" />
     <datatype extension="peff" type="galaxy.datatypes.proteomics:PEFF" display_in_upload="true" />
     <!-- End Proteomics Datatypes -->
     <datatype extension="deeptools_compute_matrix_archive" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true"/>
@@ -1038,6 +1040,8 @@
     <sniffer type="galaxy.datatypes.images:Xpm"/>
     <sniffer type="galaxy.datatypes.images:Eps"/>
     <sniffer type="galaxy.datatypes.images:Rast"/>
+    <sniffer type="galaxy.datatypes.images:Tck" />
+    <sniffer type="galaxy.datatypes.images:Trk" />
     <sniffer type="galaxy.datatypes.images:Nifti1" />
     <sniffer type="galaxy.datatypes.images:Nifti2" />
     <sniffer type="galaxy.datatypes.media:Wav"/>

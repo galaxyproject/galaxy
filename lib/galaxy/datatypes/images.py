@@ -6,6 +6,8 @@ import logging
 import zipfile
 from urllib.parse import quote_plus
 
+import numpy as np
+
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.text import Html as HtmlFromText
 from galaxy.util import nice_size
@@ -191,6 +193,96 @@ def create_applet_tag_peek(class_name, archive, params):
 </object>
 """
     return """<div><p align="center">%s</p></div>""" % text
+
+
+@build_sniff_from_prefix
+class Tck(Binary):
+    """
+    Tracks file format (.tck) format
+    https://mrtrix.readthedocs.io/en/latest/getting_started/image_data.html#tracks-file-format-tck
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('fibers_sparse_top_6_lines.tck')
+    >>> Tck().sniff( fname )
+    True
+    >>> fname = get_test_fname('2.txt')
+    >>> Tck().sniff( fname )
+    False
+    """
+    file_ext = 'tck'
+
+    def sniff_prefix(self, file_prefix):
+        format_def = [[b'mrtrix tracks'], [b'datatype: Float32LE', b'datatype: Float32BE', b'datatype: Float64BE', b'datatype: Float64LE'],
+                      [b'count: '], [b'file: .'], [b'END']]
+        matches = 0
+
+        for elem in format_def:
+            for identifier in elem:
+                if identifier in file_prefix.contents_header_bytes:
+                    matches += 1
+        if matches == 5:
+            return True
+        return False
+
+
+@build_sniff_from_prefix
+class Trk(Binary):
+    """
+    Track File format (.trk) is the tractography file format.
+    http://trackvis.org/docs/?subsect=fileformat
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('IIT2mean_top_2000bytes.trk')
+    >>> Trk().sniff( fname )
+    True
+    >>> fname = get_test_fname('2.txt')
+    >>> Trk().sniff( fname )
+    False
+    """
+    file_ext = 'trk'
+
+    def sniff_prefix(self, file_prefix):
+        # quick check
+        header_raw = None
+        header_raw = file_prefix.contents_header_bytes[:1000]
+
+        if header_raw[:5] != b'TRACK':
+            return False
+        # detailed check
+        header_def = [
+            ('magic', 'S6'),
+            ('dim', 'h', 3),
+            ('voxel_size', 'f4', 3),
+            ('origin', 'f4', 3),
+            ('n_scalars', 'h'),
+            ('scalar_name', 'S20', 10),
+            ('n_properties', 'h'),
+            ('property_name', 'S20', 10),
+            ('vox_to_ras', 'f4', (4, 4)),
+            ('reserved', 'S444'),
+            ('voxel_order', 'S4'),
+            ('pad2', 'S4'),
+            ('image_orientation_patient', 'f4', 6),
+            ('pad1', 'S2'),
+            ('invert_x', 'S1'),
+            ('invert_y', 'S1'),
+            ('invert_z', 'S1'),
+            ('swap_xy', 'S1'),
+            ('swap_yz', 'S1'),
+            ('swap_zx', 'S1'),
+            ('n_count', 'i4'),
+            ('version', 'i4'),
+            ('header_size', 'i4'),
+        ]
+        np_dtype = np.dtype(header_def)
+        header = np.ndarray(
+            shape=(),
+            dtype=np_dtype,
+            buffer=header_raw)
+        if header['header_size'] == 1000 and b'TRACK' in header['magic'] and \
+           header['version'] == 2 and len(header['dim']) == 3:
+            return True
+        return False
 
 
 class Gmaj(data.Data):
