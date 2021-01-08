@@ -107,7 +107,7 @@ export default {
         // prettier-ignore
         monitorHistory() {
             // rework this into history or invocation subscription in the future ...
-            if (!this.jobStatesTerminal) {
+            if (!this.invocationAndJobTerminal) {
                 const historyMonitor$ = getHistoryMonitor(this.invocation.history_id);
                 const primaryHistoryMonitor$ = historyMonitor$.pipe(
                     takeWhile(() => !this.invocationAndJobTerminal),
