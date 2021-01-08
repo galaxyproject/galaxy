@@ -7,73 +7,47 @@
             </div>
         </template>
         <b-card-body>
-            <div v-if="parametersOkay">
-                <p>All workflow parameters (if any are defined) are using formal inputs.{{ whyInputs }}</p>
+            <div class="mb-2">
+                <div v-if="parametersOkay">
+                    <font-awesome-icon icon="check" class="text-success" />
+                    <span>Workflow parameters are using formal inputs.</span>
+                </div>
+                <div v-else>
+                    <font-awesome-icon icon="exclamation-triangle" class="text-warning" />
+                    <span>
+                        This workflow uses implicit workflow parameters. They should be replaced with
+                        formal workflow inputs:
+                    </span>
+                    <div v-for="(item, idx) in legacyParametersArray" :key="idx">
+                        <tt>{{ item.name }} </tt>
+                    </div>
+                </div>
             </div>
-            <div else>
-                <ul>
-                    <li v-for="(item, idx) in legacyParametersArray" :key="idx">
-                        {{ item.name }}
-                        <font-awesome-icon
-                            v-if="item.canExtract"
-                            icon="cog"
-                            v-b-tooltip.hover
-                            title="Attempt to create a workflow input connected to this legacy parameter."
-                            @click="extractLegacyParameter(item)"
-                        />
-                    </li>
-                </ul>
-                <em class="small">
-                    <p>
-                        This workflow uses older-style implicit Galaxy workflow parameters (e.g. defining
-                        <tt>${parameter}</tt> on tool steps in the workflows). These should be replaced with
-                        formal workflow inputs. {{ whyInputs }}
-                    </p>
-                    <p>
-                        Many such legacy workflow parameters can be automatically converted to formal input
-                        steps by Galaxy, click the <font-awesome-icon icon="cog" /> to have Galaxy attempt
-                        this.
-                    </p>
-                </em>
-            </div> 
-            <div v-if="disconnectInputsOkay">
-                All non-optional inputs to workflow steps are connected to formal workflow inputs.
-                {{ whyInputs }}
-            </div>
-            <div else>
-                <ul>
-                    <li
-                        v-for="(input, idx) in disconnectedInputs"
-                        :key="idx"
-                        @mouseover="highlight(input.stepId)"
-                        @mouseleave="unhighlight(input.stepId)"
-                    >
-                        <b @click="scrollTo(input.stepId)" class="scrolls"
-                            ><i :class="input.stepIconClass" />{{ input.stepLabel }}</b
+
+            <div class="mb-2">
+                <div v-if="disconnectInputsOkay">
+                    <font-awesome-icon icon="check" class="text-success" />
+                    <span>All non-optional inputs to workflow steps are connected to formal workflow inputs.</span>
+                </div>
+                <div else>
+                    <font-awesome-icon icon="exclamation-triangle" class="text-warning" />
+                    <span>Some non-optional inputs are not connected to formal workflow inputs:</span>
+                    <ul class="mt-2">
+                        <li
+                            v-for="(input, idx) in disconnectedInputs"
+                            :key="idx"
+                            @mouseover="highlight(input.stepId)"
+                            @mouseleave="unhighlight(input.stepId)"
+                            class="ml-2"
                         >
-                        <span class="disconnected-input-name">
-                            {{ input.inputLabel }}
-                            <font-awesome-icon
-                                v-if="input.canExtract"
-                                icon="cog"
-                                v-b-tooltip.hover
-                                title="Attempt to create a workflow input connected to this step input."
-                                @click="extractWorkflowInput(input)"
-                            />
-                        </span>
-                    </li>
-                </ul>
-                <em class="small">
-                    <p>
-                        Inputs to tool and subworkflow steps should be connected to formal workflow inputs.
-                        {{ whyInputs }}
-                    </p>
-                    <p>
-                        Most such step inputs can be automatically connected via Galaxy, click the
-                        <font-awesome-icon icon="cog" /> for inputs to have Galaxy attempt this.
-                    </p>
-                </em>
+                            <a href="#" @click="scrollTo(input.stepId)" class="scrolls">
+                                <i :class="input.stepIconClass" />{{ input.stepLabel }}: {{ input.inputLabel }}
+                            </a>
+                        </li>
+                    </ul>
+                </div>
             </div>
+
             <div v-if="inputsMetadataOkay">
                 All workflow inputs have labels and annotations.
             </div>
@@ -99,6 +73,7 @@
                     </li>
                 </ul>
             </div>
+
             <div v-if="outputsOkay">
                 This workflow has outputs and they all have valid labels.
             </div>
@@ -134,17 +109,11 @@
                         >
                         <span class="unlabeled-output-name">
                             {{ output.outputName }}
-                            <!--
-                        <font-awesome-icon icon="cog"
-                                            v-b-tooltip.hover
-                                            title="Unmark this output as a workflow output."
-                                            @click="extractWorkflowInput(output)"
-                        />
-                        -->
                         </span>
                     </li>
                 </ul>
             </div>
+
             <span>
                 <div v-if="annotationOkay">
                     <p>
@@ -225,10 +194,13 @@ Vue.use(BootstrapVue);
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCog, faPencilAlt } from "@fortawesome/free-solid-svg-icons";
+import { faCog, faPencilAlt, faCheck, faTimes, faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
 
 library.add(faCog);
+library.add(faTimes);
+library.add(faCheck);
 library.add(faPencilAlt);
+library.add(faExclamationTriangle);
 
 export default {
     components: {
