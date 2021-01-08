@@ -5,6 +5,7 @@ Classes encapsulating Galaxy tool parameters.
 from json import dumps
 
 from boltons.iterutils import remap
+import packaging
 
 from galaxy.util import unicodify
 from galaxy.util.expressions import ExpressionContext
@@ -18,7 +19,9 @@ REPLACE_ON_TRUTHY = object()
 __all__ = ('DataCollectionToolParameter', 'DataToolParameter', 'SelectToolParameter')
 
 
-def visit_input_values(inputs, input_values, callback, name_prefix='', label_prefix='', parent_prefix='', context=None, no_replacement_value=REPLACE_ON_TRUTHY, replace_optional_connections=False):
+def visit_input_values(inputs, input_values, callback, name_prefix='', label_prefix='', 
+                       parent_prefix='', context=None, no_replacement_value=REPLACE_ON_TRUTHY,
+                       replace_optional_connections=False, profile=None):
     """
     Given a tools parameter definition (`inputs`) and a specific set of
     parameter values (`input_alues`), call `callback` for each non-grouping
@@ -144,6 +147,7 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
         except (KeyError, ValueError):
             return -1
 
+    profile = packaging.version.parse(profile)
     context = ExpressionContext(input_values, context)
     payload = {'context': context, 'no_replacement_value': no_replacement_value}
     for input in inputs.values():
@@ -153,19 +157,27 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
                 d['__index__'] = i
                 new_name_prefix = name_prefix + '%s_%d|' % (input.name, i)
                 new_label_prefix = label_prefix + '%s %d > ' % (input.title, i + 1)
-                visit_input_values(input.inputs, d, callback, new_name_prefix, new_label_prefix, parent_prefix=new_name_prefix, **payload)
+                visit_input_values(input.inputs, d, callback, new_name_prefix, new_label_prefix, parent_prefix=new_name_prefix, profile=profile, **payload)
         elif isinstance(input, Conditional):
             values = input_values[input.name] = input_values.get(input.name, {})
             new_name_prefix = name_prefix + input.name + '|'
+            if profile < packaging.version.parse("21.01"):
+                parent_prefix = name_prefix
+            else:
+                parent_prefix = new_name_prefix
             case_error = None if get_current_case(input, values) >= 0 else 'The selected case is unavailable/invalid.'
-            callback_helper(input.test_param, values, new_name_prefix, label_prefix, parent_prefix=new_name_prefix, context=context, error=case_error)
+            callback_helper(input.test_param, values, new_name_prefix, label_prefix, parent_prefix=parent_prefix, context=context, error=case_error)
             values['__current_case__'] = get_current_case(input, values)
             if values['__current_case__'] >= 0:
-                visit_input_values(input.cases[values['__current_case__']].inputs, values, callback, new_name_prefix, label_prefix, parent_prefix=new_name_prefix, **payload)
+                visit_input_values(input.cases[values['__current_case__']].inputs, values, callback, new_name_prefix, label_prefix, parent_prefix=parent_prefix, profile=profile, **payload)
         elif isinstance(input, Section):
             values = input_values[input.name] = input_values.get(input.name, {})
             new_name_prefix = name_prefix + input.name + '|'
-            visit_input_values(input.inputs, values, callback, new_name_prefix, label_prefix, parent_prefix=new_name_prefix, **payload)
+            if profile < packaging.version.parse("21.01"):
+                parent_prefix = name_prefix
+            else:
+                parent_prefix = new_name_prefix
+            visit_input_values(input.inputs, values, callback, new_name_prefix, label_prefix, parent_prefix=parent_prefix, profile=profile, **payload)
         else:
             callback_helper(input, input_values, name_prefix, label_prefix, parent_prefix=parent_prefix, context=context)
 

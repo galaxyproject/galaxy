@@ -78,7 +78,7 @@ class ToolEvaluator:
         def validate_inputs(input, value, context, **kwargs):
             value = input.from_json(value, request_context, context)
             input.validate(value, request_context)
-        visit_input_values(self.tool.inputs, incoming, validate_inputs)
+        visit_input_values(self.tool.inputs, incoming, validate_inputs, profile=self.tool.profile)
 
         # Restore input / output data lists
         inp_data, out_data, out_collections = job.io_dicts()
