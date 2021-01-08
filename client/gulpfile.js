@@ -23,15 +23,16 @@ const PLUGIN_BUILD_IDS = [
     "openseadragon",
     "pv",
     "nora",
+    "new_user",
 ];
 
 const paths = {
     node_modules: "./node_modules",
     plugin_dirs: [
-        "../config/plugins/{visualizations,interactive_environments}/*/static/**/*",
-        "../config/plugins/{visualizations,interactive_environments}/*/*/static/**/*",
+        "../config/plugins/{visualizations,interactive_environments,welcome_page}/*/static/**/*",
+        "../config/plugins/{visualizations,interactive_environments,welcome_page}/*/*/static/**/*",
     ],
-    plugin_build_modules: [`../config/plugins/visualizations/{${PLUGIN_BUILD_IDS.join(",")}}/package.json`],
+    plugin_build_modules: [`../config/plugins/{visualizations,welcome_page}/{${PLUGIN_BUILD_IDS.join(",")}}/package.json`],
     lib_locs: {
         // This is a stepping stone towards having all this staged
         // automatically.  Eventually, this dictionary and staging step will
@@ -122,14 +123,14 @@ function buildPlugins(callback) {
 }
 
 function cleanPlugins() {
-    return del(["../static/plugins/{visualizations,interactive_environments}/*"], { force: true });
+    return del(["../static/plugins/{visualizations,interactive_environments,welcome_page}/*"], { force: true });
 }
 
 const client = parallel(fonts, stageLibs);
 const plugins = series(buildPlugins, cleanPlugins, stagePlugins);
 
 function watchPlugins() {
-    const BUILD_PLUGIN_WATCH_GLOB = [`../config/plugins/visualizations/{${PLUGIN_BUILD_IDS.join(",")}}/**/*`];
+    const BUILD_PLUGIN_WATCH_GLOB = [`../config/plugins/{visualizations,welcome_page}/{${PLUGIN_BUILD_IDS.join(",")}}/**/*`];
     watch(BUILD_PLUGIN_WATCH_GLOB, { queue: false }, plugins);
 }
 

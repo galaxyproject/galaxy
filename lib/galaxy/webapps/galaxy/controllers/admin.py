@@ -17,7 +17,8 @@ from galaxy.tool_shed.util.repository_util import get_ids_of_tool_shed_repositor
 from galaxy.util import (
     nice_size,
     sanitize_text,
-    url_get
+    url_get,
+    pretty_print_time_interval
 )
 from galaxy.util.tool_shed import common_util, encoding_util
 from galaxy.web import url_for
@@ -223,7 +224,7 @@ class RoleListGrid(grids.Grid):
         StatusColumn("Status", attach_popup=False),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced"),
-        grids.GridColumn("Last Updated", key="update_time", format=time_ago)
+        grids.GridColumn("Last Updated", key="update_time")
     ]
     columns.append(grids.MulticolFilterColumn("Search",
                                               cols_to_filter=[columns[0], columns[1], columns[2]],
@@ -303,7 +304,7 @@ class GroupListGrid(grids.Grid):
         StatusColumn("Status", attach_popup=False),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced"),
-        grids.GridColumn("Last Updated", key="update_time", format=time_ago)
+        grids.GridColumn("Last Updated", key="update_time", format=pretty_print_time_interval)
     ]
     columns.append(grids.MulticolFilterColumn("Search",
                                               cols_to_filter=[columns[0]],

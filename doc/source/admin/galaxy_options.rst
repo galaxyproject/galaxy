@@ -4788,4 +4788,16 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~
+``welcome_directory``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Location of New User Welcome data, a single directory containing
+    the images and JSON of Topics/Subtopics/Slides as export. This
+    location is relative to galaxy/static
+:Default: ``/welcome_page/new_user/static/``
+:Type: str
+
+
 

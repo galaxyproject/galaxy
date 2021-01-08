@@ -53,6 +53,9 @@ import Confirmation from "components/login/Confirmation.vue";
 import DatasetDetails from "components/Details/DatasetDetails.vue";
 import Libraries from "components/Libraries";
 import { mountVueComponent } from "utils/mountVueComponent";
+import NewUserWelcome from "components/NewUserWelcome/newUserWelcome";
+
+import { newUserDict } from "../../../../static/plugins/welcome_page/new_user/static/topics/index";
 
 /** Routes */
 export const getAnalysisRouter = (Galaxy) => {
@@ -68,6 +71,7 @@ export const getAnalysisRouter = (Galaxy) => {
             "(/)user(/)cloud_auth": "show_cloud_auth",
             "(/)user(/)external_ids": "show_external_ids",
             "(/)user(/)(:form_id)": "show_user_form",
+            "(/)welcome(/)new": "mountWelcome",
             "(/)pages(/)create(/)": "show_pages_create",
             "(/)pages(/)edit(/)": "show_pages_edit",
             "(/)pages(/)sharing(/)": "show_pages_sharing",
@@ -426,6 +430,16 @@ export const getAnalysisRouter = (Galaxy) => {
                     this._loadCenterIframe("welcome");
                 }
             }
+        },
+
+        mountWelcome: async function() {
+            import(/* webpackIgnore: true */ getAppRoot() + "static/plugins/welcome_page/new_user/static/topics.js").then(module=> {
+                const propsData = {
+                    newUserDict,
+                };
+                this._display_vue_helper(NewUserWelcome, propsData);
+                }
+            )
         },
 
         /** load the center panel with a tool form described by the given params obj */
