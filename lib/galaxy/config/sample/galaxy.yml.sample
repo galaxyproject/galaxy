@@ -952,6 +952,9 @@ galaxy:
   # The URL linked by the "How to Cite Galaxy" link in the "Help" menu.
   #citation_url: https://galaxyproject.org/citing-galaxy
 
+  # The URL linked by the "Galaxy Version" link in the "Help" menu.
+  #release_doc_base_url: https://docs.galaxyproject.org/en/release_
+
   # The URL linked by the "Search" link in the "Help" menu.
   #search_url: https://galaxyproject.org/search/
 

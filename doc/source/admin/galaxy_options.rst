@@ -1791,6 +1791,16 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~
+``release_doc_base_url``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The URL linked by the "Galaxy Version" link in the "Help" menu.
+:Default: ``https://docs.galaxyproject.org/en/release_``
+:Type: str
+
+
 ~~~~~~~~~~~~~~
 ``search_url``
 ~~~~~~~~~~~~~~

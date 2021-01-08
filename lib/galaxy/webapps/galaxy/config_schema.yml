@@ -1300,6 +1300,13 @@ mapping:
         desc: |
           The URL linked by the "How to Cite Galaxy" link in the "Help" menu.
 
+      release_doc_base_url:
+        type: str
+        default: https://docs.galaxyproject.org/en/release_
+        required: false
+        desc: |
+          The URL linked by the "Galaxy Version" link in the "Help" menu.
+
       search_url:
         type: str
         default: https://galaxyproject.org/search/
