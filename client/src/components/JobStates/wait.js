@@ -3,7 +3,9 @@ import JOB_STATES_MODEL from "mvc/history/job-states-model";
 import axios from "axios";
 
 export function waitOnJob(jobId, onStateUpdate = null, interval = 1000) {
-    const jobUrl = `${getAppRoot()}api/jobs/${jobId}`;
+    // full=true to capture standard error on last iteration for building
+    // error messages.
+    const jobUrl = `${getAppRoot()}api/jobs/${jobId}?full=true`;
     const checkCondition = function (resolve, reject) {
         axios
             .get(jobUrl)
@@ -15,9 +17,7 @@ export function waitOnJob(jobId, onStateUpdate = null, interval = 1000) {
                 if (JOB_STATES_MODEL.NON_TERMINAL_STATES.indexOf(state) !== -1) {
                     setTimeout(checkCondition, interval, resolve, reject);
                 } else if (JOB_STATES_MODEL.ERROR_STATES.indexOf(state) !== -1) {
-                    // grab full output to include stderr and
-                    // such when generating error messages.
-                    axios.get(`${jobUrl}?full=true`).then(reject).catch(reject);
+                    reject(jobResponse);
                 } else {
                     resolve(jobResponse);
                 }

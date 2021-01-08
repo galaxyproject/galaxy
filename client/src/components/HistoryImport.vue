@@ -9,7 +9,10 @@
                 :job="jobError"
             />
         </b-alert>
-        <div v-if="waitingOnJob">
+        <div v-if="initializing">
+            <loading-span message="Loading server configuration." />
+        </div>
+        <div v-else-if="waitingOnJob">
             <LoadingSpan message="Waiting on history import job, this may take a while." />
         </div>
         <div v-else-if="complete">
@@ -35,7 +38,7 @@
                             Upload local file from your computer
                             <font-awesome-icon icon="upload" />
                         </b-form-radio>
-                        <b-form-radio value="remoteFilesUri">
+                        <b-form-radio value="remoteFilesUri" v-if="hasFileSources">
                             Select a remote file (e.g. Galaxy's FTP)
                             <font-awesome-icon icon="folder-open" />
                         </b-form-radio>
@@ -71,6 +74,7 @@ import { waitOnJob } from "components/JobStates/wait";
 import { errorMessageAsString } from "utils/simple-error";
 import LoadingSpan from "components/LoadingSpan";
 import JobError from "components/JobInformation/JobError";
+import { Services } from "components/FilesDialog/services";
 
 library.add(faFolderOpen);
 library.add(faUpload);
@@ -81,6 +85,7 @@ export default {
     components: { FilesInput, FontAwesomeIcon, JobError, LoadingSpan },
     data() {
         return {
+            initializing: true,
             importType: "externalUrl",
             sourceFile: null,
             sourceURL: null,
@@ -89,7 +94,11 @@ export default {
             waitingOnJob: false,
             complete: false,
             jobError: null,
+            hasFileSources: false,
         };
+    },
+    async mounted() {
+        await this.initialize();
     },
     computed: {
         importReady() {
@@ -109,6 +118,11 @@ export default {
         },
     },
     methods: {
+        async initialize() {
+            const fileSources = await new Services().getFileSources();
+            this.hasFileSources = fileSources.length > 0;
+            this.initializing = false;
+        },
         submit: function (ev) {
             const formData = new FormData();
             const importType = this.importType;

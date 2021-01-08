@@ -10,6 +10,7 @@ const localVue = getLocalVue();
 const TEST_JOB_ID = "job123789";
 const TEST_HISTORY_URI = "/api/histories";
 const TEST_SOURCE_URL = "http://galaxy.example/import";
+const TEST_PLUGINS_URL = "/api/remote_files/plugins";
 
 jest.mock("components/JobStates/wait");
 
@@ -19,10 +20,12 @@ describe("HistoryImport.vue", () => {
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
+        axiosMock.onGet(TEST_PLUGINS_URL).reply(200, [{ id: "foo", writable: false }]);
         wrapper = shallowMount(HistoryImport, {
             propsData: {},
             localVue,
         });
+        await flushPromises();
     });
 
     it("should render a form with submit disabled because inputs empty", async () => {

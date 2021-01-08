@@ -501,6 +501,8 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
                 directory_uri=directory_uri,
                 file_name=file_name,
             )
+        else:
+            job = jeha.job
 
         if exporting_to_uri:
             # we don't have a jeha, there will never be a download_url. Just let
@@ -517,7 +519,9 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
             if jeha:
                 return self.history_export_view.serialize(trans, id, jeha)
             else:
-                return ''
+                assert job is not None, "logic error, don't have a jeha or a job"
+                job_id = trans.security.encode_id(job.id)
+                return dict(job_id=job_id)
 
     @expose_api_raw
     def archive_download(self, trans, id, jeha_id, **kwds):

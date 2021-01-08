@@ -25,7 +25,7 @@
 
             <p>
                 The history has changed since this export was generated,
-                <a class="export-link" href="#" @click="regenerateExport"
+                <a class="export-link" href="#" @click.prevent="regenerateExport"
                     >click here to generate a new archive for the current history state</a
                 >.
             </p>
@@ -34,7 +34,7 @@
             <p>No link for history export ready, {{ whyNoLink }}.</p>
             <p>
                 <b
-                    ><a class="export-link" href="#" @click="regenerateExport"
+                    ><a class="export-link" href="#" @click.prevent="regenerateExport"
                         >Click here to to generate a new archive for this history.</a
                     ></b
                 >
@@ -67,18 +67,20 @@ export default {
     data() {
         return {
             errorMessage: null,
+            exportsInitialized: false,
             exports: null,
+            loadingExports: false,
             waitingOnJob: false,
             jobError: null,
         };
     },
     created() {
-        this.loadExports();
+        if (!this.exportsInitialized) {
+            this.exportsInitialized = true;
+            this.loadExports();
+        }
     },
     computed: {
-        loadingExports() {
-            return this.exports === null;
-        },
         hasExports() {
             return this.exports !== null && this.exports.length > 0;
         },
@@ -110,10 +112,12 @@ export default {
     },
     methods: {
         loadExports() {
+            this.loadingExports = true;
             const url = `${getAppRoot()}api/histories/${this.historyId}/exports`;
             axios
                 .get(url)
                 .then((response) => {
+                    this.loadingExports = false;
                     this.exports = response.data;
                     if (this.latestExportPreparing) {
                         this.waitOnExportJob(this.latestExport.job_id);
@@ -147,7 +151,9 @@ export default {
             this.waitingOnJob = true;
             this.jobError = false;
             waitOnJob(jobId)
-                .then((data) => {
+                .then((jobResponse) => {
+                    this.waitingOnJob = false;
+                    this.loadingExports = true;
                     // Race condition, for some reasons the job API returns
                     // ok before the JEHA...
                     setTimeout(this.loadExports, 2000);
@@ -156,6 +162,7 @@ export default {
         },
         handleError(err) {
             this.waitingOnJob = false;
+            this.loadingExports = false;
             this.errorMessage = errorMessageAsString(err, "Error generating a history export link");
             if (err?.data?.stderr) {
                 this.jobError = err.data;
