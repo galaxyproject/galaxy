@@ -49,8 +49,6 @@ export function createStore() {
             workflows: workflowStore,
             informationStore: jobStore,
             tools: toolStore,
-            datasets: datasetsStore,
-            datasetCollections: datasetCollectionsStore,
         },
     };
 
