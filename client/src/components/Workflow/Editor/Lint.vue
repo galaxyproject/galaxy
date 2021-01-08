@@ -401,21 +401,3 @@ export default {
     },
 };
 </script>
-
-<style scoped>
-.disconnected-input-name {
-    padding-left: 5px;
-    display: block;
-}
-.unlabeled-output-name {
-    padding-left: 5px;
-    display: block;
-}
-.input-missing-metadata-summary {
-    display: block;
-    padding-left: 5px;
-}
-.scrolls {
-    cursor: pointer;
-}
-</style>
