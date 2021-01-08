@@ -48,7 +48,7 @@ from galaxy.web_stack import (
     get_stack_facts,
     register_postfork_function
 )
-from ..version import VERSION_MAJOR
+from ..version import VERSION_MAJOR, VERSION_MINOR
 
 log = logging.getLogger(__name__)
 
@@ -535,6 +535,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.gid = os.getgid()  # if running under newgrp(1) we'll need to fix the group of data created on the cluster
 
         self.version_major = VERSION_MAJOR
+        self.version_minor = VERSION_MINOR
 
         # Database related configuration
         self.check_migrate_databases = kwargs.get('check_migrate_databases', True)

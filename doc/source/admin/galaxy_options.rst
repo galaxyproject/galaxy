@@ -1791,6 +1791,16 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~
+``release_doc_base_url``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The URL linked by the "Galaxy Version" link in the "Help" menu.
+:Default: ``https://docs.galaxyproject.org/en/release_``
+:Type: str
+
+
 ~~~~~~~~~~~~~~
 ``search_url``
 ~~~~~~~~~~~~~~
@@ -3217,6 +3227,29 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_beta_edam_toolbox``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable beta EDAM organised toolbox which ignores admin managed
+    sections in lieu of EDAM topics only.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``beta_edam_toolbox_ontology_path``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Sets the path to EDAM ontology file.
+    The value of this option will be resolved with respect to
+    <data_dir>.
+:Default: ``EDAM.tsv``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``default_workflow_export_format``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3389,10 +3422,11 @@
 ~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Master key that allows many API admin actions to be used without
-    actually having a defined admin user in the database/config.  Only
-    set this if you need to bootstrap Galaxy, you probably do not want
-    to set this on public servers.
+    API key that allows performing some admin actions without actually
+    having a real admin user in the database and config. Only set this
+    if you need to bootstrap Galaxy, in particular to create a real
+    admin user account via API. You should probably not set this on a
+    production server.
 :Default: ``None``
 :Type: str
 

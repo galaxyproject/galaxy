@@ -80,7 +80,14 @@
 </template>
 
 <script>
+import { BDropdown, BDropdownItem, BButton } from "bootstrap-vue";
+
 export default {
+    components: {
+        BDropdown,
+        BDropdownItem,
+        BButton,
+    },
     props: {
         hasChanges: {
             type: Boolean,

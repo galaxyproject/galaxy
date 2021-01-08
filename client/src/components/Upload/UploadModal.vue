@@ -37,7 +37,6 @@
 <script>
 import _l from "utils/localization";
 import Backbone from "backbone";
-import { getGalaxyInstance } from "app";
 import UploadUtils from "mvc/upload/upload-utils";
 import { getDatatypesMapper } from "components/Datatypes";
 import Composite from "./Composite";
@@ -173,11 +172,11 @@ const UploadModal = {
             currentUserId: (state) => state.currentUser.id,
         }),
 
-        currentHistoryId() {
-            const Galaxy = getGalaxyInstance();
-            const legacyId = Galaxy.currHistoryPanel?.model.get("id");
-            return legacyId;
-        },
+        // go straight to "state" instead of getter because the getter would filter out a current id
+        // that wasn't in the list
+        ...mapState("betaHistory", {
+            currentHistoryId: (state) => state.currentHistoryId,
+        }),
 
         historyAvailable() {
             return Boolean(this.currentHistoryId);

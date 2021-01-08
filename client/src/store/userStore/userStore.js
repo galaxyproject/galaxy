@@ -11,15 +11,6 @@ const getters = {
     // hydrate with model object using the getter
     currentUser(state) {
         const userProps = state.currentUser || {};
-        if (!userProps) {
-            console.warn("no user props!");
-            // TODO: remove when we no longer use the galaxy instance
-            // try {
-            //     userProps = window.Galaxy.user;
-            // } catch (err) {
-            //     console.warn(err);
-            // }
-        }
         return new User(userProps);
     },
 };
@@ -34,9 +25,6 @@ const actions = {
     async loadUser({ commit }) {
         const user = await getCurrentUser();
         commit("setCurrentUser", user);
-    },
-    async $init({ dispatch }) {
-        await dispatch("loadUser");
     },
 };
 

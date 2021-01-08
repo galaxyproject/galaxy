@@ -6,18 +6,17 @@ import Utils from "utils/utils";
 import { DefaultForm, ToolForm } from "./forms";
 import { loadWorkflow } from "./services";
 import { toSimple } from "./model";
-import { hide_modal, show_message, show_modal } from "layout/modal";
+import { show_modal } from "layout/modal";
 import WorkflowIcons from "components/Workflow/icons";
 
 export function copyIntoWorkflow(workflow, id = null, stepCount = null) {
     const _copy_into_workflow_ajax = () => {
         // Load workflow definition
-        show_message("Importing workflow", "progress");
+        workflow.onWorkflowMessage("Importing workflow", "progress");
         loadWorkflow(workflow, id, null, true).then((data) => {
             // Determine if any parameters were 'upgraded' and provide message
             const insertedStateMessages = getStateUpgradeMessages(data);
             workflow.onInsertedStateMessages(insertedStateMessages);
-            hide_modal();
         });
     };
     if (stepCount < 2) {
@@ -25,7 +24,9 @@ export function copyIntoWorkflow(workflow, id = null, stepCount = null) {
     } else {
         // don't ruin the workflow by adding 50 steps unprompted.
         show_modal(_l("Warning"), `This will copy ${stepCount} new steps into your workflow.`, {
-            Cancel: hide_modal,
+            Cancel: () => {
+                workflow.hideModal();
+            },
             Copy: _copy_into_workflow_ajax,
         });
     }
@@ -285,17 +286,19 @@ export function saveAs(workflow) {
                 },
             })
                 .done((id) => {
-                    window.onbeforeunload = undefined;
-                    window.location = `${getAppRoot()}workflow/editor?id=${id}`;
-                    hide_modal();
+                    workflow.onNavigate(`${getAppRoot()}workflow/editor?id=${id}`, true);
                 })
                 .fail((err) => {
                     console.debug(err);
-                    hide_modal();
-                    alert("Saving this workflow failed. Please contact this site's administrator.");
+                    workflow.onWorkflowError(
+                        "Saving this workflow failed. Please contact this site's administrator.",
+                        err
+                    );
                 });
         },
-        Cancel: hide_modal,
+        Cancel: () => {
+            workflow.hideModal();
+        },
     });
 }
 

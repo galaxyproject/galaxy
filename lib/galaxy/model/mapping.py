@@ -811,6 +811,7 @@ model.InteractiveToolEntryPoint.table = Table(
     Column("port", Integer),
     Column("protocol", TEXT),
     Column("entry_url", TEXT),
+    Column("requires_domain", Boolean, default=True),
     Column("info", JSONType, nullable=True),
     Column("configured", Boolean, default=False),
     Column("deleted", Boolean, default=False),

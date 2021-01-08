@@ -1,4 +1,7 @@
 <tool id="microbial_import1" name="Get Microbial Data" version="1.0.0">
+    <edam_operations>
+        <edam_operation>operation_0224</edam_operation>
+    </edam_operations>
     <command><![CDATA[
 python '$__tool_directory__/microbial_import.py'
 $CDS,$tRNA,$rRNA,$sequence,$GeneMark,$GeneMarkHMM,$Glimmer3

@@ -5,7 +5,18 @@ from fastapi.responses import JSONResponse
 from starlette.responses import Response
 
 from galaxy.exceptions import MessageException
-from galaxy.web.framework.decorators import api_error_message, validation_error_to_message_exception
+from galaxy.web.framework.decorators import (
+    api_error_message,
+    validation_error_to_message_exception
+)
+
+# https://fastapi.tiangolo.com/tutorial/metadata/#metadata-for-tags
+api_tags_metadata = [
+    {
+        "name": "licenses",
+        "description": "Operations with [SPDX licenses](https://spdx.org/licenses/).",
+    },
+]
 
 
 def add_exception_handler(
@@ -30,9 +41,8 @@ def add_exception_handler(
         )
 
 
-def initialize_fast_app(gx_app, app=None):
-    if app is None:
-        app = FastAPI()
+def initialize_fast_app(gx_app):
+    app = FastAPI(openapi_tags=api_tags_metadata)
 
     add_exception_handler(app)
     wsgi_handler = WSGIMiddleware(gx_app)
@@ -40,9 +50,11 @@ def initialize_fast_app(gx_app, app=None):
         job_lock,
         jobs,
         roles,
+        licenses
     )
     app.include_router(jobs.router)
     app.include_router(job_lock.router)
     app.include_router(roles.router)
+    app.include_router(licenses.router)
     app.mount('/', wsgi_handler)
     return app

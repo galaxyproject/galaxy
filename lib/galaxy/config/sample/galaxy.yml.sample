@@ -952,6 +952,9 @@ galaxy:
   # The URL linked by the "How to Cite Galaxy" link in the "Help" menu.
   #citation_url: https://galaxyproject.org/citing-galaxy
 
+  # The URL linked by the "Galaxy Version" link in the "Help" menu.
+  #release_doc_base_url: https://docs.galaxyproject.org/en/release_
+
   # The URL linked by the "Search" link in the "Help" menu.
   #search_url: https://galaxyproject.org/search/
 
@@ -1609,6 +1612,15 @@ galaxy:
   # workflows built using these modules may not function in the future.)
   #enable_beta_workflow_modules: false
 
+  # Enable beta EDAM organised toolbox which ignores admin managed
+  # sections in lieu of EDAM topics only.
+  #enable_beta_edam_toolbox: false
+
+  # Sets the path to EDAM ontology file.
+  # The value of this option will be resolved with respect to
+  # <data_dir>.
+  #beta_edam_toolbox_ontology_path: EDAM.tsv
+
   # Default format for the export of workflows. Possible values are 'ga'
   # or 'format2'.
   #default_workflow_export_format: ga
@@ -1692,10 +1704,11 @@ galaxy:
   # behalf of other users.
   #api_allow_run_as: null
 
-  # Master key that allows many API admin actions to be used without
-  # actually having a defined admin user in the database/config.  Only
-  # set this if you need to bootstrap Galaxy, you probably do not want
-  # to set this on public servers.
+  # API key that allows performing some admin actions without actually
+  # having a real admin user in the database and config. Only set this
+  # if you need to bootstrap Galaxy, in particular to create a real
+  # admin user account via API. You should probably not set this on a
+  # production server.
   #master_api_key: null
 
   # Enable access to post-authentication options via OpenID.

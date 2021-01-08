@@ -19,6 +19,7 @@
     <datatype extension="arff" type="galaxy.datatypes.text:Arff" mimetype="text/plain" display_in_upload="true"/>
     <datatype extension="paf" type="galaxy.datatypes.text:Paf" mimetype="text/plain" display_in_upload="true"/>
     <datatype extension="gfa1" type="galaxy.datatypes.text:Gfa1" mimetype="text/plain" display_in_upload="true"/>
+    <datatype extension="gfa2" type="galaxy.datatypes.text:Gfa2" mimetype="text/plain" display_in_upload="true"/>
     <datatype extension="asn1" type="galaxy.datatypes.data:GenericAsn1" mimetype="text/plain" display_in_upload="true"/>
     <datatype extension="asn1-binary" type="galaxy.datatypes.binary:GenericAsn1Binary" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="axt" type="galaxy.datatypes.sequence:Axt" display_in_upload="true" description="blastz pairwise alignment format.  Each alignment block in an axt file contains three lines: a summary line and 2 sequence lines.  Blocks are separated from one another by blank lines.  The summary line contains chromosomal position and size information about the alignment. It consists of 9 required fields." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Axt"/>
@@ -305,9 +306,13 @@
     <datatype extension="hardklor" type="galaxy.datatypes.tabular:Tabular" subclass="true"/>
     <datatype extension="kronik" type="galaxy.datatypes.tabular:Tabular" subclass="true"/>
     <datatype extension="imzml" type="galaxy.datatypes.proteomics:ImzML" mimetype="application/xml" display_in_upload="true"/>
-    <datatype extension="analyze75" type="galaxy.datatypes.proteomics:Analyze75" mimetype="application/xml" display_in_upload="true"/>
+    <datatype extension="analyze75" type="galaxy.datatypes.images:Analyze75" mimetype="application/xml" display_in_upload="true"/>
+    <datatype extension="nii1" auto_compressed_types="gz" type="galaxy.datatypes.images:Nifti1" mimetype="application/octet-stream" display_in_upload="true" />
+    <datatype extension="nii2" auto_compressed_types="gz" type="galaxy.datatypes.images:Nifti2" mimetype="application/octet-stream" display_in_upload="true" />
     <datatype extension="gii" auto_compressed_types="gz" type="galaxy.datatypes.images:Gifti" mimetype="application/octet-stream" display_in_upload="true" />
-    <datatype extension="peff" type="galaxy.datatypes.proteomics:PEFF" display_in_upload="true"/>
+    <datatype extension="tck" type="galaxy.datatypes.images:Tck" mimetype="application/octet-stream" display_in_upload="true" />
+    <datatype extension="trk" type="galaxy.datatypes.images:Trk" mimetype="application/octet-stream" display_in_upload="true" />
+    <datatype extension="peff" type="galaxy.datatypes.proteomics:PEFF" display_in_upload="true" />
     <!-- End Proteomics Datatypes -->
     <datatype extension="deeptools_compute_matrix_archive" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true"/>
     <datatype extension="deeptools_coverage_matrix" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true"/>
@@ -1035,6 +1040,10 @@
     <sniffer type="galaxy.datatypes.images:Xpm"/>
     <sniffer type="galaxy.datatypes.images:Eps"/>
     <sniffer type="galaxy.datatypes.images:Rast"/>
+    <sniffer type="galaxy.datatypes.images:Tck" />
+    <sniffer type="galaxy.datatypes.images:Trk" />
+    <sniffer type="galaxy.datatypes.images:Nifti1" />
+    <sniffer type="galaxy.datatypes.images:Nifti2" />
     <sniffer type="galaxy.datatypes.media:Wav"/>
     <sniffer type="galaxy.datatypes.media:Mkv"/>
     <sniffer type="galaxy.datatypes.media:Mp3"/>

@@ -87,6 +87,7 @@ class ConfigSerializer(base.ModelSerializer):
             'chunk_upload_size'                 : _use_config,
             'ftp_upload_site'                   : _use_config,
             'version_major'                     : _defaults_to(None),
+            'version_minor'                     : _defaults_to(None),
             'require_login'                     : _use_config,
             'inactivity_box_content'            : _use_config,
             'visualizations_visible'            : _use_config,
@@ -106,6 +107,7 @@ class ConfigSerializer(base.ModelSerializer):
             'select_type_workflow_threshold'    : _use_config,
             'file_sources_configured'           : lambda config, key, **context: self.app.file_sources.custom_sources_configured,
             'upload_from_form_button'           : _use_config,
+            'release_doc_base_url'              : _use_config,
         }
 
 

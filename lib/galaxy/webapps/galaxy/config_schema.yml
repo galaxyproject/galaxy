@@ -473,7 +473,7 @@ mapping:
 
       file_sources_config_file:
         type: str
-        default: file_sources_conf.yml        
+        default: file_sources_conf.yml
         path_resolves_to: config_dir
         required: false
         desc: |
@@ -1299,6 +1299,13 @@ mapping:
         required: false
         desc: |
           The URL linked by the "How to Cite Galaxy" link in the "Help" menu.
+
+      release_doc_base_url:
+        type: str
+        default: https://docs.galaxyproject.org/en/release_
+        required: false
+        desc: |
+          The URL linked by the "Galaxy Version" link in the "Help" menu.
 
       search_url:
         type: str
@@ -2350,6 +2357,22 @@ mapping:
           stable API. (The module state definitions may change and workflows built using
           these modules may not function in the future.)
 
+      enable_beta_edam_toolbox:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enable beta EDAM organised toolbox which ignores admin managed
+          sections in lieu of EDAM topics only.
+
+      beta_edam_toolbox_ontology_path:
+        type: str
+        default: EDAM.tsv
+        path_resolves_to: data_dir
+        required: false
+        desc: |
+          Sets the path to EDAM ontology file.
+
       default_workflow_export_format:
         type: str
         default: ga
@@ -2475,10 +2498,11 @@ mapping:
         type: str
         required: false
         desc: |
-          Master key that allows many API admin actions to be used without actually
-          having a defined admin user in the database/config.  Only set this if you
-          need to bootstrap Galaxy, you probably do not want to set this on public
-          servers.
+          API key that allows performing some admin actions without actually
+          having a real admin user in the database and config.
+          Only set this if you need to bootstrap Galaxy, in particular to create
+          a real admin user account via API.
+          You should probably not set this on a production server.
 
       enable_openid:
         type: bool

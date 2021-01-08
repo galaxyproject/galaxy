@@ -42,6 +42,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
     """
     runner_name = "KubernetesRunner"
 
+    LABEL_START = re.compile("^[A-Za-z0-9]")
+    LABEL_END = re.compile("[A-Za-z0-9]$")
     LABEL_REGEX = re.compile("[^-A-Za-z0-9_.]")
 
     def __init__(self, app, nworkers, **kwargs):
@@ -142,6 +144,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         job_wrapper.set_external_id(job_id)
         self.monitor_queue.put(ajs)
 
+    def __get_overridable_params(self, job_wrapper, param_key):
+        dest_params = self.__get_destination_params(job_wrapper)
+        return dest_params.get(param_key, self.runner_params[param_key])
+
     def __get_pull_policy(self):
         return pull_policy(self.runner_params)
 
@@ -201,6 +207,20 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_job_spec["ttlSecondsAfterFinished"] = job_ttl
         return k8s_job_spec
 
+    def __force_label_conformity(self, value):
+        """
+        Make sure that a label conforms to k8s requirements.
+        A valid label must be an empty string or consist of alphanumeric characters, '-', '_' or '.',
+        and must start and end with an alphanumeric character (e.g. 'MyValue',  or 'my_value',  or '12345',
+        regex used for validation is '(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?')
+        """
+        label_val = self.LABEL_REGEX.sub("_", value)
+        if not self.LABEL_START.search(label_val):
+            label_val = 'x' + label_val
+        if not self.LABEL_END.search(label_val):
+            label_val += 'x'
+        return label_val
+
     def __get_k8s_job_spec_template(self, ajs):
         """The k8s spec template is nothing but a Pod spec, except that it is nested and does not have an apiversion
         nor kind. In addition to required fields for a Pod, a pod template in a job must specify appropriate labels
@@ -208,16 +228,16 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         k8s_spec_template = {
             "metadata": {
                 "labels": {
-                    "app.kubernetes.io/name": self.LABEL_REGEX.sub("_", ajs.job_wrapper.tool.old_id),
+                    "app.kubernetes.io/name": self.__force_label_conformity(ajs.job_wrapper.tool.old_id),
                     "app.kubernetes.io/instance": self.__produce_k8s_job_prefix(),
-                    "app.kubernetes.io/version": self.LABEL_REGEX.sub("_", str(ajs.job_wrapper.tool.version)),
+                    "app.kubernetes.io/version": self.__force_label_conformity(str(ajs.job_wrapper.tool.version)),
                     "app.kubernetes.io/component": "tool",
                     "app.kubernetes.io/part-of": "galaxy",
                     "app.kubernetes.io/managed-by": "galaxy",
-                    "app.galaxyproject.org/job_id": self.LABEL_REGEX.sub("_", ajs.job_wrapper.get_id_tag()),
-                    "app.galaxyproject.org/handler": self.LABEL_REGEX.sub("_", self.app.config.server_name),
-                    "app.galaxyproject.org/destination": self.LABEL_REGEX.sub(
-                        "_", str(ajs.job_wrapper.job_destination.id))
+                    "app.galaxyproject.org/job_id": self.__force_label_conformity(ajs.job_wrapper.get_id_tag()),
+                    "app.galaxyproject.org/handler": self.__force_label_conformity(self.app.config.server_name),
+                    "app.galaxyproject.org/destination": self.__force_label_conformity(
+                        str(ajs.job_wrapper.job_destination.id))
                 },
                 "annotations": {
                     "app.galaxyproject.org/tool_id": ajs.job_wrapper.tool.id
@@ -229,8 +249,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 "containers": self.__get_k8s_containers(ajs),
                 "priorityClassName": self.runner_params['k8s_pod_priority_class'],
                 "tolerations": yaml.safe_load(self.runner_params['k8s_tolerations'] or "[]"),
-                "affinity": yaml.safe_load(self.runner_params['k8s_affinity'] or "{}"),
-                "nodeSelector": yaml.safe_load(self.runner_params['k8s_node_selector'] or "{}")
+                "affinity": yaml.safe_load(self.__get_overridable_params(ajs.job_wrapper,
+                                                                         'k8s_affinity') or "{}"),
+                "nodeSelector": yaml.safe_load(self.__get_overridable_params(ajs.job_wrapper,
+                                                                             'k8s_node_selector') or "{}")
             }
         }
         # TODO include other relevant elements that people might want to use from
@@ -392,6 +414,16 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 cleaned_id = "x%sx" % cleaned_id
             return cleaned_id
         return "job-container"
+
+    def __get_destination_params(self, job_wrapper):
+        """Obtains allowable runner param overrides from the destination"""
+        job_destination = job_wrapper.job_destination
+        OVERRIDABLE_PARAMS = ["k8s_node_selector", "k8s_affinity"]
+        new_params = {}
+        for each_param in OVERRIDABLE_PARAMS:
+            if each_param in job_destination.params:
+                new_params[each_param] = job_destination.params[each_param]
+        return new_params
 
     def check_watched_item(self, job_state):
         """Checks the state of a job already submitted on k8s. Job state is an AsynchronousJobState"""
