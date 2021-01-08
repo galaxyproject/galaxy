@@ -71,7 +71,7 @@ export default {
         invocation: {
             required: true,
         },
-        jobStatesTerminal: {
+        invocationAndJobTerminal: {
             required: true,
             type: Boolean,
         },
@@ -106,7 +106,7 @@ export default {
         monitorHistory() {
             // rework this into history or invocation subscription in the future ...
             if (!this.jobStatesTerminal) {
-                const pollHistory$ = this.watch$("jobStatesTerminal");
+                const pollHistory$ = this.watch$("invocationAndJobTerminal");
                 const stopPolling$ = pollHistory$.pipe(filter((val) => val === true));
                 const historyMonitor$ = getHistoryMonitor(this.invocation.history_id).pipe(takeUntil(stopPolling$));
                 this.listenTo(historyMonitor$, {
