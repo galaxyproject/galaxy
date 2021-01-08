@@ -409,7 +409,7 @@ class Data(metaclass=DataMeta):
                 return self._archive_composite_dataset(trans, data, do_action=kwd.get('do_action', 'zip'))
             else:
                 trans.response.headers['Content-Length'] = str(os.stat(data.file_name).st_size)
-                filename = self._download_filename(data, to_ext, hdca=kwd.get("hdca"), element_identifier=kwd.get("element_identifier"))
+                filename = self._download_filename(data, to_ext, hdca=kwd.get("hdca"), element_identifier=kwd.get("element_identifier"), filename_pattern=kwd.get("filename_pattern"))
                 trans.response.set_content_type("application/octet-stream")  # force octet-stream so Safari doesn't append mime extensions to filename
                 trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename
                 return open(data.file_name, 'rb')
@@ -472,7 +472,7 @@ class Data(metaclass=DataMeta):
 
         return open(filename, mode='rb')
 
-    def _download_filename(self, dataset, to_ext, hdca=None, element_identifier=None):
+    def _download_filename(self, dataset, to_ext, hdca=None, element_identifier=None, filename_pattern=None):
         def escape(raw_identifier):
             return ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in raw_identifier)[0:150]
 
@@ -487,15 +487,17 @@ class Data(metaclass=DataMeta):
             "hid": dataset.hid,
         }
 
-        filename_pattern = DOWNLOAD_FILENAME_PATTERN_DATASET
+        if not filename_pattern:
+            if hdca is None:
+                filename_pattern = DOWNLOAD_FILENAME_PATTERN_DATASET
+            else:
+                filename_pattern = DOWNLOAD_FILENAME_PATTERN_COLLECTION_ELEMENT
 
         if hdca is not None:
             # Use collection context to build up filename.
             template_values["element_identifier"] = element_identifier
             template_values["hdca_name"] = escape(hdca.name)
             template_values["hdca_hid"] = hdca.hid
-
-            filename_pattern = DOWNLOAD_FILENAME_PATTERN_COLLECTION_ELEMENT
 
         return string.Template(filename_pattern).substitute(**template_values)
 
