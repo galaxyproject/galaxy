@@ -342,7 +342,7 @@
                                     </b-alert>
                                 </div>
                                 <div class="unpaired-columns flex-column-container scroll-container flex-row">
-                                    <div class="forward-column flex-column column">
+                                    <div class="forward-column flex-column column truncate">
                                         <ol class="column-datasets">
                                             <unpaired-dataset-element-view
                                                 v-for="element in forwardElements"
@@ -357,7 +357,7 @@
                                             />
                                         </ol>
                                     </div>
-                                    <div class="paired-column flex-column no-flex column">
+                                    <div class="paired-column flex-column no-flex column truncate">
                                         <ol class="column-datasets" v-if="forwardFilter !== '' && reverseFilter !== ''">
                                             <li
                                                 v-for="(pairableElement, index) in pairableElements"
@@ -369,7 +369,7 @@
                                             </li>
                                         </ol>
                                     </div>
-                                    <div class="reverse-column flex-column column">
+                                    <div class="reverse-column flex-column column truncate">
                                         <ol class="column-datasets">
                                             <unpaired-dataset-element-view
                                                 v-for="element in reverseElements"
@@ -1110,7 +1110,6 @@ ol.column-datasets {
     width: auto;
 }
 li.dataset.paired {
-    margin: auto;
     text-align: center;
 }
 .column-datasets {
@@ -1135,7 +1134,6 @@ li.dataset.paired {
             margin-right: 34px;
             border: 2px solid grey;
             background: #aff1af;
-            height: auto;
             span {
                 display: inline-block;
                 overflow: visible !important;
@@ -1181,7 +1179,7 @@ li.dataset.paired {
 }
 // ---- unpaired
 .unpaired-columns {
-    //@extend .flex-bordered-vertically;
+    // @extend .flex-bordered-vertically;
     .forward-column {
         .dataset.unpaired {
             margin-right: 32px;
