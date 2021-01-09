@@ -21,7 +21,6 @@ export default {
     components: { ClickToEdit },
     data: function () {
         return {
-            name: this.pair.name,
             unpairButtonTitle: _l("Unpair"),
             titlePairName: _l("Click to rename"),
         };
@@ -33,6 +32,10 @@ export default {
         unlinkFn: {
             required: true,
             type: Function,
+        },
+        name: {
+            required: true,
+            type: String,
         },
     },
     methods: {

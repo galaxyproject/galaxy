@@ -407,6 +407,7 @@
                                                 v-for="pair in pairedElements"
                                                 :key="pair.id"
                                                 :pair="pair"
+                                                :name="pair.name"
                                                 :unlinkFn="clickUnpair(pair)"
                                                 @onPairRename="(name) => (pair.name = name)"
                                             />
@@ -476,7 +477,9 @@ export default {
             reverseFilter: "",
             selectedForwardElement: null,
             selectedReverseElement: null,
-            /** autopair by exact match */ autopairSimple: this.autoPairFnBuilder({
+            /** autopair by exact match */
+
+            autopairSimple: this.autoPairFnBuilder({
                 scoreThreshold: function () {
                     return 0.6;
                 },
@@ -571,6 +574,12 @@ export default {
         l(str) {
             // _l conflicts private methods of Vue internals, expose as l instead
             return _l(str);
+        },
+        removeExtensionsToggle: function () {
+            this.removeExtensions = !this.removeExtensions;
+            this.pairedElements.forEach((pair, index) => {
+                pair.name = this._guessNameForPair(pair.forward, pair.reverse, this.removeExtensions);
+            });
         },
         /** set up main data */
         _elementsSetUp: function () {
@@ -676,6 +685,7 @@ export default {
                 this._pair(this.selectedForwardElement, this.selectedReverseElement);
             }
         },
+
         // ------------------------------------------------------------------------ pairing / unpairing
         /** create a pair from fwd and rev, removing them from unpaired, and placing the new pair in paired */
         _pair: function (fwd, rev, options) {
@@ -1007,12 +1017,6 @@ export default {
         hideOriginalsToggle: function () {
             this.defaultHideSourceItems = !this.defaultHideSourceItems;
         },
-        removeExtensionsToggle: function () {
-            this.removeExtensions = !this.removeExtensions;
-            this.pairedElements.forEach((pair) => {
-                pair.name = this._guessNameForPair(pair.forward, pair.reverse, this.removeExtensions);
-            });
-        },
         stripExtension(name) {
             return name.includes(".") ? name.substring(0, name.lastIndexOf(".")) : name;
         },
@@ -1032,7 +1036,7 @@ export default {
             get() {
                 var pairable = [];
                 this.forwardElements.forEach((elem, index) => {
-                    if (this.reverseElements[index]) {
+                    if (this.reverseElements[index] && elem.id != this.reverseElements[index].id) {
                         pairable.push({
                             forward: this.forwardElements[index],
                             reverse: this.reverseElements[index],
