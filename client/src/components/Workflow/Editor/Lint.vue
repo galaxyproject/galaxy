@@ -7,112 +7,47 @@
             </div>
         </template>
         <b-card-body>
-            <div class="mb-2">
-                <div v-if="parametersOkay">
-                    <font-awesome-icon icon="check" class="text-success" />
-                    <span>Workflow parameters are using formal inputs.</span>
-                </div>
-                <div v-else>
-                    <font-awesome-icon icon="exclamation-triangle" class="text-warning" />
-                    <span>
-                        This workflow uses implicit workflow parameters. They should be replaced with
-                        formal workflow inputs:
-                    </span>
-                    <div v-for="(item, idx) in legacyParametersArray" :key="idx">
-                        <tt>{{ item.name }} </tt>
-                    </div>
-                </div>
-            </div>
+            <LintSection
+                :okay="parametersOkay"
+                success-message="Workflow parameters are using formal inputs."
+                warning-message="This workflow uses implicit workflow parameters. They should be replaced with
+                formal workflow inputs:"
+                :warning-items="legacyParametersArray"
+                @onMouseOver="highlight"
+                @onMouseLeave="unhighlight"
+                @onClick="scrollTo"
+            />
 
-            <div class="mb-2">
-                <div v-if="disconnectInputsOkay">
-                    <font-awesome-icon icon="check" class="text-success" />
-                    <span>All non-optional inputs to workflow steps are connected to formal workflow inputs.</span>
-                </div>
-                <div else>
-                    <font-awesome-icon icon="exclamation-triangle" class="text-warning" />
-                    <span>Some non-optional inputs are not connected to formal workflow inputs:</span>
-                    <ul class="mt-2">
-                        <li
-                            v-for="(input, idx) in disconnectedInputs"
-                            :key="idx"
-                            @mouseover="highlight(input.stepId)"
-                            @mouseleave="unhighlight(input.stepId)"
-                            class="ml-2"
-                        >
-                            <a href="#" @click="scrollTo(input.stepId)" class="scrolls">
-                                <i :class="input.stepIconClass" />{{ input.stepLabel }}: {{ input.inputLabel }}
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
+            <LintSection
+                :okay="disconnectInputsOkay"
+                success-message="All non-optional inputs to workflow steps are connected to formal workflow inputs."
+                warning-message="Some non-optional inputs are not connected to formal workflow inputs:"
+                :warning-items="disconnectedInputs"
+                @onMouseOver="highlight"
+                @onMouseLeave="unhighlight"
+                @onClick="scrollTo"
+            />
 
-            <div v-if="inputsMetadataOkay">
-                All workflow inputs have labels and annotations.
-            </div>
-            <div v-else>
-                <p>
-                    Some workflow inputs are missing labels and/or annotations.
-                </p>
-                <ul>
-                    <li
-                        v-for="(input, idx) in inputsMissingMetadata"
-                        :key="idx"
-                        @mouseover="highlight(input.stepId)"
-                        @mouseleave="unhighlight(input.stepId)"
-                    >
-                        <b @click="scrollTo(input.stepId)" class="scrolls"
-                            ><i :class="input.stepIconClass" />{{ input.stepLabel }}</b
-                        >
-                        <em class="small">
-                            <span class="input-missing-metadata-summary">
-                                This input is {{ missingSummary(input) }}.
-                            </span>
-                        </em>
-                    </li>
-                </ul>
-            </div>
+            <LintSection
+                :okay="inputsMetadataOkay"
+                success-message="All workflow inputs have labels and annotations."
+                warning-message="Some workflow inputs are missing labels and/or annotations:"
+                :warning-items="inputsMissingMetadata"
+                @onMouseOver="highlight"
+                @onMouseLeave="unhighlight"
+                @onClick="scrollTo"
+            />
 
-            <div v-if="outputsOkay">
-                This workflow has outputs and they all have valid labels.
-            </div>
-            <div v-else-if="outputs.length == 0">
-                This workflow has no labeled outputs, please select and label at least one output.
-
-                <em class="small">
-                    <p>
-                        Formal, labeled outputs make tracking workflow provenance, usage within
-                        subworkflows, and executing the workflow via the Galaxy API all more robust.
-                    </p>
-                </em>
-            </div>
-            <div v-else>
-                <p>
-                    The following workflow outputs have no labels, they should be assigned a useful label or
-                    unchecked in the workflow editor to mark them as no longer being a workflow output.
-                    Alternatively,
-                    <a href="#" @click="removeUnlabeledWorkflowOutputs"
-                        >click here <font-awesome-icon icon="cog"
-                    /></a>
-                    to remove these all as workflow outputs.
-                </p>
-                <ul>
-                    <li
-                        v-for="(output, idx) in unlabeledOutputs"
-                        :key="idx"
-                        @mouseover="highlight(output.stepId)"
-                        @mouseleave="unhighlight(output.stepId)"
-                    >
-                        <b @click="scrollTo(output.stepId)" class="scrolls"
-                            ><i :class="output.stepIconClass" />{{ output.stepLabel }}</b
-                        >
-                        <span class="unlabeled-output-name">
-                            {{ output.outputName }}
-                        </span>
-                    </li>
-                </ul>
-            </div>
+            <LintSection
+                :okay="outputsOkay"
+                success-message="This workflow has outputs and they all have valid labels."
+                warning-message="The following workflow outputs have no labels, they should be assigned a useful label or
+                    unchecked in the workflow editor to mark them as no longer being a workflow output:"
+                :warning-items="unlabeledOutputs"
+                @onMouseOver="highlight"
+                @onMouseLeave="unhighlight"
+                @onClick="scrollTo"
+            />
 
             <span>
                 <div v-if="annotationOkay">
@@ -136,6 +71,8 @@
                     </em>
                 </div>
             </span>
+
+
             <span>
                 <div v-if="licenseOkay">
                     <p>
@@ -188,6 +125,7 @@
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { LegacyParameters } from "components/Workflow/Editor/modules/utilities";
+import LintSection from "components/Workflow/Editor/LintSection";
 import { getDisconnectedInputs, getInputsMissingMetadata, getWorkflowOutputs } from "./modules/utilities";
 
 Vue.use(BootstrapVue);
@@ -205,6 +143,7 @@ library.add(faExclamationTriangle);
 export default {
     components: {
         FontAwesomeIcon,
+        LintSection,
     },
     props: {
         legacyParameters: {
