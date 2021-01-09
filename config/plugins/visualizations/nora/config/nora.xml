@@ -22,6 +22,6 @@
     <entry_point entry_point_type="chart" src="dist/index.js"/>
     <specs>
         <tag>svg</tag>
-        <use_panels>both</use_panels>
+        <use_panels>optional</use_panels>
     </specs>
 </visualization>
