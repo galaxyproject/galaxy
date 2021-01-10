@@ -370,20 +370,20 @@ var HistoryViewEdit = _super.extend(
         buildCollection: function (collectionType, selection, hideSourceItems) {
             var panel = this;
             selection = selection || panel.getSelectedModels();
-            hideSourceItems = hideSourceItems || false;
-            var createFunc;
+            const defaultHideSourceItems = hideSourceItems || true;
+            var createModalFunc;
             if (collectionType == "list") {
-                createFunc = ListCollectionCreatorModal.createListCollection;
+                createModalFunc = ListCollectionCreatorModal.createListCollection;
             } else if (collectionType == "paired") {
-                createFunc = PairCollectionCreatorModal.createPairCollection;
+                createModalFunc = PairCollectionCreatorModal.createPairCollection;
             } else if (collectionType == "list:paired") {
-                createFunc = PairedListCollectionCreatorModal.createPairedListCollection;
+                createModalFunc = PairedListCollectionCreatorModal.createPairedListCollection;
             } else if (collectionType.startsWith("rules")) {
-                createFunc = RuleBasedCollectionCreatorModal.createCollectionViaRules;
+                createModalFunc = RuleBasedCollectionCreatorModal.createCollectionViaRules;
             } else {
                 console.warn(`Unknown collectionType encountered ${collectionType}`);
             }
-            createFunc(selection, hideSourceItems)
+            createModalFunc(selection, defaultHideSourceItems)
                 .then(() => {
                     panel.model.refresh();
                 })

@@ -47,12 +47,7 @@
                     </label>
                     <label class="setting-prompt float-right">
                         {{ hideOriginalsText }}
-                        <input
-                            class="hide-originals float-right"
-                            type="checkbox"
-                            @click="$emit('hide-original-toggle')"
-                            checked
-                        />
+                        <input class="hide-originals float-right" type="checkbox" v-model="localHideSourceItems" />
                     </label>
                 </div>
                 <div class="clear">
@@ -102,6 +97,10 @@ export default {
             type: Boolean,
             default: false,
         },
+        hideSourceItems: {
+            type: Boolean,
+            required: true,
+        },
     },
     computed: {
         validInput: function () {
@@ -118,6 +117,7 @@ export default {
             isExpanded: false,
             collectionName: "",
             removeFileExtensionsText: "Remove file extensions?",
+            localHideSourceItems: this.hideSourceItems,
         };
     },
     methods: {
@@ -135,8 +135,10 @@ export default {
         _getName: function () {
             return this.collectionName;
         },
-        _setUpCommonSettings: function (attributes) {
-            this.hideOriginals = attributes.defaultHideSourceItems || false;
+    },
+    watch: {
+        localHideSourceItems() {
+            this.$emit("onUpdateHideSourceItems", this.localHideSourceItems);
         },
     },
 };
