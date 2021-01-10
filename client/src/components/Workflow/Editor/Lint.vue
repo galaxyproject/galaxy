@@ -12,7 +12,7 @@
                 success-message="Workflow parameters are using formal inputs."
                 warning-message="This workflow uses implicit workflow parameters. They should be replaced with
                 formal workflow inputs:"
-                :warning-items="legacyParametersArray"
+                :warning-items="implicitParametersArray"
                 @onMouseOver="highlight"
                 @onMouseLeave="unhighlight"
                 @onClick="scrollTo"
@@ -124,7 +124,7 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { LegacyParameters } from "components/Workflow/Editor/modules/parameters";
+import { ImplicitParameters } from "components/Workflow/Editor/modules/parameters";
 import LintSection from "components/Workflow/Editor/LintSection";
 import { getDisconnectedInputs, getInputsMissingMetadata, getWorkflowOutputs } from "./modules/linting";
 
@@ -146,8 +146,8 @@ export default {
         LintSection,
     },
     props: {
-        legacyParameters: {
-            type: LegacyParameters,
+        implicitParameters: {
+            type: ImplicitParameters,
         },
         nodes: {
             type: Object,
@@ -175,10 +175,10 @@ export default {
         refresh() {
             this.forceRefresh += 1;
         },
-        extractLegacyParameter(item) {
+        extractImplicitParameter(item) {
             const actions = [
                 {
-                    action_type: "extract_legacy_parameter",
+                    action_type: "extract_implicit_parameter",
                     name: item.name,
                 },
             ];
@@ -225,11 +225,11 @@ export default {
         autoFixAll() {
             const actions = [];
             if (!this.parametersOkay) {
-                for (const legacyParameter of this.legacyParametersArray) {
-                    if (legacyParameter.canExtract) {
+                for (const implicitParameter of this.implicitParametersArray) {
+                    if (implicitParameter.canExtract) {
                         actions.push({
-                            action_type: "extract_legacy_parameter",
-                            name: legacyParameter.name,
+                            action_type: "extract_implicit_parameter",
+                            name: implicitParameter.name,
                         });
                     }
                 }
@@ -255,7 +255,7 @@ export default {
     },
     computed: {
         parametersOkay() {
-            return this.legacyParameters == null || this.legacyParameters.parameters.length == 0;
+            return this.implicitParameters == null || this.implicitParameters.parameters.length == 0;
         },
         disconnectInputsOkay() {
             return this.disconnectedInputs == null || this.disconnectedInputs.length == 0;
@@ -280,8 +280,8 @@ export default {
                 return !!this.creator;
             }
         },
-        legacyParametersArray() {
-            return this.legacyParameters ? this.legacyParameters.parameters : [];
+        implicitParametersArray() {
+            return this.implicitParameters ? this.implicitParameters.parameters : [];
         },
         // I tried to make these purely reactive but I guess it is not surprising that the
         // entirity of the nodes object and children aren't all purely reactive.

@@ -18,7 +18,7 @@ from .schema import (
     ConnectAction,
     DisconnectAction,
     ExtractInputAction,
-    ExtractLegacyParameter,
+    ExtractImplicitParameter,
     FileDefaultsAction,
     FillStepDefaultsAction,
     InputReferenceByOrderIndex,
@@ -248,10 +248,10 @@ class WorkflowRefactorExecutor:
         )
         self._apply_connect(connect_action, execution)
 
-    def _apply_extract_legacy_parameter(self, action: ExtractLegacyParameter, execution: RefactorActionExecution):
-        legacy_parameter_name = action.name
-        new_label = action.label or legacy_parameter_name
-        target_value = "${%s}" % legacy_parameter_name
+    def _apply_extract_implicit_parameter(self, action: ExtractImplicitParameter, execution: RefactorActionExecution):
+        implicit_parameter_name = action.name
+        new_label = action.label or implicit_parameter_name
+        target_value = "${%s}" % implicit_parameter_name
 
         target_tool_inputs = []
         rename_pjas = []
@@ -269,7 +269,7 @@ class WorkflowRefactorExecutor:
 
             def callback(input, prefixed_name, context, value=None, **kwargs):
                 nonlocal replace_tool_state
-                # data parameters cannot have legacy parameter values
+                # data parameters cannot have implicit parameter values
                 if input.type in ['data', 'data_collection']:
                     return NO_REPLACEMENT
 
@@ -320,7 +320,7 @@ class WorkflowRefactorExecutor:
 
         for rename_pja in rename_pjas:
             # if name != label, got to rewrite this rename with new label.
-            if legacy_parameter_name != new_label:
+            if implicit_parameter_name != new_label:
                 action_arguments = rename_pja.get("action_arguments")
                 old_newname = action_arguments["newname"]
                 new_newname = old_newname.replace(target_value, "${%s}" % new_label)

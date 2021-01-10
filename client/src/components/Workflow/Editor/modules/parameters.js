@@ -3,28 +3,28 @@ import _l from "utils/localization";
 import Utils from "utils/utils";
 
 
-class LegacyParameterReference {
+class ImplicitParameterReference {
     constructor(parameter, node) {
         parameter.references.push(this);
         this.nodeId = node.id;
     }
 }
 
-class ToolInputLegacyParameterReference extends LegacyParameterReference {
+class ToolInputImplicitParameterReference extends ImplicitParameterReference {
     constructor(parameter, node, tooInput) {
         super(parameter, node);
         this.toolInput = tooInput;
     }
 }
 
-class PjaLegacyParameterReference extends LegacyParameterReference {
+class PjaImplicitParameterReference extends ImplicitParameterReference {
     constructor(parameter, node, pja) {
         super(parameter, node);
         this.pja = pja;
     }
 }
 
-class LegacyParameter {
+class ImplicitParameter {
     constructor(name) {
         this.name = name;
         this.references = [];
@@ -38,7 +38,7 @@ class LegacyParameter {
     }
 }
 
-export class LegacyParameters {
+export class ImplicitParameters {
     constructor() {
         this.parameters = [];
     }
@@ -49,9 +49,9 @@ export class LegacyParameters {
                 return parameter;
             }
         }
-        const legacyParameter = new LegacyParameter(name);
-        this.parameters.push(legacyParameter);
-        return legacyParameter;
+        const implicitParameter = new ImplicitParameter(name);
+        this.parameters.push(implicitParameter);
+        return implicitParameter;
     }
 
     getParameterFromMatch(match) {
@@ -59,8 +59,8 @@ export class LegacyParameters {
     }
 }
 
-export function getLegacyWorkflowParameters(nodes) {
-    const legacyParameters = new LegacyParameters();
+export function getImplicitWorkflowParameters(nodes) {
+    const implicitParameters = new ImplicitParameters();
     const parameter_re = /\$\{.+?\}/g;
     Object.entries(nodes).forEach(([k, node]) => {
         if (node.config_form && node.config_form.inputs) {
@@ -69,8 +69,8 @@ export function getLegacyWorkflowParameters(nodes) {
                     var form_matches = d.value.match(parameter_re);
                     if (form_matches) {
                         for (const match of form_matches) {
-                            const legacyParameter = legacyParameters.getParameterFromMatch(match);
-                            new ToolInputLegacyParameterReference(legacyParameter, node, d);
+                            const implicitParameter = implicitParameters.getParameterFromMatch(match);
+                            new ToolInputImplicitParameterReference(implicitParameter, node, d);
                         }
                     }
                 }
@@ -84,8 +84,8 @@ export function getLegacyWorkflowParameters(nodes) {
                             const arg_matches = action_argument.match(parameter_re);
                             if (arg_matches) {
                                 for (const match of arg_matches) {
-                                    const legacyParameter = legacyParameters.getParameterFromMatch(match);
-                                    new PjaLegacyParameterReference(legacyParameter, node, pja);
+                                    const implicitParameter = implicitParameters.getParameterFromMatch(match);
+                                    new PjaImplicitParameterReference(implicitParameter, node, pja);
                                 }
                             }
                         }
@@ -94,5 +94,5 @@ export function getLegacyWorkflowParameters(nodes) {
             });
         }
     });
-    return legacyParameters;
+    return implicitParameters;
 }

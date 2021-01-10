@@ -44,13 +44,13 @@ describe("Lint", () => {
         expect(action.input.input_name).toBe("my_input");
     });
 
-    it("should fire a refactor on extracting legacy parameter", async () => {
-        wrapper.vm.extractLegacyParameter({
+    it("should fire a refactor on extracting implicit parameter", async () => {
+        wrapper.vm.extractImplicitParameter({
             name: "run_id",
         });
         await wrapper.vm.$nextTick();
         const action = getExpectedAction();
-        expect(action.action_type).toBe("extract_legacy_parameter");
+        expect(action.action_type).toBe("extract_implicit_parameter");
         expect(action.name).toBe("run_id");
     });
 
