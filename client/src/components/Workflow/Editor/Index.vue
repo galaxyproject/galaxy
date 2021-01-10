@@ -158,10 +158,10 @@
 import { getDatatypesMapper } from "components/Datatypes";
 import { fromSimple } from "./modules/model";
 import { getModule, getVersions, saveWorkflow, loadWorkflow } from "./modules/services";
+import { getLegacyWorkflowParameters } from "./modules/parameters";
 import {
     getStateUpgradeMessages,
     copyIntoWorkflow,
-    getLegacyWorkflowParameters,
     showAttributes,
     showForm,
     showLint,

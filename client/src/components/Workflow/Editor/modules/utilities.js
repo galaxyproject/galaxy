@@ -2,7 +2,6 @@ import _ from "underscore";
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
-import Utils from "utils/utils";
 import { DefaultForm, ToolForm } from "./forms";
 import { loadWorkflow } from "./services";
 import { toSimple } from "./model";
@@ -151,44 +150,6 @@ export class LegacyParameters {
     getParameterFromMatch(match) {
         return this.getParameter(match.substring(2, match.length - 1));
     }
-}
-
-export function getLegacyWorkflowParameters(nodes) {
-    const legacyParameters = new LegacyParameters();
-    const parameter_re = /\$\{.+?\}/g;
-    Object.entries(nodes).forEach(([k, node]) => {
-        if (node.config_form && node.config_form.inputs) {
-            Utils.deepeach(node.config_form.inputs, (d) => {
-                if (typeof d.value == "string") {
-                    var form_matches = d.value.match(parameter_re);
-                    if (form_matches) {
-                        for (const match of form_matches) {
-                            const legacyParameter = legacyParameters.getParameterFromMatch(match);
-                            new ToolInputLegacyParameterReference(legacyParameter, node, d);
-                        }
-                    }
-                }
-            });
-        }
-        if (node.postJobActions) {
-            Object.values(node.postJobActions).forEach((pja) => {
-                if (pja.action_arguments) {
-                    Object.values(pja.action_arguments).forEach((action_argument) => {
-                        if (typeof action_argument === "string") {
-                            const arg_matches = action_argument.match(parameter_re);
-                            if (arg_matches) {
-                                for (const match of arg_matches) {
-                                    const legacyParameter = legacyParameters.getParameterFromMatch(match);
-                                    new PjaLegacyParameterReference(legacyParameter, node, pja);
-                                }
-                            }
-                        }
-                    });
-                }
-            });
-        }
-    });
-    return legacyParameters;
 }
 
 export function getDisconnectedInputs(nodes) {
