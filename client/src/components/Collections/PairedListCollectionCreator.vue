@@ -1134,6 +1134,7 @@ li.dataset.paired {
             margin-right: 34px;
             border: 2px solid grey;
             background: #aff1af;
+            height: auto;
             span {
                 display: inline-block;
                 overflow: visible !important;
