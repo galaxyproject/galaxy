@@ -22,6 +22,7 @@ from recommonmark.transform import AutoStructify
 # just build primary documentation. (Quicker to debug issues in most frequently updated
 # docs).
 SKIP_SOURCE = os.environ.get("GALAXY_DOCS_SKIP_SOURCE", False) == "1"
+SKIP_RELEASES = os.environ.get("GALAXY_DOCS_SKIP_RELEASES", False) == "1"
 
 # REQUIRED GALAXY INCLUDES
 
@@ -39,9 +40,10 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['recommonmark', 'sphinx.ext.autodoc', 'sphinx.ext.intersphinx', 'sphinx_markdown_tables']
+extensions = ['recommonmark', 'sphinx.ext.intersphinx', 'sphinx_markdown_tables']
 if not SKIP_SOURCE:
-    extensions += ['sphinx.ext.doctest', 'sphinx.ext.todo', 'sphinx.ext.coverage', 'sphinx.ext.viewcode']
+    # TODO: Add https://pypi.org/project/sphinx-autodoc-typehints
+    extensions += ['sphinx.ext.doctest', 'sphinx.ext.todo', 'sphinx.ext.coverage', 'sphinx.ext.viewcode', 'sphinx.ext.autodoc']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -60,7 +62,8 @@ def dont_skip_init(app, what, name, obj, skip, options):
 
 
 def setup(app):
-    app.connect("autodoc-skip-member", dont_skip_init)
+    if not SKIP_SOURCE:
+        app.connect("autodoc-skip-member", dont_skip_init)
     app.add_config_value('recommonmark_config', {
         'enable_auto_doc_ref': False,
         'enable_auto_toc_tree': False,
@@ -107,6 +110,8 @@ release = VERSION
 exclude_patterns = ['**/_*.rst']
 if SKIP_SOURCE:
     exclude_patterns.extend(['lib'])
+if SKIP_RELEASES:
+    exclude_patterns.extend(['releases'])
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None
