@@ -1,6 +1,6 @@
 import { mount, createLocalVue } from "@vue/test-utils";
 import Attributes from "./Attributes";
-import { LegacyParameters } from "./modules/utilities";
+import { LegacyParameters } from "./modules/parameters";
 
 jest.mock("app");
 
