@@ -126,7 +126,7 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { LegacyParameters } from "components/Workflow/Editor/modules/parameters";
 import LintSection from "components/Workflow/Editor/LintSection";
-import { getDisconnectedInputs, getInputsMissingMetadata, getWorkflowOutputs } from "./modules/utilities";
+import { getDisconnectedInputs, getInputsMissingMetadata, getWorkflowOutputs } from "./modules/linting";
 
 Vue.use(BootstrapVue);
 

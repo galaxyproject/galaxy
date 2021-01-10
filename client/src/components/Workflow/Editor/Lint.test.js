@@ -5,7 +5,7 @@ import Lint from "./Lint";
 jest.mock("./modules/utilities");
 jest.mock("app");
 
-import { getDisconnectedInputs, getInputsMissingMetadata, getWorkflowOutputs } from "./modules/utilities";
+import { getDisconnectedInputs, getInputsMissingMetadata, getWorkflowOutputs } from "./modules/linting";
 
 const localVue = getLocalVue();
 
