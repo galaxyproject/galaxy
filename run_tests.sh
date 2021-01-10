@@ -20,12 +20,12 @@ cat <<EOF
 '${0##*/} -framework -id toolid'    for testing one framework tool (in test/functional/tools/) with id 'toolid'
 '${0##*/} -data_managers -id data_manager_id'    for testing one Data Manager with id 'data_manager_id'
 '${0##*/} -unit'                    for running all unit tests (doctests and tests in test/unit)
-'${0##*/} -unit (test_path)'        for running unit tests on specified test path (use nosetest path)
+'${0##*/} -unit (test_selector)'    for running unit tests on specified test path (using pytest selector syntax)
 '${0##*/} -selenium'                for running all selenium web tests (in lib/galaxy_test/selenium)
-'${0##*/} -selenium (test_path)'    for running specified selenium web tests (use nosetest path)
+'${0##*/} -selenium (test_selector)' for running specified selenium web tests (using pytest selector syntax)
 
 This wrapper script largely serves as a point documentation and convenience -
-most tests shipped with Galaxy can be run with nosetests/pytest/yarn directly.
+most tests shipped with Galaxy can be run with pytest or yarn directly.
 
 The main test types are as follows:
 
@@ -49,12 +49,8 @@ The main test types are as follows:
    framework twill to test ToolShed related functionality. These are
    located in lib/tool_shed/test.
 
-Python testing is currently a mix of nosetests and pytest, many tests when ran
-outside this script could be executed using either. pytest and Nose use slightly
-different syntaxes for selecting subsets of tests for execution. Nose
-will allow specific tests to be selected per the documentation at
-https://nose.readthedocs.io/en/latest/usage.html#selecting-tests . The comparable
-pytest selector syntax is described at https://docs.pytest.org/en/latest/usage.html.
+Python testing is mostly done via pytest. Specific tests can be selected
+using the pytest selector syntax is described at https://docs.pytest.org/en/latest/usage.html.
 
 The spots these selectors can be used is described in the above usage documentation
 as ``test_path``.  A few examples are shown below.
@@ -82,14 +78,14 @@ Run all selenium tests (Under Linux using Docker):
     GALAXY_TEST_SELENIUM_REMOTE=1 ./run_tests.sh -selenium
 
 Run a specific selenium test (under Linux or Mac OS X after installing geckodriver or chromedriver):
-    ./run_tests.sh -selenium lib/galaxy_test/selenium/test_registration.py:RegistrationTestCase.test_reregister_username_fails
+    ./run_tests.sh -selenium lib/galaxy_test/selenium/test_registration.py::RegistrationTestCase::test_reregister_username_fails
 
 Run a selenium test against a running server while watching client (fastest iterating on client tests):
     ./run.sh & # run Galaxy on 8080
     make client-watch & # watch for client changes
     export GALAXY_TEST_EXTERNAL=http://localhost:8080/  # Target tests at server.
     . .venv/bin/activate # source the virtualenv so can skip run_tests.sh.
-    nosetests lib/galaxy_test/selenium/test_workflow_editor.py:WorkflowEditorTestCase.test_data_input
+    pytest lib/galaxy_test/selenium/test_workflow_editor.py::WorkflowEditorTestCase::test_data_input
 
 Note About Selenium Tests:
 
