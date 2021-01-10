@@ -78,7 +78,8 @@
                 </div>
                 <collection-creator
                     :oncancel="oncancel"
-                    @hide-original-toggle="hideOriginalsToggle"
+                    :hideSourceItems="hideSourceItems"
+                    @onUpdateHideSourceItems="onUpdateHideSourceItems"
                     @clicked-create="clickedCreate"
                     @remove-extensions-toggle="removeExtensionsToggle"
                     :creationFn="creationFn"
@@ -151,7 +152,7 @@
 </template>
 
 <script>
-import CollectionCreator from "./common/CollectionCreator";
+import mixin from "./common/mixin";
 import STATES from "mvc/dataset/states";
 import _l from "utils/localization";
 import Vue from "vue";
@@ -159,10 +160,10 @@ import BootstrapVue from "bootstrap-vue";
 
 Vue.use(BootstrapVue);
 export default {
+    mixins: [mixin],
     created() {
         this._elementsSetUp();
     },
-    components: { CollectionCreator },
     data: function () {
         return {
             state: "build", //error
@@ -178,30 +179,6 @@ export default {
             workingElements: [],
             invalidElements: [],
         };
-    },
-    props: {
-        initialElements: {
-            required: true,
-            type: Array,
-        },
-        creationFn: {
-            type: Function,
-            required: true,
-        },
-        /** fn to call when the cancel button is clicked (scoped to this) - if falsy, no btn is displayed */
-        oncancel: {
-            type: Function,
-            required: true,
-        },
-        oncreate: {
-            type: Function,
-            required: true,
-        },
-        defaultHideSourceItems: {
-            type: Boolean,
-            required: false,
-            default: false,
-        },
     },
     computed: {
         returnInvalidElementsLength: function () {
@@ -275,16 +252,13 @@ export default {
         },
         clickedCreate: function (collectionName) {
             if (this.state !== "error") {
-                this.$emit("clicked-create", this.workingElements, this.collectionName, this.defaultHideSourceItems);
-                return this.creationFn(this.workingElements, collectionName, this.defaultHideSourceItems)
+                this.$emit("clicked-create", this.workingElements, this.collectionName, this.hideSourceItems);
+                return this.creationFn(this.workingElements, collectionName, this.hideSourceItems)
                     .done(this.oncreate)
                     .fail(() => {
                         this.state = "error";
                     });
             }
-        },
-        hideOriginalsToggle: function () {
-            this.defaultHideSourceItems = !this.defaultHideSourceItems;
         },
         /** string rep */
         toString: function () {

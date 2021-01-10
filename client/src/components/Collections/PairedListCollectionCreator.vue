@@ -100,7 +100,8 @@
                 </div>
                 <collection-creator
                     :oncancel="oncancel"
-                    @hide-original-toggle="hideOriginalsToggle"
+                    :hideSourceItems="hideSourceItems"
+                    @onUpdateHideSourceItems="onUpdateHideSourceItems"
                     @clicked-create="clickedCreate"
                     @remove-extensions-toggle="removeExtensionsToggle"
                     :renderExtensionsToggle="true"
@@ -424,7 +425,7 @@
 </template>
 <script>
 import _l from "utils/localization";
-import CollectionCreator from "./common/CollectionCreator";
+import mixin from "./common/mixin";
 import UnpairedDatasetElementView from "./UnpairedDatasetElementView";
 import levenshteinDistance from "utils/levenshtein";
 import PairedElementView from "./PairedElementView";
@@ -438,13 +439,13 @@ import BootstrapVue from "bootstrap-vue";
 
 Vue.use(BootstrapVue);
 export default {
+    mixins: [mixin],
     created() {
         this.strategy = this.autopairLCS;
         this.filters = this.commonFilters[this.filters] || this.commonFilters[this.DEFAULT_FILTERS];
         this._elementsSetUp();
     },
     components: {
-        CollectionCreator,
         UnpairedDatasetElementView,
         PairedElementView,
         Splitpanes,
@@ -545,30 +546,6 @@ export default {
             allInvalidElementsPartTwo: _l("and reselect new elements."),
             duplicatePairNames: [],
         };
-    },
-    props: {
-        initialElements: {
-            required: true,
-            type: Array,
-        },
-        creationFn: {
-            type: Function,
-            required: true,
-        },
-        /** fn to call when the cancel button is clicked (scoped to this) - if falsy, no btn is displayed */
-        oncancel: {
-            type: Function,
-            required: true,
-        },
-        oncreate: {
-            type: Function,
-            required: true,
-        },
-        defaultHideSourceItems: {
-            type: Boolean,
-            required: false,
-            default: false,
-        },
     },
     methods: {
         l(str) {
@@ -993,8 +970,8 @@ export default {
         clickedCreate: function (collectionName) {
             this.checkForDuplicates();
             if (this.state !== "error") {
-                this.$emit("clicked-create", this.workingElements, this.collectionName, this.defaultHideSourceItems);
-                return this.creationFn(this.pairedElements, collectionName, this.defaultHideSourceItems)
+                this.$emit("clicked-create", this.workingElements, this.collectionName, this.hideSourceItems);
+                return this.creationFn(this.pairedElements, collectionName, this.hideSourceItems)
                     .done(this.oncreate)
                     .fail(() => {
                         this.state = "error";
@@ -1013,9 +990,6 @@ export default {
                 existingPairNames[pair.name] = true;
             });
             this.state = valid ? "build" : "error";
-        },
-        hideOriginalsToggle: function () {
-            this.defaultHideSourceItems = !this.defaultHideSourceItems;
         },
         stripExtension(name) {
             return name.includes(".") ? name.substring(0, name.lastIndexOf(".")) : name;
