@@ -24,8 +24,10 @@ cat <<EOF
 '${0##*/} -selenium'                for running all selenium web tests (in lib/galaxy_test/selenium)
 '${0##*/} -selenium (test_selector)' for running specified selenium web tests (using pytest selector syntax)
 
-This wrapper script largely serves as a point documentation and convenience -
-most tests shipped with Galaxy can be run with pytest or yarn directly.
+This wrapper script largely serves as a point documentation and convenience for
+running Galaxy's Python tests. Most Python tests shipped with Galaxy can be run with
+pytest directly. Galaxy's client unit tests can be run with ``make client-test``
+or ``yarn`` directly as documented in detail in ``client/README.md``.
 
 The main test types are as follows:
 
@@ -42,7 +44,6 @@ The main test types are as follows:
 - Unit: These are Python unit tests either defined as doctests or inside of
    test/unit. These should generally not require a Galaxy instance and should
    quickly test just a component or a few components of Galaxy's backend code.
-- QUnit: These are JavaScript unit tests defined in client/src/qunit.
 - Selenium: These are full stack tests meant to test the Galaxy UI with real
    browsers and are located in lib/galaxy_test/selenium.
 - ToolShed: These are web tests that use the older Python web testing
