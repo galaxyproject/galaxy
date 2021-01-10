@@ -11,7 +11,6 @@ Special Topics
    mulled_containers
    grt
    job_metrics
-   chat
    webhooks
    performance_tracking
    bug_reports

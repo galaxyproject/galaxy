@@ -204,6 +204,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         :param  encoded_dataset_id:      the encoded id of the dataset to update permissions of
         :type   encoded_dataset_id:      an encoded id string
         :param   payload: dictionary structure containing:
+
             :param  action:     (required) describes what action should be performed
                                 available actions: make_private, remove_restrictions, set_permissions
             :type   action:     string
@@ -213,6 +214,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
             :type   manage_ids[]:      string or list
             :param  modify_ids[]:      list of Role.id defining roles that should have modify permission on the library dataset item
             :type   modify_ids[]:      string or list
+
         :type:      dictionary
 
         :returns:   dict of current roles for all available permission types
@@ -349,20 +351,37 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         :param   payload: dictionary structure containing:
             :param  encoded_folder_id:      the encoded id of the folder to import dataset(s) to
             :type   encoded_folder_id:      an encoded id string
-            :param  source:                 source the datasets should be loaded from
-                    Source can be:
-                        user directory - root folder specified in galaxy.ini as "$user_library_import_dir"
-                            example path: path/to/galaxy/$user_library_import_dir/user@example.com/{user can browse everything here}
-                            the folder with the user login has to be created beforehand
-                        (admin)import directory - root folder specified in galaxy ini as "$library_import_dir"
-                            example path: path/to/galaxy/$library_import_dir/{admin can browse everything here}
-                        (admin)any absolute or relative path - option allowed with "allow_library_path_paste" in galaxy.ini
+            :param  source:
+
+                source the datasets should be loaded from. Source can be:
+
+                    - user directory
+
+                        root folder specified in galaxy.ini as "$user_library_import_dir"
+                        example path: path/to/galaxy/$user_library_import_dir/user@example.com/{user can browse everything here}
+                        the folder with the user login has to be created beforehand
+
+                    - (admin)import directory
+
+                        root folder specified in galaxy ini as "$library_import_dir"
+                        example path: path/to/galaxy/$library_import_dir/{admin can browse everything here}
+
+                    - (admin)any absolute or relative path
+
+                        option allowed with "allow_library_path_paste" in galaxy.ini
+
             :type   source:                 str
-            :param  link_data:              flag whether to link the dataset to data or copy it to Galaxy, defaults to copy
-                                            while linking is set to True all symlinks will be resolved _once_
+            :param  link_data:
+
+                flag whether to link the dataset to data or copy it to Galaxy, defaults to copy
+                while linking is set to True all symlinks will be resolved _once_
+
             :type   link_data:              bool
-            :param  preserve_dirs:          flag whether to preserve the directory structure when importing dir
-                                            if False only datasets will be imported
+            :param  preserve_dirs:
+
+                flag whether to preserve the directory structure when importing dir
+                if False only datasets will be imported
+
             :type   preserve_dirs:          bool
             :param  file_type:              file type of the loaded datasets, defaults to 'auto' (autodetect)
             :type   file_type:              str
@@ -370,6 +389,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
             :type   dbkey:                  str
             :param  tag_using_filenames:    flag whether to generate dataset tags from filenames
             :type   tag_using_filenames:    bool
+
         :type   dictionary
 
         :returns:   dict containing information about the created upload job

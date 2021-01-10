@@ -1,14 +1,20 @@
-"""
-API key retrieval through BaseAuth
-Sample usage:
+"""API key retrieval through BaseAuth
 
-curl --user zipzap@foo.com:password http://localhost:8080/api/authenticate/baseauth
+Sample usage
 
-Returns:
+.. code-block::
 
-{
-    "api_key": "baa4d6e3a156d3033f05736255f195f9"
-}
+    curl --user zipzap@foo.com:password http://localhost:8080/api/authenticate/baseauth
+
+Returns
+
+.. highlight:: json
+.. code-block:: json
+
+    {
+        "api_key": "baa4d6e3a156d3033f05736255f195f9"
+    }
+
 """
 import logging
 from base64 import b64decode
@@ -53,8 +59,7 @@ class AuthenticationController(BaseAPIController):
     @expose_api_anonymous_and_sessionless
     def get_api_key(self, trans, **kwd):
         """
-        def get_api_key( self, trans, **kwd )
-        * GET /api/authenticate/baseauth
+        GET /api/authenticate/baseauth
           returns an API key for authenticated user based on BaseAuth headers
 
         :returns: api_key in json format

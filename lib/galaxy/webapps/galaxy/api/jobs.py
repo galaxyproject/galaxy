@@ -94,17 +94,15 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
     @expose_api
     def index(self, trans, **kwd):
         """
-        index( trans, state=None, tool_id=None, history_id=None, date_range_min=None, date_range_max=None, user_details=False )
-        * GET /api/jobs:
-            return jobs for current user
+        GET /api/jobs
 
-            !! if user is admin and user_details is True, then
-                return jobs for all galaxy users based on filtering - this is an extended service
+        return jobs for current user
+
+        if user is admin and user_details is True, then
+        return jobs for all galaxy users based on filtering - this is an extended service
 
         :type   state: string or list
         :param  state: limit listing of jobs to those that match one of the included states. If none, all are returned.
-        Valid Galaxy job states include:
-                'new', 'upload', 'waiting', 'queued', 'running', 'ok', 'error', 'paused', 'deleted', 'deleted_new'
 
         :type   tool_id: string or list
         :param  tool_id: limit listing of jobs to those that match one of the included tool_ids. If none, all are returned.
@@ -223,9 +221,9 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
     @expose_api
     def inputs(self, trans, id, **kwd):
         """
-        show( trans, id )
-        * GET /api/jobs/{id}/inputs
-            returns input datasets created by job
+        GET /api/jobs/{id}/inputs
+
+        returns input datasets created by job
 
         :type   id: string
         :param  id: Encoded job id

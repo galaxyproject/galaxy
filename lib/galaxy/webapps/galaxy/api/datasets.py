@@ -66,11 +66,17 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
         :returns:   dictionaries containing summary of dataset or dataset_collection information
 
         The list returned can be filtered by using two optional parameters:
-            q:      string, generally a property name to filter by followed
-                    by an (often optional) hyphen and operator string.
-            qv:     string, the value to filter by
 
-        ..example:
+            :q:
+                string, generally a property name to filter by followed
+                by an (often optional) hyphen and operator string.
+
+            :qv:
+
+                string, the value to filter by
+
+        ..example::
+
             To filter the list to only those created after 2015-01-29,
             the query string would look like:
                 '?q=create_time-gt&qv=2015-01-29'

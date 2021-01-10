@@ -21,7 +21,8 @@ class ToursController(BaseAPIController):
     @expose_api_anonymous_and_sessionless
     def index(self, trans, **kwd):
         """
-        *GET /api/tours/
+        GET /api/tours/
+
         Displays available tours
         """
         return self.app.tour_registry.tours_by_id_with_description()
@@ -29,9 +30,9 @@ class ToursController(BaseAPIController):
     @expose_api_anonymous_and_sessionless
     def show(self, trans, tour_id, **kwd):
         """
-        load_config( self, trans, Tour_config_file, **kwd )
-        * GET /api/tours/{tour_id}:
-            Read a yaml file containing the specified tour definition
+        GET /api/tours/{tour_id}
+
+        Read a yaml file containing the specified tour definition
 
         :returns:   tour definition
         :rtype:     dictionary
@@ -41,10 +42,7 @@ class ToursController(BaseAPIController):
     @require_admin
     @legacy_expose_api
     def update_tour(self, trans, tour_id, **kwd):
-        """
-        This simply reloads tours right now.  It's a quick hack.
-
-        TODO: allow creation of new tours (which get written to the
-        filesystem).
-        """
+        """This simply reloads tours right now.  It's a quick hack."""
+        # TODO: allow creation of new tours (which get written to the
+        # filesystem).
         return self.app.tour_registry.load_tour(tour_id)

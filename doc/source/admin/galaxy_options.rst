@@ -181,7 +181,7 @@
     is valuable to separate these - for instance bootstrapping fresh
     Galaxy instances with pretested installs.  The following option
     can be used to separate the tool shed install database (all other
-    options listed above but prefixed with install_ are also
+    options listed above but prefixed with ``install_`` are also
     available).
     Defaults to the value of the 'database_connection' option.
 :Default: ``None``
@@ -1056,7 +1056,7 @@
 :Description:
     Tool related caching. Fully expanded tools and metadata will be
     stored at this path. Per tool_conf cache locations can be
-    configured in (shed_)tool_conf.xml files using the
+    configured in (``shed_``)tool_conf.xml files using the
     tool_cache_data_dir attribute.
     The value of this option will be resolved with respect to
     <data_dir>.
@@ -2950,10 +2950,10 @@
 :Description:
     If use_remote_user is enabled, the header that the upstream proxy
     provides the remote username in defaults to HTTP_REMOTE_USER (the
-    'HTTP_' is prepended by WSGI).  This option allows you to change
-    the header.  Note, you still need to prepend 'HTTP_' to the header
-    in this option, but your proxy server should *not* include 'HTTP_'
-    at the beginning of the header name.
+    ``HTTP_`` is prepended by WSGI).  This option allows you to change
+    the header.  Note, you still need to prepend ``HTTP_`` to the
+    header in this option, but your proxy server should *not* include
+    ``HTTP_`` at the beginning of the header name.
 :Default: ``HTTP_REMOTE_USER``
 :Type: str
 

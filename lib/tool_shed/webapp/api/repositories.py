@@ -136,63 +136,70 @@ class RepositoriesController(BaseAPIController):
         :param owner: the owner of the Repository
         :param changeset_revision: the changeset_revision of the RepositoryMetadata object associated with the Repository
 
-        Returns a list of the following dictionaries::
-        - a dictionary defining the Repository.  For example:
-        {
-            "deleted": false,
-            "deprecated": false,
-            "description": "add_column hello",
-            "id": "f9cad7b01a472135",
-            "long_description": "add_column hello",
-            "name": "add_column",
-            "owner": "test",
-            "private": false,
-            "times_downloaded": 6,
-            "url": "/api/repositories/f9cad7b01a472135",
-            "user_id": "f9cad7b01a472135"
-        }
-        - a dictionary defining the Repository revision (RepositoryMetadata).  For example:
-        {
-            "changeset_revision": "3a08cc21466f",
-            "downloadable": true,
-            "has_repository_dependencies": false,
-            "has_repository_dependencies_only_if_compiling_contained_td": false,
-            "id": "f9cad7b01a472135",
-            "includes_datatypes": false,
-            "includes_tool_dependencies": false,
-            "includes_tools": true,
-            "includes_tools_for_display_in_tool_panel": true,
-            "includes_workflows": false,
-            "malicious": false,
-            "repository_id": "f9cad7b01a472135",
-            "url": "/api/repository_revisions/f9cad7b01a472135",
-            "valid_tools": [{u'add_to_tool_panel': True,
-                u'description': u'data on any column using simple expressions',
-                u'guid': u'localhost:9009/repos/enis/sample_repo_1/Filter1/2.2.0',
-                u'id': u'Filter1',
-                u'name': u'Filter',
-                u'requirements': [],
-                u'tests': [{u'inputs': [[u'input', u'1.bed'], [u'cond', u"c1=='chr22'"]],
-                  u'name': u'Test-1',
-                  u'outputs': [[u'out_file1', u'filter1_test1.bed']],
-                  u'required_files': [u'1.bed', u'filter1_test1.bed']}],
-                u'tool_config': u'database/community_files/000/repo_1/filtering.xml',
-                u'tool_type': u'default',
-                u'version': u'2.2.0',
-                u'version_string_cmd': None}]
-        }
-        - a dictionary including the additional information required to install the repository.  For example:
-        {
-            "add_column": [
-                "add_column hello",
-                "http://test@localhost:9009/repos/test/add_column",
-                "3a08cc21466f",
-                "1",
-                "test",
-                {},
-                {}
-            ]
-        }
+        Returns a list of the following dictionaries
+
+        - a dictionary defining the Repository.  For example::
+
+            {
+                "deleted": false,
+                "deprecated": false,
+                "description": "add_column hello",
+                "id": "f9cad7b01a472135",
+                "long_description": "add_column hello",
+                "name": "add_column",
+                "owner": "test",
+                "private": false,
+                "times_downloaded": 6,
+                "url": "/api/repositories/f9cad7b01a472135",
+                "user_id": "f9cad7b01a472135"
+            }
+
+        - a dictionary defining the Repository revision (RepositoryMetadata).  For example::
+
+            {
+                "changeset_revision": "3a08cc21466f",
+                "downloadable": true,
+                "has_repository_dependencies": false,
+                "has_repository_dependencies_only_if_compiling_contained_td": false,
+                "id": "f9cad7b01a472135",
+                "includes_datatypes": false,
+                "includes_tool_dependencies": false,
+                "includes_tools": true,
+                "includes_tools_for_display_in_tool_panel": true,
+                "includes_workflows": false,
+                "malicious": false,
+                "repository_id": "f9cad7b01a472135",
+                "url": "/api/repository_revisions/f9cad7b01a472135",
+                "valid_tools": [{u'add_to_tool_panel': True,
+                    u'description': u'data on any column using simple expressions',
+                    u'guid': u'localhost:9009/repos/enis/sample_repo_1/Filter1/2.2.0',
+                    u'id': u'Filter1',
+                    u'name': u'Filter',
+                    u'requirements': [],
+                    u'tests': [{u'inputs': [[u'input', u'1.bed'], [u'cond', u"c1=='chr22'"]],
+                    u'name': u'Test-1',
+                    u'outputs': [[u'out_file1', u'filter1_test1.bed']],
+                    u'required_files': [u'1.bed', u'filter1_test1.bed']}],
+                    u'tool_config': u'database/community_files/000/repo_1/filtering.xml',
+                    u'tool_type': u'default',
+                    u'version': u'2.2.0',
+                    u'version_string_cmd': None}]
+            }
+
+        - a dictionary including the additional information required to install the repository.  For example::
+
+            {
+                "add_column": [
+                    "add_column hello",
+                    "http://test@localhost:9009/repos/test/add_column",
+                    "3a08cc21466f",
+                    "1",
+                    "test",
+                    {},
+                    {}
+                ]
+            }
+
         """
         # Example URL:
         # http://<xyz>/api/repositories/get_repository_revision_install_info?name=<n>&owner=<o>&changeset_revision=<cr>
@@ -523,15 +530,17 @@ class RepositoriesController(BaseAPIController):
         in-memory list of repository ids that have been processed is maintained.
 
         :param key: the API key of the Tool Shed user.
+        :param my_writable (optional):
+            if the API key is associated with an admin user in the Tool Shed, setting this param value
+            to True will restrict resetting metadata to only repositories that are writable by the user
+            in addition to those repositories of type tool_dependency_definition.  This param is ignored
+            if the current user is not an admin user, in which case this same restriction is automatic.
 
-        The following parameters can optionally be included in the payload.
-        :param my_writable (optional): if the API key is associated with an admin user in the Tool Shed, setting this param value
-                                       to True will restrict resetting metadata to only repositories that are writable by the user
-                                       in addition to those repositories of type tool_dependency_definition.  This param is ignored
-                                       if the current user is not an admin user, in which case this same restriction is automatic.
         :param encoded_ids_to_skip (optional): a list of encoded repository ids for repositories that should not be processed.
-        :param skip_file (optional): A local file name that contains the encoded repository ids associated with repositories to skip.
-                                     This param can be used as an alternative to the above encoded_ids_to_skip.
+        :param skip_file (optional):
+            A local file name that contains the encoded repository ids associated with repositories to skip.
+            This param can be used as an alternative to the above encoded_ids_to_skip.
+
         """
 
         def handle_repository(trans, rmm, repository, results):
@@ -831,14 +840,15 @@ class RepositoriesController(BaseAPIController):
 
         :param id: the encoded id of the Repository object
 
-        :param payload: dictionary structure containing::
+        :param payload: dictionary structure containing
+
             'name':                  repo's name (optional)
             'synopsis':              repo's synopsis (optional)
             'description':           repo's description (optional)
             'remote_repository_url': repo's remote repo (optional)
             'homepage_url':          repo's homepage url (optional)
-            'category_ids':          list of existing encoded TS category ids
-                                     the updated repo should be associated with (optional)
+            'category_ids':          list of existing encoded TS category ids the updated repo should be associated with (optional)
+
         :type payload: dict
 
         :returns:   detailed repository information
@@ -884,19 +894,19 @@ class RepositoriesController(BaseAPIController):
     @expose_api
     def create(self, trans, **kwd):
         """
-        create( self, trans, payload, **kwd )
-        * POST /api/repositories:
-            Creates a new repository.
-            Only ``name`` and ``synopsis`` parameters are required.
+        POST /api/repositories:
 
-        :param payload: dictionary structure containing::
+        Creates a new repository.
+        Only ``name`` and ``synopsis`` parameters are required.
+
+        :param payload: dictionary structure containing
+
             'name':                  new repo's name (required)
             'synopsis':              new repo's synopsis (required)
             'description':           new repo's description (optional)
             'remote_repository_url': new repo's remote repo (optional)
             'homepage_url':          new repo's homepage url (optional)
-            'category_ids[]':        list of existing encoded TS category ids
-                                     the new repo should be associated with (optional)
+            'category_ids[]':        list of existing encoded TS category ids the new repo should be associated with (optional)
             'type':                  new repo's type, defaults to ``unrestricted`` (optional)
 
         :type payload: dict

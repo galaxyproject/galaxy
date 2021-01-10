@@ -92,7 +92,8 @@ class DatasetCollectionsController(
     @expose_api
     def contents(self, trans, hdca_id, parent_id, instance_type='history', limit=None, offset=None, **kwds):
         """
-        * GET /api/dataset_collection/{hdca_id}/contents/{parent_id}?limit=100&offset=0
+        GET /api/dataset_collection/{hdca_id}/contents/{parent_id}?limit=100&offset=0
+
         Shows direct child contents of indicated dataset collection parent id
 
         :type   string:     encoded string id

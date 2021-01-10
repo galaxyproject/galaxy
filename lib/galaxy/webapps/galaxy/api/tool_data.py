@@ -20,8 +20,9 @@ class ToolData(BaseAPIController):
     @expose_api
     def index(self, trans, **kwds):
         """
-        GET /api/tool_data: returns a list tool_data tables::
+        GET /api/tool_data
 
+        returns a list tool_data tables
         """
         return list(a.to_dict() for a in self._data_tables.values())
 
