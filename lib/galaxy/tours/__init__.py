@@ -3,12 +3,37 @@ This module manages loading/etc of Galaxy interactive tours.
 """
 import logging
 import os
+from typing import List, Optional
 
 import yaml
+from pydantic import BaseModel
 
 from galaxy import util
 
 log = logging.getLogger(__name__)
+
+
+class Tour(BaseModel):
+    id: str
+    name: str
+    description: str
+    tags: List[str]
+
+
+class TourStep(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+    element: Optional[str] = None
+    placement: Optional[str] = None
+    preclick: Optional[list] = None
+    postclick: Optional[list] = None
+    textinsert: Optional[str] = None
+    backdrop: Optional[bool] = None
+
+
+class TourDetails(Tour):
+    title_default: Optional[str] = None
+    steps: List[TourStep]
 
 
 def tour_loader(contents_dict):
@@ -31,12 +56,17 @@ class ToursRegistry:
         self.tour_directories = util.config_directories_from_setting(tour_directories)
         self.load_tours()
 
-    def tours_by_id_with_description(self):
-        return [{'id': k,
-                 'description': self.tours[k].get('description', None),
-                 'name': self.tours[k].get('name', None),
-                 'tags': self.tours[k].get('tags', None)}
-                for k in self.tours.keys()]
+    def tours_by_id_with_description(self) -> List[Tour]:
+        tours = []
+        for k in self.tours.keys():
+            tourdata = {
+                'id': k,
+                'description': self.tours[k].get('description'),
+                'name': self.tours[k].get('name'),
+                'tags': self.tours[k].get('tags')
+            }
+            tours.append(Tour(**tourdata))
+        return tours
 
     def load_tour(self, tour_id):
         for tour_dir in self.tour_directories:
