@@ -68,7 +68,7 @@ class ToursRegistry:
                 'name': self.tours[k].get('name'),
                 'tags': self.tours[k].get('tags')
             }
-            tours.append(Tour(**tourdata))
+            tours.append(tourdata)
         return parse_obj_as(TourList, tours)
 
     def load_tour(self, tour_id):
