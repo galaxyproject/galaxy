@@ -1349,7 +1349,7 @@ class ColumnListParameter(SelectToolParameter):
             # Use representative dataset if a dataset collection is parsed
             if isinstance(dataset, trans.app.model.HistoryDatasetCollectionAssociation):
                 dataset = dataset.to_hda_representative()
-            if not dataset.has_data():
+            if not is_runtime_value(dataset) and not dataset.has_data():
                 return True
         return False
 
