@@ -89,7 +89,7 @@
                         {{ allInvalidElementsPartTwo }}
                     </b-alert>
                 </div>
-                <div v-if="showDuplicateError">
+                <div v-if="(state == 'duplicates')">
                     <b-alert show variant="danger">
                         {{ l("Collections cannot have duplicated names. The following list names are duplicated: ") }}
                         <ul>
@@ -454,7 +454,7 @@ export default {
     },
     data: function () {
         return {
-            state: "build", //error
+            state: "build", //error, duplicates
             dragToChangeTitle: _l("Drag to change"),
             chooseFilterTitle: _l("Choose from common filters"),
             filterTextPlaceholder: _l("Filter text"),
@@ -969,7 +969,8 @@ export default {
         },
         clickedCreate: function (collectionName) {
             this.checkForDuplicates();
-            if (this.state !== "error") {
+            console.log (this.state, " = state");
+            if (this.state == "build") {
                 this.$emit("clicked-create", this.workingElements, this.collectionName, this.hideSourceItems);
                 return this.creationFn(this.pairedElements, collectionName, this.hideSourceItems)
                     .done(this.oncreate)
@@ -982,14 +983,18 @@ export default {
             var existingPairNames = {};
             this.duplicatePairNames = [];
             var valid = true;
+            console.log ("in check for dupes");
             this.pairedElements.forEach((pair) => {
                 if (Object.prototype.hasOwnProperty.call(existingPairNames, pair.name)) {
                     valid = false;
+                    console.log("found a dupe");
                     this.duplicatePairNames.push(pair.name);
                 }
                 existingPairNames[pair.name] = true;
             });
-            this.state = valid ? "build" : "error";
+            console.log ("valid = false, right? :", valid);
+            this.state = valid ? "build" : "duplicates";
+
         },
         stripExtension(name) {
             return name.includes(".") ? name.substring(0, name.lastIndexOf(".")) : name;
