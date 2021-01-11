@@ -29,7 +29,6 @@ from galaxy.datatypes.schema import (
 from galaxy.util import asbool
 from galaxy.web import expose_api_anonymous_and_sessionless
 from galaxy.webapps.base.controller import BaseAPIController
-
 from . import get_app
 
 log = logging.getLogger(__name__)
