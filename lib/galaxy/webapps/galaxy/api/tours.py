@@ -32,7 +32,7 @@ class ToursController(BaseAPIController):
         """
         GET /api/tours/{tour_id}
 
-        Read a yaml file containing the specified tour definition
+        Read a YAML file containing the specified tour definition.
 
         :returns:   tour definition
         :rtype:     dictionary

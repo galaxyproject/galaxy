@@ -18,7 +18,8 @@ class WebhooksController(BaseAPIController):
     def all_webhooks(self, trans, **kwd):
         """
         GET /api/webhooks/
-        Returns all webhooks
+
+        Return all webhooks.
         """
         return [
             webhook.to_dict()
@@ -29,7 +30,8 @@ class WebhooksController(BaseAPIController):
     def webhook_data(self, trans, webhook_id, **kwd):
         """
         GET /api/webhooks/{webhook_id}/data/{params}
-        Returns the result of executing helper function
+
+        Return the result of executing helper function.
         """
         params = {}
 

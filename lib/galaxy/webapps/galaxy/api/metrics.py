@@ -29,8 +29,9 @@ class MetricsController(BaseAPIController):
     @expose_api_anonymous
     def create(self, trans, payload, **kwd):
         """
-        POST /api/metrics:
-            record any metrics sent and return some status object
+        POST /api/metrics
+
+        Record any metrics sent and return some status object.
 
         .. note:: Anonymous users can post metrics
 

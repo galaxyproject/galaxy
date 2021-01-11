@@ -63,7 +63,7 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
 
         return undeleted histories for the current user
 
-        GET /api/histories/deleted:
+        GET /api/histories/deleted
 
         return deleted histories for the current user
 

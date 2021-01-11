@@ -546,7 +546,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     def update(self, trans, id, payload, **kwds):
         """
         PUT /api/workflows/{id}
-        updates the workflow stored with ``id``
+
+        Update the workflow stored with ``id``.
 
         :type   id:      str
         :param  id:      the encoded id of the workflow to update

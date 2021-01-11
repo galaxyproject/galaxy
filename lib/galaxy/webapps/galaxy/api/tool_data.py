@@ -22,7 +22,7 @@ class ToolData(BaseAPIController):
         """
         GET /api/tool_data
 
-        returns a list tool_data tables
+        Return a list tool_data tables.
         """
         return list(a.to_dict() for a in self._data_tables.values())
 
