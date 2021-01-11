@@ -20,6 +20,8 @@ def assert_status_code_is_ok(response: Response):
 
     The easier alternative ``response.raise_for_status()`` might be
     perferable generally.
+
+    .. seealso:: :py:meth:`requests.Response.raise_for_status()`
     """
     response_status_code = response.status_code
     is_two_hundred_status_code = response_status_code >= 200 and response_status_code <= 300
