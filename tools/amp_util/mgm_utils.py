@@ -2,7 +2,6 @@ import sys
 import os
 import json
 import stat
-import paramiko
 
 ERR_SUFFIX = ".err"
 
