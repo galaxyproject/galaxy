@@ -58,7 +58,7 @@ import { getHistoryMonitor } from "./providers/monitors";
 import { mapGetters } from "vuex";
 import { mapCacheActions } from "vuex-cache";
 import { concat } from "rxjs";
-import { take, filter, takeWhile, share } from "rxjs/operators";
+import { take, takeWhile, share } from "rxjs/operators";
 import { vueRxShortcuts } from "components/plugins";
 
 export default {
