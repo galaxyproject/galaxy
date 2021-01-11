@@ -8,7 +8,7 @@ import yaml
 from pydantic import parse_obj_as
 
 from galaxy import util
-from galaxy.schema import TourList
+from galaxy.tours.schema import TourList
 
 
 log = logging.getLogger(__name__)
