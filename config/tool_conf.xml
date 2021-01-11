@@ -17,6 +17,7 @@
 
   <section id="segmentation" name="Segmentation">
     <tool file="amp_segment/ina_speech_segmenter.xml"/>
+    <tool file="amp_segment/ina_speech_segmenter_hpc.xml"/>
     <tool file="amp_segment/remove_silence_music.xml"/>
     <tool file="amp_segment/remove_silence_speech.xml"/>
     <tool file="amp_segment/adjust_transcript_timestamps.xml"/>
@@ -26,6 +27,7 @@
   <section id="speech_to_text" name="Speech to Text">
     <tool file="amp_stt/aws_transcribe.xml"/>
     <tool file="amp_stt/kaldi.xml"/>
+    <tool file="amp_stt/kaldi_hpc.xml"/>
     <tool file="amp_stt/vtt_generator.xml"/>
   </section>
 
