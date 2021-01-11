@@ -99,24 +99,41 @@ const createInvocationStepMonitor = (id) => {
 export const invocationStepMonitor = () => pipe(switchMap((id) => createInvocationStepMonitor(id)));
 
 // feed observables, keyed by history id. Keeps just one historyMonitor around.
-const historyFeeds = new Map();
+export const historyFeeds = new Map();
 
-export const getHistoryMonitor = (historyId) => {
+export const getHistoryMonitor = (historyId, monitorEvery = 3000) => {
     if (!historyFeeds.has(historyId)) {
-        historyFeeds.set(historyId, buildHistoryMonitor(historyId));
+        historyFeeds.set(historyId, buildHistoryMonitor(historyId, monitorEvery));
     }
     return historyFeeds.get(historyId);
 };
 
 // prettier-ignore
-const buildHistoryMonitor = (historyId) => {
+export const buildHistoryMonitor = (historyId, monitorEvery = 3000) => {
     // temporary hack until we can subscribe to invocations and their outputs.
     // set large windowSize around which to monitor (could we just monitor all updates?)
     const windowSize = 100000;
-    const monitorEvery = 3000;
     return of([historyId, {showHidden: true, showVisible: true}, 1]).pipe(
+        // noInitial skips fetching exisiting datasets and only monitors
+        // for updated datastes after the last query (or now, if this is the first query)
         loadHistoryContents({windowSize, noInitial: true}),
         delay(monitorEvery),
         repeat(),
         share());
+};
+
+export const monitorHistoryUntilTrue = (condition, historyId, monitorEvery = 3000) => {
+    // monitorHistory until condition is true, then fetch one last update
+    const historyMonitor$ = getHistoryMonitor(historyId, monitorEvery);
+    const primaryHistoryMonitor$ = historyMonitor$.pipe(
+        takeWhile(() => !condition()),
+        share()
+    );
+    return concat(
+        primaryHistoryMonitor$,
+        historyMonitor$.pipe(
+            // get one more update after invocation is terminal
+            take(1)
+        )
+    );
 };

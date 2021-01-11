@@ -53,12 +53,10 @@ import ParameterStep from "./ParameterStep.vue";
 import WorkflowInvocationDataContents from "./WorkflowInvocationDataContents";
 import WorkflowInvocationStep from "./WorkflowInvocationStep";
 import ListMixin from "components/History/ListMixin";
-import { getHistoryMonitor } from "./providers/monitors";
+import { monitorHistoryUntilTrue } from "./providers/monitors";
 
 import { mapGetters } from "vuex";
 import { mapCacheActions } from "vuex-cache";
-import { concat } from "rxjs";
-import { take, takeWhile, share } from "rxjs/operators";
 import { vueRxShortcuts } from "components/plugins";
 
 export default {
@@ -108,16 +106,9 @@ export default {
         monitorHistory() {
             // rework this into history or invocation subscription in the future ...
             if (!this.invocationAndJobTerminal) {
-                const historyMonitor$ = getHistoryMonitor(this.invocation.history_id);
-                const primaryHistoryMonitor$ = historyMonitor$.pipe(
-                    takeWhile(() => !this.invocationAndJobTerminal),
-                    share()
-                );
-                const final$ = concat(primaryHistoryMonitor$, historyMonitor$.pipe(
-                    // get one more update after invocation is terminal
-                    take(1)
-                ));
-                this.listenTo(final$, {
+                const stopFn = () => this.invocationAndJobTerminal == true;
+                const monitor$ = monitorHistoryUntilTrue(stopFn, this.invocation.history_id)
+                this.listenTo(monitor$, {
                     error: (err) => console.error("An error occured while monitoring history for datasets", err),
                     complete: () => console.log("Invocation finished, stopping history dataset monitor"),
                 });
