@@ -76,14 +76,17 @@ const createMonitor = (id, contentType, fetcher, spinUpDelay = 250) => {
 };
 
 const TERMINAL_JOB_STATES = ["ok", "error", "deleted", "paused"];
-const stepIsTerminal = (step) =>
-    ["scheduled", "cancelled", "failed"].includes(step.state) &&
-    step.jobs.every((job) => TERMINAL_JOB_STATES.includes(job.state));
+const stepIsTerminal = (step) => {
+    const isTerminal =
+        ["scheduled", "cancelled", "failed"].includes(step.state) &&
+        step.jobs.every((job) => TERMINAL_JOB_STATES.includes(job.state));
+    return isTerminal;
+};
 
-const createInvocationStepMonitor = (id) => {
+const createInvocationStepMonitor = (id, monitorEvery = 3000) => {
     const initialFetch$ = of(id).pipe(fetchInvocationStepById());
     const pollingFetch$ = of(id).pipe(
-        delay(3000),
+        delay(monitorEvery),
         fetchInvocationStepById(),
         repeat(),
         // takeWhile cancels source on true, so also cancels repeat
@@ -96,7 +99,8 @@ const createInvocationStepMonitor = (id) => {
     );
 };
 
-export const invocationStepMonitor = () => pipe(switchMap((id) => createInvocationStepMonitor(id)));
+export const invocationStepMonitor = (monitorEvery = 3000) =>
+    pipe(switchMap((id) => createInvocationStepMonitor(id, monitorEvery)));
 
 // feed observables, keyed by history id. Keeps just one historyMonitor around.
 export const historyFeeds = new Map();
