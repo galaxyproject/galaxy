@@ -1,0 +1,24 @@
+<tool id="ina_speech_segmenter_hpc" name="INA Speech Segmenter on HPC" version="1.0.0">
+  <description>INA Speech Segmenter on IU's HPC</description>
+    <requirements>
+        <requirement type="package" version="8.30">coreutils</requirement>
+    </requirements>
+  <command detect_errors="exit_code">
+    $__tool_directory__/amp_segment/ina_speech_segmenter_hpc.py '/srv/amp/hpc_batch/hpc_submitter.ini' $input_audio $amp_segments
+  </command>
+   <inputs>
+   <!-- should be wave data type -->
+    <param name="input_audio" type="data" format="wav" label="Input Audio" help="Input audio file in wav format"/>
+  </inputs>
+  <outputs>
+    <data name="amp_segments" format="segment" label="AMP Segments Generated"/>
+  </outputs>
+  <tests>
+  </tests>
+  <help>
+.. class:: infomark
+
+Segment an audio file using an HPC INA Speech Segmenter instance.
+
+  </help>
+</tool>
