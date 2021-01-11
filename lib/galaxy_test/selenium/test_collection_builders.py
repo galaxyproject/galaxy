@@ -21,7 +21,6 @@ class CollectionBuildersTestCase(SeleniumTestCase):
         self.collection_builder_create()
         self.history_panel_wait_for_hid_ok(2)
 
-
     @selenium_test
     def test_build_list_and_show_items(self):
         self.perform_upload(self.get_filename("1.fasta"))
