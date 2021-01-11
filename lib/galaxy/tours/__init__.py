@@ -8,10 +8,8 @@ import yaml
 from pydantic import parse_obj_as
 
 from galaxy import util
-from galaxy.tours.schema import (
-    TourDetails,
-    TourList,
-)
+from galaxy.tours import abc
+from galaxy.tours.schema import TourList
 
 
 log = logging.getLogger(__name__)
@@ -31,12 +29,13 @@ def load_steps(contents_dict):
             step['title'] = title_default
 
 
+@abc.ToursRegistry.register
 class ToursRegistry:
     def __init__(self, tour_directories):
         self.tour_directories = util.config_directories_from_setting(tour_directories)
         self.load_tours()
 
-    def tours_by_id_with_description(self) -> TourList:
+    def tours_by_id_with_description(self):
         tours = []
         for k in self.tours.keys():
             tourdata = {
@@ -70,7 +69,7 @@ class ToursRegistry:
         if self._is_yaml(filename):
             self._load_tour_from_path(path)
 
-    def tour_contents(self, tour_id) -> TourDetails:
+    def tour_contents(self, tour_id):
         # Extra format translation could happen here (like the previous intro_to_tour)
         # For now just return the loaded contents.
         return self.tours.get(tour_id, None)

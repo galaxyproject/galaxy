@@ -24,6 +24,7 @@ from galaxy.managers.jobs import JobManager
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.users import UserManager
 from galaxy.model import User
+from galaxy.tours.abc import ToursRegistry
 from galaxy.web.framework.decorators import require_admin_message
 from galaxy.work.context import SessionRequestContext
 
@@ -85,3 +86,7 @@ def get_admin_user(trans: SessionRequestContext = Depends(get_trans)):
     if not trans.user_is_admin:
         raise AdminRequiredException(require_admin_message(trans.app.config, trans.user))
     return trans.user
+
+
+def get_tours_registry(app: UniverseApplication = Depends(get_app)) -> ToursRegistry:
+    return app.tour_registry

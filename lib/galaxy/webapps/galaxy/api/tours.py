@@ -7,7 +7,7 @@ from fastapi import Depends
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter as APIRouter
 
-from galaxy.app import UniverseApplication
+from galaxy.tours.abc import ToursRegistry
 from galaxy.tours.schema import (
     TourDetails,
     TourList,
@@ -20,7 +20,7 @@ from galaxy.web import (
 from galaxy.webapps.base.controller import BaseAPIController
 from . import (
     get_admin_user,
-    get_app,
+    get_tours_registry,
 )
 
 log = logging.getLogger(__name__)
@@ -31,22 +31,22 @@ router = APIRouter(tags=['tours'])
 
 @cbv(router)
 class FastAPITours:
-    app: UniverseApplication = Depends(get_app)
+    registry: ToursRegistry = Depends(get_tours_registry)
 
     @router.get('/api/tours')
     def index(self) -> TourList:
         """Return list of available tours."""
-        return self.app.tour_registry.tours_by_id_with_description()
+        return self.registry.tours_by_id_with_description()
 
     @router.get('/api/tours/{tour_id}')
     def show(self, tour_id: str) -> TourDetails:
         """Return a tour definition."""
-        return self.app.tour_registry.tour_contents(tour_id)
+        return self.registry.tour_contents(tour_id)
 
     @router.post('/api/tours/{tour_id}', dependencies=[Depends(get_admin_user)])
     def update_tour(self, tour_id: str) -> TourDetails:
         """Return a tour definition."""
-        return self.app.tour_registry.load_tour(tour_id)
+        return self.registry.load_tour(tour_id)
 
 
 class ToursController(BaseAPIController):
