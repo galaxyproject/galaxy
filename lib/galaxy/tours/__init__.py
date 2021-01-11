@@ -40,7 +40,7 @@ class TourDetails(Tour):
     steps: List[TourStep]
 
 
-def tour_loader(contents_dict):
+def load_steps(contents_dict):
     #  Some of this can be done on the clientside.  Maybe even should?
     title_default = contents_dict.get('title_default', None)
     for step in contents_dict['steps']:
@@ -52,7 +52,6 @@ def tour_loader(contents_dict):
             step['orphan'] = True
         if title_default and 'title' not in step:
             step['title'] = title_default
-    return contents_dict
 
 
 class ToursRegistry:
@@ -107,9 +106,9 @@ class ToursRegistry:
         tour_id = os.path.splitext(filename)[0]
         try:
             with open(tour_path) as handle:
-                conf = yaml.safe_load(handle)
-                tour = tour_loader(conf)
-                self.tours[tour_id] = tour_loader(conf)
+                tour = yaml.safe_load(handle)
+                load_steps(tour)
+                self.tours[tour_id] = tour
                 log.info("Loaded tour '%s'" % tour_id)
                 return tour
         except OSError:
