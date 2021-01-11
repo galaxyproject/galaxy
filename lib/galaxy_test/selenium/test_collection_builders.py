@@ -21,6 +21,7 @@ class CollectionBuildersTestCase(SeleniumTestCase):
         self.collection_builder_create()
         self.history_panel_wait_for_hid_ok(2)
 
+
     @selenium_test
     def test_build_list_and_show_items(self):
         self.perform_upload(self.get_filename("1.fasta"))
@@ -99,6 +100,11 @@ class CollectionBuildersTestCase(SeleniumTestCase):
 
         self.collection_builder_create()
         self.history_panel_wait_for_hid_ok(5)
+        self.history_panel_refresh_click()
+        self.history_panel_wait_for_hid_ok(1)
+        self.history_panel_wait_for_hid_ok(2)
+        self.history_panel_wait_for_hid_hidden(3)
+        self.history_panel_wait_for_hid_hidden(4)
 
     @selenium_test
     def test_build_simple_list_via_rules_hidden(self):
@@ -112,6 +118,7 @@ class CollectionBuildersTestCase(SeleniumTestCase):
         self.screenshot("collection_builder_rules_list")
         self.collection_builder_create()
         self.history_panel_wait_for_hid_ok(2, allowed_force_refreshes=1)
+        self.history_panel_wait_for_hid_hidden(1)
 
     def _wait_for_hid_visible(self, hid):
         self.history_panel_wait_for_hid_visible(hid, allowed_force_refreshes=1)

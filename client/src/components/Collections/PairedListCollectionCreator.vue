@@ -969,7 +969,7 @@ export default {
         },
         clickedCreate: function (collectionName) {
             this.checkForDuplicates();
-            console.log (this.state, " = state");
+            console.log(this.state, " = state");
             if (this.state == "build") {
                 this.$emit("clicked-create", this.workingElements, this.collectionName, this.hideSourceItems);
                 return this.creationFn(this.pairedElements, collectionName, this.hideSourceItems)
@@ -983,7 +983,7 @@ export default {
             var existingPairNames = {};
             this.duplicatePairNames = [];
             var valid = true;
-            console.log ("in check for dupes");
+            console.log("in check for dupes");
             this.pairedElements.forEach((pair) => {
                 if (Object.prototype.hasOwnProperty.call(existingPairNames, pair.name)) {
                     valid = false;
@@ -992,9 +992,8 @@ export default {
                 }
                 existingPairNames[pair.name] = true;
             });
-            console.log ("valid = false, right? :", valid);
+            console.log("valid = false, right? :", valid);
             this.state = valid ? "build" : "duplicates";
-
         },
         stripExtension(name) {
             return name.includes(".") ? name.substring(0, name.lastIndexOf(".")) : name;
