@@ -2,7 +2,6 @@
 API Controller providing Galaxy Tours
 """
 import logging
-from typing import List
 
 from fastapi import Depends
 from fastapi_utils.cbv import cbv
@@ -10,8 +9,8 @@ from fastapi_utils.inferring_router import InferringRouter as APIRouter
 
 from galaxy.app import UniverseApplication
 from galaxy.tours import (
-    Tour,
     TourDetails,
+    TourList,
 )
 from galaxy.web import (
     expose_api_anonymous_and_sessionless,
@@ -35,7 +34,7 @@ class FastAPITours:
     app: UniverseApplication = Depends(get_app)
 
     @router.get('/api/tours')
-    def index(self) -> List[Tour]:
+    def index(self) -> TourList:
         """Return list of available tours."""
         return self.app.tour_registry.tours_by_id_with_description()
 

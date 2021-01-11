@@ -6,7 +6,7 @@ import os
 from typing import List, Optional
 
 import yaml
-from pydantic import BaseModel
+from pydantic import BaseModel, parse_obj_as
 
 from galaxy import util
 
@@ -18,6 +18,10 @@ class Tour(BaseModel):
     name: str
     description: str
     tags: List[str]
+
+
+class TourList(BaseModel):
+    __root__: List[Tour] = []
 
 
 class TourStep(BaseModel):
@@ -56,7 +60,7 @@ class ToursRegistry:
         self.tour_directories = util.config_directories_from_setting(tour_directories)
         self.load_tours()
 
-    def tours_by_id_with_description(self) -> List[Tour]:
+    def tours_by_id_with_description(self) -> TourList:
         tours = []
         for k in self.tours.keys():
             tourdata = {
@@ -66,7 +70,7 @@ class ToursRegistry:
                 'tags': self.tours[k].get('tags')
             }
             tours.append(Tour(**tourdata))
-        return tours
+        return parse_obj_as(TourList, tours)
 
     def load_tour(self, tour_id):
         for tour_dir in self.tour_directories:
