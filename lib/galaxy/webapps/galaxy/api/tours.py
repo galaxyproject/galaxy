@@ -8,7 +8,7 @@ from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter as APIRouter
 
 from galaxy.app import UniverseApplication
-from galaxy.tours import (
+from galaxy.schema import (
     TourDetails,
     TourList,
 )
