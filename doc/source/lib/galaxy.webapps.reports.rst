@@ -13,7 +13,6 @@ Subpackages
    :maxdepth: 4
 
    galaxy.webapps.reports.controllers
-   galaxy.webapps.reports.framework
 
 Submodules
 ----------

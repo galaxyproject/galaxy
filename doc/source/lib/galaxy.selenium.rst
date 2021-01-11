@@ -34,6 +34,14 @@ galaxy.selenium.components module
    :undoc-members:
    :show-inheritance:
 
+galaxy.selenium.context module
+------------------------------
+
+.. automodule:: galaxy.selenium.context
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy.selenium.data module
 ---------------------------
 
