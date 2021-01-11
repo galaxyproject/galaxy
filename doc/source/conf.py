@@ -140,7 +140,10 @@ pygments_style = 'sphinx'
 #modindex_common_prefix = []
 
 # Intersphinx mapping to Python documentation
-intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+    'requests': ("https://requests.readthedocs.io/en/master/", None),
+}
 
 # -- Options for HTML output ---------------------------------------------------
 
