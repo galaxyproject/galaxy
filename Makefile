@@ -30,6 +30,9 @@ docs: ## Generate HTML documentation.
 	$(IN_VENV) $(MAKE) -C doc clean
 	$(IN_VENV) $(MAKE) -C doc html
 
+rebuild-docs: ## Re-generate HTML documentation without clean step.
+	$(IN_VENV) $(MAKE) -C doc html
+
 setup-venv:
 	if [ ! -f $(VENV)/bin/activate ]; then bash scripts/common_startup.sh --dev-wheels; fi
 

@@ -18,6 +18,10 @@ import sphinx_rtd_theme
 # Library to make .md to slideshow
 from recommonmark.transform import AutoStructify
 
+# Set GALAXY_DOCS_SKIP_VIEW_CODE=1 to skip embedding highlighted source
+# code into docs.
+SKIP_VIEW_CODE = os.environ.get("GALAXY_DOCS_SKIP_VIEW_CODE", False) == "1"
+
 # Set GALAXY_DOCS_SKIP_SOURCE=1 to skip building source information and
 # just build primary documentation. (Quicker to debug issues in most frequently updated
 # docs).
@@ -43,7 +47,9 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 extensions = ['recommonmark', 'sphinx.ext.intersphinx', 'sphinx_markdown_tables']
 if not SKIP_SOURCE:
     # TODO: Add https://pypi.org/project/sphinx-autodoc-typehints
-    extensions += ['sphinx.ext.doctest', 'sphinx.ext.todo', 'sphinx.ext.coverage', 'sphinx.ext.viewcode', 'sphinx.ext.autodoc']
+    extensions += ['sphinx.ext.doctest', 'sphinx.ext.todo', 'sphinx.ext.coverage', 'sphinx.ext.autodoc']
+    if not SKIP_VIEW_CODE:
+        extensions.append('sphinx.ext.viewcode')
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
