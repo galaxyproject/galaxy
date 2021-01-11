@@ -8,7 +8,10 @@ import yaml
 from pydantic import parse_obj_as
 
 from galaxy import util
-from galaxy.tours.schema import TourList
+from galaxy.tours.schema import (
+    TourDetails,
+    TourList,
+)
 
 
 log = logging.getLogger(__name__)
@@ -67,7 +70,7 @@ class ToursRegistry:
         if self._is_yaml(filename):
             self._load_tour_from_path(path)
 
-    def tour_contents(self, tour_id):
+    def tour_contents(self, tour_id) -> TourDetails:
         # Extra format translation could happen here (like the previous intro_to_tour)
         # For now just return the loaded contents.
         return self.tours.get(tour_id, None)
