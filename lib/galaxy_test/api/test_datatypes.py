@@ -84,6 +84,18 @@ class DatatypesApiTestCase(ApiTestCase):
         self._assert_status_code_is(response, 200)
         assert converters == len(response.json())
 
+    def test_edamp_formats(self):
+        response = self._get("datatypes/edam_formats")
+        self._assert_status_code_is(response, 200)
+        edam_formats = response.json()
+        assert isinstance(edam_formats, dict)
+
+    def test_edam_data(self):
+        response = self._get("datatypes/edam_data")
+        self._assert_status_code_is(response, 200)
+        edam_data = response.json()
+        assert isinstance(edam_data, dict)
+
     def _index_datatypes(self, data=None):
         data = data or {}
         response = self._get("datatypes", data=data)
