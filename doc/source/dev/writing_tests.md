@@ -53,24 +53,37 @@ to write.
 
       - **No**
 
-        Most of the time, we've found that these tests are best when
-        they exercise the Galaxy API to drive the test. These tests
+        Most of the time, we have found that these tests work best when
+        they use the Galaxy API to drive the test. These tests
         are all Python tests executed by pytest. The testing frameworks
-        provide everything you need to spin up a Galaxy instance and
-        communicate with its API to invoke the component under test
-        and write expectations about what should result from the API.
-        There are two different (but very related) frameworks to do this
+        provide everything you need to spin up a Galaxy instance,
+        communicate with its API to invoke the component under test,
+        and write expectations about the outcome of the test.
+        There are three different (but very related) frameworks to do this
         and the choice between which is appropriate comes down to
-        the following question.
+        the following questions.
 
         ***Does this test require a special configuration of Galaxy?***
 
           - **No**
 
-            In this case simple Galaxy API tests are likely the most
-            appropriate way to implement the desired test, these tests
-            are located in ``lib/galaxy_test/api``. Checkout
-            [API Tests](#api) below for more information.
+            ***Does this test check only functionalities of Galaxy tools?***
+
+            - **Yes**
+
+              In this case you do not actually need to deal with the Galaxy API
+              directly and you can just create a Galaxy tool test to check that
+              the required functionality does work as expected. These are called
+              Galaxy tool framework tests and are located in
+              ``test/functional/tools/``. Checkout
+              [Tool Framework Tests](#framework) below for more information.
+
+            - **No**
+           
+              In this case Galaxy API tests are likely the most
+              appropriate way to implement the desired test. These tests
+              are located in ``lib/galaxy_test/api``. Checkout
+              [API Tests](#api) below for more information.
 
           - **Yes**
 
@@ -134,7 +147,7 @@ These tests should be marked as requiring the environment variable
 
 ### Continuous Integration
 
-The Python unit tests are ran against each pull request to Galaxy using
+The Python unit tests are run against each pull request to Galaxy using
 CircleCI. If any of these tests fail, the pull request will be marked
 red. This test suite is moderately prone to having tests fail that are 
 unrelated to the pull request being tested, if this test suite fails on
@@ -150,13 +163,13 @@ Detailed information on writing Galaxy client tests can be found in
 
 ### Continuous Integration
 
-The client tests are ran against each pull request to Galaxy using
+The client tests are run against each pull request to Galaxy using
 GitHub actions. If any of these tests fail, the pull request will be marked
 red. This test suite is moderately prone to having tests fail that are 
 unrelated to the pull request being tested, if this test suite fails on
 a pull request with changes that seem to be unrelated to the pull request -
 ping the Galaxy committers on the pull request and request a re-run. The
-Github actions workflow definition for these tests is located in
+GitHub actions workflow definition for these tests is located in
 ``.github/workflows/jest.yaml`` below Galaxy's root.
 
 ## <a name="framework"></a> Tool Framework Tests
@@ -168,7 +181,7 @@ maintained for older tool definitions. For this reason, a lot of Galaxy's
 complex internals can just be tested by simply running a tool test.
 Obviously, Galaxy is much more complex than this but a surprising amount
 of Galaxy's tests are simply tool tests. This suite of tools that
-run and have their tests exercised is called the "Tool Framework Tests"
+have their tests exercised is called the "Tool Framework Tests"
 or simply "Framework Tests".
 
 Adding a tool test is as simple as finding a related tool in the sample
@@ -176,17 +189,17 @@ tools (``test/functional/tools``) and adding a test block to that file
 or adding a new tool to this directory and referencing it in the
 sample tool configuration XML (``test/functional/tools/samples_tool_conf.xml``).
 
-For information on writing Galaxy Tool Tests can be found in Planemo's
+General information on writing Galaxy Tool Tests can be found in Planemo's
 documentation - for instance in the [Test-Driven Development](https://planemo.readthedocs.io/en/latest/writing_advanced.html#test-driven-development)
 section.
 
 ### Continuous Integration
 
-The Tool framework tests are ran against each pull request to Galaxy using
+The Tool framework tests are run against each pull request to Galaxy using
 GitHub actions. If any of these tests fail, the pull request will be marked
 red. This test suite is fairly stable and typically there are not
 transiently failed tests unrelated to the pull request being tested. The
-Github actions workflow definition for these tests is located in
+GitHub actions workflow definition for these tests is located in
 ``.github/workflows/framework.yaml`` below Galaxy's root.
 
 ## <a name="api"></a> API Tests
@@ -194,12 +207,12 @@ Github actions workflow definition for these tests is located in
 These tests are located in ``lib/galaxy_test/api`` and test various aspects 
 of the Galaxy API and test general backend aspects of Galaxy using the API.
 
-### An Example ``lib/galaxy_test/api/test_roles.py``
+### An Example: ``lib/galaxy_test/api/test_roles.py``
 
 This test file shows a fairly typical API test. It demonstrates the
 basic structure. It demonstrates how to ``GET`` and ``POST`` against the
 API. It demonstrates how to use both a typical user and admin user-only
- functionality.
+functionality.
 
 ### Populating Test Data with ``lib/galaxy_test/base/populators.py``
 
@@ -222,11 +235,11 @@ specific error messages.
 
 ### Continuous Integration
 
-The API tests are ran against each pull request to Galaxy using
+The API tests are run against each pull request to Galaxy using
 GitHub actions. If any of these tests fail, the pull request will be marked
 red. This test suite is fairly stable and typically there are not
 transiently failed tests unrelated to the pull request being tested. The
-Github actions workflow definition for these tests is located in
+GitHub actions workflow definition for these tests is located in
 ``.github/workflows/api.yaml`` below Galaxy's root.
 
 ## <a name="integration"></a> Integration Tests
@@ -241,7 +254,7 @@ they can both control Galaxy's configuration and can access Galaxy's
 internals. However, this power comes at a real cost - each test case must
 spin up its own Galaxy server (a relatively expensive operation) and the
 tests cannot be executed against external Galaxy servers (it wouldn't make
-sense to given these custom hooks during configuration of the server).
+sense to, given these custom hooks during configuration of the server).
 For these reasons, we bundle up Galaxy API tests for use in deployment
 testing of production setups for instance and Galaxy API tests should be
 implemented whenever possible and integration tests implemented only when
@@ -305,7 +318,7 @@ directly. Generally though this type of usage should be avoided.
 
 ### Continuous Integration
 
-The Integration tests are ran against each pull request to Galaxy using
+The Integration tests are run against each pull request to Galaxy using
 GitHub actions. If any of these tests fail, the pull request will be marked
 red. This test suite is moderately prone to having tests fail that are 
 unrelated to the pull request being tested, if this test suite fails on
@@ -321,7 +334,7 @@ browsers and are located in ``lib/galaxy_test/selenium``.
 
 ### Continuous Integration
 
-The Selenium tests are ran against each pull request to Galaxy using
+The Selenium tests are run against each pull request to Galaxy using
 GitHub actions. If any of these tests fail, the pull request will be marked
 red. This test suite is moderately prone to having tests fail that are 
 unrelated to the pull request being tested, if this test suite fails on
@@ -346,7 +359,7 @@ with various options (``ftp_upload_dir``, ``ftp_upload_site``).
 
 ### Continuous Integration
 
-The Selenium integration tests are ran against each pull request to Galaxy using
+The Selenium integration tests are run against each pull request to Galaxy using
 GitHub actions. If any of these tests fail, the pull request will be marked
 red. This test suite is moderately prone to having tests fail that are 
 unrelated to the pull request being tested, if this test suite fails on

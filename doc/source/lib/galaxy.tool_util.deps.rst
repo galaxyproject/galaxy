@@ -51,6 +51,14 @@ galaxy.tool\_util.deps.conda\_compat module
    :undoc-members:
    :show-inheritance:
 
+galaxy.tool\_util.deps.conda\_init module
+-----------------------------------------
+
+.. automodule:: galaxy.tool_util.deps.conda_init
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy.tool\_util.deps.conda\_util module
 -----------------------------------------
 

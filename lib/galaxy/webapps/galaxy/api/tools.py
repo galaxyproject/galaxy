@@ -272,8 +272,10 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         Attempts to install requirements via the dependency resolver
 
         parameters:
-            index:                   index of dependency resolver to use when installing dependency.
-                                     Defaults to using the highest ranking resolver
+            index:
+                index of dependency resolver to use when installing dependency.
+                Defaults to using the highest ranking resolver
+
             resolver_type:           Use the dependency resolver of this resolver_type to install dependency.
             build_dependency_cache:  If true, attempts to cache dependencies for this tool
             force_rebuild:           If true and cache dir exists, attempts to delete cache dir
@@ -291,12 +293,17 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
     def uninstall_dependencies(self, trans, id, **kwds):
         """
         DELETE /api/tools/{tool_id}/dependencies
+
         Attempts to uninstall requirements via the dependency resolver
 
         parameters:
-            index:                   index of dependency resolver to use when installing dependency.
-                                     Defaults to using the highest ranking resolver
-            resolver_type:           Use the dependency resolver of this resolver_type to install dependency
+
+            index:
+
+                index of dependency resolver to use when installing dependency.
+                Defaults to using the highest ranking resolver
+
+            resolver_type: Use the dependency resolver of this resolver_type to install dependency
         """
         tool = self._get_tool(id, user=trans.user)
         tool._view.uninstall_dependencies(requirements=tool.requirements, **kwds)

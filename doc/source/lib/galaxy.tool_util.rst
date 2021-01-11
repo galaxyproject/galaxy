@@ -12,6 +12,7 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
+   galaxy.tool_util.client
    galaxy.tool_util.cwl
    galaxy.tool_util.deps
    galaxy.tool_util.linters

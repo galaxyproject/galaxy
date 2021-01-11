@@ -41,8 +41,9 @@ class CloudAuthzController(BaseAPIController):
     @expose_api
     def index(self, trans, **kwargs):
         """
-        * GET /api/cloud/authz
-            Lists all the cloud authorizations user has defined.
+        GET /api/cloud/authz
+
+        Lists all the cloud authorizations user has defined.
 
         :type  trans: galaxy.webapps.base.webapp.GalaxyWebTransaction
         :param trans: Galaxy web transaction
@@ -194,11 +195,12 @@ class CloudAuthzController(BaseAPIController):
     @expose_api
     def update(self, trans, encoded_authz_id, payload, **kwargs):
         """
-        * PUT /api/cloud/authz/{encoded_authz_id}
-            Updates the values for the cloudauthz configuration with the given ``encoded_authz_id``.
+        PUT /api/cloud/authz/{encoded_authz_id}
 
-            With this API only the following attributes of a cloudauthz configuration
-            can be updated: `authn_id`, `provider`, `config`, `deleted`.
+        Updates the values for the cloudauthz configuration with the given ``encoded_authz_id``.
+
+        With this API only the following attributes of a cloudauthz configuration
+        can be updated: `authn_id`, `provider`, `config`, `deleted`.
 
         :type  trans:               galaxy.webapps.base.webapp.GalaxyWebTransaction
         :param trans:               Galaxy web transaction
@@ -209,6 +211,7 @@ class CloudAuthzController(BaseAPIController):
         :type payload:              dict
         :param payload:             A dictionary structure containing the attributes to modified with their new values.
                                     It can contain any number of the following attributes:
+
                                         *   provider:   the cloud-based resource provider
                                                         to which this configuration belongs to.
 

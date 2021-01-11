@@ -294,10 +294,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         :param  job_ids:                     If from_history_id is set - optional list of jobs to include when extracting a workflow from history
         :type   job_ids:                     str
 
-        :param  dataset_ids:                 If from_history_id is set - optional list of HDA `hid`s corresponding to workflow inputs when extracting a workflow from history
+        :param  dataset_ids:                 If from_history_id is set - optional list of HDA "hid"s corresponding to workflow inputs when extracting a workflow from history
         :type   dataset_ids:                 str
 
-        :param  dataset_collection_ids:      If from_history_id is set - optional list of HDCA `hid`s corresponding to workflow inputs when extracting a workflow from history
+        :param  dataset_collection_ids:      If from_history_id is set - optional list of HDCA "hid"s corresponding to workflow inputs when extracting a workflow from history
         :type   dataset_collection_ids:      str
 
         :param  workflow_name:               If from_history_id is set - name of the workflow to create when extracting a workflow from history
@@ -308,6 +308,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         :param use_cached_job:               If set to True galaxy will attempt to find previously executed steps for all workflow steps with the exact same parameter combinations
                                              and will copy the outputs of the previously executed step.
+
         """
         ways_to_create = {
             'archive_source',
@@ -544,32 +545,49 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     @expose_api
     def update(self, trans, id, payload, **kwds):
         """
-        * PUT /api/workflows/{id}
-            updates the workflow stored with ``id``
+        PUT /api/workflows/{id}
+
+        Update the workflow stored with ``id``.
 
         :type   id:      str
         :param  id:      the encoded id of the workflow to update
-        :param  instance:                 true if fetch by Workflow ID instead of StoredWorkflow id, false
-                                          by default.
-        :type   instance:                 boolean
+        :param  instance: true if fetch by Workflow ID instead of StoredWorkflow id, false by default.
+        :type   instance: boolean
         :type   payload: dict
         :param  payload: a dictionary containing any or all the
-            * workflow   the json description of the workflow as would be
-                         produced by GET workflows/<id>/download or
-                         given to `POST workflows`
 
-                         The workflow contents will be updated to target
-                         this.
+            :workflow:
 
-            * name       optional string name for the workflow, if not present in payload,
-                         name defaults to existing name
-            * annotation optional string annotation for the workflow, if not present in payload,
-                         annotation defaults to existing annotation
-            * menu_entry optional boolean marking if the workflow should appear in the user's menu,
-                         if not present, workflow menu entries are not modified
-            * tags       optional list containing list of tags to add to the workflow (overwriting
-                         existing tags), if not present, tags are not modified
-            * from_tool_form True iff encoded state coming in is encoded for the tool form.
+                the json description of the workflow as would be
+                produced by GET workflows/<id>/download or
+                given to `POST workflows`
+
+                The workflow contents will be updated to target this.
+
+            :name:
+
+                optional string name for the workflow, if not present in payload,
+                name defaults to existing name
+
+            :annotation:
+
+                optional string annotation for the workflow, if not present in payload,
+                annotation defaults to existing annotation
+
+            :menu_entry:
+
+                optional boolean marking if the workflow should appear in the user\'s menu,
+                if not present, workflow menu entries are not modified
+
+            :tags:
+
+                optional list containing list of tags to add to the workflow (overwriting
+                existing tags), if not present, tags are not modified
+
+            :from_tool_form:
+
+                True iff encoded state coming in is encoded for the tool form.
+
 
         :rtype:     dict
         :returns:   serialized version of the workflow
@@ -690,11 +708,15 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     def get_tool_predictions(self, trans, payload, **kwd):
         """
         POST /api/workflows/get_tool_predictions
+
         Fetch predicted tools for a workflow
+
         :type   payload: dict
-        :param  payload: a dictionary containing two parameters:
-                         'tool_sequence' - comma separated sequence of tool ids
-                         'remote_model_url' - (optional) path to the deep learning model
+        :param  payload:
+
+            a dictionary containing two parameters
+            'tool_sequence' - comma separated sequence of tool ids
+            'remote_model_url' - (optional) path to the deep learning model
         """
         remote_model_url = payload.get('remote_model_url', trans.app.config.tool_recommendation_model_path)
         tool_sequence = payload.get('tool_sequence', "")
@@ -1266,9 +1288,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     @expose_api_anonymous_and_sessionless
     def invocation_step_jobs_summary(self, trans, invocation_id, **kwd):
         """
-        * GET /api/workflows/{workflow_id}/invocations/{invocation_id}/step_jobs_summary
-          GET /api/invocations/{invocation_id}/step_jobs_summary
-            return job state summary info aggregated across per step of the workflow invocation
+        GET /api/workflows/{workflow_id}/invocations/{invocation_id}/step_jobs_summary
+        GET /api/invocations/{invocation_id}/step_jobs_summary
+
+        return job state summary info aggregated across per step of the workflow invocation
 
         Warning: We allow anyone to fetch job state information about any object they
         can guess an encoded ID for - it isn't considered protected data. This keeps
@@ -1292,9 +1315,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     @expose_api_anonymous_and_sessionless
     def invocation_jobs_summary(self, trans, invocation_id, **kwd):
         """
-        * GET /api/workflows/{workflow_id}/invocations/{invocation_id}/jobs_summary
-          GET /api/invocations/{invocation_id}/jobs_summary
-            return job state summary info aggregated across all current jobs of workflow invocation
+        GET /api/workflows/{workflow_id}/invocations/{invocation_id}/jobs_summary
+        GET /api/invocations/{invocation_id}/jobs_summary
+
+        return job state summary info aggregated across all current jobs of workflow invocation
 
         Warning: We allow anyone to fetch job state information about any object they
         can guess an encoded ID for - it isn't considered protected data. This keeps
