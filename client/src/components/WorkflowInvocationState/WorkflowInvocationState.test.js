@@ -1,14 +1,15 @@
 import WorkflowInvocationState from "./WorkflowInvocationState";
-import WorkflowInvocationDetails from "./WorkflowInvocationState";
-import { shallowMount, createLocalVue } from "@vue/test-utils";
+import { shallowMount } from "@vue/test-utils";
 import Vuex from "vuex";
 import invocationData from "../Workflow/test/json/invocation.json";
 
+const invocationJobsSummaryById = {
+    id: "d9833097445452b0",
+    model: "WorkflowInvocation",
+    states: {},
+    populated_state: "ok",
+};
 jest.mock("../History/caching");
-
-const localVue = createLocalVue();
-
-localVue.use(Vuex);
 
 describe("WorkflowInvocationState.vue with terminal invocation", () => {
     let wrapper;
@@ -22,7 +23,7 @@ describe("WorkflowInvocationState.vue with terminal invocation", () => {
             propsData,
             computed: {
                 invocation: () => invocationData,
-                jobStatesSummary: () => null,
+                getInvocationJobsSummaryById: () => () => invocationJobsSummaryById,
             },
         });
     });
@@ -39,10 +40,6 @@ describe("WorkflowInvocationState.vue with terminal invocation", () => {
 
     it("doesn't show cancel invocation button", async () => {
         expect(wrapper.find("#cancel-workflow-scheduling").exists()).toBeFalsy();
-    });
-
-    it("shows workflow-invocation-details component", async () => {
-        expect(wrapper.findComponent(WorkflowInvocationDetails).exists()).toBeTruthy();
     });
 });
 
@@ -68,7 +65,7 @@ describe("WorkflowInvocationState.vue with no invocation", () => {
             propsData,
             computed: {
                 invocation: () => null,
-                jobStatesSummary: () => null,
+                getInvocationJobsSummaryById: () => () => invocationJobsSummaryById,
             },
         });
     });
