@@ -79,29 +79,4 @@ def cleanup_err_file(file):
 def write_json_file(object, output_file):
     with open(output_file, 'w') as file:
         json.dump(object, file, default = lambda x: x.__dict__)
-
-# Cleanup remote directories
-def clean_up_remote_dir(sftp, dir):
-    entries = list(sftp.listdir_iter(dir))
-    for f in entries:
-        if f.st_mode & stat.S_IFDIR:
-            clean_up_remote_dir(sftp, f"{dir}/{f.filename}")
-        else:
-            print(f"Removing {dir}/{f.filename}")
-            sftp.remove(f"{dir}/{f.filename}")
-    print(f"Removing directory {dir}")
-    sftp.rmdir(dir)
-
-# Open and return SFTP connection
-def create_sftp_connection(ssh, config):
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh.connect(hostname=config['remote']['host'], 
-                port=config['remote']['port'], 
-                username=config['auth']['user'],
-                key_filename=config['auth']['key_file'],
-                passphrase=config['auth']['passphrase'])
-    sftp = ssh.open_sftp()
-    return sftp
-
-        
         
