@@ -27,6 +27,10 @@ export default {
             type: Number,
             default: null,
         },
+        selectable: {
+            type: Boolean,
+            default: false,
+        },
     },
     computed: {
         btnFilesTitle() {
