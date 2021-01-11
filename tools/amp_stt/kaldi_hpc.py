@@ -16,6 +16,9 @@ import stat
 import configparser
 import tempfile
 
+sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
+import mgm_utils
+
 
 logging.basicConfig(level=logging.DEBUG, stream=sys.stderr,
                     format="%(asctime)s %(levelname)s %(message)s")
@@ -54,13 +57,7 @@ def main():
     # make the ssh connection and get moving
     error = False
     with paramiko.SSHClient() as ssh:
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect(hostname=config['remote']['host'], 
-                    port=config['remote']['port'], 
-                    username=config['auth']['user'],
-                    key_filename=config['auth']['key_file'],
-                    passphrase=config['auth']['passphrase'])
-        sftp = ssh.open_sftp()
+        sftp = mgm_utils.create_sftp_connection(ssh, config)
 
         # go to the workspace directory
         try:
@@ -181,21 +178,10 @@ def main():
             else:
                 logger.info(f"Cleaning up work directory {workspace}")
                 sftp.chdir("..")
-                clean_up(sftp, workdir)
+                mgm_utils.clean_up_remote_dir(sftp, workdir)
 
     exit(1 if error else rc)
 
-
-def clean_up(sftp, dir):
-    entries = list(sftp.listdir_iter(dir))
-    for f in entries:
-        if f.st_mode & stat.S_IFDIR:
-            clean_up(sftp, f"{dir}/{f.filename}")
-        else:
-            logger.debug(f"Removing {dir}/{f.filename}")
-            sftp.remove(f"{dir}/{f.filename}")
-    logger.debug(f"Removing directory {dir}")
-    sftp.rmdir(dir)
 
 if __name__ == "__main__":
     main()
