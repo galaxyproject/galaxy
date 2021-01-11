@@ -737,10 +737,11 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, Uses
         return self.api_key_manager.create_api_key(trans, user)
 
     @expose_api
-    def get_or_create_api_key(self, trans, id, payload={}, **kwd):
+    def get_or_create_api_key(self, trans, id, payload=None, **kwd):
         """
         Unified 'get or create' for API key
         """
+        payload = payload or {}
         user = self._get_user(trans, id)
         return self.api_key_manager.get_or_create_api_key(user)
 
