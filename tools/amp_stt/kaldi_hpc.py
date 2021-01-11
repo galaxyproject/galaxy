@@ -3,6 +3,7 @@ import argparse
 from pathlib import Path
 import logging
 import sys
+import os
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
 import hpc_submit
 
