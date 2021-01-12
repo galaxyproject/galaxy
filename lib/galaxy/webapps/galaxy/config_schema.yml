@@ -505,7 +505,7 @@ mapping:
         required: false
         desc: |
           involucro is a tool used to build Docker or Singularity containers for tools from Conda
-          dependencies referenced in tools as `requirement`s. The following path is
+          dependencies referenced in tools as `requirement` s. The following path is
           the location of involucro on the Galaxy host. This is ignored if the relevant
           container resolver isn't enabled, and will install on demand unless
           involucro_auto_init is set to false.
@@ -2704,7 +2704,7 @@ mapping:
           separate Galaxy into multiple processes.  There are more than one way to do
           this, and they are explained in detail in the documentation:
 
-            https://docs.galaxyproject.org/en/master/admin/scaling.html
+          https://docs.galaxyproject.org/en/master/admin/scaling.html
 
           By default, Galaxy manages and executes jobs from within a single process and
           notifies itself of new jobs via in-memory queues.  Jobs are run locally on

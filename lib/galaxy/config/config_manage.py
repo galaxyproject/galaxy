@@ -426,6 +426,8 @@ def _write_option_rst(args, rst, key, heading_level, option_value):
         default = "true"
     elif default is False:
         default = "false"
+    elif default == "":
+        default = '""'
     rst.write(":Default: ``%s``\n" % default)
     if type:
         rst.write(":Type: %s\n" % type)
