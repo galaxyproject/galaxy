@@ -1345,7 +1345,22 @@ class ColumnListParameter(SelectToolParameter):
     def get_legal_values(self, trans, other_values):
         if self.data_ref not in other_values:
             raise ValueError("Value for associated data reference not found (data_ref).")
-        return set(self.get_column_list(trans, other_values))
+        legal_values = self.get_column_list(trans, other_values)
+
+        value = other_values.get(self.name)
+        if value is not None and value not in legal_values and self.is_file_empty(trans, other_values):
+            legal_values.extend(value)
+
+        return set(legal_values)
+
+    def is_file_empty(self, trans, other_values):
+        for dataset in util.listify(other_values.get(self.data_ref)):
+            # Use representative dataset if a dataset collection is parsed
+            if isinstance(dataset, trans.app.model.HistoryDatasetCollectionAssociation):
+                dataset = dataset.to_hda_representative()
+            if is_runtime_value(dataset) or not dataset.has_data():
+                return True
+        return False
 
     def get_dependencies(self):
         return [self.data_ref]
