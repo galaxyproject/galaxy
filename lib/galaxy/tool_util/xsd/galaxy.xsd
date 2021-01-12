@@ -2383,8 +2383,8 @@ The XML configuration is relatively trivial for sections:
 
 ```xml
 <inputs>
-    <section name="section_name" ... >
-        <param name="parameter_name" ... />
+    <section name="section_name" title="Section Title" >
+        <param name="parameter_name" type="text" label="A parameter  label" />
     </section>
 </inputs>
 ```
