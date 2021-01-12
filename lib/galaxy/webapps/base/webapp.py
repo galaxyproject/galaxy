@@ -70,8 +70,9 @@ class WebApplication(base.WebApplication):
     Base WSGI application instantiated for all Galaxy webapps.
 
     A web application that:
+
         * adds API and UI controllers by scanning given directories and
-        importing all modules found there.
+          importing all modules found there.
         * has a security object.
         * builds mako template lookups.
         * generates GalaxyWebTransactions.
@@ -765,8 +766,10 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
     def get_history(self, create=False, most_recent=False):
         """
         Load the current history.
+
             - If that isn't available, we find the most recently updated history.
             - If *that* isn't available, we get or create the default history.
+
         Transactions will not always have an active history (API requests), so
         None is a valid response.
         """

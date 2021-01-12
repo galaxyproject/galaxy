@@ -8,7 +8,6 @@ Sample usage
 
 Returns
 
-.. highlight:: json
 .. code-block:: json
 
     {

@@ -350,6 +350,7 @@ class JSAppLauncher(BaseUIController):
         `masthead` (boolean): (optional, default=True) include masthead elements in
             the initial page dom.
         `additional_options` (kwargs): update to the options sent to the app.
+
         """
         options = options or self._get_js_options(trans)
         options.update(additional_options)

@@ -420,10 +420,9 @@ class ToolShedRepositoriesController(BaseAPIController):
         """
         GET /api/tool_shed_repositories/{encoded_tool_shed_repsository_id}
 
-        Display a dictionary containing information about a specified tool_shed_repository
+        Display a dictionary containing information about a specified tool_shed_repository.
 
-        .. highlight:: json
-        .. code-block:: json
+        .. code-block::
 
             {
                 id: (string) Galaxy ID

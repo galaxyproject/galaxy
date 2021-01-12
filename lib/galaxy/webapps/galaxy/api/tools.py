@@ -38,17 +38,17 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
     @expose_api_anonymous_and_sessionless
     def index(self, trans, **kwds):
         """
-        GET /api/tools: returns a list of tools defined by parameters::
+        GET /api/tools
 
-            parameters:
+        returns a list of tools defined by parameters
 
-                in_panel  - if true, tools are returned in panel structure,
-                            including sections and labels
-                trackster - if true, only tools that are compatible with
-                            Trackster are returned
-                q         - if present search on the given query will be performed
-                tool_id   - if present the given tool_id will be searched for
-                            all installed versions
+        :param in_panel: if true, tools are returned in panel structure,
+                         including sections and labels
+        :param trackster: if true, only tools that are compatible with
+                          Trackster are returned
+        :param q: if present search on the given query will be performed
+        :param tool_id: if present the given tool_id will be searched for
+                        all installed versions
         """
 
         # Read params.
