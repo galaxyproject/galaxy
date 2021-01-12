@@ -493,12 +493,13 @@ class InstallRepositoryManager:
 
     def __handle_repository_contents(self, tool_shed_repository, tool_path, repository_clone_url, relative_install_dir,
                                      tool_shed=None, tool_section=None, shed_tool_conf=None, reinstalling=False,
-                                     tool_panel_section_mapping={}):
+                                     tool_panel_section_mapping=None):
         """
         Generate the metadata for the installed tool shed repository, among other things.
         This method is called when an administrator is installing a new repository or
         reinstalling an uninstalled repository.
         """
+        tool_panel_section_mapping = tool_panel_section_mapping or {}
         shed_config_dict = self.app.toolbox.get_shed_config_dict_by_filename(shed_tool_conf)
         stdtm = ShedToolDataTableManager(self.app)
         irmm = InstalledRepositoryMetadataManager(app=self.app,
@@ -876,7 +877,8 @@ class InstallRepositoryManager:
 
     def install_tool_shed_repository(self, tool_shed_repository, repo_info_dict, tool_panel_section_key, shed_tool_conf, tool_path,
                                      install_resolver_dependencies, install_tool_dependencies, reinstalling=False,
-                                     tool_panel_section_mapping={}, install_options=None):
+                                     tool_panel_section_mapping=None, install_options=None):
+        tool_panel_section_mapping = tool_panel_section_mapping or {}
         self.app.install_model.context.flush()
         if tool_panel_section_key:
             _, tool_section = self.app.toolbox.get_section(tool_panel_section_key)
@@ -1053,8 +1055,7 @@ class InstallRepositoryManager:
                         if ((new_repository_db_record and new_repository_db_record.status in [
                                 self.install_model.ToolShedRepository.installation_status.ERROR,
                                 self.install_model.ToolShedRepository.installation_status.NEW,
-                                self.install_model.ToolShedRepository.installation_status.UNINSTALLED])
-                                or not new_repository_db_record):
+                                self.install_model.ToolShedRepository.installation_status.UNINSTALLED]) or not new_repository_db_record):
                             log.debug('Update to %s contains new repository dependency %s/%s', repository.name,
                                       new_owner, new_name)
                             if not install_new_dependencies:

@@ -105,10 +105,10 @@ def build_docker_run_command(
     interactive=False,
     terminal=False,
     tag=None,
-    volumes=[],
+    volumes=None,
     volumes_from=DEFAULT_VOLUMES_FROM,
     memory=DEFAULT_MEMORY,
-    env_directives=[],
+    env_directives=None,
     working_directory=DEFAULT_WORKING_DIRECTORY,
     name=None,
     net=DEFAULT_NET,
@@ -122,6 +122,8 @@ def build_docker_run_command(
     guest_ports=False,
     container_name=None
 ):
+    env_directives = env_directives or []
+    volumes = volumes or []
     command_parts = _docker_prefix(
         docker_cmd=docker_cmd,
         sudo=sudo,
@@ -182,16 +184,18 @@ def build_docker_run_command(
     return " ".join(command_parts)
 
 
-def command_list(command, command_args=[], **kwds):
+def command_list(command, command_args=None, **kwds):
     """Return Docker command as an argv list."""
+    command_args = command_args or []
     command_parts = _docker_prefix(**kwds)
     command_parts.append(command)
     command_parts.extend(command_args)
     return command_parts
 
 
-def command_shell(command, command_args=[], **kwds):
+def command_shell(command, command_args=None, **kwds):
     """Return Docker command as a string for a shell or command-list."""
+    command_args = command_args or []
     cmd = command_list(command, command_args, **kwds)
     to_str = kwds.get("to_str", True)
     if to_str:

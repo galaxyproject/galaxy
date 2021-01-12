@@ -17,7 +17,7 @@ from galaxy import (
 )
 from galaxy.datatypes import sniff
 from galaxy.datatypes.display_applications.util import decode_dataset_user, encode_dataset_user
-from galaxy.exceptions import MessageException, RequestParameterInvalidException
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.util import (
     inflector,
@@ -325,7 +325,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         else:
             return self.message_exception(trans, 'You do not have permission to edit this dataset\'s ( id: %s ) information.' % str(dataset_id))
 
-    @web.legacy_expose_api_anonymous
+    @web.expose_api_anonymous
     def set_edit(self, trans, payload=None, **kwd):
         """Allows user to modify parameters of an HDA."""
         status = 'success'
@@ -360,11 +360,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         elif operation == 'datatype':
             # The user clicked the Save button on the 'Change data type' form
             datatype = payload.get('datatype')
-            try:
-                self.hda_deserializer.deserialize(data, {'datatype': datatype}, trans=trans)
-                message = 'Changed the type to %s.' % datatype
-            except Exception as e:
-                return self.message_exception(trans, util.unicodify(e))
+            self.hda_deserializer.deserialize(data, {'datatype': datatype}, trans=trans)
+            message = 'Changed the type to %s.' % datatype
         elif operation == 'datatype_detect':
             # The user clicked the 'Detect datatype' button on the 'Change data type' form
             if data.datatype.is_datatype_change_allowed():
@@ -385,43 +382,25 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 return self.message_exception(trans, 'Changing datatype "%s" is not allowed.' % (data.extension))
         elif operation == 'autodetect':
             # The user clicked the Auto-detect button on the 'Edit Attributes' form
-            try:
-                self.hda_manager.set_metadata(trans, data, overwrite=True)
-            except MessageException as e:
-                return self.message_exception(trans, e.err_msg)
+            self.hda_manager.set_metadata(trans, data, overwrite=True)
         elif operation == 'conversion':
             target_type = payload.get('target_type')
             if target_type:
-                try:
-                    message = data.datatype.convert_dataset(trans, data, target_type)
-                except Exception as e:
-                    return self.message_exception(trans, util.unicodify(e))
+                message = data.datatype.convert_dataset(trans, data, target_type)
         elif operation == 'permission':
-            if not trans.user:
-                return self.message_exception(trans, 'You must be logged in if you want to change permissions.')
-            if trans.app.security_agent.can_manage_dataset(trans.get_current_user_roles(), data.dataset):
-                payload_permissions = {}
-                for action in trans.app.model.Dataset.permitted_actions.keys():
-                    payload_permissions[action] = [trans.security.decode_id(role_id) for role_id in util.listify(payload.get(action))]
-                # The user associated the DATASET_ACCESS permission on the dataset with 1 or more roles.  We
-                # need to ensure that they did not associate roles that would cause accessibility problems.
-                permissions, in_roles, error, message = \
-                    trans.app.security_agent.derive_roles_from_access(trans, data.dataset.id, 'root', **payload_permissions)
-                if error:
-                    # Keep the original role associations for the DATASET_ACCESS permission on the dataset.
-                    access_action = trans.app.security_agent.get_action(trans.app.security_agent.permitted_actions.DATASET_ACCESS.action)
-                    permissions[access_action] = data.dataset.get_access_roles(trans)
-                    trans.sa_session.refresh(data.dataset)
-                    return self.message_exception(trans, message)
-                else:
-                    error = trans.app.security_agent.set_all_dataset_permissions(data.dataset, permissions)
-                    trans.sa_session.refresh(data.dataset)
-                    if error:
-                        return self.message_exception(trans, error)
-                    else:
-                        message = 'Your changes completed successfully.'
-            else:
-                return self.message_exception(trans, 'You are not authorized to change this dataset\'s permissions.')
+            # Adapt form request to API - style.
+            payload_permissions = {}
+            for key, value in {"DATASET_MANAGE_PERMISSIONS": "manage_ids", "DATASET_ACCESS": "access_ids"}.items():
+                role_ids = util.listify(payload.get(key))
+                payload_permissions[f"{value}[]"] = role_ids
+
+            self.hda_manager.update_permissions(
+                trans,
+                data,
+                action='set_permissions',
+                **payload_permissions,
+            )
+            message = 'Your changes completed successfully.'
         else:
             return self.message_exception(trans, 'Invalid operation identifier (%s).' % operation)
         return {'status': status, 'message': sanitize_text(message)}
@@ -439,7 +418,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         if dataset_id is not None and data.history.user is not None and data.history.user != trans.user:
             trans.log_event(f"User attempted to edit a dataset they do not own (encoded: {dataset_id}, decoded: {id}).")
             return None, self.message_exception(trans, 'The dataset id is invalid.')
-        if data.history.user and not data.dataset.has_manage_permissions_roles(trans):
+        if data.history.user and not data.dataset.has_manage_permissions_roles(trans.app.security_agent):
             # Permission setting related to DATASET_MANAGE_PERMISSIONS was broken for a period of time,
             # so it is possible that some Datasets have no roles associated with the DATASET_MANAGE_PERMISSIONS
             # permission.  In this case, we'll reset this permission to the hda user's private role.
@@ -705,7 +684,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                             trans.set_cors_origin()
                             trans.set_cors_allow()
                         trans.response.set_content_type(value.mime_type(action_param_extra=action_param_extra))
-                        trans.response.headers['Content-Length'] = content_length
+                        trans.response.headers['Content-Length'] = str(content_length)
                         return rval
                     elif app_action is None:
                         # redirect user to url generated by display link

@@ -145,7 +145,7 @@ class TestRepositoryDependencyRevisions(ShedTwillTestCase):
         datatypes_tip = self.get_repository_tip(datatypes_repository)
         strings_displayed = []
         # Iterate through all metadata revisions and check for repository dependencies.
-        for metadata, changeset_revision in repository_metadata:
+        for _metadata, changeset_revision in repository_metadata:
             # Add the dependency description and datatypes repository details to the strings to check.
             strings_displayed = ['emboss_datatypes_0030', 'user1', datatypes_tip]
             strings_displayed.extend(['Tool dependencies', 'emboss', '5.0.0', 'package'])

@@ -59,11 +59,14 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
     @expose_api_anonymous
     def index(self, trans, deleted='False', **kwd):
         """
-        index( trans, deleted='False' )
-        * GET /api/histories:
-            return undeleted histories for the current user
-        * GET /api/histories/deleted:
-            return deleted histories for the current user
+        GET /api/histories
+
+        return undeleted histories for the current user
+
+        GET /api/histories/deleted
+
+        return deleted histories for the current user
+
         .. note:: Anonymous users are allowed to get their current history
 
         :type   deleted: boolean
@@ -73,6 +76,7 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
         :returns:   list of dictionaries containing summary history information
 
         The following are optional parameters:
+
             view:   string, one of ('summary','detailed'), defaults to 'summary'
                     controls which set of properties to return
             keys:   comma separated strings, unused by default
@@ -83,25 +87,37 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
         If neither keys or views are sent, the default view (set of keys) is returned.
         If both a view and keys are sent, the key list and the view's keys are
         combined.
+
         If keys are send and no view, only those properties in keys are returned.
 
-        For which properties are available see:
+        For which properties are available see
+
             galaxy/managers/histories/HistorySerializer
 
         The list returned can be filtered by using two optional parameters:
-            q:      string, generally a property name to filter by followed
-                    by an (often optional) hyphen and operator string.
-            qv:     string, the value to filter by
 
-        ..example:
+            :q:
+
+                string, generally a property name to filter by followed
+                by an (often optional) hyphen and operator string.
+
+            :qv:
+
+                string, the value to filter by
+
+        ..example::
+
             To filter the list to only those created after 2015-01-29,
             the query string would look like:
+
                 '?q=create_time-gt&qv=2015-01-29'
 
             Multiple filters can be sent in using multiple q/qv pairs:
+
                 '?q=create_time-gt&qv=2015-01-29&q=tag-has&qv=experiment-1'
 
         The list returned can be paginated using two optional parameters:
+
             limit:  integer, defaults to no value and no limit (return all)
                     how many items to return
             offset: integer, defaults to 0 and starts at the beginning
@@ -109,10 +125,12 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
                     at the Nth item
 
         ..example:
+
             limit and offset can be combined. Skip the first two and return five:
                 '?limit=5&offset=3'
 
         The list returned can be ordered using the optional parameter:
+
             order:  string containing one of the valid ordering attributes followed
                     (optionally) by '-asc' or '-dsc' for ascending and descending
                     order respectively. Orders can be stacked as a comma-
@@ -123,6 +141,7 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
                 '?order=name-dsc,create_time'
 
         The ordering attributes and their default orders are:
+
             create_time defaults to 'create_time-dsc'
             update_time defaults to 'update_time-dsc'
             name    defaults to 'name-asc'
@@ -248,9 +267,9 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
     @expose_api_anonymous_and_sessionless
     def published(self, trans, **kwd):
         """
-        published( self, trans, **kwd ):
-        * GET /api/histories/published:
-            return all histories that are published
+        GET /api/histories/published
+
+        return all histories that are published
 
         :rtype:     list
         :returns:   list of dictionaries containing summary history information
@@ -348,6 +367,7 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
         else:
             new_history = self.manager.create(user=trans.user, name=hist_name)
 
+        trans.app.security_agent.history_set_default_permissions(new_history)
         trans.sa_session.add(new_history)
         trans.sa_session.flush()
 
@@ -361,9 +381,10 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
     @expose_api
     def delete(self, trans, id, **kwd):
         """
-        delete( self, trans, id, **kwd )
-        * DELETE /api/histories/{id}
-            delete the history with the given ``id``
+        DELETE /api/histories/{id}
+
+        delete the history with the given ``id``
+
         .. note:: Stops all active jobs in the history if purge is set.
 
         :type   id:     str
@@ -452,10 +473,10 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
     @expose_api
     def archive_export(self, trans, id, **kwds):
         """
-        export_archive(self, trans, id, payload)
-        * PUT /api/histories/{id}/exports:
-            start job (if needed) to create history export for corresponding
-            history.
+        PUT /api/histories/{id}/exports
+
+        start job (if needed) to create history export for corresponding
+        history.
 
         :type   id:     str
         :param  id:     the encoded id of the history to export
@@ -467,16 +488,34 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
         # in one object being created.
         history = self.manager.get_accessible(self.decode_id(id), trans.user, current_history=trans.history)
         jeha = history.latest_export
-        up_to_date = jeha and jeha.up_to_date
-        if 'force' in kwds:
-            up_to_date = False  # Temp hack to force rebuild everytime during dev
+        force = 'force' in kwds  # Hack to force rebuild everytime during dev
+        exporting_to_uri = 'directory_uri' in kwds
+        # always just issue a new export when exporting to a URI.
+        up_to_date = not force and not exporting_to_uri and (jeha and jeha.up_to_date)
+        job = None
         if not up_to_date:
             # Need to create new JEHA + job.
             gzip = kwds.get("gzip", True)
             include_hidden = kwds.get("include_hidden", False)
             include_deleted = kwds.get("include_deleted", False)
-            self.queue_history_export(trans, history, gzip=gzip, include_hidden=include_hidden, include_deleted=include_deleted)
+            directory_uri = kwds.get("directory_uri", None)
+            file_name = kwds.get("file_name", None)
+            job = self.queue_history_export(
+                trans,
+                history,
+                gzip=gzip,
+                include_hidden=include_hidden,
+                include_deleted=include_deleted,
+                directory_uri=directory_uri,
+                file_name=file_name,
+            )
 
+        if exporting_to_uri:
+            # we don't have a jeha, there will never be a download_url. Just let
+            # the client poll on the created job_id to determine when the file has been
+            # written.
+            job_id = trans.security.encode_id(job.id)
+            return dict(job_id=job_id)
         if up_to_date and jeha.ready:
             jeha_id = trans.security.encode_id(jeha.id)
             return dict(download_url=url_for("history_archive_download", id=id, jeha_id=jeha_id))
@@ -488,13 +527,13 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
     @expose_api_raw
     def archive_download(self, trans, id, jeha_id, **kwds):
         """
-        export_download( self, trans, id, jeha_id )
-        * GET /api/histories/{id}/exports/{jeha_id}:
-            If ready and available, return raw contents of exported history.
-            Use/poll "PUT /api/histories/{id}/exports" to initiate the creation
-            of such an export - when ready that route will return 200 status
-            code (instead of 202) with a JSON dictionary containing a
-            `download_url`.
+        GET /api/histories/{id}/exports/{jeha_id}
+
+        If ready and available, return raw contents of exported history.
+        Use/poll ``PUT /api/histories/{id}/exports`` to initiate the creation
+        of such an export - when ready that route will return 200 status
+        code (instead of 202) with a JSON dictionary containing a
+        ``download_url``.
         """
         # Seems silly to put jeha_id in here, but want GET to be immuatable?
         # and this is being accomplished this way.

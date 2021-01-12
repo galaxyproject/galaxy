@@ -64,7 +64,7 @@ if [ -n "$USE_SELENIUM" ]; then
 fi
 
 if [ -z "$GALAXY_NO_TESTS" ]; then
-    sudo -E -H -u "#${GALAXY_TEST_UID}" sh run_tests.sh --skip-common-startup $@
+    sudo -E -H -u "#${GALAXY_TEST_UID}" ./run_tests.sh --skip-common-startup $@
 else
     GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION="$GALAXY_TEST_DBURI"
     TOOL_SHED_CONFIG_OVERRIDE_DATABASE_CONNECTION="$TOOL_SHED_TEST_DBURI"

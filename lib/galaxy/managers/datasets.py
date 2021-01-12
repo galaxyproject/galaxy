@@ -4,6 +4,7 @@ Manager and Serializer for Datasets.
 import glob
 import logging
 import os
+from typing import Type
 
 from galaxy import (
     exceptions,
@@ -232,7 +233,7 @@ class DatasetAssociationManager(base.ModelManager,
     """
     # DA's were meant to be proxies - but were never fully implemented as them
     # Instead, a dataset association HAS a dataset but contains metadata specific to a library (lda) or user (hda)
-    model_class = model.DatasetInstance
+    model_class: Type[model.DatasetInstance] = model.DatasetInstance
 
     # NOTE: model_manager_class should be set in HDA/LDA subclasses
 
@@ -328,14 +329,15 @@ class DatasetAssociationManager(base.ModelManager,
             dataset = dataset_assoc.dataset
 
         # Omit duplicated roles by converting to set
-        access_roles = set(dataset.get_access_roles(trans))
-        manage_roles = set(dataset.get_manage_permissions_roles(trans))
+        security_agent = trans.app.security_agent
+        access_roles = set(dataset.get_access_roles(security_agent))
+        manage_roles = set(dataset.get_manage_permissions_roles(security_agent))
 
         access_dataset_role_list = [(access_role.name, trans.security.encode_id(access_role.id)) for access_role in access_roles]
         manage_dataset_role_list = [(manage_role.name, trans.security.encode_id(manage_role.id)) for manage_role in manage_roles]
         rval = dict(access_dataset_roles=access_dataset_role_list, manage_dataset_roles=manage_dataset_role_list)
         if library_dataset is not None:
-            modify_roles = set(trans.app.security_agent.get_roles_for_action(library_dataset, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY))
+            modify_roles = set(security_agent.get_roles_for_action(library_dataset, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY))
             modify_item_role_list = [(modify_role.name, trans.security.encode_id(modify_role.id)) for modify_role in modify_roles]
             rval["modify_item_roles"] = modify_item_role_list
         return rval

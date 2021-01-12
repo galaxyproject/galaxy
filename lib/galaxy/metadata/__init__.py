@@ -115,6 +115,8 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
                                 kwds=None):
         assert job_metadata, "setup_external_metadata must be supplied with job_metadata path"
         kwds = kwds or {}
+        if not job:
+            job = sa_session.query(galaxy.model.Job).get(self.job_id)
         tmp_dir = _init_tmp_dir(tmp_dir)
 
         metadata_dir = os.path.join(tmp_dir, "metadata")
@@ -294,6 +296,8 @@ class JobExternalOutputMetadataWrapper(MetadataCollectionStrategy):
                                 object_store_conf=None, tool=None, job=None,
                                 kwds=None):
         kwds = kwds or {}
+        if not job:
+            job = sa_session.query(galaxy.model.Job).get(self.job_id)
         tmp_dir = _init_tmp_dir(tmp_dir)
         _assert_datatypes_config(datatypes_config)
 
@@ -335,7 +339,6 @@ class JobExternalOutputMetadataWrapper(MetadataCollectionStrategy):
             # so we will only populate the dictionary once
             metadata_files = self._get_output_filenames_by_dataset(dataset, sa_session)
             if not metadata_files:
-                job = sa_session.query(galaxy.model.Job).get(self.job_id)
                 metadata_files = galaxy.model.JobExternalOutputMetadata(job=job, dataset=dataset)
                 # we are using tempfile to create unique filenames, tempfile always returns an absolute path
                 # we will use pathnames relative to the galaxy root, to accommodate instances where the galaxy root
@@ -373,11 +376,9 @@ class JobExternalOutputMetadataWrapper(MetadataCollectionStrategy):
         assert not use_bin
         if include_command:
             # return command required to build
-            fd, fp = tempfile.mkstemp(suffix='.py', dir=tmp_dir, prefix="set_metadata_")
-            metadata_script_file = abspath(fp)
-            with os.fdopen(fd, 'w') as f:
-                f.write(SET_METADATA_SCRIPT)
-            return 'python "{}" {}'.format(metadata_path_on_compute(metadata_script_file), args)
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.py', dir=tmp_dir, prefix="set_metadata_", delete=False) as temp:
+                temp.write(SET_METADATA_SCRIPT)
+            return 'python "{}" {}'.format(metadata_path_on_compute(temp.name), args)
         else:
             # return args to galaxy_ext.metadata.set_metadata required to build
             return args

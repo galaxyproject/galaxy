@@ -1,11 +1,12 @@
 <template>
-    <div id="edit-attributes" class="right-content p-2">
+    <div id="edit-attributes" class="right-content p-2" itemscope itemtype="http://schema.org/CreativeWork">
         <b-alert :variant="messageVariant" :show="!!message">
             {{ message }}
         </b-alert>
         <div id="workflow-name-area">
             <b>Name</b>
-            <b-input id="workflow-name" :value="name" @change="onRename" />
+            <meta itemprop="name" :content="name" />
+            <b-input id="workflow-name" v-model="nameCurrent" @keyup="$emit('update:nameCurrent', nameCurrent)" />
         </div>
         <div id="workflow-version-area" class="mt-2">
             <b>Version</b>
@@ -18,17 +19,30 @@
         <div v-if="hasParameters" id="workflow-parameters-area" class="mt-2">
             <b>Parameters</b>
             <b-list-group>
-                <b-list-group-item v-for="[key, p] in parameters.entries()" :key="key"
-                    >{{ key + 1 }}: {{ p }}
+                <b-list-group-item v-for="[key, p] in parameters.parameters.entries()" :key="key"
+                    >{{ key + 1 }}: {{ p.name }}
                 </b-list-group-item>
             </b-list-group>
         </div>
         <div id="workflow-annotation-area" class="mt-2">
             <b>Annotation</b>
-            <b-textarea id="workflow-annotation" :value="annotation" @change="onAnnotation" />
+            <meta itemprop="description" :content="annotationCurrent" />
+            <b-textarea
+                id="workflow-annotation"
+                v-model="annotationCurrent"
+                @keyup="$emit('update:annotationCurrent', annotationCurrent)"
+            />
             <div class="form-text text-muted">
                 These notes will be visible when this workflow is viewed.
             </div>
+        </div>
+        <div id="workflow-license-area" class="mt-2">
+            <b>License</b>
+            <LicenseSelector :inputLicense="license" @onLicense="onLicense" />
+        </div>
+        <div id="workflow-creator-area" class="mt-2">
+            <b>Creator</b>
+            <CreatorEditor :creators="creatorAsList" @onCreators="onCreator" />
         </div>
         <div class="mt-2">
             <b>Tags</b>
@@ -45,7 +59,10 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import moment from "moment";
 import { Services } from "components/Workflow/services";
+import { LegacyParameters } from "components/Workflow/Editor/modules/utilities";
 import Tags from "components/Common/Tags";
+import LicenseSelector from "components/License/LicenseSelector";
+import CreatorEditor from "components/SchemaOrg/CreatorEditor";
 
 Vue.use(BootstrapVue);
 
@@ -53,6 +70,8 @@ export default {
     name: "Attributes",
     components: {
         Tags,
+        LicenseSelector,
+        CreatorEditor,
     },
     props: {
         id: {
@@ -69,7 +88,13 @@ export default {
         },
         annotation: {
             type: String,
+        },
+        license: {
+            type: String,
             default: "",
+        },
+        creator: {
+            default: null,
         },
         version: {
             type: Number,
@@ -80,7 +105,7 @@ export default {
             default: null,
         },
         parameters: {
-            type: Array,
+            type: LegacyParameters,
             default: null,
         },
     },
@@ -90,14 +115,25 @@ export default {
             messageVariant: null,
             tagsCurrent: this.tags,
             versionCurrent: this.version,
+            annotationCurrent: this.annotation,
+            nameCurrent: this.name,
         };
     },
     created() {
         this.services = new Services();
     },
     computed: {
+        creatorAsList() {
+            let creator = this.creator;
+            if (!creator) {
+                creator = [];
+            } else if (!(creator instanceof Array)) {
+                creator = [creator];
+            }
+            return creator;
+        },
         hasParameters() {
-            return this.parameters.length > 0;
+            return this.parameters && this.parameters.parameters.length > 0;
         },
         versionOptions() {
             const versions = [];
@@ -117,21 +153,38 @@ export default {
         version() {
             this.versionCurrent = this.version;
         },
+        license() {
+            this.licenseCurrent = this.license;
+        },
+        creator() {
+            let creator = this.creator;
+            if (!creator) {
+                creator = [];
+            } else if (!(creator instanceof Array)) {
+                creator = [creator];
+            }
+            this.creatorCurrent = creator;
+        },
+        annotation() {
+            this.annotationCurrent = this.annotation;
+        },
+        name() {
+            this.nameCurrent = this.name;
+        },
     },
     methods: {
         onTags(tags) {
             this.tagsCurrent = tags;
             this.onAttributes({ tags });
         },
-        onAnnotation(annotation) {
-            this.onAttributes({ annotation });
-        },
-        onRename(name) {
-            this.onAttributes({ name });
-            this.$emit("onRename", name);
-        },
         onVersion() {
             this.$emit("onVersion", this.versionCurrent);
+        },
+        onLicense(license) {
+            this.$emit("onLicense", license);
+        },
+        onCreator(creator) {
+            this.$emit("onCreator", creator);
         },
         onError(error) {
             this.message = error;

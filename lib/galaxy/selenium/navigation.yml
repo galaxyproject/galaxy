@@ -78,6 +78,9 @@ preferences:
 
 toolbox_filters:
   selectors:
+    input:
+      type: xpath
+      selector: "//span[contains(. ,'${description}')]/../div/div[@class=\"custom-control\"]"
     submit: '#submit'
 
 change_user_email:
@@ -283,7 +286,8 @@ histories:
     selectors:
       unshare_user_button: '.unshare_user'
       share_with_a_user_button: '#share_with_a_user'
-      make_accessible_and_publish: '#make_accessible_and_publish'
+      make_accessible: '.make-accessible label'
+      make_publishable: '.make-publishable label'
     labels:
       unshare: 'Unshare'
 
@@ -323,11 +327,8 @@ tool_form:
     options: '#options [data-toggle="dropdown"]'
     execute: 'button#execute'
     parameter_div: 'div.ui-form-element[tour_id="${parameter}"]'
-    citations: '.citations-formatted'
-    reference: '.citations-formatted .formatted-reference'
-    show_bibtex:
-      type: xpath
-      selector: '//a[@class="nav-link" and text()="BibTeX"]'
+    reference: '.formatted-reference'
+    about: '.tool-footer'
 
   labels:
     generate_tour: 'Generate Tour'
@@ -382,6 +383,8 @@ workflow_editor:
     connector_for: "div[output-handle-id='${source_id}'][input-handle-id='${sink_id}']"
 
     connector_destroy_callout: '.delete-terminal'
+    save_button: '.editor-button-save'
+    state_modal_body: '.state-upgrade-modal'
 
 tour:
   popover:
@@ -502,12 +505,9 @@ libraries:
       save_folder_btn: '.save_folder_btn'
       input_folder_name: 'textarea[name="input_folder_name"]'
       input_folder_description: '.input_folder_description'
-      download_dropdown: '#download-dropdown-btn'
+      download_button: '#download-btn'
       delete_btn: '.toolbtn-bulk-delete'
       toast_msg: '.toast-message'
-      download_zip:
-        type: xpath
-        selector: '//a[contains(text(), ".zip")]'
 
     labels:
       from_history: 'from History'
@@ -545,7 +545,10 @@ upload:
     rule_source_content: 'textarea.upload-rule-source-content'
     rule_select_data_type: '.rule-data-type'
     rule_select_input_type: '.rule-select-type'
-    rule_dataset_selector: '.upload-rule-option .dataset-selector'
+    rule_dataset_selector:
+      selector: '.selection-dialog-modal'
+    rule_dataset_selector_row:
+      selector: '.selection-dialog-modal [aria-rowindex="${rowindex}"]'
 
 rule_builder:
   selectors:

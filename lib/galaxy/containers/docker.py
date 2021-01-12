@@ -8,19 +8,20 @@ import shlex
 from functools import partial
 from itertools import cycle, repeat
 from time import sleep
+from typing import Any, Dict, Optional, Type
 
 try:
     import docker
 except ImportError:
-    docker = None
+    docker = None  # type: ignore
 
 try:
     from requests.exceptions import ConnectionError, ReadTimeout
 except ImportError:
-    ConnectionError = None
-    ReadTimeout = None
+    ConnectionError = None  # type: ignore
+    ReadTimeout = None  # type: ignore
 
-from galaxy.containers import ContainerInterface
+from galaxy.containers import Container, ContainerInterface
 from galaxy.containers.docker_decorators import (
     docker_columns,
     docker_json
@@ -41,9 +42,9 @@ log = logging.getLogger(__name__)
 
 class DockerInterface(ContainerInterface):
 
-    container_class = DockerContainer
+    container_class: Type[Container] = DockerContainer
     volume_class = DockerVolume
-    conf_defaults = {
+    conf_defaults: Dict[str, Optional[Any]] = {
         'host': None,
         'tls': False,
         'force_tlsverify': False,
@@ -107,7 +108,7 @@ class DockerInterface(ContainerInterface):
 class DockerCLIInterface(DockerInterface):
 
     container_type = 'docker_cli'
-    conf_defaults = {
+    conf_defaults: Dict[str, Optional[Any]] = {
         'command_template': '{executable} {global_kwopts} {subcommand} {args}',
         'executable': 'docker',
     }
@@ -226,7 +227,7 @@ class DockerAPIClient:
     _host_iter = None
     _client = None
     _client_args = ()
-    _client_kwargs = {}
+    _client_kwargs: Dict[str, Optional[Any]] = {}
 
     @staticmethod
     def _qualname(f):

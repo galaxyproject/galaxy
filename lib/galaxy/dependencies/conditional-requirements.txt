@@ -8,7 +8,7 @@ drmaa
 statsd
 docker
 azure-storage==0.32.0
-python-irodsclient==0.8.4
+python-irodsclient==0.8.5
 python-ldap==3.2.0
 python-pam
 galaxycloudrunner
@@ -33,4 +33,4 @@ pygithub
 influxdb
 
 # Deep learning packages for tool recommendation
-tensorflow==2.3.1
+tensorflow==2.4.0

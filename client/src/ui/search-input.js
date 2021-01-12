@@ -30,7 +30,7 @@ function searchInput(parentNode, options) {
         onsearch: function (inputVal) {},
         minSearchLen: 0,
         escWillClear: true,
-        advsearchlink: null,
+        advsearchlink: false,
         oninit: function () {},
     };
 
@@ -149,7 +149,7 @@ function searchInput(parentNode, options) {
                     .popover({
                         trigger: "focus",
                         html: true,
-                        container: ".history-right-panel",
+                        container: "body",
                     })
                     .popover("show");
             });

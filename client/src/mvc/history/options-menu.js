@@ -151,6 +151,19 @@ var menu = [
         href: "history/export_archive?preview=True",
         anon: true,
     },
+    {
+        html: _l("Beta Features"),
+        anon: false,
+        header: true,
+    },
+    {
+        html: _l("Use Beta History Panel"),
+        anon: false,
+        func: function () {
+            sessionStorage.setItem("useBetaHistory", 1);
+            window.location.reload(false);
+        },
+    },
 ];
 
 // Webhooks
@@ -165,7 +178,7 @@ Webhooks.load({
             if (webhook.activate) {
                 webhooks_menu.push({
                     html: _l(webhook.config.title),
-                    // func: function() {},
+                    func: webhook.config.function && new Function(webhook.config.function),
                     anon: true,
                 });
             }

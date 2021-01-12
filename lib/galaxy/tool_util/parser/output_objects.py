@@ -7,13 +7,14 @@ from .output_collection_def import dataset_collector_descriptions_from_output_di
 
 class ToolOutputBase(Dictifiable):
 
-    def __init__(self, name, label=None, filters=None, hidden=False):
+    def __init__(self, name, label=None, filters=None, hidden=False, from_expression=None):
         super().__init__()
         self.name = name
         self.label = label
         self.filters = filters or []
         self.hidden = hidden
         self.collection = False
+        self.from_expression = from_expression
 
     def to_dict(self, view='collection', value_mapper=None, app=None):
         return super().to_dict(view=view, value_mapper=value_mapper)
@@ -32,8 +33,8 @@ class ToolOutput(ToolOutputBase):
 
     def __init__(self, name, format=None, format_source=None, metadata_source=None,
                  parent=None, label=None, filters=None, actions=None, hidden=False,
-                 implicit=False):
-        super().__init__(name, label=label, filters=filters, hidden=hidden)
+                 implicit=False, from_expression=None):
+        super().__init__(name, label=label, filters=filters, hidden=hidden, from_expression=from_expression)
         self.output_type = "data"
         self.format = format
         self.format_source = format_source
@@ -173,7 +174,8 @@ class ToolOutputCollection(ToolOutputBase):
         else:
             collection_prototype = self.structure.collection_prototype(inputs, type_registry)
 
-            def prototype_dataset_element_to_output(element, parent_ids=[]):
+            def prototype_dataset_element_to_output(element, parent_ids=None):
+                parent_ids = parent_ids or []
                 name = element.element_identifier
                 format = self.default_format
                 if self.inherit_format:
@@ -194,7 +196,8 @@ class ToolOutputCollection(ToolOutputBase):
                     parent_ids=parent_ids,
                 )
 
-            def prototype_collection_to_output(collection_prototype, parent_ids=[]):
+            def prototype_collection_to_output(collection_prototype, parent_ids=None):
+                parent_ids = parent_ids or []
                 output_parts = []
                 for element in collection_prototype.elements:
                     element_parts = []
@@ -301,7 +304,8 @@ class ToolOutputCollectionStructure:
 
 class ToolOutputCollectionPart:
 
-    def __init__(self, output_collection_def, element_identifier, output_def, parent_ids=[]):
+    def __init__(self, output_collection_def, element_identifier, output_def, parent_ids=None):
+        parent_ids = parent_ids or []
         self.output_collection_def = output_collection_def
         self.element_identifier = element_identifier
         self.output_def = output_def

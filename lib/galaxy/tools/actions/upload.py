@@ -15,10 +15,11 @@ log = logging.getLogger(__name__)
 class BaseUploadToolAction(ToolAction):
     produces_real_jobs = True
 
-    def execute(self, tool, trans, incoming={}, history=None, **kwargs):
+    def execute(self, tool, trans, incoming=None, history=None, **kwargs):
         trans.check_user_activation()
+        incoming = incoming or {}
         dataset_upload_inputs = []
-        for input_name, input in tool.inputs.items():
+        for input in tool.inputs.values():
             if input.type == "upload_dataset":
                 dataset_upload_inputs.append(input)
         assert dataset_upload_inputs, Exception("No dataset upload groups were found.")
@@ -79,7 +80,7 @@ class FetchUploadToolAction(BaseUploadToolAction):
                         request_part["name"] = path_def["file_data"]["filename"]
                     request_part["src"] = "path"
                 else:
-                    for key, value in request_part.items():
+                    for value in request_part.values():
                         replace_file_srcs(value)
             elif isinstance(request_part, list):
                 for value in request_part:

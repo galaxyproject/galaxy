@@ -20,9 +20,6 @@ class CloudAuthzManager(sharable.SharableModelManager):
     model_class = model.CloudAuthz
     foreign_key_name = 'cloudauthz'
 
-    def __init__(self, app, *args, **kwargs):
-        super().__init__(app, *args, **kwargs)
-
 
 class CloudAuthzsSerializer(base.ModelSerializer):
     """

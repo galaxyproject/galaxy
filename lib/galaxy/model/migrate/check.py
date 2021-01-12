@@ -20,7 +20,7 @@ migrate_repository_directory = os.path.abspath(os.path.dirname(__file__)).replac
 migrate_repository = repository.Repository(migrate_repository_directory)
 
 
-def create_or_verify_database(url, galaxy_config_file, engine_options={}, app=None, map_install_models=False):
+def create_or_verify_database(url, galaxy_config_file, engine_options=None, app=None, map_install_models=False):
     """
     Check that the database is use-able, possibly creating it if empty (this is
     the only time we automatically create tables, otherwise we force the
@@ -32,6 +32,7 @@ def create_or_verify_database(url, galaxy_config_file, engine_options={}, app=No
     4) Database versioned but out of date --> fail with informative message, user must run "sh manage_db.sh upgrade"
     """
     # Create the base database if it doesn't yet exist.
+    engine_options = engine_options or {}
     new_database = not database_exists(url)
     if new_database:
         template = app and getattr(app.config, "database_template", None)

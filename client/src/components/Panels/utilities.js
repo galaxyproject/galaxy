@@ -54,6 +54,8 @@ export function filterTools(layout, results) {
                         toolsResults.push(el);
                     }
                 });
+            } else if (!section.text && results.includes(section.id)) {
+                toolsResults.push(section);
             }
         });
         return toolsResults.sort((tool1, tool2) => {

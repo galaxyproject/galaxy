@@ -37,7 +37,8 @@ export default {
             }
         },
         remoteFiles() {
-            return this.fileSourcesConfigured || this.ftpUploadSite;
+            // this needs to be true for the tests to pass
+            return !!this.fileSourcesConfigured || !!this.ftpUploadSite;
         },
     },
     methods: {

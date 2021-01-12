@@ -63,10 +63,14 @@ class HistoryDatasetStateTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         # Expand HDA and wait for details to show up.
         return self.history_panel_click_item_title(hid=hid, wait=True)
 
-    def _assert_title_buttons(self, hid, expected_buttons=['display', 'edit', 'delete']):
+    def _assert_title_buttons(self, hid, expected_buttons=None):
+        if expected_buttons is None:
+            expected_buttons = ['display', 'edit', 'delete']
         self._assert_buttons(hid, expected_buttons)
 
-    def _assert_action_buttons(self, hid, expected_buttons=["info", "download"]):
+    def _assert_action_buttons(self, hid, expected_buttons=None):
+        if expected_buttons is None:
+            expected_buttons = ["info", "download"]
         self._assert_buttons(hid, expected_buttons)
 
     def _assert_buttons(self, hid, expected_buttons):

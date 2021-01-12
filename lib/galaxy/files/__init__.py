@@ -1,6 +1,9 @@
 import logging
 import os
-from collections import namedtuple
+from collections import (
+    defaultdict,
+    namedtuple,
+)
 
 from galaxy import exceptions
 from galaxy.util import (
@@ -172,7 +175,8 @@ class ConfiguredFileSources:
 
 class ConfiguredFileSourcesConfig:
 
-    def __init__(self, symlink_allowlist=[], library_import_dir=None, user_library_import_dir=None, ftp_upload_dir=None, ftp_upload_purge=True):
+    def __init__(self, symlink_allowlist=None, library_import_dir=None, user_library_import_dir=None, ftp_upload_dir=None, ftp_upload_purge=True):
+        symlink_allowlist = symlink_allowlist or []
         self.symlink_allowlist = symlink_allowlist
         self.library_import_dir = library_import_dir
         self.user_library_import_dir = user_library_import_dir
@@ -234,7 +238,7 @@ class ProvidesUserFileSourcesUserContext:
     @property
     def preferences(self):
         user = self.trans.user
-        return user and user.extra_preferences
+        return user and user.extra_preferences or defaultdict(lambda: None)
 
 
 class DictFileSourcesUserContext:

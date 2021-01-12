@@ -386,7 +386,8 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesApp, t
         self.job.history = self.history
         self.outputs = {DEFAULT_TOOL_OUTPUT: self.hda}
 
-    def _new_history(self, hdas=[], flush=True):
+    def _new_history(self, hdas=None, flush=True):
+        hdas = hdas or []
         history = model.History()
         self.app.model.context.add(history)
         for hda in hdas:

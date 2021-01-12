@@ -311,7 +311,7 @@ class Registry:
                                     optional = composite_file.get('optional', False)
                                     mimetype = composite_file.get('mimetype', None)
                                     self.datatypes_by_extension[extension].add_composite_file(name, optional=optional, mimetype=mimetype)
-                                for display_app in elem.findall('display'):
+                                for _display_app in elem.findall('display'):
                                     if proprietary_display_path:
                                         if elem not in self.proprietary_display_app_containers:
                                             self.proprietary_display_app_containers.append(elem)

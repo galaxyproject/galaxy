@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 __version__ = '20.9.2.dev0'
 
 PROJECT_NAME = "galaxy-util"

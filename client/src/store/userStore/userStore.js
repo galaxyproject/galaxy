@@ -10,15 +10,7 @@ const getters = {
     // persist it easily in localStorage or something,
     // hydrate with model object using the getter
     currentUser(state) {
-        let userProps = state.currentUser;
-        if (!userProps) {
-            // TODO: remove when we no longer use the galaxy instance
-            try {
-                userProps = window.Galaxy.user;
-            } catch (err) {
-                console.warn(err);
-            }
-        }
+        const userProps = state.currentUser || {};
         return new User(userProps);
     },
 };
@@ -30,12 +22,9 @@ const mutations = {
 };
 
 const actions = {
-    async loadUser({ commit, dispatch }) {
+    async loadUser({ commit }) {
         const user = await getCurrentUser();
         commit("setCurrentUser", user);
-    },
-    async $init({ dispatch }) {
-        await dispatch("loadUser");
     },
 };
 

@@ -5,11 +5,11 @@ import collections
 import json
 import logging
 import os
-
+from enum import Enum
+from typing import Any, NamedTuple, Optional
 
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.util import safe_makedirs, string_as_bool
-from galaxy.util.bunch import Bunch
 from .util import set_basename_and_derived_properties
 
 
@@ -19,17 +19,18 @@ NOT_PRESENT = object()
 
 NO_GALAXY_INPUT = object()
 
-INPUT_TYPE = Bunch(
-    DATA="data",
-    INTEGER="integer",
-    FLOAT="float",
-    TEXT="text",
-    BOOLEAN="boolean",
-    SELECT="select",
-    FIELD="field",
-    CONDITIONAL="conditional",
-    DATA_COLLECTON="data_collection",
-)
+
+class INPUT_TYPE(str, Enum):
+    DATA = "data"
+    INTEGER = "integer"
+    FLOAT = "float"
+    TEXT = "text"
+    BOOLEAN = "boolean"
+    SELECT = "select"
+    FIELD = "field"
+    CONDITIONAL = "conditional"
+    DATA_COLLECTON = "data_collection"
+
 
 # There are two approaches to mapping CWL tool state to Galaxy tool state
 # one is to map CWL types to compound Galaxy tool parameters combinations
@@ -50,7 +51,18 @@ USE_FIELD_TYPES = True
 #     easier to manage in someways.
 USE_STEP_PARAMETERS = USE_FIELD_TYPES
 
-TypeRepresentation = collections.namedtuple("TypeRepresentation", ["name", "galaxy_param_type", "label", "collection_type"])
+
+class TypeRepresentation(NamedTuple):
+    name: str
+    galaxy_param_type: Any
+    label: str
+    collection_type: Optional[str]
+
+    @property
+    def uses_param(self):
+        return self.galaxy_param_type is not NO_GALAXY_INPUT
+
+
 TYPE_REPRESENTATIONS = [
     TypeRepresentation("null", NO_GALAXY_INPUT, "no input", None),
     TypeRepresentation("integer", INPUT_TYPE.INTEGER, "an integer", None),
@@ -67,7 +79,6 @@ TYPE_REPRESENTATIONS = [
     TypeRepresentation("field", INPUT_TYPE.FIELD, "arbitrary JSON structure", None),
 ]
 FIELD_TYPE_REPRESENTATION = TYPE_REPRESENTATIONS[-1]
-TypeRepresentation.uses_param = lambda self: self.galaxy_param_type is not NO_GALAXY_INPUT
 
 if not USE_FIELD_TYPES:
     CWL_TYPE_TO_REPRESENTATIONS = {

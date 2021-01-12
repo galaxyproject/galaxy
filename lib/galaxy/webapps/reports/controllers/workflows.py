@@ -17,13 +17,13 @@ from markupsafe import escape
 from sqlalchemy import and_
 
 from galaxy import model, util
+from galaxy.web.legacy_framework import grids
 from galaxy.webapps.base.controller import BaseUIController, web
 from galaxy.webapps.reports.controllers.jobs import (
     get_spark_time,
     sorter
 )
 from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
-from galaxy.webapps.reports.framework import grids
 
 log = logging.getLogger(__name__)
 
@@ -109,7 +109,6 @@ class SpecifiedDateListGrid(grids.Grid):
                                               key="free-text-search",
                                               visible=False,
                                               filterable="standard"))
-    standard_filters = []
     default_filter = {'specified_date': 'All'}
     num_rows_per_page = 50
     use_paging = True

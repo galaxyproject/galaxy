@@ -31,11 +31,13 @@ class ToolboxFiltersSeleniumIntegrationTestCase(SeleniumIntegrationTestCase):
         self.navigate_to_user_preferences()
         self.components.preferences.toolbox_filters.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
+        self.screenshot("toolbox_filters_landing")
         sibling_text = 'This tool filter will disable the Test Section section.'
-        # This is the least terrible way I've found to get the right element.
-        filter_upload = self.driver.find_element_by_xpath("//span[contains(. ,'%s')]/../div//label" % sibling_text)
+        component = self.components.toolbox_filters.input(description=sibling_text)
+        filter_upload = component.wait_for_visible()
         self.action_chains().move_to_element(filter_upload).click().perform()
         self.sleep_for(self.wait_types.UX_RENDER)
+        self.screenshot("toolbox_filters_swapped")
         self.components.toolbox_filters.submit.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.home()

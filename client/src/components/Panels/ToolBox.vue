@@ -9,8 +9,8 @@
             </div>
         </div>
         <div class="unified-panel-controls">
-            <upload-button />
             <tool-search :query="query" placeholder="search tools" @onQuery="onQuery" @onResults="onResults" />
+            <upload-button />
             <div class="py-2" v-if="hasResults">
                 <b-button @click="onToggle" size="sm" class="w-100">
                     <span :class="buttonIcon" />

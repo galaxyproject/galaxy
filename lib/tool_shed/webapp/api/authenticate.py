@@ -2,12 +2,19 @@
 API key retrieval through BaseAuth
 Sample usage:
 
-curl --user zipzap@foo.com:password http://localhost:9009/api/authenticate/baseauth
+.. code-block::
 
-Returns:
-{
-    "api_key": <some api key>
-}
+    curl --user zipzap@foo.com:password http://localhost:9009/api/authenticate/baseauth
+
+Returns
+
+.. highlight:: json
+.. code-block:: json
+
+    {
+        "api_key": <some api key>
+    }
+
 """
 import logging
 
@@ -22,8 +29,8 @@ class ToolShedAuthenticationController(AuthenticationController):
     @expose_api_raw_anonymous_and_sessionless
     def get_tool_shed_api_key(self, trans, **kwd):
         """
-        def get_api_key( self, trans, **kwd )
-        * GET /api/authenticate/baseauth
+        GET /api/authenticate/baseauth
+
         returns an API key for authenticated user based on BaseAuth headers
 
         :returns: api_key in json format

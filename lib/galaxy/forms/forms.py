@@ -9,7 +9,7 @@ from galaxy.model import (
 )
 from galaxy.util import string_as_bool
 
-FORM_TYPES = {f_type.lower(): f_descript for f_type, f_descript in FormDefinition.types.items()}
+FORM_TYPES = {f_type.lower(): f_descript for f_type, f_descript in FormDefinition.types.__members__.items()}
 
 
 class FormDefinitionFactory:
@@ -69,7 +69,7 @@ class FormDefinitionFactory:
 
 
 class FormDefinitionFieldFactory:
-    type = None
+    type: str
 
     def __get_stored_field_type(self, **kwds):
         raise Exception('not implemented')
@@ -286,10 +286,11 @@ class FormDefinitionSelectFieldFactory(FormDefinitionFieldFactory):
         else:
             return 'SelectField'
 
-    def new(self, name=None, label=None, required=False, helptext=None, default=None, visible=True, layout=None, options=[], checkboxes=False):
+    def new(self, name=None, label=None, required=False, helptext=None, default=None, visible=True, layout=None, options=None, checkboxes=False):
         """
         Return new FormDefinition field.
         """
+        options = options or []
         rval = super().new(name=name, label=label,
                            required=required, helptext=helptext,
                            default=default, visible=visible,

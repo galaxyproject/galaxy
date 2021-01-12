@@ -428,8 +428,8 @@ def hash_conda_packages(conda_packages, conda_target=None):
 # shell makes sense for planemo, in Galaxy this should just execute
 # these commands as Python
 def install_conda(conda_context, force_conda_build=False):
-    f, script_path = tempfile.mkstemp(suffix=".sh", prefix="conda_install")
-    os.close(f)
+    with tempfile.NamedTemporaryFile(suffix=".sh", prefix="conda_install", delete=False) as temp:
+        script_path = temp.name
     download_cmd = commands.download_command(conda_link(), to=script_path)
     install_cmd = ['bash', script_path, '-b', '-p', conda_context.conda_prefix]
     package_targets = [

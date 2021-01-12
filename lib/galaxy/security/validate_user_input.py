@@ -28,12 +28,13 @@ PASSWORD_MIN_LEN = 6
 
 def validate_email_str(email):
     """Validates a string containing an email address."""
-    message = ''
+    if not email:
+        return "No email address was provided."
     if not(VALID_EMAIL_RE.match(email)):
-        message = "The format of the email address is not correct."
+        return "The format of the email address is not correct."
     elif len(email) > EMAIL_MAX_LEN:
-        message = "Email address cannot be more than %d characters in length." % EMAIL_MAX_LEN
-    return message
+        return "Email address cannot be more than %d characters in length." % EMAIL_MAX_LEN
+    return ""
 
 
 def validate_password_str(password):

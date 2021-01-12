@@ -219,7 +219,7 @@ class DatasetCollectionManager:
                                          history=None):
         if collection_type_description.has_subcollections():
             # Nested collection - recursively create collections and update identifiers.
-            self.__recursively_create_collections_for_identifiers(trans, element_identifiers, hide_source_items, copy_elements)
+            self.__recursively_create_collections_for_identifiers(trans, element_identifiers, hide_source_items, copy_elements, history=history)
         new_collection = False
         for element_identifier in element_identifiers:
             if element_identifier.get("src") == "new_collection" and element_identifier.get('collection_type') == '':
@@ -350,10 +350,10 @@ class DatasetCollectionManager:
             context.flush()
         return dataset_collection_instance
 
-    def __recursively_create_collections_for_identifiers(self, trans, element_identifiers, hide_source_items, copy_elements):
-        for index, element_identifier in enumerate(element_identifiers):
+    def __recursively_create_collections_for_identifiers(self, trans, element_identifiers, hide_source_items, copy_elements, history=None):
+        for element_identifier in element_identifiers:
             try:
-                if element_identifier.get("src", None) != "new_collection":
+                if element_identifier.get("src") != "new_collection":
                     # not a new collection, keep moving...
                     continue
             except KeyError:
@@ -361,13 +361,14 @@ class DatasetCollectionManager:
                 continue
 
             # element identifier is a dict with src new_collection...
-            collection_type = element_identifier.get("collection_type", None)
+            collection_type = element_identifier.get("collection_type")
             collection = self.create_dataset_collection(
                 trans=trans,
                 collection_type=collection_type,
                 element_identifiers=element_identifier["element_identifiers"],
                 hide_source_items=hide_source_items,
                 copy_elements=copy_elements,
+                history=history,
             )
             element_identifier["__object__"] = collection
 
@@ -382,12 +383,12 @@ class DatasetCollectionManager:
             if isinstance(element, model.DatasetCollection):
                 continue
 
-            if element.get("src", None) != "new_collection":
+            if element.get("src") != "new_collection":
                 continue
 
             # element is a dict with src new_collection and
             # and OrderedDict of named elements
-            collection_type = element.get("collection_type", None)
+            collection_type = element.get("collection_type")
             sub_elements = element["elements"]
             collection = self.create_dataset_collection(
                 trans=trans,
@@ -431,7 +432,7 @@ class DatasetCollectionManager:
             src_type = element_identifier.get('src', 'hda')
         except AttributeError:
             raise MessageException("Dataset collection element definition (%s) not dictionary-like." % element_identifier)
-        encoded_id = element_identifier.get('id', None)
+        encoded_id = element_identifier.get('id')
         if not src_type or not encoded_id:
             message_template = "Problem decoding element identifier %s - must contain a 'src' and a 'id'."
             message = message_template % element_identifier
@@ -574,6 +575,8 @@ class DatasetCollectionManager:
     def __get_history_collection_instance(self, trans, id, check_ownership=False, check_accessible=True):
         instance_id = int(trans.app.security.decode_id(id))
         collection_instance = trans.sa_session.query(trans.app.model.HistoryDatasetCollectionAssociation).get(instance_id)
+        if not collection_instance:
+            raise RequestParameterInvalidException(f"History dataset collection association {id} not found")
         history = getattr(trans, 'history', collection_instance.history)
         if check_ownership:
             self.history_manager.error_unless_owner(collection_instance.history, trans.user, current_history=history)
@@ -586,6 +589,8 @@ class DatasetCollectionManager:
             raise NotImplementedError("Functionality (getting library dataset collection with ownership check) unimplemented.")
         instance_id = int(trans.security.decode_id(id))
         collection_instance = trans.sa_session.query(trans.app.model.LibraryDatasetCollectionAssociation).get(instance_id)
+        if not collection_instance:
+            raise RequestParameterInvalidException(f"Library dataset collection association {id} not found")
         if check_accessible:
             if not trans.app.security_agent.can_access_library_item(trans.get_current_user_roles(), collection_instance, trans.user):
                 raise ItemAccessibilityException("LibraryDatasetCollectionAssociation is not accessible to the current user", type='error')

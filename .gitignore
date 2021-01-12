@@ -140,6 +140,7 @@ test/unit/**.log
 .idea
 .vscode
 client/**/jsconfig.json
+vetur.config.js
 
 # Chrom len files
 *.len

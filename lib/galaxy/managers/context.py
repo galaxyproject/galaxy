@@ -103,13 +103,13 @@ class ProvidesUserContext:
     """ For transaction-like objects to provide Galaxy convience layer for
     reasoning about users.
 
-    Mixed in class must provide `user`, `api_inherit_admin`, and `app`
+    Mixed in class must provide `user` and `app`
     properties.
     """
 
     @property
     def anonymous(self):
-        return self.user is None and not self.api_inherit_admin
+        return self.user is None
 
     def get_current_user_roles(self):
         user = self.user
@@ -121,7 +121,7 @@ class ProvidesUserContext:
 
     @property
     def user_is_admin(self):
-        return self.api_inherit_admin or self.app.config.is_admin_user(self.user)
+        return self.app.config.is_admin_user(self.user)
 
     @property
     def user_can_do_run_as(self):
@@ -130,7 +130,7 @@ class ProvidesUserContext:
             return False
         user_in_run_as_users = self.user and self.user.email in run_as_users
         # Can do if explicitly in list or master_api_key supplied.
-        can_do_run_as = user_in_run_as_users or self.api_inherit_admin
+        can_do_run_as = user_in_run_as_users or self.user.bootstrap_admin_user
         return can_do_run_as
 
     @property
