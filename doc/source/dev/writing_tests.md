@@ -264,8 +264,8 @@ spin up its own Galaxy server (a relatively expensive operation) and the
 tests cannot be executed against external Galaxy servers (it wouldn't make
 sense to, given these custom hooks during configuration of the server).
 For these reasons, we bundle up Galaxy API tests for use in deployment
-testing of production setups; Galaxy API tests should be implemented whenever
-possible and integration tests implemented only when an API test is not
+testing of production setups. Therefore Galaxy API tests are generally preferred,
+while integration tests should be implemented only when an API test is not
 possible or practical.
 
 Integration tests can make use of dataset populators and API assertions
