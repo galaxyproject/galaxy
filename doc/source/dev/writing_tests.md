@@ -1,6 +1,17 @@
 # Writing Tests for Galaxy
 
-## Other Sources of Documentation
+[Other Sources of Documentation](#other_sources)  
+[An Overview of Galaxy Tests](#overview)  
+[Backend/Python Unit Tests](#python_unit)  
+[Frontend/ES6 Unit Tests](#es6_unit)  
+[Tool Framework Tests](#framework)  
+[API Tests](#api)  
+[Integration Tests](#integration)  
+[Selenium Tests](#selenium)  
+[Selenium Integration Tests](#selenium_integration)  
+[Running Python Tests](#running_tests)
+
+## <a name="other_sources"></a> Other Sources of Documentation
 
 Over the last several years, the most up-to-date documentation on the
 structure and running of Galaxy tests has been in the help text for
@@ -11,13 +22,12 @@ and the corresponding [YouTube playlist](https://bit.ly/gx-arch-vids).
 Some more specifics on running and writing Galaxy client unit tests
 can be found in ``client/README.md`` of the Galaxy codebase.
 
-## An Overview of Galaxy Tests
+## <a name="overview"></a> An Overview of Galaxy Tests
 
-Galaxy has many test suites and frameworks. A potentially overwhelming
-question at first is, *where does a given test belong?* What testing suite
-or framework should it be added to. There few questions that may
-be able to help find the right documentation for a given test one wishes
-to write.
+Galaxy has many test suites and frameworks. A potentially overwhelming question
+at first is, *where does a given test belong? What testing suite or framework
+should it be added to?* The following questions may be able to help
+find the right documentation for a given test one wishes to write.
 
 ***Does this test require a running server and database to execute?***
 
@@ -33,14 +43,14 @@ to write.
 
       - **Client/ES6**
 
-        These tests should be placed in ``client/src` directly and executed
-        via Jest, check out [Frontend/ES6 Unit Tests](#es6_unit) below for more
+        These tests should be placed in ``client/src`` directly and executed
+        via Jest. Checkout [Frontend/ES6 Unit Tests](#es6_unit) below for more
         information.
 
       - **Backend/Python**
 
-        These tests should be placed in ``test/unit` or doctests and
-        executed via pytest, check out [Backend/Python Unit Tests](#python_unit) below for more
+        These tests should be placed in ``test/unit`` or doctests and
+        executed via pytest. Checkout [Backend/Python Unit Tests](#python_unit) below for more
         information.
 
   - **Yes**
@@ -88,22 +98,21 @@ to write.
           - **Yes**
 
             Tests that require a custom Galaxy with a very specific 
-            configuration to be spun up for the tests are called
-            Galaxy integration tests and are located in ``test/integration``.
-            Checkout [Integration Tests](#integration) below for more 
-            information.
+            configuration are called Galaxy integration tests and are located in
+            ``test/integration``.  Checkout [Integration Tests](#integration)
+            below for more information.
 
       - **Yes**
 
         The tests that exercise the Galaxy user interface and require
-        a functional Galaxy server are all use Selenium to drive interaction
+        a functional Galaxy server all use Selenium to drive interaction
         with the Galaxy web interface. There are two frameworks or suites
         available for building tests like this and they both provide high
         level access to the Galaxy API like the tests above. The frameworks
         also take care of starting the Galaxy server.
 
-        Like above, the choice between these two different frameworks
-        comes down to the answer to the following question.
+        The choice between these two different frameworks comes down to the
+        answer to the following question.
 
         ***Does this test require a special configuration of Galaxy?***
 
@@ -117,7 +126,7 @@ to write.
 
             Tests that require both a very specific Galaxy configuration
             as well as the ability to drive a running Galaxy web interface
-            should be place into ``test/integration_selenium``. Checkout
+            should be placed into ``test/integration_selenium``. Checkout
             the [Selenium Integration Tests](#selenium_integration)
             information below for more information.
 
@@ -368,7 +377,7 @@ ping the Galaxy committers on the pull request and request a re-run. The
 GitHub actions workflow definition for these tests is located in
 ``.github/workflows/selenium_integration.yaml`` below Galaxy's root.
 
-## Running Python Tests
+## <a name="running_tests"></a> Running Python Tests
 
 The best information about how to run Galaxy's Python tests can be
 found in the help output of ``run_tests.sh --help``.
