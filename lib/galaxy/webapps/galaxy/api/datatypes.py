@@ -20,7 +20,7 @@ from fastapi_utils.cbv import cbv
 from galaxy.app import UniverseApplication
 from galaxy.datatypes.data import Data
 from galaxy.datatypes.registry import Registry
-from galaxy.datatypes.schema import (
+from galaxy.managers.datatypes import (
     DatatypeConverter,
     DatatypeDetails,
     DatatypesCombinedMap,
