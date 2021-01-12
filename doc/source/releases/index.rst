@@ -37,3 +37,15 @@ Releases
    13.02_announce
    13.01_announce
    older_releases
+
+User Announcements
+
+.. toctree::
+   :maxdepth: 1
+
+   20.09_announce_user
+   20.05_announce_user
+   20.01_announce_user
+   19.09_announce_user
+   19.05_announce_user
+   19.01_announce_user
