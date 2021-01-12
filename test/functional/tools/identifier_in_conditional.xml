@@ -7,6 +7,13 @@
 #else
     echo '$input1.element_identifier' >> 'output1';
 #end if
+#if str($outer_cond.multi_input) == 'true':
+    #for $input in $outer_cond.input1#
+        echo '$input.element_identifier' >> 'output1';
+    #end for#
+#else
+    echo '$outer_cond.input1.element_identifier' >> 'output1';
+#end if
     ]]></command>
     <inputs>
         <conditional name="outer_cond">
