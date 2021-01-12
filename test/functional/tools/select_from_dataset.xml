@@ -9,7 +9,7 @@ echo select_collection '$select_collection' >> '$output'
         <param name="single" type="data" format="tabular" label="single"/>
         <param name="select_single" type="select" label="select_single">
             <options from_dataset="single">
-                <column name="name" index="0"/>
+                <column name="name" index="1"/>
                 <column name="value" index="0"/>
                 <validator type="no_options" message="No data is available in single" />
             </options>
@@ -17,7 +17,7 @@ echo select_collection '$select_collection' >> '$output'
         <param name="multiple" type="data" format="tabular" multiple="true" label="multiple"/>
         <param name="select_multiple" type="select" multiple="true" label="select_multiple">
             <options from_dataset="multiple">
-                <column name="name" index="0"/>
+                <column name="name" index="1"/>
                 <column name="value" index="0"/>
                 <validator type="no_options" message="No data is available in single" />
             </options>
@@ -25,7 +25,7 @@ echo select_collection '$select_collection' >> '$output'
         <param name="collection" type="data_collection" format="tabular" collection_type="list" label="collection"/>
         <param name="select_collection" type="select" multiple="true" label="select_collection">
             <options from_dataset="collection">
-                <column name="name" index="0"/>
+                <column name="name" index="1"/>
                 <column name="value" index="0"/>
                 <validator type="no_options" message="No data is available in single" />
             </options>
