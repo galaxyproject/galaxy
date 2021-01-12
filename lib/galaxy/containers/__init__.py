@@ -14,8 +14,7 @@ from abc import (
     abstractmethod,
     abstractproperty
 )
-from collections import namedtuple
-from typing import Any, Dict, Optional, Type
+from typing import Any, Dict, NamedTuple, Optional, Type
 
 import yaml
 
@@ -29,18 +28,12 @@ DEFAULT_CONF = {'_default_': {'type': DEFAULT_CONTAINER_TYPE}}
 log = logging.getLogger(__name__)
 
 
-class ContainerPort(namedtuple('ContainerPort', ('port', 'protocol', 'hostaddr', 'hostport'))):
-    """Named tuple representing ports published by a container, with attributes:
-
-    :ivar       port:       Port number (inside the container)
-    :vartype    port:       int
-    :ivar       protocol:   Port protocol, either ``tcp`` or ``udp``
-    :vartype    protocol:   str
-    :ivar       hostaddr:   Address or hostname where the published port can be accessed
-    :vartype    hostaddr:   str
-    :ivar       hostport:   Published port number on which the container can be accessed
-    :vartype    hostport:   int
-    """
+class ContainerPort(NamedTuple):
+    """Named tuple representing ports published by a container, with attributes"""
+    port: int  # Port number (inside the container)
+    protocol: str  # Port protocol, either ``tcp`` or ``udp``
+    hostaddr: str  # Address or hostname where the published port can be accessed
+    hostport: int  # Published port number on which the container can be accessed
 
 
 class ContainerVolume(metaclass=ABCMeta):

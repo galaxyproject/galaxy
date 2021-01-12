@@ -2,6 +2,7 @@
 Batch API middleware
 
 Adds a single route to the installation that:
+
   1. accepts a POST call containing a JSON array of 'http-like' JSON
      dictionaries.
   2. Each dictionary describes a single API call within the batch and is routed
