@@ -9,13 +9,13 @@ from ._schema import (
 class ToursRegistry(ABC):
 
     @abstractmethod
-    def tours_by_id_with_description(self) -> TourList:
+    def get_tours(self) -> TourList:
         """Return list of tours."""
 
     @abstractmethod
     def tour_contents(self, tour_id: str) -> TourDetails:
-        """Return tour details."""
+        """Return tour contents."""
 
     @abstractmethod
     def load_tour(self, tour_id: str) -> TourDetails:
-        """Reload tour and return tour details."""
+        """Reload tour and return its contents."""

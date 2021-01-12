@@ -40,7 +40,7 @@ class FastAPITours:
     @router.get('/api/tours')
     def index(self) -> TourList:
         """Return list of available tours."""
-        return self.registry.tours_by_id_with_description()
+        return self.registry.get_tours()
 
     @router.get('/api/tours/{tour_id}')
     def show(self, tour_id: str) -> TourDetails:
@@ -64,7 +64,7 @@ class ToursController(BaseAPIController):
         *GET /api/tours/
         Displays available tours
         """
-        return self.app.tour_registry.tours_by_id_with_description()
+        return self.app.tour_registry.get_tours()
 
     @expose_api_anonymous_and_sessionless
     def show(self, trans, tour_id, **kwd):
