@@ -1,4 +1,6 @@
-<tool id="collection_paired_conditional_structured_like" name="collection_paired_conditional_structured_like" version="0.1.0">
+<!-- test that structured_like references need to be qualified 
+     i.e. contain section and conditional names -->
+<tool id="collection_paired_conditional_structured_like_qualified" name="collection_paired_conditional_structured_like_qualified" version="0.1.0" profile="21.01">
   <!-- You usually wouldn't want to do this - just write the operation for
        a single dataset and allow the user to map that tool over the whole
        collection. -->
@@ -7,6 +9,8 @@
         cat '${cond.input1.reverse}' > '${list_output.reverse}'
   </command>
   <inputs>
+    
+    <param name="input1" type="data" format="data" optional="true" label="Input" help="Input collection..."/>
     <conditional name="cond">
       <param name="cond_param" type="select">
         <option value="paired">Paired</option>
@@ -17,7 +21,7 @@
     </conditional>
   </inputs>
   <outputs>
-    <collection name="list_output" structured_like="input1" type="paired" label="Duplicate List" inherit_format="true">
+    <collection name="list_output" structured_like="cond|input1" type="paired" label="Duplicate List" inherit_format="true">
       <!-- inherit_format can be used in conjunction with structured_like
            to perserve format. -->
     </collection>

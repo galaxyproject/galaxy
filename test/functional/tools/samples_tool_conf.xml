@@ -94,6 +94,7 @@
   <tool file="output_format.xml" />
   <tool file="output_format_deprecated_when.xml" />
   <tool file="output_format_collection.xml" />
+  <tool file="output_format_qualified.xml" />
   <tool file="output_filter.xml" />
   <tool file="output_empty_work_dir.xml" />
   <tool file="output_filter_with_input.xml" />
@@ -151,6 +152,7 @@
   <tool file="collection_paired_test.xml" />
   <tool file="collection_paired_structured_like.xml" />
   <tool file="collection_paired_conditional_structured_like.xml" />
+  <tool file="collection_paired_conditional_structured_like_qualified.xml" />
   <tool file="collection_nested_test.xml" />
   <tool file="collection_mixed_param.xml" />
   <tool file="collection_two_paired.xml" />
