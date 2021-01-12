@@ -8,11 +8,10 @@ Sample usage:
 
 Returns
 
-.. highlight:: json
 .. code-block:: json
 
     {
-        "api_key": <some api key>
+        "api_key": "<some api key>"
     }
 
 """

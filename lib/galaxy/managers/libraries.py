@@ -174,7 +174,7 @@ class LibraryManager:
         :type   check_accessible:        bool
 
         :returns:   the original library
-        :rtype:     Library
+        :rtype:     galaxy.model.Library
         """
         # all libraries are accessible to an admin
         if trans.user_is_admin:

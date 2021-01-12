@@ -132,12 +132,13 @@ class MetadataCollection(Mapping):
     def element_is_set(self, name):
         """
         check if the meta data with the given name is set, i.e.
+
         - if the such a metadata actually exists and
         - if its value differs from no_value
 
-        param name the name of the metadata element
-        return True if the value differes from the no_value
-            False if its equal of if no metadata with the name is specified
+        :param name: the name of the metadata element
+        :returns: True if the value differes from the no_value
+                  False if its equal of if no metadata with the name is specified
         """
         try:
             meta_val = self.parent._metadata[name]

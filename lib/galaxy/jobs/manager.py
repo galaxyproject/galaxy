@@ -54,7 +54,7 @@ class JobManager:
 
         Due to the nature of some handler assignment methods which are wholly DB-based, the enqueue method will flush
         the job. Callers who create the job typically should not flush the job before handing it off to ``enqueue()``.
-        If a job handler cannot be assigned, :exception:`ToolExecutionError` is raised.
+        If a job handler cannot be assigned, py:class:`ToolExecutionError` is raised.
 
         :param job:     Job to enqueue.
         :type job:      Instance of :class:`galaxy.model.Job`.
@@ -62,7 +62,7 @@ class JobManager:
         :type tool:     Instance of :class:`galaxy.tools.Tool`.
 
         :raises ToolExecutionError: if a handler was unable to be assigned.
-        returns: str or None -- Handler ID, tag, or pool assigned to the job.
+        :returns: str or None -- Handler ID, tag, or pool assigned to the job.
         """
         tool_id = None
         configured_handler = None

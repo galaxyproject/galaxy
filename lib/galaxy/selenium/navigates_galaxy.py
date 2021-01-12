@@ -112,14 +112,14 @@ class NavigatesGalaxy(HasDriver):
 
     In most cases, methods for interacting with Galaxy components that appear in
     multiple tests or applications should be refactored into this class for now.
-    Keep in mind that this class is used outside the context of ``TestCase``s as
+    Keep in mind that this class is used outside the context of ``TestCase`` s as
     well - so some methods more explicitly related to test data or assertion checking
     may make more sense in SeleniumTestCase for instance.
 
     Some day this class will likely be split up into smaller mixins for particular
     components of Galaxy, but until that day the best practice is to prefix methods
     for driving or querying the interface with the name of the component or page
-    the method operates on. These serve as psedu-namespaces until we decompose this
+    the method operates on. These serve as pseudo-namespaces until we decompose this
     class. For instance, the method for clicking an option in the workflow editor is
     workflow_editor_click_option instead of click_workflow_editor_option.
     """

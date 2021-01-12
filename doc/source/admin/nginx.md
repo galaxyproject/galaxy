@@ -399,7 +399,7 @@ these paths need to exposed in the same way.
 
 You may find it useful to require authentication for access to certain paths on your server.  For example, Galaxy can
 run a separate reports app which gives useful information about your Galaxy instance. See the [Reports Configuration
-documentation](reports) and [Peter Briggs' blog post on the
+documentation](./reports) and [Peter Briggs' blog post on the
 subject](http://galacticengineer.blogspot.com/2015/06/exposing-galaxy-reports-via-nginx-in.html) for more.
 
 After successfully following the blog post, Galaxy reports should be available at e.g. `https://galaxy.example.org/reports`.

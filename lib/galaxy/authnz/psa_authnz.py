@@ -282,9 +282,10 @@ def contains_required_data(response=None, is_new=False, **kwargs):
     and returns void if otherwise.
 
     :type  response: dict
-    :param response:    a dictionary containing decoded response from
-                        OIDC backend that contain the following keys
-                        among others:
+    :param response:  a dictionary containing decoded response from
+                      OIDC backend that contain the following keys
+                      among others:
+
                         -   id_token;       see: http://openid.net/specs/openid-connect-core-1_0.html#IDToken
                         -   access_token;   see: https://tools.ietf.org/html/rfc6749#section-1.4
                         -   refresh_token;  see: https://tools.ietf.org/html/rfc6749#section-1.5
@@ -297,6 +298,7 @@ def contains_required_data(response=None, is_new=False, **kwargs):
     :param is_new: has the user been authenticated?
 
     :param kwargs:      may contain the following keys among others:
+
                         -   uid:        user ID
                         -   user:       Galaxy user; if user is already authenticated
                         -   backend:    the backend that is used for user authentication.

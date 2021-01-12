@@ -6,8 +6,11 @@ from galaxy.datatypes.tabular import Tabular
 
 class BaseDataProvider:
     """
-    Base class for data providers. Data providers (a) read and package data from datasets;
-    and (b) write subsets of data to new datasets.
+    Base class for data providers. Data providers both:
+
+    - read and package data from datasets
+    - write subsets of data to new datasets
+
     """
 
     def __init__(self, converted_dataset=None, original_dataset=None, dependencies=None,

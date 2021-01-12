@@ -2,6 +2,7 @@
 Contains functionality needed in every web interface
 """
 import logging
+from typing import Optional
 
 from sqlalchemy import true
 from webob.exc import (
@@ -338,18 +339,17 @@ class JSAppLauncher(BaseUIController):
             log.exception(exc)
             return {}
 
-    def template(self, trans, app_name, entry_fn='app', options=None, bootstrapped_data=None, masthead=True, **additional_options):
+    def template(self, trans, app_name: str, entry_fn: str = 'app', options=None, bootstrapped_data: Optional[dict] = None, masthead: Optional[bool] = True, **additional_options):
         """
         Render and return the single page mako template that starts the app.
 
-        `app_name` (string): the first portion of the webpack bundle to as the app.
-        `entry_fn` (string): the name of the window-scope function that starts the
-            app. Defaults to 'app'.
-        `bootstrapped_data` (dict): (optional) update containing any more data
-            the app may need.
-        `masthead` (boolean): (optional, default=True) include masthead elements in
-            the initial page dom.
-        `additional_options` (kwargs): update to the options sent to the app.
+        :param app_name: the first portion of the webpack bundle to as the app.
+        :param entry_fn: the name of the window-scope function that starts the
+                         app. Defaults to 'app'.
+        :param bootstrapped_data: update containing any more data
+                                  the app may need.
+        :param masthead: include masthead elements in the initial page dom.
+        :param additional_options: update to the options sent to the app.
         """
         options = options or self._get_js_options(trans)
         options.update(additional_options)

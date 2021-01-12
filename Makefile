@@ -30,6 +30,9 @@ docs: ## Generate HTML documentation.
 	$(IN_VENV) $(MAKE) -C doc clean
 	$(IN_VENV) $(MAKE) -C doc html
 
+docs-develop: ## Fast doc generation and more warnings (for development)
+	$(IN_VENV) GALAXY_DOCS_SKIP_VIEW_CODE=1 SPHINXOPTS='-j 4' $(MAKE) -C doc html
+
 setup-venv:
 	if [ ! -f $(VENV)/bin/activate ]; then bash scripts/common_startup.sh --dev-wheels; fi
 
