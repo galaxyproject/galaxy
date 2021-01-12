@@ -928,17 +928,12 @@ class SelectToolParameter(ToolParameter):
         if isinstance(value, list):
             if not self.multiple:
                 raise ParameterValueError("multiple values provided but parameter is not expecting multiple values", self.name, is_dynamic=self.is_dynamic)
-            rval = []
-            for v in value:
-                if v in legal_values:
-                    rval.append(v)
-            if len(rval) == 0:
-                for v in value:
-                    if v in fallback_values:
-                        rval.append(fallback_values[v])
-            if len(rval) == 0:
-                raise ParameterValueError("an invalid option ({!r}) was selected (valid options: {})".format(v, ",".join(legal_values)), self.name, v, is_dynamic=self.is_dynamic)
-            return rval
+            if set(value).issubset(legal_values):
+                return value
+            elif set(value).issubset(set(fallback_values.keys())):
+                return [fallback_values[v] for v in value]
+            else:
+                raise ParameterValueError("invalid options ({!r}) were selected (valid options: {})".format(",".join(set(value) - set(legal_values)), ",".join(legal_values)), self.name, is_dynamic=self.is_dynamic)
         else:
             value_is_none = (value == "None" and "None" not in legal_values)
             if value_is_none or not value:
