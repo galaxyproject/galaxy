@@ -189,14 +189,14 @@ def view_sniffers(datatypes_registry: Registry) -> List[str]:
 
 
 def view_converters(datatypes_registry: Registry) -> List[DatatypeConverter]:
-    converters: List[DatatypeConverter] = []
+    converters = []
     for (source_type, targets) in datatypes_registry.datatype_converters.items():
         for target_type in targets:
-            converters.append(DatatypeConverter(
-                source=source_type,
-                target=target_type,
-                tool_id=targets[target_type].id,
-            ))
+            converters.append({
+                'source': source_type,
+                'target': target_type,
+                'tool_id': targets[target_type].id,
+            })
     return converters
 
 
