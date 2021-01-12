@@ -28,12 +28,14 @@
   </outputs>
   <tests>
     <test>
-      <param name="input1">
-        <collection type="paired">
-          <element name="forward" value="simple_line.txt" ftype="txt" />
-          <element name="reverse" value="simple_line_alternative.txt" ftype="txt" />
-        </collection>
-      </param>
+      <conditional name="cond">
+        <param name="input1">
+          <collection type="paired">
+            <element name="forward" value="simple_line.txt" ftype="txt" />
+            <element name="reverse" value="simple_line_alternative.txt" ftype="txt" />
+          </collection>
+        </param>
+      </conditional>
       <output_collection name="list_output" type="paired">
           <element name="forward" file="simple_line.txt" ftype="txt"/>
           <element name="reverse" file="simple_line_alternative.txt" ftype="txt"/>
