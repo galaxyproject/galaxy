@@ -1,7 +1,5 @@
 name: Build docs
 on: [push, pull_request]
-env:
-  SPHINXOPTS: '-W'
 jobs:
   build:
     runs-on: ubuntu-latest
