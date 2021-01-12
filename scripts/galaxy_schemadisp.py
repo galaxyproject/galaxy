@@ -1,14 +1,16 @@
 import os
 import sys
+
 from db_shell import *  # noqa
 
 gxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 sys.path.insert(1, os.path.abspath(os.path.join(gxy_root, 'lib')))
 
-from galaxy import model
 from sqlalchemy import MetaData
 from sqlalchemy.orm import class_mapper
 from sqlalchemy_schemadisplay import create_schema_graph, create_uml_graph
+
+from galaxy import model
 
 if __name__ == "__main__":
     gxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
