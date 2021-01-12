@@ -129,7 +129,7 @@ def get_repos(sa_session, file_path, hgweb_config_dir, **kwargs):
         path = os.path.join(path, "repo_%d" % repo.id)
         if os.path.exists(path):
             tools_list.extend(load_one_dir(path))
-            for root, dirs, files in os.walk(path):
+            for root, dirs, _files in os.walk(path):
                 if '.hg' in dirs:
                     dirs.remove('.hg')
                 for dirname in dirs:

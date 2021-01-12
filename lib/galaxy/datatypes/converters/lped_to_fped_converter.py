@@ -96,7 +96,7 @@ def main():
         f.write(galhtmlprefix % prog)
         print(f'## Rgenetics: http://rgenetics.org Galaxy Tools {prog} {timenow()}')  # becomes info
         f.write(f'<div>## Rgenetics: http://rgenetics.org Galaxy Tools {prog} {timenow()}\n<ol>')
-        for i, data in enumerate(flist):
+        for data in flist:
             f.write('<li><a href="{}">{}</a></li>\n'.format(os.path.split(data)[-1], os.path.split(data)[-1]))
         f.write("</div></body></html>")
 

@@ -90,7 +90,7 @@ class UploadsTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
     @selenium_test
     def test_upload_pair_specify_extension(self):
         self.upload_list([self.get_filename("1.tabular"), self.get_filename("2.tabular")], name="Test Pair", ext="txt", hide_source_items=False)
-        self.history_panel_wait_for_hid_ok(3)
+        self.history_panel_wait_for_hid_ok(5)
         self.history_panel_wait_for_hid_ok(1)
 
         history_contents = self.history_contents()
@@ -313,7 +313,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         action_chains = self.action_chains()
         action_chains.move_to_element(first_cell)
         action_chains.click(first_cell)
-        for i in range(15):
+        for _ in range(15):
             action_chains.send_keys(Keys.ARROW_RIGHT)
         action_chains.perform()
 

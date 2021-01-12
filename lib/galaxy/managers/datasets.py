@@ -4,6 +4,7 @@ Manager and Serializer for Datasets.
 import glob
 import logging
 import os
+from typing import Type
 
 from galaxy import (
     exceptions,
@@ -232,7 +233,7 @@ class DatasetAssociationManager(base.ModelManager,
     """
     # DA's were meant to be proxies - but were never fully implemented as them
     # Instead, a dataset association HAS a dataset but contains metadata specific to a library (lda) or user (hda)
-    model_class = model.DatasetInstance
+    model_class: Type[model.DatasetInstance] = model.DatasetInstance
 
     # NOTE: model_manager_class should be set in HDA/LDA subclasses
 

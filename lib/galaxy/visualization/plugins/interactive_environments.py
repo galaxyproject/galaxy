@@ -510,7 +510,7 @@ class InteractiveEnvironmentRequest:
         :type env_override: dict
         :param env_override: dictionary of environment variables to add.
 
-        :type volumes: list of :class:`galaxy.containers.docker_model.DockerVolume`s
+        :type volumes: list of py:class:`galaxy.containers.docker_model.DockerVolume` s
         :param volumes: dictionary of docker volume mounts
 
         """

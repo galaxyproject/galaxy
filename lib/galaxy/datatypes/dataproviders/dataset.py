@@ -531,6 +531,7 @@ class BigWigDataProvider(base.LimitedOffsetDataProvider):
 
     def __init__(self, source, chrom, start, end, named_columns=False, column_names=None, **kwargs):
         """
+
         :param chrom: which chromosome within the bigbed file to extract data for
         :type chrom: str
         :param start: the start of the region from which to extract data
@@ -539,15 +540,16 @@ class BigWigDataProvider(base.LimitedOffsetDataProvider):
         :type end: int
 
         :param named_columns: optionally return dictionaries keying each column
-            with 'chrom', 'start', 'end', 'strand', or 'name'.
-            Optional: defaults to False
+                              with 'chrom', 'start', 'end', 'strand', or 'name'.
+                              Optional: defaults to False
         :type named_columns: bool
 
         :param column_names: an ordered list of strings that will be used as the keys
-            for each column in the returned dictionaries.
-            The number of key, value pairs each returned dictionary has will
-            be as short as the number of column names provided.
+                             for each column in the returned dictionaries.
+                             The number of key, value pairs each returned dictionary has will
+                             be as short as the number of column names provided.
         :type column_names:
+
         """
         raise NotImplementedError('Work in progress')
         # TODO: validate is a wig
@@ -686,32 +688,6 @@ class SamtoolsDataProvider(line.RegexLineDataProvider):
             else:
                 new_kwargs[key] = value
         return options_dict, new_kwargs
-
-
-class BcftoolsDataProvider(line.RegexLineDataProvider):
-    """
-    Data provider that uses an bcftools on a bcf (or vcf?) file as its source.
-
-    This can be piped through other providers (column, map, genome region, etc.).
-    """
-
-    def __init__(self, dataset, **kwargs):
-        # TODO: as samtools
-        raise NotImplementedError()
-        # super(BcftoolsDataProvider, self).__init__(dataset, **kwargs)
-
-
-class BGzipTabixDataProvider(base.DataProvider):
-    """
-    Data provider that uses an g(un)zip on a file as its source.
-
-    This can be piped through other providers (column, map, genome region, etc.).
-    """
-
-    def __init__(self, dataset, **kwargs):
-        # TODO: as samtools - need more info on output format
-        raise NotImplementedError()
-        # super(BGzipTabixDataProvider, self).__init__(dataset, **kwargs)
 
 
 class SQliteDataProvider(base.DataProvider):

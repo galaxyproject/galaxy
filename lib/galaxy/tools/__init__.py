@@ -13,6 +13,7 @@ import threading
 from collections import OrderedDict
 from datetime import datetime
 from pathlib import Path
+from typing import List, Type
 from urllib.parse import unquote_plus
 
 import packaging.version
@@ -1116,7 +1117,7 @@ class Tool(Dictifiable):
 
     def parse_inputs(self, tool_source):
         """
-        Parse the "<inputs>" element and create appropriate `ToolParameter`s.
+        Parse the "<inputs>" element and create appropriate `ToolParameter` s.
         This implementation supports multiple pages and grouping constructs.
         """
         # Load parameters (optional)
@@ -2656,8 +2657,6 @@ class InteractiveTool(Tool):
     def __init__(self, config_file, tool_source, app, **kwd):
         assert app.config.interactivetools_enable, ValueError('Trying to load an InteractiveTool, but InteractiveTools are not enabled.')
         super().__init__(config_file, tool_source, app, **kwd)
-        for port in self.ports:
-            assert port.get('requires_domain', None), ValueError('InteractiveTools currently only work when requires_domain is True for each entry_point.')
 
     def __remove_interactivetool_by_job(self, job):
         if job:
@@ -2729,17 +2728,18 @@ class DataManagerTool(OutputParameterJSONTool):
                     history = None
         return history
 
-    def allow_user_access(self, user, attempting_access=True):
-        """
+    def allow_user_access(self, user, attempting_access=True) -> bool:
+        """Check user access to this tool.
+
         :param user: model object representing user.
         :type user: galaxy.model.User
         :param attempting_access: is the user attempting to do something with the
-                               the tool (set false for incidental checks like toolbox
-                               listing)
+                                  the tool (set false for incidental checks like toolbox
+                                  listing)
         :type attempting_access:  bool
 
-        :returns: bool -- Whether the user is allowed to access the tool.
-        Data Manager tools are only accessible to admins.
+        :returns: Whether the user is allowed to access the tool.
+                  Data Manager tools are only accessible to admins.
         """
         if super().allow_user_access(user) and self.app.config.is_admin_user(user):
             return True
@@ -2774,7 +2774,7 @@ class DatabaseOperationTool(Tool):
 
             if self.require_dataset_ok:
                 if state != model.Dataset.states.OK:
-                    raise ValueError("Tool requires inputs to be in valid state, but dataset {} is in state '{}'".format(input_dataset, input_dataset.state))
+                    raise ValueError(f"Tool requires inputs to be in valid state, but dataset {input_dataset} is in state '{input_dataset.state}'")
 
         for input_dataset in input_datasets.values():
             check_dataset_state(input_dataset.state)
@@ -3287,11 +3287,25 @@ class FilterFromFileTool(DatabaseOperationTool):
 
 # Populate tool_type to ToolClass mappings
 tool_types = {}
-for tool_class in [Tool, SetMetadataTool, OutputParameterJSONTool, ExpressionTool, InteractiveTool,
-                   DataManagerTool, DataSourceTool, AsyncDataSourceTool,
-                   UnzipCollectionTool, ZipCollectionTool, MergeCollectionTool, RelabelFromFileTool, FilterFromFileTool,
-                   BuildListCollectionTool, ExtractDatasetCollectionTool,
-                   DataDestinationTool]:
+TOOL_CLASSES: List[Type[Tool]] = [
+    Tool,
+    SetMetadataTool,
+    OutputParameterJSONTool,
+    ExpressionTool,
+    InteractiveTool,
+    DataManagerTool,
+    DataSourceTool,
+    AsyncDataSourceTool,
+    UnzipCollectionTool,
+    ZipCollectionTool,
+    MergeCollectionTool,
+    RelabelFromFileTool,
+    FilterFromFileTool,
+    BuildListCollectionTool,
+    ExtractDatasetCollectionTool,
+    DataDestinationTool
+]
+for tool_class in TOOL_CLASSES:
     tool_types[tool_class.tool_type] = tool_class
 
 

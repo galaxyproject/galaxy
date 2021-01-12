@@ -169,6 +169,53 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         return jobs
 
 
+class HistoryExportView:
+
+    def __init__(self, app):
+        self.app = app
+
+    def get_exports(self, trans, history_id):
+        history = self._history(trans, history_id)
+        matching_exports = history.exports
+        return [self.serialize(trans, history_id, e) for e in matching_exports]
+
+    def serialize(self, trans, history_id, jeha):
+        rval = jeha.to_dict()
+        encoded_jeha_id = trans.security.encode_id(jeha.id)
+        api_url = self.app.url_for("history_archive_download", id=history_id, jeha_id=encoded_jeha_id)
+        # this URL is less likely to be blocked by a proxy and require an API key, so export
+        # older-style controller version for use with within the GUI and such.
+        external_url = self.app.url_for(controller='history', action="export_archive", id=history_id, qualified=True)
+        external_permanent_url = self.app.url_for(controller='history', action="export_archive", id=history_id, jeha_id=encoded_jeha_id, qualified=True)
+        rval["download_url"] = api_url
+        rval["external_download_latest_url"] = external_url
+        rval["external_download_permanent_url"] = external_permanent_url
+        rval = trans.security.encode_all_ids(rval)
+        return rval
+
+    def get_ready_jeha(self, trans, history_id, jeha_id="latest"):
+        history = self._history(trans, history_id)
+        matching_exports = history.exports
+        if jeha_id != "latest":
+            decoded_jeha_id = trans.security.decode_id(jeha_id)
+            matching_exports = [e for e in matching_exports if e.id == decoded_jeha_id]
+        if len(matching_exports) == 0:
+            raise glx_exceptions.ObjectNotFound("Failed to find target history export")
+
+        jeha = matching_exports[0]
+        if not jeha.ready:
+            raise glx_exceptions.MessageException("Export not available or not yet ready.")
+
+        return jeha
+
+    def _history(self, trans, history_id):
+        if history_id is not None:
+            history = self.app.history_manager.get_accessible(trans.security.decode_id(history_id), trans.user, current_history=trans.history)
+        else:
+            history = trans.history
+        return history
+
+
 class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSerializerMixin):
     """
     Interface/service object for serializing histories into dictionaries.

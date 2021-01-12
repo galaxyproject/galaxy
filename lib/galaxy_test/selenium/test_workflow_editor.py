@@ -27,15 +27,16 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         editor = self.components.workflow_editor
         annotation = "basic_test"
         name = self.workflow_create_new(annotation=annotation)
-        edit_name_element = self.components.workflow_editor.edit_name.wait_for_visible()
-        actual_name = edit_name_element.get_attribute("value")
-        assert name in actual_name, f"'{name}' unequal name '{actual_name}'"
-        edit_annotation_element = self.components.workflow_editor.edit_annotation.wait_for_visible()
-        actual_annotation = edit_annotation_element.get_attribute("value")
-        assert annotation in actual_annotation, f"'{annotation}' unequal annotation '{actual_annotation}'"
+        self.assert_wf_name_is(name)
+        self.assert_wf_annotation_is(annotation)
 
         editor.canvas_body.wait_for_visible()
         editor.tool_menu.wait_for_visible()
+
+        # shouldn't have changes on fresh load
+        save_button = self.components.workflow_editor.save_button
+        save_button.wait_for_visible()
+        assert save_button.has_class("disabled")
 
         self.screenshot("workflow_editor_blank")
 
@@ -52,6 +53,37 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
 
         self.screenshot("workflow_editor_left_and_right_collapsed")
+
+    @selenium_test
+    def test_edit_annotation(self):
+        editor = self.components.workflow_editor
+        annotation = "new_annotation_test"
+        name = self.workflow_create_new(annotation=annotation)
+        edit_annotation = self.components.workflow_editor.edit_annotation
+        self.assert_wf_annotation_is(annotation)
+
+        editor.canvas_body.wait_for_visible()
+
+        new_annotation = 'look new annotation'
+        edit_annotation.wait_for_and_send_keys(new_annotation)
+        self.assert_has_changes_and_save()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.workflow_index_open_with_name(name)
+        self.assert_wf_annotation_is(new_annotation)
+
+    @selenium_test
+    def test_edit_name(self):
+        editor = self.components.workflow_editor
+        name = self.workflow_create_new()
+        editor.canvas_body.wait_for_visible()
+        new_name = self._get_random_name()
+        edit_name = self.components.workflow_editor.edit_name
+        edit_name.wait_for_and_send_keys(new_name)
+
+        self.assert_has_changes_and_save()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.workflow_index_open_with_name(new_name)
+        self.assert_wf_name_is(name)
 
     @selenium_test
     def test_data_input(self):
@@ -166,7 +198,7 @@ steps:
         # Also the connector should disappear
         tool_input.wait_for_absent_or_hidden()
 
-        # Now make it connected again and watch the requestss
+        # Now make it connected again and watch the requests
         connect_icon.wait_for_and_click()
 
         tool_input.wait_for_visible()
@@ -343,16 +375,9 @@ steps:
         # Assert workflow not initially bookmarked.
         assert_workflow_bookmarked_status(False)
 
-        save_button = self.components.workflows.save_button
-        save_button.wait_for_clickable()
-
-        # element is clickable, but still might be behind the modal
+        self.components.workflow_editor.canvas_body.wait_for_visible()
         self.wait_for_selector_absent_or_hidden(self.modal_body_selector())
-        save_button.wait_for_and_click()
-
-        # wait for saving
-        self.wait_for_selector_absent_or_hidden(self.modal_body_selector())
-        self.driver.find_element_by_id("workflow").click()
+        self.components.masthead.workflow.wait_for_and_click()
 
         # parse workflow table
         table_elements = self.workflow_index_table_elements()
@@ -489,7 +514,27 @@ steps:
         return name
 
     @retry_assertion_during_transitions
+    def assert_has_changes_and_save(self):
+        save_button = self.components.workflow_editor.save_button
+        save_button.wait_for_visible()
+        assert not save_button.has_class("disabled")
+        save_button.wait_for_and_click()
+
+    @retry_assertion_during_transitions
+    def assert_wf_name_is(self, expected_name):
+        edit_name_element = self.components.workflow_editor.edit_name.wait_for_visible()
+        actual_name = edit_name_element.get_attribute("value")
+        assert expected_name in actual_name, f"'{expected_name}' unequal name '{actual_name}'"
+
+    @retry_assertion_during_transitions
+    def assert_wf_annotation_is(self, expected_annotation):
+        edit_annotation = self.components.workflow_editor.edit_annotation
+        edit_annotation_element = edit_annotation.wait_for_visible()
+        actual_annotation = edit_annotation_element.get_attribute("value")
+        assert expected_annotation in actual_annotation, f"'{expected_annotation}' unequal annotation '{actual_annotation}'"
+
+    @retry_assertion_during_transitions
     def assert_modal_has_text(self, expected_text):
-        modal_element = self.wait_for_selector_visible(self.modal_body_selector())
+        modal_element = self.components.workflow_editor.state_modal_body.wait_for_visible()
         text = modal_element.text
         assert expected_text in text, f"Failed to find expected text [{expected_text}] in modal text [{text}]"

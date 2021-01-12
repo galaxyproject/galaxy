@@ -31,10 +31,11 @@ class GalaxyWebApplication(galaxy.webapps.base.webapp.WebApplication):
     pass
 
 
-def app_factory(global_conf, load_app_kwds={}, **kwargs):
+def app_factory(global_conf, load_app_kwds=None, **kwargs):
     """
     Return a wsgi application serving the root object
     """
+    load_app_kwds = load_app_kwds or {}
     kwargs = load_app_properties(
         kwds=kwargs,
         **load_app_kwds
@@ -145,6 +146,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/histories/citations')
     webapp.add_client_route('/histories/list')
     webapp.add_client_route('/histories/import')
+    webapp.add_client_route('/histories/{history_id}/export')
     webapp.add_client_route('/histories/list_published')
     webapp.add_client_route('/histories/list_shared')
     webapp.add_client_route('/histories/rename')
@@ -444,6 +446,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/workflows/build_module', action='build_module', controller="workflows")
     webapp.mapper.connect('/api/workflows/menu', action='get_workflow_menu', controller="workflows", conditions=dict(method=["GET"]))
     webapp.mapper.connect('/api/workflows/menu', action='set_workflow_menu', controller="workflows", conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/workflows/{id}/refactor', action='refactor', controller="workflows", conditions=dict(method=["PUT"]))
     webapp.mapper.resource('workflow', 'workflows', path_prefix='/api')
     webapp.mapper.connect('/api/licenses', controller='licenses', action='index')
     webapp.mapper.connect('/api/licenses/{id}', controller='licenses', action='get')
@@ -494,6 +497,9 @@ def populate_api_routes(webapp, app):
                            controller='page_revisions',
                            parent_resources=dict(member_name='page', collection_name='pages'))
 
+    webapp.mapper.connect("history_exports",
+                          "/api/histories/{id}/exports", controller="histories",
+                          action="index_exports", conditions=dict(method=["GET"]))
     webapp.mapper.connect("history_archive_export",
                           "/api/histories/{id}/exports", controller="histories",
                           action="archive_export", conditions=dict(method=["PUT"]))
@@ -749,6 +755,12 @@ def populate_api_routes(webapp, app):
                           controller='users',
                           action='api_key',
                           conditions=dict(method=["POST"]))
+
+    webapp.mapper.connect('api_key',
+                          '/api/users/{id}/api_key',
+                          controller='users',
+                          action='get_or_create_api_key',
+                          conditions=dict(method=["GET"]))
 
     webapp.mapper.connect('get_api_key',
                           '/api/users/{id}/api_key/inputs',

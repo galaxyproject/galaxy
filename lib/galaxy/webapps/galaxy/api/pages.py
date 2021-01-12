@@ -136,14 +136,14 @@ class PagesController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotati
     @expose_api_raw_anonymous_and_sessionless
     def show_pdf(self, trans, id, **kwd):
         """
-        show( self, trans, id, **kwd )
-        * GET /api/pages/{id}.pdf
-            View a page summary and the content of the latest revision as PDF.
+        GET /api/pages/{id}.pdf
 
-        :param  id:    ID of page to be displayed
+        View a page summary and the content of the latest revision as PDF.
 
-        :rtype:     dict
-        :returns:   Dictionary return of the Page.to_dict call with the 'content' field populated by the most recent revision
+        :param  id: ID of page to be displayed
+
+        :rtype: dict
+        :returns: Dictionary return of the Page.to_dict call with the 'content' field populated by the most recent revision
         """
         page = get_object(trans, id, 'Page', check_ownership=False, check_accessible=True)
         if page.latest_revision.content_format != "markdown":

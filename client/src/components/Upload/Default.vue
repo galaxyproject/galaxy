@@ -60,6 +60,7 @@
                 class="ui-button-default"
                 id="btn-build"
                 @click="_eventSelect"
+                v-if="selectable"
                 :disabled="!enableBuild"
                 :variant="enableBuild ? 'primary' : ''"
             >

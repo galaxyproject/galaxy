@@ -10,6 +10,7 @@ import re
 import sys
 from contextlib import contextmanager
 from json import loads
+from typing import Dict, Union
 
 import pysam
 from bx.bbi.bigbed_file import BigBedFile
@@ -126,7 +127,7 @@ class GenomeDataProvider(BaseDataProvider):
     format (0-based, half-open coordinates) for both queries and returned data.
     """
 
-    dataset_type = None
+    dataset_type: str
 
     """
     Mapping from column name to payload data; this mapping is used to create
@@ -135,7 +136,7 @@ class GenomeDataProvider(BaseDataProvider):
 
     col_name_data_attr_mapping = {4 : { index: 5, name: 'Score' } }
     """
-    col_name_data_attr_mapping = {}
+    col_name_data_attr_mapping: Dict[Union[str, int], Dict] = {}
 
     def __init__(self, converted_dataset=None, original_dataset=None, dependencies=None,
                  error_max_vals="Only the first %i %s in this region are displayed."):
@@ -318,7 +319,7 @@ class TabixDataProvider(GenomeDataProvider, FilterableMixin):
     Tabix index data provider for the Galaxy track browser.
     """
 
-    col_name_data_attr_mapping = {4: {'index': 4, 'name': 'Score'}}
+    col_name_data_attr_mapping: Dict[Union[str, int], Dict] = {4: {'index': 4, 'name': 'Score'}}
 
     @contextmanager
     def open_data_file(self):
@@ -585,6 +586,7 @@ class VcfDataProvider(GenomeDataProvider):
 
     Payload format: An array of entries for each locus in the file. Each array
     has the following entries:
+
         1. GUID (unused)
         2. location (0-based)
         3. reference base(s)
@@ -593,10 +595,11 @@ class VcfDataProvider(GenomeDataProvider):
         6. whether variant passed filter
         7. sample genotypes -- a single string with samples separated by commas; empty string
            denotes the reference genotype
-        8-end: allele counts for each alternative
+        8. allele counts for each alternative
+
     """
 
-    col_name_data_attr_mapping = {'Qual': {'index': 6, 'name': 'Qual'}}
+    col_name_data_attr_mapping: Dict[Union[str, int], Dict] = {'Qual': {'index': 6, 'name': 'Qual'}}
 
     dataset_type = 'variant'
 
@@ -677,7 +680,7 @@ class VcfDataProvider(GenomeDataProvider):
                 alleles_seen = {}
                 has_alleles = False
 
-                for i, sample in enumerate(samples_data):
+                for sample in samples_data:
                     # Parse and count alleles.
                     genotype = sample.split(':')[0]
                     has_alleles = False
@@ -839,7 +842,7 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
                     return None
 
             # Write reads in region.
-            for i, read in enumerate(data):
+            for read in data:
                 new_bamfile.write(read)
 
         # Cleanup.
@@ -1404,7 +1407,7 @@ class GtfTabixDataProvider(TabixDataProvider):
         # and then create a generic GFFDataProvider that can be used with both
         # raw and tabix datasets.
         features = {}
-        for count, line in enumerate(iterator):
+        for line in iterator:
             line_attrs = parse_gff_attributes(line.split('\t')[8])
             transcript_id = line_attrs['transcript_id']
             if transcript_id in features:
@@ -1622,8 +1625,9 @@ class ChromatinInteractionsTabixDataProvider(TabixDataProvider, ChromatinInterac
 #
 
 
-def package_gff_feature(feature, no_detail=False, filter_cols=[]):
+def package_gff_feature(feature, no_detail=False, filter_cols=None):
     """ Package a GFF feature in an array for data providers. """
+    filter_cols = filter_cols or []
     feature = convert_gff_coords_to_bed(feature)
 
     # No detail means only start, end.

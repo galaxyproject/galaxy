@@ -1,5 +1,5 @@
 export default {
-    name: "unit testing configs",
+    name: "testing",
     testBuild: true,
     debug: false,
     caching: {

@@ -109,7 +109,7 @@ class OIDC(JSAppLauncher):
                                                                                           trans=trans,
                                                                                           login_redirect_url=url_for('/'))
         except exceptions.AuthenticationFailed as e:
-            return trans.response.send_redirect(trans.request.base + url_for('/') + 'root/login?message=' + (e.message or "Duplicate Email"))
+            return trans.response.send_redirect(trans.request.base + url_for('/') + 'root/login?message=' + (str(e) or "Duplicate Email"))
 
         if success is False:
             return trans.show_error_message(message)

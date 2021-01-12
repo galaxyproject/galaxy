@@ -2,6 +2,7 @@
 Contains functionality needed in every web interface
 """
 import logging
+from typing import Optional
 
 from sqlalchemy import true
 from webob.exc import (
@@ -338,18 +339,17 @@ class JSAppLauncher(BaseUIController):
             log.exception(exc)
             return {}
 
-    def template(self, trans, app_name, entry_fn='app', options=None, bootstrapped_data=None, masthead=True, **additional_options):
+    def template(self, trans, app_name: str, entry_fn: str = 'app', options=None, bootstrapped_data: Optional[dict] = None, masthead: Optional[bool] = True, **additional_options):
         """
         Render and return the single page mako template that starts the app.
 
-        `app_name` (string): the first portion of the webpack bundle to as the app.
-        `entry_fn` (string): the name of the window-scope function that starts the
-            app. Defaults to 'app'.
-        `bootstrapped_data` (dict): (optional) update containing any more data
-            the app may need.
-        `masthead` (boolean): (optional, default=True) include masthead elements in
-            the initial page dom.
-        `additional_options` (kwargs): update to the options sent to the app.
+        :param app_name: the first portion of the webpack bundle to as the app.
+        :param entry_fn: the name of the window-scope function that starts the
+                         app. Defaults to 'app'.
+        :param bootstrapped_data: update containing any more data
+                                  the app may need.
+        :param masthead: include masthead elements in the initial page dom.
+        :param additional_options: update to the options sent to the app.
         """
         options = options or self._get_js_options(trans)
         options.update(additional_options)
@@ -410,7 +410,7 @@ class ExportsHistoryMixin:
         archive = trans.app.object_store.get_filename(jeha.dataset)
         return open(archive, mode='rb')
 
-    def queue_history_export(self, trans, history, gzip=True, include_hidden=False, include_deleted=False):
+    def queue_history_export(self, trans, history, gzip=True, include_hidden=False, include_deleted=False, directory_uri=None, file_name=None):
         # Convert options to booleans.
         if isinstance(gzip, str):
             gzip = (gzip in ['True', 'true', 'T', 't'])
@@ -419,8 +419,6 @@ class ExportsHistoryMixin:
         if isinstance(include_deleted, str):
             include_deleted = (include_deleted in ['True', 'true', 'T', 't'])
 
-        # Run job to do export.
-        history_exp_tool = trans.app.toolbox.get_tool('__EXPORT_HISTORY__')
         params = {
             'history_to_export': history,
             'compress': gzip,
@@ -428,7 +426,17 @@ class ExportsHistoryMixin:
             'include_deleted': include_deleted
         }
 
-        history_exp_tool.execute(trans, incoming=params, history=history, set_output_hid=True)
+        if directory_uri is None:
+            export_tool_id = '__EXPORT_HISTORY__'
+        else:
+            params['directory_uri'] = directory_uri
+            params['file_name'] = file_name or None
+            export_tool_id = '__EXPORT_HISTORY_TO_URI__'
+
+        # Run job to do export.
+        history_exp_tool = trans.app.toolbox.get_tool(export_tool_id)
+        job, _ = history_exp_tool.execute(trans, incoming=params, history=history, set_output_hid=True)
+        return job
 
 
 class ImportsHistoryMixin:
@@ -437,7 +445,8 @@ class ImportsHistoryMixin:
         # Run job to do import.
         history_imp_tool = trans.app.toolbox.get_tool('__IMPORT_HISTORY__')
         incoming = {'__ARCHIVE_SOURCE__' : archive_source, '__ARCHIVE_TYPE__' : archive_type}
-        history_imp_tool.execute(trans, incoming=incoming)
+        job, _ = history_imp_tool.execute(trans, incoming=incoming)
+        return job
 
 
 class UsesLibraryMixin:
@@ -804,10 +813,11 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         return imported_visualization
 
     def create_visualization(self, trans, type, title="Untitled Visualization", slug=None,
-                             dbkey=None, annotation=None, config={}, save=True):
+                             dbkey=None, annotation=None, config=None, save=True):
         """
         Create visualiation and first revision.
         """
+        config = config or {}
         visualization = self._create_visualization(trans, title, type, dbkey, slug, annotation, save)
         # TODO: handle this error structure better either in _create or here
         if isinstance(visualization, dict):
@@ -1251,25 +1261,6 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
                                       imported_stored.user, imported_stored.latest_workflow.steps[order_index])
         session.flush()
         return imported_stored
-
-    def _workflow_from_dict(self, trans, data, source=None, add_to_menu=False, publish=False, exact_tools=True, fill_defaults=False, from_tool_form=False):
-        """
-        Creates a workflow from a dict. Created workflow is stored in the database and returned.
-        """
-        # TODO: replace this method with direct access to manager.
-        workflow_contents_manager = workflows.WorkflowContentsManager(self.app)
-        raw_workflow_description = workflow_contents_manager.ensure_raw_description(data)
-        created_workflow = workflow_contents_manager.build_workflow_from_raw_description(
-            trans,
-            raw_workflow_description,
-            source=source,
-            add_to_menu=add_to_menu,
-            publish=publish,
-            exact_tools=exact_tools,
-            fill_defaults=fill_defaults,
-            from_tool_form=from_tool_form,
-        )
-        return created_workflow.stored_workflow, created_workflow.missing_tools
 
     def _workflow_to_dict(self, trans, stored):
         """

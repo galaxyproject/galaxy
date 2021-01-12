@@ -60,7 +60,7 @@ def get_changectx_for_changeset(repo, changeset_revision, **kwd):
 
 
 def get_config_from_disk(config_file, relative_install_dir):
-    for root, dirs, files in os.walk(relative_install_dir):
+    for root, _dirs, files in os.walk(relative_install_dir):
         if root.find('.hg') < 0:
             for name in files:
                 if name == config_file:

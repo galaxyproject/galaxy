@@ -1,6 +1,7 @@
 import abc
 import itertools
 import re
+from typing import List, Type
 
 import yaml
 from pkg_resources import resource_stream
@@ -139,7 +140,7 @@ class AddColumnConcatenateRuleDefinition(BaseRuleDefinition):
         column_1 = rule["target_column_1"]
 
         new_rows = []
-        for index, row in enumerate(data):
+        for row in data:
             new_rows.append(row + [row[column_0] + row[column_1]])
 
         return new_rows, sources
@@ -199,7 +200,7 @@ class AddColumnValueRuleDefinition(BaseRuleDefinition):
         value = rule["value"]
 
         new_rows = []
-        for index, row in enumerate(data):
+        for row in data:
             new_rows.append(row + [str(value)])
 
         return new_rows, sources
@@ -567,7 +568,7 @@ class RuleSet:
         return message
 
 
-RULES_DEFINITION_CLASSES = [
+RULES_DEFINITION_CLASSES: List[Type[BaseRuleDefinition]] = [
     AddColumnMetadataRuleDefinition,
     AddColumnGroupTagValueRuleDefinition,
     AddColumnConcatenateRuleDefinition,

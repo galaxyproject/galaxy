@@ -2,7 +2,7 @@ import { pipe, Observable } from "rxjs";
 import { switchMap, filter, share } from "rxjs/operators";
 
 // feed observables, keyed by underlying database instance
-const feeds = new Map();
+export const feeds = new Map();
 
 /**
  * Returns an observable with all the change events from the indicated database
@@ -19,7 +19,6 @@ export const changes = (cfg = {}) => {
         }),
         // filter out index creation which can appear as a change
         filter(({ id }) => !id.includes("_design")),
-        share()
     );
 };
 
@@ -31,11 +30,16 @@ export const changes = (cfg = {}) => {
 const buildFeed = (db, cfg = {}) => {
     const { live = true, returnDocs = true, include_docs = true, since = "now", timeout = false } = cfg;
 
-    return new Observable((obs) => {
+    const feed$ = new Observable((obs) => {
         const changeOpts = { live, include_docs, returnDocs, since, timeout };
         const feed = db.changes(changeOpts);
         feed.on("change", (update) => obs.next(update));
         feed.on("error", (err) => obs.error(err));
-        return () => feed.cancel();
+        return () => {
+            feed.cancel();
+            feeds.delete(db);
+        };
     });
+
+    return feed$.pipe(share());
 };

@@ -410,9 +410,10 @@ class ToolMigrationManager:
                     #                   id: <ToolSection id>,
                     #                   version : <ToolSection version>,
                     #                   name : <TooSection name>}]}
+                    # TODO: this code need to be revised
                     for k, v in tool_panel_dict_for_tool_config.items():
                         tool_panel_dict_for_display[k] = v
-                        for tool_panel_dict in v:
+                        for _tool_panel_dict in v:
                             # Keep track of tool config file names associated with entries that have been made to the
                             # migrated_tools_conf.xml file so they can be eliminated from all non-shed-related tool panel configs.
                             if tool_config not in tool_configs_to_filter:
@@ -642,7 +643,7 @@ class ToolMigrationManager:
     def __iscloned(self, clone_dir):
         full_path = os.path.abspath(clone_dir)
         if os.path.exists(full_path):
-            for root, dirs, files in os.walk(full_path):
+            for _root, dirs, _files in os.walk(full_path):
                 if '.hg' in dirs:
                     # Assume that the repository has been installed if we find a .hg directory.
                     return True

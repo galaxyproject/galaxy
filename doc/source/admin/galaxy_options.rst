@@ -181,7 +181,7 @@
     is valuable to separate these - for instance bootstrapping fresh
     Galaxy instances with pretested installs.  The following option
     can be used to separate the tool shed install database (all other
-    options listed above but prefixed with install_ are also
+    options listed above but prefixed with ``install_`` are also
     available).
     Defaults to the value of the 'database_connection' option.
 :Default: ``None``
@@ -677,8 +677,8 @@
 :Description:
     involucro is a tool used to build Docker or Singularity containers
     for tools from Conda dependencies referenced in tools as
-    `requirement`s. The following path is the location of involucro on
-    the Galaxy host. This is ignored if the relevant container
+    `requirement` s. The following path is the location of involucro
+    on the Galaxy host. This is ignored if the relevant container
     resolver isn't enabled, and will install on demand unless
     involucro_auto_init is set to false.
     The value of this option will be resolved with respect to
@@ -1056,7 +1056,7 @@
 :Description:
     Tool related caching. Fully expanded tools and metadata will be
     stored at this path. Per tool_conf cache locations can be
-    configured in (shed_)tool_conf.xml files using the
+    configured in (``shed_``)tool_conf.xml files using the
     tool_cache_data_dir attribute.
     The value of this option will be resolved with respect to
     <data_dir>.
@@ -1286,6 +1286,17 @@
     and tool error reports.  We recommend using a string in the
     following format: Galaxy Project <galaxy-no-reply@example.com>. If
     not configured, '<galaxy-no-reply@HOSTNAME>' will be used.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``custom_activation_email_message``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    This text will be inserted at the end of the activation email's
+    message, before the 'Your Galaxy Team' signature.
 :Default: ``None``
 :Type: str
 
@@ -1777,6 +1788,16 @@
     The URL linked by the "How to Cite Galaxy" link in the "Help"
     menu.
 :Default: ``https://galaxyproject.org/citing-galaxy``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~
+``release_doc_base_url``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The URL linked by the "Galaxy Version" link in the "Help" menu.
+:Default: ``https://docs.galaxyproject.org/en/release_``
 :Type: str
 
 
@@ -2929,10 +2950,10 @@
 :Description:
     If use_remote_user is enabled, the header that the upstream proxy
     provides the remote username in defaults to HTTP_REMOTE_USER (the
-    'HTTP_' is prepended by WSGI).  This option allows you to change
-    the header.  Note, you still need to prepend 'HTTP_' to the header
-    in this option, but your proxy server should *not* include 'HTTP_'
-    at the beginning of the header name.
+    ``HTTP_`` is prepended by WSGI).  This option allows you to change
+    the header.  Note, you still need to prepend ``HTTP_`` to the
+    header in this option, but your proxy server should *not* include
+    ``HTTP_`` at the beginning of the header name.
 :Default: ``HTTP_REMOTE_USER``
 :Type: str
 
@@ -3206,6 +3227,29 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_beta_edam_toolbox``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable beta EDAM organised toolbox which ignores admin managed
+    sections in lieu of EDAM topics only.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``beta_edam_toolbox_ontology_path``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Sets the path to EDAM ontology file.
+    The value of this option will be resolved with respect to
+    <data_dir>.
+:Default: ``EDAM.tsv``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``default_workflow_export_format``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3378,10 +3422,11 @@
 ~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Master key that allows many API admin actions to be used without
-    actually having a defined admin user in the database/config.  Only
-    set this if you need to bootstrap Galaxy, you probably do not want
-    to set this on public servers.
+    API key that allows performing some admin actions without actually
+    having a real admin user in the database and config. Only set this
+    if you need to bootstrap Galaxy, in particular to create a real
+    admin user account via API. You should probably not set this on a
+    production server.
 :Default: ``None``
 :Type: str
 
@@ -3664,7 +3709,7 @@
     you can separate Galaxy into multiple processes.  There are more
     than one way to do this, and they are explained in detail in the
     documentation:
-      https://docs.galaxyproject.org/en/master/admin/scaling.html
+    https://docs.galaxyproject.org/en/master/admin/scaling.html
     By default, Galaxy manages and executes jobs from within a single
     process and notifies itself of new jobs via in-memory queues.
     Jobs are run locally on the system on which Galaxy is started.
@@ -4040,7 +4085,7 @@
 :Description:
     Prologue Markdown/HTML to apply to markdown exports to PDF.
     Allowing branded headers.
-:Default: ````
+:Default: ``""``
 :Type: str
 
 
@@ -4051,7 +4096,7 @@
 :Description:
     Prologue Markdown/HTML to apply to markdown exports to PDF.
     Allowing branded footers.
-:Default: ````
+:Default: ``""``
 :Type: str
 
 
@@ -4062,7 +4107,7 @@
 :Description:
     Alternative to markdown_export_prologue that applies just to page
     exports.
-:Default: ````
+:Default: ``""``
 :Type: str
 
 
@@ -4073,7 +4118,7 @@
 :Description:
     Alternative to markdown_export_prologue that applies just to
     invocation report exports.
-:Default: ````
+:Default: ``""``
 :Type: str
 
 
@@ -4084,7 +4129,7 @@
 :Description:
     Alternative to markdown_export_epilogue that applies just to page
     exports.
-:Default: ````
+:Default: ``""``
 :Type: str
 
 
@@ -4095,7 +4140,7 @@
 :Description:
     Alternative to markdown_export_epilogue that applies just to
     invocation report exports.
-:Default: ````
+:Default: ``""``
 :Type: str
 
 

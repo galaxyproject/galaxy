@@ -350,11 +350,9 @@ body {
             align-items: center;
             &.active {
                 background: darken($brand-masthead, 10%);
-                .nav-link {
-                    color: $brand-masthead-text-active;
-                }
             }
             .nav-link {
+                position: relative;
                 cursor: pointer;
                 text-decoration: none;
                 color: $brand-masthead-text;
@@ -363,19 +361,17 @@ body {
                 }
                 &.nav-icon {
                     font-size: 1.7em;
+                    .nav-note {
+                        @extend .font-weight-bold;
+                        @extend .position-absolute;
+                        left: 2.2rem;
+                        top: 2.2rem;
+                        font-size: 0.6rem;
+                    }
                 }
                 &.toggle {
                     color: $brand-masthead-text-hover;
                 }
-            }
-            .nav-note {
-                @extend .font-weight-bold;
-                @extend .position-relative;
-                right: 0.4rem;
-                top: 0.7rem;
-                font-size: 0.7rem;
-                color: $brand-masthead-text-hover;
-                width: 0;
             }
         }
     }
@@ -1252,8 +1248,6 @@ div.permissionContainer {
 @import "history.scss";
 @import "collection.scss";
 @import "job.scss";
-
-@import "ui/paired-collection-creator.scss";
 
 @import "ui/search-input.scss";
 @import "ui/dataset-choice.scss";

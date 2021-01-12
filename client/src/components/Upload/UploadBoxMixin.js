@@ -27,6 +27,10 @@ export default {
             type: Number,
             default: null,
         },
+        selectable: {
+            type: Boolean,
+            default: false,
+        },
     },
     computed: {
         btnFilesTitle() {
@@ -37,7 +41,8 @@ export default {
             }
         },
         remoteFiles() {
-            return this.fileSourcesConfigured || this.ftpUploadSite;
+            // this needs to be true for the tests to pass
+            return !!this.fileSourcesConfigured || !!this.ftpUploadSite;
         },
     },
     methods: {

@@ -89,6 +89,7 @@ class BlastXml(GenericXml):
             return False
         return True
 
+    @staticmethod
     def merge(split_files, output_file):
         """Merging multiple XML files is non-trivial and must be done in subclasses."""
         if len(split_files) == 1:
@@ -167,7 +168,6 @@ class BlastXml(GenericXml):
                 h.close()
             out.write("  </BlastOutput_iterations>\n")
             out.write("</BlastOutput>\n")
-    merge = staticmethod(merge)
 
 
 class _BlastDb(Data):

@@ -154,7 +154,7 @@ mapping:
           valuable to separate these - for instance bootstrapping fresh Galaxy
           instances with pretested installs.  The following option can be used to
           separate the tool shed install database (all other options listed above
-          but prefixed with install_ are also available).
+          but prefixed with ``install_`` are also available).
 
           Defaults to the value of the 'database_connection' option.
 
@@ -473,7 +473,7 @@ mapping:
 
       file_sources_config_file:
         type: str
-        default: file_sources_conf.yml        
+        default: file_sources_conf.yml
         path_resolves_to: config_dir
         required: false
         desc: |
@@ -505,7 +505,7 @@ mapping:
         required: false
         desc: |
           involucro is a tool used to build Docker or Singularity containers for tools from Conda
-          dependencies referenced in tools as `requirement`s. The following path is
+          dependencies referenced in tools as `requirement` s. The following path is
           the location of involucro on the Galaxy host. This is ignored if the relevant
           container resolver isn't enabled, and will install on demand unless
           involucro_auto_init is set to false.
@@ -772,7 +772,7 @@ mapping:
         required: false
         desc: |
           Tool related caching. Fully expanded tools and metadata will be stored at this path.
-          Per tool_conf cache locations can be configured in (shed_)tool_conf.xml files using
+          Per tool_conf cache locations can be configured in (``shed_``)tool_conf.xml files using
           the tool_cache_data_dir attribute.
 
       tool_search_index_dir:
@@ -926,6 +926,13 @@ mapping:
           tool error reports.  We recommend using a string in the following format:
           Galaxy Project <galaxy-no-reply@example.com>.
           If not configured, '<galaxy-no-reply@HOSTNAME>' will be used.
+
+      custom_activation_email_message:
+        type: str
+        required: false
+        desc: |
+          This text will be inserted at the end of the activation email's message, before
+          the 'Your Galaxy Team' signature.
 
       instance_resource_url:
         type: str
@@ -1292,6 +1299,13 @@ mapping:
         required: false
         desc: |
           The URL linked by the "How to Cite Galaxy" link in the "Help" menu.
+
+      release_doc_base_url:
+        type: str
+        default: https://docs.galaxyproject.org/en/release_
+        required: false
+        desc: |
+          The URL linked by the "Galaxy Version" link in the "Help" menu.
 
       search_url:
         type: str
@@ -2135,10 +2149,10 @@ mapping:
         required: false
         desc: |
           If use_remote_user is enabled, the header that the upstream proxy provides
-          the remote username in defaults to HTTP_REMOTE_USER (the 'HTTP_' is prepended
+          the remote username in defaults to HTTP_REMOTE_USER (the ``HTTP_`` is prepended
           by WSGI).  This option allows you to change the header.  Note, you still need
-          to prepend 'HTTP_' to the header in this option, but your proxy server should
-          *not* include 'HTTP_' at the beginning of the header name.
+          to prepend ``HTTP_`` to the header in this option, but your proxy server should
+          *not* include ``HTTP_`` at the beginning of the header name.
 
       remote_user_secret:
         type: str
@@ -2343,6 +2357,22 @@ mapping:
           stable API. (The module state definitions may change and workflows built using
           these modules may not function in the future.)
 
+      enable_beta_edam_toolbox:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enable beta EDAM organised toolbox which ignores admin managed
+          sections in lieu of EDAM topics only.
+
+      beta_edam_toolbox_ontology_path:
+        type: str
+        default: EDAM.tsv
+        path_resolves_to: data_dir
+        required: false
+        desc: |
+          Sets the path to EDAM ontology file.
+
       default_workflow_export_format:
         type: str
         default: ga
@@ -2468,10 +2498,11 @@ mapping:
         type: str
         required: false
         desc: |
-          Master key that allows many API admin actions to be used without actually
-          having a defined admin user in the database/config.  Only set this if you
-          need to bootstrap Galaxy, you probably do not want to set this on public
-          servers.
+          API key that allows performing some admin actions without actually
+          having a real admin user in the database and config.
+          Only set this if you need to bootstrap Galaxy, in particular to create
+          a real admin user account via API.
+          You should probably not set this on a production server.
 
       enable_openid:
         type: bool
@@ -2673,7 +2704,7 @@ mapping:
           separate Galaxy into multiple processes.  There are more than one way to do
           this, and they are explained in detail in the documentation:
 
-            https://docs.galaxyproject.org/en/master/admin/scaling.html
+          https://docs.galaxyproject.org/en/master/admin/scaling.html
 
           By default, Galaxy manages and executes jobs from within a single process and
           notifies itself of new jobs via in-memory queues.  Jobs are run locally on

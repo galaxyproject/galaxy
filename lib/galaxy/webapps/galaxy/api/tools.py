@@ -38,17 +38,17 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
     @expose_api_anonymous_and_sessionless
     def index(self, trans, **kwds):
         """
-        GET /api/tools: returns a list of tools defined by parameters::
+        GET /api/tools
 
-            parameters:
+        returns a list of tools defined by parameters
 
-                in_panel  - if true, tools are returned in panel structure,
-                            including sections and labels
-                trackster - if true, only tools that are compatible with
-                            Trackster are returned
-                q         - if present search on the given query will be performed
-                tool_id   - if present the given tool_id will be searched for
-                            all installed versions
+        :param in_panel: if true, tools are returned in panel structure,
+                         including sections and labels
+        :param trackster: if true, only tools that are compatible with
+                          Trackster are returned
+        :param q: if present search on the given query will be performed
+        :param tool_id: if present the given tool_id will be searched for
+                        all installed versions
         """
 
         # Read params.
@@ -183,7 +183,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         Fetch complete test data for each tool with /api/tools/{tool_id}/test_data?tool_version=<tool_version>
         """
         test_counts_by_tool = {}
-        for id, tool in self.app.toolbox.tools():
+        for _id, tool in self.app.toolbox.tools():
             if not tool.is_datatype_converter:
                 tests = tool.tests
                 if tests:
@@ -272,8 +272,10 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         Attempts to install requirements via the dependency resolver
 
         parameters:
-            index:                   index of dependency resolver to use when installing dependency.
-                                     Defaults to using the highest ranking resolver
+            index:
+                index of dependency resolver to use when installing dependency.
+                Defaults to using the highest ranking resolver
+
             resolver_type:           Use the dependency resolver of this resolver_type to install dependency.
             build_dependency_cache:  If true, attempts to cache dependencies for this tool
             force_rebuild:           If true and cache dir exists, attempts to delete cache dir
@@ -291,12 +293,17 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
     def uninstall_dependencies(self, trans, id, **kwds):
         """
         DELETE /api/tools/{tool_id}/dependencies
+
         Attempts to uninstall requirements via the dependency resolver
 
         parameters:
-            index:                   index of dependency resolver to use when installing dependency.
-                                     Defaults to using the highest ranking resolver
-            resolver_type:           Use the dependency resolver of this resolver_type to install dependency
+
+            index:
+
+                index of dependency resolver to use when installing dependency.
+                Defaults to using the highest ranking resolver
+
+            resolver_type: Use the dependency resolver of this resolver_type to install dependency
         """
         tool = self._get_tool(id, user=trans.user)
         tool._view.uninstall_dependencies(requirements=tool.requirements, **kwds)
@@ -491,14 +498,14 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         return self._create(trans, payload, **kwd)
 
     def _create(self, trans, payload, **kwd):
-        action = payload.get('action', None)
+        action = payload.get('action')
         if action == 'rerun':
             raise Exception("'rerun' action has been deprecated")
 
         # Get tool.
-        tool_version = payload.get('tool_version', None)
-        tool_id = payload.get('tool_id', None)
-        tool_uuid = payload.get('tool_uuid', None)
+        tool_version = payload.get('tool_version')
+        tool_id = payload.get('tool_id')
+        tool_uuid = payload.get('tool_uuid')
         get_kwds = dict(
             tool_id=tool_id,
             tool_uuid=tool_uuid,
@@ -508,8 +515,11 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             raise exceptions.RequestParameterMissingException("Must specify either a tool_id or a tool_uuid.")
 
         tool = trans.app.toolbox.get_tool(**get_kwds)
-        if not tool or not tool.allow_user_access(trans.user):
-            raise exceptions.MessageException('Tool not found or not accessible.')
+        if not tool:
+            log.debug(f"Not found tool with kwds [{get_kwds}]")
+            raise exceptions.ToolMissingException('Tool not found.')
+        if not tool.allow_user_access(trans.user):
+            raise exceptions.ItemAccessibilityException('Tool not accessible.')
         if trans.app.config.user_activation_on:
             if not trans.user:
                 log.warning("Anonymous user attempts to execute tool, but account activation is turned on.")
@@ -519,7 +529,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         # Set running history from payload parameters.
         # History not set correctly as part of this API call for
         # dataset upload.
-        history_id = payload.get('history_id', None)
+        history_id = payload.get('history_id')
         if history_id:
             decoded_id = self.decode_id(history_id)
             target_history = self.history_manager.get_owned(decoded_id, trans.user, current_history=trans.history)

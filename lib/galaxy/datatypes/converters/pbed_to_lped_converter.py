@@ -68,7 +68,7 @@ def main():
         s = f'## Rgenetics: http://bitbucket.org/rgalaxy Galaxy Tools {prog} {timenow()}'  # becomes info
         print(s)
         f.write('<div>%s\n<ol>' % (s))
-        for i, data in enumerate(flist):
+        for data in flist:
             f.write('<li><a href="{}">{}</a></li>\n'.format(os.path.split(data)[-1], os.path.split(data)[-1]))
         f.write("</ol></div></div></body></html>")
 

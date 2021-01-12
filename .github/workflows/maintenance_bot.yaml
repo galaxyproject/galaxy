@@ -8,7 +8,7 @@ jobs:
     name: Assign labels and milestone
     runs-on: ubuntu-latest
     env:
-      MILESTONE_NUMBER: 18
+      MILESTONE_NUMBER: 19
     steps:
       - name: Add area labels
         if: ${{ ! contains(join(github.event.pull_request.labels.*.name, ', '), 'area/') }}

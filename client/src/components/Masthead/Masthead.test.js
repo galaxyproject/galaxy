@@ -8,6 +8,7 @@ import { loadWebhookMenuItems } from "./_webhooks";
 jest.mock("app");
 jest.mock("layout/menu");
 jest.mock("./_webhooks");
+jest.mock("../History/caching");
 
 describe("Masthead.vue", () => {
     let wrapper;
@@ -86,7 +87,6 @@ describe("Masthead.vue", () => {
             propsData: {
                 mastheadState,
                 activeTab,
-                appRoot: "prefix/",
             },
             localVue,
         });
@@ -111,7 +111,7 @@ describe("Masthead.vue", () => {
         expect(wrapper.findAll("li.nav-item").length).toBe(6);
         // Ensure specified link title respected.
         expect(wrapper.find("#analysis a").text()).toBe("Analyze");
-        expect(wrapper.find("#analysis a").attributes("href")).toBe("prefix/root");
+        expect(wrapper.find("#analysis a").attributes("href")).toBe("/root");
     });
 
     it("should render tab items with menus", () => {
@@ -120,7 +120,7 @@ describe("Masthead.vue", () => {
         expect(wrapper.find("#shared").classes("dropdown")).toBe(true);
 
         expect(wrapper.findAll("#shared .dropdown-menu li").length).toBe(1);
-        expect(wrapper.find("#shared .dropdown-menu li a").attributes().href).toBe("prefix/_menu_url");
+        expect(wrapper.find("#shared .dropdown-menu li a").attributes().href).toBe("/_menu_url");
         expect(wrapper.find("#shared .dropdown-menu li a").attributes().target).toBe("_menu_target");
         expect(wrapper.find("#shared .dropdown-menu li a").text()).toBe("_menu_title");
     });

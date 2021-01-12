@@ -22,7 +22,8 @@ class ModelOperationToolAction(DefaultToolAction):
 
         tool.check_inputs_ready(inp_data, inp_dataset_collections)
 
-    def execute(self, tool, trans, incoming={}, set_output_hid=False, overwrite=True, history=None, job_params=None, execution_cache=None, collection_info=None, job_callback=None, **kwargs):
+    def execute(self, tool, trans, incoming=None, set_output_hid=False, overwrite=True, history=None, job_params=None, execution_cache=None, collection_info=None, job_callback=None, **kwargs):
+        incoming = incoming or {}
         trans.check_user_activation()
 
         if execution_cache is None:

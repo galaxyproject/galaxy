@@ -8,6 +8,7 @@ import deepEqual from "deep-equal";
 import { defer, pipe, from } from "rxjs";
 import { tap, filter, mergeMap, reduce, shareReplay } from "rxjs/operators";
 import { needs } from "../operators/needs";
+import { dasherize } from "underscore.string";
 
 import PouchDB from "pouchdb";
 import PouchAdapterMemory from "pouchdb-adapter-memory";
@@ -27,7 +28,7 @@ PouchDB.plugin(PouchErase);
 // const show = (obj) => console.log(JSON.stringify(obj, null, 4));
 
 // Instance storage map, keyed by database name
-const dbs = new Map();
+export const dbs = new Map();
 
 /**
  * Generate an observable that initializes and shares a pouchdb instance.
@@ -71,7 +72,7 @@ async function buildCollection(opts, appConfig) {
 function collectionName(opts, appConfig) {
     const { name: dbName } = opts;
     const { name: envName } = appConfig;
-    return `${dbName}-${envName}`;
+    return dasherize(`${dbName} ${envName}`);
 }
 
 async function installCollectionIndexes(db, indexes = []) {
@@ -229,13 +230,4 @@ export async function deleteIndexes(db) {
     const doomedIndexes = response.indexes.filter((idx) => idx.ddoc !== null);
     const promises = doomedIndexes.map((idx) => db.deleteIndex(idx));
     return await Promise.all(promises);
-}
-
-/**
- * Erases all stored database instances
- */
-export async function wipeDatabase() {
-    for (const db of dbs.values()) {
-        await db.erase();
-    }
 }

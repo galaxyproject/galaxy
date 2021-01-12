@@ -12,6 +12,7 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
+   galaxy.workflow.refactor
    galaxy.workflow.reports
    galaxy.workflow.resources
    galaxy.workflow.schedulers

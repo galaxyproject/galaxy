@@ -13,6 +13,7 @@ Subpackages
    :maxdepth: 4
 
    galaxy.web.framework
+   galaxy.web.legacy_framework
    galaxy.web.proxy
 
 Submodules

@@ -3,6 +3,7 @@ from functools import partial
 import yaml
 
 from galaxy import model
+from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model import mapping
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import bunch
@@ -49,6 +50,7 @@ class TestApp:
         self.toolbox = TestToolbox()
         self.datatypes_registry = TestDatatypesRegistry()
         self.security = IdEncodingHelper(id_secret="testing")
+        self.workflow_manager = WorkflowsManager(self)
 
 
 class TestDatatypesRegistry:

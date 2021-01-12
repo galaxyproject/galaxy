@@ -265,6 +265,14 @@ galaxy.managers.secured module
    :undoc-members:
    :show-inheritance:
 
+galaxy.managers.session module
+------------------------------
+
+.. automodule:: galaxy.managers.session
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy.managers.sharable module
 -------------------------------
 

@@ -111,19 +111,20 @@ def skip_without_datatype(extension):
     return method_wrapper
 
 
-def skip_if_site_down(url):
+def is_site_up(url):
+    try:
+        response = requests.get(url, timeout=10)
+        return response.status_code == 200
+    except Exception:
+        return False
 
-    def site_down():
-        try:
-            response = requests.get(url, timeout=10)
-            return response.status_code != 200
-        except Exception:
-            return False
+
+def skip_if_site_down(url):
 
     def method_wrapper(method):
         @wraps(method)
         def wrapped_method(api_test_case, *args, **kwargs):
-            _raise_skip_if(site_down(), "Test depends on [%s] being up and it appears to be down." % url)
+            _raise_skip_if(not is_site_up(url), f"Test depends on [{url}] being up and it appears to be down.")
             method(api_test_case, *args, **kwargs)
 
         return wrapped_method
@@ -284,6 +285,10 @@ class BaseDatasetPopulator:
 
     def cancel_job(self, job_id):
         return self._delete("jobs/%s" % job_id)
+
+    def delete_history(self, history_id):
+        delete_response = self._delete(f"histories/{history_id}")
+        delete_response.raise_for_status()
 
     def delete_dataset(self, history_id, content_id):
         delete_response = self._delete(f"histories/{history_id}/contents/{content_id}")
@@ -520,7 +525,7 @@ class BaseDatasetPopulator:
         return dict(src=src, id=history_content["id"])
 
     def dataset_storage_info(self, dataset_id):
-        storage_response = self.galaxy_interactor.get("datasets/{}/storage".format(dataset_id))
+        storage_response = self.galaxy_interactor.get(f"datasets/{dataset_id}/storage")
         storage_response.raise_for_status()
         return storage_response.json()
 
@@ -604,19 +609,37 @@ class BaseDatasetPopulator:
             "dataset validation"
         )
 
-    def export_url(self, history_id, data, check_download=True):
+    def setup_history_for_export_testing(self, history_name):
+        history_id = self.new_history(name=history_name)
+        self.new_dataset(history_id, content="1 2 3")
+        deleted_hda = self.new_dataset(history_id, content="1 2 3", wait=True)
+        self.delete_dataset(history_id, deleted_hda["id"])
+        deleted_details = self.get_history_dataset_details(history_id, id=deleted_hda["id"])
+        assert deleted_details["deleted"]
+        return history_id
+
+    def prepare_export(self, history_id, data):
         url = "histories/%s/exports" % history_id
         put_response = self._put(url, data)
-        api_asserts.assert_status_code_is(put_response, 202)
+        put_response.raise_for_status()
 
-        def export_ready_response():
-            put_response = self._put(url)
-            if put_response.status_code == 202:
-                return None
+        if put_response.status_code == 202:
+            def export_ready_response():
+                put_response = self._put(url)
+                if put_response.status_code == 202:
+                    return None
+                return put_response
+
+            put_response = wait_on(export_ready_response, desc="export ready")
+            api_asserts.assert_status_code_is(put_response, 200)
             return put_response
+        else:
+            job_desc = put_response.json()
+            assert "job_id" in job_desc
+            return self.wait_for_job(job_desc["job_id"])
 
-        put_response = wait_on(export_ready_response, desc="export ready")
-        api_asserts.assert_status_code_is(put_response, 200)
+    def export_url(self, history_id, data, check_download=True):
+        put_response = self.prepare_export(history_id, data)
         response = put_response.json()
         api_asserts.assert_has_keys(response, "download_url")
         download_url = response["download_url"]
@@ -905,11 +928,24 @@ class BaseWorkflowPopulator:
         put_response = self.galaxy_interactor._put(raw_url, data=json.dumps(data))
         return put_response
 
+    def refactor_workflow(self, workflow_id, actions, dry_run=None, style=None):
+        data = dict(
+            actions=actions,
+        )
+        if style is not None:
+            data["style"] = style
+        if dry_run is not None:
+            data["dry_run"] = dry_run
+        raw_url = 'workflows/%s/refactor' % workflow_id
+        put_response = self.galaxy_interactor._put(raw_url, data=json.dumps(data))
+        return put_response
+
     @contextlib.contextmanager
     def export_for_update(self, workflow_id):
         workflow_object = self.download_workflow(workflow_id)
         yield workflow_object
-        self.update_workflow(workflow_id, workflow_object)
+        put_respose = self.update_workflow(workflow_id, workflow_object)
+        put_respose.raise_for_status()
 
     def run_workflow(self, has_workflow, test_data=None, history_id=None, wait=True, source_type=None, jobs_descriptions=None, expected_response=200, assert_ok=True, client_convert=None, round_trip_format_conversion=False, raw_yaml=False):
         """High-level wrapper around workflow API, etc. to invoke format 2 workflows."""

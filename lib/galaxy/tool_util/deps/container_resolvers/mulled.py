@@ -1,10 +1,9 @@
 """This module describes the :class:`MulledContainerResolver` ContainerResolver plugin."""
 
-import collections
 import logging
 import os
 import subprocess
-
+from typing import NamedTuple, Optional
 
 from galaxy.util import (
     string_as_bool,
@@ -38,27 +37,40 @@ from ..requirements import (
 log = logging.getLogger(__name__)
 
 
-CachedMulledImageSingleTarget = collections.namedtuple("CachedMulledImageSingleTarget", ["package_name", "version", "build", "image_identifier"])
-CachedV1MulledImageMultiTarget = collections.namedtuple("CachedV1MulledImageMultiTarget", ["hash", "build", "image_identifier"])
-CachedV2MulledImageMultiTarget = collections.namedtuple("CachedV2MulledImageMultiTarget", ["image_name", "version_hash", "build", "image_identifier"])
+class CachedMulledImageSingleTarget(NamedTuple):
+    package_name: str
+    version: str
+    build: str
+    image_identifier: str
 
-CachedMulledImageSingleTarget.multi_target = False
-CachedV1MulledImageMultiTarget.multi_target = "v1"
-CachedV2MulledImageMultiTarget.multi_target = "v2"
-
-
-@property
-def _package_hash(target):
-    # Make this work for Singularity file name or fully qualified Docker repository
-    # image names.
-    image_name = target.image_name
-    if "/" not in image_name:
-        return image_name
-    else:
-        return image_name.rsplit("/")[-1]
+    multi_target: bool = False
 
 
-CachedV2MulledImageMultiTarget.package_hash = _package_hash
+class CachedV1MulledImageMultiTarget(NamedTuple):
+    hash: str
+    build: str
+    image_identifier: str
+
+    multi_target: str = "v1"
+
+
+class CachedV2MulledImageMultiTarget(NamedTuple):
+    image_name: str
+    version_hash: str
+    build: str
+    image_identifier: str
+
+    multi_target: str = "v2"
+
+    @property
+    def package_hash(target):
+        # Make this work for Singularity file name or fully qualified Docker repository
+        # image names.
+        image_name = target.image_name
+        if "/" not in image_name:
+            return image_name
+        else:
+            return image_name.rsplit("/")[-1]
 
 
 def list_docker_cached_mulled_images(namespace=None, hash_func="v2", resolution_cache=None):
@@ -373,7 +385,7 @@ class MulledDockerContainerResolver(ContainerResolver):
     resolver_type = "mulled"
     container_type = "docker"
     shell = '/bin/bash'
-    protocol = None
+    protocol: Optional[str] = None
 
     def __init__(self, app_info=None, namespace="biocontainers", hash_func="v2", auto_install=True, **kwds):
         super().__init__(app_info)

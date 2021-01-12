@@ -4,7 +4,6 @@ from abc import (
     abstractmethod
 )
 
-
 from .util import _parse_name
 
 NOT_IMPLEMENTED_MESSAGE = "Galaxy tool format does not yet support this tool feature."

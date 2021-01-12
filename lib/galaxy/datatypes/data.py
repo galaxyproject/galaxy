@@ -7,6 +7,7 @@ import string
 import tempfile
 from collections import OrderedDict
 from inspect import isclass
+from typing import Any, Dict, Optional
 
 import webob.exc
 from markupsafe import escape
@@ -116,27 +117,27 @@ class Data(metaclass=DataMeta):
     # Add metadata elements
     MetadataElement(name="dbkey", desc="Database/Build", default="?", param=metadata.DBKeyParameter, multiple=False, no_value="?")
     # Stores the set of display applications, and viewing methods, supported by this datatype
-    supported_display_apps = {}
+    supported_display_apps: Dict[str, Any] = {}
     # If False, the peek is regenerated whenever a dataset of this type is copied
     copy_safe_peek = True
     # The dataset contains binary data --> do not space_to_tab or convert newlines, etc.
     # Allow binary file uploads of this type when True.
     is_binary = True
     # Composite datatypes
-    composite_type = None
-    composite_files = OrderedDict()
+    composite_type: Optional[str] = None
+    composite_files: Dict[str, Any] = OrderedDict()
     primary_file_name = 'index'
     # Allow user to change between this datatype and others. If left to None,
     # datatype change is allowed if the datatype is not composite.
-    allow_datatype_change = None
+    allow_datatype_change: Optional[bool] = None
     # A per datatype setting (inherited): max file size (in bytes) for setting optional metadata
     _max_optional_metadata_filesize = None
 
     # Trackster track type.
-    track_type = None
+    track_type: Optional[str] = None
 
     # Data sources.
-    data_sources = {}
+    data_sources: Dict[str, str] = {}
 
     def __init__(self, **kwd):
         """Initialize the datatype"""
@@ -180,7 +181,7 @@ class Data(metaclass=DataMeta):
         if copy_from:
             dataset.metadata = copy_from.metadata
 
-    def set_meta(self, dataset, overwrite=True, **kwd):
+    def set_meta(self, dataset: Any, overwrite=True, **kwd):
         """Unimplemented method, allows guessing of metadata from contents of file"""
         return True
 
@@ -318,7 +319,7 @@ class Data(metaclass=DataMeta):
     def _serve_raw(self, trans, dataset, to_ext, **kwd):
         trans.response.headers['Content-Length'] = str(os.stat(dataset.file_name).st_size)
         trans.response.set_content_type("application/octet-stream")  # force octet-stream so Safari doesn't append mime extensions to filename
-        filename = self._download_filename(dataset, to_ext, hdca=kwd.get("hdca"), element_identifier=kwd.get("element_identifier"))
+        filename = self._download_filename(dataset, to_ext, hdca=kwd.get("hdca"), element_identifier=kwd.get("element_identifier"), filename_pattern=kwd.get("filename_pattern"))
         trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename
         return open(dataset.file_name, mode='rb')
 
@@ -408,7 +409,7 @@ class Data(metaclass=DataMeta):
                 return self._archive_composite_dataset(trans, data, do_action=kwd.get('do_action', 'zip'))
             else:
                 trans.response.headers['Content-Length'] = str(os.stat(data.file_name).st_size)
-                filename = self._download_filename(data, to_ext, hdca=kwd.get("hdca"), element_identifier=kwd.get("element_identifier"))
+                filename = self._download_filename(data, to_ext, hdca=kwd.get("hdca"), element_identifier=kwd.get("element_identifier"), filename_pattern=kwd.get("filename_pattern"))
                 trans.response.set_content_type("application/octet-stream")  # force octet-stream so Safari doesn't append mime extensions to filename
                 trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename
                 return open(data.file_name, 'rb')
@@ -471,7 +472,7 @@ class Data(metaclass=DataMeta):
 
         return open(filename, mode='rb')
 
-    def _download_filename(self, dataset, to_ext, hdca=None, element_identifier=None):
+    def _download_filename(self, dataset, to_ext, hdca=None, element_identifier=None, filename_pattern=None):
         def escape(raw_identifier):
             return ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in raw_identifier)[0:150]
 
@@ -486,15 +487,17 @@ class Data(metaclass=DataMeta):
             "hid": dataset.hid,
         }
 
-        filename_pattern = DOWNLOAD_FILENAME_PATTERN_DATASET
+        if not filename_pattern:
+            if hdca is None:
+                filename_pattern = DOWNLOAD_FILENAME_PATTERN_DATASET
+            else:
+                filename_pattern = DOWNLOAD_FILENAME_PATTERN_COLLECTION_ELEMENT
 
         if hdca is not None:
             # Use collection context to build up filename.
             template_values["element_identifier"] = element_identifier
             template_values["hdca_name"] = escape(hdca.name)
             template_values["hdca_hid"] = hdca.hid
-
-            filename_pattern = DOWNLOAD_FILENAME_PATTERN_COLLECTION_ELEMENT
 
         return string.Template(filename_pattern).substitute(**template_values)
 
@@ -681,11 +684,11 @@ class Data(metaclass=DataMeta):
         return key
 
     @property
-    def writable_files(self, dataset=None):
+    def writable_files(self):
         files = OrderedDict()
         if self.composite_type != 'auto_primary_file':
             files[self.primary_file_name] = self.__new_composite_file(self.primary_file_name)
-        for key, value in self.get_composite_files(dataset=dataset).items():
+        for key, value in self.get_composite_files().items():
             files[key] = value
         return files
 
@@ -718,6 +721,7 @@ class Data(metaclass=DataMeta):
         datatype_classes = tuple(datatype if isclass(datatype) else datatype.__class__ for datatype in target_datatypes)
         return isinstance(self, datatype_classes)
 
+    @staticmethod
     def merge(split_files, output_file):
         """
             Merge files with copy.copyfileobj() will not hit the
@@ -731,8 +735,6 @@ class Data(metaclass=DataMeta):
             with open(output_file, 'wb') as fdst:
                 for fsrc in split_files:
                     shutil.copyfileobj(open(fsrc, 'rb'), fdst)
-
-    merge = staticmethod(merge)
 
     def get_visualizations(self, dataset):
         """
@@ -844,7 +846,7 @@ class Text(Data):
                 data_lines = None
         return data_lines
 
-    def set_peek(self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None, line_wrap=True):
+    def set_peek(self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None, line_wrap=True, **kwd):
         """
         Set the peek.  This method is used by various subclasses of Text.
         """
@@ -879,6 +881,7 @@ class Text(Data):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
+    @classmethod
     def split(cls, input_datasets, subdir_generator_function, split_params):
         """
         Split the input files by line.
@@ -897,11 +900,8 @@ class Text(Data):
 
             # Computing the length is expensive!
             def _file_len(fname):
-                i = 0
                 with open(fname) as f:
-                    for i, _ in enumerate(f):
-                        pass
-                return i + 1
+                    return sum(1 for _ in f)
             length = _file_len(input_files[0])
             parts = int(split_params['split_size'])
             if length < parts:
@@ -950,7 +950,6 @@ class Text(Data):
             f.close()
             if part_file:
                 part_file.close()
-    split = classmethod(split)
 
     # ------------- Dataproviders
     @dataproviders.decorators.dataprovider_factory('line', dataproviders.line.FilteredLineDataProvider.settings)

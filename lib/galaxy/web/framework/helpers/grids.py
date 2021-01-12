@@ -2,6 +2,7 @@ import logging
 import math
 from collections import OrderedDict
 from json import dumps, loads
+from typing import Dict, List, Optional
 
 from markupsafe import escape
 from sqlalchemy.sql.expression import and_, false, func, null, or_, true
@@ -12,387 +13,6 @@ from galaxy.web.framework import decorators, url_for
 
 
 log = logging.getLogger(__name__)
-
-
-class Grid:
-    """
-    Specifies the content and format of a grid (data table).
-    """
-    title = ""
-    model_class = None
-    show_item_checkboxes = False
-    use_hide_message = True
-    global_actions = []
-    columns = []
-    operations = []
-    standard_filters = []
-    # Any columns that are filterable (either standard or advanced) should have a default value set in the default filter.
-    default_filter = {}
-    default_sort_key = None
-    use_paging = False
-    num_rows_per_page = 25
-    num_page_links = 10
-    # Set preference names.
-    cur_filter_pref_name = ".filter"
-    cur_sort_key_pref_name = ".sort_key"
-    legend = None
-    info_text = None
-
-    def __init__(self):
-        # Determine if any multiple row operations are defined
-        self.has_multiple_item_operations = False
-        for operation in self.operations:
-            if operation.allow_multiple:
-                self.has_multiple_item_operations = True
-                break
-
-        # If a column does not have a model class, set the column's model class
-        # to be the grid's model class.
-        for column in self.columns:
-            if not column.model_class:
-                column.model_class = self.model_class
-
-    def __call__(self, trans, **kwargs):
-        # Get basics.
-        # FIXME: pretty sure this is only here to pass along, can likely be eliminated
-        status = kwargs.get('status', None)
-        message = kwargs.get('message', None)
-        # Build a base filter and sort key that is the combination of the saved state and defaults.
-        # Saved state takes preference over defaults.
-        base_filter = {}
-        if self.default_filter:
-            # default_filter is a dictionary that provides a default set of filters based on the grid's columns.
-            base_filter = self.default_filter.copy()
-        base_sort_key = self.default_sort_key
-        # Build initial query
-        query = self.build_initial_query(trans, **kwargs)
-        query = self.apply_query_filter(trans, query, **kwargs)
-        # Maintain sort state in generated urls
-        extra_url_args = {}
-        # Determine whether use_default_filter flag is set.
-        use_default_filter_str = kwargs.get('use_default_filter')
-        use_default_filter = False
-        if use_default_filter_str:
-            use_default_filter = (use_default_filter_str.lower() == 'true')
-        # Process filtering arguments to (a) build a query that represents the filter and (b) build a
-        # dictionary that denotes the current filter.
-        cur_filter_dict = {}
-        for column in self.columns:
-            if column.key:
-                # Get the filter criterion for the column. Precedence is (a) if using default filter, only look there; otherwise,
-                # (b) look in kwargs; and (c) look in base filter.
-                column_filter = None
-                if use_default_filter:
-                    if self.default_filter:
-                        column_filter = self.default_filter.get(column.key)
-                elif "f-" + column.model_class.__name__ + ".%s" % column.key in kwargs:
-                    # Queries that include table joins cannot guarantee unique column names.  This problem is
-                    # handled by setting the column_filter value to <TableName>.<ColumnName>.
-                    column_filter = kwargs.get("f-" + column.model_class.__name__ + ".%s" % column.key)
-                elif "f-" + column.key in kwargs:
-                    column_filter = kwargs.get("f-" + column.key)
-                elif column.key in base_filter:
-                    column_filter = base_filter.get(column.key)
-
-                # Method (1) combines a mix of strings and lists of strings into a single string and (2) attempts to de-jsonify all strings.
-                def loads_recurse(item):
-                    decoded_list = []
-                    if isinstance(item, str):
-                        try:
-                            # Not clear what we're decoding, so recurse to ensure that we catch everything.
-                            decoded_item = loads(item)
-                            if isinstance(decoded_item, list):
-                                decoded_list = loads_recurse(decoded_item)
-                            else:
-                                decoded_list = [str(decoded_item)]
-                        except ValueError:
-                            decoded_list = [str(item)]
-                    elif isinstance(item, list):
-                        for element in item:
-                            a_list = loads_recurse(element)
-                            decoded_list = decoded_list + a_list
-                    return decoded_list
-                # If column filter found, apply it.
-                if column_filter is not None:
-                    # TextColumns may have a mix of json and strings.
-                    if isinstance(column, TextColumn):
-                        column_filter = loads_recurse(column_filter)
-                        if len(column_filter) == 1:
-                            column_filter = column_filter[0]
-                    # Interpret ',' as a separator for multiple terms.
-                    if isinstance(column_filter, str) and column_filter.find(',') != -1:
-                        column_filter = column_filter.split(',')
-
-                    # Check if filter is empty
-                    if isinstance(column_filter, list):
-                        # Remove empty strings from filter list
-                        column_filter = [x for x in column_filter if x != '']
-                        if len(column_filter) == 0:
-                            continue
-                    elif isinstance(column_filter, str):
-                        # If filter criterion is empty, do nothing.
-                        if column_filter == '':
-                            continue
-
-                    # Update query.
-                    query = column.filter(trans, trans.user, query, column_filter)
-                    # Upate current filter dict.
-                    # Column filters are rendered in various places, sanitize them all here.
-                    cur_filter_dict[column.key] = sanitize_text(column_filter)
-                    # Carry filter along to newly generated urls; make sure filter is a string so
-                    # that we can encode to UTF-8 and thus handle user input to filters.
-                    if isinstance(column_filter, list):
-                        # Filter is a list; process each item.
-                        extra_url_args["f-" + column.key] = dumps(column_filter)
-                    else:
-                        # Process singleton filter.
-                        extra_url_args["f-" + column.key] = column_filter
-        # Process sort arguments.
-        sort_key = None
-        if 'sort' in kwargs:
-            sort_key = kwargs['sort']
-        elif base_sort_key:
-            sort_key = base_sort_key
-        if sort_key:
-            ascending = not(sort_key.startswith("-"))
-            # Queries that include table joins cannot guarantee unique column names.  This problem is
-            # handled by setting the column_filter value to <TableName>.<ColumnName>.
-            table_name = None
-            if sort_key.find('.') > -1:
-                a_list = sort_key.split('.')
-                if ascending:
-                    table_name = a_list[0]
-                else:
-                    table_name = a_list[0][1:]
-                column_name = a_list[1]
-            elif ascending:
-                column_name = sort_key
-            else:
-                column_name = sort_key[1:]
-            # Sort key is a column key.
-            for column in self.columns:
-                if column.key and column.key.find('.') > -1:
-                    column_key = column.key.split('.')[1]
-                else:
-                    column_key = column.key
-                if (table_name is None or table_name == column.model_class.__name__) and column_key == column_name:
-                    query = column.sort(trans, query, ascending, column_name=column_name)
-                    break
-            extra_url_args['sort'] = sort_key
-        # There might be a current row
-        current_item = self.get_current_item(trans, **kwargs)
-        # Process page number.
-        num_pages = None
-        total_row_count_query = query  # query without limit applied to get total number of rows.
-        if self.use_paging:
-            if 'page' in kwargs:
-                if kwargs['page'] == 'all':
-                    page_num = 0
-                else:
-                    page_num = int(kwargs['page'])
-            else:
-                page_num = 1
-            if page_num == 0:
-                num_pages = 1
-                page_num = 1
-            else:
-                query = query.limit(self.num_rows_per_page).offset((page_num - 1) * self.num_rows_per_page)
-        else:
-            # Defaults.
-            page_num = 1
-        # There are some places in grid templates where it's useful for a grid
-        # to have its current filter.
-        self.cur_filter_dict = cur_filter_dict
-
-        # Log grid view.
-        context = str(self.__class__.__name__)
-        params = cur_filter_dict.copy()
-        params['sort'] = sort_key
-
-        # Render grid.
-        def url(*args, **kwargs):
-            route_name = kwargs.pop('__route_name__', None)
-            # Only include sort/filter arguments if not linking to another
-            # page. This is a bit of a hack.
-            if 'action' in kwargs:
-                new_kwargs = dict()
-            else:
-                new_kwargs = dict(extra_url_args)
-            # Extend new_kwargs with first argument if found
-            if len(args) > 0:
-                new_kwargs.update(args[0])
-            new_kwargs.update(kwargs)
-            # We need to encode item ids
-            if 'id' in new_kwargs:
-                id = new_kwargs['id']
-                if isinstance(id, list):
-                    new_kwargs['id'] = [trans.security.encode_id(i) for i in id]
-                else:
-                    new_kwargs['id'] = trans.security.encode_id(id)
-            # The url_for invocation *must* include a controller and action.
-            if 'controller' not in new_kwargs:
-                new_kwargs['controller'] = trans.controller
-            if 'action' not in new_kwargs:
-                new_kwargs['action'] = trans.action
-            if route_name:
-                return url_for(route_name, **new_kwargs)
-            return url_for(**new_kwargs)
-
-        self.use_panels = (kwargs.get('use_panels', False) in [True, 'True', 'true'])
-        self.advanced_search = (kwargs.get('advanced_search', False) in [True, 'True', 'true'])
-        # Currently, filling the template returns a str object; this requires decoding the string into a
-        # unicode object within mako templates. What probably should be done is to return the template as
-        # utf-8 unicode; however, this would require encoding the object as utf-8 before returning the grid
-        # results via a controller method, which is require substantial changes. Hence, for now, return grid
-        # as str.
-        grid_config = {
-            'title'                         : self.title,
-            'title_id'                      : getattr(self, "title_id", None),
-            'url_base'                      : trans.request.path_url,
-            'async_ops'                     : [],
-            'categorical_filters'           : {},
-            'filters'                       : cur_filter_dict,
-            'sort_key'                      : sort_key,
-            'show_item_checkboxes'          : self.show_item_checkboxes or kwargs.get('show_item_checkboxes', '') in ['True', 'true'],
-            'cur_page_num'                  : page_num,
-            'num_page_links'                : self.num_page_links,
-            'status'                        : status,
-            'message'                       : restore_text(message),
-            'global_actions'                : [],
-            'operations'                    : [],
-            'items'                         : [],
-            'columns'                       : [],
-            'model_class'                   : str(self.model_class),
-            'use_paging'                    : self.use_paging,
-            'legend'                        : self.legend,
-            'current_item_id'               : False,
-            'use_hide_message'              : self.use_hide_message,
-            'default_filter_dict'           : self.default_filter,
-            'advanced_search'               : self.advanced_search,
-            'info_text'                     : self.info_text,
-            'url'                           : url(dict()),
-            'refresh_frames'                : kwargs.get('refresh_frames', [])
-        }
-        if current_item:
-            grid_config['current_item_id'] = current_item.id
-        for column in self.columns:
-            extra = ''
-            if column.sortable:
-                if sort_key.endswith(column.key):
-                    if not sort_key.startswith("-"):
-                        extra = "&darr;"
-                    else:
-                        extra = "&uarr;"
-            grid_config['columns'].append({
-                'key'               : column.key,
-                'visible'           : column.visible,
-                'nowrap'            : column.nowrap,
-                'attach_popup'      : column.attach_popup,
-                'label_id_prefix'   : column.label_id_prefix,
-                'sortable'          : column.sortable,
-                'label'             : column.label,
-                'filterable'        : column.filterable,
-                'delayed'           : column.delayed,
-                'is_text'           : isinstance(column, TextColumn),
-                'extra'             : extra
-            })
-        for operation in self.operations:
-            grid_config['operations'].append({
-                'allow_multiple'        : operation.allow_multiple,
-                'allow_popup'           : operation.allow_popup,
-                'target'                : operation.target,
-                'label'                 : operation.label,
-                'confirm'               : operation.confirm,
-                'href'                  : url(**operation.url_args) if isinstance(operation.url_args, dict) else None,
-                'global_operation'      : False
-            })
-            if operation.allow_multiple:
-                grid_config['show_item_checkboxes'] = True
-            if operation.global_operation:
-                grid_config['global_operation'] = url(** (operation.global_operation()))
-        for action in self.global_actions:
-            grid_config['global_actions'].append({
-                'url_args'  : url(**action.url_args),
-                'label'     : action.label,
-                'target'    : action.target
-            })
-        for operation in [op for op in self.operations if op.async_compatible]:
-            grid_config['async_ops'].append(operation.label.lower())
-        for column in self.columns:
-            if column.filterable is not None and not isinstance(column, TextColumn):
-                grid_config['categorical_filters'][column.key] = {filter.label: filter.args for filter in column.get_accepted_filters()}
-        for i, item in enumerate(query):
-            item_dict = {
-                'id'                    : item.id,
-                'encode_id'             : trans.security.encode_id(item.id),
-                'link'                  : [],
-                'operation_config'      : {},
-                'column_config'         : {}
-            }
-            for column in self.columns:
-                if column.visible:
-                    link = column.get_link(trans, self, item)
-                    if link:
-                        link = url(**link)
-                    else:
-                        link = None
-                    target = column.target
-                    value = unicodify(column.get_value(trans, self, item))
-                    if value:
-                        value = value.replace('/', '//')
-                    item_dict['column_config'][column.label] = {
-                        'link'      : link,
-                        'value'     : value,
-                        'target'    : target
-                    }
-            for operation in self.operations:
-                item_dict['operation_config'][operation.label] = {
-                    'allowed'   : operation.allowed(item),
-                    'url_args'  : url(**operation.get_url_args(item)),
-                    'target'    : operation.target
-                }
-            grid_config['items'].append(item_dict)
-
-        if self.use_paging and num_pages is None:
-            # TODO: it would be better to just return this as None, render, and fire
-            # off a second request for this count I think.
-            total_num_rows = total_row_count_query.count()
-            num_pages = int(math.ceil(float(total_num_rows) / self.num_rows_per_page))
-
-        grid_config["num_pages"] = num_pages
-
-        trans.log_action(trans.get_user(), "grid.view", context, params)
-        return grid_config
-
-    def get_ids(self, **kwargs):
-        id = []
-        if 'id' in kwargs:
-            id = kwargs['id']
-            # Coerce ids to list
-            if not isinstance(id, list):
-                id = id.split(",")
-            # Ensure ids are integers
-            try:
-                id = list(map(int, id))
-            except Exception:
-                decorators.error("Invalid id")
-        return id
-
-    # ---- Override these ----------------------------------------------------
-    def handle_operation(self, trans, operation, ids, **kwargs):
-        pass
-
-    def get_current_item(self, trans, **kwargs):
-        return None
-
-    def build_initial_query(self, trans, **kwargs):
-        return trans.sa_session.query(self.model_class)
-
-    def apply_query_filter(self, trans, query, **kwargs):
-        # Applies a database filter that holds for all items in the grid.
-        # (gvk) Is this method necessary?  Why not simply build the entire query,
-        # including applying filters in the build_initial_query() method?
-        return query
 
 
 class GridColumn:
@@ -760,7 +380,7 @@ class DeletedColumn(GridColumn):
 
     def get_accepted_filters(self):
         """ Returns a list of accepted filters for this column. """
-        accepted_filter_labels_and_vals = {"active" : "False", "deleted" : "True", "all": "All"}
+        accepted_filter_labels_and_vals = {"active": "False", "deleted": "True", "all": "All"}
         accepted_filters = []
         for label, val in accepted_filter_labels_and_vals.items():
             args = {self.key: val}
@@ -781,7 +401,7 @@ class PurgedColumn(GridColumn):
 
     def get_accepted_filters(self):
         """ Returns a list of accepted filters for this column. """
-        accepted_filter_labels_and_vals = {"nonpurged" : "False", "purged" : "True", "all": "All"}
+        accepted_filter_labels_and_vals = {"nonpurged": "False", "purged": "True", "all": "All"}
         accepted_filters = []
         for label, val in accepted_filter_labels_and_vals.items():
             args = {self.key: val}
@@ -818,9 +438,9 @@ class StateColumn(GridColumn):
 
     def get_accepted_filters(self):
         """Returns a list of accepted filters for this column."""
-        all = GridColumnFilter('all', {self.key : 'All'})
+        all = GridColumnFilter('all', {self.key: 'All'})
         accepted_filters = [all]
-        for k, v in self.model_class.states.items():
+        for v in self.model_class.states.values():
             args = {self.key: v}
             accepted_filters.append(GridColumnFilter(v, args))
         return accepted_filters
@@ -907,7 +527,7 @@ class GridOperation:
 
     def get_url_args(self, item):
         if self.url_args:
-            if hasattr(self.url_args, '__call__'):
+            if callable(self.url_args):
                 url_args = self.url_args(item)
             else:
                 url_args = dict(self.url_args)
@@ -927,7 +547,7 @@ class DisplayByUsernameAndSlugGridOperation(GridOperation):
     """ Operation to display an item by username and slug. """
 
     def get_url_args(self, item):
-        return {'action' : 'display_by_username_and_slug', 'username' : item.user.username, 'slug' : item.slug}
+        return {'action': 'display_by_username_and_slug', 'username': item.user.username, 'slug': item.slug}
 
 
 class GridAction:
@@ -947,3 +567,384 @@ class GridColumnFilter:
         for k, v in self.args.items():
             rval["f-" + k] = v
         return rval
+
+
+class Grid:
+    """
+    Specifies the content and format of a grid (data table).
+    """
+    title = ""
+    model_class: Optional[type] = None
+    show_item_checkboxes = False
+    use_hide_message = True
+    global_actions: List[GridAction] = []
+    columns: List[GridColumn] = []
+    operations: List[GridOperation] = []
+    standard_filters: List[GridColumnFilter] = []
+    # Any columns that are filterable (either standard or advanced) should have a default value set in the default filter.
+    default_filter: Dict[str, str] = {}
+    default_sort_key: Optional[str] = None
+    use_paging = False
+    num_rows_per_page = 25
+    num_page_links = 10
+    # Set preference names.
+    cur_filter_pref_name = ".filter"
+    cur_sort_key_pref_name = ".sort_key"
+    legend = None
+    info_text: Optional[str] = None
+
+    def __init__(self):
+        # Determine if any multiple row operations are defined
+        self.has_multiple_item_operations = False
+        for operation in self.operations:
+            if operation.allow_multiple:
+                self.has_multiple_item_operations = True
+                break
+
+        # If a column does not have a model class, set the column's model class
+        # to be the grid's model class.
+        for column in self.columns:
+            if not column.model_class:
+                column.model_class = self.model_class
+
+    def __call__(self, trans, **kwargs):
+        # Get basics.
+        # FIXME: pretty sure this is only here to pass along, can likely be eliminated
+        status = kwargs.get('status', None)
+        message = kwargs.get('message', None)
+        # Build a base filter and sort key that is the combination of the saved state and defaults.
+        # Saved state takes preference over defaults.
+        base_filter = {}
+        if self.default_filter:
+            # default_filter is a dictionary that provides a default set of filters based on the grid's columns.
+            base_filter = self.default_filter.copy()
+        base_sort_key = self.default_sort_key
+        # Build initial query
+        query = self.build_initial_query(trans, **kwargs)
+        query = self.apply_query_filter(trans, query, **kwargs)
+        # Maintain sort state in generated urls
+        extra_url_args = {}
+        # Determine whether use_default_filter flag is set.
+        use_default_filter_str = kwargs.get('use_default_filter')
+        use_default_filter = False
+        if use_default_filter_str:
+            use_default_filter = (use_default_filter_str.lower() == 'true')
+        # Process filtering arguments to (a) build a query that represents the filter and (b) build a
+        # dictionary that denotes the current filter.
+        cur_filter_dict = {}
+        for column in self.columns:
+            if column.key:
+                # Get the filter criterion for the column. Precedence is (a) if using default filter, only look there; otherwise,
+                # (b) look in kwargs; and (c) look in base filter.
+                column_filter = None
+                if use_default_filter:
+                    if self.default_filter:
+                        column_filter = self.default_filter.get(column.key)
+                elif "f-" + column.model_class.__name__ + ".%s" % column.key in kwargs:
+                    # Queries that include table joins cannot guarantee unique column names.  This problem is
+                    # handled by setting the column_filter value to <TableName>.<ColumnName>.
+                    column_filter = kwargs.get("f-" + column.model_class.__name__ + ".%s" % column.key)
+                elif "f-" + column.key in kwargs:
+                    column_filter = kwargs.get("f-" + column.key)
+                elif column.key in base_filter:
+                    column_filter = base_filter.get(column.key)
+
+                # Method (1) combines a mix of strings and lists of strings into a single string and (2) attempts to de-jsonify all strings.
+                def loads_recurse(item):
+                    decoded_list = []
+                    if isinstance(item, str):
+                        try:
+                            # Not clear what we're decoding, so recurse to ensure that we catch everything.
+                            decoded_item = loads(item)
+                            if isinstance(decoded_item, list):
+                                decoded_list = loads_recurse(decoded_item)
+                            else:
+                                decoded_list = [str(decoded_item)]
+                        except ValueError:
+                            decoded_list = [str(item)]
+                    elif isinstance(item, list):
+                        for element in item:
+                            a_list = loads_recurse(element)
+                            decoded_list = decoded_list + a_list
+                    return decoded_list
+                # If column filter found, apply it.
+                if column_filter is not None:
+                    # TextColumns may have a mix of json and strings.
+                    if isinstance(column, TextColumn):
+                        column_filter = loads_recurse(column_filter)
+                        if len(column_filter) == 1:
+                            column_filter = column_filter[0]
+                    # Interpret ',' as a separator for multiple terms.
+                    if isinstance(column_filter, str) and column_filter.find(',') != -1:
+                        column_filter = column_filter.split(',')
+
+                    # Check if filter is empty
+                    if isinstance(column_filter, list):
+                        # Remove empty strings from filter list
+                        column_filter = [x for x in column_filter if x != '']
+                        if len(column_filter) == 0:
+                            continue
+                    elif isinstance(column_filter, str):
+                        # If filter criterion is empty, do nothing.
+                        if column_filter == '':
+                            continue
+
+                    # Update query.
+                    query = column.filter(trans, trans.user, query, column_filter)
+                    # Upate current filter dict.
+                    # Column filters are rendered in various places, sanitize them all here.
+                    cur_filter_dict[column.key] = sanitize_text(column_filter)
+                    # Carry filter along to newly generated urls; make sure filter is a string so
+                    # that we can encode to UTF-8 and thus handle user input to filters.
+                    if isinstance(column_filter, list):
+                        # Filter is a list; process each item.
+                        extra_url_args["f-" + column.key] = dumps(column_filter)
+                    else:
+                        # Process singleton filter.
+                        extra_url_args["f-" + column.key] = column_filter
+        # Process sort arguments.
+        sort_key = None
+        if 'sort' in kwargs:
+            sort_key = kwargs['sort']
+        elif base_sort_key:
+            sort_key = base_sort_key
+        if sort_key:
+            ascending = not(sort_key.startswith("-"))
+            # Queries that include table joins cannot guarantee unique column names.  This problem is
+            # handled by setting the column_filter value to <TableName>.<ColumnName>.
+            table_name = None
+            if sort_key.find('.') > -1:
+                a_list = sort_key.split('.')
+                if ascending:
+                    table_name = a_list[0]
+                else:
+                    table_name = a_list[0][1:]
+                column_name = a_list[1]
+            elif ascending:
+                column_name = sort_key
+            else:
+                column_name = sort_key[1:]
+            # Sort key is a column key.
+            for column in self.columns:
+                if column.key and column.key.find('.') > -1:
+                    column_key = column.key.split('.')[1]
+                else:
+                    column_key = column.key
+                if (table_name is None or table_name == column.model_class.__name__) and column_key == column_name:
+                    query = column.sort(trans, query, ascending, column_name=column_name)
+                    break
+            extra_url_args['sort'] = sort_key
+        # There might be a current row
+        current_item = self.get_current_item(trans, **kwargs)
+        # Process page number.
+        num_pages = None
+        total_row_count_query = query  # query without limit applied to get total number of rows.
+        if self.use_paging:
+            if 'page' in kwargs:
+                if kwargs['page'] == 'all':
+                    page_num = 0
+                else:
+                    page_num = int(kwargs['page'])
+            else:
+                page_num = 1
+            if page_num == 0:
+                num_pages = 1
+                page_num = 1
+            else:
+                query = query.limit(self.num_rows_per_page).offset((page_num - 1) * self.num_rows_per_page)
+        else:
+            # Defaults.
+            page_num = 1
+        # There are some places in grid templates where it's useful for a grid
+        # to have its current filter.
+        self.cur_filter_dict = cur_filter_dict
+
+        # Log grid view.
+        context = str(self.__class__.__name__)
+        params = cur_filter_dict.copy()
+        params['sort'] = sort_key
+
+        # Render grid.
+        def url(*args, **kwargs):
+            route_name = kwargs.pop('__route_name__', None)
+            # Only include sort/filter arguments if not linking to another
+            # page. This is a bit of a hack.
+            if 'action' in kwargs:
+                new_kwargs = dict()
+            else:
+                new_kwargs = dict(extra_url_args)
+            # Extend new_kwargs with first argument if found
+            if len(args) > 0:
+                new_kwargs.update(args[0])
+            new_kwargs.update(kwargs)
+            # We need to encode item ids
+            if 'id' in new_kwargs:
+                id = new_kwargs['id']
+                if isinstance(id, list):
+                    new_kwargs['id'] = [trans.security.encode_id(i) for i in id]
+                else:
+                    new_kwargs['id'] = trans.security.encode_id(id)
+            # The url_for invocation *must* include a controller and action.
+            if 'controller' not in new_kwargs:
+                new_kwargs['controller'] = trans.controller
+            if 'action' not in new_kwargs:
+                new_kwargs['action'] = trans.action
+            if route_name:
+                return url_for(route_name, **new_kwargs)
+            return url_for(**new_kwargs)
+
+        self.use_panels = (kwargs.get('use_panels', False) in [True, 'True', 'true'])
+        self.advanced_search = (kwargs.get('advanced_search', False) in [True, 'True', 'true'])
+        # Currently, filling the template returns a str object; this requires decoding the string into a
+        # unicode object within mako templates. What probably should be done is to return the template as
+        # utf-8 unicode; however, this would require encoding the object as utf-8 before returning the grid
+        # results via a controller method, which is require substantial changes. Hence, for now, return grid
+        # as str.
+        grid_config = {
+            'title'                         : self.title,
+            'title_id'                      : getattr(self, "title_id", None),
+            'url_base'                      : trans.request.path_url,
+            'async_ops'                     : [],
+            'categorical_filters'           : {},
+            'filters'                       : cur_filter_dict,
+            'sort_key'                      : sort_key,
+            'show_item_checkboxes'          : self.show_item_checkboxes or kwargs.get('show_item_checkboxes', '') in ['True', 'true'],
+            'cur_page_num'                  : page_num,
+            'num_page_links'                : self.num_page_links,
+            'status'                        : status,
+            'message'                       : restore_text(message),
+            'global_actions'                : [],
+            'operations'                    : [],
+            'items'                         : [],
+            'columns'                       : [],
+            'model_class'                   : str(self.model_class),
+            'use_paging'                    : self.use_paging,
+            'legend'                        : self.legend,
+            'current_item_id'               : False,
+            'use_hide_message'              : self.use_hide_message,
+            'default_filter_dict'           : self.default_filter,
+            'advanced_search'               : self.advanced_search,
+            'info_text'                     : self.info_text,
+            'url'                           : url(dict()),
+            'refresh_frames'                : kwargs.get('refresh_frames', [])
+        }
+        if current_item:
+            grid_config['current_item_id'] = current_item.id
+        for column in self.columns:
+            extra = ''
+            if column.sortable:
+                if sort_key.endswith(column.key):
+                    if not sort_key.startswith("-"):
+                        extra = "&darr;"
+                    else:
+                        extra = "&uarr;"
+            grid_config['columns'].append({
+                'key': column.key,
+                'visible': column.visible,
+                'nowrap': column.nowrap,
+                'attach_popup': column.attach_popup,
+                'label_id_prefix': column.label_id_prefix,
+                'sortable': column.sortable,
+                'label': column.label,
+                'filterable': column.filterable,
+                'delayed': column.delayed,
+                'is_text': isinstance(column, TextColumn),
+                'extra': extra
+            })
+        for operation in self.operations:
+            grid_config['operations'].append({
+                'allow_multiple': operation.allow_multiple,
+                'allow_popup': operation.allow_popup,
+                'target': operation.target,
+                'label': operation.label,
+                'confirm': operation.confirm,
+                'href': url(**operation.url_args) if isinstance(operation.url_args, dict) else None,
+                'global_operation': False
+            })
+            if operation.allow_multiple:
+                grid_config['show_item_checkboxes'] = True
+            if operation.global_operation:
+                grid_config['global_operation'] = url(** (operation.global_operation()))
+        for action in self.global_actions:
+            grid_config['global_actions'].append({
+                'url_args': url(**action.url_args),
+                'label': action.label,
+                'target': action.target
+            })
+        for operation in [op for op in self.operations if op.async_compatible]:
+            grid_config['async_ops'].append(operation.label.lower())
+        for column in self.columns:
+            if column.filterable is not None and not isinstance(column, TextColumn):
+                grid_config['categorical_filters'][column.key] = {filter.label: filter.args for filter in column.get_accepted_filters()}
+        for item in query:
+            item_dict = {
+                'id': item.id,
+                'encode_id': trans.security.encode_id(item.id),
+                'link': [],
+                'operation_config': {},
+                'column_config': {}
+            }
+            for column in self.columns:
+                if column.visible:
+                    link = column.get_link(trans, self, item)
+                    if link:
+                        link = url(**link)
+                    else:
+                        link = None
+                    target = column.target
+                    value = unicodify(column.get_value(trans, self, item))
+                    if value:
+                        value = value.replace('/', '//')
+                    item_dict['column_config'][column.label] = {
+                        'link': link,
+                        'value': value,
+                        'target': target
+                    }
+            for operation in self.operations:
+                item_dict['operation_config'][operation.label] = {
+                    'allowed': operation.allowed(item),
+                    'url_args': url(**operation.get_url_args(item)),
+                    'target': operation.target
+                }
+            grid_config['items'].append(item_dict)
+
+        if self.use_paging and num_pages is None:
+            # TODO: it would be better to just return this as None, render, and fire
+            # off a second request for this count I think.
+            total_num_rows = total_row_count_query.count()
+            num_pages = int(math.ceil(float(total_num_rows) / self.num_rows_per_page))
+
+        grid_config["num_pages"] = num_pages
+
+        trans.log_action(trans.get_user(), "grid.view", context, params)
+        return grid_config
+
+    def get_ids(self, **kwargs):
+        id = []
+        if 'id' in kwargs:
+            id = kwargs['id']
+            # Coerce ids to list
+            if not isinstance(id, list):
+                id = id.split(",")
+            # Ensure ids are integers
+            try:
+                id = list(map(int, id))
+            except Exception:
+                decorators.error("Invalid id")
+        return id
+
+    # ---- Override these ----------------------------------------------------
+    def handle_operation(self, trans, operation, ids, **kwargs):
+        pass
+
+    def get_current_item(self, trans, **kwargs):
+        return None
+
+    def build_initial_query(self, trans, **kwargs):
+        return trans.sa_session.query(self.model_class)
+
+    def apply_query_filter(self, trans, query, **kwargs):
+        # Applies a database filter that holds for all items in the grid.
+        # (gvk) Is this method necessary?  Why not simply build the entire query,
+        # including applying filters in the build_initial_query() method?
+        return query

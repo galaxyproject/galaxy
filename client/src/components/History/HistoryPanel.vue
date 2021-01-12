@@ -2,7 +2,11 @@
 selected datset collections -->
 
 <template>
-    <History v-if="history && !selectedCollections.length" :history="history">
+    <History
+        v-on:select-collection="selectCollection($event)"
+        v-if="history && !selectedCollections.length"
+        :history="history"
+    >
         <template v-for="(_, name) in $scopedSlots" :slot="name" slot-scope="slotData">
             <slot :name="name" v-bind="slotData" :history="history" />
         </template>
@@ -49,9 +53,6 @@ export default {
         selectCollection(coll) {
             this.selectedCollections = [...this.selectedCollections, coll];
         },
-    },
-    mounted() {
-        this.eventHub.$on("selectCollection", this.selectCollection);
     },
 };
 </script>

@@ -210,12 +210,7 @@ class ImportExportHistoryTestCase(ApiTestCase, BaseHistories):
 
     def test_import_export(self):
         history_name = "for_export_default"
-        history_id = self.dataset_populator.new_history(name=history_name)
-        self.dataset_populator.new_dataset(history_id, content="1 2 3")
-        deleted_hda = self.dataset_populator.new_dataset(history_id, content="1 2 3", wait=True)
-        self.dataset_populator.delete_dataset(history_id, deleted_hda["id"])
-        deleted_details = self.dataset_populator.get_history_dataset_details(history_id, id=deleted_hda["id"])
-        assert deleted_details["deleted"]
+        history_id = self.dataset_populator.setup_history_for_export_testing(history_name)
         imported_history_id = self._reimport_history(history_id, history_name, wait_on_history_length=2)
 
         def upload_job_check(job):
@@ -353,8 +348,9 @@ class ImportExportHistoryTestCase(ApiTestCase, BaseHistories):
 
         self._check_imported_collection(imported_history_id, hid=1, collection_type="list:paired", elements_checker=check_elements)
 
-    def _reimport_history(self, history_id, history_name, wait_on_history_length=None, assert_ok=True, export_kwds={}):
+    def _reimport_history(self, history_id, history_name, wait_on_history_length=None, assert_ok=True, export_kwds=None):
         # Ensure the history is ready to go...
+        export_kwds = export_kwds or {}
         self.dataset_populator.wait_for_history(history_id, assert_ok=assert_ok)
 
         return self.dataset_populator.reimport_history(

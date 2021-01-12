@@ -5,20 +5,16 @@
             <img alt="logo" class="navbar-brand-image" :src="brandImageSecondary" v-if="brandImageSecondary" />
             <span class="navbar-brand-title">{{ brandTitle }}</span>
         </b-navbar-brand>
-
         <b-navbar-nav>
             <masthead-item
                 v-for="(tab, idx) in tabs"
                 :tab="tab"
                 :active-tab="activeTab"
                 :key="`tab-${idx}`"
-                :app-root="appRoot"
-                :galaxy="galaxy"
                 v-show="!(tab.hidden === undefined ? false : tab.hidden)"
             >
             </masthead-item>
         </b-navbar-nav>
-
         <div ref="quota-meter-container" class="quota-meter-container" />
     </b-navbar>
 </template>
@@ -57,14 +53,6 @@ export default {
             default: null,
         },
         mastheadState: {
-            type: Object,
-            default: null,
-        },
-        appRoot: {
-            type: String,
-            default: null,
-        },
-        galaxy: {
             type: Object,
             default: null,
         },

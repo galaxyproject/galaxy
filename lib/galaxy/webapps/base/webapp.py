@@ -70,8 +70,9 @@ class WebApplication(base.WebApplication):
     Base WSGI application instantiated for all Galaxy webapps.
 
     A web application that:
+
         * adds API and UI controllers by scanning given directories and
-        importing all modules found there.
+          importing all modules found there.
         * has a security object.
         * builds mako template lookups.
         * generates GalaxyWebTransactions.
@@ -765,8 +766,10 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
     def get_history(self, create=False, most_recent=False):
         """
         Load the current history.
+
             - If that isn't available, we find the most recently updated history.
             - If *that* isn't available, we get or create the default history.
+
         Transactions will not always have an active history (API requests), so
         None is a valid response.
         """
@@ -883,7 +886,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         """
         return self.template_context['message']
 
-    def show_message(self, message, type='info', refresh_frames=[], cont=None, use_panels=False, active_view=""):
+    def show_message(self, message, type='info', refresh_frames=None, cont=None, use_panels=False, active_view=""):
         """
         Convenience method for displaying a simple page with a single message.
 
@@ -893,24 +896,28 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         `refresh_frames`: names of frames in the interface that should be
                           refreshed when the message is displayed
         """
+        refresh_frames = refresh_frames or []
         return self.fill_template("message.mako", status=type, message=message, refresh_frames=refresh_frames, cont=cont, use_panels=use_panels, active_view=active_view)
 
-    def show_error_message(self, message, refresh_frames=[], use_panels=False, active_view=""):
+    def show_error_message(self, message, refresh_frames=None, use_panels=False, active_view=""):
         """
         Convenience method for displaying an error message. See `show_message`.
         """
+        refresh_frames = refresh_frames or []
         return self.show_message(message, 'error', refresh_frames, use_panels=use_panels, active_view=active_view)
 
-    def show_ok_message(self, message, refresh_frames=[], use_panels=False, active_view=""):
+    def show_ok_message(self, message, refresh_frames=None, use_panels=False, active_view=""):
         """
         Convenience method for displaying an ok message. See `show_message`.
         """
+        refresh_frames = refresh_frames or []
         return self.show_message(message, 'done', refresh_frames, use_panels=use_panels, active_view=active_view)
 
-    def show_warn_message(self, message, refresh_frames=[], use_panels=False, active_view=""):
+    def show_warn_message(self, message, refresh_frames=None, use_panels=False, active_view=""):
         """
         Convenience method for displaying an warn message. See `show_message`.
         """
+        refresh_frames = refresh_frames or []
         return self.show_message(message, 'warning', refresh_frames, use_panels=use_panels, active_view=active_view)
 
     @property

@@ -236,3 +236,7 @@ copy_dependencies
     linking them when creating per job environments. This should be considered somewhat
     deprecated because Conda will do this as needed for newer versions of Conda - such
     as the version targeted with Galaxy 17.01+.
+
+read_only
+    If ``True``, Galaxy will not attempt to install or uninstall requirement sets into
+    this environment.

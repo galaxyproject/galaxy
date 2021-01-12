@@ -17,13 +17,10 @@ export class Content extends dateMixin(ModelBase) {
     }
 
     get title() {
-        const { name, isDeleted, visible, purged } = this;
-        let result = name;
+        const { name, element_identifier, visible, purged } = this;
+        let result = element_identifier || name;
         const itemStates = [];
-        if (isDeleted) {
-            itemStates.push("Deleted");
-        }
-        if (visible == false) {
+        if (visible == false && !element_identifier) {
             itemStates.push("Hidden");
         }
         if (purged) {

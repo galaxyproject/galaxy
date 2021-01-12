@@ -18,10 +18,10 @@
         <requirement type="package" version="2.26.0">bedtools</requirement>
     </requirements>
     <command><![CDATA[
-        bedtools --version > '$out_file1' &&
-        echo "Moo" >> '$out_file1' &&
-        samtools >> '$out_file1' 2>&1 &&
-        echo "Cow" >> '$out_file1'
+bedtools --version > '$out_file1' &&
+echo "Moo" >> '$out_file1' &&
+samtools >> '$out_file1' 2>&1 &&
+echo "Cow" >> '$out_file1'
     ]]></command>
     <inputs>
         <param name="input1" type="data" optional="true" />
@@ -29,10 +29,12 @@
     <outputs>
         <data name="out_file1" format="txt" />
     </outputs>
-    <help>
-        This is an example mulled tool that combines bedtools and samtools in one
-        command-line invocation.
-    </help>
+    <tests>
+    </tests>
+    <help><![CDATA[
+This is an example mulled tool that combines bedtools and samtools in one
+command-line invocation.
+    ]]></help>
     <citations>
         <citation type="doi">10.1093/bioinformatics/btq033</citation>
         <citation type="bibtex">

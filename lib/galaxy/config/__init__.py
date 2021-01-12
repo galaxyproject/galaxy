@@ -19,6 +19,7 @@ import tempfile
 import threading
 import time
 from datetime import timedelta
+from typing import Dict, Optional, Set
 
 import yaml
 from beaker.cache import CacheManager
@@ -47,7 +48,7 @@ from galaxy.web_stack import (
     get_stack_facts,
     register_postfork_function
 )
-from ..version import VERSION_MAJOR
+from ..version import VERSION_MAJOR, VERSION_MINOR
 
 log = logging.getLogger(__name__)
 
@@ -104,11 +105,11 @@ def find_root(kwargs):
 class BaseAppConfiguration:
     # Override in subclasses (optional): {KEY: config option, VALUE: deprecated directory name}
     # If VALUE == first directory in a user-supplied path that resolves to KEY, it will be stripped from that path
-    renamed_options = None
-    deprecated_dirs = None
-    paths_to_check_against_root = None  # backward compatibility: if resolved path doesn't exist, try resolving w.r.t root
-    add_sample_file_to_defaults = None  # for these options, add sample config files to their defaults
-    listify_options = None  # values for these options are processed as lists of values
+    renamed_options: Optional[Dict[str, str]] = None
+    deprecated_dirs: Dict[str, str] = {}
+    paths_to_check_against_root: Set[str] = set()  # backward compatibility: if resolved path doesn't exist, try resolving w.r.t root
+    add_sample_file_to_defaults: Set[str] = set()  # for these options, add sample config files to their defaults
+    listify_options: Set[str] = set()  # values for these options are processed as lists of values
 
     def __init__(self, **kwargs):
         self._process_renamed_options(kwargs)
@@ -534,6 +535,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.gid = os.getgid()  # if running under newgrp(1) we'll need to fix the group of data created on the cluster
 
         self.version_major = VERSION_MAJOR
+        self.version_minor = VERSION_MINOR
 
         # Database related configuration
         self.check_migrate_databases = kwargs.get('check_migrate_databases', True)

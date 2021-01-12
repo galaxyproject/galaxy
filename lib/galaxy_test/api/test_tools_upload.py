@@ -1,5 +1,7 @@
 import json
 
+import pytest
+
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy_test.base.constants import (
     ONE_TO_SIX_ON_WINDOWS,
@@ -754,8 +756,12 @@ class ToolsUploadTestCase(ApiTestCase):
             assert extra_file["path"] == "composite"
             assert extra_file["class"] == "File"
 
-    @skip_if_site_down("https://usegalaxy.org")
     def test_upload_from_invalid_url(self):
+        with pytest.raises(AssertionError):
+            self._upload('https://foo.invalid', assert_ok=False)
+
+    @skip_if_site_down("https://usegalaxy.org")
+    def test_upload_from_404_url(self):
         history_id, new_dataset = self._upload('https://usegalaxy.org/bla123', assert_ok=False)
         dataset_details = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=new_dataset["id"], assert_ok=False)
         assert dataset_details['state'] == 'error', "expected dataset state to be 'error', but got '%s'" % dataset_details['state']

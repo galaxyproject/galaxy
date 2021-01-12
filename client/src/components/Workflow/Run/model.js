@@ -20,6 +20,8 @@ export class WorkflowRunModel {
         this.links = [];
         this.parms = [];
         this.wpInputs = {};
+        this.parameterInputLabels = [];
+
         let hasOpenToolSteps = false;
         let hasReplacementParametersInToolForm = false;
 
@@ -63,6 +65,10 @@ export class WorkflowRunModel {
             this.steps[i] = step;
             this.links[i] = [];
             this.parms[i] = {};
+
+            if (step.step_type == "parameter_input" && step.step_label) {
+                this.parameterInputLabels.push(step.step_label);
+            }
         });
 
         // build linear index of step input pairs
@@ -141,7 +147,9 @@ export class WorkflowRunModel {
                 });
             });
             _.each(step.replacement_parameters, (wp_name) => {
-                _ensureWorkflowParameter(wp_name);
+                if (this.parameterInputLabels.indexOf(wp_name) == -1) {
+                    _ensureWorkflowParameter(wp_name);
+                }
             });
         });
 

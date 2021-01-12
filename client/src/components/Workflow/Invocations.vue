@@ -8,7 +8,7 @@
         </b-alert>
         <loading-span v-if="loading" message="Loading workflow invocations" />
         <div v-else>
-            <b-alert v-if="!invocationItemsComputed.length" variant="info" show>
+            <b-alert id="no-invocations" v-if="!invocationItemsComputed.length" variant="info" show>
                 {{ noInvocationsMessage }}
             </b-alert>
             <b-table
@@ -20,22 +20,33 @@
                 striped
                 caption-top
                 :busy="loading"
+                fixed
             >
                 <template v-slot:row-details="row">
                     <b-card>
                         <small class="float-right">
                             <b>Invocation: {{ row.item.id }}</b>
                         </small>
-                        <workflow-invocation-state :invocation-id="row.item.id" />
+                        <workflow-invocation-state
+                            :invocation-id="row.item.id"
+                            @invocation-cancelled="$emit('reload-invocations')"
+                        />
                     </b-card>
                 </template>
                 <template v-slot:cell(workflow_id)="data">
-                    <b-link v-b-tooltip title="Show Invocation details" href="#" @click.stop="swapRowDetails(data)">
+                    <b-link
+                        id="toggle-invocation-details"
+                        v-b-tooltip
+                        title="Show Invocation details"
+                        href="#"
+                        @click.stop="swapRowDetails(data)"
+                    >
                         <b>{{ getWorkflowNameByInstanceId(data.item.workflow_id) }}</b>
                     </b-link>
                 </template>
                 <template v-slot:cell(history_id)="data">
                     <b-link
+                        id="switch-to-history"
                         v-b-tooltip
                         title="Switch to History"
                         href="#"
@@ -53,6 +64,7 @@
                 <template v-slot:cell(execute)="data">
                     <b-button
                         v-b-tooltip.hover.bottom
+                        id="run-workflow"
                         title="Run Workflow"
                         class="workflow-run btn-sm btn-primary fa fa-play"
                         @click.stop="executeWorkflow(getWorkflowByInstanceId(data.item.workflow_id).id)"
@@ -81,7 +93,7 @@ export default {
     props: {
         invocationItems: { type: Array, default: () => [] },
         loading: { type: Boolean, default: true },
-        noInvocationsMessage: { type: String, default: "" },
+        noInvocationsMessage: { type: String, default: "No Workflow Invocations to display" },
         headerMessage: { type: String, default: "" },
         ownerGrid: { type: Boolean, default: true },
     },

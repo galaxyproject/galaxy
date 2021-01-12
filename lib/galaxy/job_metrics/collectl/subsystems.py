@@ -20,7 +20,7 @@ class CollectlSubsystem(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def name(self, job_directory):
+    def name(self):
         """ High-level name for subsystem as consumed by this module.
         """
 

@@ -13,7 +13,6 @@ from functools import partial, wraps
 import requests
 import yaml
 
-from galaxy.util.bunch import Bunch
 from . import sizzle
 from .data import (
     NAVIGATION,
@@ -34,26 +33,27 @@ RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAULT = 10
 
 WaitType = collections.namedtuple("WaitType", ["name", "default_length"])
 
+
 # Default wait times should make sense for a development server under low
 # load. Wait times for production servers can be scaled up with a multiplier.
-WAIT_TYPES = Bunch(
+class WAIT_TYPES:
     # Rendering a form and registering callbacks, etc...
-    UX_RENDER=WaitType("ux_render", 1),
+    UX_RENDER = WaitType("ux_render", 1)
     # Fade in, fade out, etc...
-    UX_TRANSITION=WaitType("ux_transition", 5),
+    UX_TRANSITION = WaitType("ux_transition", 5)
     # Toastr popup and dismissal, etc...
-    UX_POPUP=WaitType("ux_popup", 15),
+    UX_POPUP = WaitType("ux_popup", 15)
     # Creating a new history and loading it into the panel.
-    DATABASE_OPERATION=WaitType("database_operation", 10),
+    DATABASE_OPERATION = WaitType("database_operation", 10)
     # Wait time for jobs to complete in default environment.
-    JOB_COMPLETION=WaitType("job_completion", 30),
+    JOB_COMPLETION = WaitType("job_completion", 30)
     # Wait time for a GIE to spawn.
-    GIE_SPAWN=WaitType("gie_spawn", 30),
+    GIE_SPAWN = WaitType("gie_spawn", 30)
     # Wait time for toolshed search
-    SHED_SEARCH=WaitType('shed_search', 30),
+    SHED_SEARCH = WaitType('shed_search', 30)
     # Wait time for repository installation
-    REPO_INSTALL=WaitType('repo_install', 60),
-)
+    REPO_INSTALL = WaitType('repo_install', 60)
+
 
 # Choose a moderate wait type for operations that don't specify a type.
 DEFAULT_WAIT_TYPE = WAIT_TYPES.DATABASE_OPERATION
@@ -112,14 +112,14 @@ class NavigatesGalaxy(HasDriver):
 
     In most cases, methods for interacting with Galaxy components that appear in
     multiple tests or applications should be refactored into this class for now.
-    Keep in mind that this class is used outside the context of ``TestCase``s as
+    Keep in mind that this class is used outside the context of ``TestCase`` s as
     well - so some methods more explicitly related to test data or assertion checking
     may make more sense in SeleniumTestCase for instance.
 
     Some day this class will likely be split up into smaller mixins for particular
     components of Galaxy, but until that day the best practice is to prefix methods
     for driving or querying the interface with the name of the component or page
-    the method operates on. These serve as psedu-namespaces until we decompose this
+    the method operates on. These serve as pseudo-namespaces until we decompose this
     class. For instance, the method for clicking an option in the workflow editor is
     workflow_editor_click_option instead of click_workflow_editor_option.
     """
@@ -1217,7 +1217,7 @@ class NavigatesGalaxy(HasDriver):
         selector = self.history_panel_wait_for_hid_state(collection_hid, "ok")
         self.click(selector)
         next_level_element_selector = selector
-        for i in range(len(collection_type.split(":")) - 1):
+        for _ in range(len(collection_type.split(":")) - 1):
             next_level_element_selector = next_level_element_selector.descendant(".dataset-collection-element")
             self.wait_for_and_click(next_level_element_selector)
 
@@ -1251,7 +1251,7 @@ class NavigatesGalaxy(HasDriver):
                 element.click()
                 return element
 
-        assert False, "No visualization [%s] found." % visualization_name
+        raise ValueError(f"No visualization [{visualization_name}] found.")
 
     def history_panel_item_selector(self, hid, wait=False):
         current_history_id = self.current_history_id()

@@ -2,6 +2,7 @@
 This module *does not* contain API routes. It exclusively contains dependencies to be used in FastAPI routes
 """
 from typing import (
+    cast,
     Optional,
 )
 
@@ -28,7 +29,7 @@ from galaxy.work.context import SessionRequestContext
 
 
 def get_app() -> UniverseApplication:
-    return galaxy_app.app
+    return cast(UniverseApplication, galaxy_app.app)
 
 
 def get_job_manager(app: UniverseApplication = Depends(get_app)) -> JobManager:
@@ -57,6 +58,7 @@ def get_session(session_manager: GalaxySessionManager = Depends(get_session_mana
         if session_key:
             return session_manager.get_session_from_session_key(session_key)
         # TODO: What should we do if there is no session? Since this is the API, maybe nothing is the right choice?
+    return None
 
 
 def get_api_user(user_manager: UserManager = Depends(get_user_manager), key: Optional[str] = Query(None), x_api_key: Optional[str] = Header(None)) -> Optional[User]:

@@ -172,6 +172,8 @@ Please see the `full release notes <${release}_announce.html>`_ for more details
 """)
 
 NEXT_TEMPLATE = string.Template("""
+:orphan:
+
 ===========================================================
 ${month_name} 20${year} Galaxy Release (v ${version})
 ===========================================================

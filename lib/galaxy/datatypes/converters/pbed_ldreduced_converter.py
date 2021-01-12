@@ -31,9 +31,11 @@ def timenow():
     return time.strftime('%d/%m/%Y %H:%M:%S', time.localtime(time.time()))
 
 
-def pruneLD(plinktasks=[], cd='./', vclbase=[]):
+def pruneLD(plinktasks=None, cd='./', vclbase=None):
     """
     """
+    plinktasks = plinktasks or []
+    vclbase = vclbase or []
     alog = ['## Rgenetics: http://rgenetics.org Galaxy Tools rgQC.py Plink pruneLD runner\n']
     with tempfile.NamedTemporaryFile(mode='r+') as plog:
         for task in plinktasks:  # each is a list
@@ -100,7 +102,7 @@ def main():
         s2 = f'Input {base_name}, winsize={winsize}, winmove={winmove}, r2thresh={r2thresh}'
         print(f'{s1} {s2}')
         f.write(f'<div>{s1}\n{s2}\n<ol>')
-        for i, data in enumerate(flist):
+        for data in flist:
             f.write('<li><a href="{}">{}</a></li>\n'.format(os.path.split(data)[-1], os.path.split(data)[-1]))
         f.write("</div></body></html>")
 

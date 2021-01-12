@@ -7,10 +7,11 @@ import galaxy.model
 import galaxy.model.security
 import galaxy.queues
 import galaxy.security
-from galaxy import config, job_metrics, jobs
+from galaxy import config, jobs
 from galaxy.config_watchers import ConfigWatchers
 from galaxy.containers import build_container_interfaces
 from galaxy.files import ConfiguredFileSources
+from galaxy.job_metrics import JobMetrics
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.hdas import HDAManager
@@ -20,7 +21,10 @@ from galaxy.managers.libraries import LibraryManager
 from galaxy.managers.roles import RoleManager
 from galaxy.managers.tools import DynamicToolManager
 from galaxy.managers.users import UserManager
-from galaxy.managers.workflows import WorkflowsManager
+from galaxy.managers.workflows import (
+    WorkflowContentsManager,
+    WorkflowsManager,
+)
 from galaxy.model.database_heartbeat import DatabaseHeartbeat
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.queue_worker import (
@@ -105,6 +109,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self.history_manager = HistoryManager(self)
         self.hda_manager = HDAManager(self)
         self.workflow_manager = WorkflowsManager(self)
+        self.workflow_contents_manager = WorkflowContentsManager(self)
         self.dependency_resolvers_view = DependencyResolversView(self)
         self.test_data_resolver = test_data.TestDataResolver(file_dirs=self.config.tool_test_data_directories)
         self.library_folder_manager = FolderManager()
@@ -127,7 +132,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
 
         # Initialize job metrics manager, needs to be in place before
         # config so per-destination modifications can be made.
-        self.job_metrics = job_metrics.JobMetrics(self.config.job_metrics_config_file, app=self)
+        self.job_metrics = JobMetrics(self.config.job_metrics_config_file, app=self)
 
         # Initialize error report plugins.
         self.error_reports = ErrorReports(self.config.error_report_file, app=self)

@@ -12,6 +12,7 @@ the exception and displays an error page.
 import sys
 import traceback
 from io import StringIO
+from typing import cast
 
 import markupsafe
 from paste import (
@@ -489,7 +490,7 @@ def make_error_middleware(app, global_conf, **kw):
     return ErrorMiddleware(app, global_conf=global_conf, **kw)
 
 
-doc_lines = ErrorMiddleware.__doc__.splitlines(True)
+doc_lines = cast(str, ErrorMiddleware.__doc__).splitlines(True)
 for i in range(len(doc_lines)):
     if doc_lines[i].strip().startswith('Settings'):
         make_error_middleware.__doc__ = ''.join(doc_lines[i:])

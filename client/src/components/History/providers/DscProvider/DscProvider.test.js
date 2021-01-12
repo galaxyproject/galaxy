@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 import { createLocalVue } from "@vue/test-utils";
 import { wait, mountRenderless } from "jest/helpers";
-import { wipeDatabase } from "../../caching/db/pouch";
+import { wipeDatabase } from "../../caching";
 import { cacheContent, getCachedContent, cacheCollectionContent, getCachedCollectionContent } from "../../caching";
 import { DatasetCollection } from "../../model/DatasetCollection";
 import DscProvider from "./DscProvider";
@@ -20,7 +20,7 @@ jest.mock("../../caching");
 const mountProvider = async (Component, propsData) => {
     const localVue = createLocalVue();
     localVue.use(vueRxShortcutPlugin);
-    const wrapper = mountRenderless(Component, localVue, propsData);
+    const wrapper = mountRenderless(Component, { localVue, propsData });
     await wrapper.vm.$nextTick();
     return wrapper;
 };

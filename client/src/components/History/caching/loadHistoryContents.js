@@ -4,7 +4,7 @@ import { throttleDistinct } from "utils/observable/throttleDistinct";
 import { tag } from "rxjs-spy/operators/tag";
 
 import { hydrate } from "./operators/hydrate";
-import { requestWithUpdateTime } from "./operators/requestWithUpdateTime";
+import { requestWithUpdateTime, requestWithUpdateTimeNoInitial } from "./operators/requestWithUpdateTime";
 import { prependPath } from "./workerConfig";
 import { bulkCacheContent } from "./db";
 import { SearchParams } from "../model/SearchParams";
@@ -26,8 +26,12 @@ export const clearHistoryDateStore = async () => {
 export const loadHistoryContents = (cfg = {}) => (rawInputs$) => {
     const {
         onceEvery = 30 * 1000,
-        windowSize = SearchParams.pageSize
+        windowSize = SearchParams.pageSize,
+        noInitial = false
     } = cfg;
+
+    // if noInitial, only returns updates
+    const dateAppender = noInitial ? requestWithUpdateTimeNoInitial : requestWithUpdateTime
 
     const inputs$ = rawInputs$.pipe(
         shareReplay(1)
@@ -38,7 +42,7 @@ export const loadHistoryContents = (cfg = {}) => (rawInputs$) => {
         map(buildHistoryContentsUrl(windowSize)),
         throttleDistinct({ timeout: onceEvery }),
         map(prependPath),
-        requestWithUpdateTime({ dateStore }),
+        dateAppender({ dateStore }),
         shareReplay(1),
     );
 
@@ -93,10 +97,9 @@ export const loadHistoryContents = (cfg = {}) => (rawInputs$) => {
 // TODO: method in history model maybe? Or maybe Searchparams?
 export const buildHistoryContentsUrl = (windowSize) => (inputs) => {
     const [historyId, filters, hid] = inputs;
-    console.log("buildHistoryContentsUrl", windowSize, hid);
 
     // Filtering
-    const { showDeleted, showHidden } = filters;
+    const { showDeleted, showHidden, showVisible } = filters;
     let deletedClause = "deleted=False";
     let visibleClause = "visible=True";
     if (showDeleted) {
@@ -105,7 +108,11 @@ export const buildHistoryContentsUrl = (windowSize) => (inputs) => {
     }
     if (showHidden) {
         deletedClause = "";
-        visibleClause = "visible=False";
+        if (showVisible) {
+            visibleClause = "";
+        } else {
+            visibleClause = "visible=False";
+        }
     }
     if (showDeleted && showHidden) {
         deletedClause = "deleted=True";

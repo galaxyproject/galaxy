@@ -785,11 +785,13 @@ class DefaultToolAction:
         """
         This allows to map names of input files to metadata default values. Example:
 
-        <data format="tabular" name="output" label="Tabular output, aggregates data from individual_inputs" >
-            <actions>
-                <action name="column_names" type="metadata" default="${','.join(input.name for input in $individual_inputs)}" />
-            </actions>
-        </data>
+        .. code-block::
+
+            <data format="tabular" name="output" label="Tabular output, aggregates data from individual_inputs" >
+                <actions>
+                    <action name="column_names" type="metadata" default="${','.join(input.name for input in $individual_inputs)}" />
+                </actions>
+            </data>
         """
         if output.actions:
             for action in output.actions.actions:

@@ -148,8 +148,13 @@ var menu = [
     },
     {
         html: _l("Export History to File"),
-        href: "history/export_archive?preview=True",
         anon: true,
+        func: function () {
+            const Galaxy = getGalaxyInstance();
+            if (Galaxy && Galaxy.currHistoryPanel && Galaxy.router) {
+                Galaxy.router.push(`/histories/${Galaxy.currHistoryPanel.model.id}/export`);
+            }
+        },
     },
     {
         html: _l("Beta Features"),
@@ -178,7 +183,7 @@ Webhooks.load({
             if (webhook.activate) {
                 webhooks_menu.push({
                     html: _l(webhook.config.title),
-                    // func: function() {},
+                    func: webhook.config.function && new Function(webhook.config.function),
                     anon: true,
                 });
             }
