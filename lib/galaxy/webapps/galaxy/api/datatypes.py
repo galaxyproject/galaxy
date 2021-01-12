@@ -19,7 +19,7 @@ from fastapi_utils.cbv import cbv
 from galaxy.app import UniverseApplication
 from galaxy.datatypes.registry import Registry
 from galaxy.managers.datatypes import (
-    DatatypeConverter,
+    DatatypeConverterList,
     DatatypeDetails,
     DatatypesCombinedMap,
     DatatypesMap,
@@ -115,10 +115,10 @@ class FastAPIDatatypes:
     @router.get(
         '/api/datatypes/converters',
         summary="Returns the list of all installed converters",
-        response_model=List[DatatypeConverter],
+        response_model=DatatypeConverterList,
         response_description="List of all datatype converters"
     )
-    async def converters(self) -> List[DatatypeConverter]:
+    async def converters(self) -> DatatypeConverterList:
         """Gets the list of all installed converters."""
         return view_converters(self.datatypes_registry)
 

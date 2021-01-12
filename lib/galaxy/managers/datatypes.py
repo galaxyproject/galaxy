@@ -10,6 +10,7 @@ from pydantic import (
     Field,
     HttpUrl
 )
+from pydantic.tools import parse_obj_as
 
 from galaxy.datatypes.data import Data
 from galaxy.datatypes.registry import Registry
@@ -126,6 +127,13 @@ class DatatypeConverter(BaseModel):
     )
 
 
+class DatatypeConverterList(BaseModel):
+    __root__: List[DatatypeConverter] = Field(
+        title='List of data type converters',
+        default=[]
+    )
+
+
 def view_index(
     datatypes_registry: Registry,
     extension_only: Optional[bool] = True,
@@ -188,7 +196,7 @@ def view_sniffers(datatypes_registry: Registry) -> List[str]:
     return rval
 
 
-def view_converters(datatypes_registry: Registry) -> List[DatatypeConverter]:
+def view_converters(datatypes_registry: Registry) -> DatatypeConverterList:
     converters = []
     for (source_type, targets) in datatypes_registry.datatype_converters.items():
         for target_type in targets:
@@ -197,7 +205,7 @@ def view_converters(datatypes_registry: Registry) -> List[DatatypeConverter]:
                 'target': target_type,
                 'tool_id': targets[target_type].id,
             })
-    return converters
+    return parse_obj_as(DatatypeConverterList, converters)
 
 
 def view_edam_formats(datatypes_registry: Registry) -> Dict[str, str]:
