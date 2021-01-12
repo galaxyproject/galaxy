@@ -105,7 +105,7 @@ find the right documentation for a given test one wishes to write.
       - **Yes**
 
         The tests that exercise the Galaxy user interface and require
-        a functional Galaxy server all use Selenium to drive interaction
+        a functional Galaxy server use [Selenium](https://www.selenium.dev/) to drive interaction
         with the Galaxy web interface. There are two frameworks or suites
         available for building tests like this and they both provide high
         level access to the Galaxy API like the tests above. The frameworks
