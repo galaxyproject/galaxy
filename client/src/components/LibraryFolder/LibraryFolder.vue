@@ -610,6 +610,11 @@ export default {
                 this.fetchFolderContents(this.include_deleted);
             },
         },
+        perPage: {
+            handler: function (value) {
+                this.fetchFolderContents(this.include_deleted);
+            },
+        },
     },
 };
 </script>
