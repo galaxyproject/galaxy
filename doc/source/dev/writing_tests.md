@@ -188,7 +188,7 @@ developers comes in the form of Galaxy tool wrapper definition files.
 Likewise, a lot of the legacy behavior Galaxy needs to maintain is
 maintained for older tool definitions. For this reason, a lot of Galaxy's
 complex internals can just be tested by simply running a tool test.
-Obviously, Galaxy is much more complex than this, but a surprising amount
+Obviously Galaxy is much more complex than this, but a surprising amount
 of Galaxy's tests are simply tool tests. This suite of tools that
 have their tests exercised is called the "Tool Framework Tests"
 or simply "Framework Tests".
