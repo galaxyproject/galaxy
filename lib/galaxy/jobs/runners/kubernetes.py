@@ -243,7 +243,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         # TODO include other relevant elements that people might want to use from
         # TODO http://kubernetes.io/docs/api-reference/v1/definitions/#_v1_podspec
         k8s_spec_template["spec"]["securityContext"] = self.__get_k8s_security_context()
-        extra_metadata = yaml.safe_load(self.runner_params['k8s_job_metadata'] or "{}")
+        extra_metadata = self.runner_params['k8s_job_metadata'] or '{}'
+        if isinstance(k8s_job_metadata, str):
+            extra_metadata = yaml.safe_load(extra_metadata)
         k8s_spec_template["metadata"]["labels"].update(extra_metadata.get('labels', {}))
         k8s_spec_template["metadata"]["annotations"].update(extra_metadata.get('annotations', {}))
         return k8s_spec_template
