@@ -105,13 +105,15 @@ export default {
 </script>
 
 <style lang="scss">
-/* standard list reset, which we should already
+.priority-menu {
+    /* standard list reset, which we should already
 have but mysteriously dont */
-ul,
-li {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+    ul,
+    li {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
 }
 
 .priority-menu {

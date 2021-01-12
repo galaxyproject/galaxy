@@ -90,7 +90,7 @@ class UploadsTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
     @selenium_test
     def test_upload_pair_specify_extension(self):
         self.upload_list([self.get_filename("1.tabular"), self.get_filename("2.tabular")], name="Test Pair", ext="txt", hide_source_items=False)
-        self.history_panel_wait_for_hid_ok(3)
+        self.history_panel_wait_for_hid_ok(5)
         self.history_panel_wait_for_hid_ok(1)
 
         history_contents = self.history_contents()
