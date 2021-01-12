@@ -177,17 +177,15 @@ class WebApplication(base.WebApplication):
         return T(app)
 
 
-class GalaxyWebTransaction(base.DefaultWebTransaction,
-                           context.ProvidesAppContext, context.ProvidesUserContext, context.ProvidesHistoryContext):
+class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryContext):
     """
     Encapsulates web transaction specific state for the Galaxy application
     (specifically the user's "cookie" session and history)
     """
 
     def __init__(self, environ, app, webapp, session_cookie=None):
-        self.app = app
+        self._app = app
         self.webapp = webapp
-        self.security = webapp.security
         self.user_manager = UserManager(app)
         self.session_manager = GalaxySessionManager(app.model)
         base.DefaultWebTransaction.__init__(self, environ)
@@ -263,6 +261,10 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
                     self.galaxy_session.last_action = now
                     self.sa_session.add(self.galaxy_session)
                     self.sa_session.flush()
+
+    @property
+    def app(self):
+        return self._app
 
     def setup_i18n(self):
         locales = []

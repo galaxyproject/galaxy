@@ -1,6 +1,40 @@
+"""Interfaces/mixins for transaction-like objects.
+
+These objects describe the context around a unit of work. This unit of work
+is very broad and can be anything from the response to a web request, the
+scheduling of a workflow, the reloading the toolbox, etc.. Traditionally,
+Galaxy has simply passed around a GalaxyWebTransaction object through
+all layers and large components of the Galaxy app. Having random backend
+components define explicit dependencies on this however is inappropriate
+because Galaxy may not be used in all sort of non-web contexts. The future
+use of message queues and web sockets as well as the decomposition of the
+backend into packages only further make this heavy reliance on
+GalaxyWebTransaction inappropriate.
+
+A better approach is for components to annotate their reliance on much
+narrower, typed views of the GalaxyWebTransaction. This allows explicit
+declaration of what is being required in the context of a method or class
+and allows the Python type system to ensure the transaction supplied to
+the method is appropriate for the context. For instance, an effective
+use of the type system in this way can prevent the backend work context
+used to schedule workflow from being supplied to a method that requires
+an older-style WSGI web response object.
+
+There are various levels of transactions defined in this file - these
+include :class:`galaxy.managers.context.ProvidesAppContext`,
+:class:`galaxy.managers.context.ProvidesUserContext`,
+and :class:`galaxy.managers.context.ProvidesHistoryContext`. Methods
+should annotate their dependency on the narrowest context they require.
+A method that requires a user but not a history should declare its
+``trans`` argument as requiring type :class:`galaxy.managers.context.ProvidesUserContext`.
 """
-Mixins for transaction-like objects.
-"""
+# TODO: Refactor this class so that galaxy.managers depends on a package
+# containing this.
+# TODO: Provide different classes for real users and potentially bootstrapped
+# users so the framework can provide consistent web exceptions for incorrect
+# user being used in that context and so that the type system can provide
+# more checks against this issue.
+import abc
 import string
 from json import dumps
 
@@ -15,6 +49,14 @@ class ProvidesAppContext:
 
     Mixed in class must provide `app` property.
     """
+
+    @abc.abstractproperty
+    def app(self):
+        """Provide access to the app object."""
+
+    @property
+    def security(self):
+        return self.app.security
 
     def log_action(self, user=None, action=None, context=None, params=None):
         """
@@ -99,13 +141,17 @@ class ProvidesAppContext:
         return self.app.install_model
 
 
-class ProvidesUserContext:
+class ProvidesUserContext(ProvidesAppContext):
     """ For transaction-like objects to provide Galaxy convenience layer for
     reasoning about users.
 
     Mixed in class must provide `user` and `app`
     properties.
     """
+
+    @abc.abstractproperty
+    def user(self):
+        """Provide access to the user object."""
 
     @property
     def anonymous(self):
@@ -159,13 +205,17 @@ class ProvidesUserContext:
             return path
 
 
-class ProvidesHistoryContext:
+class ProvidesHistoryContext(ProvidesUserContext):
     """ For transaction-like objects to provide Galaxy convenience layer for
     reasoning about histories.
 
     Mixed in class must provide `user`, `history`, and `app`
     properties.
     """
+
+    @abc.abstractproperty
+    def history(self):
+        """Provide access to the user's current history model object."""
 
     def db_dataset_for(self, dbkey):
         """

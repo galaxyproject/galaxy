@@ -101,6 +101,8 @@ else:
 
 
 class RepresentById(_HasTable):
+    id: int
+
     def __repr__(self):
         try:
             r = '<galaxy.model.{}({}) at {}>'.format(self.__class__.__name__, cached_id(self), hex(id(self)))

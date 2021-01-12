@@ -1,11 +1,9 @@
 from galaxy.managers.context import (
-    ProvidesAppContext,
     ProvidesHistoryContext,
-    ProvidesUserContext
 )
 
 
-class WorkRequestContext(ProvidesAppContext, ProvidesUserContext, ProvidesHistoryContext):
+class WorkRequestContext(ProvidesHistoryContext):
     """ Stripped down implementation of Galaxy web transaction god object for
     work request handling outside of web threads - uses mix-ins shared with
     GalaxyWebTransaction to provide app, user, and history context convenience
@@ -19,12 +17,15 @@ class WorkRequestContext(ProvidesAppContext, ProvidesUserContext, ProvidesHistor
     """
 
     def __init__(self, app, user=None, history=None, workflow_building_mode=False):
-        self.app = app
-        self.security = app.security
+        self._app = app
         self.__user = user
         self.__user_current_roles = None
         self.__history = history
         self.workflow_building_mode = workflow_building_mode
+
+    @property
+    def app(self):
+        return self._app
 
     def get_history(self, create=False):
         return self.__history
