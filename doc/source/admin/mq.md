@@ -1,6 +1,3 @@
-```eval_rst
-:orphan:
-```
 
 # Message queue
 
