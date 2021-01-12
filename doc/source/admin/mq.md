@@ -1,3 +1,7 @@
+```eval_rst
+:orphan:
+```
+
 # Message queue
 
 Galaxy uses a message queue internally for communicating between processes. 
