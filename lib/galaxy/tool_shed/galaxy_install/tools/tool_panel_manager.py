@@ -168,11 +168,15 @@ class ToolPanelManager:
         The intent is to call this method for every tool config in a repository and
         append each of these as entries to a tool panel dictionary for the repository.
         This enables each tool to be loaded into a different section in the tool panel.
-        {<Tool guid> :
-           [{ tool_config : <tool_config_file>,
-              id: <ToolSection id>,
-              version : <ToolSection version>,
-              name : <TooSection name>}]}
+
+        .. code-block::
+
+            {<Tool guid> :
+                [{ tool_config : <tool_config_file>,
+                    id: <ToolSection id>,
+                    version : <ToolSection version>,
+                    name : <TooSection name>}]}
+
         """
         tool_panel_dict = {}
         file_name = strip_path(tool_config)

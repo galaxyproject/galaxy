@@ -73,12 +73,15 @@ class ContainerVolume(metaclass=ABCMeta):
 class Container(metaclass=ABCMeta):
 
     def __init__(self, interface, id, name=None, **kwargs):
-        """:param   interface:  Container interface for the given container type
+        """
+
+        :param      interface:  Container interface for the given container type
         :type       interface:  :class:`ContainerInterface` subclass instance
         :param      id:         Container identifier
         :type       id:         str
         :param      name:       Container name
         :type       name:       str
+
         """
         self._interface = interface
         self._id = id
@@ -111,7 +114,7 @@ class Container(metaclass=ABCMeta):
         """Attribute for accessing details of ports published by the container.
 
         :returns:   Port details
-        :rtype:     list of :class:`ContainerPort`s
+        :rtype:     list of :class:`ContainerPort` s
         """
 
     @abstractproperty

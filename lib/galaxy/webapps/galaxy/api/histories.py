@@ -475,9 +475,10 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
     @expose_api
     def index_exports(self, trans, id):
         """
-        index_exports(self, trans, id)
-        * GET /api/histories/{id}/exports:
-            Get history exports.
+        GET /api/histories/{id}/exports
+
+        Get previous history exports (to links). Effectively returns serialized
+        JEHA objects.
         """
         return self.history_export_view.get_exports(trans, id)
 

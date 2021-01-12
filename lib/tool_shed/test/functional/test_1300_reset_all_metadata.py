@@ -24,8 +24,7 @@ category_0060_name = 'Test 0060 Workflow Features'
 '''
 This script will run in one of two possible ways:
 
-1. Directly, by calling sh run_functional_tests.sh -toolshed test/tool_shed/functional/test_1300_reset_all_metadata.py.
- -OR-
+1. Directly, by calling sh run_functional_tests.sh -toolshed test/tool_shed/functional/test_1300_reset_all_metadata.py. -or-
 2. After the previous test scripts have completed.
 
 In the first case, it is desirable to have the Galaxy database in a state that is as close as possible to the state it would

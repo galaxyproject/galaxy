@@ -315,7 +315,9 @@ class ToolDataTable:
 class TabularToolDataTable(ToolDataTable, Dictifiable):
     """
     Data stored in a tabular / separated value format on disk, allows multiple
-    files to be merged but all must have the same column definitions::
+    files to be merged but all must have the same column definitions:
+
+    .. code-block:: xml
 
         <table type="tabular" name="test">
             <column name='...' index = '...' />
@@ -798,13 +800,16 @@ class TabularToolDataField(Dictifiable):
 class RefgenieToolDataTable(TabularToolDataTable):
     """
     Data stored in refgenie
-    <table name="all_fasta" type="refgenie" asset="fasta" >
-        <file path="refgenie.yml" />
-        <field name="value" template="true">${__REFGENIE_UUID__}</field>
-        <field name="dbkey" template="true">${__REFGENIE_GENOME__}</field>
-        <field name="name" template="true">${__REFGENIE_DISPLAY_NAME__}</field>
-        <field name="path" template="true">${__REFGENIE_ASSET__}</field>
-    </table>
+
+    .. code-block:: xml
+
+        <table name="all_fasta" type="refgenie" asset="fasta" >
+            <file path="refgenie.yml" />
+            <field name="value" template="true">${__REFGENIE_UUID__}</field>
+            <field name="dbkey" template="true">${__REFGENIE_GENOME__}</field>
+            <field name="name" template="true">${__REFGENIE_DISPLAY_NAME__}</field>
+            <field name="path" template="true">${__REFGENIE_ASSET__}</field>
+        </table>
     """
     dict_collection_visible_keys = ['name']
 

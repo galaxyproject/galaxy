@@ -61,11 +61,11 @@ class CloudManager(sharable.SharableModelManager):
 
         :type  provider: string
         :param provider: the name of cloud-based resource provided. A list of supported providers is given in
-        `SUPPORTED_PROVIDERS` variable.
+                         `SUPPORTED_PROVIDERS` variable.
 
         :type  credentials: dict
         :param credentials: a dictionary containing all the credentials required to authenticated to the
-        specified provider.
+                            specified provider.
 
         :rtype: provider specific, e.g., `cloudbridge.cloud.providers.aws.provider.AWSCloudProvider` for AWS.
         :return: a cloudbridge connection to the specified provider.

@@ -443,6 +443,7 @@ class XmlToolSource(ToolSource):
         parse error handling from command and stdio tag
 
         returns list of exit codes, list of regexes
+
         - exit_codes contain all non-zero exit codes (:-1 and 1:) if
           detect_errors is default (if not legacy), exit_code, or aggressive
         - the oom_exit_code if given and detect_errors is exit_code
@@ -451,6 +452,7 @@ class XmlToolSource(ToolSource):
           and exit codes derived from the properties of the command tag.
           thus more specific regexes of the same or more severe error level
           are triggered first.
+
         """
 
         command_el = self._command_el
