@@ -22,6 +22,7 @@ const PLUGIN_BUILD_IDS = [
     "openlayers",
     "openseadragon",
     "pv",
+    "nora",
 ];
 
 const paths = {
