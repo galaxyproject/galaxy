@@ -7,10 +7,10 @@ from fastapi import Depends
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter as APIRouter
 
-from galaxy.tours.abc import ToursRegistry
-from galaxy.tours.schema import (
+from galaxy.tours import (
     TourDetails,
     TourList,
+    ToursRegistry,
 )
 from galaxy.web import (
     expose_api_anonymous_and_sessionless,
@@ -20,13 +20,17 @@ from galaxy.web import (
 from galaxy.webapps.base.controller import BaseAPIController
 from . import (
     get_admin_user,
-    get_tours_registry,
+    get_app,
 )
 
 log = logging.getLogger(__name__)
 
 
 router = APIRouter(tags=['tours'])
+
+
+def get_tours_registry(app=Depends(get_app)) -> ToursRegistry:
+    return app.tour_registry
 
 
 @cbv(router)

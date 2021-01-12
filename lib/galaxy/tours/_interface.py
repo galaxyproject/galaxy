@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from galaxy.tours.schema import (
+from ._schema import (
     TourDetails,
     TourList,
 )
