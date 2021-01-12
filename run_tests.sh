@@ -151,7 +151,8 @@ Extra options:
                        (-toolshed, -framework, etc...)
  --coverage            Generate a test coverage report. This option currently
                        should work with every test that uses pytest, but the
-                       results may not be reliable for e.g. selenium tests.
+                       results may not be reliable with selenium or other
+                       frameworks that primarily test the client.
  --debug               On python test error or failure invoke a pdb shell for
                        interactive debugging of the test
  --report_file         Path of HTML report to produce (for Python Galaxy
