@@ -16,7 +16,7 @@
         </template>
         <b-tabs v-if="ready">
             <b-tab title="Regular" id="regular" button-id="tab-title-link-regular" v-if="showRegular">
-                <default :app="this" :lazy-load-max="50" :multiple="multiple" />
+                <default :app="this" :lazy-load-max="50" :multiple="multiple" :selectable="callback != null" />
             </b-tab>
             <b-tab title="Composite" id="composite" button-id="tab-title-link-composite" v-if="showComposite">
                 <composite :app="this" />
