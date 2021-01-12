@@ -1,11 +1,11 @@
 <tool id="identifier_in_conditional" name="identifier_in_conditional" version="1.0.0">
     <command><![CDATA[
 #if str($outer_cond.multi_input) == 'true':
-    #for $input in $outer_cond.input1#
+    #for $input in $input1#
         echo '$input.element_identifier' >> 'output1';
     #end for#
 #else
-    echo '$outer_cond.input1.element_identifier' >> 'output1';
+    echo '$input1.element_identifier' >> 'output1';
 #end if
     ]]></command>
     <inputs>
