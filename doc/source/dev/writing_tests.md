@@ -159,7 +159,7 @@ These tests should be marked as requiring the environment variable
 The Python unit tests are run against each pull request to Galaxy using
 CircleCI. If any of these tests fail, the pull request will be marked
 red. This test suite is moderately prone to having tests fail that are 
-unrelated to the pull request being tested, if this test suite fails on
+unrelated to the pull request being tested; if this test suite fails on
 a pull request with changes that seem to be unrelated to the pull request -
 ping the Galaxy committers on the pull request and request a re-run. The
 CircleCI test definition for these tests is located in ``.circleci/config.yml``
@@ -175,7 +175,7 @@ Detailed information on writing Galaxy client tests can be found in
 The client tests are run against each pull request to Galaxy using
 GitHub actions. If any of these tests fail, the pull request will be marked
 red. This test suite is moderately prone to having tests fail that are 
-unrelated to the pull request being tested, if this test suite fails on
+unrelated to the pull request being tested; if this test suite fails on
 a pull request with changes that seem to be unrelated to the pull request -
 ping the Galaxy committers on the pull request and request a re-run. The
 GitHub actions workflow definition for these tests is located in
@@ -184,11 +184,11 @@ GitHub actions workflow definition for these tests is located in
 ## <a name="framework"></a> Tool Framework Tests
 
 A great deal of the complexity and interface exposed to Galaxy plugin 
-developers, comes in the form of Galaxy tool wrapper definition files.
+developers comes in the form of Galaxy tool wrapper definition files.
 Likewise, a lot of the legacy behavior Galaxy needs to maintain is
 maintained for older tool definitions. For this reason, a lot of Galaxy's
 complex internals can just be tested by simply running a tool test.
-Obviously, Galaxy is much more complex than this but a surprising amount
+Obviously, Galaxy is much more complex than this, but a surprising amount
 of Galaxy's tests are simply tool tests. This suite of tools that
 have their tests exercised is called the "Tool Framework Tests"
 or simply "Framework Tests".
@@ -214,14 +214,13 @@ GitHub actions workflow definition for these tests is located in
 ## <a name="api"></a> API Tests
 
 These tests are located in ``lib/galaxy_test/api`` and test various aspects 
-of the Galaxy API and test general backend aspects of Galaxy using the API.
+of the Galaxy API, as well as general backend aspects of Galaxy using the API.
 
 ### An Example: ``lib/galaxy_test/api/test_roles.py``
 
-This test file shows a fairly typical API test. It demonstrates the
-basic structure. It demonstrates how to ``GET`` and ``POST`` against the
-API. It demonstrates how to use both a typical user and admin user-only
-functionality.
+This test file shows a fairly typical API test. It demonstrates the basic
+structure of a test, how to ``GET`` and ``POST`` against the API, and how to use
+both typical user and admin user-only functionality.
 
 ### Populating Test Data with ``lib/galaxy_test/base/populators.py``
 
@@ -231,14 +230,14 @@ Galaxy server under test. Populators are used extensively throughout
 API tests as well as integration and Selenium tests to both populate
 data to test (histories, workflows, collections, libraries, etc..)
 as well as access information from the Galaxy server (e.g. fetch
-information from datasets, users, Galaxy's configuration, etc..).
+information from datasets, users, Galaxy's configuration, etc.).
 
 Populators and API tests in general make heavy use of the [requests
 library](https://requests.readthedocs.io/en/master/) for Python.
 
 ### API Test Assertions
 
-There is a module of common assertions ``galaxy_test.base.api_asserts``
+There is a module with common assertions ``galaxy_test.base.api_asserts``
 used to check API request status codes, dictionary content, and Galaxy
 specific error messages.
 
@@ -265,19 +264,19 @@ spin up its own Galaxy server (a relatively expensive operation) and the
 tests cannot be executed against external Galaxy servers (it wouldn't make
 sense to, given these custom hooks during configuration of the server).
 For these reasons, we bundle up Galaxy API tests for use in deployment
-testing of production setups for instance and Galaxy API tests should be
-implemented whenever possible and integration tests implemented only when
-an API test is not possible or practical.
+testing of production setups; Galaxy API tests should be implemented whenever
+possible and integration tests implemented only when an API test is not
+possible or practical.
 
 Integration tests can make use of dataset populators and API assertions
 as described above in the API test documentation. It is worth reviewing
 that documentation before digging into integration examples.
 
-### An Example ``test/integration/test_quotas.py``
+### An Example: ``test/integration/test_quota.py``
 
 This is a really simple example that does some testing with the Quotas
 API of Galaxy. This API is off by default so it must be enabled for the
-the test. The top of the test file demonstrates both how to create an
+test. The top of the test file demonstrates both how to create an
 integration test and how to modify Galaxy's configuration for the test.
 
 ```python
@@ -304,7 +303,7 @@ default user configured for API interactions must be an admin user.
 
 This example overrides Galaxy's configuration using the 
 ``handle_galaxy_config_kwds`` class method. This method is called before
-a Galaxy server is created and passed the testing server's default 
+a Galaxy server is created, and is passed the testing server's default 
 configuration as the ``config`` argument to that class method. This
 ``config`` object is effectively the Python representation of the Galaxy
 configuration file (``galaxy.yml``) used to start the Python server.
@@ -320,17 +319,17 @@ There may be cases where an integration test is used not to allow
 some custom configuration of Galaxy but to access Galaxy's internals.
 Integration tests have direct access to Galaxy's ``app`` object via
 ``self._app`` and direct access to the database as a result. An example of
-a test that uses these is ``test_workflow_refactoring.py``. This test
-required accessing the way workflow steps are stored in the database and
-not just how they are serialized by the API and so tests database models
-directly. Generally though this type of usage should be avoided.
+such a test is ``test_workflow_refactoring.py``. This test required accessing
+the way workflow steps are stored in the database and not just how they are
+serialized by the API, so it tests database models directly. Generally
+though, this type of usage should be avoided.
 
 ### Continuous Integration
 
 The Integration tests are run against each pull request to Galaxy using
 GitHub actions. If any of these tests fail, the pull request will be marked
 red. This test suite is moderately prone to having tests fail that are 
-unrelated to the pull request being tested, if this test suite fails on
+unrelated to the pull request being tested; if this test suite fails on
 a pull request with changes that seem to be unrelated to the pull request -
 ping the Galaxy committers on the pull request and request a re-run. The
 GitHub actions workflow definition for these tests is located in
@@ -346,7 +345,7 @@ browsers and are located in ``lib/galaxy_test/selenium``.
 The Selenium tests are run against each pull request to Galaxy using
 GitHub actions. If any of these tests fail, the pull request will be marked
 red. This test suite is moderately prone to having tests fail that are 
-unrelated to the pull request being tested, if this test suite fails on
+unrelated to the pull request being tested; if this test suite fails on
 a pull request with changes that seem to be unrelated to the pull request -
 ping the Galaxy committers on the pull request and request a re-run. The
 GitHub actions workflow definition for these tests is located in
@@ -354,11 +353,11 @@ GitHub actions workflow definition for these tests is located in
 
 ## <a name="selenium_integration"></a> Selenium Integration Tests
 
-These tests are located ``test/integration_selenium`` and simply
+These tests are located in ``test/integration_selenium`` and simply
 combine the capabilities of Selenium tests and Integration tests
 (both described above) into test cases that can do both. There
 are no new capabilities or gotchas of this test suite beyond
-what is described above these sections.
+what is described above in these sections.
 
 A quintessential example is ``test/integration_selenium/test_upload_ftp.py``.
 Testing the FTP capabilities of the user interface requires both
@@ -371,7 +370,7 @@ with various options (``ftp_upload_dir``, ``ftp_upload_site``).
 The Selenium integration tests are run against each pull request to Galaxy using
 GitHub actions. If any of these tests fail, the pull request will be marked
 red. This test suite is moderately prone to having tests fail that are 
-unrelated to the pull request being tested, if this test suite fails on
+unrelated to the pull request being tested; if this test suite fails on
 a pull request with changes that seem to be unrelated to the pull request -
 ping the Galaxy committers on the pull request and request a re-run. The
 GitHub actions workflow definition for these tests is located in
