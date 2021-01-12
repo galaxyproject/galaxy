@@ -10,6 +10,7 @@ Special Topics
    interactive_environments
    mulled_containers
    grt
+   gtn
    job_metrics
    webhooks
    performance_tracking
