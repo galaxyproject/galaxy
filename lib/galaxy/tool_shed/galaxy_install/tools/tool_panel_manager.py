@@ -67,7 +67,8 @@ class ToolPanelManager:
                             # Break out of the config_elems loop back to the elem_list loop.
                             break
                     # If we reach this point, no section was found. Create one with contents.
-                    config_elems.append(elem_entry)
+                    else:
+                        config_elems.append(elem_entry)
                 # This is not a section, but a tool or label. No need to search for matching sections, just add it.
                 else:
                     config_elems.append(elem_entry)
