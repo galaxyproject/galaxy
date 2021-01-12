@@ -8,7 +8,7 @@ from galaxy.managers.context import (
 class WorkRequestContext(ProvidesAppContext, ProvidesUserContext, ProvidesHistoryContext):
     """ Stripped down implementation of Galaxy web transaction god object for
     work request handling outside of web threads - uses mix-ins shared with
-    GalaxyWebTransaction to provide app, user, and history context convience
+    GalaxyWebTransaction to provide app, user, and history context convenience
     methods - but nothing related to HTTP handling, mako views, etc....
 
     Things that only need app shouldn't be consuming trans - but there is a

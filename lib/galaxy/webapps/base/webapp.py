@@ -430,9 +430,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         """
         Ensure that a valid Galaxy session exists and is available as
         trans.session (part of initialization)
-
-        Support for universe_session and universe_user cookies has been
-        removed as of 31 Oct 2008.
         """
         # Try to load an existing session
         secure_id = self.get_cookie(name=session_cookie)

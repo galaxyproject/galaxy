@@ -10,7 +10,7 @@ from galaxy.util import bunch
 
 
 class ProvidesAppContext:
-    """ For transaction-like objects to provide Galaxy convience layer for
+    """ For transaction-like objects to provide Galaxy convenience layer for
     database and event handling.
 
     Mixed in class must provide `app` property.
@@ -100,7 +100,7 @@ class ProvidesAppContext:
 
 
 class ProvidesUserContext:
-    """ For transaction-like objects to provide Galaxy convience layer for
+    """ For transaction-like objects to provide Galaxy convenience layer for
     reasoning about users.
 
     Mixed in class must provide `user` and `app`
@@ -160,7 +160,7 @@ class ProvidesUserContext:
 
 
 class ProvidesHistoryContext:
-    """ For transaction-like objects to provide Galaxy convience layer for
+    """ For transaction-like objects to provide Galaxy convenience layer for
     reasoning about histories.
 
     Mixed in class must provide `user`, `history`, and `app`
