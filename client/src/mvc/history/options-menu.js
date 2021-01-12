@@ -148,8 +148,13 @@ var menu = [
     },
     {
         html: _l("Export History to File"),
-        href: "history/export_archive?preview=True",
         anon: true,
+        func: function () {
+            const Galaxy = getGalaxyInstance();
+            if (Galaxy && Galaxy.currHistoryPanel && Galaxy.router) {
+                Galaxy.router.push(`/histories/${Galaxy.currHistoryPanel.model.id}/export`);
+            }
+        },
     },
     {
         html: _l("Beta Features"),

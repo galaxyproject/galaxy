@@ -96,7 +96,7 @@
                     key="export-history-to-file"
                     title="Export History to File"
                     icon="fas fa-file-archive"
-                    @click="iframeRedirect('/history/export_archive?preview=True')"
+                    @click="backboneRoute(`/histories/${history.id}/export`)"
                 />
             </PriorityMenu>
 

@@ -32,7 +32,6 @@ from galaxy.web import (
     expose_api_anonymous,
     expose_api_anonymous_and_sessionless,
     expose_api_raw,
-    url_for
 )
 from galaxy.webapps.base.controller import (
     BaseAPIController,
@@ -52,6 +51,7 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
         self.user_manager = users.UserManager(app)
         self.workflow_manager = workflows.WorkflowsManager(app)
         self.manager = histories.HistoryManager(app)
+        self.history_export_view = histories.HistoryExportView(app)
         self.serializer = histories.HistorySerializer(app)
         self.deserializer = histories.HistoryDeserializer(app)
         self.filters = histories.HistoryFilters(app)
@@ -352,8 +352,10 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
                 archive_type = "file"
             else:
                 raise exceptions.MessageException("Please provide a url or file.")
-            self.queue_history_import(trans, archive_type=archive_type, archive_source=archive_source)
-            return {"message": "Importing history from source '%s'. This history will be visible when the import is complete." % archive_source}
+            job = self.queue_history_import(trans, archive_type=archive_type, archive_source=archive_source)
+            job_dict = job.to_dict()
+            job_dict["message"] = "Importing history from source '%s'. This history will be visible when the import is complete." % archive_source
+            return trans.security.encode_all_ids(job_dict)
 
         new_history = None
         # if a history id was passed, copy that history
@@ -471,7 +473,16 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
             user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
 
     @expose_api
-    def archive_export(self, trans, id, **kwds):
+    def index_exports(self, trans, id):
+        """
+        index_exports(self, trans, id)
+        * GET /api/histories/{id}/exports:
+            Get history exports.
+        """
+        return self.history_export_view.get_exports(trans, id)
+
+    @expose_api
+    def archive_export(self, trans, id, payload=None, **kwds):
         """
         PUT /api/histories/{id}/exports
 
@@ -484,6 +495,7 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
         :rtype:     dict
         :returns:   object containing url to fetch export from.
         """
+        kwds.update(payload or {})
         # PUT instead of POST because multiple requests should just result
         # in one object being created.
         history = self.manager.get_accessible(self.decode_id(id), trans.user, current_history=trans.history)
@@ -509,6 +521,8 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
                 directory_uri=directory_uri,
                 file_name=file_name,
             )
+        else:
+            job = jeha.job
 
         if exporting_to_uri:
             # we don't have a jeha, there will never be a download_url. Just let
@@ -516,13 +530,18 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
             # written.
             job_id = trans.security.encode_id(job.id)
             return dict(job_id=job_id)
+
         if up_to_date and jeha.ready:
-            jeha_id = trans.security.encode_id(jeha.id)
-            return dict(download_url=url_for("history_archive_download", id=id, jeha_id=jeha_id))
+            return self.history_export_view.serialize(trans, id, jeha)
         else:
             # Valid request, just resource is not ready yet.
             trans.response.status = "202 Accepted"
-            return ''
+            if jeha:
+                return self.history_export_view.serialize(trans, id, jeha)
+            else:
+                assert job is not None, "logic error, don't have a jeha or a job"
+                job_id = trans.security.encode_id(job.id)
+                return dict(job_id=job_id)
 
     @expose_api_raw
     def archive_download(self, trans, id, jeha_id, **kwds):
@@ -535,19 +554,7 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
         code (instead of 202) with a JSON dictionary containing a
         ``download_url``.
         """
-        # Seems silly to put jeha_id in here, but want GET to be immuatable?
-        # and this is being accomplished this way.
-        history = self.manager.get_accessible(self.decode_id(id), trans.user, current_history=trans.history)
-        matching_exports = [e for e in history.exports if trans.security.encode_id(e.id) == jeha_id]
-        if not matching_exports:
-            raise exceptions.ObjectNotFound()
-
-        jeha = matching_exports[0]
-        if not jeha.ready:
-            # User should not have been given this URL, PUT export should have
-            # return a 202.
-            raise exceptions.MessageException("Export not available or not yet ready.")
-
+        jeha = self.history_export_view.get_ready_jeha(trans, id, jeha_id)
         return self.serve_ready_history_export(trans, jeha)
 
     @expose_api

@@ -445,7 +445,8 @@ class ImportsHistoryMixin:
         # Run job to do import.
         history_imp_tool = trans.app.toolbox.get_tool('__IMPORT_HISTORY__')
         incoming = {'__ARCHIVE_SOURCE__' : archive_source, '__ARCHIVE_TYPE__' : archive_type}
-        history_imp_tool.execute(trans, incoming=incoming)
+        job, _ = history_imp_tool.execute(trans, incoming=incoming)
+        return job
 
 
 class UsesLibraryMixin:
