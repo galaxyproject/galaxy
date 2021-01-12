@@ -2,13 +2,17 @@ import os
 import sys
 
 from db_shell import *  # noqa
+from sqlalchemy import MetaData
+from sqlalchemy.orm import class_mapper
+try:
+    from sqlalchemy_schemadisplay import create_schema_graph, create_uml_graph
+except ImportError:
+    print("please install sqlalchemy_schemadisplay to use this script (pip install sqlalchemy_schemadisplay)")
+    raise
+
 
 gxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 sys.path.insert(1, os.path.abspath(os.path.join(gxy_root, 'lib')))
-
-from sqlalchemy import MetaData
-from sqlalchemy.orm import class_mapper
-from sqlalchemy_schemadisplay import create_schema_graph, create_uml_graph
 
 from galaxy import model
 
