@@ -237,6 +237,13 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         else:
             style = "instance"
         version = kwd.get('version')
+        if version is None and util.string_as_bool(kwd.get("instance", "false")):
+            # A Workflow instance may not be the latest workflow version attached to StoredWorkflow.
+            # This figures out the correct version so that we return the correct Workflow and version.
+            workflow_id = self.decode_id(id)
+            for version, workflow in enumerate(reversed(stored_workflow.workflows)):
+                if workflow.id == workflow_id:
+                    break
         return self.workflow_contents_manager.workflow_to_dict(trans, stored_workflow, style=style, version=version)
 
     @expose_api
@@ -954,9 +961,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         decoded_workflow_invocation_id = self.decode_id(invocation_id)
         workflow_invocation = self.workflow_manager.get_invocation(trans, decoded_workflow_invocation_id, eager=True)
         if workflow_invocation:
-            step_details = util.string_as_bool(kwd.get('step_details', 'False'))
-            legacy_job_state = util.string_as_bool(kwd.get('legacy_job_state', 'False'))
-            return self.__encode_invocation(workflow_invocation, step_details=step_details, legacy_job_state=legacy_job_state)
+            step_details = util.string_as_bool(kwd.pop('step_details', 'False'))
+            legacy_job_state = util.string_as_bool(kwd.pop('legacy_job_state', 'False'))
+            return self.__encode_invocation(workflow_invocation, step_details=step_details, legacy_job_state=legacy_job_state, **kwd)
         return None
 
     @expose_api

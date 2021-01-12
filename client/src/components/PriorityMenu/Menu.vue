@@ -96,8 +96,8 @@ export default {
         // merge weird vnode attributes to get enough to generate a dropdown
         getMenuDataFromNode(vnode) {
             const componentOptions = vnode.componentOptions || {};
-            const attrs = Object.assign({}, vnode.data.attrs || {}, componentOptions.propsData || {});
-            const on = Object.assign({}, vnode.data.on || {}, componentOptions.listeners || {});
+            const attrs = Object.assign({}, (vnode.data && vnode.data.attrs) || {}, componentOptions.propsData || {});
+            const on = Object.assign({}, (vnode.data && vnode.data.on) || {}, componentOptions.listeners || {});
             return { attrs, on, key: vnode.key };
         },
     },

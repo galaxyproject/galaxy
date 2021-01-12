@@ -7,10 +7,10 @@ const state = {
 
 const getters = {
     config({ state }) {
-        return state.config || {};
+        return state?.config || {};
     },
     configIsLoaded({ state }) {
-        return state.config !== null;
+        return state?.config !== null;
     },
 };
 

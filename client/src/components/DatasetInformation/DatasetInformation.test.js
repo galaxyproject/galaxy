@@ -1,33 +1,22 @@
-import Vuex from "vuex";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
-import { mount, createLocalVue } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
 import DatasetInformation from "./DatasetInformation";
 import datasetResponse from "./testData/datasetResponse";
 import flushPromises from "flush-promises";
-import createCache from "vuex-cache";
 import moment from "moment";
 
+jest.mock("../History/caching");
 const HDA_ID = "FOO_HDA_ID";
 
-const localVue = createLocalVue();
-localVue.use(Vuex);
-
-const testStore = new Vuex.Store({
-    plugins: [createCache()],
-    modules: {
-        datasetsStore: {
-            actions: {
-                fetchDataset: jest.fn(),
-            },
-            getters: {
-                dataset: (state) => (hda_id) => {
-                    return datasetResponse;
-                },
-            },
-        },
+const mockDatasetProvider = {
+    render() {
+        return this.$scopedSlots.default({
+            loading: false,
+            item: datasetResponse,
+        });
     },
-});
+};
 
 describe("DatasetInformation/DatasetInformation.vue", () => {
     let wrapper;
@@ -49,9 +38,10 @@ describe("DatasetInformation/DatasetInformation.vue", () => {
         };
 
         wrapper = mount(DatasetInformation, {
-            store: testStore,
             propsData,
-            localVue,
+            stubs: {
+                DatasetProvider: mockDatasetProvider,
+            },
         });
         datasetInfoTable = wrapper.find("#dataset-details");
         await flushPromises();

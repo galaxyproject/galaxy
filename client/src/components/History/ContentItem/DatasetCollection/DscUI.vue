@@ -6,9 +6,12 @@
         class="dataset dataset-collection collapsed"
         :class="{ selected }"
         :data-state="dsc.state"
-        @keydown.arrow-right.self.stop="eventHub.$emit('selectCollection', dsc)"
+        @keydown.arrow-right.self.stop="$emit('select-collection', dsc)"
         @keydown.space.self.stop.prevent="$emit('update:selected', !selected)"
-        @click.stop="eventHub.$emit('selectCollection', dsc)"
+        @click.stop="
+            $emit('select-collection', dsc);
+            $emit('update:expanded', dsc);
+        "
     >
         <nav class="d-flex content-top-menu align-items-center justify-content-between">
             <div class="d-flex mr-1 align-items-center" @click.stop>
@@ -35,7 +38,7 @@
                     state="ok"
                     title="Collection"
                     icon="fas fa-folder"
-                    @click.stop="$emit('selectCollection', dsc)"
+                    @click.stop="$emit('select-collection', dsc)"
                 />
             </div>
 
@@ -47,7 +50,15 @@
                 </span>
             </h5>
 
-            <DscMenu class="content-item-menu" v-on="$listeners" />
+            <DscMenu v-if="!dsc.deleted" class="content-item-menu" v-on="$listeners" />
+            <StateBtn
+                v-if="dsc.deleted"
+                class="px-1"
+                state="deleted"
+                title="Undelete"
+                icon="fas fa-trash-restore"
+                @click.stop="$emit('undeleteCollection')"
+            />
         </nav>
 
         <JobStateProgress class="m-2" v-if="dsc.jobSummary" :summary="dsc.jobSummary" />

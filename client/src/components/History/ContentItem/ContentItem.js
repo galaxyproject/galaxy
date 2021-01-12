@@ -26,6 +26,7 @@ export default {
             :selected.sync="selected"
             :expanded.sync="expanded"
             :scrolling="scrolling"
+            v-on='$listeners'
             @mouseover.native.self.stop="setFocus(index)"
             @keydown.native.arrow-up.self.stop="setFocus(index - 1)"
             @keydown.native.arrow-down.self.stop="setFocus(index + 1)"

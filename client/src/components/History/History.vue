@@ -60,7 +60,7 @@
                     @scroll="setScrollPos"
                 >
                     <template v-slot="{ item, index }">
-                        <HistoryContentItem :item="item" :index="index" />
+                        <HistoryContentItem :item="item" :index="index" v-on="$listeners" />
                     </template>
                 </VirtualScroller>
             </template>

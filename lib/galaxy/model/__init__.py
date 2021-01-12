@@ -5522,27 +5522,41 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             rval['steps'] = steps
 
             inputs = {}
-            for step in self.steps:
-                if step.workflow_step.type == 'tool':
-                    for job in step.jobs:
-                        if job is None:
-                            continue
-                        for step_input in step.workflow_step.input_connections:
-                            output_step_type = step_input.output_step.type
-                            if output_step_type in ['data_input', 'data_collection_input']:
-                                src = "hda" if output_step_type == 'data_input' else 'hdca'
-                                for job_input in job.input_datasets:
-                                    if not job_input.dataset:
-                                        continue
-                                    if job_input.name == step_input.input_name:
-                                        inputs[str(step_input.output_step.order_index)] = {
-                                            "id": job_input.dataset_id, "src": src,
-                                            "uuid" : str(job_input.dataset.dataset.uuid) if job_input.dataset.dataset.uuid is not None else None
-                                        }
+            for input_item_association in self.input_datasets + self.input_dataset_collections:
+                if input_item_association.history_content_type == 'dataset':
+                    src = 'hda'
+                    item = input_item_association.dataset
+                elif input_item_association.history_content_type == 'dataset_collection':
+                    src = 'hdca'
+                    item = input_item_association.dataset_collection
+                else:
+                    # TODO: LDDAs are not implemented in workflow_request_to_input_dataset table
+                    raise Exception(f"Unknown history content type '{input_item_association.history_content_type}'")
+                # Should this maybe also be by label ? Would break backwards compatibility though
+                inputs[str(input_item_association.workflow_step.order_index)] = {
+                    'id': item.id,
+                    'src': src,
+                    'label': input_item_association.workflow_step.label,
+                    'workflow_step_id': input_item_association.workflow_step_id,
+                }
+
             rval['inputs'] = inputs
+
+            input_parameters = {}
+            for input_step_parameter in self.input_step_parameters:
+                label = input_step_parameter.workflow_step.label
+                if not label:
+                    continue
+                input_parameters[label] = {
+                    'parameter_value': input_step_parameter.parameter_value,
+                    'label': label,
+                    'workflow_step_id': input_step_parameter.workflow_step_id,
+                }
+            rval['input_step_parameters'] = input_parameters
 
             outputs = {}
             for output_assoc in self.output_datasets:
+                # TODO: does this work correctly if outputs are mapped over?
                 label = output_assoc.workflow_output.label
                 if not label:
                     continue
@@ -5550,6 +5564,7 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
                 outputs[label] = {
                     'src': 'hda',
                     'id': output_assoc.dataset_id,
+                    'workflow_step_id': output_assoc.workflow_step_id,
                 }
 
             output_collections = {}
@@ -5561,6 +5576,7 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
                 output_collections[label] = {
                     'src': 'hdca',
                     'id': output_assoc.dataset_collection_id,
+                    'workflow_step_id': output_assoc.workflow_step_id,
                 }
 
             rval['outputs'] = outputs
