@@ -162,8 +162,6 @@ client/galaxy
 doc/build
 doc/schema.md
 doc/source/admin/config_logging_default_yaml.rst
-doc/source/api/api.rst
-doc/source/api/ts_api.rst
 doc/source/dev/schema.md
 doc/source/dev/schema.rst
 client/styleguide
