@@ -826,10 +826,10 @@ def _step_with_label(native_dict, label):
 class MockTrans(ProvidesAppContext):
 
     def __init__(self, app, user):
-        self.app = app
+        self._app = app
         self.user = user
         self.history = None
 
     @property
-    def security(self):
-        return self.app.security
+    def app(self):
+        return self._app
