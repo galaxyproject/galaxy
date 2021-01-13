@@ -57,14 +57,17 @@ else:
     except Exception:
         log.exception("Failed to add Galaxy to sys.path")
         raise
+from galaxy.main_config import (
+    absolute_config_path,
+    config_is_ini,
+    DEFAULT_CONFIG_SECTION,
+    DEFAULT_INI_APP,
+    find_config,
+)
 from galaxy.util import unicodify
 from galaxy.web_stack import get_app_kwds
 
 REQUIRES_DAEMONIZE_MESSAGE = "Attempted to use Galaxy in daemon mode, but daemonize is unavailable."
-
-DEFAULT_INI_APP = "main"
-DEFAULT_CONFIG_SECTION = "galaxy"
-DEFAULT_INIS = ["config/galaxy.yml", "config/galaxy.ini", "universe_wsgi.ini", "config/galaxy.yml.sample"]
 
 DEFAULT_PID = "galaxy.pid"
 DEFAULT_VERBOSE = True
@@ -156,29 +159,6 @@ def app_loop(args, log):
         raise
 
 
-def absolute_config_path(path, galaxy_root):
-    if path and not os.path.isabs(path):
-        path = os.path.join(galaxy_root, path)
-    return path
-
-
-def find_config(supplied_config, galaxy_root):
-    if supplied_config:
-        return supplied_config
-
-    if galaxy_root is None:
-        return os.path.abspath('galaxy.yml')
-
-    # If not explicitly supplied an config, check galaxy.ini and then
-    # just resort to sample if that has not been configured.
-    for guess in DEFAULT_INIS:
-        config_path = os.path.join(galaxy_root, guess)
-        if os.path.exists(config_path):
-            return config_path
-
-    return guess
-
-
 class GalaxyConfigBuilder:
     """ Generate paste-like configuration from supplied command-line arguments.
     """
@@ -218,7 +198,7 @@ class GalaxyConfigBuilder:
 
     @property
     def config_is_ini(self):
-        return self.config_file.endswith('.ini') or self.config_file.endswith('.ini.sample')
+        return config_is_ini(self.config_file)
 
     def app_kwds(self):
         kwds = get_app_kwds(self.app_name, app_name=self.app_name)
