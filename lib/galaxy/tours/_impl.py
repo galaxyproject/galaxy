@@ -15,7 +15,7 @@ from ._schema import TourList
 log = logging.getLogger(__name__)
 
 
-def build_tours_registry(tour_directories: str) -> ToursRegistry:
+def build_tours_registry(tour_directories: str):
     return ToursRegistryImpl(tour_directories)
 
 
