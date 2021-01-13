@@ -2,30 +2,30 @@ API Design Guidelines
 =====================
 
 The following section outlines guidelines related to extending and/or modifying
-the Galaxy API. The Galaxy API has grown in an ad-hoc fashion over time by
-many contributors and so clients SHOULD NOT expect the API will conform to
+the Galaxy API. The Galaxy API has been developed over time in an ad-hoc fashion and by
+many contributors, so clients SHOULD NOT expect the API will conform to
 these guidelines - but developers contributing to the Galaxy API SHOULD follow
 these guidelines.
 
 Before Getting Started
 ~~~~~~~~~~~~~~~~~~~~~~
 
-Developers should familiarize themselves with HTTP method definitions 
-https://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9. While Galaxy
+Developers should familiarize themselves with `HTTP method definitions
+<https://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9>`__. While Galaxy
 follows these imperfectly - a serious effort should be made to use HTTP
 methods (GET, POST, PUT, DELETE, etc.) correctly and consistently. More
 information about these methods with a focus on RESTful APIs can be found
 at https://restfulapi.net/http-methods/.
 
-Developers should familiarize themselves with the HTTP status code definitions
-http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html. The API responses
+Developers should also familiarize themselves with the `HTTP status code definitions
+<http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html>`__. The API responses
 should properly set the status code according to the result - in particular
 2XX responses should be used for successful requests, 4XX for various
 kinds of client errors, and 5XX for the errors on the server side.
 
-Developers should also familiarize themselves with RESTful API design
-https://docs.microsoft.com/en-us/azure/architecture/best-practices/api-design.
-Again Galaxy follows generic RESTful guidelines imperfectly - but a serious
+Finally, developers should familiarize themselves with `RESTful API design
+<https://docs.microsoft.com/en-us/azure/architecture/best-practices/api-design>`__.
+Again, Galaxy follows generic RESTful guidelines imperfectly, but a serious
 effort should be made to design the API as RESTfully and consistently as possible.
 
 Documenting the API
@@ -44,7 +44,7 @@ of the static checking that can be done for the Galaxy backend.
 To further document your API and allow other developers to see how it functions,
 new API functionality should include functional tests. These functional
 tests should be implemented in Python and added to either the API test suite
-or the integration test suite. Checkout the :ref:`Writing Tests for Galaxy <./writing_tests.md>`
+or the integration test suite. Checkout the :doc:`Writing Tests for Galaxy <writing_tests>`
 documentation for more information on developing tests for Galaxy.
 
 .. note::
@@ -93,7 +93,7 @@ Backward Compatibility
 Backward compatibility is important and should be maintained when possible.
 If changing behavior in a non-backward compatible way please ensure one
 of the following holds - there is a strong reason to believe no consumers
-depend on a behavior, the behavior is effectively broken, or the API
+depend on the old behavior, the behavior is effectively broken, or the API
 method being modified has not been part of a tagged dist release. If these
 conditions do not hold, please help the Galaxy release manager ensure
 information about the breaking API is highlighted in the Galaxy release
@@ -118,7 +118,7 @@ possible. Most of the logic should be pushed into components that
 are decoupled from the actual web application and the web framework.
 The role of the controller should be simply to adapt the web request
 (tied to the web framework) to simple objects (plain Python objects,
-Pydantic_ models, or SQL Alchemy models), send these objects to a
+Pydantic_ models, or SQLAlchemy models), send these objects to a
 Python component lower in the stack, and finally to translate the
 response to a web response. This design will ensure that Galaxy
 application logic is usable in as many contexts as possible and
