@@ -125,8 +125,8 @@ class OIDC(JSAppLauncher):
             return {'message': message}
 
     @web.expose
-    def get_logout_url(self, trans, **kwargs):
-        idp_provider = trans.get_cookie(name=PROVIDER_COOKIE_NAME)
+    def get_logout_url(self, trans, provider=None, **kwargs):
+        idp_provider = provider if provider else trans.get_cookie(name=PROVIDER_COOKIE_NAME)
         if idp_provider:
             return trans.response.send_redirect(url_for(controller='authnz', action='logout', provider=idp_provider))
 

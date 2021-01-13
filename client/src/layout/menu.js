@@ -13,11 +13,6 @@ export function userLogout(logoutAll = false) {
     const galaxy = getGalaxyInstance();
     const session_csrf_token = galaxy.session_csrf_token;
     const url = `${galaxy.root}user/logout?session_csrf_token=${session_csrf_token}&logout_all=${logoutAll}`;
-
-    var identities;
-    getIdentityProviders().then((results) => {
-        identities = results;
-    });
     axios
         .get(url)
         .then(() => {
@@ -26,15 +21,12 @@ export function userLogout(logoutAll = false) {
             }
             // Check if we need to logout of OIDC IDP
             if (galaxy.config.enable_oidc) {
-                const email = galaxy.user.attributes.email;
-                var provider;
-                for (var i = 0; i < identities.length; i++) {
-                    if (identities[i].email == email) {
-                        provider = identities[i].provider;
-                        break;
-                    }
+                const provider = localStorage.getItem("galaxy-provider");
+                if (provider) {
+                    localStorage.removeItem("galaxy-provider");
+                    return axios.get(`${galaxy.root}authnz/logout?provider=${provider}`);
                 }
-                return axios.get(`${galaxy.root}authnz/${provider}/logout`);
+                return axios.get(`${galaxy.root}authnz/logout`);
             } else {
                 return {};
             }
