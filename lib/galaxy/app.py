@@ -43,7 +43,7 @@ from galaxy.tools.cache import (
 from galaxy.tools.data_manager.manager import DataManagers
 from galaxy.tools.error_reports import ErrorReports
 from galaxy.tools.special_tools import load_lib_tools
-from galaxy.tours import ToursRegistry
+from galaxy.tours import build_tours_registry
 from galaxy.util import (
     ExecutionTimer,
     heartbeat,
@@ -173,7 +173,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
             directories_setting=self.config.visualization_plugins_directory,
             template_cache_dir=self.config.template_cache_path)
         # Tours registry
-        self.tour_registry = ToursRegistry(self.config.tour_config_dir)
+        self.tour_registry = build_tours_registry(self.config.tour_config_dir)
         # Webhooks registry
         self.webhooks_registry = WebhooksRegistry(self.config.webhooks_dir)
         # Load security policy.

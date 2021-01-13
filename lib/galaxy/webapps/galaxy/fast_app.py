@@ -16,6 +16,10 @@ api_tags_metadata = [
         "name": "licenses",
         "description": "Operations with [SPDX licenses](https://spdx.org/licenses/).",
     },
+    {
+        "name": "tours",
+        "description": "Operations with interactive tours.",
+    },
 ]
 
 
@@ -49,12 +53,14 @@ def initialize_fast_app(gx_app):
     from galaxy.webapps.galaxy.api import (
         job_lock,
         jobs,
+        licenses,
         roles,
-        licenses
+        tours,
     )
     app.include_router(jobs.router)
     app.include_router(job_lock.router)
-    app.include_router(roles.router)
     app.include_router(licenses.router)
+    app.include_router(roles.router)
+    app.include_router(tours.router)
     app.mount('/', wsgi_handler)
     return app
