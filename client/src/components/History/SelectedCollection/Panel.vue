@@ -5,14 +5,7 @@
         <CollectionContentProvider
             v-if="dsc"
             :parent="dsc"
-            v-slot="{
-                payload: { contents = [], startKey = null, topRows = 0, bottomRows = 0, totalMatches = 0 },
-                busy: loading,
-                params,
-                pageSize,
-                updateParams,
-                setScrollPos,
-            }"
+            v-slot="{ payload: { contents = [], startKey = null, topRows = 0, bottomRows = 0 }, setScrollPos }"
         >
             <Layout>
                 <template v-slot:nav>

@@ -3,9 +3,7 @@
         :parent="history"
         v-slot="{
             loading,
-            scrolling,
             params,
-            pageSize,
             payload: { contents = [], startKey = null, topRows = 0, bottomRows = 0, totalMatches = 0 },
             updateParams,
             setScrollPos,
