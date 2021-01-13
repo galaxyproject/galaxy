@@ -8,6 +8,7 @@ isa-rwval
 parsley
 numpy<=1.16
 pycryptodome
+pydantic
 pysam
 social_auth_core
 SQLAlchemy
