@@ -13,6 +13,10 @@ from galaxy.web.framework.decorators import (
 # https://fastapi.tiangolo.com/tutorial/metadata/#metadata-for-tags
 api_tags_metadata = [
     {
+        "name": "datatypes",
+        "description": "Operations with supported data types.",
+    },
+    {
         "name": "licenses",
         "description": "Operations with [SPDX licenses](https://spdx.org/licenses/).",
     },
@@ -51,12 +55,14 @@ def initialize_fast_app(gx_app):
     add_exception_handler(app)
     wsgi_handler = WSGIMiddleware(gx_app)
     from galaxy.webapps.galaxy.api import (
+        datatypes,
         job_lock,
         jobs,
         licenses,
         roles,
         tours,
     )
+    app.include_router(datatypes.router)
     app.include_router(jobs.router)
     app.include_router(job_lock.router)
     app.include_router(licenses.router)
