@@ -23,19 +23,19 @@
         <!-- can choose a dbkey if it matches input -->
         <test>
             <param name="inputs" value="simple_line.txt,simple_line.txt" dbkey="hg19" />
-            <param name="index" value="hg19" />
+            <param name="index" value="hg19_value" />
             <output name="output" file="simple_line_x2.txt"/>
         </test>
         <!-- can choose any dbkey if none specified in reference -->
         <test>
             <param name="inputs" value="simple_line.txt,simple_line.txt" />
-            <param name="index" value="hg19" />
+            <param name="index" value="hg19_value" />
             <output name="output" file="simple_line_x2.txt"/>
         </test>
         <!-- can choose any dbkey none specified in reference -->
         <test expect_failure="true">
             <param name="inputs" value="simple_line.txt,simple_line.txt" dbkey="hg19"/>
-            <param name="index" value="hg18" />
+            <param name="index" value="hg18_value" />
             <output name="output" file="simple_line_x2.txt"/>
         </test>
     </tests>

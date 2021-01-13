@@ -1354,6 +1354,38 @@ This tag set defines the tool's input parameters for executing the tool via the
 functional test framework. See [test](#tool-tests-test) documentation for
 some simple examples of parameters.
 
+### Parameter Types
+
+#### ``text``, ``integer``, and ``float``
+
+Values for these parameters are simply given by the desired value.
+
+#### ``boolean``
+
+The value of the test parameter should be set to `true` or `false` corresponding
+to the cases that the parameter is checked or not. Alternatively the value
+specified as `truevalue` or `falsevalue` can be given.
+
+#### ``data``
+
+Data input parameters can be given as a file name. The file should exist in the
+`test-data` folder. Multiple files can be specified as comma separated list.
+
+#### ``select``
+
+The value of a select parameter should be specified as the value of one of the
+legal options. If more than one option is selected (`multiple="true"`) they
+should be given as comma separated list. For optional selects
+(`optional="true"`) the case that no option is selected can be specified with
+`value=""`.
+
+While in general it is preferred to specify the selected cases by their values it
+is also possible to specify them by their name (i.e. the content of the
+`option` tag that is shown to the user). One use case is a dynamic select that is
+generated from a data table with two columns: name and value where the value is
+a path. Since the path changes with the test environment it can not be used to
+select an option for a test.
+
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
