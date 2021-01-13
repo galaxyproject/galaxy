@@ -1669,14 +1669,6 @@ class UsesExtendedMetadataMixin(SharableItemSecurityMixin):
             yield prefix, ("%s" % (meta)).encode("utf8", errors='replace')
 
 
-class ControllerUnavailable(Exception):
-    """
-    Deprecated: `BaseController` used to be available under the name `Root`
-    """
-
-# ---- Utility methods -------------------------------------------------------
-
-
 def sort_by_attr(seq, attr):
     """
     Sort the sequence of objects by object's attribute

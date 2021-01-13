@@ -124,18 +124,13 @@ class WebApplication(base.WebApplication):
         them to the webapp.
         """
         from galaxy.webapps.base.controller import BaseUIController
-        from galaxy.webapps.base.controller import ControllerUnavailable
         package = import_module(package_name)
         controller_dir = package.__path__[0]
         for fname in os.listdir(controller_dir):
             if not(fname.startswith("_")) and fname.endswith(".py"):
                 name = fname[:-3]
                 module_name = package_name + "." + name
-                try:
-                    module = import_module(module_name)
-                except ControllerUnavailable as exc:
-                    log.debug("%s could not be loaded: %s", module_name, unicodify(exc))
-                    continue
+                module = import_module(module_name)
                 # Look for a controller inside the modules
                 for key in dir(module):
                     T = getattr(module, key)
@@ -149,18 +144,13 @@ class WebApplication(base.WebApplication):
         them to the webapp.
         """
         from galaxy.webapps.base.controller import BaseAPIController
-        from galaxy.webapps.base.controller import ControllerUnavailable
         package = import_module(package_name)
         controller_dir = package.__path__[0]
         for fname in os.listdir(controller_dir):
             if not(fname.startswith("_")) and fname.endswith(".py"):
                 name = fname[:-3]
                 module_name = package_name + "." + name
-                try:
-                    module = import_module(module_name)
-                except ControllerUnavailable as exc:
-                    log.debug("%s could not be loaded: %s", module_name, unicodify(exc))
-                    continue
+                module = import_module(module_name)
                 for key in dir(module):
                     T = getattr(module, key)
                     # Exclude classes such as BaseAPIController and BaseTagItemsController
