@@ -412,7 +412,8 @@ export default {
             showAttributes();
             this._ensureParametersSet();
         },
-        scrollTo(node) {
+        scrollTo(nodeId) {
+            const node = this.nodes[parseInt(nodeId)];
             this.canvasManager.scrollToNode(node);
             node.onScrollTo();
         },

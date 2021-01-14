@@ -124,7 +124,7 @@ export default {
             this.$emit("onAttributes");
         },
         scrollTo(stepId) {
-            this.$emit("scrollTo", this.nodes[parseInt(stepId)]);
+            this.$emit("scrollTo", stepId);
         },
         highlight(stepId) {
             this.nodes[parseInt(stepId)].onHighlight();
