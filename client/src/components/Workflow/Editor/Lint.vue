@@ -236,11 +236,11 @@ export default {
                 inputsMissingMetadata.forEach((input) => {
                     let missingLabel = null;
                     if (input.missingLabel && input.missingAnnotation) {
-                        missingLabel = "missing a label and annotation";
+                        missingLabel = "Missing a label and annotation";
                     } else if (input.missingLabel) {
-                        missingLabel = "missing a label";
+                        missingLabel = "Missing a label";
                     } else {
-                        missingLabel = "missing an annotation";
+                        missingLabel = "Missing an annotation";
                     }
                     items.push({
                         stepId: input.stepId,
