@@ -16,7 +16,7 @@
                 :okay="checkAnnotation"
                 success-message="This workflow is annotated. Ideally, this helps the executors of the workflow
                     understand the purpose and usage of the workflow."
-                warning-message="This workflow is not annotated. Providing it helps workflow executors
+                warning-message="This workflow is not annotated. Providing an annotation helps workflow executors
                     understand the purpose and usage of the workflow."
                 attribute-link="Annotate your Workflow."
                 @onClick="onAttributes"
