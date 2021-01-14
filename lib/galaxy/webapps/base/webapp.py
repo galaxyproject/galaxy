@@ -9,7 +9,6 @@ import socket
 import string
 import time
 from http.cookies import CookieError
-from importlib import import_module
 from urllib.parse import urlparse
 
 import mako.lookup
@@ -124,24 +123,13 @@ class WebApplication(base.WebApplication):
         them to the webapp.
         """
         from galaxy.webapps.base.controller import BaseUIController
-        from galaxy.webapps.base.controller import ControllerUnavailable
-        package = import_module(package_name)
-        controller_dir = package.__path__[0]
-        for fname in os.listdir(controller_dir):
-            if not(fname.startswith("_")) and fname.endswith(".py"):
-                name = fname[:-3]
-                module_name = package_name + "." + name
-                try:
-                    module = import_module(module_name)
-                except ControllerUnavailable as exc:
-                    log.debug("%s could not be loaded: %s", module_name, unicodify(exc))
-                    continue
-                # Look for a controller inside the modules
-                for key in dir(module):
-                    T = getattr(module, key)
-                    if inspect.isclass(T) and T is not BaseUIController and issubclass(T, BaseUIController):
-                        controller = self._instantiate_controller(T, app)
-                        self.add_ui_controller(name, controller)
+        for name, module in base.walk_controller_modules(package_name):
+            # Look for a controller inside the modules
+            for key in dir(module):
+                T = getattr(module, key)
+                if inspect.isclass(T) and T is not BaseUIController and issubclass(T, BaseUIController):
+                    controller = self._instantiate_controller(T, app)
+                    self.add_ui_controller(name, controller)
 
     def add_api_controllers(self, package_name, app):
         """
@@ -149,26 +137,15 @@ class WebApplication(base.WebApplication):
         them to the webapp.
         """
         from galaxy.webapps.base.controller import BaseAPIController
-        from galaxy.webapps.base.controller import ControllerUnavailable
-        package = import_module(package_name)
-        controller_dir = package.__path__[0]
-        for fname in os.listdir(controller_dir):
-            if not(fname.startswith("_")) and fname.endswith(".py"):
-                name = fname[:-3]
-                module_name = package_name + "." + name
-                try:
-                    module = import_module(module_name)
-                except ControllerUnavailable as exc:
-                    log.debug("%s could not be loaded: %s", module_name, unicodify(exc))
-                    continue
-                for key in dir(module):
-                    T = getattr(module, key)
-                    # Exclude classes such as BaseAPIController and BaseTagItemsController
-                    if inspect.isclass(T) and not key.startswith("Base") and issubclass(T, BaseAPIController):
-                        # By default use module_name, but allow controller to override name
-                        controller_name = getattr(T, "controller_name", name)
-                        controller = self._instantiate_controller(T, app)
-                        self.add_api_controller(controller_name, controller)
+        for name, module in base.walk_controller_modules(package_name):
+            for key in dir(module):
+                T = getattr(module, key)
+                # Exclude classes such as BaseAPIController and BaseTagItemsController
+                if inspect.isclass(T) and not key.startswith("Base") and issubclass(T, BaseAPIController):
+                    # By default use module_name, but allow controller to override name
+                    controller_name = getattr(T, "controller_name", name)
+                    controller = self._instantiate_controller(T, app)
+                    self.add_api_controller(controller_name, controller)
 
     def _instantiate_controller(self, T, app):
         """ Extension point, allow apps to construct controllers differently,

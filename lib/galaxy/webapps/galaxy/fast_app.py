@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 from starlette.responses import Response
 
 from galaxy.exceptions import MessageException
+from galaxy.web.framework.base import walk_controller_modules
 from galaxy.web.framework.decorators import (
     api_error_message,
     validation_error_to_message_exception
@@ -54,19 +55,9 @@ def initialize_fast_app(gx_app):
 
     add_exception_handler(app)
     wsgi_handler = WSGIMiddleware(gx_app)
-    from galaxy.webapps.galaxy.api import (
-        datatypes,
-        job_lock,
-        jobs,
-        licenses,
-        roles,
-        tours,
-    )
-    app.include_router(datatypes.router)
-    app.include_router(jobs.router)
-    app.include_router(job_lock.router)
-    app.include_router(licenses.router)
-    app.include_router(roles.router)
-    app.include_router(tours.router)
+    for _, module in walk_controller_modules('galaxy.webapps.galaxy.api'):
+        router = getattr(module, "router", None)
+        if router:
+            app.include_router(router)
     app.mount('/', wsgi_handler)
     return app

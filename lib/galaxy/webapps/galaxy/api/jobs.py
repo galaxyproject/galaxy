@@ -70,7 +70,7 @@ class FastAPIJobs:
     hda_manager: hdas.HDAManager = Depends(get_hda_manager)
 
     @router.get("/api/job/{id}")
-    def show(self, id: EncodedDatabaseIdField, trans: ProvidesUserContext = Depends(get_trans), full: typing.Optional[bool] = False) -> typing.Dict:
+    async def show(self, id: EncodedDatabaseIdField, trans: ProvidesUserContext = Depends(get_trans), full: typing.Optional[bool] = False) -> typing.Dict:
         """
         Return dictionary containing description of job data
 
