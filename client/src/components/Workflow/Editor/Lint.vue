@@ -155,7 +155,7 @@ export default {
     data() {
         return {
             whyInputs:
-                "Formal inputs make tracking workflow provenance, usage within subworkflows, and executing the workflow via the Galaxy API all more robust.",
+                "Formal inputs make tracking workflow provenance, usage within subworkflows, and executing the workflow via the API all more robust.",
             forceRefresh: 0,
         };
     },
@@ -212,14 +212,10 @@ export default {
         },
     },
     computed: {
-        checkImplicitParameters() {
-            return this.warningImplicitParameters.length == 0;
-        },
-        checkDisconnectedInputs() {
-            return this.warningDisconnectedInputs.length == 0;
-        },
-        checkUnlabeledOutputs() {
-            return this.warningUnlabeledOutputs.length == 0;
+        showFixAll() {
+            // we could be even more percise here and check the inputs and such, because
+            // of these extractions may not be possible.
+            return !this.checkImplicitParameters || !this.checkDisconnectedInputs || !this.checkUnlabeledOutputs;
         },
         checkAnnotation() {
             return !!this.annotation;
@@ -233,6 +229,15 @@ export default {
             } else {
                 return !!this.creator;
             }
+        },
+        checkImplicitParameters() {
+            return this.warningImplicitParameters.length == 0;
+        },
+        checkDisconnectedInputs() {
+            return this.warningDisconnectedInputs.length == 0;
+        },
+        checkUnlabeledOutputs() {
+            return this.warningUnlabeledOutputs.length == 0;
         },
         warningImplicitParameters() {
             let items = [];
@@ -301,19 +306,6 @@ export default {
                 });
             }
             return items;
-        },
-        disconnectedInputs() {
-            this.forceRefresh;
-            return getDisconnectedInputs(this.nodes);
-        },
-        outputs() {
-            this.forceRefresh;
-            return getWorkflowOutputs(this.nodes);
-        },
-        showFixAll() {
-            // we could be even more percise here and check the inputs and such, because
-            // of these extractions may not be possible.
-            return !this.checkImplicitParameters || !this.checkDisconnectedInputs || !this.checkUnlabeledOutputs;
         },
     },
 };
