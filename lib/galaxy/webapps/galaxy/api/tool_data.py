@@ -1,21 +1,62 @@
 import os
 
+from fastapi import Depends
+from fastapi.routing import APIRouter
+from fastapi_utils.cbv import cbv
+
 from galaxy import (
     exceptions,
     web
 )
 from galaxy.managers.context import ProvidesAppContext
+from galaxy.app import UniverseApplication
+from galaxy.managers.tool_data import ToolDataManager
+from galaxy.tools.data._schema import ToolDataEntryList
 from galaxy.web import (
     expose_api,
     expose_api_raw
 )
 from galaxy.webapps.base.controller import BaseAPIController
+from . import (
+    get_admin_user,
+    get_app
+)
+
+router = APIRouter(tags=['tool data'])
+
+AdminUserRequired = Depends(get_admin_user)
+
+
+def get_tool_data_manager(app: UniverseApplication = Depends(get_app)) -> ToolDataManager:
+    return ToolDataManager(app)
+
+
+@cbv(router)
+class FastAPIToolData:
+    tool_data_manager: ToolDataManager = Depends(get_tool_data_manager)
+
+    @router.get(
+        '/api/tool_data',
+        summary="Lists all available data tables",
+        response_description="A list with details on individual data tables.",
+        response_model=ToolDataEntryList,
+        dependencies=[
+            AdminUserRequired
+        ],
+    )
+    async def index(self) -> ToolDataEntryList:
+        """Get the list of all available data tables."""
+        return self.tool_data_manager.index()
 
 
 class ToolData(BaseAPIController):
     """
     RESTful controller for interactions with tool data
     """
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.tool_data_manager = ToolDataManager(app)
 
     @web.require_admin
     @expose_api
@@ -25,7 +66,7 @@ class ToolData(BaseAPIController):
 
         Return a list tool_data tables.
         """
-        return list(a.to_dict() for a in self._data_tables.values())
+        return self.tool_data_manager.index()
 
     @web.require_admin
     @expose_api
