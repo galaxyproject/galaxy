@@ -3,7 +3,7 @@
         <template #header>
             <div class="mb-0 font-weight-bold">Validation Results</div>
             <div v-if="showFixAll">
-                <a href="#" @click="autoFixAll">Attempt to fix any issue that can be automatically fixed.</a>
+                <a href="#" @click="fixAll">Attempt to fix any issue that can be automatically fixed.</a>
             </div>
         </template>
         <b-card-body>
@@ -162,46 +162,8 @@ export default {
         };
     },
     methods: {
-        refresh() {
-            this.forceRefresh += 1;
-        },
-        extractImplicitParameter(item) {
-            const actions = [
-                {
-                    action_type: "extract_implicit_parameter",
-                    name: item.name,
-                },
-            ];
-            this.$emit("refactor", actions);
-        },
-        extractWorkflowInput(disconnectedInput) {
-            // convert step input into a workflow input connected to the step
-            const actions = [
-                {
-                    action_type: "extract_input",
-                    input: {
-                        order_index: parseInt(disconnectedInput.stepId),
-                        input_name: disconnectedInput.inputName,
-                    },
-                },
-            ];
-            this.$emit("refactor", actions);
-        },
-        removeUnlabeledWorkflowOutputs() {
-            const actions = [{ action_type: "remove_unlabeled_workflow_outputs" }];
-            this.$emit("refactor", actions);
-        },
         onAttributes() {
             this.$emit("onAttributes");
-        },
-        missingSummary(input) {
-            if (input.missingLabel && input.missingAnnotation) {
-                return "missing a label and annotation";
-            } else if (input.missingLabel) {
-                return "missing a label";
-            } else {
-                return "missing an annotation";
-            }
         },
         scrollTo(stepId) {
             this.$emit("scrollTo", this.nodes[parseInt(stepId)]);
@@ -212,7 +174,7 @@ export default {
         unhighlight(stepId) {
             this.nodes[parseInt(stepId)].onUnhighlight();
         },
-        autoFixAll() {
+        fixAll() {
             const actions = [];
             if (!this.parametersOkay) {
                 for (const implicitParameter of this.implicitParametersArray) {
