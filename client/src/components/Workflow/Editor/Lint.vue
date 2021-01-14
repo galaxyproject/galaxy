@@ -122,12 +122,9 @@ Vue.use(BootstrapVue);
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCog, faPencilAlt, faCheck, faTimes, faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
 
-library.add(faCog);
-library.add(faTimes);
 library.add(faCheck);
-library.add(faPencilAlt);
 library.add(faExclamationTriangle);
 
 export default {
