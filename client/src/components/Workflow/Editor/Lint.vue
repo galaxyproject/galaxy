@@ -7,7 +7,7 @@
             </div>
             <div v-if="showFixAll">
                 <a href="#" @click="fixAll">
-                    Attempt to fix any issue that can be automatically fixed.
+                    Try to automatically fix issues.
                 </a>
             </div>
         </template>
@@ -18,7 +18,7 @@
                     understand the purpose and usage of the workflow."
                 warning-message="This workflow is not annotated. Providing it helps workflow executors
                     understand the purpose and usage of the workflow."
-                attribute-link="Annotate your Workflow"
+                attribute-link="Annotate your Workflow."
                 @onClick="onAttributes"
             />
             <LintSection
@@ -27,7 +27,7 @@
                 warning-message="This workflow does not specify creator(s). This is important metadata for workflows
                     that will be published and/or shared to help workflow executors know how to cite the
                     workflow authors."
-                attribute-link="Provide Creator Details"
+                attribute-link="Provide Creator Details."
                 @onClick="onAttributes"
             />
             <LintSection
@@ -36,7 +36,7 @@
                 warning-message="This workflow does not specify a license. This is important metadata for workflows
                     that will be published and/or shared to help workflow executors understand how it
                     may be used."
-                attribute-link="Specify a License"
+                attribute-link="Specify a License."
                 @onClick="onAttributes"
             />
             <LintSection
