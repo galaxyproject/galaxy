@@ -46,6 +46,7 @@ import RulesInput from "./RulesInput";
 import LoadingSpan from "components/LoadingSpan";
 import { mapState } from "vuex";
 import { BModal, BTabs, BTab } from "bootstrap-vue";
+import { isBetaHistoryOpen } from "components/History/adapters/betaToggle";
 
 const UploadModal = {
     components: {
@@ -336,8 +337,7 @@ const UploadModal = {
 };
 
 // Beta history patch
-const useBetaHistory = sessionStorage.getItem("useBetaHistory");
-if (useBetaHistory) {
+if (isBetaHistoryOpen()) {
     UploadModal.computed.currentHistoryId = function () {
         return this.$store.getters["betaHistory/currentHistoryId"];
     };
