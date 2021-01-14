@@ -178,7 +178,8 @@ export default {
         fixAll() {
             const actions = [];
             if (!this.parametersOkay) {
-                for (const implicitParameter of this.implicitParametersArray) {
+                const implicitParametersArray = this.implicitParameters ? this.implicitParameters.parameters : [];
+                for (const implicitParameter of implicitParametersArray) {
                     if (implicitParameter.canExtract) {
                         actions.push({
                             action_type: "extract_implicit_parameter",
@@ -287,20 +288,18 @@ export default {
             this.forceRefresh;
             const workflowOutputs = getWorkflowOutputs(this.nodes);
             let items = [];
-            console.log(workflowOutputs);
-            for (const output of workflowOutputs) {
-                if (output.outputLabel == null) {
-                    items.push({
-                        stepId: output.stepId,
-                        stepLabel: output.stepLabel,
-                        warningLabel: output.outputName,
-                    });
-                }
+            if (workflowOutputs) {
+                workflowOutputs.forEach(output => {
+                    if (output.outputLabel == null) {
+                        items.push({
+                            stepId: output.stepId,
+                            stepLabel: output.stepLabel,
+                            warningLabel: output.outputName,
+                        });
+                    }
+                });
             }
             return items;
-        },
-        implicitParametersArray() {
-            return this.implicitParameters ? this.implicitParameters.parameters : [];
         },
         // I tried to make these purely reactive but I guess it is not surprising that the
         // entirity of the nodes object and children aren't all purely reactive.
