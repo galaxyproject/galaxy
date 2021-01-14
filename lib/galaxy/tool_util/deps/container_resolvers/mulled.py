@@ -514,7 +514,7 @@ class BuildMulledDockerContainerResolver(DockerContainerResolver):
         self.auto_init = self._get_config_option("involucro_auto_init", True)
 
     def resolve(self, enabled_container_types, tool_info, install=False, **kwds):
-        if not self.docker_cli_available or tool_info.requires_galaxy_python_environment or self.container_type not in enabled_container_types:
+        if tool_info.requires_galaxy_python_environment or self.container_type not in enabled_container_types:
             return None
 
         targets = mulled_targets(tool_info)

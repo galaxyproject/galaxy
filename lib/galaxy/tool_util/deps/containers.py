@@ -222,9 +222,15 @@ class ContainerRegistry:
                 CachedMulledSingularityContainerResolver(self.app_info, namespace="local"),
                 MulledDockerContainerResolver(self.app_info, namespace="biocontainers"),
                 MulledSingularityContainerResolver(self.app_info, namespace="biocontainers"),
-                BuildMulledDockerContainerResolver(self.app_info),
-                BuildMulledSingularityContainerResolver(self.app_info),
             ])
+            # BuildMulledDockerContainerResolver and BuildMulledSingularityContainerResolver both need the docker daemon to build images.
+            # If docker is not available, we don't load them.
+            build_mulled_docker_container_resolver = BuildMulledDockerContainerResolver(self.app_info)
+            if build_mulled_docker_container_resolver.docker_cli_available:
+                default_resolvers.extend([
+                    build_mulled_docker_container_resolver,
+                    BuildMulledSingularityContainerResolver(self.app_info),
+                ])
         return default_resolvers
 
     def __resolvers_dict(self):
