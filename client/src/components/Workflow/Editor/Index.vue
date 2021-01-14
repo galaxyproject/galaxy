@@ -141,6 +141,8 @@
                                     :license="license"
                                     :nodes="nodes"
                                     @onAttributes="onAttributes"
+                                    @onHighlight="onHighlight"
+                                    @onUnhighlight="onUnhighlight"
                                     @refactor="attemptRefactor"
                                     @scrollTo="scrollTo"
                                 />
@@ -413,9 +415,17 @@ export default {
             this._ensureParametersSet();
         },
         scrollTo(nodeId) {
-            const node = this.nodes[parseInt(nodeId)];
+            const node = this.nodes[nodeId];
             this.canvasManager.scrollToNode(node);
             node.onScrollTo();
+        },
+        onHighlight(nodeId) {
+            const node = this.nodes[nodeId];
+            node.onHighlight();
+        },
+        onUnhighlight(nodeId) {
+            const node = this.nodes[nodeId];
+            node.onUnhighlight();
         },
         onLint() {
             this._ensureParametersSet();

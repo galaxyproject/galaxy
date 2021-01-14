@@ -83,7 +83,6 @@ import { getDisconnectedInputs, getInputsMissingMetadata, getWorkflowOutputs } f
 
 Vue.use(BootstrapVue);
 
-
 export default {
     components: {
         LintSection,
@@ -127,10 +126,10 @@ export default {
             this.$emit("scrollTo", stepId);
         },
         highlight(stepId) {
-            this.nodes[parseInt(stepId)].onHighlight();
+            this.$emit("onHighlight", stepId);
         },
         unhighlight(stepId) {
-            this.nodes[parseInt(stepId)].onUnhighlight();
+            this.$emit("onUnhighlight", stepId);
         },
         fixAll() {
             const actions = [];
