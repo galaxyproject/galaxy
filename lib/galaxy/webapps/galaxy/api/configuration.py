@@ -5,16 +5,50 @@ and configuration settings.
 import json
 import logging
 import os
+from typing import Optional
 
-from galaxy.managers import configuration, users
+from fastapi import Depends
+from fastapi_utils.cbv import cbv
+from fastapi_utils.inferring_router import InferringRouter as APIRouter
+
+from galaxy.managers import configuration
+from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.users import (
+    UserManager,
+    UserModel,
+)
+from galaxy.model import User
 from galaxy.web import (
     expose_api,
     expose_api_anonymous_and_sessionless,
     require_admin
 )
 from galaxy.webapps.base.controller import BaseAPIController
+from . import (
+    get_trans,
+    get_user,
+)
+
 
 log = logging.getLogger(__name__)
+
+
+router = APIRouter(tags=['configuration'])
+
+
+def user_to_model(user):
+    return UserModel(**user.to_dict()) if user else None
+
+
+@cbv(router)
+class FastAPITours:
+
+    @router.get('/api/whoami')
+    async def whoami(
+            self, trans: ProvidesUserContext = Depends(get_trans),
+            user: User = Depends(get_user)) -> Optional[UserModel]:
+        """Return information about the current authenticated user."""
+        return user_to_model(user)
 
 
 class ConfigurationController(BaseAPIController):
@@ -23,7 +57,7 @@ class ConfigurationController(BaseAPIController):
         super().__init__(app)
         self.config_serializer = configuration.ConfigSerializer(app)
         self.admin_config_serializer = configuration.AdminConfigSerializer(app)
-        self.user_manager = users.UserManager(app)
+        self.user_manager = UserManager(app)
 
     @expose_api
     def whoami(self, trans, **kwd):
@@ -34,11 +68,8 @@ class ConfigurationController(BaseAPIController):
         :returns: dictionary with user information
         :rtype:   dict
         """
-        current_user = self.user_manager.current_user(trans)
-        rval = None
-        if current_user:  # None for master API key for instance
-            rval = current_user.to_dict()
-        return rval
+        user = self.user_manager.current_user(trans)
+        return user_to_model(user)
 
     @expose_api_anonymous_and_sessionless
     def index(self, trans, **kwd):
