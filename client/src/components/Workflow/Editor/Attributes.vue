@@ -62,6 +62,7 @@ import { Services } from "components/Workflow/services";
 import Tags from "components/Common/Tags";
 import LicenseSelector from "components/License/LicenseSelector";
 import CreatorEditor from "components/SchemaOrg/CreatorEditor";
+import { ImplicitParameters } from "./modules/parameters";
 
 Vue.use(BootstrapVue);
 
@@ -104,7 +105,7 @@ export default {
             default: null,
         },
         parameters: {
-            type: Object,
+            type: ImplicitParameters,
             default: null,
         },
     },
