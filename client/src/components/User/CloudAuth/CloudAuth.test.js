@@ -5,9 +5,6 @@ import { getLocalVue } from "jest/helpers";
 import { default as CloudAuth } from "./CloudAuth";
 import CloudAuthItem from "./CloudAuthItem";
 
-import _l from "utils/localization";
-import BootstrapVue from "bootstrap-vue";
-
 jest.mock("./model/service", () => ({
     listCredentials: async () => {
         const listCredentials = require("./testdata/listCredentials.json");
@@ -17,8 +14,6 @@ jest.mock("./model/service", () => ({
 }));
 
 const localVue = getLocalVue();
-localVue.use(BootstrapVue);
-localVue.filter("localize", (value) => _l(value));
 
 describe("CloudAuth component", () => {
     let wrapper;

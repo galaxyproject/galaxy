@@ -1,5 +1,6 @@
 import WorkflowInvocationState from "./WorkflowInvocationState";
 import { shallowMount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 import Vuex from "vuex";
 import invocationData from "../Workflow/test/json/invocation.json";
 
@@ -10,6 +11,8 @@ const invocationJobsSummaryById = {
     populated_state: "ok",
 };
 jest.mock("../History/caching");
+
+const localVue = getLocalVue();
 
 describe("WorkflowInvocationState.vue with terminal invocation", () => {
     let wrapper;
@@ -25,6 +28,7 @@ describe("WorkflowInvocationState.vue with terminal invocation", () => {
                 invocation: () => invocationData,
                 getInvocationJobsSummaryById: () => () => invocationJobsSummaryById,
             },
+            localVue,
         });
     });
 
@@ -67,6 +71,7 @@ describe("WorkflowInvocationState.vue with no invocation", () => {
                 invocation: () => null,
                 getInvocationJobsSummaryById: () => () => invocationJobsSummaryById,
             },
+            localVue,
         });
     });
 

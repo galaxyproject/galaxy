@@ -1,4 +1,5 @@
 import { mount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 import Index from "./Index";
 
 jest.mock("app");
@@ -9,6 +10,8 @@ getAppRoot.mockImplementation(() => "/");
 
 import { Services } from "../services";
 jest.mock("../services");
+
+const localVue = getLocalVue();
 
 Services.mockImplementation(() => {
     return {
@@ -42,6 +45,7 @@ describe("InstalledList", () => {
             stubs: {
                 RepositoryDetails: true,
             },
+            localVue,
         });
         expect(wrapper.find(".loading-message").text()).toBe("Loading installed repositories...");
         await wrapper.vm.$nextTick();

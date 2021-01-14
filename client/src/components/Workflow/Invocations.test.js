@@ -1,9 +1,12 @@
 import Invocations from "../Workflow/Invocations";
 import { mount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 import invocationData from "./test/json/invocation.json";
 import moment from "moment";
 
 jest.mock("../History/caching");
+
+const localVue = getLocalVue();
 
 describe("Invocations.vue without invocation", () => {
     let wrapper;
@@ -16,6 +19,7 @@ describe("Invocations.vue without invocation", () => {
         };
         wrapper = mount(Invocations, {
             propsData,
+            localVue,
         });
     });
 
@@ -62,6 +66,7 @@ describe("Invocations.vue with invocation", () => {
                     template: "<span/>",
                 },
             },
+            localVue,
         });
     });
 

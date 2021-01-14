@@ -1,11 +1,12 @@
 jest.mock("./modules/services");
 
-import { shallowMount, createLocalVue } from "@vue/test-utils";
+import { shallowMount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 import RefactorConfirmationModal from "./RefactorConfirmationModal";
 import { refactor } from "./modules/services";
 import flushPromises from "flush-promises";
 
-const localVue = createLocalVue();
+const localVue = getLocalVue();
 const TEST_WORKFLOW_ID = "test123";
 const TEST_ACTION_TYPE = "upgrade_subworkflow";
 
