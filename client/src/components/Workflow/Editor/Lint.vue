@@ -83,17 +83,9 @@ import { getDisconnectedInputs, getInputsMissingMetadata, getWorkflowOutputs } f
 
 Vue.use(BootstrapVue);
 
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCheck, faExclamationTriangle, faPencilAlt } from "@fortawesome/free-solid-svg-icons";
-
-library.add(faPencilAlt);
-library.add(faCheck);
-library.add(faExclamationTriangle);
 
 export default {
     components: {
-        FontAwesomeIcon,
         LintSection,
     },
     props: {
@@ -102,14 +94,15 @@ export default {
         },
         nodes: {
             type: Object,
+            required: true,
         },
         annotation: {
             type: String,
-            default: "",
+            default: null,
         },
         license: {
             type: String,
-            default: "",
+            default: null,
         },
         creator: {
             default: null,
