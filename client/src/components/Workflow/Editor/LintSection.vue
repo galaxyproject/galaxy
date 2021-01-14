@@ -9,14 +9,14 @@
             <span>{{ warningMessage }}</span>
             <ul class="mt-2">
                 <li
-                    v-for="(input, idx) in warningItems"
+                    v-for="(item, idx) in warningItems"
                     :key="idx"
-                    @mouseover="onMouseOver(input.stepId)"
-                    @mouseleave="onMouseLeave(input.stepId)"
+                    @mouseover="onMouseOver(item.stepId)"
+                    @mouseleave="onMouseLeave(item.stepId)"
                     class="ml-2"
                 >
-                    <a href="#" @click="onClick(input.stepId)" class="scrolls">
-                        <i :class="input.stepIconClass" />{{ input.stepLabel }}: {{ input.inputLabel }}
+                    <a href="#" @click="onClick(item.stepId)" class="scrolls">
+                        <i :class="item.stepIconClass" />{{ item.stepLabel }}: {{ item.warningLabel }}
                     </a>
                 </li>
             </ul>

@@ -239,7 +239,7 @@ export default {
                     items.push({
                         stepId: parameter.references[0].nodeId,
                         stepLabel: parameter.references[0].toolInput.label,
-                        inputLabel: parameter.name,
+                        warningLabel: parameter.name,
                     });
                 });
             }
@@ -254,7 +254,7 @@ export default {
                     items.push({
                         stepId: input.stepId,
                         stepLabel: input.stepLabel,
-                        inputLabel: input.inputLabel,
+                        warningLabel: input.inputLabel,
                     });
                 });
             }
@@ -277,7 +277,7 @@ export default {
                     items.push({
                         stepId: input.stepId,
                         stepLabel: input.stepLabel,
-                        inputLabel: missingLabel,
+                        warningLabel: missingLabel,
                     });
                 });
             }
@@ -293,7 +293,7 @@ export default {
                     items.push({
                         stepId: output.stepId,
                         stepLabel: output.stepLabel,
-                        inputLabel: output.outputName,
+                        warningLabel: output.outputName,
                     });
                 }
             }
