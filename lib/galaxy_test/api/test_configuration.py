@@ -2,7 +2,7 @@ from galaxy_test.base.api_asserts import (
     assert_has_keys,
     assert_not_has_keys,
 )
-from galaxy_test.base.api_util import DEFAULT_TEST_USER
+from galaxy_test.base.api_util import TEST_USER
 from ._framework import ApiTestCase
 
 TEST_KEYS_FOR_ALL_USERS = [
@@ -27,7 +27,7 @@ class ConfigurationApiTestCase(ApiTestCase):
     def test_whoami(self):
         response = self._get("whoami")
         self._assert_status_code_is(response, 200)
-        assert response.json()['email'] == DEFAULT_TEST_USER
+        assert response.json()['email'] == TEST_USER
 
     def test_normal_user_configuration(self):
         config = self._get_configuration()

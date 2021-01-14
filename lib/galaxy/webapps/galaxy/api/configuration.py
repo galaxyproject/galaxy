@@ -44,7 +44,7 @@ def user_to_model(user):
 class FastAPIConfiguration:
 
     @router.get('/api/whoami')
-    async def whoami(
+    def whoami(
             self, trans: ProvidesUserContext = Depends(get_trans),
             user: User = Depends(get_user)) -> Optional[UserModel]:
         """Return information about the current authenticated user."""
