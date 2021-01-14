@@ -38,17 +38,17 @@ class FastAPITours:
     registry: ToursRegistry = Depends(get_tours_registry)
 
     @router.get('/api/tours')
-    def index(self) -> TourList:
+    async def index(self) -> TourList:
         """Return list of available tours."""
         return self.registry.get_tours()
 
     @router.get('/api/tours/{tour_id}')
-    def show(self, tour_id: str) -> TourDetails:
+    async def show(self, tour_id: str) -> TourDetails:
         """Return a tour definition."""
         return self.registry.tour_contents(tour_id)
 
     @router.post('/api/tours/{tour_id}', dependencies=[Depends(get_admin_user)])
-    def update_tour(self, tour_id: str) -> TourDetails:
+    async def update_tour(self, tour_id: str) -> TourDetails:
         """Return a tour definition."""
         return self.registry.load_tour(tour_id)
 
