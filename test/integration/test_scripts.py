@@ -138,10 +138,6 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
     def test_admin_cleanup_datasets(self):
         self._scripts_check_argparse_help("cleanup_datasets/admin_cleanup_datasets.py")
 
-    @skip_unless_module("flask_socketio")
-    def test_communication_server(self):
-        self._scripts_check_argparse_help("communication/communication_server.py")
-
     def test_secret_decoder_ring(self):
         script = "secret_decoder_ring.py"
         self._scripts_check_argparse_help(script)

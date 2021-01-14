@@ -5,6 +5,7 @@ Mixins for Taggable model managers and serializers.
 # from galaxy import exceptions as galaxy_exceptions
 
 import logging
+from typing import Type
 
 from sqlalchemy import sql
 
@@ -45,8 +46,7 @@ def _tags_from_strings(item, tag_handler, new_tags_list, user=None):
 
 
 class TaggableManagerMixin:
-    #: class of TagAssociation (e.g. HistoryTagAssociation)
-    tag_assoc = None
+    tag_assoc: Type[model.ItemTagAssociation]
 
     # TODO: most of this can be done by delegating to the GalaxyTagHandler?
     def get_tags(self, item):

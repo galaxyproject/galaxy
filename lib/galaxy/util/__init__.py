@@ -40,7 +40,7 @@ try:
     import grp
 except ImportError:
     # For Pulsar on Windows (which does not use the function that uses grp)
-    grp = None
+    grp = None  # type: ignore
 from boltons.iterutils import (
     default_enter,
     remap,
@@ -50,7 +50,7 @@ try:
     from lxml import etree
 except ImportError:
     LXML_AVAILABLE = False
-    import xml.etree.ElementTree as etree
+    import xml.etree.ElementTree as etree  # type: ignore
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
@@ -958,7 +958,7 @@ def string_as_bool_or_none(string):
     string = str(string).lower()
     if string in ('true', 'yes', 'on'):
         return True
-    elif string == 'none':
+    elif string in ['none', 'null']:
         return None
     else:
         return False
@@ -1170,17 +1170,14 @@ def compare_urls(url1, url2, compare_scheme=True, compare_hostname=True, compare
 
 def read_dbnames(filename):
     """ Read build names from file """
-    class DBNames(list):
-        default_value = "?"
-        default_name = "unspecified (?)"
-    db_names = DBNames()
+    db_names = []
     try:
         ucsc_builds = {}
         man_builds = []  # assume these are integers
         name_to_db_base = {}
         if filename is None:
             # Should only be happening with the galaxy.tools.parameters.basic:GenomeBuildParameter docstring unit test
-            filename = os.path.join('tool-data', 'shared', 'ucsc', 'builds.txt.sample')
+            filename = os.path.join(galaxy_directory(), 'tool-data', 'shared', 'ucsc', 'builds.txt.sample')
         for line in open(filename):
             try:
                 if line[0:1] == "#":
@@ -1213,16 +1210,14 @@ def read_dbnames(filename):
             ucsc_builds[db_base].sort()
             ucsc_builds[db_base].reverse()
             ucsc_builds[db_base] = [(build, name) for _, build, name in ucsc_builds[db_base]]
-            db_names = DBNames(db_names + ucsc_builds[db_base])
+            db_names = list(db_names + ucsc_builds[db_base])
         if len(db_names) > 1 and len(man_builds) > 0:
             db_names.append((db_names.default_value, '----- Additional Species Are Below -----'))
         man_builds.sort()
         man_builds = [(build, name) for name, build in man_builds]
-        db_names = DBNames(db_names + man_builds)
+        db_names = list(db_names + man_builds)
     except Exception as e:
         log.error("ERROR: Unable to read builds file: %s", unicodify(e))
-    if len(db_names) < 1:
-        db_names = DBNames([(db_names.default_value, db_names.default_name)])
     return db_names
 
 
@@ -1556,8 +1551,8 @@ def safe_str_cmp(a, b):
     return rv == 0
 
 
-galaxy_root_path = os.path.join(__path__[0], os.pardir, os.pardir, os.pardir)
-galaxy_samples_path = os.path.join(__path__[0], os.pardir, 'config', 'sample')
+galaxy_root_path = os.path.join(__path__[0], os.pardir, os.pardir, os.pardir)  # type: ignore
+galaxy_samples_path = os.path.join(__path__[0], os.pardir, 'config', 'sample')  # type: ignore
 
 
 def galaxy_directory():

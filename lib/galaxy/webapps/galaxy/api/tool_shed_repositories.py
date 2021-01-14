@@ -113,25 +113,40 @@ class ToolShedRepositoriesController(BaseAPIController):
         :param name (required): the name of the Repository
         :param owner (required): the owner of the Repository
         :param changeset_revision (required): the changeset_revision of the RepositoryMetadata object associated with the Repository
-        :param new_tool_panel_section_label (optional): label of a new section to be added to the Galaxy tool panel in which to load
-                                                        tools contained in the Repository.  Either this parameter must be an empty string or
-                                                        the tool_panel_section_id parameter must be an empty string or both must be an empty
-                                                        string (both cannot be used simultaneously).
-        :param tool_panel_section_id (optional): id of the Galaxy tool panel section in which to load tools contained in the Repository.
-                                                 If this parameter is an empty string and the above new_tool_panel_section_label parameter is an
-                                                 empty string, tools will be loaded outside of any sections in the tool panel.  Either this
-                                                 parameter must be an empty string or the tool_panel_section_id parameter must be an empty string
-                                                 of both must be an empty string (both cannot be used simultaneously).
-        :param install_repository_dependencies (optional): Set to True if you want to install repository dependencies defined for the specified
-                                                           repository being installed.  The default setting is False.
-        :param install_tool_dependencies (optional): Set to True if you want to install tool dependencies defined for the specified repository being
-                                                     installed.  The default setting is False.
-        :param shed_tool_conf (optional): The shed-related tool panel configuration file configured in the "tool_config_file" setting in the Galaxy config file
-                                          (e.g., galaxy.ini).  At least one shed-related tool panel config file is required to be configured. Setting
-                                          this parameter to a specific file enables you to choose where the specified repository will be installed because
-                                          the tool_path attribute of the <toolbox> from the specified file is used as the installation location
-                                          (e.g., <toolbox tool_path="database/shed_tools">).  If this parameter is not set, a shed-related tool panel
-                                          configuration file will be selected automatically.
+        :param new_tool_panel_section_label (optional):
+
+            label of a new section to be added to the Galaxy tool panel in which to load
+            tools contained in the Repository.  Either this parameter must be an empty string or
+            the tool_panel_section_id parameter must be an empty string or both must be an empty
+            string (both cannot be used simultaneously).
+
+        :param tool_panel_section_id (optional):
+
+            id of the Galaxy tool panel section in which to load tools contained in the Repository.
+            If this parameter is an empty string and the above new_tool_panel_section_label parameter is an
+            empty string, tools will be loaded outside of any sections in the tool panel.  Either this
+            parameter must be an empty string or the tool_panel_section_id parameter must be an empty string
+            of both must be an empty string (both cannot be used simultaneously).
+
+        :param install_repository_dependencies (optional):
+
+            Set to True if you want to install repository dependencies defined for the specified
+            repository being installed.  The default setting is False.
+
+        :param install_tool_dependencies (optional):
+
+            Set to True if you want to install tool dependencies defined for the specified repository being
+            installed.  The default setting is False.
+
+        :param shed_tool_conf (optional):
+
+            The shed-related tool panel configuration file configured in the "tool_config_file" setting in the Galaxy config file
+            (e.g., galaxy.ini).  At least one shed-related tool panel config file is required to be configured. Setting
+            this parameter to a specific file enables you to choose where the specified repository will be installed because
+            the tool_path attribute of the <toolbox> from the specified file is used as the installation location
+            (e.g., <toolbox tool_path="database/shed_tools">).  If this parameter is not set, a shed-related tool panel
+            configuration file will be selected automatically.
+
         """
         # Get the information about the repository to be installed from the payload.
         tool_shed_url, name, owner, changeset_revision = self.__parse_repository_from_payload(payload, include_changeset=True)
@@ -172,23 +187,38 @@ class ToolShedRepositoriesController(BaseAPIController):
         :param names: the names of the Repositories to be installed
         :param owners: the owners of the Repositories to be installed
         :param changeset_revisions: the changeset_revisions of each RepositoryMetadata object associated with each Repository to be installed
-        :param new_tool_panel_section_label: optional label of a new section to be added to the Galaxy tool panel in which to load
-                                             tools contained in the Repository.  Either this parameter must be an empty string or
-                                             the tool_panel_section_id parameter must be an empty string, as both cannot be used.
-        :param tool_panel_section_id: optional id of the Galaxy tool panel section in which to load tools contained in the Repository.
-                                      If not set, tools will be loaded outside of any sections in the tool panel.  Either this
-                                      parameter must be an empty string or the tool_panel_section_id parameter must be an empty string,
-                                      as both cannot be used.
-        :param install_repository_dependencies (optional): Set to True if you want to install repository dependencies defined for the specified
-                                                           repository being installed.  The default setting is False.
-        :param install_tool_dependencies (optional): Set to True if you want to install tool dependencies defined for the specified repository being
-                                                     installed.  The default setting is False.
-        :param shed_tool_conf (optional): The shed-related tool panel configuration file configured in the "tool_config_file" setting in the Galaxy config file
-                                          (e.g., galaxy.ini).  At least one shed-related tool panel config file is required to be configured. Setting
-                                          this parameter to a specific file enables you to choose where the specified repository will be installed because
-                                          the tool_path attribute of the <toolbox> from the specified file is used as the installation location
-                                          (e.g., <toolbox tool_path="database/shed_tools">).  If this parameter is not set, a shed-related tool panel
-                                          configuration file will be selected automatically.
+        :param new_tool_panel_section_label:
+
+            optional label of a new section to be added to the Galaxy tool panel in which to load
+            tools contained in the Repository.  Either this parameter must be an empty string or
+            the tool_panel_section_id parameter must be an empty string, as both cannot be used.
+
+        :param tool_panel_section_id:
+
+            optional id of the Galaxy tool panel section in which to load tools contained in the Repository.
+            If not set, tools will be loaded outside of any sections in the tool panel.  Either this
+            parameter must be an empty string or the tool_panel_section_id parameter must be an empty string,
+            as both cannot be used.
+
+        :param install_repository_dependencies (optional):
+
+            Set to True if you want to install repository dependencies defined for the specified
+            repository being installed.  The default setting is False.
+
+        :param install_tool_dependencies (optional):
+
+            Set to True if you want to install tool dependencies defined for the specified repository being
+            installed.  The default setting is False.
+
+        :param shed_tool_conf (optional):
+
+            The shed-related tool panel configuration file configured in the "tool_config_file" setting in the Galaxy config file
+            (e.g., galaxy.ini).  At least one shed-related tool panel config file is required to be configured. Setting
+            this parameter to a specific file enables you to choose where the specified repository will be installed because
+            the tool_path attribute of the <toolbox> from the specified file is used as the installation location
+            (e.g., <toolbox tool_path="database/shed_tools">).  If this parameter is not set, a shed-related tool panel
+            configuration file will be selected automatically.
+
         """
         self.__ensure_can_install_repos(trans)
         # Get the information about all of the repositories to be installed.
@@ -242,12 +272,14 @@ class ToolShedRepositoriesController(BaseAPIController):
         DELETE /api/tool_shed_repositories/
 
         :param id:  encoded repository id. Either id or name, owner, changeset_revision and tool_shed_url need to be supplied
-        :param kwd: 'remove_from_disk'  : Remove repository from disk or deactivate repository.
-                                          Defaults to `True` (= remove repository from disk).
-                    'name'   : Repository name
-                    'owner'  : Repository owner
-                    'changeset_revision': Changeset revision to uninstall
-                    'tool_shed_url'     : Tool Shed URL
+        :param kwd:
+
+            'remove_from_disk': Remove repository from disk or deactivate repository. Defaults to `True` (= remove repository from disk).
+            'name': Repository name
+            'owner': Repository owner
+            'changeset_revision': Changeset revision to uninstall
+            'tool_shed_url': Tool Shed URL
+
         """
         remove_from_disk = util.asbool(kwd.get('remove_from_disk', True))
         if id:
@@ -387,7 +419,32 @@ class ToolShedRepositoriesController(BaseAPIController):
     def show(self, trans, id, **kwd):
         """
         GET /api/tool_shed_repositories/{encoded_tool_shed_repsository_id}
+
         Display a dictionary containing information about a specified tool_shed_repository.
+
+        .. code-block::
+
+            {
+                id: (string) Galaxy ID
+                status: (string) Installation status
+                name: (string) Repository name
+                deleted: (bool) Repository deleted
+                ctx_rev: (int) Changeset revision number (0, 1, 2...)
+                error_message: (string) Installation error message
+                installed_changeset_revision: (string) Initially installed changeset revision. Used to construct path to repository within Galaxies filesystem. Does not change if a repository is updated.
+                tool_shed: (string) Repository toolshed hostname
+                dist_to_shed: (bool)
+                url: (string) API url of repository
+                uninstalled: (bool) Tool has been uninstalled
+                owner: (string) Repository owner within toolshed
+                changeset_revision: (string) Changeset revision of repository
+                include_datatypes: (bool) Repository includes installed datatypes
+                tool_shed_status: (dict) See https://github.com/galaxyproject/galaxy/issues/10453
+                    latest_installable_revision: (string) Most recent version available on toolshed
+                    revision_update: (string)
+                    revision_upgrade: (string)
+                    repository_deprecated: (string) Repository has been depreciated
+            }
 
         :param id: the encoded id of the ToolShedRepository object
         """

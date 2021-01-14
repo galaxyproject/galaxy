@@ -43,9 +43,9 @@ class ConfigSerializer(base.ModelSerializer):
             'is_admin_user'                     : lambda *a, **c: False,
             'brand'                             : _use_config,
             'display_galaxy_brand'              : _use_config,
-            # TODO: this doesn't seem right
             'logo_url'                          : lambda config, key, **context: self.url_for(config.get(key, '/')),
-            'logo_src'                          : lambda config, key, **context: self.url_for('/static/favicon.png'),
+            'logo_src'                          : lambda config, key, **context: self.url_for(config.get(key, '/static/favicon.png')),
+            'logo_src_secondary'                : lambda config, key, **context: self.url_for(config.get(key)) if config.get(key) else None,
             'terms_url'                         : _use_config,
             'myexperiment_target_url'           : _use_config,
             'wiki_url'                          : _use_config,
@@ -54,14 +54,11 @@ class ConfigSerializer(base.ModelSerializer):
             'screencasts_url'                   : _use_config,
             'citation_url'                      : _use_config,
             'support_url'                       : _use_config,
+            'quota_url'                         : _use_config,
             'helpsite_url'                      : _use_config,
             'lims_doc_url'                      : _defaults_to("https://usegalaxy.org/u/rkchak/p/sts"),
             'default_locale'                    : _use_config,
             'enable_openid'                     : _use_config,
-            'enable_communication_server'       : _use_config,
-            'communication_server_port'         : _use_config,
-            'communication_server_host'         : _use_config,
-            'persistent_communication_rooms'    : _use_config,
             'enable_tool_recommendations'       : _use_config,
             'tool_recommendation_model_path'    : _use_config,
             'admin_tool_recommendations_path'   : _use_config,
@@ -90,6 +87,7 @@ class ConfigSerializer(base.ModelSerializer):
             'chunk_upload_size'                 : _use_config,
             'ftp_upload_site'                   : _use_config,
             'version_major'                     : _defaults_to(None),
+            'version_minor'                     : _defaults_to(None),
             'require_login'                     : _use_config,
             'inactivity_box_content'            : _use_config,
             'visualizations_visible'            : _use_config,
@@ -100,7 +98,7 @@ class ConfigSerializer(base.ModelSerializer):
             'message_box_class'                 : _use_config,
             'server_startttime'                 : lambda config, key, **context: server_starttime,
             'mailing_join_addr'                 : _defaults_to('galaxy-announce-join@bx.psu.edu'),  # should this be the schema default?
-            'server_mail_configured'            : lambda config, key, **context: bool(getattr(config, 'smtp_server')),
+            'server_mail_configured'            : lambda config, key, **context: bool(config.smtp_server),
             'registration_warning_message'      : _use_config,
             'welcome_url'                       : _use_config,
             'show_welcome_with_login'           : _defaults_to(True),  # schema default is False
@@ -109,6 +107,7 @@ class ConfigSerializer(base.ModelSerializer):
             'select_type_workflow_threshold'    : _use_config,
             'file_sources_configured'           : lambda config, key, **context: self.app.file_sources.custom_sources_configured,
             'upload_from_form_button'           : _use_config,
+            'release_doc_base_url'              : _use_config,
         }
 
 

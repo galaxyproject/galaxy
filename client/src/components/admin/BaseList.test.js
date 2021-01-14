@@ -1,6 +1,5 @@
 import { mount } from "@vue/test-utils";
 import BaseList from "./BaseList";
-import Vue from "vue";
 
 describe("Categories", () => {
     const getter = async () => {
@@ -32,7 +31,7 @@ describe("Categories", () => {
                 setter: setter,
             },
         });
-        await Vue.nextTick();
+        await wrapper.vm.$nextTick();
         expect(wrapper.find(".card-header").text()).toContain("There are 2");
         const th = wrapper.findAll("th");
         expect(th.length).toBe(3);

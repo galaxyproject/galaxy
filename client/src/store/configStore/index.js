@@ -1,29 +1,41 @@
 import { getConfig } from "./queries";
 
-const defaultConfigs = {};
-
 const state = {
-    config: Object.assign({}, defaultConfigs),
+    // null if not loaded yet
+    config: null,
+};
+
+const getters = {
+    config({ state }) {
+        return state?.config || {};
+    },
+    configIsLoaded({ state }) {
+        return state?.config !== null;
+    },
 };
 
 const mutations = {
     setConfigs(state, newConfigs = {}) {
-        state.config = Object.assign({}, defaultConfigs, state.config, newConfigs);
+        state.config = Object.assign({}, state.config || {}, newConfigs);
     },
 };
 
 const actions = {
-    async loadConfigs({ commit }) {
-        const configs = await getConfig();
-        commit("setConfigs", configs);
+    setConfigs({ commit }, newConfigs = {}) {
+        commit("setConfigs", newConfigs);
     },
-    async $init({ dispatch }) {
-        await dispatch("loadConfigs");
+    async loadConfigs({ state, commit }) {
+        // only load once
+        if (state.config == null) {
+            const configs = await getConfig();
+            commit("setConfigs", configs);
+        }
     },
 };
 
 export const configStore = {
     namespaced: true,
+    getters,
     state,
     mutations,
     actions,

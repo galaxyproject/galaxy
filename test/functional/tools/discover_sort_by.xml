@@ -1,4 +1,4 @@
-<tool id="discover_sort_by" name="discover_sort_by" version="0.1.0">
+<tool id="discover_sort_by" name="discover_sort_by" version="0.1.0" profile="20.09">
     <command><![CDATA[
 for i in \$(seq 1 10);
 do

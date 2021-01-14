@@ -136,15 +136,6 @@
             <value>0.05</value>
         </input>
         <input>
-            <name>scale</name>
-            <label>Scale</label>
-            <help>Select a number that scales the value defined by the *radius* parameter.</help>
-            <type>float</type>
-            <min>0.001</min>
-            <max>10.0</max>
-            <value>0.7</value>
-        </input>
-        <input>
             <name>colorscheme</name>
             <label>Color Scheme</label>
             <help>Select color scheme of the molecule scene.</help>

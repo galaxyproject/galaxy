@@ -1,7 +1,6 @@
 """
 """
 import datetime
-import hashlib
 import inspect
 import logging
 import os
@@ -10,7 +9,6 @@ import socket
 import string
 import time
 from http.cookies import CookieError
-from importlib import import_module
 from urllib.parse import urlparse
 
 import mako.lookup
@@ -19,17 +17,20 @@ from babel import Locale
 from babel.support import Translations
 from Cheetah.Template import Template
 from sqlalchemy import and_, true
-from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.exc import NoResultFound
 
 from galaxy import util
-from galaxy.exceptions import ConfigurationError, MessageException
+from galaxy.exceptions import (
+    AuthenticationFailed,
+    ConfigurationError,
+    MessageException,
+)
 from galaxy.managers import context
+from galaxy.managers.session import GalaxySessionManager
+from galaxy.managers.users import UserManager
 from galaxy.util import (
     asbool,
     safe_makedirs,
-    safe_str_cmp,
-    smart_str,
     unicodify
 )
 from galaxy.util.sanitize_html import sanitize_html
@@ -68,8 +69,9 @@ class WebApplication(base.WebApplication):
     Base WSGI application instantiated for all Galaxy webapps.
 
     A web application that:
+
         * adds API and UI controllers by scanning given directories and
-        importing all modules found there.
+          importing all modules found there.
         * has a security object.
         * builds mako template lookups.
         * generates GalaxyWebTransactions.
@@ -121,24 +123,13 @@ class WebApplication(base.WebApplication):
         them to the webapp.
         """
         from galaxy.webapps.base.controller import BaseUIController
-        from galaxy.webapps.base.controller import ControllerUnavailable
-        package = import_module(package_name)
-        controller_dir = package.__path__[0]
-        for fname in os.listdir(controller_dir):
-            if not(fname.startswith("_")) and fname.endswith(".py"):
-                name = fname[:-3]
-                module_name = package_name + "." + name
-                try:
-                    module = import_module(module_name)
-                except ControllerUnavailable as exc:
-                    log.debug("%s could not be loaded: %s", module_name, unicodify(exc))
-                    continue
-                # Look for a controller inside the modules
-                for key in dir(module):
-                    T = getattr(module, key)
-                    if inspect.isclass(T) and T is not BaseUIController and issubclass(T, BaseUIController):
-                        controller = self._instantiate_controller(T, app)
-                        self.add_ui_controller(name, controller)
+        for name, module in base.walk_controller_modules(package_name):
+            # Look for a controller inside the modules
+            for key in dir(module):
+                T = getattr(module, key)
+                if inspect.isclass(T) and T is not BaseUIController and issubclass(T, BaseUIController):
+                    controller = self._instantiate_controller(T, app)
+                    self.add_ui_controller(name, controller)
 
     def add_api_controllers(self, package_name, app):
         """
@@ -146,26 +137,15 @@ class WebApplication(base.WebApplication):
         them to the webapp.
         """
         from galaxy.webapps.base.controller import BaseAPIController
-        from galaxy.webapps.base.controller import ControllerUnavailable
-        package = import_module(package_name)
-        controller_dir = package.__path__[0]
-        for fname in os.listdir(controller_dir):
-            if not(fname.startswith("_")) and fname.endswith(".py"):
-                name = fname[:-3]
-                module_name = package_name + "." + name
-                try:
-                    module = import_module(module_name)
-                except ControllerUnavailable as exc:
-                    log.debug("%s could not be loaded: %s", module_name, unicodify(exc))
-                    continue
-                for key in dir(module):
-                    T = getattr(module, key)
-                    # Exclude classes such as BaseAPIController and BaseTagItemsController
-                    if inspect.isclass(T) and not key.startswith("Base") and issubclass(T, BaseAPIController):
-                        # By default use module_name, but allow controller to override name
-                        controller_name = getattr(T, "controller_name", name)
-                        controller = self._instantiate_controller(T, app)
-                        self.add_api_controller(controller_name, controller)
+        for name, module in base.walk_controller_modules(package_name):
+            for key in dir(module):
+                T = getattr(module, key)
+                # Exclude classes such as BaseAPIController and BaseTagItemsController
+                if inspect.isclass(T) and not key.startswith("Base") and issubclass(T, BaseAPIController):
+                    # By default use module_name, but allow controller to override name
+                    controller_name = getattr(T, "controller_name", name)
+                    controller = self._instantiate_controller(T, app)
+                    self.add_api_controller(controller_name, controller)
 
     def _instantiate_controller(self, T, app):
         """ Extension point, allow apps to construct controllers differently,
@@ -174,17 +154,17 @@ class WebApplication(base.WebApplication):
         return T(app)
 
 
-class GalaxyWebTransaction(base.DefaultWebTransaction,
-                           context.ProvidesAppContext, context.ProvidesUserContext, context.ProvidesHistoryContext):
+class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryContext):
     """
     Encapsulates web transaction specific state for the Galaxy application
     (specifically the user's "cookie" session and history)
     """
 
     def __init__(self, environ, app, webapp, session_cookie=None):
-        self.app = app
+        self._app = app
         self.webapp = webapp
-        self.security = webapp.security
+        self.user_manager = UserManager(app)
+        self.session_manager = GalaxySessionManager(app.model)
         base.DefaultWebTransaction.__init__(self, environ)
         self.setup_i18n()
         self.expunge_all()
@@ -197,8 +177,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         # that the current history should not be used for parameter values
         # and such).
         self.workflow_building_mode = False
-        # Flag indicating whether this is an API call and the API key user is an administrator
-        self.api_inherit_admin = False
         self.__user = None
         self.galaxy_session = None
         self.error_message = None
@@ -261,6 +239,10 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
                     self.sa_session.add(self.galaxy_session)
                     self.sa_session.flush()
 
+    @property
+    def app(self):
+        return self._app
+
     def setup_i18n(self):
         locales = []
         if 'HTTP_ACCEPT_LANGUAGE' in self.environ:
@@ -284,7 +266,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
                 if key.startswith(acr):
                     self.set_cors_allow(name=key[len(acr):], value=value)
         else:
-            resp_name = 'Access-Control-Allow-{}'.format(name)
+            resp_name = f'Access-Control-Allow-{name}'
             if value is None:
                 value = self.request.headers.get(acr + name, None)
             if value:
@@ -355,9 +337,10 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
     def set_user(self, user):
         """Set the current user."""
         if self.galaxy_session:
-            self.galaxy_session.user = user
-            self.sa_session.add(self.galaxy_session)
-            self.sa_session.flush()
+            if user.bootstrap_admin_user:
+                self.galaxy_session.user = user
+                self.sa_session.add(self.galaxy_session)
+                self.sa_session.flush()
         self.__user = user
 
     user = property(get_user, set_user)
@@ -400,23 +383,13 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         api_key = self.request.params.get('key', None) or self.request.headers.get('x-api-key', None)
         secure_id = self.get_cookie(name=session_cookie)
         api_key_supplied = self.environ.get('is_api_request', False) and api_key
-        if api_key_supplied and self._check_master_api_key(api_key):
-            self.api_inherit_admin = True
-            log.info("Session authenticated using Galaxy master api key")
-            self.user = None
-            self.galaxy_session = None
-        elif api_key_supplied:
+        if api_key_supplied:
             # Sessionless API transaction, we just need to associate a user.
             try:
-                provided_key = self.sa_session.query(self.app.model.APIKeys).filter(self.app.model.APIKeys.table.c.key == api_key).one()
-            except NoResultFound:
-                return 'Provided API key is not valid.'
-            if provided_key.user.deleted:
-                return 'User account is deactivated, please contact an administrator.'
-            newest_key = provided_key.user.api_keys[0]
-            if newest_key.key != provided_key.key:
-                return 'Provided API key has expired.'
-            self.set_user(provided_key.user)
+                user = self.user_manager.by_api_key(api_key)
+            except AuthenticationFailed as e:
+                return str(e)
+            self.set_user(user)
         elif secure_id:
             # API authentication via active session
             # Associate user using existing session
@@ -432,22 +405,10 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             self.user = None
             self.galaxy_session = None
 
-    def _check_master_api_key(self, api_key):
-        master_api_key = getattr(self.app.config, 'master_api_key', None)
-        if not master_api_key:
-            return False
-        # Hash keys to make them the same size, so we can do safe comparison.
-        master_hash = hashlib.sha256(smart_str(master_api_key)).hexdigest()
-        provided_hash = hashlib.sha256(smart_str(api_key)).hexdigest()
-        return safe_str_cmp(master_hash, provided_hash)
-
     def _ensure_valid_session(self, session_cookie, create=True):
         """
         Ensure that a valid Galaxy session exists and is available as
         trans.session (part of initialization)
-
-        Support for universe_session and universe_user cookies has been
-        removed as of 31 Oct 2008.
         """
         # Try to load an existing session
         secure_id = self.get_cookie(name=session_cookie)
@@ -463,10 +424,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             try:
                 session_key = self.security.decode_guid(secure_id)
                 if session_key:
-                    # Retrieve the galaxy_session id via the unique session_key
-                    galaxy_session = self.sa_session.query(self.app.model.GalaxySession) \
-                                                    .filter(and_(self.app.model.GalaxySession.table.c.session_key == session_key,
-                                                                 self.app.model.GalaxySession.table.c.is_valid == true())).options(joinedload("user")).first()
+                    galaxy_session = self.session_manager.get_session_from_session_key(session_key=session_key)
             except Exception:
                 # We'll end up creating a new galaxy_session
                 session_key = None
@@ -784,8 +742,10 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
     def get_history(self, create=False, most_recent=False):
         """
         Load the current history.
+
             - If that isn't available, we find the most recently updated history.
             - If *that* isn't available, we get or create the default history.
+
         Transactions will not always have an active history (API requests), so
         None is a valid response.
         """
@@ -902,7 +862,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         """
         return self.template_context['message']
 
-    def show_message(self, message, type='info', refresh_frames=[], cont=None, use_panels=False, active_view=""):
+    def show_message(self, message, type='info', refresh_frames=None, cont=None, use_panels=False, active_view=""):
         """
         Convenience method for displaying a simple page with a single message.
 
@@ -912,24 +872,28 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         `refresh_frames`: names of frames in the interface that should be
                           refreshed when the message is displayed
         """
+        refresh_frames = refresh_frames or []
         return self.fill_template("message.mako", status=type, message=message, refresh_frames=refresh_frames, cont=cont, use_panels=use_panels, active_view=active_view)
 
-    def show_error_message(self, message, refresh_frames=[], use_panels=False, active_view=""):
+    def show_error_message(self, message, refresh_frames=None, use_panels=False, active_view=""):
         """
         Convenience method for displaying an error message. See `show_message`.
         """
+        refresh_frames = refresh_frames or []
         return self.show_message(message, 'error', refresh_frames, use_panels=use_panels, active_view=active_view)
 
-    def show_ok_message(self, message, refresh_frames=[], use_panels=False, active_view=""):
+    def show_ok_message(self, message, refresh_frames=None, use_panels=False, active_view=""):
         """
         Convenience method for displaying an ok message. See `show_message`.
         """
+        refresh_frames = refresh_frames or []
         return self.show_message(message, 'done', refresh_frames, use_panels=use_panels, active_view=active_view)
 
-    def show_warn_message(self, message, refresh_frames=[], use_panels=False, active_view=""):
+    def show_warn_message(self, message, refresh_frames=None, use_panels=False, active_view=""):
         """
         Convenience method for displaying an warn message. See `show_message`.
         """
+        refresh_frames = refresh_frames or []
         return self.show_message(message, 'warning', refresh_frames, use_panels=use_panels, active_view=active_view)
 
     @property

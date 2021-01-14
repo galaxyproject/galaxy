@@ -40,13 +40,16 @@ export default {
     methods: {
         async getVisualization() {
             axios
-                .get(`${getAppRoot()}api/plugins/${this.args.id}`)
+                .get(`${getAppRoot()}api/plugins/${this.args.visualization_id}`)
                 .then(({ data }) => {
-                    this.visualizationUrl = `${data.href}?dataset_id=${this.args.history_dataset_id}`;
+                    const params = Object.entries(this.args)
+                        .map((pair) => pair.map(encodeURIComponent).join("="))
+                        .join("&");
+                    this.visualizationUrl = `${data.href}?dataset_id=${this.args.history_dataset_id}&${params}`;
                     this.loading = false;
                 })
                 .catch((e) => {
-                    this.error = `Failed to load Visualization '${this.args.id}'.`;
+                    this.error = `Failed to load Visualization '${this.args.visualization_id}'.`;
                     this.loading = false;
                 });
         },

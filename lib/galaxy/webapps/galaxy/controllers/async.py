@@ -7,7 +7,7 @@ from urllib.parse import urlencode
 
 import requests
 
-from galaxy import jobs, web
+from galaxy import web
 from galaxy.util import (
     Params,
     unicodify,
@@ -92,7 +92,7 @@ class ASync(BaseUIController):
             else:
                 log.debug('async error -> %s' % STATUS)
                 trans.log_event('Async error -> %s' % STATUS)
-                data.state = data.blurb = jobs.JOB_ERROR
+                data.state = data.blurb = "error"
                 data.info = "Error -> %s" % STATUS
 
             trans.sa_session.flush()

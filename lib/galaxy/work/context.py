@@ -1,14 +1,12 @@
 from galaxy.managers.context import (
-    ProvidesAppContext,
     ProvidesHistoryContext,
-    ProvidesUserContext
 )
 
 
-class WorkRequestContext(ProvidesAppContext, ProvidesUserContext, ProvidesHistoryContext):
+class WorkRequestContext(ProvidesHistoryContext):
     """ Stripped down implementation of Galaxy web transaction god object for
     work request handling outside of web threads - uses mix-ins shared with
-    GalaxyWebTransaction to provide app, user, and history context convience
+    GalaxyWebTransaction to provide app, user, and history context convenience
     methods - but nothing related to HTTP handling, mako views, etc....
 
     Things that only need app shouldn't be consuming trans - but there is a
@@ -19,18 +17,20 @@ class WorkRequestContext(ProvidesAppContext, ProvidesUserContext, ProvidesHistor
     """
 
     def __init__(self, app, user=None, history=None, workflow_building_mode=False):
-        self.app = app
-        self.security = app.security
+        self._app = app
         self.__user = user
         self.__user_current_roles = None
         self.__history = history
-        self.api_inherit_admin = False
         self.workflow_building_mode = workflow_building_mode
+
+    @property
+    def app(self):
+        return self._app
 
     def get_history(self, create=False):
         return self.__history
 
-    def set_history(self):
+    def set_history(self, history):
         raise NotImplementedError("Cannot change histories from a work request context.")
 
     history = property(get_history, set_history)
@@ -49,3 +49,13 @@ class WorkRequestContext(ProvidesAppContext, ProvidesUserContext, ProvidesHistor
         raise NotImplementedError("Cannot change users from a work request context.")
 
     user = property(get_user, set_user)
+
+
+class SessionRequestContext(WorkRequestContext):
+    """Like WorkRequestContext, but provides access to galaxy session and session."""
+    def __init__(self, **kwargs):
+        self.galaxy_session = kwargs.pop('galaxy_session', None)
+        super().__init__(**kwargs)
+
+    def get_galaxy_session(self):
+        return self.galaxy_session

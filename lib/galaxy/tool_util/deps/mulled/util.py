@@ -32,9 +32,9 @@ def create_repository(namespace, repo_name, oauth_token):
     requests.post("https://quay.io/api/v1/repository", json=data, headers=headers, timeout=QUAY_IO_TIMEOUT)
 
 
-def quay_versions(namespace, pkg_name):
+def quay_versions(namespace, pkg_name, session=None):
     """Get all version tags for a Docker image stored on quay.io for supplied package name."""
-    data = quay_repository(namespace, pkg_name)
+    data = quay_repository(namespace, pkg_name, session=session)
 
     if 'error_type' in data and data['error_type'] == "invalid_token":
         return []
@@ -45,11 +45,13 @@ def quay_versions(namespace, pkg_name):
     return [tag for tag in data['tags'].keys() if tag != 'latest']
 
 
-def quay_repository(namespace, pkg_name):
+def quay_repository(namespace, pkg_name, session=None):
     assert namespace is not None
     assert pkg_name is not None
     url = f'https://quay.io/api/v1/repository/{namespace}/{pkg_name}'
-    response = requests.get(url, timeout=QUAY_IO_TIMEOUT)
+    if not session:
+        session = requests.session()
+    response = session.get(url, timeout=QUAY_IO_TIMEOUT)
     data = response.json()
     return data
 
@@ -74,7 +76,7 @@ def _namespace_has_repo_name(namespace, repo_name, resolution_cache):
     return repo_name in repo_names
 
 
-def mulled_tags_for(namespace, image, tag_prefix=None, resolution_cache=None):
+def mulled_tags_for(namespace, image, tag_prefix=None, resolution_cache=None, session=None):
     """Fetch remote tags available for supplied image name.
 
     The result will be sorted so newest tags are first.
@@ -83,7 +85,7 @@ def mulled_tags_for(namespace, image, tag_prefix=None, resolution_cache=None):
         # Following check is pretty expensive against biocontainers... don't even bother doing it
         # if can't cache the response.
         if not _namespace_has_repo_name(namespace, image, resolution_cache):
-            log.debug("skipping mulled_tags_for [%s] no repository" % image)
+            log.info("skipping mulled_tags_for [%s] no repository" % image)
             return []
 
     cache_key = "galaxy.tool_util.deps.container_resolvers.mulled.util:tag_cache"
@@ -101,7 +103,7 @@ def mulled_tags_for(namespace, image, tag_prefix=None, resolution_cache=None):
             tags_cached = True
 
     if not tags_cached:
-        tags = quay_versions(namespace, image)
+        tags = quay_versions(namespace, image, session)
         tag_cache[namespace][image] = tags
 
     if tag_prefix is not None:
@@ -158,7 +160,8 @@ def build_target(package_name, version=None, build=None, tag=None):
         assert build is None
         version, build = split_tag(tag)
 
-    return Target(package_name, version, build, package_name)
+    # conda package and quay image names are lowercase
+    return Target(package_name.lower(), version, build, package_name)
 
 
 def conda_build_target_str(target):

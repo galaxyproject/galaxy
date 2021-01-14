@@ -8,15 +8,21 @@
                 @fetchFolderContents="fetchFolderContents($event)"
                 @deleteFromTable="deleteFromTable"
                 @setBusy="setBusy($event)"
+                @changeFolderId="changeFolderId($event)"
                 :folderContents="folderContents"
                 :include_deleted="include_deleted"
-                :folder_id="folder_id"
+                :folder_id="current_folder_id"
                 :selected="selected"
                 :metadata="folder_metadata"
                 :unselected="unselected"
                 :isAllSelectedMode="isAllSelectedMode"
             />
-            <a class="btn btn-secondary btn-sm btn_open_folder" :href="parentFolder">..</a>
+            <a
+                class="btn btn-secondary btn-sm btn_open_folder"
+                v-if="folder_metadata && folder_metadata.full_path"
+                @click="moveToParentFolder()"
+                >..</a
+            >
 
             <b-table
                 id="folder_list_body"
@@ -33,7 +39,11 @@
                 show-empty
             >
                 <template v-slot:empty>
-                    <div v-if="!search_text" class="empty-folder-message">
+                    <div v-if="isBusy" class="text-center my-2">
+                        <b-spinner class="align-middle"></b-spinner>
+                        <strong>Loading...</strong>
+                    </div>
+                    <div v-else class="empty-folder-message">
                         This folder is either empty or you do not have proper access permissions to see the contents. If
                         you expected something to show up please consult the
                         <a href="https://galaxyproject.org/data-libraries/#permissions" target="_blank">
@@ -87,7 +97,10 @@
                         />
                     </div>
                     <div v-else-if="!row.item.deleted">
-                        <a :href="createContentLink(row.item)">{{ row.item.name }}</a>
+                        <a v-if="row.item.type === 'folder'" href="#" @click="changeFolderId(row.item.id)">{{
+                            row.item.name
+                        }}</a>
+                        <a v-else :href="createContentLink(row.item)">{{ row.item.name }}</a>
                     </div>
                     <!-- Deleted Item-->
                     <div v-else>
@@ -139,6 +152,10 @@
                 <template v-slot:cell(type_icon)="row">
                     <font-awesome-icon v-if="row.item.type === 'folder'" :icon="['far', 'folder']" title="Folder" />
                     <font-awesome-icon v-else-if="row.item.type === 'file'" title="Dataset" :icon="['far', 'file']" />
+                </template>
+                <template v-slot:cell(type)="row">
+                    <div v-if="row.item.type === 'folder'">{{ row.item.type }}</div>
+                    <div v-else-if="row.item.type === 'file'">{{ row.item.file_ext }}</div>
                 </template>
                 <template v-slot:cell(raw_size)="row">
                     <div v-if="row.item.type === 'file'" v-html="bytesToString(row.item.raw_size)"></div>
@@ -295,9 +312,10 @@ export default {
     },
     data() {
         return {
+            current_folder_id: null,
             error: null,
             isBusy: false,
-            folder_metadata: null,
+            folder_metadata: {},
             currentPage: 1,
             fields: fields,
             selectMode: "multi",
@@ -312,31 +330,31 @@ export default {
             filterOn: [],
             search_text: "",
             isAllSelectedMode: false,
+            total_rows: 0,
             deselectedDatasets: [],
         };
     },
-    computed: {
-        parentFolder() {
-            const path = this.folder_metadata.full_path;
-            if (path.length === 1) {
-                return `${this.root}library/list/`;
-            } else {
-                return `${this.root}library/folders/${path[path.length - 2][0]}`;
-            }
-        },
-    },
     created() {
+        this.current_folder_id = this.folder_id;
         this.root = getAppRoot();
         this.services = new Services({ root: this.root });
         this.fetchFolderContents();
     },
     methods: {
+        moveToParentFolder() {
+            const path = this.folder_metadata.full_path;
+            if (path.length === 1) {
+                window.location = `${this.root}library/list/`;
+            } else {
+                return this.changeFolderId(path[path.length - 2][0]);
+            }
+        },
         fetchFolderContents(include_deleted = false) {
             this.include_deleted = include_deleted;
             this.setBusy(true);
             this.services
                 .getFolderContents(
-                    this.folder_id,
+                    this.current_folder_id,
                     include_deleted,
                     this.perPage,
                     (this.currentPage - 1) * this.perPage,
@@ -364,6 +382,12 @@ export default {
         },
         updateSearchValue(value) {
             this.search_text = value;
+            this.folderContents = [];
+            this.fetchFolderContents(this.include_deleted);
+        },
+        changeFolderId(id) {
+            this.current_folder_id = id;
+            this.folderContents = [];
             this.fetchFolderContents(this.include_deleted);
         },
         selectAllRenderedRows() {
@@ -447,7 +471,7 @@ export default {
         },
         createContentLink(element) {
             if (element.type === "file")
-                return `${this.root}library/list#folders/${this.folder_id}/datasets/${element.id}`;
+                return `${this.root}library/list#folders/${this.current_folder_id}/datasets/${element.id}`;
             else if (element.type === "folder") return `${this.root}library/folders/${element.id}`;
         },
         createPermissionLink(element) {
@@ -482,7 +506,7 @@ export default {
             } else {
                 this.services.newFolder(
                     {
-                        parent_id: this.folder_id,
+                        parent_id: this.current_folder_id,
                         name: folder.name,
                         description: folder.description,
                     },
@@ -529,9 +553,9 @@ export default {
                         this.refreshTable();
                         Toast.success("Dataset undeleted. Click this to see it.", "", {
                             onclick: function () {
-                                window.location = `${getAppRoot()}library/list#folders/${this.folder_id}/datasets/${
-                                    element.id
-                                }`;
+                                window.location = `${getAppRoot()}library/list#folders/${
+                                    this.current_folder_id
+                                }/datasets/${element.id}`;
                             },
                         });
                     },
@@ -582,6 +606,11 @@ export default {
     },
     watch: {
         currentPage: {
+            handler: function (value) {
+                this.fetchFolderContents(this.include_deleted);
+            },
+        },
+        perPage: {
             handler: function (value) {
                 this.fetchFolderContents(this.include_deleted);
             },

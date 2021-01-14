@@ -178,10 +178,11 @@ class GodockerJobRunner(AsynchronousJobRunner):
                     AsynchronousJobState object with updated running status.
         '''
         """ Get task from GoDocker """
+        job_persisted_state = job_state.job_wrapper.get_state()
         job_status_god = self.get_task(job_state.job_id)
         log.debug("Job ID: " + str(job_state.job_id) + " Job Status: " + str(job_status_god['status']['primary']))
 
-        if job_status_god['status']['primary'] == "over":
+        if job_status_god['status']['primary'] == "over" or job_persisted_state == model.Job.states.STOPPED:
             job_state.running = False
             job_state.job_wrapper.change_state(model.Job.states.OK)
             if self.create_log_file(job_state, job_status_god):
@@ -213,7 +214,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
         elif job_status_god['status']['primary'] == "pending":
             return job_state
 
-        elif job_status_god['status']['exitcode'] not in [None, 0]:
+        elif job_status_god['status']['exitcode'] not in [None, 0] and job_persisted_state != model.Job.states.STOPPED:
             job_state.running = False
             job_state.job_wrapper.change_state(model.Job.states.ERROR)
             self.create_log_file(job_state, job_status_god)
@@ -252,8 +253,8 @@ class GodockerJobRunner(AsynchronousJobRunner):
         ajs.job_destination = job_wrapper.job_destination
         job_wrapper.command_line = job.command_line
         ajs.job_wrapper = job_wrapper
-        if job.state == model.Job.states.RUNNING:
-            log.debug(f"({job.id}/{job.get_job_runner_external_id()}) is still in running state, adding to the god queue")
+        if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
+            log.debug(f"({job.id}/{job.get_job_runner_external_id()}) is still in {job.state} state, adding to the god queue")
             ajs.old_state = 'R'
             ajs.running = True
             self.monitor_queue.put(ajs)

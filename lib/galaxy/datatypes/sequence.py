@@ -120,6 +120,7 @@ class Sequence(data.Text):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
+    @staticmethod
     def get_sequences_per_file(total_sequences, split_params):
         if split_params['split_mode'] == 'number_of_parts':
             # legacy basic mode - split into a specified number of parts
@@ -138,8 +139,8 @@ class Sequence(data.Text):
         else:
             raise Exception('Unsupported split mode %s' % split_params['split_mode'])
         return sequences_per_file
-    get_sequences_per_file = staticmethod(get_sequences_per_file)
 
+    @classmethod
     def do_slow_split(cls, input_datasets, subdir_generator_function, split_params):
         # count the sequences so we can split
         # TODO: if metadata is present, take the number of lines / 4
@@ -147,15 +148,13 @@ class Sequence(data.Text):
             total_sequences = input_datasets[0].metadata.sequences
         else:
             with compression_utils.get_fileobj(input_datasets[0].file_name) as in_file:
-                total_sequences = int(0)
-                for i, line in enumerate(in_file):
-                    total_sequences += 1
+                total_sequences = sum(1 for line in in_file)
             total_sequences /= 4
 
         sequences_per_file = cls.get_sequences_per_file(total_sequences, split_params)
         return cls.write_split_files(input_datasets, None, subdir_generator_function, sequences_per_file)
-    do_slow_split = classmethod(do_slow_split)
 
+    @classmethod
     def do_fast_split(cls, input_datasets, toc_file_datasets, subdir_generator_function, split_params):
         data = json.load(open(toc_file_datasets[0].file_name))
         sections = data['sections']
@@ -164,8 +163,8 @@ class Sequence(data.Text):
             total_sequences += int(section['sequences'])
         sequences_per_file = cls.get_sequences_per_file(total_sequences, split_params)
         return cls.write_split_files(input_datasets, toc_file_datasets, subdir_generator_function, sequences_per_file)
-    do_fast_split = classmethod(do_fast_split)
 
+    @classmethod
     def write_split_files(cls, input_datasets, toc_file_datasets, subdir_generator_function, sequences_per_file):
         directories = []
 
@@ -197,7 +196,6 @@ class Sequence(data.Text):
                     json.dump(split_data, f)
             start_sequence += sequences_per_file[part_no]
         return directories
-    write_split_files = classmethod(write_split_files)
 
     def split(cls, input_datasets, subdir_generator_function, split_params):
         """Split a generic sequence file (not sensible or possible, see subclasses)."""
@@ -205,6 +203,7 @@ class Sequence(data.Text):
             return None
         raise NotImplementedError("Can't split generic sequence files")
 
+    @staticmethod
     def get_split_commands_with_toc(input_name, output_name, toc_file, start_sequence, sequence_count):
         """
         Uses a Table of Contents dict, parsed from an FQTOC file, to come up with a set of
@@ -272,8 +271,8 @@ class Sequence(data.Text):
             raise Exception('%s sequences not found in file' % sequence_count)
 
         return result
-    get_split_commands_with_toc = staticmethod(get_split_commands_with_toc)
 
+    @staticmethod
     def get_split_commands_sequential(is_compressed, input_name, output_name, start_sequence, sequence_count):
         """
         Does a brain-dead sequential scan & extract of certain sequences
@@ -292,7 +291,6 @@ class Sequence(data.Text):
         cmd += ' > "%s"' % output_name
 
         return [cmd]
-    get_split_commands_sequential = staticmethod(get_split_commands_sequential)
 
 
 class Alignment(data.Text):
@@ -371,6 +369,7 @@ class Fasta(Sequence):
                     break  # we found a non-empty line, but it's not a fasta header
         return False
 
+    @classmethod
     def split(cls, input_datasets, subdir_generator_function, split_params):
         """Split a FASTA file sequence by sequence.
 
@@ -414,8 +413,8 @@ class Fasta(Sequence):
             cls._count_split(input_file, batch_size, subdir_generator_function)
         else:
             raise Exception('Unsupported split mode %s' % split_params['split_mode'])
-    split = classmethod(split)
 
+    @classmethod
     def _size_split(cls, input_file, chunk_size, subdir_generator_function):
         """Split a FASTA file into chunks based on size on disk.
 
@@ -454,8 +453,8 @@ class Fasta(Sequence):
             f.close()
             if part_file:
                 part_file.close()
-    _size_split = classmethod(_size_split)
 
+    @classmethod
     def _count_split(cls, input_file, chunk_size, subdir_generator_function):
         """Split a FASTA file into chunks based on counting records."""
         log.debug("Attemping to split FASTA file %s into chunks of %i sequences" % (input_file, chunk_size))
@@ -491,7 +490,6 @@ class Fasta(Sequence):
             f.close()
             if part_file:
                 part_file.close()
-    _count_split = classmethod(_count_split)
 
 
 @build_sniff_from_prefix
@@ -738,6 +736,7 @@ class BaseFastq(Sequence):
         else:
             return Sequence.display_data(self, trans, dataset, preview, filename, to_ext, **kwd)
 
+    @classmethod
     def split(cls, input_datasets, subdir_generator_function, split_params):
         """
         FASTQ files are split on cluster boundaries, in increments of 4 lines
@@ -761,8 +760,8 @@ class BaseFastq(Sequence):
         if len(toc_file_datasets) == len(input_datasets):
             return cls.do_fast_split(input_datasets, toc_file_datasets, subdir_generator_function, split_params)
         return cls.do_slow_split(input_datasets, subdir_generator_function, split_params)
-    split = classmethod(split)
 
+    @staticmethod
     def process_split_file(data):
         """
         This is called in the context of an external process launched by a Task (possibly not on the Galaxy machine)
@@ -784,7 +783,6 @@ class BaseFastq(Sequence):
         for cmd in commands:
             subprocess.check_call(cmd, shell=True)
         return True
-    process_split_file = staticmethod(process_split_file)
 
     @staticmethod
     def quality_check(lines):
@@ -923,8 +921,9 @@ class Maf(Alignment):
         """Returns formated html of peek"""
         return self.make_html_table(dataset)
 
-    def make_html_table(self, dataset, skipchars=[]):
+    def make_html_table(self, dataset, skipchars=None):
         """Create HTML table, used for displaying peek"""
+        skipchars = skipchars or []
         out = ['<table cellspacing="0" cellpadding="3">']
         try:
             out.append('<tr><th>Species:&nbsp;')
@@ -1288,8 +1287,8 @@ class MemePsp(Sequence):
         >>> MemePsp().sniff(fname)
         False
         """
-        def floats_verified(l):
-            for item in l.split():
+        def floats_verified(line):
+            for item in line.split():
                 try:
                     float(item)
                 except ValueError:

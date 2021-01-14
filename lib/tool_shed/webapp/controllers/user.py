@@ -46,8 +46,9 @@ class User(BaseUser):
         return trans.fill_template('/webapps/tool_shed/user/index.mako', cntrller=cntrller)
 
     @web.expose
-    def login(self, trans, refresh_frames=[], **kwd):
+    def login(self, trans, refresh_frames=None, **kwd):
         '''Handle Galaxy Log in'''
+        refresh_frames = refresh_frames or []
         referer = trans.request.referer or ''
         redirect = self.__get_redirect_url(kwd.get('redirect', referer).strip())
         redirect_url = ''  # always start with redirect_url being empty
@@ -97,7 +98,8 @@ class User(BaseUser):
                                    active_view="user")
 
     @web.expose
-    def create(self, trans, cntrller='user', redirect_url='', refresh_frames=[], **kwd):
+    def create(self, trans, cntrller='user', redirect_url='', refresh_frames=None, **kwd):
+        refresh_frames = refresh_frames or []
         params = util.Params(kwd)
         # If the honeypot field is not empty we are dealing with a bot.
         honeypot_field = params.get('bear_field', '')

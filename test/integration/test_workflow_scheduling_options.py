@@ -24,7 +24,7 @@ class MaximumWorkflowInvocationDurationTestCase(integration_util.IntegrationTest
     def handle_galaxy_config_kwds(cls, config):
         config["maximum_workflow_invocation_duration"] = 20
 
-    def do_test(self):
+    def test(self):
         workflow = self.workflow_populator.load_workflow_from_resource("test_workflow_pause")
         workflow_id = self.workflow_populator.create_workflow(workflow)
         history_id = self.dataset_populator.new_history()
@@ -61,7 +61,7 @@ class MaximumWorkflowJobsPerSchedulingIterationTestCase(integration_util.Integra
     def handle_galaxy_config_kwds(cls, config):
         config["maximum_workflow_jobs_per_scheduling_iteration"] = 1
 
-    def do_test(self):
+    def test(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
 steps:
@@ -73,11 +73,11 @@ steps:
   - tool_id: collection_paired_test
     state:
       f1:
-        $link: 1#paired_output
+        $link: 1/paired_output
   - tool_id: cat_list
     state:
       input1:
-        $link: 2#out1
+        $link: 2/out1
 """)
         with self.dataset_populator.test_history() as history_id:
             hdca1 = self.dataset_collection_populator.create_list_in_history(history_id, contents=["a\nb\nc\nd\n", "e\nf\ng\nh\n"]).json()

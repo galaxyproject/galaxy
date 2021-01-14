@@ -787,6 +787,7 @@ var AddDatasets = Backbone.View.extend({
             } else if (this.options.chain_call_control.failed_number < this.options.chain_call_control.total_number) {
                 Toast.warning("Some of the datasets could not be added to the folder");
             }
+            this.options.updateContent();
             Galaxy.modal.hide();
             return this.added_hdas;
         }
@@ -800,7 +801,6 @@ var AddDatasets = Backbone.View.extend({
             .done((model) => {
                 // TODO add to lib
                 // Galaxy.libraries.folderListView.collection.add(model);
-                this.options.updateContent();
                 updateProgress();
                 this.chainCallAddingHdas(hdas_set);
             })

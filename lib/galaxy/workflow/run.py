@@ -106,7 +106,8 @@ def __invoke(trans, workflow, workflow_run_config, workflow_invocation=None, pop
     return outputs, invoker.workflow_invocation
 
 
-def queue_invoke(trans, workflow, workflow_run_config, request_params={}, populate_state=True, flush=True):
+def queue_invoke(trans, workflow, workflow_run_config, request_params=None, populate_state=True, flush=True):
+    request_params = request_params or {}
     if populate_state:
         modules.populate_module_and_state(trans, workflow, workflow_run_config.param_map, allow_tool_state_corrections=workflow_run_config.allow_tool_state_corrections)
     workflow_invocation = workflow_run_config_to_request(trans, workflow_run_config, workflow)
@@ -352,16 +353,10 @@ class WorkflowProgress:
         try:
             replacement = step_outputs[output_name]
         except KeyError:
-            replacement = self.inputs_by_step_id.get(output_step_id)
-            if connection.output_step.type == 'parameter_input' and output_step_id is not None:
-                # FIXME: parameter_input step outputs should be properly recorded as step outputs, but for now we can
-                # short-circuit and just pick the input value
-                pass
-            else:
-                # Must resolve.
-                template = "Workflow evaluation problem - failed to find output_name %s in step_outputs %s"
-                message = template % (output_name, step_outputs)
-                raise Exception(message)
+            # Must resolve.
+            template = "Workflow evaluation problem - failed to find output_name %s in step_outputs %s"
+            message = template % (output_name, step_outputs)
+            raise Exception(message)
         if isinstance(replacement, model.HistoryDatasetCollectionAssociation):
             if not replacement.collection.populated:
                 if not replacement.waiting_for_elements:
@@ -428,6 +423,8 @@ class WorkflowProgress:
 
     def set_step_outputs(self, invocation_step, outputs, already_persisted=False):
         step = invocation_step.workflow_step
+        if invocation_step.output_value:
+            outputs[invocation_step.output_value.workflow_output.output_name] = invocation_step.output_value.value
         self.outputs[step.id] = outputs
         if not already_persisted:
             for output_name, output_object in outputs.items():

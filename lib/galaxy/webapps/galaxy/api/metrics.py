@@ -29,19 +29,20 @@ class MetricsController(BaseAPIController):
     @expose_api_anonymous
     def create(self, trans, payload, **kwd):
         """
-        create( trans, payload )
-        * POST /api/metrics:
-            record any metrics sent and return some status object
+        POST /api/metrics
+
+        Record any metrics sent and return some status object.
 
         .. note:: Anonymous users can post metrics
 
         :type   payload: dict
         :param  payload: (optional) dictionary structure containing:
-            * metrics:          a list containing dictionaries of the form:
-                ** namespace:       label indicating the source of the metric
-                ** time:            isoformat datetime when the metric was recorded
-                ** level:           an integer representing the metric's log level
-                ** args:            a json string containing an array of extra data
+            * metrics:          a list containing dictionaries of the form
+
+                namespace:       label indicating the source of the metric
+                time:            isoformat datetime when the metric was recorded
+                level:           an integer representing the metric's log level
+                args:            a json string containing an array of extra data
 
         :rtype:     dict
         :returns:   status object

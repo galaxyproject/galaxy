@@ -360,6 +360,7 @@ const View = Backbone.View.extend({
                         multiple: cnf.multiple,
                         library: !!cnf.library,
                         format: null,
+                        allowUpload: true,
                     }
                 );
             },

@@ -22,18 +22,16 @@
                 </div>
             </div>
             <div id="upload-rule-dataset-option" class="upload-rule-option" v-if="selectionType == 'dataset'">
-                <div class="upload-rule-option-title">{{ l("Select dataset to load") }}</div>
-                <div class="dataset-selector">
-                    <select2
-                        v-model="selectedDatasetId"
-                        container-class="upload-footer-selection"
-                        placeholder="Select Dataset"
-                    >
-                        <option></option>
-                        <option v-for="dataset of datasets" :key="dataset.id" :value="dataset.id">
-                            {{ dataset.hid }}: {{ dataset.name }}</option
-                        >
-                    </select2>
+                <div class="upload-rule-option-title">
+                    History dataset
+                </div>
+                <div>
+                    <b-link @click="onSelectDataset" v-if="selectedDatasetName == null">
+                        {{ l("Select") }}
+                    </b-link>
+                    <span v-else>
+                        {{ selectedDatasetName }} <font-awesome-icon icon="edit" @click="onSelectDataset" />
+                    </span>
                 </div>
             </div>
         </span>
@@ -76,29 +74,32 @@
 import _l from "utils/localization";
 import { getGalaxyInstance } from "app";
 import UploadBoxMixin from "./UploadBoxMixin";
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
 import UploadUtils from "mvc/upload/upload-utils";
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 import { filesDialog } from "utils/data";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faEdit } from "@fortawesome/free-solid-svg-icons";
+import { BButton, BLink } from "bootstrap-vue";
 
-Vue.use(BootstrapVue);
+library.add(faEdit);
 
 export default {
     mixins: [UploadBoxMixin],
+    components: { BLink, BButton, FontAwesomeIcon },
     data() {
         return {
             l: _l,
             datasets: [],
             ftpFiles: [],
             uris: [],
-            datasetsSet: false,
             topInfo: _l("Tabular source data to extract collection files and metadata from"),
             enableReset: false,
             enableBuild: false,
             dataType: "datasets",
             selectedDatasetId: null,
+            selectedDatasetName: null,
             sourceContent: "",
             selectionType: "paste",
             btnBuildTitle: _l("Build"),
@@ -113,17 +114,7 @@ export default {
     watch: {
         selectionType: function (selectionType) {
             if (selectionType == "dataset" && !this.datasetsSet) {
-                const Galaxy = getGalaxyInstance();
-                const history = Galaxy && Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model;
-                const historyContentModels = history.contents.models;
-                for (const historyContentModel of historyContentModels) {
-                    const attr = historyContentModel.attributes;
-                    if (attr.history_content_type !== "dataset") {
-                        continue;
-                    }
-                    this.datasets.push(attr);
-                }
-                this.datasetsSet = true;
+                this.onSelectDataset();
             } else if (selectionType == "ftp") {
                 UploadUtils.getRemoteFiles((ftp_files) => {
                     this.sourceContent = ftp_files.map((file) => file["path"]).join("\n");
@@ -168,6 +159,22 @@ export default {
 
         _eventBuild: function () {
             this._buildSelection(this.sourceContent);
+        },
+
+        onSelectDataset: function () {
+            const galaxy = getGalaxyInstance();
+            galaxy.data.dialog(
+                (response) => {
+                    this.selectedDatasetId = response.id;
+                    this.selectedDatasetName = response.name;
+                },
+                {
+                    multiple: false,
+                    library: false,
+                    format: null,
+                    allowUpload: false,
+                }
+            );
         },
 
         _buildSelection: function (content) {

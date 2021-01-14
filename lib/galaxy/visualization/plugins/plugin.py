@@ -114,7 +114,7 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
             'logo'          : self.config.get('logo'),
             'title'         : self.config.get('title'),
             'target'        : self.config.get('render_target', 'galaxy_main'),
-            'embeddable'    : self.config.get('embeddable', False),
+            'embeddable'    : self.config.get('embeddable'),
             'entry_point'   : self.config.get('entry_point'),
             'settings'      : self.config.get('settings'),
             'groups'        : self.config.get('groups'),

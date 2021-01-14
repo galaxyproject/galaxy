@@ -1,6 +1,7 @@
 """
 Manager and Serializer for Users.
 """
+import hashlib
 import logging
 import random
 import socket
@@ -9,11 +10,13 @@ from datetime import datetime
 
 from markupsafe import escape
 from sqlalchemy import and_, desc, exc, func, true
+from sqlalchemy.orm.exc import NoResultFound
 
 from galaxy import (
     exceptions,
     model,
-    util
+    schema,
+    util,
 )
 from galaxy.managers import (
     api_keys,
@@ -21,6 +24,7 @@ from galaxy.managers import (
     deletable
 )
 from galaxy.security.validate_user_input import (
+    VALID_EMAIL_RE,
     validate_email,
     validate_password,
     validate_publicname
@@ -229,6 +233,34 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         order_by = order_by or (model.User.email, )
         return super().list(filters=filters, order_by=order_by, **kwargs)
 
+    def by_api_key(self, api_key, sa_session=None):
+        """
+        Find a user by API key.
+        """
+        if self.check_master_api_key(api_key=api_key):
+            return schema.BootstrapAdminUser()
+        sa_session = sa_session or self.app.model.session
+        try:
+            provided_key = sa_session.query(self.app.model.APIKeys).filter(self.app.model.APIKeys.table.c.key == api_key).one()
+        except NoResultFound:
+            raise exceptions.AuthenticationFailed('Provided API key is not valid.')
+        if provided_key.user.deleted:
+            raise exceptions.AuthenticationFailed('User account is deactivated, please contact an administrator.')
+        sa_session.refresh(provided_key.user)
+        newest_key = provided_key.user.api_keys[0]
+        if newest_key.key != provided_key.key:
+            raise exceptions.AuthenticationFailed('Provided API key has expired.')
+        return provided_key.user
+
+    def check_master_api_key(self, api_key):
+        master_api_key = getattr(self.app.config, 'master_api_key', None)
+        if not master_api_key:
+            return False
+        # Hash keys to make them the same size, so we can do safe comparison.
+        master_hash = hashlib.sha256(util.smart_str(master_api_key)).hexdigest()
+        provided_hash = hashlib.sha256(util.smart_str(api_key)).hexdigest()
+        return util.safe_str_cmp(master_hash, provided_hash)
+
     # ---- admin
     def is_admin(self, user, trans=None):
         """Return True if this user is an admin (or session is authenticated as admin).
@@ -276,6 +308,22 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         if user is None:
             # TODO: code is correct (401) but should be named AuthenticationRequired (401 and 403 are flipped)
             raise exceptions.AuthenticationFailed(msg, **kwargs)
+        return user
+
+    def get_user_by_identity(self, identity):
+        """Get user by username or email."""
+        user = None
+        if VALID_EMAIL_RE.match(identity):
+            # VALID_PUBLICNAME and VALID_EMAIL do not overlap, so 'identity' here is an email address
+            user = self.session().query(self.model_class).filter(
+                self.model_class.table.c.email == identity).first()
+            if not user:
+                # Try a case-insensitive match on the email
+                user = self.session().query(self.model_class).filter(
+                    func.lower(self.model_class.table.c.email) == identity.lower()).first()
+        else:
+            user = self.session().query(self.model_class).filter(
+                self.model_class.table.c.username == identity).first()
         return user
 
     # ---- current
@@ -332,7 +380,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
 
     def quota(self, user, total=False):
         if total:
-            return self.app.quota_agent.get_quota(user, nice_size=True)
+            return self.app.quota_agent.get_quota_nice_size(user)
         return self.app.quota_agent.get_percent(user=user)
 
     def tags_used(self, user, tag_models=None):
@@ -425,18 +473,32 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         activation_token = self.__get_activation_token(trans, escape(email))
         activation_link = url_for(controller='user', action='activate', activation_token=activation_token, email=escape(email), qualified=True)
         host = self.__get_host(trans)
+        custom_message = ''
+        if self.app.config.custom_activation_email_message:
+            custom_message = self.app.config.custom_activation_email_message + '\n\n'
         body = ("Hello %s,\n\n"
-                "In order to complete the activation process for %s begun on %s at %s, please click on the following link to verify your account:\n\n"
-                "%s \n\n"
-                "By clicking on the above link and opening a Galaxy account you are also confirming that you have read and agreed to Galaxy's Terms and Conditions for use of this service (%s). This includes a quota limit of one account per user. Attempts to subvert this limit by creating multiple accounts or through any other method may result in termination of all associated accounts and data.\n\n"
-                "Please contact us if you need help with your account at: %s. You can also browse resources available at: %s. \n\n"
+                "In order to complete the activation process for %s begun on %s at %s, please click "
+                "on the following link to verify your account:\n\n" "%s \n\n"
+                "By clicking on the above link and opening a Galaxy account you are also confirming "
+                "that you have read and agreed to Galaxy's Terms and Conditions for use of this "
+                "service (%s). This includes a quota limit of one account per user. Attempts to "
+                "subvert this limit by creating multiple accounts or through any other method may "
+                "result in termination of all associated accounts and data.\n\n"
+                "Please contact us if you need help with your account at: %s. You can also browse "
+                "resources available" " at: %s. \n\n"
                 "More about the Galaxy Project can be found at galaxyproject.org\n\n"
-                "Your Galaxy Team" % (escape(username), escape(email),
-                                      datetime.utcnow().strftime("%D"),
-                                      trans.request.host, activation_link,
-                                      self.app.config.terms_url,
-                                      self.app.config.error_email_to,
-                                      self.app.config.instance_resource_url))
+                "%s"
+                "Your Galaxy Team" % (
+                    escape(username),
+                    escape(email),
+                    datetime.utcnow().strftime("%D"),
+                    trans.request.host,
+                    activation_link,
+                    self.app.config.terms_url,
+                    self.app.config.error_email_to,
+                    self.app.config.instance_resource_url,
+                    custom_message)
+                )
         to = email
         frm = self.app.config.email_from or 'galaxy-no-reply@' + host
         subject = 'Galaxy Account Activation'

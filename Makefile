@@ -30,6 +30,9 @@ docs: ## Generate HTML documentation.
 	$(IN_VENV) $(MAKE) -C doc clean
 	$(IN_VENV) $(MAKE) -C doc html
 
+docs-develop: ## Fast doc generation and more warnings (for development)
+	$(IN_VENV) GALAXY_DOCS_SKIP_VIEW_CODE=1 SPHINXOPTS='-j 4' $(MAKE) -C doc html
+
 setup-venv:
 	if [ ! -f $(VENV)/bin/activate ]; then bash scripts/common_startup.sh --dev-wheels; fi
 
@@ -165,7 +168,7 @@ client-watch: node-deps ## A useful target for parallel development building.  S
 client-dev-server: node-deps ## Starts a webpack dev server for client development (HMR enabled)
 	cd client && yarn run webpack-dev-server
 
-client-test: node-deps  ## Run JS unit tests via Karma
+client-test: node-deps  ## Run JS unit tests
 	cd client && yarn run test
 
 client-eslint: node-deps # Run client linting
@@ -176,8 +179,8 @@ client-format-check: node-deps # Run client formatting check
 
 client-lint: client-eslint client-format-check ## ES lint and check format of client
 
-client-test-watch: client ## Watch and run qunit tests on changes via Karma
-	cd client && yarn run test-watch
+client-test-watch: client ## Watch and run all client unit tests on changes
+	cd client && yarn run jest-watch
 
 # Release Targets
 release-create-rc: release-ensure-upstream ## Create a release-candidate branch

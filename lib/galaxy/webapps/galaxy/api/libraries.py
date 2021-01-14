@@ -249,12 +249,14 @@ class LibrariesController(BaseAPIController):
     @expose_api
     def set_permissions(self, trans, encoded_library_id, payload=None, **kwd):
         """
-        *POST /api/libraries/{encoded_library_id}/permissions
-            Set permissions of the given library to the given role ids.
+        POST /api/libraries/{encoded_library_id}/permissions
+
+        Set permissions of the given library to the given role ids.
 
         :param  encoded_library_id:      the encoded id of the library to set the permissions of
         :type   encoded_library_id:      an encoded id string
         :param   payload: dictionary structure containing:
+
             :param  action:            (required) describes what action should be performed
                                        available actions: remove_restrictions, set_permissions
             :type   action:            str
@@ -266,6 +268,7 @@ class LibrariesController(BaseAPIController):
             :type   manage_ids[]:      string or list
             :param  modify_ids[]:      list of Role.id defining roles that should have modify permission on the library
             :type   modify_ids[]:      string or list
+
         :type:      dictionary
         :returns:   dict of current roles for all available permission types
         :rtype:     dictionary

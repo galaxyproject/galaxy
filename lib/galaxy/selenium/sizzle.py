@@ -1,6 +1,6 @@
 """Utilities for using sizzle (jQuery-style) selectors with Selenium."""
 
-import re
+import json
 
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support.ui import WebDriverWait
@@ -62,13 +62,11 @@ def sizzle_presence_of_selector(selector):
     return ec
 
 
-def find_element_by_sizzle(driver, sizzle_selector):
+def find_element_by_sizzle(driver, sizzle_selector: str):
     """
     Finds an element by sizzle selector.
-    :Args:
-     - sizzle_selector: The sizzle selector to use when finding element.
-    :Usage:
-        driver.find_element_by_sizzle('#foo')
+
+    :param sizzle_selector: The sizzle selector to use when finding element.
     """
     elements = driver.find_elements_by_sizzle(sizzle_selector)
     if elements:
@@ -79,13 +77,11 @@ def find_element_by_sizzle(driver, sizzle_selector):
         )
 
 
-def find_elements_by_sizzle(driver, sizzle_selector):
+def find_elements_by_sizzle(driver, sizzle_selector: str):
     """
     Finds elements by sizzle selector.
-    :Args:
-     - sizzle_selector: The sizzle selector to use when finding elements.
-    :Usage:
-        driver.find_elements_by_sizzle('.foo')
+
+    :param sizzle_selector: The sizzle selector to use when finding elements.
     """
     if not _is_sizzle_loaded(driver):
         _inject_sizzle(driver, SIZZLE_URL, SIZZLE_LOAD_TIMEOUT)
@@ -119,11 +115,9 @@ def _is_sizzle_loaded(driver):
 
 
 def _make_sizzle_string(sizzle_selector):
-    try:
-        selector = sizzle_selector.decode("utf-8")
-    except (AttributeError, UnicodeEncodeError):
-        selector = sizzle_selector
-    return "return Sizzle(\"{selector}\");".format(selector=re.escape(selector))
+    # Use json.dumps to escape quotes
+    selector = json.dumps(sizzle_selector)
+    return f"return Sizzle({selector});"
 
 
 __all__ = (

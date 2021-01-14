@@ -20,10 +20,7 @@ import subprocess
 import sys
 from sys import platform as _platform
 
-try:
-    import yaml
-except ImportError:
-    yaml = None
+import yaml
 
 from galaxy.tool_util.deps import installable
 from galaxy.tool_util.deps.conda_util import best_search_result

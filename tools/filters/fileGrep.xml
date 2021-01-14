@@ -1,5 +1,8 @@
 <tool id="fileGrep1" name="Match" version="1.0.0">
   <description>a column from one Query against another Query</description>
+  <edam_operations>
+    <edam_operation>operation_3695</edam_operation>
+  </edam_operations>
   <command>
 cut -f '$col' '$input1' | grep -f - $match '$input2' > '$out_file1'
   </command>
@@ -36,7 +39,7 @@ and another that is a typical BED file describing genomic location of some ESTs:
 
 Using this tool you will be able to tell how many ESTs in Query1 are also preset in Query2 and will output this::
 
-  chr7 115443239 115443802 AA001842_exon_0_0_chr7_115443240_f 0	
+  chr7 115443239 115443802 AA001842_exon_0_0_chr7_115443240_f 0
 
 if **Match** option is chosen.
   </help>

@@ -1,9 +1,6 @@
 import collections
 
-try:
-    import yaml
-except ImportError:
-    yaml = None
+import yaml
 
 from galaxy.util import parse_xml
 from galaxy.util.submodules import import_submodules

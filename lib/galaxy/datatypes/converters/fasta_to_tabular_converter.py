@@ -13,8 +13,6 @@ Output: tabular
 import os
 import sys
 
-seq_hash = {}
-
 
 def __main__():
     infile = sys.argv[1]

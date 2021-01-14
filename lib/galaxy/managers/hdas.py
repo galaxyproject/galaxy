@@ -225,16 +225,17 @@ class HDAManager(datasets.DatasetAssociationManager,
     def _set_permissions(self, trans, hda, role_ids_dict):
         # The user associated the DATASET_ACCESS permission on the dataset with 1 or more roles.  We
         # need to ensure that they did not associate roles that would cause accessibility problems.
+        security_agent = trans.app.security_agent
         permissions, in_roles, error, message = \
-            trans.app.security_agent.derive_roles_from_access(trans, hda.dataset.id, 'root', **role_ids_dict)
+            security_agent.derive_roles_from_access(trans, hda.dataset.id, 'root', **role_ids_dict)
         if error:
             # Keep the original role associations for the DATASET_ACCESS permission on the dataset.
-            access_action = trans.app.security_agent.get_action(trans.app.security_agent.permitted_actions.DATASET_ACCESS.action)
-            permissions[access_action] = hda.dataset.get_access_roles(trans)
+            access_action = security_agent.get_action(security_agent.permitted_actions.DATASET_ACCESS.action)
+            permissions[access_action] = hda.dataset.get_access_roles(security_agent)
             trans.sa_session.refresh(hda.dataset)
             raise exceptions.RequestParameterInvalidException(message)
         else:
-            error = trans.app.security_agent.set_all_dataset_permissions(hda.dataset, permissions)
+            error = security_agent.set_all_dataset_permissions(hda.dataset, permissions)
             trans.sa_session.refresh(hda.dataset)
             if error:
                 raise exceptions.RequestParameterInvalidException(error)
@@ -316,6 +317,53 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             'accessible',
             'id', 'name', 'history_id', 'hid', 'history_content_type',
             'state', 'deleted', 'visible'
+        ])
+
+        # fields for new beta web client, there is no summary/detailed split any more
+        self.add_view('betawebclient', [
+            # common to hdca
+            'create_time',
+            'deleted',
+            'hid',
+            'history_content_type',
+            'history_id',
+            'id',
+            'name',
+            'tags',
+            'type',
+            'type_id',
+            'update_time',
+            'url',
+            'visible',
+            # dataset only
+            'accessible',
+            'api_type',
+            'annotation',
+            'created_from_basename',
+            'creating_job',
+            'dataset_id',
+            'data_type',
+            'display_apps',
+            'display_types',
+            'download_url',
+            'extension',
+            'file_ext',
+            'file_name',
+            'file_size',
+            'genome_build',
+            'hda_ldda',
+            'meta_files',
+            'misc_blurb',
+            'misc_info',
+            'model_class',
+            'peek',
+            'purged',
+            'rerunnable',
+            'resubmitted',
+            'state',
+            'uuid',
+            'validated_state',
+            'validated_state_message',
         ])
 
     def add_serializers(self):

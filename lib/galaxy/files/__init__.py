@@ -1,6 +1,9 @@
 import logging
 import os
-from collections import namedtuple
+from collections import (
+    defaultdict,
+    namedtuple,
+)
 
 from galaxy import exceptions
 from galaxy.util import (
@@ -160,15 +163,20 @@ class ConfiguredFileSources:
 
     @staticmethod
     def from_dict(as_dict):
-        sources_as_dict = as_dict["file_sources"]
-        config_as_dict = as_dict["config"]
-        file_sources_config = ConfiguredFileSourcesConfig.from_dict(config_as_dict)
+        if as_dict is not None:
+            sources_as_dict = as_dict["file_sources"]
+            config_as_dict = as_dict["config"]
+            file_sources_config = ConfiguredFileSourcesConfig.from_dict(config_as_dict)
+        else:
+            sources_as_dict = []
+            file_sources_config = ConfiguredFileSourcesConfig()
         return ConfiguredFileSources(file_sources_config, conf_dict=sources_as_dict)
 
 
 class ConfiguredFileSourcesConfig:
 
-    def __init__(self, symlink_allowlist=[], library_import_dir=None, user_library_import_dir=None, ftp_upload_dir=None, ftp_upload_purge=True):
+    def __init__(self, symlink_allowlist=None, library_import_dir=None, user_library_import_dir=None, ftp_upload_dir=None, ftp_upload_purge=True):
+        symlink_allowlist = symlink_allowlist or []
         self.symlink_allowlist = symlink_allowlist
         self.library_import_dir = library_import_dir
         self.user_library_import_dir = user_library_import_dir
@@ -230,7 +238,7 @@ class ProvidesUserFileSourcesUserContext:
     @property
     def preferences(self):
         user = self.trans.user
-        return user and user.extra_preferences
+        return user and user.extra_preferences or defaultdict(lambda: None)
 
 
 class DictFileSourcesUserContext:

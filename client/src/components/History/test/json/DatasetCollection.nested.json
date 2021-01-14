@@ -1,0 +1,13 @@
+{
+    "element_type": "dataset_collection",
+    "element_index": 0,
+    "model_class": "DatasetCollectionElement",
+    "element_identifier": "M117-bl.fq",
+    "object": {
+        "contents_url": "/api/dataset_collections/5a1cff6882ddb5b2/contents/fb85969571388350",
+        "id": "fb85969571388350",
+        "model_class": "DatasetCollection",
+        "collection_type": "paired"
+    },
+    "id": "5a9381f02a7b89af"
+}

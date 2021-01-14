@@ -1,13 +1,27 @@
 <template>
     <div>
-        <div id="path-bar" />
+        <b-breadcrumb>
+            <b-breadcrumb-item title="Return to the list of libraries" :href="getHomeUrl">
+                Libraries
+            </b-breadcrumb-item>
+            <template v-for="path_item in this.metadata.full_path">
+                <b-breadcrumb-item
+                    :key="path_item[0]"
+                    :title="isCurrentFolder(path_item[0]) ? `You are in this folder` : `Return to this folder`"
+                    :active="isCurrentFolder(path_item[0])"
+                    @click="changeFolderId(path_item[0])"
+                    href="#"
+                    >{{ path_item[1] }}</b-breadcrumb-item
+                >
+            </template>
+        </b-breadcrumb>
 
         <div class="form-inline d-flex align-items-center mb-2">
             <a class="mr-1 btn btn-secondary" :href="getHomeUrl" data-toggle="tooltip" title="Go to first page">
                 <font-awesome-icon icon="home" />
             </a>
             <div>
-                <form class="form-inline">
+                <div class="form-inline">
                     <SearchField @updateSearch="updateSearch($event)"></SearchField>
                     <button
                         v-if="metadata.can_add_library_item"
@@ -21,7 +35,6 @@
                     </button>
                     <div v-if="metadata.can_add_library_item">
                         <div
-                            v-if="multiple_add_dataset_options"
                             title="Add datasets to current folder"
                             class="dropdown add-library-items add-library-items-datasets mr-1"
                         >
@@ -92,20 +105,10 @@
                         class="dropdown dataset-manipulation mr-1"
                         v-if="dataset_manipulation"
                     >
-                        <button
-                            type="button"
-                            id="download-dropdown-btn"
-                            class="primary-button dropdown-toggle"
-                            data-toggle="dropdown"
-                        >
+                        <button type="button" id="download--btn" class="primary-button" @click="downloadData('zip')">
                             <font-awesome-icon icon="download" />
-                            Download <span class="caret"></span>
+                            Download
                         </button>
-                        <div class="dropdown-menu" role="menu">
-                            <a class="dropdown-item cursor-pointer" @click="downloadData('tgz')">.tar.gz</a>
-                            <a class="dropdown-item cursor-pointer" @click="downloadData('tbz')">.tar.bz</a>
-                            <a class="dropdown-item cursor-pointer" @click="downloadData('zip')">.zip</a>
-                        </div>
                     </div>
                     <button
                         v-if="logged_dataset_manipulation"
@@ -134,7 +137,7 @@
                             include deleted
                         </b-form-checkbox>
                     </div>
-                </form>
+                </div>
             </div>
         </div>
     </div>
@@ -147,7 +150,6 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { showLocInfo } from "./details-modal";
 import { deleteSelectedItems } from "./delete-selected";
 import { initTopBarIcons } from "components/LibraryFolder/icons";
-import mod_path_bar from "components/LibraryFolder/path-bar";
 import mod_import_dataset from "./import-to-history/import-dataset";
 import mod_import_collection from "./import-to-history/import-collection";
 import mod_add_datasets from "./add-datasets";
@@ -201,7 +203,6 @@ export default {
     data() {
         return {
             is_admin: false,
-            multiple_add_dataset_options: false,
             user_library_import_dir: false,
             library_import_dir: false,
             allow_library_path_paste: false,
@@ -227,22 +228,8 @@ export default {
         this.user_library_import_dir = Galaxy.config.user_library_import_dir;
         this.library_import_dir = Galaxy.config.library_import_dir;
         this.allow_library_path_paste = Galaxy.config.allow_library_path_paste;
-        if (
-            this.user_library_import_dir !== null ||
-            this.allow_library_path_paste !== false ||
-            this.library_import_dir !== null
-        ) {
-            this.multiple_add_dataset_options = true;
-        }
 
         this.fetchExtAndGenomes();
-    },
-    mounted() {
-        new mod_path_bar.PathBar({
-            full_path: this.metadata.full_path,
-            id: this.folder_id,
-            parent_library_id: this.metadata.parent_library_id,
-        });
     },
     computed: {
         contains_file_or_folder: function () {
@@ -269,6 +256,9 @@ export default {
     methods: {
         updateSearch: function (value) {
             this.$emit("updateSearch", value);
+        },
+        changeFolderId: function (value) {
+            this.$emit("changeFolderId", value);
         },
         deleteSelected: function () {
             this.getSelected().then((selected) =>
@@ -343,6 +333,9 @@ export default {
                     });
                 }
             });
+        },
+        isCurrentFolder(id) {
+            return this.folder_id === id;
         },
         /*
             Slightly adopted Bootstrap code

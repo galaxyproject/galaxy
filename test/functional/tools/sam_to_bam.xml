@@ -1,7 +1,7 @@
 <tool id="sam_to_conversion" name="Test sam to bam conversion">
-    <command>
-        cat '$input1' > '$out_file1'
-    </command>
+    <command><![CDATA[
+cat '$input1' > '$out_file1'
+    ]]></command>
     <inputs>
         <param name="input1" type="data" format="bam" label="Concatenate Dataset"/>
     </inputs>

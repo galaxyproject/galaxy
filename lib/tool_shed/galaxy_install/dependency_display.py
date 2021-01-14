@@ -110,7 +110,7 @@ class DependencyDisplayer:
         if metadata_dict:
             invalid_tool_dependencies = metadata_dict.get('invalid_tool_dependencies', None)
             if invalid_tool_dependencies:
-                for td_key, requirement_dict in invalid_tool_dependencies.items():
+                for requirement_dict in invalid_tool_dependencies.values():
                     error = requirement_dict.get('error', None)
                     if error:
                         message = '%s  ' % str(error)

@@ -1,5 +1,13 @@
 <template>
-    <div class="upload-button">
+    <b-button
+        id="tool-panel-upload-button"
+        @click="showUploadDialog"
+        v-b-tooltip.hover
+        aria-label="Download from URL or upload files from disk"
+        title="Download from URL or upload files from disk"
+        class="upload-button"
+        size="sm"
+    >
         <div class="progress">
             <div
                 class="progress-bar progress-bar-notransition"
@@ -7,27 +15,18 @@
                 :style="{
                     width: `${percentage}%`,
                 }"
-            ></div>
-            <a
-                class="upload-button-link"
-                id="tool-panel-upload-button"
-                @click="showUploadDialog"
-                href="javascript:void(0)"
-                role="button"
-                v-b-tooltip.hover
-                aria-label="Download from URL or upload files from disk"
-                title="Download from URL or upload files from disk"
-            >
-                <font-awesome-icon icon="upload" />
-            </a>
+            />
         </div>
-    </div>
+        <span class="position-relative">
+            <font-awesome-icon icon="upload" class="mr-1" />
+            <b>Upload Data</b>
+        </span>
+    </b-button>
 </template>
 
 <script>
 import { VBTooltip } from "bootstrap-vue";
-import { getGalaxyInstance } from "app"; // FIXME:
-
+import { getGalaxyInstance } from "app";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faUpload } from "@fortawesome/free-solid-svg-icons";
@@ -54,7 +53,6 @@ export default {
     },
     created() {
         const Galaxy = getGalaxyInstance();
-
         Galaxy.upload.model.on("change", () => {
             this.status = Galaxy.upload.model.attributes.status;
             this.percentage = Galaxy.upload.model.attributes.percentage;
@@ -62,5 +60,3 @@ export default {
     },
 };
 </script>
-
-<style scoped></style>

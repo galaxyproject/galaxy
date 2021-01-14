@@ -145,8 +145,9 @@ def create_repository_admin_role(app, repository):
     return role
 
 
-def create_repository(app, name, type, description, long_description, user_id, category_ids=[], remote_repository_url=None, homepage_url=None):
+def create_repository(app, name, type, description, long_description, user_id, category_ids=None, remote_repository_url=None, homepage_url=None):
     """Create a new ToolShed repository"""
+    category_ids = category_ids or []
     sa_session = app.model.context.current
     # Add the repository record to the database.
     repository = app.model.Repository(name=name,

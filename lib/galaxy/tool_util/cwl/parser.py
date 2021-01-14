@@ -80,8 +80,6 @@ def tool_proxy(tool_path=None, tool_object=None, strict_cwl_validation=True, too
     grab relevant data.
     """
     ensure_cwltool_available()
-    # if uuid is None:
-    #    raise Exception("tool_proxy must be called with non-None uuid")
     tool = _to_cwl_tool_object(
         tool_path=tool_path,
         tool_object=tool_object,
@@ -244,6 +242,11 @@ class ToolProxy(metaclass=ABCMeta):
         self._uuid = uuid
         self._tool_path = tool_path
         self._raw_process_reference = raw_process_reference
+        # remove input parameter formats from CWL files so that cwltool
+        # does not complain they are missing in the input data
+        for input_field in self._tool.inputs_record_schema["fields"]:
+            if 'format' in input_field:
+                del input_field['format']
 
     def job_proxy(self, input_dict, output_dict, job_directory="."):
         """ Build a cwltool.job.Job describing computation using a input_json
@@ -522,7 +525,7 @@ class JobProxy:
                             if not os.path.exists(staged_loc):
                                 os.symlink(location, staged_loc)
                             value["location"] = staged_loc
-                    for key, dict_value in value.items():
+                    for dict_value in value.values():
                         stage_recursive(dict_value)
                 else:
                     log.info("skipping simple value...")
@@ -611,7 +614,7 @@ class JobProxy:
 
     def _output_extra_files_dir(self, output_name):
         output_id = self.output_id(output_name)
-        return os.path.join(self._job_directory, "dataset_%s_files" % output_id)
+        return os.path.join(self._job_directory, "outputs", "dataset_%s_files" % output_id)
 
     def output_id(self, output_name):
         output_id = self._output_dict[output_name]["id"]
@@ -651,7 +654,7 @@ class JobProxy:
             generate_mapper = pathmapper.PathMapper(cwl_job.generatefiles["listing"],
                                                     outdir, outdir, separateDirs=False)
             # TODO: figure out what inplace_update should be.
-            inplace_update = getattr(cwl_job, "inplace_update")
+            inplace_update = cwl_job.inplace_update
             process.stage_files(generate_mapper, stageFunc, ignore_writable=inplace_update, symlink=False)
             relink_initialworkdir(generate_mapper, outdir, outdir, inplace_update=inplace_update)
         # else: expression tools do not have a path mapper.
@@ -720,7 +723,7 @@ class WorkflowProxy:
     def cwl_ids_to_index(self, step_proxies):
         index = 0
         cwl_ids_to_index = {}
-        for i, input_dict in enumerate(self._workflow.tool['inputs']):
+        for input_dict in self._workflow.tool['inputs']:
             cwl_ids_to_index[input_dict["id"]] = index
             index += 1
 
@@ -830,13 +833,15 @@ class WorkflowProxy:
                 # to be field - simpler types could be simpler inputs.
                 tool_state = {}
                 tool_state["parameter_type"] = "field"
+                default_set = "default" in input
                 default_value = input.get("default")
-                optional = False
+                optional = default_set
                 if isinstance(input_type, list) and "null" in input_type:
                     optional = True
                 if not optional and isinstance(input_type, dict) and "type" in input_type:
-                    assert False
-                tool_state["default_value"] = {"src": "json", "value": default_value}
+                    raise ValueError("'type' detected in non-optional input dictionary.")
+                if default_set:
+                    tool_state["default"] = {"src": "json", "value": default_value}
                 tool_state["optional"] = optional
                 input_as_dict["tool_state"] = tool_state
             else:
@@ -1134,7 +1139,7 @@ def _outer_field_to_input_instance(field):
     for type_description in type_descriptions:
         select_options.append({"value": type_description.name, "label": type_description.label})
         input_instances = []
-        if type_description.uses_param():
+        if type_description.uses_param:
             input_instances.append(value_input(type_description))
         case_options.append((type_description.name, input_instances))
 

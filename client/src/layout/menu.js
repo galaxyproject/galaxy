@@ -1,7 +1,6 @@
 import axios from "axios";
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
-import { CommunicationServerView } from "layout/communication-server-view";
 
 const POST_LOGOUT_URL = "root/login?is_logout_redirect=true";
 
@@ -52,14 +51,14 @@ export function userLogoutClient() {
 
 export function fetchMenu(options = {}) {
     const Galaxy = getGalaxyInstance();
+    const { version_minor, version_major } = Galaxy.config;
+    const { release_doc_base_url } = options;
+    const versionUserDocumentationUrl =
+        version_minor == "dev"
+            ? "https://docs.galaxyproject.org/en/latest/releases/index.html"
+            : `${release_doc_base_url}${version_major}/releases/${version_major}_announce_user.html`;
+
     const menu = [];
-
-    //
-    // Chat server tab
-    //
-    const extendedNavItem = new CommunicationServerView();
-    menu.push(extendedNavItem.render());
-
     //
     // Analyze data tab.
     //
@@ -198,6 +197,11 @@ export function fetchMenu(options = {}) {
             {
                 title: _l("Interactive Tours"),
                 url: "tours",
+            },
+            {
+                title: _l("Galaxy Version: " + Galaxy.config.version_major),
+                url: versionUserDocumentationUrl,
+                target: "_blank",
             },
         ],
     };

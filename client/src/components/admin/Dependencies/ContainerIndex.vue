@@ -170,16 +170,7 @@ export default {
             return params;
         },
         selectedToolIds() {
-            const toolIds = [];
-            for (const item of this.items) {
-                if (item["selected"]) {
-                    const toolId = item["tool"];
-                    if (toolId) {
-                        toolIds.push(toolId[0]);
-                    }
-                }
-            }
-            return toolIds;
+            return this.items.filter((item) => item.selected).map((item) => item.tool_id);
         },
     },
     watch: {

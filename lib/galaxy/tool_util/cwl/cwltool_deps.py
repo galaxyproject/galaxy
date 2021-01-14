@@ -9,10 +9,7 @@ import warnings
 
 warnings.filterwarnings("ignore", message=r"[\n.]DEPRECATION: Python 2", module="cwltool")
 
-try:
-    import requests
-except ImportError:
-    requests = None
+import requests
 
 try:
     from cwltool import (
@@ -23,11 +20,11 @@ try:
         pathmapper,
     )
 except ImportError:
-    main = None
-    workflow = None
-    job = None
-    process = None
-    pathmapper = None
+    main = None  # type: ignore
+    workflow = None  # type: ignore
+    job = None  # type: ignore
+    process = None  # type: ignore
+    pathmapper = None  # type: ignore
 
 try:
     from cwltool.context import (
@@ -38,11 +35,11 @@ try:
     from cwltool.job import relink_initialworkdir
     from cwltool.stdfsaccess import StdFsAccess
 except ImportError:
-    getdefault = None
-    LoadingContext = None
-    relink_initialworkdir = None
-    RuntimeContext = None
-    StdFsAccess = None
+    getdefault = None  # type: ignore
+    LoadingContext = None  # type: ignore
+    relink_initialworkdir = None  # type: ignore
+    RuntimeContext = None  # type: ignore
+    StdFsAccess = None  # type: ignore
 
 try:
     from cwltool import load_tool
@@ -51,20 +48,31 @@ try:
         resolve_and_validate_document,
     )
 except ImportError:
-    default_loader = None
-    load_tool = None
-    resolve_and_validate_document = None
+    default_loader = None  # type: ignore
+    load_tool = None  # type: ignore
+    resolve_and_validate_document = None  # type: ignore
 
 try:
     from cwltool import command_line_tool
     command_line_tool.ACCEPTLIST_RE = command_line_tool.ACCEPTLIST_EN_RELAXED_RE
 except ImportError:
-    command_line_tool = None
+    command_line_tool = None  # type: ignore
+
+try:
+    from cwltool.load_tool import resolve_and_validate_document
+except ImportError:
+    resolve_and_validate_document = None  # type: ignore
+
+try:
+    from cwltool import command_line_tool
+    command_line_tool.ACCEPTLIST_RE = command_line_tool.ACCEPTLIST_EN_RELAXED_RE
+except ImportError:
+    command_line_tool = None  # type: ignore
 
 try:
     import shellescape
 except ImportError:
-    shellescape = None
+    shellescape = None  # type: ignore
 
 try:
     import schema_salad
@@ -73,9 +81,9 @@ try:
         sourceline,
     )
 except ImportError:
-    schema_salad = None
-    ref_resolver = None
-    sourceline = None
+    schema_salad = None  # type: ignore
+    ref_resolver = None  # type: ignore
+    sourceline = None  # type: ignore
 
 needs_shell_quoting = re.compile(r"""(^$|[\s|&;()<>\'"$@])""").search
 

@@ -5,11 +5,11 @@ import string
 import sys
 import tempfile
 from collections import (
-    namedtuple,
     OrderedDict
 )
 from io import StringIO
 from textwrap import TextWrapper
+from typing import Any, List, NamedTuple
 
 import requests
 import yaml
@@ -51,11 +51,6 @@ NO_APP_MAIN_MESSAGE = "No app:main section found, using application defaults thr
 YAML_COMMENT_WRAPPER = TextWrapper(initial_indent="# ", subsequent_indent="# ", break_long_words=False, break_on_hyphens=False)
 RST_DESCRIPTION_WRAPPER = TextWrapper(initial_indent="    ", subsequent_indent="    ", break_long_words=False, break_on_hyphens=False)
 UWSGI_SCHEMA_PATH = "lib/galaxy/webapps/uwsgi_schema.yml"
-
-App = namedtuple(
-    "App",
-    ["config_paths", "default_port", "expected_app_factories", "destination", "schema_path", "uwsgi_module"]
-)
 
 UWSGI_OPTIONS = OrderedDict([
     ('http', {
@@ -154,8 +149,8 @@ UWSGI_OPTIONS = OrderedDict([
         'type': 'str',
     }),
     ('py-call-osafterfork', {
-        'desc': """Feature necessary for proper mule signal handling""",
-        'default': True,
+        'desc': """Feature necessary for proper mule signal handling on Python versions below 3.7.2. The default is set to false to prevent a runtime error under Python 3.7.2 and newer (see https://github.com/unbit/uwsgi/issues/1978).""",
+        'default': False,
         'type': 'bool',
     }),
     ('enable-threads', {
@@ -312,26 +307,39 @@ OPTION_ACTIONS = {
     'tool_submission_burst_at': _DeprecatedAndDroppedAction(),
     'toolform_upgrade': _DeprecatedAndDroppedAction(),
     'enable_beta_mulled_containers': _DeprecatedAndDroppedAction(),
+    'enable_communication_server': _DeprecatedAndDroppedAction(),
+    'communication_server_host': _DeprecatedAndDroppedAction(),
+    'communication_server_port': _DeprecatedAndDroppedAction(),
+    'persistent_communication_rooms': _DeprecatedAndDroppedAction(),
+    'legacy_eager_objectstore_initialization': _DeprecatedAndDroppedAction(),
 }
 
 
-def _app_name(self):
-    return os.path.splitext(os.path.basename(self.destination))[0]
+class App(NamedTuple):
+    config_paths: List[str]
+    default_port: str
+    expected_app_factories: List[str]
+    destination: str
+    schema_path: str
+    uwsgi_module: str
+
+    @property
+    def app_name(self):
+        return os.path.splitext(os.path.basename(self.destination))[0]
+
+    @property
+    def sample_destination(self):
+        return self.destination + ".sample"
+
+    @property
+    def schema(self):
+        return AppSchema(self.schema_path, self.app_name)
 
 
-def _sample_destination(self):
-    return self.destination + ".sample"
-
-
-def _schema(self):
-    return AppSchema(self.schema_path, self.app_name)
-
-
-App.app_name = property(_app_name)
-App.sample_destination = property(_sample_destination)
-App.schema = property(_schema)
-
-OptionValue = namedtuple("OptionValue", ["name", "value", "option"])
+class OptionValue(NamedTuple):
+    name: str
+    value: Any
+    option: Any
 
 
 GALAXY_APP = App(
@@ -407,7 +415,7 @@ def _write_option_rst(args, rst, key, heading_level, option_value):
     heading = heading_level * len(title)
     rst.write(f"{heading}\n{title}\n{heading}\n\n")
     option, value = _parse_option_value(option_value)
-    desc = option["desc"]
+    desc = _get_option_desc(option)
     rst.write(":Description:\n")
     # Wrap and indent desc, replacing whitespaces with a space, except
     # for double newlines which are replaced with a single newline.
@@ -418,6 +426,8 @@ def _write_option_rst(args, rst, key, heading_level, option_value):
         default = "true"
     elif default is False:
         default = "false"
+    elif default == "":
+        default = '""'
     rst.write(":Default: ``%s``\n" % default)
     if type:
         rst.write(":Type: %s\n" % type)
@@ -733,7 +743,7 @@ def _write_header(f, section_header):
 
 def _write_option(args, f, key, option_value, as_comment=False, uwsgi_hack=False):
     option, value = _parse_option_value(option_value)
-    desc = option["desc"]
+    desc = _get_option_desc(option)
     comment = ""
     if desc and args.add_comments:
         # Wrap and comment desc, replacing whitespaces with a space, except
@@ -800,6 +810,15 @@ def _server_paste_to_uwsgi(app_desc, server_config, applied_filters):
 
 def _warn(message):
     print("WARNING: %s" % message)
+
+
+def _get_option_desc(option):
+    desc = option["desc"]
+    parent_dir = option.get("path_resolves_to")
+    if parent_dir:
+        path_resolves = f"The value of this option will be resolved with respect to <{parent_dir}>."
+        return f"{desc}\n{path_resolves}" if desc else path_resolves
+    return desc
 
 
 ACTIONS = {

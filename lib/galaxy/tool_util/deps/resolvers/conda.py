@@ -13,7 +13,6 @@ from . import (
     Dependency,
     DependencyException,
     DependencyResolver,
-    InstallableDependencyResolver,
     ListableDependencyResolver,
     MappableDependencyResolver,
     MultipleDependencyResolver,
@@ -39,9 +38,8 @@ from ..conda_util import (
 DEFAULT_BASE_PATH_DIRECTORY = "_conda"
 DEFAULT_CONDARC_OVERRIDE = "_condarc"
 # Conda channel order from highest to lowest, following the one used in
-# https://github.com/bioconda/bioconda-recipes/blob/master/config.yml , but
-# adding `iuc` as first channel (for Galaxy-specific packages)
-DEFAULT_ENSURE_CHANNELS = "iuc,conda-forge,bioconda,defaults"
+# https://github.com/bioconda/bioconda-recipes/blob/master/config.yml
+DEFAULT_ENSURE_CHANNELS = "conda-forge,bioconda,defaults"
 CONDA_SOURCE_CMD = """[ "$(basename "$CONDA_DEFAULT_ENV")" = "$(basename '{environment_path}')" ] || {{
 MAX_TRIES=3
 COUNT=0
@@ -65,7 +63,7 @@ done
 log = logging.getLogger(__name__)
 
 
-class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, ListableDependencyResolver, InstallableDependencyResolver, SpecificationPatternDependencyResolver, MappableDependencyResolver):
+class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, ListableDependencyResolver, SpecificationPatternDependencyResolver, MappableDependencyResolver):
     dict_collection_visible_keys = DependencyResolver.dict_collection_visible_keys + ['prefix', 'versionless', 'ensure_channels', 'auto_install', 'auto_init', 'use_local']
     resolver_type = "conda"
     config_options = {
@@ -81,7 +79,8 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
     _specification_pattern = re.compile(r"https\:\/\/anaconda.org\/\w+\/\w+")
 
     def __init__(self, dependency_manager, **kwds):
-        self.can_uninstall_dependencies = True
+        read_only = _string_as_bool(kwds.get('read_only', 'false'))
+        self.read_only = read_only
         self._setup_mapping(dependency_manager, **kwds)
         self.versionless = _string_as_bool(kwds.get('versionless', 'false'))
         self.dependency_manager = dependency_manager
@@ -168,6 +167,9 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
         return final_return_code
 
     def install_all(self, conda_targets):
+        if self.read_only:
+            return False
+
         env = self.merged_environment_name(conda_targets)
         return_code = install_conda_targets(conda_targets, conda_context=self.conda_context, env_name=env)
         if return_code != 0:
@@ -336,8 +338,11 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
             version = install_target.version
             yield self._to_requirement(name, version)
 
-    def install_dependency(self, name, version, type, **kwds):
+    def _install_dependency(self, name, version, type, **kwds):
         "Returns True on (seemingly) successfull installation"
+        # should be checked before called
+        assert not self.read_only
+
         if type != "package":
             log.warning("Cannot install dependencies of type '%s'" % type)
             return False

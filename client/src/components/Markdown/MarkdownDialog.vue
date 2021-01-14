@@ -9,16 +9,26 @@
             @onOk="onOk"
             @onCancel="onCancel"
         />
-        <DataDialog v-if="dataShow" :history="dataHistoryId" format="id" @onOk="onData" @onCancel="onCancel" />
+        <MarkdownVisualization
+            v-else-if="visualizationShow"
+            :argument-name="argumentName"
+            :argument-payload="argumentPayload"
+            :labels="labels"
+            :use-labels="useLabels"
+            :history="dataHistoryId"
+            @onOk="onVisualization"
+            @onCancel="onCancel"
+        />
+        <DataDialog v-else-if="dataShow" :history="dataHistoryId" format="id" @onOk="onData" @onCancel="onCancel" />
         <DatasetCollectionDialog
-            v-if="dataCollectionShow"
+            v-else-if="dataCollectionShow"
             :history="dataHistoryId"
             format="id"
             @onOk="onDataCollection"
             @onCancel="onCancel"
         />
         <BasicSelectionDialog
-            v-if="jobShow"
+            v-else-if="jobShow"
             :get-data="getJobs"
             :is-encoded="true"
             title="Job"
@@ -27,7 +37,7 @@
             @onCancel="onCancel"
         />
         <BasicSelectionDialog
-            v-if="invocationShow"
+            v-else-if="invocationShow"
             :get-data="getInvocations"
             :is-encoded="true"
             title="Invocation"
@@ -36,7 +46,7 @@
             @onCancel="onCancel"
         />
         <BasicSelectionDialog
-            v-if="workflowShow"
+            v-else-if="workflowShow"
             :get-data="getWorkflows"
             title="Workflow"
             leaf-icon="fa fa-sitemap fa-rotate-270"
@@ -54,6 +64,7 @@ import BootstrapVue from "bootstrap-vue";
 import { getAppRoot } from "onload/loadConfig";
 import { getCurrentGalaxyHistory } from "utils/data";
 import MarkdownSelector from "./MarkdownSelector";
+import MarkdownVisualization from "./MarkdownVisualization";
 import DataDialog from "components/DataDialog/DataDialog";
 import DatasetCollectionDialog from "components/SelectionDialog/DatasetCollectionDialog";
 import BasicSelectionDialog from "components/SelectionDialog/BasicSelectionDialog";
@@ -63,6 +74,7 @@ Vue.use(BootstrapVue);
 export default {
     components: {
         MarkdownSelector,
+        MarkdownVisualization,
         BasicSelectionDialog,
         DatasetCollectionDialog,
         DataDialog,
@@ -74,6 +86,10 @@ export default {
         },
         argumentType: {
             type: String,
+            default: null,
+        },
+        argumentPayload: {
+            type: Object,
             default: null,
         },
         labels: {
@@ -105,6 +121,7 @@ export default {
             workflowsUrl: `${getAppRoot()}api/workflows`,
             invocationsUrl: `${getAppRoot()}api/invocations`,
             selectedShow: false,
+            visualizationShow: false,
             workflowShow: false,
             jobShow: false,
             invocationShow: false,
@@ -151,6 +168,10 @@ export default {
             this.workflowShow = false;
             this.$emit("onInsert", `workflow_display(workflow_id=${response.id})`);
         },
+        onVisualization(response) {
+            this.visualizationShow = false;
+            this.$emit("onInsert", response);
+        },
         onCreate() {
             if (this.argumentType == "workflow_id") {
                 this.workflowShow = true;
@@ -159,8 +180,8 @@ export default {
                     this.selectedShow = true;
                 } else {
                     getCurrentGalaxyHistory().then((historyId) => {
-                        this.dataShow = true;
                         this.dataHistoryId = historyId;
+                        this.dataShow = true;
                     });
                 }
             } else if (this.argumentType == "history_dataset_collection_id") {
@@ -168,8 +189,8 @@ export default {
                     this.selectedShow = true;
                 } else {
                     getCurrentGalaxyHistory().then((historyId) => {
-                        this.dataCollectionShow = true;
                         this.dataHistoryId = historyId;
+                        this.dataCollectionShow = true;
                     });
                 }
             } else if (this.argumentType == "invocation_id") {
@@ -184,6 +205,11 @@ export default {
                 } else {
                     this.jobShow = true;
                 }
+            } else if (this.argumentType == "visualization_id") {
+                getCurrentGalaxyHistory().then((historyId) => {
+                    this.dataHistoryId = historyId;
+                    this.visualizationShow = true;
+                });
             }
         },
         onOk(selectedLabel) {
@@ -225,6 +251,7 @@ export default {
             this.dataCollectionShow = false;
             this.selectedShow = false;
             this.workflowShow = false;
+            this.visualizationShow = false;
             this.jobShow = false;
             this.invocationShow = false;
             this.dataShow = false;

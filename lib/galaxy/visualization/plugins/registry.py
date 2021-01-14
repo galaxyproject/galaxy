@@ -51,7 +51,7 @@ class VisualizationsRegistry:
         """
         Set up the manager and load all visualization plugins.
 
-        :type   app:        UniverseApplication
+        :type   app:        galaxy.app.UniverseApplication
         :param  app:        the application (and its configuration) using this manager
         :type   base_url:   string
         :param  base_url:   url to prefix all plugin urls with
@@ -224,9 +224,11 @@ class VisualizationsRegistry:
             raise ObjectNotFound('Unknown or invalid visualization: ' + key)
         return self.plugins[key]
 
-    def get_plugins(self):
+    def get_plugins(self, embeddable=None):
         result = []
         for plugin in self.plugins.values():
+            if embeddable and not plugin.config.get('embeddable'):
+                continue
             result.append(plugin.to_dict())
         return sorted(result, key=lambda k: k.get('html'))
 

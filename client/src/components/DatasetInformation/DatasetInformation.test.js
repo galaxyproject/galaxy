@@ -1,35 +1,36 @@
-import Vuex from "vuex";
-import { mount, createLocalVue } from "@vue/test-utils";
+import axios from "axios";
+import MockAdapter from "axios-mock-adapter";
+import { mount } from "@vue/test-utils";
 import DatasetInformation from "./DatasetInformation";
 import datasetResponse from "./testData/datasetResponse";
 import flushPromises from "flush-promises";
-import createCache from "vuex-cache";
 import moment from "moment";
 
+jest.mock("../History/caching");
 const HDA_ID = "FOO_HDA_ID";
 
-const localVue = createLocalVue();
-localVue.use(Vuex);
-
-const testStore = new Vuex.Store({
-    plugins: [createCache()],
-    modules: {
-        datasetsStore: {
-            actions: {
-                fetchDataset: jest.fn(),
-            },
-            getters: {
-                dataset: (state) => (hda_id) => {
-                    return datasetResponse;
-                },
-            },
-        },
+const mockDatasetProvider = {
+    render() {
+        return this.$scopedSlots.default({
+            loading: false,
+            item: datasetResponse,
+        });
     },
-});
+};
 
 describe("DatasetInformation/DatasetInformation.vue", () => {
     let wrapper;
     let datasetInfoTable;
+    let axiosMock;
+
+    beforeEach(() => {
+        axiosMock = new MockAdapter(axios);
+        axiosMock.onGet(new RegExp(`api/configuration/decode/*`)).reply(200, { decoded_id: 123 });
+    });
+
+    afterEach(() => {
+        axiosMock.restore();
+    });
 
     beforeEach(async () => {
         const propsData = {
@@ -37,9 +38,10 @@ describe("DatasetInformation/DatasetInformation.vue", () => {
         };
 
         wrapper = mount(DatasetInformation, {
-            store: testStore,
             propsData,
-            localVue,
+            stubs: {
+                DatasetProvider: mockDatasetProvider,
+            },
         });
         datasetInfoTable = wrapper.find("#dataset-details");
         await flushPromises();
@@ -49,8 +51,8 @@ describe("DatasetInformation/DatasetInformation.vue", () => {
         // table should exist
         expect(datasetInfoTable).toBeTruthy();
         const rows = datasetInfoTable.findAll("tbody > tr");
-        // should contain 6 rows
-        expect(rows.length).toBe(6);
+        // should contain 11 rows
+        expect(rows.length).toBe(11);
     });
 
     it("filesize should be formatted", async () => {
@@ -70,11 +72,16 @@ describe("DatasetInformation/DatasetInformation.vue", () => {
             { htmlAttribute: "name", backend_key: "name" },
             { htmlAttribute: "dbkey", backend_key: "metadata_dbkey" },
             { htmlAttribute: "format", backend_key: "file_ext" },
+            { htmlAttribute: "file-contents", backend_key: "download_url" },
         ];
 
         rendered_entries.forEach((entry) => {
             const renderedText = datasetInfoTable.find(`#${entry.htmlAttribute}`).text();
-            expect(renderedText).toBe(datasetResponse[entry.backend_key].toString());
+            if (entry.htmlAttribute === "file-contents") {
+                expect(renderedText).toBe("contents");
+            } else {
+                expect(renderedText).toBe(datasetResponse[entry.backend_key].toString());
+            }
         });
     });
 });

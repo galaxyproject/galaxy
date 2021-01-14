@@ -9,7 +9,7 @@ Base class(es) for all DataProviders.
 
 import logging
 from collections import deque
-
+from typing import Dict
 
 from . import exceptions
 
@@ -66,21 +66,24 @@ class HasSettings(type):
 class DataProvider(metaclass=HasSettings):
     """
     Base class for all data providers. Data providers:
-        (a) have a source (which must be another file-like object)
-        (b) implement both the iterator and context manager interfaces
-        (c) do not allow write methods
-            (but otherwise implement the other file object interface methods)
+
+    - have a source (which must be another file-like object)
+    - implement both the iterator and context manager interfaces
+    - do not allow write methods (but otherwise implement the other file object interface methods)
+
     """
     # a definition of expected types for keyword arguments sent to __init__
     #   useful for controlling how query string dictionaries can be parsed into correct types for __init__
     #   empty in this base class
-    settings = {}
+    settings: Dict[str, str] = {}
 
     def __init__(self, source, **kwargs):
-        """
+        """Sets up a data provider, validates supplied source.
+
         :param source: the source that this iterator will loop over.
-            (Should implement the iterable interface and ideally have the
-            context manager interface as well)
+                       (Should implement the iterable interface and ideally have the
+                       context manager interface as well)
+
         """
         self.source = self.validate_source(source)
 
@@ -179,7 +182,7 @@ class FilteredDataProvider(DataProvider):
             return either the (optionally modified) datum or None.
         """
         super().__init__(source, **kwargs)
-        self.filter_fn = filter_fn if hasattr(filter_fn, '__call__') else None
+        self.filter_fn = filter_fn if callable(filter_fn) else None
         # count how many data we got from the source
         self.num_data_read = 0
         # how many valid data have we gotten from the source
@@ -224,7 +227,7 @@ class LimitedOffsetDataProvider(FilteredDataProvider):
     """
     # define the expected types of these __init__ arguments so they can be parsed out from query strings
     settings = {
-        'limit' : 'int',
+        'limit': 'int',
         'offset': 'int'
     }
 

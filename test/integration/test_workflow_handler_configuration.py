@@ -81,13 +81,11 @@ steps:
 
 
 def config_file(template, assign_with=''):
-    fd, path = tempfile.mkstemp(suffix=".xml", prefix="workflow_handler_config_")
-    os.close(fd)
-    with open(path, 'w') as config:
+    with tempfile.NamedTemporaryFile(mode='w', suffix=".xml", prefix="workflow_handler_config_", delete=False) as config:
         if assign_with:
             assign_with = f'assign_with="{assign_with}"'
         config.write(template.substitute(assign_with=assign_with))
-    return path
+    return config.name
 
 
 class BaseWorkflowHandlerConfigurationTestCase(integration_util.IntegrationTestCase):

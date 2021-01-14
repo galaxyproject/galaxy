@@ -66,13 +66,13 @@
 </template>
 
 <script>
-import { getRunData } from "./services.js";
+import { getRunData } from "./services";
 import WaitButton from "components/WaitButton";
 import LoadingSpan from "components/LoadingSpan";
 import WorkflowRunSuccess from "./WorkflowRunSuccess";
 import WorkflowRunForm from "./WorkflowRunForm";
 import WorkflowRunFormSimple from "./WorkflowRunFormSimple";
-import { WorkflowRunModel } from "./model.js";
+import { WorkflowRunModel } from "./model";
 import { errorMessageAsString } from "utils/simple-error";
 
 export default {

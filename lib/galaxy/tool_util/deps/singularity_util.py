@@ -32,8 +32,8 @@ def pull_mulled_singularity_command(docker_image_identifier,
 def build_singularity_run_command(
     container_command,
     image,
-    volumes=[],
-    env=[],
+    volumes=None,
+    env=None,
     working_directory=DEFAULT_WORKING_DIRECTORY,
     singularity_cmd=DEFAULT_SINGULARITY_COMMAND,
     run_extra_arguments=DEFAULT_RUN_EXTRA_ARGUMENTS,
@@ -42,6 +42,8 @@ def build_singularity_run_command(
     guest_ports=False,
     container_name=None
 ):
+    volumes = volumes or []
+    env = env or []
     command_parts = []
     # http://singularity.lbl.gov/docs-environment-metadata
     home = None

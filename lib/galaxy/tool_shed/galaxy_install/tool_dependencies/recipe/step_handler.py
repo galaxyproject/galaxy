@@ -28,7 +28,7 @@ VIRTUALENV_URL = 'https://pypi.python.org/packages/d4/0c/9840c08189e030873387a73
 
 class Download:
 
-    def url_download(self, install_dir, downloaded_file_name, download_url, extract=True, checksums={}):
+    def url_download(self, install_dir, downloaded_file_name, download_url, extract=True, checksums=None):
         """
         The given download_url can have an extension like #md5#, #sha256#, (or #md5= to support pypi defaults).
 
@@ -40,6 +40,7 @@ class Download:
         This indicates a checksum which will be checked after download.
         If the checksum does not match an exception is thrown.
         """
+        checksums = checksums or {}
         file_path = os.path.join(install_dir, downloaded_file_name)
         if download_url.startswith("file://"):
             local_file_source = download_url[len('file://'):].split('#')[0]
@@ -1680,7 +1681,7 @@ class SetupVirtualEnv(Download, RecipeStep):
         site_packages_directory_list = [rval]
         if os.path.exists(rval):
             return (rval, site_packages_directory_list)
-        for (dirpath, dirnames, filenames) in os.walk(lib_dir):
+        for _dirpath, dirnames, _filenames in os.walk(lib_dir):
             for dirname in dirnames:
                 rval = os.path.join(lib_dir, dirname, 'site-packages')
                 site_packages_directory_list.append(rval)

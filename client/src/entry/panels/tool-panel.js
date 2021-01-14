@@ -7,6 +7,7 @@ import Vue from "vue";
 import ToolBox from "../../components/Panels/ToolBox";
 import SidePanel from "../../components/Panels/SidePanel";
 import { mountVueComponent } from "../../utils/mountVueComponent";
+import store from "../../store";
 
 const ToolPanel = Backbone.View.extend({
     initialize: function () {
@@ -19,6 +20,7 @@ const ToolPanel = Backbone.View.extend({
         $("body").append(vm);
         const upload = new modalInstance({
             propsData: propsData,
+            store,
         }).$mount(vm);
 
         // attach upload entrypoint to Galaxy object

@@ -7,6 +7,7 @@ import os
 import re
 import sys
 from functools import reduce
+from typing import Set
 
 import numpy as np
 import yaml
@@ -25,7 +26,7 @@ verbose = True
 list of all valid priorities, inferred from the global
 default_desinations section of the config
 """
-priority_list = set()
+priority_list: Set[str] = set()
 
 """
 Instantiated to a list of all valid destinations in the job configuration file
@@ -33,7 +34,7 @@ if run directly to validate configs. Otherwise, remains None. We often check
 to see if app is None, because if it is then we'll try using the
 destination_list instead.
 -"""
-destination_list = set()
+destination_list: Set[str] = set()
 
 """
 The largest the edit distance can be for a word to be considered
@@ -82,21 +83,17 @@ class RuleValidator:
     """
 
     @classmethod
-    def validate_rule(cls, rule_type, app, return_bool=False, *args, **kwargs):
+    def validate_rule(cls, rule_type: str, app, return_bool: bool = False, *args, **kwargs):
         """
         This function is responsible for passing each rule to its relevant
         function.
 
-        @type rule_type: str
-        @param rule_type: the current rule's type
-
-        @type return_bool: bool
-        @param return_bool: True when we are only interested in the result of
+        :param rule_type: the current rule's type
+        :param return_bool: True when we are only interested in the result of
                             the validation, and not the validated rule itself.
-
-        @rtype: bool, dict (depending on return_bool)
-        @return: validated rule or result of validation (depending on
-                 return_bool)
+        :rtype: bool, dict (depending on return_bool)
+        :returns: validated rule or result of validation (depending on
+                  return_bool)
         """
         if rule_type == 'file_size':
             return cls.__validate_file_size_rule(app, return_bool, *args, **kwargs)
@@ -379,30 +376,20 @@ class RuleValidator:
         return valid_rule, rule
 
     @classmethod
-    def __validate_destination(cls, valid_rule, app, return_bool, rule, tool, counter):
+    def __validate_destination(cls, valid_rule: bool, app, return_bool: bool, rule: dict, tool: str, counter: int):
         """
         This function is responsible for validating destination.
 
-        @type valid_rule: bool
-        @param valid_rule: returns True if everything is valid. False if it
+        :param valid_rule: returns True if everything is valid. False if it
                            encounters any abnormalities in the config.
-
-        @type return_bool: bool
-        @param return_bool: True when we are only interested in the result of
+        :param return_bool: True when we are only interested in the result of
                             the validation, and not the validated rule itself.
-
-        @type rule: dict
-        @param rule: contains the original received rule
-
-        @type tool: str
-        @param tool: the name of the current tool. Necessary for log output.
-
-        @type counter: int
-        @param counter: this counter is used to identify what rule # is
+        :param rule: contains the original received rule
+        :param tool: the name of the current tool. Necessary for log output.
+        :param counter: this counter is used to identify what rule # is
                         currently being validated. Necessary for log output.
-
-        @rtype: bool, dict (tuple)
-        @return: validated rule and result of validation
+        :rtype: bool, dict (tuple)
+        :returns: validated rule and result of validation
         """
 
         if "fail_message" in rule:
@@ -697,27 +684,20 @@ class RuleValidator:
         return valid_rule, rule
 
 
-def parse_yaml(path="/config/tool_destinations.yml",
-               job_conf_path="/config/job_conf.xml", app=None, test=False,
-               return_bool=False):
+def parse_yaml(path: str = "/config/tool_destinations.yml",
+               job_conf_path: str = "/config/job_conf.xml", app=None, test: bool = False,
+               return_bool: bool = False):
     """
     Get a yaml file from path and send it to validate_config for validation.
 
-    @type path: str
-    @param path: the path to the tool destinations config file
-
-    @type job_conf_path: str
-    @param job_conf_path: the path to the job config file
-
-    @type test: bool
-    @param test: indicates whether to run in test mode or production mode
-
-    @type return_bool: bool
-    @param return_bool: True when we are only interested in the result of the
+    :param path: the path to the tool destinations config file
+    :param job_conf_path: the path to the job config file
+    :param test: indicates whether to run in test mode or production mode
+    :type return_bool: bool
+    :param return_bool: True when we are only interested in the result of the
                           validation, and not the validated rule itself.
-
-    @rtype: bool, dict (depending on return_bool)
-    @return: validated rule or result of validation (depending on return_bool)
+    :rtype: bool, dict (depending on return_bool)
+    :returns: validated rule or result of validation (depending on return_bool)
 
     """
 
@@ -753,7 +733,7 @@ def parse_yaml(path="/config/tool_destinations.yml",
                 config = validate_config(config, app)
         except MalformedYMLException:
             if verbose:
-                log.error(str(sys.exc_value))
+                log.exception("Failed to parse YAML for dynamic job destination")
             raise
     except ScannerError:
         if verbose:
@@ -767,34 +747,26 @@ def parse_yaml(path="/config/tool_destinations.yml",
         return config
 
 
-def validate_destination(app, destination, err_message, err_message_contents,
-                         return_bool=True):
+def validate_destination(app, destination: str, err_message: str, err_message_contents,
+                         return_bool: bool = True):
     """
     Validate received destination id.
 
-    @type app:
-    @param app: Current app
-
-    @type destination: str
-    @param destination: string containing the destination id that is being
+    :param app: Current app
+    :param destination: string containing the destination id that is being
                         validated
-
-    @type err_message: str
-    @param err_message: Error message to be formatted with the contents of
+    :param err_message: Error message to be formatted with the contents of
                         `err_message_contents` upon the event of invalid
                         destination
-
-    @type err_message_contents: tuple
-    @param err_message_contents: A tuple of strings to be placed in
-                                 `err_message`
-
-    @type return_bool: bool
-    @param return_bool: Whether or not the calling function has been told to
+    :type err_message_contents: tuple
+    :param err_message_contents: A tuple of strings to be placed in
+                                 ``err_message``
+    :param return_bool: Whether or not the calling function has been told to
                         return a boolean value or not. Determines whether or
                         not to print 'Ignoring...' after error messages.
 
-    @rtype: bool
-    @return: True if the destination is valid and False otherwise.
+    :rtype: bool
+    :returns: True if the destination is valid and False otherwise.
     """
 
     valid_destination = False
@@ -823,19 +795,15 @@ def validate_destination(app, destination, err_message, err_message_contents,
     return valid_destination
 
 
-def validate_config(obj, app=None, return_bool=False,):
+def validate_config(obj: dict, app=None, return_bool: bool = False):
     """
     Validate received config.
 
-    @type obj: dict
-    @param obj: the entire contents of the config
-
-    @type return_bool: bool
-    @param return_bool: True when we are only interested in the result of the
-                          validation, and not the validated rule itself.
-
-    @rtype: bool, dict (depending on return_bool)
-    @return: validated rule or result of validation (depending on return_bool)
+    :param obj: the entire contents of the config
+    :param return_bool: True when we are only interested in the result of the
+                        validation, and not the validated rule itself.
+    :rtype: bool, dict (depending on return_bool)
+    :returns: validated rule or result of validation (depending on return_bool)
     """
 
     global priority_list
@@ -1268,7 +1236,7 @@ def str_to_bytes(size):
             except ValueError:
                 error = "Unable to convert size " + str(size)
                 raise MalformedYMLException(error)
-            except (UnboundLocalError, NameError):
+            except NameError:
                 pass
         else:
             curr_size = -1
@@ -1624,21 +1592,22 @@ def map_tool_to_destination(
     return destination
 
 
-def get_destination_list_from_job_config(job_config_location):
+def get_destination_list_from_job_config(job_config_location) -> set:
     """
     returns A list of all destination IDs declared in the job configuration
 
-    @type job_config_location: str
-    @param job_config_location: The location of the job config file relative
-                to the galaxy root directory. If NoneType, defaults to
-                galaxy/config/job_conf.xml,
-                galaxy/config/job_conf.xml.sample_advanced, or
-                galaxy/config/job_conf.xml.sample_basic
-                (first one that exists)
+    :type job_config_location: str
+    :param job_config_location:
 
-    @rtype: list
-    @return: A list of all of the destination IDs declared in the job
-                configuration file.
+        The location of the job config file relative
+        to the galaxy root directory. If NoneType, defaults to
+        galaxy/config/job_conf.xml,
+        galaxy/config/job_conf.xml.sample_advanced, or
+        galaxy/config/job_conf.xml.sample_basic
+        (first one that exists)
+
+    :return: A list of all of the destination IDs declared in the job
+             configuration file.
     """
     global destination_list
 
@@ -1750,20 +1719,18 @@ def get_typo_correction(typo_str, word_set, max_dist):
     the same when case is not considered. If there are no
     appropriate matches, nothing is returned instead.
 
-    @type typo_str: str
-    @param typo_str: The string to be compared
+    :type typo_str: str
+    :param typo_str: The string to be compared
+    :type word_set: set of str
+    :param word_set: The set of strings to compare to
+    :type max_dist: int
+    :param max_dist: the largest allowed edit distance between
+                     the word and the result. If nothing is
+                     within this range, nothing is returned
 
-    @type word_set: set of str
-    @param word_set: The set of strings to compare to
-
-    @type max_dist: int
-    @param max_dist: the largest allowed edit distance between
-                    the word and the result. If nothing is
-                    within this range, nothing is returned
-
-    @rtype: str or NoneType
-    @return: The closest matching string, or None, if no strings
-    being compared to are within max_dist edit distance.
+    :rtype: str or NoneType
+    :returns: The closest matching string, or None, if no strings
+              being compared to are within max_dist edit distance.
     """
 
     # Start curr_best out as the largest

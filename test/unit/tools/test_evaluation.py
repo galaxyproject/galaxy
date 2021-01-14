@@ -233,10 +233,14 @@ class TestComputeEnvironment(SimpleComputeEnvironment):
         self,
         new_file_path,
         working_directory,
-        input_paths=['/galaxy/files/dataset_1.dat'],
-        output_paths=['/galaxy/files/dataset_2.dat'],
+        input_paths=None,
+        output_paths=None,
         unstructured_path_rewrites=None
     ):
+        if input_paths is None:
+            input_paths = ['/galaxy/files/dataset_1.dat']
+        if output_paths is None:
+            output_paths = ['/galaxy/files/dataset_2.dat']
         self._new_file_path = new_file_path
         self._working_directory = working_directory
         self._input_paths = input_paths

@@ -353,11 +353,53 @@ galaxy:
 .. _protect-reports:
 ```
 
+### Creating archives with mod-zip
+
+Galaxy creates zip archives when downloading multiple datasets from a history or a dataset library.
+While this works fine for small datasets and few users, nginx can handle the creation of zip archives
+more efficiently using [mod-zip](https://www.nginx.com/resources/wiki/modules/zip/).
+To use this feature, install nginx with mod-zip enabled, provide the file locations from which
+nginx should serve files and edit `galaxy.yml` and make the following changes before restarting Galaxy:
+
+```yaml
+galaxy:
+    #...
+    upstream_zip: true
+```
+
+Instead of creating archives Galaxy will send a special header containing the list of files to be archived.
+nginx needs to be able to serve these files. To serve files from /galaxy_root/database/files
+create the following location:
+
+```nginx
+http {
+
+    #...
+
+    server {
+
+        #...
+
+        # handle archive create via mod-zip
+        location /galaxy_root/database/files/ {
+            internal;
+            alias /galaxy_root/database/files/;
+        }
+}
+```
+
+The `internal;` statement means that the location can only be used for internal nginx requests.
+For external requests, the client error 404 (Not Found) is returned, meaning users cannot
+access arbitrary datasets in `/galaxy_root/database/files/` .
+
+Note that if you allow linking datasets from filesystem locations in your data libraries,
+these paths need to exposed in the same way.
+
 ### Use Galaxy Authentication to Protect Custom Paths
 
 You may find it useful to require authentication for access to certain paths on your server.  For example, Galaxy can
 run a separate reports app which gives useful information about your Galaxy instance. See the [Reports Configuration
-documentation](reports) and [Peter Briggs' blog post on the
+documentation](./reports) and [Peter Briggs' blog post on the
 subject](http://galacticengineer.blogspot.com/2015/06/exposing-galaxy-reports-via-nginx-in.html) for more.
 
 After successfully following the blog post, Galaxy reports should be available at e.g. `https://galaxy.example.org/reports`.

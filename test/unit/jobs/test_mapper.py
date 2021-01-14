@@ -143,7 +143,8 @@ def __mapper(tool_job_destination=TOOL_JOB_DESTINATION):
     return mapper
 
 
-def __dynamic_destination(params={}):
+def __dynamic_destination(params=None):
+    params = params or {}
     return JobDestination(runner="dynamic", params=params)
 
 

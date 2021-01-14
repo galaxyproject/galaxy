@@ -12,7 +12,7 @@ from collections import (
     namedtuple,
     OrderedDict
 )
-
+from typing import Any, NamedTuple, Optional
 
 import galaxy.model
 from galaxy import util
@@ -283,7 +283,6 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             association_name = f'__new_primary_file_{name}|{element_identifier_str}__'
             self.add_output_dataset_association(association_name, dataset)
 
-        self.flush()
         self.update_object_store_with_datasets(datasets=element_datasets['datasets'], paths=element_datasets['paths'], extra_files=element_datasets['extra_files'])
         add_datasets_timer = ExecutionTimer()
         self.add_datasets_to_history(element_datasets['datasets'])
@@ -520,7 +519,8 @@ def persist_target_to_export_store(target_dict, export_store, object_store, work
 def persist_elements_to_hdca(model_persistence_context, elements, hdca, collector=None):
     filenames = OrderedDict()
 
-    def add_to_discovered_files(elements, parent_identifiers=[]):
+    def add_to_discovered_files(elements, parent_identifiers=None):
+        parent_identifiers = parent_identifiers or []
         for element in elements:
             if "elements" in element:
                 add_to_discovered_files(element["elements"], parent_identifiers + [element["name"]])
@@ -564,7 +564,10 @@ def persist_elements_to_folder(model_persistence_context, elements, library_fold
             sources = fields_match.sources
             hashes = fields_match.hashes
             created_from_basename = fields_match.created_from_basename
-
+            state = 'ok'
+            if hasattr(discovered_file, "error_message"):
+                info = discovered_file.error_message
+                state = "error"
             model_persistence_context.create_dataset(
                 ext=ext,
                 designation=designation,
@@ -578,6 +581,7 @@ def persist_elements_to_folder(model_persistence_context, elements, library_fold
                 sources=sources,
                 hashes=hashes,
                 created_from_basename=created_from_basename,
+                final_job_state=state,
             )
 
 
@@ -610,6 +614,10 @@ def persist_hdas(elements, model_persistence_context, final_job_state='ok'):
                 hashes = fields_match.hashes
                 created_from_basename = fields_match.created_from_basename
                 extra_files = fields_match.extra_files
+                state = final_job_state
+                if hasattr(discovered_file, "error_message"):
+                    state = "error"
+                    info = discovered_file.error_message
                 dataset = model_persistence_context.create_dataset(
                     ext=ext,
                     designation=designation,
@@ -624,7 +632,7 @@ def persist_hdas(elements, model_persistence_context, final_job_state='ok'):
                     sources=sources,
                     hashes=hashes,
                     created_from_basename=created_from_basename,
-                    final_job_state=final_job_state,
+                    final_job_state=state,
                 )
                 if not hda_id:
                     datasets.append(dataset)
@@ -691,17 +699,23 @@ def replace_request_syntax_sugar(obj):
 DiscoveredFile = namedtuple('DiscoveredFile', ['path', 'collector', 'match'])
 
 
-def discovered_file_for_element(dataset, job_working_directory, parent_identifiers=[], collector=None):
+def discovered_file_for_element(dataset, job_working_directory, parent_identifiers=None, collector=None):
+    parent_identifiers = parent_identifiers or []
     target_directory = discover_target_directory(getattr(collector, "directory", None), job_working_directory)
-    filename = dataset["filename"]
-    # handle link_data_only here, verify filename is in directory if not linking...
-    if not dataset.get("link_data_only"):
-        path = os.path.join(target_directory, filename)
-        if not util.in_directory(path, target_directory):
-            raise Exception("Problem with tool configuration, attempting to pull in datasets from outside working directory.")
+    filename = dataset.get("filename")
+    error_message = dataset.get("error_message")
+    if error_message is None:
+        # handle link_data_only here, verify filename is in directory if not linking...
+        if not dataset.get("link_data_only"):
+            path = os.path.join(target_directory, filename)
+            if not util.in_directory(path, target_directory):
+                raise Exception("Problem with tool configuration, attempting to pull in datasets from outside working directory.")
+        else:
+            path = filename
+        return DiscoveredFile(path, collector, JsonCollectedDatasetMatch(dataset, collector, filename, path=path, parent_identifiers=parent_identifiers))
     else:
-        path = filename
-    return DiscoveredFile(path, collector, JsonCollectedDatasetMatch(dataset, collector, filename, path=path, parent_identifiers=parent_identifiers))
+        assert "error_message" in dataset
+        return DiscoveredFileError(dataset['error_message'], collector, JsonCollectedDatasetMatch(dataset, collector, None, parent_identifiers=parent_identifiers))
 
 
 def discover_target_directory(dir_name, job_working_directory):
@@ -716,7 +730,8 @@ def discover_target_directory(dir_name, job_working_directory):
 
 class JsonCollectedDatasetMatch:
 
-    def __init__(self, as_dict, collector, filename, path=None, parent_identifiers=[]):
+    def __init__(self, as_dict, collector, filename, path=None, parent_identifiers=None):
+        parent_identifiers = parent_identifiers or []
         self.as_dict = as_dict
         self.collector = collector
         self.filename = filename
@@ -811,3 +826,10 @@ class RegexCollectedDatasetMatch(JsonCollectedDatasetMatch):
         super().__init__(
             re_match.groupdict(), collector, filename, path=path
         )
+
+
+class DiscoveredFileError(NamedTuple):
+    error_message: str
+    collector: Any   # TODO: setup interface for this
+    match: JsonCollectedDatasetMatch
+    path: Optional[str] = None

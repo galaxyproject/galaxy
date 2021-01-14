@@ -31,24 +31,23 @@ def timenow():
     return time.strftime('%d/%m/%Y %H:%M:%S', time.localtime(time.time()))
 
 
-def pruneLD(plinktasks=[], cd='./', vclbase=[]):
+def pruneLD(plinktasks=None, cd='./', vclbase=None):
     """
     """
-    fplog, plog = tempfile.mkstemp()
-    alog = []
-    alog.append('## Rgenetics: http://rgenetics.org Galaxy Tools rgQC.py Plink pruneLD runner\n')
-    for task in plinktasks:  # each is a list
-        vcl = vclbase + task
-        with open(plog, 'w') as sto:
-            subprocess.check_call(vcl, stdout=sto, stderr=sto, cwd=cd)
-        try:
-            lplog = open(plog).readlines()
-            lplog = [elem for elem in lplog if elem.find('Pruning SNP') == -1]
-            alog += lplog
-            alog.append('\n')
-            os.unlink(plog)  # no longer needed
-        except Exception:
-            alog.append('### {} Strange - no std out from plink when running command line\n{}\n'.format(timenow(), ' '.join(vcl)))
+    plinktasks = plinktasks or []
+    vclbase = vclbase or []
+    alog = ['## Rgenetics: http://rgenetics.org Galaxy Tools rgQC.py Plink pruneLD runner\n']
+    with tempfile.NamedTemporaryFile(mode='r+') as plog:
+        for task in plinktasks:  # each is a list
+            vcl = vclbase + task
+            subprocess.check_call(vcl, stdout=plog, stderr=plog, cwd=cd)
+            try:
+                plog.seek(0)
+                lplog = [elem for elem in plog.readlines() if elem.find('Pruning SNP') == -1]
+                alog += lplog
+                alog.append('\n')
+            except Exception:
+                alog.append('### {} Strange - no std out from plink when running command line\n{}\n'.format(timenow(), ' '.join(vcl)))
     return alog
 
 
@@ -103,7 +102,7 @@ def main():
         s2 = f'Input {base_name}, winsize={winsize}, winmove={winmove}, r2thresh={r2thresh}'
         print(f'{s1} {s2}')
         f.write(f'<div>{s1}\n{s2}\n<ol>')
-        for i, data in enumerate(flist):
+        for data in flist:
             f.write('<li><a href="{}">{}</a></li>\n'.format(os.path.split(data)[-1], os.path.split(data)[-1]))
         f.write("</div></body></html>")
 
