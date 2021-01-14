@@ -8,9 +8,31 @@
         </template>
         <b-card-body>
             <LintSection
+                :okay="checkAnnotation"
+                success-message="This workflow defines an annotation. Ideally, this helps the executors of the workflow
+                    understand the purpose and usage of the workflow."
+                warning-message="This workflow does not define an annotation. This should provided to help the
+                    executors of the workflow understand the purpose and usage of the workflow."
+            />
+            <LintSection
+                :okay="checkLicense"
+                success-message="This workflow defines a license."
+                warning-message="This workflow does not specify a license. This is important metadata for workflows
+                    that will be published and/or shared to help workflow executors understand how it
+                    may be used."
+            />
+            <LintSection
+                :okay="checkCreator"
+                success-message="This workflow defines creator information."
+                warning-message="This workflow does not specify creator(s). This is important metadata for workflows
+                    that will be published and/or shared to help workflow executors know how to cite the
+                    workflow authors."
+            />
+            <LintSection
                 success-message="Workflow parameters are using formal inputs."
                 warning-message="This workflow uses implicit workflow parameters. They should be replaced with
-                formal workflow inputs:"
+                formal workflow inputs. Formal inputs make tracking workflow provenance, usage within subworkflows,
+                and executing the workflow via the API more robust:"
                 :warning-items="warningImplicitParameters"
                 @onMouseOver="highlight"
                 @onMouseLeave="unhighlight"
@@ -18,7 +40,8 @@
             />
             <LintSection
                 success-message="All non-optional inputs to workflow steps are connected to formal workflow inputs."
-                warning-message="Some non-optional inputs are not connected to formal workflow inputs:"
+                warning-message="Some non-optional inputs are not connected to formal workflow inputs. Formal inputs
+                make tracking workflow provenance, usage within subworkflows, and executing the workflow via the API more robust:"
                 :warning-items="warningDisconnectedInputs"
                 @onMouseOver="highlight"
                 @onMouseLeave="unhighlight"
@@ -41,72 +64,6 @@
                 @onMouseLeave="unhighlight"
                 @onClick="scrollTo"
             />
-            <span>
-                <div v-if="checkAnnotation">
-                    <p>
-                        This workflow defines an annotation. Ideally, this helps the executors of the workflow
-                        understand the purpose and usage of the workflow.
-                    </p>
-                </div>
-                <div v-else>
-                    <p>
-                        <a href="#" @click="onAttributes"
-                            ><font-awesome-icon icon="pencil-alt" />Edit workflow attributes</a
-                        >
-                        to add an annotation.
-                    </p>
-                    <em class="small">
-                        <p>
-                            This workflow does not define an annotation. This should provided to help the
-                            executors of the workflow understand the purpose and usage of the workflow.
-                        </p>
-                    </em>
-                </div>
-            </span>
-            <span>
-                <div v-if="checkLicense">
-                    <p>
-                        This workflow defines a license.
-                    </p>
-                </div>
-                <div v-else>
-                    <p>
-                        <a href="#" @click="onAttributes"
-                            ><font-awesome-icon icon="pencil-alt" />Edit workflow attributes</a
-                        >
-                        to specify a license.
-                    </p>
-                    <em class="small">
-                        <p>
-                            This workflow does not specify a license. This is important metadata for workflows
-                            that will be published and/or shared to help workflow executors understand how it
-                            may be used.
-                        </p>
-                    </em>
-                </div>
-            </span>
-            <span>
-                <div v-if="checkCreator">
-                    <p>
-                        This workflow defines creator information.
-                    </p>
-                </div>
-                <div v-else>
-                    <p>
-                        <a href="#" @click="onAttributes"
-                            ><font-awesome-icon icon="pencil-alt" />Edit workflow attributes</a
-                        >
-                        to specify creator(s).
-                    </p>
-                    <em class="small">
-                        <p>
-                            This workflow does not specify creator(s). This is important metadata for workflows
-                            that will be published and/or shared to help workflow executors know how to cite the
-                            workflow authors.
-                        </p>
-                    </em>
-                </div>
-            </span>
         </b-card-body>
     </b-card>
 </template>
@@ -154,8 +111,6 @@ export default {
     },
     data() {
         return {
-            whyInputs:
-                "Formal inputs make tracking workflow provenance, usage within subworkflows, and executing the workflow via the API all more robust.",
             forceRefresh: 0,
         };
     },
@@ -213,8 +168,8 @@ export default {
     },
     computed: {
         showFixAll() {
-            // we could be even more percise here and check the inputs and such, because
-            // of these extractions may not be possible.
+            // we could be even more precise here and check the inputs and such, because
+            // some of these extractions may not be possible.
             return !this.checkImplicitParameters || !this.checkDisconnectedInputs || !this.checkUnlabeledOutputs;
         },
         checkAnnotation() {
@@ -242,7 +197,7 @@ export default {
         warningImplicitParameters() {
             let items = [];
             if (this.implicitParameters) {
-                this.implicitParameters.parameters.forEach(parameter => {
+                this.implicitParameters.parameters.forEach((parameter) => {
                     items.push({
                         stepId: parameter.references[0].nodeId,
                         stepLabel: parameter.references[0].toolInput.label,
@@ -257,7 +212,7 @@ export default {
             const disconnectedInputs = getDisconnectedInputs(this.nodes);
             let items = [];
             if (disconnectedInputs) {
-                disconnectedInputs.forEach(input => {
+                disconnectedInputs.forEach((input) => {
                     items.push({
                         stepId: input.stepId,
                         stepLabel: input.stepLabel,
@@ -272,7 +227,7 @@ export default {
             const inputsMissingMetadata = getInputsMissingMetadata(this.nodes);
             let items = [];
             if (inputsMissingMetadata) {
-                inputsMissingMetadata.forEach(input => {
+                inputsMissingMetadata.forEach((input) => {
                     let missingLabel = null;
                     if (input.missingLabel && input.missingAnnotation) {
                         missingLabel = "missing a label and annotation";
@@ -295,7 +250,7 @@ export default {
             const workflowOutputs = getWorkflowOutputs(this.nodes);
             let items = [];
             if (workflowOutputs) {
-                workflowOutputs.forEach(output => {
+                workflowOutputs.forEach((output) => {
                     if (output.outputLabel == null) {
                         items.push({
                             stepId: output.stepId,

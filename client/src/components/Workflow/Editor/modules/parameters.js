@@ -2,7 +2,6 @@ import _ from "underscore";
 import _l from "utils/localization";
 import Utils from "utils/utils";
 
-
 class ImplicitParameterReference {
     constructor(parameter, node) {
         parameter.references.push(this);

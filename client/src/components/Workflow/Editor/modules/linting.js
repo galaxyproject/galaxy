@@ -1,7 +1,6 @@
 import _ from "underscore";
 import _l from "utils/localization";
 
-
 export function getDisconnectedInputs(nodes) {
     const inputs = [];
     Object.entries(nodes).forEach(([k, node]) => {

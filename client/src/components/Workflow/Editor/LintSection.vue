@@ -1,13 +1,13 @@
 <template>
     <div class="mb-2">
-        <div v-if="noWarningItems">
+        <div v-if="isOkay">
             <font-awesome-icon icon="check" class="text-success" />
             <span>{{ successMessage }}</span>
         </div>
         <div v-else>
             <font-awesome-icon icon="exclamation-triangle" class="text-warning" />
             <span>{{ warningMessage }}</span>
-            <ul class="mt-2">
+            <ul v-if="hasWarningItems" class="mt-2">
                 <li
                     v-for="(item, idx) in warningItems"
                     :key="idx"
@@ -43,23 +43,27 @@ export default {
     props: {
         okay: {
             type: Boolean,
+            default: true,
         },
         successMessage: {
             type: String,
-            default: "",
+            required: true,
         },
         warningMessage: {
             type: String,
-            default: "",
+            required: true,
         },
         warningItems: {
             type: Array,
-            required: true,
+            default: null,
         },
     },
     computed: {
-        noWarningItems() {
-            return !this.warningItems || this.warningItems.length == 0;
+        isOkay() {
+            return this.okay && !this.hasWarningItems;
+        },
+        hasWarningItems() {
+            return this.warningItems && this.warningItems.length > 0;
         },
     },
     methods: {
