@@ -8,18 +8,15 @@
         </template>
         <b-card-body>
             <LintSection
-                :okay="parametersOkay"
                 success-message="Workflow parameters are using formal inputs."
                 warning-message="This workflow uses implicit workflow parameters. They should be replaced with
                 formal workflow inputs:"
-                :warning-items="implicitParametersArray"
+                :warning-items="warningImplicitParameters"
                 @onMouseOver="highlight"
                 @onMouseLeave="unhighlight"
                 @onClick="scrollTo"
             />
-
             <LintSection
-                :okay="disconnectInputsOkay"
                 success-message="All non-optional inputs to workflow steps are connected to formal workflow inputs."
                 warning-message="Some non-optional inputs are not connected to formal workflow inputs:"
                 :warning-items="disconnectedInputs"
@@ -27,9 +24,7 @@
                 @onMouseLeave="unhighlight"
                 @onClick="scrollTo"
             />
-
             <LintSection
-                :okay="inputsMetadataOkay"
                 success-message="All workflow inputs have labels and annotations."
                 warning-message="Some workflow inputs are missing labels and/or annotations:"
                 :warning-items="inputsMissingMetadata"
@@ -37,9 +32,7 @@
                 @onMouseLeave="unhighlight"
                 @onClick="scrollTo"
             />
-
             <LintSection
-                :okay="outputsOkay"
                 success-message="This workflow has outputs and they all have valid labels."
                 warning-message="The following workflow outputs have no labels, they should be assigned a useful label or
                     unchecked in the workflow editor to mark them as no longer being a workflow output:"
@@ -48,7 +41,6 @@
                 @onMouseLeave="unhighlight"
                 @onClick="scrollTo"
             />
-
             <span>
                 <div v-if="annotationOkay">
                     <p>
@@ -71,8 +63,6 @@
                     </em>
                 </div>
             </span>
-
-
             <span>
                 <div v-if="licenseOkay">
                     <p>
@@ -267,7 +257,6 @@ export default {
             return !!this.annotation;
         },
         outputsOkay() {
-            // console.log(this.outputs);
             return this.outputs.length > 0 && this.unlabeledOutputs.length == 0;
         },
         licenseOkay() {
@@ -279,6 +268,19 @@ export default {
             } else {
                 return !!this.creator;
             }
+        },
+        warningImplicitParameters() {
+            let items = [];
+            if (this.implicitParameters) {
+                this.implicitParameters.parameters.forEach(parameter => {
+                    items.push({
+                        stepId: parameter.references[0].nodeId,
+                        stepLabel: parameter.references[0].toolInput.label,
+                        inputLabel: parameter.name,
+                    });
+                });
+            }
+            return items;
         },
         implicitParametersArray() {
             return this.implicitParameters ? this.implicitParameters.parameters : [];

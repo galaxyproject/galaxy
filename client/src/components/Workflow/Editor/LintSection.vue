@@ -1,6 +1,6 @@
 <template>
     <div class="mb-2">
-        <div v-if="okay">
+        <div v-if="noWarningItems">
             <font-awesome-icon icon="check" class="text-success" />
             <span>{{ successMessage }}</span>
         </div>
@@ -54,7 +54,18 @@ export default {
         },
         warningItems: {
             type: Array,
+            required: true,
         },
+    },
+    computed: {
+        noWarningItems() {
+            return !this.warningItems || this.warningItems.length == 0;
+        },
+    },
+    watch: {
+        warningItems() {
+            console.log(this.warningItems);
+        }
     },
     methods: {
         onMouseOver(id) {
