@@ -36,7 +36,7 @@
                 success-message="This workflow has outputs and they all have valid labels."
                 warning-message="The following workflow outputs have no labels, they should be assigned a useful label or
                     unchecked in the workflow editor to mark them as no longer being a workflow output:"
-                :warning-items="unlabeledOutputs"
+                :warning-items="warningUnlabeledOutputs"
                 @onMouseOver="highlight"
                 @onMouseLeave="unhighlight"
                 @onClick="scrollTo"
@@ -280,6 +280,22 @@ export default {
                         inputLabel: missingLabel,
                     });
                 });
+            }
+            return items;
+        },
+        warningUnlabeledOutputs() {
+            this.forceRefresh;
+            const workflowOutputs = getWorkflowOutputs(this.nodes);
+            let items = [];
+            console.log(workflowOutputs);
+            for (const output of workflowOutputs) {
+                if (output.outputLabel == null) {
+                    items.push({
+                        stepId: output.stepId,
+                        stepLabel: output.stepLabel,
+                        inputLabel: output.outputName,
+                    });
+                }
             }
             return items;
         },
