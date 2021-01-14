@@ -1,8 +1,8 @@
 import os
 
 from fastapi import Depends
-from fastapi.routing import APIRouter
 from fastapi_utils.cbv import cbv
+from fastapi_utils.inferring_router import InferringRouter as APIRouter
 from pydantic.fields import Field
 
 from galaxy import (
@@ -43,7 +43,6 @@ class FastAPIToolData:
         '/api/tool_data',
         summary="Lists all available data tables",
         response_description="A list with details on individual data tables.",
-        response_model=ToolDataEntryList,
         dependencies=[
             AdminUserRequired
         ],
@@ -56,7 +55,6 @@ class FastAPIToolData:
         '/api/tool_data/{name}',
         summary="Get details of a given data table",
         response_description="A description of the given data table and its content",
-        response_model=ToolDataDetails,
         dependencies=[
             AdminUserRequired
         ],
