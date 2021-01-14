@@ -13,6 +13,8 @@
                     understand the purpose and usage of the workflow."
                 warning-message="This workflow does not define an annotation. This should provided to help the
                     executors of the workflow understand the purpose and usage of the workflow."
+                attribute-link="Annotate your Workflow"
+                @onClick="onAttributes"
             />
             <LintSection
                 :okay="checkLicense"
@@ -20,6 +22,8 @@
                 warning-message="This workflow does not specify a license. This is important metadata for workflows
                     that will be published and/or shared to help workflow executors understand how it
                     may be used."
+                attribute-link="Specify a License"
+                @onClick="onAttributes"
             />
             <LintSection
                 :okay="checkCreator"
@@ -27,6 +31,8 @@
                 warning-message="This workflow does not specify creator(s). This is important metadata for workflows
                     that will be published and/or shared to help workflow executors know how to cite the
                     workflow authors."
+                attribute-link="Provide Creator Details"
+                @onClick="onAttributes"
             />
             <LintSection
                 success-message="Workflow parameters are using formal inputs."

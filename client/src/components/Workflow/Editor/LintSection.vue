@@ -20,6 +20,11 @@
                     </a>
                 </li>
             </ul>
+            <p v-else class="mt-2 ml-2">
+                <a href="#" @click="onClick">
+                    <font-awesome-icon icon="pencil-alt" class="mr-1" />{{ attributeLink }}
+                </a>
+            </p>
         </div>
     </div>
 </template>
@@ -31,8 +36,9 @@ Vue.use(BootstrapVue);
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCheck, faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faExclamationTriangle, faPencilAlt } from "@fortawesome/free-solid-svg-icons";
 
+library.add(faPencilAlt);
 library.add(faCheck);
 library.add(faExclamationTriangle);
 
@@ -44,6 +50,10 @@ export default {
         okay: {
             type: Boolean,
             default: true,
+        },
+        attributeLink: {
+            type: String,
+            default: "Edit Workflow Attributes",
         },
         successMessage: {
             type: String,
