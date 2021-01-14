@@ -41,7 +41,7 @@ def user_to_model(user):
 
 
 @cbv(router)
-class FastAPITours:
+class FastAPIConfiguration:
 
     @router.get('/api/whoami')
     async def whoami(
