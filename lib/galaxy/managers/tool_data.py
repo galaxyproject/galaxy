@@ -1,8 +1,9 @@
 
-from pydantic.tools import parse_obj_as
-
+from galaxy import exceptions
 from galaxy.app import UniverseApplication
+from galaxy.tools.data import TabularToolDataTable
 from galaxy.tools.data._schema import (
+    ToolDataDetails,
     ToolDataEntryList
 )
 
@@ -22,4 +23,16 @@ class ToolDataManager:
     def index(self) -> ToolDataEntryList:
         """Return all tool data tables."""
         data_tables = [table.to_dict() for table in self.data_tables.values()]
-        return parse_obj_as(ToolDataEntryList, data_tables)
+        return ToolDataEntryList.parse_obj(data_tables)
+
+    def show(self, name: str) -> ToolDataDetails:
+        """Get details of a given data table"""
+        table = self._data_table(name)
+        res = table.to_dict(view='element')
+        return ToolDataDetails.parse_obj(res)
+
+    def _data_table(self, name: str) -> TabularToolDataTable:
+        try:
+            return self.data_tables[name]
+        except IndexError:
+            raise exceptions.ObjectNotFound(f"No such data table {name}")

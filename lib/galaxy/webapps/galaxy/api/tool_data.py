@@ -3,6 +3,7 @@ import os
 from fastapi import Depends
 from fastapi.routing import APIRouter
 from fastapi_utils.cbv import cbv
+from pydantic.fields import Field
 
 from galaxy import (
     exceptions,
@@ -11,7 +12,10 @@ from galaxy import (
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.app import UniverseApplication
 from galaxy.managers.tool_data import ToolDataManager
-from galaxy.tools.data._schema import ToolDataEntryList
+from galaxy.tools.data._schema import (
+    ToolDataDetails,
+    ToolDataEntryList,
+)
 from galaxy.web import (
     expose_api,
     expose_api_raw
@@ -48,6 +52,26 @@ class FastAPIToolData:
         """Get the list of all available data tables."""
         return self.tool_data_manager.index()
 
+    @router.get(
+        '/api/tool_data/{name}',
+        summary="Get details of a given data table",
+        response_description="A description of the given data table and its content",
+        response_model=ToolDataDetails,
+        dependencies=[
+            AdminUserRequired
+        ],
+    )
+    async def show(self,
+        name: str = Field(
+            ...,  # Mark this field as required
+            title="Name",
+            description="The name of the tool data",
+            example="all_fasta"
+        )
+    ) -> ToolDataDetails:
+        """Get the list of all available data tables."""
+        return self.tool_data_manager.show(name)
+
 
 class ToolData(BaseAPIController):
     """
@@ -71,7 +95,7 @@ class ToolData(BaseAPIController):
     @web.require_admin
     @expose_api
     def show(self, trans: ProvidesAppContext, id, **kwds):
-        return self._data_table(id).to_dict(view='element')
+        return self.tool_data_manager.show(id)
 
     @web.require_admin
     @expose_api
