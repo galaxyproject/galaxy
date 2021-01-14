@@ -42,7 +42,7 @@
                 @onClick="scrollTo"
             />
             <span>
-                <div v-if="annotationOkay">
+                <div v-if="checkAnnotation">
                     <p>
                         This workflow defines an annotation. Ideally, this helps the executors of the workflow
                         understand the purpose and usage of the workflow.
@@ -64,7 +64,7 @@
                 </div>
             </span>
             <span>
-                <div v-if="licenseOkay">
+                <div v-if="checkLicense">
                     <p>
                         This workflow defines a license.
                     </p>
@@ -86,7 +86,7 @@
                 </div>
             </span>
             <span>
-                <div v-if="creatorOkay">
+                <div v-if="checkCreator">
                     <p>
                         This workflow defines creator information.
                     </p>
@@ -161,6 +161,9 @@ export default {
     },
     methods: {
         refresh() {
+            // I tried to make these purely reactive but I guess it is not surprising that the
+            // entirity of the nodes object and children aren't all purely reactive.
+            // https://logaretm.com/blog/2019-10-11-forcing-recomputation-of-computed-properties/
             this.forceRefresh += 1;
         },
         onAttributes() {
@@ -177,7 +180,7 @@ export default {
         },
         fixAll() {
             const actions = [];
-            if (!this.parametersOkay) {
+            if (!this.checkImplicitParameters) {
                 const implicitParametersArray = this.implicitParameters ? this.implicitParameters.parameters : [];
                 for (const implicitParameter of implicitParametersArray) {
                     if (implicitParameter.canExtract) {
@@ -188,8 +191,9 @@ export default {
                     }
                 }
             }
-            if (!this.disconnectInputsOkay) {
-                for (const disconnectedInput of this.disconnectedInputs) {
+            if (!this.checkDisconnectedInputs) {
+                const disconnectedInputs = getDisconnectedInputs(this.nodes);
+                for (const disconnectedInput of disconnectedInputs) {
                     if (disconnectedInput.canExtract) {
                         actions.push({
                             action_type: "extract_input",
@@ -201,32 +205,29 @@ export default {
                     }
                 }
             }
-            if (!this.outputsOkay) {
+            if (!this.checkUnlabeledOutputs) {
                 actions.push({ action_type: "remove_unlabeled_workflow_outputs" });
             }
             this.$emit("refactor", actions);
         },
     },
     computed: {
-        parametersOkay() {
-            return this.implicitParameters == null || this.implicitParameters.parameters.length == 0;
+        checkImplicitParameters() {
+            return this.warningImplicitParameters.length == 0;
         },
-        disconnectInputsOkay() {
-            return this.disconnectedInputs == null || this.disconnectedInputs.length == 0;
+        checkDisconnectedInputs() {
+            return this.warningDisconnectedInputs.length == 0;
         },
-        inputsMetadataOkay() {
-            return this.inputsMissingMetadata.length == 0;
+        checkUnlabeledOutputs() {
+            return this.warningUnlabeledOutputs.length == 0;
         },
-        annotationOkay() {
+        checkAnnotation() {
             return !!this.annotation;
         },
-        outputsOkay() {
-            return this.outputs.length > 0 && this.unlabeledOutputs.length == 0;
-        },
-        licenseOkay() {
+        checkLicense() {
             return !!this.license;
         },
-        creatorOkay() {
+        checkCreator() {
             if (this.creator instanceof Array) {
                 return this.creator.length > 0;
             } else {
@@ -301,9 +302,6 @@ export default {
             }
             return items;
         },
-        // I tried to make these purely reactive but I guess it is not surprising that the
-        // entirity of the nodes object and children aren't all purely reactive.
-        // https://logaretm.com/blog/2019-10-11-forcing-recomputation-of-computed-properties/
         disconnectedInputs() {
             this.forceRefresh;
             return getDisconnectedInputs(this.nodes);
@@ -312,23 +310,10 @@ export default {
             this.forceRefresh;
             return getWorkflowOutputs(this.nodes);
         },
-        inputsMissingMetadata() {
-            this.forceRefresh;
-            return getInputsMissingMetadata(this.nodes);
-        },
-        unlabeledOutputs() {
-            const unlabeledOutputs = [];
-            for (const output of this.outputs) {
-                if (output.outputLabel == null) {
-                    unlabeledOutputs.push(output);
-                }
-            }
-            return unlabeledOutputs;
-        },
         showFixAll() {
             // we could be even more percise here and check the inputs and such, because
             // of these extractions may not be possible.
-            return !this.parametersOkay || !this.disconnectInputsOkay || !this.outputsOkay;
+            return !this.checkImplicitParameters || !this.checkDisconnectedInputs || !this.checkUnlabeledOutputs;
         },
     },
 };
