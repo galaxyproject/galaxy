@@ -19,7 +19,7 @@
             <LintSection
                 success-message="All non-optional inputs to workflow steps are connected to formal workflow inputs."
                 warning-message="Some non-optional inputs are not connected to formal workflow inputs:"
-                :warning-items="disconnectedInputs"
+                :warning-items="warningDisconnectedInputs"
                 @onMouseOver="highlight"
                 @onMouseLeave="unhighlight"
                 @onClick="scrollTo"
@@ -27,7 +27,7 @@
             <LintSection
                 success-message="All workflow inputs have labels and annotations."
                 warning-message="Some workflow inputs are missing labels and/or annotations:"
-                :warning-items="inputsMissingMetadata"
+                :warning-items="warningMissingMetadata"
                 @onMouseOver="highlight"
                 @onMouseLeave="unhighlight"
                 @onClick="scrollTo"
@@ -122,8 +122,9 @@ Vue.use(BootstrapVue);
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCheck, faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faExclamationTriangle, faPencilAlt } from "@fortawesome/free-solid-svg-icons";
 
+library.add(faPencilAlt);
 library.add(faCheck);
 library.add(faExclamationTriangle);
 
@@ -159,6 +160,9 @@ export default {
         };
     },
     methods: {
+        refresh() {
+            this.forceRefresh += 1;
+        },
         onAttributes() {
             this.$emit("onAttributes");
         },
@@ -236,6 +240,44 @@ export default {
                         stepId: parameter.references[0].nodeId,
                         stepLabel: parameter.references[0].toolInput.label,
                         inputLabel: parameter.name,
+                    });
+                });
+            }
+            return items;
+        },
+        warningDisconnectedInputs() {
+            this.forceRefresh;
+            const disconnectedInputs = getDisconnectedInputs(this.nodes);
+            let items = [];
+            if (disconnectedInputs) {
+                disconnectedInputs.forEach(input => {
+                    items.push({
+                        stepId: input.stepId,
+                        stepLabel: input.stepLabel,
+                        inputLabel: input.inputLabel,
+                    });
+                });
+            }
+            return items;
+        },
+        warningMissingMetadata() {
+            this.forceRefresh;
+            const inputsMissingMetadata = getInputsMissingMetadata(this.nodes);
+            let items = [];
+            if (inputsMissingMetadata) {
+                inputsMissingMetadata.forEach(input => {
+                    let missingLabel = null;
+                    if (input.missingLabel && input.missingAnnotation) {
+                        missingLabel = "missing a label and annotation";
+                    } else if (input.missingLabel) {
+                        missingLabel = "missing a label";
+                    } else {
+                        missingLabel = "missing an annotation";
+                    }
+                    items.push({
+                        stepId: input.stepId,
+                        stepLabel: input.stepLabel,
+                        inputLabel: missingLabel,
                     });
                 });
             }

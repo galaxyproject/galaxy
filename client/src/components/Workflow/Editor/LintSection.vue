@@ -62,11 +62,6 @@ export default {
             return !this.warningItems || this.warningItems.length == 0;
         },
     },
-    watch: {
-        warningItems() {
-            console.log(this.warningItems);
-        }
-    },
     methods: {
         onMouseOver(id) {
             this.$emit("onMouseOver", id);
