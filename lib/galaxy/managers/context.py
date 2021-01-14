@@ -42,9 +42,10 @@ from typing import List, Optional
 from sqlalchemy.orm.scoping import scoped_session
 
 from galaxy.exceptions import UserActivationRequiredException
-from galaxy.model import History, HistoryDatasetAssociation, Role
+from galaxy.model import Dataset, History, HistoryDatasetAssociation, Role
 from galaxy.model.base import ModelMapping
 from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.structured_app import StructuredApp
 from galaxy.util import bunch
 
 
@@ -56,10 +57,8 @@ class ProvidesAppContext:
     """
 
     @abc.abstractproperty
-    def app(self):
+    def app(self) -> StructuredApp:
         """Provide access to the Galaxy ``app`` object.
-
-        :rtype: galaxy.app.UniverseApplication
         """
 
     @property
@@ -262,21 +261,21 @@ class ProvidesHistoryContext(ProvidesUserContext):
             # The API presents a Bunch for a history.  Until the API is
             # more fully featured for handling this, also return None.
             return None
-        non_ready_or_ok = set(self.app.model.Dataset.non_ready_states)
-        non_ready_or_ok.add(self.app.model.HistoryDatasetAssociation.states.OK)
+        non_ready_or_ok = set(Dataset.non_ready_states)
+        non_ready_or_ok.add(HistoryDatasetAssociation.states.OK)
         datasets = self.sa_session.query(
-            self.app.model.HistoryDatasetAssociation
+            HistoryDatasetAssociation
         ).filter_by(
             deleted=False,
             history_id=self.history.id,
             extension="len"
         ).filter(
-            self.app.model.HistoryDatasetAssociation._state.in_(non_ready_or_ok),
+            HistoryDatasetAssociation.table.c._state.in_(non_ready_or_ok),
         )
         valid_ds = None
         for ds in datasets:
             if ds.dbkey == dbkey:
-                if ds.state == self.app.model.HistoryDatasetAssociation.states.OK:
+                if ds.state == HistoryDatasetAssociation.states.OK:
                     return ds
                 valid_ds = ds
         return valid_ds
