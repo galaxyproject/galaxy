@@ -25,7 +25,6 @@ class ToolDataEntry(BaseModel):
 
 class ToolDataEntryList(BaseModel):
     __root__: List[ToolDataEntry] = Field(
-        default=[],
         title="A list with details on individual data tables.",
     )
 
@@ -44,10 +43,9 @@ class ToolDataDetails(ToolDataEntry):
     )
     # We must use an alias since the name 'fields'
     # shadows a BaseModel attribute
-    fields_td: List[List[str]] = Field(
+    field_value: List[List[str]] = Field(
         alias='fields',
         default=[],
         title="Fields",
         description="",  # TODO add documentation
-        example="all_fasta"
     )

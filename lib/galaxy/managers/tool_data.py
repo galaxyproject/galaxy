@@ -28,8 +28,8 @@ class ToolDataManager:
     def show(self, name: str) -> ToolDataDetails:
         """Get details of a given data table"""
         table = self._data_table(name)
-        res = table.to_dict(view='element')
-        return ToolDataDetails.parse_obj(res)
+        element_view = table.to_dict(view='element')
+        return ToolDataDetails.parse_obj(element_view)
 
     def _data_table(self, name: str) -> TabularToolDataTable:
         try:

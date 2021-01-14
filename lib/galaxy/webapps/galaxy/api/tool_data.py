@@ -67,7 +67,7 @@ class FastAPIToolData:
             example="all_fasta"
         )
     ) -> ToolDataDetails:
-        """Get the list of all available data tables."""
+        """Get details of a given tool data table."""
         return self.tool_data_manager.show(name)
 
 
@@ -93,7 +93,19 @@ class ToolData(BaseAPIController):
     @web.require_admin
     @expose_api
     def show(self, trans: ProvidesAppContext, id, **kwds):
-        return self.tool_data_manager.show(id)
+        """
+        GET /api/tool_data/{id}
+
+        Get details of a given tool data table.
+
+        :type   id:     str
+        :param  id:     the id of the data table
+        """
+        # Here dict(by_alias=True) is required to return
+        # `field_value` as `field` since `field` can not be directly
+        # used in the pydantic BaseModel and needs to be aliased
+        # For more details see: https://github.com/samuelcolvin/pydantic/issues/1250
+        return self.tool_data_manager.show(id).dict(by_alias=True)
 
     @web.require_admin
     @expose_api
