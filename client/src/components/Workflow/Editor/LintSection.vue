@@ -16,7 +16,7 @@
                     class="ml-2"
                 >
                     <a href="#" @click="onClick(item.stepId)" class="scrolls">
-                        <i :class="item.stepIconClass" />{{ item.stepLabel }}: {{ item.warningLabel }}
+                        <font-awesome-icon icon="search" class="mr-1" />{{ item.stepLabel }}: {{ item.warningLabel }}
                     </a>
                 </li>
             </ul>
@@ -36,8 +36,9 @@ Vue.use(BootstrapVue);
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCheck, faExclamationTriangle, faPencilAlt } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faExclamationTriangle, faPencilAlt, faSearch } from "@fortawesome/free-solid-svg-icons";
 
+library.add(faSearch);
 library.add(faPencilAlt);
 library.add(faCheck);
 library.add(faExclamationTriangle);

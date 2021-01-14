@@ -17,21 +17,21 @@
                 @onClick="onAttributes"
             />
             <LintSection
-                :okay="checkLicense"
-                success-message="This workflow defines a license."
-                warning-message="This workflow does not specify a license. This is important metadata for workflows
-                    that will be published and/or shared to help workflow executors understand how it
-                    may be used."
-                attribute-link="Specify a License"
-                @onClick="onAttributes"
-            />
-            <LintSection
                 :okay="checkCreator"
                 success-message="This workflow defines creator information."
                 warning-message="This workflow does not specify creator(s). This is important metadata for workflows
                     that will be published and/or shared to help workflow executors know how to cite the
                     workflow authors."
                 attribute-link="Provide Creator Details"
+                @onClick="onAttributes"
+            />
+            <LintSection
+                :okay="checkLicense"
+                success-message="This workflow defines a license."
+                warning-message="This workflow does not specify a license. This is important metadata for workflows
+                    that will be published and/or shared to help workflow executors understand how it
+                    may be used."
+                attribute-link="Specify a License"
                 @onClick="onAttributes"
             />
             <LintSection
