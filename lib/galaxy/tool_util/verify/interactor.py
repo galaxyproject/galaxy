@@ -562,7 +562,7 @@ class GalaxyInteractorApi:
                 print("| Dataset Info:")
                 print(self.format_for_summary(dataset_info.get("misc_info", ""), "Dataset info is empty."))
                 print("| Peek:")
-                print(self.format_for_summary(dataset_info.get("peek", ""), "Peek unavilable."))
+                print(self.format_for_summary(dataset_info.get("peek", ""), "Peek unavailable."))
             except Exception:
                 print("| *TEST FRAMEWORK ERROR FETCHING DATASET DETAILS*")
             try:
