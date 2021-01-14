@@ -3,7 +3,7 @@
         <template #header>
             <div class="mb-1 font-weight-bold">
                 <font-awesome-icon icon="magic" class="mr-1" />
-                Validation Results
+                Best Practices Review
             </div>
             <div v-if="showRefactor">
                 <a href="#" @click="onRefactor">
