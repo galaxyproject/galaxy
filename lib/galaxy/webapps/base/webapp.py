@@ -765,7 +765,9 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         self.sa_session.add(self.galaxy_session)
         self.sa_session.flush()
 
-    history = property(get_history, set_history)
+    @property
+    def history(self):
+        return self.get_history()
 
     def get_or_create_default_history(self):
         """

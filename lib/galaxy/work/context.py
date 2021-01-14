@@ -30,10 +30,9 @@ class WorkRequestContext(ProvidesHistoryContext):
     def get_history(self, create=False):
         return self.__history
 
-    def set_history(self, history):
-        raise NotImplementedError("Cannot change histories from a work request context.")
-
-    history = property(get_history, set_history)
+    @property
+    def history(self):
+        return self.get_history()
 
     def get_user(self):
         """Return the current user if logged in or None."""

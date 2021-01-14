@@ -102,8 +102,8 @@ class RoleManager(base.ModelManager):
 
         role = trans.app.model.Role(name=name, description=description, type=role_type)
         trans.sa_session.add(role)
-        users = [trans.sa_session.query(trans.model.User).get(trans.security.decode_id(i)) for i in user_ids]
-        groups = [trans.sa_session.query(trans.model.Group).get(trans.security.decode_id(i)) for i in group_ids]
+        users = [trans.sa_session.query(model.User).get(trans.security.decode_id(i)) for i in user_ids]
+        groups = [trans.sa_session.query(model.Group).get(trans.security.decode_id(i)) for i in group_ids]
 
         # Create the UserRoleAssociations
         for user in users:
