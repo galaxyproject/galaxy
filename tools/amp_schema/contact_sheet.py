@@ -72,17 +72,20 @@ class ContactSheet:
 
 	def create_contact_sheet(self, filenames, labels):
 		nrows = math.ceil(len(filenames)/self.ncols) # number of rows of images
-		sample_image = Image.open(filenames[0]) # A sample image to get aspect ratio from
-		width, height = sample_image.size
-		ratio = height/width
+		
+		if len(filenames) > 0:
+			sample_image = Image.open(filenames[0]) # A sample image to get aspect ratio from
+			width, height = sample_image.size
+			ratio = height/width
+		else:
+			ratio = 1.0	# default ratio if no frame	
+			
 		photoh = round(self.photow * ratio) # calculated height based on aspect ratio & set width
-
 		filename = self.input_file.split('/')[-1] # Get filename for labelling purposes
-
-		image = self.contact_sheet_assembly(filenames, labels, "file: %s\nLabel: %s" % (filename, 'AMP Contact Sheet'), nrows, photoh)
-
+		image = self.contact_sheet_assembly(filenames, labels, "file: %s\nLabel: %s" % (filename, 'AMP Contact Sheet'), nrows, photoh)		
+		
 		temp_file = self.output_file + ".png"
-		image.save(temp_file)
+		image.save(temp_file)		
 		shutil.copyfile(temp_file, self.output_file)
 		if os.path.exists(temp_file):
 			os.remove(temp_file)
@@ -115,8 +118,11 @@ class ContactSheet:
 		marh = self.mart+ self.marb
 
 		padw = (self.ncols-1)*self.padding
-		padh = (nrows-1)*self.padding
-		isize = (self.ncols*self.photow+marw+padw,nrows*photoh+marh+padh)
+		if nrows == 0:
+			padh = 0
+		else:
+			padh = (nrows-1)*self.padding
+		isize = (self.ncols*self.photow+marw+padw, nrows*photoh+marh+padh)
 
 		# Create the new image. The background doesn't have to be white
 		white = (255,255,255)
