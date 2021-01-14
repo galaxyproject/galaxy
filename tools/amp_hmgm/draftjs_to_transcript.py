@@ -45,6 +45,7 @@ def main():
         word_type = text = ''
         confidence = start_time = end_time = -1
         duration = 0.0
+        
         #Standardising draft js format
         if "entityMap" in data.keys():
             transcript = ''

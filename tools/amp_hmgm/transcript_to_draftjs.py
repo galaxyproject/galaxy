@@ -13,7 +13,7 @@ import mgm_utils
 
 segments = list()
 
-# Converts AMP speech to text json to Draft JS which is used by the transcript editor.
+# Converts AMP Transcript json to Draft JS which is used by the transcript editor.
 def main():
 
 	(root_dir, from_transcript, diarization_json, to_draftjs) = sys.argv[1:5]
