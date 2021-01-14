@@ -13,8 +13,8 @@ from fastapi import (
     Depends,
     Query,
 )
-from fastapi.routing import APIRouter
 from fastapi_utils.cbv import cbv
+from fastapi_utils.inferring_router import InferringRouter as APIRouter
 
 from galaxy.app import UniverseApplication
 from galaxy.datatypes.registry import Registry
@@ -64,7 +64,6 @@ class FastAPIDatatypes:
     @router.get(
         '/api/datatypes',
         summary="Lists all available data types",
-        response_model=Union[List[DatatypeDetails], List[str]],
         response_description="List of data types",
     )
     async def index(
@@ -78,7 +77,6 @@ class FastAPIDatatypes:
     @router.get(
         '/api/datatypes/mapping',
         summary="Returns mappings for data types and their implementing classes",
-        response_model=DatatypesMap,
         response_description="Dictionary to map data types with their classes"
     )
     async def mapping(self) -> DatatypesMap:
@@ -88,7 +86,6 @@ class FastAPIDatatypes:
     @router.get(
         '/api/datatypes/types_and_mapping',
         summary="Returns all the data types extensions and their mappings",
-        response_model=DatatypesCombinedMap,
         response_description="Dictionary to map data types with their classes"
     )
     async def types_and_mapping(
@@ -107,7 +104,6 @@ class FastAPIDatatypes:
     @router.get(
         '/api/datatypes/sniffers',
         summary="Returns the list of all installed sniffers",
-        response_model=List[str],
         response_description="List of datatype sniffers"
     )
     async def sniffers(self) -> List[str]:
@@ -117,7 +113,6 @@ class FastAPIDatatypes:
     @router.get(
         '/api/datatypes/converters',
         summary="Returns the list of all installed converters",
-        response_model=DatatypeConverterList,
         response_description="List of all datatype converters"
     )
     async def converters(self) -> DatatypeConverterList:
@@ -127,7 +122,6 @@ class FastAPIDatatypes:
     @router.get(
         '/api/datatypes/edam_formats',
         summary="Returns a dictionary/map of datatypes and EDAM formats",
-        response_model=Dict[str, str],
         response_description="Dictionary/map of datatypes and EDAM formats"
     )
     async def edam_formats(self) -> Dict[str, str]:
@@ -137,7 +131,6 @@ class FastAPIDatatypes:
     @router.get(
         '/api/datatypes/edam_data',
         summary="Returns a dictionary/map of datatypes and EDAM data",
-        response_model=Dict[str, str],
         response_description="Dictionary/map of datatypes and EDAM data"
     )
     async def edam_data(self) -> Dict[str, str]:

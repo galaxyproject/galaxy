@@ -4,8 +4,8 @@ from fastapi import (
     Depends,
     Path
 )
-from fastapi.routing import APIRouter
 from fastapi_utils.cbv import cbv
+from fastapi_utils.inferring_router import InferringRouter as APIRouter
 
 from galaxy.managers.licenses import (
     LicenseMetadataModel,
@@ -34,7 +34,6 @@ class FastAPILicenses:
 
     @router.get('/api/licenses',
         summary="Lists all available SPDX licenses",
-        response_model=List[LicenseMetadataModel],
         response_description="List of SPDX licenses")
     async def index(self) -> List[LicenseMetadataModel]:
         """Returns an index with all the available [SPDX licenses](https://spdx.org/licenses/)."""
@@ -42,7 +41,6 @@ class FastAPILicenses:
 
     @router.get('/api/licenses/{id}',
         summary="Gets the SPDX license metadata associated with the short identifier",
-        response_model=LicenseMetadataModel,
         response_description="SPDX license metadata")
     async def get(self, id=LicenseIdPath) -> LicenseMetadataModel:
         """Returns the license metadata associated with the given
