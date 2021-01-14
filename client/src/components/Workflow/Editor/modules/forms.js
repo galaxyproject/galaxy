@@ -31,7 +31,7 @@ export class DefaultForm {
                 tooltip: _l("Attempt to upgrade this step to latest version of this subworkflow."),
                 icon: "fa-cubes",
                 onclick: function () {
-                    workflow.attemptRefactor([
+                    workflow.onAttemptRefactor([
                         { action_type: "upgrade_subworkflow", step: { order_index: parseInt(node.id) } },
                     ]);
                 },

@@ -143,8 +143,8 @@
                                     @onAttributes="onAttributes"
                                     @onHighlight="onHighlight"
                                     @onUnhighlight="onUnhighlight"
-                                    @refactor="attemptRefactor"
-                                    @scrollTo="scrollTo"
+                                    @onRefactor="onAttemptRefactor"
+                                    @onScrollTo="onScrollTo"
                                 />
                                 <div id="right-content" class="right-content" />
                             </div>
@@ -302,7 +302,7 @@ export default {
             showForm(this, node, this.datatypes);
             this.canvasManager.drawOverview();
         },
-        attemptRefactor(actions) {
+        onAttemptRefactor(actions) {
             if (this.hasChanges) {
                 const r = window.confirm(
                     "You've made changes to your workflow that need to be saved before attempting the requested action. Save those changes and continue?"
@@ -414,7 +414,7 @@ export default {
             showAttributes();
             this._ensureParametersSet();
         },
-        scrollTo(nodeId) {
+        onScrollTo(nodeId) {
             const node = this.nodes[nodeId];
             this.canvasManager.scrollToNode(node);
             node.onScrollTo();

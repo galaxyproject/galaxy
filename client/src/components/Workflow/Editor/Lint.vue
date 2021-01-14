@@ -5,8 +5,8 @@
                 <font-awesome-icon icon="magic" class="mr-1" />
                 Validation Results
             </div>
-            <div v-if="showFixAll">
-                <a href="#" @click="fixAll">
+            <div v-if="showRefactor">
+                <a href="#" @click="onRefactor">
                     Try to automatically fix issues.
                 </a>
             </div>
@@ -45,35 +45,35 @@
                 formal workflow inputs. Formal inputs make tracking workflow provenance, usage within subworkflows,
                 and executing the workflow via the API more robust:"
                 :warning-items="warningImplicitParameters"
-                @onMouseOver="highlight"
-                @onMouseLeave="unhighlight"
-                @onClick="scrollTo"
+                @onMouseOver="onHighlight"
+                @onMouseLeave="onUnhighlight"
+                @onClick="onScrollTo"
             />
             <LintSection
                 success-message="All non-optional inputs to workflow steps are connected to formal workflow inputs."
                 warning-message="Some non-optional inputs are not connected to formal workflow inputs. Formal inputs
                 make tracking workflow provenance, usage within subworkflows, and executing the workflow via the API more robust:"
                 :warning-items="warningDisconnectedInputs"
-                @onMouseOver="highlight"
-                @onMouseLeave="unhighlight"
-                @onClick="scrollTo"
+                @onMouseOver="onHighlight"
+                @onMouseLeave="onUnhighlight"
+                @onClick="onScrollTo"
             />
             <LintSection
                 success-message="All workflow inputs have labels and annotations."
                 warning-message="Some workflow inputs are missing labels and/or annotations:"
                 :warning-items="warningMissingMetadata"
-                @onMouseOver="highlight"
-                @onMouseLeave="unhighlight"
-                @onClick="scrollTo"
+                @onMouseOver="onHighlight"
+                @onMouseLeave="onUnhighlight"
+                @onClick="onScrollTo"
             />
             <LintSection
                 success-message="This workflow has outputs and they all have valid labels."
                 warning-message="The following workflow outputs have no labels, they should be assigned a useful label or
                     unchecked in the workflow editor to mark them as no longer being a workflow output:"
                 :warning-items="warningUnlabeledOutputs"
-                @onMouseOver="highlight"
-                @onMouseLeave="unhighlight"
-                @onClick="scrollTo"
+                @onMouseOver="onHighlight"
+                @onMouseLeave="onUnhighlight"
+                @onClick="onScrollTo"
             />
         </b-card-body>
     </b-card>
@@ -133,19 +133,19 @@ export default {
         onAttributes() {
             this.$emit("onAttributes");
         },
-        scrollTo(stepId) {
-            this.$emit("scrollTo", stepId);
+        onScrollTo(stepId) {
+            this.$emit("onScrollTo", stepId);
         },
-        highlight(stepId) {
+        onHighlight(stepId) {
             this.$emit("onHighlight", stepId);
         },
-        unhighlight(stepId) {
+        onUnhighlight(stepId) {
             this.$emit("onUnhighlight", stepId);
         },
-        fixAll() {
+        onRefactor() {
             const actions = [];
             if (!this.checkImplicitParameters) {
-                const implicitParametersArray = this.implicitParameters ? this.implicitParameters.parameters : [];
+                const implicitParametersArray = this.implicitParameters.parameters;
                 for (const implicitParameter of implicitParametersArray) {
                     if (implicitParameter.canExtract) {
                         actions.push({
@@ -172,11 +172,11 @@ export default {
             if (!this.checkUnlabeledOutputs) {
                 actions.push({ action_type: "remove_unlabeled_workflow_outputs" });
             }
-            this.$emit("refactor", actions);
+            this.$emit("onRefactor", actions);
         },
     },
     computed: {
-        showFixAll() {
+        showRefactor() {
             // we could be even more precise here and check the inputs and such, because
             // some of these extractions may not be possible.
             return !this.checkImplicitParameters || !this.checkDisconnectedInputs || !this.checkUnlabeledOutputs;
