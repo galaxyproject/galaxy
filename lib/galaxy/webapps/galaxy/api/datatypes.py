@@ -61,12 +61,11 @@ def get_datatypes_registry(app: UniverseApplication = Depends(get_app)) -> Regis
 class FastAPIDatatypes:
     datatypes_registry: Registry = Depends(get_datatypes_registry)
 
-    @router.get(
-        '/api/datatypes',
-        summary="Lists all available data types",
-        response_model=Union[List[DatatypeDetails], List[str]],
-        response_description="List of data types",
-    )
+    # mypy does not like the use of Union in the response_model but it must be used to support
+    # the two possible types of response for this endpoint.
+    # Please see: https://stackoverflow.com/questions/62264787/mypy-fastapi-response-model
+    # Aparently this may be related to the Python version
+    @router.get('/api/datatypes', summary="Lists all available data types", response_model=Union[List[DatatypeDetails], List[str]], response_description="List of data types")  # type: ignore
     async def index(
         self,
         extension_only: Optional[bool] = ExtensionOnlyQueryParam,
