@@ -1,9 +1,14 @@
 <template>
     <b-card header-tag="header" body-class="p-0">
         <template #header>
-            <div class="mb-0 font-weight-bold">Validation Results</div>
+            <div class="mb-1 font-weight-bold">
+                <font-awesome-icon icon="magic" class="mr-1" />
+                Validation Results
+            </div>
             <div v-if="showFixAll">
-                <a href="#" @click="fixAll">Attempt to fix any issue that can be automatically fixed.</a>
+                <a href="#" @click="fixAll">
+                    Attempt to fix any issue that can be automatically fixed.
+                </a>
             </div>
         </template>
         <b-card-body>
@@ -80,11 +85,17 @@ import BootstrapVue from "bootstrap-vue";
 import { ImplicitParameters } from "components/Workflow/Editor/modules/parameters";
 import LintSection from "components/Workflow/Editor/LintSection";
 import { getDisconnectedInputs, getInputsMissingMetadata, getWorkflowOutputs } from "./modules/linting";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faMagic } from "@fortawesome/free-solid-svg-icons";
 
 Vue.use(BootstrapVue);
 
+library.add(faMagic);
+
 export default {
     components: {
+        FontAwesomeIcon,
         LintSection,
     },
     props: {
