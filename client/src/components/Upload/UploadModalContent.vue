@@ -35,10 +35,8 @@ import RulesInput from "./RulesInput";
 import LoadingSpan from "components/LoadingSpan";
 import { BTabs, BTab } from "bootstrap-vue";
 import { commonProps } from "./helpers";
-import { eventHubMixin } from "components/plugins";
 
 export default {
-    mixins: [eventHubMixin],
     components: {
         Collection,
         Composite,

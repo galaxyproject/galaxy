@@ -44,10 +44,8 @@ import CurrentUser from "../providers/CurrentUser";
 import UserHistories from "../History/providers/UserHistories";
 import UploadModalContent from "./UploadModalContent";
 import { commonProps } from "./helpers";
-import { eventHubMixin } from "components/plugins";
 
 export default {
-    mixins: [eventHubMixin],
     components: {
         CurrentUser,
         UserHistories,

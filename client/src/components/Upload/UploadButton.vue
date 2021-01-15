@@ -29,11 +29,9 @@ import { VBTooltip } from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faUpload } from "@fortawesome/free-solid-svg-icons";
-import { eventHubMixin } from "components/plugins";
 library.add(faUpload);
 
 export default {
-    mixins: [eventHubMixin],
     components: { FontAwesomeIcon },
     directives: {
         "v-b-tooltip": VBTooltip,

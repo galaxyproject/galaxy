@@ -17,7 +17,7 @@ import { isBetaHistoryOpen } from "components/History/adapters/betaToggle";
 
 export const syncVuextoGalaxy = (store) => {
     const globalGalaxy$ = defer(() => {
-        return waitForInit(getGalaxyInstance).pipe(shareReplay(1));
+        return waitForInit(() => getGalaxyInstance()).pipe(shareReplay(1));
     });
 
     // sets current user when glaaxy changes

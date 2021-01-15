@@ -6,7 +6,7 @@
 
 import { mountVueComponent } from "utils/mountVueComponent";
 import CurrentHistoryPanel from "../CurrentHistoryPanel";
-import { loggingProxy } from "utils/proxy";
+// import { loggingProxy } from "utils/proxy";
 
 import $ from "jquery";
 import { getGalaxyInstance } from "app";
@@ -42,8 +42,8 @@ export const HistoryPanelProxy = Backbone.View.extend({
         });
 
         // add history panel to Galaxy object
-        Galaxy.currHistoryPanel = loggingProxy(this.historyView, "Fake");
-        // Galaxy.currHistoryPanel = this.historyView;
+        // Galaxy.currHistoryPanel = loggingProxy(this.historyView, "Fake");
+        Galaxy.currHistoryPanel = this.historyView;
         Galaxy.currHistoryPanel.listenToGalaxy(Galaxy);
 
         this.model = new Backbone.Model({});
