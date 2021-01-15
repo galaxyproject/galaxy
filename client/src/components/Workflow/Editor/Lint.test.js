@@ -1,7 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "jest/helpers";
 import Lint from "./Lint";
-import { ImplicitParameters } from "./modules/parameters";
+import { UntypedParameters } from "./modules/parameters";
 
 jest.mock("app");
 
@@ -11,10 +11,10 @@ describe("Lint", () => {
     let wrapper;
 
     beforeEach(() => {
-        const implicitParameters = new ImplicitParameters();
+        const untypedParameters = new UntypedParameters();
         wrapper = mount(Lint, {
             propsData: {
-                implicitParameters: implicitParameters,
+                untypedParameters: untypedParameters,
                 nodes: {
                     "1": {
                         id: "1",

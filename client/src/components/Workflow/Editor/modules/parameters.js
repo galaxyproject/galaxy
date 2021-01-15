@@ -2,28 +2,28 @@ import _ from "underscore";
 import _l from "utils/localization";
 import Utils from "utils/utils";
 
-class ImplicitParameterReference {
+class UntypedParameterReference {
     constructor(parameter, node) {
         parameter.references.push(this);
         this.nodeId = node.id;
     }
 }
 
-class ToolInputImplicitParameterReference extends ImplicitParameterReference {
+class ToolInputUntypedParameterReference extends UntypedParameterReference {
     constructor(parameter, node, tooInput) {
         super(parameter, node);
         this.toolInput = tooInput;
     }
 }
 
-class PjaImplicitParameterReference extends ImplicitParameterReference {
+class PjaUntypedParameterReference extends UntypedParameterReference {
     constructor(parameter, node, pja) {
         super(parameter, node);
         this.pja = pja;
     }
 }
 
-class ImplicitParameter {
+class UntypedParameter {
     constructor(name) {
         this.name = name;
         this.references = [];
@@ -37,7 +37,7 @@ class ImplicitParameter {
     }
 }
 
-export class ImplicitParameters {
+export class UntypedParameters {
     constructor() {
         this.parameters = [];
     }
@@ -48,9 +48,9 @@ export class ImplicitParameters {
                 return parameter;
             }
         }
-        const implicitParameter = new ImplicitParameter(name);
-        this.parameters.push(implicitParameter);
-        return implicitParameter;
+        const untypedParameter = new UntypedParameter(name);
+        this.parameters.push(untypedParameter);
+        return untypedParameter;
     }
 
     getParameterFromMatch(match) {
@@ -58,8 +58,8 @@ export class ImplicitParameters {
     }
 }
 
-export function getImplicitWorkflowParameters(nodes) {
-    const implicitParameters = new ImplicitParameters();
+export function getUntypedWorkflowParameters(nodes) {
+    const untypedParameters = new UntypedParameters();
     const parameter_re = /\$\{.+?\}/g;
     Object.entries(nodes).forEach(([k, node]) => {
         if (node.config_form && node.config_form.inputs) {
@@ -68,8 +68,8 @@ export function getImplicitWorkflowParameters(nodes) {
                     var form_matches = d.value.match(parameter_re);
                     if (form_matches) {
                         for (const match of form_matches) {
-                            const implicitParameter = implicitParameters.getParameterFromMatch(match);
-                            new ToolInputImplicitParameterReference(implicitParameter, node, d);
+                            const untypedParameter = untypedParameters.getParameterFromMatch(match);
+                            new ToolInputUntypedParameterReference(untypedParameter, node, d);
                         }
                     }
                 }
@@ -83,8 +83,8 @@ export function getImplicitWorkflowParameters(nodes) {
                             const arg_matches = action_argument.match(parameter_re);
                             if (arg_matches) {
                                 for (const match of arg_matches) {
-                                    const implicitParameter = implicitParameters.getParameterFromMatch(match);
-                                    new PjaImplicitParameterReference(implicitParameter, node, pja);
+                                    const untypedParameter = untypedParameters.getParameterFromMatch(match);
+                                    new PjaUntypedParameterReference(untypedParameter, node, pja);
                                 }
                             }
                         }
@@ -93,5 +93,5 @@ export function getImplicitWorkflowParameters(nodes) {
             });
         }
     });
-    return implicitParameters;
+    return untypedParameters;
 }

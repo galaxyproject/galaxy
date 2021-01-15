@@ -63,10 +63,10 @@ export function getUnlabeledOutputs(nodes) {
     return outputs;
 }
 
-export function getImplicitParameters(implicitParameters) {
+export function getUntypedParameters(untypedParameters) {
     let items = [];
-    if (implicitParameters) {
-        implicitParameters.parameters.forEach((parameter) => {
+    if (untypedParameters) {
+        untypedParameters.parameters.forEach((parameter) => {
             items.push({
                 stepId: parameter.references[0].nodeId,
                 stepLabel: parameter.references[0].toolInput.label,
@@ -78,14 +78,14 @@ export function getImplicitParameters(implicitParameters) {
     return items;
 }
 
-export function getActions(nodes, implicitParameters) {
+export function getActions(nodes, untypedParameters) {
     const actions = [];
-    if (implicitParameters && implicitParameters.parameters) {
-        for (const implicitParameter of implicitParameters.parameters) {
-            if (implicitParameter.canExtract) {
+    if (untypedParameters && untypedParameters.parameters) {
+        for (const untypedParameter of untypedParameters.parameters) {
+            if (untypedParameter.canExtract) {
                 actions.push({
-                    action_type: "extract_implicit_parameter",
-                    name: implicitParameter.name,
+                    action_type: "extract_untyped_parameter",
+                    name: untypedParameter.name,
                 });
             }
         }

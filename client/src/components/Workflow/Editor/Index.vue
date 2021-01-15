@@ -135,7 +135,7 @@
                                     class="right-content"
                                     ref="lint"
                                     style="display: none;"
-                                    :implicit-parameters="parameters"
+                                    :untyped-parameters="parameters"
                                     :annotation="annotation"
                                     :creator="creator"
                                     :license="license"
@@ -160,7 +160,7 @@
 import { getDatatypesMapper } from "components/Datatypes";
 import { fromSimple } from "./modules/model";
 import { getModule, getVersions, saveWorkflow, loadWorkflow } from "./modules/services";
-import { getImplicitWorkflowParameters } from "./modules/parameters";
+import { getUntypedWorkflowParameters } from "./modules/parameters";
 import {
     getStateUpgradeMessages,
     copyIntoWorkflow,
@@ -496,7 +496,7 @@ export default {
             }
         },
         _ensureParametersSet() {
-            this.parameters = getImplicitWorkflowParameters(this.nodes);
+            this.parameters = getUntypedWorkflowParameters(this.nodes);
         },
         _insertStep(contentId, name, type) {
             if (!this.isCanvas) {

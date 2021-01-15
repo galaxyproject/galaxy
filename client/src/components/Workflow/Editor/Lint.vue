@@ -41,10 +41,10 @@
             />
             <LintSection
                 success-message="Workflow parameters are using formal input parameters."
-                warning-message="This workflow uses implicit workflow parameters. They should be replaced with
+                warning-message="This workflow uses legacy workflow parameters. They should be replaced with
                 formal workflow inputs. Formal input parameters make tracking workflow provenance, usage within subworkflows,
                 and executing the workflow via the API more robust:"
-                :warning-items="warningImplicitParameters"
+                :warning-items="warningUntypedParameters"
                 @onMouseOver="onHighlight"
                 @onMouseLeave="onUnhighlight"
                 @onClick="onScrollTo"
@@ -82,12 +82,12 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { ImplicitParameters } from "components/Workflow/Editor/modules/parameters";
+import { UntypedParameters } from "components/Workflow/Editor/modules/parameters";
 import LintSection from "components/Workflow/Editor/LintSection";
 import {
     getActions,
     getDisconnectedInputs,
-    getImplicitParameters,
+    getUntypedParameters,
     getMissingMetadata,
     getUnlabeledOutputs,
 } from "./modules/linting";
@@ -105,8 +105,8 @@ export default {
         LintSection,
     },
     props: {
-        implicitParameters: {
-            type: ImplicitParameters,
+        untypedParameters: {
+            type: UntypedParameters,
         },
         nodes: {
             type: Object,
@@ -149,7 +149,7 @@ export default {
             this.$emit("onUnhighlight", stepId);
         },
         onRefactor() {
-            const actions = getActions(this.nodes, this.implicitParameters);
+            const actions = getActions(this.nodes, this.untypedParameters);
             this.$emit("onRefactor", actions);
         },
     },
@@ -157,7 +157,7 @@ export default {
         showRefactor() {
             // we could be even more precise here and check the inputs and such, because
             // some of these extractions may not be possible.
-            return !this.checkImplicitParameters || !this.checkDisconnectedInputs || !this.checkUnlabeledOutputs;
+            return !this.checkUntypedParameters || !this.checkDisconnectedInputs || !this.checkUnlabeledOutputs;
         },
         checkAnnotation() {
             return !!this.annotation;
@@ -172,8 +172,8 @@ export default {
                 return !!this.creator;
             }
         },
-        checkImplicitParameters() {
-            return this.warningImplicitParameters.length == 0;
+        checkUntypedParameters() {
+            return this.warningUntypedParameters.length == 0;
         },
         checkDisconnectedInputs() {
             return this.warningDisconnectedInputs.length == 0;
@@ -181,8 +181,8 @@ export default {
         checkUnlabeledOutputs() {
             return this.warningUnlabeledOutputs.length == 0;
         },
-        warningImplicitParameters() {
-            return getImplicitParameters(this.implicitParameters);
+        warningUntypedParameters() {
+            return getUntypedParameters(this.untypedParameters);
         },
         warningDisconnectedInputs() {
             this.forceRefresh;

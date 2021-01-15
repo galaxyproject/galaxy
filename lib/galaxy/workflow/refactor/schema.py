@@ -142,7 +142,7 @@ class ExtractInputAction(BaseAction):
     position: Optional[Position]
 
 
-class ExtractImplicitParameter(BaseAction):
+class ExtractUntypedParameter(BaseAction):
     action_type: Literal['extract_implicit_parameter']
     name: str
     label: Optional[str]  # defaults to name if unset
@@ -217,7 +217,7 @@ union_action_classes = Union[
     ConnectAction,
     DisconnectAction,
     ExtractInputAction,
-    ExtractImplicitParameter,
+    ExtractUntypedParameter,
     FileDefaultsAction,
     FillStepDefaultsAction,
     UpdateAnnotationAction,
