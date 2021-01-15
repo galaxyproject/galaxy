@@ -40,9 +40,9 @@
                 @onClick="onAttributes"
             />
             <LintSection
-                success-message="Workflow parameters are using formal inputs."
+                success-message="Workflow parameters are using formal input parameters."
                 warning-message="This workflow uses implicit workflow parameters. They should be replaced with
-                formal workflow inputs. Formal inputs make tracking workflow provenance, usage within subworkflows,
+                formal workflow inputs. Formal input parameters make tracking workflow provenance, usage within subworkflows,
                 and executing the workflow via the API more robust:"
                 :warning-items="warningImplicitParameters"
                 @onMouseOver="onHighlight"
@@ -50,8 +50,8 @@
                 @onClick="onScrollTo"
             />
             <LintSection
-                success-message="All non-optional inputs to workflow steps are connected to formal workflow inputs."
-                warning-message="Some non-optional inputs are not connected to formal workflow inputs. Formal inputs
+                success-message="All non-optional inputs to workflow steps are connected to formal input parameters."
+                warning-message="Some non-optional inputs are not connected to formal workflow inputs. Formal input parameters
                 make tracking workflow provenance, usage within subworkflows, and executing the workflow via the API more robust:"
                 :warning-items="warningDisconnectedInputs"
                 @onMouseOver="onHighlight"
