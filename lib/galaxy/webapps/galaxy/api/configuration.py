@@ -25,7 +25,6 @@ from galaxy.web import (
 )
 from galaxy.webapps.base.controller import BaseAPIController
 from . import (
-    get_trans,
     get_user,
 )
 
@@ -44,9 +43,7 @@ def user_to_model(user):
 class FastAPIConfiguration:
 
     @router.get('/api/whoami')
-    def whoami(
-            self, trans: ProvidesUserContext = Depends(get_trans),
-            user: User = Depends(get_user)) -> Optional[UserModel]:
+    def whoami(self, user: User = Depends(get_user)) -> Optional[UserModel]:
         """Return information about the current authenticated user."""
         return user_to_model(user)
 
