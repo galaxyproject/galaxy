@@ -5,10 +5,10 @@ import jobs from "./test/json/jobs.json";
 
 jest.mock("../History/caching");
 
-import { createLocalVue } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 
 // create an extended `Vue` constructor
-const localVue = createLocalVue();
+const localVue = getLocalVue();
 
 // install plugins as normal
 localVue.use(BootstrapVue);
