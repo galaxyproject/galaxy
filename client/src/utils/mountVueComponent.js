@@ -3,10 +3,13 @@
 // the same plugins and events.
 
 import Vue from "vue";
+import Vuex from "vuex";
 import BootstrapVue from "bootstrap-vue";
 import store from "../store";
 
 import { eventHubPlugin, localizationPlugin, vueRxShortcutPlugin } from "components/plugins";
+
+Vue.use(Vuex);
 
 // Bootstrap components
 Vue.use(BootstrapVue);
