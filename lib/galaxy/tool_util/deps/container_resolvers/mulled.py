@@ -325,6 +325,8 @@ def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None,
 
 class DockerContainerResolver(ContainerResolver):
 
+    container_type = 'docker'
+
     def __init__(self, *args, **kwargs):
         self._docker_cli_available = bool(which('docker'))
         super().__init__(*args, **kwargs)
@@ -343,7 +345,6 @@ class DockerContainerResolver(ContainerResolver):
 class CachedMulledDockerContainerResolver(DockerContainerResolver):
 
     resolver_type = "cached_mulled"
-    container_type = "docker"
     shell = '/bin/bash'
 
     def __init__(self, app_info=None, namespace="biocontainers", hash_func="v2", **kwds):
@@ -389,7 +390,6 @@ class MulledDockerContainerResolver(DockerContainerResolver):
     """Look for mulled images matching tool dependencies."""
 
     resolver_type = "mulled"
-    container_type = "docker"
     shell = '/bin/bash'
     protocol = None
 
@@ -405,8 +405,8 @@ class MulledDockerContainerResolver(DockerContainerResolver):
         except subprocess.CalledProcessError:
             # We should only get here if a docker binary is available, but command quits with a non-zero exit code,
             # e.g if the docker daemon is not available
-            log.exception('An error occured while listing cached docker images. Disabling docker image cache.')
-            self.docker_cli_available = False
+            log.exception('An error occured while listing cached docker image. Docker daemon may need to be restarted.')
+            return None
 
     def pull(self, container):
         if self.docker_cli_available:
@@ -493,7 +493,6 @@ class BuildMulledDockerContainerResolver(DockerContainerResolver):
     """Build for Docker mulled images matching tool dependencies."""
 
     resolver_type = "build_mulled"
-    container_type = "docker"
     shell = '/bin/bash'
     builds_on_resolution = True
 

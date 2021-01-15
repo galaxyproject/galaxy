@@ -48,6 +48,6 @@ def test_docker_container_docker_cli_exception_resolve(mocker):
     mocker.patch('galaxy.tool_util.deps.container_resolvers.mulled.targets_to_mulled_name', return_value='samtools:1.10--h2e538c0_3')
     mocker.patch('galaxy.tool_util.deps.container_resolvers.mulled.docker_cached_container_description', side_effect=CalledProcessError(1, 'bla'))
     container_description = resolver.resolve(enabled_container_types=['docker'], tool_info=tool_info, install=True)
-    assert resolver.docker_cli_available is False
+    assert resolver.docker_cli_available is True
     assert container_description.type == 'docker'
     assert container_description.identifier == 'quay.io/biocontainers/samtools:1.10--h2e538c0_3'
