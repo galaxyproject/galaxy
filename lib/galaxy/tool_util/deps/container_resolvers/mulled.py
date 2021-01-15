@@ -8,6 +8,7 @@ from typing import NamedTuple, Optional
 from galaxy.util import (
     string_as_bool,
     unicodify,
+    which,
 )
 from galaxy.util.commands import shell
 from ..container_classes import CONTAINER_CLASSES
@@ -334,10 +335,28 @@ def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None,
     return name
 
 
-class CachedMulledDockerContainerResolver(ContainerResolver):
+class DockerContainerResolver(ContainerResolver):
+
+    container_type = 'docker'
+
+    def __init__(self, *args, **kwargs):
+        self._docker_cli_available = bool(which('docker'))
+        super().__init__(*args, **kwargs)
+
+    @property
+    def docker_cli_available(self):
+        return self._docker_cli_available
+
+    @docker_cli_available.setter
+    def docker_cli_available(self, value):
+        if not value:
+            log.info('Docker CLI not available, cannot list or pull images in Galaxy process. Does not impact kubernetes.')
+        self._docker_cli_available = value
+
+
+class CachedMulledDockerContainerResolver(DockerContainerResolver):
 
     resolver_type = "cached_mulled"
-    container_type = "docker"
     shell = '/bin/bash'
 
     def __init__(self, app_info=None, namespace="biocontainers", hash_func="v2", **kwds):
@@ -346,7 +365,7 @@ class CachedMulledDockerContainerResolver(ContainerResolver):
         self.hash_func = hash_func
 
     def resolve(self, enabled_container_types, tool_info, **kwds):
-        if tool_info.requires_galaxy_python_environment or self.container_type not in enabled_container_types:
+        if not self.docker_cli_available or tool_info.requires_galaxy_python_environment or self.container_type not in enabled_container_types:
             return None
 
         targets = mulled_targets(tool_info)
@@ -379,11 +398,10 @@ class CachedMulledSingularityContainerResolver(ContainerResolver):
         return "CachedMulledSingularityContainerResolver[cache_directory=%s]" % self.cache_directory
 
 
-class MulledDockerContainerResolver(ContainerResolver):
+class MulledDockerContainerResolver(DockerContainerResolver):
     """Look for mulled images matching tool dependencies."""
 
     resolver_type = "mulled"
-    container_type = "docker"
     shell = '/bin/bash'
     protocol: Optional[str] = None
 
@@ -394,11 +412,18 @@ class MulledDockerContainerResolver(ContainerResolver):
         self.auto_install = string_as_bool(auto_install)
 
     def cached_container_description(self, targets, namespace, hash_func, resolution_cache):
-        return docker_cached_container_description(targets, namespace, hash_func, resolution_cache)
+        try:
+            return docker_cached_container_description(targets, namespace, hash_func, resolution_cache)
+        except subprocess.CalledProcessError:
+            # We should only get here if a docker binary is available, but command quits with a non-zero exit code,
+            # e.g if the docker daemon is not available
+            log.exception('An error occured while listing cached docker image. Docker daemon may need to be restarted.')
+            return None
 
     def pull(self, container):
-        command = container.build_pull_command()
-        shell(command)
+        if self.docker_cli_available:
+            command = container.build_pull_command()
+            shell(command)
 
     def resolve(self, enabled_container_types, tool_info, install=False, session=None, **kwds):
         resolution_cache = kwds.get("resolution_cache")
@@ -419,30 +444,31 @@ class MulledDockerContainerResolver(ContainerResolver):
                 type=self.container_type,
                 shell=self.shell,
             )
-            if install and not self.cached_container_description(
-                    targets,
-                    namespace=self.namespace,
-                    hash_func=self.hash_func,
-                    resolution_cache=resolution_cache,
-            ):
-                destination_info = {}
-                destination_for_container_type = kwds.get('destination_for_container_type')
-                if destination_for_container_type:
-                    destination_info = destination_for_container_type(self.container_type)
-                container = CONTAINER_CLASSES[self.container_type](container_description.identifier,
-                                                                   self.app_info,
-                                                                   tool_info,
-                                                                   destination_info,
-                                                                   {},
-                                                                   container_description)
-                self.pull(container)
-            if not self.auto_install:
-                container_description = self.cached_container_description(
-                    targets,
-                    namespace=self.namespace,
-                    hash_func=self.hash_func,
-                    resolution_cache=resolution_cache,
-                )
+            if self.docker_cli_available:
+                if install and not self.cached_container_description(
+                        targets,
+                        namespace=self.namespace,
+                        hash_func=self.hash_func,
+                        resolution_cache=resolution_cache,
+                ):
+                    destination_info = {}
+                    destination_for_container_type = kwds.get('destination_for_container_type')
+                    if destination_for_container_type:
+                        destination_info = destination_for_container_type(self.container_type)
+                    container = CONTAINER_CLASSES[self.container_type](container_description.identifier,
+                                                                       self.app_info,
+                                                                       tool_info,
+                                                                       destination_info,
+                                                                       {},
+                                                                       container_description)
+                    self.pull(container)
+                if not self.auto_install:
+                    container_description = self.cached_container_description(
+                        targets,
+                        namespace=self.namespace,
+                        hash_func=self.hash_func,
+                        resolution_cache=resolution_cache,
+                    )
             return container_description
 
     def __str__(self):
@@ -475,11 +501,10 @@ class MulledSingularityContainerResolver(MulledDockerContainerResolver):
         return "MulledSingularityContainerResolver[namespace=%s]" % self.namespace
 
 
-class BuildMulledDockerContainerResolver(ContainerResolver):
+class BuildMulledDockerContainerResolver(DockerContainerResolver):
     """Build for Docker mulled images matching tool dependencies."""
 
     resolver_type = "build_mulled"
-    container_type = "docker"
     shell = '/bin/bash'
     builds_on_resolution = True
 
