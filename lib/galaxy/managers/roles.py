@@ -13,10 +13,10 @@ from sqlalchemy.orm import exc as sqlalchemy_exceptions
 
 import galaxy.exceptions
 from galaxy import model
-from galaxy.model import Role
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.managers import base
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.model import Role
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.util import unicodify
 

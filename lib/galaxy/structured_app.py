@@ -1,5 +1,4 @@
 """Typed description of Galaxy's app object."""
-from abc import abstractmethod
 from typing import Any, Optional
 
 from kombu import Connection
@@ -17,6 +16,8 @@ from galaxy.tool_util.deps.views import DependencyResolversView
 from galaxy.tool_util.verify import test_data
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web_stack import ApplicationStack
+from galaxy.webhooks import WebhooksRegistry
+from galaxy.workflow.trs_proxy import TrsProxy
 
 
 class StructuredApp:
@@ -48,6 +49,8 @@ class StructuredApp:
     security_agent: GalaxyRBACAgent
     host_security_agent: HostAgent
     auth_manager: AuthManager
+    trs_proxy: TrsProxy
+    webhooks_registry: WebhooksRegistry
 
     queue_worker: Any  # 'galaxy.queue_worker.GalaxyQueueWorker'
     dataset_collections_service: Any  # 'galaxy.managers.collections.DatasetCollectionManager'
@@ -69,7 +72,7 @@ class StructuredApp:
     watchers: Any  # 'galaxy.config_watchers.ConfigWatchers'
     installed_repository_manager: Any  # 'galaxy.tool_shed.galaxy_install.installed_repository_manager.InstalledRepositoryManager'
     workflow_scheduling_manager: Any  # 'galaxy.workflow.scheduling_manager.WorkflowSchedulingManager'
+    interactivetool_manager: Any
     user_manager: Any
     api_keys_manager: Any
     toolbox: Any
-

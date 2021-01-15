@@ -34,6 +34,7 @@ from galaxy.model import (
     tags,
 )
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.structured_app import StructuredApp
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import (
@@ -57,8 +58,9 @@ class BaseController:
     """
     Base class for Galaxy web application controllers.
     """
+    app: StructuredApp
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp) -> None:
         """Initialize an interface for application 'app'"""
         self.app = app
         self.sa_session = app.model.context

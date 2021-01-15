@@ -13,6 +13,7 @@ from galaxy.config_watchers import ConfigWatchers
 from galaxy.containers import build_container_interfaces
 from galaxy.files import ConfiguredFileSources
 from galaxy.job_metrics import JobMetrics
+from galaxy.managers.api_keys import ApiKeyManager
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.hdas import HDAManager
@@ -117,6 +118,7 @@ class UniverseApplication(StructuredApp, config.ConfiguresGalaxyMixin):
         self.library_manager = LibraryManager()
         self.role_manager = RoleManager(self)
         self.dynamic_tool_manager = DynamicToolManager(self)
+        self.api_keys_manager = ApiKeyManager(app)
 
         # ConfiguredFileSources
         self.file_sources = ConfiguredFileSources.from_app_config(self.config)

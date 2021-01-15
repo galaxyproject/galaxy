@@ -24,6 +24,7 @@ from galaxy.webapps.base.controller import (
     SharableMixin,
     UsesVisualizationMixin
 )
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
 
@@ -39,7 +40,7 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
         self.serializer = VisualizationSerializer(app)
 
     @expose_api
-    def index(self, trans, **kwargs):
+    def index(self, trans: GalaxyWebTransaction, **kwargs):
         """
         GET /api/visualizations:
         """
@@ -65,7 +66,7 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
         return rval
 
     @expose_api
-    def show(self, trans, id, **kwargs):
+    def show(self, trans: GalaxyWebTransaction, id: str, **kwargs):
         """
         GET /api/visualizations/{viz_id}
         """
@@ -90,7 +91,7 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
         return dictionary
 
     @expose_api
-    def create(self, trans, payload, **kwargs):
+    def create(self, trans: GalaxyWebTransaction, payload: dict, **kwargs):
         """
         POST /api/visualizations
         creates a new visualization using the given payload
@@ -101,7 +102,7 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
         rval = None
 
         if 'import_id' in payload:
-            import_id = payload('import_id')
+            import_id = payload['import_id']
             visualization = self.import_visualization(trans, import_id, user=trans.user)
 
         else:
@@ -123,7 +124,7 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
         return rval
 
     @expose_api
-    def update(self, trans, id, payload, **kwargs):
+    def update(self, trans: GalaxyWebTransaction, id: str, payload: dict, **kwargs):
         """
         PUT /api/visualizations/{encoded_visualization_id}
         """
