@@ -49,6 +49,7 @@ def main():
         # empty out to_iiif to tell the following HMGM task command to fail
         mgm_utils.empty_file(to_iiif)
         print ("Error: Failed to convert from NER " + from_ner + " to IIIF: " + to_iiif, e)
+        traceback.print_exc()
         sys.stdout.flush()
         exit(-1)
 
@@ -170,6 +171,7 @@ def get_media_duration(media_info_path):
             media_info = json.load(media_info_file)
             duration = media_info['streams']['audio'][0]['duration']
     except Exception as e:
+    	traceback.print_exc()
         raise Exception("Exception reading media info from " + media_info_path, e)
     return duration
 

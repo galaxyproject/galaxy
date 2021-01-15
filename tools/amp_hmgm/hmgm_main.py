@@ -72,6 +72,7 @@ def main():
 		# create error file to notify the following conversion command to fail
 		mgm_utils.create_err_file(output_json)
 		print ("Failed to handle HMGM task: uncorrected JSON: " + input_json + ", corrected JSON: " + output_json, e)
+		traceback.print_exc()
 		sys.stdout.flush()
 		exit(-1)
 

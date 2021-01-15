@@ -170,6 +170,7 @@ def main():
 		# empty out to_draftjs to tell the following HMGM task command to fail
 		mgm_utils.empty_file(to_draftjs)
 		print ("Error: Failed to convert from Transcript " + from_transcript + " to DraftJs: " + to_draftjs, e)
+		traceback.print_exc()
 		sys.stdout.flush()
 		exit(-1)
 

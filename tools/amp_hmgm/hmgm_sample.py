@@ -32,6 +32,8 @@ def main():
                 # Exit - Tell process to re-queue
                 exit(1)        
     except Exception as e:
+        print ("Failed to handle HMGM-Sample task", e)
+        traceback.print_exc()
         exit(-1)
 
 # Method stub to check and see if a task is complete.
