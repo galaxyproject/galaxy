@@ -44,6 +44,25 @@ class ToolDataApiTestCase(ApiTestCase):
         content = show_field_response.text
         assert content == "This is data 1.", content
 
+    def test_reload(self):
+        show_response = self._get("tool_data/test_fasta_indexes/reload", admin=True)
+        self._assert_status_code_is(show_response, 200)
+        print(show_response.content)
+        data_table = show_response.json()
+        assert data_table["columns"] == ['value', 'dbkey', 'name', 'path']
+
+    def test_show_unknown_raises_404(self):
+        show_response = self._get("tool_data/unknown", admin=True)
+        self._assert_status_code_is(show_response, 404)
+
+    def test_show_field_raises_404(self):
+        show_response = self._get("tool_data/testalpha/fields/unknown", admin=True)
+        self._assert_status_code_is(show_response, 404)
+
+    def test_reload_unknown_raises_404(self):
+        show_response = self._get("tool_data/unknown/reload", admin=True)
+        self._assert_status_code_is(show_response, 404)
+
     # Following test case rendered invalid by the fix in
     # https://github.com/galaxyproject/galaxy/commit/48f77dc742acf01ddbafafcc4634e69378f1f020#diff-bfb557a99c1f7d646d4968d8d680b885R154.
     # TODO: Restore the test case when test framework allows actions from
