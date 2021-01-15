@@ -1,9 +1,12 @@
 import os
 
-from fastapi import Depends
+from fastapi import (
+    Depends,
+    Path,
+)
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter as APIRouter
-from pydantic.fields import Field
+
 
 from galaxy import (
     exceptions,
@@ -15,6 +18,7 @@ from galaxy.managers.tool_data import ToolDataManager
 from galaxy.tools.data._schema import (
     ToolDataDetails,
     ToolDataEntryList,
+    ToolDataField,
 )
 from galaxy.web import (
     expose_api,
@@ -29,6 +33,19 @@ from . import (
 router = APIRouter(tags=['tool data'])
 
 AdminUserRequired = Depends(get_admin_user)
+
+ToolDataTableName = Path(
+    ...,  # Mark this field as required
+    title="Data table name",
+    description="The name of the tool data table",
+    example="all_fasta"
+)
+
+ToolDataTableFieldName = Path(
+    ...,  # Mark this field as required
+    title="Field name",
+    description="The name of the tool data table field"
+)
 
 
 def get_tool_data_manager(app: UniverseApplication = Depends(get_app)) -> ToolDataManager:
@@ -59,16 +76,37 @@ class FastAPIToolData:
             AdminUserRequired
         ],
     )
-    async def show(self,
-        name: str = Field(
-            ...,  # Mark this field as required
-            title="Name",
-            description="The name of the tool data",
-            example="all_fasta"
-        )
-    ) -> ToolDataDetails:
+    async def show(self, name: str = ToolDataTableName) -> ToolDataDetails:
         """Get details of a given tool data table."""
         return self.tool_data_manager.show(name)
+
+    @router.get(
+        '/api/tool_data/{name}/reload',
+        summary="Reloads a tool data table",
+        response_description="A description of the reloaded data table and its content",
+        dependencies=[
+            AdminUserRequired
+        ],
+    )
+    async def reload(self, name: str = ToolDataTableName) -> ToolDataDetails:
+        """Reloads a data table and return its details."""
+        return self.tool_data_manager.reload(name)
+
+    @router.get(
+        '/api/tool_data/{table_name}/fields/{field_name}',
+        summary="Get information about a particular field in a tool data table",
+        response_description="Information about a data table field",
+        dependencies=[
+            AdminUserRequired
+        ],
+    )
+    async def show_field(
+        self,
+        table_name: str = ToolDataTableName,
+        field_name: str = ToolDataTableFieldName
+    ) -> ToolDataField:
+        """Reloads a data table and return its details."""
+        return self.tool_data_manager.show_field(table_name, field_name)
 
 
 class ToolData(BaseAPIController):
@@ -101,11 +139,12 @@ class ToolData(BaseAPIController):
         :type   id:     str
         :param  id:     the id of the data table
         """
+        details = self.tool_data_manager.show(id)
         # Here dict(by_alias=True) is required to return
         # `field_value` as `field` since `field` can not be directly
         # used in the pydantic BaseModel and needs to be aliased
         # For more details see: https://github.com/samuelcolvin/pydantic/issues/1250
-        return self.tool_data_manager.show(id).dict(by_alias=True)
+        return details.dict(by_alias=True)
 
     @web.require_admin
     @expose_api
@@ -115,15 +154,12 @@ class ToolData(BaseAPIController):
 
         Reloads a tool_data table.
         """
-        decoded_tool_data_id = id
-        data_table = self.app.tool_data_tables.data_tables.get(decoded_tool_data_id)
-        data_table.reload_from_files()
-        self.app.queue_worker.send_control_task(
-            'reload_tool_data_tables',
-            noop_self=True,
-            kwargs={'table_name': decoded_tool_data_id}
-        )
-        return self._data_table(decoded_tool_data_id).to_dict(view='element')
+        details = self.tool_data_manager.reload(id)
+        # Here dict(by_alias=True) is required to return
+        # `field_value` as `field` since `field` can not be directly
+        # used in the pydantic BaseModel and needs to be aliased
+        # For more details see: https://github.com/samuelcolvin/pydantic/issues/1250
+        return details.dict(by_alias=True)
 
     @web.require_admin
     @expose_api
@@ -177,7 +213,12 @@ class ToolData(BaseAPIController):
 
         Get information about a partiular field in a tool_data table
         """
-        return self._data_table_field(id, value).to_dict()
+        field = self.tool_data_manager.show_field(id, value)
+        # Here dict(by_alias=True) is required to return
+        # `field_value` as `field` since `field` can not be directly
+        # used in the pydantic BaseModel and needs to be aliased
+        # For more details see: https://github.com/samuelcolvin/pydantic/issues/1250
+        return field.dict(by_alias=True)
 
     @web.require_admin
     @expose_api_raw
