@@ -1,17 +1,14 @@
-import _ from "underscore";
-import _l from "utils/localization";
-
 export function getDisconnectedInputs(nodes) {
     const inputs = [];
     Object.values(nodes).forEach((node) => {
         Object.entries(node.inputTerminals).forEach(([inputName, inputTerminal]) => {
             if (!inputTerminal.connectors || !inputTerminal.connectors.length > 0 || !inputTerminal.optional) {
+                const inputLabel = inputTerminal.attributes.input.label;
                 inputs.push({
                     stepId: node.id,
                     stepLabel: node.title, // label but falls back to tool title...
-                    warningLabel: inputTerminal.attributes.input.label,
+                    warningLabel: inputLabel,
                     inputName: inputName,
-                    inputLabel: inputTerminal.attributes.input.label,
                     canExtract: !inputTerminal.multiple,
                 });
             }
@@ -20,7 +17,7 @@ export function getDisconnectedInputs(nodes) {
     return inputs;
 }
 
-export function getInputsMissingMetadata(nodes) {
+export function getMissingMetadata(nodes) {
     const inputs = [];
     Object.values(nodes).forEach((node) => {
         if (node.isInput) {
@@ -46,7 +43,7 @@ export function getInputsMissingMetadata(nodes) {
     return inputs;
 }
 
-export function getWorkflowOutputs(nodes) {
+export function getUnlabeledOutputs(nodes) {
     const outputs = [];
     Object.values(nodes).forEach((node) => {
         if (node.isInput) {
@@ -60,8 +57,6 @@ export function getWorkflowOutputs(nodes) {
                 stepId: node.id,
                 stepLabel: node.title, // label but falls back to tool title...
                 warningLabel: outputDef.output_name,
-                outputName: outputDef.output_name,
-                outputLabel: outputDef.label,
             });
         }
     });

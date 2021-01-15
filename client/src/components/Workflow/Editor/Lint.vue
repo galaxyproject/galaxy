@@ -86,8 +86,8 @@ import { ImplicitParameters } from "components/Workflow/Editor/modules/parameter
 import LintSection from "components/Workflow/Editor/LintSection";
 import {
     getDisconnectedInputs,
-    getInputsMissingMetadata,
-    getWorkflowOutputs,
+    getMissingMetadata,
+    getUnlabeledOutputs,
     getImplicitParameters,
 } from "./modules/linting";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -217,11 +217,11 @@ export default {
         },
         warningMissingMetadata() {
             this.forceRefresh;
-            return getInputsMissingMetadata(this.nodes);
+            return getMissingMetadata(this.nodes);
         },
         warningUnlabeledOutputs() {
             this.forceRefresh;
-            return getWorkflowOutputs(this.nodes);
+            return getUnlabeledOutputs(this.nodes);
         },
     },
 };
