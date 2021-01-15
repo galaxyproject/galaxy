@@ -7,8 +7,8 @@
         <div v-else>
             <font-awesome-icon icon="exclamation-triangle" class="text-warning" />
             <span>{{ warningMessage }}</span>
-            <ul v-if="hasWarningItems" class="mt-2">
-                <li
+            <div v-if="hasWarningItems" class="mt-2">
+                <div
                     v-for="(item, idx) in warningItems"
                     :key="idx"
                     @mouseover="onMouseOver(item.stepId)"
@@ -18,8 +18,8 @@
                     <a href="#" @click="onClick(item.stepId)" class="scrolls">
                         <font-awesome-icon icon="search" class="mr-1" />{{ item.stepLabel }}: {{ item.warningLabel }}
                     </a>
-                </li>
-            </ul>
+                </div>
+            </div>
             <p v-else class="mt-2 ml-2">
                 <a href="#" @click="onClick">
                     <font-awesome-icon icon="pencil-alt" class="mr-1" />{{ attributeLink }}

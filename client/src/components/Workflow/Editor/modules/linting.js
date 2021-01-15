@@ -3,23 +3,18 @@ import _l from "utils/localization";
 
 export function getDisconnectedInputs(nodes) {
     const inputs = [];
-    Object.entries(nodes).forEach(([k, node]) => {
+    Object.values(nodes).forEach((node) => {
         Object.entries(node.inputTerminals).forEach(([inputName, inputTerminal]) => {
-            if (inputTerminal.connectors && inputTerminal.connectors.length > 0) {
-                return;
+            if (!inputTerminal.connectors || !inputTerminal.connectors.length > 0 || !inputTerminal.optional) {
+                inputs.push({
+                    stepId: node.id,
+                    stepLabel: node.title, // label but falls back to tool title...
+                    warningLabel: inputTerminal.attributes.input.label,
+                    inputName: inputName,
+                    inputLabel: inputTerminal.attributes.input.label,
+                    canExtract: !inputTerminal.multiple,
+                });
             }
-            if (inputTerminal.optional) {
-                return;
-            }
-            const input = {
-                inputName: inputName,
-                stepId: node.id,
-                stepLabel: node.title, // label but falls back to tool title...
-                stepIconClass: node.iconClass,
-                inputLabel: inputTerminal.attributes.input.label,
-                canExtract: !inputTerminal.multiple,
-            };
-            inputs.push(input);
         });
     });
     return inputs;
@@ -27,24 +22,25 @@ export function getDisconnectedInputs(nodes) {
 
 export function getInputsMissingMetadata(nodes) {
     const inputs = [];
-    Object.entries(nodes).forEach(([k, node]) => {
-        if (!node.isInput) {
-            return;
-        }
-        const annotation = node.annotation;
-        const label = node.label;
-        const missingLabel = !label;
-        const missingAnnotation = !annotation;
-
-        if (missingLabel || missingAnnotation) {
-            const input = {
-                stepId: node.id,
-                stepLabel: node.title,
-                stepIconClass: node.iconClass,
-                missingAnnotation: !annotation,
-                missingLabel: !label,
-            };
-            inputs.push(input);
+    Object.values(nodes).forEach((node) => {
+        if (node.isInput) {
+            const noAnnotation = !node.annotation;
+            const noLabel = !node.label;
+            let warningLabel = null;
+            if (noLabel && noAnnotation) {
+                warningLabel = "Missing a label and annotation";
+            } else if (noLabel) {
+                warningLabel = "Missing a label";
+            } else {
+                warningLabel = "Missing an annotation";
+            }
+            if (warningLabel) {
+                inputs.push({
+                    stepId: node.id,
+                    stepLabel: node.title,
+                    warningLabel: warningLabel,
+                });
+            }
         }
     });
     return inputs;
@@ -52,7 +48,7 @@ export function getInputsMissingMetadata(nodes) {
 
 export function getWorkflowOutputs(nodes) {
     const outputs = [];
-    Object.entries(nodes).forEach(([k, node]) => {
+    Object.values(nodes).forEach((node) => {
         if (node.isInput) {
             // For now skip these... maybe should push this logic into linting though
             // since it is fine to have outputs on inputs.
@@ -60,15 +56,29 @@ export function getWorkflowOutputs(nodes) {
         }
         const activeOutputs = node.activeOutputs;
         for (const outputDef of activeOutputs.getAll()) {
-            const output = {
-                outputName: outputDef.output_name,
-                outputLabel: outputDef.label,
+            outputs.push({
                 stepId: node.id,
                 stepLabel: node.title, // label but falls back to tool title...
-                stepIconClass: node.iconClass,
-            };
-            outputs.push(output);
+                warningLabel: outputDef.output_name,
+                outputName: outputDef.output_name,
+                outputLabel: outputDef.label,
+            });
         }
     });
     return outputs;
+}
+
+export function getImplicitParameters(implicitParameters) {
+    let items = [];
+    if (implicitParameters) {
+        implicitParameters.parameters.forEach((parameter) => {
+            items.push({
+                stepId: parameter.references[0].nodeId,
+                stepLabel: parameter.references[0].toolInput.label,
+                warningLabel: parameter.name,
+                name: parameter.name,
+            });
+        });
+    }
+    return items;
 }

@@ -84,7 +84,12 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { ImplicitParameters } from "components/Workflow/Editor/modules/parameters";
 import LintSection from "components/Workflow/Editor/LintSection";
-import { getDisconnectedInputs, getInputsMissingMetadata, getWorkflowOutputs } from "./modules/linting";
+import {
+    getDisconnectedInputs,
+    getInputsMissingMetadata,
+    getWorkflowOutputs,
+    getImplicitParameters,
+} from "./modules/linting";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faMagic } from "@fortawesome/free-solid-svg-icons";
@@ -204,72 +209,19 @@ export default {
             return this.warningUnlabeledOutputs.length == 0;
         },
         warningImplicitParameters() {
-            let items = [];
-            if (this.implicitParameters) {
-                this.implicitParameters.parameters.forEach((parameter) => {
-                    items.push({
-                        stepId: parameter.references[0].nodeId,
-                        stepLabel: parameter.references[0].toolInput.label,
-                        warningLabel: parameter.name,
-                    });
-                });
-            }
-            return items;
+            return getImplicitParameters(this.implicitParameters);
         },
         warningDisconnectedInputs() {
             this.forceRefresh;
-            const disconnectedInputs = getDisconnectedInputs(this.nodes);
-            let items = [];
-            if (disconnectedInputs) {
-                disconnectedInputs.forEach((input) => {
-                    items.push({
-                        stepId: input.stepId,
-                        stepLabel: input.stepLabel,
-                        warningLabel: input.inputLabel,
-                    });
-                });
-            }
-            return items;
+            return getDisconnectedInputs(this.nodes);
         },
         warningMissingMetadata() {
             this.forceRefresh;
-            const inputsMissingMetadata = getInputsMissingMetadata(this.nodes);
-            let items = [];
-            if (inputsMissingMetadata) {
-                inputsMissingMetadata.forEach((input) => {
-                    let missingLabel = null;
-                    if (input.missingLabel && input.missingAnnotation) {
-                        missingLabel = "Missing a label and annotation";
-                    } else if (input.missingLabel) {
-                        missingLabel = "Missing a label";
-                    } else {
-                        missingLabel = "Missing an annotation";
-                    }
-                    items.push({
-                        stepId: input.stepId,
-                        stepLabel: input.stepLabel,
-                        warningLabel: missingLabel,
-                    });
-                });
-            }
-            return items;
+            return getInputsMissingMetadata(this.nodes);
         },
         warningUnlabeledOutputs() {
             this.forceRefresh;
-            const workflowOutputs = getWorkflowOutputs(this.nodes);
-            let items = [];
-            if (workflowOutputs) {
-                workflowOutputs.forEach((output) => {
-                    if (output.outputLabel == null) {
-                        items.push({
-                            stepId: output.stepId,
-                            stepLabel: output.stepLabel,
-                            warningLabel: output.outputName,
-                        });
-                    }
-                });
-            }
-            return items;
+            return getWorkflowOutputs(this.nodes);
         },
     },
 };
