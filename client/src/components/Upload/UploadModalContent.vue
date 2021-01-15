@@ -50,7 +50,7 @@ export default {
     },
     props: {
         currentHistoryId: { type: String, required: true },
-        currentUserId: { type: String, required: true },
+        currentUserId: { type: String, default: "" },
         ...commonProps,
     },
     data: function () {

@@ -13,7 +13,7 @@
  */
 
 import { mapActions, mapGetters } from "vuex";
-import { History } from "../../model";
+import { History } from "../../model/History";
 
 export default {
     computed: {

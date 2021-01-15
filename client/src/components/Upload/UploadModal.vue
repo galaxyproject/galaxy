@@ -21,10 +21,13 @@ Provides user and current history to modal because it currently has initializati
         </template>
 
         <CurrentUser v-slot="{ user }">
-            <UserHistories v-if="user && user.id" v-slot="{ currentHistoryId }">
+            <UserHistories v-slot="{ currentHistoryId }">
+                <!-- <div>
+                    <b>History: {{ currentHistoryId }}</b>
+                    <pre>{{ user }}</pre>
+                </div> -->
                 <UploadModalContent
-                    ref="modal"
-                    v-if="user.id && currentHistoryId"
+                    v-if="currentHistoryId"
                     :current-user-id="user.id"
                     :current-history-id="currentHistoryId"
                     v-bind="{ ...$props, ...$attrs }"
