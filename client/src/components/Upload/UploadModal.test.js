@@ -1,6 +1,6 @@
 import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
-import UploadModal from "./UploadModal.vue";
+import UploadModal from "./UploadModal";
 import store from "../../store";
 import { shallowMount, createLocalVue } from "@vue/test-utils";
 

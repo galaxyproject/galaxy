@@ -1,6 +1,6 @@
 <template>
     <upload-wrapper ref="wrapper" :top-info="topInfo">
-        <span style="width: 25%; display: inline; height: 100%;" class="float-left">
+        <span style="width: 25%; display: inline; height: 100%" class="float-left">
             <div class="upload-rule-option">
                 <div class="upload-rule-option-title">{{ l("Upload data as") }}</div>
                 <div class="rule-data-type">
@@ -16,15 +16,13 @@
                     <select2 container-class="upload-footer-selection" v-model="selectionType">
                         <option value="paste">{{ l("Pasted Table") }}</option>
                         <option value="dataset">{{ l("History Dataset") }}</option>
-                        <option v-if="ftpUploadSite" value="ftp">{{ l("FTP Directory") }} </option>
+                        <option v-if="ftpUploadSite" value="ftp">{{ l("FTP Directory") }}</option>
                         <option value="remote_files">{{ l("Remote Files Directory") }}</option>
                     </select2>
                 </div>
             </div>
             <div id="upload-rule-dataset-option" class="upload-rule-option" v-if="selectionType == 'dataset'">
-                <div class="upload-rule-option-title">
-                    History dataset
-                </div>
+                <div class="upload-rule-option-title">History dataset</div>
                 <div>
                     <b-link @click="onSelectDataset" v-if="selectedDatasetName == null">
                         {{ l("Select") }}
@@ -35,16 +33,16 @@
                 </div>
             </div>
         </span>
-        <span style="display: inline; float: right; width: 75%; height: 300px;">
+        <span style="display: inline; float: right; width: 75%; height: 300px">
             <textarea
                 class="upload-rule-source-content form-control"
-                style="height: 100%;"
+                style="height: 100%"
                 v-model="sourceContent"
                 :disabled="selectionType != 'paste'"
             ></textarea>
         </span>
         <template v-slot:buttons>
-            <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="app.dismiss()">
+            <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="$emit('dismiss')">
                 {{ btnCloseTitle }}
             </b-button>
             <b-button

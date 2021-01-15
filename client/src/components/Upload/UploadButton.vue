@@ -26,14 +26,14 @@
 
 <script>
 import { VBTooltip } from "bootstrap-vue";
-import { getGalaxyInstance } from "app";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faUpload } from "@fortawesome/free-solid-svg-icons";
+import { eventHubMixin } from "components/plugins";
 library.add(faUpload);
 
 export default {
-    name: "UploadButton",
+    mixins: [eventHubMixin],
     components: { FontAwesomeIcon },
     directives: {
         "v-b-tooltip": VBTooltip,
@@ -46,16 +46,15 @@ export default {
     },
     methods: {
         showUploadDialog(e) {
-            const Galaxy = getGalaxyInstance();
-            e.preventDefault();
-            Galaxy.upload.show();
+            this.eventHub.$emit("upload:show");
         },
     },
-    created() {
-        const Galaxy = getGalaxyInstance();
-        Galaxy.upload.model.on("change", () => {
-            this.status = Galaxy.upload.model.attributes.status;
-            this.percentage = Galaxy.upload.model.attributes.percentage;
+    async created() {
+        this.eventHub.$on("upload:status", (val) => {
+            this.status = val;
+        });
+        this.eventHub.$on("upload:percentage", (val) => {
+            this.percentage = Math.round(val);
         });
     },
 };
