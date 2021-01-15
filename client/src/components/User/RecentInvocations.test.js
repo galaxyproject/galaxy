@@ -1,5 +1,6 @@
 import Invocations from "../Workflow/Invocations";
 import { mount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 import flushPromises from "flush-promises";
 
 import RecentInvocations from "./RecentInvocations.vue";
@@ -7,13 +8,15 @@ import RecentInvocations from "./RecentInvocations.vue";
 jest.mock("../History/caching");
 jest.mock("./UserServices");
 
+const localVue = getLocalVue();
+
 describe("RecentInvocations.vue", () => {
     let wrapper;
     let fetchInvocationsSpy;
 
     beforeEach(async () => {
         fetchInvocationsSpy = jest.spyOn(RecentInvocations.methods, "fetchRecentInvocations");
-        wrapper = mount(RecentInvocations);
+        wrapper = mount(RecentInvocations, { localVue });
         await flushPromises();
     });
 
