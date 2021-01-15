@@ -2,15 +2,13 @@
 selected datset collections -->
 
 <template>
-    <History
-        v-on:select-collection="selectCollection($event)"
-        v-if="history && !selectedCollections.length"
-        :history="history"
-    >
+    <HistoryComponent v-if="history && !selectedCollections.length" :history="history" v-on="$listeners">
         <template v-for="(_, name) in $scopedSlots" :slot="name" slot-scope="slotData">
             <slot :name="name" v-bind="slotData" :history="history" />
         </template>
-    </History>
+    </HistoryComponent>
+
+    <!-- <pre v-if="history && !selectedCollections.length">{{ history }}</pre> -->
 
     <SelectedCollection
         v-else-if="selectedCollections.length"
@@ -24,35 +22,33 @@ selected datset collections -->
 </template>
 
 <script>
-import { mapGetters } from "vuex";
-import History from "./History";
+import HistoryComponent from "./History";
 import SelectedCollection from "./SelectedCollection/Panel";
-import { STATES } from "./model";
+import { History, STATES } from "./model";
 
 export default {
     components: {
-        History,
+        HistoryComponent,
         SelectedCollection,
     },
     props: {
-        historyId: { type: String, required: true },
+        history: { type: History, required: true },
     },
-    data: () => ({
-        selectedCollections: [],
-    }),
+    data() {
+        return {
+            selectedCollections: [],
+        };
+    },
     provide: {
         STATES,
-    },
-    computed: {
-        ...mapGetters("betaHistory", ["getHistoryById"]),
-        history() {
-            return this.getHistoryById(this.historyId);
-        },
     },
     methods: {
         selectCollection(coll) {
             this.selectedCollections = [...this.selectedCollections, coll];
         },
+    },
+    mounted() {
+        this.eventHub.$on("selectCollection", this.selectCollection);
     },
 };
 </script>

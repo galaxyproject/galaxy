@@ -24,9 +24,8 @@ const actions = {
     setConfigs({ commit }, newConfigs = {}) {
         commit("setConfigs", newConfigs);
     },
-    async loadConfigs({ state, commit }) {
-        // only load once
-        if (state.config == null) {
+    async loadConfigs({ state, commit }, forceReload = false) {
+        if (forceReload || state.config == null) {
             const configs = await getConfig();
             commit("setConfigs", configs);
         }

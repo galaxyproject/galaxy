@@ -60,9 +60,8 @@ export function createStore() {
         // using a lifecycle hook, or alternatively switch from Vuex to an observable framework
         // capable of lazy-loading on request
         storeConfig.plugins.push((store) => {
-            store.dispatch("user/loadUser", { store });
-            store.dispatch("config/loadConfigs", { store });
-            store.dispatch("betaHistory/$init", { store });
+            store.dispatch("user/loadUser");
+            store.dispatch("config/loadConfigs");
         });
 
         // Watches for changes in Galaxy and sets those values on Vuex until Galaxy is gone

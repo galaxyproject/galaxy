@@ -1,13 +1,15 @@
+const betaKey = "useBetaHistory";
+
 export const isBetaHistoryOpen = () => {
-    return sessionStorage.getItem("useBetaHistory");
+    return sessionStorage.getItem(betaKey);
 };
 
 export const switchToLegacyHistoryPanel = () => {
-    sessionStorage.removeItem("useBetaHistory");
+    sessionStorage.removeItem(betaKey);
     location.reload();
 };
 
 export const switchToBetaHistoryPanel = () => {
-    sessionStorage.setItem("useBetaHistory", 1);
+    sessionStorage.setItem(betaKey, 1);
     location.reload(false);
 };

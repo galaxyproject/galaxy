@@ -3,16 +3,8 @@
         :parent="history"
         v-slot="{
             loading,
-            scrolling,
             params,
-            pageSize,
-            payload: {
-                contents = [],
-                startKey = null,
-                topRows = 0,
-                bottomRows = 0,
-                totalMatches = 0,
-            },
+            payload: { contents = [], startKey = null, topRows = 0, bottomRows = 0, totalMatches = 0 },
             updateParams,
             setScrollPos,
             manualReload,
@@ -25,16 +17,16 @@
             </template>
 
             <template v-slot:details>
-                <HistoryDetails class="history-details" :history="history" />
+                <HistoryDetails class="history-details" :history="history" v-on="$listeners" />
             </template>
 
             <template v-slot:messages>
                 <HistoryMessages class="history-messages m-2" :history="history" />
-                <HistoryEmpty v-if="history.empty" class="m-2" />
             </template>
 
             <template v-slot:listcontrols>
                 <ContentOperations
+                    v-if="!history.empty"
                     :history="history"
                     :params="params"
                     @update:params="updateParams"
@@ -49,7 +41,9 @@
             </template>
 
             <template v-slot:listing>
+                <HistoryEmpty v-if="history.empty" class="m-2" />
                 <VirtualScroller
+                    v-else
                     :class="{ loadingBackground: loading }"
                     key-field="hid"
                     :item-height="36"
@@ -60,7 +54,7 @@
                     @scroll="setScrollPos"
                 >
                     <template v-slot="{ item, index }">
-                        <HistoryContentItem :item="item" :index="index" v-on="$listeners" />
+                        <HistoryContentItem :item="item" :index="index" />
                     </template>
                 </VirtualScroller>
             </template>

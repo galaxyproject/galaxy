@@ -22,9 +22,11 @@ const mutations = {
 };
 
 const actions = {
-    async loadUser({ commit }) {
-        const user = await getCurrentUser();
-        commit("setCurrentUser", user);
+    async loadUser({ state, commit }, forceReload = false) {
+        if (forceReload || state.currentUser == null) {
+            const user = await getCurrentUser();
+            commit("setCurrentUser", user);
+        }
     },
 };
 
