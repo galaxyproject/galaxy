@@ -1,4 +1,5 @@
 from typing import (
+    Dict,
     List,
 )
 
@@ -43,9 +44,48 @@ class ToolDataDetails(ToolDataEntry):
     )
     # We must use an alias since the name 'fields'
     # shadows a BaseModel attribute
-    field_value: List[List[str]] = Field(
+    fields_value: List[List[str]] = Field(
         alias='fields',
         default=[],
         title="Fields",
         description="",  # TODO add documentation
+    )
+
+
+class ToolDataField(BaseModel):
+    name: str = Field(
+        ...,  # Mark this field as required
+        title="Name",
+        description="The name of the field",
+    )
+    model_class: str = Field(
+        ...,  # Mark this field as required
+        title="Model class",
+        description="The name of class modelling this tool data field",
+        example="TabularToolDataField"
+    )
+    # We must use an alias since the name 'fields'
+    # shadows a BaseModel attribute
+    fields_value: Dict[str, str] = Field(
+        ...,  # Mark this field as required
+        alias='fields',
+        title="Fields",
+        description="",  # TODO add documentation
+    )
+    base_dir: List[str] = Field(
+        ...,  # Mark this field as required
+        title="Base directories",
+        description="A list of directories where the data files are stored",
+    )
+    files: Dict[str, int] = Field(
+        ...,  # Mark this field as required
+        title="Files",
+        description="A dictionary of file names and their size in bytes",
+        example={"file.txt": 136}
+    )
+    fingerprint: str = Field(
+        ...,  # Mark this field as required
+        title="Fingerprint",
+        description="SHA1 Hash",
+        example="22b45237a85c2b3f474bf66888c534387ffe0ced"
     )
