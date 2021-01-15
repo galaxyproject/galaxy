@@ -9,7 +9,7 @@ parsley
 numpy
 pycryptodome
 pysam
-social_auth_core
+social-auth-core[openidconnect]==3.3.0
 SQLAlchemy
 sqlalchemy-migrate
 sqlalchemy-utils
