@@ -85,10 +85,11 @@ import BootstrapVue from "bootstrap-vue";
 import { ImplicitParameters } from "components/Workflow/Editor/modules/parameters";
 import LintSection from "components/Workflow/Editor/LintSection";
 import {
+    getActions,
     getDisconnectedInputs,
+    getImplicitParameters,
     getMissingMetadata,
     getUnlabeledOutputs,
-    getImplicitParameters,
 } from "./modules/linting";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -148,35 +149,7 @@ export default {
             this.$emit("onUnhighlight", stepId);
         },
         onRefactor() {
-            const actions = [];
-            if (!this.checkImplicitParameters) {
-                const implicitParametersArray = this.implicitParameters.parameters;
-                for (const implicitParameter of implicitParametersArray) {
-                    if (implicitParameter.canExtract) {
-                        actions.push({
-                            action_type: "extract_implicit_parameter",
-                            name: implicitParameter.name,
-                        });
-                    }
-                }
-            }
-            if (!this.checkDisconnectedInputs) {
-                const disconnectedInputs = getDisconnectedInputs(this.nodes);
-                for (const disconnectedInput of disconnectedInputs) {
-                    if (disconnectedInput.canExtract) {
-                        actions.push({
-                            action_type: "extract_input",
-                            input: {
-                                order_index: parseInt(disconnectedInput.stepId),
-                                input_name: disconnectedInput.inputName,
-                            },
-                        });
-                    }
-                }
-            }
-            if (!this.checkUnlabeledOutputs) {
-                actions.push({ action_type: "remove_unlabeled_workflow_outputs" });
-            }
+            const actions = getActions(this.nodes, this.implicitParameters);
             this.$emit("onRefactor", actions);
         },
     },

@@ -77,3 +77,34 @@ export function getImplicitParameters(implicitParameters) {
     }
     return items;
 }
+
+export function getActions(nodes, implicitParameters) {
+    const actions = [];
+    if (implicitParameters && implicitParameters.parameters) {
+        for (const implicitParameter of implicitParameters.parameters) {
+            if (implicitParameter.canExtract) {
+                actions.push({
+                    action_type: "extract_implicit_parameter",
+                    name: implicitParameter.name,
+                });
+            }
+        }
+    }
+    const disconnectedInputs = getDisconnectedInputs(nodes);
+    for (const disconnectedInput of disconnectedInputs) {
+        if (disconnectedInput.canExtract) {
+            actions.push({
+                action_type: "extract_input",
+                input: {
+                    order_index: parseInt(disconnectedInput.stepId),
+                    input_name: disconnectedInput.inputName,
+                },
+            });
+        }
+    }
+    const unlabeledOutputs = getUnlabeledOutputs(nodes);
+    if (unlabeledOutputs.length > 0) {
+        actions.push({ action_type: "remove_unlabeled_workflow_outputs" });
+    }
+    return actions;
+}
