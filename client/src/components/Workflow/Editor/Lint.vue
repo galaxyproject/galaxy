@@ -1,6 +1,6 @@
 <template>
     <b-card header-tag="header" body-class="p-0">
-        <template #header>
+        <template v-slot:header>
             <div class="mb-1 font-weight-bold">
                 <font-awesome-icon icon="magic" class="mr-1" />
                 Best Practices Review

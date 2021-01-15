@@ -64,7 +64,7 @@ export function getUnlabeledOutputs(nodes) {
 }
 
 export function getUntypedParameters(untypedParameters) {
-    let items = [];
+    const items = [];
     if (untypedParameters) {
         untypedParameters.parameters.forEach((parameter) => {
             items.push({

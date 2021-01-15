@@ -143,7 +143,7 @@ class ExtractInputAction(BaseAction):
 
 
 class ExtractUntypedParameter(BaseAction):
-    action_type: Literal['extract_implicit_parameter']
+    action_type: Literal['extract_untyped_parameter']
     name: str
     label: Optional[str]  # defaults to name if unset
     position: Optional[Position]
