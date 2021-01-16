@@ -170,26 +170,6 @@ def _raise_skip_if(check, *args):
         raise SkipTest(*args)
 
 
-# Deprecated mixin, use dataset populator instead.
-# TODO: Rework existing tests to target DatasetPopulator in a setup method instead.
-class TestsDatasets:
-
-    def _new_dataset(self, history_id, content='TestData123', **kwds):
-        return DatasetPopulator(self.galaxy_interactor).new_dataset(history_id, content=content, **kwds)
-
-    def _wait_for_history(self, history_id, assert_ok=False):
-        return DatasetPopulator(self.galaxy_interactor).wait_for_history(history_id, assert_ok=assert_ok)
-
-    def _new_history(self, **kwds):
-        return DatasetPopulator(self.galaxy_interactor).new_history(**kwds)
-
-    def _upload_payload(self, history_id, content, **kwds):
-        return DatasetPopulator(self.galaxy_interactor).upload_payload(history_id, content, **kwds)
-
-    def _run_tool_payload(self, tool_id, inputs, history_id, **kwds):
-        return DatasetPopulator(self.galaxy_interactor).run_tool_payload(tool_id, inputs, history_id, **kwds)
-
-
 class BaseDatasetPopulator:
     """ Abstract description of API operations optimized for testing
     Galaxy - implementations must implement _get, _post and _delete.

@@ -6,7 +6,6 @@ from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     LibraryPopulator,
-    TestsDatasets,
 )
 from ._framework import ApiTestCase
 
@@ -14,7 +13,7 @@ FILE_URL = 'https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data
 FILE_MD5 = "37b59762b59fff860460522d271bc111"
 
 
-class LibrariesApiTestCase(ApiTestCase, TestsDatasets):
+class LibrariesApiTestCase(ApiTestCase):
 
     def setUp(self):
         super().setUp()
