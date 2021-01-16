@@ -5,6 +5,7 @@ import difflib
 
 import json
 import sys
+import traceback
 import os
 from os import path
 

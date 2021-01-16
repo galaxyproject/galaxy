@@ -5,6 +5,7 @@ import json
 import os
 import os.path
 import sys
+import traceback
 import shutil
 
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
@@ -14,6 +15,7 @@ import mgm_utils
 from task_jira import TaskJira
 from task_openproject import TaskOpenproject 
 from task_redmine import TaskRedmine
+from task_manager import TaskManager
 
 
 # It's assumed that all HMGMs generate the output file in the same directory as the input file with ".completed" suffix added to the original filename

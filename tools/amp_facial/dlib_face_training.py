@@ -3,6 +3,7 @@
 import configparser
 import os
 import os.path
+import traceback
 import shutil
 import face_recognition
 import cv2

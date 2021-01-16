@@ -4,6 +4,7 @@ import os.path
 from random import seed
 from random import random
 import sys
+import traceback
 
 # Example implementation of a HMGM task
 # The task runner looks for specific exit codes in determining whether or not to terminate(0), requeue(1), or fail (-1)
