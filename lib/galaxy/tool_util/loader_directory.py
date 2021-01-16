@@ -250,7 +250,7 @@ def _find_tool_files(path_or_uri_like, recursive, enable_beta_formats):
 
     is_file = not os.path.isdir(path)
     if not os.path.exists(path):
-        raise Exception(PATH_DOES_NOT_EXIST_ERROR)
+        raise Exception(PATH_DOES_NOT_EXIST_ERROR % path)
     elif is_file and recursive:
         raise Exception(PATH_AND_RECURSIVE_ERROR)
     elif is_file:
