@@ -187,6 +187,9 @@ history_panel:
     options_show_history_structure:
       type: xpath
       selector: '//a[text()="Show Structure"]'
+    options_show_export_history_to_file:
+      type: xpath
+      selector: '//a[text()="Export History to File"]'
     new_history_button: '#history-new-button'
     multi_view_button: '#history-view-multi-button'
 
@@ -290,6 +293,16 @@ histories:
       make_publishable: '.make-publishable label'
     labels:
       unshare: 'Unshare'
+
+history_export:
+  selectors:
+    export_link: '.export-link'
+    running: '.history-export-component .loading-icon'  # TODO: more specific
+    generated_export_link: '.generated-export-link'
+    copy_export_link: '.copy-export-link'
+    show_job_link: '.show-job-link'
+    job_table: '.info_data_table'
+    job_table_ok: '.job-information-modal .btn-primary'
 
 pages:
   selectors:

@@ -517,14 +517,24 @@ class NavigatesGalaxy(HasDriver):
         center_element = self.driver.find_element_by_css_selector("#center")
         action_chains.move_to_element(center_element).click().perform()
 
-    def perform_upload(self, test_path, ext=None, genome=None, ext_all=None, genome_all=None):
+    def perform_upload(self, test_path, **kwd):
+        self._perform_upload(test_path=test_path, **kwd)
+
+    def perform_upload_of_pasted_content(self, paste_data, **kwd):
+        self._perform_upload(paste_data=paste_data, **kwd)
+
+    def _perform_upload(self, test_path=None, paste_data=None, ext=None, genome=None, ext_all=None, genome_all=None):
         self.home()
         self.upload_start_click()
 
         self.upload_set_footer_extension(ext_all)
         self.upload_set_footer_genome(genome_all)
 
-        self.upload_queue_local_file(test_path)
+        if test_path:
+            self.upload_queue_local_file(test_path)
+        else:
+            assert paste_data is not None
+            self.upload_paste_data(paste_data)
 
         if ext is not None:
             self.wait_for_selector_visible('.upload-extension')
@@ -634,6 +644,13 @@ class NavigatesGalaxy(HasDriver):
 
         file_upload = self.wait_for_selector('div#%s input[type="file"]' % tab_id)
         file_upload.send_keys(test_path)
+
+    def upload_paste_data(self, pasted_content, tab_id="regular"):
+        tab_locator = f"div#{tab_id}"
+        self.wait_for_and_click_selector(f"{tab_locator} button#btn-new")
+
+        textarea = self.wait_for_selector(f"{tab_locator} .upload-text-content")
+        textarea.send_keys(pasted_content)
 
     def upload_rule_start(self):
         self.upload_start_click()
