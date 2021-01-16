@@ -54,6 +54,7 @@ def main():
 		
 		# if input_json has empty data (not empty file), no need to go through HMGM task, just copy it to the output file, and done
 		if empty_input(input_json, task_type):
+			print ("Input file " + input_json + " for HMGM " + task_type + " editor contains empty data, skipping HMGM task and copy the input to the output")
 			shutil.copy(input_json, output_json)
             # implicitly exit 0 as the current command completes
 		# otherwise, if HMGM task hasn't been created, create one, exit 1 to get re-queued	
