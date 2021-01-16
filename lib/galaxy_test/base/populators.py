@@ -9,11 +9,6 @@ from functools import wraps
 from io import StringIO
 from operator import itemgetter
 
-try:
-    from nose.tools import nottest
-except ImportError:
-    def nottest(x):
-        return x
 import requests
 import yaml
 from gxformat2 import (
@@ -148,7 +143,6 @@ def summarize_instance_history_on_error(method):
     return wrapped_method
 
 
-@nottest
 def uses_test_history(**test_history_kwd):
     """Can override require_new and cancel_executions using kwds to decorator.
     """
