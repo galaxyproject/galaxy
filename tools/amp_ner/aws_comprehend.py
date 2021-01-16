@@ -227,7 +227,7 @@ def copy_to_s3(input_file, bucket, jobname):
         response = s3_client.upload_file(input_file, bucket, jobname)
         print("Uploaded file " + input_file + " to S3 bucket " + bucket + " for job " + jobname)
     except Exception as e:
-        print("Failed to copy file " + input_file + " to S3 bucket " + bucket + " for job " + jobname, e)
+        print("Failed to upload file " + input_file + " to S3 bucket " + bucket + " for job " + jobname, e)
         traceback.print_exc()
         return False
     return True
