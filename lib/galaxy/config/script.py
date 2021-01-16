@@ -154,7 +154,7 @@ def _handle_galaxy_yml(args, config_dir, data_dir):
 
     galaxy_config_template = []
     with open(GALAXY_CONFIG_TEMPLATE_FILE) as fh:
-        for line in fh.readlines():
+        for line in fh:
             line = line.rstrip('\n')
             for k, v in GALAXY_CONFIG_SUBSTITUTIONS.items():
                 if line == k:
