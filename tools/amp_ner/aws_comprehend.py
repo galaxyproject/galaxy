@@ -7,6 +7,7 @@ import json
 import shutil
 import subprocess
 import sys
+import traceback
 import tempfile
 import uuid
 import time

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import configparser
 import sys
+import traceback
 import requests
 import logging
 import time
