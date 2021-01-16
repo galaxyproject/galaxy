@@ -53,15 +53,21 @@ class TaskJira (TaskManager):
          # get the jira issue using id
          issue = self.jira.issue(issue_dict["id"])
          
-         # retrieve transition ID based on name = Done instead of hard coding it, if the ID might be different
+         # retrieve transition ID based on name = Done instead of hard coding it, in case the ID might be different
          transitions = self.jira.transitions(issue)
+         transition = None
          for t in transitions:
              if t["name"] == "Done":    # Done is the status when an issue is closed
-                 id = t["id"]
+                 transition = t["id"]
                  break
              
-         # update the jira status to Done via transition
-         self.jira.transition_issue(issue, id)
+         # if transition is None, that means issue is already in Done status
+         if transition is None:
+             print("Issue  " + issue.id + " is already Done, probably closed manually by someone")
+         # otherwise update the jira status to Done via transition
+         else:
+             print("Transition issue " + issue.id + " to status " + transition)
+             self.jira.transition_issue(issue, transition)
                   
          return issue
      

@@ -51,7 +51,6 @@ def find_shots(video_path, stats_file, threshold):
     scene_list = []
 
     try:
-
         # Set downscale factor to improve processing speed.
         video_manager.set_downscale_factor()
 
@@ -78,8 +77,8 @@ def find_shots(video_path, stats_file, threshold):
             with open(stats_file, 'w') as stats_file:
                 stats_manager.save_to_csv(stats_file, base_timecode)
     except Exception as err:
-        print(err)
-        
+        print("Failed to find shots for: video: " + video_path + ", stats: " + stats_file + ", threshold: " + threshold, err)
+        traceback.print_exc()        
     finally:
         video_manager.release()
 

@@ -52,26 +52,36 @@ def main():
 		context = json.loads(context_json)
 		context = desanitize_context(context)
 		
-		if not task_created(task_json):
+		# if input_json has empty data (not empty file), no need to go through HMGM task, just copy it to the output file, and done
+		if empty_input(input_json, task_type):
+			print ("Input file " + input_json + " for HMGM " + task_type + " editor contains empty data, skipping HMGM task and copy the input to the output")
+			shutil.copy(input_json, output_json)
+            # implicitly exit 0 as the current command completes
+		# otherwise, if HMGM task hasn't been created, create one, exit 1 to get re-queued	
+		elif not task_created(task_json):
 			task = create_task(config, task_type, context, input_json, output_json, task_json)
 			print ("Successfully created HMGM task " + task.key + ", exit 1")
 			sys.stdout.flush()
 			exit(1) 
+		# otherwise, check if HMGM task is completed
 		else:
 			editor_output = task_completed(config, output_json)
+			# if HMGM task is completed, close the task and move editor output to output file, and done
 			if (editor_output):
 				task = close_task(config, context, editor_output, output_json, task_json)
 				print ("Successfully closed HMGM task " + task.key)
 				sys.stdout.flush()
 				# implicitly exit 0 as the current command completes
+			# otherwise exit 1 to get re-queued
 			else:
 				print ("Waiting for HMGM task to complete ... exit 1")
 				sys.stdout.flush()
 				exit(1)        
+	# upon exception, create error file to notify the following conversion command to fail, and exit -1 (error) to avoid re-quene
 	except Exception as e:
-		# create error file to notify the following conversion command to fail
 		mgm_utils.create_err_file(output_json)
 		print ("Failed to handle HMGM task: uncorrected JSON: " + input_json + ", corrected JSON: " + output_json, e)
+		traceback.print_exc()
 		sys.stdout.flush()
 		exit(-1)
 
@@ -101,6 +111,20 @@ def desanitize_text(text):
 	text = text.replace('%22', '"');      
 	return text
 
+
+# Return true if the given input_json contains empty data based on format defined by the given task_type; false otherwise.
+def empty_input(input_json, task_type):
+	with open(input_json, 'r') as file:
+		data = json.load(file)		
+	if task_type == TaskManaager.TRANSCRIPT:
+		return not data['entityMap'] and not data['blocks']
+	elif task_type == TaskManaager.NER:
+		return not data['annotations'][0]['items']
+	# TODO update below logic	
+	elif task_type == TaskManaager.SEGMENTATION:
+		return True
+	elif task_type == TaskManaager.OCR:
+		return True
  
 # Return true if HMGM task has already been created, i.e. the file containing the HMGM task info exists.
 def task_created(task_json):    
