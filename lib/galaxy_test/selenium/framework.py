@@ -185,7 +185,26 @@ class TestSnapshot:
         write_file_func("%s-stack.txt" % prefix, str(self.stack))
 
 
-class TestWithSeleniumMixin(GalaxySeleniumContext, UsesApiTestCaseMixin):
+class GalaxyTestSeleniumContext(GalaxySeleniumContext):
+    """Extend GalaxySeleniumContext with Selenium-aware galaxy_test.base.populators."""
+
+    @property
+    def dataset_populator(self) -> populators.BaseDatasetPopulator:
+        """A dataset populator connected to the Galaxy session described by Selenium context."""
+        return SeleniumSessionDatasetPopulator(self)
+
+    @property
+    def dataset_collection_populator(self) -> populators.BaseDatasetCollectionPopulator:
+        """A dataset collection populator connected to the Galaxy session described by Selenium context."""
+        return SeleniumSessionDatasetCollectionPopulator(self)
+
+    @property
+    def workflow_populator(self) -> populators.BaseWorkflowPopulator:
+        """A workflow populator connected to the Galaxy session described by Selenium context."""
+        return SeleniumSessionWorkflowPopulator(self)
+
+
+class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin):
     # If run one-off via nosetests, the next line ensures test
     # tools and datatypes are used instead of configured tools.
     framework_tool_and_types = True
@@ -354,18 +373,6 @@ class TestWithSeleniumMixin(GalaxySeleniumContext, UsesApiTestCaseMixin):
         )
         with self.main_panel():
             self.assert_no_error_message()
-
-    @property
-    def dataset_populator(self):
-        return SeleniumSessionDatasetPopulator(self)
-
-    @property
-    def dataset_collection_populator(self):
-        return SeleniumSessionDatasetCollectionPopulator(self)
-
-    @property
-    def workflow_populator(self):
-        return SeleniumSessionWorkflowPopulator(self)
 
     def workflow_upload_yaml_with_random_name(self, content, **kwds):
         workflow_populator = self.workflow_populator

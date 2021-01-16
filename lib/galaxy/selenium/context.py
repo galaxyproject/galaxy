@@ -1,4 +1,5 @@
 from typing import Optional
+
 from six.moves.urllib.parse import urljoin
 
 from .driver_factory import ConfiguredDriver
@@ -35,7 +36,11 @@ class GalaxySeleniumContext(NavigatesGalaxy):
 
 
 class GalaxySeleniumContextImpl(GalaxySeleniumContext):
-    """Minimal, simplified GalaxySeleniumContext useful outside the context of test cases."""
+    """Minimal, simplified GalaxySeleniumContext useful outside the context of test cases.
+
+    A variant of this concept that can also populate content via the API
+    to then interact with via the Selenium is :class:galaxy_test.selenium.framework:`GalaxySeleniumContextImpl`.
+    """
 
     def __init__(self, from_dict: Optional[dict] = None) -> None:
         from_dict = from_dict or {}
