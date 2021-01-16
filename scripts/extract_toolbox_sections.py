@@ -117,7 +117,7 @@ def addToToolDict(tool, sectionname, sectionindex, toolindex, currentlabel):
 # Build a list of all toolconf xml files in the tools directory
 def getfnl(startdir):
     filenamelist = []
-    for root, dirs, files in os.walk(startdir):
+    for root, _dirs, files in os.walk(startdir):
         for fn in files:
             fullfn = os.path.join(root, fn)
             if fn.endswith('.xml'):

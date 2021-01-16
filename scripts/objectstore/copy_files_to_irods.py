@@ -127,7 +127,7 @@ def copy_files_to_irods(start_dataset_id, end_dataset_id, object_store_info_file
         args = ('ok', start_dataset_id, end_dataset_id, osi_keys)
         read_cursor.execute(read_sql_statement, args)
         rows = read_cursor.fetchall()
-        for num, row in enumerate(rows):
+        for row in rows:
             objectid = row[0]
             object_store_id = row[1]
             uuid_without_dash = row[2]
@@ -189,7 +189,7 @@ def copy_files_to_irods(start_dataset_id, end_dataset_id, object_store_info_file
                 # Recursively verify that the checksum of all files in this folder matches that in irods
                 if os.path.isdir(disk_folder_path):
                     # Recursively traverse the files in this folder
-                    for root, dirs, files in os.walk(disk_folder_path):
+                    for root, _dirs, files in os.walk(disk_folder_path):
                         for file_name in files:
                             a_disk_file_path = os.path.join(root, file_name)
                             # Get checksum for disk file

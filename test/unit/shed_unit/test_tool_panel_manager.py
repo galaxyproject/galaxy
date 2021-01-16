@@ -161,7 +161,7 @@ class ToolPanelManagerTestCase(BaseToolBoxTestCase):
 
             assert "github.com/galaxyproject/example/test_tool/0.2" not in new_toolbox._integrated_tool_panel["tid"].elems
         else:
-            next(iter(self.toolbox._tool_panel.values())).id == "github.com/galaxyproject/example/test_tool/0.1"
+            assert next(iter(self.toolbox._tool_panel.values())).id == "github.com/galaxyproject/example/test_tool/0.1"
             assert "github.com/galaxyproject/example/test_tool/0.2" not in new_toolbox._integrated_tool_panel
 
     def _remove_repository_contents(self, guid, uninstall, shed_tool_conf="tool_conf.xml"):

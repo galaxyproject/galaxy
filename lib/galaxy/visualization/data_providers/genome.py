@@ -1270,7 +1270,7 @@ class IntervalIndexDataProvider(GenomeDataProvider, FilterableMixin):
                 chrom = region.chrom
                 start = region.start
                 end = region.end
-                for start, end, offset in index.find(chrom, start, end):
+                for _start, _end, offset in index.find(chrom, start, end):
                     source.seek(offset)
 
                     # HACK: write differently depending on original dataset format.

@@ -294,7 +294,7 @@ class MockGalaxyInteractor:
                 continue
 
             count = version_defs['count']
-            for i in range(count):
+            for _ in range(count):
                 test_def = {
                     'tool_id': tool_id,
                     'tool_version': this_tool_version or '0.1.1-default',

@@ -52,7 +52,7 @@ def test_tool_conf_watcher():
 
 def wait_for_reload(check):
     reloaded = False
-    for i in range(10):
+    for _ in range(10):
         reloaded = check()
         if reloaded:
             break

@@ -90,7 +90,7 @@ $INTEGRATED_TOOL_PANEL
                     section_name = item.name or ''
                     section_version = item.version or ''
                     integrated_tool_panel.append('    <section id="{}" name="{}" version="{}">\n'.format(escape(section_id), escape(section_name), section_version))
-                    for section_key, section_item_type, section_item in item.panel_items_iter():
+                    for _section_key, section_item_type, section_item in item.panel_items_iter():
                         if section_item_type == panel_item_types.TOOL:
                             if section_item:
                                 integrated_tool_panel.append('        <tool id="%s" />\n' % section_item.id)
