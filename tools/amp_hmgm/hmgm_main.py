@@ -118,14 +118,14 @@ def desanitize_text(text):
 def empty_input(input_json, task_type):
 	with open(input_json, 'r') as file:
 		data = json.load(file)		
-	if task_type == TaskManaager.TRANSCRIPT:
+	if task_type == TaskManager.TRANSCRIPT:
 		return not data['entityMap'] and not data['blocks']
-	elif task_type == TaskManaager.NER:
+	elif task_type == TaskManager.NER:
 		return not data['annotations'][0]['items']
 	# TODO update below logic	
-	elif task_type == TaskManaager.SEGMENTATION:
+	elif task_type == TaskManager.SEGMENTATION:
 		return True
-	elif task_type == TaskManaager.OCR:
+	elif task_type == TaskManager.OCR:
 		return True
  
 # Return true if HMGM task has already been created, i.e. the file containing the HMGM task info exists.
