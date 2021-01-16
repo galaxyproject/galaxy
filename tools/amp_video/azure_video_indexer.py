@@ -172,9 +172,8 @@ def upload_to_s3(input_file, bucket):
     s3_client = boto3.client('s3')
     jobname = str(uuid.uuid1())
     try:
-        print('before response')
         response = s3_client.upload_file(input_file, bucket, jobname, ExtraArgs={'ACL': 'public-read'})
-        print(response)
+        print("Uploaded file " + input_file + " to s3 bucket " + bucket)
     except Exception as e:
         print("Failed to upload file " + input_file + " to s3 bucket " + bucket, e)
         traceback.print_exc()
@@ -186,6 +185,7 @@ def delete_from_s3(s3_path, bucket):
     try:
         obj = s3_client.Object(bucket, s3_path)
         obj.delete()
+        print("Deleted file " + s3_path + " from s3 bucket " + bucket)
     except Exception as e:
         print("Failed to delete file " + s3_path + " from s3 bucket " + bucket, e)
         traceback.print_exc()
