@@ -119,8 +119,8 @@ class TourGenerator:
 
         steps = [{
             'title': tour_name,
-            'content': 'This short tour will guide you through the <b>' +
-                       self._tool.name + '</b> tool.',
+            'content': 'This short tour will guide you through the <b>'
+                       + self._tool.name + '</b> tool.',
             'orphan': True
         }]
 

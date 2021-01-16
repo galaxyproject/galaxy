@@ -176,9 +176,9 @@ class Genome:
             'id': self.key,
             'reference': self.twobit_file is not None,
             'chrom_info': to_sort,
-            'prev_chroms' : prev_chroms,
-            'next_chroms' : next_chroms,
-            'start_index' : start_index
+            'prev_chroms': prev_chroms,
+            'next_chroms': next_chroms,
+            'start_index': start_index
         }
 
 

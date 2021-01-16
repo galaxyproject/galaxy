@@ -207,44 +207,44 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             can_manage_dataset = trans.app.security_agent.can_manage_dataset(trans.get_current_user_roles(), data.dataset)
             # attribute editing
             attribute_inputs = [{
-                'name' : 'name',
-                'type' : 'text',
+                'name': 'name',
+                'type': 'text',
                 'label': 'Name',
                 'value': data.get_display_name()
             }, {
-                'name' : 'info',
-                'type' : 'text',
-                'area' : True,
+                'name': 'info',
+                'type': 'text',
+                'area': True,
                 'label': 'Info',
                 'value': data.info
             }, {
-                'name' : 'annotation',
-                'type' : 'text',
-                'area' : True,
+                'name': 'annotation',
+                'type': 'text',
+                'area': True,
                 'label': 'Annotation',
                 'value': self.get_item_annotation_str(trans.sa_session, trans.user, data),
-                'help' : 'Add an annotation or notes to a dataset; annotations are available when a history is viewed.'
+                'help': 'Add an annotation or notes to a dataset; annotations are available when a history is viewed.'
             }]
             for name, spec in data_metadata:
                 if spec.visible:
                     attributes = data.metadata.get_metadata_parameter(name, trans=trans)
                     if type(attributes) is form_builder.SelectField:
                         attribute_inputs.append({
-                            'type'      : 'select',
-                            'multiple'  : attributes.multiple,
-                            'optional'  : spec.get('optional'),
-                            'name'      : name,
-                            'label'     : spec.desc,
-                            'options'   : attributes.options,
-                            'value'     : attributes.value if attributes.multiple else [attributes.value]
+                            'type': 'select',
+                            'multiple': attributes.multiple,
+                            'optional': spec.get('optional'),
+                            'name': name,
+                            'label': spec.desc,
+                            'options': attributes.options,
+                            'value': attributes.value if attributes.multiple else [attributes.value]
                         })
                     elif type(attributes) is form_builder.TextField:
                         attribute_inputs.append({
-                            'type'      : 'text',
-                            'name'      : name,
-                            'label'     : spec.desc,
-                            'value'     : attributes.value,
-                            'readonly'  : spec.get('readonly')
+                            'type': 'text',
+                            'name': name,
+                            'label': spec.desc,
+                            'value': attributes.value,
+                            'readonly': spec.get('readonly')
                         })
             if data.missing_meta():
                 message = 'Required metadata values are missing. Some of these values may not be editable by the user. Selecting "Auto-detect" will attempt to fix these values.'
@@ -253,22 +253,22 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             conversion_options = [(convert_name, convert_id) for convert_id, convert_name in converters_collection]
             conversion_disable = len(conversion_options) == 0
             conversion_inputs = [{
-                'type'      : 'select',
-                'name'      : 'target_type',
-                'label'     : 'Name',
-                'help'      : 'This will create a new dataset with the contents of this dataset converted to a new format.',
-                'options'   : conversion_options
+                'type': 'select',
+                'name': 'target_type',
+                'label': 'Name',
+                'help': 'This will create a new dataset with the contents of this dataset converted to a new format.',
+                'options': conversion_options
             }]
             # datatype changing
             datatype_options = [(ext_name, ext_id) for ext_id, ext_name in ldatatypes]
             datatype_disable = len(datatype_options) == 0
             datatype_inputs = [{
-                'type'      : 'select',
-                'name'      : 'datatype',
-                'label'     : 'New Type',
-                'options'   : datatype_options,
-                'value'     : [ext_id for ext_id, ext_name in ldatatypes if ext_id == data.ext],
-                'help'      : 'This will change the datatype of the existing dataset but not modify its contents. Use this if Galaxy has incorrectly guessed the type of your dataset.',
+                'type': 'select',
+                'name': 'datatype',
+                'label': 'New Type',
+                'options': datatype_options,
+                'value': [ext_id for ext_id, ext_name in ldatatypes if ext_id == data.ext],
+                'help': 'This will change the datatype of the existing dataset but not modify its contents. Use this if Galaxy has incorrectly guessed the type of your dataset.',
             }]
             # permissions
             permission_disable = True
@@ -284,42 +284,42 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                         else:
                             help_text = action.description
                         permission_inputs.append({
-                            'type'      : 'select',
-                            'multiple'  : True,
-                            'optional'  : True,
-                            'name'      : index,
-                            'label'     : action.action,
-                            'help'      : help_text,
-                            'options'   : all_roles,
-                            'value'     : in_roles.get(action.action),
-                            'readonly'  : not can_manage_dataset
+                            'type': 'select',
+                            'multiple': True,
+                            'optional': True,
+                            'name': index,
+                            'label': action.action,
+                            'help': help_text,
+                            'options': all_roles,
+                            'value': in_roles.get(action.action),
+                            'readonly': not can_manage_dataset
                         })
                     permission_disable = not can_manage_dataset
                 else:
                     permission_inputs.append({
-                        'name'      : 'access_public',
-                        'type'      : 'hidden',
-                        'label'     : 'This dataset is accessible by everyone (it is public).',
-                        'readonly'  : True
+                        'name': 'access_public',
+                        'type': 'hidden',
+                        'label': 'This dataset is accessible by everyone (it is public).',
+                        'readonly': True
                     })
             else:
                 permission_inputs.append({
-                    'name'      : 'no_access',
-                    'type'      : 'hidden',
-                    'label'     : 'Permissions not available (not logged in).',
-                    'readonly'  : True
+                    'name': 'no_access',
+                    'type': 'hidden',
+                    'label': 'Permissions not available (not logged in).',
+                    'readonly': True
                 })
             return {
-                'display_name'      : data.get_display_name(),
-                'message'           : message,
-                'status'            : status,
-                'dataset_id'        : dataset_id,
-                'attribute_inputs'  : attribute_inputs,
-                'conversion_inputs' : conversion_inputs,
+                'display_name': data.get_display_name(),
+                'message': message,
+                'status': status,
+                'dataset_id': dataset_id,
+                'attribute_inputs': attribute_inputs,
+                'conversion_inputs': conversion_inputs,
                 'conversion_disable': conversion_disable,
-                'datatype_inputs'   : datatype_inputs,
-                'datatype_disable'  : datatype_disable,
-                'permission_inputs' : permission_inputs,
+                'datatype_inputs': datatype_inputs,
+                'datatype_disable': datatype_disable,
+                'permission_inputs': permission_inputs,
                 'permission_disable': permission_disable
             }
         else:
@@ -423,7 +423,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             # so it is possible that some Datasets have no roles associated with the DATASET_MANAGE_PERMISSIONS
             # permission.  In this case, we'll reset this permission to the hda user's private role.
             manage_permissions_action = trans.app.security_agent.get_action(trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action)
-            permissions = {manage_permissions_action : [trans.app.security_agent.get_private_user_role(data.history.user)]}
+            permissions = {manage_permissions_action: [trans.app.security_agent.get_private_user_role(data.history.user)]}
             trans.app.security_agent.set_dataset_permission(data.dataset, permissions)
         return data, None
 
@@ -453,7 +453,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         decoded_id = self.decode_id(id)
         dataset = self.hda_manager.get_accessible(decoded_id, trans.user)
         dataset = self.hda_manager.error_if_uploading(dataset)
-        return_dict = {"name" : dataset.name, "link" : url_for(controller='dataset', action="display_by_username_and_slug", username=dataset.history.user.username, slug=trans.security.encode_id(dataset.id))}
+        return_dict = {"name": dataset.name, "link": url_for(controller='dataset', action="display_by_username_and_slug", username=dataset.history.user.username, slug=trans.security.encode_id(dataset.id))}
         return return_dict
 
     @web.expose

@@ -153,7 +153,7 @@ def copy_files_to_irods(start_dataset_id, end_dataset_id, object_store_info_file
                 session.collections.create(irods_file_collection_path)
 
                 # Add disk file to collection
-                options = {kw.REG_CHKSUM_KW : '', kw.RESC_NAME_KW: irods_resc}
+                options = {kw.REG_CHKSUM_KW: '', kw.RESC_NAME_KW: irods_resc}
                 session.data_objects.put(disk_file_path, irods_file_path, **options)
                 print(f"Copied disk file {disk_file_path} to irods {irods_file_path}")
 

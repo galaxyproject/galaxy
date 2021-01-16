@@ -2542,8 +2542,8 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             repository = repository_util.get_repository_in_tool_shed(trans.app, repository_id)
             user = trans.user
             if repository:
-                if user is not None and (trans.user_is_admin or
-                                         trans.app.security_agent.user_can_administer_repository(user, repository)):
+                if user is not None and (trans.user_is_admin
+                                         or trans.app.security_agent.user_can_administer_repository(user, repository)):
                     return trans.response.send_redirect(web.url_for(controller='repository',
                                                                     action='manage_repository',
                                                                     **kwd))

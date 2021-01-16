@@ -104,7 +104,7 @@ $INTEGRATED_TOOL_PANEL
                                 label_version = section_item.version or ''
                                 integrated_tool_panel.append(f'        <label id="{label_id}" text="{label_text}" version="{label_version}" />\n')
                     integrated_tool_panel.append('    </section>\n')
-        tool_panel_description = '\n    '.join(l for l in INTEGRATED_TOOL_PANEL_DESCRIPTION.split("\n") if l)
+        tool_panel_description = '\n    '.join(line for line in INTEGRATED_TOOL_PANEL_DESCRIPTION.split("\n") if line)
         tp_string = template.substitute(INTEGRATED_TOOL_PANEL_DESCRIPTION=tool_panel_description,
                                         INTEGRATED_TOOL_PANEL='\n'.join(integrated_tool_panel))
         with RenamedTemporaryFile(filename, mode='w') as f:

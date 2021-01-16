@@ -318,8 +318,8 @@ def create_basic_xml_info(readname, fname):
     # we print the info that we have
     if info:
         for key in info:
-            to_print.append('        <' + key + '>' + info[key] +
-                            '</' + key + '>\n')
+            to_print.append('        <' + key + '>' + info[key]
+                            + '</' + key + '>\n')
 
     return ''.join(to_print)
 

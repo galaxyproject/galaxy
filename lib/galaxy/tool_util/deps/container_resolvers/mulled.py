@@ -85,7 +85,7 @@ def list_docker_cached_mulled_images(namespace=None, hash_func="v2", resolution_
         except subprocess.CalledProcessError:
             log.info("Call to `docker images` failed, configured container resolution may be broken")
             return []
-        images_and_versions = [":".join(l.split()[0:2]) for l in images_and_versions[1:]]
+        images_and_versions = [":".join(line.split()[0:2]) for line in images_and_versions[1:]]
         if resolution_cache is not None:
             resolution_cache[cache_key] = images_and_versions
 

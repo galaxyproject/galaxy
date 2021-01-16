@@ -944,8 +944,8 @@ class InstalledRepositoryManager:
             if cleaned_repository_dependency_tool_shed == cleaned_tool_shed and \
                 repository_dependency.name == name and \
                 repository_dependency.owner == owner and \
-                (repository_dependency.installed_changeset_revision == changeset_revision or
-                 repository_dependency.changeset_revision == changeset_revision):
+                (repository_dependency.installed_changeset_revision == changeset_revision
+                 or repository_dependency.changeset_revision == changeset_revision):
                 return True
         return False
 

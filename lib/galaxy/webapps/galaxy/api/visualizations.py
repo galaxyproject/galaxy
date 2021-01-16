@@ -118,7 +118,7 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
             except ValueError as val_err:
                 raise exceptions.RequestParameterMissingException(str(val_err))
 
-        rval = {'id' : trans.security.encode_id(visualization.id)}
+        rval = {'id': trans.security.encode_id(visualization.id)}
 
         return rval
 
@@ -145,11 +145,11 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
         config = payload.get('config', visualization.latest_revision.config)
 
         latest_config = visualization.latest_revision.config
-        if((title != visualization.latest_revision.title) or
-                (dbkey != visualization.latest_revision.dbkey) or
-                (json.dumps(config) != json.dumps(latest_config))):
+        if((title != visualization.latest_revision.title)
+                or (dbkey != visualization.latest_revision.dbkey)
+                or (json.dumps(config) != json.dumps(latest_config))):
             revision = self.add_visualization_revision(trans, visualization, config, title, dbkey)
-            rval = {'id' : id, 'revision' : revision.id}
+            rval = {'id': id, 'revision': revision.id}
 
         # allow updating vis title
         visualization.title = title

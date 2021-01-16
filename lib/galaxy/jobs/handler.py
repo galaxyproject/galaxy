@@ -209,13 +209,13 @@ class JobHandlerQueue(Monitors):
         if self.app.config.user_activation_on:
             jobs_at_startup = self.sa_session.query(model.Job).enable_eagerloads(False) \
                 .outerjoin(model.User) \
-                .filter(model.Job.state.in_(in_list) &
-                        (model.Job.handler == self.app.config.server_name) &
-                        or_((model.Job.user_id == null()), (model.User.active == true()))).all()
+                .filter(model.Job.state.in_(in_list)
+                        & (model.Job.handler == self.app.config.server_name)
+                        & or_((model.Job.user_id == null()), (model.User.active == true()))).all()
         else:
             jobs_at_startup = self.sa_session.query(model.Job).enable_eagerloads(False) \
-                .filter(model.Job.state.in_(in_list) &
-                        (model.Job.handler == self.app.config.server_name)).all()
+                .filter(model.Job.state.in_(in_list)
+                        & (model.Job.handler == self.app.config.server_name)).all()
 
         for job in jobs_at_startup:
             if not self.app.toolbox.has_tool(job.tool_id, job.tool_version, exact=True):
@@ -582,14 +582,10 @@ class JobHandlerQueue(Monitors):
         if state == JOB_READY and self.app.quota_agent.is_over_quota(self.app, job, job_destination):
             return JOB_USER_OVER_QUOTA, job_destination
         # Check total walltime limits
-        if (state == JOB_READY and
-                "delta" in self.app.job_config.limits.total_walltime):
+        if (state == JOB_READY and "delta" in self.app.job_config.limits.total_walltime):
             jobs_to_check = self.sa_session.query(model.Job).filter(
                 model.Job.user_id == job.user.id,
-                model.Job.update_time >= datetime.datetime.now() -
-                datetime.timedelta(
-                    self.app.job_config.limits.total_walltime["window"]
-                ),
+                model.Job.update_time >= datetime.datetime.now() - datetime.timedelta(self.app.job_config.limits.total_walltime["window"]),
                 model.Job.state == 'ok'
             ).all()
             time_spent = datetime.timedelta(0)
@@ -919,8 +915,8 @@ class JobHandlerStopQueue(Monitors):
             newly_deleted_jobs = self.sa_session.query(model.Job).enable_eagerloads(False) \
                                      .filter((model.Job.state.in_((model.Job.states.DELETED_NEW,
                                                                    model.Job.states.DELETING,
-                                                                   model.Job.states.STOPPING))) &
-                                             (model.Job.handler == self.app.config.server_name)).all()
+                                                                   model.Job.states.STOPPING)))
+                                             & (model.Job.handler == self.app.config.server_name)).all()
             for job in newly_deleted_jobs:
                 # job.stderr is always a string (job.job_stderr + job.tool_stderr, possibly `''`),
                 # while any `not None` message returned in self.queue.get_nowait() is interpreted
@@ -944,8 +940,8 @@ class JobHandlerStopQueue(Monitors):
                      job.states.DELETING,
                      job.states.DELETED,
                      job.states.STOPPING,
-                     job.states.STOPPED) and
-                    job.finished):
+                     job.states.STOPPED)
+                    and job.finished):
                 # terminated before it got here
                 log.debug('Job %s already finished, not deleting or stopping', job.id)
                 continue

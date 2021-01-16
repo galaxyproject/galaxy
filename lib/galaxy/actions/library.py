@@ -214,7 +214,7 @@ class LibraryActions:
         return files_and_folders
 
     def _paths_list(self, params):
-        return [(l.strip(), os.path.abspath(l.strip())) for l in params.get('filesystem_paths', '').splitlines() if l.strip()]
+        return [(line.strip(), os.path.abspath(line.strip())) for line in params.get('filesystem_paths', '').splitlines() if line.strip()]
 
     def _check_path_paste_params(self, params):
         if params.get('filesystem_paths', '') == '':

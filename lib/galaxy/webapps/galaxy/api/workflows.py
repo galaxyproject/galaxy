@@ -702,14 +702,14 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             populate_state(trans, module.get_inputs(), inputs, module_state, check=False)
             module.recover_state(module_state, from_tool_form=True)
         return {
-            'label'             : inputs.get('__label', ''),
-            'annotation'        : inputs.get('__annotation', ''),
-            'name'              : module.get_name(),
-            'tool_state'        : module.get_state(),
-            'inputs'            : module.get_all_inputs(connectable_only=True),
-            'outputs'           : module.get_all_outputs(),
-            'config_form'       : module.get_config_form(),
-            'post_job_actions'  : module.get_post_job_actions(inputs)
+            'label': inputs.get('__label', ''),
+            'annotation': inputs.get('__annotation', ''),
+            'name': module.get_name(),
+            'tool_state': module.get_state(),
+            'inputs': module.get_all_inputs(connectable_only=True),
+            'outputs': module.get_all_outputs(),
+            'config_form': module.get_config_form(),
+            'post_job_actions': module.get_post_job_actions(inputs)
         }
 
     @expose_api
@@ -1077,7 +1077,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         tools, input_subdomain, output_subdomain, pipeline_steps, software_prerequisites = [], [], [], [], []
         for step in workflow_invocation.steps:
             if step.workflow_step.type == 'tool':
-                workflow_outputs_list , output_list, input_list = set(), [], []
+                workflow_outputs_list, output_list, input_list = set(), [], []
                 for wo in step.workflow_step.workflow_outputs:
                     workflow_outputs_list.add(wo.output_name)
                 for job in step.jobs:

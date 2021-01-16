@@ -322,13 +322,13 @@ class InteractiveEnvironmentRequest:
             volumes.insert(0, import_volume_def)
 
         return (
-            self.base_docker_cmd('run') +
-            shlex.split(command_inject) +
-            name +
-            _flag_opts('-e', ['='.join(map(str, t)) for t in env.items()]) +
-            ['-d', '-P'] +
-            _flag_opts('-v', map(str, volumes)) +
-            [image]
+            self.base_docker_cmd('run')
+            + shlex.split(command_inject)
+            + name
+            + _flag_opts('-e', ['='.join(map(str, t)) for t in env.items()])
+            + ['-d', '-P']
+            + _flag_opts('-v', map(str, volumes))
+            + [image]
         )
 
     @property

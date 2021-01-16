@@ -40,13 +40,13 @@ log = logging.getLogger(__name__)
 
 router = APIRouter(tags=['datatypes'])
 
-ExtensionOnlyQueryParam : Optional[bool] = Query(
+ExtensionOnlyQueryParam: Optional[bool] = Query(
     default=True,
     title="Extension only",
     description="Whether to return only the datatype's extension rather than the datatype's details",
 )
 
-UploadOnlyQueryParam : Optional[bool] = Query(
+UploadOnlyQueryParam: Optional[bool] = Query(
     default=True,
     title="Upload only",
     description="Whether to return only datatypes which can be uploaded",

@@ -876,7 +876,7 @@ class FetchByPathTestCase(BaseUploadContentConfigurationTestCase):
         }
         self.dataset_populator.fetch(payload)
         libraries = self.library_populator.get_libraries()
-        matching = [l for l in libraries if l["name"] == "My Cool Library"]
+        matching = [library for library in libraries if library["name"] == "My Cool Library"]
         assert len(matching) == 1
         library = matching[0]
         dataset = self.library_populator.get_library_contents_with_path(library["id"], "/file1")

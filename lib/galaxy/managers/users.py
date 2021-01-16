@@ -628,18 +628,18 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
         deletable.PurgableSerializerMixin.add_serializers(self)
 
         self.serializers.update({
-            'id'            : self.serialize_id,
-            'create_time'   : self.serialize_date,
-            'update_time'   : self.serialize_date,
-            'is_admin'      : lambda i, k, **c: self.user_manager.is_admin(i),
+            'id': self.serialize_id,
+            'create_time': self.serialize_date,
+            'update_time': self.serialize_date,
+            'is_admin': lambda i, k, **c: self.user_manager.is_admin(i),
 
-            'preferences'   : lambda i, k, **c: self.user_manager.preferences(i),
+            'preferences': lambda i, k, **c: self.user_manager.preferences(i),
 
-            'total_disk_usage' : lambda i, k, **c: float(i.total_disk_usage),
-            'quota_percent' : lambda i, k, **c: self.user_manager.quota(i),
-            'quota'         : lambda i, k, **c: self.user_manager.quota(i, total=True),
+            'total_disk_usage': lambda i, k, **c: float(i.total_disk_usage),
+            'quota_percent': lambda i, k, **c: self.user_manager.quota(i),
+            'quota': lambda i, k, **c: self.user_manager.quota(i, total=True),
 
-            'tags_used'     : lambda i, k, **c: self.user_manager.tags_used(i),
+            'tags_used': lambda i, k, **c: self.user_manager.tags_used(i),
         })
 
 
@@ -653,7 +653,7 @@ class UserDeserializer(base.ModelDeserializer):
     def add_deserializers(self):
         super().add_deserializers()
         self.deserializers.update({
-            'username'  : self.deserialize_username,
+            'username': self.deserialize_username,
         })
 
     def deserialize_username(self, item, key, username, trans=None, **context):
@@ -690,10 +690,10 @@ class CurrentUserSerializer(UserSerializer):
 
         # a very small subset of keys available
         values = {
-            'id'                    : None,
-            'total_disk_usage'      : float(usage),
-            'nice_total_disk_usage' : util.nice_size(usage),
-            'quota_percent'         : percent,
+            'id': None,
+            'total_disk_usage': float(usage),
+            'nice_total_disk_usage': util.nice_size(usage),
+            'quota_percent': percent,
         }
         serialized = {}
         for key in keys:
@@ -712,10 +712,10 @@ class AdminUserFilterParser(base.ModelFilterParser, deletable.PurgableFiltersMix
 
         # PRECONDITION: user making the query has been verified as an admin
         self.orm_filter_parsers.update({
-            'email'         : {'op': ('eq', 'contains', 'like')},
-            'username'      : {'op': ('eq', 'contains', 'like')},
-            'active'        : {'op': ('eq')},
-            'disk_usage'    : {'op': ('le', 'ge')}
+            'email': {'op': ('eq', 'contains', 'like')},
+            'username': {'op': ('eq', 'contains', 'like')},
+            'active': {'op': ('eq')},
+            'disk_usage': {'op': ('le', 'ge')}
         })
 
         self.fn_filter_parsers.update({})

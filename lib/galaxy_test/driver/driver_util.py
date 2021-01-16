@@ -189,8 +189,8 @@ def setup_galaxy_config(
     if default_data_manager_config is not None:
         data_manager_config_file = f"{default_data_manager_config},{data_manager_config_file}"
     master_api_key = get_admin_api_key()
-    cleanup_job = 'never' if ("GALAXY_TEST_NO_CLEANUP" in os.environ or
-                              "TOOL_SHED_TEST_NO_CLEANUP" in os.environ) else 'onsuccess'
+    cleanup_job = 'never' if ("GALAXY_TEST_NO_CLEANUP" in os.environ
+                              or "TOOL_SHED_TEST_NO_CLEANUP" in os.environ) else 'onsuccess'
 
     # Data Manager testing temp path
     # For storing Data Manager outputs and .loc files so that real ones don't get clobbered

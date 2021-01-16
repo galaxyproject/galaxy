@@ -58,8 +58,8 @@ def contains_workflow_parameter(value, search=False):
 
 
 def is_runtime_value(value):
-    return isinstance(value, RuntimeValue) or (isinstance(value, dict) and
-        value.get("__class__") in ["RuntimeValue", "ConnectedValue"])
+    return isinstance(value, RuntimeValue) or (isinstance(value, dict)
+        and value.get("__class__") in ["RuntimeValue", "ConnectedValue"])
 
 
 def is_runtime_context(trans, other_values):
@@ -70,8 +70,8 @@ def is_runtime_context(trans, other_values):
             return True
         for v in util.listify(context_value):
             if isinstance(v, trans.app.model.HistoryDatasetAssociation) and \
-                    ((hasattr(v, 'state') and v.state != galaxy.model.Dataset.states.OK) or
-                    hasattr(v, 'implicit_conversion')):
+                    ((hasattr(v, 'state') and v.state != galaxy.model.Dataset.states.OK)
+                    or hasattr(v, 'implicit_conversion')):
                 return True
     return False
 
