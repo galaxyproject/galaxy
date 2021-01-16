@@ -96,9 +96,7 @@ def main():
             
             d = difflib.Differ()
             res = list(d.compare(list_items, list_result))
-            print(len(res[0]))
-            print(res)
-            i = j= 0
+            i = j = 0
             word_count = len(words)
             original_item_count = len(original_items)
             print("original item count: " + str(original_item_count))
