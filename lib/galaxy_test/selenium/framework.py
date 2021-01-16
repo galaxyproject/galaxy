@@ -12,10 +12,6 @@ from gxformat2 import (
     convert_and_import_workflow,
     ImporterGalaxyInterface,
 )
-try:
-    from pyvirtualdisplay import Display
-except ImportError:
-    Display = None
 from requests.models import Response
 
 from galaxy.selenium import (
