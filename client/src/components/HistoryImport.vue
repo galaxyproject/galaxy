@@ -1,5 +1,5 @@
 <template>
-    <b-card title="Import a history from an archive">
+    <b-card body-class="history-import-component" title="Import a history from an archive">
         <b-alert v-if="errorMessage" variant="danger" dismissible @dismissed="errorMessage = null" show>
             {{ errorMessage }}
             <JobError
