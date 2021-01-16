@@ -16,4 +16,5 @@ export { default as CollectionContentProvider } from "./CollectionContentProvide
 // other collections, and sub-collections are stored as collection-content
 export { default as DscProvider } from "./DscProvider";
 
+// Management for current user's histories. Largely a passthrough of store methods
 export { default as UserHistories } from "./UserHistories";

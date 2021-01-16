@@ -89,7 +89,6 @@ deleteHistoryById.mockImplementation(async (id) => {
 // #region Mounting
 
 const localVue = getLocalVue();
-localVue.use(Vuex);
 
 // Generate store for tesint, just need the one module we talk to
 const historiesStore = new Vuex.Store({

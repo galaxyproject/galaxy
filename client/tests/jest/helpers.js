@@ -5,6 +5,8 @@ import { timer, fromEventPattern } from "rxjs";
 import { take, debounceTime, takeUntil } from "rxjs/operators";
 import { createLocalVue, shallowMount } from "@vue/test-utils";
 import { localizationPlugin } from "components/plugins/localization";
+import { vueRxShortcutPlugin } from "components/plugins/vueRxShortcuts";
+
 import Vuex from "vuex";
 
 // Creates a watcher on the indicated vm/prop for use in testing
@@ -67,6 +69,7 @@ export function getLocalVue() {
     localVue.directive("b-popover", mockedDirective);
     localVue.use(localizationPlugin);
     localVue.use(Vuex);
+    localVue.use(vueRxShortcutPlugin);
     return localVue;
 }
 

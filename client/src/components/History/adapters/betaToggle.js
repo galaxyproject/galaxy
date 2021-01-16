@@ -11,5 +11,5 @@ export const switchToLegacyHistoryPanel = () => {
 
 export const switchToBetaHistoryPanel = () => {
     sessionStorage.setItem(betaKey, 1);
-    location.reload(false);
+    location.reload();
 };

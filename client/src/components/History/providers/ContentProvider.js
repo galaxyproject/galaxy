@@ -1,9 +1,5 @@
-import Vue from "vue";
-import { vueRxShortcutPlugin } from "components/plugins";
 import { NEVER, BehaviorSubject } from "rxjs";
 import { SearchParams } from "../model/SearchParams";
-
-Vue.use(vueRxShortcutPlugin);
 
 // dumb math util
 export const clamp = (val, [bottom, top]) => Math.max(bottom, Math.min(top, val));
