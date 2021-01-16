@@ -265,7 +265,6 @@ class DockerAPIClient:
         for tries in range(1, max_tries + 1):
             retry_time = DockerAPIClient._exception_retry_time
             reinit = False
-            exc = None
             # re-get the APIClient method every time as a different caller (such as the success test function) may have
             # already reinitialized the client, and we always want to use the current client
             f = DockerAPIClient._unwrapped_attr(fname)
@@ -275,42 +274,38 @@ class DockerAPIClient:
                 if tries > 1:
                     log.info('%s() succeeded on attempt %s', qualname, tries)
                 return r
-            except ConnectionError:
-                reinit = True
-            except docker.errors.APIError as exc:
-                if not DockerAPIClient._should_retry_request(exc.response.status_code):
-                    raise
-            except ReadTimeout:
-                reinit = True
-                retry_time = 0
-            finally:
-                # this is inside the finally context so we can do a bare raise when we give up (so the real stack for
-                # the exception is raised)
-                if exc is not None:
-                    log.warning("Caught exception on %s(): %s: %s",
-                                DockerAPIClient._qualname(f), exc.__class__.__name__, exc)
-                    if reinit:
-                        log.warning("Reinitializing Docker API client due to connection-oriented failure")
-                        DockerAPIClient._init_client()
-                        f = DockerAPIClient._unwrapped_attr(fname)
-                        qualname = DockerAPIClient._qualname(f)
-                    r = None
-                    if success_test is not None:
-                        log.info("Testing if %s() succeeded despite the exception", qualname)
-                        r = success_test()
-                    if r:
-                        log.warning("The request appears to have succeeded, will not retry. Response is: %s", str(r))
-                        return r
-                    elif tries >= max_tries:
-                        log.error("Maximum number of attempts (%s) exceeded", max_tries)
-                        if 'response' in exc and DockerAPIClient._nonfatal_error(exc.response.status_code):
-                            return None
-                        else:
-                            raise
+            except (ConnectionError, docker.errors.APIError, ReadTimeout) as exc:
+                if isinstance(exc, ConnectionError):
+                    reinit = True
+                elif isinstance(exc, docker.errors.APIError):
+                    if not DockerAPIClient._should_retry_request(exc.response.status_code):
+                        raise
+                else:  # ReadTimeout
+                    reinit = True
+                    retry_time = 0
+                log.warning("Caught exception on %s(): %s: %s",
+                            DockerAPIClient._qualname(f), exc.__class__.__name__, exc)
+                if reinit:
+                    log.warning("Reinitializing Docker API client due to connection-oriented failure")
+                    DockerAPIClient._init_client()
+                    f = DockerAPIClient._unwrapped_attr(fname)
+                    qualname = DockerAPIClient._qualname(f)
+                r = None
+                if success_test is not None:
+                    log.info("Testing if %s() succeeded despite the exception", qualname)
+                    r = success_test()
+                if r:
+                    log.warning("The request appears to have succeeded, will not retry. Response is: %s", str(r))
+                    return r
+                elif tries >= max_tries:
+                    log.error("Maximum number of attempts (%s) exceeded", max_tries)
+                    if 'response' in exc and DockerAPIClient._nonfatal_error(exc.response.status_code):
+                        return None
                     else:
-                        log.error("Retrying %s() in %s seconds (attempt: %s of %s)", qualname, retry_time, tries,
-                                  max_tries)
-                        sleep(retry_time)
+                        raise
+                else:
+                    log.error("Retrying %s() in %s seconds (attempt: %s of %s)", qualname, retry_time, tries, max_tries)
+                    sleep(retry_time)
 
     def __init__(self, *args, **kwargs):
         # Only initialize the host iterator once

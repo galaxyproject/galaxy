@@ -228,15 +228,15 @@ def readable_output(json, organization='biocontainers', channel='bioconda'):
         sys.stdout.write("The query returned the following result(s).\n")
         # put quay, conda etc results as lists in lines
         lines = [['LOCATION', 'NAME', 'VERSION', 'COMMAND\n']]
-        for search_string, results in json.get('quay', {}).items():
+        for results in json.get('quay', {}).values():
             for result in results:
                 lines.append(['quay', result['package'], result['version'], 'docker pull quay.io/%s/%s:%s\n' %
                               (organization, result['package'], result['version'])])  # NOT a real solution
-        for search_string, results in json.get('conda', {}).items():
+        for results in json.get('conda', {}).values():
             for result in results:
                 lines.append(['conda', result['package'], '{}--{}'.format(result['version'], result['build']),
                               'conda install -c {} {}={}={}\n'.format(channel, result['package'], result['version'], result['build'])])
-        for search_string, results in json.get('singularity', {}).items():
+        for results in json.get('singularity', {}).values():
             for result in results:
                 lines.append(['singularity', result['package'], result['version'],
                               'wget https://depot.galaxyproject.org/singularity/{}:{}\n'.format(result['package'], result['version'])])

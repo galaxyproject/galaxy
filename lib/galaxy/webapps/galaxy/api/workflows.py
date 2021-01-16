@@ -241,8 +241,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             # A Workflow instance may not be the latest workflow version attached to StoredWorkflow.
             # This figures out the correct version so that we return the correct Workflow and version.
             workflow_id = self.decode_id(id)
-            for version, workflow in enumerate(reversed(stored_workflow.workflows)):
+            for i, workflow in enumerate(reversed(stored_workflow.workflows)):
                 if workflow.id == workflow_id:
+                    version = i
                     break
         return self.workflow_contents_manager.workflow_to_dict(trans, stored_workflow, style=style, version=version)
 

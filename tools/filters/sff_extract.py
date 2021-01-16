@@ -94,12 +94,8 @@ def check_magic(magic):
 
 def check_version(version):
     '''It checks that the version is supported, otherwise it raises an error.'''
-    supported = ('\x00', '\x00', '\x00', '\x01')
-    i = 0
-    for item in version:
-        if version[i] != supported[i]:
-            raise RuntimeError('SFF version not supported. Please contact the author of the software.')
-        i += 1
+    if version != ('\x00', '\x00', '\x00', '\x01'):
+        raise RuntimeError('SFF version not supported. Please contact the author of the software.')
 
 
 def read_header(fileh):
@@ -1326,7 +1322,7 @@ def main():
         if len(args) == 0:
             raise RuntimeError("No SFF file given?")
         extract_reads_from_sff(config, args)
-    except (OSError, IOError, RuntimeError) as errval:
+    except (OSError, IOError, RuntimeError) as errval:  # noqa: B014 Python 2.7
         print(errval)
         return 1
 
