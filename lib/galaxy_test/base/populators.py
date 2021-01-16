@@ -1,3 +1,42 @@
+"""Abstractions used by the Galaxy testing frameworks for interacting with the Galaxy API.
+
+These abstractions are geared toward testing use cases and populating fixtures.
+For a more general framework for working with the Galaxy API checkout `bioblend
+<https://github.com/galaxyproject/bioblend>`__.
+
+The populators are broken into different categories of data one might want to populate
+and work with (datasets, histories, libraries, and workflows). Within each populator
+type abstract classes describe high-level functionality that depend on abstract
+HTTP verbs executions (e.g. methods for executing GET, POST, DELETE). The abstract
+classes are :class:`galaxy_test.base.populators.BaseDatasetPopulator`,
+:class:`galaxy_test.base.populators.BaseWorkflowPopulator`, and
+:class:`galaxy_test.base.populators.BaseDatasetCollectionPopulator`.
+
+There are a few different concrete ways to supply these low-level verb executions.
+For instance :class:`galaxy_test.base.populators.DatasetPopulator` implements the abstract
+:class:`galaxy_test.base.populators.BaseDatasetPopulator` by leveraging a galaxy interactor
+:class:`galaxy.tool_util.interactor.GalaxyInteractorApi`. It is non-intuitive
+that the Galaxy testing framework uses the tool testing code inside Galaxy's code
+base for a lot of heavy lifting. This is due to the API testing framework organically
+growing from the tool testing framework that predated it and then the tool testing
+framework being extracted for re-use in `Planemo <https://github.com/galaxyproject/planemo>`__, etc..
+
+These other two concrete implementation of the populators are much more
+direct and intuitive. :class:`galaxy_test.base.populators.GiDatasetPopulator`, et. al.
+are populators built based on Bioblend ``gi`` objects to build URLs and describe
+API keys. :class:`galaxy_test.selenium.framework.SeleniumSessionDatasetPopulator`,
+et al. are populators built based on Selenium sessions to leverage Galaxy cookies
+for auth for instance.
+
+All three of these implementations are now effectively light wrappers around
+`requests <https://requests.readthedocs.io/>`__. Not leveraging requests directly
+is a bit ugly and this ugliness again stems from these organically growing from a
+framework that originally didn't use requests at all.
+
+API tests and Selenium tests routinely use requests directly and that is totally fine,
+requests should just be filtered through the verb abstractions if that functionality
+is then added to populators to be shared across tests or across testing frameworks.
+"""
 import contextlib
 import json
 import os
