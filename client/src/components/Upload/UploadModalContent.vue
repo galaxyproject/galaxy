@@ -111,15 +111,12 @@ export default {
         historyAvailable() {
             return Boolean(this.currentHistoryId);
         },
-
         ready() {
             return this.genomesSet && this.extensionsSet && this.historyAvailable && this.datatypesMapperReady;
         },
-
         unrestricted() {
             return this.formats === null && this.multiple;
         },
-
         effectiveExtensions() {
             if (this.formats === null || !this.datatypesMapperReady) {
                 return this.listExtensions;

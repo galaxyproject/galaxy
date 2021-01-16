@@ -5,7 +5,7 @@ Provides user and current history to modal because it currently has initializati
 
 <template>
     <b-modal
-        v-model="modalOpen"
+        v-model="modalShow"
         :static="modalStatic"
         header-class="no-separator"
         modal-class="ui-modal"
@@ -22,10 +22,6 @@ Provides user and current history to modal because it currently has initializati
 
         <CurrentUser v-slot="{ user }">
             <UserHistories v-slot="{ currentHistoryId }">
-                <!-- <div>
-                    <b>History: {{ currentHistoryId }}</b>
-                    <pre>{{ user }}</pre>
-                </div> -->
                 <UploadModalContent
                     v-if="currentHistoryId"
                     :current-user-id="user.id"
@@ -55,24 +51,17 @@ export default {
     props: {
         id: { type: String, default: "" },
         title: { type: String, default: "Download from web or upload from disk" },
-        modalShow: { type: Boolean, default: false },
         modalStatic: { type: Boolean, default: true },
         ...commonProps,
     },
-    computed: {
-        modalOpen: {
-            get() {
-                return this.modalShow;
-            },
-            set(val) {
-                this.$emit("update:modalShow", val);
-            },
-        },
+    data() {
+        return {
+            modalShow: false,
+        };
     },
     methods: {
         show() {
             this.modalShow = true;
-            this.$nextTick(this.tryMountingTabs);
         },
         hide() {
             this.modalShow = false;

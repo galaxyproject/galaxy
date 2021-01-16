@@ -3,8 +3,8 @@
         id="tool-panel-upload-button"
         @click="showUploadDialog"
         v-b-tooltip.hover
-        aria-label="Download from URL or upload files from disk"
-        title="Download from URL or upload files from disk"
+        :aria-label="title | localize"
+        :title="title | localize"
         class="upload-button"
         size="sm"
     >
@@ -19,7 +19,7 @@
         </div>
         <span class="position-relative">
             <font-awesome-icon icon="upload" class="mr-1" />
-            <b>Upload Data</b>
+            <b v-localize>Upload Data</b>
         </span>
     </b-button>
 </template>
@@ -35,6 +35,9 @@ export default {
     components: { FontAwesomeIcon },
     directives: {
         "v-b-tooltip": VBTooltip,
+    },
+    props: {
+        title: { type: String, default: "Download from URL or upload files from disk" },
     },
     data() {
         return {
