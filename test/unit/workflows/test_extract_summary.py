@@ -110,6 +110,7 @@ class MockTrans:
 class MockHda:
 
     def __init__(self, state='ok', output_name='out1', job=None):
+        self.hid = 1
         self.id = 123
         self.state = state
         self.copied_from_history_dataset_association = None
