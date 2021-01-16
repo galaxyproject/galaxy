@@ -262,7 +262,7 @@ export default {
             this.counterRunning = 0;
             this._updateStateForCounters();
             this._eventReset();
-            this.app.hide();
+            this.$emit("hide");
         },
 
         /** Start upload process */

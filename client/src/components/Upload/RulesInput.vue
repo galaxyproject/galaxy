@@ -192,7 +192,7 @@ export default {
             }
             selection.dataType = this.dataType;
             Galaxy.currHistoryPanel.buildCollection("rules", selection, true);
-            this.app.hide();
+            this.$emit("hide");
         },
     },
 };

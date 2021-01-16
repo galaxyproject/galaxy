@@ -33,6 +33,7 @@ Provides user and current history to modal because it currently has initializati
                     v-bind="{ ...$props, ...$attrs }"
                     v-on="$listeners"
                     @dismiss="dismiss"
+                    @hide="hide"
                 />
             </UserHistories>
         </CurrentUser>
