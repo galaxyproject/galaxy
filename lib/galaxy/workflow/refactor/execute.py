@@ -135,7 +135,7 @@ class WorkflowRefactorExecutor:
         if input_type in ["data", "dataset"]:
             module_type = "data_input"
         elif input_type in ["data_collection", "dataset_collection"]:
-            module_type == "data_collection_input"
+            module_type = "data_collection_input"
             tool_state["collection_type"] = action.collection_type
         else:
             if input_type not in InputParameterModule.POSSIBLE_PARAMETER_TYPES:
