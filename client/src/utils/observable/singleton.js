@@ -15,13 +15,12 @@ const defaultStorage = new Map();
  * @param {Map} storage Stores rendered product value
  * @param {Function} keyFn Optional, determines storage key from passed value
  */
-export const singleton = (factory, storage = defaultStorage, keyFn = defaultKeyFn) =>
-    pipe(
-        map((val) => {
-            const key = keyFn(val);
-            return storage.has(key) ? storage.get(key) : storage.set(key, factory(val)).get(key);
-        })
-    );
+export const singleton = (factory, storage = defaultStorage, keyFn = defaultKeyFn) => {
+    return map((val) => {
+        const key = keyFn(val);
+        return storage.has(key) ? storage.get(key) : storage.set(key, factory(val)).get(key);
+    });
+};
 
 /**
  * Generates a unique value from input source, then subscribes to that value if
@@ -31,8 +30,9 @@ export const singleton = (factory, storage = defaultStorage, keyFn = defaultKeyF
  * @param {Map} storage Stores rendered product value
  * @param {Function} keyFn Optional, determines storage key from passed value
  */
-export const singletonMap = (factory, storage, keyFn) =>
-    pipe(
+export const singletonMap = (factory, storage, keyFn) => {
+    return pipe(
         singleton(factory, storage, keyFn),
         mergeMap((val) => (isObservable(val) ? val : of(val)))
     );
+};
