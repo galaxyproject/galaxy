@@ -1,3 +1,4 @@
+from typing import Optional
 from six.moves.urllib.parse import urljoin
 
 from .driver_factory import ConfiguredDriver
@@ -36,7 +37,7 @@ class GalaxySeleniumContext(NavigatesGalaxy):
 class GalaxySeleniumContextImpl(GalaxySeleniumContext):
     """Minimal, simplified GalaxySeleniumContext useful outside the context of test cases."""
 
-    def __init__(self, from_dict=None):
+    def __init__(self, from_dict: Optional[dict] = None) -> None:
         from_dict = from_dict or {}
         self.configured_driver = ConfiguredDriver(**from_dict.get("driver", {}))
         self.url = from_dict.get("local_galaxy_url", "http://localhost:8080")

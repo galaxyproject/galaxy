@@ -35,7 +35,7 @@ from galaxy.tool_util.verify.interactor import GalaxyInteractorApi, verify_tool
 from galaxy.util import asbool, download_to_file, galaxy_directory
 from galaxy.util.properties import load_app_properties
 from galaxy.web import buildapp
-from galaxy_test.base.api_util import get_master_api_key, get_user_api_key
+from galaxy_test.base.api_util import get_admin_api_key, get_user_api_key
 from galaxy_test.base.env import (
     DEFAULT_WEB_HOST,
     target_url_parts,
@@ -188,7 +188,7 @@ def setup_galaxy_config(
     data_manager_config_file = 'test/functional/tools/sample_data_manager_conf.xml'
     if default_data_manager_config is not None:
         data_manager_config_file = f"{default_data_manager_config},{data_manager_config_file}"
-    master_api_key = get_master_api_key()
+    master_api_key = get_admin_api_key()
     cleanup_job = 'never' if ("GALAXY_TEST_NO_CLEANUP" in os.environ or
                               "TOOL_SHED_TEST_NO_CLEANUP" in os.environ) else 'onsuccess'
 
@@ -1126,7 +1126,7 @@ class GalaxyTestDriver(TestDriver):
         test_classes = functional.test_toolbox.build_tests(
             app=self.app,
             testing_shed_tools=testing_shed_tools,
-            master_api_key=get_master_api_key(),
+            master_api_key=get_admin_api_key(),
             user_api_key=get_user_api_key(),
         )
         if return_test_classes:
@@ -1139,7 +1139,7 @@ class GalaxyTestDriver(TestDriver):
         host, port, url = target_url_parts()
         galaxy_interactor_kwds = {
             "galaxy_url": url,
-            "master_api_key": get_master_api_key(),
+            "master_api_key": get_admin_api_key(),
             "api_key": get_user_api_key(),
             "keep_outputs_dir": None,
         }

@@ -11,7 +11,7 @@ from .api_asserts import (
 )
 from .api_util import (
     ADMIN_TEST_USER,
-    get_master_api_key,
+    get_admin_api_key,
     get_user_api_key,
     OTHER_USER,
     TEST_USER,
@@ -42,7 +42,7 @@ class UsesApiTestCaseMixin:
 
     def _setup_interactor(self):
         self.user_api_key = get_user_api_key()
-        self.master_api_key = get_master_api_key()
+        self.master_api_key = get_admin_api_key()
         self.galaxy_interactor = self._get_interactor()
 
     def _get_interactor(self, api_key=None):
