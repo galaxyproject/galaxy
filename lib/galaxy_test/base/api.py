@@ -60,10 +60,13 @@ class UsesApiTestCaseMixin:
 
     @contextmanager
     def _different_user(self, email=OTHER_USER):
-        """ Use in test cases to switch get/post operations to act as new user,
+        """ Use in test cases to switch get/post operations to act as new user
+
+        ..code-block:: python
 
             with self._different_user("other_user@bx.psu.edu"):
                 self._get("histories")  # Gets other_user@bx.psu.edu histories.
+
         """
         original_api_key = self.user_api_key
         original_interactor_key = self.galaxy_interactor.api_key
