@@ -2,12 +2,11 @@
     <div class="mb-3">
         <div v-if="invocationAndJobTerminal">
             <span>
-                <a id="invocation-link" :href="invocationLink"
-                    ><b>View Report {{ index + 1 }}</b></a
+                <a class="invocation-report-link" :href="invocationLink"
+                    ><b>View Report {{ indexStr }}</b></a
                 >
                 <a
-                    id="invocation-pdf-link"
-                    class="fa fa-print ml-1"
+                    class="fa fa-print ml-1 invocation-pdf-link"
                     :href="invocationPdfLink"
                     v-b-tooltip
                     title="Download PDF"
@@ -16,13 +15,12 @@
         </div>
         <div v-else>
             <span class="fa fa-spinner fa-spin" />
-            <span>Invocation {{ index + 1 }}...</span>
+            <span>Invocation {{ indexStr }}...</span>
             <span
-                id="cancel-workflow-scheduling"
+                class="fa fa-times cancel-workflow-scheduling"
                 v-if="!invocationSchedulingTerminal"
                 v-b-tooltip.hover
                 title="Cancel scheduling of workflow invocation"
-                class="fa fa-times"
                 @click="cancelWorkflowScheduling"
             ></span>
         </div>
@@ -54,7 +52,7 @@
             :loading="!invocationAndJobTerminal"
         />
         <span v-if="invocationAndJobTerminal">
-            <a id="bco-json" :href="bcoJSON"><b>Download BioCompute Object</b></a>
+            <a class="bco-json" :href="bcoJSON"><b>Download BioCompute Object</b></a>
         </span>
         <workflow-invocation-details
             v-if="invocation"
@@ -89,7 +87,7 @@ export default {
         },
         index: {
             type: Number,
-            default: 0,
+            optional: true,
         },
     },
     data() {
@@ -104,6 +102,13 @@ export default {
     },
     computed: {
         ...mapGetters(["getInvocationById", "getInvocationJobsSummaryById"]),
+        indexStr() {
+            if (this.index == null) {
+                return "";
+            } else {
+                return `${this.index + 1}`;
+            }
+        },
         invocation: function () {
             return this.getInvocationById(this.invocationId);
         },

@@ -81,10 +81,10 @@ describe("Invocations.vue with invocation", () => {
     it("toggles detail rendering", async () => {
         let rows = wrapper.findAll("tbody > tr").wrappers;
         expect(rows.length).toBe(1);
-        await wrapper.find("#toggle-invocation-details").trigger("click");
+        await wrapper.find(".toggle-invocation-details").trigger("click");
         rows = wrapper.findAll("tbody > tr").wrappers;
         expect(rows.length).toBe(3);
-        await wrapper.find("#toggle-invocation-details").trigger("click");
+        await wrapper.find(".toggle-invocation-details").trigger("click");
         rows = wrapper.findAll("tbody > tr").wrappers;
         expect(rows.length).toBe(1);
     });

@@ -35,7 +35,7 @@
                 </template>
                 <template v-slot:cell(workflow_id)="data">
                     <b-link
-                        id="toggle-invocation-details"
+                        class="toggle-invocation-details"
                         v-b-tooltip
                         title="Show Invocation details"
                         href="#"
