@@ -51,7 +51,6 @@ describe("Lint", () => {
     });
 
     it("test checked vs unchecked issues", async () => {
-        console.log(wrapper.html());
         const checked = wrapper.findAll("[data-icon='check']");
         expect(checked.length).toBe(5);
         const unchecked = wrapper.findAll("[data-icon='exclamation-triangle']");

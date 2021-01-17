@@ -15,7 +15,7 @@
                     @mouseleave="onMouseLeave(item.stepId)"
                     class="ml-2"
                 >
-                    <a href="#" @click="onClick(item.stepId)" class="scrolls">
+                    <a href="#" @click="onClick(item.stepId, item)" class="scrolls">
                         <font-awesome-icon icon="search" class="mr-1" />{{ item.stepLabel }}: {{ item.warningLabel }}
                     </a>
                 </div>
@@ -84,8 +84,8 @@ export default {
         onMouseLeave(id) {
             this.$emit("onMouseLeave", id);
         },
-        onClick(id) {
-            this.$emit("onClick", id);
+        onClick(id, item) {
+            this.$emit("onClick", id, item);
         },
     },
 };

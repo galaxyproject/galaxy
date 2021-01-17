@@ -78,33 +78,45 @@ export function getUntypedParameters(untypedParameters) {
     return items;
 }
 
-export function getActions(nodes, untypedParameters) {
+export function fixAllIssues(nodes, untypedParameters) {
     const actions = [];
     if (untypedParameters && untypedParameters.parameters) {
         for (const untypedParameter of untypedParameters.parameters) {
             if (untypedParameter.canExtract) {
-                actions.push({
-                    action_type: "extract_untyped_parameter",
-                    name: untypedParameter.name,
-                });
+                actions.push(fixUntypedParameter(untypedParameter));
             }
         }
     }
     const disconnectedInputs = getDisconnectedInputs(nodes);
     for (const disconnectedInput of disconnectedInputs) {
         if (disconnectedInput.canExtract) {
-            actions.push({
-                action_type: "extract_input",
-                input: {
-                    order_index: parseInt(disconnectedInput.stepId),
-                    input_name: disconnectedInput.inputName,
-                },
-            });
+            actions.push(fixDisconnectedInput(disconnectedInput));
         }
     }
     const unlabeledOutputs = getUnlabeledOutputs(nodes);
     if (unlabeledOutputs.length > 0) {
-        actions.push({ action_type: "remove_unlabeled_workflow_outputs" });
+        actions.push(fixUnlabeledOutputs());
     }
     return actions;
+}
+
+export function fixUntypedParameter(untypedParameter) {
+    return {
+        action_type: "extract_untyped_parameter",
+        name: untypedParameter.name,
+    };
+}
+
+export function fixDisconnectedInput(disconnectedInput) {
+    return {
+        action_type: "extract_input",
+        input: {
+            order_index: parseInt(disconnectedInput.stepId),
+            input_name: disconnectedInput.inputName,
+        },
+    };
+}
+
+export function fixUnlabeledOutputs() {
+    return { action_type: "remove_unlabeled_workflow_outputs" };
 }

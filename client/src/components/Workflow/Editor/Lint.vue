@@ -47,7 +47,7 @@
                 :warning-items="warningUntypedParameters"
                 @onMouseOver="onHighlight"
                 @onMouseLeave="onUnhighlight"
-                @onClick="onScrollTo"
+                @onClick="onFixUntypedParameter"
             />
             <LintSection
                 success-message="All non-optional inputs to workflow steps are connected to formal input parameters."
@@ -56,7 +56,7 @@
                 :warning-items="warningDisconnectedInputs"
                 @onMouseOver="onHighlight"
                 @onMouseLeave="onUnhighlight"
-                @onClick="onScrollTo"
+                @onClick="onFixDisconnectedInput"
             />
             <LintSection
                 success-message="All workflow inputs have labels and annotations."
@@ -73,7 +73,7 @@
                 :warning-items="warningUnlabeledOutputs"
                 @onMouseOver="onHighlight"
                 @onMouseLeave="onUnhighlight"
-                @onClick="onScrollTo"
+                @onClick="onFixUnlabeledOutputs"
             />
         </b-card-body>
     </b-card>
@@ -85,11 +85,14 @@ import BootstrapVue from "bootstrap-vue";
 import { UntypedParameters } from "components/Workflow/Editor/modules/parameters";
 import LintSection from "components/Workflow/Editor/LintSection";
 import {
-    getActions,
     getDisconnectedInputs,
     getUntypedParameters,
     getMissingMetadata,
     getUnlabeledOutputs,
+    fixAllIssues,
+    fixDisconnectedInput,
+    fixUnlabeledOutputs,
+    fixUntypedParameter,
 } from "./modules/linting";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -139,6 +142,39 @@ export default {
         onAttributes() {
             this.$emit("onAttributes");
         },
+        onFixUntypedParameter(stepId, item) {
+            if (
+                confirm(
+                    "This issue can be fixed automatically by creating an explicit parameter input step. Do you want to proceed?"
+                )
+            ) {
+                this.$emit("onRefactor", [fixUntypedParameter(item)]);
+            } else {
+                this.$emit("onScrollTo", stepId);
+            }
+        },
+        onFixDisconnectedInput(stepId, item) {
+            if (
+                confirm(
+                    "This issue can be fixed automatically by creating an explicit data input step. Do you want to proceed?"
+                )
+            ) {
+                this.$emit("onRefactor", [fixDisconnectedInput(item)]);
+            } else {
+                this.$emit("onScrollTo", stepId);
+            }
+        },
+        onFixUnlabeledOutputs(stepId) {
+            if (
+                confirm(
+                    "This issue can be fixed automatically by removing all unlabeled workflow output. Do you want to proceed?"
+                )
+            ) {
+                this.$emit("onRefactor", [fixUnlabeledOutputs()]);
+            } else {
+                this.$emit("onScrollTo", stepId);
+            }
+        },
         onScrollTo(stepId) {
             this.$emit("onScrollTo", stepId);
         },
@@ -149,7 +185,7 @@ export default {
             this.$emit("onUnhighlight", stepId);
         },
         onRefactor() {
-            const actions = getActions(this.nodes, this.untypedParameters);
+            const actions = fixAllIssues(this.nodes, this.untypedParameters);
             this.$emit("onRefactor", actions);
         },
     },
