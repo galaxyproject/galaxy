@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from typing import Optional
 
 from six.moves.urllib.parse import urljoin
@@ -7,8 +8,10 @@ from .navigates_galaxy import NavigatesGalaxy
 
 
 class GalaxySeleniumContext(NavigatesGalaxy):
+    url: str
+    target_url_from_selenium: str
 
-    def build_url(self, url, for_selenium=True):
+    def build_url(self, url: str, for_selenium: bool = True) -> str:
         if for_selenium:
             base = self.target_url_from_selenium
         else:
@@ -19,7 +22,7 @@ class GalaxySeleniumContext(NavigatesGalaxy):
     def driver(self):
         return self.configured_driver.driver
 
-    def screenshot(self, label):
+    def screenshot(self, label: str):
         """If GALAXY_TEST_SCREENSHOTS_DIRECTORY is set create a screenshot there named <label>.png.
 
         Unlike the above "snapshot" feature, this will be written out regardless and not in a per-test
@@ -33,6 +36,10 @@ class GalaxySeleniumContext(NavigatesGalaxy):
 
         self.driver.save_screenshot(target)
         return target
+
+    @abstractmethod
+    def _screenshot_path(self, label: str, extension=".png") -> str:
+        """Path to store screenshots in."""
 
 
 class GalaxySeleniumContextImpl(GalaxySeleniumContext):

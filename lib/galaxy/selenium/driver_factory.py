@@ -8,6 +8,7 @@ except ImportError:
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+from selenium.webdriver.remote.webdriver import WebDriver
 
 
 DEFAULT_BROWSER = "auto"
@@ -25,6 +26,7 @@ VALID_LOCAL_BROWSERS = ["CHROME", "FIREFOX", "OPERA", "PHANTOMJS"]
 
 
 class ConfiguredDriver:
+    driver: WebDriver
 
     def __init__(
         self,
@@ -75,7 +77,7 @@ def get_local_browser(browser):
     return browser
 
 
-def get_local_driver(browser=DEFAULT_BROWSER, headless=False):
+def get_local_driver(browser=DEFAULT_BROWSER, headless=False) -> WebDriver:
     browser = get_local_browser(browser)
     if browser not in VALID_LOCAL_BROWSERS:
         raise AssertionError(f"{browser} not in VALID_LOCAL_BROWSERS ({VALID_LOCAL_BROWSERS})")
@@ -111,7 +113,7 @@ def get_remote_driver(
     host,
     port,
     browser=DEFAULT_BROWSER
-):
+) -> WebDriver:
     # docker run -d -p 4444:4444 -v /dev/shm:/dev/shm selenium/standalone-chrome:3.0.1-aluminum
     if browser == "auto":
         browser = "CHROME"
