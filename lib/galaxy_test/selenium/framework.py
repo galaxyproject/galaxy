@@ -26,6 +26,7 @@ from galaxy.selenium.navigates_galaxy import (
 from galaxy.util import asbool, classproperty
 from galaxy_test.base import populators
 from galaxy_test.base.api import UsesApiTestCaseMixin
+from galaxy_test.base.api_util import get_admin_api_key
 from galaxy_test.base.env import DEFAULT_WEB_HOST, get_ip_address
 from galaxy_test.base.testcase import FunctionalTestCase
 try:
@@ -392,6 +393,7 @@ class SeleniumTestCase(FunctionalTestCase, TestWithSeleniumMixin):
     def setUp(self):
         super().setUp()
         self.setup_selenium()
+        self.admin_api_key = get_admin_api_key()
 
     def tearDown(self):
         exception = None
@@ -525,10 +527,19 @@ class SeleniumSessionGetPostMixin:
     """Mixin for adapting Galaxy testing populators helpers to Selenium session backed bioblend."""
     selenium_context: GalaxySeleniumContext
 
+    @property
+    def _mixin_admin_api_key(self) -> str:
+        return getattr(self, "admin_api_key", get_admin_api_key())
+
     def _get(self, route, data=None, admin=False) -> Response:
         data = data or {}
         full_url = self.selenium_context.build_url("api/" + route, for_selenium=False)
-        response = requests.get(full_url, data=data, cookies=self.selenium_context.selenium_to_requests_cookies())
+        cookies = None
+        if admin:
+            full_url = f"{full_url}?key={self._mixin_admin_api_key}"
+        else:
+            cookies = self.selenium_context.selenium_to_requests_cookies()
+        response = requests.get(full_url, params=data, cookies=cookies)
         return response
 
     def _post(self, route, data=None, files=None, admin=False, json: bool = False) -> Response:
@@ -541,19 +552,34 @@ class SeleniumSessionGetPostMixin:
             if files is not None:
                 del data["__files"]
 
-        response = requests.post(full_url, data=data, cookies=self.selenium_context.selenium_to_requests_cookies(), files=files)
+        cookies = None
+        if admin:
+            full_url = f"{full_url}?key={self._mixin_admin_api_key}"
+        else:
+            cookies = self.selenium_context.selenium_to_requests_cookies()
+        response = requests.post(full_url, data=data, cookies=cookies, files=files)
         return response
 
     def _delete(self, route, data=None, admin=False) -> Response:
         data = data or {}
         full_url = self.selenium_context.build_url("api/" + route, for_selenium=False)
-        response = requests.delete(full_url, data=data, cookies=self.selenium_context.selenium_to_requests_cookies())
+        cookies = None
+        if admin:
+            full_url = f"{full_url}?key={self._mixin_admin_api_key}"
+        else:
+            cookies = self.selenium_context.selenium_to_requests_cookies()
+        response = requests.delete(full_url, data=data, cookies=cookies)
         return response
 
     def _put(self, route, data=None, admin=False) -> Response:
         data = data or {}
         full_url = self.selenium_context.build_url("api/" + route, for_selenium=False)
-        response = requests.put(full_url, data=data, cookies=self.selenium_context.selenium_to_requests_cookies())
+        cookies = None
+        if admin:
+            full_url = f"{full_url}?key={self._mixin_admin_api_key}"
+        else:
+            cookies = self.selenium_context.selenium_to_requests_cookies()
+        response = requests.put(full_url, data=data, cookies=cookies)
         return response
 
 
@@ -588,6 +614,7 @@ class SeleniumSessionWorkflowPopulator(SeleniumSessionGetPostMixin, populators.B
         """Construct a workflow populator from a bioblend GalaxyInstance."""
         self.selenium_context = selenium_context
         self.dataset_populator = SeleniumSessionDatasetPopulator(selenium_context)
+        self.dataset_collection_populator = SeleniumSessionDatasetPopulator(selenium_context)
 
     def import_workflow(self, workflow: dict, **kwds) -> dict:
         workflow_str = json.dumps(workflow, indent=4)
@@ -596,7 +623,7 @@ class SeleniumSessionWorkflowPopulator(SeleniumSessionGetPostMixin, populators.B
         }
         data.update(**kwds)
         upload_response = self._post("workflows", data=data)
-        assert upload_response.status_code == 200
+        upload_response.raise_for_status()
         return upload_response.json()
 
     def upload_yaml_workflow(self, has_yaml, **kwds) -> str:
