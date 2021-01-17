@@ -60,6 +60,7 @@ masthead:
     custom_builds: 'Custom Builds'
     preferences: 'Preferences'
     histories: 'Histories'
+    invocations: 'Workflow Invocations'
     pages: 'Pages'
 
     # Shared data
@@ -385,6 +386,27 @@ workflow_editor:
     connector_destroy_callout: '.delete-terminal'
     save_button: '.editor-button-save'
     state_modal_body: '.state-upgrade-modal'
+
+invocations:
+  selectors:
+    invocations_table: '.invocations-list table'
+    invocations_table_rows: '.invocations-list table tbody tr'
+    state_details: '.workflow-invocation-state-component'
+    toggle_invocation_details: '.toggle-invocation-details'
+    progress_steps_note: '.workflow-invocation-state-component .steps-progress .progressNote'
+    progress_jobs_note: '.workflow-invocation-state-component .jobs-progress .progressNote'
+    input_details: '.workflow-invocation-state-component .invocation-inputs-details'
+    input_details_title: '.workflow-invocation-state-component .invocation-inputs-details [data-label="${label}"]'
+    input_details_name:  '.workflow-invocation-state-component .invocation-inputs-details [data-label="${label}"] .name'
+
+    steps_details: '.workflow-invocation-state-component .invocation-steps-details'
+    step_title: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .step-title'
+    step_details: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .portlet-operations'
+    step_job_details: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-job-details'
+    step_job_table: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-job-details table'
+    step_job_table_rows: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-job-details table tbody tr'
+    step_job_information: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-job-details table tbody .b-table-details .info_data_table'
+    step_job_information_tool_id: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-job-details table tbody .b-table-details .info_data_table #galaxy-tool-id'
 
 tour:
   popover:

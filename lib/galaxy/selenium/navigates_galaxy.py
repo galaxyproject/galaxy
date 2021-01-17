@@ -870,6 +870,11 @@ class NavigatesGalaxy(HasDriver):
         self.click_masthead_user()
         self.components.masthead.preferences.wait_for_and_click()
 
+    def navigate_to_invocations(self):
+        self.home()
+        self.click_masthead_user()
+        self.components.masthead.invocations.wait_for_and_click()
+
     def admin_open(self):
         self.components.masthead.admin.wait_for_and_click()
 

@@ -1,22 +1,26 @@
 <template>
     <div v-if="invocation">
         <div v-if="Object.keys(invocation.input_step_parameters).length">
-            <details
+            <details class="invocation-parameters-details"
                 ><summary><b>Parameters</b></summary>
                 <parameter-step :parameters="Object.values(invocation.input_step_parameters)" />
             </details>
         </div>
         <div v-if="Object.keys(invocation.inputs).length">
-            <details
+            <details class="invocation-inputs-details"
                 ><summary><b>Inputs</b></summary>
-                <div v-for="(input, key) in invocation.inputs" :key="input.id">
+                <div
+                    v-for="(input, key) in invocation.inputs"
+                    :key="input.id"
+                    :data-label="dataInputStepLabel(key, input)"
+                >
                     <b>{{ dataInputStepLabel(key, input) }}</b>
                     <workflow-invocation-data-contents :data_item="input" />
                 </div>
             </details>
         </div>
         <div v-if="Object.keys(invocation.outputs).length">
-            <details
+            <details class="invocation-outputs-details"
                 ><summary><b>Outputs</b></summary>
                 <div v-for="(output, key) in invocation.outputs" :key="output.id">
                     <b>{{ key }}:</b>
@@ -25,7 +29,7 @@
             </details>
         </div>
         <div v-if="Object.keys(invocation.output_collections).length">
-            <details
+            <details class="invocation-output-collections-details"
                 ><summary><b>Output Collections</b></summary>
                 <div v-for="(output, key) in invocation.output_collections" :key="output.id">
                     <b>{{ key }}:</b>
@@ -34,7 +38,7 @@
             </details>
         </div>
         <div v-if="workflow">
-            <details v-if="workflow"
+            <details v-if="workflow" class="invocation-steps-details"
                 ><summary><b>Steps</b></summary>
                 <workflow-invocation-step
                     v-for="step in Object.values(workflow.steps)"

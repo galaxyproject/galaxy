@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div class="invocations-list">
         <h2 class="mb-3">
             <span id="invocations-title">Workflow Invocations</span>
         </h2>
@@ -24,7 +24,7 @@
             >
                 <template v-slot:row-details="row">
                     <b-card>
-                        <small class="float-right">
+                        <small class="float-right" :data-invocation-id="row.item.id">
                             <b>Invocation: {{ row.item.id }}</b>
                         </small>
                         <workflow-invocation-state

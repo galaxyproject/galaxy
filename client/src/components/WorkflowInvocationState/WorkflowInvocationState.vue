@@ -1,5 +1,5 @@
 <template>
-    <div class="mb-3">
+    <div class="mb-3 workflow-invocation-state-component">
         <div v-if="invocationAndJobTerminal">
             <span>
                 <a class="invocation-report-link" :href="invocationLink"
@@ -24,16 +24,18 @@
                 @click="cancelWorkflowScheduling"
             ></span>
         </div>
-        <progress-bar v-if="!stepCount" note="Loading step state summary..." :loading="true" />
+        <progress-bar v-if="!stepCount" note="Loading step state summary..." :loading="true" class="steps-progress" />
         <progress-bar
             v-else-if="invocationState == 'cancelled'"
             note="Invocation scheduling cancelled - expected jobs and outputs may not be generated."
             :error-count="1"
+            class="steps-progress"
         />
         <progress-bar
             v-else-if="invocationState == 'failed'"
             note="Invocation scheduling failed - Galaxy administrator may have additional details in logs."
             :error-count="1"
+            class="steps-progress"
         />
         <progress-bar
             v-else
@@ -41,6 +43,7 @@
             :total="stepCount"
             :ok-count="stepStates.scheduled"
             :loading="!invocationSchedulingTerminal"
+            class="steps-progress"
         />
         <progress-bar
             :note="jobStatesStr"
@@ -50,6 +53,7 @@
             :new-count="newCount"
             :error-count="errorCount"
             :loading="!invocationAndJobTerminal"
+            class="jobs-progress"
         />
         <span v-if="invocationAndJobTerminal">
             <a class="bco-json" :href="bcoJSON"><b>Download BioCompute Object</b></a>
