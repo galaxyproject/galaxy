@@ -15,7 +15,7 @@
         </div>
         <div v-else>
             <span class="fa fa-spinner fa-spin" />
-            <span>Invocation {{ index + 1 }}...</span>
+            <span>Invocation {{ indexStr }}...</span>
             <span
                 class="fa fa-times cancel-workflow-scheduling"
                 v-if="!invocationSchedulingTerminal"
@@ -87,7 +87,7 @@ export default {
         },
         index: {
             type: Number,
-            default: 0,
+            optional: true,
         },
     },
     data() {
@@ -102,6 +102,13 @@ export default {
     },
     computed: {
         ...mapGetters(["getInvocationById", "getInvocationJobsSummaryById"]),
+        indexStr() {
+            if (this.index == null) {
+                return "";
+            } else {
+                return `${this.index + 1}`;
+            }
+        },
         invocation: function () {
             return this.getInvocationById(this.invocationId);
         },
