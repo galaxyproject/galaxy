@@ -1,7 +1,7 @@
 // Sync Galaxy store to legacy galaxy current history
 
-import { fromEvent } from "rxjs";
-import { map, filter, switchMap, pluck, distinctUntilChanged, retryWhen, take, delay } from "rxjs/operators";
+import { concat, fromEvent, throwError } from "rxjs";
+import { tap, map, filter, switchMap, pluck, distinctUntilChanged, retryWhen, take, delay } from "rxjs/operators";
 
 export function syncCurrentHistoryToGalaxy(galaxy$, store, cfg = {}) {
     const { retryPeriod = 500, retries = 20 } = cfg;
@@ -16,19 +16,22 @@ export function syncCurrentHistoryToGalaxy(galaxy$, store, cfg = {}) {
                 map(() => panel.model.id)
             );
         }),
-        retryWhen(err$ => err$.pipe(
-            delay(retryPeriod),
-            take(retries)
-        )),
+        retryWhen(err$ => {
+            const retries$ = err$.pipe(
+                delay(retryPeriod),
+                take(retries)
+            );
+            const errMsg$ = throwError("Unable to sync to currHistoryPanel because it never appeared");
+            return concat(retries$, errMsg$);
+        }),
         filter(Boolean),
-        distinctUntilChanged()
+        distinctUntilChanged(),
+        tap(() => console.log("Vuex is now tracking galaxy.currHistoryPanel")),
     );
 
     return historyId$.subscribe(
-        (id) => {
-            store.commit("betaHistory/setCurrentHistoryId", id);
-        },
-        (err) => console.log("syncCurrentHistoryToGalaxy error", err),
+        (id) => store.commit("betaHistory/setCurrentHistoryId", id),
+        (err) => console.warn("syncCurrentHistoryToGalaxy error", err),
         () => console.log("syncCurrentHistoryToGalaxy complete")
     );
 }
