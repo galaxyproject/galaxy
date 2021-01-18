@@ -1,16 +1,14 @@
-import os
-
 from fastapi import (
     Depends,
     Path,
 )
+from fastapi.responses import FileResponse
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter as APIRouter
 
-
 from galaxy import (
     exceptions,
-    web
+    web,
 )
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.app import UniverseApplication
@@ -22,12 +20,12 @@ from galaxy.tools.data._schema import (
 )
 from galaxy.web import (
     expose_api,
-    expose_api_raw
+    expose_api_raw,
 )
 from galaxy.webapps.base.controller import BaseAPIController
 from . import (
     get_admin_user,
-    get_app
+    get_app,
 )
 
 router = APIRouter(tags=['tool data'])
@@ -38,13 +36,13 @@ ToolDataTableName = Path(
     ...,  # Mark this field as required
     title="Data table name",
     description="The name of the tool data table",
-    example="all_fasta"
+    example="all_fasta",
 )
 
 ToolDataTableFieldName = Path(
     ...,  # Mark this field as required
     title="Field name",
-    description="The name of the tool data table field"
+    description="The name of the tool data table field",
 )
 
 
@@ -103,10 +101,33 @@ class FastAPIToolData:
     async def show_field(
         self,
         table_name: str = ToolDataTableName,
-        field_name: str = ToolDataTableFieldName
+        field_name: str = ToolDataTableFieldName,
     ) -> ToolDataField:
         """Reloads a data table and return its details."""
         return self.tool_data_manager.show_field(table_name, field_name)
+
+    @router.get(
+        '/api/tool_data/{table_name}/fields/{field_name}/files/{file_name}',
+        summary="Get information about a particular field in a tool data table",
+        response_description="Information about a data table field",
+        response_class=FileResponse,
+        dependencies=[
+            AdminUserRequired
+        ],
+    )
+    async def download_field_file(
+        self,
+        table_name: str = ToolDataTableName,
+        field_name: str = ToolDataTableFieldName,
+        file_name: str = Path(
+            ...,  # Mark this field as required
+            title="File name",
+            description="The name of a file associated with this data table field",
+        ),
+    ):
+        """Download a file associated with the data table field."""
+        path = self.tool_data_manager.get_field_file_path(table_name, field_name, file_name)
+        return FileResponse(str(path))
 
 
 class ToolData(BaseAPIController):
@@ -223,11 +244,7 @@ class ToolData(BaseAPIController):
     @web.require_admin
     @expose_api_raw
     def download_field_file(self, trans: ProvidesAppContext, id: str, value, path, **kwds):
-        field_value = self._data_table_field(id, value)
-        base_dir = field_value.get_base_dir()
-        full_path = os.path.join(base_dir, path)
-        if full_path not in field_value.get_files():
-            raise exceptions.ObjectNotFound("No such path in data table field.")
+        full_path = self.tool_data_manager.get_field_file_path(id, value, path)
         return open(full_path, "rb")
 
     def _data_table_field(self, id, value):

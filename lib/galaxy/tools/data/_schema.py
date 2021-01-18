@@ -14,13 +14,13 @@ class ToolDataEntry(BaseModel):
         ...,  # Mark this field as required
         title="Name",
         description="The name of this tool data entry",
-        example="all_fasta"
+        example="all_fasta",
     )
     model_class: str = Field(
         ...,  # Mark this field as required
         title="Model class",
         description="The name of class modelling this tool data",
-        example="TabularToolDataTable"
+        example="TabularToolDataTable",
     )
 
 
@@ -40,7 +40,7 @@ class ToolDataDetails(ToolDataEntry):
             "dbkey",
             "name",
             "path"
-        ]
+        ],
     )
     # We must use an alias since the name 'fields'
     # shadows a BaseModel attribute
@@ -62,7 +62,7 @@ class ToolDataField(BaseModel):
         ...,  # Mark this field as required
         title="Model class",
         description="The name of class modelling this tool data field",
-        example="TabularToolDataField"
+        example="TabularToolDataField",
     )
     # We must use an alias since the name 'fields'
     # shadows a BaseModel attribute
@@ -81,11 +81,11 @@ class ToolDataField(BaseModel):
         ...,  # Mark this field as required
         title="Files",
         description="A dictionary of file names and their size in bytes",
-        example={"file.txt": 136}
+        example={"file.txt": 136},
     )
     fingerprint: str = Field(
         ...,  # Mark this field as required
         title="Fingerprint",
         description="SHA1 Hash",
-        example="22b45237a85c2b3f474bf66888c534387ffe0ced"
+        example="22b45237a85c2b3f474bf66888c534387ffe0ced",
     )
