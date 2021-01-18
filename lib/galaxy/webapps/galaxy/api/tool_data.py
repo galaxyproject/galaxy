@@ -152,14 +152,6 @@ class ToolData(BaseAPIController):
     @web.require_admin
     @expose_api
     def show(self, trans: ProvidesAppContext, id, **kwds):
-        """
-        GET /api/tool_data/{id}
-
-        Get details of a given tool data table.
-
-        :type   id:     str
-        :param  id:     the id of the data table
-        """
         details = self.tool_data_manager.show(id)
         # Here dict(by_alias=True) is required to return
         # `field_value` as `field` since `field` can not be directly

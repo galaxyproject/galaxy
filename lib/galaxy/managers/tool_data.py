@@ -4,7 +4,6 @@ from typing import Dict
 
 from galaxy import exceptions
 from galaxy.app import UniverseApplication
-from galaxy.queue_worker import GalaxyQueueWorker
 from galaxy.tools.data import (
     TabularToolDataField,
     TabularToolDataTable,
@@ -28,10 +27,6 @@ class ToolDataManager:
     def data_tables(self) -> Dict[str, TabularToolDataTable]:
         return self._app.tool_data_tables.data_tables
 
-    @property
-    def queue_worker(self) -> GalaxyQueueWorker:
-        return self._app.queue_worker
-
     def index(self) -> ToolDataEntryList:
         """Return all tool data tables."""
         data_tables = [table.to_dict() for table in self.data_tables.values()]
@@ -52,7 +47,7 @@ class ToolDataManager:
         """Reloads a tool data table."""
         data_table = self._data_table(name)
         data_table.reload_from_files()
-        self.queue_worker.send_control_task(
+        self._app.queue_worker.send_control_task(
             'reload_tool_data_tables',
             noop_self=True,
             kwargs={'table_name': name}
