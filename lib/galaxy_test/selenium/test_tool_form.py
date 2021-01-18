@@ -1,4 +1,5 @@
 import json
+import pytest
 
 from galaxy.selenium.navigates_galaxy import retry_call_during_transitions
 from galaxy_test.base import rules_test_data
@@ -183,6 +184,8 @@ class LoggedInToolFormTestCase(SeleniumTestCase):
     @selenium_test
     @managed_history
     @skip_if_github_down
+    @pytest.mark.gtn_screenshot
+    @pytest.mark.local
     def test_run_apply_rules_tutorial(self):
         self.home()
         self.upload_rule_start()

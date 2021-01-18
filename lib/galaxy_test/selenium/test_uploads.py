@@ -213,6 +213,8 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.screenshot("rules_example_3_14_paired_identifier_set")
 
     @selenium_test
+    @pytest.mark.gtn_screenshot
+    @pytest.mark.local
     def test_rules_example_4_accessions(self):
         # http://www.uniprot.org/uniprot/?query=proteome:UP000052092+AND+proteomecomponent:%22Genome%22
         self._setup_uniprot_example()
@@ -245,6 +247,8 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         rule_builder.view_source.wait_for_visible()
 
     @selenium_test
+    @pytest.mark.gtn_screenshot
+    @pytest.mark.local
     def test_rules_example_5_matching_collections(self):
         self._setup_uniprot_example()
         self.screenshot("rules_example_5_1_inputs")
@@ -273,6 +277,8 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.screenshot("rules_example_5_9_mapping")
 
     @selenium_test
+    @pytest.mark.gtn_screenshot
+    @pytest.mark.local
     def test_rules_example_6_nested_lists(self):
         self.home()
         self.perform_upload(self.get_filename("rules/PRJNA355367.tsv"))
