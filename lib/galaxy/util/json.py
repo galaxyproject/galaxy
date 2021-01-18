@@ -1,4 +1,3 @@
-import copy
 import json
 import logging
 import math
@@ -70,7 +69,7 @@ def safe_dumps(*args, **kwargs):
     try:
         dumped = json.dumps(*args, allow_nan=False, **kwargs)
     except ValueError:
-        obj = swap_inf_nan(copy.deepcopy(args[0]))
+        obj = swap_inf_nan(args[0])
         dumped = json.dumps(obj, allow_nan=False, **kwargs)
     if kwargs.get('escape_closing_tags', True):
         return dumped.replace('</', '<\\/')
