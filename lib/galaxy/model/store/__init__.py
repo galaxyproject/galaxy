@@ -626,7 +626,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             if input_key in object_import_tracker.hdcas_by_key:
                 hdca = object_import_tracker.hdcas_by_key[input_key]
             if input_key in object_import_tracker.hdca_copied_from_sinks:
-                hdca = object_import_tracker.hdca_copied_from_sinks[input_key]
+                hdca = object_import_tracker.hdcas_by_key[object_import_tracker.hdca_copied_from_sinks[input_key]]
             return hdca
 
         def _find_dce(input_key):
