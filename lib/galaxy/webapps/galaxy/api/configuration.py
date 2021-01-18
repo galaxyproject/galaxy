@@ -5,17 +5,24 @@ and configuration settings.
 import json
 import logging
 import os
-from typing import Optional
+from typing import (
+    Any,
+    Dict,
+    Optional
+)
 
-from fastapi import Depends
+from fastapi import Depends, Query
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter as APIRouter
 
-from galaxy.managers import configuration
+from galaxy.managers.configuration import (
+    AdminConfigSerializer,
+    ConfigSerializer
+)
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.users import (
     UserManager,
-    UserModel,
+    UserModel
 )
 from galaxy.model import User
 from galaxy.web import (
@@ -25,9 +32,9 @@ from galaxy.web import (
 )
 from galaxy.webapps.base.controller import BaseAPIController
 from . import (
+    get_trans,
     get_user,
 )
-
 
 log = logging.getLogger(__name__)
 
@@ -35,8 +42,37 @@ log = logging.getLogger(__name__)
 router = APIRouter(tags=['configuration'])
 
 
+# TODO move to common.py as soon as used more than once
+SerializationViewQueryParam: Optional[str] = Query(
+    None,
+    title='View',
+    description='todo',
+)
+
+
+# TODO move to common.py as soon as used more than once
+SerializationKeysQueryParam: Optional[str] = Query(
+    None,
+    title='Keys',
+    description='todo',
+)
+
+
+# TODO move to common.py as soon as used more than once
+def parse_serialization_params(view, keys, default_view):
+    try:
+        keys = keys.split(',')
+    finally:
+        return dict(view=view, keys=keys, default_view=default_view)
+
+
 def user_to_model(user):
     return UserModel(**user.to_dict()) if user else None
+
+
+def get_config_dict(app, is_admin=False, view=None, keys=None, default_view='all'):
+    serializer = AdminConfigSerializer(app) if is_admin else ConfigSerializer(app)
+    return serializer.serialize_to_view(app.config, view=view, keys=keys, default_view=default_view)
 
 
 @cbv(router)
@@ -47,13 +83,24 @@ class FastAPIConfiguration:
         """Return information about the current authenticated user."""
         return user_to_model(user)
 
+    @router.get('/api/configuration')
+    def index(
+            self,
+            trans: ProvidesUserContext = Depends(get_trans),
+            view: Optional[str] = SerializationViewQueryParam,
+            keys: Optional[str] = SerializationKeysQueryParam,
+    ) -> Dict[str, Any]:
+        """Return an object containing exposable configuration settings."""
+        is_admin = trans.user_is_admin
+        serialization_params = parse_serialization_params(view, keys, 'all')   # this gets a dict
+        return get_config_dict(trans.app, is_admin, **serialization_params)
+
 
 class ConfigurationController(BaseAPIController):
 
     def __init__(self, app):
         super().__init__(app)
-        self.config_serializer = configuration.ConfigSerializer(app)
-        self.admin_config_serializer = configuration.AdminConfigSerializer(app)
+        self.app = app
         self.user_manager = UserManager(app)
 
     @expose_api
@@ -78,7 +125,7 @@ class ConfigurationController(BaseAPIController):
         """
         is_admin = trans.user_is_admin
         serialization_params = self._parse_serialization_params(kwd, 'all')
-        return self.get_config_dict(trans, is_admin, **serialization_params)
+        return get_config_dict(self.app, is_admin, **serialization_params)
 
     @expose_api_anonymous_and_sessionless
     def version(self, trans, **kwds):
@@ -97,22 +144,6 @@ class ConfigurationController(BaseAPIController):
         except Exception:
             pass
         return {"version_major": self.app.config.version_major, "extra": extra}
-
-    def get_config_dict(self, trans, return_admin=False, view=None, keys=None, default_view='all'):
-        """
-        Return a dictionary with (a subset of) current Galaxy settings.
-
-        If `return_admin` also include a subset of more sensitive keys.
-        Pass in `view` (String) and comma seperated list of keys to control which
-        configuration settings are returned.
-        """
-        serializer = self.config_serializer
-        if return_admin:
-            # TODO: this should probably just be under a different route: 'admin/configuration'
-            serializer = self.admin_config_serializer
-
-        serialized = serializer.serialize_to_view(self.app.config, view=view, keys=keys, default_view=default_view)
-        return serialized
 
     @require_admin
     @expose_api
