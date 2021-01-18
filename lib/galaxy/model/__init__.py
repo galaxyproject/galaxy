@@ -51,6 +51,7 @@ import galaxy.exceptions
 import galaxy.model.metadata
 import galaxy.model.orm.now
 import galaxy.model.tags
+from galaxy.security.idencoding import IdEncodingHelper
 import galaxy.security.passwords
 import galaxy.util
 from galaxy.model.item_attrs import get_item_annotation_str, UsesAnnotations
@@ -74,6 +75,7 @@ from galaxy.util.sanitize_html import sanitize_html
 log = logging.getLogger(__name__)
 
 _datatypes_registry = None
+_IdEncodingHelper: Optional[IdEncodingHelper]
 
 # When constructing filters with in for a fixed set of ids, maximum
 # number of items to place in the IN statement. Different databases
@@ -126,6 +128,17 @@ class ConverterDependencyException(Exception):
 
     def __str__(self):
         return repr(self.value)
+
+
+def get_id_encoding_helper():
+    if _IdEncodingHelper is None:
+        raise Exception('galaxy.model.set_id_encoding_helper must be called before ids can encoded or decoded')
+    return _IdEncodingHelper
+
+
+def set_id_encoding_helper(helper: IdEncodingHelper):
+    global _IdEncodingHelper
+    _IdEncodingHelper = helper
 
 
 def _get_datatypes_registry():

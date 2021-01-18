@@ -1,7 +1,15 @@
 import re
 
+from pydantic import PositiveInt
+
 ENCODED_DATABASE_ID_PATTERN = re.compile('f?[0-9a-f]+')
 ENCODED_ID_LENGTH_MULTIPLE = 16
+
+
+class DatabaseIdField(PositiveInt):
+    """
+    Database ID
+    """
 
 
 class EncodedDatabaseIdField(str):
