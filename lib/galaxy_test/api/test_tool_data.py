@@ -55,13 +55,17 @@ class ToolDataApiTestCase(ApiTestCase):
         show_response = self._get("tool_data/unknown", admin=True)
         self._assert_status_code_is(show_response, 404)
 
-    def test_show_field_raises_404(self):
+    def test_show_unknown_field_raises_404(self):
         show_response = self._get("tool_data/testalpha/fields/unknown", admin=True)
         self._assert_status_code_is(show_response, 404)
 
     def test_reload_unknown_raises_404(self):
         show_response = self._get("tool_data/unknown/reload", admin=True)
         self._assert_status_code_is(show_response, 404)
+
+    def test_download_field_unknown_file_raises_404(self):
+        show_field_response = self._get("tool_data/testalpha/fields/data1/files/unknown.txt", admin=True)
+        self._assert_status_code_is(show_field_response, 404)
 
     # Following test case rendered invalid by the fix in
     # https://github.com/galaxyproject/galaxy/commit/48f77dc742acf01ddbafafcc4634e69378f1f020#diff-bfb557a99c1f7d646d4968d8d680b885R154.
