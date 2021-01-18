@@ -1,11 +1,12 @@
 <template>
     <span>
         <b
-            ><a :href="link">{{ link }}</a></b
+            ><a class="generated-export-link" :href="link">{{ link }}</a></b
         >
         <font-awesome-icon
             v-b-tooltip.hover
             title="Copy export URL to your clipboard"
+            class="copy-export-link"
             icon="link"
             style="cursor: pointer;"
             @click="copyUrl"
@@ -13,9 +14,9 @@
         <i
             title="Information about when the history export was generated is included in the job details. Additionally, if there are issues with export, the job details may help figure out the underlying problem or communicate issues to your Galaxy administrator."
         >
-            (<a href="#" @click="showDetails">view job details</a>)
+            (<a class="show-job-link" href="#" @click="showDetails">view job details</a>)
         </i>
-        <b-modal v-model="details" scrollable ok-only>
+        <b-modal v-model="details" modal-class="job-information-modal" scrollable ok-only hide-header>
             <job-information :job_id="historyExport.job_id" :include-times="true" />
         </b-modal>
     </span>
