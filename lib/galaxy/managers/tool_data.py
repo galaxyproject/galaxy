@@ -1,4 +1,5 @@
 
+from pathlib import Path
 from typing import Dict
 
 from galaxy import exceptions
@@ -57,6 +58,15 @@ class ToolDataManager:
             kwargs={'table_name': name}
         )
         return self.show(name)
+
+    def get_field_file_path(self, table_name: str, field_name: str, file_name: str) -> Path:
+        """Get the absolute path to a given file name in the table field"""
+        field_value = self._data_table_field(table_name, field_name)
+        base_dir = Path(field_value.get_base_dir())
+        full_path = base_dir / file_name
+        if str(full_path) not in field_value.get_files():
+            raise exceptions.ObjectNotFound("No such path in data table field.")
+        return full_path.absolute()
 
     def _data_table(self, name: str) -> TabularToolDataTable:
         try:
