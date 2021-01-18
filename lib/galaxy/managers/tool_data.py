@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Dict
 
 from galaxy import exceptions
-from galaxy.app import UniverseApplication
+from galaxy.app import StructuredApp
 from galaxy.tools.data import (
     TabularToolDataField,
     TabularToolDataTable,
@@ -20,7 +20,7 @@ class ToolDataManager:
     Interface/service object for interacting with tool data.
     """
 
-    def __init__(self, app: UniverseApplication):
+    def __init__(self, app: StructuredApp):
         self._app = app
 
     @property

@@ -10,8 +10,8 @@ from galaxy import (
     exceptions,
     web,
 )
+from galaxy.app import StructuredApp
 from galaxy.managers.context import ProvidesAppContext
-from galaxy.app import UniverseApplication
 from galaxy.managers.tool_data import ToolDataManager
 from galaxy.tools.data._schema import (
     ToolDataDetails,
@@ -46,7 +46,7 @@ ToolDataTableFieldName = Path(
 )
 
 
-def get_tool_data_manager(app: UniverseApplication = Depends(get_app)) -> ToolDataManager:
+def get_tool_data_manager(app: StructuredApp = Depends(get_app)) -> ToolDataManager:
     return ToolDataManager(app)
 
 
