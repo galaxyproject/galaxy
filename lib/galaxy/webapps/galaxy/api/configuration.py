@@ -60,10 +60,8 @@ SerializationKeysQueryParam: Optional[str] = Query(
 
 # TODO move to common.py as soon as used more than once
 def parse_serialization_params(view, keys, default_view):
-    try:
+    if isinstance(keys, str):
         keys = keys.split(',')
-    except AttributeError:
-        pass
     return dict(view=view, keys=keys, default_view=default_view)
 
 
