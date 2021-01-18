@@ -37,9 +37,15 @@ A method that requires a user but not a history should declare its
 import abc
 import string
 from json import dumps
+from typing import List, Optional
 
+from sqlalchemy.orm.scoping import scoped_session
 
 from galaxy.exceptions import UserActivationRequiredException
+from galaxy.model import Dataset, History, HistoryDatasetAssociation, Role
+from galaxy.model.base import ModelMapping
+from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.structured_app import StructuredApp
 from galaxy.util import bunch
 
 
@@ -51,11 +57,16 @@ class ProvidesAppContext:
     """
 
     @abc.abstractproperty
-    def app(self):
-        """Provide access to the app object."""
+    def app(self) -> StructuredApp:
+        """Provide access to the Galaxy ``app`` object.
+        """
 
     @property
-    def security(self):
+    def security(self) -> IdEncodingHelper:
+        """Provide access to Galaxy app's id encoding helper.
+
+        :rtype: IdEncodingHelper
+        """
         return self.app.security
 
     def log_action(self, user=None, action=None, context=None, params=None):
@@ -110,15 +121,15 @@ class ProvidesAppContext:
             self.sa_session.flush()
 
     @property
-    def sa_session(self):
-        """
-        Returns a SQLAlchemy session -- currently just gets the current
-        session from the threadlocal session context, but this is provided
-        to allow migration toward a more SQLAlchemy 0.4 style of use.
+    def sa_session(self) -> scoped_session:
+        """Provide access to Galaxy's SQLAlchemy session.
+
+        :rtype: sqlalchemy.orm.scoping.scoped_session
         """
         return self.app.model.context.current
 
     def expunge_all(self):
+        """Expunge all the objects in Galaxy's SQLAlchemy sessions."""
         app = self.app
         context = app.model.context
         context.expunge_all()
@@ -129,15 +140,34 @@ class ProvidesAppContext:
                 install_model.context.expunge_all()
 
     def get_toolbox(self):
-        """Returns the application toolbox"""
+        """Returns the application toolbox.
+
+        :rtype: galaxy.tools.ToolBox
+        """
         return self.app.toolbox
 
     @property
-    def model(self):
+    def model(self) -> ModelMapping:
+        """Provide access to Galaxy's model mapping class.
+
+        This is sometimes used for quick access to classes in
+        :mod:`galaxy.model` but this is discouraged. Those classes
+        should be imported by the consumer for stronger static
+        checking.
+
+        This is more proper use for this is accessing the threadbound
+        SQLAlchemy session or engine.
+
+        :rtype: galaxy.model.base.ModelMapping
+        """
         return self.app.model
 
     @property
-    def install_model(self):
+    def install_model(self) -> ModelMapping:
+        """Provide access to Galaxy's install mapping.
+
+        Comments on the ``model`` property apply here also.
+        """
         return self.app.install_model
 
 
@@ -154,10 +184,10 @@ class ProvidesUserContext(ProvidesAppContext):
         """Provide access to the user object."""
 
     @property
-    def anonymous(self):
+    def anonymous(self) -> bool:
         return self.user is None
 
-    def get_current_user_roles(self):
+    def get_current_user_roles(self) -> List[Role]:
         user = self.user
         if user:
             roles = user.all_roles()
@@ -166,11 +196,11 @@ class ProvidesUserContext(ProvidesAppContext):
         return roles
 
     @property
-    def user_is_admin(self):
+    def user_is_admin(self) -> bool:
         return self.app.config.is_admin_user(self.user)
 
     @property
-    def user_can_do_run_as(self):
+    def user_can_do_run_as(self) -> bool:
         run_as_users = [user for user in self.app.config.get("api_allow_run_as", "").split(",") if user]
         if not run_as_users:
             return False
@@ -180,7 +210,7 @@ class ProvidesUserContext(ProvidesAppContext):
         return can_do_run_as
 
     @property
-    def user_is_active(self):
+    def user_is_active(self) -> bool:
         return not self.app.config.user_activation_on or self.user is None or self.user.active
 
     def check_user_activation(self):
@@ -189,7 +219,7 @@ class ProvidesUserContext(ProvidesAppContext):
             raise UserActivationRequiredException()
 
     @property
-    def user_ftp_dir(self):
+    def user_ftp_dir(self) -> Optional[str]:
         base_dir = self.app.config.ftp_upload_dir
         if base_dir is None or self.user is None:
             return None
@@ -214,12 +244,14 @@ class ProvidesHistoryContext(ProvidesUserContext):
     """
 
     @abc.abstractproperty
-    def history(self):
-        """Provide access to the user's current history model object."""
+    def history(self) -> Optional[History]:
+        """Provide access to the user's current history model object.
 
-    def db_dataset_for(self, dbkey):
+        :rtype: Optional[galaxy.model.History]
         """
-        Returns the db_file dataset associated/needed by `dataset`, or `None`.
+
+    def db_dataset_for(self, dbkey) -> Optional[HistoryDatasetAssociation]:
+        """Optionally return the db_file dataset associated/needed by `dataset`.
         """
         # If no history, return None.
         if self.history is None:
@@ -229,21 +261,21 @@ class ProvidesHistoryContext(ProvidesUserContext):
             # The API presents a Bunch for a history.  Until the API is
             # more fully featured for handling this, also return None.
             return None
-        non_ready_or_ok = set(self.app.model.Dataset.non_ready_states)
-        non_ready_or_ok.add(self.app.model.HistoryDatasetAssociation.states.OK)
+        non_ready_or_ok = set(Dataset.non_ready_states)
+        non_ready_or_ok.add(HistoryDatasetAssociation.states.OK)
         datasets = self.sa_session.query(
-            self.app.model.HistoryDatasetAssociation
+            HistoryDatasetAssociation
         ).filter_by(
             deleted=False,
             history_id=self.history.id,
             extension="len"
         ).filter(
-            self.app.model.HistoryDatasetAssociation._state.in_(non_ready_or_ok),
+            HistoryDatasetAssociation.table.c._state.in_(non_ready_or_ok),
         )
         valid_ds = None
         for ds in datasets:
             if ds.dbkey == dbkey:
-                if ds.state == self.app.model.HistoryDatasetAssociation.states.OK:
+                if ds.state == HistoryDatasetAssociation.states.OK:
                     return ds
                 valid_ds = ds
         return valid_ds

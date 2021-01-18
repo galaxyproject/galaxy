@@ -21,7 +21,6 @@ from galaxy.util import (
     unicodify,
     XML,
 )
-from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.rules_dsl import RuleSet
@@ -38,7 +37,12 @@ from .sanitize import ToolParameterSanitizer
 
 log = logging.getLogger(__name__)
 
-workflow_building_modes = Bunch(DISABLED=False, ENABLED=True, USE_HISTORY=1)
+
+class workflow_building_modes:
+    DISABLED = False
+    ENABLED = True
+    USE_HISTORY = 1
+
 
 WORKFLOW_PARAMETER_REGULAR_EXPRESSION = re.compile(r'\$\{.+?\}')
 

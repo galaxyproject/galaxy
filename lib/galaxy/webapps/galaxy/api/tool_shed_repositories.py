@@ -16,6 +16,8 @@ from galaxy import (
     exceptions,
     util
 )
+from galaxy.managers.context import ProvidesUserContext
+from galaxy.model.tool_shed_install import ToolShedRepository
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
@@ -67,7 +69,7 @@ class ToolShedRepositoriesController(BaseAPIController):
         return value_mapper
 
     @expose_api
-    def index(self, trans, **kwd):
+    def index(self, trans: ProvidesUserContext, **kwd):
         """
         GET /api/tool_shed_repositories
         Display a list of dictionaries containing information about installed tool shed repositories.
@@ -75,19 +77,19 @@ class ToolShedRepositoriesController(BaseAPIController):
         # Example URL: http://localhost:8763/api/tool_shed_repositories
         clause_list = []
         if 'name' in kwd:
-            clause_list.append(self.app.install_model.ToolShedRepository.table.c.name == kwd.get('name'))
+            clause_list.append(ToolShedRepository.table.c.name == kwd.get('name'))
         if 'owner' in kwd:
-            clause_list.append(self.app.install_model.ToolShedRepository.table.c.owner == kwd.get('owner'))
+            clause_list.append(ToolShedRepository.table.c.owner == kwd.get('owner'))
         if 'changeset' in kwd:
-            clause_list.append(self.app.install_model.ToolShedRepository.table.c.changeset_revision == kwd.get('changeset'))
+            clause_list.append(ToolShedRepository.table.c.changeset_revision == kwd.get('changeset'))
         if 'deleted' in kwd:
-            clause_list.append(self.app.install_model.ToolShedRepository.table.c.deleted == util.asbool(kwd.get('deleted')))
+            clause_list.append(ToolShedRepository.table.c.deleted == util.asbool(kwd.get('deleted')))
         if 'uninstalled' in kwd:
-            clause_list.append(self.app.install_model.ToolShedRepository.table.c.uninstalled == util.asbool(kwd.get('uninstalled')))
+            clause_list.append(ToolShedRepository.table.c.uninstalled == util.asbool(kwd.get('uninstalled')))
         tool_shed_repository_dicts = []
-        query = trans.install_model.context.query(self.app.install_model.ToolShedRepository) \
-                                           .order_by(self.app.install_model.ToolShedRepository.table.c.name) \
-                                           .order_by(cast(self.app.install_model.ToolShedRepository.ctx_rev, Integer).desc())
+        query = trans.install_model.context.query(ToolShedRepository) \
+                                           .order_by(ToolShedRepository.table.c.name) \
+                                           .order_by(cast(ToolShedRepository.ctx_rev, Integer).desc())
         if len(clause_list) > 0:
             query = query.filter(and_(*clause_list))
         for tool_shed_repository in query.all():
@@ -101,7 +103,7 @@ class ToolShedRepositoriesController(BaseAPIController):
 
     @require_admin
     @expose_api
-    def install_repository_revision(self, trans, payload, **kwd):
+    def install_repository_revision(self, trans: ProvidesUserContext, payload, **kwd):
         """
         POST /api/tool_shed_repositories/install_repository_revision
         Install a specified repository revision from a specified tool shed into Galaxy.

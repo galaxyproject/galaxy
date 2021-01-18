@@ -4,6 +4,8 @@ are encapsulated here.
 """
 
 import logging
+from threading import local
+from typing import Optional
 
 from sqlalchemy import (
     and_,
@@ -2865,9 +2867,15 @@ def _workflow_invocation_update(self):
 model.WorkflowInvocation.update = _workflow_invocation_update  # type: ignore
 
 
+class GalaxyModelMapping(ModelMapping):
+    security_agent: GalaxyRBACAgent
+    thread_local_log: Optional[local]
+    create_tables: bool
+
+
 def init(file_path, url, engine_options=None, create_tables=False, map_install_models=False,
         database_query_profiling_proxy=False, object_store=None, trace_logger=None, use_pbkdf2=True,
-        slow_query_log_threshold=0, thread_local_log=None, log_query_counts=False):
+        slow_query_log_threshold=0, thread_local_log: Optional[local] = None, log_query_counts=False) -> GalaxyModelMapping:
     """Connect mappings to the database"""
     if engine_options is None:
         engine_options = {}
@@ -2890,7 +2898,7 @@ def init(file_path, url, engine_options=None, create_tables=False, map_install_m
         galaxy.model.tool_shed_install.mapping.init(url=url, engine_options=engine_options, create_tables=create_tables)
         model_modules.append(tool_shed_install)
 
-    result = ModelMapping(model_modules, engine=engine)
+    result = GalaxyModelMapping(model_modules, engine=engine)
 
     # Create tables if needed
     if create_tables:

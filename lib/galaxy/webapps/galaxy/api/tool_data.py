@@ -4,6 +4,7 @@ from galaxy import (
     exceptions,
     web
 )
+from galaxy.managers.context import ProvidesAppContext
 from galaxy.web import (
     expose_api,
     expose_api_raw
@@ -18,7 +19,7 @@ class ToolData(BaseAPIController):
 
     @web.require_admin
     @expose_api
-    def index(self, trans, **kwds):
+    def index(self, trans: ProvidesAppContext, **kwds):
         """
         GET /api/tool_data
 
@@ -28,7 +29,7 @@ class ToolData(BaseAPIController):
 
     @web.require_admin
     @expose_api
-    def show(self, trans, id, **kwds):
+    def show(self, trans: ProvidesAppContext, id, **kwds):
         return self._data_table(id).to_dict(view='element')
 
     @web.require_admin
@@ -40,9 +41,9 @@ class ToolData(BaseAPIController):
         Reloads a tool_data table.
         """
         decoded_tool_data_id = id
-        data_table = trans.app.tool_data_tables.data_tables.get(decoded_tool_data_id)
+        data_table = self.app.tool_data_tables.data_tables.get(decoded_tool_data_id)
         data_table.reload_from_files()
-        trans.app.queue_worker.send_control_task(
+        self.app.queue_worker.send_control_task(
             'reload_tool_data_tables',
             noop_self=True,
             kwargs={'table_name': decoded_tool_data_id}
@@ -51,7 +52,7 @@ class ToolData(BaseAPIController):
 
     @web.require_admin
     @expose_api
-    def delete(self, trans, id, **kwd):
+    def delete(self, trans: ProvidesAppContext, id, **kwd):
         """
         DELETE /api/tool_data/{id}
         Removes an item from a data table
@@ -67,29 +68,26 @@ class ToolData(BaseAPIController):
         decoded_tool_data_id = id
 
         try:
-            data_table = trans.app.tool_data_tables.data_tables.get(decoded_tool_data_id)
+            data_table = self.app.tool_data_tables.data_tables.get(decoded_tool_data_id)
         except Exception:
             data_table = None
         if not data_table:
-            trans.response.status = 400
-            return "Invalid data table id ( %s ) specified." % str(decoded_tool_data_id)
+            raise exceptions.RequestParameterInvalidException("Invalid data table id ( %s ) specified." % str(decoded_tool_data_id))
 
         values = None
         if kwd.get('payload', None):
             values = kwd['payload'].get('values', '')
 
         if not values:
-            trans.response.status = 400
-            return "Invalid data table item ( %s ) specified." % str(values)
+            raise exceptions.RequestParameterInvalidException("Invalid data table item ( %s ) specified." % str(values))
 
         split_values = values.split("\t")
 
         if len(split_values) != len(data_table.get_column_name_list()):
-            trans.response.status = 400
-            return "Invalid data table item ( {} ) specified. Wrong number of columns ({} given, {} required).".format(str(values), str(len(split_values)), str(len(data_table.get_column_name_list())))
+            raise exceptions.RequestParameterInvalidException("Invalid data table item ( {} ) specified. Wrong number of columns ({} given, {} required).".format(str(values), str(len(split_values)), str(len(data_table.get_column_name_list()))))
 
         data_table.remove_entry(split_values)
-        trans.app.queue_worker.send_control_task(
+        self.app.queue_worker.send_control_task(
             'reload_tool_data_tables',
             noop_self=True,
             kwargs={'table_name': decoded_tool_data_id}
@@ -98,7 +96,7 @@ class ToolData(BaseAPIController):
 
     @web.require_admin
     @expose_api
-    def show_field(self, trans, id, value, **kwds):
+    def show_field(self, trans: ProvidesAppContext, id, value, **kwds):
         """
         GET /api/tool_data/<id>/fields/<value>
 
@@ -108,7 +106,7 @@ class ToolData(BaseAPIController):
 
     @web.require_admin
     @expose_api_raw
-    def download_field_file(self, trans, id, value, path, **kwds):
+    def download_field_file(self, trans: ProvidesAppContext, id: str, value, path, **kwds):
         field_value = self._data_table_field(id, value)
         base_dir = field_value.get_base_dir()
         full_path = os.path.join(base_dir, path)

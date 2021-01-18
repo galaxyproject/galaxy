@@ -2,6 +2,7 @@ import logging
 import signal
 import sys
 import time
+from typing import Any
 
 import galaxy.model
 import galaxy.model.security
@@ -12,6 +13,7 @@ from galaxy.config_watchers import ConfigWatchers
 from galaxy.containers import build_container_interfaces
 from galaxy.files import ConfiguredFileSources
 from galaxy.job_metrics import JobMetrics
+from galaxy.managers.api_keys import ApiKeyManager
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.hdas import HDAManager
@@ -57,15 +59,16 @@ from galaxy.web.proxy import ProxyManager
 from galaxy.web_stack import application_stack_instance
 from galaxy.webhooks import WebhooksRegistry
 from galaxy.workflow.trs_proxy import TrsProxy
+from .structured_app import StructuredApp
 
 log = logging.getLogger(__name__)
 app = None
 
 
-class UniverseApplication(config.ConfiguresGalaxyMixin):
+class UniverseApplication(StructuredApp, config.ConfiguresGalaxyMixin):
     """Encapsulates the state of a Universe application"""
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         if not log.handlers:
             # Paste didn't handle it, so we need a temporary basic log
             # configured.  The handler added here gets dumped and replaced with
@@ -73,12 +76,11 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
             logging.basicConfig(level=logging.DEBUG)
         log.debug("python path is: %s", ", ".join(sys.path))
         self.name = 'galaxy'
-        # is_webapp will be set to true when building WSGI app
         self.is_webapp = False
-        self.startup_timer = ExecutionTimer()
+        startup_timer = ExecutionTimer()
         self.new_installation = False
         # Read config file and check for errors
-        self.config = config.Configuration(**kwargs)
+        self.config: Any = config.Configuration(**kwargs)
         self.config.check()
         config.configure_logging(self.config)
         self.execution_timer_factory = ExecutionTimerFactory(self.config)
@@ -116,6 +118,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self.library_manager = LibraryManager()
         self.role_manager = RoleManager(self)
         self.dynamic_tool_manager = DynamicToolManager(self)
+        self.api_keys_manager = ApiKeyManager(app)
 
         # ConfiguredFileSources
         self.file_sources = ConfiguredFileSources.from_app_config(self.config)
@@ -270,7 +273,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self.url_for = url_for
 
         self.server_starttime = int(time.time())  # used for cachebusting
-        log.info("Galaxy app startup finished %s" % self.startup_timer)
+        log.info("Galaxy app startup finished %s" % startup_timer)
 
     def shutdown(self):
         log.debug('Shutting down')
