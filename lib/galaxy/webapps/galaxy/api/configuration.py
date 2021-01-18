@@ -62,8 +62,9 @@ SerializationKeysQueryParam: Optional[str] = Query(
 def parse_serialization_params(view, keys, default_view):
     try:
         keys = keys.split(',')
-    finally:
-        return dict(view=view, keys=keys, default_view=default_view)
+    except AttributeError:
+        pass
+    return dict(view=view, keys=keys, default_view=default_view)
 
 
 def user_to_model(user):
