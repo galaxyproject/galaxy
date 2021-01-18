@@ -1,9 +1,11 @@
 // Sync Galaxy store to legacy galaxy current history
 
 import { fromEvent } from "rxjs";
-import { map, filter, switchMap, pluck, distinctUntilChanged } from "rxjs/operators";
+import { map, filter, switchMap, pluck, distinctUntilChanged, retryWhen, take, delay } from "rxjs/operators";
 
-export function syncCurrentHistoryToGalaxy(galaxy$, store) {
+export function syncCurrentHistoryToGalaxy(galaxy$, store, cfg = {}) {
+    const { retryPeriod = 500, retries = 20 } = cfg;
+
     // prettier-ignore
     const historyId$ = galaxy$.pipe(
         pluck("currHistoryPanel"),
@@ -14,6 +16,10 @@ export function syncCurrentHistoryToGalaxy(galaxy$, store) {
                 map(() => panel.model.id)
             );
         }),
+        retryWhen(err$ => err$.pipe(
+            delay(retryPeriod),
+            take(retries)
+        )),
         filter(Boolean),
         distinctUntilChanged()
     );
