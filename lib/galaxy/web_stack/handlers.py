@@ -418,7 +418,7 @@ class ConfiguresHandlers:
             log.debug("(%s) No handler pool (uWSGI farm) for '%s' found", obj.log_str(), tag)
             raise HandlerAssignmentSkip()
         else:
-            if flush:
+            if flush or not obj.id:
                 _timed_flush_obj(obj)
             message = message_callback()
             self.app.application_stack.send_message(pool, message)
