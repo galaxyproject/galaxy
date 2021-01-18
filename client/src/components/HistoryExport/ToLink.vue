@@ -153,10 +153,7 @@ export default {
             waitOnJob(jobId)
                 .then((jobResponse) => {
                     this.waitingOnJob = false;
-                    this.loadingExports = true;
-                    // Race condition, for some reasons the job API returns
-                    // ok before the JEHA...
-                    setTimeout(this.loadExports, 2000);
+                    this.loadExports();
                 })
                 .catch(this.handleError);
         },
