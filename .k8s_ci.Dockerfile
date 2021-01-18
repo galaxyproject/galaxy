@@ -87,7 +87,6 @@ RUN git rev-parse HEAD > GITREVISION
 RUN rm -rf \
         .ci \
         .git \
-        .venv/bin/node \
         .venv/include/node \
         .venv/src/node* \
         doc \
@@ -108,7 +107,6 @@ WORKDIR $SERVER_DIR
 RUN rm -rf \
         .ci \
         .git \
-        .venv/bin/node \
         .venv/include/node \
         .venv/src/node* \
         doc \
