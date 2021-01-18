@@ -1,4 +1,5 @@
 import json
+
 import pytest
 
 from galaxy.selenium.navigates_galaxy import retry_call_during_transitions
