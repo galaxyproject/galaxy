@@ -110,7 +110,10 @@ def main():
                     words[j].score.scoreValue = 1.0
                     j += 1
                 elif ele[0:1] == " " and words[j].text == original_items[i]["text"]:
-                    words[j].score.scoreValue = float(original_items[i]["score"]["scoreValue"])
+                    if ("score" in original_items[i]):
+                        words[j].score.scoreValue = float(original_items[i]["score"]["scoreValue"])
+                    else:
+                        words[j].score.scoreValue = 1.0 # default score to 1.0 if not existing originally    
                     i += 1
                     j += 1
                 print("i: " + str(i) + " j:" + str(j))
@@ -197,8 +200,6 @@ def write_output_json(input_json, json_file):
 	with open(json_file, 'w') as outfile:
 		json.dump(input_json, outfile, default=lambda x: x.__dict__)
 
-# Retrieve the confidence values from the original file into the standardised output
-#def retrieve_confidence_scores()
 
 if __name__ == "__main__":
 	main()
