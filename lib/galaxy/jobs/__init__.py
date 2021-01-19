@@ -18,6 +18,7 @@ from abc import (
     abstractmethod,
 )
 from json import loads
+from typing import Any, cast
 
 import packaging.version
 import yaml
@@ -337,6 +338,7 @@ class JobConfiguration(ConfiguresHandlers):
         try:
             if 'job_config' in self.app.config.config_dict:
                 job_config_dict = self.app.config.config_dict["job_config"]
+                job_config_dict = self._process_raw_params(app.config, job_config_dict)
             else:
                 job_config_file = self.app.config.job_config_file
                 if '.xml' in job_config_file:
@@ -345,6 +347,7 @@ class JobConfiguration(ConfiguresHandlers):
                 else:
                     with open(job_config_file) as f:
                         job_config_dict = yaml.safe_load(f)
+                        job_config_dict = self._process_raw_params(app.config, job_config_dict)
 
             # Load tasks if configured
             if self.app.config.use_tasked_jobs:
@@ -611,6 +614,54 @@ class JobConfiguration(ConfiguresHandlers):
 
             rval[key] = param_value
         return rval
+
+    @staticmethod
+    def _process_raw_params(config, config_dict: dict):
+
+        def _dynamic_value_map(obj: Any):
+            if not isinstance(obj, dict):
+                return False
+            obj_as_dict = cast(dict, obj)
+            return '$from_environ' in obj_as_dict or '$from_config' in obj_as_dict
+
+        def _walk_dicts(config_obj: Any):
+            if isinstance(config_obj, dict):
+                config_dict = cast(dict, config_obj)
+                replacements = {}
+                for key, value in config_dict.items():
+                    if not _dynamic_value_map(value):
+                        continue
+                    value_as_dict = cast(dict, value)
+                    has_default = "$default" in value_as_dict
+                    default_value = value_as_dict.get("$default")
+                    if '$from_environ' in value_as_dict:
+                        environ_var = value_as_dict["$from_environ"]
+                        if has_default:
+                            replacements[key] = os.environ.get(environ_var, default_value)
+                        else:
+                            replacements[key] = os.environ[environ_var]
+                    elif "$from_config" in value_as_dict:
+                        config_key = value_as_dict['from_config']
+                        if has_default:
+                            replacements[key] = config.config_dict.get(config_key, default_value)
+                        else:
+                            replacements[key] = config.config_dict[config_key]
+                    else:
+                        raise Exception("Logic error in job configuration parsing.")
+
+                if replacements:
+                    print(replacements)
+                config_dict.update(replacements)
+
+                for value in config_dict.values():
+                    _walk_dicts(value)
+            elif isinstance(config_obj, list):
+                config_list = cast(list, config_obj)
+                for config_el in config_list:
+                    _walk_dicts(config_el)
+
+        _walk_dicts(config_dict)
+        return config_dict
 
     def __get_params(self, parent):
         """Parses any child <param> tags in to a dictionary suitable for persistence.

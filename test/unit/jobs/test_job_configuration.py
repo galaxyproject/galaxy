@@ -395,6 +395,14 @@ class AdvancedJobConfXmlParserTestCase(BaseJobConfXmlParserTestCase):
 class AdvancedJobConfYamlParserTestCase(AdvancedJobConfXmlParserTestCase):
     extension = "yml"
 
+    def test_env(self):
+        self._with_advanced_config()
+        # self.drmaa_library_path
+        env_example = [r for r in self.job_config.runner_plugins if r["id"] == "sge2"][0]
+        assert "drmaa_library_path" in env_example["kwds"]
+        assert env_example["kwds"]["drmaa_library_path"] == os.environ["PWD"]
+        assert env_example["kwds"]["another_runner_param"] == "a very cool default", env_example
+
 
 def test_yaml_advanced_validation():
     schema = os.path.join(os.path.dirname(__file__), "..", "..", "..", "lib", "galaxy", "webapps", "galaxy", "job_config_schema.yml")

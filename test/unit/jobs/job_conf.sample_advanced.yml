@@ -16,6 +16,14 @@ runners:
     load: galaxy.jobs.runners.drmaa:DRMAAJobRunner
     # Override the $DRMAA_LIBRARY_PATH environment variable
     drmaa_library_path: /sge/lib/libdrmaa.so
+  sge2:
+    load: galaxy.jobs.runners.drmaa:DRMAAJobRunner
+    # Override the $DRMAA_LIBRARY_PATH environment variable
+    drmaa_library_path:
+      $from_environ: PWD
+    another_runner_param:
+      $from_environ: NOT_A_REAL_VAR_HOPEFULLY
+      $default: 'a very cool default'
   cli: 
     load: galaxy.jobs.runners.cli:ShellJobRunner
   condor: 
