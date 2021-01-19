@@ -95,5 +95,7 @@ class ToolDataItem(BaseModel):
     values: str = Field(
         ...,  # Mark this field as required
         title="Values",
-        description="<TAB> separated list of column contents, there must be a value for all the columns of the data table",
+        description=("A `\\t` (TAB) separated list of column __contents__."
+        " You must specify a value for each of the columns of the data table."),
+        example="value\tdbkey\tname\tpath",
     )

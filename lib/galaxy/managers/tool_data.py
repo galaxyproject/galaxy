@@ -35,9 +35,9 @@ class ToolDataManager:
         data_tables = [table.to_dict() for table in self.data_tables.values()]
         return ToolDataEntryList.parse_obj(data_tables)
 
-    def show(self, name: str) -> ToolDataDetails:
+    def show(self, table_name: str) -> ToolDataDetails:
         """Get details of a given data table"""
-        data_table = self._data_table(name)
+        data_table = self._data_table(table_name)
         element_view = data_table.to_dict(view='element')
         return ToolDataDetails.parse_obj(element_view)
 
@@ -46,11 +46,11 @@ class ToolDataManager:
         field = self._data_table_field(table_name, field_name)
         return ToolDataField.parse_obj(field.to_dict())
 
-    def reload(self, name: str) -> ToolDataDetails:
+    def reload(self, table_name: str) -> ToolDataDetails:
         """Reloads a tool data table."""
-        data_table = self._data_table(name)
+        data_table = self._data_table(table_name)
         data_table.reload_from_files()
-        return self._reload_data_table(name)
+        return self._reload_data_table(table_name)
 
     def get_field_file_path(self, table_name: str, field_name: str, file_name: str) -> Path:
         """Get the absolute path to a given file name in the table field"""
@@ -61,9 +61,9 @@ class ToolDataManager:
             raise exceptions.ObjectNotFound("No such path in data table field.")
         return full_path.absolute()
 
-    def delete(self, name: str, values: Optional[str] = None) -> ToolDataDetails:
+    def delete(self, table_name: str, values: Optional[str] = None) -> ToolDataDetails:
         """Removes an item from a data table"""
-        data_table = self._data_table(name)
+        data_table = self._data_table(table_name)
         if not values:
             raise exceptions.RequestParameterInvalidException("Invalid values for data table item specified.")
 
@@ -73,13 +73,13 @@ class ToolDataManager:
             raise exceptions.RequestParameterInvalidException(f"Invalid data table item ( {values} ) specified. Wrong number of columns ({len(split_values)} given, {len(data_table.get_column_name_list())} required).")
 
         data_table.remove_entry(split_values)
-        return self._reload_data_table(name)
+        return self._reload_data_table(table_name)
 
-    def _data_table(self, name: str) -> TabularToolDataTable:
+    def _data_table(self, table_name: str) -> TabularToolDataTable:
         try:
-            return self.data_tables[name]
+            return self.data_tables[table_name]
         except KeyError:
-            raise exceptions.ObjectNotFound(f"No such data table {name}")
+            raise exceptions.ObjectNotFound(f"No such data table {table_name}")
 
     def _data_table_field(self, table_name: str, field_name: str) -> TabularToolDataField:
         out = self._data_table(table_name).get_field(field_name)

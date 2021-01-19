@@ -28,7 +28,7 @@ from . import (
     get_app,
 )
 
-router = APIRouter(tags=['tool data'])
+router = APIRouter(tags=['tool data tables'])
 
 AdminUserRequired = Depends(get_admin_user)
 
@@ -65,24 +65,24 @@ class FastAPIToolData:
         return self.tool_data_manager.index()
 
     @router.get(
-        '/api/tool_data/{name}',
+        '/api/tool_data/{table_name}',
         summary="Get details of a given data table",
         response_description="A description of the given data table and its content",
         dependencies=[AdminUserRequired],
     )
-    async def show(self, name: str = ToolDataTableName) -> ToolDataDetails:
+    async def show(self, table_name: str = ToolDataTableName) -> ToolDataDetails:
         """Get details of a given tool data table."""
-        return self.tool_data_manager.show(name)
+        return self.tool_data_manager.show(table_name)
 
     @router.get(
-        '/api/tool_data/{name}/reload',
+        '/api/tool_data/{table_name}/reload',
         summary="Reloads a tool data table",
         response_description="A description of the reloaded data table and its content",
         dependencies=[AdminUserRequired],
     )
-    async def reload(self, name: str = ToolDataTableName) -> ToolDataDetails:
+    async def reload(self, table_name: str = ToolDataTableName) -> ToolDataDetails:
         """Reloads a data table and return its details."""
-        return self.tool_data_manager.reload(name)
+        return self.tool_data_manager.reload(table_name)
 
     @router.get(
         '/api/tool_data/{table_name}/fields/{field_name}',
