@@ -1,3 +1,5 @@
+from typing import Optional
+
 from fastapi import (
     Depends,
     Path,
@@ -6,10 +8,7 @@ from fastapi.responses import FileResponse
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter as APIRouter
 
-from galaxy import (
-    exceptions,
-    web,
-)
+from galaxy import web
 from galaxy.app import StructuredApp
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.tool_data import ToolDataManager
@@ -17,6 +16,7 @@ from galaxy.tools.data._schema import (
     ToolDataDetails,
     ToolDataEntryList,
     ToolDataField,
+    ToolDataItem,
 )
 from galaxy.web import (
     expose_api,
@@ -58,9 +58,7 @@ class FastAPIToolData:
         '/api/tool_data',
         summary="Lists all available data tables",
         response_description="A list with details on individual data tables.",
-        dependencies=[
-            AdminUserRequired
-        ],
+        dependencies=[AdminUserRequired],
     )
     async def index(self) -> ToolDataEntryList:
         """Get the list of all available data tables."""
@@ -70,9 +68,7 @@ class FastAPIToolData:
         '/api/tool_data/{name}',
         summary="Get details of a given data table",
         response_description="A description of the given data table and its content",
-        dependencies=[
-            AdminUserRequired
-        ],
+        dependencies=[AdminUserRequired],
     )
     async def show(self, name: str = ToolDataTableName) -> ToolDataDetails:
         """Get details of a given tool data table."""
@@ -82,9 +78,7 @@ class FastAPIToolData:
         '/api/tool_data/{name}/reload',
         summary="Reloads a tool data table",
         response_description="A description of the reloaded data table and its content",
-        dependencies=[
-            AdminUserRequired
-        ],
+        dependencies=[AdminUserRequired],
     )
     async def reload(self, name: str = ToolDataTableName) -> ToolDataDetails:
         """Reloads a data table and return its details."""
@@ -94,9 +88,7 @@ class FastAPIToolData:
         '/api/tool_data/{table_name}/fields/{field_name}',
         summary="Get information about a particular field in a tool data table",
         response_description="Information about a data table field",
-        dependencies=[
-            AdminUserRequired
-        ],
+        dependencies=[AdminUserRequired],
     )
     async def show_field(
         self,
@@ -111,9 +103,7 @@ class FastAPIToolData:
         summary="Get information about a particular field in a tool data table",
         response_description="Information about a data table field",
         response_class=FileResponse,
-        dependencies=[
-            AdminUserRequired
-        ],
+        dependencies=[AdminUserRequired],
     )
     async def download_field_file(
         self,
@@ -128,6 +118,20 @@ class FastAPIToolData:
         """Download a file associated with the data table field."""
         path = self.tool_data_manager.get_field_file_path(table_name, field_name, file_name)
         return FileResponse(str(path))
+
+    @router.delete(
+        '/api/tool_data/{table_name}',
+        summary="Removes an item from a data table",
+        response_description="A description of the affected data table and its content",
+        dependencies=[AdminUserRequired],
+    )
+    async def delete(
+        self,
+        payload: ToolDataItem,
+        table_name: str = ToolDataTableName,
+    ) -> ToolDataDetails:
+        """Removes an item from a data table and reloads it to return its updated details."""
+        return self.tool_data_manager.delete(table_name, payload.values)
 
 
 class ToolData(BaseAPIController):
@@ -189,34 +193,14 @@ class ToolData(BaseAPIController):
             * payload:     a dictionary itself containing:
                 * values:   <TAB> separated list of column contents, there must be a value for all the columns of the data table
         """
-        decoded_tool_data_id = id
-
-        try:
-            data_table = self.app.tool_data_tables.data_tables.get(decoded_tool_data_id)
-        except Exception:
-            data_table = None
-        if not data_table:
-            raise exceptions.RequestParameterInvalidException("Invalid data table id ( %s ) specified." % str(decoded_tool_data_id))
-
-        values = None
+        values: Optional[str] = None
         if kwd.get('payload', None):
             values = kwd['payload'].get('values', '')
-
-        if not values:
-            raise exceptions.RequestParameterInvalidException("Invalid data table item ( %s ) specified." % str(values))
-
-        split_values = values.split("\t")
-
-        if len(split_values) != len(data_table.get_column_name_list()):
-            raise exceptions.RequestParameterInvalidException("Invalid data table item ( {} ) specified. Wrong number of columns ({} given, {} required).".format(str(values), str(len(split_values)), str(len(data_table.get_column_name_list()))))
-
-        data_table.remove_entry(split_values)
-        self.app.queue_worker.send_control_task(
-            'reload_tool_data_tables',
-            noop_self=True,
-            kwargs={'table_name': decoded_tool_data_id}
-        )
-        return self._data_table(decoded_tool_data_id).to_dict(view='element')
+        # Here dict(by_alias=True) is required to return
+        # `field_value` as `field` since `field` can not be directly
+        # used in the pydantic BaseModel and needs to be aliased
+        # For more details see: https://github.com/samuelcolvin/pydantic/issues/1250
+        return self.tool_data_manager.delete(id, values).dict(by_alias=True)
 
     @web.require_admin
     @expose_api
@@ -238,19 +222,3 @@ class ToolData(BaseAPIController):
     def download_field_file(self, trans: ProvidesAppContext, id: str, value, path, **kwds):
         full_path = self.tool_data_manager.get_field_file_path(id, value, path)
         return open(full_path, "rb")
-
-    def _data_table_field(self, id, value):
-        out = self._data_table(id).get_field(value)
-        if out is None:
-            raise exceptions.ObjectNotFound(f"No such field {value} in data table {id}.")
-        return out
-
-    def _data_table(self, id):
-        try:
-            return self._data_tables[id]
-        except IndexError:
-            raise exceptions.ObjectNotFound("No such data table %s" % id)
-
-    @property
-    def _data_tables(self):
-        return self.app.tool_data_tables.data_tables

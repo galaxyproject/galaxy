@@ -65,7 +65,7 @@ class ToolDataManager:
         """Removes an item from a data table"""
         data_table = self._data_table(name)
         if not values:
-            raise exceptions.RequestParameterInvalidException(f"Invalid data table item ( {values} ) specified.")
+            raise exceptions.RequestParameterInvalidException("Invalid values for data table item specified.")
 
         split_values = values.split("\t")
 

@@ -89,3 +89,11 @@ class ToolDataField(BaseModel):
         description="SHA1 Hash",
         example="22b45237a85c2b3f474bf66888c534387ffe0ced",
     )
+
+
+class ToolDataItem(BaseModel):
+    values: str = Field(
+        ...,  # Mark this field as required
+        title="Values",
+        description="<TAB> separated list of column contents, there must be a value for all the columns of the data table",
+    )
