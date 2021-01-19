@@ -74,6 +74,13 @@ def user_to_model(user):
 
 
 def get_config_dict(app, is_admin=False, view=None, keys=None, default_view='all'):
+    """
+    Return a dictionary with a subset of current Galaxy settings.
+
+    If `is_admin`, include a subset of more sensitive keys.
+    Pass in `view` (String) and comma seperated list of keys to control which
+    configuration settings are returned.
+    """
     serializer = AdminConfigSerializer(app) if is_admin else ConfigSerializer(app)
     return serializer.serialize_to_view(app.config, view=view, keys=keys, default_view=default_view)
 
@@ -113,7 +120,7 @@ class FastAPIConfiguration:
     ) -> Dict[str, Any]:
         """Return an object containing exposable configuration settings."""
         is_admin = trans.user_is_admin
-        serialization_params = parse_serialization_params(view, keys, 'all')   # this gets a dict
+        serialization_params = parse_serialization_params(view, keys, 'all')
         return get_config_dict(trans.app, is_admin, **serialization_params)
 
     @router.get('/api/version')
@@ -149,8 +156,9 @@ class ConfigurationController(BaseAPIController):
 
         Note: a more complete list is returned if the user is an admin.
         """
+        view, keys = kwd.get('view'), kwd.get('keys')
         is_admin = trans.user_is_admin
-        serialization_params = self._parse_serialization_params(kwd, 'all')
+        serialization_params = parse_serialization_params(view, keys, 'all')
         return get_config_dict(self.app, is_admin, **serialization_params)
 
     @expose_api_anonymous_and_sessionless
@@ -210,6 +218,10 @@ class ConfigurationController(BaseAPIController):
         Reload the Galaxy toolbox (but not individual tools).
         """
         self.app.queue_worker.send_control_task('reload_toolbox')
+
+    def get_config_dict(self, trans, return_admin=False, view=None, keys=None, default_view='all'):
+        # Method left for backward compatibility (templates/galaxy_client_app.mako).
+        return get_config_dict(self.app, return_admin, view=view, keys=keys, default_view=default_view)
 
 
 def _tool_conf_to_dict(conf):
