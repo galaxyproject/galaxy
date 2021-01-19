@@ -172,7 +172,7 @@ def get_media_duration(media_info_path):
             media_info = json.load(media_info_file)
             duration = media_info['streams']['audio'][0]['duration']
     except Exception as e:
-    	traceback.print_exc()
+        traceback.print_exc()
         raise Exception("Exception reading media info from " + media_info_path, e)
     return duration
 
