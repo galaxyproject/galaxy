@@ -1,5 +1,6 @@
 #!/bin/env python3
 import argparse
+import csv
 from pathlib import Path
 import json
 import logging
@@ -8,7 +9,7 @@ import os
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
 import hpc_submit
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
-from segmentation_schema import SegmentationSchema
+from segmentation_schema import Segmentation, SegmentationMedia
 
 def main():
     """
@@ -43,8 +44,8 @@ def main():
     if job['job']['status'] != 'ok':
         exit(1)
 
-    with open(args.segments, 'r') as csv:
-        data=[tuple(line) for line in csv.reader(f)]
+    with open(args.segments, 'r') as csvin:
+        data=[tuple(line) for line in csv.reader(csvin, delimiter='\t')]
 
      # Convert the resulting list of tuples to an object for serialization
     seg_schema = convert_to_segmentation_schema(args.input, data)
@@ -54,15 +55,21 @@ def main():
 
     exit(0)
 
+
 def convert_to_segmentation_schema(filename, segmentation):
+    media = SegmentationMedia()
+    media.filename = filename
     # Create a segmentation object to serialize
-    seg_schema = SegmentationSchema(filename)
+    seg_schema = Segmentation(media = media)
 
     # For each segment returned by the ina_speech_segmenter, add 
     # a corresponding segment formatted to json spec
+    row = 0
     for segment in segmentation:
+        row+=1
+        if row == 1:
+            continue
         seg_schema.addSegment(segment[0], segment[0], float(segment[1]), float(segment[2]))
-
     return seg_schema
 
 # Serialize schema obj and write it to output file
@@ -70,8 +77,6 @@ def write_output_json(seg_schema, json_file):
     # Serialize the segmentation object
     with open(json_file, 'w') as outfile:
         json.dump(seg_schema, outfile, default=lambda x: x.__dict__)
-
-
 
 if __name__ == "__main__":
     main()

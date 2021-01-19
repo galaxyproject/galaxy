@@ -49,7 +49,7 @@ def remove_silence(remove_type, seg_data, filename, output_file):
 				start_block = -1
 				previous_end = 0
 				segments += 1
-		elif s.label not in ["silence", remove_type]:
+		elif s.label not in ["silence", "noise", remove_type]:
 			# If this is a new block, mark the start
 			if start_block < 0:
 				start_block = s.start
@@ -167,7 +167,7 @@ def cleanup_files(segments):
 			os.remove(this_segment_name)
 
 def should_remove_segment(remove_type, segment, start_block):
-	if (segment.label == "silence" or segment.label == remove_type):
+	if (segment.label == "silence" or segment.label == "noise" or segment.label == remove_type) and segment.end - segment.start > 60:
 		duration = segment.end - segment.start
 		# If it is the middle of the file, account for buffers on both the start and end of the file
 		if start_block > 0 and duration > (buffer*2):

@@ -32,7 +32,6 @@ def main():
     exit(0)
 
 def convert_to_segmentation_schema(filename, segmentation):
-    print("Conversion")
     media = SegmentationMedia()
     media.filename = filename
     # Create a segmentation object to serialize
@@ -45,7 +44,6 @@ def convert_to_segmentation_schema(filename, segmentation):
         row+=1
         if row == 1:
             continue
-        print(segment)
         seg_schema.addSegment(segment[0], segment[0], float(segment[1]), float(segment[2]))
 
     return seg_schema
