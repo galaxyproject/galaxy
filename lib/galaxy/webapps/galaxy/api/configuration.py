@@ -25,6 +25,7 @@ from galaxy.managers.users import (
     UserModel
 )
 from galaxy.model import User
+from galaxy.structured_app import StructuredApp
 from galaxy.web import (
     expose_api,
     expose_api_anonymous_and_sessionless,
@@ -32,6 +33,7 @@ from galaxy.web import (
 )
 from galaxy.webapps.base.controller import BaseAPIController
 from . import (
+    get_app,
     get_trans,
     get_user,
 )
@@ -40,6 +42,8 @@ log = logging.getLogger(__name__)
 
 
 router = APIRouter(tags=['configuration'])
+
+VERSION_JSON_FILE = 'version.json'
 
 
 # TODO move to common.py as soon as used more than once
@@ -74,6 +78,24 @@ def get_config_dict(app, is_admin=False, view=None, keys=None, default_view='all
     return serializer.serialize_to_view(app.config, view=view, keys=keys, default_view=default_view)
 
 
+def get_version(app):
+    version_info = {
+        "version_major": app.config.version_major,
+        "version_minor": app.config.version_minor,
+    }
+    # Try loading extra version info
+    json_file = os.path.join(app.config.root, VERSION_JSON_FILE)  # TODO: add this to schema
+    json_file = os.environ.get("GALAXY_VERSION_JSON_FILE", json_file)
+    try:
+        with open(json_file) as f:
+            extra_info = json.load(f)
+    except OSError:
+        log.info('Galaxy JSON version file not loaded')
+    else:
+        version_info['extra'] = extra_info
+    return version_info
+
+
 @cbv(router)
 class FastAPIConfiguration:
 
@@ -93,6 +115,11 @@ class FastAPIConfiguration:
         is_admin = trans.user_is_admin
         serialization_params = parse_serialization_params(view, keys, 'all')   # this gets a dict
         return get_config_dict(trans.app, is_admin, **serialization_params)
+
+    @router.get('/api/version')
+    def version(self, app: StructuredApp = Depends(get_app)) -> Dict[str, Any]:
+        """Return Galaxy version information: major/minor version, optional extra info."""
+        return get_version(app)
 
 
 class ConfigurationController(BaseAPIController):
@@ -130,19 +157,12 @@ class ConfigurationController(BaseAPIController):
     def version(self, trans, **kwds):
         """
         GET /api/version
-        Return a description of the major version of Galaxy (e.g. 15.03).
+        Return Galaxy version information: major/minor version, optional extra info.
 
         :rtype:     dict
         :returns:   dictionary with major version keyed on 'version_major'
         """
-        extra = {}
-        try:
-            version_file = os.environ.get("GALAXY_VERSION_JSON_FILE", self.app.container_finder.app_info.galaxy_root_dir + "/version.json")
-            with open(version_file) as f:
-                extra = json.load(f)
-        except Exception:
-            pass
-        return {"version_major": self.app.config.version_major, "extra": extra}
+        return get_version(self.app)
 
     @require_admin
     @expose_api
