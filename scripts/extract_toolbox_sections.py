@@ -88,8 +88,8 @@ def main():
                 # create empty tags element
                 newelements.append("<tags/>\n  ")
 
-            contents = (contents[0:addelementsatposition] + newelements +
-                        contents[addelementsatposition:])
+            contents = (contents[0:addelementsatposition] + newelements
+                        + contents[addelementsatposition:])
 
             # add .new for testing/safety purposes :P
             newtoolconffile = open(toolconffile, 'w')

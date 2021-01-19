@@ -72,7 +72,7 @@ class UsersController(BaseAPIController):
         return user
 
     def __get_value_mapper(self, trans):
-        value_mapper = {'id' : trans.security.encode_id}
+        value_mapper = {'id': trans.security.encode_id}
         return value_mapper
 
     @web.legacy_expose_api_anonymous

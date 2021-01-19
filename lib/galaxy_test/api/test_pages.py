@@ -71,7 +71,7 @@ steps:
             invocation_id = summary.invocation_id
             report_json = workflow_populator.workflow_report_json(workflow_id, invocation_id)
             assert "markdown" in report_json
-            self._assert_has_keys(report_json , "markdown", "render_format")
+            self._assert_has_keys(report_json, "markdown", "render_format")
             assert report_json["render_format"] == "markdown"
             markdown_content = report_json["markdown"]
             page_request = dict(

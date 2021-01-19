@@ -152,25 +152,25 @@ class DockerCLIInterface(DockerInterface):
         """The docker API will take a volumes argument in many formats, try to
         deal with that for the command line
         """
-        l = []
+        kwopt_list = []
         if isinstance(val, list):
             # ['/host/vol']
-            l = val
+            kwopt_list = val
         else:
             for hostvol, guestopts in val.items():
                 if isinstance(guestopts, str):
                     # {'/host/vol': '/container/vol'}
-                    l.append(f'{hostvol}:{guestopts}')
+                    kwopt_list.append(f'{hostvol}:{guestopts}')
                 else:
                     # {'/host/vol': {'bind': '/container/vol'}}
                     # {'/host/vol': {'bind': '/container/vol', 'mode': 'rw'}}
                     mode = guestopts.get('mode', '')
-                    l.append('{vol}:{bind}{mode}'.format(
+                    kwopt_list.append('{vol}:{bind}{mode}'.format(
                         vol=hostvol,
                         bind=guestopts['bind'],
                         mode=':' + mode if mode else ''
                     ))
-        return self._stringify_kwopt_list(flag, l)
+        return self._stringify_kwopt_list(flag, kwopt_list)
 
     def _run_docker(self, subcommand, args=None, verbose=False):
         command = self._docker_command.format(subcommand=subcommand, args=args or '')

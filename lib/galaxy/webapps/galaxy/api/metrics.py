@@ -71,10 +71,10 @@ class MetricsController(BaseAPIController):
             label = metric['namespace']
             time = self._deserialize_isoformat_date(metric['time'])
             kwargs = {
-                'level'   : metric['level'],
-                'args'    : metric['args'],
-                'user'    : user_id,
-                'session' : session_id
+                'level': metric['level'],
+                'args': metric['args'],
+                'user': user_id,
+                'session': session_id
             }
             yield (label, time, kwargs)
 

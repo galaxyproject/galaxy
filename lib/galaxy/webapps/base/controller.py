@@ -294,24 +294,24 @@ class JSAppLauncher(BaseUIController):
         """
         root = root or web.url_for('/')
         js_options = {
-            'root'               : root,
-            'user'               : self.user_serializer.serialize(trans.user, self.USER_BOOTSTRAP_KEYS, trans=trans),
-            'config'             : self._get_site_configuration(trans),
-            'params'             : dict(trans.request.params),
-            'session_csrf_token' : trans.session_csrf_token,
+            'root': root,
+            'user': self.user_serializer.serialize(trans.user, self.USER_BOOTSTRAP_KEYS, trans=trans),
+            'config': self._get_site_configuration(trans),
+            'params': dict(trans.request.params),
+            'session_csrf_token': trans.session_csrf_token,
         }
         return js_options
 
     def _get_extended_config(self, trans):
         config = {
-            'active_view'                   : 'analysis',
-            'enable_cloud_launch'           : trans.app.config.get_bool('enable_cloud_launch', False),
-            'enable_webhooks'               : True if trans.app.webhooks_registry.webhooks else False,
-            'toolbox'                       : trans.app.toolbox.to_dict(trans),
-            'message_box_visible'           : trans.app.config.message_box_visible,
-            'show_inactivity_warning'       : trans.app.config.user_activation_on and trans.user and not trans.user.active,
-            'tool_shed_urls'                : list(trans.app.tool_shed_registry.tool_sheds.values()) if trans.app.tool_shed_registry else [],
-            'tool_dynamic_configs'          : list(trans.app.toolbox.dynamic_conf_filenames())
+            'active_view': 'analysis',
+            'enable_cloud_launch': trans.app.config.get_bool('enable_cloud_launch', False),
+            'enable_webhooks': True if trans.app.webhooks_registry.webhooks else False,
+            'toolbox': trans.app.toolbox.to_dict(trans),
+            'message_box_visible': trans.app.config.message_box_visible,
+            'show_inactivity_warning': trans.app.config.user_activation_on and trans.user and not trans.user.active,
+            'tool_shed_urls': list(trans.app.tool_shed_registry.tool_sheds.values()) if trans.app.tool_shed_registry else [],
+            'tool_dynamic_configs': list(trans.app.toolbox.dynamic_conf_filenames())
         }
 
         # TODO: move to user
@@ -446,7 +446,7 @@ class ImportsHistoryMixin:
     def queue_history_import(self, trans, archive_type, archive_source):
         # Run job to do import.
         history_imp_tool = trans.app.toolbox.get_tool('__IMPORT_HISTORY__')
-        incoming = {'__ARCHIVE_SOURCE__' : archive_source, '__ARCHIVE_TYPE__' : archive_type}
+        incoming = {'__ARCHIVE_SOURCE__': archive_source, '__ARCHIVE_TYPE__': archive_type}
         job, _ = history_imp_tool.execute(trans, incoming=incoming)
         return job
 
@@ -454,10 +454,10 @@ class ImportsHistoryMixin:
 class UsesLibraryMixin:
 
     def get_library(self, trans, id, check_ownership=False, check_accessible=True):
-        l = self.get_object(trans, id, 'Library')
-        if check_accessible and not (trans.user_is_admin or trans.app.security_agent.can_access_library(trans.get_current_user_roles(), l)):
-            error("LibraryFolder is not accessible to the current user")
-        return l
+        library = self.get_object(trans, id, 'Library')
+        if check_accessible and not (trans.user_is_admin or trans.app.security_agent.can_access_library(trans.get_current_user_roles(), library)):
+            error("Library is not accessible to the current user")
+        return library
 
 
 class UsesLibraryMixinItems(SharableItemSecurityMixin):
@@ -486,8 +486,8 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
     def can_current_user_add_to_library_item(self, trans, item):
         if not trans.user:
             return False
-        return (trans.user_is_admin or
-                trans.app.security_agent.can_add_library_item(trans.get_current_user_roles(), item))
+        return (trans.user_is_admin
+                or trans.app.security_agent.can_add_library_item(trans.get_current_user_roles(), item))
 
     def check_user_can_add_to_library_item(self, trans, item, check_accessible=True):
         """
@@ -746,10 +746,10 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         # TODO: deleted
         # TODO: importable
         return {
-            'id'        : visualization.id,
-            'title'     : visualization.title,
-            'type'      : visualization.type,
-            'dbkey'     : visualization.dbkey,
+            'id': visualization.id,
+            'title': visualization.title,
+            'type': visualization.type,
+            'dbkey': visualization.dbkey,
         }
 
     def get_visualization_dict(self, visualization):
@@ -760,15 +760,15 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         """
         return {
             'model_class': 'Visualization',
-            'id'         : visualization.id,
-            'title'      : visualization.title,
-            'type'       : visualization.type,
-            'user_id'    : visualization.user.id,
-            'dbkey'      : visualization.dbkey,
-            'slug'       : visualization.slug,
+            'id': visualization.id,
+            'title': visualization.title,
+            'type': visualization.type,
+            'user_id': visualization.user.id,
+            'dbkey': visualization.dbkey,
+            'slug': visualization.slug,
             # to_dict only the latest revision (allow older to be fetched elsewhere)
-            'latest_revision' : self.get_visualization_revision_dict(visualization.latest_revision),
-            'revisions' : [r.id for r in visualization.revisions],
+            'latest_revision': self.get_visualization_revision_dict(visualization.latest_revision),
+            'revisions': [r.id for r in visualization.revisions],
         }
 
     def get_visualization_revision_dict(self, revision):
@@ -777,12 +777,12 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         NOTE: that encoding ids isn't done here should happen at the caller level.
         """
         return {
-            'model_class'      : 'VisualizationRevision',
-            'id'               : revision.id,
-            'visualization_id' : revision.visualization.id,
-            'title'            : revision.title,
-            'dbkey'            : revision.dbkey,
-            'config'           : revision.config,
+            'model_class': 'VisualizationRevision',
+            'id': revision.id,
+            'visualization_id': revision.visualization.id,
+            'title': revision.title,
+            'dbkey': revision.dbkey,
+            'config': revision.config,
         }
 
     def import_visualization(self, trans, id, user=None):
@@ -995,7 +995,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
                     "dataset": trans.security.encode_dict_ids(dataset.to_dict()),
                     "prefs": prefs,
                     "mode": track_dict.get('mode', 'Auto'),
-                    "filters": track_dict.get('filters', {'filters' : track_data_provider.get_filters()}),
+                    "filters": track_dict.get('filters', {'filters': track_data_provider.get_filters()}),
                     "tool": self.get_tool_def(trans, dataset),
                     "tool_state": track_dict.get('tool_state', {})
                 }
@@ -1067,7 +1067,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             "name": dataset.name,
             "dataset": trans.security.encode_dict_ids(dataset.to_dict()),
             "prefs": {},
-            "filters": {'filters' : track_data_provider.get_filters()},
+            "filters": {'filters': track_data_provider.get_filters()},
             "tool": self.get_tool_def(trans, dataset),
             "tool_state": {}
         }
@@ -1114,8 +1114,8 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
                 error("You are not allowed to access this dataset")
 
             if check_state and data.state == trans.model.Dataset.states.UPLOAD:
-                return trans.show_error_message("Please wait until this dataset finishes uploading " +
-                                                "before attempting to view it.")
+                return trans.show_error_message("Please wait until this dataset finishes uploading "
+                                                + "before attempting to view it.")
         return data
 
     # -- Helper functions --

@@ -61,8 +61,8 @@ class BatchMiddleware:
       * `contentType` content-type request header (defaults to application/json)
     """
     DEFAULT_CONFIG = {
-        'route' : '/api/batch',
-        'allowed_routes' : [
+        'route': '/api/batch',
+        'allowed_routes': [
             r'^api\/users.*',
             r'^api\/histories.*',
             r'^api\/jobs.*',
@@ -126,9 +126,9 @@ class BatchMiddleware:
 
     def _disallowed_route_response(self, route):
         return dict(status=403, headers=self._default_headers(), body={
-            'err_msg'   : 'Disallowed route used for batch operation',
-            'route'     : route,
-            'allowed'   : self.config['allowed_routes']
+            'err_msg': 'Disallowed route used for batch operation',
+            'route': route,
+            'allowed': self.config['allowed_routes']
         })
 
     def _build_request_environ(self, original_environ, request):
@@ -184,8 +184,8 @@ class BatchMiddleware:
     def _default_headers(self):
         return {
             'x-frame-options': 'SAMEORIGIN',
-            'content-type'   : 'application/json',
-            'cache-control'  : 'max-age=0,no-cache,no-store'
+            'content-type': 'application/json',
+            'cache-control': 'max-age=0,no-cache,no-store'
         }
 
     def handle_exception(self, environ):

@@ -164,11 +164,11 @@ def looks_like_xml(path, regex=TOOL_REGEX):
     if not os.path.getsize(full_path):
         return False
 
-    if(checkers.check_binary(full_path) or
-       checkers.check_image(full_path) or
-       checkers.is_gzip(full_path) or
-       checkers.is_bz2(full_path) or
-       checkers.is_zip(full_path)):
+    if(checkers.check_binary(full_path)
+       or checkers.check_image(full_path)
+       or checkers.is_gzip(full_path)
+       or checkers.is_bz2(full_path)
+       or checkers.is_zip(full_path)):
         return False
 
     with open(path, encoding='utf-8') as f:

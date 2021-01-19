@@ -171,16 +171,16 @@ class DatasetSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin)
         deletable.PurgableSerializerMixin.add_serializers(self)
 
         self.serializers.update({
-            'create_time'   : self.serialize_date,
-            'update_time'   : self.serialize_date,
+            'create_time': self.serialize_date,
+            'update_time': self.serialize_date,
 
-            'uuid'          : lambda i, k, **c: str(i.uuid) if i.uuid else None,
-            'file_name'     : self.serialize_file_name,
-            'extra_files_path' : self.serialize_extra_files_path,
-            'permissions'   : self.serialize_permissions,
+            'uuid': lambda i, k, **c: str(i.uuid) if i.uuid else None,
+            'file_name': self.serialize_file_name,
+            'extra_files_path': self.serialize_extra_files_path,
+            'permissions': self.serialize_permissions,
 
-            'total_size'    : lambda i, k, **c: int(i.get_total_size()),
-            'file_size'     : lambda i, k, **c: int(i.get_size())
+            'total_size': lambda i, k, **c: int(i.get_total_size()),
+            'file_size': lambda i, k, **c: int(i.get_size())
         })
 
     def serialize_file_name(self, dataset, key, user=None, **context):
@@ -216,8 +216,8 @@ class DatasetSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin)
         management_permissions = self.dataset_manager.permissions.manage.by_dataset(dataset)
         access_permissions = self.dataset_manager.permissions.access.by_dataset(dataset)
         permissions = {
-            'manage' : [self.app.security.encode_id(perm.role.id) for perm in management_permissions],
-            'access' : [self.app.security.encode_id(perm.role.id) for perm in access_permissions],
+            'manage': [self.app.security.encode_id(perm.role.id) for perm in management_permissions],
+            'access': [self.app.security.encode_id(perm.role.id) for perm in access_permissions],
         }
         return permissions
 
@@ -446,49 +446,49 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer,
         deletable.PurgableSerializerMixin.add_serializers(self)
 
         self.serializers.update({
-            'create_time'   : self.serialize_date,
-            'update_time'   : self.serialize_date,
+            'create_time': self.serialize_date,
+            'update_time': self.serialize_date,
 
             # underlying dataset
-            'dataset'       : lambda i, k, **c: self.dataset_serializer.serialize_to_view(i.dataset, view='summary', **c),
-            'dataset_id'    : self._proxy_to_dataset(key='id'),
+            'dataset': lambda i, k, **c: self.dataset_serializer.serialize_to_view(i.dataset, view='summary', **c),
+            'dataset_id': self._proxy_to_dataset(key='id'),
             # TODO: why is this named uuid!? The da doesn't have a uuid - it's the underlying dataset's uuid!
-            'uuid'          : self._proxy_to_dataset(key='uuid'),
-            # 'dataset_uuid'  : self._proxy_to_dataset( key='uuid' ),
-            'file_name'     : self._proxy_to_dataset(serializer=self.dataset_serializer.serialize_file_name),
-            'extra_files_path' : self._proxy_to_dataset(serializer=self.dataset_serializer.serialize_extra_files_path),
-            'permissions'   : self._proxy_to_dataset(serializer=self.dataset_serializer.serialize_permissions),
+            'uuid': self._proxy_to_dataset(key='uuid'),
+            # 'dataset_uuid': self._proxy_to_dataset( key='uuid' ),
+            'file_name': self._proxy_to_dataset(serializer=self.dataset_serializer.serialize_file_name),
+            'extra_files_path': self._proxy_to_dataset(serializer=self.dataset_serializer.serialize_extra_files_path),
+            'permissions': self._proxy_to_dataset(serializer=self.dataset_serializer.serialize_permissions),
             # TODO: do the sizes proxy accurately/in the same way?
-            'size'          : lambda i, k, **c: int(i.get_size()),
-            'file_size'     : lambda i, k, **c: self.serializers['size'](i, k, **c),
-            'nice_size'     : lambda i, k, **c: i.get_size(nice_size=True),
+            'size': lambda i, k, **c: int(i.get_size()),
+            'file_size': lambda i, k, **c: self.serializers['size'](i, k, **c),
+            'nice_size': lambda i, k, **c: i.get_size(nice_size=True),
 
             # common to lddas and hdas - from mapping.py
-            'copied_from_history_dataset_association_id'        : self.serialize_id,
+            'copied_from_history_dataset_association_id': self.serialize_id,
             'copied_from_library_dataset_dataset_association_id': self.serialize_id,
-            'info'          : lambda i, k, **c: i.info.strip() if isinstance(i.info, str) else i.info,
-            'blurb'         : lambda i, k, **c: i.blurb,
-            'peek'          : lambda i, k, **c: i.display_peek() if i.peek and i.peek != 'no peek' else None,
+            'info': lambda i, k, **c: i.info.strip() if isinstance(i.info, str) else i.info,
+            'blurb': lambda i, k, **c: i.blurb,
+            'peek': lambda i, k, **c: i.display_peek() if i.peek and i.peek != 'no peek' else None,
 
-            'meta_files'    : self.serialize_meta_files,
-            'metadata'      : self.serialize_metadata,
+            'meta_files': self.serialize_meta_files,
+            'metadata': self.serialize_metadata,
 
-            'creating_job'  : self.serialize_creating_job,
-            'rerunnable'    : self.serialize_rerunnable,
+            'creating_job': self.serialize_creating_job,
+            'rerunnable': self.serialize_rerunnable,
 
-            'parent_id'     : self.serialize_id,
-            'designation'   : lambda i, k, **c: i.designation,
+            'parent_id': self.serialize_id,
+            'designation': lambda i, k, **c: i.designation,
 
-            # 'extended_metadata'     : self.serialize_extended_metadata,
-            # 'extended_metadata_id'  : self.serialize_id,
+            # 'extended_metadata': self.serialize_extended_metadata,
+            # 'extended_metadata_id': self.serialize_id,
 
             # remapped
-            'genome_build'  : lambda i, k, **c: i.dbkey,
+            'genome_build': lambda i, k, **c: i.dbkey,
 
             # derived (not mapped) attributes
-            'data_type'     : lambda i, k, **c: i.datatype.__class__.__module__ + '.' + i.datatype.__class__.__name__,
+            'data_type': lambda i, k, **c: i.datatype.__class__.__module__ + '.' + i.datatype.__class__.__name__,
 
-            'converted'     : self.serialize_converted_datasets,
+            'converted': self.serialize_converted_datasets,
             # TODO: metadata/extra files
         })
         # this an abstract superclass, so no views created
@@ -609,15 +609,15 @@ class DatasetAssociationSerializer(_UnflattenedMetadataDatasetAssociationSeriali
         return serialized
 
     # TODO: this is more util/gen. use
-    def _pluck_from_list(self, l, elems):
+    def _pluck_from_list(self, list_, elems):
         """
-        Removes found elems from list l and returns list of found elems if found.
+        Removes found elems from list list_ and returns list of found elems if found.
         """
         found = []
         for elem in elems:
             try:
-                index = l.index(elem)
-                found.append(l.pop(index))
+                index = list_.index(elem)
+                found.append(list_.pop(index))
             except ValueError:
                 pass
         return found
@@ -645,9 +645,9 @@ class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableD
         deletable.PurgableDeserializerMixin.add_deserializers(self)
 
         self.deserializers.update({
-            'name' : self.deserialize_basestring,
-            'info' : self.deserialize_basestring,
-            'datatype' : self.deserialize_datatype,
+            'name': self.deserialize_basestring,
+            'info': self.deserialize_basestring,
+            'datatype': self.deserialize_datatype,
         })
         self.deserializable_keyset.update(self.deserializers.keys())
 
@@ -699,16 +699,16 @@ class DatasetAssociationFilterParser(base.ModelFilterParser, deletable.PurgableF
         deletable.PurgableFiltersMixin._add_parsers(self)
 
         self.orm_filter_parsers.update({
-            'name'      : {'op': ('eq', 'contains', 'like')},
-            'state'     : {'column' : '_state', 'op': ('eq', 'in')},
-            'visible'   : {'op': ('eq'), 'val': self.parse_bool},
+            'name': {'op': ('eq', 'contains', 'like')},
+            'state': {'column': '_state', 'op': ('eq', 'in')},
+            'visible': {'op': ('eq'), 'val': self.parse_bool},
         })
         self.fn_filter_parsers.update({
-            'genome_build' : self.string_standard_ops('dbkey'),
-            'data_type' : {
+            'genome_build': self.string_standard_ops('dbkey'),
+            'data_type': {
                 'op': {
-                    'eq' : self.eq_datatype,
-                    'isinstance' : self.isinstance_datatype
+                    'eq': self.eq_datatype,
+                    'isinstance': self.isinstance_datatype
                 }
             }
         })
@@ -718,8 +718,7 @@ class DatasetAssociationFilterParser(base.ModelFilterParser, deletable.PurgableF
         Is the `dataset_assoc` datatype equal to the registered datatype `class_str`?
         """
         comparison_class = self.app.datatypes_registry.get_datatype_class_by_name(class_str)
-        return (comparison_class and
-            dataset_assoc.datatype.__class__ == comparison_class)
+        return comparison_class and dataset_assoc.datatype.__class__ == comparison_class
 
     def isinstance_datatype(self, dataset_assoc, class_strs):
         """
@@ -732,5 +731,4 @@ class DatasetAssociationFilterParser(base.ModelFilterParser, deletable.PurgableF
             datatype_class = parse_datatype_fn(class_str)
             if datatype_class:
                 comparison_classes.append(datatype_class)
-        return (comparison_classes and
-            isinstance(dataset_assoc.datatype, comparison_classes))
+        return comparison_classes and isinstance(dataset_assoc.datatype, comparison_classes)

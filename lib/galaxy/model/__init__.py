@@ -1149,13 +1149,13 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             for i in self.input_datasets:
                 if i.dataset is not None:
                     input_dict[i.name] = {
-                        "id" : i.dataset.id, "src" : "hda",
-                        "uuid" : str(i.dataset.dataset.uuid) if i.dataset.dataset.uuid is not None else None
+                        "id": i.dataset.id, "src": "hda",
+                        "uuid": str(i.dataset.dataset.uuid) if i.dataset.dataset.uuid is not None else None
                     }
             for i in self.input_library_datasets:
                 if i.dataset is not None:
                     input_dict[i.name] = {
-                        "id" : i.dataset.id, "src" : "ldda",
+                        "id": i.dataset.id, "src": "ldda",
                         "uuid": str(i.dataset.dataset.uuid) if i.dataset.dataset.uuid is not None else None
                     }
             for k in input_dict:
@@ -1167,14 +1167,14 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             for i in self.output_datasets:
                 if i.dataset is not None:
                     output_dict[i.name] = {
-                        "id" : i.dataset.id, "src" : "hda",
-                        "uuid" : str(i.dataset.dataset.uuid) if i.dataset.dataset.uuid is not None else None
+                        "id": i.dataset.id, "src": "hda",
+                        "uuid": str(i.dataset.dataset.uuid) if i.dataset.dataset.uuid is not None else None
                     }
             for i in self.output_library_datasets:
                 if i.dataset is not None:
                     output_dict[i.name] = {
-                        "id" : i.dataset.id, "src" : "ldda",
-                        "uuid" : str(i.dataset.dataset.uuid) if i.dataset.dataset.uuid is not None else None
+                        "id": i.dataset.id, "src": "ldda",
+                        "uuid": str(i.dataset.dataset.uuid) if i.dataset.dataset.uuid is not None else None
                     }
             rval['outputs'] = output_dict
 
@@ -1587,7 +1587,7 @@ class JobExternalOutputMetadata(RepresentById):
 # uses a Dataset rather than an HDA or LDA, it's necessary to set up a
 # fake dataset association that provides the needed attributes for
 # preparing a job.
-class FakeDatasetAssociation :
+class FakeDatasetAssociation:
     fake_dataset_association = True
 
     def __init__(self, dataset=None):
@@ -5889,14 +5889,14 @@ class FormDefinition(Dictifiable, RepresentById):
         values = values or {}
         form_def = {'id': security.encode_id(self.id) if security else self.id, 'name': self.name, 'inputs': []}
         for field in self.fields:
-            FieldClass = ({'AddressField'         : AddressField,
-                           'CheckboxField'        : CheckboxField,
-                           'HistoryField'         : HistoryField,
-                           'PasswordField'        : PasswordField,
-                           'SelectField'          : SelectField,
-                           'TextArea'             : TextArea,
-                           'TextField'            : TextField,
-                           'WorkflowField'        : WorkflowField}).get(field['type'], TextField)
+            FieldClass = ({'AddressField': AddressField,
+                           'CheckboxField': CheckboxField,
+                           'HistoryField': HistoryField,
+                           'PasswordField': PasswordField,
+                           'SelectField': SelectField,
+                           'TextArea': TextArea,
+                           'TextField': TextField,
+                           'WorkflowField': WorkflowField}).get(field['type'], TextField)
             form_def['inputs'].append(FieldClass(user=user, value=values.get(field['name'], field['default']), security=security, **field).to_dict())
         return form_def
 
@@ -5937,16 +5937,16 @@ class UserAddress(RepresentById):
         self.phone = phone
 
     def to_dict(self, trans):
-        return {'id'           : trans.security.encode_id(self.id),
-                'name'         : sanitize_html(self.name),
-                'desc'         : sanitize_html(self.desc),
-                'institution'  : sanitize_html(self.institution),
-                'address'      : sanitize_html(self.address),
-                'city'         : sanitize_html(self.city),
-                'state'        : sanitize_html(self.state),
-                'postal_code'  : sanitize_html(self.postal_code),
-                'country'      : sanitize_html(self.country),
-                'phone'        : sanitize_html(self.phone)}
+        return {'id': trans.security.encode_id(self.id),
+                'name': sanitize_html(self.name),
+                'desc': sanitize_html(self.desc),
+                'institution': sanitize_html(self.institution),
+                'address': sanitize_html(self.address),
+                'city': sanitize_html(self.city),
+                'state': sanitize_html(self.state),
+                'postal_code': sanitize_html(self.postal_code),
+                'country': sanitize_html(self.country),
+                'phone': sanitize_html(self.phone)}
 
 
 class PSAAssociation(AssociationMixin, RepresentById):

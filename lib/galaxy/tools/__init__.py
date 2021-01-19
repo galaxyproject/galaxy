@@ -2181,26 +2181,26 @@ class Tool(Dictifiable):
 
         # update tool model
         tool_model.update({
-            'id'            : self.id,
-            'help'          : tool_help,
-            'citations'     : bool(self.citations),
-            'sharable_url'  : self.sharable_url,
-            'message'       : tool_message,
-            'warnings'      : tool_warnings,
-            'versions'      : self.tool_versions,
-            'requirements'  : [{'name' : r.name, 'version' : r.version} for r in self.requirements],
-            'errors'        : state_errors,
-            'tool_errors'   : self.tool_errors,
-            'state_inputs'  : params_to_strings(self.inputs, state_inputs, self.app, use_security=True, nested=True),
-            'job_id'        : trans.security.encode_id(job.id) if job else None,
-            'job_remap'     : job.remappable() if job else None,
-            'history_id'    : trans.security.encode_id(history.id) if history else None,
-            'display'       : self.display_interface,
-            'action'        : action,
-            'license'       : self.license,
-            'creator'       : self.creator,
-            'method'        : self.method,
-            'enctype'       : self.enctype
+            'id': self.id,
+            'help': tool_help,
+            'citations': bool(self.citations),
+            'sharable_url': self.sharable_url,
+            'message': tool_message,
+            'warnings': tool_warnings,
+            'versions': self.tool_versions,
+            'requirements': [{'name': r.name, 'version': r.version} for r in self.requirements],
+            'errors': state_errors,
+            'tool_errors': self.tool_errors,
+            'state_inputs': params_to_strings(self.inputs, state_inputs, self.app, use_security=True, nested=True),
+            'job_id': trans.security.encode_id(job.id) if job else None,
+            'job_remap': job.remappable() if job else None,
+            'history_id': trans.security.encode_id(history.id) if history else None,
+            'display': self.display_interface,
+            'action': action,
+            'license': self.license,
+            'creator': self.creator,
+            'method': self.method,
+            'enctype': self.enctype
         })
         return tool_model
 

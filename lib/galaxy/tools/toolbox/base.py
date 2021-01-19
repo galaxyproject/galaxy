@@ -432,11 +432,11 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                     log.warning("Could not find lineage for tool '%s'", tool.id)
                 if not inserted:
                     if (
-                        tool.guid is None or
-                        tool.tool_shed is None or
-                        tool.repository_name is None or
-                        tool.repository_owner is None or
-                        tool.installed_changeset_revision is None
+                        tool.guid is None
+                        or tool.tool_shed is None
+                        or tool.repository_name is None
+                        or tool.repository_owner is None
+                        or tool.installed_changeset_revision is None
                     ):
                         # We have a tool that was not installed from the Tool
                         # Shed, but is also not yet defined in

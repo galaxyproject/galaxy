@@ -53,7 +53,7 @@ def truncate_index_name(index_name, engine):
     max_index_name_length = engine.dialect.max_index_name_length or engine.dialect.max_identifier_length
     if len(index_name) > max_index_name_length:
         suffix = hashlib.md5(index_name.encode('utf-8')).hexdigest()[-4:]
-        index_name = "{trunc}_{suffix}".format(trunc=index_name[0 : max_index_name_length - 8], suffix=suffix)
+        index_name = "{trunc}_{suffix}".format(trunc=index_name[0:max_index_name_length - 8], suffix=suffix)
     return index_name
 
 

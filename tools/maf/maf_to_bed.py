@@ -61,10 +61,10 @@ def __main__():
             block_num += 1
             if "None" not in species:
                 m = m.limit_to_species(species)
-            l = m.components
-            if len(l) < num_species and partial == "partial_disallowed":
+            components = m.components
+            if len(components) < num_species and partial == "partial_disallowed":
                 continue
-            for c in l:
+            for c in components:
                 spec, chrom = src_split(c.src)
                 if not spec or not chrom:
                     spec = chrom = c.src

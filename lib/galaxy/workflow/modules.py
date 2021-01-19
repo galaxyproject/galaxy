@@ -215,7 +215,7 @@ class WorkflowModule:
     def get_config_form(self, step=None):
         """ Serializes input parameters of a module into input dictionaries. """
         return {
-            'title' : self.name,
+            'title': self.name,
             'inputs': [param.to_dict(self.trans) for param in self.get_inputs().values()]
         }
 

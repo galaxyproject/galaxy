@@ -518,7 +518,7 @@ class MarkdownFormatHelpers:
 
     @staticmethod
     def literal_via_fence(content):
-        return "\n%s\n" % "\n".join("    %s" % l for l in content.splitlines())
+        return "\n%s\n" % "\n".join(f"    {line}" for line in content.splitlines())
 
     @staticmethod
     def indicate_data_truncated():

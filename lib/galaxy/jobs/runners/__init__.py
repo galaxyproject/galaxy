@@ -350,7 +350,7 @@ class BaseJobRunner:
                                                                            set_extension=True,
                                                                            tmp_dir=job_wrapper.working_directory,
                                                                            # We don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
-                                                                           kwds={'overwrite' : False})
+                                                                           kwds={'overwrite': False})
             external_metadata_script = f"{lib_adjust} {venv} {external_metadata_script}"
             if resolve_requirements:
                 dependency_shell_commands = self.app.datatypes_registry.set_external_metadata_tool.build_dependency_shell_commands(job_directory=job_wrapper.working_directory)

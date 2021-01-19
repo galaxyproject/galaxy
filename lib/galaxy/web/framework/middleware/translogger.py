@@ -50,8 +50,8 @@ class TransLogger:
 
     def __call__(self, environ, start_response):
         start = time.localtime()
-        req_uri = quote(environ.get('SCRIPT_NAME', '') +
-                        environ.get('PATH_INFO', ''))
+        req_uri = quote(environ.get('SCRIPT_NAME', '')
+                        + environ.get('PATH_INFO', ''))
         if environ.get('QUERY_STRING'):
             req_uri += '?' + environ['QUERY_STRING']
         method = environ['REQUEST_METHOD']
