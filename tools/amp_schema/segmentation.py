@@ -13,9 +13,11 @@ class Segmentation:
 		if end is not None and end > self.media.duration:
 			self.media.duration = end
 		return
+
 	def setFilename(self, filename):
 		self.media.filename = filename
 		return
+
 	@classmethod
 	def from_json(cls, json_data: dict):
 		segments = list(map(SegmentationSegment.from_json, json_data["segments"]))
@@ -40,12 +42,30 @@ class SegmentationSegment:
 	gender = None
 	speakerLabel = None
 	def __init__(self, label, gender=None, start=None, end=None, speakerLabel = None):
-		self.label = label
+		print("setting segmentation")
+		self.label = self.formatLabel(label)
 		if gender is not None:
-			self.gender = gender
+			self.gender = self.formatGender(gender)
 		self.start = start
 		self.end = end
 		self.speakerLabel = speakerLabel
+
+	def formatGender(self, value):
+		tmp_value = value.lower()
+		if tmp_value == "male" or tmp_value == "female":
+			return tmp_value.lower()
+		return ""
+
+	def formatLabel(self, value):
+		tmp_value = value.lower()
+		if tmp_value == "male" or tmp_value == "female" or tmp_value == "speech":
+			return "speech"
+		elif tmp_value == "music":
+			return "music"
+		elif tmp_value == "noactivity" or tmp_value == "noenergy":
+			return "silence"
+		return tmp_value
+
 	@classmethod
 	def from_json(cls, json_data: dict):
 		return cls(**json_data)
