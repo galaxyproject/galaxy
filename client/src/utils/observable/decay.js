@@ -1,5 +1,5 @@
 // Stateful delay gets longer with each repeated call
-import { pipe, of } from "rxjs";
+import { of } from "rxjs";
 import { mergeMap, delay } from "rxjs/operators";
 
 // prettier-ignore
@@ -16,13 +16,11 @@ export const decay = (cfg = {}) => {
 
     let counter = 0;
 
-    return pipe(
-        mergeMap(val => {
-            let waitTime = Math.floor(initialInterval * Math.exp(lambda * counter++));
-            waitTime = Math.max(waitTime, initialInterval);
-            waitTime = Math.min(waitTime, maxInterval);
-            // console.log("decay time", waitTime);
-            return of(val).pipe(delay(waitTime))
-        })
-    );
+    return mergeMap(val => {
+        let waitTime = Math.floor(initialInterval * Math.exp(lambda * counter++));
+        waitTime = Math.max(waitTime, initialInterval);
+        waitTime = Math.min(waitTime, maxInterval);
+        // console.log("decay time", waitTime);
+        return of(val).pipe(delay(waitTime))
+    });
 }
