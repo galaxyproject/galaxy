@@ -1,8 +1,14 @@
 """ Tests for the tool data API.
 """
 
+import json
 import operator
+import os
+import time
 
+from requests import delete
+
+from galaxy_test.base.populators import DatasetPopulator
 from ._framework import ApiTestCase
 
 
@@ -81,32 +87,39 @@ class ToolDataApiTestCase(ApiTestCase):
         delete_response = self._delete("tool_data/testbeta", data=payload, admin=True)
         self._assert_status_code_is(delete_response, 400)
 
-    # Following test case rendered invalid by the fix in
-    # https://github.com/galaxyproject/galaxy/commit/48f77dc742acf01ddbafafcc4634e69378f1f020#diff-bfb557a99c1f7d646d4968d8d680b885R154.
-    # TODO: Restore the test case when test framework allows actions from
-    # admin users.
 
-    # def test_delete_entry(self):
-    #     show_response = self._get( "tool_data/testbeta", admin=True )
-    #     original_count = len(show_response.json()["fields"])
+class AdminToolDataApiTestCase(ApiTestCase):
+    require_admin_user = True
 
-    #     dataset_populator = DatasetPopulator( self.galaxy_interactor )
-    #     history_id = dataset_populator.new_history()
-    #     payload = dataset_populator.run_tool_payload(
-    #         tool_id="data_manager",
-    #         inputs={"ignored_value": "moo"},
-    #         history_id=history_id,
-    #     )
-    #     create_response = self._post( "tools", data=payload )
-    #     self._assert_status_code_is( create_response, 200 )
-    #     dataset_populator.wait_for_history( history_id, assert_ok=True )
-    #     show_response = self._get( "tool_data/testbeta", admin=True )
-    #     updated_fields = show_response.json()["fields"]
-    #     assert len(updated_fields) == original_count + 1
-    #     field0 = updated_fields[0]
-    #     url = self._api_url( "tool_data/testbeta?key=%s" % self.galaxy_interactor.master_api_key )
-    #     delete( url, data=json.dumps({"values": "\t".join(field0)}) )
+    def test_delete_entry(self):
+        if "GALAXY_TEST_INCLUDE_API_CONFIG_MOD_TESTS" not in os.environ:
+            # TODO: create an integration test that copies test/functional/tool-data
+            # to a temp directory and points Galaxy at that.
+            self.skipTest("Skipping test that would mutate server config state")
 
-    #     show_response = self._get( "tool_data/testbeta", admin=True )
-    #     updated_fields = show_response.json()["fields"]
-    #     assert len(updated_fields) == original_count
+        show_response = self._get("tool_data/testbeta")
+        original_count = len(show_response.json()["fields"])
+
+        dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        history_id = dataset_populator.new_history()
+        payload = dataset_populator.run_tool_payload(
+            tool_id="data_manager",
+            inputs={"ignored_value": "moo"},
+            history_id=history_id,
+        )
+        create_response = self._post("tools", data=payload)
+        self._assert_status_code_is(create_response, 200)
+        dataset_populator.wait_for_history(history_id, assert_ok=True)
+        time.sleep(2)
+        show_response = self._get("tool_data/testbeta")
+        updated_fields = show_response.json()["fields"]
+        self.assertEquals(len(updated_fields), original_count + 1)
+        field0 = updated_fields[0]
+        url = self._api_url("tool_data/testbeta?key=%s" % self.galaxy_interactor.api_key)
+        delete_response = delete(url, data=json.dumps({"values": "\t".join(field0)}))
+        delete_response.raise_for_status()
+        time.sleep(2)
+        show_response = self._get("tool_data/testbeta")
+        show_response.raise_for_status()
+        updated_fields = show_response.json()["fields"]
+        assert len(updated_fields) == original_count
