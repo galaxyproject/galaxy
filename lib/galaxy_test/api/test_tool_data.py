@@ -67,6 +67,20 @@ class ToolDataApiTestCase(ApiTestCase):
         show_field_response = self._get("tool_data/testalpha/fields/data1/files/unknown.txt", admin=True)
         self._assert_status_code_is(show_field_response, 404)
 
+    def test_delete_without_payload_raises_400(self):
+        delete_response = self._delete("tool_data/testbeta", admin=True)
+        self._assert_status_code_is(delete_response, 400)
+
+    def test_delete_without_values_raises_400(self):
+        payload = {"unknown": "test"}
+        delete_response = self._delete("tool_data/testbeta", data=payload, admin=True)
+        self._assert_status_code_is(delete_response, 400)
+
+    def test_delete_with_wrong_values_raises_400(self):
+        payload = {"values": "wrong"}
+        delete_response = self._delete("tool_data/testbeta", data=payload, admin=True)
+        self._assert_status_code_is(delete_response, 400)
+
     # Following test case rendered invalid by the fix in
     # https://github.com/galaxyproject/galaxy/commit/48f77dc742acf01ddbafafcc4634e69378f1f020#diff-bfb557a99c1f7d646d4968d8d680b885R154.
     # TODO: Restore the test case when test framework allows actions from
