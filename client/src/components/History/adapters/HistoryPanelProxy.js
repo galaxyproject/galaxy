@@ -15,6 +15,7 @@ import Backbone from "backbone";
 import CurrentHistoryView from "mvc/history/history-view-edit-current";
 import { History } from "mvc/history/history-model";
 import "./HistoryPanelProxy.scss";
+import store from "store";
 
 // bypass polling while using the beta panel, skips contents loading
 const FakeHistoryViewModel = CurrentHistoryView.CurrentHistoryView.extend({
@@ -37,6 +38,7 @@ export const HistoryPanelProxy = Backbone.View.extend({
 
         // fake view of the current history
         this.historyView = new FakeHistoryViewModel({
+            fakeHistoryViewModel: true,
             className: `fake ${CurrentHistoryView.CurrentHistoryView.prototype.className} middle`,
             purgeAllowed: this.allow_user_dataset_purge,
             linkTarget: "galaxy_main",
@@ -58,6 +60,14 @@ export const HistoryPanelProxy = Backbone.View.extend({
             Galaxy.user.fetch({
                 url: `${Galaxy.user.urlRoot()}/${Galaxy.user.id || "current"}`,
             });
+        });
+
+        // Watch the store, change the fake history model when it changs
+        store.subscribe(({ type, payload: newId }) => {
+            if (type == "betaHistory/setCurrentHistoryId") {
+                console.log("setCurrentHistoryId", newId);
+                Galaxy.currHistoryPanel.setModel(new History({ id: newId }));
+            }
         });
     },
     render() {
