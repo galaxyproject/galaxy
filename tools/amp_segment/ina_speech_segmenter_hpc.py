@@ -9,7 +9,7 @@ import os
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
 import hpc_submit
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
-from segmentation_schema import Segmentation, SegmentationMedia
+from segmentation import Segmentation, SegmentationMedia
 
 def main():
     """
