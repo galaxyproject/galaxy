@@ -462,7 +462,7 @@ class MulledDockerContainerResolver(CliContainerResolver):
                         namespace=self.namespace,
                         hash_func=self.hash_func,
                         resolution_cache=resolution_cache,
-                    )
+                    ) or container_description
             return container_description
 
     def __str__(self):
