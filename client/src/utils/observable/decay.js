@@ -2,6 +2,8 @@
 import { of } from "rxjs";
 import { mergeMap, delay } from "rxjs/operators";
 
+let decayCounter = 0;
+
 // prettier-ignore
 export const decay = (cfg = {}) => {
     const {
@@ -15,12 +17,13 @@ export const decay = (cfg = {}) => {
     }
 
     let counter = 0;
+    decayCounter++;
 
     return mergeMap(val => {
         let waitTime = Math.floor(initialInterval * Math.exp(lambda * counter++));
         waitTime = Math.max(waitTime, initialInterval);
         waitTime = Math.min(waitTime, maxInterval);
-        // console.log("decay time", waitTime);
+        console.log("decay time", decayCounter, waitTime);
         return of(val).pipe(delay(waitTime))
     });
 }
