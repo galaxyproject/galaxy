@@ -3,6 +3,7 @@
 import json
 import sys
 import os
+import traceback
 
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
 from mgm_logger import MgmLogger
@@ -49,6 +50,7 @@ def main():
     except Exception as e:
         # as the last command in HMGM, exit -1 to let the whole job fail
         print ("Failed to convert from IIIF " + from_iiif + " to NER " + to_ner, e)
+        traceback.print_exc()
         sys.stdout.flush()
         exit(-1)            
 

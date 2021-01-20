@@ -7,6 +7,7 @@ import json
 import shutil
 import subprocess
 import sys
+import traceback
 import tempfile
 import uuid
 import time
@@ -213,21 +214,22 @@ def read_comprehend_response(reponse_filename):
 def safe_delete(filename):
     try:
         if os.path.exists(filename):
-            print("removing: " + filename)
             os.remove(filename)
+            print("Deleted file " + filename)
     except Exception as e:
-        print(e)
+        print("Failed to delete file " + filename, e)
+        traceback.print_exc()
         return False
     return True
 
 def copy_to_s3(input_file, bucket, jobname):
     s3_client = boto3.client('s3')
     try:
-        print('before response')
         response = s3_client.upload_file(input_file, bucket, jobname)
-        print('after response')
+        print("Uploaded file " + input_file + " to S3 bucket " + bucket + " for job " + jobname)
     except Exception as e:
-        print(e)
+        print("Failed to upload file " + input_file + " to S3 bucket " + bucket + " for job " + jobname, e)
+        traceback.print_exc()
         return False
     return True
 

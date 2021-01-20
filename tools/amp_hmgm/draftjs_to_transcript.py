@@ -5,6 +5,7 @@ import difflib
 
 import json
 import sys
+import traceback
 import os
 from os import path
 
@@ -45,6 +46,7 @@ def main():
         word_type = text = ''
         confidence = start_time = end_time = -1
         duration = 0.0
+        
         #Standardising draft js format
         if "entityMap" in data.keys():
             transcript = ''
@@ -94,9 +96,7 @@ def main():
             
             d = difflib.Differ()
             res = list(d.compare(list_items, list_result))
-            print(len(res[0]))
-            print(res)
-            i = j= 0
+            i = j = 0
             word_count = len(words)
             original_item_count = len(original_items)
             print("original item count: " + str(original_item_count))
@@ -110,7 +110,10 @@ def main():
                     words[j].score.scoreValue = 1.0
                     j += 1
                 elif ele[0:1] == " " and words[j].text == original_items[i]["text"]:
-                    words[j].score.scoreValue = float(original_items[i]["score"]["scoreValue"])
+                    if ("score" in original_items[i]):
+                        words[j].score.scoreValue = float(original_items[i]["score"]["scoreValue"])
+                    else:
+                        words[j].score.scoreValue = 1.0 # default score to 1.0 if not existing originally    
                     i += 1
                     j += 1
                 print("i: " + str(i) + " j:" + str(j))
@@ -187,6 +190,7 @@ def main():
     except Exception as e:
         # as the last command in HMGM, exit -1 to let the whole job fail
         print ("Failed to convert from DraftJs " + from_draftjs + " to Transcript " + to_transcript, e)
+        traceback.print_exc()
         sys.stdout.flush()
         exit(-1)            
 
@@ -196,8 +200,6 @@ def write_output_json(input_json, json_file):
 	with open(json_file, 'w') as outfile:
 		json.dump(input_json, outfile, default=lambda x: x.__dict__)
 
-# Retrieve the confidence values from the original file into the standardised output
-#def retrieve_confidence_scores()
 
 if __name__ == "__main__":
 	main()

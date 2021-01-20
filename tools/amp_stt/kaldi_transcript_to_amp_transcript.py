@@ -13,15 +13,16 @@ from speech_to_text import SpeechToText, SpeechToTextMedia, SpeechToTextResult, 
 # Convert kaldi output to standardized json
 def convert(media_file, kaldi_file, kaldi_transcript_file, output_json_file):
 	mgm_utils.exception_if_file_not_exist(kaldi_file)
-	mgm_utils.exception_if_file_not_exist(kaldi_transcript_file)
+	if not os.path.exists(kaldi_transcript_file):
+		raise Exception("Exception: File " + kaldi_transcript_file + " doesn't exist, the previous command generating it must have failed.")
 	results = SpeechToTextResult()
 
 	# Open the kaldi json
 	with open(kaldi_file) as json_file:
 		data = json.load(json_file)
 
-	transcript = open(kaldi_transcript_file, "r")
-	
+	# Get the kaldi transcript
+	transcript = open(kaldi_transcript_file, "r")	
 	results.transcript = transcript.read()
 
 	# Get a list of words

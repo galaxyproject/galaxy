@@ -91,30 +91,31 @@ def getFrameIndex(start_time, fps):
 def createFrameDictionary(video_json, frameRate):
 	frame_dict={}
 	for v in video_json:
-		for ocr in v['insights']['ocr']:
-			for i in ocr['instances']:
-				# Get where this term starts and end in terms of frame number
-				frameIndexStart = getFrameIndex(i['start'], frameRate)
-				frameIndexEnd = getFrameIndex(i['end'], frameRate)
-				# Create a temp obj to store the results
-				newOcr = {
-					"text" : ocr["text"],
-					"language" : ocr["language"],
-					"confidence" : ocr["confidence"],
-					"left" : ocr["left"],
-					"top" : ocr["top"],
-					"width" : ocr["width"],
-					"height" : ocr["height"]
-				}
-				# From the first frame to the last, add the objects info
-				for frameIndex in range(frameIndexStart, frameIndexEnd + 1):
-					# If it already exists, append it.  Otherwise create new list
-					if frameIndex in frame_dict.keys():
-						thisFrame = frame_dict[frameIndex]
-						thisFrame.append(newOcr)
-						frame_dict[frameIndex] = thisFrame
-					else:
-						frame_dict[frameIndex] = [newOcr]
+		if 'insights' in v and 'ocr' in v['insights']:
+			for ocr in v['insights']['ocr']:
+				for i in ocr['instances']:
+					# Get where this term starts and end in terms of frame number
+					frameIndexStart = getFrameIndex(i['start'], frameRate)
+					frameIndexEnd = getFrameIndex(i['end'], frameRate)
+					# Create a temp obj to store the results
+					newOcr = {
+						"text" : ocr["text"],
+						"language" : ocr["language"],
+						"confidence" : ocr["confidence"],
+						"left" : ocr["left"],
+						"top" : ocr["top"],
+						"width" : ocr["width"],
+						"height" : ocr["height"]
+					}
+					# From the first frame to the last, add the objects info
+					for frameIndex in range(frameIndexStart, frameIndexEnd + 1):
+						# If it already exists, append it.  Otherwise create new list
+						if frameIndex in frame_dict.keys():
+							thisFrame = frame_dict[frameIndex]
+							thisFrame.append(newOcr)
+							frame_dict[frameIndex] = thisFrame
+						else:
+							frame_dict[frameIndex] = [newOcr]
 	return frame_dict
 
 # Convert the dictionary into AMP objects we need

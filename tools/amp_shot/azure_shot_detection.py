@@ -42,13 +42,13 @@ def create_amp_shots(input_video, azure_index_json):
 	
 	# in our case, there should be only one video in videos, but let's loop through the list just in case
 	for video in azure_index_json['videos']:
-		# Currently we don't use Azure scenes, only shots
-# 	 	# Add shots from Azure scenes 
-# 	 	addShots(amp_shots.shots, video['insights']['scenes'], 'scene')
-		
-		# Add shots from Azure shots 
-		addShots(amp_shots.shots, video['insights']['shots'], 'shot')	
-
+		if 'insights' in video and 'shots' in video['insights']:
+			# Add shots from Azure shots 
+			addShots(amp_shots.shots, video['insights']['shots'], 'shot')	
+			# Currently we don't use Azure scenes, only shots
+# 	 	 	# Add shots from Azure scenes 
+# 	 	 	addShots(amp_shots.shots, video['insights']['scenes'], 'scene')
+			
 	return amp_shots
 
 

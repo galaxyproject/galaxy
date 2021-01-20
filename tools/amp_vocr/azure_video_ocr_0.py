@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import configparser
 import sys
+import traceback
 import requests
 import logging
 import time
@@ -286,7 +287,8 @@ def upload_to_s3(input_file, bucket):
 		response = s3_client.upload_file(input_file, bucket, jobname, ExtraArgs={'ACL': 'public-read'})
 		print(response)
 	except Exception as e:
-		print(e)
+		print("Failed to upload file " + input_file + " to s3 bucket " + bucket, e)
+		traceback.print_exc()
 		return None
 	return jobname
 
@@ -296,7 +298,8 @@ def delete_from_s3(s3_path, bucket):
 		obj = s3_client.Object(bucket, s3_path)
 		obj.delete()
 	except Exception as e:
-		print(e)
+		print("Failed to delete file " + s3_path + " from s3 bucket " + bucket, e)
+		traceback.print_exc()
 
 def read_config(root_dir):
 	config = configparser.ConfigParser()

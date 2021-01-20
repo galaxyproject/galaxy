@@ -5,7 +5,7 @@ import os
 from os import path
 import sys
 import logging
-
+import traceback
 
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
 from mgm_logger import MgmLogger
@@ -13,7 +13,7 @@ import mgm_utils
 
 segments = list()
 
-# Converts AMP speech to text json to Draft JS which is used by the transcript editor.
+# Converts AMP Transcript json to Draft JS which is used by the transcript editor.
 def main():
 
 	(root_dir, from_transcript, diarization_json, to_draftjs) = sys.argv[1:5]
@@ -170,6 +170,7 @@ def main():
 		# empty out to_draftjs to tell the following HMGM task command to fail
 		mgm_utils.empty_file(to_draftjs)
 		print ("Error: Failed to convert from Transcript " + from_transcript + " to DraftJs: " + to_draftjs, e)
+		traceback.print_exc()
 		sys.stdout.flush()
 		exit(-1)
 

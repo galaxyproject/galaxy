@@ -4,6 +4,7 @@ import os.path
 from random import seed
 from random import random
 import sys
+import traceback
 
 # Example implementation of a HMGM task
 # The task runner looks for specific exit codes in determining whether or not to terminate(0), requeue(1), or fail (-1)
@@ -32,6 +33,8 @@ def main():
                 # Exit - Tell process to re-queue
                 exit(1)        
     except Exception as e:
+        print ("Failed to handle HMGM-Sample task", e)
+        traceback.print_exc()
         exit(-1)
 
 # Method stub to check and see if a task is complete.
