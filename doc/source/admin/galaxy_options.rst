@@ -1049,6 +1049,21 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_tool_document_cache``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set this to false to disable the tool document cache. This cache
+    stores expanded xml strings. Disabling the tool cache results in
+    slower startup times. The tool cache is backed by sqlite database,
+    which cannot be stored on certain network disks. The cache
+    location is configurable using the ``tool_cache_data_dir``
+    setting, but can be disabled completely here.
+:Default: ``true``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~
 ``tool_cache_data_dir``
 ~~~~~~~~~~~~~~~~~~~~~~~

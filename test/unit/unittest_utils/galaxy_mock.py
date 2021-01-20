@@ -170,6 +170,7 @@ class MockAppConfig(Bunch):
 
         # set by MockDir
         self.root = root
+        self.enable_tool_document_cache = False
         self.tool_cache_data_dir = os.path.join(root, 'tool_cache')
         self.delay_tool_initialization = True
         self.external_chown_script = None
