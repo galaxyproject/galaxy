@@ -137,6 +137,19 @@ def _tool_conf_to_dict(conf):
     )
 
 
+def _get_tool_lineages(app):
+    rval = []
+    for id, tool in app.toolbox.tools():
+        try:
+            lineage_dict = tool.lineage.to_dict()
+        except AttributeError:
+            pass
+        else:
+            entry = {'id': id, 'lineage': lineage_dict}
+            rval.append(entry)
+    return rval
+
+
 @cbv(router)
 class FastAPIConfiguration:
 
@@ -165,14 +178,13 @@ class FastAPIConfiguration:
         return _get_dynamic_tool_confs(app)
 
     @router.get('/api/configuration/decode/{encoded_id}', dependencies=[Depends(get_admin_user)])
-    def decode_id(
-        self,
-        trans: ProvidesAppContext = Depends(get_trans),
-        *,
-        encoded_id: str
-    ) -> Dict[str, int]:
+    def decode_id(self, trans: ProvidesAppContext = Depends(get_trans), *, encoded_id: str) -> Dict[str, int]:
         """Decode a given id."""
         return _decode_id(trans, encoded_id)
+
+    @router.get('/api/configuration/tool_lineages', dependencies=[Depends(get_admin_user)])
+    def tool_lineages(self, app: StructuredApp = Depends(get_app)):
+        return _get_tool_lineages(app)
 
 
 class ConfigurationController(BaseAPIController):
@@ -225,19 +237,7 @@ class ConfigurationController(BaseAPIController):
     @require_admin
     @expose_api
     def tool_lineages(self, trans):
-        rval = []
-        for id, tool in self.app.toolbox.tools():
-            if hasattr(tool, 'lineage'):
-                lineage_dict = tool.lineage.to_dict()
-            else:
-                lineage_dict = None
-
-            entry = dict(
-                id=id,
-                lineage=lineage_dict
-            )
-            rval.append(entry)
-        return rval
+        return _get_tool_lineages(self.app)
 
     @require_admin
     @expose_api
