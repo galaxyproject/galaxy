@@ -145,7 +145,6 @@ class LibraryContentsTestCase(SeleniumTestCase):
         assert table_as_dict["Name"] == "1.txt", table_as_dict
         assert table_as_dict["Genome build"] == "?", table_as_dict
 
-
     @selenium_test
     def test_import_dataset_from_import_dir(self):
         self._navigate_to_new_library()

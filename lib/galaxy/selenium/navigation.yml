@@ -573,7 +573,6 @@ libraries:
       from_path: 'from Path'
       from_import_dir: 'from Import Directory'
 
-
   dataset:
     selectors:
       table: '.dataset_table'
