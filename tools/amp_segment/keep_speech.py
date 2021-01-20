@@ -19,13 +19,16 @@ buffer = 1
 def main():
 	(input_file, input_segmentation_json, remove_type, output_file, kept_segments_file) = sys.argv[1:6]
 
+	print("Reading segmentation file")
 	# Turn segmentation json file into segmentation object
 	with open(input_segmentation_json, 'r') as file:
 		seg_data = Segmentation().from_json(json.load(file))
 	
+	print("Removing silence to get a list of kept segments")
 	# Remove silence and get a list of kept segments
 	kept_segments = remove_silence(remove_type, seg_data, input_file, output_file)
 
+	print("Writing  output json file")
 	# Write kept segments to json file
 	write_kept_segments_json(kept_segments, kept_segments_file)
 	exit(0)
@@ -39,7 +42,6 @@ def remove_silence(remove_type, seg_data, filename, output_file):
 
 	# For each segment, calculate the blocks of speech segments
 	for s in seg_data.segments:
-
 		if should_remove_segment(remove_type, s, start_block) == True:
 			# If we have catalogued speech, create a segment from that chunk
 			if previous_end > 0 and start_block >= 0:
@@ -49,7 +51,7 @@ def remove_silence(remove_type, seg_data, filename, output_file):
 				start_block = -1
 				previous_end = 0
 				segments += 1
-		elif s.label not in ["silence", remove_type]:
+		elif s.label not in ["silence", "noise", remove_type]:
 			# If this is a new block, mark the start
 			if start_block < 0:
 				start_block = s.start
@@ -60,9 +62,10 @@ def remove_silence(remove_type, seg_data, filename, output_file):
 		kept_segment = create_audio_part(filename, start_block, previous_end, segments, seg_data.media.duration)
 		kept_segments.update(kept_segment)
 
+	print("Concatenating files")
 	# Concetenate each of the individual parts into one audio file of speech
 	concat_files(segments, output_file)
-
+	
 	return kept_segments
 
 def create_empty_file(output_file):
@@ -167,7 +170,7 @@ def cleanup_files(segments):
 			os.remove(this_segment_name)
 
 def should_remove_segment(remove_type, segment, start_block):
-	if (segment.label == "silence" or segment.label == remove_type):
+	if (segment.label == "silence" or segment.label == "noise" or segment.label == remove_type) and segment.end - segment.start > 60:
 		duration = segment.end - segment.start
 		# If it is the middle of the file, account for buffers on both the start and end of the file
 		if start_block > 0 and duration > (buffer*2):
