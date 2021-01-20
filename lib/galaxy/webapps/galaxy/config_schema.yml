@@ -765,6 +765,17 @@ mapping:
           should be disabled. Containerized jobs always use /bin/sh - so more maximum
           portability tool authors should assume generated commands run in sh.
 
+      enable_tool_document_cache:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          Set this to false to disable the tool document cache. This cache stores
+          expanded xml strings. Disabling the tool cache results in slower startup
+          times. The tool cache is backed by sqlite database, which cannot
+          be stored on certain network disks. The cache location is configurable
+          using the ``tool_cache_data_dir`` setting, but can be disabled completely here.
+
       tool_cache_data_dir:
         type: str
         default: tool_cache
