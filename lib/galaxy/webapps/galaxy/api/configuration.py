@@ -19,7 +19,10 @@ from galaxy.managers.configuration import (
     AdminConfigSerializer,
     ConfigSerializer
 )
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesAppContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.users import (
     UserManager,
     UserModel
@@ -33,6 +36,7 @@ from galaxy.web import (
 )
 from galaxy.webapps.base.controller import BaseAPIController
 from . import (
+    get_admin_user,
     get_app,
     get_trans,
     get_user,
@@ -73,6 +77,12 @@ def user_to_model(user):
     return UserModel(**user.to_dict()) if user else None
 
 
+def get_configuration(trans, view, keys, default_view='all'):
+    is_admin = trans.user_is_admin
+    serialization_params = parse_serialization_params(view, keys, default_view)
+    return get_config_dict(trans.app, is_admin, **serialization_params)
+
+
 def get_config_dict(app, is_admin=False, view=None, keys=None, default_view='all'):
     """
     Return a dictionary with a subset of current Galaxy settings.
@@ -103,6 +113,14 @@ def get_version(app):
     return version_info
 
 
+def decode_id(trans, encoded_id):
+    # Handle the special case for library folders
+    if ((len(encoded_id) % 16 == 1) and encoded_id.startswith('F')):
+        encoded_id = encoded_id[1:]
+    decoded_id = trans.security.decode_id(encoded_id)
+    return {"decoded_id": decoded_id}
+
+
 @cbv(router)
 class FastAPIConfiguration:
 
@@ -119,22 +137,25 @@ class FastAPIConfiguration:
             keys: Optional[str] = SerializationKeysQueryParam,
     ) -> Dict[str, Any]:
         """Return an object containing exposable configuration settings."""
-        is_admin = trans.user_is_admin
-        serialization_params = parse_serialization_params(view, keys, 'all')
-        return get_config_dict(trans.app, is_admin, **serialization_params)
+        return get_configuration(trans, view, keys)
 
     @router.get('/api/version')
     def version(self, app: StructuredApp = Depends(get_app)) -> Dict[str, Any]:
         """Return Galaxy version information: major/minor version, optional extra info."""
         return get_version(app)
 
+    @router.get('/api/configuration/decode/{encoded_id}', dependencies=[Depends(get_admin_user)])
+    def decode_id(
+        self,
+        trans: ProvidesAppContext = Depends(get_trans),
+        *,
+        encoded_id: str
+    ) -> Dict[str, int]:
+        """Decode a given id."""
+        return decode_id(trans, encoded_id)
+
 
 class ConfigurationController(BaseAPIController):
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.app = app
-        self.user_manager = UserManager(app)
 
     @expose_api
     def whoami(self, trans, **kwd):
@@ -145,7 +166,7 @@ class ConfigurationController(BaseAPIController):
         :returns: dictionary with user information
         :rtype:   dict
         """
-        user = self.user_manager.current_user(trans)
+        user = UserManager(self.app).current_user(trans)
         return user_to_model(user)
 
     @expose_api_anonymous_and_sessionless
@@ -157,9 +178,7 @@ class ConfigurationController(BaseAPIController):
         Note: a more complete list is returned if the user is an admin.
         """
         view, keys = kwd.get('view'), kwd.get('keys')
-        is_admin = trans.user_is_admin
-        serialization_params = parse_serialization_params(view, keys, 'all')
-        return get_config_dict(self.app, is_admin, **serialization_params)
+        return get_configuration(trans, view, keys)
 
     @expose_api_anonymous_and_sessionless
     def version(self, trans, **kwds):
@@ -185,13 +204,7 @@ class ConfigurationController(BaseAPIController):
     @expose_api
     def decode_id(self, trans, encoded_id, **kwds):
         """Decode a given id."""
-        decoded_id = None
-        # Handle the special case for library folders
-        if ((len(encoded_id) % 16 == 1) and encoded_id.startswith('F')):
-            decoded_id = trans.security.decode_id(encoded_id[1:])
-        else:
-            decoded_id = trans.security.decode_id(encoded_id)
-        return {"decoded_id": decoded_id}
+        return decode_id(trans, encoded_id)
 
     @require_admin
     @expose_api
