@@ -18,22 +18,37 @@
                 </b-dropdown-item>
             </b-dropdown>
         </PriorityMenuItem>
-        <PriorityMenuItem>
-            <b-dropdown no-caret right variant="link" size="sm" boundary="window" toggle-class="p-1">
-                <template v-slot:button-content>
-                    <i class="fa fa-pencil" />
-                    <span class="sr-only">Edit Collection</span>
-                </template>
-
-                <b-dropdown-item @click.stop="$emit('deleteCollection', { recursive: true })">
-                    Edit Database/Build
-                </b-dropdown-item>
-
-                <b-dropdown-item @click.stop="$emit('deleteCollection', { recursive: true })">
-                    Convert Datatype 
-                </b-dropdown-item>
-
-            </b-dropdown>
-        </PriorityMenuItem>
+        <PriorityMenuItem
+            v-if="notIn(STATES.DISCARDED)"
+            key="edit-collection"
+            :title="editButtonTitle"
+            :disabled="collection.deleted || isIn(STATES.UPLOAD, STATES.NEW)"
+            @click.stop="CollectionEditView"
+            icon="fa fa-pencil"
+        />
     </PriorityMenu>
 </template>
+
+<script>
+import CollectionEditView from "src/mvc/collection/CollectionEditView";
+export default {
+    components: {
+        CollectionEditView,
+    },
+    computed: {
+        editButtonTitle() {
+            if (this.collection.deleted) {
+                return "Undelete collection to edit attributes";
+            }
+            if (this.collection.purged) {
+                return "Cannot edit attributes of collections removed from disk";
+            }
+            const unreadyStates = new Set([this.STATES.UPLOAD, this.STATES.NEW]);
+            if (unreadyStates.has(this.dataset.state)) {
+                return "This collection is not yet editable";
+            }
+            return "Edit attributes";
+        },
+    },
+};
+</script>
