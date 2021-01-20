@@ -49,3 +49,10 @@ class ConfigurationApiTestCase(ApiTestCase):
         self._assert_status_code_is(response, 200)
         configuration = response.json()
         return configuration
+
+    def test_version(self):
+        response = self._get("version")
+        self._assert_status_code_is(response, 200)
+        data = response.json()
+        assert 'version_major' in data
+        assert 'version_minor' in data
