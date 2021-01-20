@@ -38,18 +38,22 @@ def main():
             'segments': args.segments
         }
     }
-
+    print("Submitting job to HPC")
     job = hpc_submit.submit_and_wait(args.dropbox, job)
 
+    print("Checking job status: " + job['job']['status'])
     if job['job']['status'] != 'ok':
         exit(1)
 
+    print("Reading TSV into list of tuples")
     with open(args.segments, 'r') as csvin:
         data=[tuple(line) for line in csv.reader(csvin, delimiter='\t')]
 
+    print("Converting ina output  to segmentation schema")
      # Convert the resulting list of tuples to an object for serialization
     seg_schema = convert_to_segmentation_schema(args.input, data)
 
+    print("Writing output json")
     # Serialize the json and write it to destination file
     write_output_json(seg_schema, args.amp_segments)
 
