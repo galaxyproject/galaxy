@@ -79,7 +79,7 @@ for populating test fixtures (with populators) or by extra testing helpers (e.g.
 
     ::
 
-        $ . venv/bin/activate
+        $ . venv/bin/activate  # first two commands only needed first time
         $ pip install papermill
         $ papermill galaxy_test/selenium/jupyter/notebook_example_library.ipynb  galaxy_test/selenium/jupyter/notebook_example_library_output.ipynb -y "
         config: {local_galaxy_url: 'http://localhost:8081/'}
@@ -112,10 +112,13 @@ suitable for your local test environment.
     $ cp lib/galaxy_test/selenium/jupyter/galaxy_selenium.yml.sample lib/galaxy_test/selenium/jupyter/galaxy_selenium.yml
     $ vi lib/galaxy_test/selenium/jupyter/galaxy_selenium.yml
 
-Start Jupyter for interactive development.
+Start Jupyter for interactive development. This requires Jupyter to be
+available in Galaxy's virtual environment.
 
 ::
 
+    $ . venv/bin/activate  # first two commands only needed first time
+    $ pip install jupyter
     $ make serve-selenium-notebooks
 
 Filling out Tests
