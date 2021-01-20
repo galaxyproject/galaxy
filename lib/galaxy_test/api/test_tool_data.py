@@ -108,15 +108,15 @@ class AdminToolDataApiTestCase(ApiTestCase):
             history_id=history_id,
         )
         create_response = self._post("tools", data=payload)
-        self._assert_status_code_is(create_response, 200)
+        create_response.raise_for_status()
         dataset_populator.wait_for_history(history_id, assert_ok=True)
         time.sleep(2)
         show_response = self._get("tool_data/testbeta")
         updated_fields = show_response.json()["fields"]
         self.assertEquals(len(updated_fields), original_count + 1)
-        field0 = updated_fields[0]
-        url = self._api_url("tool_data/testbeta?key=%s" % self.galaxy_interactor.api_key)
-        delete_response = delete(url, data=json.dumps({"values": "\t".join(field0)}))
+        new_field = updated_fields[-1]
+        url = self._api_url(f"tool_data/testbeta?key={self.galaxy_interactor.api_key}")
+        delete_response = delete(url, data=json.dumps({"values": "\t".join(new_field)}))
         delete_response.raise_for_status()
         time.sleep(2)
         show_response = self._get("tool_data/testbeta")
