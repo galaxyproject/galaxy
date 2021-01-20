@@ -22,6 +22,10 @@ api_tags_metadata = [
         "description": "Operations with [SPDX licenses](https://spdx.org/licenses/).",
     },
     {
+        "name": "tool data tables",
+        "description": "Operations with tool [Data Tables](https://galaxyproject.org/admin/tools/data-tables/).",
+    },
+    {
         "name": "tours",
         "description": "Operations with interactive tours.",
     },
