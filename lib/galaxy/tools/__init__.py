@@ -305,13 +305,14 @@ class ToolBox(BaseGalaxyToolBox):
         return self._tools_by_id
 
     def get_cache_region(self, tool_cache_data_dir):
-        if tool_cache_data_dir not in self.cache_regions:
-            self.cache_regions[tool_cache_data_dir] = ToolDocumentCache(cache_dir=tool_cache_data_dir)
-        return self.cache_regions[tool_cache_data_dir]
+        if self.app.config.enable_tool_document_cache:
+            if tool_cache_data_dir not in self.cache_regions:
+                self.cache_regions[tool_cache_data_dir] = ToolDocumentCache(cache_dir=tool_cache_data_dir)
+            return self.cache_regions[tool_cache_data_dir]
 
     def create_tool(self, config_file, tool_cache_data_dir=None, **kwds):
         cache = self.get_cache_region(tool_cache_data_dir or self.app.config.tool_cache_data_dir)
-        if config_file.endswith('.xml') and not cache.disabled:
+        if config_file.endswith('.xml') and cache and not cache.disabled:
             tool_document = cache.get(config_file)
             if tool_document:
                 tool_source = self.get_expanded_tool_source(
