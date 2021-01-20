@@ -411,6 +411,7 @@ var AddDatasets = Backbone.View.extend({
                 if (typeof response.responseJSON !== "undefined") {
                     if (response.responseJSON.err_code === 404001) {
                         Toast.warning(response.responseJSON.err_msg);
+                        getGalaxyInstance().modal.hide();
                     } else {
                         Toast.error(response.responseJSON.err_msg);
                     }

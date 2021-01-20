@@ -109,6 +109,7 @@ class ConfigSerializer(base.ModelSerializer):
             'select_type_workflow_threshold'    : _use_config,
             'file_sources_configured'           : lambda config, key, **context: self.app.file_sources.custom_sources_configured,
             'upload_from_form_button'           : _use_config,
+            'user_library_import_dir_available' : lambda config, key, **context: bool(config.get('user_library_import_dir')),
         }
 
 
