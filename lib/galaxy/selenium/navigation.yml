@@ -563,10 +563,16 @@ libraries:
       download_button: '#download-btn'
       delete_btn: '.toolbtn-bulk-delete'
       toast_msg: '.toast-message'
+      select_import_dir_item: 'li[full_path="${name}"] .jstree-anchor'
+      import_dir_btn:
+        type: xpath
+        selector: '//button[contains(text(), "Import")]'
 
     labels:
       from_history: 'from History'
       from_path: 'from Path'
+      from_import_dir: 'from Import Directory'
+
 
   dataset:
     selectors:
