@@ -7,6 +7,7 @@ import subprocess
 
 
 from galaxy.util import (
+    safe_makedirs,
     string_as_bool,
     unicodify,
     which,
@@ -343,13 +344,24 @@ class CliContainerResolver(ContainerResolver):
         self._cli_available = value
 
 
+class SingularityCliContainerResolver(CliContainerResolver):
+
+    container_type = 'singularity'
+    cli = 'singularity'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.cache_directory = kwargs.get("cache_directory", os.path.join(kwargs['app_info'].container_image_cache_path, "singularity", "mulled"))
+        safe_makedirs(self.cache_directory)
+
+
 class CachedMulledDockerContainerResolver(CliContainerResolver):
 
     resolver_type = "cached_mulled"
     shell = '/bin/bash'
 
     def __init__(self, app_info=None, namespace="biocontainers", hash_func="v2", **kwds):
-        super().__init__(app_info)
+        super().__init__(app_info=app_info, **kwds)
         self.namespace = namespace
         self.hash_func = hash_func
 
@@ -365,16 +377,13 @@ class CachedMulledDockerContainerResolver(CliContainerResolver):
         return "CachedMulledDockerContainerResolver[namespace=%s]" % self.namespace
 
 
-class CachedMulledSingularityContainerResolver(CliContainerResolver):
+class CachedMulledSingularityContainerResolver(SingularityCliContainerResolver):
 
     resolver_type = "cached_mulled_singularity"
-    cli = "singularity"
-    container_type = "singularity"
     shell = '/bin/bash'
 
     def __init__(self, app_info=None, hash_func="v2", **kwds):
-        super().__init__(app_info)
-        self.cache_directory = kwds.get("cache_directory", os.path.join(app_info.container_image_cache_path, "singularity", "mulled"))
+        super().__init__(app_info=app_info, **kwds)
         self.hash_func = hash_func
 
     def resolve(self, enabled_container_types, tool_info, **kwds):
@@ -396,7 +405,7 @@ class MulledDockerContainerResolver(CliContainerResolver):
     protocol = None
 
     def __init__(self, app_info=None, namespace="biocontainers", hash_func="v2", auto_install=True, **kwds):
-        super().__init__(app_info)
+        super().__init__(app_info=app_info, **kwds)
         self.namespace = namespace
         self.hash_func = hash_func
         self.auto_install = string_as_bool(auto_install)
@@ -469,16 +478,13 @@ class MulledDockerContainerResolver(CliContainerResolver):
         return "MulledDockerContainerResolver[namespace=%s]" % self.namespace
 
 
-class MulledSingularityContainerResolver(MulledDockerContainerResolver):
+class MulledSingularityContainerResolver(SingularityCliContainerResolver, MulledDockerContainerResolver):
 
     resolver_type = "mulled_singularity"
-    container_type = "singularity"
-    cli = "singularity"
     protocol = 'docker://'
 
     def __init__(self, app_info=None, namespace="biocontainers", hash_func="v2", auto_install=True, **kwds):
-        super().__init__(app_info)
-        self.cache_directory = kwds.get("cache_directory", os.path.join(app_info.container_image_cache_path, "singularity", "mulled"))
+        super().__init__(app_info=app_info, **kwds)
         self.namespace = namespace
         self.hash_func = hash_func
         self.auto_install = string_as_bool(auto_install)
@@ -510,7 +516,7 @@ class BuildMulledDockerContainerResolver(CliContainerResolver):
     builds_on_resolution = True
 
     def __init__(self, app_info=None, namespace="local", hash_func="v2", auto_install=True, **kwds):
-        super().__init__(app_info)
+        super().__init__(app_info=app_info, **kwds)
         self._involucro_context_kwds = {
             'involucro_bin': self._get_config_option("involucro_path", None)
         }
@@ -549,20 +555,18 @@ class BuildMulledDockerContainerResolver(CliContainerResolver):
         return "BuildDockerContainerResolver[namespace=%s]" % self.namespace
 
 
-class BuildMulledSingularityContainerResolver(ContainerResolver):
+class BuildMulledSingularityContainerResolver(SingularityCliContainerResolver):
     """Build for Singularity mulled images matching tool dependencies."""
 
     resolver_type = "build_mulled_singularity"
-    container_type = "singularity"
     shell = '/bin/bash'
     builds_on_resolution = True
 
     def __init__(self, app_info=None, hash_func="v2", auto_install=True, **kwds):
-        super().__init__(app_info)
+        super().__init__(app_info=app_info, **kwds)
         self._involucro_context_kwds = {
             'involucro_bin': self._get_config_option("involucro_path", None)
         }
-        self.cache_directory = kwds.get("cache_directory", os.path.join(app_info.container_image_cache_path, "singularity", "mulled"))
         self.hash_func = hash_func
         self.auto_install = string_as_bool(auto_install)
         self._mulled_kwds = {
