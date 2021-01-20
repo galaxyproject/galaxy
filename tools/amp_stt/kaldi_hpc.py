@@ -25,7 +25,7 @@ def main():
     logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO,
                         stream=sys.stderr,
                         format="%(asctime)s %(levelname)s %(message)s")
-
+    print("Preparing kaldi HPC job")
     # job parameters    
     job = {
         'script': 'kaldi',
@@ -38,11 +38,14 @@ def main():
             'amp_json': args.amp_transcript_json
         }
     }
-
+    print("Submitting HPC job")
     job = hpc_submit.submit_and_wait(args.dropbox, job)
+
+    print("HPC job completed with status: " + job['job']['status'])
     if job['job']['status'] != 'ok':
         exit(1)
-    
+        
+    print("Convering output to AMP Transcript JSON")
     kaldi_transcript_to_amp_transcript.convert(args.input, args.kaldi_transcript_json, args.kaldi_transcript_txt, args.amp_transcript_json)
     
     exit(0)
