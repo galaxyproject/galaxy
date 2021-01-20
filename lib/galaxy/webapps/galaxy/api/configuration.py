@@ -8,6 +8,7 @@ import os
 from typing import (
     Any,
     Dict,
+    List,
     Optional
 )
 
@@ -77,7 +78,7 @@ def user_to_model(user):
     return UserModel(**user.to_dict()) if user else None
 
 
-def get_configuration(trans, view, keys, default_view='all'):
+def _get_configuration(trans, view, keys, default_view='all'):
     is_admin = trans.user_is_admin
     serialization_params = parse_serialization_params(view, keys, default_view)
     return get_config_dict(trans.app, is_admin, **serialization_params)
@@ -95,7 +96,7 @@ def get_config_dict(app, is_admin=False, view=None, keys=None, default_view='all
     return serializer.serialize_to_view(app.config, view=view, keys=keys, default_view=default_view)
 
 
-def get_version(app):
+def _get_version(app):
     version_info = {
         "version_major": app.config.version_major,
         "version_minor": app.config.version_minor,
@@ -113,12 +114,27 @@ def get_version(app):
     return version_info
 
 
-def decode_id(trans, encoded_id):
+def _decode_id(trans, encoded_id):
     # Handle the special case for library folders
     if ((len(encoded_id) % 16 == 1) and encoded_id.startswith('F')):
         encoded_id = encoded_id[1:]
     decoded_id = trans.security.decode_id(encoded_id)
     return {"decoded_id": decoded_id}
+
+
+def _get_dynamic_tool_confs(app):
+    # WARNING: If this method is ever changed so as not to require admin privileges, update the nginx proxy
+    # documentation, since this path is used as an authentication-by-proxy method for securing other paths on the
+    # server. A dedicated endpoint should probably be added to do that instead.
+    confs = app.toolbox.dynamic_confs(include_migrated_tool_conf=True)
+    return list(map(_tool_conf_to_dict, confs))
+
+
+def _tool_conf_to_dict(conf):
+    return dict(
+        config_filename=conf['config_filename'],
+        tool_path=conf['tool_path'],
+    )
 
 
 @cbv(router)
@@ -137,12 +153,16 @@ class FastAPIConfiguration:
             keys: Optional[str] = SerializationKeysQueryParam,
     ) -> Dict[str, Any]:
         """Return an object containing exposable configuration settings."""
-        return get_configuration(trans, view, keys)
+        return _get_configuration(trans, view, keys)
 
     @router.get('/api/version')
     def version(self, app: StructuredApp = Depends(get_app)) -> Dict[str, Any]:
         """Return Galaxy version information: major/minor version, optional extra info."""
-        return get_version(app)
+        return _get_version(app)
+
+    @router.get('/api/configuration/dynamic_tool_confs', dependencies=[Depends(get_admin_user)])
+    def dynamic_tool_confs(self, app: StructuredApp = Depends(get_app)) -> List[Dict[str, str]]:
+        return _get_dynamic_tool_confs(app)
 
     @router.get('/api/configuration/decode/{encoded_id}', dependencies=[Depends(get_admin_user)])
     def decode_id(
@@ -152,7 +172,7 @@ class FastAPIConfiguration:
         encoded_id: str
     ) -> Dict[str, int]:
         """Decode a given id."""
-        return decode_id(trans, encoded_id)
+        return _decode_id(trans, encoded_id)
 
 
 class ConfigurationController(BaseAPIController):
@@ -178,7 +198,7 @@ class ConfigurationController(BaseAPIController):
         Note: a more complete list is returned if the user is an admin.
         """
         view, keys = kwd.get('view'), kwd.get('keys')
-        return get_configuration(trans, view, keys)
+        return _get_configuration(trans, view, keys)
 
     @expose_api_anonymous_and_sessionless
     def version(self, trans, **kwds):
@@ -189,22 +209,18 @@ class ConfigurationController(BaseAPIController):
         :rtype:     dict
         :returns:   dictionary with major version keyed on 'version_major'
         """
-        return get_version(self.app)
+        return _get_version(self.app)
 
     @require_admin
     @expose_api
     def dynamic_tool_confs(self, trans):
-        # WARNING: If this method is ever changed so as not to require admin privileges, update the nginx proxy
-        # documentation, since this path is used as an authentication-by-proxy method for securing other paths on the
-        # server. A dedicated endpoint should probably be added to do that instead.
-        confs = self.app.toolbox.dynamic_confs(include_migrated_tool_conf=True)
-        return list(map(_tool_conf_to_dict, confs))
+        return _get_dynamic_tool_confs(self.app)
 
     @require_admin
     @expose_api
     def decode_id(self, trans, encoded_id, **kwds):
         """Decode a given id."""
-        return decode_id(trans, encoded_id)
+        return _decode_id(trans, encoded_id)
 
     @require_admin
     @expose_api
@@ -235,10 +251,3 @@ class ConfigurationController(BaseAPIController):
     def get_config_dict(self, trans, return_admin=False, view=None, keys=None, default_view='all'):
         # Method left for backward compatibility (templates/galaxy_client_app.mako).
         return get_config_dict(self.app, return_admin, view=view, keys=keys, default_view=default_view)
-
-
-def _tool_conf_to_dict(conf):
-    return dict(
-        config_filename=conf['config_filename'],
-        tool_path=conf['tool_path'],
-    )
