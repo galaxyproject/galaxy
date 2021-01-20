@@ -150,6 +150,10 @@ def _get_tool_lineages(app):
     return rval
 
 
+def _reload_toolbox(app):
+    app.queue_worker.send_control_task('reload_toolbox')
+
+
 @cbv(router)
 class FastAPIConfiguration:
 
@@ -185,6 +189,11 @@ class FastAPIConfiguration:
     @router.get('/api/configuration/tool_lineages', dependencies=[Depends(get_admin_user)])
     def tool_lineages(self, app: StructuredApp = Depends(get_app)):
         return _get_tool_lineages(app)
+
+    @router.put('/api/configuration/toolbox')
+    def reload_toolbox(self, app: StructuredApp = Depends(get_app)):
+        """Reload the Galaxy toolbox (but not individual tools)."""
+        _reload_toolbox(app)
 
 
 class ConfigurationController(BaseAPIController):
@@ -246,7 +255,7 @@ class ConfigurationController(BaseAPIController):
         PUT /api/configuration/toolbox
         Reload the Galaxy toolbox (but not individual tools).
         """
-        self.app.queue_worker.send_control_task('reload_toolbox')
+        _reload_toolbox(self.app)
 
     def get_config_dict(self, trans, return_admin=False, view=None, keys=None, default_view='all'):
         # Method left for backward compatibility (templates/galaxy_client_app.mako).
