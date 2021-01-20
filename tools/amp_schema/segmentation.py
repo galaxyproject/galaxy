@@ -1,15 +1,39 @@
 import json
 
 class Segmentation:
+	MINIMUM_SILENCE = 10.0
 	def __init__(self, segments=[], media=None, numSpeakers=0):
 		self.segments = segments
 		self.numSpeakers = numSpeakers
 		if media is None:
 			self.media = SegmentationMedia()
 		else:
-			 self.media = media
+			self.media = media
+			
 	def addSegment(self, label, gender=None, start=None, end=None, speakerLabel = None):
-		self.segments.append(SegmentationSegment(label, gender, start, end, speakerLabel))
+		# Format the label for comparison purposes
+		tmp_label = SegmentationSegment.formatLabel(label)
+
+		# Get the last segment if we have at least on in the list
+		last_segment = None
+		if len(self.segments) >= 1:
+			last_segment = self.segments[-1]
+
+		# If the time of the segment is less than 10 seconds, we have another segment, and the current 
+		# segment is noise or silence, don't add it but add the time to the previous segment
+		if (float(end) - float(start)) < self.MINIMUM_SILENCE and last_segment is not None and tmp_label in ('noise', 'silence'):
+			last_segment.end = end
+		else:
+			# Format the gender
+			tmp_gender = SegmentationSegment.formatGender(gender)
+
+			# If the last segment matches the type, merge the two
+			if last_segment is not None and last_segment.label == tmp_label and last_segment.gender == tmp_gender:
+				last_segment.end = end
+			else:
+				# Otherwise add the segment
+				self.segments.append(SegmentationSegment(label, gender, start, end, speakerLabel))
+
 		if end is not None and end > self.media.duration:
 			self.media.duration = end
 		return
@@ -42,27 +66,28 @@ class SegmentationSegment:
 	gender = None
 	speakerLabel = None
 	def __init__(self, label, gender=None, start=None, end=None, speakerLabel = None):
-		print("setting segmentation")
-		self.label = self.formatLabel(label)
+		self.label = SegmentationSegment.formatLabel(label)
 		if gender is not None:
-			self.gender = self.formatGender(gender)
+			self.gender = SegmentationSegment.formatGender(gender)
 		self.start = start
 		self.end = end
 		self.speakerLabel = speakerLabel
 
-	def formatGender(self, value):
+	@staticmethod
+	def formatGender( value):
 		tmp_value = value.lower()
-		if tmp_value == "male" or tmp_value == "female":
+		if tmp_value in ("male", "female"):
 			return tmp_value.lower()
 		return ""
 
-	def formatLabel(self, value):
+	@staticmethod
+	def formatLabel(value):
 		tmp_value = value.lower()
-		if tmp_value == "male" or tmp_value == "female" or tmp_value == "speech":
+		if tmp_value in ("male", "female", "speech"):
 			return "speech"
 		elif tmp_value == "music":
 			return "music"
-		elif tmp_value == "noactivity" or tmp_value == "noenergy":
+		elif tmp_value in ("noactivity", "noenergy"):
 			return "silence"
 		return tmp_value
 

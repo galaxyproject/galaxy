@@ -6,6 +6,7 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
 import hpc_submit
+import kaldi_transcript_to_amp_transcript
 
 def main():
     """
@@ -39,7 +40,12 @@ def main():
     }
 
     job = hpc_submit.submit_and_wait(args.dropbox, job)
-    exit(0 if job['job']['status'] == 'ok' else 1)
+    if job['job']['status'] != 'ok':
+        exit(1)
+    
+    kaldi_transcript_to_amp_transcript.convert(args.input, args.kaldi_transcript_json, args.kaldi_transcript_txt, args.amp_transcript_json)
+    
+    exit(0)
 
 if __name__ == "__main__":
     main()
