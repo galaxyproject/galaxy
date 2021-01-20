@@ -42,7 +42,7 @@ class OIDC(JSAppLauncher):
             rtv.append({'id': trans.app.security.encode_id(authnz.id), 'provider': authnz.provider, 'email': authnz.uid})
         # Add cilogon and custos identities
         for token in trans.user.custos_auth:
-            userinfo = jwt.decode(token.id_token, verify=False)
+            userinfo = jwt.decode(token.id_token, options={"verify_signature": False})
             rtv.append({'id': trans.app.security.encode_id(token.id), 'provider': token.provider, 'email': userinfo['email']})
         return rtv
 
