@@ -6,6 +6,7 @@ import logging
 from galaxy.exceptions import MessageException
 from galaxy.web import expose_api
 from galaxy.webapps.base.controller import BaseAPIController, UsesTagsMixin
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
 
@@ -14,7 +15,7 @@ class TagsController(BaseAPIController, UsesTagsMixin):
 
     # Retag an item. All previous tags are deleted and new tags are applied.
     @expose_api
-    def update(self, trans, payload, **kwd):
+    def update(self, trans: GalaxyWebTransaction, payload: dict, **kwd):
         """
         PUT /api/tags/
 
@@ -35,7 +36,7 @@ class TagsController(BaseAPIController, UsesTagsMixin):
         self.get_tag_handler(trans).apply_item_tags(user, item, item_tags)
         trans.sa_session.flush()
 
-    def _get_item(self, trans, item_class_name, id):
+    def _get_item(self, trans: GalaxyWebTransaction, item_class_name, id):
         """
         Get an item based on type and id.
         """

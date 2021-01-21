@@ -425,7 +425,7 @@ class ConfiguresHandlers:
             log.debug("(%s) No handler pool (uWSGI farm) for '%s' found", obj.log_str(), tag)
             raise HandlerAssignmentSkip()
         else:
-            if flush:
+            if flush or not obj.id:
                 _timed_flush_obj(obj)
             message = message_callback()
             self.app.application_stack.send_message(pool, message)
@@ -434,7 +434,7 @@ class ConfiguresHandlers:
     def assign_handler(self, obj, configured=None, **kwargs):
         """Set a job handler, flush obj
 
-        Called assignment methods should raise :exception:`HandlerAssignmentSkip` to indicate that the next method
+        Called assignment methods should raise py:class:`HandlerAssignmentSkip` to indicate that the next method
         should be tried.
 
         :param obj:         Object to assign a handler to (must be a model object with ``handler`` attribute and

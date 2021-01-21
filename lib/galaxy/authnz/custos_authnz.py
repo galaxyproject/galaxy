@@ -102,9 +102,9 @@ class CustosAuthnz(IdentityProvider):
                     # TODO: Future work will expand on this and provide an
                     # interface for when there are multiple auth providers
                     # allowing explicit authenticated association.
-                    if (trans.app.config.enable_oidc and
-                            len(trans.app.config.oidc) == 1 and
-                            len(trans.app.auth_manager.authenticators) == 0):
+                    if (trans.app.config.enable_oidc
+                            and len(trans.app.config.oidc) == 1
+                            and len(trans.app.auth_manager.authenticators) == 0):
                         user = existing_user
                     else:
                         message = "There already exists a user with email %s.  To associate this external login, you must first be logged in as that existing account." % email

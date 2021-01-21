@@ -849,7 +849,7 @@ class Gfa2(Text):
             elif line[0] == 'G':
                 if len(line) < 6:
                     return False
-            elif line[0] == 'O' or line[0] == 'U' :
+            elif line[0] == 'O' or line[0] == 'U':
                 if len(line) < 3:
                     return False
             else:

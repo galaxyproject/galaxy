@@ -12,10 +12,7 @@ from gxformat2 import (
     convert_and_import_workflow,
     ImporterGalaxyInterface,
 )
-try:
-    from pyvirtualdisplay import Display
-except ImportError:
-    Display = None
+from requests.models import Response
 
 from galaxy.selenium import (
     driver_factory,
@@ -29,6 +26,7 @@ from galaxy.selenium.navigates_galaxy import (
 from galaxy.util import asbool, classproperty
 from galaxy_test.base import populators
 from galaxy_test.base.api import UsesApiTestCaseMixin
+from galaxy_test.base.api_util import get_admin_api_key
 from galaxy_test.base.env import DEFAULT_WEB_HOST, get_ip_address
 from galaxy_test.base.testcase import FunctionalTestCase
 try:
@@ -184,7 +182,26 @@ class TestSnapshot:
         write_file_func("%s-stack.txt" % prefix, str(self.stack))
 
 
-class TestWithSeleniumMixin(GalaxySeleniumContext, UsesApiTestCaseMixin):
+class GalaxyTestSeleniumContext(GalaxySeleniumContext):
+    """Extend GalaxySeleniumContext with Selenium-aware galaxy_test.base.populators."""
+
+    @property
+    def dataset_populator(self) -> populators.BaseDatasetPopulator:
+        """A dataset populator connected to the Galaxy session described by Selenium context."""
+        return SeleniumSessionDatasetPopulator(self)
+
+    @property
+    def dataset_collection_populator(self) -> populators.BaseDatasetCollectionPopulator:
+        """A dataset collection populator connected to the Galaxy session described by Selenium context."""
+        return SeleniumSessionDatasetCollectionPopulator(self)
+
+    @property
+    def workflow_populator(self) -> populators.BaseWorkflowPopulator:
+        """A workflow populator connected to the Galaxy session described by Selenium context."""
+        return SeleniumSessionWorkflowPopulator(self)
+
+
+class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin):
     # If run one-off via nosetests, the next line ensures test
     # tools and datatypes are used instead of configured tools.
     framework_tool_and_types = True
@@ -354,18 +371,6 @@ class TestWithSeleniumMixin(GalaxySeleniumContext, UsesApiTestCaseMixin):
         with self.main_panel():
             self.assert_no_error_message()
 
-    @property
-    def dataset_populator(self):
-        return SeleniumSessionDatasetPopulator(self)
-
-    @property
-    def dataset_collection_populator(self):
-        return SeleniumSessionDatasetCollectionPopulator(self)
-
-    @property
-    def workflow_populator(self):
-        return SeleniumSessionWorkflowPopulator(self)
-
     def workflow_upload_yaml_with_random_name(self, content, **kwds):
         workflow_populator = self.workflow_populator
         name = self._get_random_name()
@@ -388,6 +393,7 @@ class SeleniumTestCase(FunctionalTestCase, TestWithSeleniumMixin):
     def setUp(self):
         super().setUp()
         self.setup_selenium()
+        self.admin_api_key = get_admin_api_key()
 
     def tearDown(self):
         exception = None
@@ -519,15 +525,25 @@ def use_virtual_display():
 
 class SeleniumSessionGetPostMixin:
     """Mixin for adapting Galaxy testing populators helpers to Selenium session backed bioblend."""
+    selenium_context: GalaxySeleniumContext
 
-    def _get(self, route, data=None):
+    @property
+    def _mixin_admin_api_key(self) -> str:
+        return getattr(self, "admin_api_key", get_admin_api_key())
+
+    def _get(self, route, data=None, admin=False) -> Response:
         data = data or {}
-        full_url = self.selenium_test_case.build_url("api/" + route, for_selenium=False)
-        response = requests.get(full_url, data=data, cookies=self.selenium_test_case.selenium_to_requests_cookies())
+        full_url = self.selenium_context.build_url("api/" + route, for_selenium=False)
+        cookies = None
+        if admin:
+            full_url = f"{full_url}?key={self._mixin_admin_api_key}"
+        else:
+            cookies = self.selenium_context.selenium_to_requests_cookies()
+        response = requests.get(full_url, params=data, cookies=cookies)
         return response
 
-    def _post(self, route, data=None, files=None):
-        full_url = self.selenium_test_case.build_url("api/" + route, for_selenium=False)
+    def _post(self, route, data=None, files=None, admin=False, json: bool = False) -> Response:
+        full_url = self.selenium_context.build_url("api/" + route, for_selenium=False)
         if data is None:
             data = {}
 
@@ -536,61 +552,80 @@ class SeleniumSessionGetPostMixin:
             if files is not None:
                 del data["__files"]
 
-        response = requests.post(full_url, data=data, cookies=self.selenium_test_case.selenium_to_requests_cookies(), files=files)
+        cookies = None
+        if admin:
+            full_url = f"{full_url}?key={self._mixin_admin_api_key}"
+        else:
+            cookies = self.selenium_context.selenium_to_requests_cookies()
+        response = requests.post(full_url, data=data, cookies=cookies, files=files)
         return response
 
-    def _delete(self, route, data=None):
+    def _delete(self, route, data=None, admin=False) -> Response:
         data = data or {}
-        full_url = self.selenium_test_case.build_url("api/" + route, for_selenium=False)
-        response = requests.delete(full_url, data=data, cookies=self.selenium_test_case.selenium_to_requests_cookies())
+        full_url = self.selenium_context.build_url("api/" + route, for_selenium=False)
+        cookies = None
+        if admin:
+            full_url = f"{full_url}?key={self._mixin_admin_api_key}"
+        else:
+            cookies = self.selenium_context.selenium_to_requests_cookies()
+        response = requests.delete(full_url, data=data, cookies=cookies)
         return response
 
-    def __url(self, route):
-        return self._gi.url + "/" + route
+    def _put(self, route, data=None, admin=False) -> Response:
+        data = data or {}
+        full_url = self.selenium_context.build_url("api/" + route, for_selenium=False)
+        cookies = None
+        if admin:
+            full_url = f"{full_url}?key={self._mixin_admin_api_key}"
+        else:
+            cookies = self.selenium_context.selenium_to_requests_cookies()
+        response = requests.put(full_url, data=data, cookies=cookies)
+        return response
 
 
-class SeleniumSessionDatasetPopulator(populators.BaseDatasetPopulator, SeleniumSessionGetPostMixin):
+class SeleniumSessionDatasetPopulator(SeleniumSessionGetPostMixin, populators.BaseDatasetPopulator):
 
     """Implementation of BaseDatasetPopulator backed by bioblend."""
 
-    def __init__(self, selenium_test_case):
+    def __init__(self, selenium_context: GalaxySeleniumContext):
         """Construct a dataset populator from a bioblend GalaxyInstance."""
-        self.selenium_test_case = selenium_test_case
+        self.selenium_context = selenium_context
 
 
-class SeleniumSessionDatasetCollectionPopulator(populators.BaseDatasetCollectionPopulator, SeleniumSessionGetPostMixin):
+class SeleniumSessionDatasetCollectionPopulator(SeleniumSessionGetPostMixin, populators.BaseDatasetCollectionPopulator):
 
     """Implementation of BaseDatasetCollectionPopulator backed by bioblend."""
 
-    def __init__(self, selenium_test_case):
+    def __init__(self, selenium_context: GalaxySeleniumContext):
         """Construct a dataset collection populator from a bioblend GalaxyInstance."""
-        self.selenium_test_case = selenium_test_case
-        self.dataset_populator = SeleniumSessionDatasetPopulator(selenium_test_case)
+        self.selenium_context = selenium_context
+        self.dataset_populator = SeleniumSessionDatasetPopulator(selenium_context)
 
-    def _create_collection(self, payload):
+    def _create_collection(self, payload: dict) -> Response:
         create_response = self._post("dataset_collections", data=payload)
         return create_response
 
 
-class SeleniumSessionWorkflowPopulator(populators.BaseWorkflowPopulator, SeleniumSessionGetPostMixin, ImporterGalaxyInterface):
+class SeleniumSessionWorkflowPopulator(SeleniumSessionGetPostMixin, populators.BaseWorkflowPopulator, ImporterGalaxyInterface):
 
     """Implementation of BaseWorkflowPopulator backed by bioblend."""
 
-    def __init__(self, selenium_test_case):
+    def __init__(self, selenium_context: GalaxySeleniumContext):
         """Construct a workflow populator from a bioblend GalaxyInstance."""
-        self.selenium_test_case = selenium_test_case
-        self.dataset_populator = SeleniumSessionDatasetPopulator(selenium_test_case)
+        self.selenium_context = selenium_context
+        self.dataset_populator = SeleniumSessionDatasetPopulator(selenium_context)
+        self.dataset_collection_populator = SeleniumSessionDatasetPopulator(selenium_context)
 
-    def import_workflow(self, workflow, **kwds):
+    def import_workflow(self, workflow: dict, **kwds) -> dict:
         workflow_str = json.dumps(workflow, indent=4)
         data = {
             'workflow': workflow_str,
         }
         data.update(**kwds)
         upload_response = self._post("workflows", data=data)
-        assert upload_response.status_code == 200
+        upload_response.raise_for_status()
         return upload_response.json()
 
-    def upload_yaml_workflow(self, has_yaml, **kwds):
+    def upload_yaml_workflow(self, has_yaml, **kwds) -> str:
         workflow = convert_and_import_workflow(has_yaml, galaxy_interface=self, **kwds)
         return workflow["id"]

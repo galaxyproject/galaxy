@@ -264,7 +264,7 @@ class ToolDataTable:
         # increment this variable any time a new entry is added, or when the table is totally reloaded
         # This value has no external meaning, and does not represent an abstract version of the underlying data
         self._loaded_content_version = 1
-        self._load_info = ([config_element, tool_data_path], {'from_shed_config': from_shed_config, 'tool_data_path_files': self.tool_data_path_files, 'other_config_dict': other_config_dict})
+        self._load_info = ([config_element, tool_data_path], {'from_shed_config': from_shed_config, 'tool_data_path_files': self.tool_data_path_files, 'other_config_dict': other_config_dict, 'filename': filename})
         self._merged_load_info = []
 
     def _update_version(self, version=None):
@@ -315,7 +315,9 @@ class ToolDataTable:
 class TabularToolDataTable(ToolDataTable, Dictifiable):
     """
     Data stored in a tabular / separated value format on disk, allows multiple
-    files to be merged but all must have the same column definitions::
+    files to be merged but all must have the same column definitions:
+
+    .. code-block:: xml
 
         <table type="tabular" name="test">
             <column name='...' index = '...' />
@@ -798,13 +800,16 @@ class TabularToolDataField(Dictifiable):
 class RefgenieToolDataTable(TabularToolDataTable):
     """
     Data stored in refgenie
-    <table name="all_fasta" type="refgenie" asset="fasta" >
-        <file path="refgenie.yml" />
-        <field name="value" template="true">${__REFGENIE_UUID__}</field>
-        <field name="dbkey" template="true">${__REFGENIE_GENOME__}</field>
-        <field name="name" template="true">${__REFGENIE_DISPLAY_NAME__}</field>
-        <field name="path" template="true">${__REFGENIE_ASSET__}</field>
-    </table>
+
+    .. code-block:: xml
+
+        <table name="all_fasta" type="refgenie" asset="fasta" >
+            <file path="refgenie.yml" />
+            <field name="value" template="true">${__REFGENIE_UUID__}</field>
+            <field name="dbkey" template="true">${__REFGENIE_GENOME__}</field>
+            <field name="name" template="true">${__REFGENIE_DISPLAY_NAME__}</field>
+            <field name="path" template="true">${__REFGENIE_ASSET__}</field>
+        </table>
     """
     dict_collection_visible_keys = ['name']
 

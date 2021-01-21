@@ -215,7 +215,7 @@ class WorkflowModule:
     def get_config_form(self, step=None):
         """ Serializes input parameters of a module into input dictionaries. """
         return {
-            'title' : self.name,
+            'title': self.name,
             'inputs': [param.to_dict(self.trans) for param in self.get_inputs().values()]
         }
 
@@ -1434,7 +1434,7 @@ class ToolModule(WorkflowModule):
         data_outputs = []
         if self.tool:
             for name, tool_output in self.tool.outputs.items():
-                if filter_output(tool_output, self.state.inputs):
+                if filter_output(self.tool, tool_output, self.state.inputs):
                     continue
                 extra_kwds = {}
                 if isinstance(tool_output, ToolExpressionOutput):

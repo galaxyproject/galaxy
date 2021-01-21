@@ -15,6 +15,8 @@ import galaxy.exceptions
 from galaxy import model
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.managers import base
+from galaxy.managers.context import ProvidesUserContext
+from galaxy.model import Role
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.util import unicodify
 
@@ -54,7 +56,7 @@ class RoleManager(base.ModelManager):
     def __init__(self, app):
         super().__init__(app)
 
-    def get(self, trans, decoded_role_id):
+    def get(self, trans: ProvidesUserContext, decoded_role_id):
         """
         Method loads the role from the DB based on the given role id.
 
@@ -81,28 +83,28 @@ class RoleManager(base.ModelManager):
 
         return role
 
-    def list_displayable_roles(self, trans):
+    def list_displayable_roles(self, trans: ProvidesUserContext):
         roles = []
-        for role in trans.sa_session.query(trans.app.model.Role).filter(trans.app.model.Role.table.c.deleted == false()):
+        for role in trans.sa_session.query(Role).filter(Role.table.c.deleted == false()):
             if trans.user_is_admin or trans.app.security_agent.ok_to_display(trans.user, role):
                 roles.append(role)
         return roles
 
-    def create(self, trans, role_definition_model):
+    def create_role(self, trans: ProvidesUserContext, role_definition_model) -> model.Role:
         name = role_definition_model.name
         description = role_definition_model.description
         user_ids = role_definition_model.user_ids or []
         group_ids = role_definition_model.group_ids or []
 
-        if trans.sa_session.query(trans.app.model.Role).filter(trans.app.model.Role.table.c.name == name).first():
+        if trans.sa_session.query(Role).filter(Role.table.c.name == name).first():
             raise RequestParameterInvalidException(f"A role with that name already exists [{name}]")
 
-        role_type = trans.app.model.Role.types.ADMIN  # TODO: allow non-admins to create roles
+        role_type = Role.types.ADMIN  # TODO: allow non-admins to create roles
 
-        role = trans.app.model.Role(name=name, description=description, type=role_type)
+        role = Role(name=name, description=description, type=role_type)
         trans.sa_session.add(role)
-        users = [trans.sa_session.query(trans.model.User).get(trans.security.decode_id(i)) for i in user_ids]
-        groups = [trans.sa_session.query(trans.model.Group).get(trans.security.decode_id(i)) for i in group_ids]
+        users = [trans.sa_session.query(model.User).get(trans.security.decode_id(i)) for i in user_ids]
+        groups = [trans.sa_session.query(model.Group).get(trans.security.decode_id(i)) for i in group_ids]
 
         # Create the UserRoleAssociations
         for user in users:

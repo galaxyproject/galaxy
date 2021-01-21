@@ -159,13 +159,13 @@ def directory_hash_id(id):
     ['1', '3', '5']
     """
     s = str(id)
-    l = len(s)
+    len_s = len(s)
     # Shortcut -- ids 0-999 go under ../000/
-    if l < 4:
+    if len_s < 4:
         return ["000"]
     if not is_uuid(s):
         # Pad with zeros until a multiple of three
-        padded = ((3 - len(s) % 3) * "0") + s
+        padded = ((3 - len_s % 3) * "0") + s
         # Drop the last three digits -- 1000 files per directory
         padded = padded[:-3]
         # Break into chunks of three

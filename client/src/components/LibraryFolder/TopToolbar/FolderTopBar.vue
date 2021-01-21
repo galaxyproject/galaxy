@@ -46,7 +46,7 @@
                                     from History</a
                                 >
                                 <a
-                                    v-if="user_library_import_dir"
+                                    v-if="user_library_import_dir_available"
                                     class="dropdown-item cursor-pointer"
                                     @click="addDatasets('userdir')"
                                 >
@@ -203,7 +203,7 @@ export default {
     data() {
         return {
             is_admin: false,
-            user_library_import_dir: false,
+            user_library_import_dir_available: false,
             library_import_dir: false,
             allow_library_path_paste: false,
             list_genomes: [],
@@ -225,7 +225,7 @@ export default {
         const Galaxy = getGalaxyInstance();
         this.services = new Services();
         this.is_admin = Galaxy.user.attributes.is_admin;
-        this.user_library_import_dir = Galaxy.config.user_library_import_dir;
+        this.user_library_import_dir_available = Galaxy.config.user_library_import_dir_available;
         this.library_import_dir = Galaxy.config.library_import_dir;
         this.allow_library_path_paste = Galaxy.config.allow_library_path_paste;
 

@@ -150,7 +150,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         with open(self.app.config.beta_edam_toolbox_ontology_path, 'r') as handle:
             log.debug(f'Processing {handle}')
             self.edam = {}
-            for idx, line in enumerate(handle.readlines()):
+            for line in handle.readlines():
                 fields = line.split('\t')
                 if not fields[0].startswith('http://edamontology.org/'):
                     continue
@@ -432,11 +432,11 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                     log.warning("Could not find lineage for tool '%s'", tool.id)
                 if not inserted:
                     if (
-                        tool.guid is None or
-                        tool.tool_shed is None or
-                        tool.repository_name is None or
-                        tool.repository_owner is None or
-                        tool.installed_changeset_revision is None
+                        tool.guid is None
+                        or tool.tool_shed is None
+                        or tool.repository_name is None
+                        or tool.repository_owner is None
+                        or tool.installed_changeset_revision is None
                     ):
                         # We have a tool that was not installed from the Tool
                         # Shed, but is also not yet defined in
@@ -459,9 +459,9 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         edam = tool.edam_operations + tool.edam_topics
         if len(edam) > 0:
             for term in edam:
-                yield term, self.edam.get(term, {'label': f'Unknown EDAM Term {term}'})['label']
+                yield term
         else:
-            yield 'uncategorized', 'Uncategorized'
+            yield 'uncategorized'
 
     def _get_section(self, sec_id, sec_nm):
         if sec_id not in self._tool_panel:
@@ -503,7 +503,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 tool_id = key.replace('tool_', '', 1)
                 if tool_id in self._tools_by_id:
                     if tool_id in self._tools_by_id:
-                        for term, label in self._get_edam_sec(val):
+                        for term in self._get_edam_sec(val):
                             if term == 'uncategorized':
                                 uncategorized.append((tool_id, key, val, val.name))
                             else:
@@ -528,7 +528,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                     if section_item_type == panel_item_types.TOOL:
                         tool_id = section_key.replace('tool_', '', 1)
                         if tool_id in self._tools_by_id:
-                            for term, label in self._get_edam_sec(section_val):
+                            for term in self._get_edam_sec(section_val):
                                 if term == 'uncategorized':
                                     uncategorized.append((tool_id, key, section_val, val.name))
                                 else:

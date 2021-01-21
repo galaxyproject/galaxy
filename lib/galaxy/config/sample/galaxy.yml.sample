@@ -436,7 +436,7 @@ galaxy:
 
   # involucro is a tool used to build Docker or Singularity containers
   # for tools from Conda dependencies referenced in tools as
-  # `requirement`s. The following path is the location of involucro on
+  # `requirement` s. The following path is the location of involucro on
   # the Galaxy host. This is ignored if the relevant container resolver
   # isn't enabled, and will install on demand unless involucro_auto_init
   # is set to false.
@@ -616,6 +616,14 @@ galaxy:
   # /bin/sh - so more maximum portability tool authors should assume
   # generated commands run in sh.
   #default_job_shell: /bin/bash
+
+  # Set this to false to disable the tool document cache. This cache
+  # stores expanded xml strings. Disabling the tool cache results in
+  # slower startup times. The tool cache is backed by sqlite database,
+  # which cannot be stored on certain network disks. The cache location
+  # is configurable using the ``tool_cache_data_dir`` setting, but can
+  # be disabled completely here.
+  #enable_tool_document_cache: true
 
   # Tool related caching. Fully expanded tools and metadata will be
   # stored at this path. Per tool_conf cache locations can be configured
@@ -1830,7 +1838,7 @@ galaxy:
   # can separate Galaxy into multiple processes.  There are more than
   # one way to do this, and they are explained in detail in the
   # documentation:
-  #   https://docs.galaxyproject.org/en/master/admin/scaling.html
+  # https://docs.galaxyproject.org/en/master/admin/scaling.html
   # By default, Galaxy manages and executes jobs from within a single
   # process and notifies itself of new jobs via in-memory queues.  Jobs
   # are run locally on the system on which Galaxy is started.  Advanced

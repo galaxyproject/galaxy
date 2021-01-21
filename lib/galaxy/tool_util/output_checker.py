@@ -77,8 +77,8 @@ def check_output(stdio_regexes, stdio_exit_codes, stdout, stderr, tool_exit_code
             max_error_level = StdioErrorLevel.NO_ERROR
             if tool_exit_code is not None:
                 for stdio_exit_code in stdio_exit_codes:
-                    if (tool_exit_code >= stdio_exit_code.range_start and
-                            tool_exit_code <= stdio_exit_code.range_end):
+                    if (tool_exit_code >= stdio_exit_code.range_start
+                            and tool_exit_code <= stdio_exit_code.range_end):
                         # Tack on a generic description of the code
                         # plus a specific code description. For example,
                         # this might prepend "Job 42: Warning (Out of Memory)\n".
@@ -166,9 +166,9 @@ def __regex_err_msg(match, stream, regex):
     mstart = match.start()
     mend = match.end()
     if mend - mstart > 256:
-        match_str = match.string[mstart : mstart + 256] + "..."
+        match_str = match.string[mstart:mstart + 256] + "..."
     else:
-        match_str = match.string[mstart: mend]
+        match_str = match.string[mstart:mend]
 
     # If there's a description for the regular expression, then use it.
     # Otherwise, we'll take the first 256 characters of the match.

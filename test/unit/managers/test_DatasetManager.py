@@ -233,8 +233,8 @@ class DatasetSerializerTestCase(BaseTestCase):
         self.log('should have a serializer for all serializable keys')
         for key in self.dataset_serializer.serializable_keyset:
             instantiated_attribute = getattr(dataset, key, None)
-            if not ((key in self.dataset_serializer.serializers) or
-                    (isinstance(instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS))):
+            if not ((key in self.dataset_serializer.serializers)
+                    or (isinstance(instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS))):
                 self.fail(f'no serializer for: {key} ({instantiated_attribute})')
         else:
             self.assertTrue(True, 'all serializable keys have a serializer')

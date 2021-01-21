@@ -467,7 +467,7 @@ class DefaultToolAction:
             return data
 
         for name, output in tool.outputs.items():
-            if not filter_output(output, incoming):
+            if not filter_output(tool, output, incoming):
                 handle_output_timer = ExecutionTimer()
                 if output.collection:
                     if completed_job and dataset_collection_elements and name in dataset_collection_elements:
@@ -785,11 +785,13 @@ class DefaultToolAction:
         """
         This allows to map names of input files to metadata default values. Example:
 
-        <data format="tabular" name="output" label="Tabular output, aggregates data from individual_inputs" >
-            <actions>
-                <action name="column_names" type="metadata" default="${','.join(input.name for input in $individual_inputs)}" />
-            </actions>
-        </data>
+        .. code-block::
+
+            <data format="tabular" name="output" label="Tabular output, aggregates data from individual_inputs" >
+                <actions>
+                    <action name="column_names" type="metadata" default="${','.join(input.name for input in $individual_inputs)}" />
+                </actions>
+            </data>
         """
         if output.actions:
             for action in output.actions.actions:
@@ -942,13 +944,13 @@ def on_text_for_names(input_names):
     return on_text
 
 
-def filter_output(output, incoming):
+def filter_output(tool, output, incoming):
     for filter in output.filters:
         try:
             if not eval(filter.text.strip(), globals(), incoming):
                 return True  # do not create this dataset
         except Exception as e:
-            log.debug('Dataset output filter failed: %s' % e)
+            log.debug('Tool %s output %s: dataset output filter (%s) failed: %s' % (tool.id, output.name, filter.text, e))
     return False
 
 

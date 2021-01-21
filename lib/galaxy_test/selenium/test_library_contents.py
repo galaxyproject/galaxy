@@ -146,6 +146,15 @@ class LibraryContentsTestCase(SeleniumTestCase):
         assert table_as_dict["Genome build"] == "?", table_as_dict
 
     @selenium_test
+    def test_import_dataset_from_import_dir(self):
+        self._navigate_to_new_library()
+        self._assert_num_displayed_items_is(0)
+        self.libraries_dataset_import_from_import_dir()
+        self.components.libraries.folder.select_import_dir_item(name="1.axt").wait_for_and_click()
+        self.components.libraries.folder.import_dir_btn.wait_for_and_click()
+        self._assert_num_displayed_items_is(1)
+
+    @selenium_test
     def test_show_details(self):
         self._navigate_to_new_library()
         self.sleep_for(self.wait_types.UX_RENDER)

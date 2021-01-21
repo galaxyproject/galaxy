@@ -63,7 +63,7 @@ def main(argv=None):
 
     target = functools.partial(_run, args, gi, workflow_id, uuid)
     threads = []
-    for i in range(args.workflow_count):
+    for _ in range(args.workflow_count):
         t = Thread(target=target)
         t.daemon = True
         t.start()

@@ -2,14 +2,15 @@ from logging import getLogger
 
 import routes
 
-from galaxy import managers
-from galaxy.exceptions import ObjectNotFound
+from galaxy.exceptions import ObjectNotFound, RequestParameterInvalidException
 from galaxy.managers.base import decode_id
+from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.collections_util import (
     api_payload_to_create_params,
     dictify_dataset_collection_instance,
     dictify_element_reference
 )
+from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.web import expose_api
 from galaxy.webapps.base.controller import (
     BaseAPIController,
@@ -26,7 +27,7 @@ class DatasetCollectionsController(
 
     def __init__(self, app):
         super().__init__(app)
-        self.history_manager = managers.histories.HistoryManager(app)
+        self.history_manager = app.history_manager
 
     @expose_api
     def index(self, trans, **kwd):
@@ -34,7 +35,7 @@ class DatasetCollectionsController(
         return 'not implemented'
 
     @expose_api
-    def create(self, trans, payload, **kwd):
+    def create(self, trans: ProvidesHistoryContext, payload: dict, **kwd):
         """
         * POST /api/dataset_collections:
             create a new dataset collection instance.
@@ -62,15 +63,15 @@ class DatasetCollectionsController(
             self.check_user_can_add_to_library_item(trans, library_folder, check_accessible=False)
             create_params["parent"] = library_folder
         else:
-            trans.status = 501
-            return
-        dataset_collection_instance = self.__service(trans).create(trans=trans, **create_params)
+            raise RequestParameterInvalidException()
+
+        dataset_collection_instance = self.__service.create(trans=trans, **create_params)
         return dictify_dataset_collection_instance(dataset_collection_instance,
                                                    security=trans.security, parent=create_params["parent"])
 
     @expose_api
-    def show(self, trans, instance_type, id, **kwds):
-        dataset_collection_instance = self.__service(trans).get_dataset_collection_instance(
+    def show(self, trans: ProvidesHistoryContext, instance_type, id, **kwds):
+        dataset_collection_instance = self.__service.get_dataset_collection_instance(
             trans,
             id=id,
             instance_type=instance_type,
@@ -80,8 +81,8 @@ class DatasetCollectionsController(
         elif instance_type == 'library':
             parent = dataset_collection_instance.folder
         else:
-            trans.status = 501
-            return
+            raise RequestParameterInvalidException()
+
         return dictify_dataset_collection_instance(
             dataset_collection_instance,
             security=trans.security,
@@ -90,7 +91,7 @@ class DatasetCollectionsController(
         )
 
     @expose_api
-    def contents(self, trans, hdca_id, parent_id, instance_type='history', limit=None, offset=None, **kwds):
+    def contents(self, trans: ProvidesHistoryContext, hdca_id, parent_id, instance_type='history', limit=None, offset=None, **kwds):
         """
         GET /api/dataset_collection/{hdca_id}/contents/{parent_id}?limit=100&offset=0
 
@@ -107,7 +108,7 @@ class DatasetCollectionsController(
         :rtype:     list
         :returns:   list of dataset collection elements and contents
         """
-        svc = self.__service(trans)
+        svc = self.__service
         encode_id = trans.app.security.encode_id
 
         # validate HDCA for current user, will throw error if not permitted
@@ -138,6 +139,7 @@ class DatasetCollectionsController(
         results = contents_qry.with_session(trans.sa_session()).all()
         return [process_element(el) for el in results]
 
-    def __service(self, trans):
-        service = trans.app.dataset_collections_service
+    @property
+    def __service(self) -> DatasetCollectionManager:
+        service = self.app.dataset_collections_service
         return service

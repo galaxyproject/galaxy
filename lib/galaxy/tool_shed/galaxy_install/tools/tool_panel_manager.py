@@ -56,7 +56,22 @@ class ToolPanelManager:
                 config_elems.append(elem)
             # Add the new elements to the in-memory list of config_elems.
             for elem_entry in elem_list:
-                config_elems.append(elem_entry)
+                if elem_entry.tag == 'section':
+                    # Loop through section entries in the in-memory tool panel.
+                    for existing_elem in config_elems:
+                        # Compare the section ID for each one to the section ID for the tool being installed.
+                        if existing_elem.tag == 'section' and existing_elem.attrib.get('id', None) == elem_entry.attrib.get('id', None):
+                            # We've found a section, add the incoming tools to it.
+                            for child in elem_entry:
+                                existing_elem.append(child)
+                            # Break out of the config_elems loop back to the elem_list loop.
+                            break
+                    # If we reach this point, no section was found. Create one with contents.
+                    else:
+                        config_elems.append(elem_entry)
+                # This is not a section, but a tool or label. No need to search for matching sections, just add it.
+                else:
+                    config_elems.append(elem_entry)
             # Persist the altered shed_tool_config file.
             self.config_elems_to_xml_file(config_elems, shed_tool_conf, tool_path, tool_cache_data_dir)
             self.app.wait_for_toolbox_reload(old_toolbox)
@@ -168,11 +183,15 @@ class ToolPanelManager:
         The intent is to call this method for every tool config in a repository and
         append each of these as entries to a tool panel dictionary for the repository.
         This enables each tool to be loaded into a different section in the tool panel.
-        {<Tool guid> :
-           [{ tool_config : <tool_config_file>,
-              id: <ToolSection id>,
-              version : <ToolSection version>,
-              name : <TooSection name>}]}
+
+        .. code-block::
+
+            {<Tool guid> :
+                [{ tool_config : <tool_config_file>,
+                    id: <ToolSection id>,
+                    version : <ToolSection version>,
+                    name : <TooSection name>}]}
+
         """
         tool_panel_dict = {}
         file_name = strip_path(tool_config)

@@ -24,6 +24,7 @@ from galaxy.webapps.base.controller import (
     SharableMixin,
     UsesVisualizationMixin
 )
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
 
@@ -39,7 +40,7 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
         self.serializer = VisualizationSerializer(app)
 
     @expose_api
-    def index(self, trans, **kwargs):
+    def index(self, trans: GalaxyWebTransaction, **kwargs):
         """
         GET /api/visualizations:
         """
@@ -65,7 +66,7 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
         return rval
 
     @expose_api
-    def show(self, trans, id, **kwargs):
+    def show(self, trans: GalaxyWebTransaction, id: str, **kwargs):
         """
         GET /api/visualizations/{viz_id}
         """
@@ -90,7 +91,7 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
         return dictionary
 
     @expose_api
-    def create(self, trans, payload, **kwargs):
+    def create(self, trans: GalaxyWebTransaction, payload: dict, **kwargs):
         """
         POST /api/visualizations
         creates a new visualization using the given payload
@@ -101,7 +102,7 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
         rval = None
 
         if 'import_id' in payload:
-            import_id = payload('import_id')
+            import_id = payload['import_id']
             visualization = self.import_visualization(trans, import_id, user=trans.user)
 
         else:
@@ -118,12 +119,12 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
             except ValueError as val_err:
                 raise exceptions.RequestParameterMissingException(str(val_err))
 
-        rval = {'id' : trans.security.encode_id(visualization.id)}
+        rval = {'id': trans.security.encode_id(visualization.id)}
 
         return rval
 
     @expose_api
-    def update(self, trans, id, payload, **kwargs):
+    def update(self, trans: GalaxyWebTransaction, id: str, payload: dict, **kwargs):
         """
         PUT /api/visualizations/{encoded_visualization_id}
         """
@@ -145,11 +146,11 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
         config = payload.get('config', visualization.latest_revision.config)
 
         latest_config = visualization.latest_revision.config
-        if((title != visualization.latest_revision.title) or
-                (dbkey != visualization.latest_revision.dbkey) or
-                (json.dumps(config) != json.dumps(latest_config))):
+        if((title != visualization.latest_revision.title)
+                or (dbkey != visualization.latest_revision.dbkey)
+                or (json.dumps(config) != json.dumps(latest_config))):
             revision = self.add_visualization_revision(trans, visualization, config, title, dbkey)
-            rval = {'id' : id, 'revision' : revision.id}
+            rval = {'id': id, 'revision': revision.id}
 
         # allow updating vis title
         visualization.title = title

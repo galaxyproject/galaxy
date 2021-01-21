@@ -677,8 +677,8 @@
 :Description:
     involucro is a tool used to build Docker or Singularity containers
     for tools from Conda dependencies referenced in tools as
-    `requirement`s. The following path is the location of involucro on
-    the Galaxy host. This is ignored if the relevant container
+    `requirement` s. The following path is the location of involucro
+    on the Galaxy host. This is ignored if the relevant container
     resolver isn't enabled, and will install on demand unless
     involucro_auto_init is set to false.
     The value of this option will be resolved with respect to
@@ -1047,6 +1047,21 @@
     should assume generated commands run in sh.
 :Default: ``/bin/bash``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_tool_document_cache``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set this to false to disable the tool document cache. This cache
+    stores expanded xml strings. Disabling the tool cache results in
+    slower startup times. The tool cache is backed by sqlite database,
+    which cannot be stored on certain network disks. The cache
+    location is configurable using the ``tool_cache_data_dir``
+    setting, but can be disabled completely here.
+:Default: ``true``
+:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -3709,7 +3724,7 @@
     you can separate Galaxy into multiple processes.  There are more
     than one way to do this, and they are explained in detail in the
     documentation:
-      https://docs.galaxyproject.org/en/master/admin/scaling.html
+    https://docs.galaxyproject.org/en/master/admin/scaling.html
     By default, Galaxy manages and executes jobs from within a single
     process and notifies itself of new jobs via in-memory queues.
     Jobs are run locally on the system on which Galaxy is started.
@@ -4085,7 +4100,7 @@
 :Description:
     Prologue Markdown/HTML to apply to markdown exports to PDF.
     Allowing branded headers.
-:Default: ````
+:Default: ``""``
 :Type: str
 
 
@@ -4096,7 +4111,7 @@
 :Description:
     Prologue Markdown/HTML to apply to markdown exports to PDF.
     Allowing branded footers.
-:Default: ````
+:Default: ``""``
 :Type: str
 
 
@@ -4107,7 +4122,7 @@
 :Description:
     Alternative to markdown_export_prologue that applies just to page
     exports.
-:Default: ````
+:Default: ``""``
 :Type: str
 
 
@@ -4118,7 +4133,7 @@
 :Description:
     Alternative to markdown_export_prologue that applies just to
     invocation report exports.
-:Default: ````
+:Default: ``""``
 :Type: str
 
 
@@ -4129,7 +4144,7 @@
 :Description:
     Alternative to markdown_export_epilogue that applies just to page
     exports.
-:Default: ````
+:Default: ``""``
 :Type: str
 
 
@@ -4140,7 +4155,7 @@
 :Description:
     Alternative to markdown_export_epilogue that applies just to
     invocation report exports.
-:Default: ````
+:Default: ``""``
 :Type: str
 
 

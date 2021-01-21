@@ -105,24 +105,24 @@ class Forms(BaseUIController):
         if trans.request.method == 'GET':
             fd_types = sorted(trans.app.model.FormDefinition.types.items())
             return {
-                'title'         : 'Create new form',
-                'submit_title'  : 'Create',
-                'inputs'        : [{
-                    'name'    : 'name',
-                    'label'   : 'Name'
+                'title': 'Create new form',
+                'submit_title': 'Create',
+                'inputs': [{
+                    'name': 'name',
+                    'label': 'Name'
                 }, {
-                    'name'    : 'desc',
-                    'label'   : 'Description'
+                    'name': 'desc',
+                    'label': 'Description'
                 }, {
-                    'name'    : 'type',
-                    'type'    : 'select',
-                    'options' : [('None', 'none')] + [(ft[1], ft[1]) for ft in fd_types],
-                    'label'   : 'Type'
+                    'name': 'type',
+                    'type': 'select',
+                    'options': [('None', 'none')] + [(ft[1], ft[1]) for ft in fd_types],
+                    'label': 'Type'
                 }, {
-                    'name'    : 'csv_file',
-                    'label'   : 'Import from CSV',
-                    'type'    : 'upload',
-                    'help'    : 'Import fields from CSV-file with the following format: Label, Help, Type, Value, Options, Required=True/False.'
+                    'name': 'csv_file',
+                    'label': 'Import from CSV',
+                    'type': 'upload',
+                    'help': 'Import fields from CSV-file with the following format: Label, Help, Type, Value, Options, Required=True/False.'
                 }]
             }
         else:
@@ -163,57 +163,57 @@ class Forms(BaseUIController):
             ff_types = [(t.__name__.replace('Field', ''), t.__name__) for t in trans.model.FormDefinition.supported_field_types]
             field_cache = []
             field_inputs = [{
-                'name'    : 'name',
-                'label'   : 'Name',
-                'value'   : 'field_name',
-                'help'    : 'The field name must be unique for each field and must contain only alphanumeric characters and underscore.'
+                'name': 'name',
+                'label': 'Name',
+                'value': 'field_name',
+                'help': 'The field name must be unique for each field and must contain only alphanumeric characters and underscore.'
             }, {
-                'name'    : 'label',
-                'label'   : 'Label',
-                'value'   : 'Field label'
+                'name': 'label',
+                'label': 'Label',
+                'value': 'Field label'
             }, {
-                'name'    : 'helptext',
-                'label'   : 'Help text'
+                'name': 'helptext',
+                'label': 'Help text'
             }, {
-                'name'    : 'type',
-                'label'   : 'Type',
-                'type'    : 'select',
-                'options' : ff_types
+                'name': 'type',
+                'label': 'Type',
+                'type': 'select',
+                'options': ff_types
             }, {
-                'name'    : 'default',
-                'label'   : 'Default value'
+                'name': 'default',
+                'label': 'Default value'
             }, {
-                'name'    : 'selectlist',
-                'label'   : 'Options',
-                'help'    : '*Only for fields which allow multiple selections, provide comma-separated values.'
+                'name': 'selectlist',
+                'label': 'Options',
+                'help': '*Only for fields which allow multiple selections, provide comma-separated values.'
             }, {
-                'name'    : 'required',
-                'label'   : 'Required',
-                'type'    : 'boolean',
-                'value'   : 'false'
+                'name': 'required',
+                'label': 'Required',
+                'type': 'boolean',
+                'value': 'false'
             }]
             form_dict = {
-                'title'  : 'Edit form for \'%s\'' % (util.sanitize_text(latest_form.name)),
-                'inputs' : [{
-                    'name'    : 'name',
-                    'label'   : 'Name',
-                    'value'   : latest_form.name
+                'title': 'Edit form for \'%s\'' % (util.sanitize_text(latest_form.name)),
+                'inputs': [{
+                    'name': 'name',
+                    'label': 'Name',
+                    'value': latest_form.name
                 }, {
-                    'name'    : 'desc',
-                    'label'   : 'Description',
-                    'value'   : latest_form.desc
+                    'name': 'desc',
+                    'label': 'Description',
+                    'value': latest_form.desc
                 }, {
-                    'name'    : 'type',
-                    'type'    : 'select',
-                    'options' : [('None', 'none')] + [(ft[1], ft[1]) for ft in fd_types],
-                    'label'   : 'Type',
-                    'value'   : latest_form.type
+                    'name': 'type',
+                    'type': 'select',
+                    'options': [('None', 'none')] + [(ft[1], ft[1]) for ft in fd_types],
+                    'label': 'Type',
+                    'value': latest_form.type
                 }, {
-                    'name'    : 'fields',
-                    'title'   : 'Field',
-                    'type'    : 'repeat',
-                    'cache'   : field_cache,
-                    'inputs'  : field_inputs
+                    'name': 'fields',
+                    'title': 'Field',
+                    'type': 'repeat',
+                    'cache': field_cache,
+                    'inputs': field_inputs
                 }]
             }
             for field in latest_form.fields:

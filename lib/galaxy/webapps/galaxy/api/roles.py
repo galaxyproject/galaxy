@@ -18,6 +18,7 @@ from pydantic import (
 from galaxy import web
 from galaxy.app import UniverseApplication
 from galaxy.managers.base import decode_id
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.roles import (
     RoleDefinitionModel,
     RoleManager,
@@ -25,9 +26,6 @@ from galaxy.managers.roles import (
 )
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.webapps.base.controller import BaseAPIController, url_for
-from galaxy.work.context import (
-    SessionRequestContext,
-)
 from . import (
     get_admin_user,
     get_app,
@@ -65,26 +63,26 @@ class FastAPIRoles:
     role_manager: RoleManager = Depends(get_role_manager)
 
     @router.get('/api/roles')
-    def index(self, trans: SessionRequestContext = Depends(get_trans)) -> RoleListModel:
+    def index(self, trans: ProvidesUserContext = Depends(get_trans)) -> RoleListModel:
         roles = self.role_manager.list_displayable_roles(trans)
         return RoleListModel(__root__=[role_to_model(trans, r) for r in roles])
 
     @router.get('/api/roles/{id}')
-    def show(self, id: EncodedDatabaseIdField, trans: SessionRequestContext = Depends(get_trans)) -> RoleModel:
+    def show(self, id: EncodedDatabaseIdField, trans: ProvidesUserContext = Depends(get_trans)) -> RoleModel:
         role_id = trans.app.security.decode_id(id)
         role = self.role_manager.get(trans, role_id)
         return role_to_model(trans, role)
 
     @router.post("/api/roles")
-    def create(self, trans: SessionRequestContext = Depends(get_trans), admin_user=Depends(get_admin_user), role_definition_model: RoleDefinitionModel = Body(...)) -> RoleModel:
-        role = self.role_manager.create(trans, role_definition_model)
+    def create(self, trans: ProvidesUserContext = Depends(get_trans), admin_user=Depends(get_admin_user), role_definition_model: RoleDefinitionModel = Body(...)) -> RoleModel:
+        role = self.role_manager.create_role(trans, role_definition_model)
         return role_to_model(trans, role)
 
 
 class RoleAPIController(BaseAPIController):
 
     @web.expose_api
-    def index(self, trans, **kwd):
+    def index(self, trans: ProvidesUserContext, **kwd):
         """
         GET /api/roles
         Displays a collection (list) of roles.
@@ -93,7 +91,7 @@ class RoleAPIController(BaseAPIController):
         return RoleListModel(__root__=[role_to_model(trans, r) for r in roles])
 
     @web.expose_api
-    def show(self, trans, id, **kwd):
+    def show(self, trans: ProvidesUserContext, id: str, **kwd):
         """
         GET /api/roles/{encoded_role_id}
         Displays information about a role.
@@ -104,14 +102,14 @@ class RoleAPIController(BaseAPIController):
 
     @web.require_admin
     @web.expose_api
-    def create(self, trans, payload, **kwd):
+    def create(self, trans: ProvidesUserContext, payload, **kwd):
         """
         POST /api/roles
         Creates a new role.
         """
         expand_json_keys(payload, ["user_ids", "group_ids"])
         role_definition_model = RoleDefinitionModel(**payload)
-        role = self._role_manager.create(trans, role_definition_model)
+        role = self._role_manager.create_role(trans, role_definition_model)
         return role_to_model(trans, role)
 
     @property
@@ -119,7 +117,7 @@ class RoleAPIController(BaseAPIController):
         return self.app.role_manager
 
 
-def expand_json_keys(payload, keys):
+def expand_json_keys(payload: dict, keys):
     for key in keys:
         value = payload.get(key)
         if isinstance(value, str):

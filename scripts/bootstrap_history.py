@@ -172,6 +172,8 @@ Please see the `full release notes <${release}_announce.html>`_ for more details
 """)
 
 NEXT_TEMPLATE = string.Template("""
+:orphan:
+
 ===========================================================
 ${month_name} 20${year} Galaxy Release (v ${version})
 ===========================================================
@@ -640,7 +642,7 @@ def _text_target(pull_request, labels=None):
         try:
             github = _github_client()
             labels = github.issues.labels.list_by_issue(int(pr_number), user=PROJECT_OWNER, repo=PROJECT_NAME)
-            labels = [l.name.lower() for l in labels]
+            labels = [label.name.lower() for label in labels]
         except Exception as e:
             print(e)
     is_bug = is_enhancement = is_feature = is_minor = is_major = is_merge = is_small_enhancement = False
@@ -706,7 +708,7 @@ def _text_target(pull_request, labels=None):
 
 
 def _pr_to_labels(pr):
-    labels = [l.name.lower() for l in pr.labels]
+    labels = [label.name.lower() for label in pr.labels]
     return labels
 
 

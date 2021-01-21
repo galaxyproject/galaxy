@@ -117,14 +117,14 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     def callback_helper(input, input_values, name_prefix, label_prefix, parent_prefix, context=None, error=None):
         value = input_values.get(input.name)
         args = {
-            'input'             : input,
-            'parent'            : input_values,
-            'value'             : value,
-            'prefixed_name'     : f'{name_prefix}{input.name}',
-            'prefixed_label'    : '{}{}'.format(label_prefix, input.label or input.name),
-            'prefix'            : parent_prefix,
-            'context'           : context,
-            'error'             : error
+            'input': input,
+            'parent': input_values,
+            'value': value,
+            'prefixed_name': f'{name_prefix}{input.name}',
+            'prefixed_label': '{}{}'.format(label_prefix, input.label or input.name),
+            'prefix': parent_prefix,
+            'context': context,
+            'error': error
         }
         if input.name not in input_values:
             args['error'] = 'No value found for \'%s\'.' % args.get('prefixed_label')
@@ -401,7 +401,7 @@ def _populate_state_legacy(request_context, inputs, incoming, state, errors, pre
                 if not any(incoming_key.startswith(rep_prefix) for incoming_key in incoming.keys()) and rep_index >= input.min:
                     break
                 if rep_index < input.max:
-                    new_state = {'__index__' : rep_index}
+                    new_state = {'__index__': rep_index}
                     group_state.append(new_state)
                     _populate_state_legacy(request_context, input.inputs, incoming, new_state, errors, prefix=rep_prefix + '|', context=context, check=check, simple_errors=simple_errors)
                 rep_index += 1
@@ -430,7 +430,7 @@ def _populate_state_legacy(request_context, inputs, incoming, state, errors, pre
             while len(group_state) > file_count:
                 del group_state[-1]
             while file_count > len(group_state):
-                new_state = {'__index__' : len(group_state)}
+                new_state = {'__index__': len(group_state)}
                 for upload_item in input.inputs.values():
                     new_state[upload_item.name] = upload_item.get_initial_value(request_context, context)
                 group_state.append(new_state)

@@ -567,9 +567,9 @@ class ModelSerializer(HasAModelManager):
         the attribute.
         """
         self.serializers.update({
-            'id'            : self.serialize_id,
-            'create_time'   : self.serialize_date,
-            'update_time'   : self.serialize_date,
+            'id': self.serialize_id,
+            'create_time': self.serialize_date,
+            'update_time': self.serialize_date,
         })
 
     def add_view(self, view_name, key_list, include_keys_from=None):
@@ -925,12 +925,12 @@ class ModelFilterParser(HasAModelManager):
         # note: these are the default filters for all models
         self.orm_filter_parsers.update({
             # (prob.) applicable to all models
-            'id'            : {'op': ('in')},
-            'encoded_id'    : {'column' : 'id', 'op': ('in'), 'val': self.parse_id_list},
+            'id': {'op': ('in')},
+            'encoded_id': {'column': 'id', 'op': ('in'), 'val': self.parse_id_list},
             # dates can be directly passed through the orm into a filter (no need to parse into datetime object)
-            'extension'     : {'op': ('eq', 'like', 'in')},
-            'create_time'   : {'op': ('le', 'ge', 'lt', 'gt'), 'val': self.parse_date},
-            'update_time'   : {'op': ('le', 'ge', 'lt', 'gt'), 'val': self.parse_date},
+            'extension': {'op': ('eq', 'like', 'in')},
+            'create_time': {'op': ('le', 'ge', 'lt', 'gt'), 'val': self.parse_date},
+            'update_time': {'op': ('le', 'ge', 'lt', 'gt'), 'val': self.parse_date},
         })
 
     def parse_filters(self, filter_tuple_list):
@@ -1064,9 +1064,9 @@ class ModelFilterParser(HasAModelManager):
     # ---- preset fn_filters: dictionaries of standard filter ops for standard datatypes
     def string_standard_ops(self, key):
         return {
-            'op' : {
-                'eq'        : lambda i, v: v == getattr(i, key),
-                'contains'  : lambda i, v: v in getattr(i, key),
+            'op': {
+                'eq': lambda i, v: v == getattr(i, key),
+                'contains': lambda i, v: v in getattr(i, key),
             }
         }
 

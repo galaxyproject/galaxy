@@ -162,7 +162,7 @@ def open_recipe_file(file, recipes_path=None, github_repo='bioconda/bioconda-rec
 
 def get_alternative_versions(filepath, filename, recipes_path=None, github_repo='bioconda/bioconda-recipes'):
     """
-    Return files that match 'filepath/*/filename' in the bioconda-recipes repository
+    Return files that match ``filepath/*/filename`` in the bioconda-recipes repository
     """
     if recipes_path:
         return [n.replace('%s/' % recipes_path, '') for n in glob(f'{recipes_path}/{filepath}/*/{filename}')]

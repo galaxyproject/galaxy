@@ -21,7 +21,6 @@ from galaxy.util import (
     unicodify,
     XML,
 )
-from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.rules_dsl import RuleSet
@@ -38,7 +37,12 @@ from .sanitize import ToolParameterSanitizer
 
 log = logging.getLogger(__name__)
 
-workflow_building_modes = Bunch(DISABLED=False, ENABLED=True, USE_HISTORY=1)
+
+class workflow_building_modes:
+    DISABLED = False
+    ENABLED = True
+    USE_HISTORY = 1
+
 
 WORKFLOW_PARAMETER_REGULAR_EXPRESSION = re.compile(r'\$\{.+?\}')
 
@@ -58,8 +62,8 @@ def contains_workflow_parameter(value, search=False):
 
 
 def is_runtime_value(value):
-    return isinstance(value, RuntimeValue) or (isinstance(value, dict) and
-        value.get("__class__") in ["RuntimeValue", "ConnectedValue"])
+    return isinstance(value, RuntimeValue) or (isinstance(value, dict)
+        and value.get("__class__") in ["RuntimeValue", "ConnectedValue"])
 
 
 def is_runtime_context(trans, other_values):
@@ -70,8 +74,8 @@ def is_runtime_context(trans, other_values):
             return True
         for v in util.listify(context_value):
             if isinstance(v, trans.app.model.HistoryDatasetAssociation) and \
-                    ((hasattr(v, 'state') and v.state != galaxy.model.Dataset.states.OK) or
-                    hasattr(v, 'implicit_conversion')):
+                    ((hasattr(v, 'state') and v.state != galaxy.model.Dataset.states.OK)
+                    or hasattr(v, 'implicit_conversion')):
                 return True
     return False
 
@@ -878,17 +882,16 @@ class SelectToolParameter(ToolParameter):
             return self.static_options
 
     def get_legal_values(self, trans, other_values):
-        if self.options:
-            return {v for _, v, _ in self.options.get_options(trans, other_values)}
-        elif self.dynamic_options:
-            try:
-                call_other_values = self._get_dynamic_options_call_other_values(trans, other_values)
-                return {v for _, v, _ in eval(self.dynamic_options, self.tool.code_namespace, call_other_values)}
-            except Exception as e:
-                log.debug("Determining legal values failed for '%s': %s", self.name, unicodify(e))
-                return set()
-        else:
-            return self.legal_values
+        """
+        determine the set of values of legal options
+        """
+        return {v for _, v, _ in self.get_options(trans, other_values)}
+
+    def get_legal_names(self, trans, other_values):
+        """
+        determine a mapping from names to values for all legal options
+        """
+        return {n: v for n, v, _ in self.get_options(trans, other_values)}
 
     def from_json(self, value, trans, other_values=None, require_legal_value=True):
         other_values = other_values or {}
@@ -896,6 +899,11 @@ class SelectToolParameter(ToolParameter):
             legal_values = self.get_legal_values(trans, other_values)
         except ImplicitConversionRequired:
             return value
+        # if the given value is not found in the set of values of the legal
+        # options we fall back to check if the value is in the set of names of
+        # the legal options. this is done with the fallback_values dict which
+        # allows to determine the corresponding legal values
+        fallback_values = self.get_legal_names(trans, other_values)
         if (not legal_values or not require_legal_value) and is_runtime_context(trans, other_values):
             if self.multiple:
                 # While it is generally allowed that a select value can be '',
@@ -924,12 +932,12 @@ class SelectToolParameter(ToolParameter):
         if isinstance(value, list):
             if not self.multiple:
                 raise ParameterValueError("multiple values provided but parameter is not expecting multiple values", self.name, is_dynamic=self.is_dynamic)
-            rval = []
-            for v in value:
-                if v not in legal_values:
-                    raise ParameterValueError("an invalid option ({!r}) was selected (valid options: {})".format(v, ",".join(legal_values)), self.name, v, is_dynamic=self.is_dynamic)
-                rval.append(v)
-            return rval
+            if set(value).issubset(legal_values):
+                return value
+            elif set(value).issubset(set(fallback_values.keys())):
+                return [fallback_values[v] for v in value]
+            else:
+                raise ParameterValueError("invalid options ({!r}) were selected (valid options: {})".format(",".join(set(value) - set(legal_values)), ",".join(legal_values)), self.name, is_dynamic=self.is_dynamic)
         else:
             value_is_none = (value == "None" and "None" not in legal_values)
             if value_is_none or not value:
@@ -940,9 +948,14 @@ class SelectToolParameter(ToolParameter):
                         raise ParameterValueError("no option was selected for non optional parameter", self.name, is_dynamic=self.is_dynamic)
             if is_runtime_value(value):
                 return None
-            if value not in legal_values and require_legal_value:
+            if value in legal_values:
+                return value
+            elif value in fallback_values:
+                return fallback_values[value]
+            elif not require_legal_value:
+                return value
+            else:
                 raise ParameterValueError("an invalid option ({!r}) was selected (valid options: {})".format(value, ",".join(legal_values)), self.name, value, is_dynamic=self.is_dynamic)
-            return value
 
     def to_param_dict_string(self, value, other_values=None):
         if value in (None, []):
@@ -1345,7 +1358,22 @@ class ColumnListParameter(SelectToolParameter):
     def get_legal_values(self, trans, other_values):
         if self.data_ref not in other_values:
             raise ValueError("Value for associated data reference not found (data_ref).")
-        return set(self.get_column_list(trans, other_values))
+        legal_values = self.get_column_list(trans, other_values)
+
+        value = other_values.get(self.name)
+        if value is not None and value not in legal_values and self.is_file_empty(trans, other_values):
+            legal_values.extend(value)
+
+        return set(legal_values)
+
+    def is_file_empty(self, trans, other_values):
+        for dataset in util.listify(other_values.get(self.data_ref)):
+            # Use representative dataset if a dataset collection is parsed
+            if isinstance(dataset, trans.app.model.HistoryDatasetCollectionAssociation):
+                dataset = dataset.to_hda_representative()
+            if is_runtime_value(dataset) or not dataset.has_data():
+                return True
+        return False
 
     def get_dependencies(self):
         return [self.data_ref]

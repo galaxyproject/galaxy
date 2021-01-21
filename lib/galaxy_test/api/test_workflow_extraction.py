@@ -523,7 +523,7 @@ test_data:
                 if "job_ids" in extract_payload:
                     job_ids = extract_payload["job_ids"]
                     new_job_ids = []
-                    for i, job_id in enumerate(job_ids):
+                    for job_id in job_ids:
                         new_job_ids.append(new_history_job_ids[history_job_ids.index(job_id)])
 
                     extract_payload["job_ids"] = new_job_ids

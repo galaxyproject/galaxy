@@ -562,7 +562,7 @@ class GalaxyInteractorApi:
                 print("| Dataset Info:")
                 print(self.format_for_summary(dataset_info.get("misc_info", ""), "Dataset info is empty."))
                 print("| Peek:")
-                print(self.format_for_summary(dataset_info.get("peek", ""), "Peek unavilable."))
+                print(self.format_for_summary(dataset_info.get("peek", ""), "Peek unavailable."))
             except Exception:
                 print("| *TEST FRAMEWORK ERROR FETCHING DATASET DETAILS*")
             try:
@@ -883,7 +883,7 @@ def _verify_extra_files_content(extra_files, hda_id, dataset_fetcher, test_data_
         elif extra_file_type == 'directory':
             extracted_path = test_data_downloader(extra_file_value, mode='directory')
             cleanup_directories.append(extracted_path)
-            for root, directories, files in util.path.safe_walk(extracted_path):
+            for root, _directories, files in util.path.safe_walk(extracted_path):
                 for filename in files:
                     filename = os.path.join(root, filename)
                     filename = os.path.relpath(filename, extracted_path)

@@ -21,6 +21,7 @@ from galaxy import (
 )
 from galaxy.app import UniverseApplication
 from galaxy.managers import hdas
+from galaxy.managers.context import ProvidesHistoryContext, ProvidesUserContext
 from galaxy.managers.jobs import (
     JobLock,
     JobManager,
@@ -30,6 +31,7 @@ from galaxy.managers.jobs import (
     summarize_job_parameters,
     view_show_job,
 )
+from galaxy.model import Job
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.web import (
     expose_api,
@@ -41,7 +43,6 @@ from galaxy.webapps.base.controller import (
     UsesVisualizationMixin
 )
 from galaxy.work.context import (
-    SessionRequestContext,
     WorkRequestContext,
 )
 from . import (
@@ -70,7 +71,7 @@ class FastAPIJobs:
     hda_manager: hdas.HDAManager = Depends(get_hda_manager)
 
     @router.get("/api/job/{id}")
-    def show(self, id: EncodedDatabaseIdField, trans: SessionRequestContext = Depends(get_trans), full: typing.Optional[bool] = False) -> typing.Dict:
+    def show(self, id: EncodedDatabaseIdField, trans: ProvidesUserContext = Depends(get_trans), full: typing.Optional[bool] = False) -> typing.Dict:
         """
         Return dictionary containing description of job data
 
@@ -92,7 +93,7 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
         self.hda_manager = hdas.HDAManager(app)
 
     @expose_api
-    def index(self, trans, **kwd):
+    def index(self, trans: ProvidesUserContext, **kwd):
         """
         GET /api/jobs
 
@@ -127,9 +128,9 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
         user_details = kwd.get('user_details', False)
 
         if is_admin:
-            query = trans.sa_session.query(trans.app.model.Job)
+            query = trans.sa_session.query(Job)
         else:
-            query = trans.sa_session.query(trans.app.model.Job).filter(trans.app.model.Job.user == trans.user)
+            query = trans.sa_session.query(Job).filter(Job.table.c.user_id == trans.user.id)
 
         def build_and_apply_filters(query, objects, filter_func):
             if objects is not None:
@@ -142,27 +143,27 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
                     query = query.filter(or_(*t))
             return query
 
-        query = build_and_apply_filters(query, state, lambda s: trans.app.model.Job.state == s)
+        query = build_and_apply_filters(query, state, lambda s: Job.table.c.state == s)
 
-        query = build_and_apply_filters(query, kwd.get('tool_id', None), lambda t: trans.app.model.Job.tool_id == t)
-        query = build_and_apply_filters(query, kwd.get('tool_id_like', None), lambda t: trans.app.model.Job.tool_id.like(t))
+        query = build_and_apply_filters(query, kwd.get('tool_id', None), lambda t: Job.tool_id == t)
+        query = build_and_apply_filters(query, kwd.get('tool_id_like', None), lambda t: Job.tool_id.like(t))
 
-        query = build_and_apply_filters(query, kwd.get('date_range_min', None), lambda dmin: trans.app.model.Job.table.c.update_time >= dmin)
-        query = build_and_apply_filters(query, kwd.get('date_range_max', None), lambda dmax: trans.app.model.Job.table.c.update_time <= dmax)
+        query = build_and_apply_filters(query, kwd.get('date_range_min', None), lambda dmin: Job.table.c.update_time >= dmin)
+        query = build_and_apply_filters(query, kwd.get('date_range_max', None), lambda dmax: Job.table.c.update_time <= dmax)
 
         history_id = kwd.get('history_id', None)
         if history_id is not None:
             try:
                 decoded_history_id = self.decode_id(history_id)
-                query = query.filter(trans.app.model.Job.history_id == decoded_history_id)
+                query = query.filter(Job.table.c.history_id == decoded_history_id)
             except Exception:
                 raise exceptions.ObjectAttributeInvalidException()
 
         out = []
         if kwd.get('order_by') == 'create_time':
-            order_by = trans.app.model.Job.create_time.desc()
+            order_by = Job.table.c.create_time.desc()
         else:
-            order_by = trans.app.model.Job.update_time.desc()
+            order_by = Job.table.c.update_time.desc()
         for job in query.order_by(order_by).all():
             job_dict = job.to_dict('collection', system_details=is_admin)
             j = self.encode_all_ids(trans, job_dict, True)
@@ -173,7 +174,7 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
         return out
 
     @expose_api_anonymous
-    def show(self, trans, id, **kwd):
+    def show(self, trans: ProvidesUserContext, id, **kwd):
         """
         show( trans, id )
         * GET /api/jobs/{id}:
@@ -193,7 +194,7 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
         return view_show_job(trans, job, full_output)
 
     @expose_api
-    def common_problems(self, trans, id, **kwd):
+    def common_problems(self, trans: ProvidesUserContext, id, **kwd):
         """
         * GET /api/jobs/{id}/common_problems
             check inputs and job for common potential problems to aid in error reporting
@@ -219,7 +220,7 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
         return {"has_empty_inputs": has_empty_inputs, "has_duplicate_inputs": has_duplicate_inputs}
 
     @expose_api
-    def inputs(self, trans, id, **kwd):
+    def inputs(self, trans: ProvidesUserContext, id, **kwd):
         """
         GET /api/jobs/{id}/inputs
 
@@ -235,7 +236,7 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
         return self.__dictify_associations(trans, job.input_datasets, job.input_library_datasets)
 
     @expose_api
-    def outputs(self, trans, id, **kwd):
+    def outputs(self, trans: ProvidesUserContext, id, **kwd):
         """
         outputs( trans, id )
         * GET /api/jobs/{id}/outputs
@@ -251,7 +252,7 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
         return self.__dictify_associations(trans, job.output_datasets, job.output_library_datasets)
 
     @expose_api
-    def delete(self, trans, id, **kwd):
+    def delete(self, trans: ProvidesUserContext, id, **kwd):
         """
         delete( trans, id )
         * Delete /api/jobs/{id}
@@ -268,7 +269,7 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
         return self.job_manager.stop(job, message=message)
 
     @expose_api
-    def resume(self, trans, id, **kwd):
+    def resume(self, trans: ProvidesUserContext, id, **kwd):
         """
         * PUT /api/jobs/{id}/resume
             Resumes a paused job
@@ -289,7 +290,7 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
         return self.__dictify_associations(trans, job.output_datasets, job.output_library_datasets)
 
     @expose_api_anonymous
-    def metrics(self, trans, **kwd):
+    def metrics(self, trans: ProvidesUserContext, **kwd):
         """
         * GET /api/jobs/{job_id}/metrics
         * GET /api/datasets/{dataset_id}/metrics
@@ -314,7 +315,7 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
 
     @require_admin
     @expose_api
-    def destination_params(self, trans, **kwd):
+    def destination_params(self, trans: ProvidesUserContext, **kwd):
         """
         * GET /api/jobs/{job_id}/destination_params
             Return destination parameters for specified job.
@@ -329,7 +330,7 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
         return summarize_destination_params(trans, job)
 
     @expose_api_anonymous
-    def parameters_display(self, trans, **kwd):
+    def parameters_display(self, trans: ProvidesUserContext, **kwd):
         """
         * GET /api/jobs/{job_id}/parameters_display
         * GET /api/datasets/{dataset_id}/parameters_display
@@ -360,7 +361,7 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
         return summarize_job_parameters(trans, job)
 
     @expose_api_anonymous
-    def build_for_rerun(self, trans, id, **kwd):
+    def build_for_rerun(self, trans: ProvidesHistoryContext, id, **kwd):
         """
         * GET /api/jobs/{id}/build_for_rerun
             returns a tool input/param template prepopulated with this job's
@@ -411,12 +412,12 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
             return dataset_instance.creating_job
 
     @expose_api
-    def create(self, trans, payload, **kwd):
+    def create(self, trans: ProvidesUserContext, payload, **kwd):
         """ See the create method in tools.py in order to submit a job. """
         raise exceptions.NotImplemented('Please POST to /api/tools instead.')
 
     @expose_api
-    def search(self, trans, payload, **kwd):
+    def search(self, trans: ProvidesHistoryContext, payload: dict, **kwd):
         """
         search( trans, payload )
         * POST /api/jobs/search:
@@ -464,7 +465,7 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
         return [self.encode_all_ids(trans, single_job.to_dict('element'), True) for single_job in jobs]
 
     @expose_api_anonymous
-    def error(self, trans, id, payload, **kwd):
+    def error(self, trans: ProvidesUserContext, id, payload, **kwd):
         """
         error( trans, id )
         * POST /api/jobs/{id}/error
@@ -505,7 +506,7 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
 
     @require_admin
     @expose_api
-    def show_job_lock(self, trans, **kwd):
+    def show_job_lock(self, trans: ProvidesUserContext, **kwd):
         """
         * GET /api/job_lock
             return boolean indicating if job lock active.
@@ -514,7 +515,7 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
 
     @require_admin
     @expose_api
-    def update_job_lock(self, trans, payload, **kwd):
+    def update_job_lock(self, trans: ProvidesUserContext, payload, **kwd):
         """
         * PUT /api/job_lock
             return boolean indicating if job lock active.

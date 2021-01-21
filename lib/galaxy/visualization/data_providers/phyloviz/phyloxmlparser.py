@@ -14,10 +14,10 @@ class Phyloxml_Parser(Base_Parser):
         self.phyloTree = PhyloTree()
         self.tagsOfInterest = {
             "clade": "",
-            "name" : "name",
-            "branch_length" : "length",
-            "confidence"    : "bootstrap",
-            "events"        : "events"
+            "name": "name",
+            "branch_length": "length",
+            "confidence": "bootstrap",
+            "events": "events"
         }
 
     def parseFile(self, filePath):
@@ -85,9 +85,9 @@ class Phyloxml_Parser(Base_Parser):
             """Returns the name of a taxonomy node. A taxonomy node have to be treated differently as the name
             is embedded one level deeper"""
             phyloxmlTaxoNames = {
-                "common_name" : "",
-                "scientific_name" : "",
-                "code"  : ""
+                "common_name": "",
+                "scientific_name": "",
+                "code": ""
             }
             for child in node:
                 childTag = self.cleanTag(child.tag)
@@ -98,7 +98,7 @@ class Phyloxml_Parser(Base_Parser):
         nodeName = ""
         for child in node:
             childTag = self.cleanTag(child.tag)
-            if childTag == "name" :
+            if childTag == "name":
                 nodeName = child.text
                 break
             elif childTag == "taxonomy":

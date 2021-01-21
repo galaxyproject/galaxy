@@ -337,10 +337,10 @@ class SharableModelSerializer(base.ModelSerializer,
         annotatable.AnnotatableSerializerMixin.add_serializers(self)
         ratable.RatableSerializerMixin.add_serializers(self)
         self.serializers.update({
-            'id'                : self.serialize_id,
-            'title'             : self.serialize_title,
-            'username_and_slug' : self.serialize_username_and_slug,
-            'users_shared_with' : self.serialize_users_shared_with
+            'id': self.serialize_id,
+            'title': self.serialize_title,
+            'username_and_slug': self.serialize_username_and_slug,
+            'users_shared_with': self.serialize_users_shared_with
         })
         # these use the default serializer but must still be white-listed
         self.serializable_keyset.update([
@@ -387,9 +387,9 @@ class SharableModelDeserializer(base.ModelDeserializer,
         ratable.RatableDeserializerMixin.add_deserializers(self)
 
         self.deserializers.update({
-            'published'         : self.deserialize_published,
-            'importable'        : self.deserialize_importable,
-            'users_shared_with' : self.deserialize_users_shared_with,
+            'published': self.deserialize_published,
+            'importable': self.deserialize_importable,
+            'users_shared_with': self.deserialize_users_shared_with,
         })
 
     def deserialize_published(self, item, key, val, **context):
@@ -454,9 +454,9 @@ class SharableModelFilters(base.ModelFilterParser,
         ratable.RatableFilterMixin._add_parsers(self)
 
         self.orm_filter_parsers.update({
-            'importable'    : {'op': ('eq'), 'val': self.parse_bool},
-            'published'     : {'op': ('eq'), 'val': self.parse_bool},
-            'slug'          : {'op': ('eq', 'contains', 'like')},
+            'importable': {'op': ('eq'), 'val': self.parse_bool},
+            'published': {'op': ('eq'), 'val': self.parse_bool},
+            'slug': {'op': ('eq', 'contains', 'like')},
             # chose by user should prob. only be available for admin? (most often we'll only need trans.user)
             # 'user'          : { 'op': ( 'eq' ), 'val': self.parse_id_list },
         })

@@ -14,8 +14,7 @@ from abc import (
     abstractmethod,
     abstractproperty
 )
-from collections import namedtuple
-from typing import Any, Dict, Optional, Type
+from typing import Any, Dict, NamedTuple, Optional, Type
 
 import yaml
 
@@ -29,18 +28,12 @@ DEFAULT_CONF = {'_default_': {'type': DEFAULT_CONTAINER_TYPE}}
 log = logging.getLogger(__name__)
 
 
-class ContainerPort(namedtuple('ContainerPort', ('port', 'protocol', 'hostaddr', 'hostport'))):
-    """Named tuple representing ports published by a container, with attributes:
-
-    :ivar       port:       Port number (inside the container)
-    :vartype    port:       int
-    :ivar       protocol:   Port protocol, either ``tcp`` or ``udp``
-    :vartype    protocol:   str
-    :ivar       hostaddr:   Address or hostname where the published port can be accessed
-    :vartype    hostaddr:   str
-    :ivar       hostport:   Published port number on which the container can be accessed
-    :vartype    hostport:   int
-    """
+class ContainerPort(NamedTuple):
+    """Named tuple representing ports published by a container, with attributes"""
+    port: int  # Port number (inside the container)
+    protocol: str  # Port protocol, either ``tcp`` or ``udp``
+    hostaddr: str  # Address or hostname where the published port can be accessed
+    hostport: int  # Published port number on which the container can be accessed
 
 
 class ContainerVolume(metaclass=ABCMeta):
@@ -80,12 +73,15 @@ class ContainerVolume(metaclass=ABCMeta):
 class Container(metaclass=ABCMeta):
 
     def __init__(self, interface, id, name=None, **kwargs):
-        """:param   interface:  Container interface for the given container type
+        """
+
+        :param      interface:  Container interface for the given container type
         :type       interface:  :class:`ContainerInterface` subclass instance
         :param      id:         Container identifier
         :type       id:         str
         :param      name:       Container name
         :type       name:       str
+
         """
         self._interface = interface
         self._id = id
@@ -118,7 +114,7 @@ class Container(metaclass=ABCMeta):
         """Attribute for accessing details of ports published by the container.
 
         :returns:   Port details
-        :rtype:     list of :class:`ContainerPort`s
+        :rtype:     list of :class:`ContainerPort` s
         """
 
     @abstractproperty
@@ -246,25 +242,25 @@ class ContainerInterface(metaclass=ABCMeta):
     def _stringify_kwopt_list_of_kvpairs(self, flag, val):
         """
         """
-        l = []
+        kwopt_list = []
         if isinstance(val, list):
             # ['foo=bar', 'baz=quux']
-            l = val
+            kwopt_list = val
         else:
             # {'foo': 'bar', 'baz': 'quux'}
             for k, v in dict(val).items():
-                l.append(f'{k}={v}')
-        return self._stringify_kwopt_list(flag, l)
+                kwopt_list.append(f'{k}={v}')
+        return self._stringify_kwopt_list(flag, kwopt_list)
 
     def _stringify_kwopt_list_of_kovtrips(self, flag, val):
         """
         """
         if isinstance(val, str):
             return self._stringify_kwopt_string(flag, val)
-        l = []
+        kwopt_list = []
         for k, o, v in val:
-            l.append(f'{k}{o}{v}')
-        return self._stringify_kwopt_list(flag, l)
+            kwopt_list.append(f'{k}{o}{v}')
+        return self._stringify_kwopt_list(flag, kwopt_list)
 
     def _run_command(self, command, verbose=False):
         if verbose:
@@ -381,7 +377,7 @@ def _get_interface_modules():
     modules = import_submodules(sys.modules[__name__])
     for module in modules:
         module_names = [getattr(module, _) for _ in dir(module)]
-        classes = [_ for _ in module_names if inspect.isclass(_) and
-            not _ == ContainerInterface and issubclass(_, ContainerInterface)]
+        classes = [_ for _ in module_names if inspect.isclass(_)
+            and not _ == ContainerInterface and issubclass(_, ContainerInterface)]
         interfaces.extend(classes)
     return {x.container_type: x for x in interfaces}

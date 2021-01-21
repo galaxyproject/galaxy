@@ -544,15 +544,15 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
     def create(self, trans, payload=None, **kwd):
         if trans.request.method == 'GET':
             return {
-                'title'  : 'Create Workflow',
-                'inputs' : [{
-                    'name'  : 'workflow_name',
-                    'label' : 'Name',
-                    'value' : 'Unnamed workflow'
+                'title': 'Create Workflow',
+                'inputs': [{
+                    'name': 'workflow_name',
+                    'label': 'Name',
+                    'value': 'Unnamed workflow'
                 }, {
-                    'name'  : 'workflow_annotation',
-                    'label' : 'Annotation',
-                    'help'  : 'A description of the workflow; annotation is shown alongside shared or published workflows.'
+                    'name': 'workflow_annotation',
+                    'label': 'Annotation',
+                    'help': 'A description of the workflow; annotation is shown alongside shared or published workflows.'
                 }]}
         else:
             user = trans.get_user()
@@ -703,10 +703,10 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
 
         # create workflow models
         workflows = [{
-            'id'                  : trans.security.encode_id(workflow.id),
-            'latest_id'           : trans.security.encode_id(workflow.latest_workflow.id),
-            'step_count'          : len(workflow.latest_workflow.steps),
-            'name'                : workflow.name
+            'id': trans.security.encode_id(workflow.id),
+            'latest_id': trans.security.encode_id(workflow.latest_workflow.id),
+            'step_count': len(workflow.latest_workflow.steps),
+            'name': workflow.name
         } for workflow in workflows if workflow.id != stored.id]
 
         # identify item tags
@@ -717,15 +717,15 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
 
         # build workflow editor model
         editor_config = {
-            'id'                      : trans.security.encode_id(stored.id),
-            'name'                    : stored.name,
-            'tags'                    : item_tag_names,
-            'version'                 : version,
-            'annotation'              : self.get_item_annotation_str(trans.sa_session, trans.user, stored),
-            'toolbox'                 : trans.app.toolbox.to_dict(trans),
-            'moduleSections'          : module_sections,
-            'dataManagers'            : data_managers,
-            'workflows'               : workflows
+            'id': trans.security.encode_id(stored.id),
+            'name': stored.name,
+            'tags': item_tag_names,
+            'version': version,
+            'annotation': self.get_item_annotation_str(trans.sa_session, trans.user, stored),
+            'toolbox': trans.app.toolbox.to_dict(trans),
+            'moduleSections': module_sections,
+            'dataManagers': data_managers,
+            'workflows': workflows
         }
 
         # parse to mako

@@ -3,13 +3,15 @@ Backup resolvers for when dependencies can not be loaded from the database.
 Mainly suited for testing stage.
 
 Ideally all dependencies will be stored in the database
-    when a tool is added from a Tool Shed.
+when a tool is added from a Tool Shed.
+
 That should remain the preferred way of locating dependencies.
 
 In cases where that is not possible
-    for example during testing this resolver can act as a backup.
+for example during testing this resolver can act as a backup.
+
 This resolver looks not just for manually added dependencies
-    but also ones added from a Tool Shed.
+but also ones added from a Tool Shed.
 
 This tool is still under development so the default behaviour could change.
 It has been tested when placed in the same directory as galaxy_packages.py

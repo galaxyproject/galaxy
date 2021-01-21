@@ -756,6 +756,12 @@ def populate_api_routes(webapp, app):
                           action='api_key',
                           conditions=dict(method=["POST"]))
 
+    webapp.mapper.connect('api_key',
+                          '/api/users/{id}/api_key',
+                          controller='users',
+                          action='get_or_create_api_key',
+                          conditions=dict(method=["GET"]))
+
     webapp.mapper.connect('get_api_key',
                           '/api/users/{id}/api_key/inputs',
                           controller='users',
