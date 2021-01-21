@@ -30,8 +30,10 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
         file.write(random_text)
         file.close()
 
+        # allow user to add new datasets in the newly created library
         self.create_lib_and_permit_adding(email)
 
+        # test importing functionality
         self.libraries_open_with_name(self.name)
         self.assert_num_displayed_items_is(0)
         self.libraries_dataset_import(self.navigation.libraries.folder.labels.from_user_import_dir)
@@ -40,23 +42,31 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
 
     @selenium_test
     def test_user_library_import_dir_warning(self):
-        # do not create email-dir, assert warning
+        # do not create email-dir, assert just warning
         email = self.get_logged_in_user()["email"]
         self.create_lib_and_permit_adding(email)
 
         self.libraries_open_with_name(self.name)
         self.assert_num_displayed_items_is(0)
         self.libraries_dataset_import(self.navigation.libraries.folder.labels.from_user_import_dir)
+
+        # importing modal should be hidden
         self.wait_for_selector_absent_or_hidden(self.modal_body_selector())
+
+        # assert 'user import folder was not created' warning
         self.components.libraries.folder.toast_warning.wait_for_visible()
 
     def create_lib_and_permit_adding(self, email):
+        # logout of the current user, only admin can create new libraries
         self.logout()
         self.create_new_library()
+        # open permission manage dialog
         self.components.libraries.permission_library_btn.wait_for_and_click()
         self.components.libraries.add_items_permission_field.wait_for_and_click()
+        # search for created user and add him to permission field
         self.components.libraries.add_items_permission_field.wait_for_and_send_keys(email)
         self.components.libraries.add_items_permission_option.wait_for_and_click()
         self.components.libraries.toolbtn_save_permissions.wait_for_and_click()
         self.logout()
+        # login back to a 'regular' user account
         self.submit_login(email=email)
