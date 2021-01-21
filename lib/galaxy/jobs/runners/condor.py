@@ -10,9 +10,13 @@ greater reuse of the DRM specific hooks you'll need to write. Ideally this plugi
 have been written to target that framework, but we don't have the bandwidth to rewrite
 it at this time.
 """
+import datetime
 import logging
 import os
 import subprocess
+
+import htcondor
+from htcondor import JobEventType
 
 from galaxy import model
 from galaxy.jobs.runners import (
@@ -21,12 +25,10 @@ from galaxy.jobs.runners import (
 )
 from galaxy.jobs.runners.util.condor import (
     build_submit_description,
-    condor_stop,
-    condor_submit,
-    submission_params,
-    summarize_condor_log
+    submission_params
 )
 from galaxy.util import asbool
+
 
 log = logging.getLogger(__name__)
 
@@ -42,7 +44,8 @@ class CondorJobState(AsynchronousJobState):
         super().__init__(**kwargs)
         self.failed = False
         self.user_log = None
-        self.user_log_size = 0
+        self.last_seen_event = None
+        self.job_event_log = None
 
 
 class CondorJobRunner(AsynchronousJobRunner):
@@ -56,6 +59,7 @@ class CondorJobRunner(AsynchronousJobRunner):
         super().__init__(app, nworkers)
         self._init_monitor_thread()
         self._init_worker_threads()
+        self.schedd = htcondor.Schedd()
 
     def queue_job(self, job_wrapper):
         """Create job script and submit it to the DRM"""
@@ -95,18 +99,18 @@ class CondorJobRunner(AsynchronousJobRunner):
 
         cjs.user_log = os.path.join(job_wrapper.working_directory, 'galaxy_%s.condor.log' % galaxy_id_tag)
         cjs.register_cleanup_file_attribute('user_log')
-        submit_file = os.path.join(job_wrapper.working_directory, 'galaxy_%s.condor.desc' % galaxy_id_tag)
         executable = cjs.job_file
 
-        build_submit_params = dict(
+        submit_params = dict(
             executable=executable,
             output=cjs.output_file,
             error=cjs.error_file,
-            user_log=cjs.user_log,
-            query_params=query_params,
+            log=cjs.user_log
         )
 
-        submit_file_contents = build_submit_description(**build_submit_params)
+        submit_file_contents = build_submit_description(submit_params, query_params)
+        htcondor_job = htcondor.Submit(submit_file_contents)
+
         script = self.get_job_file(
             job_wrapper,
             exit_code_path=cjs.exit_code_file,
@@ -121,37 +125,19 @@ class CondorJobRunner(AsynchronousJobRunner):
             return
 
         cleanup_job = job_wrapper.cleanup_job
-        try:
-            open(submit_file, "w").write(submit_file_contents)
-        except Exception:
-            if cleanup_job == "always":
-                cjs.cleanup()
-                # job_wrapper.fail() calls job_wrapper.cleanup()
-            job_wrapper.fail("failure preparing submit file", exception=True)
-            log.exception("(%s) failure preparing submit file" % galaxy_id_tag)
-            return
 
         # job was deleted while we were preparing it
         if job_wrapper.get_state() in (model.Job.states.DELETED, model.Job.states.STOPPED):
             log.debug("(%s) Job deleted/stopped by user before it entered the queue", galaxy_id_tag)
             if cleanup_job in ("always", "onsuccess"):
-                os.unlink(submit_file)
                 cjs.cleanup()
                 job_wrapper.cleanup()
             return
 
         log.debug(f"({galaxy_id_tag}) submitting file {executable}")
 
-        external_job_id, message = condor_submit(submit_file)
-        if external_job_id is None:
-            log.debug(f"condor_submit failed for job {job_wrapper.get_id_tag()}: {message}")
-            if self.app.config.cleanup_job == "always":
-                os.unlink(submit_file)
-                cjs.cleanup()
-            job_wrapper.fail("condor_submit failed", exception=True)
-            return
-
-        os.unlink(submit_file)
+        with self.schedd.transaction() as txn:
+            external_job_id = htcondor_job.queue(txn)
 
         log.info(f"({galaxy_id_tag}) queued as {external_job_id}")
 
@@ -161,6 +147,7 @@ class CondorJobRunner(AsynchronousJobRunner):
         # Store DRM related state information for job
         cjs.job_id = external_job_id
         cjs.job_destination = job_destination
+        cjs.job_event_log = htcondor.JobEventLog(cjs.user_log)
 
         # Add to our 'queue' of jobs to monitor
         self.monitor_queue.put(cjs)
@@ -174,15 +161,63 @@ class CondorJobRunner(AsynchronousJobRunner):
         for cjs in self.watched:
             job_id = cjs.job_id
             galaxy_id_tag = cjs.job_wrapper.get_id_tag()
+
             try:
-                if cjs.job_wrapper.tool.tool_type != 'interactive' and os.stat(cjs.user_log).st_size == cjs.user_log_size:
+                CJS_EXECUTE = CJS_SHADOW_EXCEPTION = CJS_EVICTED = CJS_TERMINATED = CJS_ABORTED = False
+                if not cjs.job_event_log:
+                    cjs.job_event_log = htcondor.JobEventLog(cjs.user_log)
+
+                for event in cjs.job_event_log.events(stop_after=0):
+                    cjs.last_seen_event = datetime.datetime.fromtimestamp(event.timestamp)  # can be used to check for the job via polling
+                    if event.type is JobEventType.EXECUTE:
+                        CJS_EXECUTE = True
+                    elif event.type is JobEventType.JOB_EVICTED:
+                        CJS_EVICTED = True
+                    elif event.type is JobEventType.SHADOW_EXCEPTION:
+                        CJS_SHADOW_EXCEPTION = True
+                    elif event.type is JobEventType.JOB_TERMINATED:
+                        CJS_TERMINATED = True
+                    elif event.type is JobEventType.JOB_ABORTED:
+                        CJS_ABORTED = True
+
+                """
+                Condor JobStatus codes
+                0	Unexpanded 	U
+                1	Idle 	I
+                2	Running 	R
+                3	Removed 	X
+                4	Completed 	C
+                5	Held 	H
+                6	Submission_err 	E
+                """
+                # If for one day nothing happend try polling the job to be sure we have not lost it
+                # More information about event based job tracking and polling can be found here:
+                # https://htcondor.readthedocs.io/en/latest/apis/python-bindings/tutorials/Scalable-Job-Tracking.html
+                time_delta = datetime.datetime.now() - cjs.last_seen_event
+                if time_delta.days > 1:
+                    cjs.last_seen_event = datetime.datetime.now()
+                    schedd_query = self.schedd.history(
+                        constraint=f"ClusterId == {job_id}",
+                        projection=["JobStatus"]
+                    )
+                    for res in schedd_query:
+                        status = res.get('JobStatus')
+                        job_running = False
+                    if status == 4:
+                        job_complete = True
+                        job_failed = False
+                    elif status in [3, 6]:
+                        job_complete = False
+                        job_failed = True
+
+                if cjs.job_wrapper.tool.tool_type != 'interactive' and not any([CJS_EXECUTE, CJS_SHADOW_EXCEPTION, CJS_EVICTED, CJS_TERMINATED, CJS_ABORTED]):
                     new_watched.append(cjs)
                     continue
-                s1, s4, s7, s5, s9, log_size = summarize_condor_log(cjs.user_log, job_id)
-                job_running = s1 and not (s4 or s7)
-                job_complete = s5
-                job_failed = s9
-                cjs.user_log_size = log_size
+
+                job_running = CJS_EXECUTE and not (CJS_SHADOW_EXCEPTION or CJS_EVICTED)
+                job_complete = CJS_TERMINATED
+                job_failed = CJS_ABORTED
+
             except Exception:
                 # so we don't kill the monitor thread
                 log.exception(f"({galaxy_id_tag}/{job_id}) Unable to check job status")
@@ -253,13 +288,12 @@ class CondorJobRunner(AsynchronousJobRunner):
                     self._kill_container(job_wrapper)
                 except Exception as e:
                     log.warning(f"stop_job(): {job.id}: trying to kill container failed. ({e})")
-                    failure_message = condor_stop(external_id)
-                    if failure_message:
-                        log.debug(f"({external_id}). Failed to stop condor {failure_message}")
+                    self._condor_stop(external_id)
         else:
-            failure_message = condor_stop(external_id)
-            if failure_message:
-                log.debug(f"({external_id}). Failed to stop condor {failure_message}")
+            self._condor_stop(external_id)
+
+    def _condor_stop(self, external_id):
+        self.schedd.act(htcondor.JobAction.Remove, f"ClusterId == {external_id}")
 
     def recover(self, job, job_wrapper):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
@@ -270,7 +304,7 @@ class CondorJobRunner(AsynchronousJobRunner):
             self.put(job_wrapper)
             return
         cjs = CondorJobState(job_wrapper=job_wrapper, files_dir=job_wrapper.working_directory)
-        cjs.job_id = str(job_id)
+        cjs.job_id = job_id
         cjs.command_line = job.get_command_line()
         cjs.job_wrapper = job_wrapper
         cjs.job_destination = job_wrapper.job_destination
