@@ -68,5 +68,5 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
         self.components.libraries.add_items_permission_option.wait_for_and_click()
         self.components.libraries.toolbtn_save_permissions.wait_for_and_click()
         self.logout()
-        # login back to a 'regular' user account
+        # login back to the 'regular' user account
         self.submit_login(email=email)

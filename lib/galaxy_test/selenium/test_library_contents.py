@@ -26,7 +26,7 @@ class LibraryContentsTestCase(SeleniumTestCase):
         long_description = self._get_random_name(prefix="new_sub_folder_description", len=45)
 
         # create mew folder
-        self._navigate_to_new_library()
+        self.navigate_to_new_library()
         self.assert_num_displayed_items_is(0)
         self.libraries_folder_create(sub_folder_name)
         self.assert_num_displayed_items_is(1)
@@ -56,7 +56,7 @@ class LibraryContentsTestCase(SeleniumTestCase):
         self.admin_login()
         self.perform_upload(self.get_filename("1.txt"))
         self.wait_for_history()
-        self._navigate_to_new_library(login=False)
+        self.navigate_to_new_library(login=False)
         self.assert_num_displayed_items_is(0)
         self.sleep_for(self.wait_types.UX_RENDER)
         self.libraries_dataset_import(self.navigation.libraries.folder.labels.from_history)
@@ -112,7 +112,7 @@ class LibraryContentsTestCase(SeleniumTestCase):
     # for some reason. https://jenkins.galaxyproject.org/job/jmchilton-selenium/79/artifact/79-test-errors/test_import_dataset_from_path2017100413221507137721/
     @selenium_test
     def test_import_dataset_from_path(self):
-        self._navigate_to_new_library()
+        self.navigate_to_new_library()
         self.assert_num_displayed_items_is(0)
         self.sleep_for(self.wait_types.UX_RENDER)
 
@@ -146,7 +146,7 @@ class LibraryContentsTestCase(SeleniumTestCase):
 
     @selenium_test
     def test_import_dataset_from_import_dir(self):
-        self._navigate_to_new_library()
+        self.navigate_to_new_library()
         self.assert_num_displayed_items_is(0)
         self.libraries_dataset_import(self.navigation.libraries.folder.labels.from_import_dir)
         self.libraries_dataset_import_from_import_dir()
@@ -155,7 +155,7 @@ class LibraryContentsTestCase(SeleniumTestCase):
 
     @selenium_test
     def test_show_details(self):
-        self._navigate_to_new_library()
+        self.navigate_to_new_library()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.wait_for_selector_clickable(".toolbtn-show-locinfo").click()
         self.sleep_for(self.wait_types.UX_RENDER)
