@@ -1434,7 +1434,7 @@ class ToolModule(WorkflowModule):
         data_outputs = []
         if self.tool:
             for name, tool_output in self.tool.outputs.items():
-                if filter_output(tool_output, self.state.inputs):
+                if filter_output(self.tool, tool_output, self.state.inputs):
                     continue
                 extra_kwds = {}
                 if isinstance(tool_output, ToolExpressionOutput):

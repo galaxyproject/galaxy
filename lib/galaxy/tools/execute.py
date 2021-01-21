@@ -287,7 +287,7 @@ class ExecutionTracker:
 
         implicit_collection_jobs = model.ImplicitCollectionJobs()
         for output_name, output in self.tool.outputs.items():
-            if filter_output(output, self.example_params):
+            if filter_output(self.tool, output, self.example_params):
                 continue
             output_collection_name = self.output_name(trans, history, params, output)
             effective_structure = self._mapped_output_structure(trans, output)
