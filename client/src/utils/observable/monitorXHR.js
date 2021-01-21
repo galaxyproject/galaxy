@@ -2,7 +2,6 @@ import { defer, Subject } from "rxjs";
 import { filter, finalize, share } from "rxjs/operators";
 
 // global XHR request feed, emits every time xhr fires
-// prettier-ignore
 const xhr$ = defer(() => {
     const request$ = new Subject();
 
@@ -19,12 +18,10 @@ const xhr$ = defer(() => {
             XMLHttpRequest.prototype.open = originalOpen;
         })
     );
-}).pipe(
-    share()
-);
+}).pipe(share());
 
 /**
- * Watch outgong ajax calls for any of the indicated methods, filter to any of the provided route regexes
+ * Watch outgoing ajax calls for any of the indicated methods, filter to any of the provided route regexes
  *
  * @param {Object} cfg  Configure methods and routes to monitor
  * @return {Observable} Observable that emits every time a matching outgoing request happens

@@ -6,11 +6,11 @@ import { loadHistoryContents } from "../../caching";
 
 // prettier-ignore
 export const loadContents = (cfg = {}) => {
-    const { 
-        windowSize, 
-        initialInterval = 2 * 1000, 
-        maxInterval = 10 * initialInterval, 
-        disablePoll = false 
+    const {
+        windowSize,
+        initialInterval = 2 * 1000,
+        maxInterval = 10 * initialInterval,
+        disablePoll = false
     } = cfg;
 
     return switchMap(([{ id }, params, hid]) => {
