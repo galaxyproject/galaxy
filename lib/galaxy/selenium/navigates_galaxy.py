@@ -900,8 +900,6 @@ class NavigatesGalaxy(HasDriver):
     def admin_open(self):
         self.components.masthead.admin.wait_for_and_click()
 
-
-
     def select_dataset_from_lib_import_modal(self, name):
         self.components.libraries.folder.select_import_dir_item(name=name).wait_for_and_click()
         self.components.libraries.folder.import_dir_btn.wait_for_and_click()

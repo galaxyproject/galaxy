@@ -451,6 +451,7 @@ class UsesLibraryAssertions:
     def num_displayed_items(self):
         return len(self.libraries_table_elements())
 
+
 class UsesHistoryItemAssertions:
 
     def assert_item_peek_includes(self, hid, expected):

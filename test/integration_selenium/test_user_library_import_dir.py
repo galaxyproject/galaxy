@@ -60,6 +60,3 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
         self.components.libraries.toolbtn_save_permissions.wait_for_and_click()
         self.logout()
         self.submit_login(email=email)
-
-
-
