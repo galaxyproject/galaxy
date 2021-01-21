@@ -6,10 +6,11 @@ from .framework import (
     retry_during_transitions,
     selenium_test,
     SeleniumTestCase,
+    UsesLibraryAssertions
 )
 
 
-class LibraryContentsTestCase(SeleniumTestCase):
+class LibraryContentsTestCase(SeleniumTestCase, UsesLibraryAssertions):
 
     requires_admin = True
 
@@ -149,7 +150,6 @@ class LibraryContentsTestCase(SeleniumTestCase):
         self.navigate_to_new_library()
         self.assert_num_displayed_items_is(0)
         self.libraries_dataset_import(self.navigation.libraries.folder.labels.from_import_dir)
-        self.libraries_dataset_import_from_import_dir()
         self.select_dataset_from_lib_import_modal("1.axt")
         self.assert_num_displayed_items_is(1)
 
