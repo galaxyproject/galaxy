@@ -962,18 +962,19 @@ class NavigatesGalaxy(HasDriver):
 
     def libraries_click_dataset_import(self):
         self.wait_for_and_click(self.navigation.libraries.folder.selectors.add_items_button)
+        self.wait_for_visible(self.navigation.libraries.folder.selectors.add_items_menu)
 
     def libraries_dataset_import_from_history(self):
         self.libraries_click_dataset_import()
-
-        self.wait_for_visible(self.navigation.libraries.folder.selectors.add_items_menu)
         self.wait_for_and_click(self.navigation.libraries.folder.labels.from_history)
 
     def libraries_dataset_import_from_path(self):
         self.libraries_click_dataset_import()
-
-        self.wait_for_visible(self.navigation.libraries.folder.selectors.add_items_menu)
         self.wait_for_and_click(self.navigation.libraries.folder.labels.from_path)
+
+    def libraries_dataset_import_from_import_dir(self):
+        self.libraries_click_dataset_import()
+        self.wait_for_and_click(self.navigation.libraries.folder.labels.from_import_dir)
 
     def libraries_dataset_import_from_history_select(self, to_select_items):
         self.wait_for_visible(self.navigation.libraries.folder.selectors.import_history_content)
