@@ -52,6 +52,15 @@ mapping:
           file_path, etc.). Defaults to `database/` if running Galaxy from source or
           `<config_dir>/data` otherwise.
 
+      cache_dir:
+        type: str
+        default: cache
+        path_resolves_to: data_dir
+        required: false
+        desc: |
+          Top level cache directory. Any other cache directories (tool_cache_data_dir,
+          template_cache_path, etc.) should be subdirectories.
+
       database_connection:
         type: str
         required: false
@@ -725,7 +734,7 @@ mapping:
       template_cache_path:
         type: str
         default: compiled_templates
-        path_resolves_to: data_dir
+        path_resolves_to: cache_dir
         required: false
         desc: |
           Mako templates are compiled as needed and cached for reuse, this directory is
@@ -779,7 +788,7 @@ mapping:
       tool_cache_data_dir:
         type: str
         default: tool_cache
-        path_resolves_to: data_dir
+        path_resolves_to: cache_dir
         required: false
         desc: |
           Tool related caching. Fully expanded tools and metadata will be stored at this path.
@@ -815,7 +824,7 @@ mapping:
       citation_cache_data_dir:
         type: str
         default: citations/data
-        path_resolves_to: data_dir
+        path_resolves_to: cache_dir
         required: false
         desc: |
           Citation related caching.  Tool citations information maybe fetched from
@@ -825,7 +834,7 @@ mapping:
       citation_cache_lock_dir:
         type: str
         default: citations/locks
-        path_resolves_to: data_dir
+        path_resolves_to: cache_dir
         required: false
         desc: |
           Citation related caching.  Tool citations information maybe fetched from
@@ -843,7 +852,7 @@ mapping:
       mulled_resolution_cache_data_dir:
         type: str
         default: mulled/data
-        path_resolves_to: data_dir
+        path_resolves_to: cache_dir
         required: false
         desc: |
           Data directory used by beaker for caching mulled resolution requests.
@@ -851,7 +860,7 @@ mapping:
       mulled_resolution_cache_lock_dir:
         type: str
         default: mulled/locks
-        path_resolves_to: data_dir
+        path_resolves_to: cache_dir
         required: false
         desc: |
           Lock directory used by beaker for caching mulled resolution requests.
@@ -2525,7 +2534,7 @@ mapping:
       openid_consumer_cache_path:
         type: str
         default: openid_consumer_cache
-        path_resolves_to: data_dir
+        path_resolves_to: cache_dir
         required: false
         desc: |
           If OpenID is enabled, consumer cache directory to use.

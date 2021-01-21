@@ -128,6 +128,13 @@ galaxy:
   # if running Galaxy from source or `<config_dir>/data` otherwise.
   #data_dir: null
 
+  # Top level cache directory. Any other cache directories
+  # (tool_cache_data_dir, template_cache_path, etc.) should be
+  # subdirectories.
+  # The value of this option will be resolved with respect to
+  # <data_dir>.
+  #cache_dir: cache
+
   # By default, Galaxy uses a SQLite database at
   # '<data_dir>/universe.sqlite'.  You may use a SQLAlchemy connection
   # string to specify an external database instead.
@@ -593,7 +600,7 @@ galaxy:
   # Mako templates are compiled as needed and cached for reuse, this
   # directory is used for the cache
   # The value of this option will be resolved with respect to
-  # <data_dir>.
+  # <cache_dir>.
   #template_cache_path: compiled_templates
 
   # Set to false to disable various checks Galaxy will do to ensure it
@@ -630,7 +637,7 @@ galaxy:
   # in (``shed_``)tool_conf.xml files using the tool_cache_data_dir
   # attribute.
   # The value of this option will be resolved with respect to
-  # <data_dir>.
+  # <cache_dir>.
   #tool_cache_data_dir: tool_cache
 
   # Directory in which the toolbox search index is stored. The value of
@@ -653,7 +660,7 @@ galaxy:
   # following parameters can be used to control the caching used to
   # store this information.
   # The value of this option will be resolved with respect to
-  # <data_dir>.
+  # <cache_dir>.
   #citation_cache_data_dir: citations/data
 
   # Citation related caching.  Tool citations information maybe fetched
@@ -661,7 +668,7 @@ galaxy:
   # following parameters can be used to control the caching used to
   # store this information.
   # The value of this option will be resolved with respect to
-  # <data_dir>.
+  # <cache_dir>.
   #citation_cache_lock_dir: citations/locks
 
   # Mulled resolution caching. Mulled resolution uses external APIs of
@@ -672,13 +679,13 @@ galaxy:
   # Data directory used by beaker for caching mulled resolution
   # requests.
   # The value of this option will be resolved with respect to
-  # <data_dir>.
+  # <cache_dir>.
   #mulled_resolution_cache_data_dir: mulled/data
 
   # Lock directory used by beaker for caching mulled resolution
   # requests.
   # The value of this option will be resolved with respect to
-  # <data_dir>.
+  # <cache_dir>.
   #mulled_resolution_cache_lock_dir: mulled/locks
 
   # Configuration file for the object store If this is set and exists,
@@ -1724,7 +1731,7 @@ galaxy:
 
   # If OpenID is enabled, consumer cache directory to use.
   # The value of this option will be resolved with respect to
-  # <data_dir>.
+  # <cache_dir>.
   #openid_consumer_cache_path: openid_consumer_cache
 
   # Enable tool tags (associating tools with tags).  This has its own
