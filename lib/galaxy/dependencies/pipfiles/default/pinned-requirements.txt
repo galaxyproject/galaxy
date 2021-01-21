@@ -8,6 +8,7 @@
 -i https://wheels.galaxyproject.org/simple
 --extra-index-url https://pypi.python.org/simple
 adal==1.2.5
+aiofiles==0.6.0
 amqp==5.0.2; python_version >= '3.6'
 appdirs==1.4.4
 argcomplete==1.12.2

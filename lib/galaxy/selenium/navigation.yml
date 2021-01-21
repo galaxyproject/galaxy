@@ -60,6 +60,7 @@ masthead:
     custom_builds: 'Custom Builds'
     preferences: 'Preferences'
     histories: 'Histories'
+    invocations: 'Workflow Invocations'
     pages: 'Pages'
 
     # Shared data
@@ -187,6 +188,9 @@ history_panel:
     options_show_history_structure:
       type: xpath
       selector: '//a[text()="Show Structure"]'
+    options_show_export_history_to_file:
+      type: xpath
+      selector: '//a[text()="Export History to File"]'
     new_history_button: '#history-new-button'
     multi_view_button: '#history-view-multi-button'
 
@@ -282,6 +286,9 @@ collection_builders:
     reverse_datasets: ".reverse-column .column-datasets"
 
 histories:
+  labels:
+    import_button: 'Import from file'
+
   sharing:
     selectors:
       unshare_user_button: '.unshare_user'
@@ -290,6 +297,33 @@ histories:
       make_publishable: '.make-publishable label'
     labels:
       unshare: 'Unshare'
+
+files_dialog:
+  selectors:
+    ftp_row: 'span[title="gxftp://"]'
+    row: 'span[title="${uri}"]'
+
+history_export:
+  selectors:
+    export_link: '.export-link'
+    running: '.history-export-component .loading-icon'
+    generated_export_link: '.generated-export-link'
+    copy_export_link: '.copy-export-link'
+    show_job_link: '.show-job-link'
+    job_table: '.info_data_table'
+    job_table_ok: '.job-information-modal .btn-primary'
+    tab_export_to_file: '.tab-export-to-file'
+    directory_input: '.directory-form-input'
+    name_input: '.export-to-remote-file #name'
+    export_button: '.export-button'
+    success_message: '.history-export-component .alert-success'
+
+history_import:
+  selectors:
+    radio_button_remote_files: '.history-import-component .fa-folder-open'
+    import_button: '.import-button'
+    running: '.history-import-component .loading-icon'
+    success_message: '.history-import-component .alert-success'
 
 pages:
   selectors:
@@ -385,6 +419,27 @@ workflow_editor:
     connector_destroy_callout: '.delete-terminal'
     save_button: '.editor-button-save'
     state_modal_body: '.state-upgrade-modal'
+
+invocations:
+  selectors:
+    invocations_table: '.invocations-list table'
+    invocations_table_rows: '.invocations-list table tbody tr'
+    state_details: '.workflow-invocation-state-component'
+    toggle_invocation_details: '.toggle-invocation-details'
+    progress_steps_note: '.workflow-invocation-state-component .steps-progress .progressNote'
+    progress_jobs_note: '.workflow-invocation-state-component .jobs-progress .progressNote'
+    input_details: '.workflow-invocation-state-component .invocation-inputs-details'
+    input_details_title: '.workflow-invocation-state-component .invocation-inputs-details [data-label="${label}"]'
+    input_details_name:  '.workflow-invocation-state-component .invocation-inputs-details [data-label="${label}"] .name'
+
+    steps_details: '.workflow-invocation-state-component .invocation-steps-details'
+    step_title: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .step-title'
+    step_details: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .portlet-operations'
+    step_job_details: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-job-details'
+    step_job_table: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-job-details table'
+    step_job_table_rows: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-job-details table tbody tr'
+    step_job_information: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-job-details table tbody .b-table-details .info_data_table'
+    step_job_information_tool_id: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-job-details table tbody .b-table-details .info_data_table #galaxy-tool-id'
 
 tour:
   popover:
@@ -508,10 +563,15 @@ libraries:
       download_button: '#download-btn'
       delete_btn: '.toolbtn-bulk-delete'
       toast_msg: '.toast-message'
+      select_import_dir_item: 'li[full_path="${name}"] .jstree-anchor'
+      import_dir_btn:
+        type: xpath
+        selector: '//button[contains(text(), "Import")]'
 
     labels:
       from_history: 'from History'
       from_path: 'from Path'
+      from_import_dir: 'from Import Directory'
 
   dataset:
     selectors:

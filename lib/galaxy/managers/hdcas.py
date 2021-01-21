@@ -109,8 +109,8 @@ class DCESerializer(base.ModelSerializer):
     def add_serializers(self):
         super().add_serializers()
         self.serializers.update({
-            'model_class'   : lambda *a, **c: 'DatasetCollectionElement',
-            'object'        : self.serialize_object
+            'model_class': lambda *a, **c: 'DatasetCollectionElement',
+            'object': self.serialize_object
         })
 
     def serialize_object(self, item, key, **context):
@@ -148,8 +148,8 @@ class DCSerializer(base.ModelSerializer):
     def add_serializers(self):
         super().add_serializers()
         self.serializers.update({
-            'model_class'   : lambda *a, **c: 'DatasetCollection',
-            'elements'      : self.serialize_elements,
+            'model_class': lambda *a, **c: 'DatasetCollection',
+            'elements': self.serialize_elements,
         })
 
     def serialize_elements(self, item, key, **context):
@@ -290,21 +290,21 @@ class HDCASerializer(
         annotatable.AnnotatableSerializerMixin.add_serializers(self)
 
         self.serializers.update({
-            'model_class'               : lambda *a, **c: self.hdca_manager.model_class.__class__.__name__,
+            'model_class': lambda *a, **c: self.hdca_manager.model_class.__class__.__name__,
             # TODO: remove
-            'type'                      : lambda *a, **c: 'collection',
+            'type': lambda *a, **c: 'collection',
             # part of a history and container
-            'history_id'                : self.serialize_id,
-            'history_content_type'      : lambda *a, **c: self.hdca_manager.model_class.content_type,
-            'type_id'                   : self.serialize_type_id,
-            'job_source_id'             : self.serialize_id,
+            'history_id': self.serialize_id,
+            'history_content_type': lambda *a, **c: self.hdca_manager.model_class.content_type,
+            'type_id': self.serialize_type_id,
+            'job_source_id': self.serialize_id,
 
-            'url'   : lambda i, k, **c: self.url_for('history_content_typed',
-                                                     history_id=self.app.security.encode_id(i.history_id),
-                                                     id=self.app.security.encode_id(i.id),
-                                                     type=self.hdca_manager.model_class.content_type),
-            'contents_url'              : self.generate_contents_url,
-            'job_state_summary'         : self.serialize_job_state_summary
+            'url': lambda i, k, **c: self.url_for('history_content_typed',
+                                                  history_id=self.app.security.encode_id(i.history_id),
+                                                  id=self.app.security.encode_id(i.id),
+                                                  type=self.hdca_manager.model_class.content_type),
+            'contents_url': self.generate_contents_url,
+            'job_state_summary': self.serialize_job_state_summary
         })
 
     def generate_contents_url(self, hdca, key, **context):

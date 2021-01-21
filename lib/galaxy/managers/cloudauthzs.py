@@ -53,16 +53,16 @@ class CloudAuthzsSerializer(base.ModelSerializer):
         # k  : serialized dictionary key (e.g., 'model_class', 'provider').
         # **c: a dictionary containing 'trans' and 'user' objects.
         self.serializers.update({
-            'id'           : lambda i, k, **c: self.app.security.encode_id(i.id),
-            'model_class'  : lambda *a, **c: 'CloudAuthz',
-            'user_id'      : lambda i, k, **c: self.app.security.encode_id(i.user_id),
-            'provider'     : lambda i, k, **c: str(i.provider),
-            'config'       : lambda i, k, **c: i.config,
-            'authn_id'     : lambda i, k, **c: self.app.security.encode_id(i.authn_id) if i.authn_id else None,
-            'last_update'  : lambda i, k, **c: str(i.last_update),
+            'id': lambda i, k, **c: self.app.security.encode_id(i.id),
+            'model_class': lambda *a, **c: 'CloudAuthz',
+            'user_id': lambda i, k, **c: self.app.security.encode_id(i.user_id),
+            'provider': lambda i, k, **c: str(i.provider),
+            'config': lambda i, k, **c: i.config,
+            'authn_id': lambda i, k, **c: self.app.security.encode_id(i.authn_id) if i.authn_id else None,
+            'last_update': lambda i, k, **c: str(i.last_update),
             'last_activity': lambda i, k, **c: str(i.last_activity),
-            'create_time'  : lambda i, k, **c: str(i.create_time),
-            'description'  : lambda i, k, **c: str(i.description)
+            'create_time': lambda i, k, **c: str(i.create_time),
+            'description': lambda i, k, **c: str(i.description)
         })
 
 

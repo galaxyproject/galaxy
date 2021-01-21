@@ -438,10 +438,10 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                     # No user, associate
                     galaxy_session.user = self.get_or_create_remote_user(remote_user_email)
                     galaxy_session_requires_flush = True
-                elif (remote_user_email and
-                      (galaxy_session.user.email != remote_user_email) and
-                      ((not self.app.config.allow_user_impersonation) or
-                       (remote_user_email not in self.app.config.admin_users_list))):
+                elif (remote_user_email
+                      and galaxy_session.user.email != remote_user_email
+                      and (not self.app.config.allow_user_impersonation
+                           or remote_user_email not in self.app.config.admin_users_list)):
                     # Session exists but is not associated with the correct
                     # remote user, and the currently set remote_user is not a
                     # potentially impersonating admin.
@@ -531,9 +531,9 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             if self.request.path.startswith(external_display_path):
                 request_path_split = self.request.path.split('/')
                 try:
-                    if (self.app.datatypes_registry.display_applications.get(request_path_split[-5]) and
-                            request_path_split[-4] in self.app.datatypes_registry.display_applications.get(request_path_split[-5]).links and
-                            request_path_split[-3] != 'None'):
+                    if (self.app.datatypes_registry.display_applications.get(request_path_split[-5])
+                            and request_path_split[-4] in self.app.datatypes_registry.display_applications.get(request_path_split[-5]).links
+                            and request_path_split[-3] != 'None'):
                         return
                 except IndexError:
                     pass
@@ -648,12 +648,12 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             users_last_session = user.galaxy_sessions[0]
         except Exception:
             users_last_session = None
-        if (prev_galaxy_session and
-                prev_galaxy_session.current_history and not
-                prev_galaxy_session.current_history.deleted and
-                prev_galaxy_session.current_history.datasets and
-                (prev_galaxy_session.current_history.user is None or
-                 prev_galaxy_session.current_history.user == user)):
+        if (prev_galaxy_session
+                and prev_galaxy_session.current_history
+                and not prev_galaxy_session.current_history.deleted
+                and prev_galaxy_session.current_history.datasets
+                and (prev_galaxy_session.current_history.user is None
+                     or prev_galaxy_session.current_history.user == user)):
             # If the previous galaxy session had a history, associate it with the new session, but only if it didn't
             # belong to a different user.
             history = prev_galaxy_session.current_history
@@ -666,8 +666,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                 set_permissions = True
         elif self.galaxy_session.current_history:
             history = self.galaxy_session.current_history
-        if (not history and users_last_session and
-                users_last_session.current_history and not
+        if (not history and users_last_session
+                and users_last_session.current_history and not
                 users_last_session.current_history.deleted):
             history = users_last_session.current_history
         elif not history:
@@ -765,7 +765,9 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         self.sa_session.add(self.galaxy_session)
         self.sa_session.flush()
 
-    history = property(get_history, set_history)
+    @property
+    def history(self):
+        return self.get_history()
 
     def get_or_create_default_history(self):
         """

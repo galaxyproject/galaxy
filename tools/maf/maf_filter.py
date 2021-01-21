@@ -51,7 +51,7 @@ def main():
     # 'ret_val' should be set to True if the block is to be kept
     i = 0
     blocks_kept = 0
-    for i, maf_block in enumerate(maf_reader):
+    for i, maf_block in enumerate(maf_reader):  # noqa: B007
         if min_size <= maf_block.text_size <= max_size:
             local = {'maf_block': maf_block, 'ret_val': False}
             exec(compile(open(script_file).read(), script_file, 'exec'), {}, local)

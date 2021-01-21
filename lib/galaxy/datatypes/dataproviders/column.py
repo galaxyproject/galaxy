@@ -32,12 +32,12 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
     are filled with None).
     """
     settings = {
-        'indeces'       : 'list:int',
-        'column_count'  : 'int',
-        'column_types'  : 'list:str',
-        'parse_columns' : 'bool',
-        'deliminator'   : 'str',
-        'filters'       : 'list:str'
+        'indeces': 'list:int',
+        'column_count': 'int',
+        'column_types': 'list:str',
+        'parse_columns': 'bool',
+        'deliminator': 'str',
+        'filters': 'list:str'
     }
 
     def __init__(self, source, indeces=None,
@@ -223,9 +223,9 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
         # TODO: move to module level (or datatypes, util)
         return {
             # str is default and not needed here
-            'int'   : int,
-            'float' : float,
-            'bool'  : bool,
+            'int': int,
+            'float': float,
+            'bool': bool,
 
             # unfortunately, 'list' is used in dataset metadata both for
             #   query style maps (9th col gff) AND comma-sep strings.
@@ -333,7 +333,7 @@ class DictDataProvider(ColumnarDataProvider):
         params (limit, offset, etc.) are also applicable here.
     """
     settings = {
-        'column_names'  : 'list:str',
+        'column_names': 'list:str',
     }
 
     def __init__(self, source, column_names=None, **kwargs):

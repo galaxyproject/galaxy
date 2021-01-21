@@ -88,7 +88,7 @@ def assert_error_message_contains(response: Union[Response, dict], expected_cont
 
 
 def _as_dict(response: Union[Response, dict]) -> Dict[str, Any]:
-    as_dict : Dict[str, Any]
+    as_dict: Dict[str, Any]
     if isinstance(response, Response):
         as_dict = cast(dict, response.json())
     else:

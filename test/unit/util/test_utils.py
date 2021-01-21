@@ -24,10 +24,10 @@ def test_strip_control_characters():
 def test_strip_control_characters_nested():
     s = '\x00bla'
     stripped_s = 'bla'
-    l = [s]
+    list_ = [s]
     t = (s, 'blub')
     d = {42: s}
-    assert util.strip_control_characters_nested(l)[0] == stripped_s
+    assert util.strip_control_characters_nested(list_)[0] == stripped_s
     assert util.strip_control_characters_nested(t)[0] == stripped_s
     assert util.strip_control_characters_nested(d)[42] == stripped_s
 

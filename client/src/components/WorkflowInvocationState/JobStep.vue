@@ -1,13 +1,6 @@
 <template>
     <b-card v-if="jobs">
-        <b-table
-            small
-            caption-top
-            :items="jobs"
-            :fields="fields"
-            v-if="jobs"
-            @row-clicked="(item) => $set(item, '_showDetails', !item._showDetails)"
-        >
+        <b-table small caption-top :items="jobsProvider" :fields="fields" primary-key="id" @row-clicked="toggleDetails">
             <template v-slot:row-details="row">
                 <job-provider
                     :id="row.item.id"
@@ -53,6 +46,31 @@ export default {
     props: {
         jobs: { type: Array, required: true },
     },
+    methods: {
+        jobsProvider(ctx, callback) {
+            // It may seem unnecessary to use a provider here, since the jobs prop
+            // is being updated externally. However we need to keep track of the
+            // _showDetails attribute which determines whether the row is shown as expanded
+            this.$watch(
+                "jobs",
+                function () {
+                    // update new jobs array with current state
+                    const toggledJobs = this.jobs.map((e) => {
+                        return { ...e, _showDetails: !!this.toggledItems[e.id] };
+                    });
+                    callback(toggledJobs);
+                },
+                { immediate: true }
+            );
+            return null;
+        },
+        toggleDetails(item) {
+            // toggle item
+            item._showDetails = !item._showDetails;
+            // update state
+            this.toggledItems[item.id] = item._showDetails;
+        },
+    },
     data() {
         return {
             fields: [
@@ -60,6 +78,7 @@ export default {
                 { key: "update_time", label: "Updated", sortable: true },
                 { key: "create_time", label: "Created", sortable: true },
             ],
+            toggledItems: {},
         };
     },
 };

@@ -138,9 +138,9 @@ class Browser:
 
     def runtool(self):
         path = '/api/tools'
-        data = {'tool_id' : self.tool,
-                'history_id' : self.history_id,
-                'inputs' : {'echo' : self.handler}}
+        data = {'tool_id': self.tool,
+                'history_id': self.history_id,
+                'inputs': {'echo': self.handler}}
         res = self.req(path, data=data)
         dprint(json.loads(res.read()))
 
@@ -158,7 +158,7 @@ class Browser:
         return self._history_id
 
     def create_history(self):
-        res = self.req('/api/histories', data={'name' : handler})
+        res = self.req('/api/histories', data={'name': handler})
         self._history_id = json.loads(res.read())['id']
 
     @property

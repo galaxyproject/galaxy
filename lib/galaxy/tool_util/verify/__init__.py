@@ -253,8 +253,8 @@ def files_diff(file1, file2, attributes=None):
                 is_pdf = True
                 # Replace non-Unicode characters using unicodify(),
                 # difflib.unified_diff doesn't work on list of bytes
-                history_data = [unicodify(l) for l in get_fileobj(file2, mode='rb', compressed_formats=compressed_formats)]
-                local_file = [unicodify(l) for l in get_fileobj(file1, mode='rb', compressed_formats=compressed_formats)]
+                history_data = [unicodify(line) for line in get_fileobj(file2, mode='rb', compressed_formats=compressed_formats)]
+                local_file = [unicodify(line) for line in get_fileobj(file1, mode='rb', compressed_formats=compressed_formats)]
             else:
                 raise AssertionError("Binary data detected, not displaying diff")
         if attributes.get('sort', False):

@@ -21,7 +21,6 @@ from galaxy.util import (
     unicodify,
     XML,
 )
-from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.rules_dsl import RuleSet
@@ -38,7 +37,12 @@ from .sanitize import ToolParameterSanitizer
 
 log = logging.getLogger(__name__)
 
-workflow_building_modes = Bunch(DISABLED=False, ENABLED=True, USE_HISTORY=1)
+
+class workflow_building_modes:
+    DISABLED = False
+    ENABLED = True
+    USE_HISTORY = 1
+
 
 WORKFLOW_PARAMETER_REGULAR_EXPRESSION = re.compile(r'\$\{.+?\}')
 
@@ -58,8 +62,8 @@ def contains_workflow_parameter(value, search=False):
 
 
 def is_runtime_value(value):
-    return isinstance(value, RuntimeValue) or (isinstance(value, dict) and
-        value.get("__class__") in ["RuntimeValue", "ConnectedValue"])
+    return isinstance(value, RuntimeValue) or (isinstance(value, dict)
+        and value.get("__class__") in ["RuntimeValue", "ConnectedValue"])
 
 
 def is_runtime_context(trans, other_values):
@@ -70,8 +74,8 @@ def is_runtime_context(trans, other_values):
             return True
         for v in util.listify(context_value):
             if isinstance(v, trans.app.model.HistoryDatasetAssociation) and \
-                    ((hasattr(v, 'state') and v.state != galaxy.model.Dataset.states.OK) or
-                    hasattr(v, 'implicit_conversion')):
+                    ((hasattr(v, 'state') and v.state != galaxy.model.Dataset.states.OK)
+                    or hasattr(v, 'implicit_conversion')):
                 return True
     return False
 

@@ -517,14 +517,24 @@ class NavigatesGalaxy(HasDriver):
         center_element = self.driver.find_element_by_css_selector("#center")
         action_chains.move_to_element(center_element).click().perform()
 
-    def perform_upload(self, test_path, ext=None, genome=None, ext_all=None, genome_all=None):
+    def perform_upload(self, test_path, **kwd):
+        self._perform_upload(test_path=test_path, **kwd)
+
+    def perform_upload_of_pasted_content(self, paste_data, **kwd):
+        self._perform_upload(paste_data=paste_data, **kwd)
+
+    def _perform_upload(self, test_path=None, paste_data=None, ext=None, genome=None, ext_all=None, genome_all=None):
         self.home()
         self.upload_start_click()
 
         self.upload_set_footer_extension(ext_all)
         self.upload_set_footer_genome(genome_all)
 
-        self.upload_queue_local_file(test_path)
+        if test_path:
+            self.upload_queue_local_file(test_path)
+        else:
+            assert paste_data is not None
+            self.upload_paste_data(paste_data)
 
         if ext is not None:
             self.wait_for_selector_visible('.upload-extension')
@@ -634,6 +644,13 @@ class NavigatesGalaxy(HasDriver):
 
         file_upload = self.wait_for_selector('div#%s input[type="file"]' % tab_id)
         file_upload.send_keys(test_path)
+
+    def upload_paste_data(self, pasted_content, tab_id="regular"):
+        tab_locator = f"div#{tab_id}"
+        self.wait_for_and_click_selector(f"{tab_locator} button#btn-new")
+
+        textarea = self.wait_for_selector(f"{tab_locator} .upload-text-content")
+        textarea.send_keys(pasted_content)
 
     def upload_rule_start(self):
         self.upload_start_click()
@@ -865,10 +882,20 @@ class NavigatesGalaxy(HasDriver):
         self.wait_for_and_click_selector("#workflow-save-button")
         self.sleep_for(self.wait_types.DATABASE_OPERATION)
 
+    def navigate_to_histories_page(self):
+        self.home()
+        self.click_masthead_user()
+        self.components.masthead.histories.wait_for_and_click()
+
     def navigate_to_user_preferences(self):
         self.home()
         self.click_masthead_user()
         self.components.masthead.preferences.wait_for_and_click()
+
+    def navigate_to_invocations(self):
+        self.home()
+        self.click_masthead_user()
+        self.components.masthead.invocations.wait_for_and_click()
 
     def admin_open(self):
         self.components.masthead.admin.wait_for_and_click()
@@ -935,18 +962,19 @@ class NavigatesGalaxy(HasDriver):
 
     def libraries_click_dataset_import(self):
         self.wait_for_and_click(self.navigation.libraries.folder.selectors.add_items_button)
+        self.wait_for_visible(self.navigation.libraries.folder.selectors.add_items_menu)
 
     def libraries_dataset_import_from_history(self):
         self.libraries_click_dataset_import()
-
-        self.wait_for_visible(self.navigation.libraries.folder.selectors.add_items_menu)
         self.wait_for_and_click(self.navigation.libraries.folder.labels.from_history)
 
     def libraries_dataset_import_from_path(self):
         self.libraries_click_dataset_import()
-
-        self.wait_for_visible(self.navigation.libraries.folder.selectors.add_items_menu)
         self.wait_for_and_click(self.navigation.libraries.folder.labels.from_path)
+
+    def libraries_dataset_import_from_import_dir(self):
+        self.libraries_click_dataset_import()
+        self.wait_for_and_click(self.navigation.libraries.folder.labels.from_import_dir)
 
     def libraries_dataset_import_from_history_select(self, to_select_items):
         self.wait_for_visible(self.navigation.libraries.folder.selectors.import_history_content)
@@ -1163,6 +1191,18 @@ class NavigatesGalaxy(HasDriver):
     def histories_click_advanced_search(self):
         search_selector = '#standard-search .advanced-search-toggle'
         self.wait_for_and_click_selector(search_selector)
+
+    @retry_during_transitions
+    def histories_get_history_names(self):
+        self.sleep_for(self.wait_types.UX_RENDER)
+        names = []
+        grid = self.wait_for_selector('#grid-table-body')
+        for row in grid.find_elements_by_tag_name('tr'):
+            td = row.find_elements_by_tag_name('td')
+            name = td[1].text if td[0].text == '' else td[0].text
+            if name != "No items" and not name.startswith("No matching entries found"):
+                names.append(name)
+        return names
 
     def history_panel_add_tags(self, tags):
         tag_icon_selector = self.components.history_panel.tag_icon

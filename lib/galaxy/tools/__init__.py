@@ -55,6 +55,7 @@ from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
 from galaxy.tools.cache import ToolDocumentCache
+from galaxy.tools.imp_exp import JobImportHistoryArchiveWrapper
 from galaxy.tools.parameters import (
     check_param,
     params_from_strings,
@@ -304,13 +305,14 @@ class ToolBox(BaseGalaxyToolBox):
         return self._tools_by_id
 
     def get_cache_region(self, tool_cache_data_dir):
-        if tool_cache_data_dir not in self.cache_regions:
-            self.cache_regions[tool_cache_data_dir] = ToolDocumentCache(cache_dir=tool_cache_data_dir)
-        return self.cache_regions[tool_cache_data_dir]
+        if self.app.config.enable_tool_document_cache:
+            if tool_cache_data_dir not in self.cache_regions:
+                self.cache_regions[tool_cache_data_dir] = ToolDocumentCache(cache_dir=tool_cache_data_dir)
+            return self.cache_regions[tool_cache_data_dir]
 
     def create_tool(self, config_file, tool_cache_data_dir=None, **kwds):
         cache = self.get_cache_region(tool_cache_data_dir or self.app.config.tool_cache_data_dir)
-        if config_file.endswith('.xml') and not cache.disabled:
+        if config_file.endswith('.xml') and cache and not cache.disabled:
             tool_document = cache.get(config_file)
             if tool_document:
                 tool_source = self.get_expanded_tool_source(
@@ -2181,26 +2183,26 @@ class Tool(Dictifiable):
 
         # update tool model
         tool_model.update({
-            'id'            : self.id,
-            'help'          : tool_help,
-            'citations'     : bool(self.citations),
-            'sharable_url'  : self.sharable_url,
-            'message'       : tool_message,
-            'warnings'      : tool_warnings,
-            'versions'      : self.tool_versions,
-            'requirements'  : [{'name' : r.name, 'version' : r.version} for r in self.requirements],
-            'errors'        : state_errors,
-            'tool_errors'   : self.tool_errors,
-            'state_inputs'  : params_to_strings(self.inputs, state_inputs, self.app, use_security=True, nested=True),
-            'job_id'        : trans.security.encode_id(job.id) if job else None,
-            'job_remap'     : job.remappable() if job else None,
-            'history_id'    : trans.security.encode_id(history.id) if history else None,
-            'display'       : self.display_interface,
-            'action'        : action,
-            'license'       : self.license,
-            'creator'       : self.creator,
-            'method'        : self.method,
-            'enctype'       : self.enctype
+            'id': self.id,
+            'help': tool_help,
+            'citations': bool(self.citations),
+            'sharable_url': self.sharable_url,
+            'message': tool_message,
+            'warnings': tool_warnings,
+            'versions': self.tool_versions,
+            'requirements': [{'name': r.name, 'version': r.version} for r in self.requirements],
+            'errors': state_errors,
+            'tool_errors': self.tool_errors,
+            'state_inputs': params_to_strings(self.inputs, state_inputs, self.app, use_security=True, nested=True),
+            'job_id': trans.security.encode_id(job.id) if job else None,
+            'job_remap': job.remappable() if job else None,
+            'history_id': trans.security.encode_id(history.id) if history else None,
+            'display': self.display_interface,
+            'action': action,
+            'license': self.license,
+            'creator': self.creator,
+            'method': self.method,
+            'enctype': self.enctype
         })
         return tool_model
 
@@ -2648,6 +2650,12 @@ class ExportHistoryTool(Tool):
 
 class ImportHistoryTool(Tool):
     tool_type = 'import_history'
+
+    def exec_after_process(self, app, inp_data, out_data, param_dict, job, final_job_state=None, **kwds):
+        super().exec_after_process(app, inp_data, out_data, param_dict, job=job, **kwds)
+        if final_job_state != DETECTED_JOB_STATE.OK:
+            return
+        JobImportHistoryArchiveWrapper(self.app, job.id).cleanup_after_job()
 
 
 class InteractiveTool(Tool):

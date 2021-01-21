@@ -436,7 +436,6 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                 raise exceptions.RequestParameterInvalidException('The given path is invalid.')
             path = os.path.join(import_base_dir, path)
         elif source in ['userdir_file', 'userdir_folder']:
-            unsafe = None
             username = trans.user.username if trans.app.config.user_library_import_check_permissions else None
             user_login = trans.user.email
             user_base_dir = trans.app.config.user_library_import_dir
@@ -454,14 +453,13 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                         '%s -> %s and cannot be read by them.', path, os.path.realpath(path))
                 raise exceptions.RequestParameterInvalidException('The given path is invalid.')
             path = os.path.join(full_dir, path)
-            for unsafe in unsafe_walk(path, allowlist=[full_dir] + trans.app.config.user_library_import_symlink_allowlist, username=username):
+            if unsafe_walk(path, allowlist=[full_dir] + trans.app.config.user_library_import_symlink_allowlist, username=username):
                 # the path is a dir and contains files that symlink outside the user dir
                 error = 'User attempted to import a path that resolves to a path outside of their import dir: %s -> %s', \
                         path, os.path.realpath(path)
                 if trans.app.config.user_library_import_check_permissions:
                     error += ' or is not readable for them.'
                 log.error(error)
-            if unsafe:
                 raise exceptions.RequestParameterInvalidException('The given path is invalid.')
             if not os.path.exists(path):
                 raise exceptions.RequestParameterInvalidException('Given path does not exist on the host.')

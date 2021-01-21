@@ -315,9 +315,9 @@ class PageController(BaseUIController, SharableMixin,
             .filter(model.Page.deleted == false()) \
             .order_by(desc(model.Page.update_time)) \
             .all()
-        return [{'username' : p.page.user.username,
-                 'slug'     : p.page.slug,
-                 'title'    : p.page.title} for p in shared_by_others]
+        return [{'username': p.page.user.username,
+                 'slug': p.page.slug,
+                 'title': p.page.title} for p in shared_by_others]
 
     @web.legacy_expose_api
     @web.require_login("create pages")
@@ -342,33 +342,33 @@ class PageController(BaseUIController, SharableMixin,
                 content_format_hide = True
                 content_hide = False
             return {
-                'title'  : form_title,
-                'inputs' : [{
-                    'name'      : 'title',
-                    'label'     : 'Name',
-                    'value'     : title,
+                'title': form_title,
+                'inputs': [{
+                    'name': 'title',
+                    'label': 'Name',
+                    'value': title,
                 }, {
-                    'name'      : 'slug',
-                    'label'     : 'Identifier',
-                    'help'      : 'A unique identifier that will be used for public links to this page. This field can only contain lowercase letters, numbers, and dashes (-).',
-                    'value'     : slug,
+                    'name': 'slug',
+                    'label': 'Identifier',
+                    'help': 'A unique identifier that will be used for public links to this page. This field can only contain lowercase letters, numbers, and dashes (-).',
+                    'value': slug,
                 }, {
-                    'name'      : 'annotation',
-                    'label'     : 'Annotation',
-                    'help'      : 'A description of the page. The annotation is shown alongside published pages.'
+                    'name': 'annotation',
+                    'label': 'Annotation',
+                    'help': 'A description of the page. The annotation is shown alongside published pages.'
                 }, {
-                    'name'      : 'content_format',
-                    'label'     : 'Content Format',
-                    'type'      : 'select',
-                    'hidden'    : content_format_hide,
-                    'options'   : [('Markdown', 'markdown'), ('HTML', 'html')],
-                    'help'      : 'Use the traditional rich HTML editor or the newer experimental Markdown editor to create the page content. The HTML editor has several known bugs, is unmaintained and pages created with it will be read-only in future releases of Galaxy.'
+                    'name': 'content_format',
+                    'label': 'Content Format',
+                    'type': 'select',
+                    'hidden': content_format_hide,
+                    'options': [('Markdown', 'markdown'), ('HTML', 'html')],
+                    'help': 'Use the traditional rich HTML editor or the newer experimental Markdown editor to create the page content. The HTML editor has several known bugs, is unmaintained and pages created with it will be read-only in future releases of Galaxy.'
                 }, {
-                    'name'      : 'content',
-                    'label'     : 'Content',
-                    'area'      : True,
-                    'value'     : content,
-                    'hidden'    : content_hide,
+                    'name': 'content',
+                    'label': 'Content',
+                    'area': True,
+                    'value': content,
+                    'hidden': content_hide,
                 }]
             }
         else:
@@ -394,21 +394,21 @@ class PageController(BaseUIController, SharableMixin,
             if p.slug is None:
                 self.create_item_slug(trans.sa_session, p)
             return {
-                'title'  : 'Edit page attributes',
-                'inputs' : [{
-                    'name'      : 'title',
-                    'label'     : 'Name',
-                    'value'     : p.title
+                'title': 'Edit page attributes',
+                'inputs': [{
+                    'name': 'title',
+                    'label': 'Name',
+                    'value': p.title
                 }, {
-                    'name'      : 'slug',
-                    'label'     : 'Identifier',
-                    'value'     : p.slug,
-                    'help'      : 'A unique identifier that will be used for public links to this page. This field can only contain lowercase letters, numbers, and dashes (-).'
+                    'name': 'slug',
+                    'label': 'Identifier',
+                    'value': p.slug,
+                    'help': 'A unique identifier that will be used for public links to this page. This field can only contain lowercase letters, numbers, and dashes (-).'
                 }, {
-                    'name'      : 'annotation',
-                    'label'     : 'Annotation',
-                    'value'     : self.get_item_annotation_str(trans.sa_session, user, p),
-                    'help'      : 'A description of the page. The annotation is shown alongside published pages.'
+                    'name': 'annotation',
+                    'label': 'Annotation',
+                    'value': self.get_item_annotation_str(trans.sa_session, user, p),
+                    'help': 'A description of the page. The annotation is shown alongside published pages.'
                 }]
             }
         else:
@@ -676,8 +676,8 @@ class PageController(BaseUIController, SharableMixin,
             return None
 
         # Fork to template based on visualization.type (registry or builtin).
-        if((trans.app.visualizations_registry and visualization.type in trans.app.visualizations_registry.plugins) and
-                (visualization.type not in trans.app.visualizations_registry.BUILT_IN_VISUALIZATIONS)):
+        if((trans.app.visualizations_registry and visualization.type in trans.app.visualizations_registry.plugins)
+                and (visualization.type not in trans.app.visualizations_registry.BUILT_IN_VISUALIZATIONS)):
             # if a registry visualization, load a version into an iframe :(
             # TODO: simplest path from A to B but not optimal - will be difficult to do reg visualizations any other way
             # TODO: this will load the visualization twice (once above, once when the iframe src calls 'saved')

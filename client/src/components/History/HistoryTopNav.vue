@@ -35,7 +35,7 @@
                 key="use-legacy-history"
                 title="Return to legacy history panel"
                 icon="fas fa-exchange-alt"
-                @click="useLegacyHistoryPanel"
+                @click="switchToLegacyHistoryPanel"
             />
         </PriorityMenu>
     </div>
@@ -48,6 +48,7 @@ import HistorySelector from "./HistorySelector";
 import { createNewHistory } from "./model/queries";
 import { wipeDatabase, clearHistoryDateStore } from "./caching";
 import { legacyNavigationMixin } from "components/plugins";
+import { switchToLegacyHistoryPanel } from "./adapters/betaToggle";
 
 export default {
     mixins: [legacyNavigationMixin],
@@ -72,10 +73,7 @@ export default {
     methods: {
         ...mapActions("betaHistory", ["storeHistory"]),
 
-        useLegacyHistoryPanel() {
-            sessionStorage.removeItem("useBetaHistory");
-            location.reload();
-        },
+        switchToLegacyHistoryPanel,
 
         // create new server, store in vuex, switch to it
         async createHistory() {

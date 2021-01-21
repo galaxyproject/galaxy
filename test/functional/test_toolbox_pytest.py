@@ -28,7 +28,7 @@ class DefaultGalaxyTestDriver(driver_util.GalaxyTestDriver):
 
 def get_skiplist():
     with open(SKIPTEST) as skiptest:
-        skiplist = [l.strip() for l in skiptest if l.strip() and not l.startswith('#')]
+        skiplist = [line.strip() for line in skiptest if line.strip() and not line.startswith('#')]
         return skiplist
 
 
@@ -54,7 +54,7 @@ def get_cases():
     cases = []
     for test_name, test_class in tests.items():
         if test_name.startswith(TEST_PREFIX):
-            test_class.runTest = lambda : None
+            test_class.runTest = lambda: None
             test_instance = test_class()
             cases.append(test_instance)
     return cases

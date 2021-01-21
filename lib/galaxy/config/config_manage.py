@@ -688,7 +688,7 @@ def _build_sample_yaml(args, app_desc):
     description = getattr(schema, "description", None)
     if description:
         description = description.lstrip()
-        as_comment = "\n".join("# %s" % l for l in description.split("\n")) + "\n"
+        as_comment = "\n".join(f"# {line}" for line in description.split("\n")) + "\n"
         f.write(as_comment)
     _write_sample_section(args, f, 'uwsgi', Schema(UWSGI_OPTIONS), as_comment=False, uwsgi_hack=True)
     _write_sample_section(args, f, app_desc.app_name, schema)
@@ -702,7 +702,7 @@ def _write_to_file(args, f, path):
     else:
         contents = f
     if args.dry_run:
-        contents_indented = "\n".join(" |%s" % l for l in contents.splitlines())
+        contents_indented = "\n".join(f" |{line}" for line in contents.splitlines())
         print(f"Overwriting {path} with the following contents:\n{contents_indented}")
         print("... skipping because --dry-run is enabled.")
     else:
@@ -757,7 +757,7 @@ def _write_option(args, f, key, option_value, as_comment=False, uwsgi_hack=False
     else:
         key_val_str = yaml.dump({key: value}, width=float("inf")).lstrip("{").rstrip("\n}")
     lines = f"{comment}{as_comment_str}{key_val_str}"
-    lines_idented = "\n".join("  %s" % l for l in lines.split("\n"))
+    lines_idented = "\n".join(f"  {line}" for line in lines.split("\n"))
     f.write("%s\n\n" % lines_idented)
 
 

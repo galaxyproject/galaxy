@@ -20,7 +20,7 @@ import galaxy.model.tool_shed_install as galaxy_model
 import galaxy.util
 from galaxy.security import idencoding
 from galaxy.util import smart_str, unicodify
-from galaxy_test.base.api_util import get_master_api_key
+from galaxy_test.base.api_util import get_admin_api_key
 from galaxy_test.driver.testcase import DrivenFunctionalTestCase
 from tool_shed.util import (
     hg_util,
@@ -529,7 +529,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
 
     def deactivate_repository(self, installed_repository, strings_displayed=None, strings_not_displayed=None):
         encoded_id = self.security.encode_id(installed_repository.id)
-        api_key = get_master_api_key()
+        api_key = get_admin_api_key()
         response = requests.delete(self.galaxy_url + "/api/tool_shed_repositories/" + encoded_id, data={'remove_from_disk': False, 'key': api_key})
         assert response.status_code != 403, response.content
 
@@ -1258,7 +1258,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
 
     def reset_installed_repository_metadata(self, repository):
         encoded_id = self.security.encode_id(repository.id)
-        api_key = get_master_api_key()
+        api_key = get_admin_api_key()
         response = requests.post(self.galaxy_url + "/api/tool_shed_repositories/reset_metadata_on_selected_installed_repositories", data={'repository_ids': [encoded_id], 'key': api_key})
         assert response.status_code != 403, response.content
 
@@ -1268,7 +1268,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         self.submit_form(button="reset_metadata_on_selected_repositories_button", **kwd)
 
     def reset_metadata_on_selected_installed_repositories(self, repository_ids):
-        api_key = get_master_api_key()
+        api_key = get_admin_api_key()
         response = requests.post(self.galaxy_url + "/api/tool_shed_repositories/reset_metadata_on_selected_installed_repositories", data={'repository_ids': repository_ids, 'key': api_key})
         assert response.status_code != 403, response.content
 
@@ -1375,7 +1375,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
 
     def uninstall_repository(self, installed_repository, strings_displayed=None, strings_not_displayed=None):
         encoded_id = self.security.encode_id(installed_repository.id)
-        api_key = get_master_api_key()
+        api_key = get_admin_api_key()
         response = requests.delete(self.galaxy_url + "/api/tool_shed_repositories/" + encoded_id, data={'remove_from_disk': True, 'key': api_key})
         assert response.status_code != 403, response.content
 
@@ -1390,7 +1390,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def update_tool_shed_status(self):
-        api_key = get_master_api_key()
+        api_key = get_admin_api_key()
         response = requests.get(self.galaxy_url + "/api/tool_shed_repositories/check_for_updates?key=" + api_key)
         assert response.status_code != 403, response.content
 

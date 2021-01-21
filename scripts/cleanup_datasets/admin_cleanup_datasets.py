@@ -263,8 +263,8 @@ def _get_tool_id_for_hda(app, hda_id):
         return None
     job = app.sa_session.query(app.model.Job).\
         join(app.model.JobToOutputDatasetAssociation).\
-        filter(app.model.JobToOutputDatasetAssociation.table.c.dataset_id ==
-               hda_id).first()
+        filter(app.model.JobToOutputDatasetAssociation.table.c.dataset_id
+               == hda_id).first()
     if job is not None:
         return job.tool_id
     else:

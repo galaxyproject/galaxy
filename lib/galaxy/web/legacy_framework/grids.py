@@ -810,8 +810,8 @@ class Grid:
                                    use_panels=self.use_panels,
                                    use_hide_message=self.use_hide_message,
                                    advanced_search=self.advanced_search,
-                                   show_item_checkboxes=(self.show_item_checkboxes or
-                                                         kwargs.get('show_item_checkboxes', '') in ['True', 'true']),
+                                   show_item_checkboxes=(self.show_item_checkboxes
+                                                         or kwargs.get('show_item_checkboxes', '') in ['True', 'true']),
                                    # Pass back kwargs so that grid template can set and use args without
                                    # grid explicitly having to pass them.
                                    kwargs=kwargs)

@@ -7,6 +7,7 @@ from operator import itemgetter
 
 from galaxy import exceptions
 from galaxy.files import ProvidesUserFileSourcesUserContext
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.util import (
     jstree,
     smart_str,
@@ -20,7 +21,7 @@ log = logging.getLogger(__name__)
 class RemoteFilesAPIController(BaseAPIController):
 
     @expose_api
-    def index(self, trans, **kwd):
+    def index(self, trans: ProvidesUserContext, **kwd):
         """
         GET /api/remote_files/
 
@@ -94,7 +95,7 @@ class RemoteFilesAPIController(BaseAPIController):
         return index
 
     @expose_api
-    def plugins(self, trans, **kwd):
+    def plugins(self, trans: ProvidesUserContext, **kwd):
         """
         GET /api/remote_files/plugins
 

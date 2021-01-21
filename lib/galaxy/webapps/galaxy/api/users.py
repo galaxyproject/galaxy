@@ -24,6 +24,8 @@ from galaxy.managers import (
     api_keys,
     users
 )
+from galaxy.managers.context import ProvidesUserContext
+from galaxy.model import User, UserAddress
 from galaxy.security.validate_user_input import (
     validate_email,
     validate_password,
@@ -45,6 +47,7 @@ from galaxy.webapps.base.controller import (
     UsesFormDefinitionsMixin,
     UsesTagsMixin
 )
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 
 log = logging.getLogger(__name__)
@@ -60,7 +63,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, Uses
         self.api_key_manager = api_keys.ApiKeyManager(app)
 
     @expose_api
-    def index(self, trans, deleted='False', f_email=None, f_name=None, f_any=None, **kwd):
+    def index(self, trans: ProvidesUserContext, deleted='False', f_email=None, f_name=None, f_any=None, **kwd):
         """
         GET /api/users
         GET /api/users/deleted
@@ -86,37 +89,37 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, Uses
         :type  f_any: str
         """
         rval = []
-        query = trans.sa_session.query(trans.app.model.User)
+        query = trans.sa_session.query(User)
         deleted = util.string_as_bool(deleted)
 
         if f_email and (trans.user_is_admin or trans.app.config.expose_user_email):
-            query = query.filter(trans.app.model.User.email.like("%%%s%%" % f_email))
+            query = query.filter(User.email.like("%%%s%%" % f_email))
 
         if f_name and (trans.user_is_admin or trans.app.config.expose_user_name):
-            query = query.filter(trans.app.model.User.username.like("%%%s%%" % f_name))
+            query = query.filter(User.username.like("%%%s%%" % f_name))
 
         if f_any:
             if trans.user_is_admin:
                 query = query.filter(or_(
-                    trans.app.model.User.email.like("%%%s%%" % f_any),
-                    trans.app.model.User.username.like("%%%s%%" % f_any)
+                    User.email.like("%%%s%%" % f_any),
+                    User.username.like("%%%s%%" % f_any)
                 ))
             else:
                 if trans.app.config.expose_user_email and trans.app.config.expose_user_name:
                     query = query.filter(or_(
-                        trans.app.model.User.email.like("%%%s%%" % f_any),
-                        trans.app.model.User.username.like("%%%s%%" % f_any)
+                        User.email.like("%%%s%%" % f_any),
+                        User.username.like("%%%s%%" % f_any)
                     ))
                 elif trans.app.config.expose_user_email:
-                    query = query.filter(trans.app.model.User.email.like("%%%s%%" % f_any))
+                    query = query.filter(User.email.like("%%%s%%" % f_any))
                 elif trans.app.config.expose_user_name:
-                    query = query.filter(trans.app.model.User.username.like("%%%s%%" % f_any))
+                    query = query.filter(User.username.like("%%%s%%" % f_any))
 
         if deleted:
             # only admins can see deleted users
             if not trans.user_is_admin:
                 return []
-            query = query.filter(trans.app.model.User.table.c.deleted == true())
+            query = query.filter(User.table.c.deleted == true())
         else:
             # special case: user can see only their own user
             # special case2: if the galaxy admin has specified that other user email/names are
@@ -124,7 +127,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, Uses
             if not trans.user_is_admin and not trans.app.config.expose_user_name and not trans.app.config.expose_user_email:
                 item = trans.user.to_dict(value_mapper={'id': trans.security.encode_id})
                 return [item]
-            query = query.filter(trans.app.model.User.table.c.deleted == false())
+            query = query.filter(User.table.c.deleted == false())
         for user in query:
             item = user.to_dict(value_mapper={'id': trans.security.encode_id})
             # If NOT configured to expose_email, do not expose email UNLESS the user is self, or
@@ -146,7 +149,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, Uses
         return rval
 
     @expose_api_anonymous
-    def show(self, trans, id, deleted='False', **kwd):
+    def show(self, trans: ProvidesUserContext, id, deleted='False', **kwd):
         """
         GET /api/users/{encoded_id}
         GET /api/users/deleted/{encoded_id}
@@ -178,7 +181,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, Uses
         return self.user_serializer.serialize_to_view(user, view='detailed')
 
     @expose_api
-    def create(self, trans, payload, **kwd):
+    def create(self, trans: GalaxyWebTransaction, payload: dict, **kwd):
         """
         POST /api/users
         Creates a new Galaxy user.
@@ -205,7 +208,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, Uses
         return item
 
     @expose_api
-    def update(self, trans, id, payload, **kwd):
+    def update(self, trans: ProvidesUserContext, id: str, payload: dict, **kwd):
         """
         update( self, trans, id, payload, **kwd )
         * PUT /api/users/{id}
@@ -495,11 +498,11 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, Uses
             d = address_dicts[index]
             if d.get('id'):
                 try:
-                    user_address = trans.sa_session.query(trans.app.model.UserAddress).get(trans.security.decode_id(d['id']))
+                    user_address = trans.sa_session.query(UserAddress).get(trans.security.decode_id(d['id']))
                 except Exception as e:
                     raise exceptions.ObjectNotFound('Failed to access user address ({}). {}'.format(d['id'], e))
             else:
-                user_address = trans.model.UserAddress()
+                user_address = UserAddress()
                 trans.log_event('User address added')
             for field in AddressField.fields():
                 if str(field[2]).lower() == 'required' and not d.get(field[0]):

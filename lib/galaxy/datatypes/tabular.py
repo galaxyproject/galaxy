@@ -547,7 +547,7 @@ class Sam(Tabular):
                             break
                 else:
                     # Otherwise, read the whole thing and set num data lines.
-                    for i, l in enumerate(dataset_fh):
+                    for i, l in enumerate(dataset_fh):  # noqa: B007
                         if l.startswith('@'):
                             comment_lines += 1
                     dataset.metadata.data_lines = i + 1 - comment_lines
@@ -1288,7 +1288,7 @@ class MatrixMarket(TabularData):
                             dataset.metadata.data_lines = None
                             break
                 else:
-                    for i, l in enumerate(dataset_fh):
+                    for i, l in enumerate(dataset_fh):  # noqa: B007
                         if l.startswith('%'):
                             comment_lines += 1
                     dataset.metadata.data_lines = i + 1 - comment_lines

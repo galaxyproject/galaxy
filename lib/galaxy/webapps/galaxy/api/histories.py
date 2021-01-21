@@ -577,6 +577,6 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
             .filter_by(history=history, extension="fasta", deleted=False) \
             .order_by(model.HistoryDatasetAssociation.hid.desc())
         return {
-            'installed_builds'  : [{'label' : ins, 'value' : ins} for ins in installed_builds],
-            'fasta_hdas'        : [{'label' : f'{hda.hid}: {hda.name}', 'value' : trans.security.encode_id(hda.id)} for hda in fasta_hdas],
+            'installed_builds': [{'label': ins, 'value': ins} for ins in installed_builds],
+            'fasta_hdas': [{'label': f'{hda.hid}: {hda.name}', 'value': trans.security.encode_id(hda.id)} for hda in fasta_hdas],
         }

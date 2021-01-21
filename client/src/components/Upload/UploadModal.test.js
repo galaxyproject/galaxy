@@ -3,7 +3,6 @@ import axios from "axios";
 import UploadModal from "./UploadModal.vue";
 import store from "../../store";
 import { shallowMount, createLocalVue } from "@vue/test-utils";
-import BootstrapVue from "bootstrap-vue";
 
 jest.mock("app");
 jest.mock("../History/caching");
@@ -39,7 +38,6 @@ describe("UploadModal.vue", () => {
         axiosMock.onGet(`/api/genomes`).reply(200, genomesResponse);
 
         const localVue = createLocalVue();
-        localVue.use(BootstrapVue);
 
         wrapper = await shallowMount(UploadModal, {
             store,

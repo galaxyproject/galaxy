@@ -302,7 +302,7 @@ class MappingTests(BaseModelTestCase):
 
         u = model.User(email="mary2@example.com", password="password")
         lf = model.LibraryFolder(name="RootFolder")
-        l = model.Library(name="Library1", root_folder=lf)
+        library = model.Library(name="Library1", root_folder=lf)
         ld1 = model.LibraryDataset()
         ld2 = model.LibraryDataset()
 
@@ -312,7 +312,7 @@ class MappingTests(BaseModelTestCase):
         c1 = model.DatasetCollection(collection_type="pair")
         dce1 = model.DatasetCollectionElement(collection=c1, element=ldda1)
         dce2 = model.DatasetCollectionElement(collection=c1, element=ldda2)
-        self.persist(u, l, lf, ld1, ld2, c1, ldda1, ldda2, dce1, dce2)
+        self.persist(u, library, lf, ld1, ld2, c1, ldda1, ldda2, dce1, dce2)
 
         # TODO:
         # loaded_dataset_collection = self.query( model.DatasetCollection ).filter( model.DatasetCollection.name == "LibraryCollectionTest1" ).first()

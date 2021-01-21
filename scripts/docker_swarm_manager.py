@@ -362,8 +362,8 @@ class SwarmState:
             total += node.cpus / self._cpus
         # need at least this many slots
         needed = used + self.get_limit(constraints, 'slots_min_spare')
-        if (len(services) > self._conf.service_wait_count_limit and
-                time.time() - self._waiting_since.get(constraints, time.time()) > self._conf.service_wait_time_limit):
+        if (len(services) > self._conf.service_wait_count_limit
+                and time.time() - self._waiting_since.get(constraints, time.time()) > self._conf.service_wait_time_limit):
             # add slots for waiting services that have exceeded limits
             needed += sum([s.cpus for s in services]) / self._cpus
         # subtract slots for spawning nodes

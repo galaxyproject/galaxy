@@ -264,7 +264,7 @@ class ToolDataTable:
         # increment this variable any time a new entry is added, or when the table is totally reloaded
         # This value has no external meaning, and does not represent an abstract version of the underlying data
         self._loaded_content_version = 1
-        self._load_info = ([config_element, tool_data_path], {'from_shed_config': from_shed_config, 'tool_data_path_files': self.tool_data_path_files, 'other_config_dict': other_config_dict})
+        self._load_info = ([config_element, tool_data_path], {'from_shed_config': from_shed_config, 'tool_data_path_files': self.tool_data_path_files, 'other_config_dict': other_config_dict, 'filename': filename})
         self._merged_load_info = []
 
     def _update_version(self, version=None):

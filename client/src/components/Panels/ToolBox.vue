@@ -3,7 +3,7 @@
         <div class="unified-panel-header" unselectable="on">
             <div class="unified-panel-header-inner">
                 <div class="panel-header-buttons">
-                    <favorites-button @onFavorites="onFavorites" v-if="isUser" />
+                    <favorites-button :query="query" @onFavorites="onFavorites" v-if="isUser" />
                 </div>
                 <div class="panel-header-text">Tools</div>
             </div>

@@ -119,7 +119,7 @@ def test_encode_dict():
 
 def test_guid_generation():
     guids = set()
-    for i in range(100):
+    for _ in range(100):
         guids.add(test_helper_1.get_new_guid())
     assert len(guids) == 100  # Not duplicate guids generated.
 
