@@ -15,6 +15,7 @@ import requests
 
 from galaxy.authnz import custos_authnz
 from galaxy.model import CustosAuthnzToken, User
+from galaxy.util import unicodify
 from ..unittest_utils.galaxy_mock import MockTrans
 
 
@@ -83,7 +84,7 @@ class CustosAuthnzTestCase(unittest.TestCase):
 
     @property
     def test_id_token(self):
-        return jwt.encode({'nonce': self.test_nonce_hash}, key=None, algorithm=None)
+        return unicodify(jwt.encode({'nonce': self.test_nonce_hash}, key=None, algorithm=None))
 
     def mock_create_oauth2_session(self, custos_authnz):
         orig_create_oauth2_session = custos_authnz._create_oauth2_session
@@ -360,12 +361,12 @@ class CustosAuthnzTestCase(unittest.TestCase):
         )
         self.assertEqual(0, len(self.trans.sa_session.items))
 
-        test_id_token = jwt.encode({
+        test_id_token = unicodify(jwt.encode({
             'nonce': self.test_nonce_hash,
             'email': self.test_email,
             'preferred_username': self.test_username,
-            'sub': self.test_sub},
-            key=None, algorithm=None)
+            'sub': self.test_sub
+        }, key=None, algorithm=None))
 
         self._raw_token = {
             "access_token": self.test_access_token,
