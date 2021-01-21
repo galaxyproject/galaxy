@@ -442,6 +442,15 @@ class SharedStateSeleniumTestCase(SeleniumTestCase):
         """Override this to setup shared data for tests that gets initialized only once."""
 
 
+class UsesLibraryAssertions:
+
+    @retry_assertion_during_transitions
+    def assert_num_displayed_items_is(self, n):
+        self.assertEqual(n, self.num_displayed_items())
+
+    def num_displayed_items(self):
+        return len(self.libraries_table_elements())
+
 class UsesHistoryItemAssertions:
 
     def assert_item_peek_includes(self, hid, expected):

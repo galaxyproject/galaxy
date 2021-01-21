@@ -3,7 +3,6 @@ import os
 from selenium.webdriver.support.ui import Select
 
 from .framework import (
-    retry_assertion_during_transitions,
     retry_during_transitions,
     selenium_test,
     SeleniumTestCase,
@@ -28,9 +27,9 @@ class LibraryContentsTestCase(SeleniumTestCase):
 
         # create mew folder
         self._navigate_to_new_library()
-        self._assert_num_displayed_items_is(0)
+        self.assert_num_displayed_items_is(0)
         self.libraries_folder_create(sub_folder_name)
-        self._assert_num_displayed_items_is(1)
+        self.assert_num_displayed_items_is(1)
 
         # check empty folder
         new_folder_link = self.wait_for_xpath_visible('//a[contains(text(), "%s")]' % sub_folder_name)
@@ -58,15 +57,15 @@ class LibraryContentsTestCase(SeleniumTestCase):
         self.perform_upload(self.get_filename("1.txt"))
         self.wait_for_history()
         self._navigate_to_new_library(login=False)
-        self._assert_num_displayed_items_is(0)
+        self.assert_num_displayed_items_is(0)
         self.sleep_for(self.wait_types.UX_RENDER)
-        self.libraries_dataset_import_from_history()
+        self.libraries_dataset_import(self.navigation.libraries.folder.labels.from_history)
         # Click the cancel button, make sure modal is hidden.
         self.wait_for_visible(self.navigation.libraries.folder.selectors.import_modal)
         self.wait_for_and_click(self.navigation.libraries.folder.selectors.import_datasets_cancel_button)
         self.wait_for_absent_or_hidden(self.navigation.libraries.folder.selectors.import_modal)
 
-        self.libraries_dataset_import_from_history()
+        self.libraries_dataset_import(self.navigation.libraries.folder.labels.from_history)
         # Need to select the right item on the dropdown
         self.sleep_for(self.wait_types.UX_RENDER)
         self._select_history_option("dataset_add_bulk", "Unnamed history")
@@ -76,7 +75,7 @@ class LibraryContentsTestCase(SeleniumTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("libraries_dataset_import")
         self.libraries_dataset_import_from_history_click_ok()
-        self._assert_num_displayed_items_is(1)
+        self.assert_num_displayed_items_is(1)
 
     @selenium_test
     def download_dataset_from_library(self):
@@ -106,7 +105,7 @@ class LibraryContentsTestCase(SeleniumTestCase):
         self.components.libraries.folder.delete_btn.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
 
-        self._assert_num_displayed_items_is(0)
+        self.assert_num_displayed_items_is(0)
 
     # Fine test locally but the upload doesn't work in Docker compose. I'd think
     # Galaxy must be running so that test-data/1.txt would work but it just doesn't
@@ -114,11 +113,11 @@ class LibraryContentsTestCase(SeleniumTestCase):
     @selenium_test
     def test_import_dataset_from_path(self):
         self._navigate_to_new_library()
-        self._assert_num_displayed_items_is(0)
+        self.assert_num_displayed_items_is(0)
         self.sleep_for(self.wait_types.UX_RENDER)
 
         # Click the cancel button, make sure modal is hidden.
-        self.libraries_dataset_import_from_path()
+        self.libraries_dataset_import(self.navigation.libraries.folder.labels.from_path)
         self.wait_for_visible(self.navigation.libraries.folder.selectors.import_modal)
         self.wait_for_and_click(self.navigation.libraries.folder.selectors.import_datasets_cancel_button)
         self.wait_for_absent_or_hidden(self.navigation.libraries.folder.selectors.import_modal)
@@ -131,7 +130,7 @@ class LibraryContentsTestCase(SeleniumTestCase):
         self.wait_for_and_click(self.navigation.libraries.folder.selectors.import_datasets_ok_button)
         # Let the progress bar disappear...
         self.wait_for_absent_or_hidden(self.navigation.libraries.folder.selectors.import_progress_bar)
-        self._assert_num_displayed_items_is(1)
+        self.assert_num_displayed_items_is(1)
 
         self.click_label("1.txt")
         self.wait_for_visible(self.navigation.libraries.dataset.selectors.table)
@@ -148,11 +147,11 @@ class LibraryContentsTestCase(SeleniumTestCase):
     @selenium_test
     def test_import_dataset_from_import_dir(self):
         self._navigate_to_new_library()
-        self._assert_num_displayed_items_is(0)
+        self.assert_num_displayed_items_is(0)
+        self.libraries_dataset_import(self.navigation.libraries.folder.labels.from_import_dir)
         self.libraries_dataset_import_from_import_dir()
-        self.components.libraries.folder.select_import_dir_item(name="1.axt").wait_for_and_click()
-        self.components.libraries.folder.import_dir_btn.wait_for_and_click()
-        self._assert_num_displayed_items_is(1)
+        self.select_dataset_from_lib_import_modal("1.axt")
+        self.assert_num_displayed_items_is(1)
 
     @selenium_test
     def test_show_details(self):
@@ -164,19 +163,8 @@ class LibraryContentsTestCase(SeleniumTestCase):
         self.wait_for_overlays_cleared()
         self.screenshot("libraries_show_details")
 
-    @retry_assertion_during_transitions
-    def _assert_num_displayed_items_is(self, n):
-        self.assertEqual(n, self._num_displayed_items())
-
-    def _num_displayed_items(self):
-        return len(self.libraries_table_elements())
-
-    def _navigate_to_new_library(self, login=True):
-        if login:
-            self.admin_login()
-        self.libraries_open()
-        self.name = self._get_random_name(prefix="testcontents")
-        self.libraries_index_create(self.name)
+    def navigate_to_new_library(self, login=True):
+        self.create_new_library(login)
         self.libraries_open_with_name(self.name)
 
     @retry_during_transitions
