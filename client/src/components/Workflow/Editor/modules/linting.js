@@ -9,7 +9,7 @@ export function getDisconnectedInputs(nodes) {
                     stepLabel: node.title, // label but falls back to tool title...
                     warningLabel: inputLabel,
                     inputName: inputName,
-                    canExtract: !inputTerminal.multiple,
+                    autofix: !inputTerminal.multiple,
                 });
             }
         });
@@ -57,6 +57,7 @@ export function getUnlabeledOutputs(nodes) {
                 stepId: node.id,
                 stepLabel: node.title, // label but falls back to tool title...
                 warningLabel: outputDef.output_name,
+                autofix: true,
             });
         }
     });
@@ -72,24 +73,24 @@ export function getUntypedParameters(untypedParameters) {
                 stepLabel: parameter.references[0].toolInput.label,
                 warningLabel: parameter.name,
                 name: parameter.name,
+                autofix: parameter.canExtract(),
             });
         });
     }
     return items;
 }
 
-export function fixAllIssues(nodes, untypedParameters) {
+export function fixAllIssues(nodes, parameters) {
     const actions = [];
-    if (untypedParameters && untypedParameters.parameters) {
-        for (const untypedParameter of untypedParameters.parameters) {
-            if (untypedParameter.canExtract) {
-                actions.push(fixUntypedParameter(untypedParameter));
-            }
+    const untypedParameters = getUntypedParameters(parameters);
+    for (const untypedParameter of untypedParameters) {
+        if (untypedParameter.autofix) {
+            actions.push(fixUntypedParameter(untypedParameter));
         }
     }
     const disconnectedInputs = getDisconnectedInputs(nodes);
     for (const disconnectedInput of disconnectedInputs) {
-        if (disconnectedInput.canExtract) {
+        if (disconnectedInput.autofix) {
             actions.push(fixDisconnectedInput(disconnectedInput));
         }
     }

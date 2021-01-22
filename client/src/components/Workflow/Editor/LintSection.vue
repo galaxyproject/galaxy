@@ -6,17 +6,19 @@
         </div>
         <div v-else>
             <font-awesome-icon icon="exclamation-triangle" class="text-warning" />
-            <span>{{ warningMessage }}</span>
+            <span>{{ warningMessage | localize }}</span>
             <div v-if="hasWarningItems" class="mt-2">
                 <div
                     v-for="(item, idx) in warningItems"
                     :key="idx"
-                    @mouseover="onMouseOver(item.stepId)"
-                    @mouseleave="onMouseLeave(item.stepId)"
+                    @mouseover="onMouseOver(item)"
+                    @mouseleave="onMouseLeave(item)"
                     class="ml-2"
                 >
-                    <a href="#" @click="onClick(item.stepId, item)" class="scrolls">
-                        <font-awesome-icon icon="search" class="mr-1" />{{ item.stepLabel }}: {{ item.warningLabel }}
+                    <a href="#" @click="onClick(item)" class="scrolls">
+                        <font-awesome-icon v-if="item.autofix" icon="magic" class="mr-1" />
+                        <font-awesome-icon v-else icon="search" class="mr-1" />
+                        {{ item.stepLabel }}: {{ item.warningLabel }}
                     </a>
                 </div>
             </div>
@@ -36,8 +38,9 @@ Vue.use(BootstrapVue);
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCheck, faExclamationTriangle, faPencilAlt, faSearch } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faExclamationTriangle, faMagic, faPencilAlt, faSearch } from "@fortawesome/free-solid-svg-icons";
 
+library.add(faMagic);
 library.add(faSearch);
 library.add(faPencilAlt);
 library.add(faCheck);

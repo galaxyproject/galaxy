@@ -142,7 +142,7 @@ export default {
         onAttributes() {
             this.$emit("onAttributes");
         },
-        onFixUntypedParameter(stepId, item) {
+        onFixUntypedParameter(item) {
             if (
                 confirm(
                     "This issue can be fixed automatically by creating an explicit parameter input step. Do you want to proceed?"
@@ -150,10 +150,10 @@ export default {
             ) {
                 this.$emit("onRefactor", [fixUntypedParameter(item)]);
             } else {
-                this.$emit("onScrollTo", stepId);
+                this.$emit("onScrollTo", item.stepId);
             }
         },
-        onFixDisconnectedInput(stepId, item) {
+        onFixDisconnectedInput(item) {
             if (
                 confirm(
                     "This issue can be fixed automatically by creating an explicit data input step. Do you want to proceed?"
@@ -161,10 +161,10 @@ export default {
             ) {
                 this.$emit("onRefactor", [fixDisconnectedInput(item)]);
             } else {
-                this.$emit("onScrollTo", stepId);
+                this.$emit("onScrollTo", item.stepId);
             }
         },
-        onFixUnlabeledOutputs(stepId) {
+        onFixUnlabeledOutputs(item) {
             if (
                 confirm(
                     "This issue can be fixed automatically by removing all unlabeled workflow output. Do you want to proceed?"
@@ -172,17 +172,17 @@ export default {
             ) {
                 this.$emit("onRefactor", [fixUnlabeledOutputs()]);
             } else {
-                this.$emit("onScrollTo", stepId);
+                this.$emit("onScrollTo", item.stepId);
             }
         },
-        onScrollTo(stepId) {
-            this.$emit("onScrollTo", stepId);
+        onScrollTo(item) {
+            this.$emit("onScrollTo", item.stepId);
         },
-        onHighlight(stepId) {
-            this.$emit("onHighlight", stepId);
+        onHighlight(item) {
+            this.$emit("onHighlight", item.stepId);
         },
-        onUnhighlight(stepId) {
-            this.$emit("onUnhighlight", stepId);
+        onUnhighlight(item) {
+            this.$emit("onUnhighlight", item.stepId);
         },
         onRefactor() {
             const actions = fixAllIssues(this.nodes, this.untypedParameters);
