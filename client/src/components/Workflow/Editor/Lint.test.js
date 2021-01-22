@@ -65,5 +65,9 @@ describe("Lint", () => {
         // 2. Workflow license is not specified
         // 3. Workflow has no labeled outputs
         expect(unchecked.length).toBe(3);
+        const links = wrapper.findAll("a");
+        expect(links.length).toBe(2);
+        expect(links.at(0).text()).toContain("Provide Creator Details.");
+        expect(links.at(1).text()).toContain("Specify a License.");
     });
 });
