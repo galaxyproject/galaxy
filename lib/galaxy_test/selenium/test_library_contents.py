@@ -124,7 +124,7 @@ class LibraryContentsTestCase(SeleniumTestCase, UsesLibraryAssertions):
         self.wait_for_absent_or_hidden(self.navigation.libraries.folder.selectors.import_modal)
 
         # Try again... this time actually select some paths.
-        self.libraries_dataset_import_from_path()
+        self.libraries_dataset_import(self.navigation.libraries.folder.labels.from_path)
         textarea = self.wait_for_and_click(self.navigation.libraries.folder.selectors.import_from_path_textarea)
         textarea.send_keys("test-data/1.txt")
         self.sleep_for(self.wait_types.UX_RENDER)
