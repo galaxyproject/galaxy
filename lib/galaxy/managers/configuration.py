@@ -10,6 +10,7 @@ import os
 import sys
 from typing import (
     Any,
+    cast,
     Dict,
     List,
 )
@@ -17,6 +18,7 @@ from typing import (
 from galaxy.app import StructuredApp
 from galaxy.managers import base
 from galaxy.managers.context import ProvidesAppContext
+from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.web.framework.base import server_starttime
 
 log = logging.getLogger(__name__)
@@ -55,11 +57,11 @@ class ConfigurationManager:
     def decode_id(
         self,
         trans: ProvidesAppContext,
-        encoded_id: str
+        encoded_id: EncodedDatabaseIdField,
     ) -> Dict[str, int]:
         # Handle the special case for library folders
         if ((len(encoded_id) % 16 == 1) and encoded_id.startswith('F')):
-            encoded_id = encoded_id[1:]
+            encoded_id = cast(EncodedDatabaseIdField, encoded_id[1:])
         decoded_id = trans.security.decode_id(encoded_id)
         return {"decoded_id": decoded_id}
 

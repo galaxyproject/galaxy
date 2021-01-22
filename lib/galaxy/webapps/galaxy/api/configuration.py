@@ -10,7 +10,10 @@ from typing import (
     Optional
 )
 
-from fastapi import Depends
+from fastapi import (
+    Depends,
+    Query,
+)
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter as APIRouter
 
@@ -24,6 +27,7 @@ from galaxy.managers.users import (
     UserModel
 )
 from galaxy.model import User
+from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.structured_app import StructuredApp
 from galaxy.web import (
     expose_api,
@@ -48,6 +52,12 @@ log = logging.getLogger(__name__)
 router = APIRouter(tags=['configuration'])
 
 AdminUserRequired = Depends(get_admin_user)
+
+EncodedIdQueryParam: EncodedDatabaseIdField = Query(
+    ...,
+    title='Encoded id',
+    description='Encoded id to be decoded',
+)
 
 
 def get_configuration_manager(app: StructuredApp = Depends(get_app)) -> ConfigurationManager:
@@ -115,8 +125,7 @@ class FastAPIConfiguration:
     def decode_id(
         self,
         trans: ProvidesAppContext = Depends(get_trans),
-        *,
-        encoded_id: str
+        encoded_id: EncodedDatabaseIdField = EncodedIdQueryParam
     ) -> Dict[str, int]:
         """Decode a given id."""
         return self.configuration_manager.decode_id(trans, encoded_id)
