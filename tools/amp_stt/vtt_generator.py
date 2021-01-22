@@ -42,19 +42,16 @@ def main():
 		nextseg = findWordSegment(word, segments, curseg)
 
 		# the current word should be the start of a new line if it's pronunciation and  
-		if word['type'] == 'pronunciation':
-			# no previous line, this is the very first word
-			if (nword == 0):
-				newline = True
-			# there are already 10 words in current line
-			elif nword == MAX_WORD_COUNT:
-				newline = True
-			# or there are at least 6 words plus punctuation in current line	
-			elif nword >= MIN_WORD_COUNT and words[i-1]['type'] == 'punctuation':
-				newline = True
-			# or it's from a new speaker
-			elif speakSwitched(segments, curseg, nextseg, MIN_SEGMENT_GAP):
-				newline = True
+		if word['type'] == 'pronunciation' and (
+			# no previous line, this is the very first word, or
+			nword == 0 or
+			# there are already 10 words in current line, or
+			nword == MAX_WORD_COUNT or
+			# there are at least 6 words plus punctuation in current line, or	
+			nword >= MIN_WORD_COUNT and words[i-1]['type'] == 'punctuation' or
+			# it's from a new speaker
+			speakSwitched(segments, curseg, nextseg, MIN_SEGMENT_GAP) ):
+			newline = True
 		
 		# starting a new line	
 		if newline:
