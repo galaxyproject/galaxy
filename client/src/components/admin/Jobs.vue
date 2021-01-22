@@ -55,17 +55,19 @@
                     </b-form-group>
                 </b-col>
             </b-row>
-            <b-form v-if="jobsItemsComputed.length && selectedStopJobIds.length" @submit.prevent="onStopJobs">
-                <b-form-group label="Stop Selected Jobs" description="Stop message will be displayed to the user">
-                    <b-input-group>
-                        <b-form-input id="stop-message" v-model="stopMessage" placeholder="Stop message" required>
-                        </b-form-input>
-                        <b-input-group-append>
-                            <b-btn type="submit">Submit</b-btn>
-                        </b-input-group-append>
-                    </b-input-group>
-                </b-form-group>
-            </b-form>
+            <transition name="fade">
+                <b-form v-if="jobsItemsComputed.length && selectedStopJobIds.length" @submit.prevent="onStopJobs">
+                    <b-form-group label="Stop Selected Jobs" description="Stop message will be displayed to the user">
+                        <b-input-group>
+                            <b-form-input id="stop-message" v-model="stopMessage" placeholder="Stop message" required>
+                            </b-form-input>
+                            <b-input-group-append>
+                                <b-btn type="submit">Submit</b-btn>
+                            </b-input-group-append>
+                        </b-input-group>
+                    </b-form-group>
+                </b-form>
+            </transition>
             <b-alert v-if="!jobsItemsComputed.length" variant="secondary" show>
                 There are no unfinished jobs to show with current cutoff time.
             </b-alert>
