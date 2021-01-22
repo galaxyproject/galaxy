@@ -133,6 +133,7 @@ class FastAPIConfiguration:
 
     @router.put(
         '/api/configuration/toolbox',
+        dependencies=[AdminUserRequired],
         summary="Reload the Galaxy toolbox (but not individual tools)"
     )
     def reload_toolbox(self):
