@@ -5,7 +5,7 @@
             <tbody>
                 <tr v-if="job && job.tool_id">
                     <td>Galaxy Tool ID:</td>
-                    <td id="galaxy-tool-id">{{ job.tool_id }}</td>
+                    <td id="galaxy-tool-id">{{ job.tool_id }} (<a :href="'/root?tool_id=' + job.tool_id" target="_top">run</a>)</td>
                 </tr>
                 <tr v-if="job && job.tool_version">
                     <td>Galaxy Tool Version:</td>

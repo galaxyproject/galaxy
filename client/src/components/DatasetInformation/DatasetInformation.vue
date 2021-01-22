@@ -1,11 +1,11 @@
 <template>
     <DatasetProvider :id="hda_id" v-slot="{ item: dataset, loading }">
         <div v-if="!loading">
-            <h3>Dataset Information</h3>
+            <h3>Dataset Information (<a :href="'/datasets/edit?dataset_id=' + dataset.id" target="_top">edit</a>)</h3>
             <table id="dataset-details" class="tabletip info_data_table">
                 <tbody>
                     <tr>
-                        <td>Number</td>
+                        <td>Number in history</td>
                         <td id="number">{{ dataset.hid }}</td>
                     </tr>
                     <tr>
@@ -37,13 +37,13 @@
                     <tr v-if="dataset.id">
                         <td>History Content API ID</td>
                         <td>
-                            <div id="dataset-id">{{ dataset.id }} <decoded-id :id="dataset.id" /></div>
+                            <div id="dataset-id">{{ dataset.id }} <decoded-id :id="dataset.id" /> (<a :href="'/tool_runner/rerun?id=' + dataset.id" target="_top">rerun</a>)</div>
                         </td>
                     </tr>
                     <tr v-if="dataset.history_id">
                         <td>History API ID</td>
                         <td>
-                            <div id="history_id">{{ dataset.history_id }} <decoded-id :id="dataset.history_id" /></div>
+                            <div id="history_id">{{ dataset.history_id }} <decoded-id :id="dataset.history_id" /> (<a :href="'/histories/view?id=' + dataset.history_id" target="_top">view</a>)</div>
                         </td>
                     </tr>
                     <tr v-if="dataset.uuid">
