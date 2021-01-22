@@ -75,6 +75,10 @@
                 @onMouseLeave="onUnhighlight"
                 @onClick="onFixUnlabeledOutputs"
             />
+            <div v-if="warningUnlabeledOutputs.length == 0">
+                <font-awesome-icon icon="exclamation-triangle" class="text-warning" />
+                <span>This workflow has no labeled outputs, please select and label at least one output.</span>
+            </div>
         </b-card-body>
     </b-card>
 </template>
@@ -96,10 +100,11 @@ import {
 } from "./modules/linting";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faMagic } from "@fortawesome/free-solid-svg-icons";
+import { faMagic, faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
 
 Vue.use(BootstrapVue);
 
+library.add(faExclamationTriangle);
 library.add(faMagic);
 
 export default {
