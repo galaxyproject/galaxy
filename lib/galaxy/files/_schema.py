@@ -59,7 +59,7 @@ class FilesSourcePlugin(BaseModel):
     writable: bool = Field(
         ...,  # This field is required
         title="Writeable",
-        description="Wether this files source plugin has write access.",
+        description="Whether this files source plugin allows write access.",
         example=False,
     )
 
