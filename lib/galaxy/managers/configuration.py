@@ -1,21 +1,99 @@
 """
-Serializers for Galaxy config file data: ConfigSerializer for all users
+Managers, serializers for Galaxy config file data. ConfigSerializer for all users
 and a more expanded set of data for admin in AdminConfigSerializer.
 
 Used by both the API and bootstrapped data.
 """
-# TODO: this is a bit of an odd duck. It uses the serializer structure from managers
-#   but doesn't have a model like them. It might be better in config.py or a
-#   totally new area, but I'm leaving it in managers for now for class consistency.
+import json
 import logging
+import os
 import sys
+from typing import (
+    Any,
+    Dict,
+    List,
+)
 
+from galaxy.app import StructuredApp
 from galaxy.managers import base
+from galaxy.managers.context import ProvidesAppContext
 from galaxy.web.framework.base import server_starttime
 
 log = logging.getLogger(__name__)
 
+VERSION_JSON_FILE = 'version.json'
 
+
+class ConfigurationManager:
+    """Interface/service object for interacting with configuration and related data."""
+
+    def __init__(self, app: StructuredApp):
+        self._app = app
+
+    def get_configuration(self, trans, serialization_params) -> Dict[str, Any]:
+        is_admin = trans.user_is_admin
+        serializer = AdminConfigSerializer(self._app) if is_admin else ConfigSerializer(self._app)
+        return serializer.serialize_to_view(self._app.config, **serialization_params)
+
+    def version(self) -> Dict[str, Any]:
+        version_info = {
+            "version_major": self._app.config.version_major,
+            "version_minor": self._app.config.version_minor,
+        }
+        # Try loading extra version info
+        json_file = os.path.join(self._app.config.root, VERSION_JSON_FILE)  # TODO: add this to schema
+        json_file = os.environ.get("GALAXY_VERSION_JSON_FILE", json_file)
+        try:
+            with open(json_file) as f:
+                extra_info = json.load(f)
+        except OSError:
+            log.info('Galaxy JSON version file not loaded')
+        else:
+            version_info['extra'] = extra_info
+        return version_info
+
+    def decode_id(
+        self,
+        trans: ProvidesAppContext,
+        encoded_id: str
+    ) -> Dict[str, int]:
+        # Handle the special case for library folders
+        if ((len(encoded_id) % 16 == 1) and encoded_id.startswith('F')):
+            encoded_id = encoded_id[1:]
+        decoded_id = trans.security.decode_id(encoded_id)
+        return {"decoded_id": decoded_id}
+
+    def tool_lineages(self) -> List[Dict[str, Dict]]:
+        rval = []
+        for id, tool in self._app.toolbox.tools():
+            try:
+                lineage_dict = tool.lineage.to_dict()
+            except AttributeError:
+                pass
+            else:
+                entry = {'id': id, 'lineage': lineage_dict}
+                rval.append(entry)
+        return rval
+
+    def dynamic_tool_confs(self) -> List[Dict[str, str]]:
+        # WARNING: If this method is ever changed so as not to require admin privileges, update the nginx proxy
+        # documentation, since this path is used as an authentication-by-proxy method for securing other paths on the
+        # server. A dedicated endpoint should probably be added to do that instead.
+        def tool_conf_to_dict(conf):
+            return dict(
+                config_filename=conf['config_filename'],
+                tool_path=conf['tool_path'],
+            )
+        confs = self._app.toolbox.dynamic_confs(include_migrated_tool_conf=True)
+        return list(map(tool_conf_to_dict, confs))
+
+    def reload_toolbox(self):
+        self._app.queue_worker.send_control_task('reload_toolbox')
+
+
+# TODO: this is a bit of an odd duck. It uses the serializer structure from managers
+#   but doesn't have a model like them. It might be better in config.py or a
+#   totally new area, but I'm leaving it in managers for now for class consistency.
 class ConfigSerializer(base.ModelSerializer):
     """Configuration (galaxy.ini) settings viewable by all users"""
 

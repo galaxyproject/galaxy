@@ -2,9 +2,7 @@
 API operations allowing clients to determine Galaxy instance's capabilities
 and configuration settings.
 """
-import json
 import logging
-import os
 from typing import (
     Any,
     Dict,
@@ -12,14 +10,11 @@ from typing import (
     Optional
 )
 
-from fastapi import Depends, Query
+from fastapi import Depends
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter as APIRouter
 
-from galaxy.managers.configuration import (
-    AdminConfigSerializer,
-    ConfigSerializer
-)
+from galaxy.managers.configuration import ConfigurationManager
 from galaxy.managers.context import (
     ProvidesAppContext,
     ProvidesUserContext,
@@ -42,161 +37,83 @@ from . import (
     get_trans,
     get_user,
 )
+from .common import (
+    parse_serialization_params,
+    SerializationKeysQueryParam,
+    SerializationViewQueryParam,
+)
 
 log = logging.getLogger(__name__)
 
-
 router = APIRouter(tags=['configuration'])
 
-VERSION_JSON_FILE = 'version.json'
+AdminUserRequired = Depends(get_admin_user)
 
 
-# TODO move to common.py as soon as used more than once
-SerializationViewQueryParam: Optional[str] = Query(
-    None,
-    title='View',
-    description='todo',
-)
-
-
-# TODO move to common.py as soon as used more than once
-SerializationKeysQueryParam: Optional[str] = Query(
-    None,
-    title='Keys',
-    description='todo',
-)
-
-
-# TODO move to common.py as soon as used more than once
-def parse_serialization_params(view, keys, default_view):
-    if isinstance(keys, str):
-        keys = keys.split(',')
-    return dict(view=view, keys=keys, default_view=default_view)
-
-
-def user_to_model(user):
-    return UserModel(**user.to_dict()) if user else None
-
-
-def _get_configuration(trans, view, keys, default_view='all'):
-    is_admin = trans.user_is_admin
-    serialization_params = parse_serialization_params(view, keys, default_view)
-    return get_config_dict(trans.app, is_admin, **serialization_params)
-
-
-def get_config_dict(app, is_admin=False, view=None, keys=None, default_view='all'):
-    """
-    Return a dictionary with a subset of current Galaxy settings.
-
-    If `is_admin`, include a subset of more sensitive keys.
-    Pass in `view` (String) and comma seperated list of keys to control which
-    configuration settings are returned.
-    """
-    serializer = AdminConfigSerializer(app) if is_admin else ConfigSerializer(app)
-    return serializer.serialize_to_view(app.config, view=view, keys=keys, default_view=default_view)
-
-
-def _get_version(app):
-    version_info = {
-        "version_major": app.config.version_major,
-        "version_minor": app.config.version_minor,
-    }
-    # Try loading extra version info
-    json_file = os.path.join(app.config.root, VERSION_JSON_FILE)  # TODO: add this to schema
-    json_file = os.environ.get("GALAXY_VERSION_JSON_FILE", json_file)
-    try:
-        with open(json_file) as f:
-            extra_info = json.load(f)
-    except OSError:
-        log.info('Galaxy JSON version file not loaded')
-    else:
-        version_info['extra'] = extra_info
-    return version_info
-
-
-def _decode_id(trans, encoded_id):
-    # Handle the special case for library folders
-    if ((len(encoded_id) % 16 == 1) and encoded_id.startswith('F')):
-        encoded_id = encoded_id[1:]
-    decoded_id = trans.security.decode_id(encoded_id)
-    return {"decoded_id": decoded_id}
-
-
-def _get_dynamic_tool_confs(app):
-    # WARNING: If this method is ever changed so as not to require admin privileges, update the nginx proxy
-    # documentation, since this path is used as an authentication-by-proxy method for securing other paths on the
-    # server. A dedicated endpoint should probably be added to do that instead.
-    confs = app.toolbox.dynamic_confs(include_migrated_tool_conf=True)
-    return list(map(_tool_conf_to_dict, confs))
-
-
-def _tool_conf_to_dict(conf):
-    return dict(
-        config_filename=conf['config_filename'],
-        tool_path=conf['tool_path'],
-    )
-
-
-def _get_tool_lineages(app):
-    rval = []
-    for id, tool in app.toolbox.tools():
-        try:
-            lineage_dict = tool.lineage.to_dict()
-        except AttributeError:
-            pass
-        else:
-            entry = {'id': id, 'lineage': lineage_dict}
-            rval.append(entry)
-    return rval
-
-
-def _reload_toolbox(app):
-    app.queue_worker.send_control_task('reload_toolbox')
+def get_configuration_manager(app: StructuredApp = Depends(get_app)) -> ConfigurationManager:
+    return ConfigurationManager(app)
 
 
 @cbv(router)
 class FastAPIConfiguration:
+    configuration_manager: ConfigurationManager = Depends(get_configuration_manager)
 
     @router.get('/api/whoami')
     def whoami(self, user: User = Depends(get_user)) -> Optional[UserModel]:
         """Return information about the current authenticated user."""
-        return user_to_model(user)
+        return _user_to_model(user)
 
     @router.get('/api/configuration')
     def index(
-            self,
-            trans: ProvidesUserContext = Depends(get_trans),
-            view: Optional[str] = SerializationViewQueryParam,
-            keys: Optional[str] = SerializationKeysQueryParam,
+        self,
+        trans: ProvidesUserContext = Depends(get_trans),
+        view: Optional[str] = SerializationViewQueryParam,
+        keys: Optional[str] = SerializationKeysQueryParam,
     ) -> Dict[str, Any]:
-        """Return an object containing exposable configuration settings."""
-        return _get_configuration(trans, view, keys)
+        """
+        Return an object containing exposable configuration settings.
+
+        A more complete list is returned if the user is an admin.
+        Pass in `view` and a comma-seperated list of keys to control which
+        configuration settings are returned.
+        """
+        return _index(self.configuration_manager, trans, view, keys)
 
     @router.get('/api/version')
-    def version(self, app: StructuredApp = Depends(get_app)) -> Dict[str, Any]:
+    def version(self) -> Dict[str, Any]:
         """Return Galaxy version information: major/minor version, optional extra info."""
-        return _get_version(app)
+        return self.configuration_manager.version()
 
-    @router.get('/api/configuration/dynamic_tool_confs', dependencies=[Depends(get_admin_user)])
-    def dynamic_tool_confs(self, app: StructuredApp = Depends(get_app)) -> List[Dict[str, str]]:
-        return _get_dynamic_tool_confs(app)
+    @router.get('/api/configuration/dynamic_tool_confs', dependencies=[AdminUserRequired])
+    def dynamic_tool_confs(self) -> List[Dict[str, str]]:
+        return self.configuration_manager.dynamic_tool_confs()
 
-    @router.get('/api/configuration/decode/{encoded_id}', dependencies=[Depends(get_admin_user)])
-    def decode_id(self, trans: ProvidesAppContext = Depends(get_trans), *, encoded_id: str) -> Dict[str, int]:
+    @router.get('/api/configuration/decode/{encoded_id}', dependencies=[AdminUserRequired])
+    def decode_id(
+        self,
+        trans: ProvidesAppContext = Depends(get_trans),
+        *,
+        encoded_id: str
+    ) -> Dict[str, int]:
         """Decode a given id."""
-        return _decode_id(trans, encoded_id)
+        return self.configuration_manager.decode_id(trans, encoded_id)
 
-    @router.get('/api/configuration/tool_lineages', dependencies=[Depends(get_admin_user)])
-    def tool_lineages(self, app: StructuredApp = Depends(get_app)):
-        return _get_tool_lineages(app)
+    @router.get('/api/configuration/tool_lineages', dependencies=[AdminUserRequired])
+    def tool_lineages(self) -> List[Dict[str, Dict]]:
+        """Return tool lineages for tools that have them."""
+        return self.configuration_manager.tool_lineages()
 
     @router.put('/api/configuration/toolbox')
-    def reload_toolbox(self, app: StructuredApp = Depends(get_app)):
+    def reload_toolbox(self):
         """Reload the Galaxy toolbox (but not individual tools)."""
-        _reload_toolbox(app)
+        self.configuration_manager.reload_toolbox()
 
 
 class ConfigurationController(BaseAPIController):
+
+    def __init__(self, app: StructuredApp):
+        super().__init__(app)
+        self.configuration_manager = ConfigurationManager(app)
 
     @expose_api
     def whoami(self, trans, **kwd):
@@ -208,7 +125,7 @@ class ConfigurationController(BaseAPIController):
         :rtype:   dict
         """
         user = UserManager(self.app).current_user(trans)
-        return user_to_model(user)
+        return _user_to_model(user)
 
     @expose_api_anonymous_and_sessionless
     def index(self, trans, **kwd):
@@ -216,13 +133,14 @@ class ConfigurationController(BaseAPIController):
         GET /api/configuration
         Return an object containing exposable configuration settings.
 
-        Note: a more complete list is returned if the user is an admin.
+        A more complete list is returned if the user is an admin.
+        Pass in `view` and a comma-seperated list of keys to control which
+        configuration settings are returned.
         """
-        view, keys = kwd.get('view'), kwd.get('keys')
-        return _get_configuration(trans, view, keys)
+        return self.get_config_dict(trans, **kwd)
 
     @expose_api_anonymous_and_sessionless
-    def version(self, trans, **kwds):
+    def version(self, trans, **kwd):
         """
         GET /api/version
         Return Galaxy version information: major/minor version, optional extra info.
@@ -230,23 +148,23 @@ class ConfigurationController(BaseAPIController):
         :rtype:     dict
         :returns:   dictionary with major version keyed on 'version_major'
         """
-        return _get_version(self.app)
+        return self.configuration_manager.version()
 
     @require_admin
     @expose_api
-    def dynamic_tool_confs(self, trans):
-        return _get_dynamic_tool_confs(self.app)
+    def dynamic_tool_confs(self, trans, **kwds):
+        return self.configuration_manager.dynamic_tool_confs()
 
     @require_admin
     @expose_api
     def decode_id(self, trans, encoded_id, **kwds):
         """Decode a given id."""
-        return _decode_id(trans, encoded_id)
+        return self.configuration_manager.decode_id(trans, encoded_id)
 
     @require_admin
     @expose_api
-    def tool_lineages(self, trans):
-        return _get_tool_lineages(self.app)
+    def tool_lineages(self, trans, **kwds):
+        return self.configuration_manager.tool_lineages()
 
     @require_admin
     @expose_api
@@ -255,8 +173,18 @@ class ConfigurationController(BaseAPIController):
         PUT /api/configuration/toolbox
         Reload the Galaxy toolbox (but not individual tools).
         """
-        _reload_toolbox(self.app)
+        self.configuration_manager.reload_toolbox()
 
-    def get_config_dict(self, trans, return_admin=False, view=None, keys=None, default_view='all'):
-        # Method left for backward compatibility (templates/galaxy_client_app.mako).
-        return get_config_dict(self.app, return_admin, view=view, keys=keys, default_view=default_view)
+    def get_config_dict(self, trans, **kwd):
+        """Return an object containing exposable configuration settings."""
+        view, keys = kwd.get('view'), kwd.get('keys')
+        return _index(self.configuration_manager, trans, view, keys)
+
+
+def _user_to_model(user):
+    return UserModel(**user.to_dict()) if user else None
+
+
+def _index(manager, trans, view, keys):
+    serialization_params = parse_serialization_params(view, keys, 'all')
+    return manager.get_configuration(trans, serialization_params)
