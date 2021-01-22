@@ -17,6 +17,7 @@ SerializationKeysQueryParam: Optional[str] = Query(
 
 
 def parse_serialization_params(view, keys, default_view):
+    key_list = None
     if keys:
-        keys = keys.split(',')
-    return dict(view=view, keys=keys, default_view=default_view)
+        key_list = keys.split(',')
+    return dict(view=view, keys=key_list, default_view=default_view)
