@@ -29,6 +29,10 @@ api_tags_metadata = [
         "name": "tours",
         "description": "Operations with interactive tours.",
     },
+    {
+        "name": "remote files",
+        "description": "Operations with remote dataset sources.",
+    },
 ]
 
 
