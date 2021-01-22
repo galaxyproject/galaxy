@@ -52,8 +52,18 @@ describe("Lint", () => {
 
     it("test checked vs unchecked issues", async () => {
         const checked = wrapper.findAll("[data-icon='check']");
+        // Expecting 5 checks:
+        // 1. Workflow is annotated
+        // 2. Workflow parameters (if available) are formal inputs
+        // 3. Non-optional inputs (if available) are formal inputs
+        // 4. Inputs (if available) have labels and annotations
+        // 5. Outputs (if availabe) have labels
         expect(checked.length).toBe(5);
         const unchecked = wrapper.findAll("[data-icon='exclamation-triangle']");
-        expect(unchecked.length).toBe(2);
+        // Expecting 3 warnings:
+        // 1. Workflow creator is not specified
+        // 2. Workflow license is not specified
+        // 3. Workflow has no labeled outputs
+        expect(unchecked.length).toBe(3);
     });
 });
