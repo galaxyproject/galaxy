@@ -5,16 +5,11 @@ import os
 from _ast import Or
 
 
-def writeHeader():
-	#this fuction writes the header of the vtt file
-	return "WEBVTT"+"\n"
+# Reads the AMP Transcript and Segment inputs and convert them to Web VTT output.
+def main():
+	(seg_file, stt_file, vtt_file) =  sys.argv[1:4] 
 
-#This function reads the json input and parses it to write a vtt output
-def generateVtt(seg_file, stt_file, output_file):
-	out_file = open(output_file, "w")
-	out_file.write(writeHeader())
-	out_file.write(writeEmptyLine())
-
+	# read words and segments from input files
 	segments = []
 	words = []
 	if os.path.exists(seg_file):
@@ -26,20 +21,24 @@ def generateVtt(seg_file, stt_file, output_file):
 		dict_stt = json.loads(json_stt.read())
 		words = dict_stt['results']['words']
 	
-	# initialize current line status
+	# write header to output vtt file
+	out_file = open(vtt_file, "w")
+	out_file.write(writeHeader())
+	out_file.write(writeEmptyLine())
+
+	# initialize status before first (new) line
 	nword = 0	# number of pronunciation words in current line so far 
 	curseg = 0	# index of current segment (to get current speaker)
-	start = end = 0	# start/end timestamp for current line: -1 indicates uninitialized
+	start = end = 0	# start/end timestamp for current line
 	line = ''	# text of current line	
+	newline = False	# true if current word is the start of a new line
 				
 	# process all words which are in time order
-	# note that if punctuation words before the first pronunciation word will be ignored
 	for i, word in enumerate(words):
-		newline = False	# true if current word is the start of a new line
 		# the current word should be the start of a new line if it's pronunciation and  
 		if word['type'] == 'pronunciation':
 			# no previous line, this is the very first word
-			if (len(line) == 0):
+			if (nword == 0):
 				newline = True
 			# there are already 10 words in current line
 			elif nword == 10:
@@ -49,6 +48,7 @@ def generateVtt(seg_file, stt_file, output_file):
 				newline = True
 			# or it's from a new speaker
 			else:
+				# note that if segments is empty, iseg/curseg will stay at 0
 				iseg = findWordSegmentIndex(word, segments, curseg)
 				if iseg > curseg:
 					newline = True
@@ -56,16 +56,18 @@ def generateVtt(seg_file, stt_file, output_file):
 		
 		# starting a new line	
 		if newline:
-			# write the current line before starting a new line
-			if (len(line) > 0):
+			# write the current line (if any word) before starting a new line
+			# note that punctuation words before the very first pronunciation word (in which case nword = 0) will be ignored 
+			if (nword > 0):
 				out_file.write(writeTime(start, end))
- 				out_file.write(writeLine(getSpeaker(segments, curseg), line))
- 				out_file.write(writeEmptyLine())
-			# reset status of the new line
+				out_file.write(writeLine(getSpeaker(segments, curseg), line))
+				out_file.write(writeEmptyLine())
+			# reset status for the new line
 			nword = 0 
 			# new line always starts with a pronunciation, use its start time as line start time
 			start = word['start']	 
 			line = ''	
+			newline = False
 		
 		# update current line with current word
 		if word['type'] == 'pronunciation':
@@ -74,12 +76,97 @@ def generateVtt(seg_file, stt_file, output_file):
 			end = word['end']
 		line += ' ' + word['text']
 		
+	# write the last line to file if any word in it; note that 
+	# the last line should always contain some pronunciation words unless the whole words list contains no pronunciation
+	if nword > 0:
+		out_file.write(writeTime(start, end))
+		out_file.write(writeLine(getSpeaker(segments, curseg), line))
+		out_file.write(writeEmptyLine())
+	out_file.close()
+		
+# Find the index of the next segment among the given segments to which the given word belongs to, starting at the given (current) 
+# segment index (always >= 0). A word belongs to a segment if its timestamp is within the segment's time range,  
+def findWordSegmentIndex(word, segments, istart):
+	# non pronunciation word always stays with the current segment
+	if word['type'] != 'pronunciation':
+		return istart		
+	# if we are already beyond segments index bound, stay with current segment
+	if istart >= len(segments):
+		return istart
+	# if word start time is within current segment end time, stay with current segment 
+	if word['start'] < segments[istart]['end']:
+		return istart
+	
+	# otherwise, scan the following segments for the next containing one, based on following assumptions: 
+	# need to scan as some segments may not contain any word (otherwise we can just return the next segment); 
+	# can scan segments sequentially as segments are in time order;
+	# instead of requiring word's [start, end] time within segment's [start, end] time,
+	# only check word's start time against segment's end time (i.e. consider segments continuous in time), 
+	# to ensure each word fall into some segment, and handle well even when word crosses segment boundary (unlikely) 
+	iseg = istart + 1
+	while iseg < len(segments) and word['start'] >= segments[iseg]['end']:
+		iseg += 1		
+	return iseg
+	
+# Gets the speaker of the given segments[iseg]. 	
+def getSpeaker(segments, iseg):
+	if iseg < 0 or iseg >= len(segments):
+		return "No Speaker"
+	if 'speakerLabel' in segments[iseg]:
+		return segments[iseg]['speakerLabel']
+	else:
+		return "Unlabeled Speaker"
+		
+def writeHeader():
+	#this fuction writes the header of the vtt file
+	return "WEBVTT"+"\n"
+		
+def writeLine(speaker, text):
+	#This function writes a new line to the vtt output
+	return "<v "+speaker+">"+text+"\n"
+
+def writeEmptyLine():
+	# This function writes an empty line to the vtt output
+	return "\n"
+
+def writeTime(start_time, end_time):
+	#This function writes a time entry to the vtt output
+	return str(start_time)+" --> "+str(end_time)+"\n"
+	
+		
+# 	# Gets the speaker for the given pronunciation word belonging to the given segments[iseg]. 	
+# 	def getSpeaker(word, segments, iseg):
+# 		if wordWithinSegment(word, segments, iseg):
+# 			if 'speakerLabel' in segments[iseg]:
+# 				return segments[iseg]['speakerLabel']
+# 			else:
+# 				return "Unlabeled Speaker"
+# 		return "Unidentified Speaker"
+# 		
+# 	# Return true if the given pronunciation word's start/end time is within the given segments[iseg] start/end time, false otherwise.
+# 	def wordWithinSegment(word, segments, iseg):
+# 		if iseg < 0 or iseg >= len(segments):
+# 			return False		
+# 		if word['type'] == 'pronunciation' and word['start'] >= segments[iseg]['start'] and word['end'] <= segments[iseg]['end']:
+# 			return True
+# 		return False 
+#		
+# 	# Return true if the given word is pronunciation and its end time is beyond the given segments[iseg] end time, false otherwise.
+# 	# If the segment index iseg is out of the segments index range, return false.
+# 	def wordBeyondSegment(word, segments, iseg):
+# 		if iseg < 0 or iseg >= len(segments):
+# 			return False		
+# 		if word['type'] == 'pronunciation' and word['end'] > segments[iseg]['end']:
+# 			return True
+# 		return False 
+	
+	
 # 		start = end = -1	# start/end timestamp for current line: -1 indicates uninitialized
 # 		nword = 0;	# number of pronunciation words in current line so far 
 # 		line = ''	# text of current line
 # 		curr_speaker = ''	# speaker of current line
 # 		status = -1	# status of current line: start: -1, continue: 0, end: 1
-				
+# 				
 # 		for i, word in enumerate(words):
 # 			if word['type'] == 'pronunciation':
 # 				if getSpeaker(word['start'], word['end'], segments) != curr_speaker and curr_speaker != '':
@@ -105,73 +192,7 @@ def generateVtt(seg_file, stt_file, output_file):
 # 				curr_speaker = getSpeaker(word['start'], word['end'], segments)
 # 			if word['type'] == 'punctuation' or len(line) == max_words:
 # 				new_line = 0
-
-	#writing the last line to file if left
-	if len(line) > 0:
-		out_file.write(writeTime(start, end))
-		out_file.write(writeLine(getSpeaker(segments, curseg), line))
-		out_file.write(writeEmptyLine())
-	out_file.close()
-
-		
-# Find the index of the segment among the given segments to which the given word belongs to (i.e.
-# its start/end time are within the segment's start/end time), starting at the given (current) segment index (always >= 0).
-def findWordSegmentIndex(word, segments, istart):
-	# non pronunciation word belongs to the current segment
-	if word['type'] != 'pronunciation':
-		return istart		
-	# if we are already beyond segments index bound, stay with current segment
-	if istart >= len(segments):
-		return istart
-	# if word end time is within current segment end time, stay with segment 
-	if word['end'] <= segments[istart]['end']:
-		return istart
-	
-	# otherwise, scan the following segments for the next containing one, based on following assumptions: 
-	# need to scan as some segments may not contain any word (otherwise we can just return the next segment); 
-	# scan segments sequentially as segments are in time order;
-	# use only word's end time to check segment as words don't cross segment boundary;
-	# ignore segment start time (thus making segments continuous) so that each word falls into some segment based on end time. 
-	iseg = istart + 1
-	while iseg < len(segments) and word['end'] > segments[iseg]['end']:
-		iseg += 1		
-	return iseg
-	
-# Gets the speaker of the given segments[iseg]. 	
-def getSpeaker(segments, iseg):
-	if iseg < 0 or iseg >= len(segments):
-		return "Unknown Speaker"
-	if 'speakerLabel' in segments[iseg]:
-		return segments[iseg]['speakerLabel']
-	else:
-		return "Unlabeled Speaker"
-		
-# 	# Gets the speaker for the given pronunciation word belonging to the given segments[iseg]. 	
-# 	def getSpeaker(word, segments, iseg):
-# 		if wordWithinSegment(word, segments, iseg):
-# 			if 'speakerLabel' in segments[iseg]:
-# 				return segments[iseg]['speakerLabel']
-# 			else:
-# 				return "Unlabeled Speaker"
-# 		return "Unidentified Speaker"
-# 		
-# 	# Return true if the given pronunciation word's start/end time is within the given segments[iseg] start/end time, false otherwise.
-# 	def wordWithinSegment(word, segments, iseg):
-# 		if iseg < 0 or iseg >= len(segments):
-# 			return False		
-# 		if word['type'] == 'pronunciation' and word['start'] >= segments[iseg]['start'] and word['end'] <= segments[iseg]['end']:
-# 			return True
-# 		return False 
-		
-# 	# Return true if the given word is pronunciation and its end time is beyond the given segments[iseg] end time, false otherwise.
-# 	# If the segment index iseg is out of the segments index range, return false.
-# 	def wordBeyondSegment(word, segments, iseg):
-# 		if iseg < 0 or iseg >= len(segments):
-# 			return False		
-# 		if word['type'] == 'pronunciation' and word['end'] > segments[iseg]['end']:
-# 			return True
-# 		return False 
-# 		
+#		
 # 	#This function gets the current speaker from the segmenattion file
 # 	def getSpeaker(start, end, segments):
 # 		speaker_found = 'No Speaker'
@@ -181,27 +202,10 @@ def getSpeaker(segments, iseg):
 # 					speaker_found = segment['speakerLabel']
 # 				break
 # 		return speaker_found
-	
-def writeLine(speaker, text):
-	#This function writes a new line to the vtt output
-	return "<v "+speaker+">"+text+"\n"
-
-def writeEmptyLine():
-	# This function writes an empty line to the vtt output
-	return "\n"
-
-def writeTime(start_time, end_time):
-	#This function writes a time entry to the vtt output
-	return str(start_time)+" --> "+str(end_time)+"\n"
-
-def getOutput():
-	#This function writes the content to the vtt output
-	return output
-	
-def main():
-	(seg_file, stt_file, output_name) =  sys.argv[1:4] 
-	generateVtt(seg_file, stt_file, output_name)
-
+#
+# def getOutput():
+# 	#This function writes the content to the vtt output
+# 	return output	
 
 if __name__ == "__main__":
 	main()
