@@ -66,6 +66,14 @@ galaxy.selenium.has\_driver module
    :undoc-members:
    :show-inheritance:
 
+galaxy.selenium.jupyter\_context module
+---------------------------------------
+
+.. automodule:: galaxy.selenium.jupyter_context
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy.selenium.navigates\_galaxy module
 ----------------------------------------
 

@@ -176,6 +176,9 @@ client-lint: client-eslint client-format-check ## ES lint and check format of cl
 client-test-watch: client ## Watch and run all client unit tests on changes
 	cd client && yarn run jest-watch
 
+serve-selenium-notebooks: ## Serve testing notebooks for Jupyter
+	cd lib && export PYTHONPATH=`pwd`; jupyter notebook --notebook-dir=galaxy_test/selenium/jupyter
+
 # Release Targets
 release-create-rc: release-ensure-upstream ## Create a release-candidate branch
 	git checkout dev
