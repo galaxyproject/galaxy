@@ -23,6 +23,7 @@ lib/galaxy/web/framework/static/style
 # Database stuff
 database/*.sqlite
 database/beaker_sessions
+database/cache
 database/citations
 database/community_files
 database/compiled_templates
