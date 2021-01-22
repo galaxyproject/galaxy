@@ -60,7 +60,7 @@ def __main__():
             line = line.rstrip('\r\n')
             if line and not line.startswith('#'):
                 try:
-                    # GFF format: chrom source, name, chromStart, chromEnd, score, strand, attributes
+                    # GFF format: chrom, source, feature, chromStart, chromEnd, score, strand, frame, attributes
                     elems = line.split('\t')
                     start = str(int(elems[3]) - 1)
                     strand = elems[6]
@@ -76,7 +76,7 @@ def __main__():
 
                     coords = (int(start), int(elems[4]))
                     attributes = parse_gff_attributes(elems[8])
-                    t_id = attributes.get("transcript_id", None)
+                    t_id = attributes.get("transcript_id")
                     if not t_id:
                         #
                         # No transcript ID, so write last transcript and write current line as its own line.
