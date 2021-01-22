@@ -20,6 +20,7 @@
     <tool file="amp_segment/ina_speech_segmenter_hpc.xml"/>
     <tool file="amp_segment/keep_speech.xml"/>
     <tool file="amp_segment/remove_silence_speech.xml"/>
+    <tool file="amp_segment/remove_silence_music.xml"/>
     <tool file="amp_segment/adjust_transcript_timestamps.xml"/>
     <tool file="amp_segment/adjust_diarization_timestamps.xml"/>
   </section>

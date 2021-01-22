@@ -19,6 +19,10 @@ class Segmentation:
 		if len(self.segments) >= 1:
 			last_segment = self.segments[-1]
 
+		print("Segments: " + str(len(self.segments)))
+		if last_segment is not None:
+			print(last_segment)
+
 		# If the time of the segment is less than 10 seconds, we have another segment, and the current 
 		# segment is noise or silence, don't add it but add the time to the previous segment
 		if (float(end) - float(start)) < self.MINIMUM_SILENCE and last_segment is not None and tmp_label in ('noise', 'silence'):
