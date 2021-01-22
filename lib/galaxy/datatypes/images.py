@@ -6,6 +6,7 @@ import logging
 import zipfile
 from urllib.parse import quote_plus
 
+import mrcfile
 import numpy as np
 
 from galaxy.datatypes.binary import Binary
@@ -283,6 +284,32 @@ class Trk(Binary):
            header['version'] == 2 and len(header['dim']) == 3:
             return True
         return False
+
+
+class Mrc2014(Binary):
+    """
+    MRC/CCP4 2014 file format (.mrc2014).
+    https://www.ccpem.ac.uk/mrc_format/mrc2014.php
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('1.mrc')
+    >>> Mrc2014().sniff(fname)
+    True
+    >>> fname = get_test_fname('2.txt')
+    >>> Mrc2014().sniff(fname)
+    False
+    """
+    file_ext = 'mrc2014'
+
+    def sniff(self, filename):
+        # An exception is thrown if the
+        # file is not an mrc2014 file.
+        try:
+            if mrcfile.validate(filename):
+                return True
+            return False
+        except Exception:
+            return False
 
 
 class Gmaj(data.Data):
