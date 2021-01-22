@@ -1,11 +1,11 @@
 <template>
-    <span class="utc-time" v-if="mode == 'date'" :title="elapsedTime">
+    <span v-if="mode == 'date'" class="utc-time" :title="elapsedTime">
         {{ fullDate }}
     </span>
-    <span class="utc-time utc-time-elapsed" v-else-if="mode === 'elapsed'" :title="fullDate">
+    <span v-else-if="mode === 'elapsed'" class="utc-time utc-time-elapsed" :title="fullDate">
         {{ elapsedTime }}
     </span>
-    <span class="utc-time" v-else :title="elapsedTime">
+    <span v-else class="utc-time" :title="elapsedTime">
         {{ pretty }}
     </span>
 </template>
