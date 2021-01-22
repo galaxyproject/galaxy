@@ -103,6 +103,9 @@
                         :value="data.item['id']"
                     ></b-form-checkbox>
                 </template>
+                <template v-slot:cell(update_time)="data">
+                    <utc-date :date="data.value" mode="elapsed" />
+                </template>
                 <template v-slot:cell(job_info)="data">
                     <b-link :href="data.value.info_url" @click.prevent="clickJobInfo(data.value.id)">
                         {{ data.value.id }}
