@@ -14,7 +14,7 @@ TEST_ENV_DIR=${TEST_ENV_DIR:-$(mktemp -d -t gxpkgtestenvXXXXXX)}
 
 virtualenv -p "$TEST_PYTHON" "$TEST_ENV_DIR"
 . "${TEST_ENV_DIR}/bin/activate"
-pip install mypy
+pip install "mypy==0.790"
 
 # ensure ordered by dependency dag
 PACKAGE_DIRS=(
