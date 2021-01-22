@@ -58,12 +58,20 @@ def get_configuration_manager(app: StructuredApp = Depends(get_app)) -> Configur
 class FastAPIConfiguration:
     configuration_manager: ConfigurationManager = Depends(get_configuration_manager)
 
-    @router.get('/api/whoami')
+    @router.get(
+        '/api/whoami',
+        summary="Return information about the current authenticated user",
+        response_description="Information about the current authenticated user"
+    )
     def whoami(self, user: User = Depends(get_user)) -> Optional[UserModel]:
         """Return information about the current authenticated user."""
         return _user_to_model(user)
 
-    @router.get('/api/configuration')
+    @router.get(
+        '/api/configuration',
+        summary="Return an object containing exposable configuration settings",
+        response_description="Object containing exposable configuration settings"
+    )
     def index(
         self,
         trans: ProvidesUserContext = Depends(get_trans),
@@ -79,16 +87,31 @@ class FastAPIConfiguration:
         """
         return _index(self.configuration_manager, trans, view, keys)
 
-    @router.get('/api/version')
+    @router.get(
+        '/api/version',
+        summary="Return Galaxy version information: major/minor version, optional extra info",
+        response_description="Galaxy version information: major/minor version, optional extra info"
+    )
     def version(self) -> Dict[str, Any]:
         """Return Galaxy version information: major/minor version, optional extra info."""
         return self.configuration_manager.version()
 
-    @router.get('/api/configuration/dynamic_tool_confs', dependencies=[AdminUserRequired])
+    @router.get(
+        '/api/configuration/dynamic_tool_confs',
+        dependencies=[AdminUserRequired],
+        summary="Return dynamic tool configuration files",
+        response_description="Dynamic tool configuration files"
+    )
     def dynamic_tool_confs(self) -> List[Dict[str, str]]:
+        """Return dynamic tool configuration files."""
         return self.configuration_manager.dynamic_tool_confs()
 
-    @router.get('/api/configuration/decode/{encoded_id}', dependencies=[AdminUserRequired])
+    @router.get(
+        '/api/configuration/decode/{encoded_id}',
+        dependencies=[AdminUserRequired],
+        summary="Decode a given id",
+        response_description="Decoded id"
+    )
     def decode_id(
         self,
         trans: ProvidesAppContext = Depends(get_trans),
@@ -98,12 +121,20 @@ class FastAPIConfiguration:
         """Decode a given id."""
         return self.configuration_manager.decode_id(trans, encoded_id)
 
-    @router.get('/api/configuration/tool_lineages', dependencies=[AdminUserRequired])
+    @router.get(
+        '/api/configuration/tool_lineages',
+        dependencies=[AdminUserRequired],
+        summary="Return tool lineages for tools that have them",
+        response_description="Tool lineages for tools that have them"
+    )
     def tool_lineages(self) -> List[Dict[str, Dict]]:
         """Return tool lineages for tools that have them."""
         return self.configuration_manager.tool_lineages()
 
-    @router.put('/api/configuration/toolbox')
+    @router.put(
+        '/api/configuration/toolbox',
+        summary="Reload the Galaxy toolbox (but not individual tools)"
+    )
     def reload_toolbox(self):
         """Reload the Galaxy toolbox (but not individual tools)."""
         self.configuration_manager.reload_toolbox()
