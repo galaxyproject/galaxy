@@ -900,6 +900,17 @@ class NavigatesGalaxy(HasDriver):
     def admin_open(self):
         self.components.masthead.admin.wait_for_and_click()
 
+    def select_dataset_from_lib_import_modal(self, name):
+        self.components.libraries.folder.select_import_dir_item(name=name).wait_for_and_click()
+        self.components.libraries.folder.import_dir_btn.wait_for_and_click()
+
+    def create_new_library(self, login=True):
+        if login:
+            self.admin_login()
+        self.libraries_open()
+        self.name = self._get_random_name(prefix="testcontents")
+        self.libraries_index_create(self.name)
+
     def libraries_open(self):
         self.home()
         self.click_masthead_shared_data()
@@ -964,17 +975,9 @@ class NavigatesGalaxy(HasDriver):
         self.wait_for_and_click(self.navigation.libraries.folder.selectors.add_items_button)
         self.wait_for_visible(self.navigation.libraries.folder.selectors.add_items_menu)
 
-    def libraries_dataset_import_from_history(self):
+    def libraries_dataset_import(self, btn):
         self.libraries_click_dataset_import()
-        self.wait_for_and_click(self.navigation.libraries.folder.labels.from_history)
-
-    def libraries_dataset_import_from_path(self):
-        self.libraries_click_dataset_import()
-        self.wait_for_and_click(self.navigation.libraries.folder.labels.from_path)
-
-    def libraries_dataset_import_from_import_dir(self):
-        self.libraries_click_dataset_import()
-        self.wait_for_and_click(self.navigation.libraries.folder.labels.from_import_dir)
+        self.wait_for_and_click(btn)
 
     def libraries_dataset_import_from_history_select(self, to_select_items):
         self.wait_for_visible(self.navigation.libraries.folder.selectors.import_history_content)
