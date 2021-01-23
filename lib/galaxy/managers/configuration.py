@@ -17,7 +17,9 @@ from typing import (
 
 from galaxy.app import StructuredApp
 from galaxy.managers import base
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.types import SerializationParams
 from galaxy.web.framework.base import server_starttime
 
 log = logging.getLogger(__name__)
@@ -31,7 +33,11 @@ class ConfigurationManager:
     def __init__(self, app: StructuredApp):
         self._app = app
 
-    def get_configuration(self, trans, serialization_params) -> Dict[str, Any]:
+    def get_configuration(
+        self,
+        trans: ProvidesUserContext,
+        serialization_params: SerializationParams
+    ) -> Dict[str, Any]:
         is_admin = trans.user_is_admin
         serializer = AdminConfigSerializer(self._app) if is_admin else ConfigSerializer(self._app)
         return serializer.serialize_to_view(self._app.config, **serialization_params)
