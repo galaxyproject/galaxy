@@ -128,7 +128,7 @@ class FastAPIConfiguration:
         encoded_id: EncodedDatabaseIdField = EncodedIdQueryParam
     ) -> Dict[str, int]:
         """Decode a given id."""
-        return self.configuration_manager.decode_id(trans, encoded_id)
+        return self.configuration_manager.decode_id(encoded_id)
 
     @router.get(
         '/api/configuration/tool_lineages',
@@ -200,7 +200,7 @@ class ConfigurationController(BaseAPIController):
     @expose_api
     def decode_id(self, trans, encoded_id, **kwds):
         """Decode a given id."""
-        return self.configuration_manager.decode_id(trans, encoded_id)
+        return self.configuration_manager.decode_id(encoded_id)
 
     @require_admin
     @expose_api

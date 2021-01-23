@@ -17,7 +17,6 @@ from typing import (
 
 from galaxy.app import StructuredApp
 from galaxy.managers import base
-from galaxy.managers.context import ProvidesAppContext
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.web.framework.base import server_starttime
 
@@ -56,13 +55,12 @@ class ConfigurationManager:
 
     def decode_id(
         self,
-        trans: ProvidesAppContext,
         encoded_id: EncodedDatabaseIdField,
     ) -> Dict[str, int]:
         # Handle the special case for library folders
         if ((len(encoded_id) % 16 == 1) and encoded_id.startswith('F')):
             encoded_id = cast(EncodedDatabaseIdField, encoded_id[1:])
-        decoded_id = trans.security.decode_id(encoded_id)
+        decoded_id = self._app.security.decode_id(encoded_id)
         return {"decoded_id": decoded_id}
 
     def tool_lineages(self) -> List[Dict[str, Dict]]:
