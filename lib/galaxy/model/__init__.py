@@ -1136,6 +1136,12 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         rval = super().to_dict(view=view)
         rval['tool_id'] = self.tool_id
         rval['history_id'] = self.history_id
+        if self.workflow_invocation_step:
+            rval['created_by_workflow'] = True
+            rval['workflow_invocation_id'] = self.workflow_invocation_step.workflow_invocation.id
+            rval['workflow_id'] = self.workflow_invocation_step.workflow_invocation.workflow_id
+        else:
+            rval['created_by_workflow'] = False
         if system_details:
             # System level details that only admins should have.
             rval['external_id'] = self.job_runner_external_id
