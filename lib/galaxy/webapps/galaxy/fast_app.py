@@ -14,6 +14,10 @@ from galaxy.web.framework.decorators import (
 # https://fastapi.tiangolo.com/tutorial/metadata/#metadata-for-tags
 api_tags_metadata = [
     {
+        "name": "configuration",
+        "description": "Configuration-related endpoints.",
+    },
+    {
         "name": "datatypes",
         "description": "Operations with supported data types.",
     },
