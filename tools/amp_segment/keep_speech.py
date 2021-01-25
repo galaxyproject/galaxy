@@ -50,7 +50,6 @@ def remove_silence(remove_type, seg_data, filename, output_file):
 				# Reset the variables
 				start_block = -1
 				previous_end = 0
-				segments += 1
 		elif s.label not in ["silence", "noise", remove_type]:
 			# If this is a new block, mark the start
 			if start_block < 0:
@@ -64,7 +63,7 @@ def remove_silence(remove_type, seg_data, filename, output_file):
 
 	print("Concatenating files")
 	# Concetenate each of the individual parts into one audio file of speech
-	concat_files(segments, output_file)
+	concat_files(len(kept_segments), output_file)
 	
 	return kept_segments
 
@@ -122,6 +121,7 @@ def create_audio_part(input_file, start, end, segment, file_duration):
 
 # Take each of the individual parts, create one larger file and copy it to the destination file
 def concat_files(segments, output_file):
+	print("Number of segments: " + str(segments))
 	# Create the ffmpeg command, adding an input file for each segment created
 	if segments > 1:
 		ffmpegCmd = ['ffmpeg']
