@@ -31,10 +31,10 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
         file.close()
 
         # allow user to add new datasets in the newly created library
-        self.create_lib_and_permit_adding(email)
+        name = self.create_lib_and_permit_adding(email)
 
         # test importing functionality
-        self.libraries_open_with_name(self.name)
+        self.libraries_open_with_name(name)
         self.assert_num_displayed_items_is(0)
         self.libraries_dataset_import(self.navigation.libraries.folder.labels.from_user_import_dir)
         self.select_dataset_from_lib_import_modal(random_text)
@@ -44,9 +44,9 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
     def test_user_library_import_dir_warning(self):
         # do not create email-dir, assert just warning
         email = self.get_logged_in_user()["email"]
-        self.create_lib_and_permit_adding(email)
+        name = self.create_lib_and_permit_adding(email)
 
-        self.libraries_open_with_name(self.name)
+        self.libraries_open_with_name(name)
         self.assert_num_displayed_items_is(0)
         self.libraries_dataset_import(self.navigation.libraries.folder.labels.from_user_import_dir)
 
@@ -59,7 +59,7 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
     def create_lib_and_permit_adding(self, email):
         # logout of the current user, only admin can create new libraries
         self.logout()
-        self.create_new_library()
+        name = self.create_new_library()
         # open permission manage dialog
         self.components.libraries.permission_library_btn.wait_for_and_click()
         self.components.libraries.add_items_permission_field.wait_for_and_click()
@@ -77,3 +77,5 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
         self.logout()
         # login back to the 'regular' user account
         self.submit_login(email=email)
+
+        return name
