@@ -64,6 +64,8 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
         self.components.libraries.permission_library_btn.wait_for_and_click()
         self.components.libraries.add_items_permission_field.wait_for_and_click()
         # search for created user and add him to permission field
+        print("!!!!")
+        print("!!!!")
         self.components.libraries.add_items_permission_field.wait_for_and_send_keys(email)
         self.components.libraries.add_items_permission_option.wait_for_and_click()
         self.components.libraries.toolbtn_save_permissions.wait_for_and_click()
