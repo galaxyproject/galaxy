@@ -319,6 +319,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 limits = resources['limits']
                 if 'cpu' in limits:
                     cpu_val = int(math.floor(float(limits['cpu'])))
+                    cpu_val = cpu_val or 1
                     envs.append({'name': 'GALAXY_SLOTS', 'value': str(cpu_val)})
                 if 'memory' in limits:
                     mem_val = ByteSize(limits['memory']).to_unit('M', as_string=False)
