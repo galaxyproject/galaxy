@@ -17,7 +17,6 @@ def main():
     """
     parser = argparse.ArgumentParser(description=main.__doc__)
     parser.add_argument("--debug", default=False, action="store_true", help="Turn on debugging")
-    parser.add_argument("dropbox", help="hpc_batch dropbox location")
     parser.add_argument("input", help="input audio file")
     parser.add_argument("segments", help="INA Speech Segmenter output")
     parser.add_argument("amp_segments", help="AMP Segmentation Schema output")
@@ -28,6 +27,8 @@ def main():
                         stream=sys.stderr,
                         format="%(asctime)s %(levelname)s %(message)s")
 
+    dropbox = '/srv/amp/hpc_batch/dropbox'
+    
     # job parameters    
     job = {
         'script': 'ina_speech_segmenter',
@@ -39,7 +40,7 @@ def main():
         }
     }
     print("Submitting job to HPC")
-    job = hpc_submit.submit_and_wait(args.dropbox, job)
+    job = hpc_submit.submit_and_wait(dropbox, job)
 
     print("Checking job status: " + job['job']['status'])
     if job['job']['status'] != 'ok':

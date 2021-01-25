@@ -45,7 +45,7 @@ def remove_silence(remove_type, seg_data, filename, output_file):
 		if should_remove_segment(remove_type, s, start_block) == True:
 			# If we have catalogued speech, create a segment from that chunk
 			if previous_end > 0 and start_block >= 0:
-				kept_segment = create_audio_part(filename, start_block, previous_end, segments, seg_data.media.duration)
+				kept_segment = create_audio_part(filename, start_block, previous_end, len(kept_segments), seg_data.media.duration)
 				kept_segments.update(kept_segment)
 				# Reset the variables
 				start_block = -1
@@ -58,7 +58,7 @@ def remove_silence(remove_type, seg_data, filename, output_file):
 
 	# If we reached the end and still have an open block of speech, output it
 	if previous_end > 0:
-		kept_segment = create_audio_part(filename, start_block, previous_end, segments, seg_data.media.duration)
+		kept_segment = create_audio_part(filename, start_block, previous_end, len(kept_segments), seg_data.media.duration)
 		kept_segments.update(kept_segment)
 
 	print("Concatenating files")
