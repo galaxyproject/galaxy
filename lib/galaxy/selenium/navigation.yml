@@ -532,6 +532,10 @@ libraries:
     permission_library_btn: '.permission_library_btn'
     toolbtn_save_permissions: '.toolbtn_save_permissions'
     add_items_permission_field: '.add_perm > ul input'
+    add_items_permission_field_text:
+      type: xpath
+      selector: '//ul/*/div[contains(text(), "${email}")]'
+
     add_items_permission_option: '.select2-result-label[role="option"]'
 
   folder:
