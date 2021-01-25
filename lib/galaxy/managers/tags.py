@@ -15,17 +15,17 @@ class ItemTagsPayload(BaseModel):
     item_id: str = Field(
         ...,  # This field is required
         title="Item ID",
-        description="The identifier of the item whose tags will be updated",
+        description="The `encoded identifier` of the item whose tags will be updated.",
     )
     item_class: str = Field(
         ...,  # This field is required
         title="Item class",
-        description="The name of the class of the item",
+        description="The name of the class of the item.",
     )
     item_tags: Optional[List[str]] = Field(
         default=None,
         title="Item tags",
-        description="The list of tags that will replace the current tags associated with the item",
+        description="The list of tags that will replace the current tags associated with the item.",
     )
 
 
