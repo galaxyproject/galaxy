@@ -19,7 +19,6 @@ class Segmentation:
 		if len(self.segments) >= 1:
 			last_segment = self.segments[-1]
 
-		print("Segments: " + str(len(self.segments)))
 		if last_segment is not None:
 			print(last_segment)
 
@@ -79,6 +78,8 @@ class SegmentationSegment:
 
 	@staticmethod
 	def formatGender( value):
+		if value is None:
+			return None
 		tmp_value = value.lower()
 		if tmp_value in ("male", "female"):
 			return tmp_value.lower()
@@ -86,6 +87,8 @@ class SegmentationSegment:
 
 	@staticmethod
 	def formatLabel(value):
+		if value is None:
+			return None
 		tmp_value = value.lower()
 		if tmp_value in ("male", "female", "speech"):
 			return "speech"
