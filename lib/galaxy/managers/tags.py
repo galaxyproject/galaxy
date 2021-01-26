@@ -6,7 +6,6 @@ from pydantic import (
 )
 
 from galaxy.app import StructuredApp
-from galaxy.exceptions import MessageException
 from galaxy.webapps.base.controller import UsesTagsMixin
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
@@ -41,11 +40,6 @@ class TagsManager(UsesTagsMixin):
             payload: ItemTagsPayload,
     ) -> None:
         """Apply a new set of tags to an item; previous tags are deleted."""
-        if payload.item_id is None:
-            raise MessageException("Please provide the item id (item_id).")
-        if payload.item_class is None:
-            raise MessageException("Please provide the item class (item_class).")
-
         new_tags: Optional[str] = None
         if payload.item_tags and len(payload.item_tags) > 0:
             new_tags = ",".join(payload.item_tags)
