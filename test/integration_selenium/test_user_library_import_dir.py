@@ -60,13 +60,21 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
         # logout of the current user, only admin can create new libraries
         self.logout()
         self.create_new_library()
+        self.libraries_index_search_for(self.name)
         # open permission manage dialog
         self.components.libraries.permission_library_btn.wait_for_and_click()
         self.components.libraries.add_items_permission_field.wait_for_and_click()
         # search for created user and add him to permission field
         self.components.libraries.add_items_permission_field.wait_for_and_send_keys(email)
         self.components.libraries.add_items_permission_option.wait_for_and_click()
+
+        # assert that the right email has been saved
+        self.components.libraries.add_items_permission_field_text(email=email).wait_for_visible()
+
         self.components.libraries.toolbtn_save_permissions.wait_for_and_click()
+        # assert that toast message is appearing
+        self.components.libraries.folder.toast_msg.wait_for_visible()
+
         self.logout()
         # login back to the 'regular' user account
         self.submit_login(email=email)
