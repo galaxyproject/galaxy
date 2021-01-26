@@ -346,8 +346,8 @@
             <!-- Username to access Mesos cluster. -->
             <param id="password">password</param>
             <!-- Password to access Mesos cluster. -->
-            <param id="insecure">true</param>
-            <!-- True to communicate with Chronos over HTTPS; false otherwise-->
+            <param id="insecure">false</param>
+            <!-- False to communicate with Chronos over HTTPS; true otherwise-->
         </plugin>
         <!-- Additionally any plugin or destination (below) may define an "enabled" parameter that should
              evaluate to True or False. When setup using
@@ -1061,12 +1061,12 @@
             <param id="docker_enabled">true</param>
             <param id="docker_memory">512</param>
             <param id="docker_cpu">2</param>
-            <param id="volumes">/directory/</param>
+            <param id="volumes">host_path:container_path:mode</param>
             <!-- Directory which is mounted to the container and is parent of
                  the  `job_working_directory`, `file_path`, `new_file_path`
-                 directories. Directories of the data used by tools are
-                 included as well.-->
-            <param id="max_retries">2</param>
+                 directories. Other directories of the data used by tools can
+                 be mounted as well, separated by commas.-->
+            <param id="max_retries">0</param>
             <!-- Number of retries to attempt if a command returns a non-zero status -->
         </destination>
 
