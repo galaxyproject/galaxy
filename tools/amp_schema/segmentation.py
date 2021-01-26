@@ -10,6 +10,9 @@ class Segmentation:
 		else:
 			self.media = media
 			
+	def addDiarizationSegment(self, start=None, end=None, speakerLabel = None):
+		self.segments.append(SegmentationSegment(None, None, start, end, speakerLabel))
+
 	def addSegment(self, label, gender=None, start=None, end=None, speakerLabel = None):
 		# Format the label for comparison purposes
 		tmp_label = SegmentationSegment.formatLabel(label)
