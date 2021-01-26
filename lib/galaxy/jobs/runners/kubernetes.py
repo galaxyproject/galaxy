@@ -305,6 +305,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         resources = self.__get_resources(ajs.job_wrapper)
         if resources:
             envs = []
+            cpu_val = None
             if 'requests' in resources:
                 requests = resources['requests']
                 if 'cpu' in requests:
