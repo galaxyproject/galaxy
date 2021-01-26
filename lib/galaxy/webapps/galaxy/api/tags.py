@@ -3,7 +3,10 @@ API Controller providing Galaxy Tags
 """
 import logging
 
-from fastapi import Body
+from fastapi import (
+    Body,
+    status,
+)
 # TODO: replace with Router after merging #11219
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter as APIRouter
@@ -34,6 +37,7 @@ class FastAPITags:
     @router.put(
         '/api/tags',
         summary="Apply a new set of tags to an item; previous tags are deleted.",
+        status_code=status.HTTP_204_NO_CONTENT,
     )
     def update(
         self,
