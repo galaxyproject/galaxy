@@ -73,7 +73,7 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
 
         self.components.libraries.toolbtn_save_permissions.wait_for_and_click()
         # assert that toast message is appearing
-        assert self.components.libraries.folder.toast_msg.wait_for_visible()
+        self.components.libraries.folder.toast_msg.wait_for_visible()
 
         self.logout()
         # login back to the 'regular' user account
