@@ -914,9 +914,8 @@ class NavigatesGalaxy(HasDriver):
         if login:
             self.admin_login()
         self.libraries_open()
-        name = self._get_random_name(prefix="testcontents")
-        self.libraries_index_create(name)
-        return name
+        self.name = self._get_random_name(prefix="testcontents")
+        self.libraries_index_create(self.name)
 
     def libraries_open(self):
         self.home()
