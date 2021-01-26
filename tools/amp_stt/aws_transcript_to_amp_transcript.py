@@ -95,7 +95,7 @@ def main():
 		# For each segment, get the start time, end time and speaker label
 		segments = speakerLabels["segments"]
 		for segment in segments:
-			seg_schema.addSegment(None, None, float(segment["start_time"]), float(segment["end_time"]), segment["speaker_label"])
+			seg_schema.addDiarizationSegment(float(segment["start_time"]), float(segment["end_time"]), segment["speaker_label"])
 		
 	# Write the output
 	write_output_json(seg_schema, output_seg_json_file)
