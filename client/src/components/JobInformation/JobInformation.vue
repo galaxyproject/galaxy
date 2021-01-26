@@ -11,6 +11,18 @@
                     <td>Galaxy Tool Version:</td>
                     <td id="galaxy-tool-version">{{ job.tool_version }}</td>
                 </tr>
+                <tr v-if="job">
+                    <td>Created by workflow?</td>
+                    <td id="created-by-workflow">{{ job.created_by_workflow }}</td>
+                </tr>
+                <tr v-if="job && job.created_by_workflow">
+                    <td>Workflow ID:</td>
+                    <td id="workflow-id">{{ job.workflow_id }} (<a :href="'/workflow/display_by_id?id=' + job.workflow_id" target="_top">view</a>)</td>
+                </tr>
+                <tr v-if="job && job.created_by_workflow">
+                    <td>Invocation ID:</td>
+                    <td id="invocation-id">{{ job.workflow_invocation_id }}</td>
+                </tr>
                 <tr v-if="job && includeTimes">
                     <td>Created</td>
                     <td id="created" v-if="job.create_time">
