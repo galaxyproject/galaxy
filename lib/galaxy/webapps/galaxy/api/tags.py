@@ -36,19 +36,23 @@ class FastAPITags:
 
     @router.put(
         '/api/tags',
-        summary="Apply a new set of tags to an item; previous tags are deleted.",
+        summary="Apply a new set of tags to an item.",
         status_code=status.HTTP_204_NO_CONTENT,
     )
     def update(
         self,
+        trans: GalaxyWebTransaction = Depends(get_trans),
         payload: ItemTagsPayload = Body(
             ...,  # Required
             title="Payload",
             description="Request body containing the item and the tags to be assigned.",
         ),
-        trans: GalaxyWebTransaction = Depends(get_trans),
     ):
-        """Replaces the tags associated with an item with the new ones specified in the payload."""
+        """Replaces the tags associated with an item with the new ones specified in the payload.
+
+        - The previous tags will be __deleted__.
+        - If no tags are provided in the request body, the currently associated tags will also be __deleted__.
+        """
         self.manager.update(trans, payload)
 
 
