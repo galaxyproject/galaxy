@@ -18,8 +18,12 @@ from galaxy.managers.tags import (
 )
 from galaxy.structured_app import StructuredApp
 from galaxy.web import expose_api
-from galaxy.webapps.base.controller import BaseAPIController, UsesTagsMixin
-from . import Depends, get_app, get_trans
+from galaxy.webapps.base.controller import BaseAPIController
+from . import (
+    Depends,
+    get_app,
+    get_trans,
+)
 
 log = logging.getLogger(__name__)
 
@@ -31,7 +35,7 @@ def get_tags_manager(app: StructuredApp = Depends(get_app)) -> TagsManager:
 
 
 @cbv(router)
-class FastAPITags(UsesTagsMixin):
+class FastAPITags:
     manager: TagsManager = Depends(get_tags_manager)
 
     @router.put(
@@ -53,10 +57,10 @@ class FastAPITags(UsesTagsMixin):
         - The previous tags will be __deleted__.
         - If no tags are provided in the request body, the currently associated tags will also be __deleted__.
         """
-        self.manager.update(trans, payload, self.get_tag_handler(trans))
+        self.manager.update(trans, payload)
 
 
-class TagsController(BaseAPIController, UsesTagsMixin):
+class TagsController(BaseAPIController):
 
     def __init__(self, app):
         super().__init__(app)
@@ -70,4 +74,4 @@ class TagsController(BaseAPIController, UsesTagsMixin):
 
         Apply a new set of tags to an item; previous tags are deleted.
         """
-        self.manager.update(trans, ItemTagsPayload(**payload), self.get_tag_handler(trans))
+        self.manager.update(trans, ItemTagsPayload(**payload))

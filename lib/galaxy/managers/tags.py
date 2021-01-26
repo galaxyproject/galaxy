@@ -10,7 +10,6 @@ from pydantic import (
 
 from galaxy.app import StructuredApp
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.model.tags import GalaxyTagHandler
 
 
 class ItemTagsPayload(BaseModel):
@@ -41,22 +40,23 @@ class TagsManager:
             self,
             trans: ProvidesUserContext,
             payload: ItemTagsPayload,
-            tag_handler: GalaxyTagHandler
     ) -> None:
         """Apply a new set of tags to an item; previous tags are deleted."""
+        tag_handler = trans.app.tag_handler
         new_tags: Optional[str] = None
         if payload.item_tags and len(payload.item_tags) > 0:
             new_tags = ",".join(payload.item_tags)
-        item = self._get_item(trans, tag_handler, payload)
+        item = self._get_item(trans, payload)
         user = trans.user
         tag_handler.delete_item_tags(user, item)
         tag_handler.apply_item_tags(user, item, new_tags)
         trans.sa_session.flush()
 
-    def _get_item(self, trans: ProvidesUserContext, tag_handler: GalaxyTagHandler, payload: ItemTagsPayload):
+    def _get_item(self, trans: ProvidesUserContext, payload: ItemTagsPayload):
         """
         Get an item based on type and id.
         """
+        tag_handler = trans.app.tag_handler
         id = trans.security.decode_id(payload.item_id)
         item_class = tag_handler.item_tag_assoc_info[payload.item_class].item_class
         item = trans.sa_session.query(item_class).filter(item_class.id == id).first()
