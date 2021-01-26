@@ -21,7 +21,8 @@ Galaxy with testing fixtures.
 The first example notebook is good for prototyping stand-alone applications that drive
 Galaxy, the second example notebook is setup to mirror the environment available to Selenium
 test cases that ship with Galaxy (e.g. :class:`galaxy_test.selenium.framework:SeleniumTestCase`)
-and can be used for interactively developing Selenium tests for Galaxy.
+and can be used for interactively developing Selenium tests for Galaxy. Additionally, it shows how can ActionChains
+could be accessed within Jupyter notebook.
 
 These notebooks start with a cell that simply defines a ``config`` variable in the Python
 environment on a cell that is marked with metadata indicated it is "parameters". This
@@ -60,18 +61,6 @@ Both contexts can be configured with the following dictionary keys (either from
     setup the Selenium client used. Useful keys and their defaults include -
     ``browser`` (``"auto"``), ``remote`` (``false``), ``remote_host`` (``"127.0.0.1"``),
     ``remote_port`` (``4444``), ``headless`` (``false``).
-
-``ActionChains``
-    ActionChains is an important set of commands necessary for Selenium Test development.
-    Commands could be accessed after webdriver import and initialized with  driver
-
-::
-
-    from galaxy_test.selenium.jupyter_context import init
-    from selenium import webdriver
-    from selenium.webdriver.common.action_chains import ActionChains
-    gx_selenium_context = init(config)
-    ac = ActionChains(gx_selenium_context.driver)
 
 Additionally, the testing context also allows additional configuration variables used
 for populating test fixtures (with populators) or by extra testing helpers (e.g.
