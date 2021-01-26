@@ -66,7 +66,7 @@
     <tool file="amp_hmgm/hmgm_segmentation.xml"/>
   </section>
 
-  <section id="hmgm_editor" name="Obsolete MGMs">
+  <section id="obsolete_mgms" name="Obsolete MGMs">
     <tool file="amp_segment/remove_silence_music.xml"/>
   </section>
 
