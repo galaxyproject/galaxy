@@ -11,14 +11,14 @@ from fastapi import (
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter as APIRouter
 
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.tags import (
     ItemTagsPayload,
     TagsManager,
 )
 from galaxy.structured_app import StructuredApp
 from galaxy.web import expose_api
-from galaxy.webapps.base.controller import BaseAPIController
-from galaxy.webapps.base.webapp import GalaxyWebTransaction
+from galaxy.webapps.base.controller import BaseAPIController, UsesTagsMixin
 from . import Depends, get_app, get_trans
 
 log = logging.getLogger(__name__)
@@ -31,7 +31,7 @@ def get_tags_manager(app: StructuredApp = Depends(get_app)) -> TagsManager:
 
 
 @cbv(router)
-class FastAPITags:
+class FastAPITags(UsesTagsMixin):
     manager: TagsManager = Depends(get_tags_manager)
 
     @router.put(
@@ -41,7 +41,7 @@ class FastAPITags:
     )
     def update(
         self,
-        trans: GalaxyWebTransaction = Depends(get_trans),
+        trans: ProvidesUserContext = Depends(get_trans),
         payload: ItemTagsPayload = Body(
             ...,  # Required
             title="Payload",
@@ -53,10 +53,10 @@ class FastAPITags:
         - The previous tags will be __deleted__.
         - If no tags are provided in the request body, the currently associated tags will also be __deleted__.
         """
-        self.manager.update(trans, payload)
+        self.manager.update(trans, payload, self.get_tag_handler(trans))
 
 
-class TagsController(BaseAPIController):
+class TagsController(BaseAPIController, UsesTagsMixin):
 
     def __init__(self, app):
         super().__init__(app)
@@ -64,10 +64,10 @@ class TagsController(BaseAPIController):
 
     # Retag an item. All previous tags are deleted and new tags are applied.
     @expose_api
-    def update(self, trans: GalaxyWebTransaction, payload: dict, **kwd):
+    def update(self, trans: ProvidesUserContext, payload: dict, **kwd):
         """
         PUT /api/tags/
 
         Apply a new set of tags to an item; previous tags are deleted.
         """
-        self.manager.update(trans, ItemTagsPayload(**payload))
+        self.manager.update(trans, ItemTagsPayload(**payload), self.get_tag_handler(trans))

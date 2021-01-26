@@ -1,4 +1,7 @@
-from typing import List, Optional
+from typing import (
+    List,
+    Optional,
+)
 
 from pydantic import (
     BaseModel,
@@ -6,8 +9,8 @@ from pydantic import (
 )
 
 from galaxy.app import StructuredApp
-from galaxy.webapps.base.controller import UsesTagsMixin
-from galaxy.webapps.base.webapp import GalaxyWebTransaction
+from galaxy.managers.context import ProvidesUserContext
+from galaxy.model.tags import GalaxyTagHandler
 
 
 class ItemTagsPayload(BaseModel):
@@ -28,7 +31,7 @@ class ItemTagsPayload(BaseModel):
     )
 
 
-class TagsManager(UsesTagsMixin):
+class TagsManager:
     """Interface/service object shared by controllers for interacting with tags."""
 
     def __init__(self, app: StructuredApp):
@@ -36,23 +39,25 @@ class TagsManager(UsesTagsMixin):
 
     def update(
             self,
-            trans: GalaxyWebTransaction,
+            trans: ProvidesUserContext,
             payload: ItemTagsPayload,
+            tag_handler: GalaxyTagHandler
     ) -> None:
         """Apply a new set of tags to an item; previous tags are deleted."""
         new_tags: Optional[str] = None
         if payload.item_tags and len(payload.item_tags) > 0:
             new_tags = ",".join(payload.item_tags)
-        item = self._get_item(trans, payload.item_class, trans.security.decode_id(payload.item_id))
+        item = self._get_item(trans, tag_handler, payload)
         user = trans.user
-        self.get_tag_handler(trans).delete_item_tags(user, item)
-        self.get_tag_handler(trans).apply_item_tags(user, item, new_tags)
+        tag_handler.delete_item_tags(user, item)
+        tag_handler.apply_item_tags(user, item, new_tags)
         trans.sa_session.flush()
 
-    def _get_item(self, trans: GalaxyWebTransaction, item_class_name: str, id: int):
+    def _get_item(self, trans: ProvidesUserContext, tag_handler: GalaxyTagHandler, payload: ItemTagsPayload):
         """
         Get an item based on type and id.
         """
-        item_class = self.get_tag_handler(trans).item_tag_assoc_info[item_class_name].item_class
+        id = trans.security.decode_id(payload.item_id)
+        item_class = tag_handler.item_tag_assoc_info[payload.item_class].item_class
         item = trans.sa_session.query(item_class).filter(item_class.id == id).first()
         return item
