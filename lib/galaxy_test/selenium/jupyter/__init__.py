@@ -61,6 +61,18 @@ Both contexts can be configured with the following dictionary keys (either from
     ``browser`` (``"auto"``), ``remote`` (``false``), ``remote_host`` (``"127.0.0.1"``),
     ``remote_port`` (``4444``), ``headless`` (``false``).
 
+``ActionChains``
+    ActionChains is an important set of commands necessary for Selenium Test development.
+    Commands could be accessed after webdriver import and initialized with  driver
+
+::
+
+    from galaxy_test.selenium.jupyter_context import init
+    from selenium import webdriver
+    from selenium.webdriver.common.action_chains import ActionChains
+    gx_selenium_context = init(config)
+    ac = ActionChains(gx_selenium_context.driver)
+
 Additionally, the testing context also allows additional configuration variables used
 for populating test fixtures (with populators) or by extra testing helpers (e.g.
 ``gx_selenium_context.test_login()``).
