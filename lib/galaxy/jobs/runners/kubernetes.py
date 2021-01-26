@@ -314,7 +314,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                     mem_val = ByteSize(requests['memory']).to_unit('M', as_string=False)
                     envs.append({'name': 'GALAXY_MEMORY_MB', 'value': str(mem_val)})
                     if cpu_val:
-                        envs.append({'name': 'GALAXY_MEMORY_MB_PER_SLOT', 'value': str(math.floor(mem_val/cpu_val))})
+                        envs.append({'name': 'GALAXY_MEMORY_MB_PER_SLOT', 'value': str(math.floor(mem_val / cpu_val))})
             elif 'limits' in resources:
                 limits = resources['limits']
                 if 'cpu' in limits:
@@ -325,7 +325,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                     mem_val = ByteSize(limits['memory']).to_unit('M', as_string=False)
                     envs.append({'name': 'GALAXY_MEMORY_MB', 'value': str(mem_val)})
                     if cpu_val:
-                        envs.append({'name': 'GALAXY_MEMORY_MB_PER_SLOT', 'value': str(math.floor(mem_val/cpu_val))})
+                        envs.append({'name': 'GALAXY_MEMORY_MB_PER_SLOT', 'value': str(math.floor(mem_val / cpu_val))})
             k8s_container['resources'] = resources
             k8s_container['env'] = envs
 
