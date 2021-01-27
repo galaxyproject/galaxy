@@ -50,7 +50,7 @@ from galaxy.main_config import (
     find_config,
 )
 from galaxy.web_stack import get_app_kwds
-from galaxy.webapps.galaxy.buildapp import app_factory
+from galaxy.webapps.galaxy.buildapp import app_pair
 from .fast_app import initialize_fast_app
 
 
@@ -78,5 +78,5 @@ def factory():
     global_conf = {}
     if config_is_ini(config_file):
         global_conf["__file__"] = config_file
-    gx = app_factory(global_conf=global_conf, load_app_kwds=kwds)
-    return initialize_fast_app(gx)
+    gx_webapp, gx_app = app_pair(global_conf=global_conf, load_app_kwds=kwds)
+    return initialize_fast_app(gx_webapp, gx_app)

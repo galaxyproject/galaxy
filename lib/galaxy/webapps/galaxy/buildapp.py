@@ -31,9 +31,16 @@ class GalaxyWebApplication(galaxy.webapps.base.webapp.WebApplication):
     pass
 
 
-def app_factory(global_conf, load_app_kwds=None, **kwargs):
+def app_factory(*args, **kwargs):
     """
     Return a wsgi application serving the root object
+    """
+    return app_pair(*args, **kwargs)[0]
+
+
+def app_pair(global_conf, load_app_kwds=None, **kwargs):
+    """
+    Return a wsgi application serving the root object and the Galaxy application.
     """
     load_app_kwds = load_app_kwds or {}
     kwargs = load_app_properties(
@@ -200,7 +207,7 @@ def app_factory(global_conf, load_app_kwds=None, **kwargs):
         if th.is_alive():
             log.debug("Prior to webapp return, Galaxy thread %s is alive.", th)
     # Return
-    return webapp
+    return webapp, app
 
 
 def uwsgi_app():
