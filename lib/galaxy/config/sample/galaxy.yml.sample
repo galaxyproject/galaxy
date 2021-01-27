@@ -1398,13 +1398,6 @@ galaxy:
   # Available formats are currently 'zip', 'gz', and 'bz2'.
   #disable_library_comptypes: null
 
-  # Some sequencer integration features in beta allow you to
-  # automatically transfer datasets.  This is done using a lightweight
-  # transfer manager which runs outside of Galaxy (but is spawned by it
-  # automatically).  Galaxy will communicate with this manager over the
-  # port specified here.
-  #transfer_manager_port: 8163
-
   # Boosts are used to customize this instance's toolbox search. The
   # higher the boost, the more importance the scoring algorithm gives to
   # the given field.  Section refers to the tool group in the tool

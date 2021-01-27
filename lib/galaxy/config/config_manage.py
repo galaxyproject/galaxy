@@ -293,6 +293,7 @@ OPTION_ACTIONS = {
     'fulltext_max_size': _DeprecatedAndDroppedAction(),
     'fulltext_noindex_filetypes': _DeprecatedAndDroppedAction(),
     'fulltext_url': _DeprecatedAndDroppedAction(),
+    'enable_beta_job_managers': _DeprecatedAndDroppedAction(),
     'enable_legacy_sample_tracking_api': _DeprecatedAction(),
     'enable_new_user_preferences': _DeprecatedAndDroppedAction(),
     'force_beta_workflow_scheduled_for_collections': _DeprecatedAction(),

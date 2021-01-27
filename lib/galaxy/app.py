@@ -219,10 +219,6 @@ class UniverseApplication(StructuredApp, config.ConfiguresGalaxyMixin):
 
             self.application_stack.register_postfork_function(postfork_sentry_client)
 
-        # Transfer manager client
-        if self.config.get_bool('enable_beta_job_managers', False):
-            from galaxy.jobs import transfer_manager
-            self.transfer_manager = transfer_manager.TransferManager(self)
         # Start the job manager
         from galaxy.jobs import manager
         self.job_manager = manager.JobManager(self)

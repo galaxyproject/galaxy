@@ -2763,20 +2763,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~
-``transfer_manager_port``
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Some sequencer integration features in beta allow you to
-    automatically transfer datasets.  This is done using a lightweight
-    transfer manager which runs outside of Galaxy (but is spawned by
-    it automatically).  Galaxy will communicate with this manager over
-    the port specified here.
-:Default: ``8163``
-:Type: int
-
-
 ~~~~~~~~~~~~~~~~~~~
 ``tool_name_boost``
 ~~~~~~~~~~~~~~~~~~~
