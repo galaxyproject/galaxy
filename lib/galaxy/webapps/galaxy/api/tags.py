@@ -16,12 +16,10 @@ from galaxy.managers.tags import (
     ItemTagsPayload,
     TagsManager,
 )
-from galaxy.structured_app import StructuredApp
 from galaxy.web import expose_api
 from galaxy.webapps.base.controller import BaseAPIController
 from . import (
     Depends,
-    get_app,
     get_trans,
 )
 
@@ -30,8 +28,8 @@ log = logging.getLogger(__name__)
 router = APIRouter(tags=['tags'])
 
 
-def get_tags_manager(app: StructuredApp = Depends(get_app)) -> TagsManager:
-    return TagsManager(app)  # TODO: remove/refactor after merging #11180
+def get_tags_manager() -> TagsManager:
+    return TagsManager()  # TODO: remove/refactor after merging #11180
 
 
 @cbv(router)
@@ -64,7 +62,7 @@ class TagsController(BaseAPIController):
 
     def __init__(self, app):
         super().__init__(app)
-        self.manager = TagsManager(app)
+        self.manager = TagsManager()
 
     # Retag an item. All previous tags are deleted and new tags are applied.
     @expose_api

@@ -8,7 +8,6 @@ from pydantic import (
     Field,
 )
 
-from galaxy.app import StructuredApp
 from galaxy.managers.context import ProvidesUserContext
 
 
@@ -33,14 +32,7 @@ class ItemTagsPayload(BaseModel):
 class TagsManager:
     """Interface/service object shared by controllers for interacting with tags."""
 
-    def __init__(self, app: StructuredApp):
-        self._app = app
-
-    def update(
-            self,
-            trans: ProvidesUserContext,
-            payload: ItemTagsPayload,
-    ) -> None:
+    def update(self, trans: ProvidesUserContext, payload: ItemTagsPayload) -> None:
         """Apply a new set of tags to an item; previous tags are deleted."""
         tag_handler = trans.app.tag_handler
         new_tags: Optional[str] = None
