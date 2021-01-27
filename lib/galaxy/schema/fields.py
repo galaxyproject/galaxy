@@ -2,14 +2,39 @@ import re
 
 from pydantic import PositiveInt
 
+from galaxy.model import (
+    get_id_encoding_helper,
+)
+
 ENCODED_DATABASE_ID_PATTERN = re.compile('f?[0-9a-f]+')
 ENCODED_ID_LENGTH_MULTIPLE = 16
 
 
+def encode_id(v: int):
+    security = get_id_encoding_helper()
+    return security.encode_id(v)
+
+
+def decode_id(v: int):
+    security = get_id_encoding_helper()
+    return security.decode_id(v)
+
+
 class DatabaseIdField(PositiveInt):
-    """
-    Database ID
-    """
+    """Database primary id for a model."""
+
+    @classmethod
+    def __get_validators__(cls):
+        # one or more validators may be yielded which will be called in the
+        # order to validate the input, each validator will receive as an input
+        # the value returned from the previous validator
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, v):
+        if isinstance(v, EncodedDatabaseIdField):
+            v = decode_id(v)
+        return cls(v)
 
 
 class EncodedDatabaseIdField(str):
@@ -36,6 +61,8 @@ class EncodedDatabaseIdField(str):
 
     @classmethod
     def validate(cls, v):
+        if isinstance(v, int):
+            v = encode_id(v)
         if not isinstance(v, str):
             raise TypeError('String required')
         if v.startswith("F"):
