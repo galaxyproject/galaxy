@@ -221,6 +221,11 @@ class InvalidFileFormatError(MessageException):
     err_code = error_codes_by_name['INVALID_FILE_FORMAT']
 
 
+class MissingDataError(MessageException):
+    status_code = 500
+    err_code = error_codes_by_name['MISSING_DATA_ERROR']
+
+
 # non-web exceptions
 
 class ContainerCLIError(Exception):
