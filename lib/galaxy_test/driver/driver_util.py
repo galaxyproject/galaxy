@@ -850,7 +850,7 @@ def launch_uvicorn(gx_app, webapp_factory, kwargs, prefix=DEFAULT_CONFIG_PREFIX,
 
     host, port = explicitly_configured_host_and_port(prefix, config_object)
 
-    gx = webapp_factory(
+    gx_webapp = webapp_factory(
         kwargs['global_conf'],
         app=gx_app,
         use_translogger=False,
@@ -858,7 +858,7 @@ def launch_uvicorn(gx_app, webapp_factory, kwargs, prefix=DEFAULT_CONFIG_PREFIX,
         register_shutdown_at_exit=False
     )
     from galaxy.webapps.galaxy.fast_app import initialize_fast_app
-    app = initialize_fast_app(gx)
+    app = initialize_fast_app(gx_webapp, gx_app)
     server, port = uvicorn_serve(app, host=host, port=port)
     set_and_wait_for_http_target(prefix, host, port)
     log.info(f"Embedded uvicorn web server for {name} started at {host}:{port}")

@@ -62,11 +62,24 @@ def add_exception_handler(
         )
 
 
-def initialize_fast_app(gx_app):
-    app = FastAPI(openapi_tags=api_tags_metadata)
+def add_galaxy_middleware(app: FastAPI, gx_app):
+    x_frame_options = getattr(gx_app.config, 'x_frame_options', None)
+    if x_frame_options:
 
+        @app.middleware("http")
+        async def add_x_frame_options(request: Request, call_next):
+            response = await call_next(request)
+            response.headers['X-Frame-Options'] = x_frame_options
+            return response
+
+
+def initialize_fast_app(gx_webapp, gx_app):
+    app = FastAPI(
+        openapi_tags=api_tags_metadata
+    )
     add_exception_handler(app)
-    wsgi_handler = WSGIMiddleware(gx_app)
+    add_galaxy_middleware(app, gx_app)
+    wsgi_handler = WSGIMiddleware(gx_webapp)
     for _, module in walk_controller_modules('galaxy.webapps.galaxy.api'):
         router = getattr(module, "router", None)
         if router:
