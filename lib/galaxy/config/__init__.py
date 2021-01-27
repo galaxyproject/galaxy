@@ -615,7 +615,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             log.warning("preserve_python_environment set to unknown value [%s], defaulting to legacy_only")
             self.preserve_python_environment = "legacy_only"
         self.nodejs_path = kwargs.get("nodejs_path")
-        self.container_image_cache_path = self._in_data_dir(kwargs.get("container_image_cache_path", "container_images"))
+        self.container_image_cache_path = self._in_data_dir(kwargs.get("container_image_cache_path", "container_cache"))
         self.output_size_limit = int(kwargs.get('output_size_limit', 0))
         # activation_email was used until release_15.03
         activation_email = kwargs.get('activation_email')
