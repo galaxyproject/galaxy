@@ -1989,16 +1989,6 @@ mapping:
           Specific formats can be disabled with this option, separate more than one
           format with commas.  Available formats are currently 'zip', 'gz', and 'bz2'.
 
-      transfer_manager_port:
-        type: int
-        default: 8163
-        required: false
-        desc: |
-          Some sequencer integration features in beta allow you to automatically
-          transfer datasets.  This is done using a lightweight transfer manager which
-          runs outside of Galaxy (but is spawned by it automatically).  Galaxy will
-          communicate with this manager over the port specified here.
-
       tool_name_boost:
         type: float
         default: 9.0
