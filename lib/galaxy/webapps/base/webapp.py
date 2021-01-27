@@ -955,14 +955,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             return []
         return render
 
-    def fill_template_string(self, template_string, context=None, **kwargs):
-        """
-        Fill in a template, putting any keyword arguments on the context.
-        """
-        template = Template(source=template_string,
-                            searchList=[context or kwargs, dict(caller=self)])
-        return str(template)
-
 
 def default_url_path(path):
     return os.path.abspath(os.path.join(os.path.dirname(__file__), path))
