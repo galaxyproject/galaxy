@@ -34,7 +34,7 @@ from galaxy.model.tool_shed_install import mapping as toolshed_mapping
 from galaxy.tool_util.verify.interactor import GalaxyInteractorApi, verify_tool
 from galaxy.util import asbool, download_to_file, galaxy_directory
 from galaxy.util.properties import load_app_properties
-from galaxy.web import buildapp
+from galaxy.webapps.galaxy import buildapp
 from galaxy_test.base.api_util import get_admin_api_key, get_user_api_key
 from galaxy_test.base.env import (
     DEFAULT_WEB_HOST,
@@ -843,17 +843,6 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
             return server_wrapper
         except Exception:
             server_wrapper.stop()
-
-
-def launch_uvicorn_multi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=None):
-    host, port = explicitly_configured_host_and_port(prefix, config_object)
-
-    config = {}
-    config["galaxy"] = kwargs.copy()
-
-    yaml_config_path = os.path.join(tempdir, "galaxy.yml")
-    with open(yaml_config_path, "w") as f:
-        yaml.dump(config, f)
 
 
 def launch_uvicorn(gx_app, webapp_factory, kwargs, prefix=DEFAULT_CONFIG_PREFIX, config_object=None):
