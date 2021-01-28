@@ -761,7 +761,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, Uses
         """
         payload = payload or {}
         user = self._get_user(trans, id)
-        self.api_key_manager.create_api_key(trans, user)
+        self.api_key_manager.create_api_key(user)
         return self._build_inputs_api_key(user, message='Generated a new web API key.')
 
     def _build_inputs_api_key(self, user, message=''):
