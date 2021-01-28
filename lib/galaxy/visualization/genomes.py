@@ -124,69 +124,70 @@ class Genome:
         if not self.len_file:
             raise MissingDataError(f'len_file not set for {self.key}')
 
-        len_file_enumerate = enumerate(open(self.len_file))
-        chroms = {}
-        prev_chroms = False
-        start_index = 0
-        if chrom:
-            # Use starting chrom to start list.
-            found = False
-            count = 0
-            for line_num, line in len_file_enumerate:
-                if line.startswith("#"):
-                    continue
-                name, len = line.split("\t")
-                if found:
-                    chroms[name] = int(len)
-                    count += 1
-                elif name == chrom:
-                    # Found starting chrom.
-                    chroms[name] = int(len)
-                    count += 1
-                    found = True
-                    start_index = line_num
-                    if line_num != 0:
-                        prev_chroms = True
-                if count >= num:
-                    break
-        else:
-            # Use low to start list.
-            high = low + int(num)
-            prev_chroms = (low != 0)
-            start_index = low
+        with open(self.len_file) as f:
+            len_file_enumerate = enumerate(f)
+            chroms = {}
+            prev_chroms = False
+            start_index = 0
+            if chrom:
+                # Use starting chrom to start list.
+                found = False
+                count = 0
+                for line_num, line in len_file_enumerate:
+                    if line.startswith("#"):
+                        continue
+                    name, len = line.split("\t")
+                    if found:
+                        chroms[name] = int(len)
+                        count += 1
+                    elif name == chrom:
+                        # Found starting chrom.
+                        chroms[name] = int(len)
+                        count += 1
+                        found = True
+                        start_index = line_num
+                        if line_num != 0:
+                            prev_chroms = True
+                    if count >= num:
+                        break
+            else:
+                # Use low to start list.
+                high = low + int(num)
+                prev_chroms = (low != 0)
+                start_index = low
 
-            # Read chrom data from len file.
-            for line_num, line in len_file_enumerate:
-                if line_num < low:
-                    continue
-                if line_num >= high:
-                    break
-                if line.startswith("#"):
-                    continue
-                # LEN files have format:
-                #   <chrom_name><tab><chrom_length>
-                fields = line.split("\t")
-                chroms[fields[0]] = int(fields[1])
+                # Read chrom data from len file.
+                for line_num, line in len_file_enumerate:
+                    if line_num < low:
+                        continue
+                    if line_num >= high:
+                        break
+                    if line.startswith("#"):
+                        continue
+                    # LEN files have format:
+                    #   <chrom_name><tab><chrom_length>
+                    fields = line.split("\t")
+                    chroms[fields[0]] = int(fields[1])
 
-        # Set flag to indicate whether there are more chroms after list.
-        next_chroms = False
-        try:
-            next(len_file_enumerate)
-            next_chroms = True
-        except StopIteration:
-            # No more chroms to read.
-            pass
+            # Set flag to indicate whether there are more chroms after list.
+            next_chroms = False
+            try:
+                next(len_file_enumerate)
+                next_chroms = True
+            except StopIteration:
+                # No more chroms to read.
+                pass
 
-        to_sort = [{'chrom': chrm, 'len': length} for chrm, length in chroms.items()]
-        to_sort.sort(key=lambda _: split_by_number(_['chrom']))
-        return {
-            'id': self.key,
-            'reference': self.twobit_file is not None,
-            'chrom_info': to_sort,
-            'prev_chroms': prev_chroms,
-            'next_chroms': next_chroms,
-            'start_index': start_index
-        }
+            to_sort = [{'chrom': chrm, 'len': length} for chrm, length in chroms.items()]
+            to_sort.sort(key=lambda _: split_by_number(_['chrom']))
+            return {
+                'id': self.key,
+                'reference': self.twobit_file is not None,
+                'chrom_info': to_sort,
+                'prev_chroms': prev_chroms,
+                'next_chroms': next_chroms,
+                'start_index': start_index
+            }
 
 
 class Genomes:
@@ -215,13 +216,15 @@ class Genomes:
         if twobit_table is None:
             # Add genome data (twobit files) to genomes, directly from twobit.loc
             try:
-                for line in open(os.path.join(self.app.config.tool_data_path, "twobit.loc")):
-                    if line.startswith("#"):
-                        continue
-                    val = line.split()
-                    if len(val) == 2:
-                        key, path = val
-                        twobit_fields[key] = path
+                twobit_path = os.path.join(self.app.config.tool_data_path, "twobit.loc")
+                with open(twobit_path) as f:
+                    for line in f:
+                        if line.startswith("#"):
+                            continue
+                        val = line.split()
+                        if len(val) == 2:
+                            key, path = val
+                            twobit_fields[key] = path
             except OSError:
                 # Thrown if twobit.loc does not exist.
                 log.exception("Error reading twobit.loc")
@@ -394,9 +397,10 @@ class Genomes:
 
         # Read and return reference data.
         try:
-            twobit = TwoBitFile(open(twobit_file_name, 'rb'))
-            if chrom in twobit:
-                seq_data = twobit[chrom].get(int(low), int(high))
-                return GenomeRegion(chrom=chrom, start=low, end=high, sequence=seq_data)
+            with open(twobit_file_name, 'rb') as f:
+                twobit = TwoBitFile(f)
+                if chrom in twobit:
+                    seq_data = twobit[chrom].get(int(low), int(high))
+                    return GenomeRegion(chrom=chrom, start=low, end=high, sequence=seq_data)
         except OSError:
             return None
