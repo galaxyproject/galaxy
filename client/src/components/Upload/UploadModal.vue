@@ -262,12 +262,43 @@ const UploadModal = {
         currentFtp: function () {
             return this.currentUserId && this.ftpUploadSite;
         },
-
+        toData: function (items, history_id) {
+            var data = {
+                fetchRequest: null,
+                uploadRequest: null
+            };
+            if (items && items.length > 0) {
+                var split = this.preprocess(items);
+                if (split.urls) {
+                    // TODO multiple fetches?
+                    data.fetchRequest = this.toFetchData(split.urls, history_id);
+                } 
+                if (split.files) {
+                    data.uploadRequest = this.toFileUploadData(split.files, history_id);
+                }
+            }
+            return data;
+        },
+        preprocess: function(items) {
+            var data = {
+                urls: [],
+                files: []
+            };
+            for (var item in items) {
+                if (item.get("file_mode") != "new" 
+                    || !item.get("url_paste").startsWith("http")){
+                    data.files.push(item)
+                } else {
+                    data.urls.push(item);
+                }
+            }
+            return data;
+        },
         /**
          * Package API data from array of models
          * @param{Array} items - Upload items/rows filtered from a collection
          */
-        toData: function (items, history_id) {
+        toFileUploadData: function (items, history_id) {
             // create dictionary for data submission
             var data = {
                 payload: {
@@ -332,6 +363,32 @@ const UploadModal = {
                 data.payload.inputs = JSON.stringify(inputs);
             }
             return data;
+        },
+        toFetchData: function (items, history_id) {
+            // TODO create the request body - see RuleCollectionBuilder._datasetFor
+            var data = {
+                history_id: history_id,
+                targets: [
+                    {
+                        destination: { type: "hdas" },
+                        elements: [],
+                        name: "",
+                    },
+                ],
+                auto_decompress: true,
+            };
+
+            // TODO iterate through items - maybe there's only one?
+            const urls = items[0].get("url_paste").split("\n");
+            for (var url in urls) {
+                var element = {
+                    url: url,
+                    src: "url",
+                    dbkey: "?",
+                    ext: "auto",
+                };
+                data.targets[0].elements.push(element);
+            }
         },
     },
 };

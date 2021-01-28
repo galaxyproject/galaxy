@@ -174,7 +174,9 @@ export default {
                 this._eventAnnounce(index, file);
             },
             initialize: (index) => {
-                return this.app.toData([this.collection.get(index)], this.history_id);
+                var data = this.app.toData([this.collection.get(index)], this.history_id);
+                this.url = data.fetchRequest ? "TODO" : this.app.uploadPath;
+                return data;
             },
             progress: (index, percentage) => {
                 this._eventProgress(index, percentage);

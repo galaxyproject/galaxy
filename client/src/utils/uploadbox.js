@@ -125,16 +125,16 @@ import { getAppRoot } from "onload/loadConfig";
                         process(new_start);
                     } else {
                         console.debug("Upload completed.");
-                        data.payload.inputs = JSON.parse(data.payload.inputs);
-                        data.payload.inputs["files_0|file_data"] = {
+                        data.uploadRequest.payload.inputs = JSON.parse(data.payload.inputs);
+                        data.uploadRequest.payload.inputs["files_0|file_data"] = {
                             session_id: session_id,
                             name: file.name,
                         };
-                        data.payload.inputs = JSON.stringify(data.payload.inputs);
+                        data.uploadRequest.payload.inputs = JSON.stringify(data.payload.inputs);
                         $.ajax({
                             url: `${getAppRoot()}api/tools`,
                             method: "POST",
-                            data: data.payload,
+                            data: data.uploadRequest.payload,
                             success: (tool_response) => {
                                 cnf.success(tool_response);
                             },
