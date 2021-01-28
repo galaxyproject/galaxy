@@ -1,4 +1,7 @@
-from galaxy import web
+from galaxy.web import (
+    expose_api_anonymous,
+    expose_api_raw_anonymous,
+)
 from galaxy.web.framework.helpers import is_true
 from galaxy.webapps.base.controller import BaseAPIController
 
@@ -15,15 +18,14 @@ class GenomesController(BaseAPIController):
     RESTful controller for interactions with genome data.
     """
 
-    @web.legacy_expose_api_anonymous
+    @expose_api_anonymous
     def index(self, trans, **kwd):
         """
         GET /api/genomes: returns a list of installed genomes
         """
-
         return self.app.genomes.get_dbkeys(trans, **kwd)
 
-    @web.json
+    @expose_api_anonymous
     def show(self, trans, id, num=None, chrom=None, low=None, high=None, **kwd):
         """
         GET /api/genomes/{id}
@@ -44,7 +46,7 @@ class GenomesController(BaseAPIController):
             rval = self.app.genomes.chroms(trans, dbkey=id, num=num, chrom=chrom, low=low)
         return rval
 
-    @web.legacy_expose_api_raw_anonymous
+    @expose_api_raw_anonymous
     def indexes(self, trans, id, **kwd):
         """
         GET /api/genomes/{id}/indexes?type={table name}
@@ -62,7 +64,7 @@ class GenomesController(BaseAPIController):
         if_open = open(index_file_name + index_extensions[index_type], mode='r')
         return if_open.read()
 
-    @web.legacy_expose_api_raw_anonymous
+    @expose_api_raw_anonymous
     def sequences(self, trans, id, num=None, chrom=None, low=None, high=None, **kwd):
         """
         GET /api/genomes/{id}/sequences
