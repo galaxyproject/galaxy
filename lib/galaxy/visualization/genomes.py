@@ -6,7 +6,10 @@ from json import loads
 
 from bx.seq.twobit import TwoBitFile
 
-from galaxy.exceptions import ObjectNotFound
+from galaxy.exceptions import (
+    MissingDataError,
+    ObjectNotFound,
+)
 from galaxy.util.bunch import Bunch
 
 log = logging.getLogger(__name__)
@@ -118,6 +121,9 @@ class Genome:
         #   (b) whether there are previous, next chroms;
         #   (c) index of start chrom.
         #
+        if not self.len_file:
+            raise MissingDataError(f'len_file not set for {self.key}')
+
         len_file_enumerate = enumerate(open(self.len_file))
         chroms = {}
         prev_chroms = False
