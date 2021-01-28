@@ -37,13 +37,25 @@
                     <tr v-if="dataset.id">
                         <td>History Content API ID</td>
                         <td>
-                            <div id="dataset-id">{{ dataset.id }} <decoded-id :id="dataset.id" /> (<a :href="'/tool_runner/rerun?id=' + dataset.id" target="_top">rerun</a>)</div>
+                            <div id="dataset-id">
+                                {{ dataset.id }} <decoded-id :id="dataset.id" /> (<a
+                                    :href="'/tool_runner/rerun?id=' + dataset.id"
+                                    target="_top"
+                                    >rerun</a
+                                >)
+                            </div>
                         </td>
                     </tr>
                     <tr v-if="dataset.history_id">
                         <td>History API ID</td>
                         <td>
-                            <div id="history_id">{{ dataset.history_id }} <decoded-id :id="dataset.history_id" /> (<a :href="'/histories/view?id=' + dataset.history_id" target="_top">view</a>)</div>
+                            <div id="history_id">
+                                {{ dataset.history_id }} <decoded-id :id="dataset.history_id" /> (<a
+                                    :href="'/histories/view?id=' + dataset.history_id"
+                                    target="_top"
+                                    >view</a
+                                >)
+                            </div>
                         </td>
                     </tr>
                     <tr v-if="dataset.uuid">

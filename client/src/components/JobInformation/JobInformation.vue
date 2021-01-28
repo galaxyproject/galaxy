@@ -5,7 +5,9 @@
             <tbody>
                 <tr v-if="job && job.tool_id">
                     <td>Galaxy Tool ID:</td>
-                    <td id="galaxy-tool-id">{{ job.tool_id }} (<a :href="'/root?tool_id=' + job.tool_id" target="_top">run</a>)</td>
+                    <td id="galaxy-tool-id">
+                        {{ job.tool_id }} (<a :href="'/root?tool_id=' + job.tool_id" target="_top">run</a>)
+                    </td>
                 </tr>
                 <tr v-if="job && job.tool_version">
                     <td>Galaxy Tool Version:</td>
@@ -17,7 +19,11 @@
                 </tr>
                 <tr v-if="job && job.created_by_workflow">
                     <td>Workflow ID:</td>
-                    <td id="workflow-id">{{ job.workflow_id }} (<a :href="'/workflow/display_by_id?id=' + job.workflow_id" target="_top">view</a>)</td>
+                    <td id="workflow-id">
+                        {{ job.workflow_id }} (<a :href="'/workflow/display_by_id?id=' + job.workflow_id" target="_top"
+                            >view</a
+                        >)
+                    </td>
                 </tr>
                 <tr v-if="job && job.created_by_workflow">
                     <td>Invocation ID:</td>

@@ -80,7 +80,7 @@ describe("JobInformation/JobInformation.vue", () => {
         expect(jobInfoTable).toBeTruthy();
         const rows = jobInfoTable.findAll("tr");
         // should contain 9 rows
-        expect(rows.length).toBe(9);
+        expect(rows.length).toBe(10);
     });
 
     it("stdout and stderr should be rendered", async () => {
