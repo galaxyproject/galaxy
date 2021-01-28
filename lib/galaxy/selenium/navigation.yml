@@ -529,6 +529,14 @@ libraries:
 
   selectors:
     _: .library_style_container
+    permission_library_btn: '.permission_library_btn'
+    toolbtn_save_permissions: '.toolbtn_save_permissions'
+    add_items_permission_field: '.add_perm > ul input'
+    add_items_permission_field_text:
+      type: xpath
+      selector: '//ul/*/div[contains(text(), "${email}")]'
+
+    add_items_permission_option: '.select2-result-label[role="option"]'
 
   folder:
     selectors:
@@ -563,6 +571,7 @@ libraries:
       download_button: '#download-btn'
       delete_btn: '.toolbtn-bulk-delete'
       toast_msg: '.toast-message'
+      toast_warning: '.toast-warning'
       select_import_dir_item: 'li[full_path="${name}"] .jstree-anchor'
       import_dir_btn:
         type: xpath
@@ -572,6 +581,7 @@ libraries:
       from_history: 'from History'
       from_path: 'from Path'
       from_import_dir: 'from Import Directory'
+      from_user_import_dir: 'from User Directory'
 
   dataset:
     selectors:

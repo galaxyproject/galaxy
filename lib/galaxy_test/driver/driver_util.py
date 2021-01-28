@@ -34,7 +34,7 @@ from galaxy.model.tool_shed_install import mapping as toolshed_mapping
 from galaxy.tool_util.verify.interactor import GalaxyInteractorApi, verify_tool
 from galaxy.util import asbool, download_to_file, galaxy_directory
 from galaxy.util.properties import load_app_properties
-from galaxy.web import buildapp
+from galaxy.webapps.galaxy import buildapp
 from galaxy_test.base.api_util import get_admin_api_key, get_user_api_key
 from galaxy_test.base.env import (
     DEFAULT_WEB_HOST,
@@ -845,23 +845,12 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
             server_wrapper.stop()
 
 
-def launch_uvicorn_multi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=None):
-    host, port = explicitly_configured_host_and_port(prefix, config_object)
-
-    config = {}
-    config["galaxy"] = kwargs.copy()
-
-    yaml_config_path = os.path.join(tempdir, "galaxy.yml")
-    with open(yaml_config_path, "w") as f:
-        yaml.dump(config, f)
-
-
 def launch_uvicorn(gx_app, webapp_factory, kwargs, prefix=DEFAULT_CONFIG_PREFIX, config_object=None):
     name = prefix.lower()
 
     host, port = explicitly_configured_host_and_port(prefix, config_object)
 
-    gx = webapp_factory(
+    gx_webapp = webapp_factory(
         kwargs['global_conf'],
         app=gx_app,
         use_translogger=False,
@@ -869,7 +858,7 @@ def launch_uvicorn(gx_app, webapp_factory, kwargs, prefix=DEFAULT_CONFIG_PREFIX,
         register_shutdown_at_exit=False
     )
     from galaxy.webapps.galaxy.fast_app import initialize_fast_app
-    app = initialize_fast_app(gx)
+    app = initialize_fast_app(gx_webapp, gx_app)
     server, port = uvicorn_serve(app, host=host, port=port)
     set_and_wait_for_http_target(prefix, host, port)
     log.info(f"Embedded uvicorn web server for {name} started at {host}:{port}")
@@ -981,6 +970,11 @@ class GalaxyTestDriver(TestDriver):
                 use_uwsgi = True
         self.use_uwsgi = use_uwsgi
 
+        if getattr(config_object, "use_uvicorn", USE_UVICORN):
+            self.else_use_uvicorn = True
+        else:
+            self.else_use_uvicorn = False
+
         # Allow controlling the log format
         log_format = os.environ.get('GALAXY_TEST_LOG_FORMAT', None)
         if not log_format and use_uwsgi:
@@ -1072,11 +1066,11 @@ class GalaxyTestDriver(TestDriver):
                     tempdir=tempdir,
                     config_object=config_object,
                 )
-            elif USE_UVICORN:
+            elif self.else_use_uvicorn:
                 self.app = build_galaxy_app(galaxy_config)
                 server_wrapper = launch_uvicorn(
                     self.app,
-                    buildapp.app_factory,
+                    lambda *args, **kwd: buildapp.app_factory(*args, wsgi_preflight=False, **kwd),
                     galaxy_config,
                     config_object=config_object,
                 )

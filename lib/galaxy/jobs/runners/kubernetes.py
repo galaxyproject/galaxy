@@ -305,18 +305,28 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         resources = self.__get_resources(ajs.job_wrapper)
         if resources:
             envs = []
+            cpu_val = None
             if 'requests' in resources:
                 requests = resources['requests']
-                if 'memory' in requests:
-                    envs.append({'name': 'GALAXY_MEMORY_MB', 'value': str(ByteSize(requests['memory']).to_unit('M', as_string=False))})
                 if 'cpu' in requests:
-                    envs.append({'name': 'GALAXY_SLOTS', 'value': str(int(math.ceil(float(requests['cpu']))))})
+                    cpu_val = int(math.ceil(float(requests['cpu'])))
+                    envs.append({'name': 'GALAXY_SLOTS', 'value': str(cpu_val)})
+                if 'memory' in requests:
+                    mem_val = ByteSize(requests['memory']).to_unit('M', as_string=False)
+                    envs.append({'name': 'GALAXY_MEMORY_MB', 'value': str(mem_val)})
+                    if cpu_val:
+                        envs.append({'name': 'GALAXY_MEMORY_MB_PER_SLOT', 'value': str(math.floor(mem_val / cpu_val))})
             elif 'limits' in resources:
                 limits = resources['limits']
-                if 'memory' in limits:
-                    envs.append({'name': 'GALAXY_MEMORY_MB', 'value': str(ByteSize(limits['memory']).to_unit('M', as_string=False))})
                 if 'cpu' in limits:
-                    envs.append({'name': 'GALAXY_SLOTS', 'value': str(int(math.ceil(float(limits['cpu']))))})
+                    cpu_val = int(math.floor(float(limits['cpu'])))
+                    cpu_val = cpu_val or 1
+                    envs.append({'name': 'GALAXY_SLOTS', 'value': str(cpu_val)})
+                if 'memory' in limits:
+                    mem_val = ByteSize(limits['memory']).to_unit('M', as_string=False)
+                    envs.append({'name': 'GALAXY_MEMORY_MB', 'value': str(mem_val)})
+                    if cpu_val:
+                        envs.append({'name': 'GALAXY_MEMORY_MB_PER_SLOT', 'value': str(math.floor(mem_val / cpu_val))})
             k8s_container['resources'] = resources
             k8s_container['env'] = envs
 

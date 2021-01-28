@@ -159,6 +159,7 @@ def _which(file):
 
 
 __all__ = (
+    'ConfiguredDriver',
     'get_local_driver',
     'get_remote_driver',
     'is_virtual_display_available',

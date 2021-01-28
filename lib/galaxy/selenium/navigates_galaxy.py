@@ -14,8 +14,9 @@ import requests
 import yaml
 
 from . import sizzle
+from .components import Component
 from .data import (
-    NAVIGATION,
+    load_root_component,
 )
 from .has_driver import (
     exception_indicates_not_clickable,
@@ -123,17 +124,22 @@ class NavigatesGalaxy(HasDriver):
     class. For instance, the method for clicking an option in the workflow editor is
     workflow_editor_click_option instead of click_workflow_editor_option.
     """
-
     default_password = DEFAULT_PASSWORD
     wait_types = WAIT_TYPES
+    # set to True to reload each invocation (good for interactive test building)
+    _interactive_components: bool = False
+    _root_component: Component = load_root_component()
 
     def get(self, url=""):
         full_url = self.build_url(url)
         return self.driver.get(full_url)
 
     @property
-    def navigation(self):
-        return NAVIGATION
+    def navigation(self) -> Component:
+        if self._interactive_components:
+            return load_root_component()
+        else:
+            return self._root_component
 
     @property
     def components(self):
@@ -900,6 +906,17 @@ class NavigatesGalaxy(HasDriver):
     def admin_open(self):
         self.components.masthead.admin.wait_for_and_click()
 
+    def select_dataset_from_lib_import_modal(self, name):
+        self.components.libraries.folder.select_import_dir_item(name=name).wait_for_and_click()
+        self.components.libraries.folder.import_dir_btn.wait_for_and_click()
+
+    def create_new_library(self, login=True):
+        if login:
+            self.admin_login()
+        self.libraries_open()
+        self.name = self._get_random_name(prefix="testcontents")
+        self.libraries_index_create(self.name)
+
     def libraries_open(self):
         self.home()
         self.click_masthead_shared_data()
@@ -964,17 +981,9 @@ class NavigatesGalaxy(HasDriver):
         self.wait_for_and_click(self.navigation.libraries.folder.selectors.add_items_button)
         self.wait_for_visible(self.navigation.libraries.folder.selectors.add_items_menu)
 
-    def libraries_dataset_import_from_history(self):
+    def libraries_dataset_import(self, btn):
         self.libraries_click_dataset_import()
-        self.wait_for_and_click(self.navigation.libraries.folder.labels.from_history)
-
-    def libraries_dataset_import_from_path(self):
-        self.libraries_click_dataset_import()
-        self.wait_for_and_click(self.navigation.libraries.folder.labels.from_path)
-
-    def libraries_dataset_import_from_import_dir(self):
-        self.libraries_click_dataset_import()
-        self.wait_for_and_click(self.navigation.libraries.folder.labels.from_import_dir)
+        self.wait_for_and_click(btn)
 
     def libraries_dataset_import_from_history_select(self, to_select_items):
         self.wait_for_visible(self.navigation.libraries.folder.selectors.import_history_content)

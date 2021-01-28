@@ -370,7 +370,14 @@ class PulsarJobRunner(AsynchronousJobRunner):
             else:
                 metadata_directory = os.path.join(job_wrapper.working_directory, "metadata")
 
-            remote_pulsar_app_config = job_destination.params.get("pulsar_app_config", {})
+            dest_params = job_destination.params
+            remote_pulsar_app_config = dest_params.get("pulsar_app_config", None)
+            if remote_pulsar_app_config is None and "pulsar_app_config_path" in dest_params:
+                pulsar_app_config_path = dest_params["pulsar_app_config_path"]
+                with open(pulsar_app_config_path, "r") as fh:
+                    remote_pulsar_app_config = yaml.safe_load(fh)
+            elif remote_pulsar_app_config is None:
+                remote_pulsar_app_config = {}
             job_directory_files = []
             config_files = job_wrapper.extra_filenames
             tool_script = os.path.join(job_wrapper.working_directory, "tool_script.sh")

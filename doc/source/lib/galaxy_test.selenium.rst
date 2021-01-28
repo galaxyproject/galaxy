@@ -6,6 +6,14 @@ galaxy\_test.selenium package
    :undoc-members:
    :show-inheritance:
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   galaxy_test.selenium.jupyter
+
 Submodules
 ----------
 
@@ -13,6 +21,14 @@ galaxy\_test.selenium.framework module
 --------------------------------------
 
 .. automodule:: galaxy_test.selenium.framework
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy\_test.selenium.jupyter\_context module
+---------------------------------------------
+
+.. automodule:: galaxy_test.selenium.jupyter_context
    :members:
    :undoc-members:
    :show-inheritance:
@@ -269,6 +285,14 @@ galaxy\_test.selenium.test\_workflow\_editor module
 ---------------------------------------------------
 
 .. automodule:: galaxy_test.selenium.test_workflow_editor
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy\_test.selenium.test\_workflow\_invocation\_details module
+----------------------------------------------------------------
+
+.. automodule:: galaxy_test.selenium.test_workflow_invocation_details
    :members:
    :undoc-members:
    :show-inheritance:
