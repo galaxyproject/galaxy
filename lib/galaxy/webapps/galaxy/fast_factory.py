@@ -78,5 +78,5 @@ def factory():
     global_conf = {}
     if config_is_ini(config_file):
         global_conf["__file__"] = config_file
-    gx_webapp, gx_app = app_pair(global_conf=global_conf, load_app_kwds=kwds)
+    gx_webapp, gx_app = app_pair(global_conf=global_conf, load_app_kwds=kwds, wsgi_preflight=False)
     return initialize_fast_app(gx_webapp, gx_app)

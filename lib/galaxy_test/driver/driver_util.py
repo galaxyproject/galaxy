@@ -970,6 +970,11 @@ class GalaxyTestDriver(TestDriver):
                 use_uwsgi = True
         self.use_uwsgi = use_uwsgi
 
+        if getattr(config_object, "use_uvicorn", USE_UVICORN):
+            self.else_use_uvicorn = True
+        else:
+            self.else_use_uvicorn = False
+
         # Allow controlling the log format
         log_format = os.environ.get('GALAXY_TEST_LOG_FORMAT', None)
         if not log_format and use_uwsgi:
@@ -1061,11 +1066,11 @@ class GalaxyTestDriver(TestDriver):
                     tempdir=tempdir,
                     config_object=config_object,
                 )
-            elif USE_UVICORN:
+            elif self.else_use_uvicorn:
                 self.app = build_galaxy_app(galaxy_config)
                 server_wrapper = launch_uvicorn(
                     self.app,
-                    buildapp.app_factory,
+                    lambda *args, **kwd: buildapp.app_factory(*args, wsgi_preflight=False, **kwd),
                     galaxy_config,
                     config_object=config_object,
                 )
