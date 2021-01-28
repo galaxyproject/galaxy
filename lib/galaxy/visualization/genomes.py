@@ -6,6 +6,7 @@ from json import loads
 
 from bx.seq.twobit import TwoBitFile
 
+from galaxy.exceptions import ObjectNotFound
 from galaxy.util.bunch import Bunch
 
 log = logging.getLogger(__name__)
@@ -325,14 +326,10 @@ class Genomes:
             elif dbkey in self.genomes:
                 genome = self.genomes[dbkey]
 
-        # Set up return value or log exception if genome not found for key.
-        rval = None
-        if genome:
-            rval = genome.to_dict(num=num, chrom=chrom, low=low)
-        else:
-            log.exception('genome not found for key %s', dbkey)
+        if not genome:
+            raise ObjectNotFound(f'genome not found for key {dbkey}')
 
-        return rval
+        return genome.to_dict(num=num, chrom=chrom, low=low)
 
     def has_reference_data(self, dbkey, dbkey_owner=None):
         """
