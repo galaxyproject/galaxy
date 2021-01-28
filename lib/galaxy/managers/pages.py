@@ -12,8 +12,10 @@ from html.parser import HTMLParser
 
 from galaxy import exceptions, model
 from galaxy.managers import base, sharable
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.markdown_util import (
+    internal_galaxy_markdown_to_pdf,
     ready_galaxy_markdown_for_export,
     ready_galaxy_markdown_for_import,
 )
@@ -56,6 +58,124 @@ _cp1252 = {
 }
 
 
+class PagesManager:
+    """
+    Common interface/service logic for interactions with pages.
+    """
+
+    def __init__(self, app):
+        self.manager = PageManager(app)
+
+    def index(self, trans: ProvidesUserContext, deleted: bool = False, **kwd):
+        """Return a list of Pages viewable by the user
+
+        :param deleted: Display deleted pages
+
+        :rtype:     list
+        :returns:   dictionaries containing summary or detailed Page information
+        """
+        out = []
+
+        if trans.user_is_admin:
+            r = trans.sa_session.query(model.Page)
+            if not deleted:
+                r = r.filter_by(deleted=False)
+            for row in r:
+                out.append(trans.security.encode_all_ids(row.to_dict(), recursive=True))
+        else:
+            # Transaction user's pages (if any)
+            user = trans.user
+            r = trans.sa_session.query(model.Page).filter_by(user=user)
+            if not deleted:
+                r = r.filter_by(deleted=False)
+            for row in r:
+                out.append(trans.security.encode_all_ids(row.to_dict(), recursive=True))
+            # Published pages from other users
+            r = trans.sa_session.query(model.Page).filter(model.Page.user != user).filter_by(published=True)
+            if not deleted:
+                r = r.filter_by(deleted=False)
+            for row in r:
+                out.append(trans.security.encode_all_ids(row.to_dict(), recursive=True))
+
+        return out
+
+    def create(self, trans: ProvidesUserContext, payload, **kwd):
+        """
+        create( self, trans, payload, **kwd )
+        * POST /api/pages
+            Create a page and return dictionary containing Page summary
+
+        :param  payload:    dictionary structure containing::
+            'slug'           = The title slug for the page URL, must be unique
+            'title'          = Title of the page
+            'content'        = contents of the first page revision (type dependent on content_format)
+            'content_format' = 'html' or 'markdown'
+            'annotation'     = Annotation that will be attached to the page
+
+        :rtype:     dict
+        :returns:   Dictionary return of the Page.to_dict call
+        """
+        page = self.manager.create(trans, payload)
+        rval = trans.security.encode_all_ids(page.to_dict(), recursive=True)
+        rval['content'] = page.latest_revision.content
+        self.manager.rewrite_content_for_export(trans, rval)
+        return rval
+
+    def delete(self, trans: ProvidesUserContext, id, **kwd):
+        """
+        delete( self, trans, id, **kwd )
+        * DELETE /api/pages/{id}
+            Create a page and return dictionary containing Page summary
+
+        :param  id:    ID of page to be deleted
+
+        :rtype:     dict
+        :returns:   Dictionary with 'success' or 'error' element to indicate the result of the request
+        """
+        page = base.get_object(trans, id, 'Page', check_ownership=True)
+
+        # Mark a page as deleted
+        page.deleted = True
+        trans.sa_session.flush()
+        return ''  # TODO: Figure out what to return on DELETE, document in guidelines!
+
+    def show(self, trans: ProvidesUserContext, id, **kwd):
+        """
+        show( self, trans, id, **kwd )
+        * GET /api/pages/{id}
+            View a page summary and the content of the latest revision
+
+        :param  id:    ID of page to be displayed
+
+        :rtype:     dict
+        :returns:   Dictionary return of the Page.to_dict call with the 'content' field populated by the most recent revision
+        """
+        page = base.get_object(trans, id, 'Page', check_ownership=False, check_accessible=True)
+        rval = trans.security.encode_all_ids(page.to_dict(), recursive=True)
+        rval['content'] = page.latest_revision.content
+        rval['content_format'] = page.latest_revision.content_format
+        self.manager.rewrite_content_for_export(trans, rval)
+        return rval
+
+    def show_pdf(self, trans, id, **kwd):
+        """
+        GET /api/pages/{id}.pdf
+
+        View a page summary and the content of the latest revision as PDF.
+
+        :param  id: ID of page to be displayed
+
+        :rtype: dict
+        :returns: Dictionary return of the Page.to_dict call with the 'content' field populated by the most recent revision
+        """
+        page = base.get_object(trans, id, 'Page', check_ownership=False, check_accessible=True)
+        if page.latest_revision.content_format != "markdown":
+            raise exceptions.RequestParameterInvalidException("PDF export only allowed for Markdown based pages")
+        internal_galaxy_markdown = page.latest_revision.content
+        trans.response.set_content_type("application/pdf")
+        return internal_galaxy_markdown_to_pdf(trans, internal_galaxy_markdown, 'page')
+
+
 class PageManager(sharable.SharableModelManager, UsesAnnotations):
     """
     """
@@ -74,10 +194,6 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         super().__init__(app, *args, **kwargs)
         self.workflow_manager = WorkflowsManager(app)
 
-    def copy(self, trans, page, user, **kwargs):
-        """
-        """
-
     def create(self, trans, payload):
         user = trans.get_user()
 
@@ -87,7 +203,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
             raise exceptions.ObjectAttributeMissingException("Page id is required")
         elif not base.is_valid_slug(payload["slug"]):
             raise exceptions.ObjectAttributeInvalidException("Page identifier must consist of only lowercase letters, numbers, and the '-' character")
-        elif trans.sa_session.query(trans.app.model.Page).filter_by(user=user, slug=payload["slug"], deleted=False).first():
+        elif trans.sa_session.query(self.model_class).filter_by(user=user, slug=payload["slug"], deleted=False).first():
             raise exceptions.DuplicatedSlugException("Page identifier must be unique")
 
         if payload.get("invocation_id"):
@@ -101,7 +217,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         content = self.rewrite_content_for_import(trans, content, content_format)
 
         # Create the new stored page
-        page = trans.app.model.Page()
+        page = self.model_class()
         page.title = payload['title']
         page.slug = payload['slug']
         page_annotation = payload.get("annotation", None)
