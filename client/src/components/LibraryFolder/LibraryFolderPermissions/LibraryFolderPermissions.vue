@@ -33,18 +33,7 @@
             <h4>
                 Roles that can manage permissions on this folder
             </h4>
-
-            <multiselect
-                v-if="options.roles.length > 0"
-                v-model="value"
-                :options="options.roles"
-                :clear-on-select="true"
-                :preserve-search="true"
-                :multiple="true"
-                label="name"
-                track-by="id"
-            >
-            </multiselect>
+            <PermissionsInputField :folder_id="folder_id" :type="manage_type" :value="manage_ids" @input="setUserPermissionsPreferences(ids, type)"/>
 
             <div class="alert alert-info roles-selection">
                 User with <strong>any</strong> of these roles can manage permissions on this folder.
@@ -52,14 +41,14 @@
             <h4>
                 Roles that can add items to this folder
             </h4>
-            <div id="add_perm" class="add_perm roles-selection"></div>
+            <PermissionsInputField :folder_id="folder_id" :type="add_type" :value="add_ids" @input="setUserPermissionsPreferences(ids, type)" />
             <div class="alert alert-info roles-selection">
                 User with <strong>any</strong> of these roles can add items to this folder (folders and datasets).
             </div>
             <h4>
                 Roles that can modify this folder
             </h4>
-            <div id="modify_perm" class="modify_perm roles-selection"></div>
+            <PermissionsInputField :folder_id="folder_id" :type="modify_type" :value="modify_ids" @input="setUserPermissionsPreferences(ids, type)" />
             <div class="alert alert-info roles-selection">
                 User with <strong>any</strong> of these roles can modify this folder (name, etc.).
             </div>
@@ -69,6 +58,7 @@
                 title="Save modifications"
                 class="btn btn-secondary toolbtn_save_permissions primary-button"
                 type="button"
+                @click="postPermissions"
             >
                 <span class="fa fa-floppy-o" />
                 &nbsp;Save
@@ -86,9 +76,12 @@ import Utils from "utils/utils";
 import { Toast } from "ui/toast";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
-import Multiselect from "vue-multiselect";
-import "vue-multiselect/dist/vue-multiselect.min.css";
+import PermissionsInputField from "./PermissionsInputField.vue";
 
+import "vue-multiselect/dist/vue-multiselect.min.css";
+import VueObserveVisibility from "vue-observe-visibility";
+
+Vue.use(VueObserveVisibility);
 Vue.use(BootstrapVue);
 
 export default {
@@ -99,15 +92,20 @@ export default {
         },
     },
     components: {
-        Multiselect,
+        PermissionsInputField,
     },
     data() {
         return {
-            permissisons: undefined,
+            permissions: undefined,
             folder: undefined,
             is_admin: undefined,
-            options: { roles: [] },
             value: null,
+            add_ids: [],
+            modify_ids: [],
+            manage_ids: [],
+            add_type: "add_type",
+            manage_type: "manage_type",
+            modify_type: "moddify_type",
         };
     },
     created() {
@@ -117,26 +115,44 @@ export default {
         this.is_admin = Galaxy.user.attributes.is_admin;
 
         this.services.getFolderPermissions(this.folder_id).then((response) => {
-            this.permissisons = response;
+            this.permissions = response;
         });
         this.services.getFolder(this.folder_id).then((response) => {
             this.folder = response;
         });
-        this.getSelectOptions();
     },
+
     methods: {
-        getSelectOptions() {
-            this.services.getSelectOptions(this.folder_id, true, 1).then((response) => {
-                console.log(response)
-                if (this.options.page > 1) {
-                    this.options.roles.concat(response.roles);
-                } else {
-                    this.options = response;
-                }
-            });
-        },
         getParentLink() {
             return `${this.root}library/folders/${this.folder.parent_id}`;
+        },
+        setUserPermissionsPreferences(ids, type) {
+            switch (type) {
+                case "manage":
+                    this.manage_ids = ids;
+                    break;
+                case "add":
+                    this.add_ids = ids;
+                    break;
+                case "modify":
+                    this.modify_ids = ids;
+                    break;
+            }
+        },
+        postPermissions() {
+            this.services.setPermissions(
+                this.add_ids,
+                this.manage_ids,
+                this.modify_ids,
+                (fetched_permissions) => {
+                    Toast.success("Permissions saved.");
+                    this.permissions = fetched_permissions;
+                },
+                (error) => {
+                    Toast.error("An error occurred while attempting to set folder permissions.");
+                    console.error(error);
+                }
+            );
         },
     },
 };
