@@ -16,6 +16,7 @@ import galaxy.model.mapping
 import galaxy.web.framework
 import galaxy.webapps.base.webapp
 from galaxy import util
+from galaxy.security.validate_user_input import VALID_PUBLICNAME_RE
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
 from galaxy.web.framework.middleware.batch import BatchMiddleware
@@ -90,12 +91,14 @@ def app_factory(global_conf, load_app_kwds=None, **kwargs):
     webapp.add_route('/display_application/{dataset_id}/{app_name}/{link_name}/{user_id}/{app_action}/{action_param}/{action_param_extra:.+?}',
                      controller='dataset', action='display_application', dataset_id=None, user_id=None,
                      app_name=None, link_name=None, app_action=None, action_param=None, action_param_extra=None)
-    webapp.add_route('/u/{username}/d/{slug}/{filename}', controller='dataset', action='display_by_username_and_slug', filename=None)
-    webapp.add_route('/u/{username}/p/{slug}', controller='page', action='display_by_username_and_slug')
-    webapp.add_route('/u/{username}/h/{slug}', controller='history', action='display_by_username_and_slug')
-    webapp.add_route('/u/{username}/w/{slug}', controller='workflow', action='display_by_username_and_slug')
-    webapp.add_route('/u/{username}/w/{slug}/{format}', controller='workflow', action='display_by_username_and_slug')
-    webapp.add_route('/u/{username}/v/{slug}', controller='visualization', action='display_by_username_and_slug')
+
+    USERNAME_REQS = {'username': VALID_PUBLICNAME_RE.pattern.strip("^$")}  # Strip start/end from compiled RE pattern
+    webapp.add_route('/u/{username}/d/{slug}/{filename}', controller='dataset', action='display_by_username_and_slug', filename=None, requirements=USERNAME_REQS)
+    webapp.add_route('/u/{username}/p/{slug}', controller='page', action='display_by_username_and_slug', requirements=USERNAME_REQS)
+    webapp.add_route('/u/{username}/h/{slug}', controller='history', action='display_by_username_and_slug', requirements=USERNAME_REQS)
+    webapp.add_route('/u/{username}/w/{slug}', controller='workflow', action='display_by_username_and_slug', requirements=USERNAME_REQS)
+    webapp.add_route('/u/{username}/w/{slug}/{format}', controller='workflow', action='display_by_username_and_slug', requirements=USERNAME_REQS)
+    webapp.add_route('/u/{username}/v/{slug}', controller='visualization', action='display_by_username_and_slug', requirements=USERNAME_REQS)
 
     # TODO: Refactor above routes into external method to allow testing in
     # isolation as well.
