@@ -39,7 +39,10 @@ export const loadHistoryContents = (cfg = {}) => (rawInputs$) => {
 
     const ajaxResponse$ = inputs$.pipe(
         hydrate([undefined, SearchParams]),
-        map(buildHistoryContentsUrl(windowSize)),
+        map(([id, params, hid]) => {
+            const baseUrl = `/api/histories/${id}/contents/near/${hid}/${windowSize}`;
+            return `${baseUrl}?${params.historyContentQueryString}`;
+        }),
         throttleDistinct({ timeout: onceEvery }),
         map(prependPath),
         dateAppender({ dateStore }),
@@ -92,41 +95,6 @@ export const loadHistoryContents = (cfg = {}) => (rawInputs$) => {
             };
         })
     );
-};
-
-// TODO: method in history model maybe? Or maybe Searchparams?
-export const buildHistoryContentsUrl = (windowSize) => (inputs) => {
-    const [historyId, filters, hid] = inputs;
-
-    // Filtering
-    const { showDeleted, showHidden, showVisible } = filters;
-    let deletedClause = "deleted=False";
-    let visibleClause = "visible=True";
-    if (showDeleted) {
-        deletedClause = "deleted=True";
-        visibleClause = "";
-    }
-    if (showHidden) {
-        deletedClause = "";
-        if (showVisible) {
-            visibleClause = "";
-        } else {
-            visibleClause = "visible=False";
-        }
-    }
-    if (showDeleted && showHidden) {
-        deletedClause = "deleted=True";
-        visibleClause = "visible=False";
-    }
-
-    const filterMap = filters.parseTextFilter();
-    const textfilters = Array.from(filterMap.entries()).map(([field, val]) => `${field}-contains=${val}`);
-
-    const parts = [deletedClause, visibleClause, ...textfilters];
-    const baseUrl = `/api/histories/${historyId}/contents/near/${hid}/${windowSize}`;
-    const qs = parts.filter((o) => o.length).join("&");
-
-    return `${baseUrl}?${qs}`;
 };
 
 /**
