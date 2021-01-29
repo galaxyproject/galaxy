@@ -371,7 +371,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 metadata_directory = os.path.join(job_wrapper.working_directory, "metadata")
 
             dest_params = job_destination.params
-            remote_pulsar_app_config = dest_params.get("pulsar_app_config", {})
+            remote_pulsar_app_config = dest_params.get("pulsar_app_config", {}).copy()
             if "pulsar_app_config_path" in dest_params:
                 pulsar_app_config_path = dest_params["pulsar_app_config_path"]
                 with open(pulsar_app_config_path, "r") as fh:
