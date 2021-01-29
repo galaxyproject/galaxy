@@ -7,12 +7,21 @@ from within Galaxy.
 """
 import logging
 import re
+from enum import Enum
 from html.entities import name2codepoint
 from html.parser import HTMLParser
+from typing import (
+    List,
+    Optional,
+)
+
+from pydantic import (
+    BaseModel,
+    Field,
+)
 
 from galaxy import exceptions, model
 from galaxy.managers import base, sharable
-from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.markdown_util import (
     internal_galaxy_markdown_to_pdf,
@@ -21,6 +30,7 @@ from galaxy.managers.markdown_util import (
 )
 from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.util import unicodify
 from galaxy.util.sanitize_html import sanitize_html
 
@@ -58,6 +68,112 @@ _cp1252 = {
 }
 
 
+class PageContentFormat(str, Enum):
+    markdown = "markdown"
+    html = "html"
+
+
+ContentFormatField: PageContentFormat = Field(
+    default=PageContentFormat.markdown,
+    title="Content format",
+    description="Either `markdown` or `html`.",
+)
+
+ContentField: Optional[str] = Field(
+    default="",
+    title="Content",
+    description="Raw text contents of the first page revision (type dependent on content_format).",
+)
+
+
+class PageSummaryBase(BaseModel):
+    title: str = Field(
+        ...,  # Required
+        title="Title",
+        description="The name of the page",
+    )
+    slug: str = Field(
+        ...,  # Required
+        title="Identifier",
+        description="The title slug for the page URL, must be unique.",
+        regex=r"^[a-z0-9\-]+$",
+    )
+
+
+class CreatePagePayload(PageSummaryBase):
+    content_format: PageContentFormat = ContentFormatField
+    content: Optional[str] = ContentField
+    annotation: Optional[str] = Field(
+        default=None,
+        title="Annotation",
+        description="Annotation that will be attached to the page.",
+    )
+    invocation_id: Optional[EncodedDatabaseIdField] = Field(
+        None,
+        title="Workflow invocation ID",
+        description="Encoded ID used by workflow generated reports.",
+    )
+
+    class Config:
+        use_enum_values = True  # When using .dict()
+
+
+class PageSummary(PageSummaryBase):
+    id: EncodedDatabaseIdField = Field(
+        ...,  # Required
+        title="ID",
+        description="Encoded ID of the Page.",
+    )
+    model_class: str = Field(
+        ...,  # Required
+        title="Model class",
+        description="The class of the model associated with the ID.",
+        example="Page",
+    )
+    username: str = Field(
+        ...,  # Required
+        title="Username",
+        description="The name of the user owning this Page.",
+    )
+    published: bool = Field(
+        ...,  # Required
+        title="Published",
+        description="Whether this Page has been published.",
+    )
+    importable: bool = Field(
+        ...,  # Required
+        title="Importable",
+        description="Whether this Page can be imported.",
+    )
+    deleted: bool = Field(
+        ...,  # Required
+        title="Deleted",
+        description="Whether this Page has been deleted.",
+    )
+    latest_revision_id: EncodedDatabaseIdField = Field(
+        ...,  # Required
+        title="Latest revision ID",
+        description="The encoded ID of the last revision of this Page.",
+    )
+    revision_ids: List[EncodedDatabaseIdField] = Field(
+        ...,  # Required
+        title="List of revisions",
+        description="The history with the encoded ID of each revision of the Page.",
+    )
+
+
+class PageDetails(PageSummary):
+    content_format: PageContentFormat = ContentFormatField
+    content: Optional[str] = ContentField
+
+
+class PageSummaryList(BaseModel):
+    __root__: List[PageSummary] = Field(
+        default=[],
+        title='List with summary information of Pages.',
+    )
+
+
 class PagesManager:
     """
     Common interface/service logic for interactions with pages.
@@ -66,7 +182,7 @@ class PagesManager:
     def __init__(self, app):
         self.manager = PageManager(app)
 
-    def index(self, trans: ProvidesUserContext, deleted: bool = False, **kwd):
+    def index(self, trans, deleted: bool = False) -> PageSummaryList:
         """Return a list of Pages viewable by the user
 
         :param deleted: Display deleted pages
@@ -97,52 +213,30 @@ class PagesManager:
             for row in r:
                 out.append(trans.security.encode_all_ids(row.to_dict(), recursive=True))
 
-        return out
+        return PageSummaryList.parse_obj(out)
 
-    def create(self, trans: ProvidesUserContext, payload, **kwd):
+    def create(self, trans, payload: CreatePagePayload) -> PageSummary:
         """
-        create( self, trans, payload, **kwd )
-        * POST /api/pages
-            Create a page and return dictionary containing Page summary
-
-        :param  payload:    dictionary structure containing::
-            'slug'           = The title slug for the page URL, must be unique
-            'title'          = Title of the page
-            'content'        = contents of the first page revision (type dependent on content_format)
-            'content_format' = 'html' or 'markdown'
-            'annotation'     = Annotation that will be attached to the page
-
-        :rtype:     dict
-        :returns:   Dictionary return of the Page.to_dict call
+        Create a page and return Page summary
         """
-        page = self.manager.create(trans, payload)
+        page = self.manager.create(trans, payload.dict())
         rval = trans.security.encode_all_ids(page.to_dict(), recursive=True)
         rval['content'] = page.latest_revision.content
         self.manager.rewrite_content_for_export(trans, rval)
-        return rval
+        return PageSummary.parse_obj(rval)
 
-    def delete(self, trans: ProvidesUserContext, id, **kwd):
+    def delete(self, trans, id: EncodedDatabaseIdField):
         """
-        delete( self, trans, id, **kwd )
-        * DELETE /api/pages/{id}
-            Create a page and return dictionary containing Page summary
-
-        :param  id:    ID of page to be deleted
-
-        :rtype:     dict
-        :returns:   Dictionary with 'success' or 'error' element to indicate the result of the request
+        Deletes a page (or marks it as deleted)
         """
         page = base.get_object(trans, id, 'Page', check_ownership=True)
 
         # Mark a page as deleted
         page.deleted = True
         trans.sa_session.flush()
-        return ''  # TODO: Figure out what to return on DELETE, document in guidelines!
 
-    def show(self, trans: ProvidesUserContext, id, **kwd):
+    def show(self, trans, id: EncodedDatabaseIdField) -> PageDetails:
         """
-        show( self, trans, id, **kwd )
-        * GET /api/pages/{id}
             View a page summary and the content of the latest revision
 
         :param  id:    ID of page to be displayed
@@ -155,9 +249,9 @@ class PagesManager:
         rval['content'] = page.latest_revision.content
         rval['content_format'] = page.latest_revision.content_format
         self.manager.rewrite_content_for_export(trans, rval)
-        return rval
+        return PageDetails.parse_obj(rval)
 
-    def show_pdf(self, trans, id, **kwd):
+    def show_pdf(self, trans, id: EncodedDatabaseIdField):
         """
         GET /api/pages/{id}.pdf
 
@@ -169,7 +263,7 @@ class PagesManager:
         :returns: Dictionary return of the Page.to_dict call with the 'content' field populated by the most recent revision
         """
         page = base.get_object(trans, id, 'Page', check_ownership=False, check_accessible=True)
-        if page.latest_revision.content_format != "markdown":
+        if page.latest_revision.content_format != PageContentFormat.markdown.value:
             raise exceptions.RequestParameterInvalidException("PDF export only allowed for Markdown based pages")
         internal_galaxy_markdown = page.latest_revision.content
         trans.response.set_content_type("application/pdf")
@@ -203,7 +297,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
             raise exceptions.ObjectAttributeMissingException("Page id is required")
         elif not base.is_valid_slug(payload["slug"]):
             raise exceptions.ObjectAttributeInvalidException("Page identifier must consist of only lowercase letters, numbers, and the '-' character")
-        elif trans.sa_session.query(self.model_class).filter_by(user=user, slug=payload["slug"], deleted=False).first():
+        elif trans.sa_session.query(trans.app.model.Page).filter_by(user=user, slug=payload["slug"], deleted=False).first():
             raise exceptions.DuplicatedSlugException("Page identifier must be unique")
 
         if payload.get("invocation_id"):
@@ -217,7 +311,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         content = self.rewrite_content_for_import(trans, content, content_format)
 
         # Create the new stored page
-        page = self.model_class()
+        page = trans.app.model.Page()
         page.title = payload['title']
         page.slug = payload['slug']
         page_annotation = payload.get("annotation", None)
@@ -245,7 +339,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         content_format = payload.get("content_format", None)
         if not content:
             raise exceptions.ObjectAttributeMissingException("content undefined or empty")
-        if content_format not in [None, "html", "markdown"]:
+        if content_format not in [None, PageContentFormat.html.value, PageContentFormat.markdown.value]:
             raise exceptions.RequestParameterInvalidException("content_format [%s], if specified, must be either html or markdown" % content_format)
 
         if 'title' in payload:
@@ -269,8 +363,8 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         session.flush()
         return page_revision
 
-    def rewrite_content_for_import(self, trans, content, content_format):
-        if content_format == "html":
+    def rewrite_content_for_import(self, trans, content, content_format: str):
+        if content_format == PageContentFormat.html.value:
             try:
                 content = sanitize_html(content)
                 processor = PageContentProcessor(trans, placeholderRenderForSave)
@@ -281,7 +375,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
                 raise
             except Exception:
                 raise exceptions.RequestParameterInvalidException("problem with embedded HTML content [%s]" % content)
-        elif content_format == "markdown":
+        elif content_format == PageContentFormat.markdown.value:
             content = ready_galaxy_markdown_for_import(trans, content)
         else:
             raise exceptions.RequestParameterInvalidException("content_format [%s] must be either html or markdown" % content_format)
@@ -290,13 +384,13 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
 
     def rewrite_content_for_export(self, trans, as_dict):
         content = as_dict["content"]
-        content_format = as_dict.get("content_format", "html")
-        if content_format == "html":
+        content_format = as_dict.get("content_format", PageContentFormat.html.value)
+        if content_format == PageContentFormat.html.value:
             processor = PageContentProcessor(trans, placeholderRenderForEdit)
             processor.feed(content)
             content = unicodify(processor.output(), 'utf-8')
             as_dict["content"] = content
-        elif content_format == "markdown":
+        elif content_format == PageContentFormat.markdown.value:
             content, extra_attributes = ready_galaxy_markdown_for_export(trans, content)
             as_dict["content"] = content
             as_dict.update(extra_attributes)
