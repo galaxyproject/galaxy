@@ -72,6 +72,7 @@ export default {
             }
         },
         valueChanged() {
+            console.log(this.value)
             this.$emit("input", this.value, this.type);
         },
     },

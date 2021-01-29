@@ -33,7 +33,7 @@
             <h4>
                 Roles that can manage permissions on this folder
             </h4>
-            <PermissionsInputField :folder_id="folder_id" :type="manage_type" :value="manage_ids" @input="setUserPermissionsPreferences(ids, type)"/>
+            <PermissionsInputField :folder_id="folder_id" :type="manage_type" :value="manage_ids" @input="setUserPermissionsPreferences"/>
 
             <div class="alert alert-info roles-selection">
                 User with <strong>any</strong> of these roles can manage permissions on this folder.
@@ -41,14 +41,14 @@
             <h4>
                 Roles that can add items to this folder
             </h4>
-            <PermissionsInputField :folder_id="folder_id" :type="add_type" :value="add_ids" @input="setUserPermissionsPreferences(ids, type)" />
+            <PermissionsInputField :folder_id="folder_id" :type="add_type" :value="add_ids" @input="setUserPermissionsPreferences" />
             <div class="alert alert-info roles-selection">
                 User with <strong>any</strong> of these roles can add items to this folder (folders and datasets).
             </div>
             <h4>
                 Roles that can modify this folder
             </h4>
-            <PermissionsInputField :folder_id="folder_id" :type="modify_type" :value="modify_ids" @input="setUserPermissionsPreferences(ids, type)" />
+            <PermissionsInputField :folder_id="folder_id" :type="modify_type" :value="modify_ids" @input="setUserPermissionsPreferences" />
             <div class="alert alert-info roles-selection">
                 User with <strong>any</strong> of these roles can modify this folder (name, etc.).
             </div>
@@ -105,7 +105,7 @@ export default {
             manage_ids: [],
             add_type: "add_type",
             manage_type: "manage_type",
-            modify_type: "moddify_type",
+            modify_type: "modify_type",
         };
     },
     created() {
