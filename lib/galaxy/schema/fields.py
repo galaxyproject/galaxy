@@ -2,8 +2,8 @@ import re
 
 from pydantic import PositiveInt
 
-from galaxy.model import (
-    get_id_encoding_helper,
+from galaxy import (
+    model,
 )
 
 ENCODED_DATABASE_ID_PATTERN = re.compile('f?[0-9a-f]+')
@@ -11,12 +11,12 @@ ENCODED_ID_LENGTH_MULTIPLE = 16
 
 
 def encode_id(v: int):
-    security = get_id_encoding_helper()
+    security = model.get_id_encoding_helper()
     return security.encode_id(v)
 
 
-def decode_id(v: int):
-    security = get_id_encoding_helper()
+def decode_id(v: str):
+    security = model.get_id_encoding_helper()
     return security.decode_id(v)
 
 

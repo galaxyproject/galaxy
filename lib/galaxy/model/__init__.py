@@ -75,7 +75,7 @@ from galaxy.util.sanitize_html import sanitize_html
 log = logging.getLogger(__name__)
 
 _datatypes_registry = None
-_IdEncodingHelper: Optional[IdEncodingHelper]
+_IdEncodingHelper: Optional[IdEncodingHelper] = None
 
 # When constructing filters with in for a fixed set of ids, maximum
 # number of items to place in the IN statement. Different databases
@@ -5680,8 +5680,8 @@ class WorkflowInvocationToSubworkflowInvocationAssociation(Dictifiable, Represen
 
 
 class WorkflowInvocationStep(Dictifiable, RepresentById):
-    dict_collection_visible_keys = ['id', 'update_time', 'job_id', 'workflow_step_id', 'subworkflow_invocation_id', 'state', 'action']
-    dict_element_visible_keys = ['id', 'update_time', 'job_id', 'workflow_step_id', 'subworkflow_invocation_id', 'state', 'action']
+    dict_collection_visible_keys = ['id', 'update_time', 'job_id', 'workflow_invocation_id', 'workflow_step_id', 'subworkflow_invocation_id', 'state', 'action']
+    dict_element_visible_keys = ['id', 'update_time', 'job_id', 'workflow_invocation_id', 'workflow_step_id', 'subworkflow_invocation_id', 'state', 'action']
 
     class states(str, Enum):
         NEW = 'new'  # Brand new workflow invocation step

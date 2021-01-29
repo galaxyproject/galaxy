@@ -105,7 +105,7 @@ class UniverseApplication(StructuredApp, config.ConfiguresGalaxyMixin):
 
         # Security helper
         self._configure_security()
-        self.model.set_id_encoding_helper(self.security)
+        galaxy.model.set_id_encoding_helper(self.security)
         # Tag handler
         self.tag_handler = GalaxyTagHandler(self.model.context)
         self.dataset_collections_service = DatasetCollectionManager(self)
