@@ -90,6 +90,9 @@ class Genome:
         """
         Returns representation of self as a dictionary.
         """
+        # if there's no len_file, there's nothing to return
+        if not self.len_file:
+            raise MissingDataError(f'len_file not set for {self.key}')
 
         def check_int(s):
             if s.isdigit():
@@ -121,9 +124,6 @@ class Genome:
         #   (b) whether there are previous, next chroms;
         #   (c) index of start chrom.
         #
-        if not self.len_file:
-            raise MissingDataError(f'len_file not set for {self.key}')
-
         with open(self.len_file) as f:
             len_file_enumerate = enumerate(f)
             chroms = {}
