@@ -34,7 +34,7 @@ export class Services {
             rethrowSimple(e);
         }
     }
-    async setPermisions(access_ids, add_ids, manage_ids, modify_ids, onSuccess, onError) {
+    async setPermissions(access_ids, add_ids, manage_ids, modify_ids, onSuccess, onError) {
         var formData = new FormData();
         formData.append("add_ids[]", access_ids);
         formData.append("manage_ids[]", manage_ids);
