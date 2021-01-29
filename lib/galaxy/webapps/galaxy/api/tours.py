@@ -13,8 +13,8 @@ from galaxy.tours import (
     ToursRegistry,
 )
 from galaxy.web import (
+    expose_api,
     expose_api_anonymous_and_sessionless,
-    legacy_expose_api,
     require_admin
 )
 from galaxy.webapps.base.controller import BaseAPIController
@@ -80,7 +80,7 @@ class ToursController(BaseAPIController):
         return self.app.tour_registry.tour_contents(tour_id)
 
     @require_admin
-    @legacy_expose_api
+    @expose_api
     def update_tour(self, trans, tour_id, **kwd):
         """This simply reloads tours right now.  It's a quick hack."""
         # TODO: allow creation of new tours (which get written to the
