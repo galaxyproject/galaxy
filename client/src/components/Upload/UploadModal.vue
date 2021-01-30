@@ -368,7 +368,6 @@ const UploadModal = {
             return data;
         },
         toFetchData: function (items, history_id) {
-            
             // TODO create the request body - see RuleCollectionBuilder._datasetFor
             var data = {
                 history_id: history_id,

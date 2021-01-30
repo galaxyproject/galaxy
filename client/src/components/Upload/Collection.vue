@@ -171,7 +171,7 @@ export default {
         // file upload
         this.initUploadbox({
             initUrl: (index) => {
-                if (!this.uploadUrl){
+                if (!this.uploadUrl) {
                     var data = this.app.toData([this.collection.get(index)], this.history_id);
                     this.uploadUrl = data.fetchRequest ? "TODO" : this.app.uploadPath;
                 }
