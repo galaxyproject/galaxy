@@ -265,33 +265,35 @@ const UploadModal = {
         toData: function (items, history_id) {
             var data = {
                 fetchRequest: null,
-                uploadRequest: null
+                uploadRequest: null,
             };
             if (items && items.length > 0) {
                 var split = this.preprocess(items);
-                if (split.urls) {
+                if (split.urls.length > 0) {
                     // TODO multiple fetches?
                     data.fetchRequest = this.toFetchData(split.urls, history_id);
-                } 
-                if (split.files) {
+                }
+                if (split.files.length > 0) {
                     data.uploadRequest = this.toFileUploadData(split.files, history_id);
                 }
             }
             return data;
         },
-        preprocess: function(items) {
+        preprocess: function (items) {
             var data = {
                 urls: [],
-                files: []
+                files: [],
             };
-            for (var item in items) {
-                if (item.get("file_mode") != "new" 
-                    || !item.get("url_paste").startsWith("http")){
-                    data.files.push(item)
+            for (var index in items) {
+                var it = items[index];
+                console.log("it ", it);
+                if (it.get("file_mode") != "new" || !it.get("url_paste").startsWith("http")) {
+                    data.files.push(it);
                 } else {
-                    data.urls.push(item);
+                    data.urls.push(it);
                 }
             }
+            console.log("data ", data);
             return data;
         },
         /**
@@ -362,9 +364,11 @@ const UploadModal = {
                 }
                 data.payload.inputs = JSON.stringify(inputs);
             }
+            console.log("inUploadData:", data);
             return data;
         },
         toFetchData: function (items, history_id) {
+            
             // TODO create the request body - see RuleCollectionBuilder._datasetFor
             var data = {
                 history_id: history_id,
@@ -380,15 +384,17 @@ const UploadModal = {
 
             // TODO iterate through items - maybe there's only one?
             const urls = items[0].get("url_paste").split("\n");
-            for (var url in urls) {
+            for (var index in urls) {
                 var element = {
-                    url: url,
+                    url: urls[index],
                     src: "url",
                     dbkey: "?",
                     ext: "auto",
                 };
                 data.targets[0].elements.push(element);
             }
+            console.log("***inFetchData:****", data);
+            return data;
         },
     },
 };

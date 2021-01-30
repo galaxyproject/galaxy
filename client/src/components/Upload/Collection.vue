@@ -129,6 +129,7 @@ export default {
     components: { BButton },
     data() {
         return {
+            uploadUrl: null,
             topInfo: "",
             showHelper: true,
             extension: this.app.defaultExtension,
@@ -169,13 +170,19 @@ export default {
         this.initFtpPopover();
         // file upload
         this.initUploadbox({
-            url: this.app.uploadPath,
+            initUrl: (index) => {
+                if (!this.uploadUrl){
+                    var data = this.app.toData([this.collection.get(index)], this.history_id);
+                    this.uploadUrl = data.fetchRequest ? "TODO" : this.app.uploadPath;
+                }
+                return this.uploadUrl;
+            },
             announce: (index, file) => {
                 this._eventAnnounce(index, file);
             },
             initialize: (index) => {
                 var data = this.app.toData([this.collection.get(index)], this.history_id);
-                this.url = data.fetchRequest ? "TODO" : this.app.uploadPath;
+                this.uploadUrl = data.fetchRequest ? "TODO" : this.app.uploadPath;
                 return data;
             },
             progress: (index, percentage) => {

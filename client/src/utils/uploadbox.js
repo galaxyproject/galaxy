@@ -228,6 +228,42 @@ import { getAppRoot } from "onload/loadConfig";
             },
         });
     };
+    /**
+     * 
+     * @param {*} config
+     */
+    $.datafetchpost = function (config) {
+        console.log("in datafetchpost");
+        var cnf = $.extend(
+            {},
+            {
+                data: {},
+                success: () => {},
+                error: () => {},
+                progress: () => {},
+                url: null
+            },
+            config
+        );
+        var data = cnf.data;
+        if (data.error_message) {
+            cnf.error(data.error_message);
+            return;
+        }
+
+        // submit request
+        _uploadrequest({
+            url: cnf.url,
+            data: JSON.stringify(cnf.data),
+            success: cnf.success,
+            error: cnf.error,
+            progress: (e) => {
+                if (e.lengthComputable) {
+                    cnf.progress(Math.round((e.loaded * 100) / e.total));
+                }
+            },
+        });
+    };
 
     /**
         Handles the upload events drag/drop etc.
@@ -391,6 +427,7 @@ import { getAppRoot } from "onload/loadConfig";
 
             // create and submit data
             var submitter = $.uploadpost;
+            var requestData = opts.initialize(index);
             if (
                 file.chunk_mode &&
                 session &&
@@ -399,10 +436,14 @@ import { getAppRoot } from "onload/loadConfig";
                 session.chunk_upload_size > 0
             ) {
                 submitter = $.uploadchunk;
+            } else if (requestData.fetchRequest) {
+                submitter = $.datafetchpost;
             }
+            
+            console.log("******requestData******", requestData);
             submitter({
-                url: opts.url,
-                data: opts.initialize(index),
+                url: opts.initUrl(index),
+                data: requestData.fetchRequest ? requestData.fetchRequest : requestData.uploadRequest,
                 session: session,
                 success: (message) => {
                     opts.success(index, message);

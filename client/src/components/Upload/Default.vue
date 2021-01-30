@@ -128,6 +128,7 @@ export default {
     },
     data() {
         return {
+            uploadUrl: null,
             topInfo: "",
             highlightBox: false,
             showHelper: true,
@@ -166,14 +167,22 @@ export default {
         this.initFtpPopover();
         // file upload
         this.initUploadbox({
-            url: this.app.uploadPath,
+            initUrl: (index) => {
+                if (!this.uploadUrl){
+                    var data = this.app.toData([this.collection.get(index)], this.history_id);
+                    this.uploadUrl = data.fetchRequest ? "TODO" : this.app.uploadPath;
+                }
+                console.log("URL ", this.uploadUrl);
+                return this.uploadUrl;
+            },
             multiple: this.multiple,
             announce: (index, file) => {
                 this._eventAnnounce(index, file);
             },
             initialize: (index) => {
                 var data = this.app.toData([this.collection.get(index)], this.history_id);
-                this.url = data.fetchRequest ? "TODO" : this.app.uploadPath;
+                this.uploadUrl = data.fetchRequest ? "/api/tools/fetch" : this.app.uploadPath;
+                console.log("URL in inititalize", this.uploadUrl);
                 return data;
             },
             progress: (index, percentage) => {
