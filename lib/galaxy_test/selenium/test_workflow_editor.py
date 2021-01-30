@@ -518,6 +518,12 @@ steps:
         return name
 
     @retry_assertion_during_transitions
+    def assert_has_changes_and_save(self):
+        save_button = self.components.workflows.save_button
+        save_button.wait_for_visible()
+        save_button.wait_for_and_click()
+
+    @retry_assertion_during_transitions
     def assert_modal_has_text(self, expected_text):
         modal_element = self.wait_for_selector_visible(self.modal_body_selector())
         text = modal_element.text
