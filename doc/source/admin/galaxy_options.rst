@@ -37,6 +37,20 @@
 :Type: str
 
 
+~~~~~~~~~~~~~
+``cache_dir``
+~~~~~~~~~~~~~
+
+:Description:
+    Top level cache directory. Any other cache directories
+    (tool_cache_data_dir, template_cache_path, etc.) should be
+    subdirectories.
+    The value of this option will be resolved with respect to
+    <data_dir>.
+:Default: ``cache``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~
 ``database_connection``
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -995,7 +1009,7 @@
     Mako templates are compiled as needed and cached for reuse, this
     directory is used for the cache
     The value of this option will be resolved with respect to
-    <data_dir>.
+    <cache_dir>.
 :Default: ``compiled_templates``
 :Type: str
 
@@ -1074,7 +1088,7 @@
     configured in (``shed_``)tool_conf.xml files using the
     tool_cache_data_dir attribute.
     The value of this option will be resolved with respect to
-    <data_dir>.
+    <cache_dir>.
 :Default: ``tool_cache``
 :Type: str
 
@@ -1125,7 +1139,7 @@
     the following parameters can be used to control the caching used
     to store this information.
     The value of this option will be resolved with respect to
-    <data_dir>.
+    <cache_dir>.
 :Default: ``citations/data``
 :Type: str
 
@@ -1140,7 +1154,7 @@
     the following parameters can be used to control the caching used
     to store this information.
     The value of this option will be resolved with respect to
-    <data_dir>.
+    <cache_dir>.
 :Default: ``citations/locks``
 :Type: str
 
@@ -1165,7 +1179,7 @@
     Data directory used by beaker for caching mulled resolution
     requests.
     The value of this option will be resolved with respect to
-    <data_dir>.
+    <cache_dir>.
 :Default: ``mulled/data``
 :Type: str
 
@@ -1178,7 +1192,7 @@
     Lock directory used by beaker for caching mulled resolution
     requests.
     The value of this option will be resolved with respect to
-    <data_dir>.
+    <cache_dir>.
 :Default: ``mulled/locks``
 :Type: str
 
@@ -2749,20 +2763,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~
-``transfer_manager_port``
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Some sequencer integration features in beta allow you to
-    automatically transfer datasets.  This is done using a lightweight
-    transfer manager which runs outside of Galaxy (but is spawned by
-    it automatically).  Galaxy will communicate with this manager over
-    the port specified here.
-:Default: ``8163``
-:Type: int
-
-
 ~~~~~~~~~~~~~~~~~~~
 ``tool_name_boost``
 ~~~~~~~~~~~~~~~~~~~
@@ -3463,7 +3463,7 @@
 :Description:
     If OpenID is enabled, consumer cache directory to use.
     The value of this option will be resolved with respect to
-    <data_dir>.
+    <cache_dir>.
 :Default: ``openid_consumer_cache``
 :Type: str
 

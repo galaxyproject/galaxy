@@ -127,6 +127,13 @@ class UsersApiTestCase(ApiTestCase):
         self.assertEqual(len(response["addresses"]), 1)
         self.assertEqual(response["addresses"][0]["desc"], "_desc")
 
+    def test_create_api_key(self):
+        user = self._setup_user(TEST_USER_EMAIL)
+        user_id = user["id"]
+        response = self._put(f"users/{user_id}/api_key/inputs", admin=True)
+        self._assert_status_code_is_ok(response)
+        self.assertEqual(response.json()["inputs"][0]["name"], "api-key")
+
     @skip_without_tool("cat1")
     def test_favorites(self):
         user = self._setup_user(TEST_USER_EMAIL)

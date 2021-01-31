@@ -6136,7 +6136,7 @@ class UserAuthnzToken(UserMixin, RepresentById):
 
     @classmethod
     def get_users_by_email(cls, email):
-        return cls.user_query().filter_by(email=email)
+        return cls.user_query().filter(func.lower(User.table.c.email) == email.lower())
 
     @classmethod
     def get_social_auth(cls, provider, uid):

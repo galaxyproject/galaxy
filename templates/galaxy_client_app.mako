@@ -81,7 +81,7 @@ ${ h.dumps( dictionary, indent=( 2 if trans.debug else 0 ) ) }
         try:
             controller = trans.webapp.api_controllers.get( 'configuration', None )
             if controller:
-                config_dict = controller.get_config_dict( trans, trans.user_is_admin )
+                config_dict = controller.get_config_dict(trans)
         except Exception as exc:
             pass
         return config_dict

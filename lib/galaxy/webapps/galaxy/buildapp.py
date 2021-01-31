@@ -31,9 +31,19 @@ class GalaxyWebApplication(galaxy.webapps.base.webapp.WebApplication):
     pass
 
 
-def app_factory(global_conf, load_app_kwds=None, **kwargs):
+def app_factory(*args, **kwargs):
     """
     Return a wsgi application serving the root object
+    """
+    return app_pair(*args, **kwargs)[0]
+
+
+def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
+    """
+    Return a wsgi application serving the root object and the Galaxy application.
+
+    When creating an app for asgi, set wsgi_preflight to False to allow FastAPI
+    middleware to handle CORS options, etc..
     """
     load_app_kwds = load_app_kwds or {}
     kwargs = load_app_properties(
@@ -100,6 +110,15 @@ def app_factory(global_conf, load_app_kwds=None, **kwargs):
     # TODO: Refactor above routes into external method to allow testing in
     # isolation as well.
     populate_api_routes(webapp, app)
+    if wsgi_preflight:
+        # API OPTIONS RESPONSE
+        webapp.mapper.connect(
+            'options',
+            '/api/{path_info:.*?}',
+            controller='authenticate',
+            action='options',
+            conditions={'method': ['OPTIONS']},
+        )
 
     # CLIENTSIDE ROUTES
     # The following are routes that are handled completely on the clientside.
@@ -200,7 +219,7 @@ def app_factory(global_conf, load_app_kwds=None, **kwargs):
         if th.is_alive():
             log.debug("Prior to webapp return, Galaxy thread %s is alive.", th)
     # Return
-    return webapp
+    return webapp, app
 
 
 def uwsgi_app():
@@ -448,8 +467,8 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/workflows/menu', action='set_workflow_menu', controller="workflows", conditions=dict(method=["PUT"]))
     webapp.mapper.connect('/api/workflows/{id}/refactor', action='refactor', controller="workflows", conditions=dict(method=["PUT"]))
     webapp.mapper.resource('workflow', 'workflows', path_prefix='/api')
-    webapp.mapper.connect('/api/licenses', controller='licenses', action='index')
-    webapp.mapper.connect('/api/licenses/{id}', controller='licenses', action='get')
+    webapp.mapper.connect('/api/licenses', controller='licenses', action='index', conditions=dict(method="GET"))
+    webapp.mapper.connect('/api/licenses/{id}', controller='licenses', action='get', conditions=dict(method="GET"))
     webapp.mapper.resource_with_deleted('history', 'histories', path_prefix='/api')
     webapp.mapper.connect('/api/histories/{history_id}/citations', action='citations', controller="histories")
     webapp.mapper.connect('/api/histories/{id}/sharing', action='sharing', controller="histories", conditions=dict(method=["GET", "POST"]))
@@ -700,13 +719,6 @@ def populate_api_routes(webapp, app):
                           controller='authenticate',
                           action='get_api_key',
                           conditions=dict(method=["GET"]))
-
-    # API OPTIONS RESPONSE
-    webapp.mapper.connect('options',
-                          '/api/{path_info:.*?}',
-                          controller='authenticate',
-                          action='options',
-                          conditions={'method': ['OPTIONS']})
 
     # ======================================
     # ====== DISPLAY APPLICATIONS API ======

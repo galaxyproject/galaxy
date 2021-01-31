@@ -1,6 +1,6 @@
 import re
 
-ENCODED_DATABASE_ID_PATTERN = re.compile('[0-9a-f]+')
+ENCODED_DATABASE_ID_PATTERN = re.compile('f?[0-9a-f]+')
 ENCODED_ID_LENGTH_MULTIPLE = 16
 
 
@@ -37,8 +37,7 @@ class EncodedDatabaseIdField(str):
             len_v = len(v)
         if len_v % ENCODED_ID_LENGTH_MULTIPLE:
             raise ValueError('Invalid id length, must be multiple of 16')
-        v = v.lower()
-        m = ENCODED_DATABASE_ID_PATTERN.fullmatch(v)
+        m = ENCODED_DATABASE_ID_PATTERN.fullmatch(v.lower())
         if not m:
             raise ValueError('Invalid characters in encoded ID')
         return cls(v)

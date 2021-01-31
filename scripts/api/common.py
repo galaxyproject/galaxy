@@ -86,14 +86,17 @@ def display(api_key, url, return_formatted=True):
         print('Collection Members')
         print('------------------')
         for n, i in enumerate(r):
-            # All collection members should have a name in the response.
-            # url is optional
-            if 'url' in i:
-                print('#%d: %s' % (n + 1, i.pop('url')))
-            if 'name' in i:
-                print('  name: %s' % i.pop('name'))
-            for k, v in i.items():
-                print(f'  {k}: {v}')
+            if isinstance(i, str):
+                print('  %s' % i)
+            else:
+                # All collection members should have a name in the response.
+                # url is optional
+                if 'url' in i:
+                    print('#%d: %s' % (n + 1, i.pop('url')))
+                if 'name' in i:
+                    print('  name: %s' % i.pop('name'))
+                for k, v in i.items():
+                    print('  %s: %s' % (k, v))
         print('')
         print('%d element(s) in collection' % len(r))
     elif type(r) == dict:
