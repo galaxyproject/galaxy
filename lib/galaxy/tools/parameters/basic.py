@@ -426,7 +426,7 @@ class IntegerToolParameter(TextToolParameter):
             raise err
 
     def get_initial_value(self, trans, other_values):
-        if self.value:
+        if self.value not in {None, ''}:
             return int(self.value)
         else:
             return None
