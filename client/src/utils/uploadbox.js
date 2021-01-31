@@ -229,7 +229,7 @@ import { getAppRoot } from "onload/loadConfig";
         });
     };
     /**
-     * 
+     *
      * @param {*} config
      */
     $.datafetchpost = function (config) {
@@ -240,7 +240,7 @@ import { getAppRoot } from "onload/loadConfig";
                 success: () => {},
                 error: () => {},
                 progress: () => {},
-                url: null
+                url: null,
             },
             config
         );
@@ -438,7 +438,7 @@ import { getAppRoot } from "onload/loadConfig";
             } else if (requestData.fetchRequest) {
                 submitter = $.datafetchpost;
             }
-            
+
             submitter({
                 url: opts.initUrl(index),
                 data: requestData.fetchRequest ? requestData.fetchRequest : requestData.uploadRequest,
