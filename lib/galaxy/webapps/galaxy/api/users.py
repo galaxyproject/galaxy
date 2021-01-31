@@ -416,7 +416,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, Uses
         # Update email
         if 'email' in payload:
             email = payload.get('email')
-            message = self._validate_email(email) or validate_email(trans, email, user)
+            message = validate_email(trans, email, user)
             if message:
                 raise exceptions.RequestParameterInvalidException(message)
             if user.email != email:
@@ -441,7 +441,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, Uses
         # Update public name
         if 'username' in payload:
             username = payload.get('username')
-            message = self._validate_publicname(username) or validate_publicname(trans, username, user)
+            message = validate_publicname(trans, username, user)
             if message:
                 raise exceptions.RequestParameterInvalidException(message)
             if user.username != username:
@@ -580,19 +580,6 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, Uses
             pass
         else:
             raise exceptions.ObjectAttributeInvalidException("This type is not supported. Given object_type: %s" % object_type)
-
-    def _validate_email(self, email):
-        ''' Validate email and username using regex '''
-        if email == '' or not isinstance(email, str):
-            return 'Please provide your email address.'
-        if not re.match(r'^(([^<>()[\]\.,;:\s@"]+(\.[^<>()[\]\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$', email):
-            return 'Please provide your valid email address.'
-        if len(email) > 255:
-            return 'Email cannot be more than 255 characters in length.'
-
-    def _validate_publicname(self, username):
-        if not re.match(r'^[a-z0-9\-]{3,255}$', username):
-            return 'Public name must contain only lowercase letters, numbers and "-". It also has to be shorter than 255 characters but longer than 2.'
 
     @expose_api
     def get_password(self, trans, id, payload=None, **kwd):
