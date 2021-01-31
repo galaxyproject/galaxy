@@ -103,7 +103,7 @@ export var Input = Backbone.View.extend({
             .css("color", this.model.get("color") || "")
             .css("border-color", this.model.get("color") || "");
         var datalist = this.model.get("datalist");
-        if ($.isArray(datalist) && datalist.length > 0) {
+        if (Array.isArray(datalist) && datalist.length > 0) {
             this.$el.autocomplete({
                 source: function (request, response) {
                     response(self.model.get("datalist"));
@@ -187,7 +187,7 @@ export var TextSelect = Backbone.View.extend({
             });
         }
         var v = this.value();
-        this.textmode = input_def.textable && (!$.isArray(data) || data.length === 0);
+        this.textmode = input_def.textable && (!Array.isArray(data) || data.length === 0);
         this.text.$el[this.textmode ? "show" : "hide"]();
         this.select.$el[this.textmode ? "hide" : "show"]();
         this.select.update({ data: data });
