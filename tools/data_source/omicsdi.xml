@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<tool name="OmicsDI" id="omicsdi" tool_type="data_source" version="1.0.0">
+    <description>Sync dataset's files from OmicsDI</description>
+    <command detect_errors="aggressive"><![CDATA[
+        mkdir -p outputs &&
+        python '$__tool_directory__/omicsdi_importer.py'
+        --json_parameter_file '${output}'
+        --galaxy_root $__root_dir__
+        --data_conf $__datatypes_config__ &&
+        ls -l
+    ]]></command>
+
+
+    <inputs action="https://www.omicsdi.org" check_values="false" method="get" target="_top">
+        <display>go to OmicsDI server $GALAXY_URL</display>
+    </inputs>
+    <request_param_translation>
+        <request_param galaxy_name="URL" remote_name="URL" missing="" />
+        <request_param galaxy_name="URL_method" remote_name="URL_method" missing="get" />
+    </request_param_translation>
+    <uihints minwidth="800"/>
+    <outputs>
+        <data name="output" format="json" />
+        <collection name="output_coll" type="list" label="Table split on first column">
+          <discover_datasets pattern="__name_and_ext__" directory="outputs" />
+        </collection>
+    </outputs>
+    <options sanitize="False" refresh="True"/>
+</tool>
