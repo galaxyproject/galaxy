@@ -125,16 +125,16 @@ import { getAppRoot } from "onload/loadConfig";
                         process(new_start);
                     } else {
                         console.debug("Upload completed.");
-                        data.uploadRequest.payload.inputs = JSON.parse(data.payload.inputs);
-                        data.uploadRequest.payload.inputs["files_0|file_data"] = {
+                        data.payload.inputs = JSON.parse(data.payload.inputs);
+                        data.payload.inputs["files_0|file_data"] = {
                             session_id: session_id,
                             name: file.name,
                         };
-                        data.uploadRequest.payload.inputs = JSON.stringify(data.payload.inputs);
+                        data.payload.inputs = JSON.stringify(data.payload.inputs);
                         $.ajax({
                             url: `${getAppRoot()}api/tools`,
                             method: "POST",
-                            data: data.uploadRequest.payload,
+                            data: data.payload,
                             success: (tool_response) => {
                                 cnf.success(tool_response);
                             },
@@ -233,7 +233,6 @@ import { getAppRoot } from "onload/loadConfig";
      * @param {*} config
      */
     $.datafetchpost = function (config) {
-        console.log("in datafetchpost");
         var cnf = $.extend(
             {},
             {
@@ -440,7 +439,6 @@ import { getAppRoot } from "onload/loadConfig";
                 submitter = $.datafetchpost;
             }
             
-            console.log("******requestData******", requestData);
             submitter({
                 url: opts.initUrl(index),
                 data: requestData.fetchRequest ? requestData.fetchRequest : requestData.uploadRequest,

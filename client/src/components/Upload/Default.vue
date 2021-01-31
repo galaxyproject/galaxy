@@ -172,7 +172,6 @@ export default {
                     var data = this.app.toData([this.collection.get(index)], this.history_id);
                     this.uploadUrl = data.fetchRequest ? "TODO" : this.app.uploadPath;
                 }
-                console.log("URL ", this.uploadUrl);
                 return this.uploadUrl;
             },
             multiple: this.multiple,
@@ -182,7 +181,6 @@ export default {
             initialize: (index) => {
                 var data = this.app.toData([this.collection.get(index)], this.history_id);
                 this.uploadUrl = data.fetchRequest ? "/api/tools/fetch" : this.app.uploadPath;
-                console.log("URL in inititalize", this.uploadUrl);
                 return data;
             },
             progress: (index, percentage) => {

@@ -286,14 +286,12 @@ const UploadModal = {
             };
             for (var index in items) {
                 var it = items[index];
-                console.log("it ", it);
                 if (it.get("file_mode") != "new" || !it.get("url_paste").startsWith("http")) {
                     data.files.push(it);
                 } else {
                     data.urls.push(it);
                 }
             }
-            console.log("data ", data);
             return data;
         },
         /**
@@ -364,7 +362,7 @@ const UploadModal = {
                 }
                 data.payload.inputs = JSON.stringify(inputs);
             }
-            console.log("inUploadData:", data);
+
             return data;
         },
         toFetchData: function (items, history_id) {
@@ -392,7 +390,6 @@ const UploadModal = {
                 };
                 data.targets[0].elements.push(element);
             }
-            console.log("***inFetchData:****", data);
             return data;
         },
     },
