@@ -34,15 +34,24 @@ export class Services {
             rethrowSimple(e);
         }
     }
-    async setPermissions(access_ids, add_ids, manage_ids, modify_ids, onSuccess, onError) {
+    async setPermissions(id, add_ids, manage_ids, modify_ids, onSuccess, onError) {
         var formData = new FormData();
-        formData.append("add_ids[]", access_ids);
-        formData.append("manage_ids[]", manage_ids);
-        formData.append("modify_ids[]", modify_ids);
+        formData.append(
+            "add_ids[]",
+            add_ids.map((a) => a.id)
+        );
+        formData.append(
+            "manage_ids[]",
+            manage_ids.map((a) => a.id)
+        );
+        formData.append(
+            "modify_ids[]",
+            modify_ids.map((a) => a.id)
+        );
 
         axios({
             method: "post",
-            url: "`${getAppRoot()}api/libraries/${self.id}/permissions?action=set_permissions`",
+            url: `${getAppRoot()}api/folders/${id}/permissions?action=set_permissions`,
             data: formData,
             headers: { "Content-Type": "multipart/form-data" },
         })

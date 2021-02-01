@@ -1,8 +1,8 @@
 <template>
-    <div v-if="roles.length > 0">
+    <div v-if="fetched_options.length > 0 && value">
         <multiselect
             v-model="value"
-            :options="roles"
+            :options="fetched_options"
             :clear-on-select="true"
             :preserve-search="true"
             :multiple="true"
@@ -29,8 +29,12 @@ export default {
             type: String,
             required: true,
         },
-        type: {
+        permission_type: {
             type: String,
+            required: true,
+        },
+        initial_value: {
+            type: Array,
             required: true,
         },
     },
@@ -43,15 +47,17 @@ export default {
             folder: undefined,
             is_admin: undefined,
             options: undefined,
-            value: null,
+            value: undefined,
             page: 1,
             page_limit: 10,
-            roles: [],
+            fetched_options: [],
+
         };
     },
     created() {
         this.services = new Services({ root: this.root });
-
+        // Avoid mutating a prop directly
+        this.value = this.initial_value;
         this.getSelectOptions(this.page);
     },
     computed: {
@@ -63,7 +69,7 @@ export default {
         getSelectOptions(page) {
             this.services.getSelectOptions(this.folder_id, true, page, this.page_limit).then((response) => {
                 this.options = response;
-                this.roles = this.roles.concat(this.options.roles);
+                this.fetched_options = this.fetched_options.concat(this.options.roles);
             });
         },
         reachedEndOfList(reached) {
@@ -73,7 +79,7 @@ export default {
         },
         valueChanged() {
             console.log(this.value)
-            this.$emit("input", this.value, this.type);
+            this.$emit("input", this.value, this.permission_type);
         },
     },
 };
