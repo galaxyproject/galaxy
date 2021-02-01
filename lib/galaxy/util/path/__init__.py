@@ -352,7 +352,7 @@ def external_chown(path, pwent, external_chown_script, description="file"):
     - True in case of success
     - False in case of failure
     """
-    if external_chown_script is None:
+    if not external_chown_script:
         return None
 
     try:
