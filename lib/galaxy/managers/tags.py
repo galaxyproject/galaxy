@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import (
     List,
     Optional,
@@ -9,18 +10,29 @@ from pydantic import (
 )
 
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.schema.fields import EncodedDatabaseIdField
+
+
+class TaggableItemClass(str, Enum):
+    History = "History"
+    HistoryDatasetAssociation = "HistoryDatasetAssociation"
+    HistoryDatasetCollectionAssociation = "HistoryDatasetCollectionAssociation"
+    LibraryDatasetDatasetAssociation = "LibraryDatasetDatasetAssociation"
+    Page = "Page"
+    StoredWorkflow = "StoredWorkflow"
+    Visualization = "Visualization"
 
 
 class ItemTagsPayload(BaseModel):
-    item_id: str = Field(
+    item_id: EncodedDatabaseIdField = Field(
         ...,  # This field is required
         title="Item ID",
         description="The `encoded identifier` of the item whose tags will be updated.",
     )
-    item_class: str = Field(
+    item_class: TaggableItemClass = Field(
         ...,  # This field is required
         title="Item class",
-        description="The name of the class of the item.",
+        description="The name of the class of the item that will be tagged.",
     )
     item_tags: Optional[List[str]] = Field(
         default=None,
