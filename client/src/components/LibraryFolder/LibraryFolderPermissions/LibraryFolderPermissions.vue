@@ -6,17 +6,19 @@
             </b-button>
         </div>
         <b-jumbotron bg-variant="white">
-            <template v-if="folder" #header> {{ folder.name }}</template>
+            <template v-if="folder" #header>
+                <div class="text-center">{{ folder.name }}</div>
+            </template>
             <template #lead>
-                <div class="alert alert-warning">
-                    <div v-if="is_admin">
+                <div class="text-center">
+                    <b-alert show variant="warning" v-if="is_admin">
                         You are logged in as an <strong>administrator</strong> therefore you can manage any folder on
                         this Galaxy instance. Please make sure you understand the consequences.
-                    </div>
-                    <div v-else>
+                    </b-alert>
+                    <b-alert show variant="warning" v-else>
                         You can assign any number of roles to any of the following permission types. However please read
                         carefully the implications of such actions.
-                    </div>
+                    </b-alert>
                 </div>
             </template>
             <hr class="my-4" />
