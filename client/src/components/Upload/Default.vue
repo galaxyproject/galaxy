@@ -170,7 +170,7 @@ export default {
             initUrl: (index) => {
                 if (!this.uploadUrl) {
                     var data = this.app.toData([this.collection.get(index)], this.history_id);
-                    this.uploadUrl = data.fetchRequest ? "TODO" : this.app.uploadPath;
+                    this.uploadUrl = data.fetchRequest ? "/api/tools/fetch" : this.app.uploadPath;
                 }
                 return this.uploadUrl;
             },
