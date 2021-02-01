@@ -326,6 +326,30 @@ steps:
         self.workflow_editor_click_option("Save As")
 
     @selenium_test
+    def test_editor_tool_upgrade(self):
+        workflow_populator = self.workflow_populator
+        workflow_id = workflow_populator.upload_yaml_workflow("""class: GalaxyWorkflow
+inputs: []
+steps:
+  - tool_id: multiple_versions
+    tool_version: 0.1
+    label: multiple_versions
+    state:
+      foo: bar
+        """, exact_tools=True)
+        self.workflow_index_open()
+        self.workflow_index_click_option("Edit")
+        editor = self.components.workflow_editor
+        editor.node._(label="multiple_versions").wait_for_and_click()
+        editor.tool_version_button.wait_for_and_click()
+        assert self.select_dropdown_item('Switch to 0.2'), 'Switch to tool version dropdown item not found'
+        self.screenshot("workflow_editor_version_update")
+        self.assert_has_changes_and_save()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        workflow = self.workflow_populator.download_workflow(workflow_id)
+        assert workflow['steps']['0']['tool_version'] == '0.2'
+
+    @selenium_test
     def test_editor_tool_upgrade_message(self):
         workflow_populator = self.workflow_populator
         workflow_populator.upload_yaml_workflow(WORKFLOW_WITH_OLD_TOOL_VERSION, exact_tools=True)
