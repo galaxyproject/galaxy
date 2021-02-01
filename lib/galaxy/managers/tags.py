@@ -36,6 +36,9 @@ class ItemTagsPayload(BaseModel):
         description="The list of tags that will replace the current tags associated with the item.",
     )
 
+    class Config:
+        use_enum_values = True
+
 
 class TagsManager:
     """Interface/service object shared by controllers for interacting with tags."""
