@@ -1168,59 +1168,6 @@ def compare_urls(url1, url2, compare_scheme=True, compare_hostname=True, compare
     return True
 
 
-def read_dbnames(filename):
-    """ Read build names from file """
-    db_names = []
-    try:
-        ucsc_builds = {}
-        man_builds = []  # assume these are integers
-        name_to_db_base = {}
-        if filename is None:
-            # Should only be happening with the galaxy.tools.parameters.basic:GenomeBuildParameter docstring unit test
-            filename = os.path.join(galaxy_directory(), 'tool-data', 'shared', 'ucsc', 'builds.txt.sample')
-        for line in open(filename):
-            try:
-                if line[0:1] == "#":
-                    continue
-                fields = line.replace("\r", "").replace("\n", "").split("\t")
-                # Special case of unspecified build is at top of list
-                if fields[0] == "?":
-                    db_names.insert(0, (fields[0], fields[1]))
-                    continue
-                try:  # manual build (i.e. microbes)
-                    int(fields[0])
-                    man_builds.append((fields[1], fields[0]))
-                except Exception:  # UCSC build
-                    db_base = fields[0].rstrip('0123456789')
-                    if db_base not in ucsc_builds:
-                        ucsc_builds[db_base] = []
-                        name_to_db_base[fields[1]] = db_base
-                    # we want to sort within a species numerically by revision number
-                    build_rev = re.compile(r'\d+$')
-                    try:
-                        build_rev = int(build_rev.findall(fields[0])[0])
-                    except Exception:
-                        build_rev = 0
-                    ucsc_builds[db_base].append((build_rev, fields[0], fields[1]))
-            except Exception:
-                continue
-        sort_names = sorted(name_to_db_base.keys())
-        for name in sort_names:
-            db_base = name_to_db_base[name]
-            ucsc_builds[db_base].sort()
-            ucsc_builds[db_base].reverse()
-            ucsc_builds[db_base] = [(build, name) for _, build, name in ucsc_builds[db_base]]
-            db_names = list(db_names + ucsc_builds[db_base])
-        if len(db_names) > 1 and len(man_builds) > 0:
-            db_names.append((db_names.default_value, '----- Additional Species Are Below -----'))
-        man_builds.sort()
-        man_builds = [(build, name) for name, build in man_builds]
-        db_names = list(db_names + man_builds)
-    except Exception as e:
-        log.error("ERROR: Unable to read builds file: %s", unicodify(e))
-    return db_names
-
-
 def read_build_sites(filename, check_builds=True):
     """ read db names to ucsc mappings from file, this file should probably be merged with the one above """
     build_sites = []
