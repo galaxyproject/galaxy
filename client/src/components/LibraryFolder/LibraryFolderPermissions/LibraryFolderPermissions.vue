@@ -1,15 +1,15 @@
 <template>
     <div>
-        <div v-if="folder">
-            <b-button variant="primary" :href="getParentLink()">
-                <font-awesome-icon icon="angle-double-left">1</font-awesome-icon>
-            </b-button>
-        </div>
-        <b-jumbotron bg-variant="white">
-            <template v-if="folder" #header>
-                <div class="text-center">{{ folder.name }}</div>
-            </template>
-            <template #lead>
+        <div>
+            <div v-if="folder">
+                <b-button variant="primary" :href="getParentLink()">
+                    <font-awesome-icon icon="angle-double-left">1</font-awesome-icon>
+                </b-button>
+                <div>
+                    <div class="header text-center">{{ folder.name }}</div>
+                </div>
+            </div>
+            <div>
                 <div class="text-center">
                     <b-alert show variant="warning" v-if="is_admin">
                         You are logged in as an <strong>administrator</strong> therefore you can manage any folder on
@@ -20,79 +20,80 @@
                         carefully the implications of such actions.
                     </b-alert>
                 </div>
-            </template>
-            <hr class="my-4" />
-
-            <div class="dataset_table">
-                <h2>Folder permissions</h2>
-                <h4>
-                    Roles that can manage permissions on this folder
-                </h4>
-                <b-row>
-                    <b-col>
-                        <PermissionsInputField
-                            v-if="manage_folder_role_list"
-                            :folder_id="folder_id"
-                            :permission_type="manage_type"
-                            :initial_value="manage_folder_role_list"
-                            @input="setUserPermissionsPreferences"
-                    /></b-col>
-                    <b-col>
-                        <b-alert show variant="info">
-                            User with <strong>any</strong> of these roles can manage permissions on this folder.
-                        </b-alert>
-                    </b-col>
-                </b-row>
-                <h4>
-                    Roles that can add items to this folder
-                </h4>
-                <b-row>
-                    <b-col>
-                        <PermissionsInputField
-                            v-if="add_library_item_role_list"
-                            :folder_id="folder_id"
-                            :permission_type="add_type"
-                            :initial_value="add_library_item_role_list"
-                            @input="setUserPermissionsPreferences"
-                    /></b-col>
-                    <b-col>
-                        <b-alert class="p-3" show variant="info">
-                            User with <strong>any</strong> of these roles can add items to this folder (folders and
-                            datasets).
-                        </b-alert>
-                    </b-col>
-                </b-row>
-                <h4>
-                    Roles that can modify this folder
-                </h4>
-                <b-row>
-                    <b-col>
-                        <PermissionsInputField
-                            v-if="modify_folder_role_list"
-                            :folder_id="folder_id"
-                            :permission_type="modify_type"
-                            :initial_value="modify_folder_role_list"
-                            @input="setUserPermissionsPreferences"
-                    /></b-col>
-                    <b-col>
-                        <b-alert show variant="info">
-                            User with <strong>any</strong> of these roles can modify this folder (name, etc.).
-                        </b-alert></b-col
-                    >
-                </b-row>
-                <button
-                    data-toggle="tooltip"
-                    data-placement="top"
-                    title="Save modifications"
-                    class="btn btn-secondary toolbtn_save_permissions primary-button"
-                    type="button"
-                    @click="postPermissions"
-                >
-                    <font-awesome-icon :icon="['far', 'save']" />
-                    &nbsp;Save
-                </button>
             </div>
-        </b-jumbotron>
+            <hr class="my-4" />
+            <b-card border-variant="white">
+                <div class="dataset_table">
+                    <h2>Folder permissions</h2>
+                    <h4>
+                        Roles that can manage permissions on this folder
+                    </h4>
+                    <b-row>
+                        <b-col>
+                            <PermissionsInputField
+                                v-if="manage_folder_role_list"
+                                :folder_id="folder_id"
+                                :permission_type="manage_type"
+                                :initial_value="manage_folder_role_list"
+                                @input="setUserPermissionsPreferences"
+                        /></b-col>
+                        <b-col>
+                            <b-alert show variant="info">
+                                User with <strong>any</strong> of these roles can manage permissions on this folder.
+                            </b-alert>
+                        </b-col>
+                    </b-row>
+                    <h4>
+                        Roles that can add items to this folder
+                    </h4>
+                    <b-row>
+                        <b-col>
+                            <PermissionsInputField
+                                v-if="add_library_item_role_list"
+                                :folder_id="folder_id"
+                                :permission_type="add_type"
+                                :initial_value="add_library_item_role_list"
+                                @input="setUserPermissionsPreferences"
+                        /></b-col>
+                        <b-col>
+                            <b-alert class="p-3" show variant="info">
+                                User with <strong>any</strong> of these roles can add items to this folder (folders and
+                                datasets).
+                            </b-alert>
+                        </b-col>
+                    </b-row>
+                    <h4>
+                        Roles that can modify this folder
+                    </h4>
+                    <b-row>
+                        <b-col>
+                            <PermissionsInputField
+                                v-if="modify_folder_role_list"
+                                :folder_id="folder_id"
+                                :permission_type="modify_type"
+                                :initial_value="modify_folder_role_list"
+                                @input="setUserPermissionsPreferences"
+                        /></b-col>
+                        <b-col>
+                            <b-alert show variant="info">
+                                User with <strong>any</strong> of these roles can modify this folder (name, etc.).
+                            </b-alert></b-col
+                        >
+                    </b-row>
+                    <button
+                        data-toggle="tooltip"
+                        data-placement="top"
+                        title="Save modifications"
+                        class="btn btn-secondary toolbtn_save_permissions primary-button"
+                        type="button"
+                        @click="postPermissions"
+                    >
+                        <font-awesome-icon :icon="['far', 'save']" />
+                        &nbsp;Save
+                    </button>
+                </div>
+            </b-card>
+        </div>
     </div>
 </template>
 
@@ -198,3 +199,9 @@ export default {
     },
 };
 </script>
+
+<style scoped>
+.header {
+    font-size: 45px;
+}
+</style>
