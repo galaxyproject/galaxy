@@ -7,7 +7,7 @@ from fastapi import (
     Body,
     status,
 )
-# TODO: replace with Router after merging #11219
+# TODO: replace with _router after merging #11219
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter as APIRouter
 
@@ -25,18 +25,19 @@ from . import (
 
 log = logging.getLogger(__name__)
 
-router = APIRouter(tags=['tags'])
+# TODO: This FastAPI router is disabled. Please rename it to `router` when the database session issues are fixed.
+_router = APIRouter(tags=['tags'])
 
 
 def get_tags_manager() -> TagsManager:
     return TagsManager()  # TODO: remove/refactor after merging #11180
 
 
-@cbv(router)
+@cbv(_router)
 class FastAPITags:
     manager: TagsManager = Depends(get_tags_manager)
 
-    @router.put(
+    @_router.put(
         '/api/tags',
         summary="Apply a new set of tags to an item.",
         status_code=status.HTTP_204_NO_CONTENT,
