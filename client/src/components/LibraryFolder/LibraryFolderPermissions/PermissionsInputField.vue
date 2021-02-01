@@ -51,7 +51,6 @@ export default {
             page: 1,
             page_limit: 10,
             fetched_options: [],
-
         };
     },
     created() {
@@ -78,7 +77,6 @@ export default {
             }
         },
         valueChanged() {
-            console.log(this.value)
             this.$emit("input", this.value, this.permission_type);
         },
     },
