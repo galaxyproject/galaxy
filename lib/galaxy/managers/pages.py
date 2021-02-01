@@ -74,7 +74,7 @@ class PageContentFormat(str, Enum):
 
 
 ContentFormatField: PageContentFormat = Field(
-    default=PageContentFormat.markdown,
+    default=PageContentFormat.html,
     title="Content format",
     description="Either `markdown` or `html`.",
 )
