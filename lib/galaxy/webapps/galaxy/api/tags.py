@@ -7,7 +7,7 @@ from fastapi import (
     Body,
     status,
 )
-# TODO: replace with _router after merging #11219
+# TODO: replace with Router after merging #11219
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter as APIRouter
 

@@ -19,7 +19,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from enum import Enum
 from string import Template
-from typing import Optional, TYPE_CHECKING
+from typing import List, Optional, TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from boltons.iterutils import remap
@@ -6350,6 +6350,11 @@ class Tag(RepresentById):
 class ItemTagAssociation(Dictifiable):
     dict_collection_visible_keys = ['id', 'user_tname', 'user_value']
     dict_element_visible_keys = dict_collection_visible_keys
+    associated_item_names: List[str] = []
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        cls.associated_item_names.append(cls.__name__.replace("TagAssociation", ""))
 
     def __init__(self, id=None, user=None, item_id=None, tag_id=None, user_tname=None, value=None):
         self.id = id
