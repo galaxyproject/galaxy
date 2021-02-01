@@ -34,7 +34,7 @@ class RuleHelper:
 
         :param job_or_tool:
         :param container_type: either "docker" or "singularity" currently
-        :return:
+        :return: true if the tool supports the specified container type.
         """
         # Not a ton of logic in this method - but the idea is to shield rule
         # developers from the details and they shouldn't have to know how to
