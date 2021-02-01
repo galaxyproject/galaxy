@@ -437,24 +437,17 @@ class User(Dictifiable, RepresentById):
         Gives the system user pwent entry based on e-mail or username depending
         on the value in real_system_username
         """
-        system_user_pwent = None
         if real_system_username == 'user_email':
-            try:
-                system_user_pwent = pwd.getpwnam(self.email.split('@')[0])
-            except KeyError:
-                pass
+            username = self.email.split('@')[0]
         elif real_system_username == 'username':
-            try:
-                system_user_pwent = pwd.getpwnam(self.username)
-            except KeyError:
-                pass
+            username = self.username
         else:
-            try:
-                system_user_pwent = pwd.getpwnam(real_system_username)
-            except KeyError:
-                log.warning("invalid configuration of real_system_username")
-                system_user_pwent = None
-        return system_user_pwent
+            username = real_system_username
+        try:
+            return pwd.getpwnam(username)
+        except Exception:
+            log.exception(f"Error getting the password database entry for user {username}")
+            raise
 
     def all_roles(self):
         """
