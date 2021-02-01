@@ -73,7 +73,5 @@ class GenomesController(BaseAPIController):
         want a raw return, not json
         """
         id = get_id(id, kwd.get('format', None))
-        reference = is_true(kwd.get('reference', False))
-        assert reference
         region = self.app.genomes.reference(trans, dbkey=id, chrom=chrom, low=low, high=high)
         return region.sequence
