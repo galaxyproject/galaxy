@@ -1054,18 +1054,17 @@ class NavigatesGalaxy(HasDriver):
         workflow_button = workflow_row.find_element_by_css_selector(workflow_selector)
         workflow_button.click()
 
-    def workflow_index_click_option(self, option_title, workflow_index=0):
-        self.workflow_click_option(".workflow-dropdown", workflow_index)
+    def select_dropdown_item(self, option_title):
         menu_element = self.wait_for_selector_visible(".dropdown-menu.show")
         menu_options = menu_element.find_elements_by_css_selector("a.dropdown-item")
-        found_option = False
         for menu_option in menu_options:
             if option_title in menu_option.text:
                 menu_option.click()
-                found_option = True
-                break
+                return True
 
-        if not found_option:
+    def workflow_index_click_option(self, option_title, workflow_index=0):
+        self.workflow_click_option(".workflow-dropdown", workflow_index)
+        if not self.select_dropdown_item(option_title):
             raise AssertionError("Failed to find workflow action option with title [%s]" % option_title)
 
     def workflow_index_click_tag_display(self, workflow_index=0):

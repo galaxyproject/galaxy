@@ -321,6 +321,7 @@ export default {
         },
         setData(data) {
             this.config_form = data.config_form;
+            this.content_id = this.config_form?.id;
             this.tool_state = data.tool_state;
             this.errors = data.errors;
             this.annotation = data.annotation;
