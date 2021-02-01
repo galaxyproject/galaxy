@@ -270,7 +270,6 @@ const UploadModal = {
             if (items && items.length > 0) {
                 var split = this.preprocess(items);
                 if (split.urls.length > 0) {
-                    // TODO multiple fetches?
                     data.fetchRequest = this.toFetchData(split.urls, history_id);
                 }
                 if (split.files.length > 0) {
@@ -366,7 +365,6 @@ const UploadModal = {
             return data;
         },
         toFetchData: function (items, history_id) {
-            // TODO create the request body - see RuleCollectionBuilder._datasetFor
             var data = {
                 history_id: history_id,
                 targets: [
@@ -379,7 +377,6 @@ const UploadModal = {
                 auto_decompress: true,
             };
 
-            // TODO iterate through items - maybe there's only one?
             const urls = items[0].get("url_paste").split("\n");
             for (var index in urls) {
                 var element = {
