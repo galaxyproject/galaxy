@@ -56,7 +56,6 @@ class RuleHelper:
     def supports_docker(self, job_or_tool):
         return self.supports_container(job_or_tool, container_type="docker")
 
-
     def job_count(
         self,
         **kwds
