@@ -89,6 +89,9 @@ class RBACAgent:
     def can_modify_library_item(self, roles, item):
         raise Exception("Unimplemented Method")
 
+    def can_change_object_store_id(self, user, dataset):
+        raise Exception("Unimplemented Method")
+
     def can_manage_library_item(self, roles, item):
         raise Exception("Unimplemented Method")
 

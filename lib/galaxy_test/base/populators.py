@@ -1182,6 +1182,13 @@ class BaseDatasetPopulator(BasePopulator):
         assert "total_disk_usage" in user_object
         return user_object["total_disk_usage"]
 
+    def update_object_store_id(self, dataset_id: str, object_store_id: str):
+        payload = {"object_store_id": object_store_id}
+        url = f"datasets/{dataset_id}/object_store_id"
+        update_response = self._put(url, payload, json=True)
+        update_response.raise_for_status()
+        return update_response
+
     def create_role(self, user_ids: list, description: Optional[str] = None) -> dict:
         using_requirement("admin")
         payload = {
