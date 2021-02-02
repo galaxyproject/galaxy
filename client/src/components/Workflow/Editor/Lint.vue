@@ -91,13 +91,9 @@
                 </LintSection>
                 <LintSection :okay="inputsMetadataOkay" title="Input Metadata" collapse-id="c-input-metadata">
                     <span>
-                        <div v-if="inputsMetadataOkay">
-                            All workflow inputs have labels and annotations.
-                        </div>
+                        <div v-if="inputsMetadataOkay">All workflow inputs have labels and annotations.</div>
                         <div v-else>
-                            <p>
-                                Some workflow inputs are missing labels and/or annotations.
-                            </p>
+                            <p>Some workflow inputs are missing labels and/or annotations.</p>
                             <ul>
                                 <li
                                     v-for="(input, idx) in inputsMissingMetadata"
@@ -120,9 +116,7 @@
                 </LintSection>
                 <LintSection :okay="outputsOkay" title="Outputs" collapse-id="c-outputs">
                     <span>
-                        <div v-if="outputsOkay">
-                            This workflow has outputs and they all have valid labels.
-                        </div>
+                        <div v-if="outputsOkay">This workflow has outputs and they all have valid labels.</div>
                         <div v-else-if="outputs.length == 0">
                             This workflow has no labeled outputs, please select and label at least one output.
 
@@ -195,9 +189,7 @@
                 <LintSection :okay="licenseOkay" title="Metadata - License" collapse-id="c-license">
                     <span>
                         <div v-if="licenseOkay">
-                            <p>
-                                This workflow defines a license.
-                            </p>
+                            <p>This workflow defines a license.</p>
                         </div>
                         <div v-else>
                             <p>
@@ -219,9 +211,7 @@
                 <LintSection :okay="creatorOkay" title="Metadata - Creator" collapse-id="c-creator">
                     <span>
                         <div v-if="creatorOkay">
-                            <p>
-                                This workflow defines creator information.
-                            </p>
+                            <p>This workflow defines creator information.</p>
                         </div>
                         <div v-else>
                             <p>

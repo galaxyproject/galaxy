@@ -11,9 +11,7 @@
                             Switch to this history
                         </button>
                     </span>
-                    <button id="show-structure" class="btn btn-secondary" @click="showStructure">
-                        Show structure
-                    </button>
+                    <button id="show-structure" class="btn btn-secondary" @click="showStructure">Show structure</button>
                 </span>
             </div>
             <div class="float-right">
@@ -28,7 +26,7 @@
         <div
             :id="'history-' + historyHistory['id']"
             class="history-panel unified-panel-body"
-            style="overflow: auto;"
+            style="overflow: auto"
         ></div>
     </div>
 </template>

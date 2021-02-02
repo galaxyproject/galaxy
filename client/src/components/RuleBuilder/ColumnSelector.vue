@@ -30,7 +30,8 @@
                 </span>
                 <span class="rule-column-selector-target-select" v-else>
                     <select2 @input="handleAdd" placeholder="Select a column">
-                        <option /><!-- empty option selection for placeholder -->
+                        <option />
+                        <!-- empty option selection for placeholder -->
                         <option v-for="(col, index) in remainingHeaders" :value="index" :key="col">{{ col }}</option>
                     </select2>
                 </span>

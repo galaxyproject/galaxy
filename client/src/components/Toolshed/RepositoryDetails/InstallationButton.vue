@@ -1,8 +1,6 @@
 <template>
     <div>
-        <b-button v-if="installState" :class="buttonClass" variant="primary" @click="onInstall">
-            Install
-        </b-button>
+        <b-button v-if="installState" :class="buttonClass" variant="primary" @click="onInstall"> Install </b-button>
         <div v-else>
             <b-button v-if="uninstallState" :class="buttonClass" variant="danger" @click="onUninstall">
                 Uninstall

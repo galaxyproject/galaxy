@@ -134,7 +134,7 @@
                                     id="lint-panel"
                                     class="right-content"
                                     ref="lint"
-                                    style="display: none;"
+                                    style="display: none"
                                     :legacy-parameters="parameters"
                                     :annotation="annotation"
                                     :creator="creator"

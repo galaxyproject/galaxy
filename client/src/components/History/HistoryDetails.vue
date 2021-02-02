@@ -5,7 +5,7 @@
                 <span class="size">{{ history.niceSize | localize }}</span>
             </h6>
 
-            <PriorityMenu style="max-width: 50%;" :starting-height="27">
+            <PriorityMenu style="max-width: 50%" :starting-height="27">
                 <PriorityMenuItem
                     key="edit-history-tags"
                     title="Edit History Tags"

@@ -468,7 +468,7 @@
                 </div>
                 <!--  flex-column column -->
                 <!--  style="width: 70%;" -->
-                <div class="table-column" :class="orientation" style="width: 100%;" v-if="initialElements !== null">
+                <div class="table-column" :class="orientation" style="width: 100%" v-if="initialElements !== null">
                     <hot-table
                         id="hot-table"
                         ref="hotTable"

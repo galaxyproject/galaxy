@@ -2,7 +2,7 @@
     <div v-if="historyId">
         <HistorySelector v-model="historyId" />
 
-        <PriorityMenu style="max-width: 50%;" :starting-height="27">
+        <PriorityMenu style="max-width: 50%" :starting-height="27">
             <PriorityMenuItem
                 key="create-new-history"
                 title="Create New History"

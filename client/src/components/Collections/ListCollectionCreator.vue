@@ -1,6 +1,6 @@
 <template>
     <div class="list-collection-creator">
-        <div v-if="(state == 'error')">
+        <div v-if="state == 'error'">
             <b-alert show variant="danger">
                 {{ errorText }}
             </b-alert>

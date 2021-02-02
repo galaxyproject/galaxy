@@ -60,9 +60,7 @@
             </transition>
 
             <b-button-group class="mb-4">
-                <button name="createNewKey" @click="onCreate">
-                    Create New Authorization Key
-                </button>
+                <button name="createNewKey" @click="onCreate">Create New Authorization Key</button>
             </b-button-group>
         </header>
 

@@ -1,6 +1,6 @@
 <template>
     <div class="paired-list-collection-creator">
-        <div v-if="(state == 'error')">
+        <div v-if="state == 'error'">
             <b-alert show variant="danger">
                 {{ errorText }}
             </b-alert>
@@ -89,7 +89,7 @@
                         {{ allInvalidElementsPartTwo }}
                     </b-alert>
                 </div>
-                <div v-if="(state == 'duplicates')">
+                <div v-if="state == 'duplicates'">
                     <b-alert show variant="danger">
                         {{ l("Collections cannot have duplicated names. The following list names are duplicated: ") }}
                         <ul>
@@ -335,7 +335,7 @@
                                 </div>
                             </div>
                         </div>
-                        <splitpanes horizontal style="height: 400px;">
+                        <splitpanes horizontal style="height: 400px">
                             <pane>
                                 <div v-if="noUnpairedElementsDisplayed">
                                     <b-alert show variant="warning">

@@ -6,13 +6,7 @@
             v-if="dsc"
             :parent="dsc"
             v-slot="{
-                payload: {
-                    contents = [],
-                    startKey = null,
-                    topRows = 0,
-                    bottomRows = 0,
-                    totalMatches = 0
-                },
+                payload: { contents = [], startKey = null, topRows = 0, bottomRows = 0, totalMatches = 0 },
                 busy: loading,
                 params,
                 pageSize,

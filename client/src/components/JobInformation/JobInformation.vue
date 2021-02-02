@@ -33,7 +33,7 @@
                 <tr id="job-messages" v-if="job && job.job_messages && job.job_messages.length > 0">
                     <td>Job Messages</td>
                     <td>
-                        <ul style="padding-left: 15px; margin-bottom: 0px;">
+                        <ul style="padding-left: 15px; margin-bottom: 0px">
                             <li v-for="message in job.job_messages" :key="message">{{ message }}</li>
                         </ul>
                     </td>

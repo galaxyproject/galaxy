@@ -6,7 +6,7 @@
                 v-b-tooltip.hover
                 title="Copy all citations as BibTeX"
                 icon="copy"
-                style="cursor: pointer;"
+                style="cursor: pointer"
                 @click="copyBibtex"
             />
             <Citation
