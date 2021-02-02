@@ -66,6 +66,10 @@ LOGGING_CONFIG_DEFAULT = {
             'level': 'WARN',
             'qualname': 'paste.httpserver.ThreadPool',
         },
+        'urllib3.connectionpool': {
+            'level': 'WARN',
+            'qualname': 'urllib3.connectionpool',
+        },
         'routes.middleware': {
             'level': 'WARN',
             'qualname': 'routes.middleware',
