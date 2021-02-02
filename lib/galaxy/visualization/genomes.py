@@ -7,7 +7,7 @@ from json import loads
 from bx.seq.twobit import TwoBitFile
 
 from galaxy.exceptions import (
-    MissingDataError,
+    ReferenceDataError,
     ObjectNotFound,
 )
 from galaxy.util.bunch import Bunch
@@ -92,7 +92,7 @@ class Genome:
         """
         # if there's no len_file, there's nothing to return
         if not self.len_file:
-            raise MissingDataError(f'len_file not set for {self.key}')
+            raise ReferenceDataError(f'len_file not set for {self.key}')
 
         def check_int(s):
             if s.isdigit():
@@ -375,7 +375,7 @@ class Genomes:
             dbkey_user = trans.user
 
         if not self.has_reference_data(dbkey, dbkey_user):
-            return None
+            raise ReferenceDataError(f"No reference data for {dbkey}")
 
         #
         # Get twobit file with reference data.
@@ -395,6 +395,9 @@ class Genomes:
                 twobit_dataset = fasta_dataset.get_converted_dataset(trans, 'twobit')
                 twobit_file_name = twobit_dataset.file_name
 
+        return self._get_reference_data()
+
+    def _get_reference_data():
         # Read and return reference data.
         try:
             with open(twobit_file_name, 'rb') as f:
@@ -402,5 +405,5 @@ class Genomes:
                 if chrom in twobit:
                     seq_data = twobit[chrom].get(int(low), int(high))
                     return GenomeRegion(chrom=chrom, start=low, end=high, sequence=seq_data)
-        except OSError:
-            return None
+        except OSError as e:
+            raise e()

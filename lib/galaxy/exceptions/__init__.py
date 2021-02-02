@@ -221,9 +221,9 @@ class InvalidFileFormatError(MessageException):
     err_code = error_codes_by_name['INVALID_FILE_FORMAT']
 
 
-class MissingDataError(MessageException):
+class ReferenceDataError(MessageException):
     status_code = 500
-    err_code = error_codes_by_name['MISSING_DATA_ERROR']
+    err_code = error_codes_by_name['REFERENCE_DATA_ERROR']
 
 
 # non-web exceptions
