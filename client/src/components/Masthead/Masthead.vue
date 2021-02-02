@@ -71,9 +71,6 @@ export default {
         addItem(item) {
             this.tabs.push(item);
         },
-        highlight(activeTab) {
-            this.activeTab = activeTab;
-        },
         _tabToJson(el) {
             const defaults = {
                 visible: true,
