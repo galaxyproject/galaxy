@@ -1,8 +1,10 @@
 import os
+import tempfile
+from unittest.mock import patch
 
 from galaxy.exceptions import (
-    MissingDataError,
     ObjectNotFound,
+    ReferenceDataError,
 )
 from galaxy_test.driver import integration_util
 
@@ -65,13 +67,45 @@ class GenomesTestCase(integration_util.IntegrationTestCase):
         assert rval['id'] == key
         assert len(rval['chrom_info']) == len(LEN_DATA)
 
-    def test_show_valid_missing(self):
+    def test_show_valid_no_refdata(self):
         key = get_key(has_len_file=False)
         response = self._get(f'genomes/{key}')
         self._assert_status_code_is(response, 500)
-        assert response.json()['err_code'] == MissingDataError.err_code.code
+        assert response.json()['err_code'] == ReferenceDataError.err_code.code
 
     def test_show_invalid(self):
         response = self._get('genomes/invalid')
         self._assert_status_code_is(response, 404)
         assert response.json()['err_code'] == ObjectNotFound.err_code.code
+
+    def test_sequences(self):
+
+        class RefDataMock:
+            sequence = 'test-value'
+
+        key = get_key()
+        with patch.object(self._app.genomes, 'has_reference_data', return_value=True), \
+                patch.object(self._app.genomes, '_get_reference_data', return_value=RefDataMock()):
+            response = self._get(f'genomes/{key}/sequences')
+            self._assert_status_code_is(response, 200)
+            assert response.content == bytes(RefDataMock.sequence, 'utf-8')
+
+    def test_sequences_no_data(self):
+        key = get_key()
+        with patch.object(self._app.genomes, 'has_reference_data', return_value=False):
+            response = self._get(f'genomes/{key}/sequences')
+            self._assert_status_code_is(response, 500)
+            assert response.json()['err_code'] == ReferenceDataError.err_code.code
+
+    def test_indexes(self):
+        mock_key, mock_content, index_type, suffix = 'mykey', 'mydata', 'fasta_indexes', '.fai'
+        # write some data to a tempfile
+        with tempfile.NamedTemporaryFile(dir=self._tempdir, suffix=suffix, mode="w", delete=False) as tf:
+            tf.write(mock_content)
+        # make a mock containing the path to the tempfile
+        tmpfile_path = tf.name[:-len(suffix)]  # chop off the extention
+        mock_data = [[mock_key, tmpfile_path]]
+        with patch.object(self._app.tool_data_tables.data_tables[index_type], 'data', new=mock_data):
+            response = self._get(f'genomes/{mock_key}/indexes?type={index_type}')
+            self._assert_status_code_is(response, 200)
+            assert response.content == bytes(mock_content, 'utf-8')
