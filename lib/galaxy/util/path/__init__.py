@@ -343,22 +343,18 @@ extensions = Extensions({
 
 def external_chown(path, pwent, external_chown_script, description="file"):
     """
-    call the external chown script (if not None) to change
+    call the external chown script to change
     the user and group of the given path, and additional description
     of the file/path for the log message can be given
 
-    return
-    - None if external_chown_script is None
-    - True in case of success
-    - False in case of failure
+    return True in case of success
     """
-    if not external_chown_script:
-        return None
-
     try:
+        if not external_chown_script:
+            raise ValueError('external_chown_script is not defined')
         cmd = shlex.split(external_chown_script)
         cmd.extend([path, pwent[0], str(pwent[3])])
-        log.debug('Changing ownership of {} with: {}'.format(path, ' '.join(cmd)))
+        log.debug('Changing ownership of {} with: {}'.format(path, ' '.join(map(shlex.quote, cmd))))
         galaxy.util.commands.execute(cmd)
         return True
     except galaxy.util.commands.CommandLineException as e:
