@@ -73,18 +73,18 @@ describe("history contents search field text parsing", () => {
         // have “FASTQC on” in other fields like the description or annotation.
         describe("name", () => {
             const searchField = "name";
-            const searchTerm = "FASTQS on";
+            const searchTerm = "FASTQC on";
 
             const goodDoc = {
                 _id: "anything",
-                name: "asfasdfasdfasdf FASTQS onsdfasdfasdf",
+                name: "asfasdfasdfasdf FASTQC onsdfasdfasdf",
                 visible: true,
                 isDeleted: false,
             };
 
             const badDoc = {
                 _id: "anything",
-                otherField: "asfasdfasdfasdf FASTQS onsdfasdfasdf",
+                otherField: "asfasdfasdfasdf FASTQC onsdfasdfasdf",
                 visible: true,
                 isDeleted: false,
             };
