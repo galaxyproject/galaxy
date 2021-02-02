@@ -36,7 +36,7 @@
         </div>
         <div id="workflow-license-area" class="mt-2">
             <b>License</b>
-            <LicenseSelector :inputLicense="license" @onLicense="onLicense" />
+            <LicenseSelector :input-license="license" @onLicense="onLicense" />
         </div>
         <div id="workflow-creator-area" class="mt-2">
             <b>Creator</b>

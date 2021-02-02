@@ -1,7 +1,7 @@
 <template>
     <div class="collection-creator">
         <div class="header flex-row no-flex">
-            <div class="main-help well clear" v-bind:class="{ expanded: isExpanded }">
+            <div class="main-help well clear" :class="{ expanded: isExpanded }">
                 <a
                     class="more-help"
                     href="javascript:void(0);"

@@ -100,12 +100,12 @@
                 </div>
                 <collection-creator
                     :oncancel="oncancel"
-                    :hideSourceItems="hideSourceItems"
+                    :hide-source-items="hideSourceItems"
                     @onUpdateHideSourceItems="onUpdateHideSourceItems"
                     @clicked-create="clickedCreate"
                     @remove-extensions-toggle="removeExtensionsToggle"
-                    :renderExtensionsToggle="true"
-                    :creationFn="creationFn"
+                    :render-extensions-toggle="true"
+                    :creation-fn="creationFn"
                 >
                     <template v-slot:help-content>
                         <p>
@@ -409,7 +409,7 @@
                                                 :key="pair.id"
                                                 :pair="pair"
                                                 :name="pair.name"
-                                                :unlinkFn="clickUnpair(pair)"
+                                                :unlink-fn="clickUnpair(pair)"
                                                 @onPairRename="(name) => (pair.name = name)"
                                             />
                                         </draggable>

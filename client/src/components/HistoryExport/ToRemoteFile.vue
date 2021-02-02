@@ -25,7 +25,7 @@
                 description="Select a 'remote files' directory to export history archive to."
                 class="mt-3"
             >
-                <files-input id="directory" v-model="directory" mode="directory" :requireWritable="true" />
+                <files-input id="directory" v-model="directory" mode="directory" :require-writable="true" />
             </b-form-group>
             <b-form-group id="fieldset-name" label-for="name" description="Give the exported file a name." class="mt-3">
                 <b-form-input id="name" v-model="name" placeholder="Name" required></b-form-input>

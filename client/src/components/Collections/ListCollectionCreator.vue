@@ -63,10 +63,10 @@
                 </div>
                 <collection-creator
                     :oncancel="oncancel"
-                    :hideSourceItems="hideSourceItems"
+                    :hide-source-items="hideSourceItems"
                     @onUpdateHideSourceItems="onUpdateHideSourceItems"
                     @clicked-create="clickedCreate"
-                    :creationFn="creationFn"
+                    :creation-fn="creationFn"
                 >
                     <template v-slot:help-content>
                         <p>

@@ -3,7 +3,7 @@ selected datset collections -->
 
 <template>
     <History
-        v-on:select-collection="selectCollection($event)"
+        @select-collection="selectCollection($event)"
         v-if="history && !selectedCollections.length"
         :history="history"
     >

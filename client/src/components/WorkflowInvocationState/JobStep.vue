@@ -7,7 +7,7 @@
                     <div v-else>
                         <job-information :job_id="item.id" v-if="item" />
                         <p></p>
-                        <job-parameters v-if="item" :jobId="item.id" :includeTitle="false" />
+                        <job-parameters v-if="item" :job-id="item.id" :include-title="false" />
                     </div>
                 </job-provider>
             </template>

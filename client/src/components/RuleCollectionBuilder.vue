@@ -350,7 +350,7 @@
                                 <saved-rules-selector
                                     ref="savedRulesSelector"
                                     @update-rules="restoreRules"
-                                    :savedRules="this.savedRules"
+                                    :saved-rules="this.savedRules"
                                 />
                             </span>
                             <div v-if="jaggedData" class="rule-warning">

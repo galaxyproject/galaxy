@@ -5,7 +5,7 @@
             v-bind="$attrs"
             v-on="$listeners"
             :dsc="datasetCollection"
-            :showTags="true"
+            :show-tags="true"
             @update:expanded="toggleExpand"
             @hideCollection="onHide(datasetCollection)"
             @unhideCollection="onUnhide(datasetCollection)"
@@ -14,7 +14,7 @@
         />
         <DatasetCollectionContentProvider v-if="expand" :id="datasetCollection.contents_url" v-slot="{ item, loading }">
             <b-spinner v-if="loading">Loading Dataset Collection...</b-spinner>
-            <DatasetCollectionContents v-else :collectionContents="item" />
+            <DatasetCollectionContents v-else :collection-contents="item" />
         </DatasetCollectionContentProvider>
     </div>
 </template>

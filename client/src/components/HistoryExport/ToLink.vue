@@ -17,11 +17,11 @@
         </div>
         <div v-else-if="latestExportReady">
             Link for download ready
-            <export-link :historyExport="latestExport" />
+            <export-link :history-export="latestExport" />
             . Use this link to download the archive or import it on another Galaxy server.
         </div>
         <div v-else-if="hasReadyExport">
-            <p>An out of date export is ready <export-link :historyExport="latestReadyExport" />.</p>
+            <p>An out of date export is ready <export-link :history-export="latestReadyExport" />.</p>
 
             <p>
                 The history has changed since this export was generated,
