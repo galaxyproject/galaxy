@@ -2827,6 +2827,16 @@ class Dataset(StorableObject, RepresentById, _HasTable):
         quota_source_map = self.object_store.get_quota_source_map()
         return quota_source_map.get_quota_source_info(object_store_id)
 
+    @property
+    def device_source_label(self):
+        return self.device_source_info.label
+
+    @property
+    def device_source_info(self):
+        object_store_id = self.object_store_id
+        device_source_map = self.object_store.get_quota_source_map()
+        return device_source_map.get_device_source_info(object_store_id)
+
     def set_file_name(self, filename):
         if not filename:
             self.external_filename = None
