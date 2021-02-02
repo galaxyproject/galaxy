@@ -30,7 +30,7 @@ class RuleHelper:
     def supports_container(self, job_or_tool, container_type):
         """
         Job rules can pass this function a job, job_wrapper, or tool and
-        determine if the underlying tool believes it can be containered.
+        determine if the underlying tool believes it can be run with a specific container type.
 
         :param job_or_tool:
         :param container_type: either "docker" or "singularity" currently
@@ -54,7 +54,22 @@ class RuleHelper:
         return container_description is not None
 
     def supports_docker(self, job_or_tool):
+        """
+        Returns true if the tool or job supports running on a singularity container.
+
+        :param job_or_tool: the job or tool to test for.
+        :return: true if the tool/job can run in docker.
+        """
         return self.supports_container(job_or_tool, container_type="docker")
+
+    def supports_singularity(self, job_or_tool):
+        """
+        Returns true if the tool or job supports running on a singularity container.
+
+        :param job_or_tool: the job or tool to test for.
+        :return: true if the tool/job can run in singularity.
+        """
+        return self.supports_container(job_or_tool, container_type="singularity")
 
     def job_count(
         self,
