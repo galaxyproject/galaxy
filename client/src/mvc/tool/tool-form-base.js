@@ -151,6 +151,7 @@ export default FormBase.extend({
         // button for version selection
         var versions_button = new Ui.ButtonMenu({
             icon: "fa-cubes",
+            cls: "btn btn-secondary float-right tool-versions",
             title: options.narrow ? null : "Versions",
             tooltip: "Select another tool version",
         });

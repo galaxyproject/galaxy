@@ -623,11 +623,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             log.warning("preserve_python_environment set to unknown value [%s], defaulting to legacy_only")
             self.preserve_python_environment = "legacy_only"
         self.nodejs_path = kwargs.get("nodejs_path")
-        # Older default container cache path, I don't think anyone is using it anymore and it wasn't documented - we
-        # should probably drop the backward compatiblity to save the path check.
-        self.container_image_cache_path = self._in_data_dir(kwargs.get("container_image_cache_path", "container_images"))
-        if not os.path.exists(self.container_image_cache_path):
-            self.container_image_cache_path = self._in_root_dir(kwargs.get("container_image_cache_path", self._in_data_dir("container_cache")))
+        self.container_image_cache_path = self._in_data_dir(kwargs.get("container_image_cache_path", "container_cache"))
         self.output_size_limit = int(kwargs.get('output_size_limit', 0))
         # activation_email was used until release_15.03
         activation_email = kwargs.get('activation_email')

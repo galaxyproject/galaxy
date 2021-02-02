@@ -1528,7 +1528,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         status = kwd.get('status', 'info')
         cutoff_time = datetime.utcnow() - timedelta(seconds=int(cutoff))
         jobs = trans.sa_session.query(trans.app.model.Job) \
-                               .filter(and_(trans.app.model.Job.table.c.update_time < cutoff_time,
+                               .filter(and_(trans.app.model.Job.table.c.update_time > cutoff_time,
                                             or_(trans.app.model.Job.state == trans.app.model.Job.states.NEW,
                                                 trans.app.model.Job.state == trans.app.model.Job.states.QUEUED,
                                                 trans.app.model.Job.state == trans.app.model.Job.states.RUNNING,

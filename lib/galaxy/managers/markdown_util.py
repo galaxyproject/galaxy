@@ -27,7 +27,11 @@ try:
 except Exception:
     weasyprint = None
 
-from galaxy.exceptions import MalformedContents, MalformedId
+from galaxy.exceptions import (
+    MalformedContents,
+    MalformedId,
+    MessageException,
+)
 from galaxy.managers.hdcas import HDCASerializer
 from galaxy.managers.jobs import (
     JobManager,
@@ -544,7 +548,7 @@ def to_html(basic_markdown):
     return html
 
 
-def to_pdf(trans, basic_markdown, css_paths=None):
+def to_pdf(trans, basic_markdown, css_paths=None) -> bytes:
     css_paths = css_paths or []
     as_html = to_html(basic_markdown)
     directory = tempfile.mkdtemp('gxmarkdown')
@@ -567,7 +571,14 @@ def to_pdf(trans, basic_markdown, css_paths=None):
         shutil.rmtree(directory)
 
 
-def internal_galaxy_markdown_to_pdf(trans, internal_galaxy_markdown, document_type):
+def _check_can_convert_to_pdf_or_raise():
+    """Checks if the HTML to PDF converter is available."""
+    if not weasyprint:
+        raise MessageException("PDF conversion service not available.")
+
+
+def internal_galaxy_markdown_to_pdf(trans, internal_galaxy_markdown, document_type) -> bytes:
+    _check_can_convert_to_pdf_or_raise()
     basic_markdown = to_basic_markdown(trans, internal_galaxy_markdown)
     config = trans.app.config
     document_type_prologue = getattr(config, "markdown_export_prologue_%ss" % document_type, '') or ''
