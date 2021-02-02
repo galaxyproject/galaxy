@@ -1,3 +1,7 @@
+from galaxy.exceptions import (
+    ReferenceDataError,
+    RequestParameterInvalidException,
+)
 from galaxy.web import (
     expose_api_anonymous,
     expose_api_raw_anonymous,
@@ -54,15 +58,31 @@ class GenomesController(BaseAPIController):
         Returns all available indexes for a genome id for type={table name}
         For instance, /api/genomes/hg19/indexes?type=fasta_indexes
         """
-        index_extensions = {'fasta_indexes': '.fai'}
         id = get_id(id, kwd.get('format', None))
         index_type = kwd.get('type', None)
+        index_filename = self._get_index_filename(id, index_type)
+        try:
+            fh = open(index_filename, mode='r')
+        except OSError:
+            raise ReferenceDataError(f'Failed to load index file for {id}')
+        else:
+            return fh.read()
+
+    def _get_index_filename(self, id, index_type):
+        index_extensions = {'fasta_indexes': '.fai'}
+        if index_type not in index_extensions:
+            raise RequestParameterInvalidException(f'Invalid index type: {index_type}')
 
         tbl_entries = self.app.tool_data_tables.data_tables[index_type].data
-        index_file_name = [x[-1] for x in tbl_entries if id in x].pop()
-
-        if_open = open(index_file_name + index_extensions[index_type], mode='r')
-        return if_open.read()
+        try:
+            paths = [x[-1] for x in tbl_entries if id in x]
+            index_file_name = paths.pop()
+        except TypeError:
+            raise ReferenceDataError('Data tables not found for {index_type}')
+        except IndexError:
+            raise ReferenceDataError('Data tables not found for {index_type} for {id}')
+        else:
+            return index_file_name + index_extensions[index_type]
 
     @expose_api_raw_anonymous
     def sequences(self, trans, id, num=None, chrom=None, low=None, high=None, **kwd):

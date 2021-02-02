@@ -7,8 +7,8 @@ from json import loads
 from bx.seq.twobit import TwoBitFile
 
 from galaxy.exceptions import (
-    ReferenceDataError,
     ObjectNotFound,
+    ReferenceDataError,
 )
 from galaxy.util.bunch import Bunch
 
@@ -395,9 +395,9 @@ class Genomes:
                 twobit_dataset = fasta_dataset.get_converted_dataset(trans, 'twobit')
                 twobit_file_name = twobit_dataset.file_name
 
-        return self._get_reference_data()
+        return self._get_reference_data(twobit_file_name, chrom, low, high)
 
-    def _get_reference_data():
+    def _get_reference_data(twobit_file_name, chrom, low, high):
         # Read and return reference data.
         try:
             with open(twobit_file_name, 'rb') as f:
