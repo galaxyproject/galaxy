@@ -11,7 +11,6 @@ import sys
 import tempfile
 import weakref
 from collections import OrderedDict
-from collections.abc import Mapping
 from os.path import abspath
 
 from sqlalchemy.orm import object_session
@@ -57,7 +56,7 @@ class Statement:
             statement.target(element, *args, **kwargs)  # statement.target is MetadataElementSpec, element is a Datatype class
 
 
-class MetadataCollection(Mapping):
+class MetadataCollection:
     """
     MetadataCollection is not a collection at all, but rather a proxy
     to the real metadata which is stored as a Dictionary. This class
@@ -90,14 +89,17 @@ class MetadataCollection(Mapping):
     def __iter__(self):
         yield from self.spec.keys()
 
-    def __getitem__(self, key):
+    def get(self, key, default=None):
         try:
-            return self.__getattr__(key)
+            return self.__getattr__(key) or default
         except Exception:
-            return KeyError
+            return default
 
-    def __len__(self):
-        return len(self.spec)
+    def values(self):
+        yield from (self.get(k) for k in self)
+
+    def items(self):
+        yield from ((k, self.get(k)) for k in self)
 
     def __str__(self):
         return dict(self.items()).__str__()
