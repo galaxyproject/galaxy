@@ -380,7 +380,7 @@ const UploadModal = {
             const urls = items[0].get("url_paste").split("\n");
             for (var index in urls) {
                 var element = {
-                    url: urls[index],
+                    url: urls[index].trim(),
                     src: "url",
                     dbkey: "?",
                     ext: "auto",
