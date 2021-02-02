@@ -386,8 +386,22 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
 
     def handle_dataset_as_image(self, line, hda):
         dataset = hda.dataset
+        print("!!!!!!!!!!!")
+        print("!!!!!!!!!!!")    
+        print("!!!!!!!!!!!")
+        print("!!!!!!!!!!!")
+        print("!!!!!!!!!!!")
+        print("!!!!!!!!!!!")
+        print("!!!!!!!!!!!")
+        print(line)
         name = hda.name or ''
-        with open(dataset.file_name, "rb") as f:
+        
+        if "path" in line:
+            file = os.path.join(hda.extra_files_path, 'GSM461178_untreat_paired_subset_1_fastq_fastqc/Images/per_sequence_quality.png')
+        else:
+            file = dataset.file_name
+            
+        with open(file, "rb") as f:
             base64_image_data = base64.b64encode(f.read()).decode("utf-8")
         rval = (f"![{name}](data:image/png;base64,{base64_image_data})", True)
         return rval
@@ -552,6 +566,17 @@ def to_pdf(trans, basic_markdown, css_paths=None) -> bytes:
     css_paths = css_paths or []
     as_html = to_html(basic_markdown)
     directory = tempfile.mkdtemp('gxmarkdown')
+    print("!!!!!!!!!!1")
+    print("!!!!!!!!!!1")
+    print("!!!!!!!!!!1")
+    print("!!!!!!!!!!1")
+    print("!!!!!!!!!!1")
+    print("!!!!!!!!!!1")
+    print("!!!!!!!!!!1")
+    print("!!!!!!!!!!1")
+    print("!!!!!!!!!!1")
+    print("!!!!!!!!!!1")
+    print(directory)
     index = os.path.join(directory, "index.html")
     try:
         output_file = codecs.open(index, "w", encoding="utf-8", errors="xmlcharrefreplace")
@@ -568,7 +593,8 @@ def to_pdf(trans, basic_markdown, css_paths=None) -> bytes:
         # font_config = FontConfiguration()
         # stylesheets=[css], font_config=font_config
     finally:
-        shutil.rmtree(directory)
+        print()
+    #     shutil.rmtree(directory)
 
 
 def _check_can_convert_to_pdf_or_raise():
