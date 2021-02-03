@@ -377,7 +377,7 @@ const UploadModal = {
                 auto_decompress: true,
             };
 
-            // Composite does not use the fetch API, so we can just 
+            // Composite does not use the fetch API, so we can just
             // index into the first element of items
             const urls = items[0].get("url_paste").split("\n");
             const dbkey = items[0].get("genome", "?");
@@ -389,7 +389,7 @@ const UploadModal = {
                         url: urls[index].trim(),
                         src: "url",
                         dbkey: dbkey,
-                        ext: ext
+                        ext: ext,
                     };
                     data.targets[0].elements.push(element);
                 }
