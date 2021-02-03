@@ -10,6 +10,7 @@ import logging
 import os
 import re
 import shutil
+import struct
 import sys
 import tempfile
 import urllib.request
@@ -38,11 +39,20 @@ def get_test_fname(fname):
     return full_path
 
 
+def sniff_with_cls(cls, fname):
+    path = get_test_fname(fname)
+    try:
+        return bool(cls().sniff(path))
+    except Exception:
+        return False
+
+
 def stream_url_to_file(path, file_sources=None):
     prefix = "url_paste"
     if file_sources and file_sources.looks_like_uri(path):
         file_source_path = file_sources.get_file_source_path(path)
-        _, temp_name = tempfile.mkstemp(prefix=prefix)
+        with tempfile.NamedTemporaryFile(prefix=prefix, delete=False) as temp:
+            temp_name = temp.name
         file_source_path.file_source.realize_to(file_source_path.path, temp_name)
         return temp_name
     else:
@@ -109,11 +119,10 @@ def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload", 
     Converts in place a file from universal line endings
     to Posix line endings.
     """
-    fd, temp_name = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
     i = 0
     NEWLINE_BYTE = 10
     CR_BYTE = 13
-    with open(fd, mode="wb") as fp, open(fname, mode="rb") as fi:
+    with tempfile.NamedTemporaryFile(mode='wb', prefix=tmp_prefix, dir=tmp_dir, delete=False) as fp, open(fname, mode='rb') as fi:
         last_char = None
         block = fi.read(block_size)
         last_block = b""
@@ -135,11 +144,11 @@ def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload", 
             i += 1
             fp.write(b"\n")
     if in_place:
-        shutil.move(temp_name, fname)
+        shutil.move(fp.name, fname)
         # Return number of lines in file.
         return (i, None)
     else:
-        return (i, temp_name)
+        return (i, fp.name)
 
 
 def convert_newlines_sep2tabs(fname, in_place=True, patt=br"[^\S\n]+", tmp_dir=None, tmp_prefix="gxupload"):
@@ -430,6 +439,9 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> fname = get_test_fname('1.phyloxml')
     >>> guess_ext(fname, sniff_order)
     'phyloxml'
+    >>> fname = get_test_fname('1.dzi')
+    >>> guess_ext(fname, sniff_order)
+    'dzi'
     >>> fname = get_test_fname('1.tiff')
     >>> guess_ext(fname, sniff_order)
     'tiff'
@@ -586,6 +598,19 @@ class FilePrefix:
     def search_str(self, query_str):
         return query_str in self.contents_header
 
+    def magic_header(self, pattern):
+        """
+        Unpack header and get first element
+        """
+        size = struct.calcsize(pattern)
+        header_bytes = self.contents_header_bytes[:size]
+        if len(header_bytes) < size:
+            return None
+        return struct.unpack(pattern, header_bytes)[0]
+
+    def startswith_bytes(self, test_bytes):
+        return self.contents_header_bytes.startswith(test_bytes)
+
 
 def build_sniff_from_prefix(klass):
     # Build and attach a sniff function to this class (klass) from the sniff_prefix function
@@ -666,21 +691,20 @@ def handle_compressed_file(
             keep_compressed = getattr(datatype, 'compressed', False)
     # don't waste time decompressing if we sniff invalid contents
     if is_compressed and is_valid and auto_decompress and not keep_compressed:
-        fd, uncompressed = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
-        compressed_file = DECOMPRESSION_FUNCTIONS[compressed_type](filename)
-        # TODO: it'd be ideal to convert to posix newlines and space-to-tab here as well
-        while True:
-            try:
-                chunk = compressed_file.read(CHUNK_SIZE)
-            except OSError as e:
-                os.close(fd)
-                os.remove(uncompressed)
-                compressed_file.close()
-                raise OSError('Problem uncompressing {} data, please try retrieving the data uncompressed: {}'.format(compressed_type, util.unicodify(e)))
-            if not chunk:
-                break
-            os.write(fd, chunk)
-        os.close(fd)
+        with tempfile.NamedTemporaryFile(prefix=tmp_prefix, dir=tmp_dir, delete=False) as uncompressed:
+            compressed_file = DECOMPRESSION_FUNCTIONS[compressed_type](filename)
+            # TODO: it'd be ideal to convert to posix newlines and space-to-tab here as well
+            while True:
+                try:
+                    chunk = compressed_file.read(CHUNK_SIZE)
+                except OSError as e:
+                    os.remove(uncompressed.name)
+                    compressed_file.close()
+                    raise OSError('Problem uncompressing {} data, please try retrieving the data uncompressed: {}'.format(compressed_type, util.unicodify(e)))
+                if not chunk:
+                    break
+                uncompressed.write(chunk)
+        uncompressed = uncompressed.name
         compressed_file.close()
         if in_place:
             # Replace the compressed file with the uncompressed file

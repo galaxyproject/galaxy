@@ -1,9 +1,8 @@
 import logging
+import shlex
 import tempfile
 from collections import OrderedDict
 from functools import total_ordering
-
-from six.moves import shlex_quote
 
 from galaxy import exceptions
 from galaxy.model.none_like import NoneDataset
@@ -34,7 +33,7 @@ class ToolParameterValueWrapper:
         """
         rval = self.input.value_to_display_text(self.value) or ''
         if quote:
-            return shlex_quote(rval)
+            return shlex.quote(rval)
         return rval
 
 
@@ -52,7 +51,7 @@ class RawObjectWrapper(ToolParameterValueWrapper):
 
     def __str__(self):
         try:
-            return "{}:{}".format(self.obj.__module__, self.obj.__class__.__name__)
+            return f"{self.obj.__module__}:{self.obj.__class__.__name__}"
         except Exception:
             # Most likely None, which lacks __module__.
             return str(self.obj)
@@ -67,10 +66,10 @@ class InputValueWrapper(ToolParameterValueWrapper):
     Wraps an input so that __str__ gives the "param_dict" representation.
     """
 
-    def __init__(self, input, value, other_values={}):
+    def __init__(self, input, value, other_values=None):
         self.input = input
         self.value = value
-        self._other_values = other_values
+        self._other_values = other_values or {}
 
     def _get_cast_value(self, other):
         if self.input.type == 'boolean' and isinstance(other, str):
@@ -159,11 +158,11 @@ class SelectToolParameterWrapper(ToolParameterValueWrapper):
 
             return self._input.separator.join(values)
 
-    def __init__(self, input, value, other_values={}, compute_environment=None):
+    def __init__(self, input, value, other_values=None, compute_environment=None):
         self.input = input
         self.value = value
         self.input.value_label = input.value_to_display_text(value)
-        self._other_values = other_values
+        self._other_values = other_values or {}
         self.compute_environment = compute_environment
         self.fields = self.SelectToolParameterFieldWrapper(input, value, other_values, self.compute_environment)
 
@@ -185,7 +184,7 @@ class SelectToolParameterWrapper(ToolParameterValueWrapper):
         return self.input.to_param_dict_string(self.value, other_values=self._other_values)
 
     def __add__(self, x):
-        return '{}{}'.format(self, x)
+        return f'{self}{x}'
 
     def __getattr__(self, key):
         return getattr(self.input, key)
@@ -242,6 +241,9 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         def __iter__(self):
             return self.metadata.__iter__()
 
+        def element_is_set(self, name):
+            return self.metadata.element_is_set(name)
+
         def get(self, key, default=None):
             try:
                 return getattr(self, key)
@@ -264,8 +266,8 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
             # so we will wrap it and keep the original around for file paths
             # Should we name this .value to maintain consistency with most other ToolParameterValueWrapper?
             if formats:
-                target_ext, converted_dataset = dataset.find_conversion_destination(formats)
-                if target_ext and converted_dataset:
+                direct_match, target_ext, converted_dataset = dataset.find_conversion_destination(formats)
+                if not direct_match and target_ext and converted_dataset:
                     dataset = converted_dataset
             self.unsanitized = dataset
             self.dataset = wrap_with_safe_string(dataset, no_wrap_classes=ToolParameterValueWrapper)

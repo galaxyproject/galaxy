@@ -34,7 +34,7 @@ RepositoryRoleAssociation_table = Table("repository_role_association", metadata,
 
 def nextval(migrate_engine, table, col='id'):
     if migrate_engine.name in ['postgresql', 'postgres']:
-        return "nextval('{}_{}_seq')".format(table, col)
+        return f"nextval('{table}_{col}_seq')"
     elif migrate_engine.name in ['mysql', 'sqlite']:
         return "null"
     else:
@@ -95,7 +95,7 @@ def upgrade(migrate_engine):
         cmd += ");"
         migrate_engine.execute(cmd)
         # Get the id of the new role.
-        cmd = "SELECT id FROM role WHERE name = '{}' and type = '{}';".format(role_name, ROLE_TYPE)
+        cmd = f"SELECT id FROM role WHERE name = '{role_name}' and type = '{ROLE_TYPE}';"
         row = migrate_engine.execute(cmd).fetchone()
         if row:
             role_id = row[0]

@@ -1,12 +1,11 @@
 """
 Universe configuration builder.
 """
+import configparser
 import logging
 import logging.config
 import os
 from datetime import timedelta
-
-from six.moves import configparser
 
 from galaxy.config import (
     BaseAppConfiguration,
@@ -31,6 +30,8 @@ TOOLSHED_CONFIG_SCHEMA_PATH = 'lib/tool_shed/webapp/config_schema.yml'
 class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     default_config_file_name = 'tool_shed.yml'
 
+    add_sample_file_to_defaults = {'datatypes_config_file'}
+
     def _load_schema(self):
         return AppSchema(TOOLSHED_CONFIG_SCHEMA_PATH, TOOLSHED_APP_NAME)
 
@@ -41,16 +42,6 @@ class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     @property
     def shed_tool_data_path(self):
         return self.tool_data_path
-
-    def parse_config_file_options(self, kwargs):
-        defaults = dict(
-            auth_config_file=[self._in_config_dir('config/auth_conf.xml')],
-            datatypes_config_file=[self._in_config_dir('datatypes_conf.xml'), self._in_sample_dir('datatypes_conf.xml.sample')],
-            shed_tool_data_table_config=[self._in_managed_config_dir('shed_tool_data_table_conf.xml')],
-        )
-        self._parse_config_file_options(defaults, dict(), kwargs)
-        # Backwards compatibility for names used in too many places to fix
-        self.datatypes_config = self.datatypes_config_file
 
     def check(self):
         # Check that required directories exist; attempt to create otherwise
@@ -69,8 +60,8 @@ class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             raise ConfigurationError('File not found: %s' % self.datatypes_config)
 
     def _process_config(self, kwargs):
-        # Resolve paths of other config files
-        self.parse_config_file_options(kwargs)
+        # Backwards compatibility for names used in too many places to fix
+        self.datatypes_config = self.datatypes_config_file
         # Collect the umask and primary gid from the environment
         self.umask = os.umask(0o77)  # get the current umask
         os.umask(self.umask)  # can't get w/o set, so set it back

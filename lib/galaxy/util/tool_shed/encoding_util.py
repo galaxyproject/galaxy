@@ -38,4 +38,4 @@ def tool_shed_encode(val):
         value = val
     a = hmac_new(b'ToolShedAndGalaxyMustHaveThisSameKey', value)
     b = unicodify(binascii.hexlify(smart_str(value)))
-    return "{}:{}".format(a, b)
+    return f"{a}:{b}"

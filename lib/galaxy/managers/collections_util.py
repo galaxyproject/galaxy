@@ -78,12 +78,12 @@ def get_collection(collection, name=""):
     hdas = []
     if collection.has_subcollections:
         for element in collection.elements:
-            subnames, subhdas = get_collection_elements(element.child_collection, name="{}/{}".format(name, element.element_identifier))
+            subnames, subhdas = get_collection_elements(element.child_collection, name=f"{name}/{element.element_identifier}")
             names.extend(subnames)
             hdas.extend(subhdas)
     else:
         for element in collection.elements:
-            names.append("{}/{}".format(name, element.element_identifier))
+            names.append(f"{name}/{element.element_identifier}")
             hdas.append(element.dataset_instance)
     return names, hdas
 
@@ -92,7 +92,7 @@ def get_collection_elements(collection, name=""):
     names = []
     hdas = []
     for element in collection.elements:
-        full_element_name = "{}/{}".format(name, element.element_identifier)
+        full_element_name = f"{name}/{element.element_identifier}"
         if element.is_collection:
             subnames, subhdas = get_collection(element.child_collection, name=full_element_name)
             names.extend(subnames)
@@ -116,6 +116,11 @@ def dictify_dataset_collection_instance(dataset_collection_instance, parent, sec
         # TODO: Work in progress - this end-point is not right yet...
         dict_value['url'] = web.url_for('library_content', library_id=encoded_library_id, id=encoded_id, folder_id=encoded_folder_id)
 
+    dict_value['contents_url'] = web.url_for(
+        'contents_dataset_collection',
+        hdca_id=encoded_id,
+        parent_id=security.encode_id(dataset_collection_instance.collection_id)
+    )
     if view in ["element", "element-reference"]:
         collection = dataset_collection_instance.collection
         rank_fuzzy_counts = gen_rank_fuzzy_counts(collection.collection_type, fuzzy_count)

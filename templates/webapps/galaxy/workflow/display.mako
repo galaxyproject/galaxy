@@ -74,15 +74,25 @@
 </%def>
 
 <%def name="render_item_links( workflow )">
-    %if workflow.importable:
-    <a
-        href="${h.url_for( controller='/workflow', action='imp', id=trans.security.encode_id(workflow.id) )}"
-        class="btn btn-secondary fa fa-plus float-right"
-        title="Import workflow"></a>
-    <a
-        href="${h.url_for( controller='/workflow', action='export_to_file', id=trans.security.encode_id(workflow.id) )}"
-        class="btn btn-secondary fa fa-download float-right mr-2"
-        title="Save workflow"></a>
+   ## Check owner, show edit or view
+    %if user_is_owner:
+      <a
+          href="${h.url_for( controller='/workflows', action='run', id=trans.security.encode_id(workflow.id) )}"
+          class="btn btn-secondary fa fa-play float-right"
+          title="Run workflow"></a>
+      <a
+          href="${h.url_for( controller='/workflow', action='editor', id=trans.security.encode_id(workflow.id) )}"
+          class="btn btn-secondary fa fa-edit float-right mr-2"
+          title="Edit workflow"></a>
+    %elif workflow.importable:
+      <a
+          href="${h.url_for( controller='/workflow', action='imp', id=trans.security.encode_id(workflow.id) )}"
+          class="btn btn-secondary fa fa-plus float-right"
+          title="Import workflow"></a>
+      <a
+          href="${h.url_for( controller='/workflow', action='export_to_file', id=trans.security.encode_id(workflow.id) )}"
+          class="btn btn-secondary fa fa-download float-right mr-2"
+          title="Save workflow"></a>
     %endif
 </%def>
 

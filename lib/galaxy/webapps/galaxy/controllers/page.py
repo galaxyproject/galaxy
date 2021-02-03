@@ -23,6 +23,7 @@ from galaxy.managers.pages import (
     PageContentProcessor,
     PageManager,
 )
+from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.util import unicodify
 from galaxy.util.sanitize_html import sanitize_html
@@ -113,7 +114,12 @@ class PageAllPublishedGrid(grids.Grid):
 
     def build_initial_query(self, trans, **kwargs):
         # See optimization description comments and TODO for tags in matching public histories query.
-        return trans.sa_session.query(self.model_class).join("user").options(eagerload("user").load_only("username"), eagerload("annotations"), undefer("average_rating"))
+        return trans.sa_session.query(self.model_class).join("user").filter(
+            model.User.deleted == false()).options(
+                eagerload("user").load_only("username"),
+                eagerload("annotations"),
+                undefer("average_rating")
+        )
 
     def apply_query_filter(self, trans, query, **kwargs):
         return query.filter(self.model_class.deleted == false()).filter(self.model_class.published == true())
@@ -270,6 +276,7 @@ class PageController(BaseUIController, SharableMixin,
         self.history_manager = HistoryManager(app)
         self.history_serializer = HistorySerializer(self.app)
         self.hda_manager = HDAManager(app)
+        self.workflow_manager = WorkflowsManager(app)
 
     @web.expose
     @web.json
@@ -308,9 +315,9 @@ class PageController(BaseUIController, SharableMixin,
             .filter(model.Page.deleted == false()) \
             .order_by(desc(model.Page.update_time)) \
             .all()
-        return [{'username' : p.page.user.username,
-                 'slug'     : p.page.slug,
-                 'title'    : p.page.title} for p in shared_by_others]
+        return [{'username': p.page.user.username,
+                 'slug': p.page.slug,
+                 'title': p.page.title} for p in shared_by_others]
 
     @web.legacy_expose_api
     @web.require_login("create pages")
@@ -319,25 +326,49 @@ class PageController(BaseUIController, SharableMixin,
         Create a new page.
         """
         if trans.request.method == 'GET':
+            form_title = "Create new Page"
+            title = ""
+            slug = ""
+            content = ""
+            content_format_hide = False
+            content_hide = True
+            if "invocation_id" in kwd:
+                invocation_id = kwd.get("invocation_id")
+                form_title = form_title + " from Invocation Report"
+                slug = "invocation-report-" + invocation_id
+                invocation_report = self.workflow_manager.get_invocation_report(trans, invocation_id)
+                title = invocation_report.get("title")
+                content = invocation_report.get("markdown")
+                content_format_hide = True
+                content_hide = False
             return {
-                'title'  : 'Create a new page',
-                'inputs' : [{
-                    'name'      : 'title',
-                    'label'     : 'Name'
+                'title': form_title,
+                'inputs': [{
+                    'name': 'title',
+                    'label': 'Name',
+                    'value': title,
                 }, {
-                    'name'      : 'slug',
-                    'label'     : 'Identifier',
-                    'help'      : 'A unique identifier that will be used for public links to this page. This field can only contain lowercase letters, numbers, and dashes (-).'
+                    'name': 'slug',
+                    'label': 'Identifier',
+                    'help': 'A unique identifier that will be used for public links to this page. This field can only contain lowercase letters, numbers, and dashes (-).',
+                    'value': slug,
                 }, {
-                    'name'      : 'annotation',
-                    'label'     : 'Annotation',
-                    'help'      : 'A description of the page. The annotation is shown alongside published pages.'
+                    'name': 'annotation',
+                    'label': 'Annotation',
+                    'help': 'A description of the page. The annotation is shown alongside published pages.'
                 }, {
-                    'name'      : 'content_format',
-                    'label'     : 'Content Format',
-                    'type'      : 'select',
-                    'options'   : [('HTML', 'html'), ('Markdown', 'markdown')],
-                    'help'      : 'Use the traditional rich HTML editor or the newer experimental Markdown editor to create the page content. The HTML editor has several known bugs, is unmaintained and pages created with it will be read-only in future releases of Galaxy.'
+                    'name': 'content_format',
+                    'label': 'Content Format',
+                    'type': 'select',
+                    'hidden': content_format_hide,
+                    'options': [('Markdown', 'markdown'), ('HTML', 'html')],
+                    'help': 'Use the traditional rich HTML editor or the newer experimental Markdown editor to create the page content. The HTML editor has several known bugs, is unmaintained and pages created with it will be read-only in future releases of Galaxy.'
+                }, {
+                    'name': 'content',
+                    'label': 'Content',
+                    'area': True,
+                    'value': content,
+                    'hidden': content_hide,
                 }]
             }
         else:
@@ -363,21 +394,21 @@ class PageController(BaseUIController, SharableMixin,
             if p.slug is None:
                 self.create_item_slug(trans.sa_session, p)
             return {
-                'title'  : 'Edit page attributes',
-                'inputs' : [{
-                    'name'      : 'title',
-                    'label'     : 'Name',
-                    'value'     : p.title
+                'title': 'Edit page attributes',
+                'inputs': [{
+                    'name': 'title',
+                    'label': 'Name',
+                    'value': p.title
                 }, {
-                    'name'      : 'slug',
-                    'label'     : 'Identifier',
-                    'value'     : p.slug,
-                    'help'      : 'A unique identifier that will be used for public links to this page. This field can only contain lowercase letters, numbers, and dashes (-).'
+                    'name': 'slug',
+                    'label': 'Identifier',
+                    'value': p.slug,
+                    'help': 'A unique identifier that will be used for public links to this page. This field can only contain lowercase letters, numbers, and dashes (-).'
                 }, {
-                    'name'      : 'annotation',
-                    'label'     : 'Annotation',
-                    'value'     : self.get_item_annotation_str(trans.sa_session, user, p),
-                    'help'      : 'A description of the page. The annotation is shown alongside published pages.'
+                    'name': 'annotation',
+                    'label': 'Annotation',
+                    'value': self.get_item_annotation_str(trans.sa_session, user, p),
+                    'help': 'A description of the page. The annotation is shown alongside published pages.'
                 }]
             }
         else:
@@ -408,10 +439,7 @@ class PageController(BaseUIController, SharableMixin,
         """
         Render the main page editor interface.
         """
-        id = self.decode_id(id)
-        page = trans.sa_session.query(model.Page).get(id)
-        assert page.user == trans.user
-        return trans.fill_template("page/editor.mako", page=page)
+        return trans.fill_template("page/editor.mako", id=id)
 
     @web.expose
     @web.require_login("use Galaxy pages")
@@ -444,7 +472,7 @@ class PageController(BaseUIController, SharableMixin,
                 session.flush()
                 page_title = escape(page.title)
                 other_email = escape(other.email)
-                trans.set_message("Page '{}' shared with user '{}'".format(page_title, other_email))
+                trans.set_message(f"Page '{page_title}' shared with user '{other_email}'")
                 return trans.response.send_redirect(url_for("/pages/sharing?id=%s" % id))
         return trans.fill_template("/ind_share_base.mako",
                                    message=msg,
@@ -648,8 +676,8 @@ class PageController(BaseUIController, SharableMixin,
             return None
 
         # Fork to template based on visualization.type (registry or builtin).
-        if((trans.app.visualizations_registry and visualization.type in trans.app.visualizations_registry.plugins) and
-                (visualization.type not in trans.app.visualizations_registry.BUILT_IN_VISUALIZATIONS)):
+        if((trans.app.visualizations_registry and visualization.type in trans.app.visualizations_registry.plugins)
+                and (visualization.type not in trans.app.visualizations_registry.BUILT_IN_VISUALIZATIONS)):
             # if a registry visualization, load a version into an iframe :(
             # TODO: simplest path from A to B but not optimal - will be difficult to do reg visualizations any other way
             # TODO: this will load the visualization twice (once above, once when the iframe src calls 'saved')

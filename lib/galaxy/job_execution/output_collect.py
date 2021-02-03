@@ -120,7 +120,11 @@ def collect_dynamic_outputs(
                 collection_type_description = COLLECTION_TYPE_DESCRIPTION_FACTORY.for_collection_type(collection_type)
                 structure = UninitializedTree(collection_type_description)
                 hdca = job_context.create_hdca(name, structure)
-            persist_elements_to_hdca(job_context, elements, hdca, collector=DEFAULT_DATASET_COLLECTOR)
+            error_message = unnamed_output_dict.get("error_message")
+            if error_message:
+                hdca.collection.handle_population_failed(error_message)
+            else:
+                persist_elements_to_hdca(job_context, elements, hdca, collector=DEFAULT_DATASET_COLLECTOR)
         elif destination_type == "hdas":
             persist_hdas(elements, job_context, final_job_state=job_context.final_job_state)
 
@@ -379,8 +383,17 @@ def collect_primary_datasets(job_context, output, input_ext):
                 # Before I guess pop() would just have thrown an IndexError
                 raise Exception("Problem parsing metadata fields for file %s" % filename)
             designation = fields_match.designation
+            ext = fields_match.ext
+            if ext == "input":
+                ext = input_ext
+            dbkey = fields_match.dbkey
+            if dbkey == INPUT_DBKEY_TOKEN:
+                dbkey = job_context.input_dbkey
             if filename_index == 0 and extra_file_collector.assign_primary_output and output_index == 0:
-                new_outdata_name = fields_match.name or "{} ({})".format(outdata.name, designation)
+                new_outdata_name = fields_match.name or f"{outdata.name} ({designation})"
+                outdata.change_datatype(ext)
+                outdata.dbkey = dbkey
+                outdata.designation = designation
                 outdata.dataset.external_filename = None  # resets filename_override
                 # Move data from temp location to dataset location
                 job_context.object_store.update_from_file(outdata.dataset, file_name=filename, create=True)
@@ -389,14 +402,8 @@ def collect_primary_datasets(job_context, output, input_ext):
             if name not in primary_datasets:
                 primary_datasets[name] = OrderedDict()
             visible = fields_match.visible
-            ext = fields_match.ext
-            if ext == "input":
-                ext = input_ext
-            dbkey = fields_match.dbkey
-            if dbkey == INPUT_DBKEY_TOKEN:
-                dbkey = job_context.input_dbkey
             # Create new primary dataset
-            new_primary_name = fields_match.name or "{} ({})".format(outdata.name, designation)
+            new_primary_name = fields_match.name or f"{outdata.name} ({designation})"
             info = outdata.info
 
             # TODO: should be able to disambiguate files in different directories...
@@ -415,7 +422,7 @@ def collect_primary_datasets(job_context, output, input_ext):
                 dataset_attributes=new_primary_datasets_attributes,
             )
             # Associate new dataset with job
-            job_context.add_output_dataset_association('__new_primary_file_{}|{}__'.format(name, designation), primary_data)
+            job_context.add_output_dataset_association(f'__new_primary_file_{name}|{designation}__', primary_data)
 
             if new_primary_datasets_attributes:
                 extra_files_path = new_primary_datasets_attributes.get('extra_files', None)
@@ -574,7 +581,7 @@ def read_exit_code_from(exit_code_file, id_tag):
         exit_code = int(exit_code_str)
     except ValueError:
         galaxy_id_tag = id_tag
-        log.warning("({}) Exit code '{}' invalid. Using 0.".format(galaxy_id_tag, exit_code_str))
+        log.warning(f"({galaxy_id_tag}) Exit code '{exit_code_str}' invalid. Using 0.")
         exit_code = 0
 
     return exit_code
@@ -593,7 +600,7 @@ def collect_extra_files(object_store, dataset, job_working_directory):
         # automatically creates them.  However, empty directories will
         # not be created in the object store at all, which might be a
         # problem.
-        for root, dirs, files in os.walk(temp_file_path):
+        for root, _dirs, files in os.walk(temp_file_path):
             extra_dir = root.replace(os.path.join(job_working_directory, "working"), '', 1).lstrip(os.path.sep)
             for f in files:
                 object_store.update_from_file(

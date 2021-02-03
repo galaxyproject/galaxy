@@ -1,4 +1,3 @@
-
 import os
 import string
 import subprocess
@@ -54,7 +53,7 @@ def start_minio(container_name):
         'docker',
         'run',
         '-p',
-        '{port}:9000'.format(port=OBJECT_STORE_PORT),
+        f'{OBJECT_STORE_PORT}:9000',
         '-d',
         '--name',
         container_name,
@@ -76,12 +75,12 @@ class SwiftObjectStoreIntegrationTestCase(integration_util.IntegrationTestCase):
     def setUpClass(cls):
         cls.container_name = "%s_container" % cls.__name__
         start_minio(cls.container_name)
-        super(SwiftObjectStoreIntegrationTestCase, cls).setUpClass()
+        super().setUpClass()
 
     @classmethod
     def tearDownClass(cls):
         stop_minio(cls.container_name)
-        super(SwiftObjectStoreIntegrationTestCase, cls).tearDownClass()
+        super().tearDownClass()
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):

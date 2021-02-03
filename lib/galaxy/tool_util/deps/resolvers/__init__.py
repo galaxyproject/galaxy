@@ -1,10 +1,12 @@
 """The module defines the abstract interface for dealing tool dependency resolution plugins."""
 import errno
+import os.path
 from abc import (
     ABCMeta,
     abstractmethod,
     abstractproperty,
 )
+from typing import Any, Dict
 
 import yaml
 
@@ -17,7 +19,7 @@ class DependencyResolver(Dictifiable, metaclass=ABCMeta):
     """Abstract description of a technique for resolving container images for tool execution."""
 
     # Keys for dictification.
-    dict_collection_visible_keys = ['resolver_type', 'resolves_simple_dependencies', 'can_uninstall_dependencies']
+    dict_collection_visible_keys = ['resolver_type', 'resolves_simple_dependencies', 'can_uninstall_dependencies', 'read_only']
     # A "simple" dependency is one that does not depend on the the tool
     # resolving the dependency. Classic tool shed dependencies are non-simple
     # because the repository install context is used in dependency resolution
@@ -25,8 +27,8 @@ class DependencyResolver(Dictifiable, metaclass=ABCMeta):
     # resolution.
     disabled = False
     resolves_simple_dependencies = True
-    can_uninstall_dependencies = False
-    config_options = {}
+    config_options: Dict[str, Any] = {}
+    read_only = True
 
     @abstractmethod
     def resolve(self, requirement, **kwds):
@@ -40,6 +42,22 @@ class DependencyResolver(Dictifiable, metaclass=ABCMeta):
         version (which may differ from requested version for instance if the
         request version is 'default'.)
         """
+
+    def install_dependency(self, name, version, type, **kwds):
+        if self.read_only:
+            return False
+        else:
+            return self._install_dependency(name, version, type, **kwds)
+
+    def _install_dependency(self, name, version, type, **kwds):
+        """ Attempt to install this dependency if a recipe to do so
+        has been registered in some way.
+        """
+        return False
+
+    @property
+    def can_uninstall_dependencies(self):
+        return not self.read_only
 
 
 class MultipleDependencyResolver:
@@ -86,9 +104,23 @@ class MappableDependencyResolver:
         mapping_files = dependency_manager.get_resolver_option(self, "mapping_files", explicit_resolver_options=kwds)
         mappings = []
         if mapping_files:
+            search_dirs = [os.getcwd()]
+            if isinstance(dependency_manager.default_base_path, str):
+                search_dirs.append(dependency_manager.default_base_path)
+
+            def candidates(path):
+                if os.path.isabs(path):
+                    yield path
+                else:
+                    for search_dir in search_dirs:
+                        yield os.path.join(search_dir, path)
+
             mapping_files = listify(mapping_files)
             for mapping_file in mapping_files:
-                mappings.extend(MappableDependencyResolver._mapping_file_to_list(mapping_file))
+                for full_path in candidates(mapping_file):
+                    if os.path.exists(full_path):
+                        mappings.extend(MappableDependencyResolver._mapping_file_to_list(full_path))
+                        break
         self._mappings = mappings
 
     @staticmethod
@@ -221,18 +253,6 @@ class SpecificationPatternDependencyResolver(SpecificationAwareDependencyResolve
         return requirement
 
 
-class InstallableDependencyResolver(metaclass=ABCMeta):
-    """ Mix this into a ``DependencyResolver`` and implement to indicate
-    the dependency resolver can attempt to install new dependencies.
-    """
-
-    @abstractmethod
-    def install_dependency(self, name, version, type, **kwds):
-        """ Attempt to install this dependency if a recipe to do so
-        has been registered in some way.
-        """
-
-
 class Dependency(Dictifiable, metaclass=ABCMeta):
     dict_collection_visible_keys = ['dependency_type', 'exact', 'name', 'version', 'cacheable']
     cacheable = False
@@ -254,7 +274,7 @@ class Dependency(Dictifiable, metaclass=ABCMeta):
         """
         Return a message describing this dependency
         """
-        return "Using dependency {} version {} of type {}".format(self.name, self.version, self.dependency_type)
+        return f"Using dependency {self.name} version {self.version} of type {self.dependency_type}"
 
 
 class ContainerDependency(Dependency):

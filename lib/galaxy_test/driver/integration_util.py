@@ -17,6 +17,7 @@ from .driver_util import GalaxyTestDriver
 NO_APP_MESSAGE = "test_case._app called though no Galaxy has been configured."
 # Following should be for Homebrew Rabbitmq and Docker on Mac "amqp://guest:guest@localhost:5672//"
 AMQP_URL = os.environ.get("GALAXY_TEST_AMQP_URL", None)
+POSTGRES_CONFIGURED = 'postgres' in os.environ.get("GALAXY_TEST_DBURI", '')
 
 
 def _identity(func):
@@ -34,6 +35,12 @@ def skip_unless_amqp():
     if AMQP_URL is not None:
         return _identity
     return pytest.mark.skip("AMQP_URL is not set, required for this test.")
+
+
+def skip_unless_postgres():
+    if POSTGRES_CONFIGURED:
+        return _identity
+    return pytest.mark.skip("GALAXY_TEST_DBURI does not point to postgres database, required for this test.")
 
 
 def skip_unless_executable(executable):
@@ -104,7 +111,7 @@ class IntegrationInstance(UsesApiTestCaseMixin):
         server_wrapper = self._test_driver.server_wrappers[0]
         host = server_wrapper.host
         port = server_wrapper.port
-        self.url = "http://{}:{}".format(host, port)
+        self.url = f"http://{host}:{port}"
         self._setup_interactor()
 
     def restart(self, handle_reconfig=None):

@@ -32,8 +32,7 @@ def create_compiler_class(module_code):
     class CustomCompilerClass(FixedModuleCodeCompiler):
         pass
 
-    setattr(CustomCompilerClass, 'module_code', module_code)
-
+    CustomCompilerClass.module_code = module_code
     return CustomCompilerClass
 
 

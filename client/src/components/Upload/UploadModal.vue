@@ -16,7 +16,7 @@
         </template>
         <b-tabs v-if="ready">
             <b-tab title="Regular" id="regular" button-id="tab-title-link-regular" v-if="showRegular">
-                <default :app="this" :lazy-load-max="50" :multiple="multiple" />
+                <default :app="this" :lazy-load-max="50" :multiple="multiple" :selectable="callback != null" />
             </b-tab>
             <b-tab title="Composite" id="composite" button-id="tab-title-link-composite" v-if="showComposite">
                 <composite :app="this" />
@@ -35,12 +35,8 @@
 </template>
 
 <script>
-import Backbone from "backbone";
-import $ from "jquery";
 import _l from "utils/localization";
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-import { getGalaxyInstance } from "app";
+import Backbone from "backbone";
 import UploadUtils from "mvc/upload/upload-utils";
 import { getDatatypesMapper } from "components/Datatypes";
 import Composite from "./Composite";
@@ -48,16 +44,20 @@ import Collection from "./Collection";
 import Default from "./Default";
 import RulesInput from "./RulesInput";
 import LoadingSpan from "components/LoadingSpan";
+import { mapState } from "vuex";
+import { BModal, BTabs, BTab } from "bootstrap-vue";
+import { isBetaHistoryOpen } from "components/History/adapters/betaToggle";
 
-Vue.use(BootstrapVue);
-
-export default {
+const UploadModal = {
     components: {
         Collection,
         Composite,
         Default,
         RulesInput,
         LoadingSpan,
+        BModal,
+        BTabs,
+        BTab,
     },
     props: {
         modalStatic: {
@@ -121,8 +121,6 @@ export default {
         return {
             id: "",
             title: _l("Download from web or upload from disk"),
-            historyAvailable: false,
-            currentUser: null,
             listGenomes: [],
             listExtensions: [],
             genomesSet: false,
@@ -131,7 +129,7 @@ export default {
             datatypesMapperReady: true,
         };
     },
-    created: function () {
+    created() {
         this.model = new Backbone.Model({
             label: "Load Data",
             percentage: 0,
@@ -139,7 +137,6 @@ export default {
             onunload: function () {},
             onclick: function () {},
         });
-        $(window).on("beforeunload", () => this.model.get("onunload")());
 
         // load extensions
         UploadUtils.getUploadDatatypes(
@@ -157,7 +154,6 @@ export default {
             this.listGenomes = listGenomes;
         }, this.defaultGenome);
 
-        this.initStateWhenHistoryReady();
         if (this.formats !== null) {
             this.datatypesMapperReady = false;
             getDatatypesMapper().then((datatypesMapper) => {
@@ -168,13 +164,33 @@ export default {
             this.datatypesMapperReady = true;
         }
     },
+    beforeDestroy() {
+        const modelUnload = this.model.get("onunload");
+        modelUnload();
+    },
     computed: {
+        ...mapState("user", {
+            currentUserId: (state) => state.currentUser.id,
+        }),
+
+        // go straight to "state" instead of getter because the getter would filter out a current id
+        // that wasn't in the list
+        ...mapState("betaHistory", {
+            currentHistoryId: (state) => state.currentHistoryId,
+        }),
+
+        historyAvailable() {
+            return Boolean(this.currentHistoryId);
+        },
+
         ready() {
             return this.genomesSet && this.extensionsSet && this.historyAvailable && this.datatypesMapperReady;
         },
+
         unrestricted() {
             return this.formats === null && this.multiple;
         },
+
         effectiveExtensions() {
             if (this.formats === null || !this.datatypesMapperReady) {
                 return this.listExtensions;
@@ -243,25 +259,10 @@ export default {
                 this.hide();
             }
         },
-        initStateWhenHistoryReady() {
-            const Galaxy = getGalaxyInstance();
-            if (!Galaxy.currHistoryPanel || !Galaxy.currHistoryPanel.model) {
-                window.setTimeout(() => {
-                    this.initStateWhenHistoryReady();
-                }, 500);
-                return;
-            }
-            this.historyAvailable = true;
-            this.currentUser = Galaxy.user.id;
-        },
         currentFtp: function () {
-            return this.currentUser && this.ftpUploadSite;
+            return this.currentUserId && this.ftpUploadSite;
         },
-        /** Refresh user and current history */
-        currentHistory: function () {
-            const Galaxy = getGalaxyInstance();
-            return this.currentUser && Galaxy.currHistoryPanel.model.get("id");
-        },
+
         /**
          * Package API data from array of models
          * @param{Array} items - Upload items/rows filtered from a collection
@@ -271,7 +272,7 @@ export default {
             var data = {
                 payload: {
                     tool_id: "upload1",
-                    history_id: history_id || this.currentHistory(),
+                    history_id: history_id || this.currentHistoryId,
                     inputs: {},
                 },
                 files: [],
@@ -334,6 +335,13 @@ export default {
         },
     },
 };
-</script>
 
-<style></style>
+// Beta history patch
+if (isBetaHistoryOpen()) {
+    UploadModal.computed.currentHistoryId = function () {
+        return this.$store.getters["betaHistory/currentHistoryId"];
+    };
+}
+
+export default UploadModal;
+</script>

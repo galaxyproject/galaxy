@@ -11,7 +11,7 @@ export default {
     props: {
         callback: {
             type: Function,
-            required: true,
+            default: () => {},
         },
     },
 };

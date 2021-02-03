@@ -1,23 +1,28 @@
-import { shallowMount } from "@vue/test-utils";
+import { shallowMount, createLocalVue } from "@vue/test-utils";
 import Details from "./Details";
-import { __RewireAPI__ as rewire } from "./Details";
-import Vue from "vue";
+
+jest.mock("app");
+
+import { getAppRoot } from "onload/loadConfig";
+jest.mock("onload/loadConfig");
+getAppRoot.mockImplementation(() => "/");
+
+import { Services } from "../services";
+jest.mock("../services");
+
+Services.mockImplementation(() => {
+    return {
+        async getRepositoryByName(url, name, owner) {
+            expect(url).toBe("tool_shed_url");
+            expect(name).toBe("name");
+            expect(owner).toBe("owner");
+            return {};
+        },
+    };
+});
 
 describe("Details", () => {
-    beforeEach(() => {
-        rewire.__Rewire__(
-            "Services",
-            class {
-                async getRepositoryByName(url, name, owner) {
-                    expect(url).to.equal("tool_shed_url");
-                    expect(name).to.equal("name");
-                    expect(owner).to.equal("owner");
-                    return {};
-                }
-            }
-        );
-    });
-
+    const localVue = createLocalVue();
     it("test repository details loading", async () => {
         const wrapper = shallowMount(Details, {
             propsData: {
@@ -27,15 +32,14 @@ describe("Details", () => {
                     owner: "owner",
                 },
             },
+            localVue,
         });
-        expect(wrapper.findAll("loading-span-stub").length).to.equal(1);
-        expect(wrapper.find("loading-span-stub").attributes("message")).to.equal(
-            "Loading installed repository details"
-        );
-        expect(wrapper.findAll("repositorydetails-stub").length).to.equal(0);
-        await Vue.nextTick();
-        expect(wrapper.findAll("loading-span-stub").length).to.equal(0);
-        expect(wrapper.findAll(".alert").length).to.equal(0);
-        expect(wrapper.findAll("repositorydetails-stub").length).to.equal(1);
+        expect(wrapper.findAll("loading-span-stub").length).toBe(1);
+        expect(wrapper.find("loading-span-stub").attributes("message")).toBe("Loading installed repository details");
+        expect(wrapper.findAll("repositorydetails-stub").length).toBe(0);
+        await localVue.nextTick();
+        expect(wrapper.findAll("loading-span-stub").length).toBe(0);
+        expect(wrapper.findAll(".alert").length).toBe(0);
+        expect(wrapper.findAll("repositorydetails-stub").length).toBe(1);
     });
 });

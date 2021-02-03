@@ -14,7 +14,8 @@ from tool_shed.util.hg_util import changeset2rev
 log = logging.getLogger(__name__)
 
 
-def get_all_dependencies(app, metadata_entry, processed_dependency_links=[]):
+def get_all_dependencies(app, metadata_entry, processed_dependency_links=None):
+    processed_dependency_links = processed_dependency_links or []
     encoder = app.security.encode_id
     value_mapper = {'repository_id': encoder, 'id': encoder, 'user_id': encoder}
     metadata = metadata_entry.to_dict(value_mapper=value_mapper, view='element')
@@ -65,7 +66,7 @@ def get_current_repository_metadata_for_changeset_revision(app, repository, chan
 
 def get_dependencies_for_metadata_revision(app, metadata):
     dependencies = []
-    for shed, name, owner, changeset, prior, _ in metadata['repository_dependencies']:
+    for _shed, name, owner, changeset, _prior, _ in metadata['repository_dependencies']:
         required_repository = get_repository_by_name_and_owner(app, name, owner)
         updated_changeset = get_next_downloadable_changeset_revision(app, required_repository, changeset)
         if updated_changeset is None:

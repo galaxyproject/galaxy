@@ -3,7 +3,6 @@ import axios from "axios";
 import Vue from "vue";
 import DataDialog from "components/DataDialog/DataDialog.vue";
 import { FilesDialog } from "components/FilesDialog";
-import WorkflowDialog from "components/SelectionDialog/WorkflowDialog.vue";
 import DatasetCollectionDialog from "components/SelectionDialog/DatasetCollectionDialog.vue";
 import { mountUploadModal } from "components/Upload";
 import { getGalaxyInstance } from "app";
@@ -12,7 +11,7 @@ import { getAppRoot } from "onload/loadConfig";
 // This should be moved more centrally (though still hanging off Galaxy for
 // external use?), and populated from the store; just using this as a temporary
 // interface.
-async function getCurrentGalaxyHistory() {
+export async function getCurrentGalaxyHistory() {
     const galaxy = getGalaxyInstance();
     if (galaxy.currHistoryPanel && galaxy.currHistoryPanel.model.id) {
         // TODO: use central store (vuex) for this.
@@ -36,14 +35,10 @@ async function getCurrentGalaxyHistory() {
  * @param {function} callback - Result function called with selection
  */
 export function dialog(callback, options = {}) {
-    const galaxy = getGalaxyInstance();
-    const host = `${window.location.protocol}//${window.location.hostname}:${window.location.port}`;
     getCurrentGalaxyHistory().then((history_id) => {
         Object.assign(options, {
             callback: callback,
             history: history_id,
-            root: galaxy.root,
-            host: host,
         });
         if (options.new) {
             options.modalShow = true;
@@ -52,17 +47,6 @@ export function dialog(callback, options = {}) {
             _mountSelectionDialog(DataDialog, options);
         }
     });
-}
-
-/**
- * Opens a modal dialog for workflow selection
- * @param {function} callback - Result function called with selection
- */
-export function workflowDialog(callback, options = {}) {
-    Object.assign(options, {
-        callback: callback,
-    });
-    _mountSelectionDialog(WorkflowDialog, options);
 }
 
 /**

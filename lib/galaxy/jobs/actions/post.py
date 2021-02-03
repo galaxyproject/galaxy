@@ -1,6 +1,6 @@
 """
 Actions to be run at job completion (or output hda creation, as in the case of
-immediate_actions listed below.  Currently only used in workflows.
+immediate_actions listed below.
 """
 import datetime
 import socket
@@ -46,6 +46,8 @@ class EmailAction(DefaultJobAction):
     def execute(cls, app, sa_session, action, job, replacement_dict):
         try:
             frm = app.config.email_from
+            history_id_encoded = app.security.encode_id(job.history_id)
+            link = app.config.galaxy_infrastructure_url + "/histories/view?id=" + history_id_encoded
             if frm is None:
                 if action.action_arguments and 'host' in action.action_arguments:
                     host = action.action_arguments['host']
@@ -54,8 +56,8 @@ class EmailAction(DefaultJobAction):
                 frm = 'galaxy-no-reply@%s' % host
             to = job.user.email
             subject = "Galaxy job completion notification from history '%s'" % (job.history.name)
-            outdata = ', '.join(ds.dataset.display_name() for ds in job.output_datasets)
-            body = "Your Galaxy job generating dataset '{}' is complete as of {}.".format(outdata, datetime.datetime.now().strftime("%I:%M"))
+            outdata = ',\n'.join(ds.dataset.display_name() for ds in job.output_datasets)
+            body = "Your Galaxy job generating dataset(s):\n\n{}\n\nis complete as of {}. Click the link below to access your data: \n{}".format(outdata, datetime.datetime.now().strftime("%I:%M"), link)
             send_mail(frm, to, subject, body, app.config)
         except Exception as e:
             log.error("EmailAction PJA Failed, exception: %s", unicodify(e))
@@ -362,14 +364,14 @@ class DeleteIntermediatesAction(DefaultJobAction):
                 if wfi_step_job:
                     jobs_to_check.append(wfi_step_job)
                 else:
-                    log.debug("No job found yet for wfi_step {}, (step {})".format(wfi_step, wfi_step.workflow_step))
+                    log.debug(f"No job found yet for wfi_step {wfi_step}, (step {wfi_step.workflow_step})")
             for j2c in jobs_to_check:
                 creating_jobs = []
                 for input_dataset in j2c.input_datasets:
                     if not input_dataset.dataset:
-                        log.debug("PJA Async Issue: No dataset attached to input_dataset {} during handling of workflow invocation {}".format(input_dataset.id, wfi))
+                        log.debug(f"PJA Async Issue: No dataset attached to input_dataset {input_dataset.id} during handling of workflow invocation {wfi}")
                     elif not input_dataset.dataset.creating_job:
-                        log.debug("PJA Async Issue: No creating job attached to dataset {} during handling of workflow invocation {}".format(input_dataset.dataset.id, wfi))
+                        log.debug(f"PJA Async Issue: No creating job attached to dataset {input_dataset.dataset.id} during handling of workflow invocation {wfi}")
                     else:
                         creating_jobs.append((input_dataset, input_dataset.dataset.creating_job))
                 for (input_dataset, creating_job) in creating_jobs:
@@ -381,7 +383,7 @@ class DeleteIntermediatesAction(DefaultJobAction):
                     safe_to_delete = True
                     for job_to_check in [d_j.job for d_j in input_dataset.dependent_jobs]:
                         if job_to_check != job and job_to_check.state not in [job.states.OK, job.states.DELETED]:
-                            log.trace("Workflow Intermediates cleanup attempted, but non-terminal state '{}' detected for job {}".format(job_to_check.state, job_to_check.id))
+                            log.trace(f"Workflow Intermediates cleanup attempted, but non-terminal state '{job_to_check.state}' detected for job {job_to_check.id}")
                             safe_to_delete = False
                     if safe_to_delete:
                         # Support purging here too.

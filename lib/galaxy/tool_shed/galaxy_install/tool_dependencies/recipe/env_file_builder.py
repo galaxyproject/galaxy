@@ -26,14 +26,14 @@ class EnvFileBuilder:
         if env_var_action in ['prepend_to', 'set_to', 'append_to']:
             env_var_name = env_var_dict['name']
             if env_var_action == 'prepend_to':
-                changed_value = '{}:${}'.format(env_var_value, env_var_name)
+                changed_value = f'{env_var_value}:${env_var_name}'
             elif env_var_action == 'set_to':
                 changed_value = '%s' % env_var_value
             elif env_var_action == 'append_to':
-                changed_value = '${}:{}'.format(env_var_name, env_var_value)
-            line = "{}={}; export {}".format(env_var_name, changed_value, env_var_name)
+                changed_value = f'${env_var_name}:{env_var_value}'
+            line = f"{env_var_name}={changed_value}; export {env_var_name}"
         elif env_var_action == "source":
-            line = "if [ -f {} ] ; then . {} ; fi".format(env_var_value, env_var_value)
+            line = f"if [ -f {env_var_value} ] ; then . {env_var_value} ; fi"
         else:
             raise Exception("Unknown shell file action %s" % env_var_action)
         env_shell_file_path = os.path.join(install_dir, 'env.sh')

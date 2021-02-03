@@ -158,7 +158,7 @@ class KubernetesDatasetPopulator(DatasetPopulator):
 
     def wait_for_history(self, *args, **kwargs):
         try:
-            super(KubernetesDatasetPopulator, self).wait_for_history(*args, **kwargs)
+            super().wait_for_history(*args, **kwargs)
         except AssertionError:
             print("Kubernetes status:\n %s" % unicodify(subprocess.check_output(['kubectl', 'describe', 'nodes'])))
             raise
@@ -168,7 +168,7 @@ class KubernetesDatasetPopulator(DatasetPopulator):
 class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases):
 
     def setUp(self):
-        super(BaseKubernetesIntegrationTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = KubernetesDatasetPopulator(self.galaxy_interactor)
         self.history_id = self.dataset_populator.new_history()
 
@@ -190,7 +190,7 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
             claim_obj.setup()
             cls.persistent_volume_claims.append(claim_obj)
         cls.job_config = job_config(jobs_directory=cls.jobs_directory)
-        super(BaseKubernetesIntegrationTestCase, cls).setUpClass()
+        super().setUpClass()
 
     @classmethod
     def tearDownClass(cls):
@@ -198,7 +198,7 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
             claim.teardown()
         for volume in cls.persistent_volumes:
             volume.teardown()
-        super(BaseKubernetesIntegrationTestCase, cls).tearDownClass()
+        super().tearDownClass()
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -215,6 +215,17 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
     def test_job_environment(self):
         job_env = self._run_and_get_environment_properties()
         assert job_env.some_env == '42'
+
+    @staticmethod
+    def _wait_for_external_state(sa_session, job, expected):
+        # Not checking the state here allows the change from queued to running to overwrite
+        # the change from queued to deleted_new in the API thread - this is a problem because
+        # the job will still run. See issue https://github.com/galaxyproject/galaxy/issues/4960.
+        max_tries = 60
+        while max_tries > 0 and job.job_runner_external_id is None or job.state != expected:
+            sa_session.refresh(job)
+            time.sleep(1)
+            max_tries -= 1
 
     @skip_without_tool('cat_data_and_sleep')
     def test_kill_process(self):
@@ -234,22 +245,12 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
 
             app = self._app
             sa_session = app.model.context.current
-            external_id = None
-            state = False
+            job = sa_session.query(app.model.Job).get(app.security.decode_id(job_dict["id"]))
 
-            job = sa_session.query(app.model.Job).filter_by(tool_id="cat_data_and_sleep").one()
-            # Not checking the state here allows the change from queued to running to overwrite
-            # the change from queued to deleted_new in the API thread - this is a problem because
-            # the job will still run. See issue https://github.com/galaxyproject/galaxy/issues/4960.
-            max_tries = 60
-            while max_tries > 0 and external_id is None or state != app.model.Job.states.RUNNING:
-                sa_session.refresh(job)
-                assert not job.finished
-                external_id = job.job_runner_external_id
-                state = job.state
-                time.sleep(1)
-                max_tries -= 1
+            self._wait_for_external_state(sa_session, job, app.model.Job.states.RUNNING)
+            assert not job.finished
 
+            external_id = job.job_runner_external_id
             output = unicodify(subprocess.check_output(['kubectl', 'get', 'job', external_id, '-o', 'json']))
             status = json.loads(output)
             assert status['status']['active'] == 1
@@ -263,6 +264,42 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
             with pytest.raises(subprocess.CalledProcessError) as excinfo:
                 subprocess.check_output(['kubectl', 'get', 'job', external_id, '-o', 'json'], stderr=subprocess.STDOUT)
             assert "not found" in unicodify(excinfo.value.output)
+
+    @skip_without_tool('cat_data_and_sleep')
+    def test_external_job_delete(self):
+        with self.dataset_populator.test_history() as history_id:
+            hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3")
+            running_inputs = {
+                "input1": {"src": "hda", "id": hda1["id"]},
+                "sleep_time": 240,
+            }
+            running_response = self.dataset_populator.run_tool(
+                "cat_data_and_sleep",
+                running_inputs,
+                history_id,
+                assert_ok=False,
+            )
+            job_dict = running_response.json()["jobs"][0]
+
+            app = self._app
+            sa_session = app.model.context.current
+            job = sa_session.query(app.model.Job).get(app.security.decode_id(job_dict["id"]))
+
+            self._wait_for_external_state(sa_session, job, app.model.Job.states.RUNNING)
+
+            external_id = job.job_runner_external_id
+            output = unicodify(subprocess.check_output(['kubectl', 'get', 'job', external_id, '-o', 'json']))
+            status = json.loads(output)
+            assert status['status']['active'] == 1
+
+            output = unicodify(subprocess.check_output(['kubectl', 'delete', 'job', external_id, '-o', 'name']))
+            assert 'job.batch/%s' % external_id in output
+
+            result = self.dataset_populator.wait_for_tool_run(run_response=running_response, history_id=history_id,
+                                                              assert_ok=False).json()
+            details = self.dataset_populator.get_job_details(result['jobs'][0]['id'], full=True).json()
+
+            assert details['state'] == app.model.Job.states.ERROR, details
 
     @skip_without_tool('job_properties')
     def test_exit_code_127(self):

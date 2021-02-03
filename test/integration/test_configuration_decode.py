@@ -7,7 +7,7 @@ from galaxy_test.driver import integration_util
 class ConfigurationDecodeIntegrationTestCase(integration_util.IntegrationTestCase):
 
     def setUp(self):
-        super(ConfigurationDecodeIntegrationTestCase, self).setUp()
+        super().setUp()
         self.library_populator = LibraryPopulator(self.galaxy_interactor)
 
     def test_admin_decode_id(self):

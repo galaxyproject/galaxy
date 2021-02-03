@@ -1,5 +1,8 @@
 <tool id="Show beginning1" name="Select first" version="1.0.0">
   <description>lines from a dataset</description>
+  <edam_operations>
+    <edam_operation>operation_3695</edam_operation>
+  </edam_operations>
   <command>
 perl '$__tool_directory__/headWrapper.pl' '$input' $lineNum '$out_file1'
   </command>

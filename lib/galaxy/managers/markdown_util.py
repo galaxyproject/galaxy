@@ -27,7 +27,11 @@ try:
 except Exception:
     weasyprint = None
 
-from galaxy.exceptions import MalformedContents, MalformedId
+from galaxy.exceptions import (
+    MalformedContents,
+    MalformedId,
+    MessageException,
+)
 from galaxy.managers.hdcas import HDCASerializer
 from galaxy.managers.jobs import (
     JobManager,
@@ -41,7 +45,7 @@ from .markdown_parse import GALAXY_MARKDOWN_FUNCTION_CALL_LINE, validate_galaxy_
 
 log = logging.getLogger(__name__)
 
-ARG_VAL_CAPTURED_REGEX = r'''(?:([\w_\-]+)|\"([^\"]+)\"|\'([^\']+)\')'''
+ARG_VAL_CAPTURED_REGEX = r'''(?:([\w_\-\|]+)|\"([^\"]+)\"|\'([^\']+)\')'''
 OUTPUT_LABEL_PATTERN = re.compile(r'output=\s*%s\s*' % ARG_VAL_CAPTURED_REGEX)
 INPUT_LABEL_PATTERN = re.compile(r'input=\s*%s\s*' % ARG_VAL_CAPTURED_REGEX)
 STEP_LABEL_PATTERN = re.compile(r'step=\s*%s\s*' % ARG_VAL_CAPTURED_REGEX)
@@ -84,6 +88,10 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
         job_manager = JobManager(trans.app)
         collection_manager = trans.app.dataset_collections_service
 
+        def _check_object(object_id, line):
+            if object_id is None:
+                raise MalformedContents("Missing object identifier [%s]." % line)
+
         def _remap(container, line):
             id_match = re.search(UNENCODED_ID_PATTERN, line)
             object_id = None
@@ -92,46 +100,44 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
                 object_id = int(id_match.group(2))
                 encoded_id = trans.security.encode_id(object_id)
                 line = line.replace(id_match.group(), "{}={}".format(id_match.group(1), encoded_id))
-
             if container == "history_dataset_display":
-                assert object_id is not None
+                _check_object(object_id, line)
                 hda = hda_manager.get_accessible(object_id, trans.user)
                 rval = self.handle_dataset_display(line, hda)
             elif container == "history_dataset_link":
-                assert object_id is not None
+                _check_object(object_id, line)
                 hda = hda_manager.get_accessible(object_id, trans.user)
                 rval = self.handle_dataset_display(line, hda)
             elif container == "history_dataset_index":
-                assert object_id is not None
+                _check_object(object_id, line)
                 hda = hda_manager.get_accessible(object_id, trans.user)
                 rval = self.handle_dataset_display(line, hda)
             elif container == "history_dataset_embedded":
-                assert object_id is not None
+                _check_object(object_id, line)
                 hda = hda_manager.get_accessible(object_id, trans.user)
                 rval = self.handle_dataset_embedded(line, hda)
             elif container == "history_dataset_as_image":
-                assert object_id is not None
+                _check_object(object_id, line)
                 hda = hda_manager.get_accessible(object_id, trans.user)
                 rval = self.handle_dataset_as_image(line, hda)
             elif container == "history_dataset_peek":
-                assert object_id is not None
+                _check_object(object_id, line)
                 hda = hda_manager.get_accessible(object_id, trans.user)
                 rval = self.handle_dataset_peek(line, hda)
             elif container == "history_dataset_info":
-                assert object_id is not None
+                _check_object(object_id, line)
                 hda = hda_manager.get_accessible(object_id, trans.user)
                 rval = self.handle_dataset_info(line, hda)
             elif container == "history_dataset_type":
-                assert object_id is not None
+                _check_object(object_id, line)
                 hda = hda_manager.get_accessible(object_id, trans.user)
                 rval = self.handle_dataset_type(line, hda)
             elif container == "history_dataset_name":
-                assert object_id is not None
+                _check_object(object_id, line)
                 hda = hda_manager.get_accessible(object_id, trans.user)
                 rval = self.handle_dataset_name(line, hda)
             elif container == "workflow_display":
                 stored_workflow = workflow_manager.get_stored_accessible_workflow(trans, encoded_id)
-                # TODO: should be workflow id...
                 rval = self.handle_workflow_display(line, stored_workflow)
             elif container == "history_dataset_collection_display":
                 hdca = collection_manager.get_dataset_collection_instance(trans, "history", encoded_id)
@@ -141,7 +147,7 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
                 rval = self.handle_tool_stdout(line, job)
             elif container == "tool_stderr":
                 job = job_manager.get_accessible_job(trans, object_id)
-                rval = self.handle_tool_stdout(line, job)
+                rval = self.handle_tool_stderr(line, job)
             elif container == "job_parameters":
                 job = job_manager.get_accessible_job(trans, object_id)
                 rval = self.handle_job_parameters(line, job)
@@ -156,14 +162,22 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
             elif container == "invocation_time":
                 invocation = workflow_manager.get_invocation(trans, object_id)
                 rval = self.handle_invocation_time(line, invocation)
+            elif container == "visualization":
+                rval = None
             else:
-                raise MalformedContents("Unknown Galaxy Markdown directive encountered [%s]" % container)
+                raise MalformedContents("Unknown Galaxy Markdown directive encountered [%s]." % container)
             if rval is not None:
                 return rval
             else:
                 return (line, False)
 
-        export_markdown = _remap_galaxy_markdown_calls(_remap, internal_galaxy_markdown)
+        def _remap_container(container, line):
+            try:
+                return _remap(container, line)
+            except Exception as e:
+                return self.handle_error(container, line, str(e))
+
+        export_markdown = _remap_galaxy_markdown_calls(_remap_container, internal_galaxy_markdown)
         return export_markdown
 
     @abc.abstractmethod
@@ -226,10 +240,15 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
     def handle_invocation_time(self, line, date):
         pass
 
+    @abc.abstractmethod
+    def handle_error(self, container, line, error):
+        pass
+
 
 class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
 
-    def __init__(self, trans, extra_rendering_data={}):
+    def __init__(self, trans, extra_rendering_data=None):
+        extra_rendering_data = extra_rendering_data or {}
         self.trans = trans
         self.extra_rendering_data = extra_rendering_data
 
@@ -301,6 +320,16 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
     def handle_dataset_name(self, line, hda):
         self.extend_history_dataset_rendering_data(hda, "name", hda.name, "*Unknown dataset name*")
 
+    def handle_error(self, container, line, error):
+        if "errors" not in self.extra_rendering_data:
+            self.extra_rendering_data["errors"] = []
+        self.extra_rendering_data["errors"].append({
+            "error": error,
+            "line": line,
+            "container": container,
+        })
+        return (line, False)
+
 
 def ready_galaxy_markdown_for_export(trans, internal_galaxy_markdown):
     """Fill in details needed to render Galaxy flavored markdown.
@@ -360,7 +389,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         name = hda.name or ''
         with open(dataset.file_name, "rb") as f:
             base64_image_data = base64.b64encode(f.read()).decode("utf-8")
-        rval = ("![{}](data:image/png;base64,{})".format(name, base64_image_data), True)
+        rval = (f"![{name}](data:image/png;base64,{base64_image_data})", True)
         return rval
 
     def handle_dataset_peek(self, line, hda):
@@ -403,7 +432,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
                     walk_elements(element.child_collection, element_prefix + element.element_identifier + ":")
             else:
                 for element in collection.elements:
-                    markdown_wrapper[0] += "**Element:** {}{}\n\n".format(element_prefix, element.element_identifier)
+                    markdown_wrapper[0] += f"**Element:** {element_prefix}{element.element_identifier}\n\n"
                     markdown_wrapper[0] += self._display_dataset_content(element.hda, header="Element Contents")
         walk_elements(hdca.collection)
         markdown = '---\n%s\n---\n' % markdown_wrapper[0]
@@ -430,7 +459,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
             markdown += "**%s**\n\n" % metric_plugin
             markdown += "|   |   |\n|---|--|\n"
             for title, value in metrics_for_plugin.items():
-                markdown += "| {} | {} |\n".format(title, value)
+                markdown += f"| {title} | {value} |\n"
         return (markdown, True)
 
     def handle_job_parameters(self, line, job):
@@ -484,13 +513,16 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
             content = "*No Dataset Type Available*"
         return (content, True)
 
+    def handle_error(self, container, line, error):
+        return (line, False)
+
 
 class MarkdownFormatHelpers:
     """Inject common markdown formatting helpers for per-datatype rendering."""
 
     @staticmethod
     def literal_via_fence(content):
-        return "\n%s\n" % "\n".join("    %s" % l for l in content.splitlines())
+        return "\n%s\n" % "\n".join(f"    {line}" for line in content.splitlines())
 
     @staticmethod
     def indicate_data_truncated():
@@ -516,7 +548,8 @@ def to_html(basic_markdown):
     return html
 
 
-def to_pdf(trans, basic_markdown, css_paths=[]):
+def to_pdf(trans, basic_markdown, css_paths=None) -> bytes:
+    css_paths = css_paths or []
     as_html = to_html(basic_markdown)
     directory = tempfile.mkdtemp('gxmarkdown')
     index = os.path.join(directory, "index.html")
@@ -538,7 +571,14 @@ def to_pdf(trans, basic_markdown, css_paths=[]):
         shutil.rmtree(directory)
 
 
-def internal_galaxy_markdown_to_pdf(trans, internal_galaxy_markdown, document_type):
+def _check_can_convert_to_pdf_or_raise():
+    """Checks if the HTML to PDF converter is available."""
+    if not weasyprint:
+        raise MessageException("PDF conversion service not available.")
+
+
+def internal_galaxy_markdown_to_pdf(trans, internal_galaxy_markdown, document_type) -> bytes:
+    _check_can_convert_to_pdf_or_raise()
     basic_markdown = to_basic_markdown(trans, internal_galaxy_markdown)
     config = trans.app.config
     document_type_prologue = getattr(config, "markdown_export_prologue_%ss" % document_type, '') or ''
@@ -654,7 +694,7 @@ history_dataset_collection_display(input={})
                     ref_object_type = "history_dataset"
                 else:
                     ref_object_type = "history_dataset_collection"
-            line = line.replace(target_match.group(), "{}_id={}".format(ref_object_type, ref_object.id))
+            line = line.replace(target_match.group(), f"{ref_object_type}_id={ref_object.id}")
         return (line, False)
 
     workflow_markdown = _remap_galaxy_markdown_calls(
@@ -683,7 +723,6 @@ def _remap_galaxy_markdown_containers(func, markdown):
                 end_pos = match.end(1)
             start_pos = start_pos + searching_from
             end_pos = end_pos + searching_from
-
             new_markdown = new_markdown[:start_pos] + replacement + new_markdown[end_pos:]
             searching_from = start_pos + len(replacement)
         else:
@@ -701,10 +740,11 @@ def _remap_galaxy_markdown_calls(func, markdown):
                 assert matching_line is None
                 matching_line = line
 
-        assert matching_line, "Failed to find func call line in [%s]" % container
-        match = GALAXY_MARKDOWN_FUNCTION_CALL_LINE.match(line)
-
-        return func(match.group(1), matching_line + "\n")
+        if matching_line:
+            match = GALAXY_MARKDOWN_FUNCTION_CALL_LINE.match(line)
+            return func(match.group(1), matching_line + "\n")
+        else:
+            return (container, True)
 
     return _remap_galaxy_markdown_containers(_remap_container, markdown)
 

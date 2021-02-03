@@ -28,7 +28,7 @@ VIRTUALENV_URL = 'https://pypi.python.org/packages/d4/0c/9840c08189e030873387a73
 
 class Download:
 
-    def url_download(self, install_dir, downloaded_file_name, download_url, extract=True, checksums={}):
+    def url_download(self, install_dir, downloaded_file_name, download_url, extract=True, checksums=None):
         """
         The given download_url can have an extension like #md5#, #sha256#, (or #md5= to support pypi defaults).
 
@@ -40,6 +40,7 @@ class Download:
         This indicates a checksum which will be checked after download.
         If the checksum does not match an exception is thrown.
         """
+        checksums = checksums or {}
         file_path = os.path.join(install_dir, downloaded_file_name)
         if download_url.startswith("file://"):
             local_file_source = download_url[len('file://'):].split('#')[0]
@@ -61,7 +62,7 @@ class Download:
                 expected = download_url.split('#sha256#')[1].lower()
 
             if downloaded_checksum != expected:
-                raise Exception('Given sha256 checksum does not match with the one from the downloaded file ({} != {}).'.format(downloaded_checksum, expected))
+                raise Exception(f'Given sha256 checksum does not match with the one from the downloaded file ({downloaded_checksum} != {expected}).')
 
         if 'md5sum' in checksums or '#md5#' in download_url or '#md5=' in download_url:
             downloaded_checksum = hashlib.md5(open(file_path, 'rb').read()).hexdigest().lower()
@@ -73,7 +74,7 @@ class Download:
                 expected = re.split('#md5[#=]', download_url)[1].lower()
 
             if downloaded_checksum != expected:
-                raise Exception('Given md5 checksum does not match with the one from the downloaded file ({} != {}).'.format(downloaded_checksum, expected))
+                raise Exception(f'Given md5 checksum does not match with the one from the downloaded file ({downloaded_checksum} != {expected}).')
 
         if extract:
             if tarfile.is_tarfile(file_path) or (zipfile.is_zipfile(file_path) and not file_path.endswith('.jar')):
@@ -1596,7 +1597,7 @@ class SetupVirtualEnv(Download, RecipeStep):
         venv_directory = os.path.join(install_environment.install_dir, "venv")
         python_cmd = action_dict['python']
         # TODO: Consider making --no-site-packages optional.
-        setup_command = "{} {}/virtualenv.py --no-site-packages '{}'".format(python_cmd, venv_src_directory, venv_directory)
+        setup_command = f"{python_cmd} {venv_src_directory}/virtualenv.py --no-site-packages '{venv_directory}'"
         # POSIXLY_CORRECT forces shell commands . and source to have the same
         # and well defined behavior in bash/zsh.
         activate_command = "POSIXLY_CORRECT=1; . %s" % os.path.join(venv_directory, "bin", "activate")
@@ -1621,8 +1622,8 @@ class SetupVirtualEnv(Download, RecipeStep):
                         if not install_command:
                             install_command = line_install_command
                         else:
-                            install_command = "{} && {}".format(install_command, line_install_command)
-        full_setup_command = "{}; {}; {}".format(setup_command, activate_command, install_command)
+                            install_command = f"{install_command} && {line_install_command}"
+        full_setup_command = f"{setup_command}; {activate_command}; {install_command}"
         return_code = install_environment.handle_command(tool_dependency=tool_dependency,
                                                          cmd=full_setup_command,
                                                          return_output=False,
@@ -1680,7 +1681,7 @@ class SetupVirtualEnv(Download, RecipeStep):
         site_packages_directory_list = [rval]
         if os.path.exists(rval):
             return (rval, site_packages_directory_list)
-        for (dirpath, dirnames, filenames) in os.walk(lib_dir):
+        for _dirpath, dirnames, _filenames in os.walk(lib_dir):
             for dirname in dirnames:
                 rval = os.path.join(lib_dir, dirname, 'site-packages')
                 site_packages_directory_list.append(rval)

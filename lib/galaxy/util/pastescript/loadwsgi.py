@@ -7,9 +7,10 @@ import inspect
 import os
 import re
 import sys
+from typing import Callable, Dict, List, Optional, Union
+from urllib.parse import unquote
 
 import pkg_resources
-from six.moves.urllib.parse import unquote
 
 from galaxy.util.getargspec import getfullargspec
 from galaxy.util.properties import NicerConfigParser
@@ -53,9 +54,9 @@ def fix_type_error(exc_info, callable, varargs, kwargs):
     """
     if exc_info is None:
         exc_info = sys.exc_info()
-    if (exc_info[0] != TypeError or
-            str(exc_info[1]).find('argument') == -1 or
-            getattr(exc_info[1], '_type_error_fixed', False)):
+    if (exc_info[0] != TypeError
+            or str(exc_info[1]).find('argument') == -1
+            or getattr(exc_info[1], '_type_error_fixed', False)):
         return exc_info
     exc_info[1]._type_error_fixed = True
     argspec = inspect.formatargspec(*getfullargspec(callable))
@@ -146,9 +147,9 @@ def _flatten(lst):
 
 class _ObjectType:
 
-    name = None
-    egg_protocols = None
-    config_prefixes = None
+    name: Optional[str] = None
+    egg_protocols: Optional[List[Union[str, List[str]]]] = None
+    config_prefixes: Optional[List[Union[List[str], str]]] = None
 
     def __init__(self):
         # Normalize these variables:
@@ -304,7 +305,7 @@ def appconfig(uri, name=None, relative_to=None, global_conf=None):
     return context.config()
 
 
-_loaders = {}
+_loaders: Dict[str, Callable] = {}
 
 
 def loadobj(object_type, uri, name=None, relative_to=None,

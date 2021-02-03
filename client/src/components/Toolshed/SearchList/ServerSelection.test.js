@@ -1,5 +1,8 @@
 import { mount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 import ServerSelection from "./ServerSelection";
+
+const localVue = getLocalVue();
 
 describe("ServerSelection", () => {
     it("test server selection dropdown", () => {
@@ -10,15 +13,16 @@ describe("ServerSelection", () => {
                 loading: false,
                 total: "total",
             },
+            localVue,
         });
-        expect(wrapper.find(".description").text()).to.equal("total repositories available at");
+        expect(wrapper.find(".description").text()).toBe("total repositories available at");
         const $options = wrapper.findAll("a");
-        expect($options.at(0).text()).to.equal("url_0");
-        expect($options.at(1).text()).to.equal("url_0");
-        expect($options.at(2).text()).to.equal("url_1");
-        expect(wrapper.vm.showDropdown).to.be.true;
+        expect($options.at(0).text()).toBe("url_0");
+        expect($options.at(1).text()).toBe("url_0");
+        expect($options.at(2).text()).toBe("url_1");
+        expect(wrapper.vm.showDropdown).toBe(true);
         const $link = wrapper.find(".dropdown-item:last-child");
         $link.trigger("click");
-        expect(wrapper.emitted().onToolshed[0]).to.contain("url_1");
+        expect(wrapper.emitted().onToolshed[0]).toEqual(expect.arrayContaining(["url_1"]));
     });
 });

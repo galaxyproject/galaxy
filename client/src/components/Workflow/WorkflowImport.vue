@@ -13,6 +13,11 @@
             </b-form-group>
             <b-button id="workflow-import-button" type="submit">Import workflow</b-button>
             <div class="mt-4">
+                <h4>Import a Workflow from Configured GA4GH Tool Registry Servers (e.g. Dockstore)</h4>
+                Use either the Galaxy <a :href="trsSearchHref">search form</a> or
+                <a :href="trsImportHref">import from a TRS ID</a>.
+            </div>
+            <div class="mt-4">
                 <h4>Import a Workflow from myExperiment</h4>
                 <a :href="myexperiment_target_url">Visit myExperiment</a>
                 <div class="form-text">Click the link above to visit myExperiment and search for Galaxy workflows.</div>
@@ -26,6 +31,7 @@ import { getGalaxyInstance } from "app";
 import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import { redirectOnImport } from "./utils";
 
 Vue.use(BootstrapVue);
 
@@ -43,6 +49,12 @@ export default {
         hasErrorMessage() {
             return this.errorMessage != null;
         },
+        trsSearchHref() {
+            return `${getAppRoot()}workflows/trs_search`;
+        },
+        trsImportHref() {
+            return `${getAppRoot()}workflows/trs_import`;
+        },
     },
     methods: {
         submit: function (ev) {
@@ -56,9 +68,7 @@ export default {
                 axios
                     .post(`${getAppRoot()}api/workflows`, formData)
                     .then((response) => {
-                        window.location = `${getAppRoot()}workflows/list?message=${
-                            response.data.message
-                        }&status=success`;
+                        redirectOnImport(getAppRoot(), response.data);
                     })
                     .catch((error) => {
                         const message = error.response.data && error.response.data.err_msg;

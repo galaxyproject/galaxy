@@ -1,23 +1,26 @@
-import Vue from "vue";
 import { mount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 import ToolSection from "./ToolSection";
 
+const localVue = getLocalVue();
+
 describe("ToolSection", () => {
-    it("test tool section", () => {
+    test("test tool section", () => {
         const wrapper = mount(ToolSection, {
             propsData: {
                 category: {
                     name: "name",
                 },
             },
+            localVue,
         });
         const nameElement = wrapper.findAll(".name");
-        expect(nameElement.at(0).text()).to.equal("name");
+        expect(nameElement.at(0).text()).toBe("name");
         nameElement.trigger("click");
-        expect(wrapper.emitted().onClick).to.not.be.undefined;
+        expect(wrapper.emitted().onClick).toBeDefined();
     });
 
-    it("test tool section title", async () => {
+    test("test tool section title", async () => {
         const wrapper = mount(ToolSection, {
             propsData: {
                 category: {
@@ -32,22 +35,23 @@ describe("ToolSection", () => {
                     ],
                 },
             },
+            localVue,
         });
-        expect(wrapper.vm.opened).to.equal(false);
+        expect(wrapper.vm.opened).toBe(false);
         const $sectionName = wrapper.find(".name");
-        expect($sectionName.text()).to.equal("tool_section");
+        expect($sectionName.text()).toBe("tool_section");
         $sectionName.trigger("click");
-        await Vue.nextTick();
+        await wrapper.vm.$nextTick();
         const $names = wrapper.findAll(".name");
-        expect($names.at(1).text()).to.equal("name");
-        const $label = wrapper.find(".label");
-        expect($label.text()).to.equal("text");
+        expect($names.at(1).text()).toBe("name");
+        const $label = wrapper.find(".tool-panel-label");
+        expect($label.text()).toBe("text");
         $sectionName.trigger("click");
-        await Vue.nextTick();
-        expect(wrapper.findAll(".name").length).to.equal(1);
+        await wrapper.vm.$nextTick();
+        expect(wrapper.findAll(".name").length).toBe(1);
     });
 
-    it("test tool slider state", async () => {
+    test("test tool slider state", async () => {
         const wrapper = mount(ToolSection, {
             propsData: {
                 category: {
@@ -63,29 +67,30 @@ describe("ToolSection", () => {
                 },
                 queryFilter: "test",
             },
+            localVue,
         });
-        expect(wrapper.vm.opened).to.equal(true);
+        expect(wrapper.vm.opened).toBe(true);
         const $sectionName = wrapper.find(".name");
         $sectionName.trigger("click");
-        await Vue.nextTick();
-        expect(wrapper.vm.opened).to.equal(false);
+        await wrapper.vm.$nextTick();
+        expect(wrapper.vm.opened).toBe(false);
         wrapper.setProps({ queryFilter: "" });
-        await Vue.nextTick();
-        expect(wrapper.vm.opened).to.equal(false);
+        await wrapper.vm.$nextTick();
+        expect(wrapper.vm.opened).toBe(false);
         wrapper.setProps({ queryFilter: "test" });
-        await Vue.nextTick();
-        expect(wrapper.vm.opened).to.equal(true);
+        await wrapper.vm.$nextTick();
+        expect(wrapper.vm.opened).toBe(true);
         wrapper.setProps({ disableFilter: true });
-        await Vue.nextTick();
-        expect(wrapper.vm.opened).to.equal(true);
+        await wrapper.vm.$nextTick();
+        expect(wrapper.vm.opened).toBe(true);
         wrapper.setProps({ queryFilter: "" });
-        await Vue.nextTick();
-        expect(wrapper.vm.opened).to.equal(false);
+        await wrapper.vm.$nextTick();
+        expect(wrapper.vm.opened).toBe(false);
         $sectionName.trigger("click");
-        await Vue.nextTick();
-        expect(wrapper.vm.opened).to.equal(true);
+        await wrapper.vm.$nextTick();
+        expect(wrapper.vm.opened).toBe(true);
         wrapper.setProps({ queryFilter: "test" });
-        await Vue.nextTick();
-        expect(wrapper.vm.opened).to.equal(false);
+        await wrapper.vm.$nextTick();
+        expect(wrapper.vm.opened).toBe(false);
     });
 });

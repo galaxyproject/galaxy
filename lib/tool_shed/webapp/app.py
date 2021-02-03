@@ -3,13 +3,13 @@ import sys
 import time
 
 import galaxy.datatypes.registry
-import galaxy.quota
 import galaxy.tools.data
 import tool_shed.repository_registry
 import tool_shed.repository_types.registry
 import tool_shed.webapp.model
 from galaxy.config import configure_logging
 from galaxy.model.tags import CommunityTagHandler
+from galaxy.quota import NoQuotaAgent
 from galaxy.security import idencoding
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web_stack import application_stack_instance
@@ -69,7 +69,7 @@ class UniverseApplication:
         # Initialize the Tool Shed security agent.
         self.security_agent = self.model.security_agent
         # The Tool Shed makes no use of a quota, but this attribute is still required.
-        self.quota_agent = galaxy.quota.NoQuotaAgent(self.model)
+        self.quota_agent = NoQuotaAgent()
         # Initialize the baseline Tool Shed statistics component.
         self.shed_counter = self.model.shed_counter
         # Let the Tool Shed's HgwebConfigManager know where the hgweb.config file is located.

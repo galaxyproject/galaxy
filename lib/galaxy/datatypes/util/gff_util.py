@@ -58,9 +58,10 @@ class GFFFeature(GFFInterval):
     """
 
     def __init__(self, reader, chrom_col=0, feature_col=2, start_col=3, end_col=4,
-                 strand_col=6, score_col=5, default_strand='.', fix_strand=False, intervals=[],
+                 strand_col=6, score_col=5, default_strand='.', fix_strand=False, intervals=None,
                  raw_size=0):
         # Use copy so that first interval and feature do not share fields.
+        intervals = intervals or []
         GFFInterval.__init__(self, reader, copy.deepcopy(intervals[0].fields), chrom_col, feature_col,
                              start_col, end_col, strand_col, score_col, default_strand,
                              fix_strand=fix_strand)
@@ -167,7 +168,7 @@ class GFFReaderWrapper(NiceReaderWrapper):
         def handle_parse_error(e):
             """ Actions to take when ParseError found. """
             if self.outstream:
-                if self.print_delegate and hasattr(self.print_delegate, "__call__"):
+                if self.print_delegate and callable(self.print_delegate):
                     self.print_delegate(self.outstream, e, self)
             self.skipped += 1
             # no reason to stuff an entire bad file into memmory
@@ -429,7 +430,7 @@ def read_unordered_gtf(iterator, strict=False):
     # Aggregate intervals by transcript_id and collect comments.
     feature_intervals = OrderedDict()
     comments = []
-    for count, line in enumerate(iterator):
+    for line in iterator:
         if line.startswith('#'):
             comments.append(Comment(line))
             continue
@@ -444,7 +445,7 @@ def read_unordered_gtf(iterator, strict=False):
 
     # Create features.
     chroms_features = {}
-    for count, intervals in enumerate(feature_intervals.values()):
+    for intervals in feature_intervals.values():
         # Sort intervals by start position.
         intervals.sort(key=lambda _: _.start)
         feature = GFFFeature(None, intervals=intervals)

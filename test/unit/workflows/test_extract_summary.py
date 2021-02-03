@@ -88,7 +88,7 @@ class TestWorkflowExtractSummary(unittest.TestCase):
         assert len(job_dict) == 0
 
 
-class MockHistory(object):
+class MockHistory:
 
     def __init__(self):
         self.active_datasets = []
@@ -98,7 +98,7 @@ class MockHistory(object):
         return self.active_datasets
 
 
-class MockTrans(object):
+class MockTrans:
 
     def __init__(self, history):
         self.history = history
@@ -107,9 +107,10 @@ class MockTrans(object):
         return self.history
 
 
-class MockHda(object):
+class MockHda:
 
     def __init__(self, state='ok', output_name='out1', job=None):
+        self.hid = 1
         self.id = 123
         self.state = state
         self.copied_from_history_dataset_association = None
@@ -125,7 +126,7 @@ class MockHda(object):
             self.creating_job_associations = []
 
 
-class MockHdca(object):
+class MockHdca:
 
     def __init__(self, implicit_output_name=None, job=None, hid=1):
         self.id = 124
@@ -151,4 +152,3 @@ class MockHdca(object):
         element.dataset_instance.creating_job_associations = [
             creating,
         ]
-        self.collection.elements = [element]

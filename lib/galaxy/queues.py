@@ -4,6 +4,7 @@ All message queues used by Galaxy
 
 """
 import socket
+from typing import Optional
 
 from kombu import (
     Connection,
@@ -31,13 +32,13 @@ def control_queues_from_config(config):
     galaxy process's config
     """
     hostname = socket.gethostname()
-    process_name = "{server_name}@{hostname}".format(server_name=config.server_name, hostname=hostname)
+    process_name = f"{config.server_name}@{hostname}"
     exchange_queue = Queue("control.%s" % process_name, galaxy_exchange, routing_key='control.*')
     non_exchange_queue = Queue("control.%s" % process_name, routing_key='control.%s' % process_name)
     return exchange_queue, non_exchange_queue
 
 
-def connection_from_config(config):
+def connection_from_config(config) -> Optional[Connection]:
     if config.amqp_internal_connection:
         return Connection(config.amqp_internal_connection)
     else:

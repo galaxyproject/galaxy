@@ -15,7 +15,7 @@ class ApiBatchTestCase(ApiTestCase):
         return url + sep + 'key=' + self._get_api_key(admin=admin)
 
     def _post_batch(self, batch):
-        data = json.dumps({"batch" : batch})
+        data = json.dumps({"batch": batch})
         return post("%s/batch" % (self.galaxy_interactor.api_url), data=data)
 
     # ---- tests

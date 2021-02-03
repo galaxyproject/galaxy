@@ -1,7 +1,7 @@
 module.exports = {
     extends: [
         "eslint:recommended",
-        "plugin:vue/strongly-recommended"
+        "plugin:vue/strongly-recommended",
         //"airbnb-base", eventually
     ],
     env: {
@@ -9,11 +9,11 @@ module.exports = {
         commonjs: true,
         es6: true,
         node: true,
-        mocha: true
+        jest: true,
     },
     parserOptions: {
         parser: "babel-eslint",
-        sourceType: "module"
+        sourceType: "module",
     },
     rules: {
         // Standard rules
@@ -37,11 +37,6 @@ module.exports = {
         "vue/singleline-html-element-content-newline": "off",
         "vue/multiline-html-element-content-newline": "off",
         "vue/html-closing-bracket-newline": "off",
-        "vue/html-closing-bracket-spacing": "off"
+        "vue/html-closing-bracket-spacing": "off",
     },
-    globals: {
-        // chai tests
-        assert: true,
-        expect: true
-    }
 };

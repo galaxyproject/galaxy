@@ -34,7 +34,7 @@ def test_history_dataset_copy(num_datasets=NUM_DATASETS, include_metadata_file=I
         print("history copied %s" % history_copy_timer)
         assert new_history.name == "HistoryCopyHistory1"
         assert new_history.user == old_history.user
-        for i, hda in enumerate(new_history.active_datasets):
+        for hda in new_history.active_datasets:
             assert hda.get_size() == 3
             if include_metadata_file:
                 _check_metadata_file(hda)
@@ -57,11 +57,9 @@ def test_history_collection_copy(list_size=NUM_DATASETS):
                 paired_collection = model.DatasetCollection(collection_type="paired")
                 forward_dce = model.DatasetCollectionElement(collection=paired_collection, element=hdas[j * 2])
                 reverse_dce = model.DatasetCollectionElement(collection=paired_collection, element=hdas[j * 2 + 1])
-                paired_collection.elements = [forward_dce, reverse_dce]
                 paired_collection_element = model.DatasetCollectionElement(collection=list_collection, element=paired_collection)
                 list_elements.append(paired_collection_element)
                 model.context.add_all([forward_dce, reverse_dce, paired_collection_element])
-            list_collection.elements = list_elements
             history_dataset_collection = model.HistoryDatasetCollectionAssociation(collection=list_collection)
             history_dataset_collection.user = old_history.user
             model.context.add(history_dataset_collection)
@@ -86,7 +84,7 @@ def test_history_collection_copy(list_size=NUM_DATASETS):
         new_history = old_history.copy(target_user=old_history.user)
         print("history copied %s" % history_copy_timer)
 
-        for i, hda in enumerate(new_history.active_datasets):
+        for hda in new_history.active_datasets:
             assert hda.get_size() == 3
             annotation_str = hda.get_item_annotation_str(model.context, old_history.user, hda)
             assert annotation_str == "annotation #%d" % hda.hid, annotation_str
@@ -129,6 +127,6 @@ def _check_metadata_file(hda):
     assert hda.metadata.bam_index.id
     copied_index = hda.metadata.bam_index.file_name
     assert os.path.exists(copied_index)
-    with open(copied_index, "r") as f:
+    with open(copied_index) as f:
         assert f.read() == "moo"
     assert copied_index.endswith("metadata_%d.dat" % hda.id)

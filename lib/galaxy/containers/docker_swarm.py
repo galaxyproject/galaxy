@@ -6,6 +6,7 @@ import logging
 import os.path
 import subprocess
 from functools import partial
+from typing import Any, Dict, Optional
 
 try:
     import docker.types
@@ -50,7 +51,7 @@ SWARM_MANAGER_PATH = os.path.abspath(
 class DockerSwarmInterface(DockerInterface):
 
     container_class = DockerService
-    conf_defaults = {
+    conf_defaults: Dict[str, Optional[Any]] = {
         'ignore_volumes': False,
         'node_prefix': None,
         'service_create_image_constraint': False,
@@ -331,7 +332,7 @@ class DockerSwarmCLIInterface(DockerSwarmInterface, DockerCLIInterface):
 
     @docker_columns
     def service_ps(self, service_id):
-        return self._run_docker(subcommand='service ps', args='--no-trunc {}'.format(service_id))
+        return self._run_docker(subcommand='service ps', args=f'--no-trunc {service_id}')
 
     def service_rm(self, service_ids):
         service_ids = ' '.join(service_ids)
@@ -347,7 +348,7 @@ class DockerSwarmCLIInterface(DockerSwarmInterface, DockerCLIInterface):
 
     @docker_columns
     def node_ps(self, node_id):
-        return self._run_docker(subcommand='node ps', args='--no-trunc {}'.format(node_id))
+        return self._run_docker(subcommand='node ps', args=f'--no-trunc {node_id}')
 
     def node_update(self, node_id, **kwopts):
         return self._run_docker(subcommand='node update', args='{kwopts} {node_id}'.format(
@@ -370,7 +371,7 @@ class DockerSwarmAPIInterface(DockerSwarmInterface, DockerAPIInterface):
         'service_mode': {'param': 0, 'default': 'replicated'},
         'replicas': {'default': 1},
     }
-    endpoint_spec_option_map = {
+    endpoint_spec_option_map: Dict[str, Dict] = {
         'ports': {},
     }
     resources_option_map = {

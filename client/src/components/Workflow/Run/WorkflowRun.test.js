@@ -1,50 +1,61 @@
-import MockAdapter from "axios-mock-adapter";
-import axios from "axios";
-import { __RewireAPI__ as rewire } from "./WorkflowRun";
 import WorkflowRun from "./WorkflowRun.vue";
-import { mount, createLocalVue } from "@vue/test-utils";
-import flushPromises from "flush-promises";
+import { shallowMount, createLocalVue } from "@vue/test-utils";
+import { watchForChange } from "jest/helpers";
 
 import sampleRunData1 from "./testdata/run1.json";
 
-const run1WorkflowId = "ebab00128497f9d7";
+import { getRunData } from "./services";
+jest.mock("./services");
+
+getRunData.mockImplementation(async () => {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            resolve(sampleRunData1);
+        }, 0);
+    });
+});
+
+jest.mock("app");
+
+// WorkflowRunSuccess contains some bad code that automatically
+// runs ajax calls, needs to be reworked and shallowMount doesn't
+// seem to be stopping the event hooks from firing probably because the
+// offending code runs immediately on loading
+jest.mock("./WorkflowRunSuccess");
 
 describe("WorkflowRun.vue", () => {
-    let axiosMock;
     let wrapper;
     let localVue;
+    const run1WorkflowId = "ebab00128497f9d7";
 
     beforeEach(() => {
-        axiosMock = new MockAdapter(axios);
-        rewire.__Rewire__("getAppRoot", () => "/");
-
         const propsData = { workflowId: run1WorkflowId };
         localVue = createLocalVue();
-        axiosMock.onGet(`/api/workflows/${run1WorkflowId}/download?style=run`).reply(200, sampleRunData1);
-        wrapper = mount(WorkflowRun, {
+        wrapper = shallowMount(WorkflowRun, {
             propsData: propsData,
             localVue,
         });
     });
 
-    afterEach(() => {
-        axiosMock.restore();
-    });
-
     it("loads run data from API and parses it into a WorkflowRunModel object", async () => {
-        expect(wrapper.vm.loading).to.equal(true);
-        expect(wrapper.vm.error).to.equal(null);
-        expect(wrapper.vm.model).to.equal(null);
-        await flushPromises();
-        expect(wrapper.vm.error).to.equal(null);
-        expect(wrapper.vm.loading).to.equal(false);
+        // waits for vue to render wrapper
+        await localVue.nextTick();
+
+        expect(wrapper.vm.loading).toBe(true);
+        expect(wrapper.vm.error).toBeNull();
+        expect(wrapper.vm.model).toBeNull();
+
+        await watchForChange({ vm: wrapper.vm, propName: "loading" });
+
+        expect(wrapper.vm.error).toBeNull();
+        expect(wrapper.vm.loading).toBe(false);
         const model = wrapper.vm.model;
-        expect(model).to.not.equal(null);
-        expect(model.workflowId).to.equal(run1WorkflowId);
-        expect(model.name).to.equal("Cool Test Workflow");
-        expect(model.historyId).to.equal("8f7a155755f10e73");
-        expect(model.hasUpgradeMessages).to.equal(false);
-        expect(model.hasStepVersionChanges).to.equal(false);
-        expect(model.wpInputs.wf_param.label).to.equal("wf_param");
+        expect(model).not.toBeNull();
+        expect(model.workflowId).toBe(run1WorkflowId);
+        expect(model.name).toBe("Cool Test Workflow");
+        expect(model.historyId).toBe("8f7a155755f10e73");
+        expect(model.hasUpgradeMessages).toBe(false);
+        expect(model.hasStepVersionChanges).toBe(false);
+        expect(model.wpInputs.wf_param.label).toBe("wf_param");
     });
 });

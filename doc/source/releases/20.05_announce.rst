@@ -18,7 +18,7 @@ Galaxy interactive tools allow a greater depth of analysis via access to GUI-bas
 As the last component in the Galaxy Codebase the Tool Shed has been ported to Python 3. This concludes a 4 year effort to port the Galaxy codebase to Python 3 (`Pull Request 9528`_).
 
 **Workflow Editor and Workflow Run Form in Vue.js**
-The Workflow Editor and Workflow Run Form have been re-written in Vue.js. While the functionality has been preserved this lays the groundwork for creating beautiful and reactive custom variants of these components in the future (`Pull Request 9346`_, `Pull Request 9332`_, `Pull Request 9324`_, `Pull Request 9249`_, `Pull Request 9201`_, `Pull Request 9147`_, `Pull Request 9138`_, `Pull Request 9574`_).
+The Workflow Editor and Workflow Run Form have been re-written in Vue.js. While the functionality has been preserved this lays the groundwork for creating beautiful and reactive custom variants of these components in the future (`Pull Request 9346`_, `Pull Request 9332`_, `Pull Request 9324`_, `Pull Request 9249`_, `Pull Request 9201`_, `Pull Request 9147`_, `Pull Request 9138`_, `Pull Request 9471`_).
 
 **Accelerated Galaxy Startup**
 Galaxy now caches expanded tool documents, delays creating the tool search index until after startup and creates search indexes incrementally (`Pull Request 9610`_).
@@ -41,6 +41,18 @@ To update an existing Galaxy repository run:
       $ git fetch origin && git checkout release_20.05 && git pull --ff-only origin release_20.05
 
 See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
+
+Upgrade Warning for Admins
+==========================
+
+We have been simplifying the organization of our static and client content. As a result, the ``/static`` directory now
+only requires a single rule in your proxy (nginx, Apache, etc.) configuration. Previously, additional rules for
+``/static/scripts`` and ``/static/style`` were required. Both of these additional rules should be removed from your
+proxy server configuration when upgrading your Galaxy server to release 20.05.
+
+More information about proxy server configuration for Galaxy can be found in  `Proxying Galaxy with NGINX
+<https://docs.galaxyproject.org/en/release_20.05/admin/nginx.html>`__ and `Proxying Galaxy with Apache
+<https://docs.galaxyproject.org/en/release_20.05/admin/apache.html>`__.
 
 Release Notes
 ===========================================================

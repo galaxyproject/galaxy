@@ -1,8 +1,0 @@
-<?xml version="1.0"?>
-<workflow_schedulers default="core">
-  <core id="core" />
-  <handlers default="workflow_handlers">
-    <handler id="work1" tags="workflow_handlers" />
-    <handler id="work2" tags="workflow_handlers" />
-  </handlers>
-</workflow_schedulers>

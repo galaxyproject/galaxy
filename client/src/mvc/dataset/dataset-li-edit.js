@@ -63,12 +63,15 @@ var DatasetListItemEdit = _super.extend(
                 faIcon: "fa-pencil",
                 classes: "edit-btn",
                 onclick: function (ev) {
-                    const Galaxy = getGalaxyInstance();
-                    if (Galaxy.router) {
-                        ev.preventDefault();
-                        Galaxy.router.push("datasets/edit", {
-                            dataset_id: self.model.attributes.id,
-                        });
+                    if (!deleted && !purged) {
+                        const Galaxy = getGalaxyInstance();
+                        if (Galaxy.router) {
+                            ev.preventDefault();
+                            const identifier = self.model.get("element_id") || self.model.get("id");
+                            Galaxy.router.push("datasets/edit", {
+                                dataset_id: identifier,
+                            });
+                        }
                     }
                 },
             };

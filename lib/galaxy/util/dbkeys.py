@@ -26,7 +26,7 @@ class GenomeBuilds:
 
     def get_genome_build_names(self, trans=None):
         # FIXME: how to deal with key duplicates?
-        rval = []
+        rval = [(self.default_value, self.default_name)]
         # load user custom genome builds
         if trans is not None:
             if trans.history:
@@ -38,7 +38,7 @@ class GenomeBuilds:
                 datasets = trans.sa_session.query(self._app.model.HistoryDatasetAssociation) \
                                 .filter_by(deleted=False, history_id=trans.history.id, extension="len")
                 for dataset in datasets:
-                    rval.append((dataset.dbkey, "{} ({}) [History]".format(dataset.name, dataset.dbkey)))
+                    rval.append((dataset.dbkey, f"{dataset.name} ({dataset.dbkey}) [History]"))
             user = trans.user
             if user and hasattr(user, 'preferences') and 'dbkeys' in user.preferences:
                 user_keys = loads(user.preferences['dbkeys'])

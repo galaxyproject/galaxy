@@ -7,7 +7,7 @@
             aria-haspopup="true"
             aria-expanded="false"
         >
-            <span :class="icon" />
+            <font-awesome-icon icon="caret-down" />
             <span>{{ workflow.name }}</span>
         </b-link>
         <p v-if="workflow.description">{{ workflow.description }}</p>
@@ -56,8 +56,18 @@
 <script>
 import { getAppRoot } from "onload/loadConfig";
 import { Services } from "./services";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faCaretDown);
+
 export default {
     props: ["workflow"],
+    components: {
+        FontAwesomeIcon,
+    },
     computed: {
         urlEdit() {
             return `${getAppRoot()}workflow/editor?id=${this.workflow.id}`;
@@ -75,12 +85,6 @@ export default {
             return `${getAppRoot()}workflow/display_by_username_and_slug?username=${this.workflow.owner}&slug=${
                 this.workflow.slug
             }`;
-        },
-        icon() {
-            if (this.workflow.shared) {
-                return "fa fa-share-alt";
-            }
-            return "fa fa-caret-down";
         },
     },
     created() {

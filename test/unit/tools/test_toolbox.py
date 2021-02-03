@@ -7,7 +7,6 @@ import time
 import unittest
 
 import routes
-from six import string_types
 
 from galaxy import model
 from galaxy.config_watchers import ConfigWatchers
@@ -36,10 +35,11 @@ CONFIG_TEST_TOOL_VERSION_TEMPLATE = string.Template(
 CONFIG_TEST_TOOL_VERSION_1 = CONFIG_TEST_TOOL_VERSION_TEMPLATE.safe_substitute(dict(version="1"))
 CONFIG_TEST_TOOL_VERSION_2 = CONFIG_TEST_TOOL_VERSION_TEMPLATE.safe_substitute(dict(version="2"))
 
-DEFAULT_TEST_REPO = collections.namedtuple(
+REPO_TYPE = collections.namedtuple(
     'DEFAULT_TEST_REPO',
     'tool_shed owner name changeset_revision installed_changeset_revision description status',
-)('github.com', 'galaxyproject', 'example', '1', '1', 'description', 'OK')
+)
+DEFAULT_TEST_REPO = REPO_TYPE('github.com', 'galaxyproject', 'example', '1', '1', 'description', 'OK')
 
 
 class BaseToolBoxTestCase(unittest.TestCase, UsesApp, UsesTools):
@@ -142,7 +142,7 @@ class BaseToolBoxTestCase(unittest.TestCase, UsesApp, UsesTools):
         is_json = name.endswith(".json")
         path = self._tool_conf_path(name=name)
         with open(path, "w") as f:
-            if not is_json or isinstance(content, string_types):
+            if not is_json or isinstance(content, str):
                 f.write(content)
             else:
                 json.dump(content, f)
@@ -244,7 +244,7 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
 
     def _try_until_no_errors(self, f):
         e = None
-        for i in range(40):
+        for _ in range(40):
             try:
                 f()
                 return
@@ -302,7 +302,7 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
             if elem.get("id") == section_id:
                 assert elem["model_class"] == "ToolSection"
                 return elem
-        assert False, "Failed to find section with id [%s]" % section_id
+        raise AssertionError(f"Failed to find section with id [{section_id}]")
 
     def test_tool_shed_properties(self):
         self._init_tool()
@@ -567,7 +567,7 @@ class SimplifiedToolBox(ToolBox):
         app.config.schema.defaults = {'tool_dependency_dir': 'dependencies'}
         config_files = test_case.config_files
         tool_root_dir = test_case.test_directory
-        super(SimplifiedToolBox, self).__init__(
+        super().__init__(
             config_files,
             tool_root_dir,
             app,

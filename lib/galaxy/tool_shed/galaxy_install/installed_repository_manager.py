@@ -56,24 +56,6 @@ class InstalledRepositoryManager:
         # and whose values are a list of tuples defining tool_shed_repository objects (whose status is 'Installed') that require
         # the key.
         self.installed_dependent_repositories_of_installed_repositories = {}
-        # Keep an in-memory dictionary whose keys are tuples defining tool_shed_repository objects (whose status is 'Installed')
-        # and whose values are a list of tuples defining its immediate tool_dependency objects (whose status can be anything).
-        # The value defines only the immediate tool dependencies of the repository and does not include any dependencies of the
-        # tool dependencies.
-        self.tool_dependencies_of_installed_repositories = {}
-        # Keep an in-memory dictionary whose keys are tuples defining tool_shed_repository objects (whose status is 'Installed')
-        # and whose values are a list of tuples defining its immediate tool_dependency objects (whose status is 'Installed').
-        # The value defines only the immediate tool dependencies of the repository and does not include any dependencies of the
-        # tool dependencies.
-        self.installed_tool_dependencies_of_installed_repositories = {}
-        # Keep an in-memory dictionary whose keys are tuples defining tool_dependency objects (whose status is 'Installed') and
-        # whose values are a list of tuples defining tool_dependency objects (whose status can be anything) required by the
-        # installed tool dependency at runtime.  The value defines the entire tool dependency tree.
-        self.runtime_tool_dependencies_of_installed_tool_dependencies = {}
-        # Keep an in-memory dictionary whose keys are tuples defining tool_dependency objects (whose status is 'Installed') and
-        # whose values are a list of tuples defining tool_dependency objects (whose status is 'Installed') that require the key
-        # at runtime.  The value defines the entire tool dependency tree.
-        self.installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies = {}
 
     @property
     def tool_paths(self):
@@ -161,14 +143,14 @@ class InstalledRepositoryManager:
         repository_dependency_tups = self.get_repository_dependency_tups_for_installed_repository(repository, status=status)
         # Add an entry to self.installed_repository_dependencies_of_installed_repositories.
         if repository_tup not in self.installed_repository_dependencies_of_installed_repositories:
-            debug_msg = "Adding an entry for revision {} of repository {} owned by {} ".format(installed_changeset_revision, name, owner)
+            debug_msg = f"Adding an entry for revision {installed_changeset_revision} of repository {name} owned by {owner} "
             debug_msg += "to installed_repository_dependencies_of_installed_repositories."
             log.debug(debug_msg)
             self.installed_repository_dependencies_of_installed_repositories[repository_tup] = repository_dependency_tups
         # Use the repository_dependency_tups to add entries to the reverse dictionary
         # self.installed_dependent_repositories_of_installed_repositories.
         for required_repository_tup in repository_dependency_tups:
-            debug_msg = "Appending revision {} of repository {} owned by {} ".format(installed_changeset_revision, name, owner)
+            debug_msg = f"Appending revision {installed_changeset_revision} of repository {name} owned by {owner} "
             debug_msg += "to all dependent repositories in installed_dependent_repositories_of_installed_repositories."
             log.debug(debug_msg)
             if required_repository_tup in self.installed_dependent_repositories_of_installed_repositories:
@@ -176,72 +158,16 @@ class InstalledRepositoryManager:
             else:
                 self.installed_dependent_repositories_of_installed_repositories[required_repository_tup] = [repository_tup]
 
-    def add_entry_to_installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies(self, tool_dependency):
-        """Add an entry to self.installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies."""
-        tool_dependency_tup = self.get_tool_dependency_tuple_for_installed_repository_manager(tool_dependency)
-        if tool_dependency_tup not in self.installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies:
-            tool_shed_repository_id, name, version, type = tool_dependency_tup
-            debug_msg = "Adding an entry for version {} of {} {} ".format(version, type, name)
-            debug_msg += "to installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies."
-            log.debug(debug_msg)
-            status = self.install_model.ToolDependency.installation_status.INSTALLED
-            installed_runtime_dependent_tool_dependency_tups = self.get_runtime_dependent_tool_dependency_tuples(tool_dependency,
-                                                                                                                 status=status)
-            self.installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies[tool_dependency_tup] = \
-                installed_runtime_dependent_tool_dependency_tups
-
-    def add_entry_to_installed_tool_dependencies_of_installed_repositories(self, repository):
-        """Add an entry to self.installed_tool_dependencies_of_installed_repositories."""
-        repository_tup = self.get_repository_tuple_for_installed_repository_manager(repository)
-        if repository_tup not in self.installed_tool_dependencies_of_installed_repositories:
-            tool_shed, name, owner, installed_changeset_revision = repository_tup
-            debug_msg = "Adding an entry for revision {} of repository {} owned by {} ".format(installed_changeset_revision, name, owner)
-            debug_msg += "to installed_tool_dependencies_of_installed_repositories."
-            log.debug(debug_msg)
-            installed_tool_dependency_tups = []
-            for tool_dependency in repository.tool_dependencies:
-                if tool_dependency.status == self.app.install_model.ToolDependency.installation_status.INSTALLED:
-                    tool_dependency_tup = self.get_tool_dependency_tuple_for_installed_repository_manager(tool_dependency)
-                    installed_tool_dependency_tups.append(tool_dependency_tup)
-            self.installed_tool_dependencies_of_installed_repositories[repository_tup] = installed_tool_dependency_tups
-
     def add_entry_to_repository_dependencies_of_installed_repositories(self, repository):
         """Add an entry to self.repository_dependencies_of_installed_repositories."""
         repository_tup = self.get_repository_tuple_for_installed_repository_manager(repository)
         if repository_tup not in self.repository_dependencies_of_installed_repositories:
             tool_shed, name, owner, installed_changeset_revision = repository_tup
-            debug_msg = "Adding an entry for revision {} of repository {} owned by {} ".format(installed_changeset_revision, name, owner)
+            debug_msg = f"Adding an entry for revision {installed_changeset_revision} of repository {name} owned by {owner} "
             debug_msg += "to repository_dependencies_of_installed_repositories."
             log.debug(debug_msg)
             repository_dependency_tups = self.get_repository_dependency_tups_for_installed_repository(repository, status=None)
             self.repository_dependencies_of_installed_repositories[repository_tup] = repository_dependency_tups
-
-    def add_entry_to_runtime_tool_dependencies_of_installed_tool_dependencies(self, tool_dependency):
-        """Add an entry to self.runtime_tool_dependencies_of_installed_tool_dependencies."""
-        tool_dependency_tup = self.get_tool_dependency_tuple_for_installed_repository_manager(tool_dependency)
-        if tool_dependency_tup not in self.runtime_tool_dependencies_of_installed_tool_dependencies:
-            tool_shed_repository_id, name, version, type = tool_dependency_tup
-            debug_msg = "Adding an entry for version {} of {} {} ".format(version, type, name)
-            debug_msg += "to runtime_tool_dependencies_of_installed_tool_dependencies."
-            log.debug(debug_msg)
-            runtime_dependent_tool_dependency_tups = self.get_runtime_dependent_tool_dependency_tuples(tool_dependency,
-                                                                                                       status=None)
-            self.runtime_tool_dependencies_of_installed_tool_dependencies[tool_dependency_tup] = \
-                runtime_dependent_tool_dependency_tups
-
-    def add_entry_to_tool_dependencies_of_installed_repositories(self, repository):
-        """Add an entry to self.tool_dependencies_of_installed_repositories."""
-        repository_tup = self.get_repository_tuple_for_installed_repository_manager(repository)
-        if repository_tup not in self.tool_dependencies_of_installed_repositories:
-            tool_shed, name, owner, installed_changeset_revision = repository_tup
-            debug_msg = "Adding an entry for revision {} of repository {} owned by {} ".format(installed_changeset_revision, name, owner)
-            debug_msg += "to tool_dependencies_of_installed_repositories."
-            log.debug(debug_msg)
-            tool_dependency_tups = []
-            for tool_dependency in repository.tool_dependencies:
-                tool_dependency_tup = self.get_tool_dependency_tuple_for_installed_repository_manager(tool_dependency)
-                tool_dependency_tups.append(tool_dependency_tup)
-            self.tool_dependencies_of_installed_repositories[repository_tup] = tool_dependency_tups
 
     def get_containing_repository_for_tool_dependency(self, tool_dependency_tup):
         tool_shed_repository_id, name, version, type = tool_dependency_tup
@@ -296,7 +222,7 @@ class InstalledRepositoryManager:
             if required_repo_info_dicts:
                 required_tool_dependencies = {}
                 for rid in required_repo_info_dicts:
-                    for name, repo_info_tuple in rid.items():
+                    for repo_info_tuple in rid.values():
                         description, repository_clone_url, changeset_revision, ctx_rev, \
                             repository_owner, rid_repository_dependencies, rid_tool_dependencies = \
                             repository_util.get_repo_info_tuple_contents(repo_info_tuple)
@@ -730,7 +656,7 @@ class InstalledRepositoryManager:
                 for tool_dependency in tool_dependencies_to_uninstall:
                     uninstalled, error_message = tool_dependency_util.remove_tool_dependency(self.app, tool_dependency)
                     if error_message:
-                        errors = '{}  {}'.format(errors, error_message)
+                        errors = f'{errors}  {error_message}'
         repository.deleted = True
         if remove_from_disk:
             repository.status = self.app.install_model.ToolShedRepository.installation_status.UNINSTALLED
@@ -878,60 +804,20 @@ class InstalledRepositoryManager:
             altered_installed_dependent_repositories_of_installed_repositories
         # Remove this repository's entry from self.installed_repository_dependencies_of_installed_repositories.
         if repository_tup in self.installed_repository_dependencies_of_installed_repositories:
-            debug_msg = "Removing entry for revision {} of repository {} owned by {} ".format(installed_changeset_revision, name, owner)
+            debug_msg = f"Removing entry for revision {installed_changeset_revision} of repository {name} owned by {owner} "
             debug_msg += "from installed_repository_dependencies_of_installed_repositories."
             log.debug(debug_msg)
             del self.installed_repository_dependencies_of_installed_repositories[repository_tup]
-
-    def remove_entry_from_installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies(self, tool_dependency):
-        """Remove an entry from self.installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies."""
-        tool_dependency_tup = self.get_tool_dependency_tuple_for_installed_repository_manager(tool_dependency)
-        if tool_dependency_tup in self.installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies:
-            tool_shed_repository_id, name, version, type = tool_dependency_tup
-            debug_msg = "Removing entry for version {} of {} {} ".format(version, type, name)
-            debug_msg += "from installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies."
-            log.debug(debug_msg)
-            del self.installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies[tool_dependency_tup]
-
-    def remove_entry_from_installed_tool_dependencies_of_installed_repositories(self, repository):
-        """Remove an entry from self.installed_tool_dependencies_of_installed_repositories."""
-        repository_tup = self.get_repository_tuple_for_installed_repository_manager(repository)
-        if repository_tup in self.installed_tool_dependencies_of_installed_repositories:
-            tool_shed, name, owner, installed_changeset_revision = repository_tup
-            debug_msg = "Removing entry for revision {} of repository {} owned by {} ".format(installed_changeset_revision, name, owner)
-            debug_msg += "from installed_tool_dependencies_of_installed_repositories."
-            log.debug(debug_msg)
-            del self.installed_tool_dependencies_of_installed_repositories[repository_tup]
 
     def remove_entry_from_repository_dependencies_of_installed_repositories(self, repository):
         """Remove an entry from self.repository_dependencies_of_installed_repositories."""
         repository_tup = self.get_repository_tuple_for_installed_repository_manager(repository)
         if repository_tup in self.repository_dependencies_of_installed_repositories:
             tool_shed, name, owner, installed_changeset_revision = repository_tup
-            debug_msg = "Removing entry for revision {} of repository {} owned by {} ".format(installed_changeset_revision, name, owner)
+            debug_msg = f"Removing entry for revision {installed_changeset_revision} of repository {name} owned by {owner} "
             debug_msg += "from repository_dependencies_of_installed_repositories."
             log.debug(debug_msg)
             del self.repository_dependencies_of_installed_repositories[repository_tup]
-
-    def remove_entry_from_runtime_tool_dependencies_of_installed_tool_dependencies(self, tool_dependency):
-        """Remove an entry from self.runtime_tool_dependencies_of_installed_tool_dependencies."""
-        tool_dependency_tup = self.get_tool_dependency_tuple_for_installed_repository_manager(tool_dependency)
-        if tool_dependency_tup in self.runtime_tool_dependencies_of_installed_tool_dependencies:
-            tool_shed_repository_id, name, version, type = tool_dependency_tup
-            debug_msg = "Removing entry for version %s of %s %s from runtime_tool_dependencies_of_installed_tool_dependencies." % \
-                (version, type, name)
-            log.debug(debug_msg)
-            del self.runtime_tool_dependencies_of_installed_tool_dependencies[tool_dependency_tup]
-
-    def remove_entry_from_tool_dependencies_of_installed_repositories(self, repository):
-        """Remove an entry from self.tool_dependencies_of_installed_repositories."""
-        repository_tup = self.get_repository_tuple_for_installed_repository_manager(repository)
-        if repository_tup in self.tool_dependencies_of_installed_repositories:
-            tool_shed, name, owner, installed_changeset_revision = repository_tup
-            debug_msg = "Removing entry for revision %s of repository %s owned by %s from tool_dependencies_of_installed_repositories." % \
-                (installed_changeset_revision, name, owner)
-            log.debug(debug_msg)
-            del self.tool_dependencies_of_installed_repositories[repository_tup]
 
     def repository_dependency_needed_only_for_compiling_tool_dependency(self, repository, repository_dependency):
         for rd_tup in repository.tuples_of_repository_dependencies_needed_for_compiling_td:
@@ -944,8 +830,8 @@ class InstalledRepositoryManager:
             if cleaned_repository_dependency_tool_shed == cleaned_tool_shed and \
                 repository_dependency.name == name and \
                 repository_dependency.owner == owner and \
-                (repository_dependency.installed_changeset_revision == changeset_revision or
-                 repository_dependency.changeset_revision == changeset_revision):
+                (repository_dependency.installed_changeset_revision == changeset_revision
+                 or repository_dependency.changeset_revision == changeset_revision):
                 return True
         return False
 
@@ -1024,7 +910,7 @@ class InstalledRepositoryManager:
                 new_dependency_name = None
                 new_dependency_type = None
                 new_dependency_version = None
-                for new_dependency_key, new_dependency_val_dict in new_dependencies_dict.items():
+                for new_dependency_val_dict in new_dependencies_dict.values():
                     # Match on name only, hopefully this will be enough!
                     if original_name == new_dependency_val_dict['name']:
                         new_dependency_name = new_dependency_val_dict['name']

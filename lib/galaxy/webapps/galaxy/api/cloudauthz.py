@@ -41,8 +41,9 @@ class CloudAuthzController(BaseAPIController):
     @expose_api
     def index(self, trans, **kwargs):
         """
-        * GET /api/cloud/authz
-            Lists all the cloud authorizations user has defined.
+        GET /api/cloud/authz
+
+        Lists all the cloud authorizations user has defined.
 
         :type  trans: galaxy.webapps.base.webapp.GalaxyWebTransaction
         :param trans: Galaxy web transaction
@@ -104,11 +105,11 @@ class CloudAuthzController(BaseAPIController):
             missing_arguments.append('config')
 
         authn_id = payload.get('authn_id', None)
-        if authn_id is None:
+        if authn_id is None and provider.lower() not in ["azure", "gcp"]:
             missing_arguments.append('authn_id')
 
         if len(missing_arguments) > 0:
-            log.debug(msg_template.format("missing required config {}".format(missing_arguments)))
+            log.debug(msg_template.format(f"missing required config {missing_arguments}"))
             raise RequestParameterMissingException('The following required arguments are missing in the payload: '
                                                    '{}'.format(missing_arguments))
 
@@ -118,16 +119,17 @@ class CloudAuthzController(BaseAPIController):
             log.debug(msg_template.format("invalid config type `{}`, expect `dict`".format(type(config))))
             raise RequestParameterInvalidException('Invalid type for the required `config` variable; expect `dict` '
                                                    'but received `{}`.'.format(type(config)))
-        try:
-            authn_id = self.decode_id(authn_id)
-        except Exception:
-            log.debug(msg_template.format("cannot decode authn_id `" + str(authn_id) + "`"))
-            raise MalformedId('Invalid `authn_id`!')
+        if authn_id:
+            try:
+                authn_id = self.decode_id(authn_id)
+            except Exception:
+                log.debug(msg_template.format("cannot decode authn_id `" + str(authn_id) + "`"))
+                raise MalformedId('Invalid `authn_id`!')
 
-        try:
-            trans.app.authnz_manager.can_user_assume_authn(trans, authn_id)
-        except Exception as e:
-            raise e
+            try:
+                trans.app.authnz_manager.can_user_assume_authn(trans, authn_id)
+            except Exception as e:
+                raise e
 
         # No two authorization configuration with
         # exact same key/value should exist.
@@ -147,7 +149,6 @@ class CloudAuthzController(BaseAPIController):
             )
             view = self.cloudauthz_serializer.serialize_to_view(new_cloudauthz, trans=trans, **self._parse_serialization_params(kwargs, 'summary'))
             log.debug('Created a new cloudauthz record for the user id `{}` '.format(str(trans.user.id)))
-            trans.response.status = '200'
             return view
         except Exception as e:
             log.exception(msg_template.format("exception while creating the new cloudauthz record"))
@@ -194,11 +195,12 @@ class CloudAuthzController(BaseAPIController):
     @expose_api
     def update(self, trans, encoded_authz_id, payload, **kwargs):
         """
-        * PUT /api/cloud/authz/{encoded_authz_id}
-            Updates the values for the cloudauthz configuration with the given ``encoded_authz_id``.
+        PUT /api/cloud/authz/{encoded_authz_id}
 
-            With this API only the following attributes of a cloudauthz configuration
-            can be updated: `authn_id`, `provider`, `config`, `deleted`.
+        Updates the values for the cloudauthz configuration with the given ``encoded_authz_id``.
+
+        With this API only the following attributes of a cloudauthz configuration
+        can be updated: `authn_id`, `provider`, `config`, `deleted`.
 
         :type  trans:               galaxy.webapps.base.webapp.GalaxyWebTransaction
         :param trans:               Galaxy web transaction
@@ -209,6 +211,7 @@ class CloudAuthzController(BaseAPIController):
         :type payload:              dict
         :param payload:             A dictionary structure containing the attributes to modified with their new values.
                                     It can contain any number of the following attributes:
+
                                         *   provider:   the cloud-based resource provider
                                                         to which this configuration belongs to.
 

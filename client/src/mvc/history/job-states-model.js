@@ -6,6 +6,7 @@ import AJAX_QUEUE from "utils/ajax-queue";
 var UPDATE_DELAY = 2000;
 var NON_TERMINAL_STATES = ["new", "queued", "running"];
 var ERROR_STATES = ["error", "deleted"];
+var TERMINAL_STATES = ["ok"].concat(ERROR_STATES);
 /** Fetch state on add or just wait for polling to start. */
 var FETCH_STATE_ON_ADD = false;
 var BATCH_FETCH_STATE = true;
@@ -58,6 +59,10 @@ var JobStatesSummary = Backbone.Model.extend({
 
     numInError: function () {
         return this.numWithStates(ERROR_STATES);
+    },
+
+    numTerminal: function () {
+        return this.numWithStates(TERMINAL_STATES);
     },
 
     running: function () {
@@ -203,4 +208,10 @@ var JobStatesSummaryCollection = Backbone.Collection.extend({
     },
 });
 
-export default { JobStatesSummary, JobStatesSummaryCollection, FETCH_STATE_ON_ADD, NON_TERMINAL_STATES, ERROR_STATES };
+export default {
+    JobStatesSummary,
+    JobStatesSummaryCollection,
+    FETCH_STATE_ON_ADD,
+    NON_TERMINAL_STATES,
+    ERROR_STATES,
+};

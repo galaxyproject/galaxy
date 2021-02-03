@@ -6,7 +6,6 @@ from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     LibraryPopulator,
-    TestsDatasets,
 )
 from ._framework import ApiTestCase
 
@@ -14,7 +13,7 @@ FILE_URL = 'https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data
 FILE_MD5 = "37b59762b59fff860460522d271bc111"
 
 
-class LibrariesApiTestCase(ApiTestCase, TestsDatasets):
+class LibrariesApiTestCase(ApiTestCase):
 
     def setUp(self):
         super().setUp()
@@ -190,7 +189,8 @@ class LibrariesApiTestCase(ApiTestCase, TestsDatasets):
         items = [{
             "src": "url",
             "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
-            "MD5": "37b59762b59fff860460522d271bc112"
+            "MD5": "37b59762b59fff860460522d271bc112",
+            "name": "4.bed",
         }]
         targets = [{
             "destination": destination,
@@ -207,7 +207,10 @@ class LibrariesApiTestCase(ApiTestCase, TestsDatasets):
 
         job = tool_response.json()["jobs"][0]
         details = self.dataset_populator.get_job_details(job["id"]).json()
-        assert details["state"] == "error", details
+        assert details["state"] == "ok", details
+
+        dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
+        assert dataset["state"] == "error", dataset
 
     def test_fetch_url_archive_to_folder(self):
         history_id, library, destination = self._setup_fetch_to_folder("single_url")
@@ -225,7 +228,7 @@ class LibrariesApiTestCase(ApiTestCase, TestsDatasets):
         dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
         assert dataset["file_size"] == 61, dataset
 
-    @unittest.skip  # reference URLs changed, checksums now invalid.
+    @unittest.skip("reference URLs changed, checksums now invalid.")
     def test_fetch_bagit_archive_to_folder(self):
         history_id, library, destination = self._setup_fetch_to_folder("bagit_archive")
         example_bag_path = self.test_data_resolver.get_filename("example-bag.zip")
@@ -324,6 +327,31 @@ class LibrariesApiTestCase(ApiTestCase, TestsDatasets):
 
     def test_ldda_collection_import_to_history_hide_source(self):
         self._import_to_history(visible=False)
+
+    def test_import_paired_collection(self):
+        ld = self._create_dataset_in_folder_in_library("ForHistoryImport").json()
+        history_id = self.dataset_populator.new_history()
+        url = "histories/%s/contents" % history_id
+        collection_name = 'Paired-end data (from library)'
+        payload = {
+            'name': collection_name,
+            'collection_type': 'list:paired',
+            "type": "dataset_collection",
+            'element_identifiers': json.dumps([
+                {
+                    'src': 'new_collection',
+                    'name': 'pair1',
+                    'collection_type': 'paired',
+                    'element_identifiers': [{'name': 'forward', 'src': 'ldda', 'id': ld['id']},
+                                            {'name': 'reverse', 'src': 'ldda', 'id': ld['id']}]
+                }
+            ])
+        }
+        new_collection = self._post(url, payload).json()
+        assert new_collection['name'] == collection_name
+        pair = new_collection['elements'][0]
+        assert pair['element_identifier'] == 'pair1'
+        assert pair['object']['elements'][0]['object']['history_id'] == history_id
 
     def _import_to_history(self, visible=True):
         ld = self._create_dataset_in_folder_in_library("ForHistoryImport").json()

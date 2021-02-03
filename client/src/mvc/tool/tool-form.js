@@ -22,6 +22,7 @@ const View = Backbone.View.extend({
         this.form = new ToolFormBase(
             Utils.merge(
                 {
+                    setupToolMicrodata: true,
                     listen_to_history: true,
                     always_refresh: false,
                     buildmodel: (process, form) => {
@@ -49,6 +50,23 @@ const View = Backbone.View.extend({
                                     window.location = getAppRoot();
                                     return;
                                 }
+
+                                // we can rely on tool_id, only if it's installed from toolshed
+                                // if no version provided and tool_id is not in toolshed style, don't show the warning
+                                const client_version =
+                                    options.version ||
+                                    (options.tool_id && options.tool_id.match(/^(toolshed)\./)
+                                        ? options.tool_id
+                                        : false);
+
+                                if (
+                                    data.versions &&
+                                    client_version &&
+                                    !data.versions.includes(client_version.replace(/.*\//, ""))
+                                ) {
+                                    data.message = `Requested version unavailable.`;
+                                }
+
                                 form.model.set(data);
                                 this._customize(form);
                                 Galaxy.emit.debug("tool-form-base::_buildModel()", "Initial tool model ready.", data);
@@ -337,7 +355,7 @@ const View = Backbone.View.extend({
                 Galaxy.emit.debug("tool-form::validate()", "Retrieving input objects failed.");
                 continue;
             }
-            if (!input_def.optional && input_value == null) {
+            if (!input_def.optional && input_value == null && input_def.type != "hidden") {
                 this.form.highlight(input_id);
                 return false;
             }
@@ -381,7 +399,7 @@ const View = Backbone.View.extend({
         const index = {};
         for (const i in job_def.inputs) {
             const input = job_def.inputs[i];
-            if (input && $.isArray(input.values)) {
+            if (input && Array.isArray(input.values)) {
                 for (const j of input.values) {
                     if (j.src && !index[j.id]) {
                         inputs.push(j);

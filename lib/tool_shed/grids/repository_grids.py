@@ -7,7 +7,7 @@ from sqlalchemy import and_, false, or_, true
 import tool_shed.grids.util as grids_util
 import tool_shed.repository_types.util as rt_util
 import tool_shed.util.shed_util_common as suc
-from galaxy.webapps.reports.framework import grids
+from galaxy.web.legacy_framework import grids
 from tool_shed.util import hg_util, metadata_util, repository_util
 from tool_shed.webapp import model
 
@@ -57,12 +57,7 @@ class CategoryGrid(grids.Grid):
                            attach_popup=False)
     ]
     # Override these
-    default_filter = {}
-    global_actions = []
-    operations = []
-    standard_filters = []
     num_rows_per_page = 50
-    use_paging = False
 
 
 class RepositoryGrid(grids.Grid):
@@ -118,7 +113,7 @@ class RepositoryGrid(grids.Grid):
                 option_items = select_field.options[0][0]
                 rev_label, rev_date = option_items.split(' ')
                 rev_date = '<i><font color="#666666">%s</font></i>' % rev_date
-                return '{} {}'.format(rev_label, rev_date)
+                return f'{rev_label} {rev_date}'
             return ''
 
     class LatestInstallableRevisionColumn(grids.GridColumn):
@@ -231,11 +226,10 @@ class RepositoryGrid(grids.Grid):
                                               key="free-text-search",
                                               visible=False,
                                               filterable="standard"))
-    operations = []
-    standard_filters = []
     default_filter = dict(deleted="False")
     num_rows_per_page = 50
-    use_paging = False
+    use_paging = True
+    allow_fetching_all_results = False
 
     def build_initial_query(self, trans, **kwd):
         filter = trans.app.repository_grid_filter_manager.get_filter(trans)
@@ -353,8 +347,6 @@ class MatchedRepositoryGrid(grids.Grid):
                    attach_popup=False)
     ]
     operations = [grids.GridOperation("Install to Galaxy", allow_multiple=True)]
-    standard_filters = []
-    default_filter = {}
     num_rows_per_page = 50
     use_paging = False
 
@@ -408,8 +400,6 @@ class MyWritableRepositoriesGrid(RepositoryGrid):
                                               key="free-text-search",
                                               visible=False,
                                               filterable="standard"))
-    operations = []
-    use_paging = False
 
     def build_initial_query(self, trans, **kwd):
         # TODO: improve performance by adding a db table associating users with repositories for which they have write access.
@@ -449,11 +439,7 @@ class RepositoriesByUserGrid(RepositoryGrid):
                                       key="Category.name",
                                       attach_popup=False)
     ]
-    operations = []
-    standard_filters = []
     default_filter = dict(deleted="False")
-    num_rows_per_page = 50
-    use_paging = False
 
     def build_initial_query(self, trans, **kwd):
         decoded_user_id = trans.security.decode_id(kwd['user_id'])
@@ -515,8 +501,6 @@ class RepositoriesInCategoryGrid(RepositoryGrid):
                                               key="free-text-search",
                                               visible=False,
                                               filterable="standard"))
-    operations = []
-    use_paging = False
 
     def build_initial_query(self, trans, **kwd):
         category_id = kwd.get('id', None)
@@ -593,8 +577,6 @@ class RepositoriesIOwnGrid(RepositoryGrid):
                                               key="free-text-search",
                                               visible=False,
                                               filterable="standard"))
-    operations = []
-    use_paging = False
 
     def build_initial_query(self, trans, **kwd):
         return trans.sa_session.query(model.Repository) \
@@ -621,8 +603,6 @@ class RepositoriesICanAdministerGrid(RepositoryGrid):
                                               key="free-text-search",
                                               visible=False,
                                               filterable="standard"))
-    operations = []
-    use_paging = False
 
     def build_initial_query(self, trans, **kwd):
         """
@@ -671,8 +651,6 @@ class RepositoriesMissingToolTestComponentsGrid(RepositoryGrid):
                                               key="free-text-search",
                                               visible=False,
                                               filterable="standard"))
-    operations = []
-    use_paging = False
 
     def build_initial_query(self, trans, **kwd):
         # Filter by latest installable revisions that contain tools with missing tool test components.
@@ -700,8 +678,6 @@ class MyWritableRepositoriesMissingToolTestComponentsGrid(RepositoriesMissingToo
     # This grid displays only the latest installable revision of each repository.
     title = "Repositories I can change with missing tool test components"
     columns = [col for col in RepositoriesMissingToolTestComponentsGrid.columns]
-    operations = []
-    use_paging = False
 
     def build_initial_query(self, trans, **kwd):
         # First get all repositories that the current user is authorized to update.
@@ -759,7 +735,6 @@ class DeprecatedRepositoriesIOwnGrid(RepositoriesIOwnGrid):
                                               key="free-text-search",
                                               visible=False,
                                               filterable="standard"))
-    use_paging = False
 
     def build_initial_query(self, trans, **kwd):
         return trans.sa_session.query(model.Repository) \
@@ -810,8 +785,6 @@ class RepositoriesWithInvalidToolsGrid(RepositoryGrid):
                                   link=(lambda item: dict(operation="repositories_by_user", id=item.id)),
                                   attach_popup=False)
     ]
-    operations = []
-    use_paging = False
 
     def build_initial_query(self, trans, **kwd):
         # Filter by latest metadata revisions that contain invalid tools.
@@ -839,8 +812,6 @@ class MyWritableRepositoriesWithInvalidToolsGrid(RepositoriesWithInvalidToolsGri
     # This grid displays only the latest installable revision of each repository.
     title = "Repositories I can change with invalid tools"
     columns = [col for col in RepositoriesWithInvalidToolsGrid.columns]
-    operations = []
-    use_paging = False
 
     def build_initial_query(self, trans, **kwd):
         # First get all repositories that the current user is authorized to update.
@@ -969,11 +940,10 @@ class RepositoryMetadataGrid(grids.Grid):
                                               key="free-text-search",
                                               visible=False,
                                               filterable="standard"))
-    operations = []
-    standard_filters = []
     default_filter = dict(malicious="False")
     num_rows_per_page = 50
-    use_paging = False
+    use_paging = True
+    allow_fetching_all_results = False
 
     def build_initial_query(self, trans, **kwd):
         return trans.sa_session.query(model.RepositoryMetadata) \
@@ -1281,12 +1251,7 @@ class ValidCategoryGrid(CategoryGrid):
                            attach_popup=False)
     ]
     # Override these
-    default_filter = {}
-    global_actions = []
-    operations = []
-    standard_filters = []
     num_rows_per_page = 50
-    use_paging = False
 
 
 class ValidRepositoryGrid(RepositoryGrid):
@@ -1355,8 +1320,6 @@ class ValidRepositoryGrid(RepositoryGrid):
                                               key="free-text-search",
                                               visible=False,
                                               filterable="standard"))
-    operations = []
-    use_paging = False
 
     def build_initial_query(self, trans, **kwd):
         filter = trans.app.repository_grid_filter_manager.get_filter(trans)

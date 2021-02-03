@@ -171,6 +171,8 @@ def galactic_job_json(
             return replacement_record(value)
 
     def replacement_file(value):
+        if value.get('galaxy_id'):
+            return {"src": "hda", "id": value['galaxy_id']}
         file_path = value.get("location", None) or value.get("path", None)
         # format to match output definitions in tool, where did filetype come from?
         filetype = value.get("filetype", None) or value.get("format", None)
@@ -278,6 +280,8 @@ def galactic_job_json(
         return collection_element_identifiers
 
     def replacement_collection(value):
+        if value.get('galaxy_id'):
+            return {"src": "hdca", "id": value['galaxy_id']}
         assert "collection_type" in value
         collection_type = value["collection_type"]
         elements = to_elements(value, collection_type)
@@ -328,12 +332,13 @@ def _ensure_file_exists(file_path):
 
 class FileLiteralTarget:
 
-    def __init__(self, contents, **kwargs):
+    def __init__(self, contents, path=None, **kwargs):
         self.contents = contents
         self.properties = kwargs
+        self.path = path
 
     def __str__(self):
-        return "FileLiteralTarget[path={}] with {}".format(self.path, self.properties)
+        return f"FileLiteralTarget[contents={self.contents}] with {self.properties}"
 
 
 class FileUploadTarget:
@@ -345,16 +350,17 @@ class FileUploadTarget:
         self.properties = kwargs
 
     def __str__(self):
-        return "FileUploadTarget[path={}] with {}".format(self.path, self.properties)
+        return f"FileUploadTarget[path={self.path}] with {self.properties}"
 
 
 class ObjectUploadTarget:
 
     def __init__(self, the_object):
         self.object = the_object
+        self.properties = {}
 
     def __str__(self):
-        return "ObjectUploadTarget[object=%s]" % self.object
+        return f"ObjectUploadTarget[object={self.object} with {self.properties}]"
 
 
 class DirectoryUploadTarget:
@@ -388,8 +394,11 @@ def invocation_to_output(invocation, history_id, output_id):
     elif output_id in invocation["output_collections"]:
         collection = invocation["output_collections"][output_id]
         galaxy_output = GalaxyOutput(history_id, "dataset_collection", collection["id"], None)
+    elif output_id in invocation["output_values"]:
+        output_value = invocation["output_values"][output_id]
+        galaxy_output = GalaxyOutput(None, "raw_value", output_value, None)
     else:
-        raise Exception("Failed to find output with label [{}] in [{}]".format(output_id, invocation))
+        raise Exception(f"Failed to find output with label [{output_id}] in [{invocation}]")
 
     return galaxy_output
 
@@ -429,7 +438,9 @@ def output_to_cwl_json(
             with open(dataset_dict["path"]) as f:
                 return json.safe_load(f)
 
-    if output_metadata["history_content_type"] == "dataset":
+    if galaxy_output.history_content_type == "raw_value":
+        return galaxy_output.history_content_id
+    elif output_metadata["history_content_type"] == "dataset":
         ext = output_metadata["file_ext"]
         assert output_metadata["state"] == "ok"
         if ext == "expression.json":

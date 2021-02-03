@@ -3,18 +3,17 @@ Test lib/galaxy/visualization/plugins/plugin.
 """
 import unittest
 
-from six import string_types
-
 from galaxy.util import clean_multiline_string
 from galaxy.visualization.plugins import (
     plugin as vis_plugin,
     resource_parser,
     utils as vis_utils
 )
+from . import VisualizationsBase_TestCase
 from ...unittest_utils import galaxy_mock
 
 
-class VisualizationsPlugin_TestCase(unittest.TestCase):
+class VisualizationsPlugin_TestCase(VisualizationsBase_TestCase):
     plugin_class = vis_plugin.VisualizationPlugin
 
     def test_default_init(self):
@@ -178,7 +177,7 @@ class VisualizationsPlugin_TestCase(unittest.TestCase):
         plugin.template_lookup = plugin._build_template_lookup(mock_app_dir.root_path)
 
         response = plugin.render(trans=galaxy_mock.MockTrans(app=mock_app))
-        self.assertIsInstance(response, string_types)
+        self.assertIsInstance(response, str)
         self.assertEqual(response.strip(), "True")
 
 

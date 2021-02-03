@@ -6,6 +6,8 @@ import logging
 import re
 from collections import defaultdict, OrderedDict
 
+import packaging.version
+
 from galaxy import (
     exceptions,
     model,
@@ -19,7 +21,8 @@ from galaxy.tool_util.parser.output_objects import ToolExpressionOutput
 from galaxy.tools import (
     DatabaseOperationTool,
     DefaultToolState,
-    ToolInputsNotReadyException
+    ToolInputsNotReadyException,
+    WORKFLOW_SAFE_TOOL_VERSION_UPDATES,
 )
 from galaxy.tools.actions import filter_output
 from galaxy.tools.execute import execute, MappingParameters, PartialJobExecution
@@ -103,7 +106,7 @@ class WorkflowModule:
 
     # ---- Saving in various forms ------------------------------------------
 
-    def save_to_step(self, step):
+    def save_to_step(self, step, detached=False):
         step.type = self.type
         step.tool_inputs = self.get_state()
 
@@ -212,7 +215,7 @@ class WorkflowModule:
     def get_config_form(self, step=None):
         """ Serializes input parameters of a module into input dictionaries. """
         return {
-            'title' : self.name,
+            'title': self.name,
             'inputs': [param.to_dict(self.trans) for param in self.get_inputs().values()]
         }
 
@@ -400,10 +403,11 @@ class SubWorkflowModule(WorkflowModule):
     def from_dict(Class, trans, d, **kwds):
         module = super().from_dict(trans, d, **kwds)
         if "subworkflow" in d:
+            detached = kwds.get("detached", False)
+            assert not detached  # dry run requires content_id
             module.subworkflow = d["subworkflow"]
         elif "content_id" in d:
-            from galaxy.managers.workflows import WorkflowsManager
-            module.subworkflow = WorkflowsManager(trans.app).get_owned_workflow(trans, d["content_id"])
+            module.subworkflow = trans.app.workflow_manager.get_owned_workflow(trans, d["content_id"])
         else:
             raise Exception("Step associated subworkflow could not be found.")
         return module
@@ -414,7 +418,7 @@ class SubWorkflowModule(WorkflowModule):
         module.subworkflow = step.subworkflow
         return module
 
-    def save_to_step(self, step):
+    def save_to_step(self, step, **kwd):
         step.type = self.type
         step.subworkflow = self.subworkflow
 
@@ -426,32 +430,27 @@ class SubWorkflowModule(WorkflowModule):
     def get_all_inputs(self, data_only=False, connectable_only=False):
         """ Get configure time data input descriptions. """
         # Filter subworkflow steps and get inputs
-        step_to_input_type = {
-            "data_input": "dataset",
-            "data_collection_input": "dataset_collection",
-            "parameter_input": "parameter",
-        }
         inputs = []
         if hasattr(self.subworkflow, 'input_steps'):
             for step in self.subworkflow.input_steps:
                 name = step.label
                 if not name:
                     step_module = module_factory.from_workflow_step(self.trans, step)
-                    name = "{}:{}".format(step.order_index, step_module.get_name())
-                step_type = step.type
-                assert step_type in step_to_input_type
+                    name = f"{step.order_index}:{step_module.get_name()}"
                 input = dict(
                     input_subworkflow_step_id=step.order_index,
                     name=name,
                     label=name,
                     multiple=False,
                     extensions=["data"],
-                    input_type=step_to_input_type[step_type],
+                    input_type=step.input_type,
                 )
-                if step.type == 'data_collection_input':
+                step_type = step.type
+                if step_type == 'data_collection_input':
                     input['collection_type'] = step.tool_inputs.get('collection_type') if step.tool_inputs else None
                 if step_type == 'parameter_input':
                     input['type'] = step.tool_inputs['parameter_type']
+                input['optional'] = step.tool_inputs.get('optional', False)
                 inputs.append(input)
         return inputs
 
@@ -513,7 +512,7 @@ class SubWorkflowModule(WorkflowModule):
         subworkflow_progress = subworkflow_invoker.progress
         outputs = {}
         for workflow_output in subworkflow.workflow_outputs:
-            workflow_output_label = workflow_output.label or "{}:{}".format(workflow_output.workflow_step.order_index, workflow_output.output_name)
+            workflow_output_label = workflow_output.label or f"{workflow_output.workflow_step.order_index}:{workflow_output.output_name}"
             replacement = subworkflow_progress.get_replacement_workflow_output(workflow_output)
             outputs[workflow_output_label] = replacement
         progress.set_step_outputs(invocation_step, outputs)
@@ -663,7 +662,7 @@ class InputModule(WorkflowModule):
         state = json.dumps(state)
         return state
 
-    def save_to_step(self, step):
+    def save_to_step(self, step, **kwd):
         step.type = self.type
         step.tool_inputs = self._parse_state_into_dict()
 
@@ -778,6 +777,7 @@ class InputDataCollectionModule(InputModule):
 
 
 class InputParameterModule(WorkflowModule):
+    POSSIBLE_PARAMETER_TYPES = ["text", "integer", "float", "boolean", "color"]
     type = "parameter_input"
     name = "Input parameter"
     default_parameter_type = "text"
@@ -903,7 +903,6 @@ class InputParameterModule(WorkflowModule):
                     restrict_how_value = "staticSuggestions"
                 else:
                     restrict_how_value = "none"
-                log.info("parameter_def [{}], how [{}]".format(parameter_def, restrict_how_value))
                 restrict_how_source["options"] = [
                     {"value": "none", "label": "Do not specify restrictions (default).", "selected": restrict_how_value == "none"},
                     {"value": "onConnections", "label": "Attempt restriction based on connections.", "selected": restrict_how_value == "onConnections"},
@@ -982,7 +981,7 @@ class InputParameterModule(WorkflowModule):
                     tool_inputs = module.tool.inputs  # may not be set, but we're catching the Exception below.
 
                     def callback(input, prefixed_name, context, **kwargs):
-                        if prefixed_name == connection.input_name:
+                        if prefixed_name == connection.input_name and hasattr(input, 'get_options'):
                             static_options.append(input.get_options(self.trans, {}))
                     visit_input_values(tool_inputs, module.state.inputs, callback)
 
@@ -1172,14 +1171,14 @@ class InputParameterModule(WorkflowModule):
                     suggestion_values = restrictions_cond_values["suggestions"]
                     rval.update({"suggestions": _string_to_parameter_def_option(suggestion_values)})
                 else:
-                    log.warn("Unknown restriction conditional type encountered for workflow parameter.")
+                    log.warning("Unknown restriction conditional type encountered for workflow parameter.")
 
             rval.update({"parameter_type": parameters_def["parameter_type"], "optional": optional})
         else:
             rval.update({"parameter_type": self.default_parameter_type, "optional": self.default_optional})
         return rval
 
-    def save_to_step(self, step):
+    def save_to_step(self, step, **kwd):
         step.type = self.type
         step.tool_inputs = self._parse_state_into_dict()
 
@@ -1245,13 +1244,17 @@ class ToolModule(WorkflowModule):
     def __init__(self, trans, tool_id, tool_version=None, exact_tools=True, tool_uuid=None, **kwds):
         super().__init__(trans, content_id=tool_id, **kwds)
         self.tool_id = tool_id
-        self.tool_version = tool_version
+        self.tool_version = str(tool_version)
         self.tool_uuid = tool_uuid
         self.tool = trans.app.toolbox.get_tool(tool_id, tool_version=tool_version, exact=exact_tools, tool_uuid=tool_uuid)
         if self.tool:
-            if tool_version and exact_tools and str(self.tool.version) != str(tool_version):
-                log.info("Exact tool specified during workflow module creation for [{}] but couldn't find correct version [{}].".format(tool_id, tool_version))
-                self.tool = None
+            if tool_version and exact_tools and str(self.tool.version) != tool_version:
+                safe_version = WORKFLOW_SAFE_TOOL_VERSION_UPDATES.get(tool_id)
+                if safe_version and safe_version.current_version >= packaging.version.parse(tool_version) >= safe_version.min_version:
+                    self.tool = trans.app.toolbox.get_tool(tool_id, tool_version=tool_version, exact=False, tool_uuid=tool_uuid)
+                else:
+                    log.info(f"Exact tool specified during workflow module creation for [{tool_id}] but couldn't find correct version [{tool_version}].")
+                    self.tool = None
         self.post_job_actions = {}
         self.runtime_post_job_actions = {}
         self.workflow_outputs = []
@@ -1286,7 +1289,7 @@ class ToolModule(WorkflowModule):
         if module.tool:
             message = ""
             if tool_id != module.tool_id:
-                message += "The tool (id '{}') specified in this step is not available. Using the tool with id {} instead.".format(tool_id, module.tool_id)
+                message += f"The tool (id '{tool_id}') specified in this step is not available. Using the tool with id {module.tool_id} instead."
             if d.get('tool_version', 'Unspecified') != module.get_version():
                 message += "{}: using version '{}' instead of version '{}' specified in this workflow.".format(tool_id, module.get_version(), d.get('tool_version', 'Unspecified'))
             if message:
@@ -1315,13 +1318,13 @@ class ToolModule(WorkflowModule):
                     old_tool_shed_url = get_tool_shed_url_from_tool_shed_registry(trans.app, old_tool_shed)
                     if not old_tool_shed_url:  # a tool from a different tool_shed has been found, but the original tool shed has been deactivated
                         old_tool_shed_url = "http://" + old_tool_shed  # let's just assume it's either http, or a http is forwarded to https.
-                    old_url = old_tool_shed_url + "/view/{}/{}/".format(module.tool.repository_owner, module.tool.repository_name)
+                    old_url = old_tool_shed_url + f"/view/{module.tool.repository_owner}/{module.tool.repository_name}/"
                     new_url = module.tool.sharable_url + '/%s/' % module.tool.changeset_revision
                     new_tool_shed_url = new_url.split("/view")[0]
-                    message += "The tool \'{}\', version {} by the owner {} installed from <a href=\"{}\" target=\"_blank\">{}</a> is not available. ".format(module.tool.name, tool_version, module.tool.repository_owner, old_url, old_tool_shed_url)
-                    message += "A derivation of this tool installed from <a href=\"{}\" target=\"_blank\">{}</a> will be used instead. ".format(new_url, new_tool_shed_url)
+                    message += f"The tool \'{module.tool.name}\', version {tool_version} by the owner {module.tool.repository_owner} installed from <a href=\"{old_url}\" target=\"_blank\">{old_tool_shed_url}</a> is not available. "
+                    message += f"A derivation of this tool installed from <a href=\"{new_url}\" target=\"_blank\">{new_tool_shed_url}</a> will be used instead. "
             if step.tool_version and (step.tool_version != module.tool.version):
-                message += "<span title=\"tool id '{}'\">Using version '{}' instead of version '{}' specified in this workflow. ".format(tool_id, module.tool.version, step.tool_version)
+                message += f"<span title=\"tool id '{tool_id}'\">Using version '{module.tool.version}' instead of version '{step.tool_version}' specified in this workflow. "
             if message:
                 log.debug(message)
                 module.version_changes.append(message)
@@ -1331,8 +1334,8 @@ class ToolModule(WorkflowModule):
 
     # ---- Saving in various forms ------------------------------------------
 
-    def save_to_step(self, step):
-        super().save_to_step(step)
+    def save_to_step(self, step, detached=False):
+        super().save_to_step(step, detached=detached)
         step.tool_id = self.tool_id
         if self.tool:
             step.tool_version = self.get_version()
@@ -1341,9 +1344,10 @@ class ToolModule(WorkflowModule):
         tool_uuid = getattr(self, "tool_uuid", None)
         if tool_uuid:
             step.dynamic_tool = self.trans.app.dynamic_tool_manager.get_tool_by_uuid(tool_uuid)
-        for k, v in self.post_job_actions.items():
-            pja = self.__to_pja(k, v, step)
-            self.trans.sa_session.add(pja)
+        if not detached:
+            for k, v in self.post_job_actions.items():
+                pja = self.__to_pja(k, v, step)
+                self.trans.sa_session.add(pja)
 
     # ---- General attributes ------------------------------------------------
 
@@ -1430,7 +1434,7 @@ class ToolModule(WorkflowModule):
         data_outputs = []
         if self.tool:
             for name, tool_output in self.tool.outputs.items():
-                if filter_output(tool_output, self.state.inputs):
+                if filter_output(self.tool, tool_output, self.state.inputs):
                     continue
                 extra_kwds = {}
                 if isinstance(tool_output, ToolExpressionOutput):
@@ -1853,7 +1857,7 @@ class WorkflowModuleFactory:
         Return module initialized from the data in dictionary `d`.
         """
         type = d['type']
-        assert type in self.module_types, "Unexpected workflow step type [{}] not found in [{}]".format(type, self.module_types.keys())
+        assert type in self.module_types, f"Unexpected workflow step type [{type}] not found in [{self.module_types.keys()}]"
         return self.module_types[type].from_dict(trans, d, **kwargs)
 
     def from_workflow_step(self, trans, step, **kwargs):

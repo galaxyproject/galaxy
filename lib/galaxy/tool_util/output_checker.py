@@ -13,7 +13,7 @@ DETECTED_JOB_STATE = Bunch(
     GENERIC_ERROR='generic_error',
 )
 
-ERROR_PEAK = 2000
+ERROR_PEEK_SIZE = 2000
 
 
 def check_output_regex(job_id_tag, regex, stream, stream_name, job_messages, max_error_level):
@@ -77,8 +77,8 @@ def check_output(stdio_regexes, stdio_exit_codes, stdout, stderr, tool_exit_code
             max_error_level = StdioErrorLevel.NO_ERROR
             if tool_exit_code is not None:
                 for stdio_exit_code in stdio_exit_codes:
-                    if (tool_exit_code >= stdio_exit_code.range_start and
-                            tool_exit_code <= stdio_exit_code.range_end):
+                    if (tool_exit_code >= stdio_exit_code.range_start
+                            and tool_exit_code <= stdio_exit_code.range_end):
                         # Tack on a generic description of the code
                         # plus a specific code description. For example,
                         # this might prepend "Job 42: Warning (Out of Memory)\n".
@@ -96,7 +96,6 @@ def check_output(stdio_regexes, stdio_exit_codes, stdout, stderr, tool_exit_code
                             'code_desc': code_desc,
                             'error_level': stdio_exit_code.error_level,
                         }
-                        log.info("Job {}: {}".format(job_id_tag, reason))
                         job_messages.append(reason)
                         max_error_level = max(max_error_level,
                                               stdio_exit_code.error_level)
@@ -133,7 +132,10 @@ def check_output(stdio_regexes, stdio_exit_codes, stdout, stderr, tool_exit_code
             if max_error_level == StdioErrorLevel.FATAL_OOM:
                 state = DETECTED_JOB_STATE.OUT_OF_MEMORY_ERROR
             elif max_error_level >= StdioErrorLevel.FATAL:
-                log.debug("Tool exit code indicates an error, failing job.")
+                reason = ''
+                if job_messages:
+                    reason = f" Reasons are {job_messages}"
+                log.info(f"Job error detected, failing job.{reason}")
                 state = DETECTED_JOB_STATE.GENERIC_ERROR
 
         # When there are no regular expressions and no exit codes to check,
@@ -145,10 +147,8 @@ def check_output(stdio_regexes, stdio_exit_codes, stdout, stderr, tool_exit_code
             #          + "checking stderr for success" )
             if stderr:
                 state = DETECTED_JOB_STATE.GENERIC_ERROR
-
-        if state != DETECTED_JOB_STATE.OK:
-            peak = stderr[0:ERROR_PEAK] if stderr else ""
-            log.debug("job failed, detected state {}, standard error is - [{}]".format(state, peak))
+                peek = stderr[0:ERROR_PEEK_SIZE] if stderr else ""
+                log.info(f"Job failed because of contents in the standard error stream: [{peek}]")
     except Exception:
         log.exception("Job state check encountered unexpected exception; assuming execution successful")
 
@@ -166,9 +166,9 @@ def __regex_err_msg(match, stream, regex):
     mstart = match.start()
     mend = match.end()
     if mend - mstart > 256:
-        match_str = match.string[mstart : mstart + 256] + "..."
+        match_str = match.string[mstart:mstart + 256] + "..."
     else:
-        match_str = match.string[mstart: mend]
+        match_str = match.string[mstart:mend]
 
     # If there's a description for the regular expression, then use it.
     # Otherwise, we'll take the first 256 characters of the match.

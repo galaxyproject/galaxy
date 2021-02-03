@@ -1,5 +1,6 @@
 import os
 
+import pytest
 from selenium.webdriver.common.keys import Keys
 
 from .framework import (
@@ -89,7 +90,7 @@ class UploadsTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
     @selenium_test
     def test_upload_pair_specify_extension(self):
         self.upload_list([self.get_filename("1.tabular"), self.get_filename("2.tabular")], name="Test Pair", ext="txt", hide_source_items=False)
-        self.history_panel_wait_for_hid_ok(3)
+        self.history_panel_wait_for_hid_ok(5)
         self.history_panel_wait_for_hid_ok(1)
 
         history_contents = self.history_contents()
@@ -110,6 +111,8 @@ class UploadsTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.history_panel_wait_for_hid_hidden(2)
 
     @selenium_test
+    @pytest.mark.gtn_screenshot
+    @pytest.mark.local
     def test_rules_example_1_datasets(self):
         # Test case generated for:
         #   https://www.ebi.ac.uk/ena/data/view/PRJDA60709
@@ -148,13 +151,15 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         # self.screenshot("rules_example_1_6_download_complete")
 
     @selenium_test
+    @pytest.mark.gtn_screenshot
+    @pytest.mark.local
     def test_rules_example_2_list(self):
         self.perform_upload(self.get_filename("rules/PRJDA60709.tsv"))
         self.history_panel_wait_for_hid_ok(1)
         self.upload_rule_start()
         self.upload_rule_set_data_type("Collection")
         self.upload_rule_set_input_type("History Dataset")
-        self.upload_rule_set_dataset("1:")
+        self.upload_rule_set_dataset(1)
         self.screenshot("rules_example_2_1_inputs")
         self.upload_rule_build()
         rule_builder = self.components.rule_builder
@@ -173,13 +178,15 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         # self.screenshot("rules_example_2_5_download_complete")
 
     @selenium_test
+    @pytest.mark.gtn_screenshot
+    @pytest.mark.local
     def test_rules_example_3_list_pairs(self):
         self.perform_upload(self.get_filename("rules/PRJDB3920.tsv"))
         self.history_panel_wait_for_hid_ok(1)
         self.upload_rule_start()
         self.upload_rule_set_data_type("Collection")
         self.upload_rule_set_input_type("History Dataset")
-        self.upload_rule_set_dataset("1:")
+        self.upload_rule_set_dataset(1)
         self.screenshot("rules_example_3_1_inputs")
         self.upload_rule_build()
         rule_builder = self.components.rule_builder
@@ -206,6 +213,8 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.screenshot("rules_example_3_14_paired_identifier_set")
 
     @selenium_test
+    @pytest.mark.gtn_screenshot
+    @pytest.mark.local
     def test_rules_example_4_accessions(self):
         # http://www.uniprot.org/uniprot/?query=proteome:UP000052092+AND+proteomecomponent:%22Genome%22
         self._setup_uniprot_example()
@@ -238,6 +247,8 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         rule_builder.view_source.wait_for_visible()
 
     @selenium_test
+    @pytest.mark.gtn_screenshot
+    @pytest.mark.local
     def test_rules_example_5_matching_collections(self):
         self._setup_uniprot_example()
         self.screenshot("rules_example_5_1_inputs")
@@ -266,6 +277,8 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.screenshot("rules_example_5_9_mapping")
 
     @selenium_test
+    @pytest.mark.gtn_screenshot
+    @pytest.mark.local
     def test_rules_example_6_nested_lists(self):
         self.home()
         self.perform_upload(self.get_filename("rules/PRJNA355367.tsv"))
@@ -273,7 +286,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.upload_rule_start()
         self.upload_rule_set_data_type("Collection")
         self.upload_rule_set_input_type("History Dataset")
-        self.upload_rule_set_dataset("1:")
+        self.upload_rule_set_dataset(1)
         self.screenshot("rules_example_6_1_paste")
         self.upload_rule_build()
 
@@ -306,7 +319,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         action_chains = self.action_chains()
         action_chains.move_to_element(first_cell)
         action_chains.click(first_cell)
-        for i in range(15):
+        for _ in range(15):
             action_chains.send_keys(Keys.ARROW_RIGHT)
         action_chains.perform()
 
@@ -316,7 +329,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.upload_rule_start()
         self.upload_rule_set_data_type("Collection")
         self.upload_rule_set_input_type("History Dataset")
-        self.upload_rule_set_dataset("1:")
+        self.upload_rule_set_dataset(1)
 
     # @selenium_test
     # def test_rules_example_5_matching_collections(self):

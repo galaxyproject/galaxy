@@ -213,16 +213,16 @@ class WorkflowProgressTestCase(unittest.TestCase):
         )
 
 
-class MockModuleInjector(object):
+class MockModuleInjector:
 
     def __init__(self, progress):
         self.progress = progress
 
-    def inject(self, step, step_args={}):
+    def inject(self, step, step_args=None):
         step.module = MockModule(self.progress)
 
 
-class MockModule(object):
+class MockModule:
 
     def __init__(self, progress):
         self.progress = progress

@@ -113,7 +113,7 @@ def get_item_annotation_obj(db_session, user, item):
 
     # Get annotation association class.
     annotation_assoc_class = _get_annotation_assoc_class(item)
-    if not annotation_assoc_class:
+    if not annotation_assoc_class or item.id is None:
         return None
 
     # Get annotation association object.

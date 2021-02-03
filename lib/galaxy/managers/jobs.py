@@ -1,7 +1,12 @@
 import json
 import logging
+import typing
 
 from boltons.iterutils import remap
+from pydantic import (
+    BaseModel,
+    Field,
+)
 from sqlalchemy import and_, false, func, or_
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql import select
@@ -25,6 +30,10 @@ from galaxy.util import (
 log = logging.getLogger(__name__)
 
 
+class JobLock(BaseModel):
+    active: bool = Field(title="Job lock status", description="If active, jobs will not dispatch")
+
+
 def get_path_key(path_tuple):
     path_key = ""
     tuple_elements = len(path_tuple)
@@ -38,7 +47,7 @@ def get_path_key(path_tuple):
             # we remove the last 2 items of the path tuple (values and list index)
             return path_key
         if path_key:
-            path_key = "{}{}{}".format(path_key, sep, p)
+            path_key = f"{path_key}{sep}{p}"
         else:
             path_key = p
     return path_key
@@ -50,11 +59,18 @@ class JobManager:
         self.app = app
         self.dataset_manager = DatasetManager(app)
 
+    def job_lock(self):
+        return JobLock(active=self.app.job_manager.job_lock)
+
+    def update_job_lock(self, job_lock: JobLock):
+        self.app.queue_worker.send_control_task('admin_job_lock', kwargs={'job_lock': job_lock.active}, get_response=True)
+        return self.job_lock()
+
     def get_accessible_job(self, trans, decoded_job_id):
         job = trans.sa_session.query(trans.app.model.Job).filter(trans.app.model.Job.id == decoded_job_id).first()
         if job is None:
             raise ObjectNotFound()
-        belongs_to_user = (job.user == trans.user) if job.user else (job.session_id == trans.get_galaxy_session().id)
+        belongs_to_user = (job.user_id == trans.user.id) if job.user_id and trans.user else (job.session_id == trans.get_galaxy_session().id)
         if not trans.user_is_admin and not belongs_to_user:
             # Check access granted via output datasets.
             if not job.output_datasets:
@@ -135,14 +151,17 @@ class JobSearch:
                 return key, value
             return key, value
 
-        conditions = [and_(model.Job.tool_id == tool_id,
-                           model.Job.user == user)]
+        job_conditions = [and_(
+            model.Job.tool_id == tool_id,
+            model.Job.user == user,
+            model.Job.copied_from_job_id.is_(None)  # Always pick original job
+        )]
 
         if tool_version:
-            conditions.append(model.Job.tool_version == str(tool_version))
+            job_conditions.append(model.Job.tool_version == str(tool_version))
 
         if job_state is None:
-            conditions.append(
+            job_conditions.append(
                 model.Job.state.in_([model.Job.states.NEW,
                                      model.Job.states.QUEUED,
                                      model.Job.states.WAITING,
@@ -151,14 +170,50 @@ class JobSearch:
             )
         else:
             if isinstance(job_state, str):
-                conditions.append(model.Job.state == job_state)
+                job_conditions.append(model.Job.state == job_state)
             elif isinstance(job_state, list):
                 o = []
                 for s in job_state:
                     o.append(model.Job.state == s)
-                conditions.append(
+                job_conditions.append(
                     or_(*o)
                 )
+
+        for k, v in wildcard_param_dump.items():
+            wildcard_value = None
+            if v == {'__class__': 'RuntimeValue'}:
+                # TODO: verify this is always None. e.g. run with runtime input input
+                v = None
+            elif k.endswith('|__identifier__'):
+                # We've taken care of this while constructing the conditions based on ``input_data`` above
+                continue
+            elif k == 'chromInfo' and '?.len' in v:
+                continue
+                wildcard_value = '"%?.len"'
+            if not wildcard_value:
+                value_dump = json.dumps(v, sort_keys=True)
+                wildcard_value = value_dump.replace('"id": "__id_wildcard__"', '"id": %')
+            a = aliased(model.JobParameter)
+            if value_dump == wildcard_value:
+                job_conditions.append(and_(
+                    model.Job.id == a.job_id,
+                    a.name == k,
+                    a.value == value_dump,
+                ))
+            else:
+                job_conditions.append(and_(
+                    model.Job.id == a.job_id,
+                    a.name == k,
+                    a.value.like(wildcard_value)
+                ))
+
+        job_conditions.append(and_(
+            model.Job.any_output_dataset_collection_instances_deleted == false(),
+            model.Job.any_output_dataset_deleted == false()
+        ))
+
+        subq = self.sa_session.query(model.Job.id).filter(*job_conditions).subquery()
+        data_conditions = []
 
         # We now build the query filters that relate to the input datasets
         # that this job uses. We keep track of the requested dataset id in `requested_ids`,
@@ -168,6 +223,9 @@ class JobSearch:
         data_types = []
         used_ids = []
         for k, input_list in input_data.items():
+            # k will be matched against the JobParameter.name column. This can be prefixed depending on whethter
+            # the input is in a repeat, or not (section and conditional)
+            k = {k, k.split('|')[-1]}
             for type_values in input_list:
                 t = type_values['src']
                 v = type_values['id']
@@ -180,10 +238,27 @@ class JobSearch:
                     c = aliased(model.HistoryDatasetAssociation)
                     d = aliased(model.JobParameter)
                     e = aliased(model.HistoryDatasetAssociationHistory)
-                    conditions.append(and_(
-                        model.Job.id == a.job_id,
-                        a.name == k,
-                        a.dataset_id == b.id,  # b is the HDA use for the job
+                    stmt = select([model.HistoryDatasetAssociation.id]).where(
+                        model.HistoryDatasetAssociation.id == e.history_dataset_association_id
+                    )
+                    name_condition = []
+                    if identifier:
+                        data_conditions.append(and_(model.Job.id == d.job_id,
+                                             d.name.in_({"%s|__identifier__" % _ for _ in k}),
+                                             d.value == json.dumps(identifier)))
+                    else:
+                        stmt = stmt.where(e.name == c.name)
+                        name_condition.append(b.name == c.name)
+                    stmt = stmt.where(
+                        e.extension == c.extension,
+                    ).where(
+                        a.dataset_version == e.version,
+                    ).where(
+                        e._metadata == c._metadata,
+                    )
+                    data_conditions.append(and_(
+                        a.name.in_(k),
+                        a.dataset_id == b.id,  # b is the HDA used for the job
                         c.dataset_id == b.dataset_id,
                         c.id == v,  # c is the requested job input HDA
                         # We need to make sure that the job we are looking for has been run with identical inputs.
@@ -194,29 +269,22 @@ class JobSearch:
                         or_(
                             and_(or_(a.dataset_version.in_([0, b.version]),
                                      b.update_time < model.Job.create_time),
-                                 b.name == c.name,
                                  b.extension == c.extension,
                                  b.metadata == c.metadata,
+                                 *name_condition,
                                  ),
-                            and_(b.id == e.history_dataset_association_id,
-                                 a.dataset_version == e.version,
-                                 e.name == c.name,
-                                 e.extension == c.extension,
-                                 e._metadata == c._metadata,
-                                 ),
+                            b.id.in_(stmt)
                         ),
                         or_(b.deleted == false(), c.deleted == false())
+
                     ))
-                    if identifier:
-                        conditions.append(and_(model.Job.id == d.job_id,
-                                             d.name == "%s|__identifier__" % k,
-                                             d.value == json.dumps(identifier)))
+
                     used_ids.append(a.dataset_id)
                 elif t == 'ldda':
                     a = aliased(model.JobToInputLibraryDatasetAssociation)
-                    conditions.append(and_(
+                    data_conditions.append(and_(
                         model.Job.id == a.job_id,
-                        a.name == k,
+                        a.name.in_(k),
                         a.ldda_id == v
                     ))
                     used_ids.append(a.ldda_id)
@@ -224,9 +292,9 @@ class JobSearch:
                     a = aliased(model.JobToInputDatasetCollectionAssociation)
                     b = aliased(model.HistoryDatasetCollectionAssociation)
                     c = aliased(model.HistoryDatasetCollectionAssociation)
-                    conditions.append(and_(
+                    data_conditions.append(and_(
                         model.Job.id == a.job_id,
-                        a.name == k,
+                        a.name.in_(k),
                         b.id == a.dataset_collection_id,
                         c.id == v,
                         b.name == c.name,
@@ -238,25 +306,24 @@ class JobSearch:
                             )
                     ))
                     used_ids.append(a.dataset_collection_id)
+                elif t == 'dce':
+                    a = aliased(model.JobToInputDatasetCollectionElementAssociation)
+                    b = aliased(model.DatasetCollectionElement)
+                    c = aliased(model.DatasetCollectionElement)
+                    data_conditions.append(and_(
+                        model.Job.id == a.job_id,
+                        a.name.in_(k),
+                        a.dataset_collection_element_id == b.id,
+                        b.element_identifier == c.element_identifier,
+                        c.child_collection_id == b.child_collection_id,
+                        c.id == v,
+                    ))
+                    used_ids.append(a.dataset_collection_element_id)
                 else:
                     return []
 
-        for k, v in wildcard_param_dump.items():
-            wildcard_value = json.dumps(v, sort_keys=True).replace('"id": "__id_wildcard__"', '"id": %')
-            a = aliased(model.JobParameter)
-            conditions.append(and_(
-                model.Job.id == a.job_id,
-                a.name == k,
-                a.value.like(wildcard_value)
-            ))
-
-        conditions.append(and_(
-            model.Job.any_output_dataset_collection_instances_deleted == false(),
-            model.Job.any_output_dataset_deleted == false()
-        ))
-
-        query = self.sa_session.query(model.Job.id, *used_ids).filter(and_(*conditions))
-        for job in query.all():
+        query = self.sa_session.query(model.Job.id, *used_ids).join(subq, model.Job.id == subq.c.id).filter(*data_conditions).group_by(model.Job.id, *used_ids).order_by(model.Job.id.desc())
+        for job in query:
             # We found a job that is equal in terms of tool_id, user, state and input datasets,
             # but to be able to verify that the parameters match we need to modify all instances of
             # dataset_ids (HDA, LDDA, HDCA) in the incoming param_dump to point to those used by the
@@ -275,8 +342,20 @@ class JobSearch:
                 # new_param_dump has its dataset ids remapped to those used by the job.
                 # We now ask if the remapped job parameters match the current job.
                 for k, v in new_param_dump.items():
+                    if v == {'__class__': 'RuntimeValue'}:
+                        # TODO: verify this is always None. e.g. run with runtime input input
+                        v = None
+                    elif k.endswith('|__identifier__'):
+                        # We've taken care of this while constructing the conditions based on ``input_data`` above
+                        continue
+                    elif k == 'chromInfo' and '?.len' in v:
+                        continue
+                        wildcard_value = '"%?.len"'
+                    if not wildcard_value:
+                        wildcard_value = json.dumps(v, sort_keys=True).replace('"id": "__id_wildcard__"', '"id": %')
                     a = aliased(model.JobParameter)
                     job_parameter_conditions.append(and_(
+                        model.Job.id == a.job_id,
                         a.name == k,
                         a.value == json.dumps(v, sort_keys=True)
                     ))
@@ -297,12 +376,36 @@ class JobSearch:
                 if parameter.name in {'chromInfo', 'dbkey'} or parameter.name.endswith('|__identifier__'):
                     continue
                 n_parameters += 1
-            if not n_parameters == len(param_dump):
+            if not n_parameters == sum(1 for k in param_dump if not k.startswith('__') and not k.endswith('|__identifier__') and k not in {'chromInfo', 'dbkey'}):
                 continue
             log.info("Found equivalent job %s", search_timer)
             return job
         log.info("No equivalent jobs found %s", search_timer)
         return None
+
+
+def view_show_job(trans, job, full: bool) -> typing.Dict:
+    is_admin = trans.user_is_admin
+    job_dict = trans.app.security.encode_all_ids(job.to_dict('element', system_details=is_admin), True)
+    if full:
+        job_dict.update(dict(
+            tool_stdout=job.tool_stdout,
+            tool_stderr=job.tool_stderr,
+            job_stdout=job.job_stdout,
+            job_stderr=job.job_stderr,
+            stderr=job.stderr,
+            stdout=job.stdout,
+            job_messages=job.job_messages
+        ))
+
+        if is_admin:
+            if job.user:
+                job_dict['user_email'] = job.user.email
+            else:
+                job_dict['user_email'] = None
+
+            job_dict['job_metrics'] = summarize_job_metrics(trans, job)
+    return job_dict
 
 
 def invocation_job_source_iter(sa_session, invocation_id):
@@ -523,7 +626,7 @@ def summarize_job_parameters(trans, job):
 
         rval = []
 
-        for input_index, input in enumerate(input_params.values()):
+        for input in input_params.values():
             if input.name in param_values:
                 if input.type == "repeat":
                     for i in range(len(param_values[input.name])):
@@ -548,7 +651,7 @@ def summarize_job_parameters(trans, job):
                     rval.append(dict(text=input.group_title(param_values), depth=depth, value="%s uploaded datasets" % len(param_values[input.name])))
                 elif input.type == "data":
                     value = []
-                    for i, element in enumerate(listify(param_values[input.name])):
+                    for element in listify(param_values[input.name]):
                         if element.history_content_type == "dataset":
                             hda = element
                             encoded_id = trans.security.encode_id(hda.id)

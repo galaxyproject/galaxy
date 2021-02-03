@@ -61,11 +61,11 @@ class CloudManager(sharable.SharableModelManager):
 
         :type  provider: string
         :param provider: the name of cloud-based resource provided. A list of supported providers is given in
-        `SUPPORTED_PROVIDERS` variable.
+                         `SUPPORTED_PROVIDERS` variable.
 
         :type  credentials: dict
         :param credentials: a dictionary containing all the credentials required to authenticated to the
-        specified provider.
+                            specified provider.
 
         :rtype: provider specific, e.g., `cloudbridge.cloud.providers.aws.provider.AWSCloudProvider` for AWS.
         :return: a cloudbridge connection to the specified provider.
@@ -248,7 +248,7 @@ class CloudManager(sharable.SharableModelManager):
         try:
             bucket = connection.storage.buckets.get(bucket_name)
             if bucket is None:
-                raise RequestParameterInvalidException("The bucket `{}` not found.".format(bucket_name))
+                raise RequestParameterInvalidException(f"The bucket `{bucket_name}` not found.")
         except Exception as e:
             raise ItemAccessibilityException("Could not get the bucket `{}`: {}".format(bucket_name, util.unicodify(e)))
 
@@ -354,7 +354,7 @@ class CloudManager(sharable.SharableModelManager):
                     incoming = (util.Params(args, sanitize=False)).__dict__
                     d2c = trans.app.toolbox.get_tool(SEND_TOOL, SEND_TOOL_VERSION)
                     if not d2c:
-                        log.debug("Failed to get the `send` tool per user `{}` request.".format(trans.user.id))
+                        log.debug(f"Failed to get the `send` tool per user `{trans.user.id}` request.")
                         failed.append(json.dumps(
                             {
                                 "object": object_label,

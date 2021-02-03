@@ -3,7 +3,6 @@
         v-if="!menu"
         :class="classes"
         :style="styles"
-        :active="!tab.disabled"
         :id="tab.id"
         :href="formatUrl(tab.url)"
         :target="tab.target || '_parent'"
@@ -16,7 +15,7 @@
     >
         <template v-if="tab.icon">
             <span :class="iconClasses" />
-            <span v-if="tab.show_note" :class="['nav-note-port', tab.note_cls]">{{ tab.note }}</span>
+            <span v-if="tab.show_note" :class="['nav-note', tab.note_cls]">{{ tab.note }}</span>
         </template>
         <template v-else>
             {{ tab.title }}
@@ -42,6 +41,7 @@
                 :target="item.target || '_parent'"
                 role="menuitem"
                 @click="open(item, $event)"
+                :disabled="item.disabled === true"
             >
                 {{ item.title }}
             </b-dropdown-item>
@@ -51,9 +51,14 @@
 </template>
 
 <script>
-import { VBTooltip } from "bootstrap-vue";
-import { VBPopover } from "bootstrap-vue";
+import Vue from "vue";
+import { VBPopoverPlugin, VBTooltipPlugin } from "bootstrap-vue";
 import { BNavItem, BNavItemDropdown, BDropdownItem } from "bootstrap-vue";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
+
+Vue.use(VBPopoverPlugin);
+Vue.use(VBTooltipPlugin);
 
 export default {
     name: "MastheadItem",
@@ -62,10 +67,6 @@ export default {
         BNavItemDropdown,
         BDropdownItem,
     },
-    directives: {
-        "v-b-tooltip": VBTooltip,
-        "v-b-popover": VBPopover,
-    },
     props: {
         tab: {
             type: Object,
@@ -73,39 +74,30 @@ export default {
         activeTab: {
             type: String,
         },
-        appRoot: {
-            type: String,
-        },
-        Galaxy: {
-            type: Object,
-        },
     },
     computed: {
         menu() {
             return this.tab.menu;
         },
-        active() {
-            return this.tab.id == this.activeTab;
-        },
         popoverNote() {
-            return `Please <a href="${this.appRoot}login">login or register</a> to use this feature.`;
+            return `Please <a href="${getAppRoot()}login">login or register</a> to use this feature.`;
         },
         classes() {
-            let classesString = this.tab.cls || "";
-            if (this.active) {
-                classesString = `${classesString} active`;
-            }
-            return classesString;
+            const isActiveTab = this.tab.id == this.activeTab;
+            return Object.fromEntries([
+                ["active", isActiveTab],
+                [this.tab.cls, true],
+            ]);
         },
         linkClasses() {
             return {
                 "nav-icon": this.tab.icon,
+                toggle: this.tab.toggle,
             };
         },
         iconClasses() {
             return Object.fromEntries([
-                ["fa", true],
-                ["toggle", this.tab.toggle],
+                ["fa fa-fw", true],
                 [this.tab.icon, this.tab.icon],
             ]);
         },
@@ -139,23 +131,21 @@ export default {
             if (tab.onclick) {
                 return this.propogateClick(tab, event);
             }
-
             if (tab.disabled) {
                 event.preventDefault();
-
                 this.$root.$emit("bv::hide::tooltip");
                 this.$root.$emit("bv::show::popover", tab.id);
-
                 setTimeout(() => {
                     this.$root.$emit("bv::hide::popover", tab.id);
                 }, 3000);
             } else if (!tab.menu) {
                 event.preventDefault();
-                if (tab.target === "__use_router__" && typeof this.Galaxy.page !== "undefined") {
-                    this.Galaxy.page.router.executeUseRouter(this.formatUrl(tab.url));
+                const galaxy = getGalaxyInstance();
+                if (tab.target === "__use_router__" && typeof galaxy.page !== "undefined") {
+                    galaxy.page.router.executeUseRouter(this.formatUrl(tab.url));
                 } else {
                     try {
-                        this.Galaxy.frame.add({ ...tab, url: this.formatUrl(tab.url) });
+                        galaxy.frame.add({ ...tab, url: this.formatUrl(tab.url) });
                     } catch (err) {
                         console.warn("Missing frame element on galaxy instance", err);
                     }
@@ -165,31 +155,17 @@ export default {
         propogateClick(tab, event) {
             event.preventDefault();
             tab.onclick();
-
             if (tab.id === "enable-scratchbook") {
                 this.$emit("updateScratchbookTab", tab);
             }
         },
         formatUrl(url) {
-            return typeof url === "string" && url.indexOf("//") === -1 && url.charAt(0) != "/"
-                ? this.appRoot + url
-                : url;
+            if (typeof url === "string" && url.indexOf("//") === -1 && url.charAt(0) != "/") {
+                return getAppRoot() + url;
+            } else {
+                return url;
+            }
         },
     },
 };
 </script>
-
-<style scoped>
-.nav-note-port {
-    position: absolute;
-    font-weight: 700;
-    font-size: 0.7rem;
-    color: gold;
-    line-height: 3.5rem;
-    margin-left: 1px;
-}
-
-li .nav-link > span.toggle {
-    color: gold;
-}
-</style>

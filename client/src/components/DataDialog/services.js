@@ -1,12 +1,8 @@
 import axios from "axios";
+import { getAppRoot } from "onload/loadConfig";
 
 /** Data populator traverses raw server responses **/
 export class Services {
-    constructor(options = {}) {
-        this.root = options.root;
-        this.host = options.host;
-    }
-
     get(url) {
         return new Promise((resolve, reject) => {
             axios
@@ -51,6 +47,7 @@ export class Services {
 
     /** Populate record data from raw record source **/
     getRecord(record) {
+        const host = `${window.location.protocol}//${window.location.hostname}:${window.location.port}`;
         record.details = record.extension || record.description;
         record.time = record.update_time || record.create_time;
         record.isLeaf = this.isDataset(record);
@@ -59,16 +56,16 @@ export class Services {
         }
         if (record.model_class == "Library") {
             record.label = record.name;
-            record.url = `${this.root}api/libraries/${record.id}/contents`;
+            record.url = `${getAppRoot()}api/libraries/${record.id}/contents`;
             return record;
         } else if (record.hid) {
             record.label = `${record.hid}: ${record.name}`;
-            record.download = `${this.host}/api/histories/${record.history_id}/contents/${record.id}/display`;
+            record.download = `${host}${getAppRoot()}api/histories/${record.history_id}/contents/${record.id}/display`;
             return record;
         } else if (record.type == "file") {
             record.src = "ldda";
             record.label = record.name;
-            record.download = `${this.host}${this.root}api/libraries/datasets/download/uncompressed?ld_ids=${record.id}`;
+            record.download = `${host}${getAppRoot()}api/libraries/datasets/download/uncompressed?ld_ids=${record.id}`;
             return record;
         }
     }

@@ -1,0 +1,42 @@
+<tool id="discover_sort_by_legacy_test" name="discover_sort_by_legacy_test" version="0.1.0" profile="20.05">
+    <!-- same as discover_sort_by but with tests not ordered correctly, this would cause
+         failure in profile 20.09 or newer.
+    -->
+    <command><![CDATA[
+for i in \$(seq 1 10);
+do
+    echo "\$i" > \$i.txt;
+done
+]]></command>
+  <inputs/>
+  <outputs>
+    <collection name="collection_numeric_name" type="list" label="num">
+      <discover_datasets pattern="__name_and_ext__" sort_by="numeric_name"/>
+    </collection>
+    <collection name="collection_rev_numeric_name" type="list" label="num rev">
+      <discover_datasets pattern="__name_and_ext__" sort_by="reverse_numeric_name"/>
+    </collection>
+    <collection name="collection_lexical_name" type="list" label="num">
+      <discover_datasets pattern="__name_and_ext__" sort_by="lexical_name" />
+    </collection>
+    <data name="data_reverse_lexical_name">
+      <discover_datasets pattern="__name_and_ext__" format="txt" assign_primary_output="true" sort_by="reverse_lexical_name" visible="true"/>
+    </data>
+  </outputs>
+  <tests>
+    <test expect_num_outputs="4">
+      <param name="input1" value="tinywga.fam" />
+      <output_collection name="collection_numeric_name" type="list" count="10">
+        <element name="2">
+          <assert_contents><has_text_matching expression="^.*$"/></assert_contents>
+        </element>
+        <element name="1">
+          <assert_contents><has_text_matching expression="^.*$"/></assert_contents>
+        </element>
+        <element name="10">
+          <assert_contents><has_text_matching expression="^.*$"/></assert_contents>
+        </element>
+      </output_collection>
+    </test>
+  </tests>
+</tool>

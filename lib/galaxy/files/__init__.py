@@ -1,6 +1,9 @@
 import logging
 import os
-from collections import namedtuple
+from collections import (
+    defaultdict,
+    namedtuple,
+)
 
 from galaxy import exceptions
 from galaxy.util import (
@@ -12,7 +15,7 @@ log = logging.getLogger(__name__)
 FileSourcePath = namedtuple('FileSourcePath', ['file_source', 'path'])
 
 
-class ConfiguredFileSources(object):
+class ConfiguredFileSources:
     """Load plugins and resolve Galaxy URIs to FileSource objects."""
 
     def __init__(self, file_sources_config, conf_file=None, conf_dict=None, load_stock_plugins=False):
@@ -61,14 +64,19 @@ class ConfiguredFileSources(object):
         extra_kwds = {
             'file_sources_config': self._file_sources_config,
         }
-        return plugin_config.load_plugins(self._plugin_classes, plugin_source, extra_kwds)
+        return plugin_config.load_plugins(
+            self._plugin_classes,
+            plugin_source,
+            extra_kwds,
+            dict_to_list_key="id",
+        )
 
     def get_file_source_path(self, uri):
         """Parse uri into a FileSource object and a path relative to its base."""
         if "://" not in uri:
             raise exceptions.RequestParameterInvalidException("Invalid uri [%s]" % uri)
         scheme, rest = uri.split("://", 1)
-        if scheme not in self.get_schemas():
+        if scheme not in self.get_schemes():
             raise exceptions.RequestParameterInvalidException("Unsupported URI scheme [%s]" % scheme)
 
         if scheme != "gxfiles":
@@ -107,30 +115,30 @@ class ConfiguredFileSources(object):
             if not user_ftp_dir or not os.path.exists(user_ftp_dir):
                 raise exceptions.ObjectNotFound('Your FTP directory does not exist, attempting to upload files to it may cause it to be created.')
 
-    def get_file_source(self, id_prefix, schema):
+    def get_file_source(self, id_prefix, scheme):
         for file_source in self._file_sources:
-            # gxfiles uses prefix to find plugin, other schema are assumed to have
+            # gxfiles uses prefix to find plugin, other scheme are assumed to have
             # at most one file_source.
-            if schema != file_source.get_schema():
+            if scheme != file_source.get_scheme():
                 continue
-            prefix_match = schema != "gxfiles" or file_source.get_prefix() == id_prefix
+            prefix_match = scheme != "gxfiles" or file_source.get_prefix() == id_prefix
             if prefix_match:
                 return file_source
 
     def looks_like_uri(self, path_or_uri):
         # is this string a URI this object understands how to realize
         if path_or_uri.startswith("gx") and "://" in path_or_uri:
-            for scheme in self.get_schemas():
+            for scheme in self.get_schemes():
                 if path_or_uri.startswith("%s://" % scheme):
                     return True
 
         return False
 
-    def get_schemas(self):
-        schemas = set()
+    def get_schemes(self):
+        schemes = set()
         for file_source in self._file_sources:
-            schemas.add(file_source.get_schema())
-        return schemas
+            schemes.add(file_source.get_scheme())
+        return schemes
 
     def plugins_to_dict(self, for_serialization=False, user_context=None):
         rval = []
@@ -155,15 +163,20 @@ class ConfiguredFileSources(object):
 
     @staticmethod
     def from_dict(as_dict):
-        sources_as_dict = as_dict["file_sources"]
-        config_as_dict = as_dict["config"]
-        file_sources_config = ConfiguredFileSourcesConfig.from_dict(config_as_dict)
+        if as_dict is not None:
+            sources_as_dict = as_dict["file_sources"]
+            config_as_dict = as_dict["config"]
+            file_sources_config = ConfiguredFileSourcesConfig.from_dict(config_as_dict)
+        else:
+            sources_as_dict = []
+            file_sources_config = ConfiguredFileSourcesConfig()
         return ConfiguredFileSources(file_sources_config, conf_dict=sources_as_dict)
 
 
-class ConfiguredFileSourcesConfig(object):
+class ConfiguredFileSourcesConfig:
 
-    def __init__(self, symlink_allowlist=[], library_import_dir=None, user_library_import_dir=None, ftp_upload_dir=None, ftp_upload_purge=True):
+    def __init__(self, symlink_allowlist=None, library_import_dir=None, user_library_import_dir=None, ftp_upload_dir=None, ftp_upload_purge=True):
+        symlink_allowlist = symlink_allowlist or []
         self.symlink_allowlist = symlink_allowlist
         self.library_import_dir = library_import_dir
         self.user_library_import_dir = user_library_import_dir
@@ -202,7 +215,7 @@ class ConfiguredFileSourcesConfig(object):
         )
 
 
-class ProvidesUserFileSourcesUserContext(object):
+class ProvidesUserFileSourcesUserContext:
     """Implement a FileSourcesUserContext from a Galaxy ProvidesUserContext (e.g. trans)."""
 
     def __init__(self, trans):
@@ -225,10 +238,10 @@ class ProvidesUserFileSourcesUserContext(object):
     @property
     def preferences(self):
         user = self.trans.user
-        return user and user.extra_preferences
+        return user and user.extra_preferences or defaultdict(lambda: None)
 
 
-class DictFileSourcesUserContext(object):
+class DictFileSourcesUserContext:
 
     def __init__(self, **kwd):
         self._kwd = kwd

@@ -2,6 +2,7 @@ import logging
 
 
 import galaxy.model
+from galaxy.util import asbool
 from galaxy.util.xml_macros import load
 
 log = logging.getLogger(__name__)
@@ -67,13 +68,10 @@ class VisualizationsConfigParser:
             log.info('Visualizations plugin disabled: %s. Skipping...', returned['name'])
             return None
 
-        # record the embeddable flag - defaults to false
-        #   this is a design by contract promise that the visualization can be rendered inside another page
-        #   often by rendering only a DOM fragment. Since this is an advanced feature that requires a bit more
-        #   work from the creator's side - it defaults to False
-        returned['embeddable'] = False
+        # record the embeddable flag - defaults to true
+        returned['embeddable'] = True
         if 'embeddable' in xml_tree.attrib:
-            returned['embeddable'] = xml_tree.attrib.get('embeddable', False) == 'true'
+            returned['embeddable'] = asbool(xml_tree.attrib.get('embeddable'))
 
         # a (for now) text description of what the visualization does
         description = xml_tree.find('description')
@@ -139,8 +137,8 @@ class VisualizationsConfigParser:
         # render_target: where in the browser to open the rendered visualization
         # defaults to: galaxy_main
         render_target = xml_tree.find('render_target')
-        if((render_target is not None and render_target.text) and
-                (render_target.text in self.VALID_RENDER_TARGETS)):
+        if((render_target is not None and render_target.text)
+                and (render_target.text in self.VALID_RENDER_TARGETS)):
             returned['render_target'] = render_target.text
         else:
             returned['render_target'] = 'galaxy_main'
@@ -166,7 +164,7 @@ class VisualizationsConfigParser:
     def parse_entry_point(self, xml_tree):
         """
         Parse the config file for an appropriate entry point: a mako template, a script tag,
-        or an html file, returning as dictionary with: `type`, `file`, and `attr`ibutes of
+        or an html file, returning as dictionary with: ``type``, ``file``, and ``attr`` (-ibutes) of
         the element.
         """
         # (older) mako-only syntax: the template to use in rendering the visualization
@@ -174,9 +172,9 @@ class VisualizationsConfigParser:
         if template is not None and template.text:
             log.info('template syntax is deprecated: use entry_point instead')
             return {
-                'type' : 'mako',
-                'file' : template.text,
-                'attr' : {}
+                'type': 'mako',
+                'file': template.text,
+                'attr': {}
             }
 
         # need one of the two: (the deprecated) template or entry_point
@@ -190,9 +188,9 @@ class VisualizationsConfigParser:
         if entry_point_type not in self.ALLOWED_ENTRY_POINT_TYPES:
             raise ParsingException('Unknown entry_point type: ' + entry_point_type)
         return {
-            'type' : entry_point_type,
-            'file' : entry_point.text,
-            'attr' : entry_point_attrib
+            'type': entry_point_type,
+            'file': entry_point.text,
+            'attr': entry_point_attrib
         }
 
 
@@ -297,8 +295,8 @@ class DataSourceParser:
             test_type = test_elem.get('type', 'eq')
             test_result = test_elem.text.strip() if test_elem.text else None
             if not test_type or not test_result:
-                log.warning('Skipping test. Needs both type attribute and text node to be parsed: ' +
-                          '{}, {}'.format(test_type, test_elem.text))
+                log.warning('Skipping test. Needs both type attribute and text node to be parsed: '
+                          + f'{test_type}, {test_elem.text}')
                 continue
             test_result = test_result.strip()
 
@@ -324,8 +322,8 @@ class DataSourceParser:
             elif test_type == 'has_dataprovider':
                 # does the object itself have a datatype attr and does that datatype have the given dataprovider
                 def test_fn(o, result):
-                    return (hasattr(getter(o), 'has_dataprovider') and
-                            getter(o).has_dataprovider(result))
+                    return (hasattr(getter(o), 'has_dataprovider')
+                            and getter(o).has_dataprovider(result))
 
             elif test_type == 'has_attribute':
                 # does the object itself have attr in 'result' (no equivalence checking)
@@ -342,10 +340,10 @@ class DataSourceParser:
                     return str(getter(o)) == result
 
             tests.append({
-                'type'          : test_type,
-                'result'        : test_result,
-                'result_type'   : test_result_type,
-                'fn'            : test_fn
+                'type': test_type,
+                'result': test_result,
+                'result_type': test_result_type,
+                'fn': test_fn
             })
 
         return tests

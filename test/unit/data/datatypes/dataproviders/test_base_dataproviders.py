@@ -6,8 +6,8 @@ import logging
 import os
 import tempfile
 import unittest
-
-from six import StringIO
+from io import StringIO
+from typing import Type
 
 from galaxy.datatypes.dataproviders import base, exceptions
 from galaxy.util import clean_multiline_string
@@ -58,7 +58,7 @@ class BaseTestCase(unittest.TestCase):
 
 
 class Test_BaseDataProvider(BaseTestCase):
-    provider_class = base.DataProvider
+    provider_class: Type[base.DataProvider] = base.DataProvider
 
     def contents_provider_and_data(self,
             filename=None, contents=None, source=None, *provider_args, **provider_kwargs):
@@ -157,7 +157,7 @@ class Test_BaseDataProvider(BaseTestCase):
 
 
 class Test_FilteredDataProvider(Test_BaseDataProvider):
-    provider_class = base.FilteredDataProvider
+    provider_class: Type[base.DataProvider] = base.FilteredDataProvider
 
     def assertCounters(self, provider, read, valid, returned):
         self.assertEqual(provider.num_data_read, read)
@@ -183,7 +183,7 @@ class Test_FilteredDataProvider(Test_BaseDataProvider):
 
 
 class Test_LimitedOffsetDataProvider(Test_FilteredDataProvider):
-    provider_class = base.LimitedOffsetDataProvider
+    provider_class: Type[base.DataProvider] = base.LimitedOffsetDataProvider
 
     def test_offset_1(self):
         """when offset is 1, should skip first
@@ -290,7 +290,7 @@ class Test_LimitedOffsetDataProvider(Test_FilteredDataProvider):
 
 
 class Test_MultiSourceDataProvider(BaseTestCase):
-    provider_class = base.MultiSourceDataProvider
+    provider_class: Type[base.DataProvider] = base.MultiSourceDataProvider
 
     def contents_and_tmpfile(self, contents=None):
         # TODO: hmmmm...
@@ -374,7 +374,7 @@ class Test_MultiSourceDataProvider(BaseTestCase):
         self.assertEqual(''.join(data), 'Two\nThree\nNine\nEleven\n')
 
 
-class TempFileCache(object):
+class TempFileCache:
     """
     Creates and caches tempfiles with/based-on the given contents.
     """

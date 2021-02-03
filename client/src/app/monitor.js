@@ -5,6 +5,7 @@
 import { getGalaxyInstance, setGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
 import { serverPath } from "utils/serverPath";
+import config from "config";
 
 const galaxyStub = {
     root: getAppRoot(),
@@ -15,7 +16,9 @@ if (!window.Galaxy) {
     Object.defineProperty(window, "Galaxy", {
         enumerable: true,
         get: function () {
-            console.warn("accessing (get) window.Galaxy", serverPath());
+            if (!config.testBuild === true) {
+                console.warn("accessing (get) window.Galaxy", serverPath());
+            }
             return getGalaxyInstance() || galaxyStub;
         },
         set: function (newValue) {

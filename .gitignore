@@ -23,6 +23,7 @@ lib/galaxy/web/framework/static/style
 # Database stuff
 database/*.sqlite
 database/beaker_sessions
+database/cache
 database/citations
 database/community_files
 database/compiled_templates
@@ -40,6 +41,7 @@ database/test_errors
 database/tmp
 database/tool_cache
 database/tool_search_index
+database/tool_recommendation_model.hdf5
 
 
 # Python bytecode
@@ -95,6 +97,7 @@ config/plugins/**/.cache
 static/welcome.html.*
 static/welcome.html
 static/client_build_hash.txt
+lib/galaxy_test/selenium/jupyter/galaxy_selenium_context.yml
 
 # Tool data.
 tool-data/annotation_profiler_options.xml
@@ -139,6 +142,7 @@ test/unit/**.log
 .idea
 .vscode
 client/**/jsconfig.json
+vetur.config.js
 
 # Chrom len files
 *.len
@@ -160,10 +164,7 @@ client/galaxy
 doc/build
 doc/schema.md
 doc/source/admin/config_logging_default_yaml.rst
-doc/source/api/api.rst
-doc/source/api/ts_api.rst
 doc/source/dev/schema.md
-doc/source/dev/schema.rst
 client/styleguide
 
 # webpack stats

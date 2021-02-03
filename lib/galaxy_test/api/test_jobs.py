@@ -137,6 +137,10 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         job = jobs_response.json()[0]
         job_id = job["id"]
 
+        job_lock_response = self._get("job_lock", admin=True)
+        job_lock_response.raise_for_status()
+        assert not job_lock_response.json()["active"]
+
         show_jobs_response = self._get("jobs/%s" % job_id, admin=False)
         self._assert_not_has_keys(show_jobs_response.json(), "command_line", "external_id")
 
@@ -244,7 +248,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         run_response = requests.post("%s/tools" % self.galaxy_interactor.api_url, data=payload, cookies=cookies).json()
         job_id = run_response['jobs'][0]["id"]
         dataset_id = run_response['outputs'][0]['id']
-        response = requests.post('{}/jobs/{}/error'.format(self.galaxy_interactor.api_url, job_id),
+        response = requests.post(f'{self.galaxy_interactor.api_url}/jobs/{job_id}/error',
                                  data={'email': 'someone@domain.com', 'dataset_id': dataset_id},
                                  cookies=cookies)
         assert response.status_code == 200, response.text
@@ -270,7 +274,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         # Delete the second output and make sure the job is cancelled.
         self._raw_update_history_item(history_id, outputs[1]["id"], {"deleted": True})
         final_state = wait_on_state(job_state, assert_ok=False, timeout=15)
-        assert final_state in ["deleted_new", "deleted"], final_state
+        assert final_state in ["deleting", "deleted"], final_state
 
     @uses_test_history(require_new=True)
     def test_purging_output_keep_running_until_all_purged(self, history_id):
@@ -305,7 +309,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         # Purge the second output and make sure the job is cancelled.
         self._raw_update_history_item(history_id, outputs[1]["id"], {"purged": True})
         final_state = wait_on_state(job_state, assert_ok=False, timeout=15)
-        assert final_state in ["deleted_new", "deleted"], final_state
+        assert final_state in ["deleting", "deleted"], final_state
 
         def paths_deleted():
             if not os.path.exists(output_dataset_paths[0]) and not os.path.exists(output_dataset_paths[1]):
@@ -382,7 +386,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         return job_state, outputs
 
     def _raw_update_history_item(self, history_id, item_id, data):
-        update_url = self._api_url("histories/{}/contents/{}".format(history_id, item_id), use_key=True)
+        update_url = self._api_url(f"histories/{history_id}/contents/{item_id}", use_key=True)
         update_response = requests.put(update_url, json=data)
         assert_status_code_is_ok(update_response)
         return update_response
@@ -433,7 +437,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         assert dataset_details['state'] == 'ok'
 
     def _get_history_item_as_admin(self, history_id, item_id):
-        response = self._get("histories/{}/contents/{}?view=detailed".format(history_id, item_id), admin=True)
+        response = self._get(f"histories/{history_id}/contents/{item_id}?view=detailed", admin=True)
         assert_status_code_is_ok(response)
         return response.json()
 
@@ -457,11 +461,11 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         search_payload = self._search_payload(history_id=history_id, tool_id='cat1', inputs=copied_inputs)
         self._search(search_payload, expected_search_count=1)
         # Now we delete the original input HDA that was used -- we should still be able to find the job
-        delete_respone = self._delete("histories/{}/contents/{}".format(history_id, dataset_id))
+        delete_respone = self._delete(f"histories/{history_id}/contents/{dataset_id}")
         self._assert_status_code_is(delete_respone, 200)
         self._search(search_payload, expected_search_count=1)
         # Now we also delete the copy -- we shouldn't find a job
-        delete_respone = self._delete("histories/{}/contents/{}".format(new_history_id, new_dataset_id))
+        delete_respone = self._delete(f"histories/{new_history_id}/contents/{new_dataset_id}")
         self._assert_status_code_is(delete_respone, 200)
         self._search(search_payload, expected_search_count=0)
 
@@ -473,9 +477,9 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
             'input1': {'src': 'hda', 'id': dataset_id}
         })
         self._job_search(tool_id='identifier_single', history_id=history_id, inputs=inputs)
-        dataset_details = self._get("histories/{}/contents/{}".format(history_id, dataset_id)).json()
+        dataset_details = self._get(f"histories/{history_id}/contents/{dataset_id}").json()
         dataset_details['name'] = 'Renamed Test Dataset'
-        dataset_update_response = self._put("histories/{}/contents/{}".format(history_id, dataset_id), data=dict(name='Renamed Test Dataset'))
+        dataset_update_response = self._put(f"histories/{history_id}/contents/{dataset_id}", data=dict(name='Renamed Test Dataset'))
         self._assert_status_code_is(dataset_update_response, 200)
         assert dataset_update_response.json()['name'] == 'Renamed Test Dataset'
         search_payload = self._search_payload(history_id=history_id, tool_id='identifier_single', inputs=inputs)
@@ -489,7 +493,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         })
         tool_response = self._job_search(tool_id='cat1', history_id=history_id, inputs=inputs)
         output_id = tool_response.json()['outputs'][0]['id']
-        delete_respone = self._delete("histories/{}/contents/{}".format(history_id, output_id))
+        delete_respone = self._delete(f"histories/{history_id}/contents/{output_id}")
         self._assert_status_code_is(delete_respone, 200)
         search_payload = self._search_payload(history_id=history_id, tool_id='cat1', inputs=inputs)
         self._search(search_payload, expected_search_count=0)
@@ -513,7 +517,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         # We delete the ouput (this is a HDA, as multi_data_param reduces collections)
         # and use the correct input job definition, the job should not be found
         output_id = tool_response.json()['outputs'][0]['id']
-        delete_respone = self._delete("histories/{}/contents/{}".format(history_id, output_id))
+        delete_respone = self._delete(f"histories/{history_id}/contents/{output_id}")
         self._assert_status_code_is(delete_respone, 200)
         search_payload = self._search_payload(history_id=history_id, tool_id='multi_data_param', inputs=inputs)
         self._search(search_payload, expected_search_count=0)
@@ -527,14 +531,14 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         tool_response = self._job_search(tool_id='collection_creates_list', history_id=history_id, inputs=inputs)
         output_id = tool_response.json()['outputs'][0]['id']
         # We delete a single tool output, no job should be returned
-        delete_respone = self._delete("histories/{}/contents/{}".format(history_id, output_id))
+        delete_respone = self._delete(f"histories/{history_id}/contents/{output_id}")
         self._assert_status_code_is(delete_respone, 200)
         search_payload = self._search_payload(history_id=history_id, tool_id='collection_creates_list', inputs=inputs)
         self._search(search_payload, expected_search_count=0)
         tool_response = self._job_search(tool_id='collection_creates_list', history_id=history_id, inputs=inputs)
         output_collection_id = tool_response.json()['output_collections'][0]['id']
         # We delete a collection output, no job should be returned
-        delete_respone = self._delete("histories/{}/contents/dataset_collections/{}".format(history_id, output_collection_id))
+        delete_respone = self._delete(f"histories/{history_id}/contents/dataset_collections/{output_collection_id}")
         self._assert_status_code_is(delete_respone, 200)
         search_payload = self._search_payload(history_id=history_id, tool_id='collection_creates_list', inputs=inputs)
         self._search(search_payload, expected_search_count=0)
@@ -560,11 +564,11 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         search_payload = self._search_payload(history_id=new_history_id, tool_id='multi_data_param', inputs=copied_inputs)
         self._search(search_payload, expected_search_count=1)
         # Now we delete the original input HDCA that was used -- we should still be able to find the job
-        delete_respone = self._delete("histories/{}/contents/dataset_collections/{}".format(history_id, list_id_a))
+        delete_respone = self._delete(f"histories/{history_id}/contents/dataset_collections/{list_id_a}")
         self._assert_status_code_is(delete_respone, 200)
         self._search(search_payload, expected_search_count=1)
         # Now we also delete the copy -- we shouldn't find a job
-        delete_respone = self._delete("histories/{}/contents/dataset_collections/{}".format(history_id, new_list_a))
+        delete_respone = self._delete(f"histories/{history_id}/contents/dataset_collections/{new_list_a}")
         self._assert_status_code_is(delete_respone, 200)
         self._search(search_payload, expected_search_count=0)
 
@@ -576,6 +580,14 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
             'f2': {'src': 'hdca', 'id': list_id_a},
         })
         self._job_search(tool_id='multi_data_param', history_id=history_id, inputs=inputs)
+
+    @uses_test_history(require_new=True)
+    def test_search_with_hdca_list_pair_collection_mapped_over_pair_input(self, history_id):
+        list_id_a = self.__history_with_ok_collection(collection_type='list:pair', history_id=history_id)
+        inputs = json.dumps({
+            'f1': {'batch': True, 'values': [{'src': 'hdca', 'id': list_id_a, 'map_over_type': 'paired'}]},
+        })
+        self._job_search(tool_id='collection_paired_test', history_id=history_id, inputs=inputs)
 
     def _get_simple_rerun_params(self, history_id, private=False):
         list_id_a = self.__history_with_ok_collection(collection_type='list:pair', history_id=history_id)

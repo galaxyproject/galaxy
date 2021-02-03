@@ -3,9 +3,9 @@ import json
 import logging
 import os
 from collections import OrderedDict
+from urllib.parse import urljoin
 
 from routes import url_for
-from six.moves.urllib.parse import urljoin
 
 from galaxy import util
 from galaxy.util.tool_shed import encoding_util, xml_util
@@ -103,7 +103,7 @@ def check_for_missing_tools(app, tool_panel_configs, latest_tool_migration_scrip
                                 if section_elem.tag == 'tool':
                                     missing_tool_configs_dict = check_tool_tag_set(section_elem, migrated_tool_configs_dict, missing_tool_configs_dict)
     else:
-        exception_msg = '\n\nThe entry for the main Galaxy tool shed at {} is missing from the {} file.  '.format(tool_shed, app.config.tool_sheds_config)
+        exception_msg = f'\n\nThe entry for the main Galaxy tool shed at {tool_shed} is missing from the {app.config.tool_sheds_config} file.  '
         exception_msg += 'The entry for this tool shed must always be available in this file, so re-add it before attempting to start your Galaxy server.\n'
         raise Exception(exception_msg)
     return tool_shed_accessible, missing_tool_configs_dict
@@ -131,9 +131,9 @@ def generate_clone_url_for_repository_in_tool_shed(user, repository):
     if user:
         protocol, base = base_url.split('://')
         username = '%s@' % user.username
-        return '{}://{}{}/repos/{}/{}'.format(protocol, username, base, repository.user.username, repository.name)
+        return f'{protocol}://{username}{base}/repos/{repository.user.username}/{repository.name}'
     else:
-        return '{}/repos/{}/{}'.format(base_url, repository.user.username, repository.name)
+        return f'{base_url}/repos/{repository.user.username}/{repository.name}'
 
 
 def generate_clone_url_from_repo_info_tup(app, repo_info_tup):
@@ -155,9 +155,9 @@ def get_non_shed_tool_panel_configs(app):
         try:
             tree, error_message = xml_util.parse_xml(config_filename)
         except OSError as exc:
-            if (config_filename == app.config.shed_tool_conf and not
-                    app.config.shed_tool_conf_set and
-                    exc.errno == errno.ENOENT):
+            if (config_filename == app.config.shed_tool_conf
+                    and not app.config.shed_tool_conf_set
+                    and exc.errno == errno.ENOENT):
                 continue
             raise
         if tree is None:
@@ -266,7 +266,7 @@ def get_tool_shed_repository_url(app, tool_shed, owner, name):
         # Append a slash to the tool shed URL, because urlparse.urljoin will eliminate
         # the last part of a URL if it does not end with a forward slash.
         tool_shed_url = '%s/' % tool_shed_url
-        return urljoin(tool_shed_url, 'view/{}/{}'.format(owner, name))
+        return urljoin(tool_shed_url, f'view/{owner}/{name}')
     return tool_shed_url
 
 

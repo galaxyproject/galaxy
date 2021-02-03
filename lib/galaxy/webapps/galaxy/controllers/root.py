@@ -84,9 +84,9 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         """
         # directly redirect to oidc provider if 1) enable_oidc is True, 2)
         # there is only one oidc provider, 3) auth_conf.xml has no authenticators
-        if (trans.app.config.enable_oidc and
-                len(trans.app.config.oidc) == 1 and
-                len(trans.app.auth_manager.authenticators) == 0
+        if (trans.app.config.enable_oidc
+                and len(trans.app.config.oidc) == 1
+                and len(trans.app.auth_manager.authenticators) == 0
                 and is_logout_redirect is False):
             provider = next(iter(trans.app.config.oidc.keys()))
             success, message, redirect_uri = trans.app.authnz_manager.authenticate(provider, trans)
@@ -185,12 +185,12 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
                 trans.response.set_content_type(data.get_mime())
                 if tofile:
                     fStat = os.stat(data.file_name)
-                    trans.response.headers['Content-Length'] = int(fStat.st_size)
+                    trans.response.headers['Content-Length'] = str(fStat.st_size)
                     if toext[0:1] != ".":
                         toext = "." + toext
                     fname = data.name
                     fname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in fname)[0:150]
-                    trans.response.headers["Content-Disposition"] = 'attachment; filename="GalaxyHistoryItem-{}-[{}]{}"'.format(data.hid, fname, toext)
+                    trans.response.headers["Content-Disposition"] = f'attachment; filename="GalaxyHistoryItem-{data.hid}-[{fname}]{toext}"'
                 trans.log_event("Display dataset id: %s" % str(id))
                 try:
                     return open(data.file_name, 'rb')

@@ -58,7 +58,7 @@ def assert_element_text_matches(output, path, expression):
     path matches the specified regular expression."""
     text = xml_find_text(output, path)
     if re.match(expression, text) is None:
-        errmsg = "Expected element with path '{}' to contain text matching '{}', instead text '{}' was found.".format(path, expression, text)
+        errmsg = f"Expected element with path '{path}' to contain text matching '{expression}', instead text '{text}' was found."
         raise AssertionError(errmsg)
 
 
@@ -74,7 +74,7 @@ def assert_attribute_matches(output, path, attribute, expression):
     xml = xml_find(output, path)
     attribute_value = xml.attrib[attribute]
     if re.match(expression, attribute_value) is None:
-        errmsg = "Expected attribute '{}' on element with path '{}' to match '{}', instead attribute value was '{}'.".format(attribute, path, expression, attribute_value)
+        errmsg = f"Expected attribute '{attribute}' on element with path '{path}' to match '{expression}', instead attribute value was '{attribute_value}'."
         raise AssertionError(errmsg)
 
 

@@ -51,7 +51,7 @@ def test_get_test_from_anaconda():
 @external_dependency_management
 def test_find_anaconda_versions():
     versions = find_anaconda_versions('2pg_cartesian')
-    assert u'/bioconda/2pg_cartesian/1.0.1/download/linux-64/2pg_cartesian-1.0.1-0.tar.bz2' in versions
+    assert '/bioconda/2pg_cartesian/1.0.1/download/linux-64/2pg_cartesian-1.0.1-0.tar.bz2' in versions
 
 
 @external_dependency_management

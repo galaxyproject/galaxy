@@ -308,9 +308,9 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
             .filter(model.Visualization.deleted == false()) \
             .order_by(desc(model.Visualization.update_time)) \
             .all()
-        return [{'username' : v.visualization.user.username,
-                 'slug'     : v.visualization.slug,
-                 'title'    : v.visualization.title} for v in shared_by_others]
+        return [{'username': v.visualization.user.username,
+                 'slug': v.visualization.slug,
+                 'title': v.visualization.title} for v in shared_by_others]
 
     #
     # -- Functions for operating on visualizations. --
@@ -440,7 +440,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                 session.flush()
                 viz_title = escape(visualization.title)
                 other_email = escape(other.email)
-                trans.set_message("Visualization '{}' shared with user '{}'".format(viz_title, other_email))
+                trans.set_message(f"Visualization '{viz_title}' shared with user '{other_email}'")
                 return trans.response.send_redirect(web.url_for("/visualizations/sharing?id=%s" % id))
         return trans.fill_template("/ind_share_base.mako",
                                    message=msg,
@@ -474,8 +474,8 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         ave_item_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, visualization)
 
         # Fork to template based on visualization.type (registry or builtin).
-        if((trans.app.visualizations_registry and visualization.type in trans.app.visualizations_registry.plugins) and
-                (visualization.type not in trans.app.visualizations_registry.BUILT_IN_VISUALIZATIONS)):
+        if((trans.app.visualizations_registry and visualization.type in trans.app.visualizations_registry.plugins)
+                and (visualization.type not in trans.app.visualizations_registry.BUILT_IN_VISUALIZATIONS)):
             # if a registry visualization, load a version of display.mako that will load the vis into an iframe :(
             # TODO: simplest path from A to B but not optimal - will be difficult to do reg visualizations any other way
             # TODO: this will load the visualization twice (once above, once when the iframe src calls 'saved')
@@ -546,29 +546,29 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
             if v.slug is None:
                 self.create_item_slug(trans.sa_session, v)
             return {
-                'title'  : 'Edit visualization attributes',
-                'inputs' : [{
-                    'name'      : 'title',
-                    'label'     : 'Name',
-                    'value'     : v.title
+                'title': 'Edit visualization attributes',
+                'inputs': [{
+                    'name': 'title',
+                    'label': 'Name',
+                    'value': v.title
                 }, {
-                    'name'      : 'slug',
-                    'label'     : 'Identifier',
-                    'value'     : v.slug,
-                    'help'      : 'A unique identifier that will be used for public links to this visualization. This field can only contain lowercase letters, numbers, and dashes (-).'
+                    'name': 'slug',
+                    'label': 'Identifier',
+                    'value': v.slug,
+                    'help': 'A unique identifier that will be used for public links to this visualization. This field can only contain lowercase letters, numbers, and dashes (-).'
                 }, {
-                    'name'      : 'dbkey',
-                    'label'     : 'Build',
-                    'type'      : 'select',
-                    'optional'  : True,
-                    'value'     : v.dbkey,
-                    'options'   : trans.app.genomes.get_dbkeys(trans, chrom_info=True),
-                    'help'      : 'Parameter to associate your visualization with a database key.'
+                    'name': 'dbkey',
+                    'label': 'Build',
+                    'type': 'select',
+                    'optional': True,
+                    'value': v.dbkey,
+                    'options': trans.app.genomes.get_dbkeys(trans, chrom_info=True),
+                    'help': 'Parameter to associate your visualization with a database key.'
                 }, {
-                    'name'      : 'annotation',
-                    'label'     : 'Annotation',
-                    'value'     : self.get_item_annotation_str(trans.sa_session, trans.user, v),
-                    'help'      : 'A description of the visualization. The annotation is shown alongside published visualizations.'
+                    'name': 'annotation',
+                    'label': 'Annotation',
+                    'value': self.get_item_annotation_str(trans.sa_session, trans.user, v),
+                    'help': 'A description of the visualization. The annotation is shown alongside published visualizations.'
                 }]
             }
         else:
@@ -630,9 +630,9 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         if trans.debug:
             raise exception
         return trans.show_error_message(
-            "There was an error rendering the visualization. " +
-            "Contact your Galaxy administrator if the problem persists." +
-            "<br/>Details: " + unicodify(exception), use_panels=False)
+            "There was an error rendering the visualization. "
+            + "Contact your Galaxy administrator if the problem persists."
+            + "<br/>Details: " + unicodify(exception), use_panels=False)
 
     @web.expose
     @web.require_login("use Galaxy visualizations", use_panels=True)
@@ -698,7 +698,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         """
 
         # define app configuration
-        app = {"jscript" : "trackster"}
+        app = {"jscript": "trackster"}
 
         # get dataset to add
         id = kwargs.get("id", None)
@@ -736,9 +736,9 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         # update gene region of saved visualization if user parses a new gene region in the url
         if gene_region.chrom is not None:
             app['gene_region'] = {
-                'chrom' : gene_region.chrom,
-                'start' : gene_region.start,
-                'end'   : gene_region.end
+                'chrom': gene_region.chrom,
+                'start': gene_region.start,
+                'end': gene_region.end
             }
 
         # fill template
@@ -798,13 +798,13 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
 
         # define app configuration for generic mako template
         app = {
-            'jscript'       : "circster",
-            'viz_config'    : viz_config,
-            'genome'        : genome
+            'jscript': "circster",
+            'viz_config': viz_config,
+            'genome': genome
         }
 
         # fill template
-        return trans.fill_template('galaxy.panels.mako', config={'app' : app, 'bundle': 'extended'})
+        return trans.fill_template('galaxy.panels.mako', config={'app': app, 'bundle': 'extended'})
 
     @web.expose
     def sweepster(self, trans, id=None, hda_ldda=None, dataset_id=None, regions=None):
@@ -869,10 +869,10 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         if not config:
             config = {
                 'dataset_id': dataset_id,
-                'title'     : hda.display_name(),
-                'ext'       : hda.datatype.file_ext,
-                'treeIndex' : tree_index,
-                'saved_visualization' : False
+                'title': hda.display_name(),
+                'ext': hda.datatype.file_ext,
+                'treeIndex': tree_index,
+                'saved_visualization': False
             }
         return trans.fill_template_mako("visualization/phyloviz.mako", data=data, config=config)
 

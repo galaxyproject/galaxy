@@ -1,0 +1,34 @@
+name: "Maintenance Bot"
+on:
+  pull_request_target:
+    types: [opened, reopened]
+
+jobs:
+  labeler:
+    name: Assign labels and milestone
+    runs-on: ubuntu-latest
+    env:
+      MILESTONE_NUMBER: 19
+    steps:
+      - name: Add area labels
+        if: ${{ ! contains(join(github.event.pull_request.labels.*.name, ', '), 'area/') }}
+        uses: actions/labeler@main
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Assign milestone
+        if: |
+          ! github.event.pull_request.milestone &&
+          ! contains(github.event.pull_request.labels.*.name, 'merge') &&
+          ! contains(github.event.pull_request.labels.*.name, 'status/WIP') &&
+          ! contains(github.event.pull_request.title, 'WIP') &&
+          ! github.event.pull_request.draft
+        uses: actions/github-script@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              milestone: ${{ env.MILESTONE_NUMBER }},
+            });

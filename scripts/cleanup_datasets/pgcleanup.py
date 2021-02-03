@@ -4,7 +4,6 @@ pgcleanup.py - A script for cleaning up datasets in Galaxy efficiently, by
     bypassing the Galaxy model and operating directly on the database.
     PostgreSQL 9.1 or greater is required.
 """
-from __future__ import print_function
 
 import argparse
 import datetime
@@ -26,7 +25,11 @@ sys.path.insert(1, os.path.join(galaxy_root, 'lib'))
 import galaxy.config
 from galaxy.exceptions import ObjectNotFound
 from galaxy.objectstore import build_object_store_from_config
-from galaxy.util.script import app_properties_from_args, populate_config_args
+from galaxy.util.script import (
+    app_properties_from_args,
+    populate_config_args,
+    set_log_handler,
+)
 
 DEFAULT_LOG_DIR = os.path.join(galaxy_root, 'scripts', 'cleanup_datasets')
 
@@ -54,7 +57,7 @@ class LevelFormatter(logging.Formatter):
         return logging.Formatter.format(self, record)
 
 
-class Action(object):
+class Action:
     """Base class for all actions.
 
     When writing new actions, the following things happen automatically:
@@ -97,6 +100,7 @@ class Action(object):
 
     def __init__(self, app):
         self._log_dir = app.args.log_dir
+        self._log_file = app.args.log_file
         self._dry_run = app.args.dry_run
         self._debug = app.args.debug
         self._update_time = app.args.update_time
@@ -120,21 +124,23 @@ class Action(object):
             self.__close_log()
 
     def __open_log(self):
-        logf = os.path.join(self._log_dir, self.name + '.log')
+        if self._log_file:
+            logf = os.path.join(self._log_dir, self._log_file)
+        else:
+            logf = os.path.join(self._log_dir, self.name + '.log')
         if self._dry_run:
             log.info('--dry-run specified, logging changes to stderr instead of log file: %s' % logf)
-            h = logging.StreamHandler()
+            h = set_log_handler()
         else:
             log.info('Opening log file: %s' % logf)
-            h = logging.FileHandler(logf)
+            h = set_log_handler(filename=logf)
         h.setLevel(logging.DEBUG if self._debug else logging.INFO)
         h.setFormatter(LevelFormatter())
-        l = logging.getLogger(self.name)
-        l.addHandler(h)
-        l.propagate = False
+        self.__log = logging.getLogger(self.name)
+        self.__log.addHandler(h)
+        self.__log.propagate = False
         m = ('==== Log opened: %s ' % datetime.datetime.now().isoformat()).ljust(72, '=')
-        l.info(m)
-        self.__log = l
+        self.__log.info(m)
 
     def __close_log(self):
         m = ('==== Log closed: %s ' % datetime.datetime.now().isoformat()).ljust(72, '=')
@@ -204,11 +210,11 @@ class Action(object):
 
     def _log_results(self, results, primary_key):
         for primary in sorted(results.keys()):
-            self.log.info('%s: %s' % (primary_key, primary))
+            self.log.info(f'{primary_key}: {primary}')
             for causal, s in zip(self.causals, results[primary]):
                 for r in sorted(s):
                     secondaries = ', '.join('%s: %s' % x for x in zip(causal[1:], r[1:]))
-                    self.log.info('%s %s caused %s' % (causal[0], r[0], secondaries))
+                    self.log.info('{} {} caused {}'.format(causal[0], r[0], secondaries))
 
     def handle_results(self, cur):
         results = {}
@@ -233,7 +239,7 @@ class Action(object):
         pass
 
 
-class RemovesObjects(object):
+class RemovesObjects:
     """Base class for mixins that remove objects from object stores.
     """
     def _init(self):
@@ -267,9 +273,9 @@ class RemovesObjects(object):
                 if not self._dry_run:
                     self.object_store.delete(object_to_remove, entire_dir=entire_dir, **object_store_kwargs)
         except ObjectNotFound as e:
-            [l.warning('object store failure: %s: %s', object_to_remove, e) for l in loggers]
+            [log_.warning('object store failure: %s: %s', object_to_remove, e) for log_ in loggers]
         except Exception as e:
-            [l.error('delete failure: %s: %s', object_to_remove, e) for l in loggers]
+            [log_.error('delete failure: %s: %s', object_to_remove, e) for log_ in loggers]
 
     def remove_object(self, object_to_remove):
         raise NotImplementedError()
@@ -280,7 +286,7 @@ class RemovesObjects(object):
 #
 
 
-class PurgesHDAs(object):
+class PurgesHDAs:
     """Avoid repetition in queries that purge HDAs, since they must also delete MetadataFiles and ICDAs.
 
     To use, place ``{purge_hda_dependencies_sql}`` somewhere in your CTEs after a ``purged_hda_ids`` CTE returning HDA
@@ -336,7 +342,7 @@ class PurgesHDAs(object):
         )
 
 
-class RequiresDiskUsageRecalculation(object):
+class RequiresDiskUsageRecalculation:
     """Causes disk usage to be recalculated for affected users.
 
     To use, ensure your query returns a ``recalculate_disk_usage_user_id`` column.
@@ -626,7 +632,7 @@ class PurgeDeletedUsers(PurgesHDAs, RemovesMetadataFiles, Action):
     )
 
     def _init(self):
-        super(PurgeDeletedUsers, self)._init()
+        super()._init()
         self.__zero_disk_usage_user_ids = set()
         self._register_row_method(self.collect_zero_disk_usage_user_id)
         self._register_post_method(self.zero_disk_usage)
@@ -952,7 +958,7 @@ class PurgeDatasets(RemovesDatasets, Action):
     """
 
 
-class Cleanup(object):
+class Cleanup:
     def __init__(self):
         self.args = None
         self.config = None
@@ -1040,6 +1046,10 @@ class Cleanup(object):
             '-l', '--log-dir',
             default=DEFAULT_LOG_DIR,
             help='Log file directory')
+        parser.add_argument(
+            '-g', '--log-file',
+            default=None,
+            help='Log file name')
         parser.add_argument(
             'actions',
             nargs='*',

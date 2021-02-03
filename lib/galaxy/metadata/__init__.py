@@ -3,12 +3,11 @@
 import abc
 import json
 import os
+import pickle
 import shutil
 import tempfile
 from logging import getLogger
 from os.path import abspath
-
-from six.moves import cPickle
 
 import galaxy.model
 from galaxy.model import store
@@ -94,7 +93,7 @@ class MetadataCollectionStrategy(metaclass=abc.ABCMeta):
             rstring = "Metadata results could not be read from '%s'" % filename_results_code
 
         if not rval:
-            log.debug('setting metadata externally failed for {} {}: {}'.format(dataset.__class__.__name__, dataset.id, rstring))
+            log.debug(f'setting metadata externally failed for {dataset.__class__.__name__} {dataset.id}: {rstring}')
         return rval
 
 
@@ -116,6 +115,8 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
                                 kwds=None):
         assert job_metadata, "setup_external_metadata must be supplied with job_metadata path"
         kwds = kwds or {}
+        if not job:
+            job = sa_session.query(galaxy.model.Job).get(self.job_id)
         tmp_dir = _init_tmp_dir(tmp_dir)
 
         metadata_dir = os.path.join(tmp_dir, "metadata")
@@ -137,7 +138,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
             key = name
 
             def _metadata_path(what):
-                return os.path.join(metadata_dir, "metadata_{}_{}".format(what, key))
+                return os.path.join(metadata_dir, f"metadata_{what}_{key}")
 
             _initialize_metadata_inputs(dataset, _metadata_path, tmp_dir, kwds, real_metadata_object=real_metadata_object)
 
@@ -295,6 +296,8 @@ class JobExternalOutputMetadataWrapper(MetadataCollectionStrategy):
                                 object_store_conf=None, tool=None, job=None,
                                 kwds=None):
         kwds = kwds or {}
+        if not job:
+            job = sa_session.query(galaxy.model.Job).get(self.job_id)
         tmp_dir = _init_tmp_dir(tmp_dir)
         _assert_datatypes_config(datatypes_config)
 
@@ -336,14 +339,13 @@ class JobExternalOutputMetadataWrapper(MetadataCollectionStrategy):
             # so we will only populate the dictionary once
             metadata_files = self._get_output_filenames_by_dataset(dataset, sa_session)
             if not metadata_files:
-                job = sa_session.query(galaxy.model.Job).get(self.job_id)
                 metadata_files = galaxy.model.JobExternalOutputMetadata(job=job, dataset=dataset)
                 # we are using tempfile to create unique filenames, tempfile always returns an absolute path
                 # we will use pathnames relative to the galaxy root, to accommodate instances where the galaxy root
                 # is located differently, i.e. on a cluster node with a different filesystem structure
 
                 def _metadata_path(what):
-                    return abspath(tempfile.NamedTemporaryFile(dir=tmp_dir, prefix="metadata_{}_{}_".format(what, key)).name)
+                    return abspath(tempfile.NamedTemporaryFile(dir=tmp_dir, prefix=f"metadata_{what}_{key}_").name)
 
                 filename_in, filename_out, filename_results_code, filename_kwds, filename_override_metadata = _initialize_metadata_inputs(dataset, _metadata_path, tmp_dir, kwds)
 
@@ -374,11 +376,9 @@ class JobExternalOutputMetadataWrapper(MetadataCollectionStrategy):
         assert not use_bin
         if include_command:
             # return command required to build
-            fd, fp = tempfile.mkstemp(suffix='.py', dir=tmp_dir, prefix="set_metadata_")
-            metadata_script_file = abspath(fp)
-            with os.fdopen(fd, 'w') as f:
-                f.write(SET_METADATA_SCRIPT)
-            return 'python "{}" {}'.format(metadata_path_on_compute(metadata_script_file), args)
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.py', dir=tmp_dir, prefix="set_metadata_", delete=False) as temp:
+                temp.write(SET_METADATA_SCRIPT)
+            return 'python "{}" {}'.format(metadata_path_on_compute(temp.name), args)
         else:
             # return args to galaxy_ext.metadata.set_metadata required to build
             return args
@@ -404,7 +404,7 @@ class JobExternalOutputMetadataWrapper(MetadataCollectionStrategy):
                 try:
                     os.remove(fname)
                 except Exception as e:
-                    log.debug('Failed to cleanup external metadata file ({}) for {}: {}'.format(key, dataset_key, e))
+                    log.debug(f'Failed to cleanup external metadata file ({key}) for {dataset_key}: {e}')
 
     def set_job_runner_external_pid(self, pid, sa_session):
         for metadata_files in sa_session.query(galaxy.model.Job).get(self.job_id).external_output_metadata:
@@ -465,7 +465,7 @@ def _dump_dataset_instance_to(dataset_instance, file_path):
     # Touch also deferred column
     dataset_instance._metadata
 
-    cPickle.dump(dataset_instance, open(file_path, 'wb+'))
+    pickle.dump(dataset_instance, open(file_path, 'wb+'))
 
 
 def _get_filename_override(output_fnames, file_name):

@@ -7,6 +7,7 @@ import Vue from "vue";
 import ToolBox from "../../components/Panels/ToolBox";
 import SidePanel from "../../components/Panels/SidePanel";
 import { mountVueComponent } from "../../utils/mountVueComponent";
+import store from "../../store";
 
 const ToolPanel = Backbone.View.extend({
     initialize: function () {
@@ -19,6 +20,7 @@ const ToolPanel = Backbone.View.extend({
         $("body").append(vm);
         const upload = new modalInstance({
             propsData: propsData,
+            store,
         }).$mount(vm);
 
         // attach upload entrypoint to Galaxy object
@@ -34,26 +36,17 @@ const ToolPanel = Backbone.View.extend({
 
     mountVueComponent: function (el) {
         const Galaxy = getGalaxyInstance();
-        return mountVueComponent(SidePanel)(
+        return (this.component = mountVueComponent(SidePanel)(
             {
                 side: "left",
                 currentPanel: ToolBox,
-                currentPanelProperties: Galaxy.config,
+                currentPanelProperties: {
+                    storedWorkflowMenuEntries: Galaxy.config.stored_workflow_menu_entries,
+                    toolbox: Galaxy.config.toolbox,
+                },
             },
             el
-        );
-    },
-
-    getVueComponent: function () {
-        const Galaxy = getGalaxyInstance();
-        const SidePanelClass = Vue.extend(SidePanel);
-        return new SidePanelClass({
-            propsData: {
-                side: "left",
-                currentPanel: ToolBox,
-                currentPanelProperties: Galaxy.config,
-            },
-        });
+        ));
     },
 
     toString: function () {

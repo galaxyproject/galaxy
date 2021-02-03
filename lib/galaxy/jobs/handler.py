@@ -5,11 +5,11 @@ import datetime
 import os
 import time
 from collections import defaultdict
-
-from six.moves.queue import (
+from queue import (
     Empty,
-    Queue
+    Queue,
 )
+
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.sql.expression import (
     and_,
@@ -62,6 +62,72 @@ class JobHandler:
         self.job_stop_queue.shutdown()
 
 
+class ItemGrabber:
+
+    def __init__(self, app, grab_type='Job', handler_assignment_method=None, max_grab=None, self_handler_tags=None, handler_tags=None):
+        self.app = app
+        self.sa_session = app.model.context
+        self.grab_this = getattr(model, grab_type)
+        self.grab_type = grab_type
+        self._grab_conn_opts = {'autocommit': False}
+        subq = select([self.grab_this.id]) \
+            .where(and_(
+                self.grab_this.table.c.handler.in_(self_handler_tags),
+                self.grab_this.table.c.state == self.grab_this.states.NEW)) \
+            .order_by(self.grab_this.table.c.id)
+        if max_grab:
+            subq = subq.limit(max_grab)
+        if handler_assignment_method == HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED:
+            subq = subq.with_for_update(skip_locked=True)
+        self._grab_query = self.grab_this.table.update() \
+            .returning(self.grab_this.table.c.id) \
+            .where(self.grab_this.table.c.id.in_(subq)) \
+            .values(handler=self.app.config.server_name)
+        if handler_assignment_method == HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION:
+            self._grab_conn_opts['isolation_level'] = 'SERIALIZABLE'
+        log.info(
+            "Handler job grabber initialized with '%s' assignment method for handler '%s', tag(s): %s", handler_assignment_method,
+            self.app.config.server_name, ', '.join(str(x) for x in handler_tags)
+        )
+
+    @staticmethod
+    def get_grabbable_handler_assignment_method(handler_assignment_methods):
+        grabbable_methods = {
+            HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION,
+            HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED,
+        }
+        if handler_assignment_methods:
+            try:
+                return [m for m in handler_assignment_methods if m in grabbable_methods][0]
+            except IndexError:
+                return
+
+    def grab_unhandled_items(self):
+        """
+        Attempts to assign unassigned jobs or invocaions to itself using DB serialization methods, if enabled. This
+        simply sets `Job.handler` or `WorkflowInvocation.handler` to the current server name, which causes the job to be picked up by
+        the appropriate handler.
+        """
+        # an excellent discussion on PostgreSQL concurrency safety:
+        # https://blog.2ndquadrant.com/what-is-select-skip-locked-for-in-postgresql-9-5/
+        self.sa_session.expunge_all()
+        conn = self.sa_session.connection(execution_options=self._grab_conn_opts)
+        with conn.begin() as trans:
+            try:
+                rows = conn.execute(self._grab_query).fetchall()
+                if rows:
+                    log.debug('Grabbed %s(s): %s', self.grab_type, ', '.join(str(row[0]) for row in rows))
+                    trans.commit()
+                else:
+                    trans.rollback()
+            except OperationalError as e:
+                # If this is a serialization failure on PostgreSQL, then e.orig is a psycopg2 TransactionRollbackError
+                # and should have attribute `code`. Other engines should just report the message and move on.
+                if int(getattr(e.orig, 'pgcode', -1)) != 40001:
+                    log.debug('Grabbing %s failed (serialization failures are ok): %s', self.grab_type, unicodify(e))
+                trans.rollback()
+
+
 class JobHandlerQueue(Monitors):
     """
     Job Handler's Internal Queue, this is what actually implements waiting for
@@ -91,38 +157,17 @@ class JobHandlerQueue(Monitors):
         self.job_wrappers = {}
         name = "JobHandlerQueue.monitor_thread"
         self._init_monitor_thread(name, target=self.__monitor, config=app.config)
-        self.__grab_query = None
-        self.__grab_conn_opts = {'autocommit': False}
-        self.__initialize_job_grabbing()
-
-    def __initialize_job_grabbing(self):
-        grabbable_methods = {
-            HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION,
-            HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED,
-        }
-        try:
-            method = [m for m in self.app.job_config.handler_assignment_methods if m in grabbable_methods][0]
-        except IndexError:
-            return
-        subq = select([model.Job.id]) \
-            .where(and_(
-                model.Job.table.c.handler.in_(self.app.job_config.self_handler_tags),
-                model.Job.table.c.state == model.Job.states.NEW)) \
-            .order_by(model.Job.table.c.id)
-        if self.app.job_config.handler_max_grab:
-            subq = subq.limit(self.app.job_config.handler_max_grab)
-        if method == HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED:
-            subq = subq.with_for_update(skip_locked=True)
-        self.__grab_query = model.Job.table.update() \
-            .returning(model.Job.table.c.id) \
-            .where(model.Job.table.c.id.in_(subq)) \
-            .values(handler=self.app.config.server_name)
-        if method == HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION:
-            self.__grab_conn_opts['isolation_level'] = 'SERIALIZABLE'
-        log.info(
-            "Handler job grabber initialized with '%s' assignment method for handler '%s', tag(s): %s", method,
-            self.app.config.server_name, ', '.join(str(x) for x in self.app.job_config.handler_tags)
-        )
+        self.job_grabber = None
+        handler_assignment_method = ItemGrabber.get_grabbable_handler_assignment_method(self.app.job_config.handler_assignment_methods)
+        if handler_assignment_method:
+            self.job_grabber = ItemGrabber(
+                app=app,
+                grab_type='Job',
+                handler_assignment_method=handler_assignment_method,
+                max_grab=self.app.job_config.handler_max_grab,
+                self_handler_tags=self.app.job_config.self_handler_tags,
+                handler_tags=self.app.job_config.handler_tags,
+            )
 
     def start(self):
         """
@@ -147,7 +192,7 @@ class JobHandlerQueue(Monitors):
 
     def __check_jobs_at_startup(self):
         """
-        Checks all jobs that are in the 'new', 'queued' or 'running' state in
+        Checks all jobs that are in the 'new', 'queued', 'running', or 'stopped' state in
         the database and requeues or cleans up as necessary.  Only run as the
         job handler starts.
         In case the activation is enforced it will filter out the jobs of inactive users.
@@ -155,7 +200,8 @@ class JobHandlerQueue(Monitors):
         jobs_at_startup = []
         if self.track_jobs_in_database:
             in_list = (model.Job.states.QUEUED,
-                       model.Job.states.RUNNING)
+                       model.Job.states.RUNNING,
+                       model.Job.states.STOPPED)
         else:
             in_list = (model.Job.states.NEW,
                        model.Job.states.QUEUED,
@@ -163,17 +209,17 @@ class JobHandlerQueue(Monitors):
         if self.app.config.user_activation_on:
             jobs_at_startup = self.sa_session.query(model.Job).enable_eagerloads(False) \
                 .outerjoin(model.User) \
-                .filter(model.Job.state.in_(in_list) &
-                        (model.Job.handler == self.app.config.server_name) &
-                        or_((model.Job.user_id == null()), (model.User.active == true()))).all()
+                .filter(model.Job.state.in_(in_list)
+                        & (model.Job.handler == self.app.config.server_name)
+                        & or_((model.Job.user_id == null()), (model.User.active == true()))).all()
         else:
             jobs_at_startup = self.sa_session.query(model.Job).enable_eagerloads(False) \
-                .filter(model.Job.state.in_(in_list) &
-                        (model.Job.handler == self.app.config.server_name)).all()
+                .filter(model.Job.state.in_(in_list)
+                        & (model.Job.handler == self.app.config.server_name)).all()
 
         for job in jobs_at_startup:
             if not self.app.toolbox.has_tool(job.tool_id, job.tool_version, exact=True):
-                log.warning("({}) Tool '{}' removed from tool config, unable to recover job".format(job.id, job.tool_id))
+                log.warning(f"({job.id}) Tool '{job.tool_id}' removed from tool config, unable to recover job")
                 self.job_wrapper(job).fail('This tool was disabled before the job completed.  Please contact your Galaxy administrator.')
             elif job.job_runner_name is not None and job.job_runner_external_id is None:
                 # This could happen during certain revisions of Galaxy where a runner URL was persisted before the job was dispatched to a runner.
@@ -194,7 +240,7 @@ class JobHandlerQueue(Monitors):
                 log.info('(%s) Converted job from a URL to a destination and recovered' % (job.id))
             elif job.job_runner_name is None:
                 # Never (fully) dispatched
-                log.debug("({}) No job runner assigned and job still in '{}' state, adding to the job handler queue".format(job.id, job.state))
+                log.debug(f"({job.id}) No job runner assigned and job still in '{job.state}' state, adding to the job handler queue")
                 if self.track_jobs_in_database:
                     job.set_state(model.Job.states.NEW)
                 else:
@@ -248,35 +294,10 @@ class JobHandlerQueue(Monitors):
             'internal.galaxy.jobs.handlers.monitor_step',
             'Job handler monitor step complete.'
         )
-        if self.__grab_query is not None:
-            self.__grab_unhandled_jobs()
+        if self.job_grabber is not None:
+            self.job_grabber.grab_unhandled_items()
         self.__handle_waiting_jobs()
         log.trace(monitor_step_timer.to_str())
-
-    def __grab_unhandled_jobs(self):
-        """
-        Attempts to "grab" jobs (assign unassigned jobs to itself) using DB serialization methods, if enabled. This
-        simply sets `Job.handler` to the current server name, which causes the job to be picked up by
-        `__handle_waiting_jobs()`.
-        """
-        # an excellent discussion on PostgreSQL concurrency safety:
-        # https://blog.2ndquadrant.com/what-is-select-skip-locked-for-in-postgresql-9-5/
-        self.sa_session.expunge_all()
-        conn = self.sa_session.connection(execution_options=self.__grab_conn_opts)
-        with conn.begin() as trans:
-            try:
-                rows = conn.execute(self.__grab_query).fetchall()
-                if rows:
-                    log.debug('Grabbed job(s): %s', ', '.join(str(row[0]) for row in rows))
-                    trans.commit()
-                else:
-                    trans.rollback()
-            except OperationalError as e:
-                # If this is a serialization failure on PostgreSQL, then e.orig is a psycopg2 TransactionRollbackError
-                # and should have attribute `code`. Other engines should just report the message and move on.
-                if int(getattr(e.orig, 'pgcode', -1)) != 40001:
-                    log.debug('Grabbing job failed (serialization failures are ok): %s', unicodify(e))
-                trans.rollback()
 
     def __handle_waiting_jobs(self):
         """
@@ -467,7 +488,7 @@ class JobHandlerQueue(Monitors):
             elif dataset_state == model.Dataset.states.ERROR:
                 jobs_to_pause[job_id].append("Input dataset '%s' is in error state" % hda_name)
             elif dataset_state != model.Dataset.states.OK:
-                jobs_to_ignore[job_id].append("Input dataset '{}' is in {} state".format(hda_name, dataset_state))
+                jobs_to_ignore[job_id].append(f"Input dataset '{hda_name}' is in {dataset_state} state")
         for job_id in sorted(jobs_to_pause):
             pause_message = ", ".join(jobs_to_pause[job_id])
             pause_message = "%s. To resume this job fix the input dataset(s)." % pause_message
@@ -538,7 +559,7 @@ class JobHandlerQueue(Monitors):
             # Cause the job_destination to be set and cached by the mapper
             job_destination = job_wrapper.job_destination
         except AssertionError as e:
-            log.warning("({}) Tool '{}' removed from tool config, unable to run job".format(job.id, job.tool_id))
+            log.warning(f"({job.id}) Tool '{job.tool_id}' removed from tool config, unable to run job")
             job_wrapper.fail(e)
             return JOB_ERROR, job_destination
         except JobNotReadyException as e:
@@ -558,24 +579,13 @@ class JobHandlerQueue(Monitors):
 
         if state == JOB_READY:
             state = self.__check_user_jobs(job, job_wrapper)
-        if state == JOB_READY and self.app.config.enable_quotas:
-            quota = self.app.quota_agent.get_quota(job.user)
-            if quota is not None:
-                try:
-                    usage = self.app.quota_agent.get_usage(user=job.user, history=job.history)
-                    if usage > quota:
-                        return JOB_USER_OVER_QUOTA, job_destination
-                except AssertionError:
-                    pass  # No history, should not happen with an anon user
+        if state == JOB_READY and self.app.quota_agent.is_over_quota(self.app, job, job_destination):
+            return JOB_USER_OVER_QUOTA, job_destination
         # Check total walltime limits
-        if (state == JOB_READY and
-                "delta" in self.app.job_config.limits.total_walltime):
+        if (state == JOB_READY and "delta" in self.app.job_config.limits.total_walltime):
             jobs_to_check = self.sa_session.query(model.Job).filter(
                 model.Job.user_id == job.user.id,
-                model.Job.update_time >= datetime.datetime.now() -
-                datetime.timedelta(
-                    self.app.job_config.limits.total_walltime["window"]
-                ),
+                model.Job.update_time >= datetime.datetime.now() - datetime.timedelta(self.app.job_config.limits.total_walltime["window"]),
                 model.Job.state == 'ok'
             ).all()
             time_spent = datetime.timedelta(0)
@@ -612,7 +622,7 @@ class JobHandlerQueue(Monitors):
                 continue
             # don't run jobs for which the input dataset was deleted
             if idata.deleted:
-                self.job_wrappers.pop(job.id, self.job_wrapper(job)).fail("input data {} (file: {}) was deleted before the job started".format(idata.hid, idata.file_name))
+                self.job_wrappers.pop(job.id, self.job_wrapper(job)).fail(f"input data {idata.hid} (file: {idata.file_name}) was deleted before the job started")
                 return JOB_INPUT_DELETED
             # an error in the input data causes us to bail immediately
             elif idata.state == idata.states.ERROR:
@@ -877,10 +887,25 @@ class JobHandlerStopQueue(Monitors):
             # Sleep
             self._monitor_sleep(1)
 
+    def __delete(self, job, error_msg):
+        final_state = job.states.DELETED
+        if error_msg is not None:
+            final_state = job.states.ERROR
+            job.info = error_msg
+        job.set_final_state(final_state)
+        self.sa_session.add(job)
+        self.sa_session.flush()
+
+    def __stop(self, job):
+        job.set_state(job.states.STOPPED)
+        self.sa_session.add(job)
+        self.sa_session.flush()
+
     def monitor_step(self):
         """
         Called repeatedly by `monitor` to stop jobs.
         """
+        # TODO: remove handling of DELETED_NEW after 21.09
         # Pull all new jobs from the queue at once
         jobs_to_check = []
         if self.app.config.track_jobs_in_database:
@@ -888,8 +913,10 @@ class JobHandlerStopQueue(Monitors):
             self.sa_session.expunge_all()
             # Fetch all new jobs
             newly_deleted_jobs = self.sa_session.query(model.Job).enable_eagerloads(False) \
-                                     .filter((model.Job.state == model.Job.states.DELETED_NEW) &
-                                             (model.Job.handler == self.app.config.server_name)).all()
+                                     .filter((model.Job.state.in_((model.Job.states.DELETED_NEW,
+                                                                   model.Job.states.DELETING,
+                                                                   model.Job.states.STOPPING)))
+                                             & (model.Job.handler == self.app.config.server_name)).all()
             for job in newly_deleted_jobs:
                 # job.stderr is always a string (job.job_stderr + job.tool_stderr, possibly `''`),
                 # while any `not None` message returned in self.queue.get_nowait() is interpreted
@@ -910,18 +937,18 @@ class JobHandlerStopQueue(Monitors):
         for job, error_msg in jobs_to_check:
             if (job.state not in
                     (job.states.DELETED_NEW,
-                     job.states.DELETED) and
-                    job.finished):
+                     job.states.DELETING,
+                     job.states.DELETED,
+                     job.states.STOPPING,
+                     job.states.STOPPED)
+                    and job.finished):
                 # terminated before it got here
                 log.debug('Job %s already finished, not deleting or stopping', job.id)
                 continue
-            final_state = job.states.DELETED
-            if error_msg is not None:
-                final_state = job.states.ERROR
-                job.info = error_msg
-            job.set_final_state(final_state)
-            self.sa_session.add(job)
-            self.sa_session.flush()
+            if job.state in (job.states.DELETED_NEW, job.states.DELETING):
+                self.__delete(job, error_msg)
+            elif job.state == job.states.STOPPING:
+                self.__stop(job)
             if job.job_runner_name is not None:
                 # tell the dispatcher to stop the job
                 job_wrapper = JobWrapper(job, self, use_persisted_destination=True)
@@ -981,12 +1008,12 @@ class DefaultJobDispatcher:
         try:
             if isinstance(job_wrapper, TaskWrapper):
                 # DBTODO Refactor
-                log.debug("({}) Dispatching task {} to {} runner".format(job_wrapper.job_id, job_wrapper.task_id, runner_name))
+                log.debug(f"({job_wrapper.job_id}) Dispatching task {job_wrapper.task_id} to {runner_name} runner")
             else:
-                log.debug("({}) Dispatching to {} runner".format(job_wrapper.job_id, runner_name))
+                log.debug(f"({job_wrapper.job_id}) Dispatching to {runner_name} runner")
             self.job_runners[runner_name].put(job_wrapper)
         except KeyError:
-            log.error('put(): ({}) Invalid job runner: {}'.format(job_wrapper.job_id, runner_name))
+            log.error(f'put(): ({job_wrapper.job_id}) Invalid job runner: {runner_name}')
             job_wrapper.fail(DEFAULT_JOB_PUT_FAILURE_MESSAGE)
 
     def stop(self, job, job_wrapper):
@@ -1004,11 +1031,11 @@ class DefaultJobDispatcher:
         job_runner_name = job.get_job_runner_name()
         if job_runner_name is not None:
             runner_name = job_runner_name.split(":", 1)[0]
-            log.debug("Stopping job {} in {} runner".format(job_wrapper.get_id_tag(), runner_name))
+            log.debug(f"Stopping job {job_wrapper.get_id_tag()} in {runner_name} runner")
             try:
                 self.job_runners[runner_name].stop_job(job_wrapper)
             except KeyError:
-                log.error('stop(): ({}) Invalid job runner: {}'.format(job_wrapper.get_id_tag(), runner_name))
+                log.error(f'stop(): ({job_wrapper.get_id_tag()}) Invalid job runner: {runner_name}')
                 # Job and output dataset states have already been updated, so nothing is done here.
 
     def recover(self, job, job_wrapper):
@@ -1017,7 +1044,7 @@ class DefaultJobDispatcher:
         try:
             self.job_runners[runner_name].recover(job, job_wrapper)
         except KeyError:
-            log.error('recover(): ({}) Invalid job runner: {}'.format(job_wrapper.job_id, runner_name))
+            log.error(f'recover(): ({job_wrapper.job_id}) Invalid job runner: {runner_name}')
             job_wrapper.fail(DEFAULT_JOB_PUT_FAILURE_MESSAGE)
 
     def shutdown(self):

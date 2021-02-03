@@ -4,23 +4,24 @@ Interface to Docker
 
 import logging
 import os
+import shlex
 from functools import partial
 from itertools import cycle, repeat
 from time import sleep
+from typing import Any, Dict, Optional, Type
 
 try:
     import docker
 except ImportError:
-    docker = None
+    docker = None  # type: ignore
 
 try:
     from requests.exceptions import ConnectionError, ReadTimeout
 except ImportError:
-    ConnectionError = None
-    ReadTimeout = None
-from six.moves import shlex_quote
+    ConnectionError = None  # type: ignore
+    ReadTimeout = None  # type: ignore
 
-from galaxy.containers import ContainerInterface
+from galaxy.containers import Container, ContainerInterface
 from galaxy.containers.docker_decorators import (
     docker_columns,
     docker_json
@@ -41,9 +42,9 @@ log = logging.getLogger(__name__)
 
 class DockerInterface(ContainerInterface):
 
-    container_class = DockerContainer
+    container_class: Type[Container] = DockerContainer
     volume_class = DockerVolume
-    conf_defaults = {
+    conf_defaults: Dict[str, Optional[Any]] = {
         'host': None,
         'tls': False,
         'force_tlsverify': False,
@@ -107,7 +108,7 @@ class DockerInterface(ContainerInterface):
 class DockerCLIInterface(DockerInterface):
 
     container_type = 'docker_cli'
-    conf_defaults = {
+    conf_defaults: Dict[str, Optional[Any]] = {
         'command_template': '{executable} {global_kwopts} {subcommand} {args}',
         'executable': 'docker',
     }
@@ -130,7 +131,7 @@ class DockerCLIInterface(DockerInterface):
         global_kwopts = []
         if self._conf.host:
             global_kwopts.append('--host')
-            global_kwopts.append(shlex_quote(self._conf.host))
+            global_kwopts.append(shlex.quote(self._conf.host))
         if self._conf.force_tlsverify:
             global_kwopts.append('--tlsverify')
         self._docker_command = self._conf['command_template'].format(
@@ -142,34 +143,34 @@ class DockerCLIInterface(DockerInterface):
 
     def _filter_by_id_or_name(self, id, name):
         if id:
-            return '--filter id={}'.format(id)
+            return f'--filter id={id}'
         elif name:
-            return '--filter name={}'.format(name)
+            return f'--filter name={name}'
         return None
 
     def _stringify_kwopt_docker_volumes(self, flag, val):
         """The docker API will take a volumes argument in many formats, try to
         deal with that for the command line
         """
-        l = []
+        kwopt_list = []
         if isinstance(val, list):
             # ['/host/vol']
-            l = val
+            kwopt_list = val
         else:
             for hostvol, guestopts in val.items():
                 if isinstance(guestopts, str):
                     # {'/host/vol': '/container/vol'}
-                    l.append('{}:{}'.format(hostvol, guestopts))
+                    kwopt_list.append(f'{hostvol}:{guestopts}')
                 else:
                     # {'/host/vol': {'bind': '/container/vol'}}
                     # {'/host/vol': {'bind': '/container/vol', 'mode': 'rw'}}
                     mode = guestopts.get('mode', '')
-                    l.append('{vol}:{bind}{mode}'.format(
+                    kwopt_list.append('{vol}:{bind}{mode}'.format(
                         vol=hostvol,
                         bind=guestopts['bind'],
                         mode=':' + mode if mode else ''
                     ))
-        return self._stringify_kwopt_list(flag, l)
+        return self._stringify_kwopt_list(flag, kwopt_list)
 
     def _run_docker(self, subcommand, args=None, verbose=False):
         command = self._docker_command.format(subcommand=subcommand, args=args or '')
@@ -198,7 +199,7 @@ class DockerCLIInterface(DockerInterface):
             return self._run_docker(subcommand='inspect', args=container_id)[0]
         except (IndexError, ContainerCLIError) as exc:
             msg = "Invalid container id: %s" % container_id
-            if exc.stdout == '[]' and exc.stderr == 'Error: no such object: {container_id}'.format(container_id=container_id):
+            if exc.stdout == '[]' and exc.stderr == f'Error: no such object: {container_id}':
                 log.warning(msg)
                 return []
             else:
@@ -210,7 +211,7 @@ class DockerCLIInterface(DockerInterface):
             return self._run_docker(subcommand='image inspect', args=image)[0]
         except (IndexError, ContainerCLIError) as exc:
             msg = "%s not pulled, cannot get digest" % image
-            if exc.stdout == '[]' and exc.stderr == 'Error: no such image: {image}'.format(image=image):
+            if exc.stdout == '[]' and exc.stderr == f'Error: no such image: {image}':
                 log.warning(msg, image)
                 return []
             else:
@@ -226,7 +227,7 @@ class DockerAPIClient:
     _host_iter = None
     _client = None
     _client_args = ()
-    _client_kwargs = {}
+    _client_kwargs: Dict[str, Optional[Any]] = {}
 
     @staticmethod
     def _qualname(f):
@@ -264,7 +265,6 @@ class DockerAPIClient:
         for tries in range(1, max_tries + 1):
             retry_time = DockerAPIClient._exception_retry_time
             reinit = False
-            exc = None
             # re-get the APIClient method every time as a different caller (such as the success test function) may have
             # already reinitialized the client, and we always want to use the current client
             f = DockerAPIClient._unwrapped_attr(fname)
@@ -274,42 +274,38 @@ class DockerAPIClient:
                 if tries > 1:
                     log.info('%s() succeeded on attempt %s', qualname, tries)
                 return r
-            except ConnectionError:
-                reinit = True
-            except docker.errors.APIError as exc:
-                if not DockerAPIClient._should_retry_request(exc.response.status_code):
-                    raise
-            except ReadTimeout:
-                reinit = True
-                retry_time = 0
-            finally:
-                # this is inside the finally context so we can do a bare raise when we give up (so the real stack for
-                # the exception is raised)
-                if exc is not None:
-                    log.warning("Caught exception on %s(): %s: %s",
-                                DockerAPIClient._qualname(f), exc.__class__.__name__, exc)
-                    if reinit:
-                        log.warning("Reinitializing Docker API client due to connection-oriented failure")
-                        DockerAPIClient._init_client()
-                        f = DockerAPIClient._unwrapped_attr(fname)
-                        qualname = DockerAPIClient._qualname(f)
-                    r = None
-                    if success_test is not None:
-                        log.info("Testing if %s() succeeded despite the exception", qualname)
-                        r = success_test()
-                    if r:
-                        log.warning("The request appears to have succeeded, will not retry. Response is: %s", str(r))
-                        return r
-                    elif tries >= max_tries:
-                        log.error("Maximum number of attempts (%s) exceeded", max_tries)
-                        if 'response' in exc and DockerAPIClient._nonfatal_error(exc.response.status_code):
-                            return None
-                        else:
-                            raise
+            except (ConnectionError, docker.errors.APIError, ReadTimeout) as exc:
+                if isinstance(exc, ConnectionError):
+                    reinit = True
+                elif isinstance(exc, docker.errors.APIError):
+                    if not DockerAPIClient._should_retry_request(exc.response.status_code):
+                        raise
+                else:  # ReadTimeout
+                    reinit = True
+                    retry_time = 0
+                log.warning("Caught exception on %s(): %s: %s",
+                            DockerAPIClient._qualname(f), exc.__class__.__name__, exc)
+                if reinit:
+                    log.warning("Reinitializing Docker API client due to connection-oriented failure")
+                    DockerAPIClient._init_client()
+                    f = DockerAPIClient._unwrapped_attr(fname)
+                    qualname = DockerAPIClient._qualname(f)
+                r = None
+                if success_test is not None:
+                    log.info("Testing if %s() succeeded despite the exception", qualname)
+                    r = success_test()
+                if r:
+                    log.warning("The request appears to have succeeded, will not retry. Response is: %s", str(r))
+                    return r
+                elif tries >= max_tries:
+                    log.error("Maximum number of attempts (%s) exceeded", max_tries)
+                    if 'response' in exc and DockerAPIClient._nonfatal_error(exc.response.status_code):
+                        return None
                     else:
-                        log.error("Retrying %s() in %s seconds (attempt: %s of %s)", qualname, retry_time, tries,
-                                  max_tries)
-                        sleep(retry_time)
+                        raise
+                else:
+                    log.error("Retrying %s() in %s seconds (attempt: %s of %s)", qualname, retry_time, tries, max_tries)
+                    sleep(retry_time)
 
     def __init__(self, *args, **kwargs):
         # Only initialize the host iterator once

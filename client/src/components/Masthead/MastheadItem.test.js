@@ -1,13 +1,15 @@
+import { shallowMount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 import MastheadItem from "./MastheadItem.vue";
-import { mount, createLocalVue } from "@vue/test-utils";
 
-describe("Masthead.vue", () => {
+describe("MastheadItem.vue", () => {
     let wrapper;
     let localVue;
-    let active, menu;
+    let active;
+    let menu;
 
     beforeEach(() => {
-        localVue = createLocalVue();
+        localVue = getLocalVue();
     });
 
     function m() {
@@ -15,7 +17,8 @@ describe("Masthead.vue", () => {
             id: "mytab",
             menu: menu,
         };
-        return mount(MastheadItem, {
+
+        return shallowMount(MastheadItem, {
             propsData: {
                 tab,
                 activeTab: active,
@@ -28,15 +31,15 @@ describe("Masthead.vue", () => {
         active = "mytab";
         menu = true;
         wrapper = m();
-        expect(wrapper.vm.active).to.equals(true);
-        expect(wrapper.vm.menu).to.equals(true);
+        expect(wrapper.vm.classes.active).toBe(true);
+        expect(wrapper.vm.menu).toBe(true);
     });
 
     it("should render inactive tabs without menus", async () => {
         active = "othertab";
         menu = false;
         wrapper = m();
-        expect(wrapper.vm.active).to.equals(false);
-        expect(wrapper.vm.menu).to.equals(false);
+        expect(wrapper.vm.classes.active).toBe(false);
+        expect(wrapper.vm.menu).toBe(false);
     });
 });

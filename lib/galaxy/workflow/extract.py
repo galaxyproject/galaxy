@@ -15,6 +15,7 @@ from galaxy.tools.parameters.grouping import (
     Repeat,
     Section
 )
+from galaxy.util import listify
 from .steps import (
     attach_ordered_steps,
     order_workflow_steps_with_levels
@@ -54,18 +55,9 @@ def extract_workflow(trans, user, history=None, job_ids=None, dataset_ids=None, 
 
 def extract_steps(trans, history=None, job_ids=None, dataset_ids=None, dataset_collection_ids=None, dataset_names=None, dataset_collection_names=None):
     # Ensure job_ids and dataset_ids are lists (possibly empty)
-    if job_ids is None:
-        job_ids = []
-    elif type(job_ids) is not list:
-        job_ids = [job_ids]
-    if dataset_ids is None:
-        dataset_ids = []
-    elif type(dataset_ids) is not list:
-        dataset_ids = [dataset_ids]
-    if dataset_collection_ids is None:
-        dataset_collection_ids = []
-    elif type(dataset_collection_ids) is not list:
-        dataset_collection_ids = [dataset_collection_ids]
+    job_ids = listify(job_ids)
+    dataset_ids = listify(dataset_ids)
+    dataset_collection_ids = listify(dataset_collection_ids)
     # Convert both sets of ids to integers
     job_ids = [int(_) for _ in job_ids]
     dataset_ids = [int(_) for _ in dataset_ids]
@@ -103,7 +95,7 @@ def extract_steps(trans, history=None, job_ids=None, dataset_ids=None, dataset_c
     # Tool steps
     for job_id in job_ids:
         if job_id not in summary.job_id2representative_job:
-            log.warning("job_id {} not found in job_id2representative_job {}".format(job_id, summary.job_id2representative_job))
+            log.warning(f"job_id {job_id} not found in job_id2representative_job {summary.job_id2representative_job}")
             raise AssertionError("Attempt to create workflow with job not connected to current history")
         job = summary.job_id2representative_job[job_id]
         tool_inputs, associations = step_inputs(trans, job)
@@ -137,12 +129,14 @@ def extract_steps(trans, history=None, job_ids=None, dataset_ids=None, dataset_c
             assoc_name = assoc.name
             if ToolOutputCollectionPart.is_named_collection_part_name(assoc_name):
                 continue
+            if assoc_name.startswith("__new_primary_file"):
+                continue
             if job in summary.implicit_map_jobs:
                 hid = None
                 for implicit_pair in jobs[job]:
                     query_assoc_name, dataset_collection = implicit_pair
                     if query_assoc_name == assoc_name or assoc_name.startswith("__new_primary_file_%s|" % query_assoc_name):
-                        hid = dataset_collection.hid
+                        hid = summary.hid(dataset_collection)
                 if hid is None:
                     template = "Failed to find matching implicit job - job id is %s, implicit pairs are %s, assoc_name is %s."
                     message = template % (job.id, jobs[job], assoc_name)
@@ -150,9 +144,12 @@ def extract_steps(trans, history=None, job_ids=None, dataset_ids=None, dataset_c
                     raise Exception("Failed to extract job.")
             else:
                 if hasattr(assoc, "dataset"):
-                    hid = assoc.dataset.hid
+                    has_hid = assoc.dataset
                 else:
-                    hid = assoc.dataset_collection_instance.hid
+                    has_hid = assoc.dataset_collection_instance
+                hid = summary.hid(has_hid)
+            if hid in hid_to_output_pair:
+                log.warning("duplicate hid found in extract_steps [%s]" % hid)
             hid_to_output_pair[hid] = (step, assoc.name)
     return steps
 
@@ -204,7 +201,28 @@ class WorkflowSummary:
         self.implicit_map_jobs = []
         self.collection_types = {}
 
+        self.hda_hid_in_history = {}
+        self.hdca_hid_in_history = {}
+
         self.__summarize()
+
+    def hid(self, object):
+        if object.history_content_type == "dataset_collection":
+            if object.id in self.hdca_hid_in_history:
+                return self.hdca_hid_in_history[object.id]
+            elif object.history == self.history:
+                return object.hid
+            else:
+                log.warning("extraction issue, using hdca hid from outside current history and unmapped")
+                return object.hid
+        else:
+            if object.id in self.hda_hid_in_history:
+                return self.hda_hid_in_history[object.id]
+            elif object.history == self.history:
+                return object.hid
+            else:
+                log.warning("extraction issue, using hda hid from outside current history and unmapped")
+                return object.hid
 
     def __summarize(self):
         # Make a first pass handle all singleton jobs, input dataset and dataset collections
@@ -223,7 +241,10 @@ class WorkflowSummary:
             self.__summarize_dataset(content)
 
     def __summarize_dataset_collection(self, dataset_collection):
+        hid_in_history = dataset_collection.hid
         dataset_collection = self.__original_hdca(dataset_collection)
+        self.hdca_hid_in_history[dataset_collection.id] = hid_in_history
+
         hid = dataset_collection.hid
         self.collection_types[hid] = dataset_collection.collection.collection_type
         cja = dataset_collection.creating_job_associations
@@ -272,7 +293,9 @@ class WorkflowSummary:
         if not self.__check_state(dataset):
             return
 
+        hid_in_history = dataset.hid
         original_hda = self.__original_hda(dataset)
+        self.hda_hid_in_history[original_hda.id] = hid_in_history
 
         if not original_hda.creating_job_associations:
             self.jobs[FakeJob(dataset)] = [(None, dataset)]
@@ -328,18 +351,16 @@ def __cleanup_param_values(inputs, values):
     def cleanup(prefix, inputs, values):
         for key, input in inputs.items():
             if isinstance(input, DataToolParameter) or isinstance(input, DataCollectionToolParameter):
-                tmp = values[key]
+                items = values[key]
                 values[key] = None
                 # HACK: Nested associations are not yet working, but we
                 #       still need to clean them up so we can serialize
                 # if not( prefix ):
-                if isinstance(tmp, model.DatasetCollectionElement):
-                    tmp = tmp.first_dataset_instance()
-                if tmp:  # this is false for a non-set optional dataset
-                    if not isinstance(tmp, list):
-                        associations.append((tmp.hid, prefix + key))
-                    else:
-                        associations.extend([(t.hid, prefix + key) for t in tmp])
+                for item in listify(items):
+                    if isinstance(item, model.DatasetCollectionElement):
+                        item = item.first_dataset_instance()
+                    if item:  # this is false for a non-set optional dataset
+                        associations.append((item.hid, prefix + key))
 
                 # Cleanup the other deprecated crap associated with datasets
                 # as well. Worse, for nested datasets all the metadata is
@@ -365,10 +386,10 @@ def __cleanup_param_values(inputs, values):
                 if input.name in values:
                     group_values = values[input.name]
                     current_case = group_values['__current_case__']
-                    cleanup("{}{}|".format(prefix, key), input.cases[current_case].inputs, group_values)
+                    cleanup(f"{prefix}{key}|", input.cases[current_case].inputs, group_values)
             elif isinstance(input, Section):
                 if input.name in values:
-                    cleanup("{}{}|".format(prefix, key), input.inputs, values[input.name])
+                    cleanup(f"{prefix}{key}|", input.inputs, values[input.name])
     cleanup("", inputs, values)
     return associations
 

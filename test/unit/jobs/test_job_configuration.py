@@ -3,8 +3,8 @@ import os
 import shutil
 import tempfile
 import unittest
+from unittest import mock
 
-import mock
 from pykwalify.core import Core
 
 from galaxy.job_metrics import JobMetrics
@@ -95,7 +95,7 @@ class BaseJobConfXmlParserTestCase(unittest.TestCase):
 
     def _write_config_from(self, path, template=None):
         template = template or {}
-        contents = open(path, "r").read()
+        contents = open(path).read()
         if template:
             contents = contents.format(**template)
         self._write_config(contents)
@@ -379,6 +379,7 @@ class AdvancedJobConfXmlParserTestCase(BaseJobConfXmlParserTestCase):
         assert self.job_config.tools["foo"][-1].params["source"] == "trackster"
         assert self.job_config.tools["longbar"][-1].destination == "dynamic"
         assert self.job_config.tools["longbar"][-1].resources == "all"
+        assert "resources" not in self.job_config.tools["longbar"][-1].params
 
     def test_handler_runner_plugins(self):
         self._with_advanced_config()

@@ -1,52 +1,34 @@
-import sinon from "sinon";
 import flushPromises from "flush-promises";
-import { shallowMount, createLocalVue } from "@vue/test-utils";
+import { shallowMount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 
-import { default as CloudAuth, __RewireAPI__ as rewire } from "./CloudAuth";
+import { default as CloudAuth } from "./CloudAuth";
 import CloudAuthItem from "./CloudAuthItem";
-import { Credential } from "./model";
 
-import _l from "utils/localization";
-import BootstrapVue from "bootstrap-vue";
+jest.mock("./model/service", () => ({
+    listCredentials: async () => {
+        const listCredentials = require("./testdata/listCredentials.json");
+        const Credential = require("./model").Credential;
+        return listCredentials.map(Credential.create);
+    },
+}));
 
-// test data
-import listCredentials from "./testdata/listCredentials.json";
-
-const localVue = createLocalVue();
-localVue.use(BootstrapVue);
-localVue.filter("localize", (value) => _l(value));
+const localVue = getLocalVue();
 
 describe("CloudAuth component", () => {
-    let stub, wrapper;
-
-    const mockSvc = {
-        listCredentials: async () => null,
-    };
-
-    rewire.__Rewire__("svc", mockSvc);
+    let wrapper;
 
     beforeEach(async () => {
-        const creds = listCredentials.map(Credential.create);
-        stub = sinon.stub(mockSvc, "listCredentials").resolves(creds);
-        /* https://github.com/vuejs/vue-test-utils/issues/829 for more info
-         * regarding the sync option used here.
-         */
-        wrapper = shallowMount(CloudAuth, { sync: false, localVue });
+        wrapper = shallowMount(CloudAuth, { localVue });
         await flushPromises();
-    });
-
-    afterEach(() => {
-        if (stub) {
-            stub.restore();
-        }
     });
 
     describe("initialization", () => {
         it("should render the initial list", () => {
-            assert(wrapper);
-            assert(wrapper.contains(CloudAuthItem));
-            assert(wrapper.vm.items.length == 2);
-            assert(wrapper.vm.filteredItems.length == 2);
+            expect(wrapper).toBeTruthy();
+            expect(wrapper.findComponent(CloudAuthItem).exists()).toBeTruthy();
+            expect(wrapper.vm.items.length == 2).toBeTruthy();
+            expect(wrapper.vm.filteredItems.length == 2).toBeTruthy();
         });
     });
 
@@ -56,35 +38,35 @@ describe("CloudAuth component", () => {
 
             wrapper.vm.filter = "aws";
             results = wrapper.vm.filteredItems;
-            assert(wrapper.contains(CloudAuthItem));
-            assert(results.length == 1, `Wrong number of items: ${results.length}`);
+            expect(wrapper.findComponent(CloudAuthItem).exists()).toBeTruthy();
+            expect(results.length == 1).toBeTruthy();
 
             wrapper.vm.filter = "azure";
             results = wrapper.vm.filteredItems;
-            assert(results.length == 1, `Wrong number of items: ${results.length}`);
+            expect(results.length == 1).toBeTruthy();
 
             wrapper.vm.filter = "";
             results = wrapper.vm.filteredItems;
-            assert(results.length == 2, `Wrong number of items: ${results.length}`);
+            expect(results.length == 2).toBeTruthy();
         });
     });
 
     describe("create button", () => {
         it("clicking create button should add a blank key", () => {
             let results = wrapper.vm.filteredItems;
-            assert(wrapper.contains(CloudAuthItem));
-            assert(results.length == 2, `Wrong number of items: ${results.length}`);
+            expect(wrapper.findComponent(CloudAuthItem).exists()).toBeTruthy();
+            expect(results.length == 2).toBeTruthy();
 
             const button = wrapper.find("button[name=createNewKey]");
-            assert(button);
+            expect(button).toBeTruthy();
             button.trigger("click");
 
             results = wrapper.vm.filteredItems;
-            assert(results.length == 3, `Wrong number of items: ${results.length}`);
+            expect(results.length == 3).toBeTruthy();
 
             const blank = results.find((i) => i.id == null);
-            assert(blank, "missing blank key");
-            assert(blank.id == null);
+            expect(blank).toBeTruthy();
+            expect(blank.id == null).toBeTruthy();
         });
     });
 });

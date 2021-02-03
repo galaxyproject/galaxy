@@ -68,12 +68,20 @@ class Repeat(Group):
 
     def __init__(self):
         Group.__init__(self)
-        self.title = None
+        self._title = None
         self.inputs = None
         self.help = None
         self.default = 0
         self.min = None
         self.max = None
+
+    @property
+    def title(self):
+        return self._title or self.name
+
+    @title.setter
+    def title(self, value):
+        self._title = value
 
     @property
     def title_plural(self):
@@ -266,7 +274,7 @@ class UploadDataset(Group):
             if i == index:
                 rval = composite_name
                 if composite_file.description:
-                    rval = "{} ({})".format(rval, composite_file.description)
+                    rval = f"{rval} ({composite_file.description})"
                 if composite_file.optional:
                     rval = "%s [optional]" % rval
                 return rval
@@ -419,14 +427,14 @@ class UploadDataset(Group):
             elif ftp_files is not None and trans.user is not None:  # look for files uploaded via FTP
                 user_ftp_dir = trans.user_ftp_dir
                 assert not os.path.islink(user_ftp_dir), "User FTP directory cannot be a symbolic link"
-                for (dirpath, dirnames, filenames) in os.walk(user_ftp_dir):
+                for dirpath, _dirnames, filenames in os.walk(user_ftp_dir):
                     for filename in filenames:
                         for ftp_filename in ftp_files:
                             if ftp_filename == filename:
                                 path = relpath(os.path.join(dirpath, filename), user_ftp_dir)
                                 if not os.path.islink(os.path.join(dirpath, filename)):
-                                    ftp_data_file = {'local_filename' : os.path.abspath(os.path.join(user_ftp_dir, path)),
-                                                     'filename' : os.path.basename(path)}
+                                    ftp_data_file = {'local_filename': os.path.abspath(os.path.join(user_ftp_dir, path)),
+                                                     'filename': os.path.basename(path)}
                                     purge = getattr(trans.app.config, 'ftp_upload_purge', True)
                                     file_bunch = get_data_file_filename(
                                         ftp_data_file,
@@ -505,7 +513,7 @@ class UploadDataset(Group):
                 else:
                     user_ftp_dir = trans.user_ftp_dir
                     assert not os.path.islink(user_ftp_dir), "User FTP directory cannot be a symbolic link"
-                    for (dirpath, dirnames, filenames) in os.walk(user_ftp_dir):
+                    for dirpath, _dirnames, filenames in os.walk(user_ftp_dir):
                         for filename in filenames:
                             path = relpath(os.path.join(dirpath, filename), user_ftp_dir)
                             if not os.path.islink(os.path.join(dirpath, filename)):
@@ -522,8 +530,8 @@ class UploadDataset(Group):
                     log.warning('User passed an invalid file path in ftp_files: %s' % ftp_file)
                     continue
                     # TODO: warning to the user (could happen if file is already imported)
-                ftp_data_file = {'local_filename' : os.path.abspath(os.path.join(user_ftp_dir, ftp_file)),
-                                 'filename' : os.path.basename(ftp_file)}
+                ftp_data_file = {'local_filename': os.path.abspath(os.path.join(user_ftp_dir, ftp_file)),
+                                 'filename': os.path.basename(ftp_file)}
                 purge = getattr(trans.app.config, 'ftp_upload_purge', True)
                 file_bunch = get_data_file_filename(ftp_data_file, override_name=name, override_info=info, purge=purge)
                 if file_bunch.path:

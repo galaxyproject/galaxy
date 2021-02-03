@@ -5,12 +5,11 @@ import os
 import re
 import unittest
 
-from six import text_type
-
 from galaxy import model
 from galaxy.util import clean_multiline_string
 from galaxy.visualization.plugins import plugin
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
+from . import VisualizationsBase_TestCase
 from ...unittest_utils import galaxy_mock
 
 glx_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, os.pardir))
@@ -37,7 +36,7 @@ config1 = """\
 """
 
 
-class VisualizationsRegistry_TestCase(unittest.TestCase):
+class VisualizationsRegistry_TestCase(VisualizationsBase_TestCase):
 
     def test_plugin_load_from_repo(self):
         """should attempt load if criteria met"""
@@ -199,7 +198,7 @@ class VisualizationsRegistry_TestCase(unittest.TestCase):
         # should return the (new) api key for the above user (see the template above)
         response = jupyter._render({}, trans=trans)
         response.strip()
-        self.assertIsInstance(response, text_type)
+        self.assertIsInstance(response, str)
         self.assertTrue('-' in response)
         ie_request, api_key = response.split('-')
 

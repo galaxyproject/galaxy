@@ -158,7 +158,7 @@ class DependencyManager:
             explicit_resolver_options = {}
         default = resolver.config_options.get(key)
         config_prefix = resolver.resolver_type
-        global_key = "{}_{}".format(config_prefix, key)
+        global_key = f"{config_prefix}_{key}"
         value = explicit_resolver_options.get(key, CONFIG_VAL_NOT_FOUND)
         if value is CONFIG_VAL_NOT_FOUND:
             value = self.get_app_option(global_key, default)
@@ -299,7 +299,7 @@ class DependencyManager:
         return any(map(lambda r: isinstance(r, ToolShedPackageDependencyResolver), self.dependency_resolvers))
 
     def find_dep(self, name, version=None, type='package', **kwds):
-        log.debug('Find dependency {} version {}'.format(name, version))
+        log.debug(f'Find dependency {name} version {version}')
         requirements = ToolRequirements([ToolRequirement(name=name, version=version, type=type)])
         dep_dict = self._requirements_to_dependencies_dict(requirements, **kwds)
         if len(dep_dict) > 0:

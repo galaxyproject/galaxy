@@ -14,9 +14,9 @@
                 :items="items"
                 :multiple="multiple"
                 :filter="filter"
-                :showDetails="showDetails"
-                :showTime="showTime"
-                :showNavigate="mode == 'directory'"
+                :show-details="showDetails"
+                :show-time="showTime"
+                :show-navigate="mode == 'directory'"
                 @clicked="clicked"
                 @open="open"
                 @load="load"
@@ -59,6 +59,10 @@ export default {
             type: String,
             default: "file",
             validator: (prop) => ["file", "directory"].includes(prop),
+        },
+        requireWritable: {
+            type: Boolean,
+            default: false,
         },
     },
     data() {
@@ -129,16 +133,19 @@ export default {
                 this.services
                     .getFileSources()
                     .then((items) => {
-                        this.items = items.map((item) => {
-                            return {
-                                id: item.id,
-                                label: item.label,
-                                details: item.doc,
-                                isLeaf: false,
-                                url: item.uri_root,
-                                labelTitle: item.uri_root,
-                            };
-                        });
+                        items = items
+                            .filter((item) => !this.requireWritable || item.writable)
+                            .map((item) => {
+                                return {
+                                    id: item.id,
+                                    label: item.label,
+                                    details: item.doc,
+                                    isLeaf: false,
+                                    url: item.uri_root,
+                                    labelTitle: item.uri_root,
+                                };
+                            });
+                        this.items = items;
                         this.formatRows();
                         this.optionsShow = true;
                         this.showTime = false;

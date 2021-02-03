@@ -1,8 +1,6 @@
-# -*- coding: utf-8 -*-
 import unittest
 
 import sqlalchemy
-from six import string_types
 
 from galaxy import exceptions, model
 from galaxy.managers import hdas
@@ -20,7 +18,7 @@ user3_data = dict(email='user3@user3.user3', username='user3', password=default_
 class HDATestCase(BaseTestCase):
 
     def set_up_managers(self):
-        super(HDATestCase, self).set_up_managers()
+        super().set_up_managers()
         self.hda_manager = hdas.HDAManager(self.app)
         self.history_manager = HistoryManager(self.app)
         self.dataset_manager = DatasetManager(self.app)
@@ -98,7 +96,7 @@ class HDAManagerTestCase(HDATestCase):
         hda1 = self.hda_manager.create(history=history1, dataset=dataset1)
 
         self.log("should be able to set tags on an hda")
-        tags_to_set = [u'tag-one', u'tag-two']
+        tags_to_set = ['tag-one', 'tag-two']
         self.hda_manager.set_tags(hda1, tags_to_set, user=owner)
         tag_str_array = self.hda_manager.get_tags(hda1)
         self.assertEqual(sorted(tags_to_set), sorted(tag_str_array))
@@ -110,7 +108,7 @@ class HDAManagerTestCase(HDATestCase):
         hda1 = self.hda_manager.create(history=history1, dataset=dataset1)
 
         self.log("should be able to set annotation on an hda")
-        annotation = u'an annotation or анотація'
+        annotation = 'an annotation or анотація'
         self.hda_manager.annotate(hda1, annotation, user=owner)
         self.assertEqual(self.hda_manager.annotation(hda1), annotation)
 
@@ -131,7 +129,7 @@ class HDAManagerTestCase(HDATestCase):
 
         self.log("tags should be copied between HDAs")
         tagged = self.hda_manager.create(history=history1, dataset=self.dataset_manager.create())
-        tags_to_set = [u'tag-one', u'tag-two']
+        tags_to_set = ['tag-one', 'tag-two']
         self.hda_manager.set_tags(tagged, tags_to_set, user=owner)
 
         hda2 = self.hda_manager.copy(tagged, history=history1)
@@ -140,7 +138,7 @@ class HDAManagerTestCase(HDATestCase):
 
         self.log("annotations should be copied between HDAs")
         annotated = self.hda_manager.create(history=history1, dataset=self.dataset_manager.create())
-        annotation = u'( ͡° ͜ʖ ͡°)'
+        annotation = '( ͡° ͜ʖ ͡°)'
         self.hda_manager.annotate(annotated, annotation, user=owner)
 
         hda3 = self.hda_manager.copy(annotated, history=history1)
@@ -240,13 +238,13 @@ class HDAManagerTestCase(HDATestCase):
         accessible = self.hda_manager.get_accessible(item1.id, owner, current_history=self.trans.history)
         self.assertEqual(accessible, item1)
 
-        self.log("after setting a dataset to private (one user) permissions, " +
-            "access should be not allowed for other users")
+        self.log("after setting a dataset to private (one user) permissions, "
+            + "access should be not allowed for other users")
         self.assertRaises(exceptions.ItemAccessibilityException,
             self.hda_manager.get_accessible, item1.id, non_owner, current_history=self.trans.history)
 
-        self.log("a copy of a restricted dataset in another users history should be inaccessible even to " +
-            "the histories owner")
+        self.log("a copy of a restricted dataset in another users history should be inaccessible even to "
+            + "the histories owner")
         history2 = self.history_manager.create(name='history2', user=non_owner)
         self.trans.set_history(history2)
         item2 = self.hda_manager.copy(item1, history=history2)
@@ -302,14 +300,14 @@ class HDAManagerTestCase(HDATestCase):
         dataset_owner = self.user_manager.create(**user3_data)
         self.dataset_manager.permissions.set_private_to_one_user(dataset1, dataset_owner)
 
-        self.log("anonymous users should not be able to access datasets within their own histories if " +
-            "permissions do not allow")
+        self.log("anonymous users should not be able to access datasets within their own histories if "
+            + "permissions do not allow")
         self.assertFalse(self.hda_manager.is_accessible(item1, anon_user))
         self.assertRaises(exceptions.ItemAccessibilityException,
             self.hda_manager.error_unless_accessible, item1, anon_user)
 
-        self.log("those users with access permissions should still be allowed access to datasets " +
-            "within anon users' histories")
+        self.log("those users with access permissions should still be allowed access to datasets "
+            + "within anon users' histories")
         self.assertTrue(self.hda_manager.is_accessible(item1, dataset_owner))
 
     def test_error_if_uploading(self):
@@ -345,7 +343,7 @@ class HDAManagerTestCase(HDATestCase):
 # =============================================================================
 # web.url_for doesn't work well in the framework
 def testable_url_for(*a, **k):
-    return '(fake url): %s, %s' % (a, k)
+    return f'(fake url): {a}, {k}'
 
 
 hdas.HDASerializer.url_for = staticmethod(testable_url_for)
@@ -354,7 +352,7 @@ hdas.HDASerializer.url_for = staticmethod(testable_url_for)
 class HDASerializerTestCase(HDATestCase):
 
     def set_up_managers(self):
-        super(HDASerializerTestCase, self).set_up_managers()
+        super().set_up_managers()
         self.hda_serializer = hdas.HDASerializer(self.app)
 
     def test_views(self):
@@ -382,16 +380,16 @@ class HDASerializerTestCase(HDATestCase):
 
         # skip metadata for this test
         def is_metadata(key):
-            return (key == 'metadata' or
-                key.startswith('metadata_'))
+            return (key == 'metadata'
+                or key.startswith('metadata_'))
 
         self.log('should have a serializer for all serializable keys')
         for key in self.hda_serializer.serializable_keyset:
             instantiated_attribute = getattr(hda, key, None)
-            if not ((key in self.hda_serializer.serializers) or
-                   (isinstance(instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS)) or
-                   (is_metadata(key))):
-                self.fail('no serializer for: %s (%s)' % (key, instantiated_attribute))
+            if not ((key in self.hda_serializer.serializers)
+                   or (isinstance(instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS))
+                   or (is_metadata(key))):
+                self.fail(f'no serializer for: {key} ({instantiated_attribute})')
         else:
             self.assertTrue(True, 'all serializable keys have a serializer')
 
@@ -424,11 +422,11 @@ class HDASerializerTestCase(HDATestCase):
         self.assertIsInstance(serialized['dataset'], dict)
         self.assertEncodedId(serialized['dataset_id'])
         self.assertUUID(serialized['uuid'])
-        self.assertIsInstance(serialized['file_name'], string_types)
-        self.assertIsInstance(serialized['extra_files_path'], string_types)
+        self.assertIsInstance(serialized['file_name'], str)
+        self.assertIsInstance(serialized['extra_files_path'], str)
         self.assertIsInstance(serialized['size'], int)
         self.assertIsInstance(serialized['file_size'], int)
-        self.assertIsInstance(serialized['nice_size'], string_types)
+        self.assertIsInstance(serialized['nice_size'], str)
         # TODO: these should be tested w/copy
         self.assertNullableEncodedId(serialized['copied_from_history_dataset_association_id'])
         self.assertNullableEncodedId(serialized['copied_from_library_dataset_dataset_association_id'])
@@ -438,8 +436,8 @@ class HDASerializerTestCase(HDATestCase):
         self.assertIsInstance(serialized['meta_files'], list)
         self.assertNullableEncodedId(serialized['parent_id'])
         self.assertEqual(serialized['designation'], None)
-        self.assertIsInstance(serialized['genome_build'], string_types)
-        self.assertIsInstance(serialized['data_type'], string_types)
+        self.assertIsInstance(serialized['genome_build'], str)
+        self.assertIsInstance(serialized['data_type'], str)
 
         # hda
         self.assertEncodedId(serialized['history_id'])
@@ -464,9 +462,9 @@ class HDASerializerTestCase(HDATestCase):
         self.assertEqual(serialized['api_type'], 'file')
         self.assertEqual(serialized['type'], 'file')
 
-        self.assertIsInstance(serialized['url'], string_types)
+        self.assertIsInstance(serialized['url'], str)
         self.assertIsInstance(serialized['urls'], dict)
-        self.assertIsInstance(serialized['download_url'], string_types)
+        self.assertIsInstance(serialized['download_url'], str)
 
         self.log('serialized should jsonify well')
         self.assertIsJsonifyable(serialized)
@@ -523,7 +521,7 @@ class HDASerializerTestCase(HDATestCase):
 class HDADeserializerTestCase(HDATestCase):
 
     def set_up_managers(self):
-        super(HDADeserializerTestCase, self).set_up_managers()
+        super().set_up_managers()
         self.hda_deserializer = hdas.HDADeserializer(self.app)
 
     def test_deserialize_delete(self):
@@ -574,7 +572,7 @@ class HDADeserializerTestCase(HDATestCase):
     def test_deserialize_genome_build(self):
         hda = self._create_vanilla_hda()
 
-        self.assertIsInstance(hda.dbkey, string_types)
+        self.assertIsInstance(hda.dbkey, str)
         self.log('should deserialize to "?" from None')
         self.hda_deserializer.deserialize(hda, {'genome_build': None})
         self.assertEqual(hda.dbkey, '?')
@@ -582,7 +580,7 @@ class HDADeserializerTestCase(HDATestCase):
         self.assertRaises(exceptions.RequestParameterInvalidException,
             self.hda_deserializer.deserialize, hda, {'genome_build': 12})
         self.log('should be able to deserialize from unicode')
-        date_palm = u'نخيل التمر'
+        date_palm = 'نخيل التمر'
         self.hda_deserializer.deserialize(hda, {'genome_build': date_palm})
         self.assertEqual(hda.dbkey, date_palm)
         self.log('should be deserializable from empty string')
@@ -602,7 +600,7 @@ class HDADeserializerTestCase(HDATestCase):
         # self.hda_deserializer.deserialize( hda, { 'name': None } )
         # self.assertEqual( hda.name, '' )
         self.log('should be able to deserialize from unicode')
-        olive = u'ελιά'
+        olive = 'ελιά'
         self.hda_deserializer.deserialize(hda, {'name': olive})
         self.assertEqual(hda.name, olive)
         self.log('should be deserializable from empty string')
@@ -619,7 +617,7 @@ class HDADeserializerTestCase(HDATestCase):
         self.assertRaises(exceptions.RequestParameterInvalidException,
             self.hda_deserializer.deserialize, hda, {'info': None})
         self.log('should be able to deserialize from unicode')
-        rice = u'飯'
+        rice = '飯'
         self.hda_deserializer.deserialize(hda, {'info': rice})
         self.assertEqual(hda.info, rice)
         self.log('should be deserializable from empty string')
@@ -631,7 +629,7 @@ class HDADeserializerTestCase(HDATestCase):
 class HDAFilterParserTestCase(HDATestCase):
 
     def set_up_managers(self):
-        super(HDAFilterParserTestCase, self).set_up_managers()
+        super().set_up_managers()
         self.filter_parser = hdas.HDAFilterParser(self.app)
 
     def test_parsable(self):

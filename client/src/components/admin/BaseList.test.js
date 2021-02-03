@@ -1,6 +1,8 @@
 import { mount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 import BaseList from "./BaseList";
-import Vue from "vue";
+
+const localVue = getLocalVue();
 
 describe("Categories", () => {
     const getter = async () => {
@@ -20,7 +22,7 @@ describe("Categories", () => {
     const setter = async () => {
         return {};
     };
-    it("test categories loading", async () => {
+    test("test categories loading", async () => {
         const wrapper = mount(BaseList, {
             propsData: {
                 icon: "fa fa-caret-down",
@@ -31,13 +33,14 @@ describe("Categories", () => {
                 getter: getter,
                 setter: setter,
             },
+            localVue,
         });
-        await Vue.nextTick();
-        expect(wrapper.find(".card-header").text()).contains("There are 2");
+        await wrapper.vm.$nextTick();
+        expect(wrapper.find(".card-header").text()).toContain("There are 2");
         const th = wrapper.findAll("th");
-        expect(th.length).to.equal(3);
-        expect(th.at(0).text()).to.equal("Execute");
-        expect(th.at(1).text()).to.equal("Col 0");
-        expect(th.at(2).text()).to.equal("Col 1");
+        expect(th.length).toBe(3);
+        expect(th.at(0).text()).toBe("Execute");
+        expect(th.at(1).text()).toBe("Col 0");
+        expect(th.at(2).text()).toBe("Col 1");
     });
 });

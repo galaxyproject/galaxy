@@ -1,10 +1,6 @@
-from __future__ import print_function
-
 import os
+import shlex
 import sys
-
-from six import string_types
-from six.moves import shlex_quote
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
 
@@ -49,13 +45,13 @@ def __add_arg(args, arg, value):
     if isinstance(value, bool):
         if value is True:
             args.append(optarg)
-    elif isinstance(value, string_types):
+    elif isinstance(value, str):
         # the = in --optarg=value is usually, but not always, optional
         if value.startswith('='):
-            args.append(shlex_quote(optarg + value))
+            args.append(shlex.quote(optarg + value))
         else:
             args.append(optarg)
-            args.append(shlex_quote(value))
+            args.append(shlex.quote(value))
     else:
         [__add_arg(args, arg, v) for v in value]
 
@@ -91,8 +87,8 @@ def _get_uwsgi_args(cliargs, kwargs):
         'threads': '4',
         'buffer-size': '16384',  # https://github.com/galaxyproject/galaxy/issues/1530
         'http': 'localhost:{port}'.format(port=DEFAULT_PORTS[cliargs.app]),
-        'static-map': ('/static={here}/static'.format(here=os.getcwd()),
-                       '/favicon.ico={here}/static/favicon.ico'.format(here=os.getcwd())),
+        'static-map': (f'/static={os.getcwd()}/static',
+                       f'/favicon.ico={os.getcwd()}/static/favicon.ico'),
         'die-on-term': True,
         'enable-threads': True,
         'hook-master-start': ('unix_signal:2 gracefully_kill_them_all',
@@ -106,7 +102,7 @@ def _get_uwsgi_args(cliargs, kwargs):
         if cliargs.app in ["tool_shed"]:
             __add_arg(args, 'module', 'tool_shed.webapp.buildapp:uwsgi_app()')
         else:
-            __add_arg(args, 'module', 'galaxy.webapps.{app}.buildapp:uwsgi_app()'.format(app=cliargs.app))
+            __add_arg(args, 'module', f'galaxy.webapps.{cliargs.app}.buildapp:uwsgi_app()')
     # only include virtualenv if it's set/exists, otherwise this breaks conda-env'd Galaxy
     if not __arg_set('virtualenv', uwsgi_kwargs) and ('VIRTUAL_ENV' in os.environ or os.path.exists('.venv')):
         __add_arg(args, 'virtualenv', os.environ.get('VIRTUAL_ENV', '.venv'))
@@ -118,9 +114,14 @@ def _get_uwsgi_args(cliargs, kwargs):
         # route: ^/static/scripts/bundled/ http:127.0.0.1:8081
         if hmr_server.lower() in ['1', 'true', 'default']:
             hmr_server = "http:127.0.0.1:8081"
-        __add_arg(args, 'route', '^/static/dist/ {hmr_server}'.format(hmr_server=hmr_server))
+        __add_arg(args, 'route', f'^/static/dist/ {hmr_server}')
     # We always want to append client/src/assets as static-safe.
-    __add_arg(args, 'static-safe', '{here}/client/src/assets'.format(here=os.getcwd()))
+    __add_arg(args, 'static-safe', f'{os.getcwd()}/client/src/assets')
+
+    # Do not let uwsgi remap stdin to /dev/null if galaxy is in debug mode
+    galaxy_kwargs = load_app_properties(config_file=config_file, config_section='galaxy')
+    if __arg_set('debug', galaxy_kwargs) and not __arg_set('honour-stdin', uwsgi_kwargs):
+        __add_arg(args, 'honour-stdin', True)
 
     for arg in DEFAULT_ARGS['_all_'] + DEFAULT_ARGS[cliargs.app]:
         if not __arg_set(arg, uwsgi_kwargs):

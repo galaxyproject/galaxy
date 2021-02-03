@@ -19,12 +19,13 @@ class StubGalaxyWebTransaction(Webapp.GalaxyWebTransaction):
 
 class CORSParsingMockConfig(galaxy_mock.MockAppConfig):
     def __init__(self, **kwargs):
-        super(CORSParsingMockConfig, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.allowed_origin_hostnames = self._parse_allowed_origin_hostnames(kwargs)
 
     @staticmethod
     def _parse_allowed_origin_hostnames(kwargs):
-        return galaxy.config.Configuration._parse_allowed_origin_hostnames(kwargs)
+        hostnames = kwargs.get('allowed_origin_hostnames')
+        return galaxy.config.Configuration._parse_allowed_origin_hostnames(hostnames)
 
 
 class GalaxyWebTransaction_Headers_TestCase(unittest.TestCase):

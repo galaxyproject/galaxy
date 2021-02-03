@@ -1,6 +1,7 @@
 import abc
 import itertools
 import re
+from typing import List, Type
 
 import yaml
 from pkg_resources import resource_stream
@@ -24,7 +25,7 @@ def _ensure_rule_contains_keys(rule, keys):
 def _ensure_key_value_in(rule, key, values):
     value = rule[key]
     if value not in values:
-        raise ValueError("Invalid value [{}] for [{}] encountered.".format(value, key))
+        raise ValueError(f"Invalid value [{value}] for [{key}] encountered.")
 
 
 def _ensure_valid_pattern(expression):
@@ -39,7 +40,7 @@ def apply_regex(regex, target, data, replacement=None, group_count=None):
         if replacement is None:
             match = pattern.search(source)
             if not match:
-                raise Exception("Problem applying regular expression [{}] to [{}].".format(regex, source))
+                raise Exception(f"Problem applying regular expression [{regex}] to [{source}].")
 
             if group_count:
                 if len(match.groups()) != group_count:
@@ -139,7 +140,7 @@ class AddColumnConcatenateRuleDefinition(BaseRuleDefinition):
         column_1 = rule["target_column_1"]
 
         new_rows = []
-        for index, row in enumerate(data):
+        for row in data:
             new_rows.append(row + [row[column_0] + row[column_1]])
 
         return new_rows, sources
@@ -199,7 +200,7 @@ class AddColumnValueRuleDefinition(BaseRuleDefinition):
         value = rule["value"]
 
         new_rows = []
-        for index, row in enumerate(data):
+        for row in data:
             new_rows.append(row + [str(value)])
 
         return new_rows, sources
@@ -567,7 +568,7 @@ class RuleSet:
         return message
 
 
-RULES_DEFINITION_CLASSES = [
+RULES_DEFINITION_CLASSES: List[Type[BaseRuleDefinition]] = [
     AddColumnMetadataRuleDefinition,
     AddColumnGroupTagValueRuleDefinition,
     AddColumnConcatenateRuleDefinition,

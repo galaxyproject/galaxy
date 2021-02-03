@@ -88,7 +88,7 @@ def generate_tool_guid(repository_clone_url, tool):
     <tool shed host>/repos/<repository owner>/<repository name>/<tool id>/<tool version>
     """
     tmp_url = common_util.remove_protocol_and_user_from_clone_url(repository_clone_url)
-    return '{}/{}/{}'.format(tmp_url, tool.id, tool.version)
+    return f'{tmp_url}/{tool.id}/{tool.version}'
 
 
 def get_ctx_rev(app, tool_shed_url, name, owner, changeset_revision):
@@ -131,7 +131,7 @@ def get_next_prior_import_or_install_required_dict_entry(prior_required_dict, pr
             return key
     # Return the first key / value pair that is not yet processed.  Hopefully this is all that is necessary
     # at this point.
-    for key, value in prior_required_dict.items():
+    for key in prior_required_dict.keys():
         if key in processed_tsr_ids:
             continue
         return key
