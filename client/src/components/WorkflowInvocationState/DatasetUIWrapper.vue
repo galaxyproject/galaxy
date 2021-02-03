@@ -8,10 +8,10 @@
         :expanded="expanded"
         :dataset="dataset"
         :show-tags="true"
-        @deleteDataset="onDelete(dataset, $event)"
-        @undeleteDataset="onUndelete(dataset, $event)"
-        @unhideDataset="onUnhide(dataset, $event)"
-        @updateDataset="onUpdate(dataset, $event)"
+        @delete="onDelete"
+        @undelete="onUndelete"
+        @unhide="onUnhide"
+        @update="onUpdate"
     >
     </DatasetUI>
 </template>
@@ -44,18 +44,18 @@ export default {
         expand(event) {
             this.expanded = !this.expanded;
         },
-        async onDelete(dataset, opts = {}) {
-            const ajaxResult = await deleteContent(dataset, opts);
+        async onDelete(opts = {}) {
+            const ajaxResult = await deleteContent(this.dataset, opts);
             await cacheContent(ajaxResult);
         },
-        async onUnhide(dataset) {
-            await this.onUpdate(dataset, { visible: true });
+        async onUnhide() {
+            await this.onUpdate({ visible: true });
         },
-        async onUndelete(dataset) {
-            await this.onUpdate(dataset, { deleted: false });
+        async onUndelete() {
+            await this.onUpdate({ deleted: false });
         },
-        async onUpdate(dataset, changes) {
-            const newContent = await updateContentFields(dataset, changes);
+        async onUpdate(changes = {}) {
+            const newContent = await updateContentFields(this.dataset, changes);
             await cacheContent(newContent);
         },
     },
