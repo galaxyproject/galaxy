@@ -114,7 +114,7 @@ export default {
                     complete: () => console.log("Invocation finished, stopping history dataset monitor"),
                 });
             }
-        },
+        }
     },
 };
 </script>
