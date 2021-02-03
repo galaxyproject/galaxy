@@ -436,9 +436,8 @@ class JobHandlerQueue(Monitors):
         if not self.track_jobs_in_database:
             self.waiting_jobs = new_waiting_jobs
         # Remove cached wrappers for any jobs that are no longer being tracked
-        for id in list(self.job_wrappers.keys()):
-            if id not in new_waiting_jobs:
-                del self.job_wrappers[id]
+        for id in set(self.job_wrappers.keys()) - set(new_waiting_jobs):
+            del self.job_wrappers[id]
         # Flush, if we updated the state
         self.sa_session.flush()
         # Done with the session
