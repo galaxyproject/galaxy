@@ -1,6 +1,6 @@
 <tool id="__EXTRACT_DATASET__"
       name="Extract Dataset"
-      version="1.0.0"
+      version="1.0.1"
       tool_type="extract_element">
   <description>from a list</description>
   <type class="ExtractDatasetCollectionTool" module="galaxy.tools" />
