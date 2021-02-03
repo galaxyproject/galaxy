@@ -377,15 +377,19 @@ const UploadModal = {
                 auto_decompress: true,
             };
 
+            // Composite does not use the fetch API, so we can just 
+            // index into the first element of items
             const urls = items[0].get("url_paste").split("\n");
+            const dbkey = items[0].get("genome", "?");
+            const ext = items[0].get("extension", "auto");
             for (var index in urls) {
                 var url = urls[index].trim();
                 if (url != "") {
                     var element = {
                         url: urls[index].trim(),
                         src: "url",
-                        dbkey: "?",
-                        ext: "auto",
+                        dbkey: dbkey,
+                        ext: ext
                     };
                     data.targets[0].elements.push(element);
                 }
