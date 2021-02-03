@@ -720,7 +720,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             'id': trans.security.encode_id(stored.id),
             'name': stored.name,
             'tags': item_tag_names,
-            'version': version,
+            'initialVersion': version,
             'annotation': self.get_item_annotation_str(trans.sa_session, trans.user, stored),
             'toolbox': trans.app.toolbox.to_dict(trans),
             'moduleSections': module_sections,

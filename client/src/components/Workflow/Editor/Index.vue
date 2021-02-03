@@ -203,7 +203,7 @@ export default {
             type: String,
             required: true,
         },
-        version: {
+        initialVersion: {
             type: Number,
             required: true,
         },
@@ -255,6 +255,7 @@ export default {
             messageTitle: null,
             messageBody: null,
             messageIsError: false,
+            version: this.initialVersion,
         };
     },
     created() {
