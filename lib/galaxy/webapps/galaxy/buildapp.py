@@ -16,7 +16,7 @@ import galaxy.model.mapping
 import galaxy.web.framework
 import galaxy.webapps.base.webapp
 from galaxy import util
-from galaxy.security.validate_user_input import VALID_PUBLICNAME_SUB
+from galaxy.security.validate_user_input import VALID_PUBLICNAME_RE
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
 from galaxy.web.framework.middleware.batch import BatchMiddleware
@@ -92,7 +92,7 @@ def app_factory(global_conf, load_app_kwds=None, **kwargs):
                      controller='dataset', action='display_application', dataset_id=None, user_id=None,
                      app_name=None, link_name=None, app_action=None, action_param=None, action_param_extra=None)
 
-    USERNAME_REQS = {'username': VALID_PUBLICNAME_SUB.pattern}
+    USERNAME_REQS = {'username': VALID_PUBLICNAME_RE.pattern.strip("^$")}
     webapp.add_route('/u/{username}/d/{slug}/{filename}', controller='dataset', action='display_by_username_and_slug', filename=None, requirements=USERNAME_REQS)
     webapp.add_route('/u/{username}/p/{slug}', controller='page', action='display_by_username_and_slug', requirements=USERNAME_REQS)
     webapp.add_route('/u/{username}/h/{slug}', controller='history', action='display_by_username_and_slug', requirements=USERNAME_REQS)
