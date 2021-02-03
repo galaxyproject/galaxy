@@ -1,7 +1,7 @@
 <template>
-    <b-button class="p-1" v-bind="$attrs" v-on="$listeners" :title="title" variant="link" size="sm" v-b-tooltip>
+    <b-button class="p-1" v-bind="$attrs" v-on="$listeners" :title="title | localize" variant="link" size="sm">
         <i v-if="icon" :class="icon" />
-        <span class="sr-only">{{ title }}</span>
+        <span class="sr-only">{{ title | localize }}</span>
     </b-button>
 </template>
 

@@ -18,7 +18,7 @@
                         <span class="sr-only">...</span>
                     </template>
                     <b-dropdown-item v-for="item in overflow" :key="item.key" v-bind="item.attrs" v-on="item.on">
-                        {{ item.attrs.title }}
+                        {{ item.attrs.title | localize }}
                     </b-dropdown-item>
                 </b-dropdown>
             </div>
