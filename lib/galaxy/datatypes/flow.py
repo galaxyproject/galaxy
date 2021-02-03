@@ -11,6 +11,7 @@ Flow analysis datatypes.
 import logging
 import re
 import subprocess
+import math
 
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.tabular import Tabular
@@ -50,18 +51,32 @@ class FCS(Binary):
         Checking if the file is in FCS format. Should read FCS2.0, FCS3.0
         and FCS3.1
 
-        For this to work, need to have install checkFCS.R via bioconda
-        conda install ig-checkflowtypes
+        Based on flowcore:
+        https://github.com/RGLab/flowCore/blob/27141b792ad65ae8bd0aeeef26e757c39cdaefe7/R/IO.R#L667
         """
         try:
-            rscript = 'checkFCS.R'
-            fcs_check = subprocess.check_output([rscript, filename])
-            if re.search('TRUE', str(fcs_check)):
-                return True
-            else:
-                return False
+            with open(filename, 'rb') as f:
+                # assume 1 byte = 1 char
+                version = f.read(6).decode("utf8", errors="ignore")
+                if version not in ["FCS2.0", "FCS3.0", "FCS3.1"]:
+                    return False
+                version = version.replace("FCS","")
+                tmp = f.read(4).decode("utf8", errors="ignore")
+                if tmp != "    ":
+                    return False
+                coffs = []
+                for i in range(6):
+                    coffs.append(f.read(8).decode("utf8", errors="ignore"))
+
+            ioffs = [float(version)] + [int(x) for x in coffs]
+            for ioff in ioffs:
+                if ioff is None or math.isnan(ioff):
+                    return False
         except Exception:
-            False
+            return False
+
+        return True
+
 
     def get_mime(self):
         """Returns the mime type of the datatype"""
