@@ -49,7 +49,7 @@ import { UrlTracker } from "./utilities";
 import { Model } from "./model";
 import { Services } from "./services";
 import { getAppRoot } from "onload/loadConfig";
-import { mountUploadModal } from "components/Upload";
+import { openUploadModal } from "components/Upload";
 
 Vue.use(BootstrapVue);
 
@@ -135,7 +135,7 @@ export default {
                 callback: this.callback,
                 modalShow: true,
             };
-            mountUploadModal(propsData);
+            openUploadModal(propsData);
             this.modalShow = false;
         },
         /** Called when selection is complete, values are formatted and parsed to external callback **/

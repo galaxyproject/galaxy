@@ -52,21 +52,9 @@ export function createStore() {
         },
     };
 
-    // Initializes global store elements.
-    // Vuex can't lazy-load, so we much manually insert global data at some point and we currently
-    // don't have a root App component container (which is traditionally used for such operations).
+    // Watches for changes in Galaxy and sets those values on Vuex until Galaxy is gone
+    // TODO: remove subscriptions in syncVuexToGalaxy as legacy functionality is ported to Vue
     if (!config.testBuild) {
-        // TODO: remove all automagic inits in favor of provider mechanism which will trigger a load
-        // using a lifecycle hook, or alternatively switch from Vuex to an observable framework
-        // capable of lazy-loading on request
-        storeConfig.plugins.push((store) => {
-            store.dispatch("user/loadUser", { store });
-            store.dispatch("config/loadConfigs", { store });
-            store.dispatch("betaHistory/$init", { store });
-        });
-
-        // Watches for changes in Galaxy and sets those values on Vuex until Galaxy is gone
-        // TODO: remove subscriptions in syncVuexToGalaxy as legacy functionality is ported to Vue
         storeConfig.plugins.push(syncVuextoGalaxy);
     }
 

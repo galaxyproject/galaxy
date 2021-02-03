@@ -1,10 +1,8 @@
 import { NEVER } from "rxjs";
-import { createLocalVue } from "@vue/test-utils";
 import { cacheContent, cacheCollectionContent, bulkCacheDscContent, wipeDatabase } from "../../caching";
 import { SearchParams } from "../../model/SearchParams";
 import CollectionContentProvider from "./CollectionContentProvider";
-import { watchForChange, mountRenderless } from "jest/helpers";
-import { vueRxShortcutPlugin } from "components/plugins";
+import { watchForChange, mountRenderless, getLocalVue } from "jest/helpers";
 
 // sample data
 import rawRootCollection from "../../test/json/DatasetCollection.json";
@@ -28,8 +26,7 @@ loadCollectionContents.mockImplementation((config) => (src$) => {
 //#endregion
 
 const mountProvider = async (Component, propsData) => {
-    const localVue = createLocalVue();
-    localVue.use(vueRxShortcutPlugin);
+    const localVue = getLocalVue();
     const wrapper = mountRenderless(Component, { localVue, propsData });
     await wrapper.vm.$nextTick();
     return wrapper;
