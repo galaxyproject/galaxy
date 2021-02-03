@@ -77,7 +77,7 @@ class GalaxyLargeBinary(LargeBinary):
         return process
 
 
-class JSONType(sqlalchemy.types.TypeDecorator):
+class BaseJSONType(sqlalchemy.types.TypeDecorator):
     """
     Represents an immutable structure as a json-encoded string.
 
@@ -111,6 +111,14 @@ class JSONType(sqlalchemy.types.TypeDecorator):
 
     def compare_values(self, x, y):
         return (x == y)
+
+
+class JSONType(BaseJSONType):
+    pass
+
+
+class SimpleJSONType(BaseJSONType):
+    pass
 
 
 Mutable.associate_with(JSONType)

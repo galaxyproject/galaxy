@@ -38,7 +38,13 @@ from sqlalchemy.types import BigInteger
 
 from galaxy import model
 from galaxy.model.base import ModelMapping
-from galaxy.model.custom_types import JSONType, MetadataType, TrimmedString, UUIDType
+from galaxy.model.custom_types import (
+    JSONType,
+    MetadataType,
+    SimpleJSONType,
+    TrimmedString,
+    UUIDType,
+)
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
 from galaxy.model.security import GalaxyRBACAgent
@@ -1123,7 +1129,7 @@ model.WorkflowInvocationStep.table = Table(
     Column("state", TrimmedString(64), index=True),
     Column("job_id", Integer, ForeignKey("job.id"), index=True, nullable=True),
     Column("implicit_collection_jobs_id", Integer, ForeignKey("implicit_collection_jobs.id"), index=True, nullable=True),
-    Column("action", JSONType, nullable=True))
+    Column("action", SimpleJSONType, nullable=True))
 
 model.WorkflowInvocationOutputDatasetAssociation.table = Table(
     "workflow_invocation_output_dataset_association", metadata,
