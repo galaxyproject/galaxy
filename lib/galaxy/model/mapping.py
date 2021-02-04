@@ -864,7 +864,7 @@ model.PostJobAction.table = Table(
     Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True, nullable=True),
     Column("action_type", String(255), nullable=False),
     Column("output_name", String(255), nullable=True),
-    Column("action_arguments", JSONType, nullable=True))
+    Column("action_arguments", SimpleJSONType, nullable=True))
 
 model.PostJobActionAssociation.table = Table(
     "post_job_action_association", metadata,
@@ -1041,7 +1041,7 @@ model.WorkflowStepInput.table = Table(
     Column("scatter_type", TEXT),
     Column("value_from", JSONType),
     Column("value_from_type", TEXT),
-    Column("default_value", JSONType),
+    Column("default_value", SimpleJSONType),
     Column("default_value_set", Boolean, default=False),
     Column("runtime_value", Boolean, default=False),
     Index('ix_workflow_step_input_workflow_step_id_name_unique', "workflow_step_id", "name", unique=True, mysql_length={'name': 200}),
@@ -1070,7 +1070,7 @@ model.WorkflowRequestInputStepParameter.table = Table(
     Column("id", Integer, primary_key=True),
     Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id"), index=True),
     Column("workflow_step_id", Integer, ForeignKey("workflow_step.id")),
-    Column("parameter_value", JSONType),
+    Column("parameter_value", SimpleJSONType),
 )
 
 model.WorkflowRequestToInputDatasetAssociation.table = Table(
