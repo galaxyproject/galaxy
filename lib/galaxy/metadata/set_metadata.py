@@ -171,6 +171,11 @@ def set_metadata_portable():
     for output_name, output_dict in outputs.items():
         dataset_instance_id = output_dict["id"]
         dataset = import_model_store.sa_session.query(galaxy.model.HistoryDatasetAssociation).find(dataset_instance_id)
+        if dataset is None:
+            # legacy check for jobs that started before 21.01, remove on 21.05
+            import pickle
+            filename_in = os.path.join("metadata/metadata_in_%s" % output_name)
+            dataset = pickle.load(open(filename_in, 'rb'))  # load DatasetInstance
         assert dataset is not None
 
         filename_kwds = os.path.join("metadata/metadata_kwds_%s" % output_name)
