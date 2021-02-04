@@ -16,7 +16,11 @@ import os
 import sys
 import traceback
 
-from pulsar.client.staging import COMMAND_VERSION_FILENAME
+try:
+    from pulsar.client.staging import COMMAND_VERSION_FILENAME
+except ImportError:
+    # Package unit tests
+    COMMAND_VERSION_FILENAME = 'COMMAND_VERSION'
 
 import galaxy.datatypes.registry
 import galaxy.model.mapping
