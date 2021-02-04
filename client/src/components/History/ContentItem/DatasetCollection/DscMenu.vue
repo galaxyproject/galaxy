@@ -23,17 +23,24 @@
             key="edit-collection"
             :title="editButtonTitle"
             :disabled="collection.deleted || isIn(STATES.UPLOAD, STATES.NEW)"
-            @click.stop="CollectionEditView"
+            :href="collectionEditURL()"
             icon="fa fa-pencil"
         />
     </PriorityMenu>
 </template>
 
 <script>
-import CollectionEditView from "src/mvc/collection/CollectionEditView";
+import { DatasetCollection } from "../../model";
+import { PriorityMenu, PriorityMenuItem } from "components/PriorityMenu";
+import { getAppRoot } from "onload/loadConfig";
 export default {
     components: {
-        CollectionEditView,
+        PriorityMenu,
+        PriorityMenuItem,
+    },
+    inject: ["STATES"],
+    props: {
+        collection: { type: DatasetCollection, required: true },
     },
     computed: {
         editButtonTitle() {
@@ -44,10 +51,24 @@ export default {
                 return "Cannot edit attributes of collections removed from disk";
             }
             const unreadyStates = new Set([this.STATES.UPLOAD, this.STATES.NEW]);
-            if (unreadyStates.has(this.dataset.state)) {
+            if (unreadyStates.has(this.collection.state)) {
                 return "This collection is not yet editable";
             }
             return "Edit attributes";
+        },
+    },
+    methods: {
+        collectionEditURL: function (){
+            return getAppRoot() + 'collection/edit'
+        },
+        notIn(...states) {
+            const badStates = new Set(states);
+            return !badStates.has(this.collection.state);
+        },
+
+        isIn(...states) {
+            const goodStates = new Set(states);
+            return goodStates.has(this.collection.state);
         },
     },
 };

@@ -31,6 +31,7 @@ import TrsSearch from "components/Workflow/TrsSearch.vue";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools.vue";
 import LibraryFolder from "components/LibraryFolder/LibraryFolder.vue";
 import WorkflowList from "components/Workflow/WorkflowList.vue";
+import CollectionEditView from "components/Collections/common/CollectionEditView.vue";
 import HistoryImport from "components/HistoryImport.vue";
 import { HistoryExport } from "components/HistoryExport/index";
 import HistoryView from "components/HistoryView.vue";
@@ -96,9 +97,10 @@ export const getAnalysisRouter = (Galaxy) =>
             "(/)datasets(/)list(/)": "show_datasets",
             "(/)custom_builds": "show_custom_builds",
             "(/)datasets/edit": "show_dataset_edit_attributes",
+            "(/)collection(/)edit(/)": "show_collection_edit_attributes",
             "(/)datasets/error": "show_dataset_error",
             "(/)interactivetool_entry_points(/)list": "show_interactivetool_list",
-            "(/)library/folders(/)(:folder_id)": "show_library_folder",
+            "(/)library/folders(/)(:folder_id)": "show_library_folder"
         },
 
         require_login: ["show_user", "show_user_form", "show_workflows", "show_cloud_auth", "show_external_ids"],
@@ -387,6 +389,10 @@ export const getAnalysisRouter = (Galaxy) =>
 
         show_dataset_edit_attributes: function () {
             this.page.display(new DatasetEditAttributes.View());
+        },
+
+        show_collection_edit_attributes: function () {
+            this._display_vue_helper(CollectionEditView);
         },
 
         show_dataset_error: function () {
