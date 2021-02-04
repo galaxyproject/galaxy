@@ -391,7 +391,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         filepath =  re.search(PATH_LABEL_PATTERN, line).group(2)
 
 
-        if "path" in line:
+        if filepath is not None:
             file = os.path.join(hda.extra_files_path, filepath)
         else:
             file = dataset.file_name
@@ -561,17 +561,6 @@ def to_pdf(trans, basic_markdown, css_paths=None) -> bytes:
     css_paths = css_paths or []
     as_html = to_html(basic_markdown)
     directory = tempfile.mkdtemp('gxmarkdown')
-    print("!!!!!!!!!!1")
-    print("!!!!!!!!!!1")
-    print("!!!!!!!!!!1")
-    print("!!!!!!!!!!1")
-    print("!!!!!!!!!!1")
-    print("!!!!!!!!!!1")
-    print("!!!!!!!!!!1")
-    print("!!!!!!!!!!1")
-    print("!!!!!!!!!!1")
-    print("!!!!!!!!!!1")
-    print(directory)
     index = os.path.join(directory, "index.html")
     try:
         output_file = codecs.open(index, "w", encoding="utf-8", errors="xmlcharrefreplace")
@@ -588,8 +577,7 @@ def to_pdf(trans, basic_markdown, css_paths=None) -> bytes:
         # font_config = FontConfiguration()
         # stylesheets=[css], font_config=font_config
     finally:
-        print()
-    #     shutil.rmtree(directory)
+        shutil.rmtree(directory)
 
 
 def _check_can_convert_to_pdf_or_raise():
