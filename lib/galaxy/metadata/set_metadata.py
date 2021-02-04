@@ -34,7 +34,7 @@ from galaxy.job_execution.output_collect import (
     read_exit_code_from,
     SessionlessJobContext,
 )
-from galaxy.jobs import TOOL_PROVIDED_JOB_METADATA_KEYS
+from galaxy.job_execution.setup import TOOL_PROVIDED_JOB_METADATA_KEYS
 from galaxy.model import (
     Dataset,
     HistoryDatasetAssociation,

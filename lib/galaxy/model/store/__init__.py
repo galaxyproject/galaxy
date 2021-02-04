@@ -490,29 +490,32 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             return dc
 
         for collection_attrs in collections_attrs:
-            dc = import_collection(collection_attrs["collection"])
-            if 'id' in collection_attrs and self.import_options.allow_edit and not self.sessionless:
-                hdca = self.sa_session.query(model.HistoryDatasetCollectionAssociation).get(collection_attrs["id"])
-                # TODO: edit attributes...
-            else:
-                hdca = model.HistoryDatasetCollectionAssociation(collection=dc,
-                                                                 visible=True,
-                                                                 name=collection_attrs['display_name'],
-                                                                 implicit_output_name=collection_attrs.get("implicit_output_name"))
-                self._attach_raw_id_if_editing(hdca, collection_attrs)
-
-                hdca.history = history
-                if new_history and self.trust_hid(collection_attrs):
-                    hdca.hid = collection_attrs['hid']
+            if 'collection' in collection_attrs:
+                dc = import_collection(collection_attrs["collection"])
+                if 'id' in collection_attrs and self.import_options.allow_edit and not self.sessionless:
+                    hdca = self.sa_session.query(model.HistoryDatasetCollectionAssociation).get(collection_attrs["id"])
+                    # TODO: edit attributes...
                 else:
-                    object_import_tracker.requires_hid.append(hdca)
+                    hdca = model.HistoryDatasetCollectionAssociation(collection=dc,
+                                                                     visible=True,
+                                                                     name=collection_attrs['display_name'],
+                                                                     implicit_output_name=collection_attrs.get("implicit_output_name"))
+                    self._attach_raw_id_if_editing(hdca, collection_attrs)
 
-            self._session_add(hdca)
-            if object_key in collection_attrs:
-                object_import_tracker.hdcas_by_key[collection_attrs[object_key]] = hdca
+                    hdca.history = history
+                    if new_history and self.trust_hid(collection_attrs):
+                        hdca.hid = collection_attrs['hid']
+                    else:
+                        object_import_tracker.requires_hid.append(hdca)
+
+                self._session_add(hdca)
+                if object_key in collection_attrs:
+                    object_import_tracker.hdcas_by_key[collection_attrs[object_key]] = hdca
+                else:
+                    assert 'id' in collection_attrs
+                    object_import_tracker.hdcas_by_id[collection_attrs['id']] = hdca
             else:
-                assert 'id' in collection_attrs
-                object_import_tracker.hdcas_by_id[collection_attrs['id']] = hdca
+                import_collection(collection_attrs)
 
     def _attach_raw_id_if_editing(self, obj, attrs):
         if self.sessionless and 'id' in attrs and self.import_options.allow_edit:
