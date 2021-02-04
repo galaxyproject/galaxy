@@ -193,7 +193,7 @@ model.DynamicTool.table = Table(
     Column("tool_directory", Unicode(255)),
     Column("hidden", Boolean, default=True),
     Column("active", Boolean, default=True),
-    Column("value", JSONType()),
+    Column("value", JSONType),
 )
 
 
@@ -239,7 +239,7 @@ model.HistoryDatasetAssociation.table = Table(
     Column("peek", TEXT, key="_peek"),
     Column("tool_version", TEXT),
     Column("extension", TrimmedString(64)),
-    Column("metadata", MetadataType(), key="_metadata"),
+    Column("metadata", MetadataType, key="_metadata"),
     Column("parent_id", Integer, ForeignKey("history_dataset_association.id"), nullable=True),
     Column("designation", TrimmedString(255)),
     Column("deleted", Boolean, index=True, default=False),
@@ -262,7 +262,7 @@ model.HistoryDatasetAssociationHistory.table = Table(
     Column("version", Integer),
     Column("name", TrimmedString(255)),
     Column("extension", TrimmedString(64)),
-    Column("metadata", MetadataType(), key="_metadata"),
+    Column("metadata", MetadataType, key="_metadata"),
     Column("extended_metadata_id", Integer, ForeignKey("extended_metadata.id"), index=True),
 )
 
@@ -517,7 +517,7 @@ model.LibraryDatasetDatasetAssociation.table = Table(
     Column("peek", TEXT, key="_peek"),
     Column("tool_version", TEXT),
     Column("extension", TrimmedString(64)),
-    Column("metadata", MetadataType(), key="_metadata"),
+    Column("metadata", MetadataType, key="_metadata"),
     Column("parent_id", Integer, ForeignKey("library_dataset_dataset_association.id"), nullable=True),
     Column("designation", TrimmedString(255)),
     Column("deleted", Boolean, index=True, default=False),
@@ -1054,7 +1054,7 @@ model.WorkflowRequestStepState.table = Table(
     Column("workflow_invocation_id", Integer,
         ForeignKey("workflow_invocation.id", onupdate="CASCADE", ondelete="CASCADE")),
     Column("workflow_step_id", Integer, ForeignKey("workflow_step.id")),
-    Column("value", JSONType))
+    Column("value", SimpleJSONType))
 
 model.WorkflowRequestInputParameter.table = Table(
     "workflow_request_input_parameters", metadata,
@@ -1225,9 +1225,9 @@ model.FormDefinition.table = Table(
     Column("name", TrimmedString(255), nullable=False),
     Column("desc", TEXT),
     Column("form_definition_current_id", Integer, ForeignKey("form_definition_current.id", use_alter=True), index=True, nullable=False),
-    Column("fields", JSONType()),
+    Column("fields", JSONType),
     Column("type", TrimmedString(255), index=True),
-    Column("layout", JSONType()))
+    Column("layout", JSONType))
 
 model.FormValues.table = Table(
     "form_values", metadata,
@@ -1235,7 +1235,7 @@ model.FormValues.table = Table(
     Column("create_time", DateTime, default=now),
     Column("update_time", DateTime, default=now, onupdate=now),
     Column("form_definition_id", Integer, ForeignKey("form_definition.id"), index=True),
-    Column("content", JSONType()))
+    Column("content", JSONType))
 
 model.Page.table = Table(
     "page", metadata,

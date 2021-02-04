@@ -15,7 +15,7 @@ from sqlalchemy.types import (
     String,
     TypeDecorator
 )
-from sqlalchemy_mutable.mutable import Mutable
+from sqlalchemy_json import mutable_json_type
 
 from galaxy.util import (
     smart_str,
@@ -77,7 +77,7 @@ class GalaxyLargeBinary(LargeBinary):
         return process
 
 
-class BaseJSONType(sqlalchemy.types.TypeDecorator):
+class SimpleJSONType(sqlalchemy.types.TypeDecorator):
     """
     Represents an immutable structure as a json-encoded string.
 
@@ -112,16 +112,6 @@ class BaseJSONType(sqlalchemy.types.TypeDecorator):
     def compare_values(self, x, y):
         return (x == y)
 
-
-class JSONType(BaseJSONType):
-    pass
-
-
-class SimpleJSONType(BaseJSONType):
-    pass
-
-
-Mutable.associate_with(JSONType)
 
 metadata_pickler = AliasPickleModule({
     ("cookbook.patterns", "Bunch"): ("galaxy.util.bunch", "Bunch")
@@ -170,7 +160,7 @@ def total_size(o, handlers=None, verbose=False):
     return sizeof(o)
 
 
-class MetadataType(JSONType):
+class BaseMetadataType(SimpleJSONType):
     """
     Backward compatible metadata type. Can read pickles or JSON, but always
     writes in JSON.
@@ -201,6 +191,10 @@ class MetadataType(JSONType):
             except Exception:
                 ret = None
         return ret
+
+
+JSONType = mutable_json_type(dbtype=SimpleJSONType, nested=True)
+MetadataType = mutable_json_type(dbtype=BaseMetadataType, nested=True)
 
 
 class UUIDType(TypeDecorator):
