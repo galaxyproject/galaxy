@@ -31,7 +31,7 @@ def upgrade(migrate_engine):
     Request_table = Table("request", metadata, autoload=True)
 
     # create the column again as JSONType
-    col = Column("notification", JSONType)
+    col = Column("notification", JSONType())
     add_column(col, Request_table, metadata)
 
     cmd = "SELECT id, user_id, notify FROM request"

@@ -28,7 +28,7 @@ def upgrade(migrate_engine):
     metadata.reflect()
 
     ToolShedRepository_table = Table("tool_shed_repository", metadata, autoload=True)
-    c = Column("metadata", JSONType, nullable=True)
+    c = Column("metadata", JSONType(), nullable=True)
     add_column(c, ToolShedRepository_table, metadata)
     c = Column("includes_datatypes", Boolean, index=True, default=False)
     add_column(c, ToolShedRepository_table, metadata, index_name="ix_tool_shed_repository_includes_datatypes")

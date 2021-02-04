@@ -170,7 +170,7 @@ LibraryDatasetDatasetAssociation_table = Table("library_dataset_dataset_associat
     Column("blurb", TrimmedString(255)),
     Column("peek", TEXT),
     Column("extension", TrimmedString(64)),
-    Column("metadata", MetadataType, key="_metadata"),
+    Column("metadata", MetadataType(), key="_metadata"),
     Column("parent_id", Integer, ForeignKey("library_dataset_dataset_association.id"), nullable=True),
     Column("designation", TrimmedString(255)),
     Column("deleted", Boolean, index=True, default=False),
@@ -211,7 +211,7 @@ LibraryItemInfoTemplateElement_table = Table("library_item_info_template_element
     Column("description", TEXT),
     Column("type", TEXT, default='string'),
     Column("order_id", Integer),
-    Column("options", JSONType),
+    Column("options", JSONType()),
     Column("library_item_info_template_id", Integer, ForeignKey("library_item_info_template.id")))
 Index("ix_liite_library_item_info_template_id", LibraryItemInfoTemplateElement_table.c.library_item_info_template_id)
 
@@ -262,7 +262,7 @@ LibraryItemInfoElement_table = Table("library_item_info_element", metadata,
     Column("id", Integer, primary_key=True),
     Column("create_time", DateTime, default=now),
     Column("update_time", DateTime, default=now, onupdate=now),
-    Column("contents", JSONType),
+    Column("contents", JSONType()),
     Column("library_item_info_id", Integer, ForeignKey("library_item_info.id"), index=True),
     Column("library_item_info_template_element_id", Integer, ForeignKey("library_item_info_template_element.id")))
 Index("ix_liie_library_item_info_template_element_id", LibraryItemInfoElement_table.c.library_item_info_template_element_id)

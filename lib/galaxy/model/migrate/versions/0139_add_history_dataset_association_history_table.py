@@ -35,7 +35,7 @@ HistoryDatasetAssociationHistory_table = Table(
     Column("version", Integer, index=True),
     Column("name", TrimmedString(255)),
     Column("extension", TrimmedString(64)),
-    Column("metadata", MetadataType, key='_metadata'),
+    Column("metadata", MetadataType(), key='_metadata'),
     Column("extended_metadata_id", Integer, ForeignKey("extended_metadata.id"), index=True),
 )
 
