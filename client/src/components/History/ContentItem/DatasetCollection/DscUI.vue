@@ -50,7 +50,7 @@
                 </span>
             </h5>
 
-            <DscMenu v-if="!dsc.deleted" class="content-item-menu" v-on="$listeners" />
+            <DscMenu v-if="!dsc.deleted" class="content-item-menu" :collection="dsc" v-on="$listeners" />
             <StateBtn
                 v-if="dsc.deleted"
                 class="px-1"
