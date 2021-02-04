@@ -3851,13 +3851,13 @@
 ~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Determines how metadata will be set. Valid values are `directory`,
-    `extended` and `legacy`. In extended mode jobs will decide if a
-    tool run failed, the object stores configuration is serialized and
-    made available to the job and is used for writing output datasets
-    to the object store as part of the job and dynamic output
-    discovery (e.g. discovered datasets <discover_datasets>,
-    unpopulated collections, etc) happens as part of the job.
+    Determines how metadata will be set. Valid values are `directory`
+    and `extended`. In extended mode jobs will decide if a tool run
+    failed, the object stores configuration is serialized and made
+    available to the job and is used for writing output datasets to
+    the object store as part of the job and dynamic output discovery
+    (e.g. discovered datasets <discover_datasets>, unpopulated
+    collections, etc) happens as part of the job.
 :Default: ``directory``
 :Type: str
 

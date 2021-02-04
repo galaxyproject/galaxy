@@ -13,7 +13,6 @@ constructed automatically).
 import json
 import logging
 import os
-import pickle
 import sys
 import traceback
 
@@ -23,10 +22,7 @@ import galaxy.model.mapping  # need to load this before we unpickle, in order to
 from galaxy.model import store
 from galaxy.model.custom_types import total_size
 from galaxy.tool_util.provided_metadata import parse_tool_provided_metadata
-from galaxy.util import (
-    stringify_dictionary_keys,
-    unicodify,
-)
+from galaxy.util import stringify_dictionary_keys
 
 logging.basicConfig()
 log = logging.getLogger(__name__)
@@ -78,10 +74,7 @@ def set_meta_with_tool_provided(dataset_instance, file_dict, set_meta_kwds, data
 
 
 def set_metadata():
-    if len(sys.argv) == 1:
-        set_metadata_portable()
-    else:
-        set_metadata_legacy()
+    set_metadata_portable()
 
 
 def set_metadata_portable():
@@ -172,17 +165,13 @@ def set_metadata_portable():
         job_context = ExpressionContext(dict(stdout=tool_stdout, stderr=tool_stderr))
 
         # Load outputs.
-        import_model_store = store.imported_store_for_metadata('metadata/outputs_new', object_store=object_store)
         export_store = store.DirectoryModelExportStore('metadata/outputs_populated', serialize_dataset_objects=True, for_edit=True, strip_metadata_files=False)
+    import_model_store = store.imported_store_for_metadata('metadata/outputs_new', object_store=object_store)
 
     for output_name, output_dict in outputs.items():
-        if extended_metadata_collection:
-            dataset_instance_id = output_dict["id"]
-            dataset = import_model_store.sa_session.query(galaxy.model.HistoryDatasetAssociation).find(dataset_instance_id)
-            assert dataset is not None
-        else:
-            filename_in = os.path.join("metadata/metadata_in_%s" % output_name)
-            dataset = pickle.load(open(filename_in, 'rb'))  # load DatasetInstance
+        dataset_instance_id = output_dict["id"]
+        dataset = import_model_store.sa_session.query(galaxy.model.HistoryDatasetAssociation).find(dataset_instance_id)
+        assert dataset is not None
 
         filename_kwds = os.path.join("metadata/metadata_kwds_%s" % output_name)
         filename_out = os.path.join("metadata/metadata_out_%s" % output_name)
@@ -308,64 +297,6 @@ def set_metadata_portable():
 
     if export_store:
         export_store._finalize()
-    write_job_metadata(tool_job_working_directory, job_metadata, set_meta, tool_provided_metadata)
-
-
-def set_metadata_legacy():
-    import galaxy.model
-    galaxy.model.metadata.MetadataTempFile.tmp_dir = tool_job_working_directory = os.path.abspath(os.getcwd())
-
-    # This is ugly, but to transition from existing jobs without this parameter
-    # to ones with, smoothly, it has to be the last optional parameter and we
-    # have to sniff it.
-    try:
-        max_metadata_value_size = int(sys.argv[-1])
-        sys.argv = sys.argv[:-1]
-    except ValueError:
-        max_metadata_value_size = 0
-        # max_metadata_value_size is unspecified and should be 0
-
-    # Set up datatypes registry
-    datatypes_config = sys.argv.pop(1)
-    datatypes_registry = validate_and_load_datatypes_config(datatypes_config)
-
-    job_metadata = sys.argv.pop(1)
-    tool_provided_metadata = load_job_metadata(job_metadata, None)
-
-    def set_meta(new_dataset_instance, file_dict):
-        set_meta_with_tool_provided(new_dataset_instance, file_dict, set_meta_kwds, datatypes_registry, max_metadata_value_size)
-
-    for filenames in sys.argv[1:]:
-        fields = filenames.split(',')
-        filename_in = fields.pop(0)
-        filename_kwds = fields.pop(0)
-        filename_out = fields.pop(0)
-        filename_results_code = fields.pop(0)
-        dataset_filename_override = fields.pop(0)
-        override_metadata = fields.pop(0)
-        set_meta_kwds = stringify_dictionary_keys(json.load(open(filename_kwds)))  # load kwds; need to ensure our keywords are not unicode
-        try:
-            dataset = pickle.load(open(filename_in, 'rb'))  # load DatasetInstance
-            dataset.dataset.external_filename = dataset_filename_override
-            store_by = "id"
-            extra_files_dir_name = "dataset_%s_files" % getattr(dataset.dataset, store_by)
-            files_path = os.path.abspath(os.path.join(tool_job_working_directory, "working", extra_files_dir_name))
-            dataset.dataset.external_extra_files_path = files_path
-            file_dict = tool_provided_metadata.get_dataset_meta(None, dataset.dataset.id, dataset.dataset.uuid)
-            if 'ext' in file_dict:
-                dataset.extension = file_dict['ext']
-            # Metadata FileParameter types may not be writable on a cluster node, and are therefore temporarily substituted with MetadataTempFiles
-            override_metadata = json.load(open(override_metadata))
-            for metadata_name, metadata_file_override in override_metadata:
-                if galaxy.datatypes.metadata.MetadataTempFile.is_JSONified_value(metadata_file_override):
-                    metadata_file_override = galaxy.datatypes.metadata.MetadataTempFile.from_JSON(metadata_file_override)
-                setattr(dataset.metadata, metadata_name, metadata_file_override)
-            set_meta(dataset, file_dict)
-            dataset.metadata.to_JSON_dict(filename_out)  # write out results of set_meta
-            json.dump((True, 'Metadata has been set successfully'), open(filename_results_code, 'wt+'))  # setting metadata has succeeded
-        except Exception as e:
-            json.dump((False, unicodify(e)), open(filename_results_code, 'wt+'))  # setting metadata has failed somehow
-
     write_job_metadata(tool_job_working_directory, job_metadata, set_meta, tool_provided_metadata)
 
 
