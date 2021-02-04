@@ -370,7 +370,11 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         assert 'id' in dataset_attrs
                         object_import_tracker.hdas_by_id[dataset_attrs['id']] = dataset_instance
                 else:
-                    object_import_tracker.lddas_by_key[dataset_attrs[object_key]] = dataset_instance
+                    if object_key in dataset_attrs:
+                        object_import_tracker.lddas_by_key[dataset_attrs[object_key]] = dataset_instance
+                    else:
+                        assert 'id' in dataset_attrs
+                        object_import_tracker.lddas_by_key[dataset_attrs['id']] = dataset_instance
 
     def _import_libraries(self, object_import_tracker):
         object_key = self.object_key
@@ -1251,7 +1255,8 @@ class DirectoryModelExportStore(ModelExportStore):
         def record_associated_jobs(obj):
             # Get the job object.
             job = None
-            for assoc in obj.creating_job_associations:
+            for assoc in getattr(obj, 'creating_job_associations', []):
+                # For mapped over jobs obj could be DatasetCollection, which has no creating_job_association
                 job = assoc.job
                 break
             if not job:

@@ -189,7 +189,8 @@ def set_metadata_portable():
 
     for output_name, output_dict in outputs.items():
         dataset_instance_id = output_dict["id"]
-        dataset = import_model_store.sa_session.query(HistoryDatasetAssociation).find(dataset_instance_id)
+        klass = getattr(galaxy.model, output_dict.get('model_class', 'HistoryDatasetAssociation'))
+        dataset = import_model_store.sa_session.query(klass).find(dataset_instance_id)
         if dataset is None:
             # legacy check for jobs that started before 21.01, remove on 21.05
             filename_in = os.path.join("metadata/metadata_in_%s" % output_name)
@@ -306,7 +307,8 @@ def set_metadata_portable():
             output_collections[name] = import_model_store.sa_session.query(HistoryDatasetCollectionAssociation).find(output_collection["id"])
         outputs = {}
         for name, output in metadata_params["outputs"].items():
-            outputs[name] = import_model_store.sa_session.query(HistoryDatasetAssociation).find(output["id"])
+            klass = getattr(galaxy.model, output.get('model_class', 'HistoryDatasetAssociation'))
+            outputs[name] = import_model_store.sa_session.query(klass).find(output["id"])
 
         input_ext = json.loads(metadata_params["job_params"].get("__input_ext", '"data"'))
         collect_primary_datasets(
