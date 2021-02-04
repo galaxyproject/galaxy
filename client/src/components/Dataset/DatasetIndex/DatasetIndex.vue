@@ -46,7 +46,7 @@ export default {
                     pathDestination.filepath
                 );
             } else if (this.path === undefined || this.path === "undefined") {
-                this.directoryContent = pathDestination.datasetContent
+                this.directoryContent = pathDestination.datasetContent;
             } else {
                 this.errorMessage = `is not found!`;
             }
