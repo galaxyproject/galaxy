@@ -113,11 +113,13 @@ class BaseJSONType(sqlalchemy.types.TypeDecorator):
         return (x == y)
 
 
-class JSONType(BaseJSONType):
+class SimpleJSONType(BaseJSONType):
+    """SQLAlchemy column type that does not track mutations to mutable data."""
     pass
 
 
-class SimpleJSONType(BaseJSONType):
+class JSONType(BaseJSONType):
+    """SQLAlchemy column type that tracks mutations to mutable data."""
     pass
 
 
