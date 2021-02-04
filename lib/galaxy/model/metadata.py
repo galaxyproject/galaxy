@@ -94,7 +94,7 @@ class MetadataCollection(Mapping):
         try:
             return self.__getattr__(key)
         except Exception:
-            return KeyError
+            raise KeyError
 
     def __len__(self):
         return len(self.spec)
@@ -113,6 +113,7 @@ class MetadataCollection(Mapping):
             return self.spec[name].wrap(self.spec[name].default, object_session(self.parent))
         if name in self.parent._metadata:
             return self.parent._metadata[name]
+        raise AttributeError
 
     def __setattr__(self, name, value):
         if name == "parent":
