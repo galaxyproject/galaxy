@@ -15,6 +15,8 @@ from . import data
 
 log = logging.getLogger(__name__)
 
+def check_all_required_fields(fields, required_fields):
+    return len(set(fields).intersection(required_fields)) == len(required_fields)
 
 class mStats(Tabular):
     """Class describing the table of cluster statistics output from MetaCyto"""
@@ -39,17 +41,10 @@ class mStats(Tabular):
         with open(filename, "r") as f:
             # last one == fraction
             headers = f.readline().strip().split("\t")
-            if headers[-1] != "fraction":
-                return False
-            hdrs = ["fcs_files", "cluster_id", "label", "fcs_names"]
-            for h in hdrs:
-                if h not in headers:
-                    return False
-            return True
-
-    def get_mime(self):
-        """Returns the mime type of the datatype"""
-        return 'text/tab-separated-values'
+        if headers[-1] != "fraction":
+            return False
+        hdrs = {"fcs_files", "cluster_id", "label", "fcs_names"}
+        return check_all_required_fields(fields=headers, required_fields=hdrs)
 
 
 class mClrList(Tabular):
@@ -69,10 +64,6 @@ class mClrList(Tabular):
             return dataset.peek
         except Exception:
             return "MetaCyto Cluster Definitions List file (%s)" % (data.nice_size(dataset.get_size()))
-
-    def get_mime(self):
-        """Returns the mime type of the datatype"""
-        return 'text/tab-separated-values'
 
 
 class mSummary(Tabular):
@@ -97,12 +88,5 @@ class mSummary(Tabular):
         """Quick test on file formatting"""
         with open(filename, "r") as f:
             headings = f.readline().strip().split("\t")
-            hdgs = ["study_id", "antibodies", "filenames"]
-            for h in hdgs:
-                if h not in headings:
-                    return False
-            return True
-
-    def get_mime(self):
-        """Returns the mime type of the datatype"""
-        return 'text/tab-separated-values'
+        hdgs = {"study_id", "antibodies", "filenames"}
+        return check_all_required_fields(fields=headings, required_fields=hdgs)
