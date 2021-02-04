@@ -58,12 +58,12 @@ class FCS(Binary):
                 version = f.read(6).decode("utf8", errors="ignore")
                 if version not in ["FCS2.0", "FCS3.0", "FCS3.1"]:
                     return False
-                version = version.replace("FCS","")
+                version = version.replace("FCS", "")
                 tmp = f.read(4).decode("utf8", errors="ignore")
                 if tmp != "    ":
                     return False
                 coffs = []
-                for i in range(6):
+                for _i in range(6):
                     coffs.append(f.read(8).decode("utf8", errors="ignore"))
 
             ioffs = [float(version)] + [int(x) for x in coffs]
@@ -74,7 +74,6 @@ class FCS(Binary):
             return False
 
         return True
-
 
     def get_mime(self):
         """Returns the mime type of the datatype"""
