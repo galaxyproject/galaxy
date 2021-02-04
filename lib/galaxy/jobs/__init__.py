@@ -1310,8 +1310,6 @@ class JobWrapper(HasResourceParameters):
                 # Pause any dependent jobs (and those jobs' outputs)
                 for dep_job_assoc in dataset.dependent_jobs:
                     self.pause(dep_job_assoc.job, "Execution of this dataset's job is paused because its input datasets are in an error state.")
-                self.sa_session.add(dataset)
-                self.sa_session.flush()
             job.set_final_state(job.states.ERROR)
             job.command_line = unicodify(self.command_line)
             job.info = message
