@@ -383,7 +383,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         filepath =  re.search(PATH_LABEL_PATTERN, line).group(2)
 
 
-        if "path" in line:
+        if filepath is not None:
             file = os.path.join(hda.extra_files_path, filepath)
         else:
             file = dataset.file_name
