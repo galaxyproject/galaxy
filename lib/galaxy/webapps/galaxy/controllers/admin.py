@@ -677,8 +677,8 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                                          .order_by(trans.app.model.Group.table.c.name):
                 all_groups.append((group.name, trans.security.encode_id(group.id)))
             default_options = [('No', 'no')]
-            for typ in trans.app.model.DefaultQuotaAssociation.types.__dict__.values():
-                default_options.append(('Yes, ' + typ, typ))
+            for type_ in trans.app.model.DefaultQuotaAssociation.types:
+                default_options.append(('Yes, ' + type_, type_))
             return {'title': 'Create Quota',
                     'inputs': [
                         {

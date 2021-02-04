@@ -65,7 +65,6 @@ export const HistoryPanelProxy = Backbone.View.extend({
         // Watch the store, change the fake history model when it changs
         store.subscribe(({ type, payload: newId }) => {
             if (type == "betaHistory/setCurrentHistoryId") {
-                console.log("setCurrentHistoryId", newId);
                 Galaxy.currHistoryPanel.setModel(new History({ id: newId }));
             }
         });

@@ -55,4 +55,10 @@ export class Content extends dateMixin(ModelBase) {
     get hdca_id() {
         return this.isCollection ? this.id : null;
     }
+
+    // subset of tags that start with name:
+    get nameTags() {
+        const allTags = this.tags || [];
+        return allTags.filter((t) => t.includes("name:"));
+    }
 }
