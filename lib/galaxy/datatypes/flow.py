@@ -112,10 +112,6 @@ class FlowText(Tabular):
                     return False
             return True
 
-    def get_mime(self):
-        """Returns the mime type of the datatype"""
-        return 'text/tab-separated-values'
-
 
 class FlowClustered(Tabular):
     """Class describing a Flow Text that has been clustered through FLOCK"""
@@ -146,10 +142,6 @@ class FlowClustered(Tabular):
                 if not is_number(vals):
                     return False
             return True
-
-    def get_mime(self):
-        """Returns the mime type of the datatype"""
-        return 'text/tab-separated-values'
 
 
 class FlowMFI(Tabular):
@@ -182,10 +174,6 @@ class FlowMFI(Tabular):
                     return False
             return True
 
-    def get_mime(self):
-        """Returns the mime type of the datatype"""
-        return 'text/tab-separated-values'
-
 
 class FlowStats1(Tabular):
     """Class describing a Flow Stats file"""
@@ -213,10 +201,6 @@ class FlowStats1(Tabular):
                 return False
             return True
 
-    def get_mime(self):
-        """Returns the mime type of the datatype"""
-        return 'text/tab-separated-values'
-
 
 class FlowStats2(Tabular):
     """Class describing a Flow Stats file"""
@@ -243,10 +227,6 @@ class FlowStats2(Tabular):
             if smp_name != "SampleName":
                 return False
             return True
-
-    def get_mime(self):
-        """Returns the mime type of the datatype"""
-        return 'text/tab-separated-values'
 
 
 class FlowStats3(Tabular):
@@ -279,10 +259,6 @@ class FlowStats3(Tabular):
                     return False
             return True
 
-    def get_mime(self):
-        """Returns the mime type of the datatype"""
-        return 'text/tab-separated-values'
-
 
 class FlowScore(Tabular):
     """Class describing a Flow Score file"""
@@ -313,7 +289,3 @@ class FlowScore(Tabular):
                 if not is_number(vals):
                     return False
             return True
-
-    def get_mime(self):
-        """Returns the mime type of the datatype"""
-        return 'text/tab-separated-values'
