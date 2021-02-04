@@ -3,7 +3,7 @@ Execute an external process to set_meta() on a provided list of pickled datasets
 
 This was formerly scripts/set_metadata.py and expects these arguments:
 
-    %prog datatypes_conf.xml job_metadata_file metadata_in,metadata_kwds,metadata_out,metadata_results_code,output_filename_override,metadata_override... max_metadata_value_size
+    %prog datatypes_conf.xml job_metadata_file metadata_kwds,metadata_out,metadata_results_code,output_filename_override,metadata_override... max_metadata_value_size
 
 Galaxy should be importable on sys.path and output_filename_override should be
 set to the path of the dataset on which metadata is being set
@@ -16,20 +16,48 @@ import os
 import sys
 import traceback
 
-from sqlalchemy.orm import clear_mappers
+from pulsar.client.staging import COMMAND_VERSION_FILENAME
 
-import galaxy.model.mapping  # need to load this before we unpickle, in order to setup properties assigned by the mappers
-from galaxy.model import store
+import galaxy.datatypes.registry
+import galaxy.model.mapping
+from galaxy.datatypes import sniff
+from galaxy.datatypes.data import validate
+from galaxy.job_execution.output_collect import (
+    collect_dynamic_outputs,
+    collect_extra_files,
+    collect_primary_datasets,
+    default_exit_code_file,
+    read_exit_code_from,
+    SessionlessJobContext,
+)
+from galaxy.jobs import TOOL_PROVIDED_JOB_METADATA_KEYS
+from galaxy.model import (
+    Dataset,
+    HistoryDatasetAssociation,
+    HistoryDatasetCollectionAssociation,
+    Job,
+    store,
+)
 from galaxy.model.custom_types import total_size
+from galaxy.model.metadata import MetadataTempFile
+from galaxy.objectstore import build_object_store_from_config
+from galaxy.tool_util.output_checker import (
+    check_output,
+    DETECTED_JOB_STATE,
+)
+from galaxy.tool_util.parser.stdio import (
+    ToolStdioExitCode,
+    ToolStdioRegex,
+)
 from galaxy.tool_util.provided_metadata import parse_tool_provided_metadata
 from galaxy.util import stringify_dictionary_keys
+from galaxy.util.expressions import ExpressionContext
 
 logging.basicConfig()
 log = logging.getLogger(__name__)
 
 
 def set_validated_state(dataset_instance):
-    from galaxy.datatypes.data import validate
     datatype_validation = validate(dataset_instance)
 
     dataset_instance.validated_state = datatype_validation.state
@@ -49,7 +77,6 @@ def set_meta_with_tool_provided(dataset_instance, file_dict, set_meta_kwds, data
     extension = dataset_instance.extension
     if extension == "_sniff_":
         try:
-            from galaxy.datatypes import sniff
             extension = sniff.handle_uploaded_dataset_file(dataset_instance.dataset.external_filename, datatypes_registry)
             # We need to both set the extension so it is available to set_meta
             # and record it in the metadata so it can be reloaded on the server
@@ -78,10 +105,9 @@ def set_metadata():
 
 
 def set_metadata_portable():
-    import galaxy.model
     tool_job_working_directory = os.path.abspath(os.getcwd())
     metadata_tmp_files_dir = os.path.join(tool_job_working_directory, "metadata")
-    galaxy.model.metadata.MetadataTempFile.tmp_dir = metadata_tmp_files_dir
+    MetadataTempFile.tmp_dir = metadata_tmp_files_dir
 
     metadata_params_path = os.path.join("metadata", "params.json")
     try:
@@ -110,7 +136,6 @@ def set_metadata_portable():
 
     export_store = None
     if extended_metadata_collection:
-        from galaxy.tool_util.parser.stdio import ToolStdioRegex, ToolStdioExitCode
         tool_dict = metadata_params["tool"]
         stdio_exit_code_dicts, stdio_regex_dicts = tool_dict["stdio_exit_codes"], tool_dict["stdio_regexes"]
         stdio_exit_codes = list(map(ToolStdioExitCode, stdio_exit_code_dicts))
@@ -118,10 +143,9 @@ def set_metadata_portable():
 
         with open(object_store_conf_path) as f:
             config_dict = json.load(f)
-        from galaxy.objectstore import build_object_store_from_config
         assert config_dict is not None
         object_store = build_object_store_from_config(None, config_dict=config_dict)
-        galaxy.model.Dataset.object_store = object_store
+        Dataset.object_store = object_store
 
         outputs_directory = os.path.join(tool_job_working_directory, "outputs")
         if not os.path.exists(outputs_directory):
@@ -144,24 +168,19 @@ def set_metadata_portable():
 
         job_id_tag = metadata_params["job_id_tag"]
 
-        # TODO: this clearly needs to be refactored, nothing in runners should be imported here..
-        from galaxy.job_execution.output_collect import default_exit_code_file, read_exit_code_from
         exit_code_file = default_exit_code_file(".", job_id_tag)
         tool_exit_code = read_exit_code_from(exit_code_file, job_id_tag)
 
-        from galaxy.tool_util.output_checker import check_output, DETECTED_JOB_STATE
         check_output_detected_state, tool_stdout, tool_stderr, job_messages = check_output(stdio_regexes, stdio_exit_codes, tool_stdout, tool_stderr, tool_exit_code, job_id_tag)
         if check_output_detected_state == DETECTED_JOB_STATE.OK and not tool_provided_metadata.has_failed_outputs():
-            final_job_state = galaxy.model.Job.states.OK
+            final_job_state = Job.states.OK
         else:
-            final_job_state = galaxy.model.Job.states.ERROR
+            final_job_state = Job.states.ERROR
 
-        from pulsar.client.staging import COMMAND_VERSION_FILENAME
         version_string = ""
         if os.path.exists(COMMAND_VERSION_FILENAME):
             version_string = open(COMMAND_VERSION_FILENAME).read()
 
-        from galaxy.util.expressions import ExpressionContext
         job_context = ExpressionContext(dict(stdout=tool_stdout, stderr=tool_stderr))
 
         # Load outputs.
@@ -170,11 +189,11 @@ def set_metadata_portable():
 
     for output_name, output_dict in outputs.items():
         dataset_instance_id = output_dict["id"]
-        dataset = import_model_store.sa_session.query(galaxy.model.HistoryDatasetAssociation).find(dataset_instance_id)
+        dataset = import_model_store.sa_session.query(HistoryDatasetAssociation).find(dataset_instance_id)
         if dataset is None:
             # legacy check for jobs that started before 21.01, remove on 21.05
-            import pickle
             filename_in = os.path.join("metadata/metadata_in_%s" % output_name)
+            import pickle
             dataset = pickle.load(open(filename_in, 'rb'))  # load DatasetInstance
         assert dataset is not None
 
@@ -200,8 +219,8 @@ def set_metadata_portable():
             # Metadata FileParameter types may not be writable on a cluster node, and are therefore temporarily substituted with MetadataTempFiles
             override_metadata = json.load(open(override_metadata))
             for metadata_name, metadata_file_override in override_metadata:
-                if galaxy.datatypes.metadata.MetadataTempFile.is_JSONified_value(metadata_file_override):
-                    metadata_file_override = galaxy.datatypes.metadata.MetadataTempFile.from_JSON(metadata_file_override)
+                if MetadataTempFile.is_JSONified_value(metadata_file_override):
+                    metadata_file_override = MetadataTempFile.from_JSON(metadata_file_override)
                 setattr(dataset.metadata, metadata_name, metadata_file_override)
             if output_dict.get("validate", False):
                 set_validated_state(dataset)
@@ -234,9 +253,8 @@ def set_metadata_portable():
                     # This has to be a job with outputs_to_working_directory set.
                     # We update the object store with the created output file.
                     object_store.update_from_file(dataset.dataset, file_name=dataset_filename_override, create=True)
-                from galaxy.job_execution.output_collect import collect_extra_files
                 collect_extra_files(object_store, dataset, ".")
-                if galaxy.model.Job.states.ERROR == final_job_state:
+                if Job.states.ERROR == final_job_state:
                     dataset.blurb = "error"
                     dataset.mark_unhidden()
                 else:
@@ -256,7 +274,6 @@ def set_metadata_portable():
                         # ... and others don't
                         dataset.set_peek()
 
-                from galaxy.jobs import TOOL_PROVIDED_JOB_METADATA_KEYS
                 for context_key in TOOL_PROVIDED_JOB_METADATA_KEYS:
                     if context_key in context:
                         context_value = context[context_key]
@@ -273,7 +290,6 @@ def set_metadata_portable():
 
     if extended_metadata_collection:
         # discover extra outputs...
-        from galaxy.job_execution.output_collect import collect_dynamic_outputs, collect_primary_datasets, SessionlessJobContext
 
         job_context = SessionlessJobContext(
             metadata_params,
@@ -287,10 +303,10 @@ def set_metadata_portable():
 
         output_collections = {}
         for name, output_collection in metadata_params["output_collections"].items():
-            output_collections[name] = import_model_store.sa_session.query(galaxy.model.HistoryDatasetCollectionAssociation).find(output_collection["id"])
+            output_collections[name] = import_model_store.sa_session.query(HistoryDatasetCollectionAssociation).find(output_collection["id"])
         outputs = {}
         for name, output in metadata_params["outputs"].items():
-            outputs[name] = import_model_store.sa_session.query(galaxy.model.HistoryDatasetAssociation).find(output["id"])
+            outputs[name] = import_model_store.sa_session.query(HistoryDatasetAssociation).find(output["id"])
 
         input_ext = json.loads(metadata_params["job_params"].get("__input_ext", '"data"'))
         collect_primary_datasets(
@@ -315,7 +331,6 @@ def validate_and_load_datatypes_config(datatypes_config):
     if not os.path.exists(datatypes_config):
         print("Metadata setting failed because registry.xml [%s] could not be found. You may retry setting metadata." % datatypes_config)
         sys.exit(1)
-    import galaxy.datatypes.registry
     datatypes_registry = galaxy.datatypes.registry.Registry()
     datatypes_registry.load_datatypes(root_dir=galaxy_root, config=datatypes_config, use_build_sites=False, use_converters=False, use_display_applications=False)
     galaxy.model.set_datatypes_registry(datatypes_registry)
@@ -330,14 +345,13 @@ def write_job_metadata(tool_job_working_directory, job_metadata, set_meta, tool_
     for i, file_dict in enumerate(tool_provided_metadata.get_new_datasets_for_metadata_collection(), start=1):
         filename = file_dict["filename"]
         new_dataset_filename = os.path.join(tool_job_working_directory, "working", filename)
-        new_dataset = galaxy.model.Dataset(id=-i, external_filename=new_dataset_filename)
+        new_dataset = Dataset(id=-i, external_filename=new_dataset_filename)
         extra_files = file_dict.get('extra_files', None)
         if extra_files is not None:
             new_dataset._extra_files_path = os.path.join(tool_job_working_directory, "working", extra_files)
         new_dataset.state = new_dataset.states.OK
-        new_dataset_instance = galaxy.model.HistoryDatasetAssociation(id=-i, dataset=new_dataset, extension=file_dict.get('ext', 'data'))
+        new_dataset_instance = HistoryDatasetAssociation(id=-i, dataset=new_dataset, extension=file_dict.get('ext', 'data'))
         set_meta(new_dataset_instance, file_dict)
         file_dict['metadata'] = json.loads(new_dataset_instance.metadata.to_JSON_dict())  # storing metadata in external form, need to turn back into dict, then later jsonify
 
     tool_provided_metadata.rewrite()
-    clear_mappers()
