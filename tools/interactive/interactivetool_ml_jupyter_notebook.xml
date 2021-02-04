@@ -1,19 +1,20 @@
-<tool id="interactive_tool_ml_jupyter_notebook" tool_type="interactive" name="Interactive Machine Learning Jupyter Notebook" version="0.1">
+<tool id="interactive_ml_tool_jupyter_notebook" tool_type="interactive" name="Interactive Machine Learning Jupyter Notebook" version="0.1">
     <requirements>
-        <container type="docker">anupkumar/sample-docker-ml-jupyter:latest</container>
+        <container type="docker">docker.io/anupkumar/sample-docker-ml-jupyter</container>
     </requirements>
     <entry_points>
         <entry_point name="Jupyter Interactive Tool" requires_domain="True">
             <port>8888</port>
-            <url>ipython/lab</url>
+            <url>lab/</url>
         </entry_point>
     </entry_points>
     <environment_variables>
-        <environment_variable name="HISTORY_ID">$__history_id__</environment_variable>
+         <environment_variable name="HISTORY_ID">$__history_id__</environment_variable>
         <environment_variable name="REMOTE_HOST">$__galaxy_url__</environment_variable>
         <environment_variable name="GALAXY_WEB_PORT">8080</environment_variable>
         <environment_variable name="GALAXY_URL">$__galaxy_url__</environment_variable>
         <environment_variable name="API_KEY" inject="api_key" />
+        
     </environment_variables>
     <command detect_errors="aggressive"><![CDATA[
         #import re
