@@ -24,6 +24,7 @@ import requests
 from sqlalchemy import case, cast, func, Integer, String
 
 from galaxy import model, util
+from galaxy.model import data_tables as data_tables_model
 from galaxy.util import RW_R__R__
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
@@ -944,10 +945,10 @@ class DatabaseToolDataTable(ToolDataTable, Dictifiable):
         errors = []
 
         if app is not None:
-            self.sa_session = app.model.context
+            self.sa_session = app.data_tables_model.context
             if not self.data_table_exist_in_database():
                 # In case we don't have a datatable yet, create a new one in the database and add the columns to it
-                dt = model.DataTable(name=self.datatable_name)
+                dt = data_tables_model.DataTable(name=self.datatable_name)
                 self.sa_session.add(dt)
 
                 # Create columns in the database if we need to
@@ -955,7 +956,7 @@ class DatabaseToolDataTable(ToolDataTable, Dictifiable):
                     # Check if the column already exists first, if it doesn't create it
                     datatablecolumns = self.lookup_column_by_name(columnname)
                     if datatablecolumns is not None and len(datatablecolumns) == 0:
-                        dt_column = model.DataTableColumn(name=columnname)
+                        dt_column = data_tables_model.DataTableColumn(name=columnname)
                         self.sa_session.add(dt_column)
                 self.sa_session.flush()
                 log.debug("Created new DataTable and DataTableColumn entries in database.")
@@ -965,8 +966,8 @@ class DatabaseToolDataTable(ToolDataTable, Dictifiable):
                     datatablecolumns = self.lookup_column_by_name(columnname)
                     if datatablecolumns is not None and len(datatablecolumns) == 1:
                         datatablecolumn = datatablecolumns[0]
-                        dtfa = model.DataTableColumnAssociation(data_table_id=dt.id,
-                                                               data_table_column_id=datatablecolumn.id)
+                        dtfa = data_tables_model.DataTableColumnAssociation(data_table_id=dt.id,
+                                                                            data_table_column_id=datatablecolumn.id)
                         self.sa_session.add(dtfa)
                 self.sa_session.flush()
                 log.debug("Mapped DataTable and DataTableColumn to each other in database.")
@@ -994,8 +995,8 @@ class DatabaseToolDataTable(ToolDataTable, Dictifiable):
         Lookup a data table data table column
         """
         if self.sa_session:
-            return self.sa_session.query(model.DataTableColumn).enable_eagerloads(False) \
-                .filter(model.DataTableColumn.name == column).all()
+            return self.sa_session.query(data_tables_model.DataTableColumn).enable_eagerloads(False) \
+                .filter(data_tables_model.DataTableColumn.name == column).all()
         return None
 
     def data_table_exist_in_database(self):
@@ -1007,8 +1008,8 @@ class DatabaseToolDataTable(ToolDataTable, Dictifiable):
         return False
 
     def get_data_table_from_database(self):
-        return self.sa_session.query(model.DataTable).enable_eagerloads(False)\
-            .filter(model.DataTable.name == self.datatable_name).all()
+        return self.sa_session.query(data_tables_model.DataTable).enable_eagerloads(False)\
+            .filter(data_tables_model.DataTable.name == self.datatable_name).all()
 
     def set_db_column(self, column, idx):
         if 'db_columns' not in dir(self):
@@ -1025,12 +1026,12 @@ class DatabaseToolDataTable(ToolDataTable, Dictifiable):
         Retrieve all rows from the database that belong to this data table
         """
         rows = []
-        dt_rows = self.sa_session.query(model.DataTableRowAssociation).enable_eagerloads(False)\
-            .filter(model.DataTableRowAssociation.data_table_id == self.datatable_id).all()
+        dt_rows = self.sa_session.query(data_tables_model.DataTableRowAssociation).enable_eagerloads(False)\
+            .filter(data_tables_model.DataTableRowAssociation.data_table_id == self.datatable_id).all()
         for row in dt_rows:
             row_data = [None for x in self.db_columns.keys()]
-            dt_row_values = self.sa_session.query(model.DataTableField).enable_eagerloads(False)\
-                .filter(model.DataTableField.data_table_row_id == row.id).all()
+            dt_row_values = self.sa_session.query(data_tables_model.DataTableField).enable_eagerloads(False)\
+                .filter(data_tables_model.DataTableField.data_table_row_id == row.id).all()
             for dt_row_value in dt_row_values:
                 colname = self.db_columns[dt_row_value.data_table_column_id]
                 colidx = self.columns_data[colname]['col_idx']
@@ -1089,12 +1090,12 @@ class DatabaseToolDataTable(ToolDataTable, Dictifiable):
                 return True
 
         # Create data table row
-        dtrow = model.DataTableRow()
+        dtrow = data_tables_model.DataTableRow()
         self.sa_session.add(dtrow)
         self.sa_session.flush()
 
         # Associate row with data table
-        dtrow_assoc = model.DataTableRowAssociation(data_table_id=self.datatable_id, data_table_row_id=dtrow.id)
+        dtrow_assoc = data_tables_model.DataTableRowAssociation(data_table_id=self.datatable_id, data_table_row_id=dtrow.id)
         self.sa_session.add(dtrow_assoc)
         self.sa_session.flush()
 
@@ -1103,7 +1104,7 @@ class DatabaseToolDataTable(ToolDataTable, Dictifiable):
             colinfo = self.columns_data.get(entrykey, {})
             dt_columnid = colinfo.get('db_idx', None)
             if dt_columnid is not False:
-                dtrow_value = model.DataTableField(value=entryvalue, data_table_row_id=dtrow.id,
+                dtrow_value = data_tables_model.DataTableField(value=entryvalue, data_table_row_id=dtrow.id,
                                                    data_table_column_id=dt_columnid)
                 self.sa_session.add(dtrow_value)
         self.sa_session.flush()
@@ -1137,11 +1138,11 @@ class DatabaseToolDataTable(ToolDataTable, Dictifiable):
         # Delete rows
         for row in qrows:
             log.debug("Deleting row %s" % row.row_id)
-            self.sa_session.query(model.DataTableField)\
-                .filter(model.DataTableField.data_table_row_id == row.row_id).delete()
-            self.sa_session.query(model.DataTableRowAssociation)\
-                .filter(model.DataTableRowAssociation.data_table_row_id == row.row_id).delete()
-            self.sa_session.query(model.DataTableRow).filter(model.DataTableRow.id == row.row_id).delete()
+            self.sa_session.query(data_tables_model.DataTableField)\
+                .filter(data_tables_model.DataTableField.data_table_row_id == row.row_id).delete()
+            self.sa_session.query(data_tables_model.DataTableRowAssociation)\
+                .filter(data_tables_model.DataTableRowAssociation.data_table_row_id == row.row_id).delete()
+            self.sa_session.query(data_tables_model.DataTableRow).filter(data_tables_model.DataTableRow.id == row.row_id).delete()
         self.sa_session.flush()
 
         # Reload data entries for the data table using queries
@@ -1191,16 +1192,16 @@ class DatabaseToolDataTable(ToolDataTable, Dictifiable):
             dbidx = self.columns_data[colname]['db_idx']
             collabel = "value_%s" % colname
 
-            prep_case = cast(func.max(case(value=model.DataTableField.data_table_column_id,
-                                           whens={dbidx: model.DataTableField.value})), String).label(collabel)
+            prep_case = cast(func.max(case(value=data_tables_model.DataTableField.data_table_column_id,
+                                           whens={dbidx: data_tables_model.DataTableField.value})), String).label(collabel)
             case_query.append(prep_case)
             entry_collabels[collabel] = value
 
         # Retrieve the ID of the row
-        case_query.insert(0, cast(model.DataTableField.data_table_row_id, Integer).label("row_id"))
+        case_query.insert(0, cast(data_tables_model.DataTableField.data_table_row_id, Integer).label("row_id"))
 
         # Query the DataTableField table with the data_table_row_id and the cases
-        datatable_temp = self.sa_session.query(*case_query).group_by(model.DataTableField.data_table_row_id) \
+        datatable_temp = self.sa_session.query(*case_query).group_by(data_tables_model.DataTableField.data_table_row_id) \
             .cte('datatable_temporary')
 
         # Prepare secondary query of the temporary datatable table
@@ -1212,7 +1213,7 @@ class DatabaseToolDataTable(ToolDataTable, Dictifiable):
 
         return query.all()
 
-    def to_dict(self, view='collection'):
+    def to_dict(self, view='collection', **kwargs):
         rval = super(DatabaseToolDataTable, self).to_dict()
         if view == 'element':
             rval['columns'] = sorted(self.columns.keys(), key=lambda x: self.columns[x])

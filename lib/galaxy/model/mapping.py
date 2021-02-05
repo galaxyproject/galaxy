@@ -1643,63 +1643,6 @@ CleanupEventImplicitlyConvertedDatasetAssociationAssociation_table = Table("clea
                                                                            Column("cleanup_event_id", Integer, ForeignKey("cleanup_event.id"), index=True, nullable=True),
                                                                            Column("icda_id", Integer, ForeignKey("implicitly_converted_dataset_association.id"), index=True))
 
-# Data Table in database tables
-model.DataTable.table = Table(
-    'data_table',
-    metadata,
-    Column("id", Integer, primary_key=True),
-    Column("name", String(255), index=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    UniqueConstraint('name'),
-)
-
-model.DataTableColumn.table = Table(
-    'data_table_column',
-    metadata,
-    Column("id", Integer, primary_key=True),
-    Column("name", String(255), index=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    UniqueConstraint('name'),
-)
-
-model.DataTableColumnAssociation.table = Table(
-    'data_table_column_association',
-    metadata,
-    Column("id", Integer, primary_key=True),
-    Column("data_table_id", Integer, ForeignKey("data_table.id"), index=True),
-    Column("data_table_column_id", Integer, ForeignKey("data_table_column.id"), index=True),
-)
-
-model.DataTableRow.table = Table(
-    'data_table_row',
-    metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-)
-
-model.DataTableRowAssociation.table = Table(
-    'data_table_row_association',
-    metadata,
-    Column("id", Integer, primary_key=True),
-    Column("data_table_id", Integer, ForeignKey("data_table.id"), index=True),
-    Column("data_table_row_id", Integer, ForeignKey("data_table_row.id"), index=True),
-)
-
-model.DataTableField.table = Table(
-    'data_table_field',
-    metadata,
-    Column("id", Integer, primary_key=True),
-    Column("value", String(255), index=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("data_table_row_id", Integer, ForeignKey("data_table_row.id"), index=True),
-    Column("data_table_column_id", Integer, ForeignKey("data_table_column.id"), index=True),
-)
-
-
 # With the tables defined we can define the mappers and setup the
 # relationships between the model objects.
 def simple_mapping(model, **kwds):
@@ -2866,23 +2809,6 @@ mapper(model.DataManagerJobAssociation, model.DataManagerJobAssociation.table, p
     job=relation(model.Job,
         backref=backref('data_manager_association', uselist=False),
         uselist=False)
-))
-
-# Data tables
-mapper(model.DataTable, model.DataTable.table, properties={})
-mapper(model.DataTableColumnAssociation, model.DataTableColumnAssociation.table, properties=dict(
-    data_table=relation(model.DataTable),
-    data_table_column=relation(model.DataTableColumn)
-))
-mapper(model.DataTableColumn, model.DataTableColumn.table, properties={})
-mapper(model.DataTableRowAssociation, model.DataTableRowAssociation.table, properties=dict(
-    data_table=relation(model.DataTable),
-    data_table_row=relation(model.DataTableRow)
-))
-mapper(model.DataTableRow, model.DataTableRow.table, properties={})
-mapper(model.DataTableField, model.DataTableField.table, properties=dict(
-    data_table_row=relation(model.DataTableRow),
-    data_table_column=relation(model.DataTableColumn)
 ))
 
 # model.HistoryDatasetAssociation.mapper.add_property( "creating_job_associations",

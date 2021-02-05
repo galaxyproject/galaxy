@@ -48,6 +48,12 @@ DATABASE = {
             'default_sqlite_file': 'install.sqlite',
             'config_override': 'GALAXY_INSTALL_CONFIG_',
         },
+    "data_tables":
+        {
+            'repo': 'galaxy/model/data_tables/migrate',
+            'default_sqlite_file': 'data_tables.sqlite',
+            'config_override': 'GALAXY_CONFIG_',
+        },
 }
 
 

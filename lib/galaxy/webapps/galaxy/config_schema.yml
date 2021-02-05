@@ -3261,3 +3261,14 @@ mapping:
         required: false
         desc: |
           Path to dynamic tool destinations configuration file.
+
+      data_table_connection:
+        type: str
+        required: false
+        desc: |
+          The database connection for data table entries within a database. By default, Galaxy
+          will use a SQLite database at '<data_dir>/data_tables.sqlite'.  You
+          may use a SQLAlchemy connection string to specify an external database
+          instead.
+
+          Sample default 'sqlite:///<data_dir>/data_tables.sqlite?isolation_level=IMMEDIATE'

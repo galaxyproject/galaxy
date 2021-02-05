@@ -913,6 +913,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             log.warning(msg, repository_name, repository_owner)
             # Figure out path to repository on disk given the tool shed info and the path to the tool contained in the repo
             repository_path = os.path.join(tool_shed, 'repos', repository_owner, repository_name, installed_changeset_revision)
+            log.debug(path)
             tool_path = path[:path.index(repository_path)]
             repository = ToolConfRepository(
                 tool_shed,

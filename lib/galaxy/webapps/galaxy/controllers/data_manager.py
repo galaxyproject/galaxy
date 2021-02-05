@@ -21,8 +21,11 @@ class DataManager(BaseUIController):
         message = kwd.get('message', '')
         status = kwd.get('status', 'info')
         data_managers = []
+        log.debug("data_manager_list")
         for data_manager_id, data_manager in sorted(trans.app.data_managers.data_managers.items(),
                                                     key=lambda data_manager: data_manager[1].name):
+            log.debug(data_manager_id)
+            log.debug(data_manager)
             data_managers.append({'toolUrl': web.url_for(controller='root',
                                                          tool_id=data_manager.tool.id),
                                   'id': data_manager_id,
