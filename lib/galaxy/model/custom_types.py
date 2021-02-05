@@ -16,6 +16,8 @@ from sqlalchemy.types import (
     TypeDecorator
 )
 from sqlalchemy_mutable.mutable import Mutable
+# For compatibility with custom yaml dumping in gxformat2
+from sqlalchemy_mutable.mutable_dict import MutableDict as MutationDict  # noqa: F401
 
 from galaxy.util import (
     smart_str,
