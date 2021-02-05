@@ -22,7 +22,7 @@
                 </div>
             </div>
             <hr class="my-4" />
-            <b-container class="bv-example-row">
+            <b-container fluid>
                 <div class="dataset_table">
                     <h2>Folder permissions</h2>
                     <h4>
