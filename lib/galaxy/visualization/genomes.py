@@ -256,18 +256,15 @@ class Genomes:
             rval = self.genomes[dbkey]
         return rval
 
-    def get_dbkeys(self, trans, chrom_info=False):
+    def get_dbkeys(self, user, chrom_info=False):
         """ Returns all known dbkeys. If chrom_info is True, only dbkeys with
             chromosome lengths are returned. """
         self.check_and_reload()
         dbkeys = []
 
         # Add user's custom keys to dbkeys.
-        user_keys_dict = {}
-        user = trans.get_user()
-        if user:
-            if 'dbkeys' in user.preferences:
-                user_keys_dict = loads(user.preferences['dbkeys'])
+        if user and 'dbkeys' in user.preferences:
+            user_keys_dict = loads(user.preferences['dbkeys'])
             dbkeys.extend([(attributes['name'], key) for key, attributes in user_keys_dict.items()])
 
         # Add app keys to dbkeys.

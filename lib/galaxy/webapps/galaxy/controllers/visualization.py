@@ -541,6 +541,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         id = kwd.get('id')
         if not id:
             return self.message_exception(trans, 'No visualization id received for editing.')
+        trans_user = trans.get_user()
         v = self.get_visualization(trans, id, check_ownership=True)
         if trans.request.method == 'GET':
             if v.slug is None:
@@ -562,7 +563,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                     'type': 'select',
                     'optional': True,
                     'value': v.dbkey,
-                    'options': trans.app.genomes.get_dbkeys(trans, chrom_info=True),
+                    'options': trans.app.genomes.get_dbkeys(trans_user, chrom_info=True),
                     'help': 'Parameter to associate your visualization with a database key.'
                 }, {
                     'name': 'annotation',
@@ -590,7 +591,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                 v.dbkey = v_dbkey
                 if v_annotation:
                     v_annotation = sanitize_html(v_annotation)
-                    self.add_item_annotation(trans.sa_session, trans.get_user(), v, v_annotation)
+                    self.add_item_annotation(trans.sa_session, trans_user, v, v_annotation)
                 trans.sa_session.add(v)
                 trans.sa_session.flush()
             return {'message': 'Attributes of \'%s\' successfully saved.' % v.title, 'status': 'success'}
