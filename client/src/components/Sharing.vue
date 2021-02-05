@@ -205,19 +205,10 @@ export default {
         },
         onImportable(importable) {
             if (importable) {
-                const alsoPublish = this.item.published;
-                this.setSharing("make_accessible_via_link").then(() => {
-                    if (alsoPublish) {
-                        this.setSharing("publish");
-                    } else {
-                        this.setSharing("unpublish");
-                    }
-                });
+                this.setSharing(`make_accessible_via_link-${this.item.published ? "publish" : "unpublish"}`);
             } else {
                 this.item.published = false;
-                this.setSharing("disable_link_access").then(() => {
-                    this.setSharing("unpublish");
-                });
+                this.setSharing("disable_link_access-unpublish");
             }
         },
         onPublish(published) {
@@ -251,7 +242,7 @@ export default {
                 })
                 .catch((error) => (this.errMsg = error.response.data.err_msg));
         },
-        async setSharing(action, user_id) {
+        setSharing(action, user_id) {
             const data = {
                 action: action,
                 user_id: user_id,
