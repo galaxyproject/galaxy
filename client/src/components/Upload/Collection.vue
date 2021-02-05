@@ -172,7 +172,7 @@ export default {
         this.initUploadbox({
             initUrl: (index) => {
                 if (!this.uploadUrl) {
-                   this.uploadUrl = this.getRequestUrl([this.collection.get(index)], this.history_id);
+                    this.uploadUrl = this.getRequestUrl([this.collection.get(index)], this.history_id);
                 }
                 return this.uploadUrl;
             },
