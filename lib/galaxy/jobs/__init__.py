@@ -2225,7 +2225,7 @@ class JobWrapper(HasResourceParameters):
     def change_ownership_for_run(self):
         job = self.get_job()
         external_chown_script = self.get_destination_configuration("external_chown_script", None)
-        if job.user is not None and external_chown_script is not None:
+        if job.user is not None and external_chown_script:
             ret = external_chown(self.working_directory, self.user_system_pwent,
                            external_chown_script, description="working directory")
             if not ret:
@@ -2234,7 +2234,7 @@ class JobWrapper(HasResourceParameters):
     def reclaim_ownership(self):
         job = self.get_job()
         external_chown_script = self.get_destination_configuration("external_chown_script", None)
-        if job.user is not None:
+        if job.user is not None and external_chown_script:
             external_chown(self.working_directory, self.galaxy_system_pwent,
                            external_chown_script, description="working directory")
 
