@@ -1,6 +1,6 @@
 <tool id="interactive_ml_tool_jupyter_notebook" tool_type="interactive" name="Interactive Machine Learning Jupyter Notebook" version="0.1">
     <requirements>
-        <container type="docker">docker.io/anupkumar/sample-docker-ml-jupyter</container>
+        <container type="docker">docker.io/anupkumar/sample-docker-ml-jupyter:latest</container>
     </requirements>
     <entry_points>
         <entry_point name="Jupyter Interactive Tool" requires_domain="True">
@@ -30,8 +30,8 @@
         export PATH=/home/jovyan/.local/bin:\$PATH &&
 
         #if $mode.mode_select == 'scratch':
-            ## copy default notebook
-            cp '$__tool_directory__/default_notebook.ipynb' ./ipython_galaxy_notebook.ipynb &&
+            ## copy default notebook ml
+            cp '$__tool_directory__/default_notebook_ml.ipynb' ./ipython_galaxy_notebook.ipynb &&
             jupyter trust ./ipython_galaxy_notebook.ipynb &&
             jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True &&
             cp ./ipython_galaxy_notebook.ipynb '$jupyter_notebook'
