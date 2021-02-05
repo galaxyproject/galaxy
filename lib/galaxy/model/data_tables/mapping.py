@@ -81,14 +81,13 @@ data_tables_model.DataTableField.table = Table(
     Column("data_table_column_id", Integer, ForeignKey("data_table_column.id"), index=True),
 )
 
-
 # Data tables
 mapper(data_tables_model.DataTable, data_tables_model.DataTable.table, properties={})
 mapper(data_tables_model.DataTableColumnAssociation, data_tables_model.DataTableColumnAssociation.table,
        properties=dict(data_table=relation(data_tables_model.DataTable),
                        data_table_column=relation(data_tables_model.DataTableColumn)
                        )
-)
+       )
 mapper(data_tables_model.DataTableColumn, data_tables_model.DataTableColumn.table, properties={})
 mapper(data_tables_model.DataTableRowAssociation, data_tables_model.DataTableRowAssociation.table, properties=dict(
     data_table=relation(data_tables_model.DataTable),

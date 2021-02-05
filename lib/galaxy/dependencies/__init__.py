@@ -166,12 +166,14 @@ class ConditionalDependencies:
             return False
 
     def check_psycopg2_binary(self):
-        return (self.config["database_connection"].startswith("postgres") or
-                self.config.get("data_table_connection", "").startswith("postgres"))
+        return (self.config["database_connection"].startswith("postgres")
+                or self.config.get("install_database_connection", "").startswith("postgres")
+                or self.config.get("data_table_connection", "").startswith("postgres"))
 
     def check_mysqlclient(self):
-        return (self.config["database_connection"].startswith("mysql") or
-                self.config.get("data_table_connection", "").startswith("mysql"))
+        return (self.config["database_connection"].startswith("mysql")
+                or self.config.get("install_database_connection", "").startswith("mysql")
+                or self.config.get("data_table_connection", "").startswith("mysql"))
 
     def check_drmaa(self):
         return ("galaxy.jobs.runners.drmaa:DRMAAJobRunner" in self.job_runners

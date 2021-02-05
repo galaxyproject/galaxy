@@ -1643,6 +1643,7 @@ CleanupEventImplicitlyConvertedDatasetAssociationAssociation_table = Table("clea
                                                                            Column("cleanup_event_id", Integer, ForeignKey("cleanup_event.id"), index=True, nullable=True),
                                                                            Column("icda_id", Integer, ForeignKey("implicitly_converted_dataset_association.id"), index=True))
 
+
 # With the tables defined we can define the mappers and setup the
 # relationships between the model objects.
 def simple_mapping(model, **kwds):
