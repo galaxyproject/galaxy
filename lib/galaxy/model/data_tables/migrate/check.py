@@ -31,7 +31,7 @@ def create_or_verify_database(url, engine_options=None, app=None):
     """
     """
     # Create engine and metadata
-    engine_options = engine_options or {}
+    engine_options = engine_options if engine_options or not url.startswith("sqlite") else {}
     if not database_exists(url):
         message = "Creating database for URI [%s]" % url
         log.info(message)
