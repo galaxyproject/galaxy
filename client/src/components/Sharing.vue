@@ -127,7 +127,7 @@ export default {
             errMsg: null,
             item: {
                 title: "title",
-                username_and_slug: "username_and_slug",
+                username_and_slug: "username/slug",
                 importable: false,
                 published: false,
                 users_shared_with: [],
@@ -205,16 +205,19 @@ export default {
         },
         onImportable(importable) {
             if (importable) {
-                this.setSharing("make_accessible_via_link");
-                if (this.item.published) {
-                    this.setSharing("publish");
-                } else {
-                    this.setSharing("unpublish");
-                }
+                const alsoPublish = this.item.published;
+                this.setSharing("make_accessible_via_link").then(() => {
+                    if (alsoPublish) {
+                        this.setSharing("publish");
+                    } else {
+                        this.setSharing("unpublish");
+                    }
+                });
             } else {
                 this.item.published = false;
-                this.setSharing("disable_link_access");
-                this.setSharing("unpublish");
+                this.setSharing("disable_link_access").then(() => {
+                    this.setSharing("unpublish");
+                });
             }
         },
         onPublish(published) {
@@ -248,18 +251,19 @@ export default {
                 })
                 .catch((error) => (this.errMsg = error.response.data.err_msg));
         },
-        setSharing(action, user_id) {
+        async setSharing(action, user_id) {
             const data = {
                 action: action,
                 user_id: user_id,
             };
-            axios
+            return axios
                 .post(`${getAppRoot()}api/${this.pluralNameLower}/${this.id}/sharing`, data)
                 .then((response) => {
                     if (response.data.skipped) {
                         this.errMsg = "Some of the items within this object were not published due to an error.";
                     }
                     this.item = response.data;
+                    this.ready = true;
                 })
                 .catch((error) => (this.errMsg = error.response.data.err_msg));
         },

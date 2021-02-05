@@ -18,7 +18,7 @@ export default {
     props: {
         slug: {
             type: String,
-            required: true
+            required: true,
         },
     },
     data() {
