@@ -127,6 +127,7 @@ const UploadModal = {
             extensionsSet: false,
             datatypesMapper: null,
             datatypesMapperReady: true,
+            URI_PREFIXES: ["http", "https", "ftp", "file", "gxfiles", "gximport", "gxuserimport", "gxftp"],
         };
     },
     created() {
@@ -138,7 +139,7 @@ const UploadModal = {
             onclick: function () {},
         });
 
-        // load extensions
+        // load extensions`
         UploadUtils.getUploadDatatypes(
             (listExtensions) => {
                 this.extensionsSet = true;
@@ -285,13 +286,21 @@ const UploadModal = {
             };
             for (var index in items) {
                 var it = items[index];
-                if (it.get("file_mode") != "new" || !it.get("url_paste").startsWith("http")) {
+                if (it.get("file_mode") != "new" || !this.itemIsURL(it)) {
                     data.files.push(it);
                 } else {
                     data.urls.push(it);
                 }
             }
             return data;
+        },
+        itemIsURL: function (item) {
+            for (var index in this.URI_PREFIXES) {
+                if (item.get("url_paste").startsWith(this.URI_PREFIXES[index])) {
+                    return true;
+                }
+            }
+            return false;
         },
         /**
          * Package API data from array of models

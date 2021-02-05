@@ -332,5 +332,9 @@ export default {
             const models = allHids.map((hid) => Galaxy.currHistoryPanel.collection.getByHid(hid));
             return models;
         },
+        getRequestUrl: function(items, history_id){
+            var data = this.app.toData(items, history_id);
+            return data.fetchRequest ? "/api/tools/fetch" : this.app.uploadPath;
+        }
     },
 };

@@ -169,8 +169,7 @@ export default {
         this.initUploadbox({
             initUrl: (index) => {
                 if (!this.uploadUrl) {
-                    var data = this.app.toData([this.collection.get(index)], this.history_id);
-                    this.uploadUrl = data.fetchRequest ? "/api/tools/fetch" : this.app.uploadPath;
+                   this.uploadUrl = this.getRequestUrl([this.collection.get(index)], this.history_id);
                 }
                 return this.uploadUrl;
             },
@@ -179,9 +178,7 @@ export default {
                 this._eventAnnounce(index, file);
             },
             initialize: (index) => {
-                var data = this.app.toData([this.collection.get(index)], this.history_id);
-                this.uploadUrl = data.fetchRequest ? "/api/tools/fetch" : this.app.uploadPath;
-                return data;
+                return this.app.toData([this.collection.get(index)], this.history_id);
             },
             progress: (index, percentage) => {
                 this._eventProgress(index, percentage);
