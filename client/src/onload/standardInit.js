@@ -44,7 +44,7 @@ export function standardInit(label = "Galaxy", appFactory = defaultAppFactory) {
     // functions even if they are registered super-late because combineLatest
     // will not remake a the existing Galaxy or config objects, it'll just run
     // the new batch of freshly registered init functions
-    combineLatest(config$, galaxy$, initializations$).subscribe(([config, galaxy, inits]) => {
+    combineLatest([config$, galaxy$, initializations$]).subscribe(([config, galaxy, inits]) => {
         console.group(`runInitializations`, label, serverPath());
         inits.forEach((fn) => fn(galaxy, config));
         clearInitQueue();
