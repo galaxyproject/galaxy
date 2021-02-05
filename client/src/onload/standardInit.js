@@ -45,7 +45,7 @@ export function standardInit(label = "Galaxy", appFactory = defaultAppFactory) {
     // will not remake a the existing Galaxy or config objects, it'll just run
     // the new batch of freshly registered init functions
     combineLatest(config$, galaxy$, initializations$).subscribe(([config, galaxy, inits]) => {
-        console.groupCollapsed(`runInitializations`, label, serverPath());
+        console.group(`runInitializations`, label, serverPath());
         inits.forEach((fn) => fn(galaxy, config));
         clearInitQueue();
         console.groupEnd();
