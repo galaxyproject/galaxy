@@ -25,8 +25,9 @@ export class Services {
             rethrowSimple(e);
         }
     }
-    async getSelectOptions(id, is_library_access, page, page_limit, query) {
-        const url = `${this.root}api/folders/${id}/permissions?scope=available&is_library_access=${is_library_access}&page_limit=${page_limit}&page=${page}`;
+    async getSelectOptions(id, is_library_access, page, page_limit, searchQuery) {
+        searchQuery = searchQuery ? `&q=${searchQuery}` : "";
+        const url = `${this.root}api/folders/${id}/permissions?scope=available&is_library_access=${is_library_access}&page_limit=${page_limit}&page=${page}${searchQuery}`;
         try {
             const response = await axios.get(url);
             return response.data;

@@ -1,5 +1,5 @@
 <template>
-    <div v-if="fetched_options.length > 0 && value">
+    <div v-if="options && value">
         <multiselect
             v-model="value"
             :options="fetched_options"
@@ -9,6 +9,8 @@
             label="name"
             track-by="id"
             @input="valueChanged"
+            @search-change="searchChanged"
+            :internal-search="false"
         >
             <template slot="afterList">
                 <div v-observe-visibility="reachedEndOfList" v-if="hasMorePages">
@@ -50,6 +52,7 @@ export default {
             value: undefined,
             page: 1,
             page_limit: 10,
+            searchValue: "",
             fetched_options: [],
         };
     },
@@ -57,7 +60,7 @@ export default {
         this.services = new Services({ root: this.root });
         // Avoid mutating a prop directly
         this.value = this.initial_value;
-        this.getSelectOptions(this.page);
+        this.getSelectOptions();
     },
     computed: {
         hasMorePages() {
@@ -65,19 +68,28 @@ export default {
         },
     },
     methods: {
-        getSelectOptions(page) {
-            this.services.getSelectOptions(this.folder_id, true, page, this.page_limit).then((response) => {
-                this.options = response;
-                this.fetched_options = this.fetched_options.concat(this.options.roles);
-            });
+        getSelectOptions(searchChanged = false) {
+            this.services
+                .getSelectOptions(this.folder_id, true, this.page, this.page_limit, this.searchValue)
+                .then((response) => {
+                    this.options = response;
+                    if (searchChanged) this.fetched_options = this.options.roles;
+                    else this.fetched_options = this.fetched_options.concat(this.options.roles);
+                });
         },
         reachedEndOfList(reached) {
             if (reached) {
-                this.getSelectOptions(this.page++);
+                this.page++;
+                this.getSelectOptions();
             }
         },
         valueChanged() {
             this.$emit("input", this.value, this.permission_type);
+        },
+        searchChanged(searchValue) {
+            this.page = 1;
+            this.searchValue = searchValue;
+            this.getSelectOptions(true);
         },
     },
 };

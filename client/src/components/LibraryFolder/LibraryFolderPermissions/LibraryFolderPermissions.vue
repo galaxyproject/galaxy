@@ -22,7 +22,7 @@
                 </div>
             </div>
             <hr class="my-4" />
-            <b-card border-variant="white">
+            <b-container class="bv-example-row">
                 <div class="dataset_table">
                     <h2>Folder permissions</h2>
                     <h4>
@@ -92,7 +92,7 @@
                         &nbsp;Save
                     </button>
                 </div>
-            </b-card>
+            </b-container>
         </div>
     </div>
 </template>
