@@ -171,6 +171,7 @@ DO_NOT_TEST = [
     'database_engine_option_pool_size',  # overridden for tests runnign on non-sqlite databases
     'database_template',  # default value set for tests
     'datatypes_config_file',  # broken
+    'data_table_connection',  # untestable; refactor config/__init__ to test
     'default_locale',  # broken
     'dependency_resolution',  # nested properties
     'disable_library_comptypes',  # broken: default overridden with empty string
