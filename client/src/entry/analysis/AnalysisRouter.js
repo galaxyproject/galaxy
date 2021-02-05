@@ -100,7 +100,7 @@ export const getAnalysisRouter = (Galaxy) =>
             "(/)datasets/error": "show_dataset_error",
             "(/)interactivetool_entry_points(/)list": "show_interactivetool_list",
             "(/)library/folders(/)(:folder_id)": "show_library_folder",
-            "(/)library/folders-permissions(/)(:folder_id)": "manage_library_folder",
+            "(/)library/folders/permissions(/)(:folder_id)": "manage_library_folder",
         },
 
         require_login: ["show_user", "show_user_form", "show_workflows", "show_cloud_auth", "show_external_ids"],
