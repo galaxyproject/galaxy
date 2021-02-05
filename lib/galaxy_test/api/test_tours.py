@@ -1,6 +1,9 @@
+import pytest
+
 from ._framework import ApiTestCase
 
 
+@pytest.mark.legacy_api
 class TourApiTestCase(ApiTestCase):
 
     def test_index(self):

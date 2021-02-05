@@ -171,8 +171,12 @@ Extra options:
  --external_master_key Master API key used to configure external tests.
  --external_user_key   User API used for external tests - not required if
                        external_master_key is specified.
-  --skip_flakey_fails  Skip flakey tests on error (sets
+ --skip_flakey_fails   Skip flakey tests on error (sets
                        GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR=1).
+ --legacy_api          Run tests marked as 'legacy_api'. Tests are run using
+                       uvicorn by default, which tests FastAPI endpoints.
+                       Setting GALAXY_TEST_USE_UVICORN=0 will run them with
+                       uwsgi, which tests Galaxy's legacy API.
 
 Environment Variables:
 
@@ -250,6 +254,8 @@ TOOL_SHED_TEST_TMP_DIR          Defaults to random /tmp directory - place for
                                 tool shed test server files to be placed.
 TOOL_SHED_TEST_OMIT_GALAXY      Do not launch a Galaxy server for tool shed
                                 testing.
+GALAXY_TEST_USE_UVICORN         Tests use uvicorn by default. Unset this option (set to 0)
+                                to use uwsgi instead.
 
 Unit Test Environment Variables
 
@@ -575,6 +581,10 @@ do
           # Don't run ./scripts/common_startup.sh (presumably it has already
           # been done, or you know what you're doing).
           skip_common_startup=1
+          shift
+          ;;
+      --legacy-api)
+          marker="legacy_api"
           shift
           ;;
       --)

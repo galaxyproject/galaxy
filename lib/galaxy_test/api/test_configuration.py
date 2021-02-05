@@ -1,3 +1,5 @@
+import pytest
+
 from galaxy_test.base.api_asserts import (
     assert_has_keys,
     assert_not_has_keys,
@@ -22,6 +24,7 @@ TEST_KEYS_FOR_ADMIN_ONLY = [
 ]
 
 
+@pytest.mark.legacy_api
 class ConfigurationApiTestCase(ApiTestCase):
 
     def test_whoami(self):
