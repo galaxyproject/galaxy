@@ -1445,12 +1445,10 @@ class ToolModule(WorkflowModule):
                     if not collection_type and tool_output.structure.collection_type_from_rules:
                         rule_param = tool_output.structure.collection_type_from_rules
                         if rule_param in self.state.inputs:
-                            rule_json_str = self.state.inputs[rule_param]
-                            if rule_json_str:  # initialized to None...
-                                rules = rule_json_str
-                                if rules:
-                                    rule_set = RuleSet(rules)
-                                    collection_type = rule_set.collection_type
+                            rules = self.state.inputs[rule_param]
+                            if rules:
+                                rule_set = RuleSet(rules)
+                                collection_type = rule_set.collection_type
                     extra_kwds["collection_type"] = collection_type
                     extra_kwds["collection_type_source"] = tool_output.structure.collection_type_source
                     formats = ['input']  # TODO: fix
