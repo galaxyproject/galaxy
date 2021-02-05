@@ -259,6 +259,7 @@ export default {
                     if (response.data.skipped) {
                         this.errMsg = "Some of the items within this object were not published due to an error.";
                     }
+                    this.item = response.data;
                 })
                 .catch((error) => (this.errMsg = error.response.data.err_msg));
         },
