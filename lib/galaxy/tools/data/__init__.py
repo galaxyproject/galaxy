@@ -23,7 +23,7 @@ import refgenconf
 import requests
 from sqlalchemy import case, cast, func, Integer, String
 
-from galaxy import model, util
+from galaxy import util
 from galaxy.model import data_tables as data_tables_model
 from galaxy.util import RW_R__R__
 from galaxy.util.dictifiable import Dictifiable
