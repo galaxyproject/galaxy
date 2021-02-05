@@ -71,6 +71,7 @@ class ExpectedValues:
         self._resolvers = {
             'amqp_internal_connection': self.get_expected_amqp_internal_connection,
             'database_connection': self.get_expected_database_connection,
+            'data_table_connection': self.get_expected_database_data_tables_connection,
             'disable_library_comptypes': [''],  # TODO: we can do better
             'ftp_upload_dir_template': self.get_expected_ftp_upload_dir_template,
             'mulled_channels': listify_strip,
@@ -209,6 +210,9 @@ class ExpectedValues:
 
     def get_expected_amqp_internal_connection(self, value):
         return f'sqlalchemy+sqlite:///{self._config.data_dir}/control.sqlite?isolation_level=IMMEDIATE'
+
+    def get_expected_database_data_tables_connection(self, value):
+        return f'sqlite:///{self._config.data_dir}/data_tables.sqlite?isolation_level=IMMEDIATE'
 
 
 def get_config_data():
