@@ -3,8 +3,8 @@
         id="tool-panel-upload-button"
         @click="showUploadDialog"
         v-b-tooltip.hover
-        aria-label="Download from URL or upload files from disk"
-        title="Download from URL or upload files from disk"
+        :aria-label="title | localize"
+        :title="title | localize"
         class="upload-button"
         size="sm"
     >
@@ -19,24 +19,26 @@
         </div>
         <span class="position-relative">
             <font-awesome-icon icon="upload" class="mr-1" />
-            <b>Upload Data</b>
+            <b v-localize>Upload Data</b>
         </span>
     </b-button>
 </template>
 
 <script>
 import { VBTooltip } from "bootstrap-vue";
-import { getGalaxyInstance } from "app";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faUpload } from "@fortawesome/free-solid-svg-icons";
+import { openUploadModal } from "./mount";
 library.add(faUpload);
 
 export default {
-    name: "UploadButton",
     components: { FontAwesomeIcon },
     directives: {
         "v-b-tooltip": VBTooltip,
+    },
+    props: {
+        title: { type: String, default: "Download from URL or upload files from disk" },
     },
     data() {
         return {
@@ -46,17 +48,22 @@ export default {
     },
     methods: {
         showUploadDialog(e) {
-            const Galaxy = getGalaxyInstance();
-            e.preventDefault();
-            Galaxy.upload.show();
+            openUploadModal();
+        },
+        setStatus(val) {
+            this.status = val;
+        },
+        setPercentage(val) {
+            this.percentage = Math.round(val);
         },
     },
     created() {
-        const Galaxy = getGalaxyInstance();
-        Galaxy.upload.model.on("change", () => {
-            this.status = Galaxy.upload.model.attributes.status;
-            this.percentage = Galaxy.upload.model.attributes.percentage;
-        });
+        this.eventHub.$on("upload:status", this.setStatus);
+        this.eventHub.$on("upload:percentage", this.setPercentage);
+    },
+    beforeDestroy() {
+        this.eventHub.$off("upload:status", this.setStatus);
+        this.eventHub.$off("upload:percentage", this.setPercentage);
     },
 };
 </script>

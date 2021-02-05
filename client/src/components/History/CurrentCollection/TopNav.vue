@@ -11,26 +11,12 @@
 
         <PriorityMenu :starting-height="27">
             <PriorityMenuItem
-                key="filter"
-                title="Filter History Content"
-                icon="fa fa-filter"
-                @click="$emit('update:showFilter', !showFilter)"
-                :pressed="showFilter"
-            />
-            <PriorityMenuItem
                 key="download-collection"
                 title="Download Collection"
                 icon="fas fa-file-download"
                 tag="a"
                 download
                 :href="downloadCollectionUrl"
-            />
-            <PriorityMenuItem
-                key="edit-tags"
-                title="Edit Collection Tags"
-                icon="fas fa-tags"
-                :pressed="showTags"
-                @click="$emit('update:showTags', !showTags)"
             />
             <PriorityMenuItem key="back-up" title="Back One" icon="fas fa-level-up-alt" @click="back" />
         </PriorityMenu>
@@ -49,8 +35,6 @@ export default {
     props: {
         history: { type: History, required: true },
         selectedCollections: { type: Array, required: true, validate: (val) => val.length > 0 },
-        showFilter: { type: Boolean, required: true },
-        showTags: { type: Boolean, required: true },
     },
     computed: {
         rootCollection() {

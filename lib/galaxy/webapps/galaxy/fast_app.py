@@ -29,6 +29,10 @@ api_tags_metadata = [
         "description": "Operations with [SPDX licenses](https://spdx.org/licenses/).",
     },
     {
+        "name": "tags",
+        "description": "Operations with tags.",
+    },
+    {
         "name": "tool data tables",
         "description": "Operations with tool [Data Tables](https://galaxyproject.org/admin/tools/data-tables/).",
     },

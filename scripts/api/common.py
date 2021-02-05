@@ -95,8 +95,12 @@ def display(api_key, url, return_formatted=True):
                     print('#%d: %s' % (n + 1, i.pop('url')))
                 if 'name' in i:
                     print('  name: %s' % i.pop('name'))
-                for k, v in i.items():
-                    print('  %s: %s' % (k, v))
+                try:
+                    for k, v in i.items():
+                        print('  %s: %s' % (k, v))
+                except AttributeError:
+                    for item in i:
+                        print(item)
         print('')
         print('%d element(s) in collection' % len(r))
     elif type(r) == dict:

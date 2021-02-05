@@ -36,13 +36,13 @@
             <span class="upload-footer-extension-info upload-icon-button fa fa-search" />
             <span class="upload-footer-title">Genome (set all):</span>
             <select2 container-class="upload-footer-genome" ref="footerGenome" v-model="genome" :enabled="!running">
-                <option v-for="(listGenome, index) in listGenomes" :key="index" :value="listGenome.id">{{
-                    listGenome.text
-                }}</option>
+                <option v-for="(listGenome, index) in listGenomes" :key="index" :value="listGenome.id">
+                    {{ listGenome.text }}
+                </option>
             </select2>
         </template>
         <template v-slot:buttons>
-            <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="app.dismiss()">
+            <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="$emit('dismiss')">
                 {{ btnCloseTitle }}
             </b-button>
             <b-button
@@ -268,7 +268,7 @@ export default {
             this.counterRunning = 0;
             this._updateStateForCounters();
             this._eventReset();
-            this.app.hide();
+            this.$emit("hide");
         },
 
         /** Start upload process */

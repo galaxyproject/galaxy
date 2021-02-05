@@ -1,10 +1,12 @@
 import { of, combineLatest } from "rxjs";
-import { map, switchMap, debounceTime, scan, catchError, distinctUntilChanged } from "rxjs/operators";
-import { tag } from "rxjs-spy/operators/tag";
+import { map, switchMap, debounceTime, scan, distinctUntilChanged } from "rxjs/operators";
 import { chunk } from "../../caching/operators/chunk";
 import { monitorHistoryContent } from "../../caching";
 import { SearchParams } from "../../model/SearchParams";
 import { processContentUpdate, newUpdateMap, buildContentResult, getKeyForUpdateMap } from "../aggregation";
+
+// disable debugging
+const tag = () => (src$) => src$;
 
 /**
  * Monitor history in the region of the cursor for the provided inputs
@@ -71,10 +73,5 @@ export const watchHistoryContents = (cfg = {}) => input$ => {
         tag('watchHistoryContents-contentWindow'),
     );
 
-    return contentWindow$.pipe(
-        catchError(err => {
-            console.warn("Error in watchHistoryContents", err);
-            throw err;
-        })
-    );
+    return contentWindow$;
 };
