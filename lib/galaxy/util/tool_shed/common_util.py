@@ -2,7 +2,6 @@ import errno
 import json
 import logging
 import os
-from collections import OrderedDict
 from urllib.parse import urljoin
 
 from routes import url_for
@@ -36,16 +35,16 @@ def check_for_missing_tools(app, tool_panel_configs, latest_tool_migration_scrip
                                                        'migrate', 'scripts',
                                                        '%04d_tools.xml' % latest_tool_migration_script_number))
     # Parse the XML and load the file attributes for later checking against the proprietary tool_panel_config.
-    migrated_tool_configs_dict = OrderedDict()
+    migrated_tool_configs_dict = {}
     tree, error_message = xml_util.parse_xml(tools_xml_file_path)
     if tree is None:
-        return False, OrderedDict()
+        return False, {}
     root = tree.getroot()
     tool_shed = root.get('name')
     tool_shed_url = get_tool_shed_url_from_tool_shed_registry(app, tool_shed)
     # The default behavior is that the tool shed is down.
     tool_shed_accessible = False
-    missing_tool_configs_dict = OrderedDict()
+    missing_tool_configs_dict = {}
     if tool_shed_url:
         for elem in root:
             if elem.tag == 'repository':
