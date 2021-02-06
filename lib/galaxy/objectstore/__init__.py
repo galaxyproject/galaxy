@@ -183,6 +183,9 @@ class ObjectStore(metaclass=abc.ABCMeta):
 
         To accommodate nested objectstores, obj is passed in so this metadata can
         be returned for the ConcreteObjectStore corresponding to the object.
+
+        If the dataset is in a new or discarded state and an object_store_id has not
+        yet been set, this may return ``None``.
         """
 
     @abc.abstractmethod
@@ -191,6 +194,9 @@ class ObjectStore(metaclass=abc.ABCMeta):
 
         To accommodate nested objectstores, obj is passed in so this metadata can
         be returned for the ConcreteObjectStore corresponding to the object.
+
+        If the dataset is in a new or discarded state and an object_store_id has not
+        yet been set, this may return ``None``.
         """
 
     @abc.abstractmethod
@@ -701,10 +707,10 @@ class NestedObjectStore(BaseObjectStore):
         return self._call_method('_get_object_url', obj, None, False, **kwargs)
 
     def _get_concrete_store_name(self, obj):
-        return self._call_method('_get_concrete_store_name', obj, None, True)
+        return self._call_method('_get_concrete_store_name', obj, None, False)
 
     def _get_concrete_store_description_markdown(self, obj):
-        return self._call_method('_get_concrete_store_description_markdown', obj, None, True)
+        return self._call_method('_get_concrete_store_description_markdown', obj, None, False)
 
     def _get_store_by(self, obj):
         return self._call_method('_get_store_by', obj, None, False)
