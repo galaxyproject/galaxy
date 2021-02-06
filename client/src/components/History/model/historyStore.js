@@ -1,113 +1,146 @@
 import Vue from "vue";
-import VuexPersistence from "vuex-persist";
-import { History } from "./History";
-import { getHistoriesForCurrentUser, getCurrentHistoryFromServer, setCurrentHistoryOnServer } from "./queries";
-// import { changeGalaxyHistory } from "../adapters/changeGalaxyHistory";
+import { sortByObjectProp } from "utils/sorting";
 
-const persist = new VuexPersistence();
-Vue.use(persist);
+import {
+    createNewHistory,
+    deleteHistoryById,
+    getHistoryList,
+    getHistoryById,
+    getCurrentHistoryFromServer,
+    setCurrentHistoryOnServer,
+    updateHistoryFields,
+    cloneHistory,
+    secureHistory,
+} from "./queries";
 
-// default state
 export const state = {
+    // owner of the histories in this store
+    // need this to track whether or not the right histories have been loaded
+    loadedForUser: null,
+    // selected history
     currentHistoryId: null,
-    histories: [],
+    // histories for current user
+    histories: {},
 };
 
 export const mutations = {
     setCurrentHistoryId(state, id) {
         state.currentHistoryId = id;
     },
-    setHistory(state, rawHistory) {
-        const history = new History(rawHistory);
-        const newHistories = new Map(state.histories);
-        state.histories = newHistories.set(history.id, new History(history));
+    setHistory(state, newHistory) {
+        Vue.set(state.histories, newHistory.id, newHistory);
     },
-    setHistories(state, list) {
-        const newHistories = list.reduce((histories, rawHistory) => {
-            const h = new History(rawHistory);
-            return histories.set(h.id, h);
-        }, new Map());
-        state.histories = newHistories;
+    deleteHistory(state, doomed) {
+        Vue.delete(state.histories, doomed.id);
+    },
+    setHistories(state, newHistories = []) {
+        const newMap = newHistories.reduce((acc, h) => ({ ...acc, [h.id]: h }), {});
+        Vue.set(state, "histories", newMap);
+    },
+    setLoadedForUser(state, userId) {
+        state.loadedForUser = userId;
     },
 };
 
 export const getters = {
-    histories: (state) => {
-        return Array.from(state.histories.values());
-    },
-
-    activeHistories: (state, getters) => {
-        const list = Array.from(getters.histories);
-        const okHistory = (h) => !h.deleted && !h.purged;
-        const activeHistories = list.filter(okHistory);
-        return activeHistories;
-    },
-
     currentHistoryId: (state, getters) => {
-        const activeHistories = getters.activeHistories;
-        const validIds = activeHistories.map((h) => h.id);
-
-        if (state.currentHistoryId && validIds.includes(state.currentHistoryId)) {
-            return state.currentHistoryId;
-        }
-        if (validIds.length) {
-            return validIds[0];
-        }
-        return null;
+        const { histories, currentHistoryId: id } = state;
+        return id in histories ? id : getters.firstHistoryId;
     },
-
+    firstHistoryId: (state, getters) => {
+        const { histories } = getters;
+        return histories.length ? histories[0].id : null;
+    },
     currentHistory: (state, getters) => {
-        const currentId = getters.currentHistoryId;
-        return getters.getHistoryById(currentId);
+        const { currentHistoryId: id } = getters;
+        return id ? getters.getHistoryById(id) : null;
     },
-
-    getHistoryById: (state) => (historyId) => {
-        const raw = state.histories.get(historyId);
-        const history = raw ? new History(raw) : null;
-        return history;
+    histories: (state) => {
+        return Object.values(state.histories).sort(sortByObjectProp("name"));
+    },
+    getHistoryById: (state) => (id) => {
+        return id in state.histories ? state.histories[id] : null;
     },
 };
 
+// Holds promises for in-flight loads
+const promises = {
+    load: null,
+    byId: new Map(),
+};
+
 export const actions = {
-    async $init({ dispatch }, { store }) {
-        store.watch(
-            (state) => state.user.currentUser,
-            async () => {
-                const myHistories = await getHistoriesForCurrentUser();
-                dispatch("storeHistories", myHistories);
-            },
-            { immediate: true }
-        );
-        dispatch("loadCurrentHistoryId");
-    },
-
-    async loadCurrentHistoryId({ dispatch }) {
-        const serverSaysWhat = await getCurrentHistoryFromServer();
-        if (serverSaysWhat && serverSaysWhat.id) {
-            dispatch("storeCurrentHistoryId", serverSaysWhat.id);
+    loadUserHistories({ dispatch, commit }) {
+        if (!promises.load) {
+            promises.load = Promise.all([getHistoryList(), getCurrentHistoryFromServer()])
+                .then(([list, history]) => {
+                    commit("setHistories", list);
+                    dispatch("selectHistory", history);
+                })
+                .catch((err) => {
+                    console.warn("loadUserHistories error", err);
+                })
+                .finally(() => {
+                    promises.load = null;
+                });
         }
     },
-
-    async storeCurrentHistoryId({ commit, getters }, id) {
-        if (id == getters.currentHistoryId) return;
-        const rawHistory = await setCurrentHistoryOnServer(id);
-        if (rawHistory && rawHistory.id) {
-            // tell legacy code that we changed the history,
-            // remove when the backbone history management is not required
-            // changeGalaxyHistory(rawHistory.id);
-            commit("setCurrentHistoryId", rawHistory.id);
+    loadHistoryById({ commit, getters }, id) {
+        if (!promises.byId.has(id)) {
+            const existing = getters.getHistoryById(id);
+            const lastUpdated = existing?.update_time || null;
+            const p = getHistoryById(id, lastUpdated)
+                .then((history) => {
+                    commit("setHistory", history);
+                })
+                .catch((err) => {
+                    console.warn("loadHistoryById error", id, err);
+                })
+                .finally(() => {
+                    promises.byId.delete(id);
+                });
+            promises.byId.set(id, p);
         }
     },
-
-    // boilerplate (tm): let's think of 3 names for functions
-    // that all do the same thing
-
-    async storeHistories({ commit }, list) {
-        commit("setHistories", list);
+    async setCurrentHistoryId({ dispatch }, id) {
+        const nextHistory = await setCurrentHistoryOnServer(id);
+        dispatch("selectHistory", nextHistory);
     },
-
-    async storeHistory({ commit }, history) {
+    async createNewHistory({ dispatch }) {
+        const newHistory = await createNewHistory();
+        dispatch("selectHistory", newHistory);
+    },
+    async updateHistory({ commit }, { id, ...updateFields }) {
+        // save new history params should be an object with an id property and any additional
+        // properties that are to be updated on the server. A full history object is not required
+        const saveResult = await updateHistoryFields(id, updateFields);
+        commit("setHistory", saveResult);
+    },
+    async deleteHistory({ dispatch, commit, getters }, { history, purge = false }) {
+        const deletedHistory = await deleteHistoryById(history.id, purge);
+        commit("deleteHistory", deletedHistory);
+        if (getters.histories.length == 0) {
+            await dispatch("createNewHistory");
+        }
+    },
+    async copyHistory({ dispatch }, { history, name, copyAll }) {
+        const newHistory = await cloneHistory(history, name, copyAll);
+        dispatch("selectHistory", newHistory);
+    },
+    async secureHistory({ commit }, history) {
+        const updatedHistory = await secureHistory(history);
+        commit("setHistory", updatedHistory);
+    },
+    setHistory({ commit }, history) {
         commit("setHistory", history);
+    },
+    selectHistory({ commit }, history) {
+        commit("setHistory", history);
+        commit("setCurrentHistoryId", history.id);
+    },
+    reset({ commit }) {
+        commit("setHistories", []);
+        commit("setCurrentHistoryId", null);
     },
 };
 
@@ -118,23 +151,3 @@ export const historyStore = {
     mutations,
     actions,
 };
-
-/**
- * Localstorage plugin
- *
- * Caches simple user settings like "currentHistory" in localStorage instead
- * of having the server do that. Hopefully doing this in the client
- * will mean we can move closer towards a completely stateless REST api.
- */
-
-export const historyPersist = new VuexPersistence({
-    key: "vuex-state-history",
-    modules: ["betaHistory"],
-    reducer: (state) => {
-        return {
-            history: {
-                currentHistoryId: state.betaHistory.currentHistoryId,
-            },
-        };
-    },
-});
