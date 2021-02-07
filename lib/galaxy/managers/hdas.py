@@ -225,16 +225,17 @@ class HDAManager(datasets.DatasetAssociationManager,
     def _set_permissions(self, trans, hda, role_ids_dict):
         # The user associated the DATASET_ACCESS permission on the dataset with 1 or more roles.  We
         # need to ensure that they did not associate roles that would cause accessibility problems.
+        security_agent = trans.app.security_agent
         permissions, in_roles, error, message = \
-            trans.app.security_agent.derive_roles_from_access(trans, hda.dataset.id, 'root', **role_ids_dict)
+            security_agent.derive_roles_from_access(trans, hda.dataset.id, 'root', **role_ids_dict)
         if error:
             # Keep the original role associations for the DATASET_ACCESS permission on the dataset.
-            access_action = trans.app.security_agent.get_action(trans.app.security_agent.permitted_actions.DATASET_ACCESS.action)
-            permissions[access_action] = hda.dataset.get_access_roles(trans)
+            access_action = security_agent.get_action(security_agent.permitted_actions.DATASET_ACCESS.action)
+            permissions[access_action] = hda.dataset.get_access_roles(security_agent)
             trans.sa_session.refresh(hda.dataset)
             raise exceptions.RequestParameterInvalidException(message)
         else:
-            error = trans.app.security_agent.set_all_dataset_permissions(hda.dataset, permissions)
+            error = security_agent.set_all_dataset_permissions(hda.dataset, permissions)
             trans.sa_session.refresh(hda.dataset)
             if error:
                 raise exceptions.RequestParameterInvalidException(error)
@@ -318,48 +319,95 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             'state', 'deleted', 'visible'
         ])
 
+        # fields for new beta web client, there is no summary/detailed split any more
+        self.add_view('betawebclient', [
+            # common to hdca
+            'create_time',
+            'deleted',
+            'hid',
+            'history_content_type',
+            'history_id',
+            'id',
+            'name',
+            'tags',
+            'type',
+            'type_id',
+            'update_time',
+            'url',
+            'visible',
+            # dataset only
+            'accessible',
+            'api_type',
+            'annotation',
+            'created_from_basename',
+            'creating_job',
+            'dataset_id',
+            'data_type',
+            'display_apps',
+            'display_types',
+            'download_url',
+            'extension',
+            'file_ext',
+            'file_name',
+            'file_size',
+            'genome_build',
+            'hda_ldda',
+            'meta_files',
+            'misc_blurb',
+            'misc_info',
+            'model_class',
+            'peek',
+            'purged',
+            'rerunnable',
+            'resubmitted',
+            'state',
+            'uuid',
+            'validated_state',
+            'validated_state_message',
+        ])
+
     def add_serializers(self):
         super().add_serializers()
         taggable.TaggableSerializerMixin.add_serializers(self)
         annotatable.AnnotatableSerializerMixin.add_serializers(self)
 
         self.serializers.update({
-            'model_class'   : lambda *a, **c: 'HistoryDatasetAssociation',
+            'model_class': lambda *a, **c: 'HistoryDatasetAssociation',
             'history_content_type': lambda *a, **c: 'dataset',
-            'hda_ldda'      : lambda *a, **c: 'hda',
-            'type_id'       : self.serialize_type_id,
+            'hda_ldda': lambda *a, **c: 'hda',
+            'type_id': self.serialize_type_id,
 
-            'history_id'    : self.serialize_id,
+            'history_id': self.serialize_id,
 
             # remapped
-            'misc_info'     : self._remap_from('info'),
-            'misc_blurb'    : self._remap_from('blurb'),
-            'file_ext'      : self._remap_from('extension'),
-            'file_path'     : self._remap_from('file_name'),
-            'resubmitted'   : lambda i, k, **c: self.hda_manager.has_been_resubmitted(i),
-            'display_apps'  : self.serialize_display_apps,
-            'display_types' : self.serialize_old_display_applications,
+            'misc_info': self._remap_from('info'),
+            'misc_blurb': self._remap_from('blurb'),
+            'file_ext': self._remap_from('extension'),
+            'file_path': self._remap_from('file_name'),
+            'resubmitted': lambda i, k, **c: self.hda_manager.has_been_resubmitted(i),
+            'display_apps': self.serialize_display_apps,
+            'display_types': self.serialize_old_display_applications,
             'visualizations': self.serialize_visualization_links,
 
             # 'url'   : url_for( 'history_content_typed', history_id=encoded_history_id, id=encoded_id, type="dataset" ),
             # TODO: this intermittently causes a routes.GenerationException - temp use the legacy route to prevent this
             #   see also: https://trello.com/c/5d6j4X5y
             #   see also: https://sentry.galaxyproject.org/galaxy/galaxy-main/group/20769/events/9352883/
-            'url'           : lambda i, k, **c: self.url_for('history_content',
-                                                             history_id=self.app.security.encode_id(i.history_id),
-                                                             id=self.app.security.encode_id(i.id)),
-            'urls'          : self.serialize_urls,
+            'url': lambda i, k, **c: self.url_for('history_content',
+                                                  history_id=self.app.security.encode_id(i.history_id),
+                                                  id=self.app.security.encode_id(i.id)),
+            'urls': self.serialize_urls,
 
             # TODO: backwards compat: need to go away
-            'download_url'  : lambda i, k, **c: self.url_for('history_contents_display',
-                                                             history_id=self.app.security.encode_id(i.history.id),
-                                                             history_content_id=self.app.security.encode_id(i.id)),
-            'parent_id'     : self.serialize_id,
+            'download_url': lambda i, k, **c: self.url_for('history_contents_display',
+                                                           history_id=self.app.security.encode_id(i.history.id),
+                                                           history_content_id=self.app.security.encode_id(i.id)),
+            'parent_id': self.serialize_id,
             # TODO: to DatasetAssociationSerializer
-            'accessible'    : lambda i, k, user=None, **c: self.manager.is_accessible(i, user, **c),
-            'api_type'      : lambda *a, **c: 'file',
-            'type'          : lambda *a, **c: 'file',
-            'created_from_basename' : lambda i, k, **c: i.created_from_basename,
+            'accessible': lambda i, k, user=None, **c: self.manager.is_accessible(i, user, **c),
+            'api_type': lambda *a, **c: 'file',
+            'type': lambda *a, **c: 'file',
+            'created_from_basename': lambda i, k, **c: i.created_from_basename,
         })
 
     def serialize(self, hda, keys, user=None, **context):
@@ -434,18 +482,18 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
         url_for = self.url_for
         encoded_id = self.app.security.encode_id(hda.id)
         urls = {
-            'purge'         : url_for(controller='dataset', action='purge_async', dataset_id=encoded_id),
-            'display'       : url_for(controller='dataset', action='display', dataset_id=encoded_id, preview=True),
-            'edit'          : url_for(controller='dataset', action='edit', dataset_id=encoded_id),
-            'download'      : url_for(controller='dataset', action='display',
-                                      dataset_id=encoded_id, to_ext=hda.extension),
-            'report_error'  : url_for(controller='dataset', action='errors', id=encoded_id),
-            'rerun'         : url_for(controller='tool_runner', action='rerun', id=encoded_id),
-            'show_params'   : url_for(controller='dataset', action='show_params', dataset_id=encoded_id),
-            'visualization' : url_for(controller='visualization', action='index',
-                                      id=encoded_id, model='HistoryDatasetAssociation'),
-            'meta_download' : url_for(controller='dataset', action='get_metadata_file',
-                                      hda_id=encoded_id, metadata_name=''),
+            'purge': url_for(controller='dataset', action='purge_async', dataset_id=encoded_id),
+            'display': url_for(controller='dataset', action='display', dataset_id=encoded_id, preview=True),
+            'edit': url_for(controller='dataset', action='edit', dataset_id=encoded_id),
+            'download': url_for(controller='dataset', action='display',
+                                dataset_id=encoded_id, to_ext=hda.extension),
+            'report_error': url_for(controller='dataset', action='errors', id=encoded_id),
+            'rerun': url_for(controller='tool_runner', action='rerun', id=encoded_id),
+            'show_params': url_for(controller='dataset', action='show_params', dataset_id=encoded_id),
+            'visualization': url_for(controller='visualization', action='index',
+                                     id=encoded_id, model='HistoryDatasetAssociation'),
+            'meta_download': url_for(controller='dataset', action='get_metadata_file',
+                                     hda_id=encoded_id, metadata_name=''),
         }
         return urls
 
@@ -468,11 +516,11 @@ class HDADeserializer(datasets.DatasetAssociationDeserializer,
         annotatable.AnnotatableDeserializerMixin.add_deserializers(self)
 
         self.deserializers.update({
-            'visible'       : self.deserialize_bool,
+            'visible': self.deserialize_bool,
             # remapped
-            'genome_build'  : lambda i, k, v, **c: self.deserialize_genome_build(i, 'dbkey', v),
-            'misc_info'     : lambda i, k, v, **c: self.deserialize_basestring(i, 'info', v,
-                                                                               convert_none_to_empty=True),
+            'genome_build': lambda i, k, v, **c: self.deserialize_genome_build(i, 'dbkey', v),
+            'misc_info': lambda i, k, v, **c: self.deserialize_basestring(i, 'info', v,
+                                                                          convert_none_to_empty=True),
         })
         self.deserializable_keyset.update(self.deserializers.keys())
 

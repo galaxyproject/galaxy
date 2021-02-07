@@ -297,7 +297,7 @@ class DataManager:
                 data_table_remove_values = [data_table_remove_values] if data_table_remove_values else []
             for data_table_row in data_table_values:
                 data_table_value = dict(**data_table_row)  # keep original values here
-                for name, value in data_table_row.items():  # FIXME: need to loop through here based upon order listed in data_manager config
+                for name in data_table_row.keys():  # FIXME: need to loop through here based upon order listed in data_manager config
                     if name in output_ref_values:
                         self.process_move(data_table_name, name, output_ref_values[name].extra_files_path, **data_table_value)
                         data_table_value[name] = self.process_value_translation(data_table_name, name, **data_table_value)

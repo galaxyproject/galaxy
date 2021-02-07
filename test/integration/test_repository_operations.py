@@ -6,7 +6,8 @@ from galaxy_test.driver import integration_util
 from tool_shed.util import hg_util
 from .uses_shed import UsesShed
 
-REPO = namedtuple('Repository', 'name owner changeset')(
+REPO_TYPE = namedtuple('Repository', 'name owner changeset')
+REPO = REPO_TYPE(
     'collection_column_join',
     'iuc',
     'dfde09461b1e',  # revision 2, a known installable revision

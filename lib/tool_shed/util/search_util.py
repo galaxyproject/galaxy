@@ -38,13 +38,13 @@ def in_tool_dict(tool_dict, exact_matches_checked, tool_id=None, tool_name=None,
         tool_dict_tool_version = tool_dict['version'].lower()
         tool_dict_tool_name = tool_dict['name'].lower()
         tool_dict_tool_id = tool_dict['id'].lower()
-        found = (tool_version == tool_dict_tool_version and
-                 tool_name == tool_dict_tool_name and
-                 tool_id == tool_dict_tool_id) or \
-                (not exact_matches_checked and
-                 tool_dict_tool_version.find(tool_version) >= 0 and
-                 tool_dict_tool_name.find(tool_name) >= 0 and
-                 tool_dict_tool_id.find(tool_id) >= 0)
+        found = (tool_version == tool_dict_tool_version
+                 and tool_name == tool_dict_tool_name
+                 and tool_id == tool_dict_tool_id) or \
+                (not exact_matches_checked
+                 and tool_dict_tool_version.find(tool_version) >= 0
+                 and tool_dict_tool_name.find(tool_name) >= 0
+                 and tool_dict_tool_id.find(tool_id) >= 0)
     return found
 
 
@@ -57,10 +57,10 @@ def in_workflow_dict(workflow_dict, exact_matches_checked, workflow_name):
 def make_same_length(list1, list2):
     # If either list is 1 item, we'll append to it until its length is the same as the other.
     if len(list1) == 1:
-        for i in range(1, len(list2)):
+        for _ in range(1, len(list2)):
             list1.append(list1[0])
     elif len(list2) == 1:
-        for i in range(1, len(list1)):
+        for _ in range(1, len(list1)):
             list2.append(list2[0])
     return list1, list2
 

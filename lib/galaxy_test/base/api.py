@@ -11,7 +11,7 @@ from .api_asserts import (
 )
 from .api_util import (
     ADMIN_TEST_USER,
-    get_master_api_key,
+    get_admin_api_key,
     get_user_api_key,
     OTHER_USER,
     TEST_USER,
@@ -42,7 +42,7 @@ class UsesApiTestCaseMixin:
 
     def _setup_interactor(self):
         self.user_api_key = get_user_api_key()
-        self.master_api_key = get_master_api_key()
+        self.master_api_key = get_admin_api_key()
         self.galaxy_interactor = self._get_interactor()
 
     def _get_interactor(self, api_key=None):
@@ -60,10 +60,13 @@ class UsesApiTestCaseMixin:
 
     @contextmanager
     def _different_user(self, email=OTHER_USER):
-        """ Use in test cases to switch get/post operations to act as new user,
+        """ Use in test cases to switch get/post operations to act as new user
 
-            with self._different_user( "other_user@bx.psu.edu" ):
-                self._get( "histories" )  # Gets other_user@bx.psu.edu histories.
+        ..code-block:: python
+
+            with self._different_user("other_user@bx.psu.edu"):
+                self._get("histories")  # Gets other_user@bx.psu.edu histories.
+
         """
         original_api_key = self.user_api_key
         original_interactor_key = self.galaxy_interactor.api_key

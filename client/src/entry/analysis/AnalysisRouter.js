@@ -32,6 +32,7 @@ import InteractiveTools from "components/InteractiveTools/InteractiveTools.vue";
 import LibraryFolder from "components/LibraryFolder/LibraryFolder.vue";
 import WorkflowList from "components/Workflow/WorkflowList.vue";
 import HistoryImport from "components/HistoryImport.vue";
+import { HistoryExport } from "components/HistoryExport/index";
 import HistoryView from "components/HistoryView.vue";
 import WorkflowInvocationReport from "components/Workflow/InvocationReport.vue";
 import WorkflowRun from "components/Workflow/Run/WorkflowRun.vue";
@@ -47,6 +48,7 @@ import Citations from "components/Citation/Citations.vue";
 import DisplayStructure from "components/DisplayStructured.vue";
 import { CloudAuth } from "components/User/CloudAuth";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
+import Confirmation from "components/login/Confirmation.vue";
 import Vue from "vue";
 import store from "store";
 
@@ -56,6 +58,7 @@ export const getAnalysisRouter = (Galaxy) =>
         routes: {
             "(/)(#)(_=_)": "home",
             "(/)root*": "home",
+            "(/)login/confirm": "show_new_user_confirmation",
             "(/)tools/view": "show_tools_view",
             "(/)tools/json": "show_tools_json",
             "(/)tours(/)(:tour_id)": "show_tours",
@@ -85,6 +88,7 @@ export const getAnalysisRouter = (Galaxy) =>
             "(/)histories(/)rename(/)": "show_histories_rename",
             "(/)histories(/)sharing(/)": "show_histories_sharing",
             "(/)histories(/)import(/)": "show_histories_import",
+            "(/)histories(/)(:history_id)(/)export(/)": "show_history_export",
             "(/)histories(/)permissions(/)": "show_histories_permissions",
             "(/)histories/view": "show_history_view",
             "(/)histories/show_structure": "show_history_structure",
@@ -120,6 +124,10 @@ export const getAnalysisRouter = (Galaxy) =>
             } else {
                 this.page.display(new Tours.ToursView());
             }
+        },
+
+        show_new_user_confirmation: function () {
+            this._display_vue_helper(Confirmation);
         },
 
         show_user: function () {
@@ -245,6 +253,12 @@ export const getAnalysisRouter = (Galaxy) =>
             this._display_vue_helper(HistoryImport);
         },
 
+        show_history_export: function (history_id) {
+            this._display_vue_helper(HistoryExport, {
+                historyId: history_id,
+            });
+        },
+
         show_tools_view: function () {
             this.page.toolPanel?.component.hide();
             this.page.panels.right.hide();
@@ -327,6 +341,9 @@ export const getAnalysisRouter = (Galaxy) =>
                     url: "workflow/create",
                     redirect: "workflow/editor",
                     active_tab: "workflow",
+                    submit_title: "Create",
+                    submit_icon: "fa-check",
+                    cancel_redirect: "workflows/list",
                 })
             );
         },

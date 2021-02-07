@@ -6,7 +6,6 @@ from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     LibraryPopulator,
-    TestsDatasets,
 )
 from ._framework import ApiTestCase
 
@@ -14,7 +13,7 @@ FILE_URL = 'https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data
 FILE_MD5 = "37b59762b59fff860460522d271bc111"
 
 
-class LibrariesApiTestCase(ApiTestCase, TestsDatasets):
+class LibrariesApiTestCase(ApiTestCase):
 
     def setUp(self):
         super().setUp()
@@ -229,7 +228,7 @@ class LibrariesApiTestCase(ApiTestCase, TestsDatasets):
         dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
         assert dataset["file_size"] == 61, dataset
 
-    @unittest.skip  # reference URLs changed, checksums now invalid.
+    @unittest.skip("reference URLs changed, checksums now invalid.")
     def test_fetch_bagit_archive_to_folder(self):
         history_id, library, destination = self._setup_fetch_to_folder("bagit_archive")
         example_bag_path = self.test_data_resolver.get_filename("example-bag.zip")

@@ -4,7 +4,7 @@ from tempfile import NamedTemporaryFile
 from unittest import mock
 
 from galaxy.tool_util.verify.script import (
-    _arg_parser,
+    arg_parser,
     build_case_references,
     Results,
     test_tools as run,
@@ -16,7 +16,7 @@ NEW_HISTORY = object()
 
 
 def test_arg_parse():
-    parser = _arg_parser()
+    parser = arg_parser()
 
     # defaults
     args = parser.parse_args([])
@@ -41,6 +41,18 @@ def test_arg_parse():
     assert args.page_size == 5
     assert args.page_number == 40
     assert args.parallel_tests == 3
+    assert args.test_data is None
+
+    args = parser.parse_args(["--test-data", "/foo/bar", "--test-data", "cow"])
+    assert len(args.test_data) == 2
+    assert args.test_data[0] == "/foo/bar"
+    assert args.test_data[1] == "cow"
+
+    args = parser.parse_args(["--skip-previously-successful"])
+    assert args.skip == "successful"
+
+    args = parser.parse_args(["--skip-previously-executed"])
+    assert args.skip == "executed"
 
 
 def test_test_tools():
@@ -255,7 +267,7 @@ class MockGalaxyInteractor:
         self.history_deleted = False
         self.history_created = False
 
-    def new_history(self, history_name=""):
+    def new_history(self, history_name="", publish_history=False):
         self.history_created = True
         return NEW_HISTORY
 
@@ -282,7 +294,7 @@ class MockGalaxyInteractor:
                 continue
 
             count = version_defs['count']
-            for i in range(count):
+            for _ in range(count):
                 test_def = {
                     'tool_id': tool_id,
                     'tool_version': this_tool_version or '0.1.1-default',

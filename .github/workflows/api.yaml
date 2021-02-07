@@ -36,5 +36,5 @@ jobs:
       - uses: actions/upload-artifact@v2
         if: failure()
         with:
-          name: API test results
+          name: API test results (${{ matrix.python-version }})
           path: 'galaxy root/run_api_tests.html'

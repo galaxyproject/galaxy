@@ -107,8 +107,8 @@ class SDF(GenericMolFile):
             if idx < 4:
                 continue
             elif idx == 4:
-                if len(line) != 39 or not(line.endswith(' V2000') or
-                        line.endswith(' V3000')):
+                if len(line) != 39 or not(line.endswith(' V2000')
+                        or line.endswith(' V3000')):
                     return False
             elif not m_end_found:
                 if line == 'M  END':
@@ -125,6 +125,7 @@ class SDF(GenericMolFile):
         """
         dataset.metadata.number_of_molecules = count_special_lines(r"^\$\$\$\$$", dataset.file_name)
 
+    @classmethod
     def split(cls, input_datasets, subdir_generator_function, split_params):
         """
         Split the input files by molecule records.
@@ -172,7 +173,6 @@ class SDF(GenericMolFile):
         except Exception as e:
             log.error('Unable to split files: %s', unicodify(e))
             raise
-    split = classmethod(split)
 
 
 @build_sniff_from_prefix
@@ -208,6 +208,7 @@ class MOL2(GenericMolFile):
         """
         dataset.metadata.number_of_molecules = count_special_lines("@<TRIPOS>MOLECULE", dataset.file_name)
 
+    @classmethod
     def split(cls, input_datasets, subdir_generator_function, split_params):
         """
         Split the input files by molecule records.
@@ -259,7 +260,6 @@ class MOL2(GenericMolFile):
         except Exception as e:
             log.error('Unable to split files: %s', unicodify(e))
             raise
-    split = classmethod(split)
 
 
 @build_sniff_from_prefix
@@ -293,6 +293,7 @@ class FPS(GenericMolFile):
         """
         dataset.metadata.number_of_molecules = count_special_lines('^#', dataset.file_name, invert=True)
 
+    @classmethod
     def split(cls, input_datasets, subdir_generator_function, split_params):
         """
         Split the input files by fingerprint records.
@@ -338,8 +339,8 @@ class FPS(GenericMolFile):
         except Exception as e:
             log.error('Unable to split files: %s', unicodify(e))
             raise
-    split = classmethod(split)
 
+    @staticmethod
     def merge(split_files, output_file):
         """
         Merging fps files requires merging the header manually.
@@ -363,7 +364,6 @@ class FPS(GenericMolFile):
                             # line is no header and not a comment, we assume the first header is written to out and we set 'first' to False
                             first = False
                             out.write(line)
-    merge = staticmethod(merge)
 
 
 class OBFS(Binary):
@@ -846,6 +846,7 @@ class CML(GenericXml):
 
         return True
 
+    @classmethod
     def split(cls, input_datasets, subdir_generator_function, split_params):
         """
         Split the input files by molecule records.
@@ -902,8 +903,8 @@ class CML(GenericXml):
         except Exception as e:
             log.error('Unable to split files: %s', unicodify(e))
             raise
-    split = classmethod(split)
 
+    @staticmethod
     def merge(split_files, output_file):
         """
         Merging CML files.
@@ -938,4 +939,3 @@ class CML(GenericXml):
                         if molecule_found:
                             out.write(line)
             out.write("</cml>\n")
-    merge = staticmethod(merge)

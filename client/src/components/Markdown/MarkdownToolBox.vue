@@ -20,13 +20,19 @@
                 />
                 <tool-section v-else :category="workflowSection" @onClick="onClick" :expanded="true" />
                 <tool-section :category="otherSection" @onClick="onClick" :expanded="true" />
-                <tool-section v-if="hasVisualizations" :category="visualizationSection" @onClick="onClick" />
+                <tool-section
+                    v-if="hasVisualizations"
+                    :category="visualizationSection"
+                    @onClick="onClick"
+                    :expanded="true"
+                />
             </div>
         </div>
         <MarkdownDialog
             v-if="selectedShow"
             :argument-type="selectedType"
             :argument-name="selectedArgumentName"
+            :argument-payload="selectedPayload"
             :labels="selectedLabels"
             :use-labels="isWorkflow"
             @onInsert="onInsert"
@@ -63,6 +69,7 @@ export default {
             selectedType: null,
             selectedLabels: null,
             selectedShow: false,
+            visualizationIndex: {},
             error: null,
             historySection: {
                 title: "History",
@@ -272,6 +279,9 @@ export default {
                 case "onInvocationId":
                     this.onInvocationId(item.id);
                     break;
+                case "onVisualizationId":
+                    this.onVisualizationId(item.id);
+                    break;
                 default:
                     this.onNoParameter(item.id);
             }
@@ -285,6 +295,13 @@ export default {
         },
         onNoParameter(argumentName) {
             this.onInsert(`${argumentName}()`);
+        },
+        onVisualizationId(argumentName) {
+            this.selectedArgumentName = argumentName;
+            this.selectedType = "visualization_id";
+            this.selectedPayload = this.visualizationIndex[argumentName];
+            this.selectedLabels = this.getOutputs();
+            this.selectedShow = true;
         },
         onHistoryId(argumentName) {
             this.selectedArgumentName = argumentName;
@@ -320,16 +337,20 @@ export default {
         },
         async getVisualizations() {
             axios
-                .get(`${getAppRoot()}api/plugins`)
-                .then((response) => {
-                    this.visualizationSection.elems = response.data.map((x) => {
+                .get(`${getAppRoot()}api/plugins?embeddable=True`)
+                .then(({ data }) => {
+                    this.visualizationSection.elems = data.map((x) => {
                         return {
-                            id: `visualization(id=${x.name})`,
+                            id: x.name,
                             name: x.html,
                             description: x.description,
                             logo: x.logo ? `${getAppRoot()}${x.logo}` : null,
-                            emitter: "onHistoryId",
+                            emitter: "onVisualizationId",
                         };
+                    });
+                    this.visualizationIndex = {};
+                    data.forEach((element) => {
+                        this.visualizationIndex[element.name] = element;
                     });
                 })
                 .catch((e) => {

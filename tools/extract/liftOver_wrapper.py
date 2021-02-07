@@ -25,16 +25,12 @@ def safe_bed_file(infile):
     https://lists.soe.ucsc.edu/pipermail/genome/2007-May/013561.html
     """
     fix_pat = re.compile("^(track|browser)")
-    (fd, fname) = tempfile.mkstemp()
-    in_handle = open(infile)
-    out_handle = open(fname, "w")
-    for line in in_handle:
-        if fix_pat.match(line):
-            line = "#" + line
-        out_handle.write(line)
-    in_handle.close()
-    out_handle.close()
-    return fname
+    with tempfile.NamedTemporaryFile(mode='w', delete=False) as out_handle, open(infile, 'w') as in_handle:
+        for line in in_handle:
+            if fix_pat.match(line):
+                line = "#" + line
+            out_handle.write(line)
+    return out_handle.name
 
 
 if len(sys.argv) < 9:

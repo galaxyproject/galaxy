@@ -161,7 +161,7 @@ class MockJobWrapper:
     def wait_for_external_id(self):
         """Test method for waiting until an external id has been registered."""
         external_id = None
-        for i in range(50):
+        for _ in range(50):
             external_id = self.job.job_runner_external_id
             if external_id:
                 break

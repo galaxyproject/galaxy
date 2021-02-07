@@ -40,7 +40,7 @@ try:
     import grp
 except ImportError:
     # For Pulsar on Windows (which does not use the function that uses grp)
-    grp = None
+    grp = None  # type: ignore
 from boltons.iterutils import (
     default_enter,
     remap,
@@ -50,7 +50,7 @@ try:
     from lxml import etree
 except ImportError:
     LXML_AVAILABLE = False
-    import xml.etree.ElementTree as etree
+    import xml.etree.ElementTree as etree  # type: ignore
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
@@ -159,13 +159,13 @@ def directory_hash_id(id):
     ['1', '3', '5']
     """
     s = str(id)
-    l = len(s)
+    len_s = len(s)
     # Shortcut -- ids 0-999 go under ../000/
-    if l < 4:
+    if len_s < 4:
         return ["000"]
     if not is_uuid(s):
         # Pad with zeros until a multiple of three
-        padded = ((3 - len(s) % 3) * "0") + s
+        padded = ((3 - len_s % 3) * "0") + s
         # Drop the last three digits -- 1000 files per directory
         padded = padded[:-3]
         # Break into chunks of three
@@ -1041,8 +1041,9 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', strip_null=Fals
         if not isinstance(value, str):
             value = str(value, encoding, error)
     except Exception as e:
-        msg = "Value '{}' could not be coerced to Unicode: {}('{}')".format(value, type(e).__name__, e)
-        raise Exception(msg)
+        msg = "Value '{}' could not be coerced to Unicode: {}('{}')".format(repr(value), type(e).__name__, e)
+        log.exception(msg)
+        raise
     if strip_null:
         return value.replace('\0', '')
     return value
@@ -1166,59 +1167,6 @@ def compare_urls(url1, url2, compare_scheme=True, compare_hostname=True, compare
     if compare_path and url1.path and url2.path and url1.path != url2.path:
         return False
     return True
-
-
-def read_dbnames(filename):
-    """ Read build names from file """
-    db_names = []
-    try:
-        ucsc_builds = {}
-        man_builds = []  # assume these are integers
-        name_to_db_base = {}
-        if filename is None:
-            # Should only be happening with the galaxy.tools.parameters.basic:GenomeBuildParameter docstring unit test
-            filename = os.path.join('tool-data', 'shared', 'ucsc', 'builds.txt.sample')
-        for line in open(filename):
-            try:
-                if line[0:1] == "#":
-                    continue
-                fields = line.replace("\r", "").replace("\n", "").split("\t")
-                # Special case of unspecified build is at top of list
-                if fields[0] == "?":
-                    db_names.insert(0, (fields[0], fields[1]))
-                    continue
-                try:  # manual build (i.e. microbes)
-                    int(fields[0])
-                    man_builds.append((fields[1], fields[0]))
-                except Exception:  # UCSC build
-                    db_base = fields[0].rstrip('0123456789')
-                    if db_base not in ucsc_builds:
-                        ucsc_builds[db_base] = []
-                        name_to_db_base[fields[1]] = db_base
-                    # we want to sort within a species numerically by revision number
-                    build_rev = re.compile(r'\d+$')
-                    try:
-                        build_rev = int(build_rev.findall(fields[0])[0])
-                    except Exception:
-                        build_rev = 0
-                    ucsc_builds[db_base].append((build_rev, fields[0], fields[1]))
-            except Exception:
-                continue
-        sort_names = sorted(name_to_db_base.keys())
-        for name in sort_names:
-            db_base = name_to_db_base[name]
-            ucsc_builds[db_base].sort()
-            ucsc_builds[db_base].reverse()
-            ucsc_builds[db_base] = [(build, name) for _, build, name in ucsc_builds[db_base]]
-            db_names = list(db_names + ucsc_builds[db_base])
-        if len(db_names) > 1 and len(man_builds) > 0:
-            db_names.append((db_names.default_value, '----- Additional Species Are Below -----'))
-        man_builds.sort()
-        man_builds = [(build, name) for name, build in man_builds]
-        db_names = list(db_names + man_builds)
-    except Exception as e:
-        log.error("ERROR: Unable to read builds file: %s", unicodify(e))
-    return db_names
 
 
 def read_build_sites(filename, check_builds=True):
@@ -1551,8 +1499,8 @@ def safe_str_cmp(a, b):
     return rv == 0
 
 
-galaxy_root_path = os.path.join(__path__[0], os.pardir, os.pardir, os.pardir)
-galaxy_samples_path = os.path.join(__path__[0], os.pardir, 'config', 'sample')
+galaxy_root_path = os.path.join(__path__[0], os.pardir, os.pardir, os.pardir)  # type: ignore
+galaxy_samples_path = os.path.join(__path__[0], os.pardir, 'config', 'sample')  # type: ignore
 
 
 def galaxy_directory():

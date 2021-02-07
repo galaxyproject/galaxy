@@ -27,7 +27,11 @@ try:
 except Exception:
     weasyprint = None
 
-from galaxy.exceptions import MalformedContents, MalformedId
+from galaxy.exceptions import (
+    MalformedContents,
+    MalformedId,
+    MessageException,
+)
 from galaxy.managers.hdcas import HDCASerializer
 from galaxy.managers.jobs import (
     JobManager,
@@ -41,7 +45,7 @@ from .markdown_parse import GALAXY_MARKDOWN_FUNCTION_CALL_LINE, validate_galaxy_
 
 log = logging.getLogger(__name__)
 
-ARG_VAL_CAPTURED_REGEX = r'''(?:([\w_\-]+)|\"([^\"]+)\"|\'([^\']+)\')'''
+ARG_VAL_CAPTURED_REGEX = r'''(?:([\w_\-\|]+)|\"([^\"]+)\"|\'([^\']+)\')'''
 OUTPUT_LABEL_PATTERN = re.compile(r'output=\s*%s\s*' % ARG_VAL_CAPTURED_REGEX)
 INPUT_LABEL_PATTERN = re.compile(r'input=\s*%s\s*' % ARG_VAL_CAPTURED_REGEX)
 STEP_LABEL_PATTERN = re.compile(r'step=\s*%s\s*' % ARG_VAL_CAPTURED_REGEX)
@@ -243,7 +247,8 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
 
 class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
 
-    def __init__(self, trans, extra_rendering_data={}):
+    def __init__(self, trans, extra_rendering_data=None):
+        extra_rendering_data = extra_rendering_data or {}
         self.trans = trans
         self.extra_rendering_data = extra_rendering_data
 
@@ -517,7 +522,7 @@ class MarkdownFormatHelpers:
 
     @staticmethod
     def literal_via_fence(content):
-        return "\n%s\n" % "\n".join("    %s" % l for l in content.splitlines())
+        return "\n%s\n" % "\n".join(f"    {line}" for line in content.splitlines())
 
     @staticmethod
     def indicate_data_truncated():
@@ -543,7 +548,8 @@ def to_html(basic_markdown):
     return html
 
 
-def to_pdf(trans, basic_markdown, css_paths=[]):
+def to_pdf(trans, basic_markdown, css_paths=None) -> bytes:
+    css_paths = css_paths or []
     as_html = to_html(basic_markdown)
     directory = tempfile.mkdtemp('gxmarkdown')
     index = os.path.join(directory, "index.html")
@@ -565,7 +571,14 @@ def to_pdf(trans, basic_markdown, css_paths=[]):
         shutil.rmtree(directory)
 
 
-def internal_galaxy_markdown_to_pdf(trans, internal_galaxy_markdown, document_type):
+def _check_can_convert_to_pdf_or_raise():
+    """Checks if the HTML to PDF converter is available."""
+    if not weasyprint:
+        raise MessageException("PDF conversion service not available.")
+
+
+def internal_galaxy_markdown_to_pdf(trans, internal_galaxy_markdown, document_type) -> bytes:
+    _check_can_convert_to_pdf_or_raise()
     basic_markdown = to_basic_markdown(trans, internal_galaxy_markdown)
     config = trans.app.config
     document_type_prologue = getattr(config, "markdown_export_prologue_%ss" % document_type, '') or ''

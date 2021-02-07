@@ -3,13 +3,14 @@ A simple WSGI application/framework.
 """
 import io
 import logging
-import os.path
+import os
 import socket
 import tarfile
 import tempfile
 import time
 import types
 from http.cookies import CookieError, SimpleCookie
+from importlib import import_module
 
 import routes
 import webob.compat
@@ -520,3 +521,14 @@ def flatten(seq):
                 yield smart_str(y)
         else:
             yield smart_str(x)
+
+
+def walk_controller_modules(package_name):
+    package = import_module(package_name)
+    controller_dir = package.__path__[0]
+    for fname in os.listdir(controller_dir):
+        if not(fname.startswith("_")) and fname.endswith(".py"):
+            name = fname[:-3]
+            module_name = package_name + "." + name
+            module = import_module(module_name)
+            yield name, module

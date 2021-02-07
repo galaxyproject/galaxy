@@ -25,7 +25,7 @@ class ToolOutput(ToolOutputBase):
     Represents an output datasets produced by a tool. For backward
     compatibility this behaves as if it were the tuple::
 
-      (format, metadata_source, parent)
+    (format, metadata_source, parent)
     """
 
     dict_collection_visible_keys = ['name', 'format', 'label', 'hidden', 'output_type', 'format_source',
@@ -123,15 +123,17 @@ class ToolOutputCollection(ToolOutputBase):
     Represents a HistoryDatasetCollectionAssociation of output datasets produced
     by a tool.
 
-    <outputs>
-      <collection type="list" label="${tool.name} on ${on_string} fasta">
-        <discover_datasets pattern="__name__" ext="fasta" visible="True" directory="outputFiles" />
-      </collection>
-      <collection type="paired" label="${tool.name} on ${on_string} paired reads">
-        <data name="forward" format="fastqsanger" />
-        <data name="reverse" format="fastqsanger"/>
-      </collection>
-    <outputs>
+    .. code-block::
+
+        <outputs>
+        <collection type="list" label="${tool.name} on ${on_string} fasta">
+            <discover_datasets pattern="__name__" ext="fasta" visible="True" directory="outputFiles" />
+        </collection>
+        <collection type="paired" label="${tool.name} on ${on_string} paired reads">
+            <data name="forward" format="fastqsanger" />
+            <data name="reverse" format="fastqsanger"/>
+        </collection>
+        <outputs>
     """
     dict_collection_visible_keys = ['name', 'format', 'label', 'hidden', 'output_type', 'default_format',
                                     'default_format_source', 'default_metadata_source', 'inherit_format', 'inherit_metadata']
@@ -174,7 +176,8 @@ class ToolOutputCollection(ToolOutputBase):
         else:
             collection_prototype = self.structure.collection_prototype(inputs, type_registry)
 
-            def prototype_dataset_element_to_output(element, parent_ids=[]):
+            def prototype_dataset_element_to_output(element, parent_ids=None):
+                parent_ids = parent_ids or []
                 name = element.element_identifier
                 format = self.default_format
                 if self.inherit_format:
@@ -195,7 +198,8 @@ class ToolOutputCollection(ToolOutputBase):
                     parent_ids=parent_ids,
                 )
 
-            def prototype_collection_to_output(collection_prototype, parent_ids=[]):
+            def prototype_collection_to_output(collection_prototype, parent_ids=None):
+                parent_ids = parent_ids or []
                 output_parts = []
                 for element in collection_prototype.elements:
                     element_parts = []
@@ -302,7 +306,8 @@ class ToolOutputCollectionStructure:
 
 class ToolOutputCollectionPart:
 
-    def __init__(self, output_collection_def, element_identifier, output_def, parent_ids=[]):
+    def __init__(self, output_collection_def, element_identifier, output_def, parent_ids=None):
+        parent_ids = parent_ids or []
         self.output_collection_def = output_collection_def
         self.element_identifier = element_identifier
         self.output_def = output_def

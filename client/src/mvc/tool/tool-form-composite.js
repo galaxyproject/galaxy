@@ -376,7 +376,7 @@ var View = Backbone.View.extend({
             invokeWorkflow(this.runWorkflowModel.workflowId, job_def)
                 .then((invocations) => {
                     Galaxy.emit.debug("tool-form-composite::submit", "Submission successful.", invocations);
-                    if ($.isArray(invocations) && invocations.length > 0) {
+                    if (Array.isArray(invocations) && invocations.length > 0) {
                         this.handleInvocations(invocations);
                     } else {
                         this.submissionErrorModal(job_def, invocations);

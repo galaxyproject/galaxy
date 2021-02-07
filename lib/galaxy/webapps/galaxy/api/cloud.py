@@ -29,10 +29,10 @@ class CloudController(BaseAPIController):
     @expose_api
     def index(self, trans, **kwargs):
         """
-        * GET /api/cloud/storage
-            Lists cloud-based buckets (e.g., S3 bucket, Azure blob) user has defined.
-        :param trans:
-        :param kwargs:
+        GET /api/cloud/storage
+
+        Lists cloud-based buckets (e.g., S3 bucket, Azure blob) user has defined.
+
         :return: A list of cloud-based buckets user has defined.
         """
         # TODO: This can be implemented leveraging PluggedMedia objects (part of the user-based object store project)
@@ -42,13 +42,16 @@ class CloudController(BaseAPIController):
     @expose_api
     def get(self, trans, payload, **kwargs):
         """
-        * POST /api/cloud/storage/get
-            gets given objects from a given cloud-based bucket to a Galaxy history.
+        POST /api/cloud/storage/get
+
+        gets given objects from a given cloud-based bucket to a Galaxy history.
+
         :type  trans: galaxy.webapps.base.webapp.GalaxyWebTransaction
         :param trans: Galaxy web transaction
 
         :type  payload: dict
         :param payload: A dictionary structure containing the following keys:
+
             *   history_id:    the (encoded) id of history to which the object should be received to.
             *   bucket:        the name of a bucket from which data should be fetched from (e.g., a bucket name on AWS S3).
             *   objects:       a list of the names of objects to be fetched.
@@ -84,6 +87,7 @@ class CloudController(BaseAPIController):
 
         :rtype:  dictionary
         :return: a dictionary containing a `summary` view of the datasets copied from the given cloud-based storage.
+
         """
         if not isinstance(payload, dict):
             raise ActionInputError('Invalid payload data type. The payload is expected to be a dictionary, '
@@ -137,16 +141,19 @@ class CloudController(BaseAPIController):
     @expose_api
     def send(self, trans, payload, **kwargs):
         """
-        * POST /api/cloud/storage/send
-            Sends given dataset(s) in a given history to a given cloud-based bucket. Each dataset is named
-            using the label assigned to the dataset in the given history (see `HistoryDatasetAssociation.name`).
-            If no dataset ID is given, this API sends all the datasets belonging to a given history to a given
-            cloud-based bucket.
+        POST /api/cloud/storage/send
+
+        Sends given dataset(s) in a given history to a given cloud-based bucket. Each dataset is named
+        using the label assigned to the dataset in the given history (see `HistoryDatasetAssociation.name`).
+        If no dataset ID is given, this API sends all the datasets belonging to a given history to a given
+        cloud-based bucket.
+
         :type  trans: galaxy.webapps.base.webapp.GalaxyWebTransaction
         :param trans: Galaxy web transaction
 
         :type  payload: dictionary
         :param payload: A dictionary structure containing the following keys:
+
             *   history_id              the (encoded) id of history from which the object should be downloaed.
             *   bucket:                 the name of a bucket to which data should be sent (e.g., a bucket name on AWS S3).
             *   authz_id:               the encoded ID of CloudAuthz to be used for authorizing access to the resource
@@ -163,11 +170,10 @@ class CloudController(BaseAPIController):
                                         with the dataset to be sent. If set to "False", Galaxy appends datetime
                                         to the dataset name to prevent overwriting an existing object.
 
-        :param kwargs:
-
         :rtype:     dictionary
         :return:    Information about the (un)successfully submitted dataset send jobs,
                     containing the following keys:
+
                         *   `bucket_name`:                  The name of bucket to which the listed datasets are queued
                                                             to be sent.
                         *   `sent_dataset_labels`:          A list of JSON objects with the following key-value pair:
@@ -177,6 +183,7 @@ class CloudController(BaseAPIController):
                         *   `failed_dataset_labels`:        A list of JSON objects with the following key-value pair
                                                             representing the datasets Galaxy failed to create
                                                             (and queue) send job for:
+
                             **  `object`:                   The name of object is queued to be created.
                             **  `error`:                    A descriptive error message.
 

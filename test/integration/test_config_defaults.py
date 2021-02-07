@@ -37,6 +37,8 @@ from galaxy_test.driver.driver_util import GalaxyTestDriver
 
 OptionData = namedtuple('OptionData', ('key', 'expected', 'loaded'))
 
+driver_created = False
+
 # Configuration properties that are paths should be absolute paths, by default resolved w.r.t root.
 PATH_CONFIG_PROPERTIES = [
     # For now, these include base config properties
@@ -44,6 +46,7 @@ PATH_CONFIG_PROPERTIES = [
     'config_file',
     'config_dir',
     'managed_config_dir',
+    'cache_dir',
     'data_dir',
     'auth_config_file',
     'email_domain_blocklist_file',
@@ -226,9 +229,12 @@ def create_driver():
     # Ideally `create_driver` would be a fixture and clean up after the yield,
     # but that's not compatible with the use use of pytest.mark.parametrize:
     # a fixture is not directly callable, so it cannot be used in place of get_config_data.
-    global DRIVER
-    DRIVER = GalaxyTestDriver()
-    DRIVER.setup()
+    global driver_created
+    if not driver_created:
+        global DRIVER
+        DRIVER = GalaxyTestDriver()
+        DRIVER.setup()
+        driver_created = True
 
 
 def get_config_data():
@@ -240,6 +246,7 @@ def get_config_data():
             'managed_config_dir': DRIVER.app.config.managed_config_dir,
             'data_dir': DRIVER.app.config.data_dir,
             'tool_data_path': DRIVER.app.config.tool_data_path,
+            'cache_dir': DRIVER.app.config.cache_dir
         }
 
     def resolve(parent, child):
@@ -259,8 +266,9 @@ def get_config_data():
 
     create_driver()  # create + setup DRIVER
     parent_dirs = load_parent_dirs()  # called after DRIVER is setup
-    items = ((k, v) for k, v in DRIVER.app.config.schema.app_schema.items() if k not in DO_NOT_TEST)
-    for key, data in items:
+    for key, data in DRIVER.app.config.schema.app_schema.items():
+        if key in DO_NOT_TEST:
+            continue
         expected_value = get_expected(key, data, parent_dirs)
         loaded_value = getattr(DRIVER.app.config, key)
         data = OptionData(key=key, expected=expected_value, loaded=loaded_value)  # passed to test
@@ -268,6 +276,7 @@ def get_config_data():
 
 
 def get_path_data():
+    create_driver()  # create + setup DRIVER
     yield from PATH_CONFIG_PROPERTIES
 
 

@@ -3,7 +3,7 @@
         <div class="unified-panel-header" unselectable="on">
             <div class="unified-panel-header-inner">
                 <div class="panel-header-buttons">
-                    <favorites-button @onFavorites="onFavorites" v-if="isUser" />
+                    <favorites-button :query="query" @onFavorites="onFavorites" v-if="isUser" />
                 </div>
                 <div class="panel-header-text">Tools</div>
             </div>
@@ -50,7 +50,7 @@
 <script>
 import ToolSection from "./Common/ToolSection";
 import ToolSearch from "./Common/ToolSearch";
-import UploadButton from "./Buttons/UploadButton";
+import { UploadButton } from "components/Upload";
 import FavoritesButton from "./Buttons/FavoritesButton";
 import { filterToolSections, filterTools } from "./utilities";
 import { getGalaxyInstance } from "app";
@@ -143,12 +143,12 @@ export default {
             this.query = term;
         },
         onOpen(tool, evt) {
-            const Galaxy = getGalaxyInstance();
             if (tool.id === "upload1") {
                 evt.preventDefault();
-                Galaxy.upload.show();
+                this.eventHub.$emit("upload:open");
             } else if (tool.form_style === "regular") {
                 evt.preventDefault();
+                const Galaxy = getGalaxyInstance();
                 Galaxy.router.push("/", {
                     tool_id: tool.id,
                     version: tool.version,

@@ -4,7 +4,6 @@ import QuotaMeter from "mvc/user/user-quotameter";
 import { getGalaxyInstance } from "app";
 import Masthead from "../components/Masthead/Masthead";
 import { mountVueComponent } from "../utils/mountVueComponent";
-import { getAppRoot } from "onload/loadConfig";
 
 export class MastheadState {
     // Used to be a Backbone View - not pretty but keep all window wide listeners,
@@ -53,8 +52,6 @@ export function mountMasthead(el, options, mastheadState) {
             brandLink: options.logo_url,
             brandImage: options.logo_src,
             brandImageSecondary: options.logo_src_secondary,
-            appRoot: getAppRoot(),
-            galaxy: getGalaxyInstance(),
             menuOptions: options,
         },
         el

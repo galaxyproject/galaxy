@@ -51,8 +51,14 @@ export function userLogoutClient() {
 
 export function fetchMenu(options = {}) {
     const Galaxy = getGalaxyInstance();
-    const menu = [];
+    const { version_minor, version_major } = Galaxy.config;
+    const { release_doc_base_url } = options;
+    const versionUserDocumentationUrl =
+        version_minor == "dev"
+            ? "https://docs.galaxyproject.org/en/latest/releases/index.html"
+            : `${release_doc_base_url}${version_major}/releases/${version_major}_announce_user.html`;
 
+    const menu = [];
     //
     // Analyze data tab.
     //
@@ -192,6 +198,11 @@ export function fetchMenu(options = {}) {
                 title: _l("Interactive Tours"),
                 url: "tours",
             },
+            {
+                title: _l("Galaxy Version: " + Galaxy.config.version_major),
+                url: versionUserDocumentationUrl,
+                target: "_blank",
+            },
         ],
     };
     if (options.terms_url) {
@@ -243,7 +254,7 @@ export function fetchMenu(options = {}) {
             menu: [
                 {
                     title: `${_l("Logged in as")} ${Galaxy.user.get("email")}`,
-                    class: "dropdown-item disabled",
+                    disabled: true,
                 },
                 {
                     title: _l("Preferences"),

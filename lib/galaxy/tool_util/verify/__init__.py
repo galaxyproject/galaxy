@@ -176,26 +176,25 @@ def verify(
 def make_temp_fname(fname=None):
     """Safe temp name - preserve the file extension for tools that interpret it."""
     suffix = os.path.split(fname)[-1]  # ignore full path
-    fd, temp_prefix = tempfile.mkstemp(prefix='tmp', suffix=suffix)
-    return temp_prefix
+    with tempfile.NamedTemporaryFile(prefix='tmp', suffix=suffix, delete=False) as temp:
+        return temp.name
 
 
 def _bam_to_sam(local_name, temp_name):
     temp_local = tempfile.NamedTemporaryFile(suffix='.sam', prefix='local_bam_converted_to_sam_')
-    fd, temp_temp = tempfile.mkstemp(suffix='.sam', prefix='history_bam_converted_to_sam_')
-    os.close(fd)
-    try:
-        pysam.view('-h', '-o%s' % temp_local.name, local_name)
-    except Exception as e:
-        msg = "Converting local (test-data) BAM to SAM failed: %s" % unicodify(e)
-        raise Exception(msg)
-    try:
-        pysam.view('-h', '-o%s' % temp_temp, temp_name)
-    except Exception as e:
-        msg = "Converting history BAM to SAM failed: %s" % unicodify(e)
-        raise Exception(msg)
+    with tempfile.NamedTemporaryFile(suffix='.sam', prefix='history_bam_converted_to_sam_', delete=False) as temp:
+        try:
+            pysam.view('-h', '-o%s' % temp_local.name, local_name)
+        except Exception as e:
+            msg = "Converting local (test-data) BAM to SAM failed: %s" % unicodify(e)
+            raise Exception(msg)
+        try:
+            pysam.view('-h', '-o%s' % temp.name, temp_name)
+        except Exception as e:
+            msg = "Converting history BAM to SAM failed: %s" % unicodify(e)
+            raise Exception(msg)
     os.remove(temp_name)
-    return temp_local, temp_temp
+    return temp_local, temp.name
 
 
 def _verify_checksum(data, checksum_type, expected_checksum_value):
@@ -254,8 +253,8 @@ def files_diff(file1, file2, attributes=None):
                 is_pdf = True
                 # Replace non-Unicode characters using unicodify(),
                 # difflib.unified_diff doesn't work on list of bytes
-                history_data = [unicodify(l) for l in get_fileobj(file2, mode='rb', compressed_formats=compressed_formats)]
-                local_file = [unicodify(l) for l in get_fileobj(file1, mode='rb', compressed_formats=compressed_formats)]
+                history_data = [unicodify(line) for line in get_fileobj(file2, mode='rb', compressed_formats=compressed_formats)]
+                local_file = [unicodify(line) for line in get_fileobj(file1, mode='rb', compressed_formats=compressed_formats)]
             else:
                 raise AssertionError("Binary data detected, not displaying diff")
         if attributes.get('sort', False):

@@ -192,7 +192,7 @@ class JobHandlerQueue(Monitors):
 
     def __check_jobs_at_startup(self):
         """
-        Checks all jobs that are in the 'new', 'queued' or 'running' state in
+        Checks all jobs that are in the 'new', 'queued', 'running', or 'stopped' state in
         the database and requeues or cleans up as necessary.  Only run as the
         job handler starts.
         In case the activation is enforced it will filter out the jobs of inactive users.
@@ -200,7 +200,8 @@ class JobHandlerQueue(Monitors):
         jobs_at_startup = []
         if self.track_jobs_in_database:
             in_list = (model.Job.states.QUEUED,
-                       model.Job.states.RUNNING)
+                       model.Job.states.RUNNING,
+                       model.Job.states.STOPPED)
         else:
             in_list = (model.Job.states.NEW,
                        model.Job.states.QUEUED,
@@ -208,13 +209,13 @@ class JobHandlerQueue(Monitors):
         if self.app.config.user_activation_on:
             jobs_at_startup = self.sa_session.query(model.Job).enable_eagerloads(False) \
                 .outerjoin(model.User) \
-                .filter(model.Job.state.in_(in_list) &
-                        (model.Job.handler == self.app.config.server_name) &
-                        or_((model.Job.user_id == null()), (model.User.active == true()))).all()
+                .filter(model.Job.state.in_(in_list)
+                        & (model.Job.handler == self.app.config.server_name)
+                        & or_((model.Job.user_id == null()), (model.User.active == true()))).all()
         else:
             jobs_at_startup = self.sa_session.query(model.Job).enable_eagerloads(False) \
-                .filter(model.Job.state.in_(in_list) &
-                        (model.Job.handler == self.app.config.server_name)).all()
+                .filter(model.Job.state.in_(in_list)
+                        & (model.Job.handler == self.app.config.server_name)).all()
 
         for job in jobs_at_startup:
             if not self.app.toolbox.has_tool(job.tool_id, job.tool_version, exact=True):
@@ -435,9 +436,8 @@ class JobHandlerQueue(Monitors):
         if not self.track_jobs_in_database:
             self.waiting_jobs = new_waiting_jobs
         # Remove cached wrappers for any jobs that are no longer being tracked
-        for id in list(self.job_wrappers.keys()):
-            if id not in new_waiting_jobs:
-                del self.job_wrappers[id]
+        for id in set(self.job_wrappers.keys()) - set(new_waiting_jobs):
+            del self.job_wrappers[id]
         # Flush, if we updated the state
         self.sa_session.flush()
         # Done with the session
@@ -581,14 +581,10 @@ class JobHandlerQueue(Monitors):
         if state == JOB_READY and self.app.quota_agent.is_over_quota(self.app, job, job_destination):
             return JOB_USER_OVER_QUOTA, job_destination
         # Check total walltime limits
-        if (state == JOB_READY and
-                "delta" in self.app.job_config.limits.total_walltime):
+        if (state == JOB_READY and "delta" in self.app.job_config.limits.total_walltime):
             jobs_to_check = self.sa_session.query(model.Job).filter(
                 model.Job.user_id == job.user.id,
-                model.Job.update_time >= datetime.datetime.now() -
-                datetime.timedelta(
-                    self.app.job_config.limits.total_walltime["window"]
-                ),
+                model.Job.update_time >= datetime.datetime.now() - datetime.timedelta(self.app.job_config.limits.total_walltime["window"]),
                 model.Job.state == 'ok'
             ).all()
             time_spent = datetime.timedelta(0)
@@ -890,10 +886,25 @@ class JobHandlerStopQueue(Monitors):
             # Sleep
             self._monitor_sleep(1)
 
+    def __delete(self, job, error_msg):
+        final_state = job.states.DELETED
+        if error_msg is not None:
+            final_state = job.states.ERROR
+            job.info = error_msg
+        job.set_final_state(final_state)
+        self.sa_session.add(job)
+        self.sa_session.flush()
+
+    def __stop(self, job):
+        job.set_state(job.states.STOPPED)
+        self.sa_session.add(job)
+        self.sa_session.flush()
+
     def monitor_step(self):
         """
         Called repeatedly by `monitor` to stop jobs.
         """
+        # TODO: remove handling of DELETED_NEW after 21.09
         # Pull all new jobs from the queue at once
         jobs_to_check = []
         if self.app.config.track_jobs_in_database:
@@ -901,8 +912,10 @@ class JobHandlerStopQueue(Monitors):
             self.sa_session.expunge_all()
             # Fetch all new jobs
             newly_deleted_jobs = self.sa_session.query(model.Job).enable_eagerloads(False) \
-                                     .filter((model.Job.state == model.Job.states.DELETED_NEW) &
-                                             (model.Job.handler == self.app.config.server_name)).all()
+                                     .filter((model.Job.state.in_((model.Job.states.DELETED_NEW,
+                                                                   model.Job.states.DELETING,
+                                                                   model.Job.states.STOPPING)))
+                                             & (model.Job.handler == self.app.config.server_name)).all()
             for job in newly_deleted_jobs:
                 # job.stderr is always a string (job.job_stderr + job.tool_stderr, possibly `''`),
                 # while any `not None` message returned in self.queue.get_nowait() is interpreted
@@ -923,18 +936,18 @@ class JobHandlerStopQueue(Monitors):
         for job, error_msg in jobs_to_check:
             if (job.state not in
                     (job.states.DELETED_NEW,
-                     job.states.DELETED) and
-                    job.finished):
+                     job.states.DELETING,
+                     job.states.DELETED,
+                     job.states.STOPPING,
+                     job.states.STOPPED)
+                    and job.finished):
                 # terminated before it got here
                 log.debug('Job %s already finished, not deleting or stopping', job.id)
                 continue
-            final_state = job.states.DELETED
-            if error_msg is not None:
-                final_state = job.states.ERROR
-                job.info = error_msg
-            job.set_final_state(final_state)
-            self.sa_session.add(job)
-            self.sa_session.flush()
+            if job.state in (job.states.DELETED_NEW, job.states.DELETING):
+                self.__delete(job, error_msg)
+            elif job.state == job.states.STOPPING:
+                self.__stop(job)
             if job.job_runner_name is not None:
                 # tell the dispatcher to stop the job
                 job_wrapper = JobWrapper(job, self, use_persisted_destination=True)

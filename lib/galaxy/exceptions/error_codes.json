@@ -75,6 +75,11 @@
     "message": "Tool could not be found."
    },
    {
+      "name": "TOOL_INPUTS_NOT_READY",
+      "code": 400015,
+      "message": "Tool inputs not yet ready, try again later."
+   },
+   {
     "name": "USER_AUTHENTICATION_FAILED",
     "code": 401001,
     "message": "Authentication failed, invalid credentials supplied."

@@ -5,6 +5,9 @@
   <type class="UnzipCollectionTool" module="galaxy.tools" />
   <action module="galaxy.tools.actions.model_operations"
           class="ModelOperationToolAction"/>
+    <edam_operations>
+        <edam_operation>operation_3359</edam_operation>
+    </edam_operations>
   <inputs>
     <param type="data_collection" collection_type="paired" name="input" label="Input Paired Dataset" />
   </inputs>
@@ -14,7 +17,7 @@
   </outputs>
   <help><![CDATA[
 
-This tool takes a paired dataset collection and builds two datasets from it. If mapped over a list of paired datasets, this tool will produce two lists of datasets. 
+This tool takes a paired dataset collection and builds two datasets from it. If mapped over a list of paired datasets, this tool will produce two lists of datasets.
 
 ----
 

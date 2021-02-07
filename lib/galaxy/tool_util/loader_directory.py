@@ -121,7 +121,7 @@ def is_tool_load_error(obj):
     return obj is TOOL_LOAD_ERROR
 
 
-def looks_like_a_tool(path_or_uri_like, invalid_names=[], enable_beta_formats=False):
+def looks_like_a_tool(path_or_uri_like, invalid_names=None, enable_beta_formats=False):
     """Quick check to see if a file looks like it may be a tool file.
 
     Whether true in a strict sense or not, lets say the intention and
@@ -132,6 +132,7 @@ def looks_like_a_tool(path_or_uri_like, invalid_names=[], enable_beta_formats=Fa
     invalid_names may be supplied in the context of the tool shed to quickly
     rule common tool shed XML files.
     """
+    invalid_names = invalid_names or []
     path = resolved_path(path_or_uri_like)
     if path is UNRESOLVED_URI:
         # Assume the path maps to a real tool.
@@ -163,11 +164,11 @@ def looks_like_xml(path, regex=TOOL_REGEX):
     if not os.path.getsize(full_path):
         return False
 
-    if(checkers.check_binary(full_path) or
-       checkers.check_image(full_path) or
-       checkers.is_gzip(full_path) or
-       checkers.is_bz2(full_path) or
-       checkers.is_zip(full_path)):
+    if(checkers.check_binary(full_path)
+       or checkers.check_image(full_path)
+       or checkers.is_gzip(full_path)
+       or checkers.is_bz2(full_path)
+       or checkers.is_zip(full_path)):
         return False
 
     with open(path, encoding='utf-8') as f:
@@ -249,7 +250,7 @@ def _find_tool_files(path_or_uri_like, recursive, enable_beta_formats):
 
     is_file = not os.path.isdir(path)
     if not os.path.exists(path):
-        raise Exception(PATH_DOES_NOT_EXIST_ERROR)
+        raise Exception(PATH_DOES_NOT_EXIST_ERROR % path)
     elif is_file and recursive:
         raise Exception(PATH_AND_RECURSIVE_ERROR)
     elif is_file:

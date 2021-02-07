@@ -1,0 +1,48 @@
+# Provide a list of tools which are deprecated. These tools would be removed the list of 
+# recommended tools by the deep learning model. These tools will be removed from the recommendations and a warning message, set as the 'text_message', 
+# is shown instead of their recommendations and when they are executed.
+# Format:
+# <<tool id>>:
+#   - is_deprecate: True
+#   - text_message: <<message to show once they are recommended by the deep learning model>>
+#
+# For the following example, the tool 'cufflinks' is deprecated. It will be removed from the recommendations and a warning message, set as the 'text_message', 
+# is shown instead of its recommendations and when it is executed:
+#
+# cufflinks:
+#  - is_deprecated: True
+#    text_message: It is deprecated
+#
+#
+#
+# Provide list of tools to be recommended. These tools will either be appended to the tools recommended by deep learning model or 
+# completely overwrite them with these tools.
+# Format:
+# <<tool id>>:
+#   - tool_id: <<recommended tool id 1>>
+#     name: <<display text: name and description of the tool>>
+#     i_extensions:
+#       - <<input file extension>>
+#       - <<input file extension>>
+#   - tool_id: <<recommended tool id 2>>
+#     name: <<display text: name and description of the tool>>
+#     i_extensions:
+#       - <<input file extension of this tool>>
+#       - <<input file extension of this tool>>
+# <<tool id>>:
+#   - tool_id ...
+#
+# For the following example, the tools 'cat1' and 'sort1' are shown as the recommendations for tool 'Filter1':
+#
+# Filter1:
+#  - tool_id: 'cat1'
+#    name: 'Concatenate datasets tail-to-head'
+#    i_extensions: 
+#      - tabular
+#      - txt
+#  - tool_id: 'sort1'
+#    name: 'Sort data in ascending or descending order'
+#    i_extensions: 
+#      - tabular
+#      - txt
+

@@ -6,7 +6,7 @@ from galaxy import (
     web
 )
 from galaxy.util import inflector
-from galaxy.web.framework.helpers import grids
+from galaxy.web.legacy_framework import grids
 from galaxy.webapps.base.controller import BaseUIController
 from tool_shed.metadata import repository_metadata_manager
 from tool_shed.util import (
@@ -51,7 +51,7 @@ class AdminController(BaseUIController, Admin):
                                                                 **kwd))
             elif operation == "repositories_by_user":
                 # Eliminate the current filters if any exist.
-                for k, v in list(kwd.items()):
+                for k in list(kwd.keys()):
                     if k.startswith('f-'):
                         del kwd[k]
                 if 'user_id' in kwd:
@@ -66,7 +66,7 @@ class AdminController(BaseUIController, Admin):
                     kwd['f-email'] = repository.user.email
             elif operation == "repositories_by_category":
                 # Eliminate the current filters if any exist.
-                for k, v in list(kwd.items()):
+                for k in list(kwd.keys()):
                     if k.startswith('f-'):
                         del kwd[k]
                 category_id = kwd.get('id', None)

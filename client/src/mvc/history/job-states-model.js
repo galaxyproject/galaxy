@@ -208,4 +208,10 @@ var JobStatesSummaryCollection = Backbone.Collection.extend({
     },
 });
 
-export default { JobStatesSummary, JobStatesSummaryCollection, FETCH_STATE_ON_ADD, NON_TERMINAL_STATES, ERROR_STATES };
+export default {
+    JobStatesSummary,
+    JobStatesSummaryCollection,
+    FETCH_STATE_ON_ADD,
+    NON_TERMINAL_STATES,
+    ERROR_STATES,
+};

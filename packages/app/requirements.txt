@@ -4,3 +4,16 @@ galaxy-job-metrics
 galaxy-tool-util
 galaxy-web-framework
 galaxy-web-stack
+
+kombu
+Beaker
+pykwalify
+pulsar-galaxy-lib
+gxformat2
+Mako
+sqlitedict
+svgwrite
+sortedcontainers
+Markdown
+refgenconf
+Fabric3

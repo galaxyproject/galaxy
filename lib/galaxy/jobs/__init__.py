@@ -40,7 +40,10 @@ from galaxy.job_execution.datasets import (
     TaskPathRewriter
 )
 from galaxy.job_execution.output_collect import collect_extra_files
-from galaxy.job_execution.setup import ensure_configs_directory
+from galaxy.job_execution.setup import (
+    create_working_directory_for_job,
+    ensure_configs_directory,
+)
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.jobs.mapper import (
     JobMappingException,
@@ -1190,11 +1193,7 @@ class JobWrapper(HasResourceParameters):
         return os.path.join(self.working_directory, "working")
 
     def _create_working_directory(self, job):
-        self.object_store.create(
-            job, base_dir='job_work', dir_only=True, obj_dir=True)
-        working_directory = self.object_store.get_filename(
-            job, base_dir='job_work', dir_only=True, obj_dir=True)
-        return working_directory
+        return create_working_directory_for_job(self.object_store, job)
 
     def clear_working_directory(self):
         job = self.get_job()
@@ -1311,8 +1310,6 @@ class JobWrapper(HasResourceParameters):
                 # Pause any dependent jobs (and those jobs' outputs)
                 for dep_job_assoc in dataset.dependent_jobs:
                     self.pause(dep_job_assoc.job, "Execution of this dataset's job is paused because its input datasets are in an error state.")
-                self.sa_session.add(dataset)
-                self.sa_session.flush()
             job.set_final_state(job.states.ERROR)
             job.command_line = unicodify(self.command_line)
             job.info = message
@@ -1536,6 +1533,8 @@ class JobWrapper(HasResourceParameters):
             # it would be quicker to just copy the metadata from the originating output dataset,
             # but somewhat trickier (need to recurse up the copied_from tree), for now we'll call set_meta()
             retry_internally = util.asbool(self.get_destination_configuration("retry_metadata_internally", True))
+            if not retry_internally and self.tool.tool_type == 'interactive':
+                retry_internally = util.asbool(self.get_destination_configuration("retry_interactivetool_metadata_internally", retry_internally))
             metadata_set_successfully = self.external_output_metadata.external_metadata_set_successfully(dataset, output_name, self.sa_session, working_directory=self.working_directory)
             if retry_internally and not metadata_set_successfully:
                 # If Galaxy was expected to sniff type and didn't - do so.
@@ -1730,7 +1729,11 @@ class JobWrapper(HasResourceParameters):
         # Certain tools require tasks to be completed after job execution
         # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).
         param_dict = self.get_param_dict(job)
-        self.tool.exec_after_process(self.app, inp_data, out_data, param_dict, job=job, final_job_state=final_job_state)
+        try:
+            self.tool.exec_after_process(self.app, inp_data, out_data, param_dict, job=job, final_job_state=final_job_state)
+        except Exception:
+            log.exception(f"exec_after_process hook failed for job {self.job_id}")
+            final_job_state = job.states.ERROR
         # Call 'exec_after_process' hook
         self.tool.call_hook('exec_after_process', self.app, inp_data=inp_data,
                             out_data=out_data, param_dict=param_dict,
@@ -1833,7 +1836,6 @@ class JobWrapper(HasResourceParameters):
                         if e.errno != errno.ENOENT:
                             raise
                 self.external_output_metadata.cleanup_external_metadata(self.sa_session)
-            galaxy.tools.imp_exp.JobImportHistoryArchiveWrapper(self.app, self.job_id).cleanup_after_job()
             if delete_files:
                 self.object_store.delete(self.get_job(), base_dir='job_work', entire_dir=True, dir_only=True, obj_dir=True)
         except Exception:
@@ -2223,7 +2225,7 @@ class JobWrapper(HasResourceParameters):
     def change_ownership_for_run(self):
         job = self.get_job()
         external_chown_script = self.get_destination_configuration("external_chown_script", None)
-        if job.user is not None and external_chown_script is not None:
+        if job.user is not None and external_chown_script:
             ret = external_chown(self.working_directory, self.user_system_pwent,
                            external_chown_script, description="working directory")
             if not ret:
@@ -2232,7 +2234,7 @@ class JobWrapper(HasResourceParameters):
     def reclaim_ownership(self):
         job = self.get_job()
         external_chown_script = self.get_destination_configuration("external_chown_script", None)
-        if job.user is not None:
+        if job.user is not None and external_chown_script:
             external_chown(self.working_directory, self.galaxy_system_pwent,
                            external_chown_script, description="working directory")
 

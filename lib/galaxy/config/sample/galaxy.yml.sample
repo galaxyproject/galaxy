@@ -92,8 +92,11 @@ uwsgi:
   # SIGTERM (its default is to brutally kill workers)
   hook-master-start: unix_signal:15 gracefully_kill_them_all
 
-  # Feature necessary for proper mule signal handling
-  py-call-osafterfork: true
+  # Feature necessary for proper mule signal handling on Python versions
+  # below 3.7.2. The default is set to false to prevent a runtime error
+  # under Python 3.7.2 and newer (see
+  # https://github.com/unbit/uwsgi/issues/1978).
+  py-call-osafterfork: false
 
   # Ensure application threads will run if `threads` is unset.
   enable-threads: true
@@ -124,6 +127,13 @@ galaxy:
   # default SQLite database, file_path, etc.). Defaults to `database/`
   # if running Galaxy from source or `<config_dir>/data` otherwise.
   #data_dir: null
+
+  # Top level cache directory. Any other cache directories
+  # (tool_cache_data_dir, template_cache_path, etc.) should be
+  # subdirectories.
+  # The value of this option will be resolved with respect to
+  # <data_dir>.
+  #cache_dir: cache
 
   # By default, Galaxy uses a SQLite database at
   # '<data_dir>/universe.sqlite'.  You may use a SQLAlchemy connection
@@ -192,7 +202,7 @@ galaxy:
   # valuable to separate these - for instance bootstrapping fresh Galaxy
   # instances with pretested installs.  The following option can be used
   # to separate the tool shed install database (all other options listed
-  # above but prefixed with install_ are also available).
+  # above but prefixed with ``install_`` are also available).
   # Defaults to the value of the 'database_connection' option.
   #install_database_connection: null
 
@@ -412,20 +422,6 @@ galaxy:
   # option.
   #watch_tours: 'false'
 
-  # As of 18.09, Galaxy defaults to setting up the object store
-  # configuration for output datasets during the job queue step in job
-  # handlers. This should generally provide for more robust job
-  # submission, more configurability, and a better user experience but
-  # may in some cases slightly slow down the job handler job setup
-  # process. On the off chance that an admin would like to or need to
-  # optimize job handlers at the expense of user experience and web
-  # handling this option will remain for some time by setting this
-  # option to true. This behavior however should be considered
-  # deprecated and this option will likely be removed in future versions
-  # of Galaxy. For more information see
-  # https://github.com/galaxyproject/galaxy/issues/6513.
-  #legacy_eager_objectstore_initialization: false
-
   # Configured FileSource plugins.
   # The value of this option will be resolved with respect to
   # <config_dir>.
@@ -447,7 +443,7 @@ galaxy:
 
   # involucro is a tool used to build Docker or Singularity containers
   # for tools from Conda dependencies referenced in tools as
-  # `requirement`s. The following path is the location of involucro on
+  # `requirement` s. The following path is the location of involucro on
   # the Galaxy host. This is ignored if the relevant container resolver
   # isn't enabled, and will install on demand unless involucro_auto_init
   # is set to false.
@@ -604,7 +600,7 @@ galaxy:
   # Mako templates are compiled as needed and cached for reuse, this
   # directory is used for the cache
   # The value of this option will be resolved with respect to
-  # <data_dir>.
+  # <cache_dir>.
   #template_cache_path: compiled_templates
 
   # Set to false to disable various checks Galaxy will do to ensure it
@@ -628,12 +624,20 @@ galaxy:
   # generated commands run in sh.
   #default_job_shell: /bin/bash
 
+  # Set this to false to disable the tool document cache. This cache
+  # stores expanded xml strings. Disabling the tool cache results in
+  # slower startup times. The tool cache is backed by sqlite database,
+  # which cannot be stored on certain network disks. The cache location
+  # is configurable using the ``tool_cache_data_dir`` setting, but can
+  # be disabled completely here.
+  #enable_tool_document_cache: true
+
   # Tool related caching. Fully expanded tools and metadata will be
   # stored at this path. Per tool_conf cache locations can be configured
-  # in (shed_)tool_conf.xml files using the tool_cache_data_dir
+  # in (``shed_``)tool_conf.xml files using the tool_cache_data_dir
   # attribute.
   # The value of this option will be resolved with respect to
-  # <data_dir>.
+  # <cache_dir>.
   #tool_cache_data_dir: tool_cache
 
   # Directory in which the toolbox search index is stored. The value of
@@ -656,7 +660,7 @@ galaxy:
   # following parameters can be used to control the caching used to
   # store this information.
   # The value of this option will be resolved with respect to
-  # <data_dir>.
+  # <cache_dir>.
   #citation_cache_data_dir: citations/data
 
   # Citation related caching.  Tool citations information maybe fetched
@@ -664,7 +668,7 @@ galaxy:
   # following parameters can be used to control the caching used to
   # store this information.
   # The value of this option will be resolved with respect to
-  # <data_dir>.
+  # <cache_dir>.
   #citation_cache_lock_dir: citations/locks
 
   # Mulled resolution caching. Mulled resolution uses external APIs of
@@ -675,13 +679,13 @@ galaxy:
   # Data directory used by beaker for caching mulled resolution
   # requests.
   # The value of this option will be resolved with respect to
-  # <data_dir>.
+  # <cache_dir>.
   #mulled_resolution_cache_data_dir: mulled/data
 
   # Lock directory used by beaker for caching mulled resolution
   # requests.
   # The value of this option will be resolved with respect to
-  # <data_dir>.
+  # <cache_dir>.
   #mulled_resolution_cache_lock_dir: mulled/locks
 
   # Configuration file for the object store If this is set and exists,
@@ -737,11 +741,15 @@ galaxy:
   #error_email_to: null
 
   # Email address to use in the 'From' field when sending emails for
-  # account activations, workflow step notifications and password
-  # resets. We recommend using string in the following format: Galaxy
-  # Project <galaxy-no-reply@example.com> If not configured,
-  # '<galaxy-no-reply@HOSTNAME>' will be used.
+  # account activations, workflow step notifications, password resets,
+  # and tool error reports.  We recommend using a string in the
+  # following format: Galaxy Project <galaxy-no-reply@example.com>. If
+  # not configured, '<galaxy-no-reply@HOSTNAME>' will be used.
   #email_from: null
+
+  # This text will be inserted at the end of the activation email's
+  # message, before the 'Your Galaxy Team' signature.
+  #custom_activation_email_message: null
 
   # URL of the support resource for the galaxy instance.  Used in
   # activation emails.
@@ -836,13 +844,13 @@ galaxy:
   # third-party server, tricking a Galaxy user to access said site.
   #enable_old_display_applications: true
 
-  # Enable InteractiveTools.
-  #interactivetools_enable: false
-
   # This flag enables an AWS cost estimate for every job based on their
   # runtime matrices. CPU, RAM and runtime usage is mapped against AWS
   # pricing table. Please note, that those numbers are only estimates.
   #aws_estimate: false
+
+  # Enable InteractiveTools.
+  #interactivetools_enable: false
 
   # Proxy host - assumed to just be hosted on the same hostname and port
   # as Galaxy by default.
@@ -852,6 +860,14 @@ galaxy:
   # The value of this option will be resolved with respect to
   # <data_dir>.
   #interactivetools_map: interactivetools_map.sqlite
+
+  # Galaxy Interactive Tools (GxITs) can be stopped from within the
+  # Galaxy interface, killing the GxIT job without completing its
+  # metadata setting post-job steps. In such a case it may be desirable
+  # to set metadata on job outputs internally (in the Galaxy job handler
+  # process). The default is is the value of
+  # `retry_metadata_internally`, which defaults to `true`.
+  #retry_interactivetool_metadata_internally: true
 
   # Show visualization tab and list in masthead.
   #visualizations_visible: true
@@ -942,11 +958,17 @@ galaxy:
   # The URL linked by the "Wiki" link in the "Help" menu.
   #wiki_url: https://galaxyproject.org/
 
+  # The URL linked for quota information in the UI.
+  #quota_url: https://galaxyproject.org/support/account-quotas/
+
   # The URL linked by the "Support" link in the "Help" menu.
   #support_url: https://galaxyproject.org/support/
 
   # The URL linked by the "How to Cite Galaxy" link in the "Help" menu.
   #citation_url: https://galaxyproject.org/citing-galaxy
+
+  # The URL linked by the "Galaxy Version" link in the "Help" menu.
+  #release_doc_base_url: https://docs.galaxyproject.org/en/release_
 
   # The URL linked by the "Search" link in the "Help" menu.
   #search_url: https://galaxyproject.org/search/
@@ -1032,9 +1054,20 @@ galaxy:
   #nginx_x_accel_redirect_base: null
 
   # If using compression in the upstream proxy server, use this option
-  # to disable gzipping of library .tar.gz and .zip archives, since the
-  # proxy server will do it faster on the fly.
+  # to disable gzipping of dataset collection and library archives,
+  # since the upstream server will do it faster on the fly. To enable
+  # compression add ``application/zip`` to the proxy's compressable
+  # mimetypes.
   #upstream_gzip: false
+
+  # If using the mod-zip module in nginx, use this option to assemble
+  # zip archives in nginx. This is preferable over the upstream_gzip
+  # option as Galaxy does not need to serve the archive. Requires
+  # setting up internal nginx locations to all paths that can be
+  # archived. See
+  # https://docs.galaxyproject.org/en/master/admin/nginx.html#creating-archives-with-mod-zip
+  # for details.
+  #upstream_mod_zip: false
 
   # The following default adds a header to web request responses that
   # will cause modern web browsers to not allow Galaxy to be embedded in
@@ -1365,13 +1398,6 @@ galaxy:
   # Available formats are currently 'zip', 'gz', and 'bz2'.
   #disable_library_comptypes: null
 
-  # Some sequencer integration features in beta allow you to
-  # automatically transfer datasets.  This is done using a lightweight
-  # transfer manager which runs outside of Galaxy (but is spawned by it
-  # automatically).  Galaxy will communicate with this manager over the
-  # port specified here.
-  #transfer_manager_port: 8163
-
   # Boosts are used to customize this instance's toolbox search. The
   # higher the boost, the more importance the scoring algorithm gives to
   # the given field.  Section refers to the tool group in the tool
@@ -1462,10 +1488,10 @@ galaxy:
 
   # If use_remote_user is enabled, the header that the upstream proxy
   # provides the remote username in defaults to HTTP_REMOTE_USER (the
-  # 'HTTP_' is prepended by WSGI).  This option allows you to change the
-  # header.  Note, you still need to prepend 'HTTP_' to the header in
-  # this option, but your proxy server should *not* include 'HTTP_' at
-  # the beginning of the header name.
+  # ``HTTP_`` is prepended by WSGI).  This option allows you to change
+  # the header.  Note, you still need to prepend ``HTTP_`` to the header
+  # in this option, but your proxy server should *not* include ``HTTP_``
+  # at the beginning of the header name.
   #remote_user_header: HTTP_REMOTE_USER
 
   # If use_remote_user is enabled, anyone who can log in to the Galaxy
@@ -1594,6 +1620,15 @@ galaxy:
   # workflows built using these modules may not function in the future.)
   #enable_beta_workflow_modules: false
 
+  # Enable beta EDAM organised toolbox which ignores admin managed
+  # sections in lieu of EDAM topics only.
+  #enable_beta_edam_toolbox: false
+
+  # Sets the path to EDAM ontology file.
+  # The value of this option will be resolved with respect to
+  # <data_dir>.
+  #beta_edam_toolbox_ontology_path: EDAM.tsv
+
   # Default format for the export of workflows. Possible values are 'ga'
   # or 'format2'.
   #default_workflow_export_format: ga
@@ -1677,10 +1712,11 @@ galaxy:
   # behalf of other users.
   #api_allow_run_as: null
 
-  # Master key that allows many API admin actions to be used without
-  # actually having a defined admin user in the database/config.  Only
-  # set this if you need to bootstrap Galaxy, you probably do not want
-  # to set this on public servers.
+  # API key that allows performing some admin actions without actually
+  # having a real admin user in the database and config. Only set this
+  # if you need to bootstrap Galaxy, in particular to create a real
+  # admin user account via API. You should probably not set this on a
+  # production server.
   #master_api_key: null
 
   # Enable access to post-authentication options via OpenID.
@@ -1688,7 +1724,7 @@ galaxy:
 
   # If OpenID is enabled, consumer cache directory to use.
   # The value of this option will be resolved with respect to
-  # <data_dir>.
+  # <cache_dir>.
   #openid_consumer_cache_path: openid_consumer_cache
 
   # Enable tool tags (associating tools with tags).  This has its own
@@ -1802,7 +1838,7 @@ galaxy:
   # can separate Galaxy into multiple processes.  There are more than
   # one way to do this, and they are explained in detail in the
   # documentation:
-  #   https://docs.galaxyproject.org/en/master/admin/scaling.html
+  # https://docs.galaxyproject.org/en/master/admin/scaling.html
   # By default, Galaxy manages and executes jobs from within a single
   # process and notifies itself of new jobs via in-memory queues.  Jobs
   # are run locally on the system on which Galaxy is started.  Advanced

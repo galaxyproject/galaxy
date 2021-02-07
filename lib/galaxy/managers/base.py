@@ -28,6 +28,7 @@ attribute change to a model object.
 import datetime
 import logging
 import re
+from typing import Type
 
 import routes
 import sqlalchemy
@@ -155,8 +156,8 @@ class ModelManager:
     Provides common queries and CRUD operations as a (hopefully) light layer
     over the ORM.
     """
-    model_class = object
-    foreign_key_name = None
+    model_class: type = object
+    foreign_key_name: str
 
     def __init__(self, app):
         self.app = app
@@ -480,7 +481,7 @@ class HasAModelManager:
     """
 
     #: the class used to create this serializer's generically accessible model_manager
-    model_manager_class = None
+    model_manager_class: Type[object]
     # examples where this doesn't really work are ConfigurationSerializer (no manager)
     # and contents (2 managers)
 
@@ -566,9 +567,9 @@ class ModelSerializer(HasAModelManager):
         the attribute.
         """
         self.serializers.update({
-            'id'            : self.serialize_id,
-            'create_time'   : self.serialize_date,
-            'update_time'   : self.serialize_date,
+            'id': self.serialize_id,
+            'create_time': self.serialize_date,
+            'update_time': self.serialize_date,
         })
 
     def add_view(self, view_name, key_list, include_keys_from=None):
@@ -893,9 +894,7 @@ class ModelFilterParser(HasAModelManager):
     # (as the model informs how the filter params are parsed)
     # I have no great idea where this 'belongs', so it's here for now
 
-    #: model class
-    model_class = None
-    subcontainer_model_class = None
+    model_class: type
     parsed_filter = parsed_filter
 
     def __init__(self, app, **kwargs):
@@ -926,12 +925,12 @@ class ModelFilterParser(HasAModelManager):
         # note: these are the default filters for all models
         self.orm_filter_parsers.update({
             # (prob.) applicable to all models
-            'id'            : {'op': ('in')},
-            'encoded_id'    : {'column' : 'id', 'op': ('in'), 'val': self.parse_id_list},
+            'id': {'op': ('in')},
+            'encoded_id': {'column': 'id', 'op': ('in'), 'val': self.parse_id_list},
             # dates can be directly passed through the orm into a filter (no need to parse into datetime object)
-            'extension'     : {'op': ('eq', 'like', 'in')},
-            'create_time'   : {'op': ('le', 'ge', 'lt', 'gt'), 'val': self.parse_date},
-            'update_time'   : {'op': ('le', 'ge', 'lt', 'gt'), 'val': self.parse_date},
+            'extension': {'op': ('eq', 'like', 'in')},
+            'create_time': {'op': ('le', 'ge', 'lt', 'gt'), 'val': self.parse_date},
+            'update_time': {'op': ('le', 'ge', 'lt', 'gt'), 'val': self.parse_date},
         })
 
     def parse_filters(self, filter_tuple_list):
@@ -1065,9 +1064,9 @@ class ModelFilterParser(HasAModelManager):
     # ---- preset fn_filters: dictionaries of standard filter ops for standard datatypes
     def string_standard_ops(self, key):
         return {
-            'op' : {
-                'eq'        : lambda i, v: v == getattr(i, key),
-                'contains'  : lambda i, v: v in getattr(i, key),
+            'op': {
+                'eq': lambda i, v: v == getattr(i, key),
+                'contains': lambda i, v: v in getattr(i, key),
             }
         }
 

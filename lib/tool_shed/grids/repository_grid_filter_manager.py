@@ -35,7 +35,7 @@ class RepositoryGridFilterManager:
     def is_valid_filter(self, filter):
         if filter is None:
             return True
-        for valid_key, valid_filter in self.filters.items():
+        for valid_filter in self.filters.values():
             if filter == valid_filter:
                 return True
         return False

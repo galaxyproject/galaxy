@@ -25,7 +25,11 @@ sys.path.insert(1, os.path.join(galaxy_root, 'lib'))
 import galaxy.config
 from galaxy.exceptions import ObjectNotFound
 from galaxy.objectstore import build_object_store_from_config
-from galaxy.util.script import app_properties_from_args, populate_config_args
+from galaxy.util.script import (
+    app_properties_from_args,
+    populate_config_args,
+    set_log_handler,
+)
 
 DEFAULT_LOG_DIR = os.path.join(galaxy_root, 'scripts', 'cleanup_datasets')
 
@@ -96,6 +100,7 @@ class Action:
 
     def __init__(self, app):
         self._log_dir = app.args.log_dir
+        self._log_file = app.args.log_file
         self._dry_run = app.args.dry_run
         self._debug = app.args.debug
         self._update_time = app.args.update_time
@@ -119,21 +124,23 @@ class Action:
             self.__close_log()
 
     def __open_log(self):
-        logf = os.path.join(self._log_dir, self.name + '.log')
+        if self._log_file:
+            logf = os.path.join(self._log_dir, self._log_file)
+        else:
+            logf = os.path.join(self._log_dir, self.name + '.log')
         if self._dry_run:
             log.info('--dry-run specified, logging changes to stderr instead of log file: %s' % logf)
-            h = logging.StreamHandler()
+            h = set_log_handler()
         else:
             log.info('Opening log file: %s' % logf)
-            h = logging.FileHandler(logf)
+            h = set_log_handler(filename=logf)
         h.setLevel(logging.DEBUG if self._debug else logging.INFO)
         h.setFormatter(LevelFormatter())
-        l = logging.getLogger(self.name)
-        l.addHandler(h)
-        l.propagate = False
+        self.__log = logging.getLogger(self.name)
+        self.__log.addHandler(h)
+        self.__log.propagate = False
         m = ('==== Log opened: %s ' % datetime.datetime.now().isoformat()).ljust(72, '=')
-        l.info(m)
-        self.__log = l
+        self.__log.info(m)
 
     def __close_log(self):
         m = ('==== Log closed: %s ' % datetime.datetime.now().isoformat()).ljust(72, '=')
@@ -266,9 +273,9 @@ class RemovesObjects:
                 if not self._dry_run:
                     self.object_store.delete(object_to_remove, entire_dir=entire_dir, **object_store_kwargs)
         except ObjectNotFound as e:
-            [l.warning('object store failure: %s: %s', object_to_remove, e) for l in loggers]
+            [log_.warning('object store failure: %s: %s', object_to_remove, e) for log_ in loggers]
         except Exception as e:
-            [l.error('delete failure: %s: %s', object_to_remove, e) for l in loggers]
+            [log_.error('delete failure: %s: %s', object_to_remove, e) for log_ in loggers]
 
     def remove_object(self, object_to_remove):
         raise NotImplementedError()
@@ -1039,6 +1046,10 @@ class Cleanup:
             '-l', '--log-dir',
             default=DEFAULT_LOG_DIR,
             help='Log file directory')
+        parser.add_argument(
+            '-g', '--log-file',
+            default=None,
+            help='Log file name')
         parser.add_argument(
             'actions',
             nargs='*',

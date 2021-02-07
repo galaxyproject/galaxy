@@ -1,6 +1,7 @@
 import logging
 import os
 import unittest
+from typing import Optional
 
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy_test.base.env import setup_keep_outdir, target_url_parts
@@ -15,9 +16,15 @@ class FunctionalTestCase(unittest.TestCase):
     needs to be launched to run the test, this base class assumes a
     server is already running.
     """
-    galaxy_driver_class = None
+    galaxy_driver_class: Optional[type] = None
+    history_id: Optional[str]
+    host: str
+    port: Optional[str]
+    url: str
+    keepOutdir: str
+    test_data_resolver: TestDataResolver
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.history_id = os.environ.get('GALAXY_TEST_HISTORY_ID', None)
         self.host, self.port, self.url = target_url_parts()
         self.test_data_resolver = TestDataResolver()
@@ -38,6 +45,6 @@ class FunctionalTestCase(unittest.TestCase):
         if cls._test_driver:
             cls._test_driver.tear_down()
 
-    def get_filename(self, filename):
+    def get_filename(self, filename: str) -> str:
         # No longer used by tool tests - drop if isn't used else where.
         return self.test_data_resolver.get_filename(filename)

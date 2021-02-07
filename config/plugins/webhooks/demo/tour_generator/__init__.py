@@ -44,7 +44,7 @@ class TourGenerator:
         }
 
         # Conditional datasets
-        for name, value in self._test.inputs.items():
+        for name in self._test.inputs.keys():
             if '|' in name:
                 input_name = name.split('|')[1]
                 if input_name in self._data_inputs.keys():
@@ -119,8 +119,8 @@ class TourGenerator:
 
         steps = [{
             'title': tour_name,
-            'content': 'This short tour will guide you through the <b>' +
-                       self._tool.name + '</b> tool.',
+            'content': 'This short tour will guide you through the <b>'
+                       + self._tool.name + '</b> tool.',
             'orphan': True
         }]
 

@@ -74,7 +74,7 @@ $INTEGRATED_TOOL_PANEL
 </toolbox>
 """)
         integrated_tool_panel = []
-        for key, item_type, item in self._integrated_tool_panel.panel_items_iter():
+        for _, item_type, item in self._integrated_tool_panel.panel_items_iter():
             if item:
                 if item_type == panel_item_types.TOOL:
                     integrated_tool_panel.append('    <tool id="%s" />\n' % item.id)
@@ -90,7 +90,7 @@ $INTEGRATED_TOOL_PANEL
                     section_name = item.name or ''
                     section_version = item.version or ''
                     integrated_tool_panel.append('    <section id="{}" name="{}" version="{}">\n'.format(escape(section_id), escape(section_name), section_version))
-                    for section_key, section_item_type, section_item in item.panel_items_iter():
+                    for _section_key, section_item_type, section_item in item.panel_items_iter():
                         if section_item_type == panel_item_types.TOOL:
                             if section_item:
                                 integrated_tool_panel.append('        <tool id="%s" />\n' % section_item.id)
@@ -104,7 +104,7 @@ $INTEGRATED_TOOL_PANEL
                                 label_version = section_item.version or ''
                                 integrated_tool_panel.append(f'        <label id="{label_id}" text="{label_text}" version="{label_version}" />\n')
                     integrated_tool_panel.append('    </section>\n')
-        tool_panel_description = '\n    '.join(l for l in INTEGRATED_TOOL_PANEL_DESCRIPTION.split("\n") if l)
+        tool_panel_description = '\n    '.join(line for line in INTEGRATED_TOOL_PANEL_DESCRIPTION.split("\n") if line)
         tp_string = template.substitute(INTEGRATED_TOOL_PANEL_DESCRIPTION=tool_panel_description,
                                         INTEGRATED_TOOL_PANEL='\n'.join(integrated_tool_panel))
         with RenamedTemporaryFile(filename, mode='w') as f:

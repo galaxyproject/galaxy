@@ -14,9 +14,10 @@
     <div v-else>
         <progress-bar
             :note="generatingNote"
-            :ok-progress="okPercent"
-            :running-progress="runningPercent"
-            :new-progress="otherPercent"
+            :ok-count="okCount"
+            :error-count="errorCount"
+            :running-count="runningCount"
+            :new-count="newCount"
         />
     </div>
 </template>

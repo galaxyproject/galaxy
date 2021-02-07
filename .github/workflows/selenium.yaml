@@ -3,11 +3,13 @@ on: [push, pull_request]
 env:
   GALAXY_TEST_DBURI: 'postgres://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
   GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR: 'true'
+  GALAXY_TEST_SELENIUM_RETRIES: 1
 jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         python-version: ['3.7']
         chunk: [0, 1, 2]
@@ -39,5 +41,5 @@ jobs:
       - uses: actions/upload-artifact@v2
         if: failure()
         with:
-          name: Selenium test results
+          name: Selenium test results (${{ matrix.python-version }}, ${{ matrix.chunk }})
           path: 'galaxy root/database/test_errors'

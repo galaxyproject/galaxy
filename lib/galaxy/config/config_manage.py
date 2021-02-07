@@ -5,11 +5,11 @@ import string
 import sys
 import tempfile
 from collections import (
-    namedtuple,
     OrderedDict
 )
 from io import StringIO
 from textwrap import TextWrapper
+from typing import Any, List, NamedTuple
 
 import requests
 import yaml
@@ -51,11 +51,6 @@ NO_APP_MAIN_MESSAGE = "No app:main section found, using application defaults thr
 YAML_COMMENT_WRAPPER = TextWrapper(initial_indent="# ", subsequent_indent="# ", break_long_words=False, break_on_hyphens=False)
 RST_DESCRIPTION_WRAPPER = TextWrapper(initial_indent="    ", subsequent_indent="    ", break_long_words=False, break_on_hyphens=False)
 UWSGI_SCHEMA_PATH = "lib/galaxy/webapps/uwsgi_schema.yml"
-
-App = namedtuple(
-    "App",
-    ["config_paths", "default_port", "expected_app_factories", "destination", "schema_path", "uwsgi_module"]
-)
 
 UWSGI_OPTIONS = OrderedDict([
     ('http', {
@@ -154,8 +149,8 @@ UWSGI_OPTIONS = OrderedDict([
         'type': 'str',
     }),
     ('py-call-osafterfork', {
-        'desc': """Feature necessary for proper mule signal handling""",
-        'default': True,
+        'desc': """Feature necessary for proper mule signal handling on Python versions below 3.7.2. The default is set to false to prevent a runtime error under Python 3.7.2 and newer (see https://github.com/unbit/uwsgi/issues/1978).""",
+        'default': False,
         'type': 'bool',
     }),
     ('enable-threads', {
@@ -298,6 +293,7 @@ OPTION_ACTIONS = {
     'fulltext_max_size': _DeprecatedAndDroppedAction(),
     'fulltext_noindex_filetypes': _DeprecatedAndDroppedAction(),
     'fulltext_url': _DeprecatedAndDroppedAction(),
+    'enable_beta_job_managers': _DeprecatedAndDroppedAction(),
     'enable_legacy_sample_tracking_api': _DeprecatedAction(),
     'enable_new_user_preferences': _DeprecatedAndDroppedAction(),
     'force_beta_workflow_scheduled_for_collections': _DeprecatedAction(),
@@ -316,26 +312,35 @@ OPTION_ACTIONS = {
     'communication_server_host': _DeprecatedAndDroppedAction(),
     'communication_server_port': _DeprecatedAndDroppedAction(),
     'persistent_communication_rooms': _DeprecatedAndDroppedAction(),
+    'legacy_eager_objectstore_initialization': _DeprecatedAndDroppedAction(),
 }
 
 
-def _app_name(self):
-    return os.path.splitext(os.path.basename(self.destination))[0]
+class App(NamedTuple):
+    config_paths: List[str]
+    default_port: str
+    expected_app_factories: List[str]
+    destination: str
+    schema_path: str
+    uwsgi_module: str
+
+    @property
+    def app_name(self):
+        return os.path.splitext(os.path.basename(self.destination))[0]
+
+    @property
+    def sample_destination(self):
+        return self.destination + ".sample"
+
+    @property
+    def schema(self):
+        return AppSchema(self.schema_path, self.app_name)
 
 
-def _sample_destination(self):
-    return self.destination + ".sample"
-
-
-def _schema(self):
-    return AppSchema(self.schema_path, self.app_name)
-
-
-App.app_name = property(_app_name)
-App.sample_destination = property(_sample_destination)
-App.schema = property(_schema)
-
-OptionValue = namedtuple("OptionValue", ["name", "value", "option"])
+class OptionValue(NamedTuple):
+    name: str
+    value: Any
+    option: Any
 
 
 GALAXY_APP = App(
@@ -422,6 +427,8 @@ def _write_option_rst(args, rst, key, heading_level, option_value):
         default = "true"
     elif default is False:
         default = "false"
+    elif default == "":
+        default = '""'
     rst.write(":Default: ``%s``\n" % default)
     if type:
         rst.write(":Type: %s\n" % type)
@@ -682,7 +689,7 @@ def _build_sample_yaml(args, app_desc):
     description = getattr(schema, "description", None)
     if description:
         description = description.lstrip()
-        as_comment = "\n".join("# %s" % l for l in description.split("\n")) + "\n"
+        as_comment = "\n".join(f"# {line}" for line in description.split("\n")) + "\n"
         f.write(as_comment)
     _write_sample_section(args, f, 'uwsgi', Schema(UWSGI_OPTIONS), as_comment=False, uwsgi_hack=True)
     _write_sample_section(args, f, app_desc.app_name, schema)
@@ -696,7 +703,7 @@ def _write_to_file(args, f, path):
     else:
         contents = f
     if args.dry_run:
-        contents_indented = "\n".join(" |%s" % l for l in contents.splitlines())
+        contents_indented = "\n".join(f" |{line}" for line in contents.splitlines())
         print(f"Overwriting {path} with the following contents:\n{contents_indented}")
         print("... skipping because --dry-run is enabled.")
     else:
@@ -751,7 +758,7 @@ def _write_option(args, f, key, option_value, as_comment=False, uwsgi_hack=False
     else:
         key_val_str = yaml.dump({key: value}, width=float("inf")).lstrip("{").rstrip("\n}")
     lines = f"{comment}{as_comment_str}{key_val_str}"
-    lines_idented = "\n".join("  %s" % l for l in lines.split("\n"))
+    lines_idented = "\n".join(f"  {line}" for line in lines.split("\n"))
     f.write("%s\n\n" % lines_idented)
 
 

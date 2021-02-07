@@ -14,11 +14,12 @@ import tempfile
 import zipfile
 from collections import OrderedDict
 from json import dumps
+from typing import Optional
 
 import h5py
 import pysam
 import pysam.bcftools
-from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_MAGIC_SIZE
+from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP
 
 from galaxy import util
 from galaxy.datatypes import metadata
@@ -27,6 +28,7 @@ from galaxy.datatypes.data import (
     get_file_peek,
 )
 from galaxy.datatypes.metadata import DictParameter, ListParameter, MetadataElement, MetadataParameter
+from galaxy.datatypes.sniff import build_sniff_from_prefix
 from galaxy.util import nice_size, sqlite
 from galaxy.util.checkers import is_bz2, is_gzip
 from . import data, dataproviders
@@ -51,7 +53,7 @@ class Binary(data.Data):
     def register_unsniffable_binary_ext(ext):
         """Deprecated method."""
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset, **kwd):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = 'binary data'
@@ -272,7 +274,7 @@ class BamNative(CompressedArchive):
     edam_format = "format_2572"
     edam_data = "data_0863"
     file_ext = "unsorted.bam"
-    sort_flag = None
+    sort_flag: Optional[str] = None
 
     MetadataElement(name="bam_version", default=None, desc="BAM Version", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=None)
     MetadataElement(name="sort_order", default=None, desc="Sort Order", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=None)
@@ -341,7 +343,7 @@ class BamNative(CompressedArchive):
         except Exception:
             return "Binary bam alignments file (%s)" % (nice_size(dataset.get_size()))
 
-    def to_archive(self, trans, dataset, name=""):
+    def to_archive(self, dataset, name=""):
         rel_paths = []
         file_paths = []
         rel_paths.append("{}.{}".format(name or dataset.file_name, dataset.extension))
@@ -964,6 +966,10 @@ class Anndata(H5):
     MetadataElement(name="layers_count", default=0, desc="layers_count", readonly=True, visible=True, no_value=0)
     MetadataElement(name="layers_names", desc="layers_names", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
     MetadataElement(name="row_attrs_count", default=0, desc="row_attrs_count", readonly=True, visible=True, no_value=0)
+    # obs_names: Cell1, Cell2, Cell3,...
+    # obs_layers: louvain, leidein, isBcell
+    # obs_count: number of obs_layers
+    # obs_size: number of obs_names
     MetadataElement(name="obs_names", desc="obs_names", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
     MetadataElement(name="obs_layers", desc="obs_layers", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
     MetadataElement(name="obs_count", default=0, desc="obs_count", readonly=True, visible=True, no_value=0)
@@ -1000,10 +1006,8 @@ class Anndata(H5):
             dataset.metadata.doi = anndata_file.attrs.get('doi')
             dataset.creation_date = anndata_file.attrs.get('creation_date')
             dataset.metadata.shape = anndata_file.attrs.get('shape', dataset.metadata.shape)
-            # none of the above appear to work in any dataset tested, but could be useful for future
-            # AnnData datasets
-
-            # all possible keys
+            # none of the above appear to work in any dataset tested, but could be useful for
+            # future AnnData datasets
             dataset.metadata.layers_count = len(anndata_file)
             dataset.metadata.layers_names = list(anndata_file.keys())
 
@@ -1026,13 +1030,25 @@ class Anndata(H5):
                     obs_index = "index"
                 elif "_index" in tmp:
                     obs_index = "_index"
-                # do not attempt to parse beyond these
+                # Determine cell labels
                 if obs_index:
                     dataset.metadata.obs_names = list(tmp[obs_index])
-                    x, y, z = _layercountsize(tmp, len(dataset.metadata.obs_names))
-                    dataset.metadata.obs_layers = x
-                    dataset.metadata.obs_count = y
-                    dataset.metadata.obs_size = z
+                elif hasattr(tmp, 'dtype'):
+                    if "index" in tmp.dtype.names:
+                        # Yes, we call tmp["index"], and not tmp.dtype["index"]
+                        # here, despite the above tests.
+                        dataset.metadata.obs_names = list(tmp["index"])
+                    elif "_index" in tmp.dtype.names:
+                        dataset.metadata.obs_names = list(tmp["_index"])
+                    else:
+                        log.warning("Could not determine cell labels for %s", self)
+                else:
+                    log.warning("Could not determine observation index for %s", self)
+
+                x, y, z = _layercountsize(tmp, len(dataset.metadata.obs_names))
+                dataset.metadata.obs_layers = x
+                dataset.metadata.obs_count = y
+                dataset.metadata.obs_size = z
 
             if 'obsm' in dataset.metadata.layers_names:
                 tmp = anndata_file["obsm"]
@@ -1058,9 +1074,14 @@ class Anndata(H5):
                 # dataset.metadata.var_names = tmp[var_index]
                 if var_index:
                     x, y, z = _layercountsize(tmp, len(tmp[var_index]))
-                    dataset.metadata.var_layers = x
-                    dataset.metadata.var_count = y
-                    dataset.metadata.var_size = z
+                else:
+                    # failing to detect a var_index is not an indicator
+                    # that the dataset is empty
+                    x, y, z = _layercountsize(tmp)
+
+                dataset.metadata.var_layers = x
+                dataset.metadata.var_count = y
+                dataset.metadata.var_size = z
 
             if 'varm' in dataset.metadata.layers_names:
                 tmp = anndata_file["varm"]
@@ -1117,23 +1138,18 @@ class Anndata(H5):
             return "Binary Anndata file (%s)" % (nice_size(dataset.get_size()))
 
 
+@build_sniff_from_prefix
 class GmxBinary(Binary):
     """
     Base class for GROMACS binary files - xtc, trr, cpt
     """
 
-    magic_number = None  # variables to be overwritten in the child class
+    magic_number: Optional[int] = None  # variables to be overwritten in the child class
     file_ext = ""
 
-    def sniff(self, filename):
+    def sniff_prefix(self, sniff_prefix):
         # The first 4 bytes of any GROMACS binary file containing the magic number
-        try:
-            header = open(filename, 'rb').read(struct.calcsize('>1i'))
-            if struct.unpack('>1i', header)[0] == self.magic_number:
-                return True
-            return False
-        except Exception:
-            return False
+        return sniff_prefix.magic_header('>1i') == self.magic_number
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
@@ -1430,22 +1446,17 @@ class Scf(Binary):
             return "Binary scf sequence file (%s)" % (nice_size(dataset.get_size()))
 
 
+@build_sniff_from_prefix
 class Sff(Binary):
     """ Standard Flowgram Format (SFF) """
     edam_format = "format_3284"
     edam_data = "data_0924"
     file_ext = "sff"
 
-    def sniff(self, filename):
+    def sniff_prefix(self, sniff_prefix):
         # The first 4 bytes of any sff file is '.sff', and the file is binary. For details
         # about the format, see http://www.ncbi.nlm.nih.gov/Traces/trace.cgi?cmd=show&f=formats&m=doc&s=format
-        try:
-            header = open(filename, 'rb').read(4)
-            if header == b'.sff':
-                return True
-            return False
-        except Exception:
-            return False
+        return sniff_prefix.startswith_bytes(b'.sff')
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
@@ -1462,6 +1473,7 @@ class Sff(Binary):
             return "Binary sff file (%s)" % (nice_size(dataset.get_size()))
 
 
+@build_sniff_from_prefix
 class BigWig(Binary):
     """
     Accessing binary BigWig files from UCSC.
@@ -1479,15 +1491,8 @@ class BigWig(Binary):
         self._magic = 0x888FFC26
         self._name = "BigWig"
 
-    def _unpack(self, pattern, handle):
-        return struct.unpack(pattern, handle.read(struct.calcsize(pattern)))
-
-    def sniff(self, filename):
-        try:
-            magic = self._unpack("I", open(filename, 'rb'))
-            return magic[0] == self._magic
-        except Exception:
-            return False
+    def sniff_prefix(self, sniff_prefix):
+        return sniff_prefix.magic_header("I") == self._magic
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
@@ -1517,23 +1522,16 @@ class BigBed(BigWig):
         self._name = "BigBed"
 
 
+@build_sniff_from_prefix
 class TwoBit(Binary):
     """Class describing a TwoBit format nucleotide file"""
     edam_format = "format_3009"
     edam_data = "data_0848"
     file_ext = "twobit"
 
-    def sniff(self, filename):
-        try:
-            # All twobit files start with a 16-byte header. If the file is smaller than 16 bytes, it's obviously not a valid twobit file.
-            if os.path.getsize(filename) < 16:
-                return False
-            header = open(filename, 'rb').read(TWOBIT_MAGIC_SIZE)
-            magic = struct.unpack(">L", header)[0]
-            if magic == TWOBIT_MAGIC_NUMBER or magic == TWOBIT_MAGIC_NUMBER_SWAP:
-                return True
-        except OSError:
-            return False
+    def sniff_prefix(self, sniff_prefix):
+        magic = sniff_prefix.magic_header(">L")
+        return magic == TWOBIT_MAGIC_NUMBER or magic == TWOBIT_MAGIC_NUMBER_SWAP
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
@@ -2147,22 +2145,16 @@ class ExcelXls(Binary):
             return "Microsoft Excel XLS file (%s)" % (data.nice_size(dataset.get_size()))
 
 
+@build_sniff_from_prefix
 class Sra(Binary):
     """ Sequence Read Archive (SRA) datatype originally from mdshw5/sra-tools-galaxy"""
     file_ext = 'sra'
 
-    def sniff(self, filename):
+    def sniff_prefix(self, sniff_prefix):
         """ The first 8 bytes of any NCBI sra file is 'NCBI.sra', and the file is binary.
         For details about the format, see http://www.ncbi.nlm.nih.gov/books/n/helpsra/SRA_Overview_BK/#SRA_Overview_BK.4_SRA_Data_Structure
         """
-        try:
-            header = open(filename, 'rb').read(8)
-            if header == b'NCBI.sra':
-                return True
-            else:
-                return False
-        except Exception:
-            return False
+        return sniff_prefix.startswith_bytes(b'NCBI.sra')
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
@@ -2559,6 +2551,7 @@ class SearchGuiArchive(CompressedArchive):
             return "SearchGUI Archive, version %s" % (dataset.metadata.searchgui_version or 'unknown')
 
 
+@build_sniff_from_prefix
 class NetCDF(Binary):
     """Binary data in netCDF format"""
     file_ext = "netcdf"
@@ -2579,15 +2572,8 @@ class NetCDF(Binary):
         except Exception:
             return "Binary netCDF file (%s)" % (nice_size(dataset.get_size()))
 
-    def sniff(self, filename):
-        try:
-            with open(filename, 'rb') as f:
-                header = f.read(3)
-            if header == b'CDF':
-                return True
-            return False
-        except Exception:
-            return False
+    def sniff_prefix(self, sniff_prefix):
+        return sniff_prefix.startswith_bytes(b'CDF')
 
 
 class Dcd(Binary):
@@ -2693,6 +2679,7 @@ class Vel(Binary):
             return "Binary CHARMM velocity file (%s)" % (nice_size(dataset.get_size()))
 
 
+@build_sniff_from_prefix
 class DAA(Binary):
     """
     Class describing an DAA (diamond alignment archive) file
@@ -2710,12 +2697,12 @@ class DAA(Binary):
         super().__init__(**kwd)
         self._magic = binascii.unhexlify("6be33e6d47530e3c")
 
-    def sniff(self, filename):
+    def sniff_prefix(self, sniff_prefix):
         # The first 8 bytes of any daa file are 0x3c0e53476d3ee36b
-        with open(filename, 'rb') as f:
-            return f.read(8) == self._magic
+        return sniff_prefix.startswith_bytes(self._magic)
 
 
+@build_sniff_from_prefix
 class RMA6(Binary):
     """
     Class describing an RMA6 (MEGAN6 read-match archive) file
@@ -2733,12 +2720,11 @@ class RMA6(Binary):
         super().__init__(**kwd)
         self._magic = binascii.unhexlify("000003f600000006")
 
-    def sniff(self, filename):
-        # The first 8 bytes of any daa file are 0x3c0e53476d3ee36b
-        with open(filename, 'rb') as f:
-            return f.read(8) == self._magic
+    def sniff_prefix(self, sniff_prefix):
+        return sniff_prefix.startswith_bytes(self._magic)
 
 
+@build_sniff_from_prefix
 class DMND(Binary):
     """
     Class describing an DMND file
@@ -2756,10 +2742,9 @@ class DMND(Binary):
         super().__init__(**kwd)
         self._magic = binascii.unhexlify("6d18ee15a4f84a02")
 
-    def sniff(self, filename):
+    def sniff_prefix(self, sniff_prefix):
         # The first 8 bytes of any dmnd file are 0x24af8a415ee186d
-        with open(filename, 'rb') as f:
-            return f.read(8) == self._magic
+        return sniff_prefix.startswith_bytes(self._magic)
 
 
 class ICM(Binary):
@@ -2783,6 +2768,28 @@ class ICM(Binary):
             return True
 
         return False
+
+
+@build_sniff_from_prefix
+class Parquet(Binary):
+    """
+    Class describing Apache Parquet file (https://parquet.apache.org/)
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('example.parquet')
+    >>> Parquet().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.mz5')
+    >>> Parquet().sniff(fname)
+    False
+    """
+    file_ext = "parquet"
+
+    def __init__(self, **kwd):
+        super().__init__(**kwd)
+        self._magic = b"PAR1"  # Defined at https://parquet.apache.org/documentation/latest/
+
+    def sniff_prefix(self, sniff_prefix):
+        return sniff_prefix.startswith_bytes(self._magic)
 
 
 class BafTar(CompressedArchive):

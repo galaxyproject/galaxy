@@ -38,20 +38,34 @@ class ToolDocumentCache:
             os.makedirs(self.cache_dir)
         self.cache_file = os.path.join(self.cache_dir, 'cache.sqlite')
         self.writeable_cache_file = None
-        # Create database if necessary using 'c' flag
-        self._cache = SqliteDict(self.cache_file, flag='c', encode=encoder, decode=decoder, autocommit=False)
-        # Switch SqliteDict back to readonly
-        self._cache.flag = 'r'
+        self._cache = None
+        self.disabled = False
+        self._get_cache(create_if_necessary=True)
 
     def close(self):
-        self._cache.close()
+        self._cache and self._cache.close()
+
+    def _get_cache(self, flag='r', create_if_necessary=False):
+        try:
+            if create_if_necessary and not os.path.exists(self.cache_file):
+                # Create database if necessary using 'c' flag
+                self._cache = SqliteDict(self.cache_file, flag='c', encode=encoder, decode=decoder, autocommit=False)
+                if flag == 'r':
+                    self._cache.flag = flag
+            else:
+                cache_file = self.writeable_cache_file.name if self.writeable_cache_file else self.cache_file
+                self._cache = SqliteDict(cache_file, flag=flag, encode=encoder, decode=decoder, autocommit=False)
+        except sqlite3.OperationalError:
+            log.warning('Tool document cache unavailable')
+            self._cache = None
+            self.disabled = True
 
     @property
     def cache_file_is_writeable(self):
         return os.access(self.cache_file, os.W_OK)
 
     def reopen_ro(self):
-        self._cache = SqliteDict(self.cache_file, flag='r', encode=encoder, decode=decoder, autocommit=False)
+        self._get_cache(flag='r')
         self.writeable_cache_file = None
 
     def get(self, config_file):
@@ -75,7 +89,7 @@ class ToolDocumentCache:
             self.writeable_cache_file = tempfile.NamedTemporaryFile(dir=self.cache_dir, suffix='cache.sqlite.tmp', delete=False)
             if os.path.exists(self.cache_file):
                 shutil.copy(self.cache_file, self.writeable_cache_file.name)
-            self._cache = SqliteDict(self.writeable_cache_file.name, flag='c', encode=encoder, decode=decoder, autocommit=False)
+            self._get_cache(flag='c')
 
     def persist(self):
         if self.writeable_cache_file:
@@ -169,7 +183,7 @@ class ToolCache:
                     if tool_id in self._new_tool_ids:
                         self._new_tool_ids.remove(tool_id)
                 if persist_tool_document_cache:
-                    tool.toolbox.persist_tool_document_cache()
+                    tool.app.toolbox.persist_cache()
         except Exception as e:
             log.debug("Exception while checking tools to remove from cache: %s", unicodify(e))
             # If by chance the file is being removed while calculating the hash or modtime
@@ -180,18 +194,19 @@ class ToolCache:
 
     def _should_cleanup(self, config_filename):
         """Return True if `config_filename` does not exist or if modtime and hash have changes, else return False."""
-        if not os.path.exists(config_filename):
+        try:
+            new_mtime = os.path.getmtime(config_filename)
+            tool_hash = self._hash_by_tool_paths.get(config_filename)
+            if tool_hash.modtime < new_mtime:
+                if md5_hash_file(config_filename) != tool_hash.hash:
+                    return True
+            tool = self._tools_by_path[config_filename]
+            for macro_path in tool._macro_paths:
+                new_mtime = os.path.getmtime(macro_path)
+                if self._hash_by_tool_paths.get(macro_path).modtime < new_mtime:
+                    return True
+        except FileNotFoundError:
             return True
-        new_mtime = os.path.getmtime(config_filename)
-        tool_hash = self._hash_by_tool_paths.get(config_filename)
-        if tool_hash.modtime < new_mtime:
-            if md5_hash_file(config_filename) != tool_hash.hash:
-                return True
-        tool = self._tools_by_path[config_filename]
-        for macro_path in tool._macro_paths:
-            new_mtime = os.path.getmtime(macro_path)
-            if self._hash_by_tool_paths.get(macro_path).modtime < new_mtime:
-                return True
         return False
 
     def get_tool(self, config_filename):

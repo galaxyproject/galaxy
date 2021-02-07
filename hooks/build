@@ -1,0 +1,3 @@
+#!/bin/bash
+
+DOCKER_BUILDKIT=1 docker build -f $DOCKERFILE_PATH -t $IMAGE_NAME --build-arg GIT_USERNAME=$GIT_USERNAME --build-arg GIT_PASSWORD=$GIT_PASSWORD .

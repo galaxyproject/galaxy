@@ -43,26 +43,26 @@ mkdir -p %s
 """
 
 PBS_ARGMAP = {
-    'destination'           : '-q',
-    'Execution_Time'        : '-a',
-    'Account_Name'          : '-A',
-    'Checkpoint'            : '-c',
-    'Error_Path'            : '-e',
-    'Group_List'            : '-g',
-    'Hold_Types'            : '-h',
-    'Join_Paths'            : '-j',
-    'Keep_Files'            : '-k',
-    'Resource_List'         : '-l',
-    'Mail_Points'           : '-m',
-    'Mail_Users'            : '-M',
-    'Job_Name'              : '-N',
-    'Output_Path'           : '-o',
-    'Priority'              : '-p',
-    'Rerunable'             : '-r',
-    'Shell_Path_List'       : '-S',
-    'job_array_request'     : '-t',
-    'User_List'             : '-u',
-    'Variable_List'         : '-v',
+    'destination': '-q',
+    'Execution_Time': '-a',
+    'Account_Name': '-A',
+    'Checkpoint': '-c',
+    'Error_Path': '-e',
+    'Group_List': '-g',
+    'Hold_Types': '-h',
+    'Join_Paths': '-j',
+    'Keep_Files': '-k',
+    'Resource_List': '-l',
+    'Mail_Points': '-m',
+    'Mail_Users': '-M',
+    'Job_Name': '-N',
+    'Output_Path': '-o',
+    'Priority': '-p',
+    'Rerunable': '-r',
+    'Shell_Path_List': '-S',
+    'job_array_request': '-t',
+    'User_List': '-u',
+    'Variable_List': '-v',
 }
 
 # From pbs' pbs_job.h
@@ -290,8 +290,8 @@ class PBSJobRunner(AsynchronousJobRunner):
         job_file = f"{self.app.config.cluster_files_directory}/{job_wrapper.job_id}.sh"
         self.write_executable_script(job_file, script)
         # job was deleted while we were preparing it
-        if job_wrapper.get_state() == model.Job.states.DELETED:
-            log.debug("Job %s deleted by user before it entered the PBS queue" % job_wrapper.job_id)
+        if job_wrapper.get_state() in (model.Job.states.DELETED, model.Job.states.STOPPED):
+            log.debug("Job %s deleted/stopped by user before it entered the PBS queue" % job_wrapper.job_id)
             pbs.pbs_disconnect(c)
             if job_wrapper.cleanup_job in ("always", "onsuccess"):
                 self.cleanup((ofile, efile, ecfile, job_file))
@@ -395,7 +395,7 @@ class PBSJobRunner(AsynchronousJobRunner):
             elif status.job_state == "C":
                 # "keep_completed" is enabled in PBS, so try to check exit status
                 try:
-                    assert int(status.exit_status) == 0
+                    assert int(status.exit_status) == 0 or pbs_job_state.job_wrapper.get_state() == model.Job.states.STOPPED
                     log.debug(f"({galaxy_job_id}/{job_id}) PBS job has completed successfully")
                 except AssertionError:
                     exit_status = int(status.exit_status)
@@ -545,8 +545,8 @@ class PBSJobRunner(AsynchronousJobRunner):
         pbs_job_state.job_destination = job_wrapper.job_destination
         job_wrapper.command_line = job.command_line
         pbs_job_state.job_wrapper = job_wrapper
-        if job.state == model.Job.states.RUNNING:
-            log.debug(f"({job.id}/{job.get_job_runner_external_id()}) is still in running state, adding to the PBS queue")
+        if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
+            log.debug(f"({job.id}/{job.get_job_runner_external_id()}) is still in {job.state} state, adding to the PBS queue")
             pbs_job_state.old_state = 'R'
             pbs_job_state.running = True
             self.monitor_queue.put(pbs_job_state)

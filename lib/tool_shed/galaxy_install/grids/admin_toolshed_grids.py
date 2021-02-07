@@ -149,16 +149,14 @@ class InstalledRepositoryGrid(grids.Grid):
                                               key="free-text-search",
                                               visible=False,
                                               filterable="standard"))
-    global_actions = [
-    ]
     operations = [grids.GridOperation(label="Update tool shed status",
                                       condition=(lambda item: not item.deleted),
                                       allow_multiple=False),
                   grids.GridOperation(label="Get updates",
                                       condition=(lambda item:
-                                                 not item.deleted and
-                                                 item.revision_update_available and
-                                                 item.status not in [
+                                                 not item.deleted
+                                                 and item.revision_update_available
+                                                 and item.status not in [
                                                      tool_shed_install.ToolShedRepository.installation_status.ERROR,
                                                      tool_shed_install.ToolShedRepository.installation_status.NEW]),
                                       allow_multiple=False,
@@ -173,8 +171,8 @@ class InstalledRepositoryGrid(grids.Grid):
                                                     action='install_latest_repository_revision')),
                   grids.GridOperation(label="Install",
                                       condition=(lambda item:
-                                                 not item.deleted and
-                                                 item.status == tool_shed_install.ToolShedRepository.installation_status.NEW),
+                                                 not item.deleted
+                                                 and item.status == tool_shed_install.ToolShedRepository.installation_status.NEW),
                                       allow_multiple=False,
                                       target='center',
                                       url_args=dict(controller='admin_toolshed',
@@ -182,8 +180,8 @@ class InstalledRepositoryGrid(grids.Grid):
                                                     operation='install')),
                   grids.GridOperation(label="Deactivate or uninstall",
                                       condition=(lambda item:
-                                                 not item.deleted and
-                                                 item.status != tool_shed_install.ToolShedRepository.installation_status.NEW),
+                                                 not item.deleted
+                                                 and item.status != tool_shed_install.ToolShedRepository.installation_status.NEW),
                                       allow_multiple=True,
                                       target="center",
                                       url_args=dict(controller='admin_toolshed',
@@ -200,7 +198,6 @@ class InstalledRepositoryGrid(grids.Grid):
                                       target='center',
                                       url_args=dict(controller='admin_toolshed',
                                                     action='purge_repository'))]
-    standard_filters = []
     default_filter = dict(deleted="False")
     num_rows_per_page = 50
     use_paging = False

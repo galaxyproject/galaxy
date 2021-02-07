@@ -43,7 +43,7 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
     if invocation_step is None:
         execution_tracker = ToolExecutionTracker(trans, tool, mapping_params, collection_info, completed_jobs=completed_jobs)
     else:
-        execution_tracker = WorkflowStepExecutionTracker(trans, tool, mapping_params, collection_info, invocation_step, job_callback=job_callback, completed_jobs=completed_jobs)
+        execution_tracker = WorkflowStepExecutionTracker(trans, tool, mapping_params, collection_info, invocation_step, completed_jobs=completed_jobs)
     execution_cache = ToolExecutionCache(trans)
 
     def execute_single_job(execution_slice, completed_job):
@@ -65,7 +65,7 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
             del params['__workflow_resource_params__']
         if validate_outputs:
             params['__validate_outputs__'] = True
-        job, result = tool.handle_single_execution(trans, rerun_remap_job_id, execution_slice, history, execution_cache, completed_job, collection_info, flush_job=False)
+        job, result = tool.handle_single_execution(trans, rerun_remap_job_id, execution_slice, history, execution_cache, completed_job, collection_info, job_callback=job_callback, flush_job=False)
         if job:
             log.debug(job_timer.to_str(tool_id=tool.id, job_id=job.id))
             execution_tracker.record_success(execution_slice, job, result)
@@ -107,10 +107,11 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
     else:
         # Make sure collections, implicit jobs etc are flushed even if there are no precreated output datasets
         trans.sa_session.flush()
+    tool_id = tool.id
     for job in execution_tracker.successful_jobs:
         # Put the job in the queue if tracking in memory
         tool.app.job_manager.enqueue(job, tool=tool, flush=False)
-        trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
+        trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=tool_id)
     trans.sa_session.flush()
 
     if has_remaining_jobs:
@@ -286,7 +287,7 @@ class ExecutionTracker:
 
         implicit_collection_jobs = model.ImplicitCollectionJobs()
         for output_name, output in self.tool.outputs.items():
-            if filter_output(output, self.example_params):
+            if filter_output(self.tool, output, self.example_params):
                 continue
             output_collection_name = self.output_name(trans, history, params, output)
             effective_structure = self._mapped_output_structure(trans, output)
@@ -414,16 +415,16 @@ class ToolExecutionTracker(ExecutionTracker):
 
 class WorkflowStepExecutionTracker(ExecutionTracker):
 
-    def __init__(self, trans, tool, mapping_params, collection_info, invocation_step, job_callback, completed_jobs=None):
+    def __init__(self, trans, tool, mapping_params, collection_info, invocation_step, completed_jobs=None):
         super().__init__(trans, tool, mapping_params, collection_info, completed_jobs=completed_jobs)
         self.invocation_step = invocation_step
-        self.job_callback = job_callback
 
     def record_success(self, execution_slice, job, outputs):
         super().record_success(execution_slice, job, outputs)
         if not self.collection_info:
+            for output_name, output in outputs:
+                self.invocation_step.add_output(output_name, output)
             self.invocation_step.job = job
-        self.job_callback(job)
 
     def new_collection_execution_slices(self):
         for job_index, (param_combination, dataset_collection_elements) in enumerate(zip(self.param_combinations, self.walk_implicit_collections())):
@@ -446,6 +447,8 @@ class WorkflowStepExecutionTracker(ExecutionTracker):
         history = history or self.tool.get_default_history_by_trans(self.trans)
         if self.invocation_step.is_new:
             self.precreate_output_collections(history, params)
+            for output_name, implicit_collection in self.implicit_collections.items():
+                self.invocation_step.add_output(output_name, implicit_collection)
         else:
             collections = {}
             for output_assoc in self.invocation_step.output_dataset_collections:

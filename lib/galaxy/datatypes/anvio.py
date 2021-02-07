@@ -6,6 +6,7 @@ import glob
 import logging
 import os
 import sys
+from typing import Optional
 
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.text import Html
@@ -41,7 +42,7 @@ class AnvioComposite(Html):
             rval.append("</ul>")
         defined_files = map(lambda x: x[0], defined_files)
         extra_files = []
-        for (dirpath, dirnames, filenames) in os.walk(dataset.extra_files_path, followlinks=True):
+        for dirpath, _dirnames, filenames in os.walk(dataset.extra_files_path, followlinks=True):
             for filename in filenames:
                 rel_path = os.path.relpath(os.path.join(dirpath, filename), dataset.extra_files_path)
                 if rel_path not in defined_files:
@@ -79,7 +80,7 @@ class AnvioComposite(Html):
 
 class AnvioDB(AnvioComposite):
     """Class for AnvioDB database files."""
-    _anvio_basename = None
+    _anvio_basename: Optional[str] = None
     MetadataElement(name="anvio_basename", default=_anvio_basename, desc="Basename", readonly=True)
     file_ext = 'anvio_db'
 

@@ -1,98 +1,77 @@
 <template>
     <div>
-        <b-container class="mb-3">
-            <b-row>
-                <b-col md="6">
-                    <h2>
-                        <span id="jobs-title">Jobs</span>
-                    </h2>
-                </b-col>
-                <b-col>
-                    <job-lock />
-                </b-col>
-            </b-row>
-        </b-container>
+        <h2 id="jobs-title">Jobs</h2>
         <b-alert v-if="this.message !== ''" :variant="galaxyKwdToBootstrap(status)" show>
             {{ message }}
         </b-alert>
-        <b-alert variant="info" show>
-            <p>
-                Unfinished and recently finished jobs are displayed on this page. The 'cutoff' input box will do two
-                things -- it will limit the display of unfinished jobs to only those jobs that have not had their job
-                state updated recently, and it will limit the recently finished jobs list to only displaying jobs that
-                have finished since the cutoff.
-            </p>
+        <p>
+            Unfinished jobs (in the state 'new', 'queued', 'running', or 'upload') and recently terminal jobs (in the
+            state 'error' or 'ok') are displayed on this page. The 'cutoff' input box will limit the display of jobs to
+            only those jobs that have had their state updated in the specified timeframe.
+        </p>
+        <p>
             If any jobs are displayed, you may choose to stop them. Your stop message will be displayed to the user as:
             "This job was stopped by an administrator: <strong>&lt;YOUR MESSAGE&gt;</strong> For more information or
             help, report this error".
-        </b-alert>
-        <b-alert v-if="loading" variant="info" show>
-            Waiting for data
-        </b-alert>
+        </p>
+        <h3>Job Control</h3>
+        <job-lock />
+        <b-alert v-if="loading" variant="info" show> Waiting for data </b-alert>
         <div v-else>
-            <b-container class="mb-3">
-                <b-row>
-                    <b-col md="6">
-                        <b-form name="jobs" @submit.prevent="onRefresh">
-                            <b-form-group
-                                id="cutoff"
-                                label="Update Jobs"
-                                label-for="cutoff-minutes"
-                                description="Cutoff in minutes"
-                            >
-                                <b-input-group>
-                                    <b-form-input id="cutoff" type="number" v-model="cutoffMin"> </b-form-input>
-                                    <b-input-group-append>
-                                        <b-btn type="submit">Refresh</b-btn>
-                                    </b-input-group-append>
-                                </b-input-group>
-                            </b-form-group>
-                        </b-form>
-                    </b-col>
-                </b-row>
-                <b-row>
-                    <b-col md="6">
+            <h3>Job Details</h3>
+            <b-row>
+                <b-col>
+                    <b-form name="jobs" @submit.prevent="onRefresh">
                         <b-form-group
-                            label="Filter Jobs"
-                            label-for="filter-regex"
-                            description="Search for strings or regular expressions"
+                            id="cutoff"
+                            label="Cutoff time period"
+                            label-for="cutoff-minutes"
+                            description="in minutes"
                         >
-                            <b-input-group id="filter-regex">
-                                <b-form-input
-                                    v-model="filter"
-                                    placeholder="Type to Search"
-                                    @keyup.esc.native="filter = ''"
-                                />
+                            <b-input-group>
+                                <b-form-input id="cutoff" type="number" v-model="cutoffMin"> </b-form-input>
                                 <b-input-group-append>
-                                    <b-btn :disabled="!filter" @click="filter = ''">Clear (esc)</b-btn>
+                                    <b-btn type="submit">Refresh</b-btn>
                                 </b-input-group-append>
                             </b-input-group>
                         </b-form-group>
-                    </b-col>
-                    <b-col>
-                        <b-card v-if="jobsItemsComputed.length" header="Stop Selected Jobs">
-                            <b-form @submit.prevent="onStopJobs">
-                                <b-form-group label-for="stop-message" description="will be displayed to the user">
-                                    <b-input-group>
-                                        <b-form-input
-                                            id="stop-message"
-                                            v-model="stopMessage"
-                                            placeholder="Stop message"
-                                            required
-                                        >
-                                        </b-form-input>
-                                        <b-input-group-append>
-                                            <b-btn type="submit">Submit</b-btn>
-                                        </b-input-group-append>
-                                    </b-input-group>
-                                </b-form-group>
-                            </b-form>
-                        </b-card>
-                    </b-col>
-                </b-row>
-            </b-container>
+                    </b-form>
+                </b-col>
+                <b-col>
+                    <b-form-group
+                        label="Filter Jobs"
+                        label-for="filter-regex"
+                        description="by strings or regular expressions"
+                    >
+                        <b-input-group id="filter-regex">
+                            <b-form-input
+                                v-model="filter"
+                                placeholder="Type to Search"
+                                @keyup.esc.native="filter = ''"
+                            />
+                            <b-input-group-append>
+                                <b-btn :disabled="!filter" @click="filter = ''">Clear (esc)</b-btn>
+                            </b-input-group-append>
+                        </b-input-group>
+                    </b-form-group>
+                </b-col>
+            </b-row>
+            <transition name="fade">
+                <b-form v-if="jobsItemsComputed.length && selectedStopJobIds.length" @submit.prevent="onStopJobs">
+                    <b-form-group label="Stop Selected Jobs" description="Stop message will be displayed to the user">
+                        <b-input-group>
+                            <b-form-input id="stop-message" v-model="stopMessage" placeholder="Stop message" required>
+                            </b-form-input>
+                            <b-input-group-append>
+                                <b-btn type="submit">Submit</b-btn>
+                            </b-input-group-append>
+                        </b-input-group>
+                    </b-form-group>
+                </b-form>
+            </transition>
+            <h4>Unfinished Jobs</h4>
             <b-alert v-if="!jobsItemsComputed.length" variant="secondary" show>
-                There are no unfinished jobs to show with current cutoff time.
+                There are no unfinished jobs to show with current cutoff time of {{ cutoffMin }} minutes.
             </b-alert>
             <b-table
                 v-else
@@ -108,8 +87,9 @@
                 :busy="busy"
             >
                 <template v-slot:table-caption>
-                    Unfinished Jobs: These jobs are unfinished and have had their state updated in the previous
-                    {{ cutoffDisplay }} minutes.
+                    These jobs are unfinished and have had their state updated in the previous
+                    {{ cutoffMin }} minutes. For currently running jobs, the "Last Update" column should indicate the
+                    runtime so far.
                 </template>
                 <template v-slot:head(selected)>
                     <b-form-checkbox
@@ -126,18 +106,24 @@
                         :value="data.item['id']"
                     ></b-form-checkbox>
                 </template>
+                <template v-slot:cell(update_time)="data">
+                    <utc-date :date="data.value" mode="elapsed" />
+                </template>
                 <template v-slot:cell(job_info)="data">
                     <b-link :href="data.value.info_url" @click.prevent="clickJobInfo(data.value.id)">
                         {{ data.value.id }}
                     </b-link>
                 </template>
                 <template v-slot:row-details="row">
-                    <job-details :command-line="row.item.command_line" :job-id="row.item.jobId" />
+                    <job-details :job="row.item" />
                 </template>
             </b-table>
+
+            <h4>Finished Jobs</h4>
             <b-alert v-if="!recentJobsItemsComputed.length" variant="secondary" show>
-                There are no recently finished jobs to show with current cutoff time.
+                There are no recently finished jobs to show with current cutoff time of {{ cutoffMin }} minutes.
             </b-alert>
+
             <b-table
                 v-else
                 :fields="recentJobsFieldsComputed"
@@ -151,7 +137,7 @@
                 :busy="busy"
             >
                 <template v-slot:table-caption>
-                    Recent Jobs: These jobs have completed in the previous {{ cutoffDisplay }} minutes.
+                    These jobs have completed in the previous {{ cutoffMin }} minutes.
                 </template>
                 <template v-slot:cell(job_info)="data">
                     <b-link :href="data.value.info_url" @click.prevent="clickJobInfo(data.value.id)">
@@ -201,7 +187,6 @@ export default {
                 { key: "job_runner_name", label: "Job Runner" },
                 { key: "job_runner_external_id", label: "PID/Cluster ID", sortable: true },
             ],
-            cutoffDisplay: 180,
             selectedStopJobIds: [],
             selectedJobId: null,
             allSelected: false,
@@ -242,7 +227,6 @@ export default {
                     this.jobsItems = response.data.jobs;
                     this.recentJobsItems = response.data.recent_jobs;
                     this.cutoffMin = Math.floor(response.data.cutoff / 60);
-                    this.cutoffDisplay = this.cutoffMin;
                     this.message = response.data.message;
                     this.status = response.data.status;
                     this.loading = false;

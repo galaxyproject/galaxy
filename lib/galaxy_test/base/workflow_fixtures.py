@@ -57,14 +57,91 @@ steps:
 """
 
 
+# Throwing a bunch of broken steps in to get a really long modal and sure it
+# is scrollable.
 WORKFLOW_WITH_INVALID_STATE = """
 class: GalaxyWorkflow
 inputs:
   input1: data
 steps:
-  mul_versions:
+  mul_versions_1:
     tool_id: multiple_versions
     tool_version: "0.0.1"
+    state:
+      inttest: "moocow"
+  'another bad step':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step2':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step3':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step4':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step5':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step6':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step7':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step8':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step9':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step10':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step11':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step12':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step13':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step14':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
     state:
       inttest: "moocow"
 """

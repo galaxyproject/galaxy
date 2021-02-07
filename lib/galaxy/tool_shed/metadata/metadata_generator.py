@@ -839,7 +839,7 @@ class MetadataGenerator:
             work_dir = repository_files_dir
         sample_file_metadata_paths = []
         sample_file_copy_paths = []
-        for root, dirs, files in os.walk(repository_files_dir):
+        for root, _dirs, files in os.walk(repository_files_dir):
             if root.find('.hg') < 0:
                 for name in files:
                     if name.endswith('.sample'):

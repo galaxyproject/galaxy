@@ -4,7 +4,11 @@ related to running and queued jobs.
 import logging
 
 from galaxy import exceptions, util
-from galaxy.managers.interactivetool import InteractiveToolManager
+from galaxy.managers.context import ProvidesUserContext
+from galaxy.model import (
+    InteractiveToolEntryPoint,
+    Job,
+)
 from galaxy.web import expose_api_anonymous_and_sessionless
 from galaxy.webapps.base.controller import BaseAPIController
 
@@ -15,10 +19,10 @@ class ToolEntryPointsAPIController(BaseAPIController):
 
     def __init__(self, app):
         self.app = app
-        self.interactivetool_manager = InteractiveToolManager(app)
+        self.interactivetool_manager = app.interactivetool_manager
 
     @expose_api_anonymous_and_sessionless
-    def index(self, trans, running=False, job_id=None, **kwd):
+    def index(self, trans: ProvidesUserContext, running=False, job_id=None, **kwd):
         """
         * GET /api/entry_points
             Returns tool entry point information. Currently passing a job_id
@@ -42,7 +46,7 @@ class ToolEntryPointsAPIController(BaseAPIController):
             raise exceptions.RequestParameterInvalidException("Currently this API must passed only a job id or running=true")
 
         if job_id is not None:
-            job = trans.sa_session.query(trans.app.model.Job).get(self.decode_id(job_id))
+            job = trans.sa_session.query(Job).get(self.decode_id(job_id))
             if not self.interactivetool_manager.can_access_job(trans, job):
                 raise exceptions.ItemAccessibilityException()
             entry_points = job.interactivetool_entry_points
@@ -59,7 +63,7 @@ class ToolEntryPointsAPIController(BaseAPIController):
         return rval
 
     @expose_api_anonymous_and_sessionless
-    def access_entry_point(self, trans, id, **kwd):
+    def access_entry_point(self, trans: ProvidesUserContext, id, **kwd):
         """
         * GET /api/entry_points/{id}/access
             Return the URL target described by the entry point.
@@ -75,3 +79,20 @@ class ToolEntryPointsAPIController(BaseAPIController):
             raise exceptions.RequestParameterMissingException("Must supply entry point ID.")
         entry_point_id = self.decode_id(id)
         return {"target": self.interactivetool_manager.access_entry_point_target(trans, entry_point_id)}
+
+    @expose_api_anonymous_and_sessionless
+    def stop_entry_point(self, trans: ProvidesUserContext, id, **kwds):
+        """
+        DELETE /api/entry_points/{id}
+        """
+        if not id:
+            raise exceptions.RequestParameterMissingException("Must supply entry point id")
+        try:
+            entry_point_id = self.decode_id(id)
+            entry_point = trans.sa_session.query(InteractiveToolEntryPoint).get(entry_point_id)
+        except Exception:
+            raise exceptions.RequestParameterInvalidException("entry point '{id}' invalid")
+        if self.app.interactivetool_manager.can_access_entry_point(trans, entry_point):
+            self.app.interactivetool_manager.stop(trans, entry_point)
+        else:
+            raise exceptions.ItemAccessibilityException(f"entry point '{id}' is not accessible")

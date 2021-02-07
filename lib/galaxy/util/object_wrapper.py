@@ -23,40 +23,18 @@ from types import (
     TracebackType,
 )
 
-try:
-    from types import NoneType
-except ImportError:
-    NoneType = type(None)
-try:
-    from types import NotImplementedType
-except ImportError:
-    NotImplementedType = type(NotImplemented)
+NoneType = type(None)
+NotImplementedType = type(NotImplemented)
+EllipsisType = type(Ellipsis)
+XRangeType = range
+SliceType = slice
 
-try:
-    from types import EllipsisType
-except ImportError:
-    EllipsisType = type(Ellipsis)
-
-try:
-    from types import XRangeType
-except ImportError:
-    XRangeType = range
-
-try:
-    from types import SliceType
-except ImportError:
-    SliceType = slice
-
-try:
-    from types import (
-        BufferType,
-        DictProxyType
-    )
-except ImportError:
-    # Py3 doesn't have these concepts, just treat them like SliceType that
-    # so they are __WRAP_NO_SUBCLASS__.
-    BufferType = SliceType
-    DictProxyType = SliceType
+# Python 2 version was:
+# from types import BufferType, DictProxyType
+# Py3 doesn't have these concepts, just treat them like SliceType that
+# so they are __WRAP_NO_SUBCLASS__.
+BufferType = SliceType
+DictProxyType = SliceType
 
 from galaxy.util import sanitize_lists_to_string as _sanitize_lists_to_string
 
@@ -73,9 +51,6 @@ __WRAP_NO_SUBCLASS__ = (ModuleType, XRangeType, SliceType, BufferType, Traceback
 
 # Don't wrap or sanitize.
 __DONT_SANITIZE_TYPES__ = (Number, bool, NoneType, NotImplementedType, EllipsisType, bytearray, )
-
-# Don't wrap, but do sanitize.
-__DONT_WRAP_TYPES__ = tuple()  # ( basestring, ) so that we can get the unsanitized string, we will now wrap basestring instances
 
 # Wrap contents, but not the container
 __WRAP_SEQUENCES__ = (tuple, list, )
@@ -133,8 +108,6 @@ def wrap_with_safe_string(value, no_wrap_classes=None):
             safe_class = SafeStringWrapper
         if isinstance(value, no_wrap_classes):
             return value
-        if isinstance(value, __DONT_WRAP_TYPES__):
-            return sanitize_lists_to_string(value, valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP)
         if isinstance(value, __WRAP_NO_SUBCLASS__):
             return safe_class(value, safe_string_wrapper_function=__do_wrap)
         for this_type in __WRAP_SEQUENCES__ + __WRAP_SETS__:
@@ -156,7 +129,7 @@ def wrap_with_safe_string(value, no_wrap_classes=None):
         if value_mod:
             wrapped_class_name = f"{value_mod.__name__}.{wrapped_class_name}"
         wrapped_class_name = "SafeStringWrapper({}:{})".format(wrapped_class_name, ",".join(sorted(map(str, no_wrap_classes))))
-        do_wrap_func_name = "__do_wrap_%s" % (wrapped_class_name)
+        do_wrap_func_name = f"__do_wrap_{wrapped_class_name}"
         do_wrap_func = __do_wrap
         global_dict = globals()
         if wrapped_class_name in global_dict:
@@ -168,7 +141,7 @@ def wrap_with_safe_string(value, no_wrap_classes=None):
                 wrapped_class = type(wrapped_class_name, (safe_class, wrapped_class, ), {})
             except TypeError as e:
                 # Fail-safe for when a class cannot be dynamically subclassed.
-                log.warning("Unable to create dynamic subclass for %s, %s: %s", type(value), value, e)
+                log.warning(f"Unable to create dynamic subclass {wrapped_class_name} for {type(value)}, {value}: {e}")
                 wrapped_class = type(wrapped_class_name, (safe_class, ), {})
             if wrapped_class not in (SafeStringWrapper, CallableSafeStringWrapper):
                 # Save this wrapper for reuse and pickling/copying

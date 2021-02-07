@@ -16,12 +16,12 @@ class RBACPermissionFailedException(galaxy.exceptions.InsufficientPermissionsExc
 
 class RBACPermission:
     """
-    Base class for wrangling/controlling the permissions ORM models (*Permissions, Roles)
+    Base class for wrangling/controlling the permissions ORM models (Permissions, Roles)
     that control which users can perform certain actions on their associated models
     (Libraries, Datasets).
     """
 
-    permissions_class = None
+    permissions_class: type
     permission_failed_error_class = RBACPermissionFailedException
 
     def __init__(self, app):
@@ -168,7 +168,7 @@ class ManageDatasetRBACPermission(DatasetRBACPermission):
     have permission on the dataset
     """
     # TODO: We may also be able to infer/record the dataset 'owner' as well.
-    action_name = security.RBACAgent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action
+    action_name = security.RBACAgent.permitted_actions.get('DATASET_MANAGE_PERMISSIONS').action
     permission_failed_error_class = DatasetManagePermissionFailedException
 
     # ---- interface
@@ -227,7 +227,7 @@ class AccessDatasetRBACPermission(DatasetRBACPermission):
     An user must have all the Roles of all the access permissions associated
     with a dataset in order to access it.
     """
-    action_name = security.RBACAgent.permitted_actions.DATASET_ACCESS.action
+    action_name = security.RBACAgent.permitted_actions.get('DATASET_ACCESS').action
     permission_failed_error_class = DatasetAccessPermissionFailedException
 
     # ---- interface
@@ -238,10 +238,9 @@ class AccessDatasetRBACPermission(DatasetRBACPermission):
         current_roles = self._roles(dataset)
         # NOTE: that because of short circuiting this allows
         #   anonymous access to public datasets
-        return (self._is_public_based_on_roles(current_roles) or
-                # admin is always permitted
-                self.user_manager.is_admin(user) or
-                self._user_has_all_roles(user, current_roles))
+        return (self._is_public_based_on_roles(current_roles)
+                or self.user_manager.is_admin(user)  # admin is always permitted
+                or self._user_has_all_roles(user, current_roles))
 
     def grant(self, item, user):
         pass
@@ -274,6 +273,6 @@ class AccessDatasetRBACPermission(DatasetRBACPermission):
 
     def _role_is_permitted(self, dataset, role):
         current_roles = self._roles(dataset)
-        return (self._is_public_based_on_roles(current_roles) or
+        return (self._is_public_based_on_roles(current_roles)
                 # if there's only one role and this is it, let em in
-                ((len(current_roles) == 1) and (role == current_roles[0])))
+                or ((len(current_roles) == 1) and (role == current_roles[0])))

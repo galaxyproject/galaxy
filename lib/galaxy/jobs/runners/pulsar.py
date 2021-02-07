@@ -305,7 +305,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
 
     def _update_job_state_for_status(self, job_state, pulsar_status, full_status=None):
         log.debug('(%s) Received status update: %s %s', job_state.job_id, type(pulsar_status), pulsar_status)
-        if pulsar_status == "complete":
+        if pulsar_status == "complete" or job_state.job_wrapper.get_state() == model.Job.states.STOPPED:
             self.mark_as_finished(job_state)
             return None
         if pulsar_status in ["failed", "lost"]:
@@ -370,7 +370,12 @@ class PulsarJobRunner(AsynchronousJobRunner):
             else:
                 metadata_directory = os.path.join(job_wrapper.working_directory, "metadata")
 
-            remote_pulsar_app_config = job_destination.params.get("pulsar_app_config", {})
+            dest_params = job_destination.params
+            remote_pulsar_app_config = dest_params.get("pulsar_app_config", {}).copy()
+            if "pulsar_app_config_path" in dest_params:
+                pulsar_app_config_path = dest_params["pulsar_app_config_path"]
+                with open(pulsar_app_config_path, "r") as fh:
+                    remote_pulsar_app_config.update(yaml.safe_load(fh))
             job_directory_files = []
             config_files = job_wrapper.extra_filenames
             tool_script = os.path.join(job_wrapper.working_directory, "tool_script.sh")
@@ -601,10 +606,14 @@ class PulsarJobRunner(AsynchronousJobRunner):
             stderr = run_results.get('stderr', '')
             exit_code = run_results.get('returncode', None)
             pulsar_outputs = PulsarOutputs.from_status_response(run_results)
+            job_state = job_wrapper.get_state()
             # Use Pulsar client code to transfer/copy files back
             # and cleanup job if needed.
-            completed_normally = \
-                job_wrapper.get_state() not in [model.Job.states.ERROR, model.Job.states.DELETED]
+            completed_normally = job_state not in [model.Job.states.ERROR, model.Job.states.DELETED]
+            if completed_normally and job_state == model.Job.states.STOPPED:
+                # Discard pulsar exit code (probably -9), we know the user stopped the job
+                log.debug("Setting exit code for stopped job {job_wrapper.job_id} to 0 (was {exit_code})")
+                exit_code = 0
             cleanup_job = job_wrapper.cleanup_job
             client_outputs = self.__client_outputs(client, job_wrapper)
             finish_args = dict(client=client,
@@ -705,8 +714,8 @@ class PulsarJobRunner(AsynchronousJobRunner):
         job_state = self._job_state(job, job_wrapper)
         job_wrapper.command_line = job.get_command_line()
         state = job.get_state()
-        if state in [model.Job.states.RUNNING, model.Job.states.QUEUED]:
-            log.debug("(Pulsar/%s) is still in running state, adding to the Pulsar queue" % (job.id))
+        if state in [model.Job.states.RUNNING, model.Job.states.QUEUED, model.Job.states.STOPPED]:
+            log.debug(f"(Pulsar/{job.id}) is still in {state} state, adding to the Pulsar queue")
             job_state.old_state = True
             job_state.running = state == model.Job.states.RUNNING
             self.monitor_queue.put(job_state)
@@ -764,8 +773,8 @@ class PulsarJobRunner(AsynchronousJobRunner):
         remote_dependency_resolution = dependency_resolution == "remote"
         if not remote_dependency_resolution:
             return None
-        requirements = job_wrapper.tool.requirements or []
-        installed_tool_dependencies = job_wrapper.tool.installed_tool_dependencies or []
+        requirements = job_wrapper.tool.requirements
+        installed_tool_dependencies = job_wrapper.tool.installed_tool_dependencies
         return dependencies.DependenciesDescription(
             requirements=requirements,
             installed_tool_dependencies=installed_tool_dependencies,

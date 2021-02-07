@@ -6,6 +6,9 @@
     <type class="RelabelFromFileTool" module="galaxy.tools" />
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>
+    <edam_operations>
+        <edam_operation>operation_3096</edam_operation>
+    </edam_operations>
     <inputs>
         <param type="data_collection" name="input" label="Input Collection" help="A list whose identifiers will be relabelled."/>
         <conditional name="how">
@@ -133,7 +136,7 @@
         </test>
     </tests>
     <help><![CDATA[
-    
+
 .. class:: infomark
 
         This tool will take an input list and a text file with new identifiers
@@ -147,8 +150,8 @@
         in the collection. In that case only matching list identifiers will be
         relabeled.
 
-        Valid identifiers must contain only characters (a-z, A-Z), numbers (0-9), 
-        dash and underscore (-, _). Punctuation or whitespace are not allowed. 
+        Valid identifiers must contain only characters (a-z, A-Z), numbers (0-9),
+        dash and underscore (-, _). Punctuation or whitespace are not allowed.
 
         This tool will create new history datasets from your collection
         but your quota usage will not increase.

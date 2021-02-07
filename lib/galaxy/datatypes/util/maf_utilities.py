@@ -17,10 +17,7 @@ import bx.align.maf
 import bx.interval_index_file
 import bx.intervals
 
-try:
-    maketrans = str.maketrans
-except AttributeError:
-    from string import maketrans
+maketrans = str.maketrans
 
 log = logging.getLogger(__name__)
 
@@ -141,8 +138,9 @@ class RegionAlignment:
     DNA_COMPLEMENT = maketrans("ACGTacgt", "TGCAtgca")
     MAX_SEQUENCE_SIZE = sys.maxsize  # Maximum length of sequence allowed
 
-    def __init__(self, size, species=[], temp_file_handler=None):
+    def __init__(self, size, species=None, temp_file_handler=None):
         assert size <= self.MAX_SEQUENCE_SIZE, "Maximum length allowed for an individual sequence has been exceeded (%i > %i)." % (size, self.MAX_SEQUENCE_SIZE)
+        species = species or []
         self.size = size
         if not temp_file_handler:
             temp_file_handler = TempFileHandler()
@@ -161,7 +159,8 @@ class RegionAlignment:
         fh.write("-" * self.size)
 
     # returns the names for species found in alignment, skipping names as requested
-    def get_species_names(self, skip=[]):
+    def get_species_names(self, skip=None):
+        skip = skip or []
         if not isinstance(skip, list):
             skip = [skip]
         names = list(self.sequences.keys())
@@ -214,7 +213,8 @@ class RegionAlignment:
 
 class GenomicRegionAlignment(RegionAlignment):
 
-    def __init__(self, start, end, species=[], temp_file_handler=None):
+    def __init__(self, start, end, species=None, temp_file_handler=None):
+        species = species or []
         RegionAlignment.__init__(self, end - start, species, temp_file_handler=temp_file_handler)
         self.start = start
         self.end = end
@@ -224,7 +224,8 @@ class SplicedAlignment:
 
     DNA_COMPLEMENT = maketrans("ACGTacgt", "TGCAtgca")
 
-    def __init__(self, exon_starts, exon_ends, species=[], temp_file_handler=None):
+    def __init__(self, exon_starts, exon_ends, species=None, temp_file_handler=None):
+        species = species or []
         if not isinstance(exon_starts, list):
             exon_starts = [exon_starts]
         if not isinstance(exon_ends, list):
@@ -238,7 +239,8 @@ class SplicedAlignment:
             self.exons.append(GenomicRegionAlignment(exon_starts[i], exon_ends[i], species, temp_file_handler=temp_file_handler))
 
     # returns the names for species found in alignment, skipping names as requested
-    def get_species_names(self, skip=[]):
+    def get_species_names(self, skip=None):
+        skip = skip or []
         if not isinstance(skip, list):
             skip = [skip]
         names = []
@@ -353,13 +355,11 @@ def build_maf_index_species_chromosomes(filename, index_species=None):
 
 # builds and returns ( index, index_filename ) for specified maf_file
 def build_maf_index(maf_file, species=None):
-    indexes, found_species, species_chromosomes, blocks = build_maf_index_species_chromosomes(maf_file, species)
+    indexes, *_ = build_maf_index_species_chromosomes(maf_file, species)
     if indexes is not None:
-        fd, index_filename = tempfile.mkstemp()
-        out = os.fdopen(fd, 'w')
-        indexes.write(out)
-        out.close()
-        return (bx.align.maf.Indexed(maf_file, index_filename=index_filename, keep_open=True, parse_e_rows=False), index_filename)
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as index:
+            indexes.write(index)
+        return (bx.align.maf.Indexed(maf_file, index_filename=index.name, keep_open=True, parse_e_rows=False), index.name)
     return (None, None)
 
 
@@ -680,7 +680,8 @@ def remove_temp_index_file(index_filename):
 # Below are methods to deal with FASTA files
 
 
-def get_fasta_header(component, attributes={}, suffix=None):
+def get_fasta_header(component, attributes=None, suffix=None):
+    attributes = attributes or {}
     header = ">%s(%s):%i-%i|" % (component.src, component.strand, component.get_forward_strand_start(), component.get_forward_strand_end())
     for key, value in attributes.items():
         header = f"{header}{key}={value}|"

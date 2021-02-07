@@ -51,8 +51,8 @@ class TabularData(data.Text):
     def set_meta(self, dataset, **kwd):
         raise NotImplementedError
 
-    def set_peek(self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None):
-        super().set_peek(dataset, line_count=line_count, WIDTH=WIDTH, skipchars=skipchars, line_wrap=False)
+    def set_peek(self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None, line_wrap=False, **kwd):
+        super().set_peek(dataset, line_count=line_count, WIDTH=WIDTH, skipchars=skipchars, line_wrap=line_wrap)
         if dataset.metadata.comment_lines:
             dataset.blurb = "{}, {} comments".format(dataset.blurb, util.commaify(str(dataset.metadata.comment_lines)))
 
@@ -538,8 +538,8 @@ class Sam(Tabular):
                 comment_lines = 0
                 if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
                     # If the dataset is larger than optional_metadata, just count comment lines.
-                    for l in dataset_fh:
-                        if l.startswith('@'):
+                    for line in dataset_fh:
+                        if line.startswith('@'):
                             comment_lines += 1
                         else:
                             # No more comments, and the file is too big to look at the whole thing. Give up.
@@ -547,7 +547,7 @@ class Sam(Tabular):
                             break
                 else:
                     # Otherwise, read the whole thing and set num data lines.
-                    for i, l in enumerate(dataset_fh):
+                    for i, l in enumerate(dataset_fh):  # noqa: B007
                         if l.startswith('@'):
                             comment_lines += 1
                     dataset.metadata.data_lines = i + 1 - comment_lines
@@ -555,6 +555,7 @@ class Sam(Tabular):
             dataset.metadata.columns = 12
             dataset.metadata.column_types = ['str', 'int', 'str', 'int', 'int', 'str', 'str', 'int', 'int', 'str', 'str', 'str']
 
+    @staticmethod
     def merge(split_files, output_file):
         """
         Multiple SAM files may each have headers. Since the headers should all be the same, remove
@@ -565,8 +566,6 @@ class Sam(Tabular):
         if len(split_files) > 1:
             cmd = ['egrep', '-v', '-h', '^@'] + split_files[1:] + ['>>', output_file]
             subprocess.check_call(cmd, shell=True)
-
-    merge = staticmethod(merge)
 
     # Dataproviders
     # sam does not use '#' to indicate comments/headers - we need to strip out those headers from the std. providers
@@ -1239,18 +1238,20 @@ class MatrixMarket(TabularData):
     suitable for representing sparse matrices. Only nonzero entries need
     be encoded, and the coordinates of each are given explicitly.
 
-    The tabular file format is defined as follows::
+    The tabular file format is defined as follows:
 
-    %%MatrixMarket matrix coordinate real general <--- header line
-    %                                             <--+
-    % comments                                       |-- 0 or more comment lines
-    %                                             <--+
-        M  N  L                                   <--- rows, columns, entries
-        I1  J1  A(I1, J1)                         <--+
-        I2  J2  A(I2, J2)                            |
-        I3  J3  A(I3, J3)                            |-- L lines
-            . . .                                    |
-        IL JL  A(IL, JL)                          <--+
+    .. code-block::
+
+        %%MatrixMarket matrix coordinate real general <--- header line
+        %                                             <--+
+        % comments                                       |-- 0 or more comment lines
+        %                                             <--+
+            M  N  L                                   <--- rows, columns, entries
+            I1  J1  A(I1, J1)                         <--+
+            I2  J2  A(I2, J2)                            |
+            I3  J3  A(I3, J3)                            |-- L lines
+                . . .                                    |
+            IL JL  A(IL, JL)                          <--+
 
     Indices are 1-based, i.e. A(1,1) is the first element.
 
@@ -1279,15 +1280,15 @@ class MatrixMarket(TabularData):
                 comment_lines = 0
                 if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
                     # If the dataset is larger than optional_metadata, just count comment lines.
-                    for l in dataset_fh:
-                        if l.startswith('%'):
+                    for line in dataset_fh:
+                        if line.startswith('%'):
                             comment_lines += 1
                         else:
                             # No more comments, and the file is too big to look at the whole thing. Give up.
                             dataset.metadata.data_lines = None
                             break
                 else:
-                    for i, l in enumerate(dataset_fh):
+                    for i, l in enumerate(dataset_fh):  # noqa: B007
                         if l.startswith('%'):
                             comment_lines += 1
                     dataset.metadata.data_lines = i + 1 - comment_lines

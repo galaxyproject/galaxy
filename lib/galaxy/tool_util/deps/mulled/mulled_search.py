@@ -6,17 +6,15 @@ import logging
 import sys
 import tempfile
 
+import requests
+
 from .mulled_list import get_singularity_containers
 from .util import build_target, v2_image_name
 
 try:
     from conda.cli.python_api import run_command
 except ImportError:
-    run_command = None
-try:
-    import requests
-except ImportError:
-    requests = None
+    run_command = None  # type: ignore
 
 try:
     from whoosh.fields import Schema
@@ -25,7 +23,7 @@ try:
     from whoosh.index import create_in
     from whoosh.qparser import QueryParser
 except ImportError:
-    Schema = TEXT = STORED = create_in = QueryParser = None
+    Schema = TEXT = STORED = create_in = QueryParser = None  # type: ignore
 
 QUAY_API_URL = 'https://quay.io/api/v1/repository'
 
@@ -230,15 +228,15 @@ def readable_output(json, organization='biocontainers', channel='bioconda'):
         sys.stdout.write("The query returned the following result(s).\n")
         # put quay, conda etc results as lists in lines
         lines = [['LOCATION', 'NAME', 'VERSION', 'COMMAND\n']]
-        for search_string, results in json.get('quay', {}).items():
+        for results in json.get('quay', {}).values():
             for result in results:
                 lines.append(['quay', result['package'], result['version'], 'docker pull quay.io/%s/%s:%s\n' %
                               (organization, result['package'], result['version'])])  # NOT a real solution
-        for search_string, results in json.get('conda', {}).items():
+        for results in json.get('conda', {}).values():
             for result in results:
                 lines.append(['conda', result['package'], '{}--{}'.format(result['version'], result['build']),
                               'conda install -c {} {}={}={}\n'.format(channel, result['package'], result['version'], result['build'])])
-        for search_string, results in json.get('singularity', {}).items():
+        for results in json.get('singularity', {}).values():
             for result in results:
                 lines.append(['singularity', result['package'], result['version'],
                               'wget https://depot.galaxyproject.org/singularity/{}:{}\n'.format(result['package'], result['version'])])

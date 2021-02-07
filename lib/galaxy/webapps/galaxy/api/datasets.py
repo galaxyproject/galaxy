@@ -66,11 +66,17 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
         :returns:   dictionaries containing summary of dataset or dataset_collection information
 
         The list returned can be filtered by using two optional parameters:
-            q:      string, generally a property name to filter by followed
-                    by an (often optional) hyphen and operator string.
-            qv:     string, the value to filter by
 
-        ..example:
+            :q:
+                string, generally a property name to filter by followed
+                by an (often optional) hyphen and operator string.
+
+            :qv:
+
+                string, the value to filter by
+
+        ..example::
+
             To filter the list to only those created after 2015-01-29,
             the query string would look like:
                 '?q=create_time-gt&qv=2015-01-29'
@@ -154,6 +160,34 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
             else:
                 rval = dataset.to_dict()
         return rval
+
+    @web.expose_api_anonymous
+    def show_storage(self, trans, dataset_id, hda_ldda='hda', **kwd):
+        """
+        GET /api/datasets/{encoded_dataset_id}/storage
+
+        Display user-facing storage details related to the objectstore a
+        dataset resides in.
+        """
+        dataset_instance = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=dataset_id)
+        dataset = dataset_instance.dataset
+        object_store = self.app.object_store
+        object_store_id = dataset.object_store_id
+        name = object_store.get_concrete_store_name(dataset)
+        description = object_store.get_concrete_store_description_markdown(dataset)
+        # not really working (existing problem)
+        try:
+            percent_used = object_store.get_store_usage_percent()
+        except AttributeError:
+            # not implemented on nestedobjectstores yet.
+            percent_used = None
+
+        return {
+            'object_store_id': object_store_id,
+            'name': name,
+            'description': description,
+            'percent_used': percent_used,
+        }
 
     @web.expose_api
     def update_permissions(self, trans, dataset_id, payload, **kwd):

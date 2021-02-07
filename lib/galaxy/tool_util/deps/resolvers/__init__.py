@@ -6,6 +6,7 @@ from abc import (
     abstractmethod,
     abstractproperty,
 )
+from typing import Any, Dict
 
 import yaml
 
@@ -18,7 +19,7 @@ class DependencyResolver(Dictifiable, metaclass=ABCMeta):
     """Abstract description of a technique for resolving container images for tool execution."""
 
     # Keys for dictification.
-    dict_collection_visible_keys = ['resolver_type', 'resolves_simple_dependencies', 'can_uninstall_dependencies']
+    dict_collection_visible_keys = ['resolver_type', 'resolves_simple_dependencies', 'can_uninstall_dependencies', 'read_only']
     # A "simple" dependency is one that does not depend on the the tool
     # resolving the dependency. Classic tool shed dependencies are non-simple
     # because the repository install context is used in dependency resolution
@@ -26,8 +27,8 @@ class DependencyResolver(Dictifiable, metaclass=ABCMeta):
     # resolution.
     disabled = False
     resolves_simple_dependencies = True
-    can_uninstall_dependencies = False
-    config_options = {}
+    config_options: Dict[str, Any] = {}
+    read_only = True
 
     @abstractmethod
     def resolve(self, requirement, **kwds):
@@ -41,6 +42,22 @@ class DependencyResolver(Dictifiable, metaclass=ABCMeta):
         version (which may differ from requested version for instance if the
         request version is 'default'.)
         """
+
+    def install_dependency(self, name, version, type, **kwds):
+        if self.read_only:
+            return False
+        else:
+            return self._install_dependency(name, version, type, **kwds)
+
+    def _install_dependency(self, name, version, type, **kwds):
+        """ Attempt to install this dependency if a recipe to do so
+        has been registered in some way.
+        """
+        return False
+
+    @property
+    def can_uninstall_dependencies(self):
+        return not self.read_only
 
 
 class MultipleDependencyResolver:
@@ -234,18 +251,6 @@ class SpecificationPatternDependencyResolver(SpecificationAwareDependencyResolve
             requirement.version = version
 
         return requirement
-
-
-class InstallableDependencyResolver(metaclass=ABCMeta):
-    """ Mix this into a ``DependencyResolver`` and implement to indicate
-    the dependency resolver can attempt to install new dependencies.
-    """
-
-    @abstractmethod
-    def install_dependency(self, name, version, type, **kwds):
-        """ Attempt to install this dependency if a recipe to do so
-        has been registered in some way.
-        """
 
 
 class Dependency(Dictifiable, metaclass=ABCMeta):

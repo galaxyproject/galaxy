@@ -58,13 +58,13 @@ class GenericXml(data.Text):
         """
         return file_prefix.startswith('<?xml ')
 
+    @staticmethod
     def merge(split_files, output_file):
         """Merging multiple XML files is non-trivial and must be done in subclasses."""
         if len(split_files) > 1:
             raise NotImplementedError("Merging multiple XML files is non-trivial and must be implemented for each XML type")
         # For one file only, use base class method (move/copy)
         data.Text.merge(split_files, output_file)
-    merge = staticmethod(merge)
 
     @dataproviders.decorators.dataprovider_factory('xml', dataproviders.hierarchy.XMLDataProvider.settings)
     def xml_dataprovider(self, dataset, **settings):

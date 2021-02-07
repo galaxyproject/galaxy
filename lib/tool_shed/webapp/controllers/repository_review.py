@@ -389,6 +389,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
     def manage_repositories_ready_for_review(self, trans, **kwd):
         """
         A repository is ready to be reviewed if one of the following conditions is met:
+
         1) It contains no tools
         2) It contains tools the tools_functionally_correct flag is set to True.  This implies that the repository metadata revision was installed and tested
            by the Tool Shed's install and test framework.

@@ -1,7 +1,8 @@
-import Vue from "vue";
 import { mount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 import SavedRulesSelector from "components/RuleBuilder/SavedRulesSelector";
-import { getNewAttachNode } from "jest/helpers";
+
+const localVue = getLocalVue();
 
 describe("SavedRulesSelector", () => {
     let wrapper;
@@ -14,13 +15,13 @@ describe("SavedRulesSelector", () => {
                 prefix: "test_prefix_" + new Date().toISOString() + "_",
                 savedRules: [],
             },
-            attachTo: getNewAttachNode(),
+            localVue,
         });
-        await Vue.nextTick();
+        await wrapper.vm.$nextTick();
     });
 
     afterEach(async () => {
-        await Vue.nextTick();
+        await wrapper.vm.$nextTick();
     });
 
     it("disables history icon if there is no history", async () => {
@@ -49,7 +50,7 @@ describe("SavedRulesSelector", () => {
             user: "test_user",
             savedRules: [testRules],
         });
-        await Vue.nextTick();
+        await wrapper.vm.$nextTick();
         const sessions = wrapper.findAll("div.dropdown-menu > a.saved-rule-item");
         expect(sessions.length > 0).toBeTruthy();
         sessions.wrappers[0].trigger("click");

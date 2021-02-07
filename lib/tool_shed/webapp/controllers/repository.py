@@ -22,8 +22,8 @@ from galaxy import (
 )
 from galaxy.tools.repositories import ValidationContext
 from galaxy.web.form_builder import CheckboxField, SelectField
+from galaxy.web.legacy_framework import grids
 from galaxy.webapps.base.controller import BaseUIController
-from galaxy.webapps.reports.framework import grids
 from tool_shed.dependencies.repository import relation_builder
 from tool_shed.galaxy_install import dependency_display
 from tool_shed.metadata import repository_metadata_manager
@@ -132,7 +132,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             operation = kwd['operation'].lower()
             if operation in ["repositories_by_category", "repositories_by_user"]:
                 # Eliminate the current filters if any exist.
-                for k, v in list(kwd.items()):
+                for k in list(kwd.keys()):
                     if k.startswith('f-'):
                         del kwd[k]
                 return trans.response.send_redirect(web.url_for(controller='repository',
@@ -286,7 +286,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
     def browse_repositories_by_user(self, trans, **kwd):
         """Display the list of repositories owned by a specified user."""
         # Eliminate the current search filters if any exist.
-        for k, v in list(kwd.items()):
+        for k in list(kwd.keys()):
             if k.startswith('f-'):
                 del kwd[k]
         if 'operation' in kwd:
@@ -534,7 +534,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             operation = kwd['operation'].lower()
             if operation in ["valid_repositories_by_category", "valid_repositories_by_user"]:
                 # Eliminate the current filters if any exist.
-                for k, v in list(kwd.items()):
+                for k in list(kwd.keys()):
                     if k.startswith('f-'):
                         del kwd[k]
                 return trans.response.send_redirect(web.url_for(controller='repository',
@@ -572,7 +572,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                                                                 changeset_revision=latest_installable_changeset_revision))
             elif operation == "valid_repositories_by_category":
                 # Eliminate the current filters if any exist.
-                for k, v in list(kwd.items()):
+                for k in list(kwd.keys()):
                     if k.startswith('f-'):
                         del kwd[k]
                 category_id = kwd.get('id', None)
@@ -1440,7 +1440,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         has_repository_dependencies = False
         has_repository_dependencies_only_if_compiling_contained_td = False
         includes_tool_dependencies = False
-        for name, repo_info_tuple in repo_info_dict.items():
+        for repo_info_tuple in repo_info_dict.values():
             if not has_repository_dependencies or not has_repository_dependencies_only_if_compiling_contained_td or not includes_tool_dependencies:
                 description, reposectory_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
                     repository_util.get_repo_info_tuple_contents(repo_info_tuple)
@@ -1741,7 +1741,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             if user.username not in current_allow_push_list:
                 options.append(user)
         for obj in options:
-            label = getattr(obj, 'username')
+            label = obj.username
             allow_push_select_field.add_option(label, trans.security.encode_id(obj.id))
         checked = alerts_checked or user.email in email_alerts
         alerts_check_box = CheckboxField('alerts', value=checked)
@@ -2542,8 +2542,8 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             repository = repository_util.get_repository_in_tool_shed(trans.app, repository_id)
             user = trans.user
             if repository:
-                if user is not None and (trans.user_is_admin or
-                                         trans.app.security_agent.user_can_administer_repository(user, repository)):
+                if user is not None and (trans.user_is_admin
+                                         or trans.app.security_agent.user_can_administer_repository(user, repository)):
                     return trans.response.send_redirect(web.url_for(controller='repository',
                                                                     action='manage_repository',
                                                                     **kwd))

@@ -1,20 +1,5 @@
 <template>
     <div>
-        <b-breadcrumb>
-            <b-breadcrumb-item title="Return to the list of libraries" :href="getHomeUrl">
-                Libraries
-            </b-breadcrumb-item>
-            <template v-for="path_item in this.metadata.full_path">
-                <b-breadcrumb-item
-                    :key="path_item[0]"
-                    :title="isCurrentFolder(path_item[0]) ? `You are in this folder` : `Return to this folder`"
-                    :active="isCurrentFolder(path_item[0])"
-                    :href="path_item[0]"
-                    >{{ path_item[1] }}</b-breadcrumb-item
-                >
-            </template>
-        </b-breadcrumb>
-
         <div class="form-inline d-flex align-items-center mb-2">
             <a class="mr-1 btn btn-secondary" :href="getHomeUrl" data-toggle="tooltip" title="Go to first page">
                 <font-awesome-icon icon="home" />
@@ -45,7 +30,7 @@
                                     from History</a
                                 >
                                 <a
-                                    v-if="user_library_import_dir"
+                                    v-if="user_library_import_dir_available"
                                     class="dropdown-item cursor-pointer"
                                     @click="addDatasets('userdir')"
                                 >
@@ -104,20 +89,10 @@
                         class="dropdown dataset-manipulation mr-1"
                         v-if="dataset_manipulation"
                     >
-                        <button
-                            type="button"
-                            id="download-dropdown-btn"
-                            class="primary-button dropdown-toggle"
-                            data-toggle="dropdown"
-                        >
+                        <button type="button" id="download--btn" class="primary-button" @click="downloadData('zip')">
                             <font-awesome-icon icon="download" />
-                            Download <span class="caret"></span>
+                            Download
                         </button>
-                        <div class="dropdown-menu" role="menu">
-                            <a class="dropdown-item cursor-pointer" @click="downloadData('tgz')">.tar.gz</a>
-                            <a class="dropdown-item cursor-pointer" @click="downloadData('tbz')">.tar.bz</a>
-                            <a class="dropdown-item cursor-pointer" @click="downloadData('zip')">.zip</a>
-                        </div>
                     </div>
                     <button
                         v-if="logged_dataset_manipulation"
@@ -149,6 +124,22 @@
                 </div>
             </div>
         </div>
+
+        <b-breadcrumb>
+            <b-breadcrumb-item title="Return to the list of libraries" :href="getHomeUrl">
+                Libraries
+            </b-breadcrumb-item>
+            <template v-for="path_item in this.metadata.full_path">
+                <b-breadcrumb-item
+                    :key="path_item[0]"
+                    :title="isCurrentFolder(path_item[0]) ? `You are in this folder` : `Return to this folder`"
+                    :active="isCurrentFolder(path_item[0])"
+                    @click="changeFolderId(path_item[0])"
+                    href="#"
+                    >{{ path_item[1] }}</b-breadcrumb-item
+                >
+            </template>
+        </b-breadcrumb>
     </div>
 </template>
 <script>
@@ -212,7 +203,7 @@ export default {
     data() {
         return {
             is_admin: false,
-            user_library_import_dir: false,
+            user_library_import_dir_available: false,
             library_import_dir: false,
             allow_library_path_paste: false,
             list_genomes: [],
@@ -234,7 +225,7 @@ export default {
         const Galaxy = getGalaxyInstance();
         this.services = new Services();
         this.is_admin = Galaxy.user.attributes.is_admin;
-        this.user_library_import_dir = Galaxy.config.user_library_import_dir;
+        this.user_library_import_dir_available = Galaxy.config.user_library_import_dir_available;
         this.library_import_dir = Galaxy.config.library_import_dir;
         this.allow_library_path_paste = Galaxy.config.allow_library_path_paste;
 
@@ -265,6 +256,9 @@ export default {
     methods: {
         updateSearch: function (value) {
             this.$emit("updateSearch", value);
+        },
+        changeFolderId: function (value) {
+            this.$emit("changeFolderId", value);
         },
         deleteSelected: function () {
             this.getSelected().then((selected) =>

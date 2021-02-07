@@ -1,6 +1,10 @@
+# TODO: revisit ignoring type and write some tests for this, the multi-inheritance in this
+# this file is challenging, it should be broken into true mixins.
+# type: ignore
 """
 Constructive Solid Geometry file formats.
 """
+
 import abc
 
 from galaxy import util

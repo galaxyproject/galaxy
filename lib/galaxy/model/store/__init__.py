@@ -14,7 +14,7 @@ from uuid import uuid4
 
 from bdbag import bdbag_api as bdb
 from boltons.iterutils import remap
-from sqlalchemy.orm import eagerload_all
+from sqlalchemy.orm import joinedload
 from sqlalchemy.sql import expression
 
 from galaxy.exceptions import MalformedContents, ObjectNotFound
@@ -119,7 +119,6 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         and a history may contain multiple objects with the same 'hid'.
         """
 
-    @abc.abstractproperty
     def trust_hid(self, obj_attrs):
         """Trust HID when importing objects into a new History."""
 
@@ -336,7 +335,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         if dataset_extra_files_path:
                             dir_name = dataset_instance.dataset.extra_files_path_name
                             dataset_extra_files_path = os.path.join(self.archive_dir, dataset_extra_files_path)
-                            for root, dirs, files in safe_walk(dataset_extra_files_path):
+                            for root, _dirs, files in safe_walk(dataset_extra_files_path):
                                 extra_dir = os.path.join(dir_name, root.replace(dataset_extra_files_path, '', 1).lstrip(os.path.sep))
                                 extra_dir = os.path.normpath(extra_dir)
                                 for extra_file in files:
@@ -627,7 +626,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             if input_key in object_import_tracker.hdcas_by_key:
                 hdca = object_import_tracker.hdcas_by_key[input_key]
             if input_key in object_import_tracker.hdca_copied_from_sinks:
-                hdca = object_import_tracker.hdca_copied_from_sinks[input_key]
+                hdca = object_import_tracker.hdcas_by_key[object_import_tracker.hdca_copied_from_sinks[input_key]]
             return hdca
 
         def _find_dce(input_key):
@@ -1162,7 +1161,7 @@ class DirectoryModelExportStore(ModelExportStore):
         query = (sa_session.query(model.HistoryDatasetAssociation)
                  .filter(model.HistoryDatasetAssociation.history == history)
                  .join("dataset")
-                 .options(eagerload_all("dataset.actions"))
+                 .options(joinedload("dataset").joinedload("actions"))
                  .order_by(model.HistoryDatasetAssociation.hid)
                  .filter(model.Dataset.purged == expression.false()))
         datasets = query.all()
@@ -1217,7 +1216,7 @@ class DirectoryModelExportStore(ModelExportStore):
 
         datasets_attrs = []
         provenance_attrs = []
-        for dataset_id, (dataset, include_files) in self.included_datasets.items():
+        for dataset, include_files in self.included_datasets.values():
             if include_files:
                 datasets_attrs.append(dataset)
             else:
@@ -1265,7 +1264,7 @@ class DirectoryModelExportStore(ModelExportStore):
                 implicit_collection_jobs = icja.implicit_collection_jobs
                 implicit_collection_jobs_dict[implicit_collection_jobs.id] = implicit_collection_jobs
 
-        for hda_id, (hda, include_files) in self.included_datasets.items():
+        for hda, _include_files in self.included_datasets.values():
             # Get the associated job, if any. If this hda was copied from another,
             # we need to find the job that created the origial hda
             job_hda = hda
@@ -1282,7 +1281,7 @@ class DirectoryModelExportStore(ModelExportStore):
 
         # Get jobs' attributes.
         jobs_attrs = []
-        for id, job in jobs_dict.items():
+        for job in jobs_dict.values():
             # Don't attempt to serialize jobs for editing... yet at least.
             if self.serialization_options.for_edit:
                 continue
@@ -1369,7 +1368,7 @@ class DirectoryModelExportStore(ModelExportStore):
             jobs_attrs.append({"id": job_id, 'output_dataset_mapping': output_dataset_mapping})
 
         icjs_attrs = []
-        for icj_id, icj in implicit_collection_jobs_dict.items():
+        for icj in implicit_collection_jobs_dict.values():
             icj_attrs = icj.serialize(self.security, self.serialization_options)
             icjs_attrs.append(icj_attrs)
 

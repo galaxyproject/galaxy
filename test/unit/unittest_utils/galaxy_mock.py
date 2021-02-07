@@ -162,14 +162,15 @@ class MockAppConfig(Bunch):
 
         self.shed_tool_config_file = "config/shed_tool_conf.xml"
         self.shed_tool_config_file_set = False
+        self.enable_beta_edam_toolbox = False
         self.preserve_python_environment = "always"
         self.enable_beta_gdpr = False
-        self.legacy_eager_objectstore_initialization = True
 
         self.version_major = "19.09"
 
         # set by MockDir
         self.root = root
+        self.enable_tool_document_cache = False
         self.tool_cache_data_dir = os.path.join(root, 'tool_cache')
         self.delay_tool_initialization = True
         self.external_chown_script = None
@@ -212,6 +213,7 @@ class MockTrans:
         self.error_message = None
         self.anonymous = False
         self.debug = True
+        self.user_is_admin = True
 
         self.galaxy_session = None
         self.__user = user
@@ -219,7 +221,7 @@ class MockTrans:
         self.history = history
 
         self.request = Bunch(headers={}, body=None)
-        self.response = Bunch(headers={}, set_content_type=lambda i : None)
+        self.response = Bunch(headers={}, set_content_type=lambda i: None)
 
     def check_csrf_token(self, payload):
         pass
