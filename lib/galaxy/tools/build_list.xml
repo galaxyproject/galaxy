@@ -14,7 +14,7 @@
       <param type="data" name="input" optional="true" label="Input Dataset"  help="If providing a collection here the tool will be run in batch and one collection per element is created."/>
       <conditional name="id_cond">
           <param name="id_select" type="select" label="Label to use" help="">
-              <option value="idx">Index</option>
+              <option value="idx" selected="true">Index</option>
               <option value="identifier">Identifier</option>
               <option value="manual">Manual</option>
           </param>
@@ -79,6 +79,37 @@ This tool will create a new collection from your history datasets but your quota
       <repeat name="datasets">
       </repeat>
       <output_collection name="output" type="list" count="0">
+      </output_collection>
+    </test>
+    <test>
+      <repeat name="datasets">
+        <param name="input" value="simple_line.txt" />
+        <conditional name="id_cond">
+          <param name="id_select" value="identifier"/>
+        </conditional>
+      </repeat>
+      <output_collection name="output" type="list">
+        <element name="simple_line.txt">
+          <assert_contents>
+              <has_text_matching expression="^This is a line of text.\n$"/>
+          </assert_contents>
+        </element>
+      </output_collection>
+    </test>
+    <test>
+      <repeat name="datasets">
+        <param name="input" value="simple_line.txt" />
+        <conditional name="id_cond">
+          <param name="id_select" value="manual"/>
+          <param name="identifier" value="identifier"/>
+        </conditional>
+      </repeat>
+      <output_collection name="output" type="list">
+        <element name="identifier">
+          <assert_contents>
+              <has_text_matching expression="^This is a line of text.\n$"/>
+          </assert_contents>
+        </element>
       </output_collection>
     </test>
   </tests>
