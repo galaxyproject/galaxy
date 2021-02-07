@@ -1411,8 +1411,10 @@ class SharableMixin:
         skipped = False
         class_name = self.manager.model_class.__name__
         item = self.get_object(trans, id, class_name, check_ownership=True, check_accessible=True, deleted=False)
-        if payload and payload.get("action"):
-            action = payload.get("action")
+        actions = []
+        if payload:
+            actions += payload.get("action").split("-")
+        for action in actions:
             if action == "make_accessible_via_link":
                 self._make_item_accessible(trans.sa_session, item)
                 if hasattr(item, "has_possible_members") and item.has_possible_members:
