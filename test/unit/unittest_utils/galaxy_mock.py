@@ -168,6 +168,8 @@ class MockAppConfig(Bunch):
 
         self.version_major = "19.09"
 
+        self.user_api_key_auto_generate = False
+
         # set by MockDir
         self.root = root
         self.enable_tool_document_cache = False
