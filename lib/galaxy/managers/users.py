@@ -606,7 +606,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         self.post_user_create(user)
 
     def post_user_create(self, user):
-        if self.app.config.user_api_key_auto_generate:
+        if getattr(self.app.config, "user_api_key_auto_generate", False):
             self.get_or_create_valid_api_key(user)
         cuf = CreateUserFactory(self.app)
         cuf.run(user)
