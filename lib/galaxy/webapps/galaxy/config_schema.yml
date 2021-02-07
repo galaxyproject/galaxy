@@ -3268,4 +3268,23 @@ mapping:
         required: false
         desc: |
           Setting the following option to true will cause Galaxy to automatically generate an
-          API key when a user has been created.
+          API key when a user has been created. This will only trigger after the account has been activated.
+          Note: Currently accounts created through OIDC providers aren't supported.
+
+      user_create_base_modules:
+        type: str
+        default: galaxy.users.create
+        required: false
+        desc: |
+          The base module(s) that are searched for modules to run after a user has been created.
+          Please check https://docs.galaxyproject.org/en/master/admin/user_creation_scripts.html for more information.
+          Note: Currently accounts created through OIDC providers aren't supported.
+
+      user_create_functions:
+        type: str
+        default: examples:log_email
+        required: false
+        desc: |
+          Define functions to run after a user has been created. The user object is provided as a dictionary.
+          Please check https://docs.galaxyproject.org/en/master/admin/user_creation_scripts.html for more information.
+          Note: Currently accounts created through OIDC providers aren't supported.

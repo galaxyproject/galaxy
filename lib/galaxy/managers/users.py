@@ -30,6 +30,7 @@ from galaxy.security.validate_user_input import (
     validate_password,
     validate_publicname
 )
+from galaxy.users.create import CreateUserFactory
 from galaxy.util.hash_util import new_secure_hash
 from galaxy.web import url_for
 
@@ -126,6 +127,8 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         except exc.IntegrityError as db_err:
             raise exceptions.Conflict(str(db_err))
         self.app.security_agent.create_user_role(user, self.app)
+        if user.active:
+            self.post_user_create(user)
         return user
 
     def delete(self, user, flush=True):
@@ -600,6 +603,13 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         user.active = True
         self.session().add(user)
         self.session().flush()
+        self.post_user_create(user)
+
+    def post_user_create(self, user):
+        if self.app.config.user_api_key_auto_generate:
+            self.get_or_create_valid_api_key(user)
+        cuf = CreateUserFactory(self.app)
+        cuf.run(user)
 
 
 class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):

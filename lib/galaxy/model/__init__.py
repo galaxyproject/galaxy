@@ -6128,6 +6128,7 @@ class UserAuthnzToken(UserMixin, RepresentById):
         instance.set_random_password()
         cls.sa_session.add(instance)
         cls.sa_session.flush()
+        # TODO: Somehow run the UserManager with the post user creation system
         return instance
 
     @classmethod
