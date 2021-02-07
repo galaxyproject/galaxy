@@ -4,8 +4,6 @@ Galaxy data model classes
 Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
-import inspect
-
 import base64
 import errno
 import json
