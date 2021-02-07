@@ -4,9 +4,13 @@ In some occassions a Galaxy admin may want to run some scripts after an account 
 ## How does the system work
 The system reads the [Configuration Options](#configuration-options) and uses them to determine which scripts to use.
 Once a user has been created, the script(s) are automatically triggered. They will run at the same time. The scripts are
-set up to be non-blocking to the user creation process. So the user has feedback before the scripts have finished. This is to avoid long running scripts from slowing down the process for the user. 
+set up to be non-blocking to the user creation process. So the user has feedback before the scripts have finished. 
+This is to avoid long running scripts from slowing down the process for the user. 
+The script will also only run after the account has been activated, so if the configuration option `user_activation_on`
+is turned on, it will only start once the user has activated their account.
 
 **Main takeaways**:
+*  Script will only run upon account activation, depends on `user_activation_on` configuration option.
 *  Scripts start at the same time
 *  Scripts run in separate processes
 *  Scripts are non-blocking to user creation process.
