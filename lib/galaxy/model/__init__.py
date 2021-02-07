@@ -4,6 +4,8 @@ Galaxy data model classes
 Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
+import inspect
+
 import base64
 import errno
 import json
@@ -6121,6 +6123,11 @@ class UserAuthnzToken(UserMixin, RepresentById):
         This is used by PSA authnz, do not use directly.
         Prefer using the user manager.
         """
+        # Determine if we have app included, this is needed for post user create, not for user creation
+        app = kwargs.get('app', None)
+        if app is not None:
+            # Delete the argument for user creation
+            del kwargs['app']
         model = cls.user_model()
         instance = model(*args, **kwargs)
         if cls.get_users_by_email(instance.email).first():
@@ -6128,7 +6135,9 @@ class UserAuthnzToken(UserMixin, RepresentById):
         instance.set_random_password()
         cls.sa_session.add(instance)
         cls.sa_session.flush()
-        # TODO: Somehow run the UserManager with the post user creation system
+        # Run post user creation scripts
+        if app is not None:
+            app.user_manager.post_user_create(instance)
         return instance
 
     @classmethod

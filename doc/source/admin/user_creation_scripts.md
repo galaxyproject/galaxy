@@ -26,6 +26,13 @@ There are 2 configuration options needed to set this up. These are:
    ```
    This defines which scripts Galaxy should execute. This is similar to the `user_tool_label_filters` configuration option.
  
+### Notes for OIDC configuration
+In order for this to work for OIDC, you need to update the `oidc_config.xml` file and set the `USER_FIELDS` property.
+It should be set the following way:
+```xml
+<Setter Property="USER_FIELDS" Value="username,email,app" Type="str"/>
+```
+
  ## Scripts
 The function in the script receives the `User` model in a dictionary form as parameter. An example application is provided in `lib/galaxy/users/create/examples.py.sample`. A very simple email logging system to the Galaxy root folder would look as follows:
 ```python

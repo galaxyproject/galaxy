@@ -15,18 +15,20 @@ class CreateUserFactory:
 
     def __init__(self, app):
         self.__base_modules = listify(getattr(app.config, "user_create_base_modules", "galaxy.users.create"))
+        # Normal user creation
         self.__functions = listify(getattr(app.config, "user_create_functions", ""))
-        self.__loaded_functions = []
-        self.__init_functions()
+        self.__loaded_functions = self.__init_functions(self.__functions)
 
     def run(self, user):
         run_user_functions(self.__loaded_functions, user)
 
-    def __init_functions(self):
+    def __init_functions(self, functions):
+        funcs = []
         for usercreatefunction in self.__functions:
             create_user_function = self.build_create_user_function(usercreatefunction)
             if create_user_function is not None:
-                self.__loaded_functions.append(create_user_function)
+                funcs.append(create_user_function)
+        return funcs
 
     def build_create_user_function(self, filter_name):
         """Obtain python function (importing a submodule if needed)
@@ -58,9 +60,9 @@ class CreateUserFactory:
 
 def run_user_functions(functions, user):
     # Spawn processes so the regular user creation process doesn't hang
-    mp.set_start_method('spawn')
+    ctx = mp.get_context('spawn')
     user = user.to_dict()
     for function in functions:
         log.debug("Running after user creation function: %s" % function.__name__)
-        p = mp.Process(target=function, args=(user,), daemon=True)
+        p = ctx.Process(target=function, args=(user,), daemon=True)
         p.start()
