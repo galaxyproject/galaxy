@@ -1284,7 +1284,7 @@ class ToolTestDescription:
         self.error = processed_test_dict.get("error", False)
         self.exception = processed_test_dict.get("exception", None)
 
-        self.output_collections = list(map(TestCollectionOutputDef.from_dict, processed_test_dict.get("output_collections", [])))
+        self.output_collections = [TestCollectionOutputDef.from_dict(d) for d in processed_test_dict.get("output_collections", [])]
         self.command_line = processed_test_dict.get("command_line", None)
         self.command_version = processed_test_dict.get("command_version", None)
         self.stdout = processed_test_dict.get("stdout", None)
