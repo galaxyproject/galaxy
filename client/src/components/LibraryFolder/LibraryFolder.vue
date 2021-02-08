@@ -216,7 +216,7 @@
                         </b-button>
                         <b-button
                             v-if="row.item.can_manage && !row.item.deleted"
-                            :href="createPermissionLink(row.item)"
+                            @click="navigateToPermission(row.item)"
                             data-toggle="tooltip"
                             data-placement="top"
                             size="sm"
@@ -287,6 +287,7 @@ import { Toast } from "ui/toast";
 import FolderTopBar from "./TopToolbar/FolderTopBar";
 import { initFolderTableIcons } from "./icons.js";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { getGalaxyInstance } from "app";
 
 initFolderTableIcons();
 
@@ -460,9 +461,9 @@ export default {
                 return `${this.root}library/list#folders/${this.current_folder_id}/datasets/${element.id}`;
             else if (element.type === "folder") return `${this.root}library/folders/${element.id}`;
         },
-        createPermissionLink(element) {
-            if (element.type === "file") return `${this.createContentLink(element)}/permissions`;
-            else if (element.type === "folder") return `${this.root}library/list#folders/${element.id}/permissions`;
+        navigateToPermission(element) {
+            if (element.type === "file") window.location.replace(`${this.createContentLink(element)}/permissions`);
+            else if (element.type === "folder") this.$router.push({ path: `/permissions/${element.id}` });
         },
         getMessage(element) {
             if (element.type === "file") return element.message;

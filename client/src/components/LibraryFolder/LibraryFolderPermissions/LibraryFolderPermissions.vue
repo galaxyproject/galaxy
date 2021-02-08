@@ -2,7 +2,7 @@
     <div>
         <div>
             <div v-if="folder">
-                <b-button variant="primary" :href="getParentLink()">
+                <b-button variant="primary" :to="{ path: `/${this.folder.parent_id}` }">
                     <font-awesome-icon icon="angle-double-left">1</font-awesome-icon>
                 </b-button>
                 <div>
