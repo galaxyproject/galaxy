@@ -388,9 +388,10 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
     def handle_dataset_as_image(self, line, hda):
         dataset = hda.dataset
         name = hda.name or ''
-        filepath = re.search(PATH_LABEL_PATTERN, line).group(2)
+        path_match = re.search(PATH_LABEL_PATTERN, line)
 
-        if filepath is not None:
+        if path_match:
+            filepath = path_match.group(2)
             file = os.path.join(hda.extra_files_path, filepath)
         else:
             file = dataset.file_name
