@@ -11,7 +11,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ['3.7']
-        subset: ['kubernetes']
+        subset: ['upload_datatype', 'extended_metadata', 'kubernetes', 'not (upload_datatype or extended_metadata or kubernetes)']
     services:
       postgres:
         image: postgres:13
