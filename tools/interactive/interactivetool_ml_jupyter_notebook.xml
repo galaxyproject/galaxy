@@ -5,16 +5,15 @@
     <entry_points>
         <entry_point name="Jupyter Interactive Tool" requires_domain="True">
             <port>8888</port>
-            <url>lab/</url>
+            <url>ipython/lab</url>
         </entry_point>
     </entry_points>
     <environment_variables>
-         <environment_variable name="HISTORY_ID">$__history_id__</environment_variable>
+        <environment_variable name="HISTORY_ID">$__history_id__</environment_variable>
         <environment_variable name="REMOTE_HOST">$__galaxy_url__</environment_variable>
         <environment_variable name="GALAXY_WEB_PORT">8080</environment_variable>
         <environment_variable name="GALAXY_URL">$__galaxy_url__</environment_variable>
         <environment_variable name="API_KEY" inject="api_key" />
-        
     </environment_variables>
     <command detect_errors="aggressive"><![CDATA[
         #import re
@@ -30,12 +29,11 @@
         export PATH=/home/jovyan/.local/bin:\$PATH &&
 
         #if $mode.mode_select == 'scratch':
-            ## copy default notebook ml
+            ## copy default machine learning notebook
             cp '$__tool_directory__/default_notebook_ml.ipynb' ./ipython_galaxy_notebook.ipynb &&
             jupyter trust ./ipython_galaxy_notebook.ipynb &&
             jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True &&
             cp ./ipython_galaxy_notebook.ipynb '$jupyter_notebook'
-
         #else:
             #set $cleaned_name = re.sub('[^\w\-\.]', '_', str($input.element_identifier))
             cp '$mode.ipynb' ./${cleaned_name}.ipynb &&
