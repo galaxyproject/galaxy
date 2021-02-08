@@ -77,7 +77,7 @@
             key="copy-link"
             title="Copy Link"
             icon="fa fa-chain"
-            @click.stop="$emit('copy-link')"
+            @click.stop="onCopyLink"
         />
 
         <div v-if="showDownloads && dataset.hasMetaData">
@@ -141,6 +141,8 @@ import { mapGetters } from "vuex";
 import { Dataset, STATES } from "../../model";
 import { PriorityMenu, PriorityMenuItem } from "components/PriorityMenu";
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
+import { copy as sendToClipboard } from "utils/clipboard";
+import { absPath } from "utils/redirect";
 
 export default {
     mixins: [legacyNavigationMixin],
@@ -275,6 +277,12 @@ export default {
         onDeleteClick() {
             const eventName = this.dataset.deleted ? "undelete" : "delete";
             this.$emit(eventName);
+        },
+
+        onCopyLink() {
+            const relPath = this.dataset.getUrl("download");
+            const msg = this.localize("Link is copied to your clipboard");
+            sendToClipboard(absPath(relPath), msg);
         },
     },
 };

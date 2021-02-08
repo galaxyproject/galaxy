@@ -1,5 +1,4 @@
-<!-- a separate collection content item for collections
-    inside of other collections -->
+<!-- a separate collection content item for collections inside of other collections -->
 
 <template>
     <div
@@ -7,8 +6,8 @@
         v-on="$listeners"
         class="collapsed"
         :data-state="state"
-        @keydown.arrow-right.self.stop.prevent="$emit('viewCollection')"
-        @click.stop="$emit('viewCollection')"
+        @keydown.arrow-right.self.stop.prevent="$emit('selectCollection')"
+        @click.stop="$emit('selectCollection')"
     >
         <nav class="content-top-menu d-flex align-items-center justify-content-between p-1">
             <h5 class="flex-grow-1 overflow-hidden mr-auto text-nowrap text-truncate">

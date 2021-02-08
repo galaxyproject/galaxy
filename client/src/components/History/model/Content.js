@@ -1,4 +1,5 @@
 import { dateMixin, ModelBase } from "./ModelBase";
+import { objectNeedsProps } from "utils/objectNeedsProps";
 
 const defaults = {
     accessible: false,
@@ -62,3 +63,6 @@ export class Content extends dateMixin(ModelBase) {
         return allTags.filter((t) => t.includes("name:"));
     }
 }
+
+// determines if we have minimum props for history content
+Content.isValidContentProps = objectNeedsProps(["history_id", "type_id", "id", "history_content_type"]);

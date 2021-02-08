@@ -5,7 +5,7 @@
         v-on="$listeners"
         class="dataset-collection"
         :dsc="dsc"
-        @update:dsc="onUpdate"
+        @update:dsc="$emit('update:item', $event)"
         @delete="onDelete"
         @undelete="onUndelete"
         @unhide="onUnhide"
@@ -15,7 +15,7 @@
 <script>
 import DscUI from "./DscUI";
 import { DatasetCollection } from "../../model";
-import { deleteDatasetCollection, updateContentFields } from "../../model/queries";
+import { deleteDatasetCollection } from "../../model/queries";
 import { cacheContent } from "../../caching";
 
 export default {
@@ -41,16 +41,6 @@ export default {
                 });
                 await cacheContent(newFields);
             }
-        },
-        async onUnhide() {
-            await this.onUpdate({ visible: true });
-        },
-        async onUndelete() {
-            await this.onUpdate({ deleted: false });
-        },
-        async onUpdate(changes) {
-            const newContent = await updateContentFields(this.item, changes);
-            await cacheContent(newContent);
         },
     },
 };

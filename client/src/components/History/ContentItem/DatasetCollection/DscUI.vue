@@ -6,9 +6,9 @@
         class="dataset dataset-collection collapsed"
         :class="{ selected }"
         :data-state="dsc.state"
-        @keydown.arrow-right.self.stop="$emit('viewCollection')"
+        @keydown.arrow-right.self.stop="$emit('selectCollection')"
         @keydown.space.self.stop.prevent="$emit('update:selected', !selected)"
-        @click.stop="$emit('viewCollection')"
+        @click.stop="$emit('selectCollection')"
     >
         <nav class="d-flex content-top-menu align-items-center justify-content-between">
             <div class="d-flex mr-1 align-items-center" @click.stop>
@@ -35,7 +35,7 @@
                     state="ok"
                     title="Collection"
                     icon="fas fa-folder"
-                    @click.stop="$emit('viewCollection')"
+                    @click.stop="$emit('selectCollection')"
                 />
             </div>
 

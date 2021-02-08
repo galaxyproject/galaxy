@@ -7,6 +7,7 @@
 
 import { Content } from "./Content";
 import { JobStateSummary } from "./JobStateSummary";
+import { objectNeedsProps } from "utils/objectNeedsProps";
 
 export class DatasetCollection extends Content {
     loadProps(raw = {}) {
@@ -69,3 +70,6 @@ export class DatasetCollection extends Content {
 DatasetCollection.equals = function (a, b) {
     return JSON.stringify(a) == JSON.stringify(b);
 };
+
+// determines if we have enough props to make a DSC
+DatasetCollection.isValidCollectionProps = objectNeedsProps(["parent_url", "type_id", "id", "history_content_type"]);
