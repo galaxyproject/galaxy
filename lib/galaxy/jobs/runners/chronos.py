@@ -62,10 +62,9 @@ def _parse_job_volumes_list(li):
     # Create the list with right mountpoint and permissions
     mountpoint_list = []
     # Convert each element to right format
-    path = lambda x, y, z: {'hostPath': x, 'containerPath': y, 'mode': z}
     for i in volume_list:
         hpath, cpath, mode = i.split(':')
-        mountpoint_list.append(path(hpath, cpath, mode))
+        mountpoint_list.append({'hostPath': hpath, 'containerPath': cpath, 'mode': mode})
     return mountpoint_list
 
 
@@ -73,9 +72,7 @@ def _add_galaxy_environment_variables(cpus, memory):
     # Set:
     # GALAXY_SLOTS: to docker_cpu
     # GALAXY_MEMORY_MB to docker_memory
-    add_var = lambda x, y: {'name': x, 'value': y}
-    li = [add_var('GALAXY_SLOTS', cpus), add_var('GALAXY_MEMORY_MB', memory)]
-    return li
+    return [{'name': 'GALAXY_SLOTS', 'value': cpus}, {'name': 'GALAXY_MEMORY_MB', 'value': memory}]
 
 
 class ChronosJobRunner(AsynchronousJobRunner):
@@ -210,7 +207,7 @@ class ChronosJobRunner(AsynchronousJobRunner):
         self._handle_runner_state('failure', job_state)
         if not job_state.runner_state_handled:
             job_state.job_wrapper.fail(getattr(job_state, 'fail_message', 'Job failed'), exception=exception)
-            self._finish_or_resubmit_job(job_state,'',job_state.fail_message, job_id=job_state.job_id)
+            self._finish_or_resubmit_job(job_state, '', job_state.fail_message, job_id=job_state.job_id)
             if job_state.job_wrapper.cleanup_job == "always":
                 job_state.cleanup()
 
