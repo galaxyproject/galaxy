@@ -65,7 +65,9 @@ jobs:
         working-directory: 'galaxy root'
       - name: Run tests
         if: matrix.subset == 'kubernetes'
-        run: 'source .ci/minikube-test-setup/start_services.sh && ./run_tests.sh -integration test/integration -- -k "${{ matrix.subset }}"'
+        run: |
+          . .ci/minikube-test-setup/start_services.sh
+          ./run_tests.sh -integration test/integration -- -k "${{ matrix.subset }}"
         working-directory: 'galaxy root'
       - uses: actions/upload-artifact@v2
         if: failure()
