@@ -74,10 +74,8 @@ class Otu(Text):
             # Set the discovered metadata values for the dataset
             dataset.metadata.data_lines = data_lines
             dataset.metadata.columns = ncols
-            dataset.metadata.labels = list(label_names)
-            dataset.metadata.labels.sort()
-            dataset.metadata.otulabels = list(otulabel_names)
-            dataset.metadata.otulabels.sort()
+            dataset.metadata.labels = sorted(label_names)
+            dataset.metadata.otulabels = sorted(otulabel_names)
 
     def sniff_prefix(self, file_prefix):
         """
@@ -193,10 +191,8 @@ class GroupAbund(Otu):
             # Set the discovered metadata values for the dataset
             dataset.metadata.data_lines = data_lines
             dataset.metadata.columns = ncols
-            dataset.metadata.labels = list(label_names)
-            dataset.metadata.labels.sort()
-            dataset.metadata.groups = list(group_names)
-            dataset.metadata.groups.sort()
+            dataset.metadata.labels = sorted(label_names)
+            dataset.metadata.groups = sorted(group_names)
             dataset.metadata.skip = skip
 
     def sniff_prefix(self, file_prefix, vals_are_int=False):
