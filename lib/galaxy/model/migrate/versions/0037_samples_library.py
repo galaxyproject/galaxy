@@ -35,7 +35,7 @@ def upgrade(migrate_engine):
     metadata.reflect()
 
     # Add the datatx_info column in 'request_type' table
-    col = Column("datatx_info", JSONType())
+    col = Column("datatx_info", JSONType)
     add_column(col, 'request_type', metadata)
 
     # Delete the library_id column in 'request' table
@@ -49,7 +49,7 @@ def upgrade(migrate_engine):
 
     # Add the dataset_files column in 'sample' table
     Sample_table = Table("sample", metadata, autoload=True)
-    col = Column("dataset_files", JSONType())
+    col = Column("dataset_files", JSONType)
     add_column(col, Sample_table, metadata)
 
     # Add the library_id column in 'sample' table
