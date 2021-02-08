@@ -62,20 +62,21 @@ def _parse_job_volumes_list(li):
     # Create the list with right mountpoint and permissions
     mountpoint_list = []
     # Convert each element to right format
-    path = lambda x,y,z: {'hostPath': x, 'containerPath': y, 'mode': z}
+    path = lambda x, y, z: {'hostPath': x, 'containerPath': y, 'mode': z}
     for i in volume_list:
-        hpath,cpath,mode = i.split(':')
-        mountpoint_list.append(path(hpath,cpath,mode))
+        hpath, cpath, mode = i.split(':')
+        mountpoint_list.append(path(hpath, cpath, mode))
     return mountpoint_list
 
 
-def _add_galaxy_environment_variables(cpus,memory):
-  # Set:
-  # GALAXY_SLOTS: to docker_cpu
-  # GALAXY_MEMORY_MB to docker_memory
-  add_var = lambda x,y: { 'name': x, 'value': y }
-  li =  [ add_var('GALAXY_SLOTS', cpus), add_var('GALAXY_MEMORY_MB', memory) ]
-  return li
+def _add_galaxy_environment_variables(cpus, memory):
+    # Set:
+    # GALAXY_SLOTS: to docker_cpu
+    # GALAXY_MEMORY_MB to docker_memory
+    add_var = lambda x, y: {'name': x, 'value': y}
+    li = [add_var('GALAXY_SLOTS', cpus), add_var('GALAXY_MEMORY_MB', memory)]
+    return li
+
 
 class ChronosJobRunner(AsynchronousJobRunner):
     runner_name = 'ChronosRunner'
@@ -213,7 +214,6 @@ class ChronosJobRunner(AsynchronousJobRunner):
             if job_state.job_wrapper.cleanup_job == "always":
                 job_state.cleanup()
 
-
     @handle_exception_call
     def check_watched_item(self, job_state):
         job_name = job_state.job_id
@@ -229,9 +229,9 @@ class ChronosJobRunner(AsynchronousJobRunner):
             elif errors:
                 max_retries = job['retries']
                 if max_retries == 0:
-                  msg = 'Job {name!r} failed. No retries performed.'
+                    msg = 'Job {name!r} failed. No retries performed.'
                 else:
-                  msg = 'Job {name!r} failed more than {retries!s} times.'
+                    msg = 'Job {name!r} failed more than {retries!s} times.'
                 reason = msg.format(name=job_name, retries=str(max_retries))
                 return self._mark_as_failed(job_state, reason)
         reason = f'Job {job_name!r} not found'
@@ -277,13 +277,13 @@ class ChronosJobRunner(AsynchronousJobRunner):
         return parsed_params
 
     def write_command(self, job_wrapper):
-    # Create command script instead passing it in the container
-    # preventing wrong characters parsing.
+        # Create command script instead passing it in the container
+        # preventing wrong characters parsing.
         if not os.path.exists(job_wrapper.working_directory):
             LOGGER.error("No working directory found")
 
         path = job_wrapper.working_directory + '/chronos_' + job_wrapper.get_id_tag() + '.sh'
-        mode=0o755
+        mode = 0o755
 
         with open(path, 'w', encoding='utf-8') as f:
             f.write('#!/bin/bash\n')
@@ -297,7 +297,7 @@ class ChronosJobRunner(AsynchronousJobRunner):
         command_script_path = self.write_command(job_wrapper)
         template = {
             'async': False,
-            #'command': job_wrapper.runner_command_line,
+            # 'command': job_wrapper.runner_command_line,
             'command': '$SHELL ' + command_script_path,
             'owner': self.runner_params['owner'],
             'disabled': False,
@@ -316,7 +316,7 @@ class ChronosJobRunner(AsynchronousJobRunner):
         template['container']['image'] = self._find_container(
             job_wrapper).container_id
         # Fix the working directory inside the container
-        template['container']['parameters'] = [{"key": "workdir", "value": job_wrapper.working_directory }]
+        template['container']['parameters'] = [{"key": "workdir", "value": job_wrapper.working_directory}]
         return template
 
     def _retrieve_job(self, job_id):
