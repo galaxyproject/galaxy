@@ -3,6 +3,10 @@ API operations on Quota objects.
 """
 import logging
 
+from fastapi import Path
+# TODO: replace with Router after merging #11219
+from fastapi_utils.cbv import cbv
+from fastapi_utils.inferring_router import InferringRouter as APIRouter
 from paste.httpexceptions import HTTPBadRequest
 from sqlalchemy import (
     false,
@@ -15,18 +19,148 @@ from galaxy import (
 )
 from galaxy.actions.admin import AdminActions
 from galaxy.exceptions import ActionInputError
+from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.quotas import QuotasManager
+from galaxy.quota._schema import (
+    CreateQuotaPayload,
+    UpdateQuotaPayload,
+)
+from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.web.params import QuotaParamParser
 from galaxy.webapps.base.controller import (
     url_for,
     UsesQuotaMixin
 )
-from . import BaseGalaxyAPIController
+from . import (
+    AdminUserRequired,
+    BaseGalaxyAPIController,
+    depends,
+    DependsOnTrans,
+)
 
 log = logging.getLogger(__name__)
 
 
-class QuotaAPIController(BaseGalaxyAPIController, AdminActions, UsesQuotaMixin, QuotaParamParser):
+# TODO: This FastAPI router is disabled. Please rename it to `router` when the database session issues are fixed.
+_router = APIRouter(tags=['quotas'])
 
+
+QuotaIdPathParam: EncodedDatabaseIdField = Path(
+    ...,  # Required
+    title="Quota ID",
+    description="The encoded indentifier of the Quota."
+)
+
+
+@cbv(_router)
+class FastAPITags:
+    manager: QuotasManager = depends(QuotasManager)
+
+    @_router.get(
+        '/api/quotas',
+        summary="Displays a list with information of quotas that are currently active.",
+        dependencies=[AdminUserRequired],
+    )
+    def index(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ):
+        """Displays a list with information of quotas that are currently active."""
+        self.manager.index(trans)
+
+    @_router.get(
+        '/api/quotas/deleted',
+        summary="Displays a list with information of quotas that have been deleted.",
+        dependencies=[AdminUserRequired],
+    )
+    def index_deleted(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ):
+        """Displays a list with information of quotas that have been deleted."""
+        self.manager.index(trans, deleted=True)
+
+    @_router.get(
+        '/api/quotas/{id}',
+        summary="Displays details on a particular active quota.",
+        dependencies=[AdminUserRequired],
+    )
+    def show(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = QuotaIdPathParam
+    ):
+        """Displays details on a particular active quota."""
+        self.manager.show(trans, id)
+
+    @_router.get(
+        '/api/quotas/deleted/{id}',
+        summary="Displays details on a particular quota that has been deleted.",
+        dependencies=[AdminUserRequired],
+    )
+    def show_deleted(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = QuotaIdPathParam,
+    ):
+        """Displays details on a particular quota that has been deleted."""
+        self.manager.show(trans, id, deleted=True)
+
+    @_router.post(
+        '/api/quotas',
+        summary="Creates a new quota.",
+        dependencies=[AdminUserRequired],
+    )
+    def create(
+        self,
+        payload: CreateQuotaPayload,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ):
+        """Creates a new quota."""
+        self.manager.create(trans, payload)
+
+    @_router.put(
+        '/api/quotas/{id}',
+        summary="Updates an existing quota.",
+        dependencies=[AdminUserRequired],
+    )
+    def update(
+        self,
+        payload: UpdateQuotaPayload,
+        id: EncodedDatabaseIdField = QuotaIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ):
+        """Updates an existing quota."""
+        self.manager.update(trans, id, payload)
+
+    @_router.delete(
+        '/api/quotas/{id}',
+        summary="Deletes an existing quota.",
+        dependencies=[AdminUserRequired],
+    )
+    def delete(
+        self,
+        id: EncodedDatabaseIdField = QuotaIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ):
+        """Deletes an existing quota."""
+        self.manager.delete(trans, id)
+
+    @_router.post(
+        '/api/quotas/deleted/{id}/undelete',
+        summary="Restores a previously deleted quota.",
+        dependencies=[AdminUserRequired],
+    )
+    def undelete(
+        self,
+        id: EncodedDatabaseIdField = QuotaIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ):
+        """Restores a previously deleted quota."""
+        self.manager.undelete(trans, id)
+
+
+class QuotaAPIController(BaseGalaxyAPIController, AdminActions, UsesQuotaMixin, QuotaParamParser):
     @web.require_admin
     @web.legacy_expose_api
     def index(self, trans, deleted='False', **kwd):

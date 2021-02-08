@@ -35,7 +35,9 @@ class DefaultQuotaTypes(str, Enum):  # TODO: should this replace lib.galaxy.mode
     REGISTERED = 'registered'
 
 
-class DefaultQuotaValues(DefaultQuotaTypes):
+class DefaultQuotaValues(str, Enum):
+    UNREGISTERED = 'unregistered'
+    REGISTERED = 'registered'
     NO = "no"
 
 
