@@ -71,7 +71,7 @@ class FastAPIJobs:
     hda_manager: hdas.HDAManager = Depends(get_hda_manager)
 
     @router.get("/api/job/{id}")
-    def show(self, id: EncodedDatabaseIdField, trans: ProvidesUserContext = Depends(get_trans), full: typing.Optional[bool] = False) -> typing.Dict:
+    def show(self, id: EncodedDatabaseIdField, trans: ProvidesUserContext = Depends(get_trans), view='element', full: typing.Optional[bool] = False) -> typing.Dict:
         """
         Return dictionary containing description of job data
 
@@ -81,7 +81,7 @@ class FastAPIJobs:
         """
         id = trans.app.security.decode_id(id)
         job = self.job_manager.get_accessible_job(trans, id)
-        return view_show_job(trans, job, bool(full))
+        return view_show_job(trans, job, view, bool(full))
 
 
 class JobController(BaseAPIController, UsesVisualizationMixin):
@@ -191,7 +191,8 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
         """
         job = self.__get_job(trans, id)
         full_output = util.asbool(kwd.get('full', 'false'))
-        return view_show_job(trans, job, full_output)
+        view = kwd.get('view', 'element')
+        return view_show_job(trans, job, view, full_output)
 
     @expose_api
     def common_problems(self, trans: ProvidesUserContext, id, **kwd):

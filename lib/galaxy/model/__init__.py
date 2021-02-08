@@ -687,6 +687,7 @@ class TaskMetricNumeric(BaseJobMetric, RepresentById):
 class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
     dict_collection_visible_keys = ['id', 'state', 'exit_code', 'update_time', 'create_time', 'galaxy_version']
     dict_element_visible_keys = ['id', 'state', 'exit_code', 'update_time', 'create_time', 'galaxy_version', 'command_version']
+    dict_workflow_visible_keys = ['id', 'state', 'exit_code', 'update_time', 'create_time', 'galaxy_version']
 
     """
     A job represents a request to run a tool given input datasets, tool
@@ -1129,12 +1130,11 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         rval = super().to_dict(view=view)
         rval['tool_id'] = self.tool_id
         rval['history_id'] = self.history_id
-        if self.workflow_invocation_step:
-            rval['created_by_workflow'] = True
-            rval['workflow_invocation_id'] = self.workflow_invocation_step.workflow_invocation.id
-            rval['workflow_id'] = self.workflow_invocation_step.workflow_invocation.workflow_id
-        else:
-            rval['created_by_workflow'] = False
+
+        if view == 'workflow':
+            if self.workflow_invocation_step:
+                rval['workflow_invocation_step'] = self.workflow_invocation_step.to_dict() if self.workflow_invocation_step else {}
+
         if system_details:
             # System level details that only admins should have.
             rval['external_id'] = self.job_runner_external_id
@@ -5710,6 +5710,7 @@ class WorkflowInvocationStep(Dictifiable, RepresentById):
         rval['order_index'] = self.workflow_step.order_index
         rval['workflow_step_label'] = self.workflow_step.label
         rval['workflow_step_uuid'] = str(self.workflow_step.uuid)
+        rval['workflow_invocation_id'] = self.workflow_invocation.id
         # Following no longer makes sense...
         # rval['state'] = self.job.state if self.job is not None else None
         if view == 'element':

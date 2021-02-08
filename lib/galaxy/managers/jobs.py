@@ -384,9 +384,9 @@ class JobSearch:
         return None
 
 
-def view_show_job(trans, job, full: bool) -> typing.Dict:
+def view_show_job(trans, job, view, full: bool) -> typing.Dict:
     is_admin = trans.user_is_admin
-    job_dict = trans.app.security.encode_all_ids(job.to_dict('element', system_details=is_admin), True)
+    job_dict = trans.app.security.encode_all_ids(job.to_dict(view, system_details=is_admin), True)
     if full:
         job_dict.update(dict(
             tool_stdout=job.tool_stdout,

@@ -15,19 +15,21 @@
                 </tr>
                 <tr v-if="job">
                     <td>Created by workflow?</td>
-                    <td id="created-by-workflow">{{ job.created_by_workflow }}</td>
+                    <td id="created-by-workflow">{{ job.workflow_invocation_step != None }}</td>
                 </tr>
-                <tr v-if="job && job.created_by_workflow">
+                <tr v-if="job && job.workflow_invocation_step">
                     <td>Workflow ID:</td>
                     <td id="workflow-id">
-                        {{ job.workflow_id }} (<a :href="'/workflow/display_by_id?id=' + job.workflow_id" target="_top"
+                        {{ job.workflow_invocation_step.id }} (<a
+                            :href="'/workflow/display_by_id?id=' + job.workflow_invocation_step.id"
+                            target="_top"
                             >view</a
                         >)
                     </td>
                 </tr>
-                <tr v-if="job && job.created_by_workflow">
+                <tr v-if="job && job.workflow_invocation_step">
                     <td>Invocation ID:</td>
-                    <td id="invocation-id">{{ job.workflow_invocation_id }}</td>
+                    <td id="invocation-id">{{ job.workflow_invocation_step.workflow_invocation_id }}</td>
                 </tr>
                 <tr v-if="job && includeTimes">
                     <td>Created</td>
@@ -58,7 +60,11 @@
                 </tr>
                 <tr v-if="job && job.id">
                     <td>Job API ID:</td>
-                    <td id="encoded-job-id">{{ job.id }} <decoded-id :id="job.id" /></td>
+                    <td id="encoded-job-id">
+                        {{ job.id }} <decoded-id :id="job.id" /> (<a :href="'/root?job_id=' + job.id" target="_top"
+                            >rerun</a
+                        >)
+                    </td>
                 </tr>
                 <tr v-if="job && job.copied_from_job_id">
                     <td>Copied from Job API ID:</td>
