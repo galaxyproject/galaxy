@@ -1,7 +1,6 @@
 import imp
 import logging
 import os
-from collections import OrderedDict
 from datetime import datetime, timedelta
 
 from sqlalchemy import and_, false, or_
@@ -882,7 +881,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
     def review_tool_migration_stages(self, trans, **kwd):
         message = escape(util.restore_text(kwd.get('message', '')))
         status = util.restore_text(kwd.get('status', 'done'))
-        migration_stages_dict = OrderedDict()
+        migration_stages_dict = {}
         # FIXME: this isn't valid in an installed context
         migration_scripts_dir = os.path.abspath(os.path.join(trans.app.config.root, 'lib', 'galaxy', 'tool_shed', 'galaxy_install', 'migrate', 'versions'))
         modules = os.listdir(migration_scripts_dir)

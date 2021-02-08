@@ -5,7 +5,6 @@ import copy
 import json
 import logging
 import re
-from collections import OrderedDict
 
 from markupsafe import escape
 from sqlalchemy import (
@@ -713,9 +712,9 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, Uses
             inputs.append({'type': 'section', 'title': filter_title, 'name': filter_type, 'expanded': True, 'inputs': filter_inputs})
 
     def _get_filter_types(self, trans):
-        return OrderedDict([('toolbox_tool_filters', {'title': 'Tools', 'config': trans.app.config.user_tool_filters}),
-                            ('toolbox_section_filters', {'title': 'Sections', 'config': trans.app.config.user_tool_section_filters}),
-                            ('toolbox_label_filters', {'title': 'Labels', 'config': trans.app.config.user_tool_label_filters})])
+        return {'toolbox_tool_filters': {'title': 'Tools', 'config': trans.app.config.user_tool_filters},
+                'toolbox_section_filters': {'title': 'Sections', 'config': trans.app.config.user_tool_section_filters},
+                'toolbox_label_filters': {'title': 'Labels', 'config': trans.app.config.user_tool_label_filters}}
 
     @expose_api
     def api_key(self, trans, id, payload=None, **kwd):

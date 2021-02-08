@@ -2,7 +2,6 @@ import json
 import logging
 import os
 import re
-from collections import OrderedDict
 from json import dumps
 
 
@@ -69,7 +68,7 @@ class DefaultToolAction:
         """
         if current_user_roles is None:
             current_user_roles = trans.get_current_user_roles()
-        input_datasets = OrderedDict()
+        input_datasets = {}
         all_permissions = {}
 
         def record_permission(action, role_id):
@@ -357,7 +356,7 @@ class DefaultToolAction:
         # wrapped params are used by change_format action and by output.label; only perform this wrapping once, as needed
         wrapped_params = self._wrapped_params(trans, tool, incoming, inp_data)
 
-        out_data = OrderedDict()
+        out_data = {}
         input_collections = {k: v[0][0] for k, v in inp_dataset_collections.items()}
         output_collections = OutputCollections(
             trans,
@@ -852,7 +851,7 @@ class OutputCollections:
                     # We don't care about the repeat index, we just need to find the correct DataCollectionToolParameter
                 else:
                     key = group
-                if isinstance(data_param, OrderedDict):
+                if isinstance(data_param, dict):
                     data_param = data_param.get(key)
                 else:
                     data_param = data_param.inputs.get(key)
