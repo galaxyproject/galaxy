@@ -38,7 +38,13 @@ from sqlalchemy.types import BigInteger
 
 from galaxy import model
 from galaxy.model.base import ModelMapping
-from galaxy.model.custom_types import JSONType, MetadataType, TrimmedString, UUIDType
+from galaxy.model.custom_types import (
+    JSONType,
+    MetadataType,
+    SimpleJSONType,
+    TrimmedString,
+    UUIDType,
+)
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
 from galaxy.model.security import GalaxyRBACAgent
@@ -858,7 +864,7 @@ model.PostJobAction.table = Table(
     Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True, nullable=True),
     Column("action_type", String(255), nullable=False),
     Column("output_name", String(255), nullable=True),
-    Column("action_arguments", JSONType, nullable=True))
+    Column("action_arguments", SimpleJSONType, nullable=True))
 
 model.PostJobActionAssociation.table = Table(
     "post_job_action_association", metadata,
@@ -1035,7 +1041,7 @@ model.WorkflowStepInput.table = Table(
     Column("scatter_type", TEXT),
     Column("value_from", JSONType),
     Column("value_from_type", TEXT),
-    Column("default_value", JSONType),
+    Column("default_value", SimpleJSONType),
     Column("default_value_set", Boolean, default=False),
     Column("runtime_value", Boolean, default=False),
     Index('ix_workflow_step_input_workflow_step_id_name_unique', "workflow_step_id", "name", unique=True, mysql_length={'name': 200}),
@@ -1064,7 +1070,7 @@ model.WorkflowRequestInputStepParameter.table = Table(
     Column("id", Integer, primary_key=True),
     Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id"), index=True),
     Column("workflow_step_id", Integer, ForeignKey("workflow_step.id")),
-    Column("parameter_value", JSONType),
+    Column("parameter_value", SimpleJSONType),
 )
 
 model.WorkflowRequestToInputDatasetAssociation.table = Table(
@@ -1123,7 +1129,7 @@ model.WorkflowInvocationStep.table = Table(
     Column("state", TrimmedString(64), index=True),
     Column("job_id", Integer, ForeignKey("job.id"), index=True, nullable=True),
     Column("implicit_collection_jobs_id", Integer, ForeignKey("implicit_collection_jobs.id"), index=True, nullable=True),
-    Column("action", JSONType, nullable=True))
+    Column("action", SimpleJSONType, nullable=True))
 
 model.WorkflowInvocationOutputDatasetAssociation.table = Table(
     "workflow_invocation_output_dataset_association", metadata,

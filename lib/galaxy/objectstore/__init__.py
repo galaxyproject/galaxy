@@ -12,7 +12,6 @@ import random
 import shutil
 import threading
 import time
-from collections import OrderedDict
 
 import yaml
 
@@ -938,7 +937,7 @@ class HierarchicalObjectStore(NestedObjectStore):
         """The default constructor. Extends `NestedObjectStore`."""
         super().__init__(config, config_dict)
 
-        backends = OrderedDict()
+        backends = {}
         for order, backend_def in enumerate(config_dict["backends"]):
             backends[order] = build_object_store_from_config(config, config_dict=backend_def, fsmon=fsmon)
 

@@ -12,7 +12,6 @@ import sys
 import tarfile
 import tempfile
 import zipfile
-from collections import OrderedDict
 from json import dumps
 from typing import Optional
 
@@ -320,7 +319,7 @@ class BamNative(CompressedArchive):
             # TODO: Reference names, lengths, read_groups and headers can become very large, truncate when necessary
             dataset.metadata.reference_names = list(bam_file.references)
             dataset.metadata.reference_lengths = list(bam_file.lengths)
-            dataset.metadata.bam_header = OrderedDict((k, v) for k, v in bam_file.header.items())
+            dataset.metadata.bam_header = dict(bam_file.header.items())
             dataset.metadata.read_groups = [read_group['ID'] for read_group in dataset.metadata.bam_header.get('RG', []) if 'ID' in read_group]
             dataset.metadata.sort_order = dataset.metadata.bam_header.get('HD', {}).get('SO', None)
             dataset.metadata.bam_version = dataset.metadata.bam_header.get('HD', {}).get('VN', None)

@@ -1,6 +1,5 @@
 import logging
 import os
-from collections import OrderedDict
 from json import dumps
 
 from galaxy.job_execution.datasets import DatasetPath
@@ -129,4 +128,4 @@ class SetMetadataToolAction(ToolAction):
         # clear e.g. converted files
         dataset.datatype.before_setting_metadata(dataset)
 
-        return job, OrderedDict()
+        return job, {}

@@ -593,6 +593,8 @@ class PulsarJobRunner(AsynchronousJobRunner):
             files_endpoint=files_endpoint,
             env=env
         )
+        # Turn MutableDict into standard dict for pulsar consumption
+        job_destination_params = dict(job_destination_params.items())
         return self.client_manager.get_client(job_destination_params, **get_client_kwds)
 
     def finish_job(self, job_state):

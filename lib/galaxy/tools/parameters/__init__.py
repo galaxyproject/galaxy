@@ -27,7 +27,6 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
 
     If the callback returns a value, it will be replace the old value.
 
-    >>> from collections import OrderedDict
     >>> from galaxy.util import XML
     >>> from galaxy.util.bunch import Bunch
     >>> from galaxy.tools.parameters.basic import TextToolParameter, BooleanToolParameter
@@ -43,9 +42,9 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     >>> i = TextToolParameter(None, XML('<param name="i"/>'))
     >>> j = TextToolParameter(None, XML('<param name="j"/>'))
     >>> b.name = b.title = 'b'
-    >>> b.inputs = OrderedDict([ ('c', c), ('d', d) ])
+    >>> b.inputs = dict([ ('c', c), ('d', d) ])
     >>> d.name = d.title = 'd'
-    >>> d.inputs = OrderedDict([ ('e', e), ('f', f) ])
+    >>> d.inputs = dict([ ('e', e), ('f', f) ])
     >>> f.test_param = g
     >>> f.name = 'f'
     >>> f.cases = [Bunch(value='true', inputs= {'h': h}), Bunch(value='false', inputs= { 'i': i })]
@@ -54,8 +53,8 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     ...     print('name=%s, prefix=%s, prefixed_name=%s, prefixed_label=%s, value=%s' % (input.name, prefix, prefixed_name, prefixed_label, value))
     ...     if error:
     ...         print(error)
-    >>> inputs = OrderedDict([('a', a),('b', b)])
-    >>> nested = OrderedDict([('a', 1), ('b', [OrderedDict([('c', 3), ('d', [OrderedDict([ ('e', 5), ('f', OrderedDict([ ('g', True), ('h', 7)]))])])])])])
+    >>> inputs = dict([('a', a),('b', b)])
+    >>> nested = dict([('a', 1), ('b', [dict([('c', 3), ('d', [dict([ ('e', 5), ('f', dict([ ('g', True), ('h', 7)]))])])])])])
     >>> visit_input_values(inputs, nested, visitor)
     name=a, prefix=, prefixed_name=a, prefixed_label=a, value=1
     name=c, prefix=b_0|, prefixed_name=b_0|c, prefixed_label=b 1 > c, value=3
@@ -103,7 +102,7 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     No value found for 'b 1 > d 1 > j'.
 
     >>> # Other parameters are missing in state
-    >>> nested = OrderedDict([('b', [OrderedDict([( 'd', [OrderedDict([('f', OrderedDict([('g', True), ('h', 7)]))])])])])])
+    >>> nested = dict([('b', [dict([( 'd', [dict([('f', dict([('g', True), ('h', 7)]))])])])])])
     >>> visit_input_values(inputs, nested, visitor)
     name=a, prefix=, prefixed_name=a, prefixed_label=a, value=None
     No value found for 'a'.
@@ -274,7 +273,6 @@ def update_dataset_ids(input_values, translate_values, src):
 def populate_state(request_context, inputs, incoming, state, errors=None, context=None, check=True, simple_errors=True, input_format='legacy'):
     """
     Populates nested state dict from incoming parameter values.
-    >>> from collections import OrderedDict
     >>> from galaxy.util import XML
     >>> from galaxy.util.bunch import Bunch
     >>> from galaxy.tools.parameters.basic import TextToolParameter, BooleanToolParameter
@@ -294,15 +292,15 @@ def populate_state(request_context, inputs, incoming, state, errors=None, contex
     >>> h = TextToolParameter(None, XML('<param name="h"/>'))
     >>> i = TextToolParameter(None, XML('<param name="i"/>'))
     >>> b.name = 'b'
-    >>> b.inputs = OrderedDict([('c', c), ('d', d)])
+    >>> b.inputs = dict([('c', c), ('d', d)])
     >>> d.name = 'd'
-    >>> d.inputs = OrderedDict([('e', e), ('f', f)])
+    >>> d.inputs = dict([('e', e), ('f', f)])
     >>> f.test_param = g
     >>> f.name = 'f'
     >>> f.cases = [Bunch(value='true', inputs= { 'h': h }), Bunch(value='false', inputs= { 'i': i })]
-    >>> inputs = OrderedDict([('a',a),('b',b)])
-    >>> flat = OrderedDict([('a', 1), ('b_0|c', 2), ('b_0|d_0|e', 3), ('b_0|d_0|f|h', 4), ('b_0|d_0|f|g', True)])
-    >>> state = OrderedDict()
+    >>> inputs = dict([('a',a),('b',b)])
+    >>> flat = dict([('a', 1), ('b_0|c', 2), ('b_0|d_0|e', 3), ('b_0|d_0|f|h', 4), ('b_0|d_0|f|g', True)])
+    >>> state = {}
     >>> populate_state(trans, inputs, flat, state, check=False)
     >>> print(state['a'])
     1
@@ -314,7 +312,7 @@ def populate_state(request_context, inputs, incoming, state, errors=None, contex
     4
     >>> # now test with input_format='21.01'
     >>> nested = {'a': 1, 'b': [{'c': 2, 'd': [{'e': 3, 'f': {'h': 4, 'g': True}}]}]}
-    >>> state_new = OrderedDict()
+    >>> state_new = {}
     >>> populate_state(trans, inputs, nested, state_new, check=False, input_format='21.01')
     >>> print(state_new['a'])
     1

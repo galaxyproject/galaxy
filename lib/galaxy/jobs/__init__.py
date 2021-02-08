@@ -40,9 +40,12 @@ from galaxy.job_execution.datasets import (
     TaskPathRewriter
 )
 from galaxy.job_execution.output_collect import collect_extra_files
-from galaxy.job_execution.setup import (
+from galaxy.job_execution.setup import (  # noqa: F401
     create_working_directory_for_job,
     ensure_configs_directory,
+    # This is read by certain misbehaving tool wrappers that import Galaxy internals
+    TOOL_PROVIDED_JOB_METADATA_FILE,
+    TOOL_PROVIDED_JOB_METADATA_KEYS,
 )
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.jobs.mapper import (
@@ -71,12 +74,6 @@ from galaxy.util.xml_macros import load
 from galaxy.web_stack.handlers import ConfiguresHandlers
 
 log = logging.getLogger(__name__)
-
-# Legacy definition - this is read by certain misbehaving tool wrappers
-# that import Galaxy internals - but it shouldn't be used in Galaxy's code
-# itself.
-TOOL_PROVIDED_JOB_METADATA_FILE = 'galaxy.json'
-TOOL_PROVIDED_JOB_METADATA_KEYS = ['name', 'info', 'dbkey', 'created_from_basename']
 
 # Override with config.default_job_shell.
 DEFAULT_JOB_SHELL = '/bin/bash'
