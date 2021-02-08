@@ -29,7 +29,6 @@ import WorkflowImport from "components/Workflow/WorkflowImport.vue";
 import TrsImport from "components/Workflow/TrsImport.vue";
 import TrsSearch from "components/Workflow/TrsSearch.vue";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools.vue";
-import LibraryFolder from "components/LibraryFolder/LibraryFolder.vue";
 import WorkflowList from "components/Workflow/WorkflowList.vue";
 import HistoryImport from "components/HistoryImport.vue";
 import { HistoryExport } from "components/HistoryExport/index";
