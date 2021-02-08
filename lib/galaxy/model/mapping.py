@@ -1155,7 +1155,7 @@ model.WorkflowInvocationOutputValue.table = Table(
     Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id"), index=True),
     Column("workflow_step_id", Integer, ForeignKey("workflow_step.id")),
     Column("workflow_output_id", Integer, ForeignKey("workflow_output.id"), index=True),
-    Column("value", JSONType),
+    Column("value", SimpleJSONType),
 )
 
 model.WorkflowInvocationStepOutputDatasetAssociation.table = Table(
