@@ -2,15 +2,9 @@
  * Renderless component, used to debounce various types of form inputs
  */
 
-import Vue from "vue";
-import VueRx from "vue-rx";
 import { filter, debounceTime, distinctUntilChanged, finalize } from "rxjs/operators";
-import { vueRxShortcuts } from "./plugins";
-
-Vue.use(VueRx);
 
 export default {
-    mixins: [vueRxShortcuts],
     props: {
         value: { required: true },
         delay: { type: Number, required: false, default: 500 },

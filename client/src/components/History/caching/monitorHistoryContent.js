@@ -82,68 +82,33 @@ export const SEEK = { ASC: "asc", DESC: "desc" };
  * Can't use skip because there might be big un-cached regions of the history
  * and we need to be able to select without loading everything
  */
-// prettier-ignore
 export const buildContentPouchRequest = (cfg = {}) => (inputs) => {
     const { limit = SearchParams.pageSize, seek = SEEK.DESC } = cfg;
-    const [ history_id, params, hid ] = inputs;
+    const [history_id, params, hid] = inputs;
 
-    // look up or down from target
+    // look up or down from target hid
     const targetId = buildContentId({ history_id, hid });
-    const comparator = (seek == SEEK.ASC) ? "$gt" : "$lte";
+    const comparator = seek == SEEK.ASC ? "$gt" : "$lte";
 
-    const filters = buildContentSelectorFromParams(params);
-    const fieldNames = new Set(['_id', 'history_id', ...Object.keys(filters)]);
-    const idxName = "idx-" + Array.from(fieldNames).join("-");
+    // index, will build if not existent
+    const filterFields = Array.from(params.criteria.keys()).map((f) => params.getPouchFieldName(f));
+    const fields = ["_id", "history_id", ...filterFields];
+    const ddoc = "idx-" + fields.sort().join("-");
 
-    const request = {
+    return {
         selector: {
-            _id: { [comparator]: targetId },
-            history_id: { $eq: history_id },
-            ...filters,
+            $and: [
+                // doc id + direction (up/down)
+                { _id: { [comparator]: targetId } },
+                { history_id: history_id },
+                ...params.pouchFilters,
+            ],
         },
-        sort: [{"_id": seek }],
+        sort: [{ _id: seek }],
         limit,
         index: {
-            fields: Array.from(fieldNames),
-            ddoc: idxName,
-        }
+            fields,
+            ddoc,
+        },
     };
-
-    return request;
 };
-
-/**
- * Build search selector for params filters:
- * deleted, visible, text search
- *
- * @param {SearchParams} params
- */
-// prettier-ignore
-export function buildContentSelectorFromParams(params) {
-    const selector = {
-        visible: { $eq: true },
-        isDeleted: { $eq: false },
-    };
-
-    if (params.showDeleted) {
-        delete selector.visible;
-        selector.isDeleted = { $eq: true };
-    }
-
-    if (params.showHidden) {
-        delete selector.isDeleted;
-        selector.visible = { $eq: false };
-    }
-
-    if (params.showDeleted && params.showHidden) {
-        selector.visible = { $eq: false };
-        selector.isDeleted = { $eq: true };
-    }
-
-    const textFields = params.parseTextFilter();
-    for (const [field, val] of textFields.entries()) {
-        selector[field] = { $regex: new RegExp(val, "gi") };
-    }
-
-    return selector;
-}

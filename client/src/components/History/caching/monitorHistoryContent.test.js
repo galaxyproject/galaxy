@@ -19,6 +19,8 @@ import historyContent from "../test/json/historyContent.json";
 beforeEach(wipeDatabase);
 afterEach(wipeDatabase);
 
+const selectorHasField = (selector, field) => selector.$and.some((row) => row[field] !== undefined);
+
 describe("buildContentPouchRequest", () => {
     test("should turn inputs into a pouch request suitable for find", () => {
         const fn = buildContentPouchRequest();
@@ -29,8 +31,10 @@ describe("buildContentPouchRequest", () => {
         const request = fn(inputs);
 
         expect(request).toBeDefined();
-        expect(request.selector._id).toBeDefined();
-        expect(request.selector.history_id).toBeDefined();
+        expect(request.selector).toBeDefined();
+        expect(request.selector.$and).toBeDefined();
+        expect(selectorHasField(request.selector, "_id")).toBeTruthy();
+        expect(selectorHasField(request.selector, "history_id")).toBeTruthy();
     });
 });
 

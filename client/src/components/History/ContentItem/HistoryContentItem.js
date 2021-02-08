@@ -7,10 +7,6 @@ export default {
         contentItemComponent() {
             if (this.item.id === undefined) {
                 return "Placeholder";
-                // return "Loading";
-            }
-            if (this.scrolling) {
-                return "Placeholder";
             }
             const { history_content_type } = this.item;
             switch (history_content_type) {

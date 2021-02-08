@@ -2,7 +2,7 @@
     <section>
         <header class="d-flex align-items-center justify-content-between">
             <h6 class="text-nowrap mr-3">
-                <span>Matches</span>
+                <span v-localize>Matches</span>
                 <a href="#" @click="showFilter = !showFilter">
                     <span>{{ totalMatches }}</span>
                 </a>
@@ -21,7 +21,7 @@
                     key="selection"
                     title="Operations on multiple datasets"
                     icon="fas fa-check-square"
-                    @click="$emit('update:showSelection', !showSelection)"
+                    @click="$emit('update:show-selection', !showSelection)"
                     :pressed="showSelection"
                 />
 
@@ -143,11 +143,13 @@ import {
 import { createDatasetCollection } from "./model/queries";
 import { cacheContent } from "./caching";
 
+import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 import ContentFilters from "./ContentFilters";
 import { PriorityMenu, PriorityMenuItem } from "components/PriorityMenu";
 import { buildCollectionModal } from "./adapters/buildCollectionModal";
 
 export default {
+    mixins: [legacyNavigationMixin],
     components: {
         ContentFilters,
         PriorityMenu,

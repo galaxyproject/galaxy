@@ -1,7 +1,4 @@
-import { vueRxShortcuts } from "components/plugins";
-
 export default {
-    mixins: [vueRxShortcuts],
     props: {
         id: { type: String, required: true },
     },

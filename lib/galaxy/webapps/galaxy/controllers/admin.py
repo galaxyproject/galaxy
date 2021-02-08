@@ -677,8 +677,8 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                                          .order_by(trans.app.model.Group.table.c.name):
                 all_groups.append((group.name, trans.security.encode_id(group.id)))
             default_options = [('No', 'no')]
-            for typ in trans.app.model.DefaultQuotaAssociation.types.__dict__.values():
-                default_options.append(('Yes, ' + typ, typ))
+            for type_ in trans.app.model.DefaultQuotaAssociation.types:
+                default_options.append(('Yes, ' + type_, type_))
             return {'title': 'Create Quota',
                     'inputs': [
                         {
@@ -1528,7 +1528,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         status = kwd.get('status', 'info')
         cutoff_time = datetime.utcnow() - timedelta(seconds=int(cutoff))
         jobs = trans.sa_session.query(trans.app.model.Job) \
-                               .filter(and_(trans.app.model.Job.table.c.update_time < cutoff_time,
+                               .filter(and_(trans.app.model.Job.table.c.update_time > cutoff_time,
                                             or_(trans.app.model.Job.state == trans.app.model.Job.states.NEW,
                                                 trans.app.model.Job.state == trans.app.model.Job.states.QUEUED,
                                                 trans.app.model.Job.state == trans.app.model.Job.states.RUNNING,

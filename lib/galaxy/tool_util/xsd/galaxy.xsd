@@ -617,7 +617,7 @@ Example:
 ```xml
 <requirements>
   <container type="docker">quay.io/biocontainers/fastqc:0.11.2--1</container>
-<requirements>
+</requirements>
 ```
 
 Read more about configuring Galaxy to run Docker jobs

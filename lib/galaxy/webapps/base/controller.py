@@ -1515,7 +1515,7 @@ class UsesQuotaMixin:
 
 class UsesTagsMixin(SharableItemSecurityMixin):
 
-    def get_tag_handler(self, trans):
+    def get_tag_handler(self, trans) -> tags.GalaxyTagHandler:
         return trans.app.tag_handler
 
     def _get_user_tags(self, trans, item_class_name, id):

@@ -38,8 +38,9 @@ class LibraryContentsTestCase(SeleniumTestCase, UsesLibraryAssertions):
 
         # assert that 'empty folder message' is present
         self.components.libraries.folder.empty_folder_message.wait_for_present()
+
         # go one folder up
-        self.components.libraries.folder.btn_open_upper_folder.wait_for_and_click()
+        self.components.libraries.folder.btn_open_parent_folder(folder_name=self.name).wait_for_and_click()
         # assert empty description
         self.components.libraries.folder.description_field.assert_absent_or_hidden()
         # change description

@@ -413,6 +413,7 @@ workflow_editor:
 
     label_input: "[tour_id='__label'] input"
     annotation_input: "[tour_id='__annotation'] textarea"
+    tool_version_button: ".tool-versions"
 
     connector_for: "div[output-handle-id='${source_id}'][input-handle-id='${sink_id}']"
 
@@ -561,7 +562,9 @@ libraries:
       select_all: '#select-all-checkboxes'
       select_one: '.lib-folder-checkbox'
       empty_folder_message: '.empty-folder-message'
-      btn_open_upper_folder: '.btn_open_folder'
+      btn_open_parent_folder:
+        type: xpath
+        selector: '//a[contains(text(), "${folder_name}")]'
       edit_folder_btn: '.edit_folder_btn'
       description_field: '.description-field > div'
       description_field_shrinked: '.shrinked-description'
