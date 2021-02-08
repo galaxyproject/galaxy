@@ -1,0 +1,21 @@
+<tool id="vocabulary_tagging" name="Vocabulary Tagging" version="1.0.0">
+  <description>Tag relevant words from a transcription</description>
+  <command detect_errors="exit_code">
+	'$__tool_directory__/tag_words.py' '$amp_transcript' '$words_to_tag' '$tagged_words';
+  </command>
+  <inputs>
+    <param name="amp_transcript" type="data" format="transcript" label="Input Transcription File" help="AMP transcript input to search for words from"/>
+    <param name="words_to_tag" type="data" format="txt" label="Words to tag" help="A text list of words to tag"/>
+  </inputs>
+  <outputs>
+    <data name="tagged_words" format="csv" label='Tagged words' />
+  </outputs>
+  <tests>
+  </tests>
+  <help>
+.. class:: infomark
+
+Tag relevant words that appear in a transcript
+
+  </help>
+</tool>

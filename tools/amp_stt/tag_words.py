@@ -12,13 +12,15 @@ def main():
     amp_transcript =  sys.argv[1] 
     words_to_flag_file =  sys.argv[2] 
     output_csv =  sys.argv[3] 
-    words_to_flag = get_words(words_to_flag_file) 
 
+    # Get a list of words to flag
+    words_to_flag = get_words(words_to_flag_file) 
     print("Words to Flag:")
     for w in words_to_flag:
         print(w)
     print("")
 
+    # Search for matching words/phrases
     matching_words = list()
     with open(amp_transcript, 'r') as f:
         transcript_dict = json.load(f)
@@ -46,10 +48,10 @@ def match_words(words_to_flag, transcript_words):
                 # For multiple word phrases, find the starting index and iterate through the list
                 index = transcript_words.index(word)
                 found_match = True
-                index_part = 0
+                index_part = 1
                 phrase_matches = list()
                 # Iterate through the word list
-                for i in range(index, index + len(flag_word["parts"])):
+                for i in range(index + 1, index + len(flag_word["parts"])):
                     next_word = transcript_words[i]
                     print("Phrase: "  + next_word["text"] + " : " + flag_word["parts"][index_part])
                     # If the word doesn't match, neither does the phrase.  Break here
