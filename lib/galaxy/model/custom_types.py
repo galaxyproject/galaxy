@@ -164,7 +164,7 @@ def total_size(o, handlers=None, verbose=False):
     return sizeof(o)
 
 
-class MetadataType(SimpleJSONType):
+class _MetadataType(SimpleJSONType):
     """
     Backward compatible metadata type. Can read pickles or JSON, but always
     writes in JSON.
@@ -198,7 +198,7 @@ class MetadataType(SimpleJSONType):
 
 
 JSONType = mutable_json_type(dbtype=SimpleJSONType, nested=True)
-MetadataType = mutable_json_type(dbtype=MetadataType, nested=True)
+MetadataType = mutable_json_type(dbtype=_MetadataType, nested=True)
 
 
 class UUIDType(TypeDecorator):
