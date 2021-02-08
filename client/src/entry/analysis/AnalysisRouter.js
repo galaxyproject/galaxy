@@ -120,14 +120,14 @@ export const getAnalysisRouter = (Galaxy) => {
             this.page.display(container, noPadding);
             new instance({ store, propsData }).$mount(container);
         },
-        _display_vue_router: function (propsData = {}, active_tab = null, noPadding = false) {
+        _display_vue_router: function (router, propsData = {}, active_tab = null, noPadding = false) {
             const container = document.createElement("div");
             if (active_tab) {
                 container.active_tab = active_tab;
             }
             this.page.display(container, noPadding);
             new Vue({
-                router: LibraryFolderRouter,
+                router: router,
                 render: (h) => h(VueRouterMain),
             }).$mount(container);
         },
@@ -166,7 +166,7 @@ export const getAnalysisRouter = (Galaxy) => {
         show_library_folder: function (folder_id) {
             this.page.toolPanel?.component.hide(0);
             this.page.panels.right.hide();
-            this._display_vue_router({ folder_id: folder_id });
+            this._display_vue_router(LibraryFolderRouter, { folder_id: folder_id });
         },
 
         show_cloud_auth: function () {
