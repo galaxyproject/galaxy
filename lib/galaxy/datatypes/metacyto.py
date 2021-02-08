@@ -15,8 +15,10 @@ from . import data
 
 log = logging.getLogger(__name__)
 
+
 def check_all_required_fields(fields, required_fields):
     return len(set(fields).intersection(required_fields)) == len(required_fields)
+
 
 class mStats(Tabular):
     """Class describing the table of cluster statistics output from MetaCyto"""
@@ -85,7 +87,12 @@ class mSummary(Tabular):
             return "MetaCyto Preprocessing Summary file (%s)" % (data.nice_size(dataset.get_size()))
 
     def sniff(self, filename):
-        """Quick test on file formatting"""
+        """Quick test on file formatting
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('mc_preprocess_summ.metacyto_summary.txt')
+        >>> mSummary().sniff(fname)
+        True
+        """
         with open(filename, "r") as f:
             headings = f.readline().strip().split("\t")
         hdgs = {"study_id", "antibodies", "filenames"}
