@@ -5,6 +5,7 @@ bdbag
 bx-python
 h5py
 isa-rwval
+mrcfile
 parsley
 numpy
 pycryptodome
