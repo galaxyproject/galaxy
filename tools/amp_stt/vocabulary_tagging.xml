@@ -1,7 +1,7 @@
 <tool id="vocabulary_tagging" name="Vocabulary Tagging" version="1.0.0">
   <description>Tag relevant words from a transcription</description>
   <command detect_errors="exit_code">
-	'$__tool_directory__/tag_words.py' '$amp_transcript' '$words_to_tag' '$tagged_words';
+	'$__tool_directory__/vocabulary_tagging.py' '$amp_transcript' '$words_to_tag' '$tagged_words';
   </command>
   <inputs>
     <param name="amp_transcript" type="data" format="transcript" label="Input Transcription File" help="AMP transcript input to search for words from"/>

@@ -28,8 +28,11 @@ def main():
         if "results" in transcript_dict.keys() and "words" in transcript_dict["results"].keys():
             transcript_words = transcript_dict["results"]["words"]
             matching_words = match_words(words_to_flag, transcript_words)
+        else:
+            print("Warning: Results or words missing from AMP Json")
 
     # Print the output
+    print("Matching Words:")
     print(matching_words)
     write_csv(output_csv, matching_words)
     exit(0)
@@ -107,13 +110,6 @@ def get_words(words_to_flag):
         if len(flag_word["parts"]) > 0:
             to_return.append(flag_word)
     return to_return
-
-class FlagWord:
-    parts = list()
-    whole_phrase = ""
-    def __int__(self):
-        self.whole_phrase = ""
-        self.parts = list()
     
 if __name__ == "__main__":
     main()

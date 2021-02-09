@@ -27,7 +27,7 @@
 
   <section id="speech_to_text" name="Speech to Text">
     <tool file="amp_stt/aws_transcribe.xml"/>
-    <tool file="amp_stt/tag_words.xml"/>
+    <tool file="amp_stt/vocabulary_tagging.xml"/>
     <tool file="amp_stt/kaldi.xml"/>
     <tool file="amp_stt/kaldi_hpc.xml"/>
     <tool file="amp_stt/vtt_generator.xml"/>
