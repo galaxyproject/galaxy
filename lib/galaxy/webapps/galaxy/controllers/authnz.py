@@ -3,6 +3,7 @@ OAuth 2.0 and OpenID Connect Authentication and Authorization Controller.
 """
 
 
+import datetime
 import json
 import logging
 
@@ -46,7 +47,12 @@ class OIDC(JSAppLauncher):
             # signature, audience, and expiration as that's potentially useful
             # information to share with the end user
             userinfo = jwt.decode(token.id_token, options={'verify_signature': False, 'verify_aud': False, 'verify_exp': False})
-            rtv.append({'id': trans.app.security.encode_id(token.id), 'provider': token.provider, 'email': userinfo['email']})
+            rtv.append({
+                'id': trans.app.security.encode_id(token.id),
+                'provider': token.provider,
+                'email': userinfo['email'],
+                'expiration': str(datetime.datetime.utcfromtimestamp(userinfo['exp']))
+            })
         return rtv
 
     @web.json
