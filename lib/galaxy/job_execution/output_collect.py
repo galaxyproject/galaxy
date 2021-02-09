@@ -478,7 +478,6 @@ def walk_over_extra_files(target_dir, extra_file_collector, job_working_director
     if os.path.isdir(directory):
         for filename in os.listdir(directory):
             path = os.path.join(directory, filename)
-            log.error("%s isdir %s recurse %s" % (path, os.path.isdir(path), extra_file_collector.recurse))
             if os.path.isdir(path):
                 if extra_file_collector.recurse:
                     # The current directory is already validated, so use that as the next job_working_directory when recursing
