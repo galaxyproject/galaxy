@@ -116,13 +116,13 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
     else:
         # Make sure collections, implicit jobs etc are flushed even if there are no precreated output datasets
         trans.sa_session.flush()
-    tool_id = tool.id
 
     if job_datasets:
         for job, datasets in job_datasets.items():
             for dataset_instance in datasets:
                 dataset_instance.dataset.job_id = job.id
 
+    tool_id = tool.id
     for job in execution_tracker.successful_jobs:
         # Put the job in the queue if tracking in memory
         tool.app.job_manager.enqueue(job, tool=tool, flush=False)
