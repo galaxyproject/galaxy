@@ -118,7 +118,7 @@ Repository.table = Table("repository", metadata,
                          Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
                          Column("private", Boolean, default=False),
                          Column("deleted", Boolean, index=True, default=False),
-                         Column("email_alerts", JSONType, nullable=True),
+                         Column("email_alerts", JSONType, nullable=True, default=list),
                          Column("times_downloaded", Integer),
                          Column("deprecated", Boolean, default=False))
 

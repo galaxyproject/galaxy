@@ -18,7 +18,6 @@ import os
 import re
 import shutil
 import tempfile
-from collections import OrderedDict
 
 import markdown
 import pkg_resources
@@ -448,11 +447,11 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
 
     def handle_job_metrics(self, line, job):
         job_metrics = summarize_job_metrics(self.trans, job)
-        metrics_by_plugin = OrderedDict()
+        metrics_by_plugin = {}
         for job_metric in job_metrics:
             plugin = job_metric["plugin"]
             if plugin not in metrics_by_plugin:
-                metrics_by_plugin[plugin] = OrderedDict()
+                metrics_by_plugin[plugin] = {}
             metrics_by_plugin[plugin][job_metric["title"]] = job_metric["value"]
         markdown = ""
         for metric_plugin, metrics_for_plugin in metrics_by_plugin.items():
