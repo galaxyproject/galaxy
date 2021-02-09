@@ -27,7 +27,7 @@ def main():
         # Check to see if we have a valid transcript.  If so, find the matches. 
         if "results" in transcript_dict.keys() and "words" in transcript_dict["results"].keys():
             transcript_words = transcript_dict["results"]["words"]
-            matching_words = match_words(words_to_flag, transcript_words)
+            matching_words = match_words(words_to_flag.values(), transcript_words)
         else:
             print("Warning: Results or words missing from AMP Json")
 
@@ -41,6 +41,8 @@ def match_words(words_to_flag, transcript_words):
     matching_words = list()
     # Iterate through the transcript
     for word in transcript_words:
+        if word["text"]=="punctuation":
+            continue
         cleaned_word = clean_word(word["text"])
         # Iterate through all the words to flag
         for flag_word in words_to_flag:
@@ -85,13 +87,15 @@ def write_csv(output_file, matching_words):
 # Simple word cleaning function for comparison
 def clean_word(word):
     return word.strip().lower()
+def remove_punctuation(word):
+    return word.replace(","," ").replace(".", " ")
 
 # Parse the list of words.  Store the whole phrase as well as the parts
 def get_words(words_to_flag):
     word_file = open(words_to_flag, 'r')
     word_lines = word_file.readlines()
 
-    to_return = list()
+    to_return = dict()
     if(len(word_lines)==0):
         return to_return
 
@@ -99,7 +103,7 @@ def get_words(words_to_flag):
         flag_word = dict()
 
         flag_word["parts"] = list()
-        flag_word["whole_phrase"] = clean_word(line)
+        flag_word["whole_phrase"] = remove_punctuation(clean_word(line))
 
         if(len(flag_word["whole_phrase"])==0):
             continue
@@ -110,8 +114,7 @@ def get_words(words_to_flag):
                 flag_word["parts"].append(cleaned_word)
 
         if len(flag_word["parts"]) > 0:
-            to_return.append(flag_word)
-            
+            to_return[flag_word["whole_phrase"]] = flag_word
     return to_return
     
 if __name__ == "__main__":
