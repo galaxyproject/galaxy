@@ -4139,7 +4139,7 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
                 select_stmt = select(list(map(lambda dc: dc.c.populated_state, collection_depth_aliases))).select_from(select_from).where(dc.c.id == self.id).distinct()
                 for populated_states in db_session.execute(select_stmt).fetchall():
                     for populated_state in populated_states:
-                        if populated_state != DatasetCollection.populated_states.OK:
+                        if populated_state and populated_state != DatasetCollection.populated_states.OK:
                             _populated_optimized = False
 
             self._populated_optimized = _populated_optimized
@@ -4989,6 +4989,7 @@ class Workflow(Dictifiable, RepresentById):
         copied_workflow.name = self.name
         copied_workflow.has_cycles = self.has_cycles
         copied_workflow.has_errors = self.has_errors
+        copied_workflow.reports_config = self.reports_config
 
         # Map old step ids to new steps
         step_mapping = {}

@@ -12,7 +12,7 @@
         </div>
         <div v-else>
             <b-form-checkbox switch class="make-accessible" v-model="item.importable" @change="onImportable">
-                Make {{ model_class }} accessible.
+                Make {{ model_class }} accessible
             </b-form-checkbox>
             <b-form-checkbox
                 v-if="item.importable"
@@ -22,38 +22,38 @@
                 @change="onPublish"
             >
                 Make {{ model_class }} publicly available in
-                <a :href="published_url" target="_top">Published {{ plural_name }}</a> section.
+                <a :href="published_url" target="_top">Published {{ plural_name }}</a>
             </b-form-checkbox>
             <br />
-            <div>
-                <div v-if="item.importable">
-                    <div>
-                        This {{ model_class }} is currently <strong>{{ itemStatus }}</strong
-                        >.
-                    </div>
-                    <p>Anyone can view and import this {{ model_class }} by visiting the following URL:</p>
-                    <blockquote>
-                        <b-button title="Edit URL" @click="onEdit" v-b-tooltip.hover variant="link" size="sm">
-                            <font-awesome-icon icon="edit" />
-                        </b-button>
-                        <b-button id="tooltip-clipboard" @click="onCopy" @mouseout="onCopyOut" variant="link" size="sm">
-                            <font-awesome-icon icon="link" />
-                        </b-button>
-                        <b-tooltip target="tooltip-clipboard" triggers="hover">
-                            {{ tooltipClipboard }}
-                        </b-tooltip>
-                        <a v-if="showUrl" id="item-url" :href="itemUrl" target="_top" class="ml-2">
-                            {{ itemUrl }}
-                        </a>
-                        <span v-else id="item-url-text">
-                            {{ itemUrlParts[0] }}<SlugInput class="ml-1" :slug="itemUrlParts[1]" @onChange="onChange" />
-                        </span>
-                    </blockquote>
+            <div v-if="item.importable">
+                <div>
+                    This {{ model_class }} is currently <strong>{{ itemStatus }}</strong
+                    >.
                 </div>
-                <div v-else>
-                    Access to this {{ model_class }} is currently restricted so that only you and the users listed below
-                    can access it. Note that sharing a History will also allow access to all of its datasets.
-                </div>
+                <p>Anyone can view and import this {{ model_class }} by visiting the following URL:</p>
+                <blockquote>
+                    <b-button title="Edit URL" @click="onEdit" v-b-tooltip.hover variant="link" size="sm">
+                        <font-awesome-icon icon="edit" />
+                    </b-button>
+                    <b-button id="tooltip-clipboard" @click="onCopy" @mouseout="onCopyOut" variant="link" size="sm">
+                        <font-awesome-icon icon="link" />
+                    </b-button>
+                    <b-tooltip target="tooltip-clipboard" triggers="hover">
+                        {{ tooltipClipboard }}
+                    </b-tooltip>
+                    <a v-if="showUrl" id="item-url" :href="itemUrl" target="_top" class="ml-2">
+                        url:
+                        {{ itemUrl }}
+                    </a>
+                    <span v-else id="item-url-text">
+                        slug:
+                        {{ itemUrlParts[0] }}<SlugInput class="ml-1" :slug="itemUrlParts[1]" @onChange="onChange" />
+                    </span>
+                </blockquote>
+            </div>
+            <div v-else>
+                Access to this {{ model_class }} is currently restricted so that only you and the users listed below can
+                access it. Note that sharing a History will also allow access to all of its datasets.
             </div>
             <br />
             <h4>Share {{ model_class }} with Individual Users</h4>
@@ -127,7 +127,7 @@ export default {
             errMsg: null,
             item: {
                 title: "title",
-                username_and_slug: "username_and_slug",
+                username_and_slug: "username/slug",
                 importable: false,
                 published: false,
                 users_shared_with: [],
@@ -205,16 +205,10 @@ export default {
         },
         onImportable(importable) {
             if (importable) {
-                this.setSharing("make_accessible_via_link");
-                if (this.item.published) {
-                    this.setSharing("publish");
-                } else {
-                    this.setSharing("unpublish");
-                }
+                this.setSharing(`make_accessible_via_link-${this.item.published ? "publish" : "unpublish"}`);
             } else {
                 this.item.published = false;
-                this.setSharing("disable_link_access");
-                this.setSharing("unpublish");
+                this.setSharing("disable_link_access-unpublish");
             }
         },
         onPublish(published) {
@@ -253,12 +247,14 @@ export default {
                 action: action,
                 user_id: user_id,
             };
-            axios
+            return axios
                 .post(`${getAppRoot()}api/${this.pluralNameLower}/${this.id}/sharing`, data)
                 .then((response) => {
                     if (response.data.skipped) {
                         this.errMsg = "Some of the items within this object were not published due to an error.";
                     }
+                    this.item = response.data;
+                    this.ready = true;
                 })
                 .catch((error) => (this.errMsg = error.response.data.err_msg));
         },

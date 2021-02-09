@@ -100,8 +100,8 @@ class RoleAPIController(BaseAPIController):
         role = self._role_manager.get(trans, role_id)
         return role_to_model(trans, role)
 
-    @web.require_admin
     @web.expose_api
+    @web.require_admin
     def create(self, trans: ProvidesUserContext, payload, **kwd):
         """
         POST /api/roles

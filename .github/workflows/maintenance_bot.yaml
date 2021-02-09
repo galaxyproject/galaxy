@@ -10,13 +10,21 @@ jobs:
     env:
       MILESTONE_NUMBER: 19
     steps:
-      - name: Debug
-        run: |
-          echo "Pull request: ${{ toJSON(github.event.pull_request) }}"
-          echo "Pull request labels: ${{ toJSON(github.event.pull_request.labels.*.name) }}"
-          echo "Joined labels: ${{ join(github.event.pull_request.labels.*.name, ', ') }}"
+      - name: Get latest pull request labels
+        id: get_pr_labels
+        uses: actions/github-script@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const response = await github.issues.listLabelsOnIssue({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            console.log(response);
+            return response.data;
       - name: Add area labels
-        if: ${{ ! contains(join(github.event.pull_request.labels.*.name, ', '), 'area/') }}
+        if: ${{ ! contains(join(fromJSON(steps.get_pr_labels.outputs.result).*.name, ', '), 'area/') }}
         uses: actions/labeler@main
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"

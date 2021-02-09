@@ -12,6 +12,7 @@ pydantic
 pysam
 social-auth-core[openidconnect]==3.3.0
 SQLAlchemy
+sqlalchemy-json
 sqlalchemy-migrate
 sqlalchemy-utils
 WebOb

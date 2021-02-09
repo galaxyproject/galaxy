@@ -1,4 +1,5 @@
 var gtnWebhookLoaded = false;
+var lastUpdate = 0;
 
 function removeOverlay() {
     document.getElementById("gtn-container").style.visibility = "hidden";
@@ -8,9 +9,43 @@ function showOverlay() {
     document.getElementById("gtn-container").style.visibility = "visible";
 }
 
+function getIframeUrl() {
+    var loc;
+    try {
+        loc = document.getElementById("gtn-embed").contentWindow.location.pathname;
+    } catch (e) {
+        loc = null;
+    }
+    return loc;
+}
+
+function getIframeScroll() {
+    var loc;
+    try {
+        loc = parseInt(document.getElementById("gtn-embed").contentWindow.scrollY);
+    } catch (e) {
+        loc = 0;
+    }
+    return loc;
+}
+
+function restoreLocation() {}
+
+function persistLocation() {
+    // Don't save every scroll event.
+    var time = new Date().getTime();
+    if (time - lastUpdate < 1000) {
+        return;
+    }
+    lastUpdate = time;
+    window.localStorage.setItem("gtn-in-galaxy", `${getIframeScroll()} ${getIframeUrl()}`);
+}
+
 function addIframe() {
-    let url, message;
+    let url, message, onloadscroll;
     gtnWebhookLoaded = true;
+    let storedData = false;
+    let safe = false;
 
     // Test for the presence of /training-material/. If that is available we
     // can opt in the fancy click-to-run features. Otherwise we fallback to
@@ -24,7 +59,19 @@ function addIframe() {
                             <a href="https://docs.galaxyproject.org/en/master/admin/special_topics/gtn.html">Click to run</a> unavailable.
                         </span>`;
             } else {
-                url = "/training-material/";
+                safe = true;
+
+                var storedLocation = window.localStorage.getItem("gtn-in-galaxy");
+                if (
+                    storedLocation !== null &&
+                    storedLocation.split(" ")[1] !== undefined &&
+                    storedLocation.split(" ")[1].startsWith("/training-material/")
+                ) {
+                    onloadscroll = storedLocation.split(" ")[0];
+                    url = storedLocation.split(" ")[1];
+                } else {
+                    url = "/training-material/";
+                }
                 message = "";
             }
         })
@@ -48,8 +95,25 @@ function addIframe() {
                 removeOverlay();
             });
 
+            // Only setup the listener if it won't crash things.
+            if (safe) {
+                // Listen to the scroll position
+                document.getElementById("gtn-embed").contentWindow.addEventListener("scroll", () => {
+                    persistLocation();
+                });
+            }
+
             // Depends on the iframe being present
             document.getElementById("gtn-embed").addEventListener("load", () => {
+                // Save our current location when possible
+                if (onloadscroll !== undefined) {
+                    document.getElementById("gtn-embed").contentWindow.scrollTo(0, parseInt(onloadscroll));
+                    onloadscroll = undefined;
+                }
+
+                if (safe) {
+                    persistLocation();
+                }
                 var gtn_tools = $("#gtn-embed").contents().find("span[data-tool]");
                 // Buttonify
                 gtn_tools.addClass("galaxy-proxy-active");
