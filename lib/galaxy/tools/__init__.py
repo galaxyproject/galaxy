@@ -2955,16 +2955,15 @@ class BuildListCollectionTool(DatabaseOperationTool):
         new_elements = {}
 
         for i, incoming_repeat in enumerate(incoming["datasets"]):
-            if not incoming_repeat["input"]:
-                continue
-            new_dataset = incoming_repeat["input"].copy(copy_tags=tags)
-            if incoming_repeat["id_cond"]["id_select"] == 'idx':
-                identifier = str(i)
-            elif incoming_repeat["id_cond"]["id_select"] == 'identifier':
-                identifier = incoming_repeat["input"].element_identifier
-            elif incoming_repeat["id_cond"]["id_select"] == 'manual':
-                identifier = incoming_repeat["id_cond"]["identifier"]
-            new_elements[identifier] = new_dataset
+            if incoming_repeat["input"]:
+                if incoming_repeat["id_cond"]["id_select"] == 'idx':
+                    identifier = str(i)
+                elif incoming_repeat["id_cond"]["id_select"] == 'identifier':
+                    identifier = incoming_repeat["input"].name
+                elif incoming_repeat["id_cond"]["id_select"] == 'manual':
+                    identifier = incoming_repeat["id_cond"]["identifier"]
+                new_elements[identifier] = incoming_repeat["input"].copy(copy_tags=tags)
+
         self._add_datasets_to_history(history, new_elements.values())
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", elements=new_elements, propagate_hda_tags=False
