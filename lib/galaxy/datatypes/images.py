@@ -288,7 +288,7 @@ class Trk(Binary):
 
 class Mrc2014(Binary):
     """
-    MRC/CCP4 2014 file format (.mrc2014).
+    MRC/CCP4 2014 file format (.mrc).
     https://www.ccpem.ac.uk/mrc_format/mrc2014.php
 
     >>> from galaxy.datatypes.sniff import get_test_fname
@@ -299,7 +299,7 @@ class Mrc2014(Binary):
     >>> Mrc2014().sniff(fname)
     False
     """
-    file_ext = 'mrc2014'
+    file_ext = 'mrc'
 
     def sniff(self, filename):
         try:
