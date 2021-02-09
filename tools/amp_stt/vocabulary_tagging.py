@@ -105,10 +105,13 @@ def get_words(words_to_flag):
             continue
 
         for w in flag_word["whole_phrase"].split(' '):
-            flag_word["parts"].append(clean_word(w))
+            cleaned_word = clean_word(w)
+            if len(cleaned_word.strip())>0:
+                flag_word["parts"].append(cleaned_word)
 
         if len(flag_word["parts"]) > 0:
             to_return.append(flag_word)
+            
     return to_return
     
 if __name__ == "__main__":
