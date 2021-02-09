@@ -2763,20 +2763,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~
-``transfer_manager_port``
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Some sequencer integration features in beta allow you to
-    automatically transfer datasets.  This is done using a lightweight
-    transfer manager which runs outside of Galaxy (but is spawned by
-    it automatically).  Galaxy will communicate with this manager over
-    the port specified here.
-:Default: ``8163``
-:Type: int
-
-
 ~~~~~~~~~~~~~~~~~~~
 ``tool_name_boost``
 ~~~~~~~~~~~~~~~~~~~
@@ -3865,13 +3851,13 @@
 ~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Determines how metadata will be set. Valid values are `directory`,
-    `extended` and `legacy`. In extended mode jobs will decide if a
-    tool run failed, the object stores configuration is serialized and
-    made available to the job and is used for writing output datasets
-    to the object store as part of the job and dynamic output
-    discovery (e.g. discovered datasets <discover_datasets>,
-    unpopulated collections, etc) happens as part of the job.
+    Determines how metadata will be set. Valid values are `directory`
+    and `extended`. In extended mode jobs will decide if a tool run
+    failed, the object stores configuration is serialized and made
+    available to the job and is used for writing output datasets to
+    the object store as part of the job and dynamic output discovery
+    (e.g. discovered datasets <discover_datasets>, unpopulated
+    collections, etc) happens as part of the job.
 :Default: ``directory``
 :Type: str
 

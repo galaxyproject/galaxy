@@ -4,9 +4,6 @@ import shutil
 import string
 import sys
 import tempfile
-from collections import (
-    OrderedDict
-)
 from io import StringIO
 from textwrap import TextWrapper
 from typing import Any, List, NamedTuple
@@ -52,7 +49,7 @@ YAML_COMMENT_WRAPPER = TextWrapper(initial_indent="# ", subsequent_indent="# ", 
 RST_DESCRIPTION_WRAPPER = TextWrapper(initial_indent="    ", subsequent_indent="    ", break_long_words=False, break_on_hyphens=False)
 UWSGI_SCHEMA_PATH = "lib/galaxy/webapps/uwsgi_schema.yml"
 
-UWSGI_OPTIONS = OrderedDict([
+UWSGI_OPTIONS = dict([
     ('http', {
         'desc': """The address and port on which to listen.  By default, only listen to localhost ($app_name will not be accessible over the network).  Use ':$default_port' to listen on all available network interfaces.""",
         'default': '127.0.0.1:$default_port',
@@ -293,6 +290,7 @@ OPTION_ACTIONS = {
     'fulltext_max_size': _DeprecatedAndDroppedAction(),
     'fulltext_noindex_filetypes': _DeprecatedAndDroppedAction(),
     'fulltext_url': _DeprecatedAndDroppedAction(),
+    'enable_beta_job_managers': _DeprecatedAndDroppedAction(),
     'enable_legacy_sample_tracking_api': _DeprecatedAction(),
     'enable_new_user_preferences': _DeprecatedAndDroppedAction(),
     'force_beta_workflow_scheduled_for_collections': _DeprecatedAction(),
@@ -440,7 +438,7 @@ def _build_uwsgi_schema(args, app_desc):
     last_line = None
     current_opt = None
 
-    options = OrderedDict({})
+    options = {}
     option = None
     for line in rst_options.splitlines():
         line = line.strip()
@@ -505,9 +503,9 @@ def _find_app_options(app_desc, path):
 def _find_app_options_from_config_parser(p):
     if not p.has_section("app:main"):
         _warn(NO_APP_MAIN_MESSAGE)
-        app_items = OrderedDict()
+        app_items = {}
     else:
-        app_items = OrderedDict(p.items("app:main"))
+        app_items = dict(p.items("app:main"))
 
     return app_items
 
@@ -603,9 +601,9 @@ def _run_conversion(args, app_desc):
 
     if not server_section:
         _warn("No server section found, using default uwsgi server definition.")
-        server_config = OrderedDict()
+        server_config = {}
     else:
-        server_config = OrderedDict(p.items(server_section))
+        server_config = dict(p.items(server_section))
 
     app_items = _find_app_options_from_config_parser(p)
     applied_filters = []
@@ -620,7 +618,7 @@ def _run_conversion(args, app_desc):
 
     uwsgi_dict = _server_paste_to_uwsgi(app_desc, server_config, applied_filters)
 
-    app_dict = OrderedDict({})
+    app_dict = {}
     schema = app_desc.schema
     for key, value in app_items.items():
         if key in ["__file__", "here"]:
@@ -777,7 +775,7 @@ def _parse_option_value(option_value):
 
 
 def _server_paste_to_uwsgi(app_desc, server_config, applied_filters):
-    uwsgi_dict = OrderedDict()
+    uwsgi_dict = {}
     port = server_config.get("port", app_desc.default_port)
     host = server_config.get("host", "127.0.0.1")
 

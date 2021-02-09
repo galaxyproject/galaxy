@@ -5,7 +5,6 @@ import os
 import shutil
 import string
 import tempfile
-from collections import OrderedDict
 from inspect import isclass
 from typing import Any, Dict, Optional
 
@@ -125,7 +124,7 @@ class Data(metaclass=DataMeta):
     is_binary = True
     # Composite datatypes
     composite_type: Optional[str] = None
-    composite_files: Dict[str, Any] = OrderedDict()
+    composite_files: Dict[str, Any] = {}
     primary_file_name = 'index'
     # Allow user to change between this datatype and others. If left to None,
     # datatype change is allowed if the datatype is not composite.
@@ -144,7 +143,7 @@ class Data(metaclass=DataMeta):
         object.__init__(self, **kwd)
         self.supported_display_apps = self.supported_display_apps.copy()
         self.composite_files = self.composite_files.copy()
-        self.display_applications = OrderedDict()
+        self.display_applications = {}
 
     @classmethod
     def is_datatype_change_allowed(cls):
@@ -565,7 +564,7 @@ class Data(metaclass=DataMeta):
         return self.display_applications.get(key, default)
 
     def get_display_applications_by_dataset(self, dataset, trans):
-        rval = OrderedDict()
+        rval = {}
         for key, value in self.display_applications.items():
             value = value.filter_by_dataset(dataset, trans)
             if value.links:
@@ -685,7 +684,7 @@ class Data(metaclass=DataMeta):
 
     @property
     def writable_files(self):
-        files = OrderedDict()
+        files = {}
         if self.composite_type != 'auto_primary_file':
             files[self.primary_file_name] = self.__new_composite_file(self.primary_file_name)
         for key, value in self.get_composite_files().items():
@@ -701,7 +700,7 @@ class Data(metaclass=DataMeta):
                     meta_value = self.metadata_spec[composite_file.substitute_name_with_metadata].default
                 return key % meta_value
             return key
-        files = OrderedDict()
+        files = {}
         for key, value in self.composite_files.items():
             files[substitute_composite_key(key, value)] = value
         return files

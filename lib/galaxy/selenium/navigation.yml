@@ -413,6 +413,7 @@ workflow_editor:
 
     label_input: "[tour_id='__label'] input"
     annotation_input: "[tour_id='__annotation'] textarea"
+    tool_version_button: ".tool-versions"
 
     connector_for: "div[output-handle-id='${source_id}'][input-handle-id='${sink_id}']"
 
@@ -532,6 +533,10 @@ libraries:
     permission_library_btn: '.permission_library_btn'
     toolbtn_save_permissions: '.toolbtn_save_permissions'
     add_items_permission_field: '.add_perm > ul input'
+    add_items_permission_field_text:
+      type: xpath
+      selector: '//ul/*/div[contains(text(), "${email}")]'
+
     add_items_permission_option: '.select2-result-label[role="option"]'
 
   folder:
@@ -557,7 +562,9 @@ libraries:
       select_all: '#select-all-checkboxes'
       select_one: '.lib-folder-checkbox'
       empty_folder_message: '.empty-folder-message'
-      btn_open_upper_folder: '.btn_open_folder'
+      btn_open_parent_folder:
+        type: xpath
+        selector: '//a[contains(text(), "${folder_name}")]'
       edit_folder_btn: '.edit_folder_btn'
       description_field: '.description-field > div'
       description_field_shrinked: '.shrinked-description'

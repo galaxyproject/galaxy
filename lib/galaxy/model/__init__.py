@@ -19,7 +19,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from enum import Enum
 from string import Template
-from typing import Optional, TYPE_CHECKING
+from typing import List, Optional, TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from boltons.iterutils import remap
@@ -437,24 +437,17 @@ class User(Dictifiable, RepresentById):
         Gives the system user pwent entry based on e-mail or username depending
         on the value in real_system_username
         """
-        system_user_pwent = None
         if real_system_username == 'user_email':
-            try:
-                system_user_pwent = pwd.getpwnam(self.email.split('@')[0])
-            except KeyError:
-                pass
+            username = self.email.split('@')[0]
         elif real_system_username == 'username':
-            try:
-                system_user_pwent = pwd.getpwnam(self.username)
-            except KeyError:
-                pass
+            username = self.username
         else:
-            try:
-                system_user_pwent = pwd.getpwnam(real_system_username)
-            except KeyError:
-                log.warning("invalid configuration of real_system_username")
-                system_user_pwent = None
-        return system_user_pwent
+            username = real_system_username
+        try:
+            return pwd.getpwnam(username)
+        except Exception:
+            log.exception(f"Error getting the password database entry for user {username}")
+            raise
 
     def all_roles(self):
         """
@@ -4146,7 +4139,7 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
                 select_stmt = select(list(map(lambda dc: dc.c.populated_state, collection_depth_aliases))).select_from(select_from).where(dc.c.id == self.id).distinct()
                 for populated_states in db_session.execute(select_stmt).fetchall():
                     for populated_state in populated_states:
-                        if populated_state != DatasetCollection.populated_states.OK:
+                        if populated_state and populated_state != DatasetCollection.populated_states.OK:
                             _populated_optimized = False
 
             self._populated_optimized = _populated_optimized
@@ -6136,7 +6129,7 @@ class UserAuthnzToken(UserMixin, RepresentById):
 
     @classmethod
     def get_users_by_email(cls, email):
-        return cls.user_query().filter_by(email=email)
+        return cls.user_query().filter(func.lower(User.table.c.email) == email.lower())
 
     @classmethod
     def get_social_auth(cls, provider, uid):
@@ -6350,6 +6343,11 @@ class Tag(RepresentById):
 class ItemTagAssociation(Dictifiable):
     dict_collection_visible_keys = ['id', 'user_tname', 'user_value']
     dict_element_visible_keys = dict_collection_visible_keys
+    associated_item_names: List[str] = []
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        cls.associated_item_names.append(cls.__name__.replace("TagAssociation", ""))
 
     def __init__(self, id=None, user=None, item_id=None, tag_id=None, user_tname=None, value=None):
         self.id = id

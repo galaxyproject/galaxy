@@ -36,13 +36,13 @@ describe("DatasetUIWrapper.vue with Dataset", () => {
         expect(onUnhide).not.toHaveBeenCalled();
         expect(onDelete).not.toHaveBeenCalled();
         expect(onUndelete).not.toHaveBeenCalled();
-        wrapper.findComponent(DscUI).vm.$emit("hideCollection");
+        wrapper.findComponent(DscUI).vm.$emit("hide");
         expect(onHide).toHaveBeenCalled();
-        wrapper.findComponent(DscUI).vm.$emit("unhideCollection");
+        wrapper.findComponent(DscUI).vm.$emit("unhide");
         expect(onUnhide).toHaveBeenCalled();
-        wrapper.findComponent(DscUI).vm.$emit("deleteCollection");
+        wrapper.findComponent(DscUI).vm.$emit("delete");
         expect(onDelete).toHaveBeenCalled();
-        wrapper.findComponent(DscUI).vm.$emit("undeleteCollection");
+        wrapper.findComponent(DscUI).vm.$emit("undelete");
         expect(onUndelete).toHaveBeenCalled();
     });
     it("creates DatasetCollection", async () => {

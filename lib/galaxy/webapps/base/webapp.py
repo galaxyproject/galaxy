@@ -9,6 +9,7 @@ import socket
 import string
 import time
 from http.cookies import CookieError
+from typing import Any, Dict
 from urllib.parse import urlparse
 
 import mako.lookup
@@ -154,13 +155,36 @@ class WebApplication(base.WebApplication):
         return T(app)
 
 
+def config_allows_origin(origin_raw, config):
+    # boil origin header down to hostname
+    origin = urlparse(origin_raw).hostname
+
+    # singular match
+    def matches_allowed_origin(origin, allowed_origin):
+        if isinstance(allowed_origin, str):
+            return origin == allowed_origin
+        match = allowed_origin.match(origin)
+        return match and match.group() == origin
+
+    # localhost uses no origin header (== null)
+    if not origin:
+        return False
+
+    # check for '*' or compare to list of allowed
+    for allowed_origin in config.allowed_origin_hostnames:
+        if allowed_origin == '*' or matches_allowed_origin(origin, allowed_origin):
+            return True
+
+    return False
+
+
 class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryContext):
     """
     Encapsulates web transaction specific state for the Galaxy application
     (specifically the user's "cookie" session and history)
     """
 
-    def __init__(self, environ, app, webapp, session_cookie=None):
+    def __init__(self, environ: Dict[str, Any], app, webapp, session_cookie=None) -> None:
         self._app = app
         self.webapp = webapp
         self.user_manager = UserManager(app)
@@ -303,28 +327,11 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         if not origin_header:
             return
 
-        # singular match
-        def matches_allowed_origin(origin, allowed_origin):
-            if isinstance(allowed_origin, str):
-                return origin == allowed_origin
-            match = allowed_origin.match(origin)
-            return match and match.group() == origin
-
-        # check for '*' or compare to list of allowed
-        def is_allowed_origin(origin):
-            # localhost uses no origin header (== null)
-            if not origin:
-                return False
-            for allowed_origin in self.app.config.allowed_origin_hostnames:
-                if allowed_origin == '*' or matches_allowed_origin(origin, allowed_origin):
-                    return True
-            return False
-
-        # boil origin header down to hostname
-        origin = urlparse(origin_header).hostname
         # check against the list of allowed strings/regexp hostnames, echo original if cleared
-        if is_allowed_origin(origin):
+        if config_allows_origin(origin_header, self.app.config):
             self.set_cors_origin(origin=origin_header)
+        else:
+            self.response.status = 400
 
     def get_user(self):
         """Return the current user if logged in or None."""

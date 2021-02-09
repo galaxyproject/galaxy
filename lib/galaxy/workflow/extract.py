@@ -2,7 +2,6 @@
 histories.
 """
 import logging
-from collections import OrderedDict
 
 from galaxy import exceptions, model
 from galaxy.tool_util.parser import ToolOutputCollectionPart
@@ -196,7 +195,7 @@ class WorkflowSummary:
             history = trans.get_history()
         self.history = history
         self.warnings = set()
-        self.jobs = OrderedDict()
+        self.jobs = {}
         self.job_id2representative_job = {}  # map a non-fake job id to its representative job
         self.implicit_map_jobs = []
         self.collection_types = {}

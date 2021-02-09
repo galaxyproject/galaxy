@@ -112,7 +112,7 @@ prettytable==0.7.2; python_version >= "3.6"
 protobuf==3.14.0; python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.6.0"
 prov==1.5.1; python_version >= "3.6" and python_version < "4"
 psutil==5.8.0; (python_version >= "2.6" and python_full_version < "3.0.0") or (python_full_version >= "3.4.0")
-pulsar-galaxy-lib==0.14.0.dev4
+pulsar-galaxy-lib==0.14.1
 pyasn1-modules==0.2.8; python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.6.0"
 pyasn1==0.4.8; python_version >= "3.5" and python_version < "4"
 pycparser==2.20; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.6"
@@ -161,6 +161,7 @@ six==1.15.0; python_version >= "3.6" and python_full_version < "3.0.0" and pytho
 social-auth-core==3.3.0
 sortedcontainers==2.3.0
 sqlalchemy-migrate==0.13.0
+sqlalchemy-mutable==0.0.11; python_version >= "3.6"
 sqlalchemy-utils==0.36.7
 sqlalchemy==1.3.22; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.4.0")
 sqlitedict==1.7.0

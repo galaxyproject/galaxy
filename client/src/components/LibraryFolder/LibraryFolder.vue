@@ -17,12 +17,6 @@
                 :unselected="unselected"
                 :isAllSelectedMode="isAllSelectedMode"
             />
-            <a
-                class="btn btn-secondary btn-sm btn_open_folder"
-                v-if="folder_metadata && folder_metadata.full_path"
-                @click="moveToParentFolder()"
-                >..</a
-            >
 
             <b-table
                 id="folder_list_body"
@@ -341,14 +335,6 @@ export default {
         this.fetchFolderContents();
     },
     methods: {
-        moveToParentFolder() {
-            const path = this.folder_metadata.full_path;
-            if (path.length === 1) {
-                window.location = `${this.root}library/list/`;
-            } else {
-                return this.changeFolderId(path[path.length - 2][0]);
-            }
-        },
         fetchFolderContents(include_deleted = false) {
             this.include_deleted = include_deleted;
             this.setBusy(true);

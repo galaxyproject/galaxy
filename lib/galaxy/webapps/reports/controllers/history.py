@@ -1,4 +1,3 @@
-import collections
 import logging
 
 import sqlalchemy as sa
@@ -111,7 +110,7 @@ class History(BaseUIController):
             users = users[:user_cutoff]
 
         # to keep ordered
-        data = collections.OrderedDict()
+        data = {}
         for user in users:
             dataset = datasets.get(user, [0, 0])
             history = histories.get(user, 0)
@@ -172,8 +171,7 @@ class History(BaseUIController):
         possible_status = {"ok": 0, "upload": 1, "paused": 2, "queued": 3, "error": 4, "discarded": 5}
         number_of_possible_status = len(possible_status) + 1  # + 1 to handle unknown status!
 
-        # to keep ordered
-        datas = collections.OrderedDict()
+        datas = {}
         for no, name in enumerate(names):
             if name not in datas:
                 if user_cutoff > 0:

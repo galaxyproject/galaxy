@@ -1,9 +1,5 @@
-import Vue from "vue";
-import { vueRxShortcutPlugin } from "components/plugins";
 import { NEVER, BehaviorSubject } from "rxjs";
 import { SearchParams } from "../model/SearchParams";
-
-Vue.use(vueRxShortcutPlugin);
 
 // dumb math util
 export const clamp = (val, [bottom, top]) => Math.max(bottom, Math.min(top, val));
@@ -55,30 +51,29 @@ export const ContentProvider = {
         };
     },
 
+    watch: {
+        params(newParams, oldParams) {
+            if (!SearchParams.equals(newParams, oldParams)) {
+                this.resetScrollPos();
+            }
+        },
+    },
+
     created() {
         this.initParams();
         this.initScrollPos();
 
-        const { cache$, loader$, loading$, scrolling$ } = this.initStreams();
+        const { payload$, loading$, scrolling$ } = this.initStreams();
 
         this.listenTo(scrolling$, (val) => (this.scrolling = val));
         this.listenTo(loading$, (val) => (this.loading = val));
 
         // render output
         if (!this.disableWatch) {
-            this.listenTo(cache$, {
+            this.listenTo(payload$, {
                 next: (payload) => this.setPayload(payload),
                 error: (err) => console.warn("error in cache$", err),
                 complete: () => console.warn("why did cache$ complete?"),
-            });
-        }
-
-        // keep sub to loader which popualates the cache
-        if (!this.disableLoad) {
-            this.listenTo(loader$, {
-                // next: (result) => console.log("loader$ result", result),
-                error: (err) => console.warn("error in loader$", err),
-                complete: () => console.warn("why did loader$ complete?"),
             });
         }
     },
@@ -91,6 +86,10 @@ export const ContentProvider = {
 
         initScrollPos() {
             this.scrollPos$ = new BehaviorSubject({ cursor: 0.0, key: null });
+        },
+
+        resetScrollPos() {
+            this.scrollPos$.next({ cursor: 0.0, key: null });
         },
 
         initStreams() {
@@ -137,6 +136,7 @@ export const ContentProvider = {
 
     render() {
         return this.$scopedSlots.default({
+            // actual content delivery
             payload: this.payload,
 
             // local vars/settings/props passthrough
@@ -147,9 +147,11 @@ export const ContentProvider = {
             pageSize: this.pageSize,
 
             // update methods
-            updateParams: this.updateParams,
-            setScrollPos: this.setScrollPos,
-            manualReload: this.manualReload,
+            handlers: {
+                updateParams: this.updateParams,
+                setScrollPos: this.setScrollPos,
+                manualReload: this.manualReload,
+            },
         });
     },
 };
