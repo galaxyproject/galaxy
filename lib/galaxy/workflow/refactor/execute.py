@@ -282,7 +282,7 @@ class WorkflowRefactorExecutor:
                     return runtime_to_json(ConnectedValue())
                 else:
                     return NO_REPLACEMENT
-            visit_input_values(tool.inputs, tool_inputs.inputs, callback, no_replacement_value=NO_REPLACEMENT)
+            visit_input_values(tool.inputs, tool_inputs.inputs, callback, no_replacement_value=NO_REPLACEMENT, profile=tool.profile)
             if replace_tool_state:
                 step_def["tool_state"] = step.module.get_tool_state()
 

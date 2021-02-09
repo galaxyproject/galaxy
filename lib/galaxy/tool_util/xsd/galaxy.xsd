@@ -186,21 +186,21 @@ automatically if profile is set to any version newer than ``16.01``, such as
 
 16.04
 
-- Disable implicit extra file collection. All dynamic extra file collection requires a `discover_datasets` tag.
-- Disable `format="input"` and require explicit metadata targets (`metadata_source`, `format_source`).
-- Disable `interpreter` use `$__tool_directory__`.
-- Disable `$param_file` use `configfile`
-- Disable default tool version of 1.0.0.
+- Disable implicit extra file collection. All dynamic extra file collection requires a ``discover_datasets`` tag.
+- Disable ``format="input"`` and require explicit metadata targets (``metadata_source``, ``format_source``).
+- Disable ``interpreter`` use ``$__tool_directory__``.
+- Disable ``$param_file`` use ``configfile``.
+- Disable default tool version of ``1.0.0``.
 - Use non zero exit code as default stdio error condition (before non-empty stderr).
 
 18.01
 
 - Use a separate home directory for each job.
-- Introduce `provided_metadata_style` with default `"default"` before `"legacy"`.
+- Introduce ``provided_metadata_style`` with default ``"default"`` before ``"legacy"``.
 
 18.09 
 
-- References to other inputs need to be fully qualified by using `|`.
+- References to other inputs need to be fully qualified by using ``|``.
 - Do not allow provided but illegal default values.
 - Do not use Galaxy python environment for `manage_data` tools.
 
@@ -211,13 +211,20 @@ automatically if profile is set to any version newer than ``16.01``, such as
 20.05
 
 - json config files: 
-   - unselected optional `select` and `data_column` parameters get `None` instead of `"None"`
-   - multiple `select` and `data_column` parameters are lists (before comma separated string)
+   - unselected optional ``select`` and ``data_column`` parameters get ``None`` instead of ``"None"``
+   - multiple ``select`` and ``data_column`` parameters are lists (before comma separated string)
 
 20.09
 
-- Exit immediately if a command exits with a non-zero status (`set -e`)
+- Exit immediately if a command exits with a non-zero status (``set -e``)
 - Assume sort order for collection elements
+
+21.01
+
+- all references to input parameters from output and output collections
+(e.g. with ``structured_like`` or ``format_source``) need to be qualified using ``|``.
+
+
   </xs:documentation>
         </xs:annotation>
       </xs:attribute>
@@ -4230,7 +4237,7 @@ The default is ``galaxy.json``.
   <xs:attributeGroup name="OutputCommon">
     <xs:attribute name="format_source" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">This sets the data type of the output dataset(s) to be the same format as that of the specified tool input.</xs:documentation>
+        <xs:documentation xml:lang="en">This sets the data type of the output dataset(s) to be the same format as that of the specified tool input. If the input is contained in a section or conditional the name of the input must be fully qualified if profile >= 21.01.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="label" type="xs:string">

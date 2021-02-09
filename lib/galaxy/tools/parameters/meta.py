@@ -185,7 +185,7 @@ def expand_meta_parameters(trans, tool, incoming):
             reordered_incoming[prefixed_name] = incoming_copy[prefixed_name]
             del incoming_copy[prefixed_name]
 
-    visit_input_values(inputs=tool.inputs, input_values=nested_dict, callback=visitor)
+    visit_input_values(inputs=tool.inputs, input_values=nested_dict, callback=visitor, profile=tool.profile)
     reordered_incoming.update(incoming_copy)
 
     def classifier(input_key):

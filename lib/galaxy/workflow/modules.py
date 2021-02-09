@@ -540,7 +540,7 @@ class SubWorkflowModule(WorkflowModule):
                         input_name = "%d|%s" % (step.order_index, prefixed_name)
                         inputs[input_name] = InputProxy(input, input_name)
 
-                visit_input_values(tool.inputs, tool_inputs.inputs, callback)
+                visit_input_values(tool.inputs, tool_inputs.inputs, callback, profile=tool.profile)
 
         return inputs
 
@@ -983,7 +983,7 @@ class InputParameterModule(WorkflowModule):
                     def callback(input, prefixed_name, context, **kwargs):
                         if prefixed_name == connection.input_name and hasattr(input, 'get_options'):
                             static_options.append(input.get_options(self.trans, {}))
-                    visit_input_values(tool_inputs, module.state.inputs, callback)
+                    visit_input_values(tool_inputs, module.state.inputs, callback, profile=module.tool.profile)
 
                 options = None
                 if static_options and len(static_options) == 1:
@@ -1427,7 +1427,7 @@ class ToolModule(WorkflowModule):
                             )
                         )
 
-            visit_input_values(self.tool.inputs, self.state.inputs, callback)
+            visit_input_values(self.tool.inputs, self.state.inputs, callback, profile=self.tool.profile)
         return inputs
 
     def get_all_outputs(self, data_only=False):
@@ -1522,7 +1522,7 @@ class ToolModule(WorkflowModule):
                         return input.get_initial_value(self.trans, context)
                 elif (is_data and connections is None) or prefixed_name in input_connections_by_name:
                     return ConnectedValue()
-            visit_input_values(self.tool.inputs, self.state.inputs, callback)
+            visit_input_values(self.tool.inputs, self.state.inputs, callback, profile=self.tool.profile)
         else:
             raise ToolMissingException("Tool %s missing. Cannot add dummy datasets." % self.tool_id,
                                        tool_id=self.tool_id)
@@ -1708,7 +1708,7 @@ class ToolModule(WorkflowModule):
 
             try:
                 # Replace DummyDatasets with historydatasetassociations
-                visit_input_values(tool.inputs, execution_state.inputs, callback, no_replacement_value=NO_REPLACEMENT, replace_optional_connections=True)
+                visit_input_values(tool.inputs, execution_state.inputs, callback, no_replacement_value=NO_REPLACEMENT, replace_optional_connections=True, profile=tool.profile)
             except KeyError as k:
                 message_template = "Error due to input mapping of '%s' in '%s'.  A common cause of this is conditional outputs that cannot be determined until runtime, please review your workflow."
                 message = message_template % (tool.name, unicodify(k))

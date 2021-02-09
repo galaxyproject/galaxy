@@ -837,7 +837,7 @@ class WorkflowContentsManager(UsesAnnotations):
                             input_connections_type[input.name] = "dataset"
                         if isinstance(input, DataCollectionToolParameter):
                             input_connections_type[input.name] = "dataset_collection"
-                visit_input_values(module.tool.inputs, module.state.inputs, callback)
+                visit_input_values(module.tool.inputs, module.state.inputs, callback, profile=module.tool.profile)
                 # post_job_actions
                 pja_dict = {}
                 for pja in step.post_job_actions:
@@ -1142,7 +1142,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 if module.tool:
                     # If the tool is installed we attempt to verify input values
                     # and connections, otherwise the last known state will be dumped without modifications.
-                    visit_input_values(module.tool.inputs, module.state.inputs, callback)
+                    visit_input_values(module.tool.inputs, module.state.inputs, callback, profile=module.tool.profile)
 
             # Encode input connections as dictionary
             input_conn_dict = {}

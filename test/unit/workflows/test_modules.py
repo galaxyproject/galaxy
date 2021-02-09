@@ -456,6 +456,7 @@ def __mock_tool(
         check_and_update_param_values=mock.Mock(),
         to_json=_to_json,
         assert_finalized=lambda: None,
+        profile="16.01",
     )
 
     return tool

@@ -1533,7 +1533,7 @@ class Tool(Dictifiable):
         """
         # HACK: Yet another hack around check_values -- WHY HERE?
         if self.check_values:
-            visit_input_values(self.inputs, values, callback)
+            visit_input_values(self.inputs, values, callback, profile=self.profile)
 
     def expand_incoming(self, trans, incoming, request_context, input_format='legacy'):
         rerun_remap_job_id = None
@@ -1787,7 +1787,7 @@ class Tool(Dictifiable):
                 else:
                     messages[prefixed_name] = error
 
-        visit_input_values(self.inputs, values, validate_inputs)
+        visit_input_values(self.inputs, values, validate_inputs, profile=self.profile)
         return messages
 
     def build_dependency_cache(self, **kwds):
@@ -2307,7 +2307,7 @@ class Tool(Dictifiable):
                     return map_to_history(value)
             elif isinstance(input, DataCollectionToolParameter):
                 return map_to_history(value)
-        visit_input_values(tool_inputs, params, mapping_callback)
+        visit_input_values(tool_inputs, params, mapping_callback, profile=self.profile)
 
     def _compare_tool_version(self, job):
         """
