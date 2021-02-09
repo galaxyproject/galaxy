@@ -5,8 +5,6 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from fastapi.param_functions import Query
-from fastapi_utils.cbv import cbv
-from fastapi_utils.inferring_router import InferringRouter as APIRouter
 
 from galaxy.files._schema import (
     FilesSourcePluginList,
@@ -21,11 +19,12 @@ from . import (
     BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
+    Router,
 )
 
 log = logging.getLogger(__name__)
 
-router = APIRouter(tags=['remote files'])
+router = Router(tags=['remote files'])
 
 TargetQueryParam: str = Query(
     default=RemoteFilesTarget.ftpdir,
@@ -65,7 +64,7 @@ DisableModeQueryParam: Optional[RemoteFilesDisableMode] = Query(
 )
 
 
-@cbv(router)
+@router.cbv
 class FastAPIRemoteFiles:
     manager: RemoteFilesManager = depends(RemoteFilesManager)
 
