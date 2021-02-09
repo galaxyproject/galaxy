@@ -41,7 +41,7 @@ describe("DatasetUIWrapper.vue with Dataset", () => {
         expect(onUndelete).toHaveBeenCalled();
         wrapper.findComponent(DatasetUI).vm.$emit("unhide");
         expect(onUnhide).toHaveBeenCalled();
-        wrapper.findComponent(DatasetUI).vm.$emit("update");
+        wrapper.findComponent(DatasetUI).vm.$emit("update:dataset");
         expect(updateDataset).toHaveBeenCalled();
     });
     it("handles element identifier", async () => {

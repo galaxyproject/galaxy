@@ -117,6 +117,7 @@ import DatasetMenu from "./DatasetMenu";
 import DatasetSummary from "./Summary";
 import ContentTags from "../../ContentTags";
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
+
 export default {
     mixins: [legacyNavigationMixin],
     components: {

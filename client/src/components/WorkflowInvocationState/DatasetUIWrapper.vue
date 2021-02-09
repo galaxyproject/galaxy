@@ -11,7 +11,7 @@
         @delete="onDelete"
         @undelete="onUndelete"
         @unhide="onUnhide"
-        @update="onUpdate"
+        @update:dataset="onUpdate"
     >
     </DatasetUI>
 </template>
