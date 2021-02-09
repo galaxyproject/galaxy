@@ -88,7 +88,7 @@ def write_csv(output_file, matching_words):
 def clean_word(word):
     return word.strip().lower()
 def remove_punctuation(word):
-    return word.replace(","," ").replace(".", " ")
+    return word.replace(","," ").replace(".", " ").replace("!", " ")
 
 # Parse the list of words.  Store the whole phrase as well as the parts
 def get_words(words_to_flag):
