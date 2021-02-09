@@ -12,7 +12,7 @@ from typing import (
 
 from fastapi import (
     Depends,
-    Query,
+    Path,
 )
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter as APIRouter
@@ -53,7 +53,7 @@ router = APIRouter(tags=['configuration'])
 
 AdminUserRequired = Depends(get_admin_user)
 
-EncodedIdQueryParam: EncodedDatabaseIdField = Query(
+EncodedIdPathParam: EncodedDatabaseIdField = Path(
     ...,
     title='Encoded id',
     description='Encoded id to be decoded',
@@ -125,7 +125,7 @@ class FastAPIConfiguration:
     def decode_id(
         self,
         trans: ProvidesAppContext = Depends(get_trans),
-        encoded_id: EncodedDatabaseIdField = EncodedIdQueryParam
+        encoded_id: EncodedDatabaseIdField = EncodedIdPathParam
     ) -> Dict[str, int]:
         """Decode a given id."""
         return self.configuration_manager.decode_id(encoded_id)
