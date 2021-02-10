@@ -222,7 +222,7 @@ export default {
             "div",
             {
                 ref: "container",
-                staticClass: "virtualScroller",
+                staticClass: "historyScroller",
                 directives: [
                     {
                         name: "scroll",
