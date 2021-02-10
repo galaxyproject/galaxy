@@ -369,12 +369,19 @@ class CustosAuthnzTestCase(unittest.TestCase):
         )
         self.assertEqual(0, len(self.trans.sa_session.items))
 
-        test_id_token = unicodify(jwt.encode({
-            'nonce': self.test_nonce_hash,
-            'email': self.test_email,
-            'preferred_username': self.test_username,
-            'sub': self.test_sub
-        }, key=None, algorithm=None))
+        test_id_token = unicodify(
+            jwt.encode(
+                {
+                    "nonce": self.test_nonce_hash,
+                    "email": self.test_email,
+                    "preferred_username": self.test_username,
+                    "sub": self.test_sub,
+                    "aud": "test-client-id",
+                },
+                key=None,
+                algorithm=None,
+            )
+        )
 
         self._raw_token = {
             "access_token": self.test_access_token,
