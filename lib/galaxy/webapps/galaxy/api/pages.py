@@ -191,6 +191,7 @@ class PagesController(BaseAPIController):
         :returns:   Dictionary with 'success' or 'error' element to indicate the result of the request
         """
         self.manager.delete(trans, id)
+        trans.response.status = 204
 
     @expose_api_anonymous_and_sessionless
     def show(self, trans, id, **kwd):
