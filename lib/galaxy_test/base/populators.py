@@ -212,19 +212,19 @@ def _raise_skip_if(check, *args):
 class BasePopulator(metaclass=ABCMeta):
 
     @abstractmethod
-    def _post(self, route, data=None, files=None, admin=False, json: bool = False) -> Response:
+    def _post(self, route, data=None, files=None, headers=None, admin=False, json: bool = False) -> Response:
         """POST data to target Galaxy instance on specified route."""
 
     @abstractmethod
-    def _put(self, route, data=None, admin=False) -> Response:
+    def _put(self, route, data=None, headers=None, admin=False) -> Response:
         """PUT data to target Galaxy instance on specified route."""
 
     @abstractmethod
-    def _get(self, route, data=None, admin=False) -> Response:
+    def _get(self, route, data=None, headers=None, admin=False) -> Response:
         """GET data from target Galaxy instance on specified route."""
 
     @abstractmethod
-    def _delete(self, route, data=None, admin=False) -> Response:
+    def _delete(self, route, data=None, headers=None, admin=False) -> Response:
         """DELETE against target Galaxy instance on specified route."""
 
 
@@ -784,23 +784,23 @@ class GalaxyInteractorHttpMixin:
     def _api_key(self):
         return self.galaxy_interactor.api_key
 
-    def _post(self, route, data=None, files=None, admin=False, json: bool = False) -> Response:
-        return self.galaxy_interactor.post(route, data, files=files, admin=admin, json=json)
+    def _post(self, route, data=None, files=None, headers=None, admin=False, json: bool = False) -> Response:
+        return self.galaxy_interactor.post(route, data, files=files, admin=admin, headers=headers, json=json)
 
-    def _put(self, route, data=None, admin=False):
-        return self.galaxy_interactor.put(route, data, admin=admin)
+    def _put(self, route, data=None, headers=None, admin=False):
+        return self.galaxy_interactor.put(route, data, headers=headers, admin=admin)
 
-    def _get(self, route, data=None, admin=False):
+    def _get(self, route, data=None, headers=None, admin=False):
         if data is None:
             data = {}
 
-        return self.galaxy_interactor.get(route, data=data, admin=admin)
+        return self.galaxy_interactor.get(route, data=data, headers=headers, admin=admin)
 
-    def _delete(self, route, data=None, admin=False):
+    def _delete(self, route, data=None, headers=None, admin=False):
         if data is None:
             data = {}
 
-        return self.galaxy_interactor.delete(route, data=data, admin=admin)
+        return self.galaxy_interactor.delete(route, data=data, headers=headers, admin=admin)
 
 
 class DatasetPopulator(GalaxyInteractorHttpMixin, BaseDatasetPopulator):
@@ -1636,26 +1636,26 @@ class GiHttpMixin:
             data = {}
         return self._gi.make_get_request(self._url(route), data=data)
 
-    def _post(self, route, data=None, files=None, admin=False, json: bool = False) -> Response:
+    def _post(self, route, data=None, files=None, headers=None, admin=False, json: bool = False) -> Response:
         if data is None:
             data = {}
         data = data.copy()
         data['key'] = self._gi.key
-        return requests.post(self._url(route), data=data)
+        return requests.post(self._url(route), data=data, headers=headers)
 
-    def _put(self, route, data=None, admin=False):
+    def _put(self, route, data=None, headers=None, admin=False):
         if data is None:
             data = {}
         data = data.copy()
         data['key'] = self._gi.key
-        return requests.put(self._url(route), data=data)
+        return requests.put(self._url(route), data=data, headers=headers)
 
-    def _delete(self, route, data=None):
+    def _delete(self, route, data=None, headers=None):
         if data is None:
             data = {}
         data = data.copy()
         data['key'] = self._gi.key
-        return requests.delete(self._url(route), data=data)
+        return requests.delete(self._url(route), data=data, headers=headers)
 
     def _url(self, route):
         if route.startswith("/api/"):

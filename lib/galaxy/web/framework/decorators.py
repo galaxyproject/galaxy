@@ -221,6 +221,9 @@ def __extract_payload_from_request(trans, func, kwargs):
         # should ideally be in reverse, with the if clause being a check for application/json and the else clause assuming a standard encoding
         # such as multipart/form-data. Leaving it as is for backward compatibility, just in case.
         payload = loads(unicodify(trans.request.body))
+        run_as = trans.request.headers.get('run-as')
+        if run_as:
+            payload['run_as'] = run_as
     return payload
 
 

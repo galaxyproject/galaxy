@@ -19,7 +19,15 @@ from galaxy import (
     model,
 )
 from galaxy.app import UniverseApplication
-from galaxy.exceptions import AdminRequiredException, MalformedId
+from galaxy.exceptions import (
+    AdminRequiredException,
+    InsufficientPermissionsException,
+    MalformedId,
+)
+from galaxy.exceptions.error_codes import (
+    USER_CANNOT_RUN_AS,
+    USER_INVALID_RUN_AS,
+)
 from galaxy.managers.jobs import JobManager
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.users import UserManager
@@ -72,18 +80,20 @@ def get_api_user(
         user_manager: UserManager = Depends(get_user_manager),
         key: Optional[str] = Query(None),
         x_api_key: Optional[str] = Header(None),
-        run_as: Optional[EncodedDatabaseIdField] = Header(None),
-    ) -> Optional[User]:
+        run_as: Optional[EncodedDatabaseIdField] = Header(None, title='Run as User', description='Admins and ')) -> Optional[User]:
     api_key = key or x_api_key
     if not api_key:
         return None
     user = user_manager.by_api_key(api_key=api_key)
-    if run_as and user_manager.user_can_do_run_as(user):
-        try:
-            decoded_run_as_id = security.decode_id(run_as)
-        except Exception:
-            raise MalformedId(run_as)
-        return user_manager.by_id(decoded_run_as_id)
+    if run_as:
+        if user_manager.user_can_do_run_as(user):
+            try:
+                decoded_run_as_id = security.decode_id(run_as)
+            except Exception:
+                raise MalformedId(USER_INVALID_RUN_AS.message)
+            return user_manager.by_id(decoded_run_as_id)
+        else:
+            raise InsufficientPermissionsException(USER_CANNOT_RUN_AS.message)
     return user
 
 
