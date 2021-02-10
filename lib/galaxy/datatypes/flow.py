@@ -63,7 +63,8 @@ class FCS(Binary):
                 if tmp != "    ":
                     return False
                 coffs = []
-                for _i in range(6):
+                # we only need to check ioffs 2 to 5
+                for _i in range(4):
                     coffs.append(f.read(8).decode("utf8", errors="ignore"))
 
             ioffs = [float(version)] + [int(x) for x in coffs]
