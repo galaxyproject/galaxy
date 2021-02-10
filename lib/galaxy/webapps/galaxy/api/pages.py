@@ -34,7 +34,7 @@ from . import get_app, get_trans
 log = logging.getLogger(__name__)
 
 # TODO: This FastAPI router is disabled. Please rename it to `router` when the database session issues are fixed.
-_router = APIRouter(tags=['pages'])
+router = APIRouter(tags=['pages'])
 
 DeletedQueryParam: bool = Query(
     default=False,
@@ -53,11 +53,11 @@ def get_pages_manager(app=Depends(get_app)) -> PagesManager:
     return PagesManager(app)
 
 
-@cbv(_router)
+@cbv(router)
 class FastAPIPages:
     manager: PagesManager = Depends(get_pages_manager)
 
-    @_router.get(
+    @router.get(
         '/api/pages',
         summary="Lists all Pages viewable by the user.",
         response_description="A list with summary page information.",
@@ -70,7 +70,7 @@ class FastAPIPages:
         """Get a list with summary information of all Pages available to the user."""
         return self.manager.index(trans, deleted)
 
-    @_router.post(
+    @router.post(
         '/api/pages',
         summary="Create a page and return summary information.",
         response_description="The page summary information.",
@@ -83,7 +83,7 @@ class FastAPIPages:
         """Get a list with details of all Pages available to the user."""
         return self.manager.create(trans, payload)
 
-    @_router.delete(
+    @router.delete(
         '/api/pages/{id}',
         summary="Marks the specific Page as deleted.",
         status_code=status.HTTP_204_NO_CONTENT,
@@ -96,7 +96,7 @@ class FastAPIPages:
         """Marks the Page with the given ID as deleted."""
         self.manager.delete(trans, id)
 
-    @_router.get(
+    @router.get(
         '/api/pages/{id}',
         summary="Return a page summary and the content of the last revision.",
         response_description="The page summary information.",
@@ -109,7 +109,7 @@ class FastAPIPages:
         """Return summary information about a specific Page and the content of the last revision."""
         return self.manager.show(trans, id)
 
-    @_router.get(
+    @router.get(
         '/api/pages/{id}.pdf',
         summary="Return a PDF document of the last revision of the Page.",
         response_class=StreamingResponse,

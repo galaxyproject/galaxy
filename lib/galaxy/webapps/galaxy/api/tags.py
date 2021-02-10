@@ -26,18 +26,18 @@ from . import (
 log = logging.getLogger(__name__)
 
 # TODO: This FastAPI router is disabled. Please rename it to `router` when the database session issues are fixed.
-_router = APIRouter(tags=['tags'])
+router = APIRouter(tags=['tags'])
 
 
 def get_tags_manager() -> TagsManager:
     return TagsManager()  # TODO: remove/refactor after merging #11180
 
 
-@cbv(_router)
+@cbv(router)
 class FastAPITags:
     manager: TagsManager = Depends(get_tags_manager)
 
-    @_router.put(
+    @router.put(
         '/api/tags',
         summary="Apply a new set of tags to an item.",
         status_code=status.HTTP_204_NO_CONTENT,
