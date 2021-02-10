@@ -640,7 +640,7 @@ class RuleValidator:
                     if not isinstance(user, str):
                         error = f"Entry '{str(user)}' in users for rule "
                         error += f"{str(counter)} in tool '{str(tool)}"
-                        error += f"' is in an invalid format!"
+                        error += "' is in an invalid format!"
                         if not return_bool:
                             error += " Ignoring entry."
                         if verbose:

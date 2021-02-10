@@ -1132,8 +1132,8 @@ class ConnectivityTable(Tabular):
     edam_format = "format_3309"
     file_ext = "ct"
 
-    header_regexp = re.compile(f"^[0-9]+(?:	|[ ]+).*?(?:ENERGY|energy|dG)[ 	].*?=")
-    structure_regexp = re.compile(f"^[0-9]+(?:	|[ ]+)[ACGTURYKMSWBDHVN]+(?:	|[ ]+)[^	]+(?:	|[ ]+)[^	]+(?:	|[ ]+)[^	]+(?:	|[ ]+)[^	]+")
+    header_regexp = re.compile("^[0-9]+(?:	|[ ]+).*?(?:ENERGY|energy|dG)[ 	].*?=")
+    structure_regexp = re.compile("^[0-9]+(?:	|[ ]+)[ACGTURYKMSWBDHVN]+(?:	|[ ]+)[^	]+(?:	|[ ]+)[^	]+(?:	|[ ]+)[^	]+(?:	|[ ]+)[^	]+")
 
     def __init__(self, **kwd):
         super().__init__(**kwd)
