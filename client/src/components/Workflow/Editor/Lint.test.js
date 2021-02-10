@@ -10,7 +10,7 @@ const localVue = getLocalVue();
 const nodes = {
     "1": {
         id: "1",
-        title: "",
+        title: "node_title",
         label: "",
         annotation: "",
         config_form: {
@@ -22,7 +22,15 @@ const nodes = {
                 },
             ],
         },
-        inputTerminals: {},
+        inputTerminals: {
+            input: {
+                attributes: {
+                    input: {
+                        label: "input_label",
+                    },
+                },
+            },
+        },
         outputTerminals: {},
         activeOutputs: {
             getAll() {
@@ -70,22 +78,24 @@ describe("Lint", () => {
         // 1. Workflow is annotated
         // 2. Non-optional inputs (if available) are formal inputs
         // 3. Inputs (if available) have labels and annotations
-        expect(checked.length).toBe(3);
+        expect(checked.length).toBe(2);
         const unchecked = wrapper.findAll("[data-icon='exclamation-triangle']");
         // Expecting 3 warnings:
         // 1. Workflow creator is not specified
         // 2. Workflow license is not specified
         // 3. Workflow has no labeled outputs
         // 4. Untyped parameter found
-        // 5. Unlabeled output found
-        expect(unchecked.length).toBe(4);
+        // 5. Missing input connection
+        // 6. Unlabeled output found
+        expect(unchecked.length).toBe(5);
         const links = wrapper.findAll("a");
-        expect(links.length).toBe(5);
+        expect(links.length).toBe(6);
         expect(links.at(0).text()).toContain("Try to automatically fix issues.");
         expect(links.at(1).text()).toContain("Provide Creator Details.");
         expect(links.at(2).text()).toContain("Specify a License.");
         expect(links.at(3).text()).toContain("untyped_parameter");
-        expect(links.at(4).text()).toContain("output_1");
+        expect(links.at(4).text()).toContain("node_title: input_label");
+        expect(links.at(5).text()).toContain("output_1");
     });
 
     it("should fire refactor event to extract untyped paramater and remove unlabeld workflows", async () => {
@@ -93,9 +103,10 @@ describe("Lint", () => {
         await wrapper.vm.$nextTick();
         expect(wrapper.emitted().onRefactor.length).toBe(1);
         const actions = wrapper.emitted().onRefactor[0][0];
-        expect(actions.length).toBe(2);
+        expect(actions.length).toBe(3);
         expect(actions[0].action_type).toBe("extract_untyped_parameter");
         expect(actions[0].name).toBe("untyped_parameter");
-        expect(actions[1].action_type).toBe("remove_unlabeled_workflow_outputs");
+        expect(actions[1].action_type).toBe("extract_input");
+        expect(actions[2].action_type).toBe("remove_unlabeled_workflow_outputs");
     });
 });
