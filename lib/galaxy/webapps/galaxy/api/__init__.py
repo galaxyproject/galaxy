@@ -39,7 +39,12 @@ from galaxy.work.context import SessionRequestContext
 
 
 def get_app() -> UniverseApplication:
-    return cast(UniverseApplication, galaxy_app.app)
+    app = cast(UniverseApplication, galaxy_app.app)
+    try:
+        app.model.set_local_session()
+        yield app
+    finally:
+        app.model.dispose_local_session()
 
 
 def get_id_encoding_helper(app: UniverseApplication = Depends(get_app)) -> IdEncodingHelper:
@@ -106,7 +111,6 @@ def get_user(galaxy_session: Optional[model.GalaxySession] = Depends(get_session
 def get_trans(app: UniverseApplication = Depends(get_app), user: Optional[User] = Depends(get_user),
               galaxy_session: Optional[model.GalaxySession] = Depends(get_session),
               ) -> SessionRequestContext:
-    app.model.session.expunge_all()
     return SessionRequestContext(app=app, user=user, galaxy_session=galaxy_session)
 
 
