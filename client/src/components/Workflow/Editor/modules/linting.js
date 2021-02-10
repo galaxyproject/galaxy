@@ -2,7 +2,7 @@ export function getDisconnectedInputs(nodes) {
     const inputs = [];
     Object.values(nodes).forEach((node) => {
         Object.entries(node.inputTerminals).forEach(([inputName, inputTerminal]) => {
-            if (!inputTerminal.connectors || !inputTerminal.connectors.length > 0 || !inputTerminal.optional) {
+            if (!(inputTerminal.connectors && inputTerminal.connectors.length > 0) && !inputTerminal.optional) {
                 const inputLabel = inputTerminal.attributes.input.label;
                 inputs.push({
                     stepId: node.id,
