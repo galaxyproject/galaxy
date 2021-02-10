@@ -131,7 +131,7 @@ class ProvidesAppContext:
 
         :rtype: sqlalchemy.orm.scoping.scoped_session
         """
-        return self.app.model.context.current
+        return self.app.model.session
 
     def expunge_all(self):
         """Expunge all the objects in Galaxy's SQLAlchemy sessions."""

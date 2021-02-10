@@ -67,7 +67,7 @@ def check_file_contents_for_email_alerts(app):
     See if any admin users have chosen to receive email alerts when a repository is updated.
     If so, the file contents of the update must be checked for inappropriate content.
     """
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     admin_users = app.config.get("admin_users", "").split(",")
     for repository in sa_session.query(app.model.Repository) \
                                 .filter(app.model.Repository.table.c.email_alerts != null()):

@@ -97,7 +97,7 @@ This message was sent from the Galaxy Tool Shed instance hosted on the server
 
 
 def count_repositories_in_category(app, category_id):
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     return sa_session.query(app.model.RepositoryCategoryAssociation) \
                      .filter(app.model.RepositoryCategoryAssociation.table.c.category_id == app.security.decode_id(category_id)) \
                      .count()
@@ -105,7 +105,7 @@ def count_repositories_in_category(app, category_id):
 
 def get_categories(app):
     """Get all categories from the database."""
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     return sa_session.query(app.model.Category) \
                      .filter(app.model.Category.table.c.deleted == false()) \
                      .order_by(app.model.Category.table.c.name) \
@@ -114,13 +114,13 @@ def get_categories(app):
 
 def get_category(app, id):
     """Get a category from the database."""
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     return sa_session.query(app.model.Category).get(app.security.decode_id(id))
 
 
 def get_category_by_name(app, name):
     """Get a category from the database via name."""
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     try:
         return sa_session.query(app.model.Category).filter_by(name=name).one()
     except sqlalchemy.orm.exc.NoResultFound:
@@ -180,7 +180,7 @@ def get_requirements_from_repository(repository):
 
 def get_repository_categories(app, id):
     """Get categories of a repository on the tool shed side from the database via id"""
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     return sa_session.query(app.model.RepositoryCategoryAssociation) \
         .filter(app.model.RepositoryCategoryAssociation.table.c.repository_id == app.security.decode_id(id))
 
@@ -326,7 +326,7 @@ def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_al
        that was included in the change set.
 
     """
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     repo = repository.hg_repo
     sharable_link = repository_util.generate_sharable_link_for_repository_in_tool_shed(repository, changeset_revision=None)
     smtp_server = app.config.smtp_server

@@ -78,7 +78,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         self.object_store = object_store
         self.app = app
         if app is not None:
-            self.sa_session = app.model.context.current
+            self.sa_session = app.model.session
             self.sessionless = False
         else:
             self.sa_session = SessionlessContext()
@@ -1137,7 +1137,7 @@ class DirectoryModelExportStore(ModelExportStore):
         with open(history_attrs_filename, 'w') as history_attrs_out:
             dump(history_attrs, history_attrs_out)
 
-        sa_session = app.model.context.current
+        sa_session = app.model.session
 
         # Write collections' attributes (including datasets list) to file.
         query = (sa_session.query(model.HistoryDatasetCollectionAssociation)
