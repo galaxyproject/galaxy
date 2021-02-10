@@ -1201,7 +1201,7 @@ class ConnectivityTable(Tabular):
                     else:
                         if j != int(re.split(r'\W+', line, 1)[0]):
                             return False
-                        elif j == length:  # Last line of first sequence has been recheached
+                        elif j == length:  # Last line of first sequence has been reached
                             return True
                         else:
                             j += 1
