@@ -5,6 +5,7 @@ import base64
 import contextlib
 import logging
 import zipfile
+from io import StringIO
 from urllib.parse import quote_plus
 
 import mrcfile
@@ -305,7 +306,7 @@ class Mrc2014(Binary):
     def sniff(self, filename):
         # Handle the wierdness of mrcfile:
         # https://github.com/ccpem/mrcfile/blob/master/mrcfile/validator.py#L88
-        with contextlib.redirect_stdout(None):
+        with contextlib.redirect_stdout(StringIO()):
             try:
                 # An exception is thrown
                 # if the file is not an
