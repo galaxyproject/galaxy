@@ -39,26 +39,28 @@ class CustosAuthnzTestCase(unittest.TestCase):
 
     def setUp(self):
         self.orig_requests_get = requests.get
-        requests.get = self.mockRequest({
-            self._get_well_known_url(): {
-                "authorization_endpoint": "https://test-auth-endpoint",
-                "token_endpoint": "https://test-token-endpoint",
-                "userinfo_endpoint": "https://test-userinfo-endpoint",
-                "end_session_endpoint": "https://test-end-session-endpoint"
-            },
-            self._get_credential_url(): {
-                "iam_client_secret": "TESTSECRET"
+        requests.get = self.mockRequest(
+            {
+                self._get_well_known_url(): {
+                    "authorization_endpoint": "https://test-auth-endpoint",
+                    "token_endpoint": "https://test-token-endpoint",
+                    "userinfo_endpoint": "https://test-userinfo-endpoint",
+                    "end_session_endpoint": "https://test-end-session-endpoint",
+                },
+                self._get_credential_url(): {"iam_client_secret": "TESTSECRET"},
             }
-        })
-        self.custos_authnz = custos_authnz.CustosAuthnz('Custos', {
-            'VERIFY_SSL': True
-        }, {
-            'url': self._get_idp_url(),
-            'client_id': 'test-client-id',
-            'client_secret': 'test-client-secret',
-            'redirect_uri': 'https://test-redirect-uri',
-            'realm': 'test-realm'
-        })
+        )
+        self.custos_authnz = custos_authnz.CustosAuthnz(
+            "Custos",
+            {"VERIFY_SSL": True},
+            {
+                "url": self._get_idp_url(),
+                "client_id": "test-client-id",
+                "client_secret": "test-client-secret",
+                "redirect_uri": "https://test-redirect-uri",
+                "realm": "test-realm",
+            },
+        )
         self.setupMocks()
         self.test_state = "abc123"
         self.test_nonce = b"4662892146306485421546981092"
@@ -84,7 +86,13 @@ class CustosAuthnzTestCase(unittest.TestCase):
 
     @property
     def test_id_token(self):
-        return unicodify(jwt.encode({'nonce': self.test_nonce_hash}, key=None, algorithm=None))
+        return unicodify(
+            jwt.encode(
+                {"nonce": self.test_nonce_hash, "aud": "test-client-id"},
+                key=None,
+                algorithm=None,
+            )
+        )
 
     def mock_create_oauth2_session(self, custos_authnz):
         orig_create_oauth2_session = custos_authnz._create_oauth2_session
