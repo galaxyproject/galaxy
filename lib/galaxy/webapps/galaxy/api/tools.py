@@ -563,7 +563,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         # as a regular tool parameter we accept both.
         use_cached_job = payload.get('use_cached_job', False) or util.string_as_bool(inputs.get('use_cached_job', 'false'))
 
-        input_format = payload.get('input_format', 'legacy')
+        input_format = str(payload.get('input_format', 'legacy'))
 
         vars = tool.handle_input(trans, incoming, history=target_history, use_cached_job=use_cached_job, input_format=input_format)
 
