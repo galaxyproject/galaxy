@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-######################################################################
-#                  Copyright (c) 2016 Northrop Grumman.
-#                          All rights reserved.
-######################################################################
-
 """
 Flow analysis datatypes.
 """
@@ -84,9 +78,6 @@ class FCS(Binary):
     def get_mime(self):
         """Returns the mime type of the datatype"""
         return 'application/octet-stream'
-
-
-Binary.register_sniffable_binary_format("fcs", "fcs", FCS)
 
 
 class FlowText(Tabular):
