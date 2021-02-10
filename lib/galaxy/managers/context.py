@@ -42,7 +42,12 @@ from typing import List, Optional
 from sqlalchemy.orm.scoping import scoped_session
 
 from galaxy.exceptions import UserActivationRequiredException
-from galaxy.model import Dataset, History, HistoryDatasetAssociation, Role
+from galaxy.model import (
+    Dataset,
+    History,
+    HistoryDatasetAssociation,
+    Role,
+)
 from galaxy.model.base import ModelMapping
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import StructuredApp
@@ -201,13 +206,7 @@ class ProvidesUserContext(ProvidesAppContext):
 
     @property
     def user_can_do_run_as(self) -> bool:
-        run_as_users = [user for user in self.app.config.get("api_allow_run_as", "").split(",") if user]
-        if not run_as_users:
-            return False
-        user_in_run_as_users = self.user and self.user.email in run_as_users
-        # Can do if explicitly in list or master_api_key supplied.
-        can_do_run_as = user_in_run_as_users or self.user.bootstrap_admin_user
-        return can_do_run_as
+        return self.app.user_manager.user_can_do_run_as(self.user)
 
     @property
     def user_is_active(self) -> bool:
