@@ -1359,6 +1359,7 @@ class ColumnListParameter(SelectToolParameter):
 
         value = other_values.get(self.name)
         if value is not None and value not in legal_values and self.is_file_empty(trans, other_values):
+            value = value if type(value) is list else [value]
             legal_values.extend(value)
 
         return set(legal_values)
