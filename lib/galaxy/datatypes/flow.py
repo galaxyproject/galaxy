@@ -99,22 +99,6 @@ class FlowText(Tabular):
         except Exception:
             return "Text Flow file (%s)" % (data.nice_size(dataset.get_size()))
 
-    def sniff(self, filename):
-        """Quick test on file formatting and values
-        Try to guess if the file is a fcs file.
-        >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('flowtext_scatterplot_input.flowtext')
-        >>> FlowText().sniff(fname)
-        True
-        """
-        with open(filename, "r") as f:
-            f.readline()
-            values = f.readline().strip().split("\t")
-            for vals in values:
-                if not is_number(vals):
-                    return False
-            return True
-
 
 class FlowClustered(Tabular):
     """Class describing a Flow Text that has been clustered through FLOCK"""
