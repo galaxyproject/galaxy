@@ -22,12 +22,8 @@ from galaxy import (
 from galaxy.app import UniverseApplication
 from galaxy.exceptions import (
     AdminRequiredException,
-    InsufficientPermissionsException,
-    MalformedId,
-)
-from galaxy.exceptions.error_codes import (
-    USER_CANNOT_RUN_AS,
-    USER_INVALID_RUN_AS,
+    UserCannotRunAsException,
+    UserInvalidRunAsException,
 )
 from galaxy.managers.jobs import JobManager
 from galaxy.managers.session import GalaxySessionManager
@@ -96,10 +92,10 @@ def get_api_user(
             try:
                 decoded_run_as_id = security.decode_id(run_as)
             except Exception:
-                raise MalformedId(USER_INVALID_RUN_AS.message)
+                raise UserInvalidRunAsException
             return user_manager.by_id(decoded_run_as_id)
         else:
-            raise InsufficientPermissionsException(USER_CANNOT_RUN_AS.message)
+            raise UserCannotRunAsException
     return user
 
 
