@@ -19,6 +19,8 @@ from sqlalchemy.types import (
 from sqlalchemy_json import (  # noqa: F401
     mutable_json_type,
     NestedMutableDict as MutationDict,
+    NestedMutableList as MutationList,
+    track
 )
 
 from galaxy.util import (
@@ -28,6 +30,7 @@ from galaxy.util import (
 from galaxy.util.aliaspickler import AliasPickleModule
 
 log = logging.getLogger(__name__)
+track.TrackedObject.parent = None  # https://github.com/edelooff/sqlalchemy-json/pull/28
 
 
 class SafeJsonEncoder(json.JSONEncoder):
