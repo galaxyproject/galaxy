@@ -11,8 +11,8 @@ import os
 import shutil
 import time
 
+import pytest
 from requests import delete
-
 
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
@@ -22,6 +22,7 @@ THIS_DIR = os.path.dirname(__file__)
 SOURCE_TOOL_DATA_DIRECTORY = os.path.join(THIS_DIR, os.pardir, "functional", "tool-data")
 
 
+@pytest.mark.legacy_api
 class AdminToolDataIntegrationTestCase(integration_util.IntegrationTestCase):
     require_admin_user = True
 
