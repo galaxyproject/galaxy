@@ -16,6 +16,24 @@ export class Services {
             rethrowSimple(e);
         }
     }
+    async getDatasetPermissions(id) {
+        const url = `${this.root}api/libraries/datasets/${id}/permissions?scope=current`;
+        try {
+            const response = await axios.get(url);
+            return response.data;
+        } catch (e) {
+            rethrowSimple(e);
+        }
+    }
+    async getDataset(id) {
+        const url = `${this.root}api/libraries/datasets/${id}`;
+        try {
+            const response = await axios.get(url);
+            return response.data;
+        } catch (e) {
+            rethrowSimple(e);
+        }
+    }
     async getFolder(id) {
         const url = `${this.root}api/folders/${id}`;
         try {
@@ -25,9 +43,9 @@ export class Services {
             rethrowSimple(e);
         }
     }
-    async getSelectOptions(id, is_library_access, page, page_limit, searchQuery) {
+    async getSelectOptions(apiRootUrl, id, is_library_access, page, page_limit, searchQuery) {
         searchQuery = searchQuery ? `&q=${searchQuery}` : "";
-        const url = `${this.root}api/folders/${id}/permissions?scope=available&is_library_access=${is_library_access}&page_limit=${page_limit}&page=${page}${searchQuery}`;
+        const url = `${apiRootUrl}/${id}/permissions?scope=available&is_library_access=${is_library_access}&page_limit=${page_limit}&page=${page}${searchQuery}`;
         try {
             const response = await axios.get(url);
             return response.data;
@@ -35,6 +53,7 @@ export class Services {
             rethrowSimple(e);
         }
     }
+
     async setPermissions(id, add_ids, manage_ids, modify_ids, onSuccess, onError) {
         var formData = new FormData();
         formData.append(

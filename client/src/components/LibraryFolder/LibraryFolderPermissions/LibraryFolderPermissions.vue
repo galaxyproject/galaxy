@@ -9,77 +9,44 @@
                     <div class="header text-center">{{ folder.name }}</div>
                 </div>
             </div>
-            <div>
-                <div class="text-center">
-                    <b-alert show variant="warning" v-if="is_admin">
-                        You are logged in as an <strong>administrator</strong> therefore you can manage any folder on
-                        this Galaxy instance. Please make sure you understand the consequences.
-                    </b-alert>
-                    <b-alert show variant="warning" v-else>
-                        You can assign any number of roles to any of the following permission types. However please read
-                        carefully the implications of such actions.
-                    </b-alert>
-                </div>
-            </div>
+            <LibraryPermissionsWarning :is_admin="is_admin" />
             <hr class="my-4" />
             <b-container fluid>
                 <div class="dataset_table">
-                    <h2>Folder permissions</h2>
-                    <h4>
-                        Roles that can manage permissions on this folder
-                    </h4>
-                    <b-row>
-                        <b-col>
-                            <PermissionsInputField
-                                v-if="manage_folder_role_list"
-                                :folder_id="folder_id"
-                                :permission_type="manage_type"
-                                :initial_value="manage_folder_role_list"
-                                @input="setUserPermissionsPreferences"
-                        /></b-col>
-                        <b-col>
-                            <b-alert show variant="info">
-                                User with <strong>any</strong> of these roles can manage permissions on this folder.
-                            </b-alert>
-                        </b-col>
-                    </b-row>
-                    <h4>
-                        Roles that can add items to this folder
-                    </h4>
-                    <b-row>
-                        <b-col>
-                            <PermissionsInputField
-                                v-if="add_library_item_role_list"
-                                :folder_id="folder_id"
-                                :permission_type="add_type"
-                                :initial_value="add_library_item_role_list"
-                                @input="setUserPermissionsPreferences"
-                        /></b-col>
-                        <b-col>
-                            <b-alert class="p-3" show variant="info">
-                                User with <strong>any</strong> of these roles can add items to this folder (folders and
-                                datasets).
-                            </b-alert>
-                        </b-col>
-                    </b-row>
-                    <h4>
-                        Roles that can modify this folder
-                    </h4>
-                    <b-row>
-                        <b-col>
-                            <PermissionsInputField
-                                v-if="modify_folder_role_list"
-                                :folder_id="folder_id"
-                                :permission_type="modify_type"
-                                :initial_value="modify_folder_role_list"
-                                @input="setUserPermissionsPreferences"
-                        /></b-col>
-                        <b-col>
-                            <b-alert show variant="info">
-                                User with <strong>any</strong> of these roles can modify this folder (name, etc.).
-                            </b-alert></b-col
-                        >
-                    </b-row>
+                    <h2 class="text-center">Folder permissions</h2>
+                    <PermissionsInputField
+                        v-if="manage_folder_role_list"
+                        :id="folder_id"
+                        :permission_type="manage_type"
+                        :initial_value="manage_folder_role_list"
+                        :apiRootUrl="apiRootUrl"
+                        alert="User with <strong>any</strong> of these roles can manage permissions on this folder."
+                        title="Roles that can manage permissions on this folder"
+                        @input="setUserPermissionsPreferences"
+                    />
+
+                    <PermissionsInputField
+                        v-if="add_library_item_role_list"
+                        :id="folder_id"
+                        :permission_type="add_type"
+                        :initial_value="add_library_item_role_list"
+                        :apiRootUrl="apiRootUrl"
+                        title="Roles that can add items to this folder"
+                        alert="User with <strong>any</strong> of these roles can add items to this folder (folders and
+                                datasets)."
+                        @input="setUserPermissionsPreferences"
+                    />
+
+                    <PermissionsInputField
+                        v-if="modify_folder_role_list"
+                        :id="folder_id"
+                        :permission_type="modify_type"
+                        :initial_value="modify_folder_role_list"
+                        :apiRootUrl="apiRootUrl"
+                        title="Roles that can modify this folder"
+                        alert="User with <strong>any</strong> of these roles can modify this folder (name, etc.)."
+                        @input="setUserPermissionsPreferences"
+                    />
                     <button
                         data-toggle="tooltip"
                         data-placement="top"
@@ -106,12 +73,11 @@ import { Toast } from "ui/toast";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
 import PermissionsInputField from "./PermissionsInputField.vue";
+import LibraryPermissionsWarning from "components/LibraryFolder/LibraryFolderPermissions/LibraryPermissionsWarning.vue";
+import { extractRoles } from "./utils";
+
 import { initManageFolderIcons } from "components/LibraryFolder/icons";
 
-import "vue-multiselect/dist/vue-multiselect.min.css";
-import VueObserveVisibility from "vue-observe-visibility";
-
-Vue.use(VueObserveVisibility);
 Vue.use(BootstrapVue);
 initManageFolderIcons();
 
@@ -124,6 +90,7 @@ export default {
     },
     components: {
         PermissionsInputField,
+        LibraryPermissionsWarning,
         FontAwesomeIcon,
     },
     data() {
@@ -137,6 +104,7 @@ export default {
             add_type: "add_type",
             manage_type: "manage_type",
             modify_type: "modify_type",
+            apiRootUrl: `${getAppRoot()}api/folders`,
         };
     },
     created() {
@@ -145,9 +113,9 @@ export default {
         this.services = new Services({ root: this.root });
         this.is_admin = Galaxy.user.attributes.is_admin;
         this.services.getFolderPermissions(this.folder_id).then((fetched_permissions) => {
-            this.add_library_item_role_list = this._serializeRoles(fetched_permissions.add_library_item_role_list);
-            this.manage_folder_role_list = this._serializeRoles(fetched_permissions.manage_folder_role_list);
-            this.modify_folder_role_list = this._serializeRoles(fetched_permissions.modify_folder_role_list);
+            this.add_library_item_role_list = extractRoles(fetched_permissions.add_library_item_role_list);
+            this.manage_folder_role_list = extractRoles(fetched_permissions.manage_folder_role_list);
+            this.modify_folder_role_list = extractRoles(fetched_permissions.modify_folder_role_list);
         });
         this.services.getFolder(this.folder_id).then((response) => {
             this.folder = response;
@@ -186,15 +154,6 @@ export default {
                     console.error(error);
                 }
             );
-        },
-
-        _serializeRoles: function (role_list) {
-            const selected_roles = [];
-            role_list.forEach((item) => {
-                selected_roles.push({ name: item[0], id: item[1] });
-            });
-
-            return selected_roles;
         },
     },
 };
