@@ -231,8 +231,8 @@ runners:
     username: username
     # Password to access Mesos cluster.
     password: password
-    # True to communicate with Chronos over HTTPS; false otherwise
-    insecure: true
+    # False to communicate with Chronos over HTTPS; true otherwise
+    insecure: false
 
   # Pulsar runners (see more at https://pulsar.readthedocs.io/)
   pulsar_rest:
@@ -934,12 +934,12 @@ execution:
 
       # Directory which is mounted to the container and is parent of
       # the  `job_working_directory`, `file_path`, `new_file_path`
-      # directories. Directories of the data used by tools are
-      # included as well.
-      volumes: /directory/
+      # directories. Other directories of the data used by tools
+      # can be mounted as well, separated by commas.
+      volumes: host_path:container_path:mode
 
       # Number of retries to attempt if a command returns a non-zero status
-      max_retries: 2
+      max_retries: 0
 
 # Tools can be configured to use specific destinations or handlers,
 # identified by either the "id" or "tags" attribute.  If assigned to
