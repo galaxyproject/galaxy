@@ -8,7 +8,6 @@ import tarfile
 import tempfile
 import time
 import zipfile
-from collections import OrderedDict
 from json import dumps
 from logging import getLogger
 
@@ -43,7 +42,7 @@ DEFAULT_FTYPE = 'auto'
 DEFAULT_DBKEY = os.environ.get("GALAXY_TEST_DEFAULT_DBKEY", "?")
 
 
-class OutputsDict(OrderedDict):
+class OutputsDict(dict):
     """Ordered dict that can also be accessed by index.
 
     >>> out = OutputsDict()
@@ -57,12 +56,7 @@ class OutputsDict(OrderedDict):
         if isinstance(item, int):
             return self[list(self.keys())[item]]
         else:
-            # ideally we'd do `return super(OutputsDict, self)[item]`,
-            # but this fails because OrderedDict has no `__getitem__`. (!?)
-            item = self.get(item)
-            if item is None:
-                raise KeyError(item)
-            return item
+            return super().__getitem__(item)
 
 
 def stage_data_in_history(galaxy_interactor, tool_id, all_test_data, history=None, force_path_paste=False, maxseconds=DEFAULT_TOOL_TEST_WAIT):
@@ -497,7 +491,7 @@ class GalaxyInteractorApi:
         return element_identifiers
 
     def __dictify_output_collections(self, submit_response):
-        output_collections_dict = OrderedDict()
+        output_collections_dict = {}
         for output_collection in submit_response['output_collections']:
             output_collections_dict[output_collection.get("output_name")] = output_collection
         return output_collections_dict
@@ -1290,7 +1284,7 @@ class ToolTestDescription:
         self.error = processed_test_dict.get("error", False)
         self.exception = processed_test_dict.get("exception", None)
 
-        self.output_collections = map(TestCollectionOutputDef.from_dict, processed_test_dict.get("output_collections", []))
+        self.output_collections = [TestCollectionOutputDef.from_dict(d) for d in processed_test_dict.get("output_collections", [])]
         self.command_line = processed_test_dict.get("command_line", None)
         self.command_version = processed_test_dict.get("command_version", None)
         self.stdout = processed_test_dict.get("stdout", None)

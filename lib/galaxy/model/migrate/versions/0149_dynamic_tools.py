@@ -27,7 +27,7 @@ DynamicTool_table = Table(
     Column("tool_directory", Unicode(255)),
     Column("hidden", Boolean),
     Column("active", Boolean),
-    Column("value", JSONType()),
+    Column("value", JSONType),
 )
 
 

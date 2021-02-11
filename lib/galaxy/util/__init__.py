@@ -1086,19 +1086,6 @@ def strip_control_characters(s):
     return "".join(c for c in unicodify(s) if unicodedata.category(c) != "Cc")
 
 
-def strip_control_characters_nested(item):
-    """Recursively strips control characters from lists, dicts, tuples."""
-
-    def visit(path, key, value):
-        if isinstance(key, str):
-            key = strip_control_characters(key)
-        if isinstance(value, str):
-            value = strip_control_characters(value)
-        return key, value
-
-    return remap(item, visit)
-
-
 def object_to_string(obj):
     return binascii.hexlify(obj)
 

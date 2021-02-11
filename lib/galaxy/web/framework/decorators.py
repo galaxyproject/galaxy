@@ -95,8 +95,12 @@ def require_admin(func):
         if not trans.user_is_admin:
             msg = require_admin_message(trans.app.config, trans.get_user())
             trans.response.status = 403
-            if trans.response.get_content_type() == 'application/json':
-                return msg
+            content_type = trans.response.get_content_type()
+            # content_type for instance may be... application/json; charset=UTF-8
+            if 'application/json' in content_type:
+                return __api_error_dict(
+                    trans, status_code=403, err_code=error_codes.ADMIN_REQUIRED, err_msg=msg
+                )
             else:
                 return trans.show_error_message(msg)
         return func(self, trans, *args, **kwargs)
@@ -393,7 +397,7 @@ def api_error_message(trans, **kwds):
     return error_response
 
 
-def __api_error_response(trans, **kwds):
+def __api_error_dict(trans, **kwds):
     error_dict = api_error_message(trans, **kwds)
     exception = kwds.get("exception", None)
     # If we are given an status code directly - use it - otherwise check
@@ -410,6 +414,11 @@ def __api_error_response(trans, **kwds):
         # non-success (i.e. not 200 or 201) has been set, do not override
         # underlying controller.
         response.status = status_code
+    return error_dict
+
+
+def __api_error_response(trans, **kwds):
+    error_dict = __api_error_dict(trans, **kwds)
     return safe_dumps(error_dict)
 
 

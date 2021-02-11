@@ -6,7 +6,6 @@ import json
 import logging
 import os.path
 import shutil
-from collections import OrderedDict
 
 from galaxy.util import (
     hash_util,
@@ -201,7 +200,7 @@ class DependencyManager:
 
     def _requirements_to_dependencies_dict(self, requirements, search=False, **kwds):
         """Build simple requirements to dependencies dict for resolution."""
-        requirement_to_dependency = OrderedDict()
+        requirement_to_dependency = {}
         index = kwds.get('index')
         install = kwds.get('install', False)
         resolver_type = kwds.get('resolver_type')
@@ -233,7 +232,7 @@ class DependencyManager:
             if container_type is not None and getattr(resolver, "container_type", None) != container_type:
                 continue
 
-            _requirement_to_dependency = OrderedDict([(k, v) for k, v in requirement_to_dependency.items() if not isinstance(v, NullDependency)])
+            _requirement_to_dependency = {k: v for k, v in requirement_to_dependency.items() if not isinstance(v, NullDependency)}
 
             if len(_requirement_to_dependency) == len(resolvable_requirements):
                 # Shortcut - resolution complete.
