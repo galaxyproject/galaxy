@@ -2,6 +2,7 @@
 import json
 import sys
 import os
+import time
 
 MIN_WORD_COUNT = 6	# minimum number of words per line
 MAX_WORD_COUNT = 10	# maximum number of words per line
@@ -26,7 +27,6 @@ def main():
 	# write header to output vtt file
 	out_file = open(vtt_file, "w")
 	out_file.write(writeHeader())
-	out_file.write(writeEmptyLine())
 
 	# initialize status before first (new) line
 	nword = 0	# number of pronunciation words in current line so far 
@@ -58,9 +58,9 @@ def main():
 			# write the current line (if any word) before starting a new line
 			# note that punctuation words before the very first pronunciation word (in which case nword = 0) will be ignored 
 			if (nword > 0):
+				out_file.write(writeEmptyLine())
 				out_file.write(writeTime(start, end))
 				out_file.write(writeLine(getSegmentSpeaker(segments, curseg), line))
-				out_file.write(writeEmptyLine())
 			# reset status for the new line
 			nword = 0 
 			# new line always starts with a pronunciation, use its start time as line start time
@@ -84,9 +84,9 @@ def main():
 	# write the last line to file if any word in it; note that 
 	# the last line should always contain some pronunciation words unless the whole words list contains no pronunciation
 	if nword > 0:
+		out_file.write(writeEmptyLine())
 		out_file.write(writeTime(start, end))
 		out_file.write(writeLine(getSegmentSpeaker(segments, curseg), line))
-		out_file.write(writeEmptyLine())
 	out_file.close()
 		
 # Find the index of the next segment among the given segments to which the given word belongs to, starting at the given (current) 
@@ -157,9 +157,12 @@ def writeEmptyLine():
 
 def writeTime(start_time, end_time):
 	#This function writes a time entry to the vtt output
-	return str(start_time)+" --> "+str(end_time)+"\n"
+	return str(convert(start_time))+" --> "+str(convert(end_time))+"\n"
 	
-		
+def convert(seconds): 
+    return time.strftime("%H:%M:%S", time.gmtime(seconds)) 
+   
+   
 if __name__ == "__main__":
 	main()
 		
