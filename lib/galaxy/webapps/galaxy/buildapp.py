@@ -192,6 +192,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route('/custom_builds')
     webapp.add_client_route('/interactivetool_entry_points/list')
     webapp.add_client_route('/library/folders/{folder_id}')
+    webapp.add_client_route('/library/folders/permissions/{folder_id}')
 
     # ==== Done
     # Indicate that all configuration settings have been provided
