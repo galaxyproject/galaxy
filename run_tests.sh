@@ -162,10 +162,6 @@ Extra options:
                        functional tests).
  --skip-venv           Do not create .venv (passes this flag to
                        common_startup.sh)
- --dockerize           Run tests in a pre-configured Docker container (must be
-                       first argument if present).
- --db <type>           For use with --dockerize, run tests using partially
-                       migrated 'postgres', 'mysql', or 'sqlite' databases.
  --external_url        External URL to use for Galaxy testing (only certain
                        tests).
  --external_master_key Master API key used to configure external tests.
@@ -270,8 +266,6 @@ exists() {
     type "$1" >/dev/null 2>/dev/null
 }
 
-DOCKER_DEFAULT_IMAGE='galaxy/testing-base:20.05.00'
-
 test_script="./scripts/functional_tests.py"
 report_file="run_functional_tests.html"
 coverage_arg=""
@@ -283,61 +277,6 @@ then
     skip_client_build="--skip-client-build"
 else
     skip_client_build=""
-fi
-
-if [ "$1" = "--dockerize" ];
-then
-    shift
-    DOCKER_EXTRA_ARGS=${DOCKER_ARGS:-""}
-    DOCKER_RUN_EXTRA_ARGS=${DOCKER_RUN_EXTRA_ARGS:-""}
-    DOCKER_IMAGE=${DOCKER_IMAGE:-${DOCKER_DEFAULT_IMAGE}}
-    db_type="sqlite"
-    while [ $# -gt 0 ]; do
-        case "$1" in
-            --python3)
-                DOCKER_RUN_EXTRA_ARGS="${DOCKER_RUN_EXTRA_ARGS} -e GALAXY_VIRTUAL_ENV=/galaxy_venv3"
-                shift 1
-                ;;
-            --db)
-                db_type=$2
-                shift 2
-                ;;
-            *)
-                break
-                ;;
-        esac
-    done
-    # Skip client build process in the Docker container for all tests except Selenium
-    GALAXY_SKIP_CLIENT_BUILD=1
-    case "$*" in
-        *-selenium*)
-            GALAXY_SKIP_CLIENT_BUILD=0
-            ;;
-    esac
-    MY_UID=$(id -u)
-    DOCKER_RUN_EXTRA_ARGS="${DOCKER_RUN_EXTRA_ARGS} -e GALAXY_TEST_UID=${MY_UID} -e GALAXY_SKIP_CLIENT_BUILD=${GALAXY_SKIP_CLIENT_BUILD}"
-    echo "Docker version:"
-    docker --version
-    echo "Launching docker container for testing with extra args ${DOCKER_RUN_EXTRA_ARGS}..."
-    name=$(python -c 'import re; import uuid; print(re.sub("-", "", str(uuid.uuid4())))')
-    # Create a cache dir for pip, so it has the right owner
-    DOCKER_PIP_CACHE_DIR="$HOME"/.cache/docker_galaxy_pip
-    mkdir -p "$DOCKER_PIP_CACHE_DIR"
-    _on_exit() {
-        docker kill "$name"
-    }
-    trap _on_exit 0
-    docker $DOCKER_EXTRA_ARGS run $DOCKER_RUN_EXTRA_ARGS \
-        -e "BUILD_NUMBER=$BUILD_NUMBER" \
-        -e "GALAXY_TEST_DATABASE_TYPE=$db_type" \
-        -e "LC_ALL=C" \
-        -e "PIP_CACHE_DIR=/pip_cache_dir" \
-        --rm \
-        --name="$name" \
-        -v "$DOCKER_PIP_CACHE_DIR":/pip_cache_dir \
-        -v "$(pwd)":/galaxy \
-        -v "$(pwd)"/test/docker/base/run_test_wrapper.sh:/usr/local/bin/run_test_wrapper.sh "$DOCKER_IMAGE" "$@"
-    exit $?
 fi
 
 # If in Jenkins environment, create xunit-${BUILD_NUMBER}.xml by default.

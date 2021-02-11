@@ -40,9 +40,12 @@ from galaxy.job_execution.datasets import (
     TaskPathRewriter
 )
 from galaxy.job_execution.output_collect import collect_extra_files
-from galaxy.job_execution.setup import (
+from galaxy.job_execution.setup import (  # noqa: F401
     create_working_directory_for_job,
     ensure_configs_directory,
+    # This is read by certain misbehaving tool wrappers that import Galaxy internals
+    TOOL_PROVIDED_JOB_METADATA_FILE,
+    TOOL_PROVIDED_JOB_METADATA_KEYS,
 )
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.jobs.mapper import (
@@ -71,12 +74,6 @@ from galaxy.util.xml_macros import load
 from galaxy.web_stack.handlers import ConfiguresHandlers
 
 log = logging.getLogger(__name__)
-
-# Legacy definition - this is read by certain misbehaving tool wrappers
-# that import Galaxy internals - but it shouldn't be used in Galaxy's code
-# itself.
-TOOL_PROVIDED_JOB_METADATA_FILE = 'galaxy.json'
-TOOL_PROVIDED_JOB_METADATA_KEYS = ['name', 'info', 'dbkey', 'created_from_basename']
 
 # Override with config.default_job_shell.
 DEFAULT_JOB_SHELL = '/bin/bash'
@@ -1310,8 +1307,6 @@ class JobWrapper(HasResourceParameters):
                 # Pause any dependent jobs (and those jobs' outputs)
                 for dep_job_assoc in dataset.dependent_jobs:
                     self.pause(dep_job_assoc.job, "Execution of this dataset's job is paused because its input datasets are in an error state.")
-                self.sa_session.add(dataset)
-                self.sa_session.flush()
             job.set_final_state(job.states.ERROR)
             job.command_line = unicodify(self.command_line)
             job.info = message
@@ -2227,7 +2222,7 @@ class JobWrapper(HasResourceParameters):
     def change_ownership_for_run(self):
         job = self.get_job()
         external_chown_script = self.get_destination_configuration("external_chown_script", None)
-        if job.user is not None and external_chown_script is not None:
+        if job.user is not None and external_chown_script:
             ret = external_chown(self.working_directory, self.user_system_pwent,
                            external_chown_script, description="working directory")
             if not ret:
@@ -2236,7 +2231,7 @@ class JobWrapper(HasResourceParameters):
     def reclaim_ownership(self):
         job = self.get_job()
         external_chown_script = self.get_destination_configuration("external_chown_script", None)
-        if job.user is not None:
+        if job.user is not None and external_chown_script:
             external_chown(self.working_directory, self.galaxy_system_pwent,
                            external_chown_script, description="working directory")
 

@@ -1,11 +1,9 @@
 /* eslint-disable no-unused-vars */
-import { createLocalVue } from "@vue/test-utils";
-import { wait, mountRenderless } from "jest/helpers";
+import { wait, mountRenderless, getLocalVue } from "jest/helpers";
 import { wipeDatabase } from "../../caching";
 import { cacheContent, getCachedContent, cacheCollectionContent, getCachedCollectionContent } from "../../caching";
 import { DatasetCollection } from "../../model/DatasetCollection";
 import DscProvider from "./DscProvider";
-import { vueRxShortcutPlugin } from "components/plugins";
 
 // test data as root-level collections
 import rootContents from "../../test/json/historyContentWithCollection.json";
@@ -18,8 +16,7 @@ jest.mock("app");
 jest.mock("../../caching");
 
 const mountProvider = async (Component, propsData) => {
-    const localVue = createLocalVue();
-    localVue.use(vueRxShortcutPlugin);
+    const localVue = getLocalVue();
     const wrapper = mountRenderless(Component, { localVue, propsData });
     await wrapper.vm.$nextTick();
     return wrapper;

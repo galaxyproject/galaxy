@@ -1,8 +1,5 @@
 import logging
-from collections import (
-    namedtuple,
-    OrderedDict,
-)
+from collections import namedtuple
 
 from galaxy.util import parse_xml_string
 from galaxy.util.tool_shed.common_util import remove_protocol_from_tool_shed_url
@@ -22,8 +19,8 @@ AUTH_TUPLE = namedtuple('AuthSetting', 'username password')
 class Registry:
 
     def __init__(self, config=None):
-        self.tool_sheds = OrderedDict()
-        self.tool_sheds_auth = OrderedDict()
+        self.tool_sheds = {}
+        self.tool_sheds_auth = {}
         if config:
             # Parse tool_sheds_conf.xml
             tree, error_message = parse_xml(config)

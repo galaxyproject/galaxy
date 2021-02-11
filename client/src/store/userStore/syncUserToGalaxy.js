@@ -12,10 +12,7 @@ export function syncUserToGalaxy(galaxy$, store) {
     );
 
     return result$.subscribe(
-        (user) => {
-            console.log("SETTING USER", user);
-            store.commit("user/setCurrentUser", user);
-        },
+        (user) => store.commit("user/setCurrentUser", user),
         (err) => console.log("syncUserToGalaxy error", err),
         () => console.log("syncUserToGalaxy complete")
     );

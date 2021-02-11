@@ -16,6 +16,7 @@ import {
     faDownload,
     faBook,
     faMinusSquare,
+    faAngleDoubleLeft,
 } from "@fortawesome/free-solid-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
 
@@ -36,10 +37,18 @@ const tableIcons = [
     faSquare,
     faMinusSquare,
 ];
+
+const manageIcons = [faAngleDoubleLeft, faSave];
 const topBarIcons = [faHome, faPlus, faInfoCircle, faTrash, faDownload, faBook];
 
 export function initFolderTableIcons() {
     tableIcons.forEach((icon) => {
+        library.add(icon);
+    });
+}
+
+export function initManageFolderIcons() {
+    manageIcons.forEach((icon) => {
         library.add(icon);
     });
 }

@@ -437,24 +437,17 @@ class User(Dictifiable, RepresentById):
         Gives the system user pwent entry based on e-mail or username depending
         on the value in real_system_username
         """
-        system_user_pwent = None
         if real_system_username == 'user_email':
-            try:
-                system_user_pwent = pwd.getpwnam(self.email.split('@')[0])
-            except KeyError:
-                pass
+            username = self.email.split('@')[0]
         elif real_system_username == 'username':
-            try:
-                system_user_pwent = pwd.getpwnam(self.username)
-            except KeyError:
-                pass
+            username = self.username
         else:
-            try:
-                system_user_pwent = pwd.getpwnam(real_system_username)
-            except KeyError:
-                log.warning("invalid configuration of real_system_username")
-                system_user_pwent = None
-        return system_user_pwent
+            username = real_system_username
+        try:
+            return pwd.getpwnam(username)
+        except Exception:
+            log.exception(f"Error getting the password database entry for user {username}")
+            raise
 
     def all_roles(self):
         """
@@ -4146,7 +4139,7 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
                 select_stmt = select(list(map(lambda dc: dc.c.populated_state, collection_depth_aliases))).select_from(select_from).where(dc.c.id == self.id).distinct()
                 for populated_states in db_session.execute(select_stmt).fetchall():
                     for populated_state in populated_states:
-                        if populated_state != DatasetCollection.populated_states.OK:
+                        if populated_state and populated_state != DatasetCollection.populated_states.OK:
                             _populated_optimized = False
 
             self._populated_optimized = _populated_optimized
@@ -4996,6 +4989,7 @@ class Workflow(Dictifiable, RepresentById):
         copied_workflow.name = self.name
         copied_workflow.has_cycles = self.has_cycles
         copied_workflow.has_errors = self.has_errors
+        copied_workflow.reports_config = self.reports_config
 
         # Map old step ids to new steps
         step_mapping = {}

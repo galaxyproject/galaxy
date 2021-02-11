@@ -1,13 +1,12 @@
 import { pipe } from "rxjs";
 import { map } from "rxjs/operators";
-import { createLocalVue } from "@vue/test-utils";
 import { History } from "../../model/History";
 import { SearchParams } from "../../model/SearchParams";
 import HistoryContentProvider from "./HistoryContentProvider";
 import { bulkCacheContent, wipeDatabase } from "../../caching";
 import { getPropRange } from "../../caching/loadHistoryContents";
 import { watchForChange, mountRenderless } from "jest/helpers";
-import { vueRxShortcutPlugin } from "components/plugins";
+import { getLocalVue } from "jest/helpers";
 
 //#region Test Data
 
@@ -65,8 +64,7 @@ const payloadChange = async ({ vm, label = "payload change" }) => {
 };
 
 const mountProvider = async (Component, propsData) => {
-    const localVue = createLocalVue();
-    localVue.use(vueRxShortcutPlugin);
+    const localVue = getLocalVue();
     const wrapper = mountRenderless(Component, { localVue, propsData });
     await wrapper.vm.$nextTick();
     return wrapper;

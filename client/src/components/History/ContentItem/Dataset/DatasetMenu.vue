@@ -72,6 +72,14 @@
             icon="fas fa-file-download"
         />
 
+        <PriorityMenuItem
+            v-if="!dataset.purged && dataset.getUrl('download')"
+            key="copy-link"
+            title="Copy Link"
+            icon="fa fa-chain"
+            @click.stop="$emit('copy-link')"
+        />
+
         <div v-if="showDownloads && dataset.hasMetaData">
             <PriorityMenuItem
                 v-for="mf in dataset.meta_files"
@@ -130,12 +138,11 @@
 
 <script>
 import { mapGetters } from "vuex";
-import { Dataset } from "../../model";
+import { Dataset, STATES } from "../../model";
 import { PriorityMenu, PriorityMenuItem } from "components/PriorityMenu";
-import { legacyNavigationMixin } from "components/plugins";
+import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 
 export default {
-    inject: ["STATES"],
     mixins: [legacyNavigationMixin],
 
     components: {
@@ -156,6 +163,11 @@ export default {
         };
     },
 
+    created() {
+        // make available to template
+        this.STATES = STATES;
+    },
+
     computed: {
         ...mapGetters("user", ["currentUser"]),
         ...mapGetters("config", ["config"]),
@@ -168,10 +180,10 @@ export default {
             if (this.dataset.purged) {
                 return "Cannot display datasets removed from disk";
             }
-            if (this.dataset.state == this.STATES.UPLOAD) {
+            if (this.dataset.state == STATES.UPLOAD) {
                 return "This dataset must finish uploading before it can be viewed";
             }
-            if (this.dataset.state == this.STATES.NEW) {
+            if (this.dataset.state == STATES.NEW) {
                 return "This dataset is not yet viewable";
             }
             return "View data";
@@ -184,7 +196,7 @@ export default {
             if (this.dataset.purged) {
                 return "Cannot edit attributes of datasets removed from disk";
             }
-            const unreadyStates = new Set([this.STATES.UPLOAD, this.STATES.NEW]);
+            const unreadyStates = new Set([STATES.UPLOAD, STATES.NEW]);
             if (unreadyStates.has(this.dataset.state)) {
                 return "This dataset is not yet editable";
             }
@@ -206,7 +218,7 @@ export default {
             if (!this.dataset.hasData) {
                 return false;
             }
-            const okStates = new Set([this.STATES.OK, this.STATES.FAILED_METADATA, this.STATES.ERROR]);
+            const okStates = new Set([STATES.OK, STATES.FAILED_METADATA, STATES.ERROR]);
             return okStates.has(this.dataset.state);
         },
 
@@ -261,9 +273,8 @@ export default {
         },
 
         onDeleteClick() {
-            const eventName = this.dataset.deleted ? "undeleteDataset" : "deleteDataset";
-            // console.log("emitting", eventName, this.dataset);
-            this.$emit(eventName, this.dataset);
+            const eventName = this.dataset.deleted ? "undelete" : "delete";
+            this.$emit(eventName);
         },
     },
 };
