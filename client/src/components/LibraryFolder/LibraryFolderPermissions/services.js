@@ -54,24 +54,18 @@ export class Services {
         }
     }
 
-    async setPermissions(id, add_ids, manage_ids, modify_ids, onSuccess, onError) {
+    async setPermissions(apiRootUrl, id, new_roles_ids, onSuccess, onError) {
         var formData = new FormData();
-        formData.append(
-            "add_ids[]",
-            add_ids.map((a) => a.id)
-        );
-        formData.append(
-            "manage_ids[]",
-            manage_ids.map((a) => a.id)
-        );
-        formData.append(
-            "modify_ids[]",
-            modify_ids.map((a) => a.id)
-        );
+        new_roles_ids.forEach((permissionType) => {
+            Object.keys(permissionType).map(function (k) {
+                const ids = permissionType[k].map((a) => a.id);
+                formData.append(k, ids);
+            });
+        });
 
         axios({
             method: "post",
-            url: `${getAppRoot()}api/folders/${id}/permissions?action=set_permissions`,
+            url: `${apiRootUrl}/${id}/permissions?action=set_permissions`,
             data: formData,
             headers: { "Content-Type": "multipart/form-data" },
         })

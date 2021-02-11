@@ -2,8 +2,8 @@
     <div>
         <div>
             <div v-if="folder">
-                <b-button variant="primary" :to="{ path: `/${this.folder.parent_id}` }">
-                    <font-awesome-icon icon="angle-double-left">1</font-awesome-icon>
+                <b-button variant="primary" title="back to parent folder" :to="{ path: `/${this.folder.parent_id}` }">
+                    <font-awesome-icon icon="angle-double-left" />
                 </b-button>
                 <div>
                     <div class="header text-center">{{ folder.name }}</div>
@@ -76,10 +76,10 @@ import PermissionsInputField from "./PermissionsInputField.vue";
 import LibraryPermissionsWarning from "components/LibraryFolder/LibraryFolderPermissions/LibraryPermissionsWarning.vue";
 import { extractRoles } from "./utils";
 
-import { initManageFolderIcons } from "components/LibraryFolder/icons";
+import { initPermissionsIcons } from "components/LibraryFolder/icons";
 
 Vue.use(BootstrapVue);
-initManageFolderIcons();
+initPermissionsIcons();
 
 export default {
     props: {
@@ -101,9 +101,9 @@ export default {
             add_library_item_role_list: undefined,
             modify_folder_role_list: undefined,
             manage_folder_role_list: undefined,
-            add_type: "add_type",
-            manage_type: "manage_type",
-            modify_type: "modify_type",
+            add_type: "add_library_item_role_list",
+            manage_type: "manage_folder_role_list",
+            modify_type: "modify_folder_role_list",
             apiRootUrl: `${getAppRoot()}api/folders`,
         };
     },
@@ -127,24 +127,17 @@ export default {
             return `${this.root}library/folders/${this.folder.parent_id}`;
         },
         setUserPermissionsPreferences(ids, permission_type) {
-            switch (permission_type) {
-                case "manage_type":
-                    this.manage_folder_role_list = ids;
-                    break;
-                case "add_type":
-                    this.add_library_item_role_list = ids;
-                    break;
-                case "modify_type":
-                    this.modify_folder_role_list = ids;
-                    break;
-            }
+            this[permission_type] = ids;
         },
         postPermissions() {
             this.services.setPermissions(
+                this.apiRootUrl,
                 this.folder_id,
-                this.add_library_item_role_list,
-                this.manage_folder_role_list,
-                this.modify_folder_role_list,
+                [
+                    { "add_ids[]": this.add_library_item_role_list },
+                    { "manage_ids[]": this.manage_folder_role_list },
+                    { "modify_ids[]": this.modify_folder_role_list },
+                ],
                 (fetched_permissions) => {
                     Toast.success("Permissions saved.");
                     this.permissions = fetched_permissions;
