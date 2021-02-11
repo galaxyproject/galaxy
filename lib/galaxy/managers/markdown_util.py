@@ -44,6 +44,7 @@ ARG_VAL_CAPTURED_REGEX = r'''(?:([\w_\-\|]+)|\"([^\"]+)\"|\'([^\']+)\')'''
 OUTPUT_LABEL_PATTERN = re.compile(r'output=\s*%s\s*' % ARG_VAL_CAPTURED_REGEX)
 INPUT_LABEL_PATTERN = re.compile(r'input=\s*%s\s*' % ARG_VAL_CAPTURED_REGEX)
 STEP_LABEL_PATTERN = re.compile(r'step=\s*%s\s*' % ARG_VAL_CAPTURED_REGEX)
+PATH_LABEL_PATTERN = re.compile(r'path=\s*%s\s*' % ARG_VAL_CAPTURED_REGEX)
 # STEP_OUTPUT_LABEL_PATTERN = re.compile(r'step_output=([\w_\-]+)/([\w_\-]+)')
 UNENCODED_ID_PATTERN = re.compile(r'(workflow_id|history_dataset_id|history_dataset_collection_id|job_id|invocation_id)=([\d]+)')
 ENCODED_ID_PATTERN = re.compile(r'(workflow_id|history_dataset_id|history_dataset_collection_id|job_id|invocation_id)=([a-z0-9]+)')
@@ -382,7 +383,15 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
     def handle_dataset_as_image(self, line, hda):
         dataset = hda.dataset
         name = hda.name or ''
-        with open(dataset.file_name, "rb") as f:
+        path_match = re.search(PATH_LABEL_PATTERN, line)
+
+        if path_match:
+            filepath = path_match.group(2)
+            file = os.path.join(hda.extra_files_path, filepath)
+        else:
+            file = dataset.file_name
+
+        with open(file, "rb") as f:
             base64_image_data = base64.b64encode(f.read()).decode("utf-8")
         rval = (f"![{name}](data:image/png;base64,{base64_image_data})", True)
         return rval
