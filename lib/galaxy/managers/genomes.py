@@ -56,15 +56,11 @@ class GenomesManager:
         tbl_entries = self._app.tool_data_tables.data_tables[index_type].data
         ext = index_extensions[index_type]
         index_filename = self._get_index_filename(id, tbl_entries, ext, index_type)
-
         try:
-            fh = open(index_filename, mode='r')
+            with open(index_filename, mode='r') as f:
+                return f.read()
         except OSError:
             raise ReferenceDataError(f'Failed to load index file for {id}')
-        else:
-            return fh.read()
-        finally:
-            fh.close()
 
     def _get_index_filename(self, id, tbl_entries, ext, index_type):
         try:
