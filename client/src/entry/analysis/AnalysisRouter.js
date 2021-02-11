@@ -97,10 +97,10 @@ export const getAnalysisRouter = (Galaxy) =>
             "(/)datasets(/)list(/)": "show_datasets",
             "(/)custom_builds": "show_custom_builds",
             "(/)datasets/edit": "show_dataset_edit_attributes",
-            "(/)collection(/)edit(/)": "show_collection_edit_attributes",
+            "(/)collection(/)edit(/)(:collection_id)": "show_collection_edit_attributes",
             "(/)datasets/error": "show_dataset_error",
             "(/)interactivetool_entry_points(/)list": "show_interactivetool_list",
-            "(/)library/folders(/)(:folder_id)": "show_library_folder"
+            "(/)library/folders(/)(:folder_id)": "show_library_folder",
         },
 
         require_login: ["show_user", "show_user_form", "show_workflows", "show_cloud_auth", "show_external_ids"],
@@ -391,8 +391,8 @@ export const getAnalysisRouter = (Galaxy) =>
             this.page.display(new DatasetEditAttributes.View());
         },
 
-        show_collection_edit_attributes: function () {
-            this._display_vue_helper(CollectionEditView);
+        show_collection_edit_attributes: function (collection_id) {
+            this._display_vue_helper(CollectionEditView, {collection_id: collection_id});
         },
 
         show_dataset_error: function () {

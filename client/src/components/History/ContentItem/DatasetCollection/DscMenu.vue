@@ -23,7 +23,9 @@
             key="edit-collection"
             :title="editButtonTitle"
             :disabled="collection.deleted || isIn(STATES.UPLOAD, STATES.NEW)"
-            :href="collectionEditURL()"
+            @click.stop="
+                backboneRoute('collection/edit/' + collection.hdca_id)
+            "
             icon="fa fa-pencil"
         />
     </PriorityMenu>
@@ -32,12 +34,13 @@
 <script>
 import { DatasetCollection } from "../../model";
 import { PriorityMenu, PriorityMenuItem } from "components/PriorityMenu";
-import { getAppRoot } from "onload/loadConfig";
+import { legacyNavigationMixin } from "components/plugins";
 export default {
     components: {
         PriorityMenu,
         PriorityMenuItem,
     },
+    mixins: [legacyNavigationMixin],
     inject: ["STATES"],
     props: {
         collection: { type: DatasetCollection, required: true },
@@ -58,18 +61,17 @@ export default {
         },
     },
     methods: {
-        collectionEditURL: function (){
-            return getAppRoot() + 'collection/edit'
+        collectionEditURL: function () {
+            return "/collection/edit/" + this.collection.hdca_id;
         },
         notIn(...states) {
             const badStates = new Set(states);
             return !badStates.has(this.collection.state);
         },
-
         isIn(...states) {
             const goodStates = new Set(states);
             return goodStates.has(this.collection.state);
-        },
+        }
     },
 };
 </script>
