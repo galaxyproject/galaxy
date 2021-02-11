@@ -25,7 +25,6 @@ from . import (
 
 log = logging.getLogger(__name__)
 
-# TODO: This FastAPI router is disabled. Please rename it to `router` when the database session issues are fixed.
 router = APIRouter(tags=['tags'])
 
 
