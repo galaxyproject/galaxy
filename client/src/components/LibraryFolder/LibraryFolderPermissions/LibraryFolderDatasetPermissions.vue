@@ -58,6 +58,21 @@
                 Changes made below will affect <strong>every</strong> library item that was created from this dataset
                 and also every history this dataset is part of.
             </div>
+            <p class="text-center" v-if="is_unrestricted">
+                You can
+                <strong class="remove-restrictions">
+                    <a href="javascript:void(0)">remove all access restrictions</a></strong
+                >
+                on this dataset.
+            </p>
+            <p class="text-center" v-else>
+                You can
+                <strong @click="makeDatasetPrivate()" class="make-private">
+                    <a href="javascript:void(0)">make this dataset private</a></strong
+                >
+                to you.
+            </p>
+
             <PermissionsInputField
                 v-if="access_dataset_roles"
                 :id="dataset_id"
@@ -160,8 +175,25 @@ export default {
             this.dataset = response;
         });
     },
-
+    computed: {
+        is_unrestricted() {
+            return this.access_dataset_roles ? this.access_dataset_roles.length === 0 : false;
+        },
+    },
     methods: {
+        makeDatasetPrivate() {
+            this.services.makeDatasetPrivate(
+                this.dataset_id,
+                (fetched_permissions) => {
+                    Toast.success("Permissions saved.");
+                    this.permissions = fetched_permissions;
+                },
+                (error) => {
+                    Toast.error("An error occurred while attempting to set folder permissions.");
+                    console.error(error);
+                }
+            );
+        },
         getParentLink() {
             return `${this.root}library/folders/${this.folder_id}`;
         },

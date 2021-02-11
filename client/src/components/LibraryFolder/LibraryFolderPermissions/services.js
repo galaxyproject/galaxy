@@ -76,4 +76,14 @@ export class Services {
                 onError(response);
             });
     }
+    async makeDatasetPrivate(id, onSuccess, onError) {
+        await axios
+            .get(`${getAppRoot()}api/libraries/datasets/${id}/permissions?action=make_private`)
+            .then((fetched_permissions) => {
+                onSuccess(fetched_permissions);
+            })
+            .catch((response) => {
+                onError(response);
+            });
+    }
 }
