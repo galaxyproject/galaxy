@@ -1235,7 +1235,7 @@ model.FormValues.table = Table(
     Column("create_time", DateTime, default=now),
     Column("update_time", DateTime, default=now, onupdate=now),
     Column("form_definition_id", Integer, ForeignKey("form_definition.id"), index=True),
-    Column("content", JSONType))
+    Column("content", SimpleJSONType))
 
 model.Page.table = Table(
     "page", metadata,
