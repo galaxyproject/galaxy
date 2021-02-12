@@ -17,7 +17,7 @@ fs.webdavfs
 fs.dropboxfs
 
 # Chronos client
-chronos-python==0.38.0
+chronos-python==1.2.1
 
 # Kubernetes job runner
 pykube==0.15.0
