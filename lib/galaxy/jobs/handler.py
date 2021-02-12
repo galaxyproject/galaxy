@@ -325,6 +325,8 @@ class JobHandlerQueue(Monitors):
                 .join(model.Dataset) \
                 .filter(and_(model.Job.state == model.Job.states.NEW,
                              model.Dataset.state.in_(model.Dataset.non_ready_states))).subquery()
+            rank = func.rank().over(partition_by=model.Job.table.c.user_id,
+                                    order_by=model.Job.table.c.id).label('rank')
             job_filter_conditions = (
                 (model.Job.state == model.Job.states.NEW),
                 (model.Job.handler == self.app.config.server_name),
@@ -333,10 +335,11 @@ class JobHandlerQueue(Monitors):
             if self.app.config.user_activation_on:
                 job_filter_conditions = job_filter_conditions + (
                     or_((model.Job.user_id == null()), (model.User.active == true())),)
-            jobs_to_check = self.sa_session.query(model.Job).enable_eagerloads(False) \
+            ranked = self.sa_session.query(model.Job, rank).enable_eagerloads(False) \
                 .outerjoin(model.User) \
                 .filter(and_(*job_filter_conditions)) \
-                .order_by(model.Job.id).all()
+                .order_by(model.Job.id).subquery()
+            jobs_to_check = self.sa_session.query(ranked).filter(ranked.c.rank <= 1).all()
             # Filter jobs with invalid input states
             jobs_to_check = self.__filter_jobs_with_invalid_input_states(jobs_to_check)
             # Fetch all "resubmit" jobs
