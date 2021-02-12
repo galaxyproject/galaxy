@@ -73,8 +73,8 @@ var LibraryRouter = Backbone.Router.extend({
             window.plausible(`pageview ${getAppRoot()}library/list${url}`);
         }
         if (typeof window._paq !== "undefined") {
-            window._paq.push(['setCustomUrl', `${getAppRoot()}library/list${url}`]);
-            window._paq.push(['trackPageView']);
+            window._paq.push(["setCustomUrl", `${getAppRoot()}library/list${url}`]);
+            window._paq.push(["trackPageView"]);
         }
     },
 });
@@ -127,21 +127,30 @@ var GalaxyLibrary = Backbone.View.extend({
             ga("send", "pageview");
         }
         if (Galaxy.config.plausible_server && Galaxy.config.plausible_domain) {
-             document.write("<script async defer data-domain=\""+Galaxy.config.plausible_domain+"\" src=\""+Galaxy.config.plausible_server+"/js/plausible.js\"></script>");
+            document.write(
+                '<script async defer data-domain="' +
+                    Galaxy.config.plausible_domain +
+                    '" src="' +
+                    Galaxy.config.plausible_server +
+                    '/js/plausible.js"></script>'
+            );
         }
         if (Galaxy.config.matomo_server && Galaxy.config.matomo_site_id) {
-            var _paq = window._paq = window._paq || [];
+            var _paq = (window._paq = window._paq || []);
             /* tracker methods like "setCustomDimension" should be called before "trackPageView" */
-            _paq.push(['trackPageView']);
-            _paq.push(['enableLinkTracking']);
-            (function() {
-             var u=Galaxy.config.matomo_server+"/";
-             _paq.push(['setTrackerUrl', u+'matomo.php']);
-             _paq.push(['setSiteId', Galaxy.config.matomo_site_id]);
-             var d=document;
-             var g=d.createElement('script');
-             var s=d.getElementsByTagName('script')[0];
-             g.type='text/javascript'; g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
+            _paq.push(["trackPageView"]);
+            _paq.push(["enableLinkTracking"]);
+            (function () {
+                var u = Galaxy.config.matomo_server + "/";
+                _paq.push(["setTrackerUrl", u + "matomo.php"]);
+                _paq.push(["setSiteId", Galaxy.config.matomo_site_id]);
+                var d = document;
+                var g = d.createElement("script");
+                var s = d.getElementsByTagName("script")[0];
+                g.type = "text/javascript";
+                g.async = true;
+                g.src = u + "matomo.js";
+                s.parentNode.insertBefore(g, s);
             })();
         }
 
