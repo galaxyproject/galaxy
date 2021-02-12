@@ -394,7 +394,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                 filename = os.path.join(tool_data_path, filename)
             if self.tool_data_path_files.exists(filename):
                 found = True
-            else:
+            elif not os.path.isabs(filename):
                 # Since the path attribute can include a hard-coded path to a specific directory
                 # (e.g., <file path="tool-data/cg_crr_files.loc" />) which may not be the same value
                 # as self.tool_data_path, we'll parse the path to get the filename and see if it is
