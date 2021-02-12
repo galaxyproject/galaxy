@@ -304,7 +304,7 @@ class JobConfiguration(ConfiguresHandlers):
         self.handler_assignment_methods = None
         self.handler_assignment_methods_configured = False
         self.handler_max_grab = None
-        self.handler_ready_job_window = None
+        self.handler_ready_window_size = None
         self.destinations = {}
         self.destination_tags = {}
         self.default_destination_id = None
