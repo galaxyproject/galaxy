@@ -69,8 +69,8 @@ var LibraryRouter = Backbone.Router.extend({
         if (typeof ga !== "undefined") {
             ga("send", "pageview", `${getAppRoot()}library/list${url}`);
         }
-        if (typeof plausible !== "undefined") {
-            plausible(`pageview ${getAppRoot()}library/list${url}`);
+        if (typeof window.plausible !== "undefined") {
+            window.plausible(`pageview ${getAppRoot()}library/list${url}`);
         }
         if (typeof window._paq !== "undefined") {
             window._paq.push(['setCustomUrl', `${getAppRoot()}library/list${url}`]);
@@ -138,7 +138,9 @@ var GalaxyLibrary = Backbone.View.extend({
              var u=Galaxy.config.matomo_server+"/";
              _paq.push(['setTrackerUrl', u+'matomo.php']);
              _paq.push(['setSiteId', Galaxy.config.matomo_site_id]);
-             var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+             var d=document;
+             var g=d.createElement('script');
+             var s=d.getElementsByTagName('script')[0];
              g.type='text/javascript'; g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
             })();
         }

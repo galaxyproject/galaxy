@@ -1468,6 +1468,51 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~
+``plausible_server``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Please enter the URL for the Plausible server (including https) so
+    this can be used for tracking with Plausible
+    (https://plausible.io/).
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~
+``plausible_domain``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Please enter the URL for the Galaxy server so this can be used for
+    tracking with Plausible (https://plausible.io/).
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~
+``matomo_server``
+~~~~~~~~~~~~~~~~~
+
+:Description:
+    Please enter the URL for the Matomo server (including https) so
+    this can be used for tracking with Matomo (https://matomo.org/).
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~
+``matomo_site_id``
+~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Please enter the site ID for the Matomo server so this can be used
+    for tracking with Matomo (https://matomo.org/).
+:Default: ``None``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~
 ``display_servers``
 ~~~~~~~~~~~~~~~~~~~

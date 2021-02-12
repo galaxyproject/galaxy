@@ -817,13 +817,22 @@ galaxy:
   # your Google Analytics account.  Example: UA-XXXXXXXX-Y
   #ga_code: null
 
-  # Please enter the URL for the Plausible server (including https) so this can be used for tracking
-  # with Plausible (https://plausible.io/).
-  # plausible_server: null
+  # Please enter the URL for the Plausible server (including https) so
+  # this can be used for tracking with Plausible
+  # (https://plausible.io/).
+  #plausible_server: null
 
-  # Please enter the URL for the Galaxy server so this can be used for tracking
-  # with Plausible (https://plausible.io/).
+  # Please enter the URL for the Galaxy server so this can be used for
+  # tracking with Plausible (https://plausible.io/).
   #plausible_domain: null
+
+  # Please enter the URL for the Matomo server (including https) so this
+  # can be used for tracking with Matomo (https://matomo.org/).
+  #matomo_server: null
+
+  # Please enter the site ID for the Matomo server so this can be used
+  # for tracking with Matomo (https://matomo.org/).
+  #matomo_site_id: null
 
   # Galaxy can display data at various external browsers.  These options
   # specify which browsers should be available.  URLs and builds

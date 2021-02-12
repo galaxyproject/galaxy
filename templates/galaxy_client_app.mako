@@ -72,15 +72,13 @@ ${ h.dumps( dictionary, indent=( 2 if trans.debug else 0 ) ) }
 </%def>
 
 <%def name="config_plausible_analytics(plausible_server, plausible_domain)">
-    <script>
-        console.log("config_plausible_analytics plausible_server:", '${plausible_server}');
-        console.log("config_plausible_analytics plausible_domain:", '${plausible_domain}');
-    </script>
     %if plausible_server and plausible_domain:
         <script async defer data-domain="${plausible_domain}" src="${plausible_server}/js/plausible.js"></script>
         <script>window.plausible = window.plausible || function() { (window.plausible.q = window.plausible.q || []).push(arguments) }</script>
     %else:
-        <script>console.warn("Missing plausible server or plausible domain");</script>
+        <script>
+            console.warn("Missing plausible server or plausible domain");
+        </script>
     %endif
 </%def>
 
@@ -97,7 +95,9 @@ ${ h.dumps( dictionary, indent=( 2 if trans.debug else 0 ) ) }
                 var u = "${matomo_server}/";
                 _paq.push(['setTrackerUrl', u + 'matomo.php']);
                 _paq.push(['setSiteId', '${matomo_site_id}']);
-                var d = document, g = d.createElement('script'), s = d.getElementsByTagName('script')[0];
+                var d = document;
+                var g = d.createElement('script');
+                var s = d.getElementsByTagName('script')[0];
                 g.type = 'text/javascript';
                 g.async = true;
                 g.src = u + 'matomo.js';
