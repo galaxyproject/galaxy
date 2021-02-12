@@ -1,0 +1,35 @@
+name: first startup
+on: [push, pull_request]
+jobs:
+
+  test:
+    name: Startup test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.5']
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        path: 'galaxy root'
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Cache pip dir
+      uses: actions/cache@v1
+      id: pip-cache
+      with:
+        path: ~/.cache/pip
+        key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
+    - name: Install tox
+      run: pip install tox
+      # Use this job to test the latest migrations
+    - run: wget -q https://github.com/jmchilton/galaxy-downloads/raw/master/db_gx_rev_0141.sqlite
+    - run: mv db_gx_rev_0141.sqlite 'galaxy root'/database/universe.sqlite
+    - name: run tests
+      run: tox -e first_startup
+      working-directory: 'galaxy root'
