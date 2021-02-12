@@ -23,9 +23,8 @@ jobs:
       uses: actions/cache@v1
       id: pip-cache
       with:
-        path: ~/Library/Caches/pip
-        # scripts/common_startup.sh creates a conda env for Galaxy containing Python 3.6
-        key: pip-cache-3.6-${{ hashFiles('galaxy root/requirements.txt') }}
+        path: ~/.cache/pip
+        key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
     - name: Install tox
       run: pip install tox
       # Use this job to test the latest migrations
