@@ -16,9 +16,11 @@ export default {
     props: {
         query: {
             type: String,
+            default: ''
         },
         placeholder: {
             type: String,
+            default: "search tools"
         },
     },
     data() {
