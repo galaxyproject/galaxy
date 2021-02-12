@@ -179,6 +179,14 @@ tool_shed:
   # your Google Analytics account. Example: UA-XXXXXXXX-Y
   #ga_code: null
 
+  # Please enter the URL for the Plausible server (including https) so this can be used for tracking
+  # with Plausible (https://plausible.io/).
+  # plausible_server: null
+
+  # Please enter the URL for the Galaxy server so this can be used for tracking
+  # with Plausible (https://plausible.io/).
+  #plausible_domain: null
+
   # The Tool Shed encodes various internal values when these values will
   # be output in some format (for example, in a URL or cookie).  You
   # should set a key to be used by the algorithm that encodes and
