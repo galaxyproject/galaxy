@@ -25,6 +25,10 @@ api_tags_metadata = [
         "description": "Operations with supported data types.",
     },
     {
+        "name": "genomes",
+        "description": "Operations with genome data.",
+    },
+    {
         "name": "licenses",
         "description": "Operations with [SPDX licenses](https://spdx.org/licenses/).",
     },

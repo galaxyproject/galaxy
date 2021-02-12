@@ -77,7 +77,6 @@ def get_user(galaxy_session: Optional[model.GalaxySession] = Depends(get_session
 def get_trans(app: UniverseApplication = Depends(get_app), user: Optional[User] = Depends(get_user),
               galaxy_session: Optional[model.GalaxySession] = Depends(get_session),
               ) -> SessionRequestContext:
-    app.model.session.expunge_all()
     return SessionRequestContext(app=app, user=user, galaxy_session=galaxy_session)
 
 
