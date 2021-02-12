@@ -551,6 +551,7 @@ class JobConfiguration(ConfiguresHandlers):
             self._set_default_handler_assignment_methods()
         else:
             self.app.application_stack.init_job_handling(self)
+        self.handler_ready_window_size = JobConfiguration.DEFAULT_HANDLER_READY_WINDOW_SIZE
         # Set the destination
         self.default_destination_id = 'local'
         self.destinations['local'] = [JobDestination(id='local', runner='local')]
