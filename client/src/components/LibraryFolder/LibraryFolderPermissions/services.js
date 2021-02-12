@@ -1,6 +1,7 @@
 import axios from "axios";
 import { rethrowSimple } from "utils/simple-error";
 import { getAppRoot } from "onload/loadConfig";
+import $ from "jquery";
 
 export class Services {
     constructor(options = {}) {
@@ -76,11 +77,15 @@ export class Services {
                 onError(response);
             });
     }
-    async makeDatasetPrivate(id, onSuccess, onError) {
+    async toggleDatasetPrivacy(id, isMakePrivate, onSuccess, onError) {
         await axios
-            .get(`${getAppRoot()}api/libraries/datasets/${id}/permissions?action=make_private`)
+            .post(
+                `${getAppRoot()}api/libraries/datasets/${id}/permissions?action=${
+                    isMakePrivate ? "make_private" : "remove_restrictions"
+                }`
+            )
             .then((fetched_permissions) => {
-                onSuccess(fetched_permissions);
+                onSuccess(fetched_permissions.data);
             })
             .catch((response) => {
                 onError(response);

@@ -90,7 +90,7 @@ export default {
     created() {
         this.services = new Services({ root: this.root });
         // Avoid mutating a prop directly
-        this.value = this.initial_value;
+        this.assignValue(this.initial_value);
         this.getSelectOptions();
     },
     computed: {
@@ -121,6 +121,9 @@ export default {
             this.page = 1;
             this.searchValue = searchValue;
             this.getSelectOptions(true);
+        },
+        assignValue(value) {
+            this.value = value;
         },
     },
 };

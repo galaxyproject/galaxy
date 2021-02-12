@@ -60,20 +60,21 @@
             </div>
             <p class="text-center" v-if="is_unrestricted">
                 You can
-                <strong class="remove-restrictions">
-                    <a href="javascript:void(0)">remove all access restrictions</a></strong
-                >
-                on this dataset.
+                <strong @click="toggleDatasetPrivacy(true)" class="make-private">
+                    <a href="javascript:void(0)">make this dataset private</a>
+                </strong>
+                to you.
             </p>
             <p class="text-center" v-else>
                 You can
-                <strong @click="makeDatasetPrivate()" class="make-private">
-                    <a href="javascript:void(0)">make this dataset private</a></strong
-                >
-                to you.
+                <strong @click="toggleDatasetPrivacy(false)" class="remove-restrictions">
+                    <a href="javascript:void(0)">remove all access restrictions</a>
+                </strong>
+                on this dataset.
             </p>
 
             <PermissionsInputField
+                ref="access_field"
                 v-if="access_dataset_roles"
                 :id="dataset_id"
                 :permission_type="access_dataset_roles_type"
@@ -166,11 +167,9 @@ export default {
         this.root = getAppRoot();
         this.services = new Services({ root: this.root });
         this.is_admin = Galaxy.user.attributes.is_admin;
-        this.services.getDatasetPermissions(this.dataset_id).then((fetched_permissions) => {
-            this.access_dataset_roles = extractRoles(fetched_permissions.access_dataset_roles);
-            this.modify_item_roles = extractRoles(fetched_permissions.modify_item_roles);
-            this.manage_dataset_roles = extractRoles(fetched_permissions.manage_dataset_roles);
-        });
+        this.services
+            .getDatasetPermissions(this.dataset_id)
+            .then((fetched_permissions) => this.assignFetchedPermissions(fetched_permissions));
         this.services.getDataset(this.dataset_id).then((response) => {
             this.dataset = response;
         });
@@ -181,12 +180,26 @@ export default {
         },
     },
     methods: {
-        makeDatasetPrivate() {
-            this.services.makeDatasetPrivate(
+        assignFetchedPermissions(fetched_permissions) {
+            this.access_dataset_roles = extractRoles(fetched_permissions.access_dataset_roles);
+            this.modify_item_roles = extractRoles(fetched_permissions.modify_item_roles);
+            this.manage_dataset_roles = extractRoles(fetched_permissions.manage_dataset_roles);
+            console.log(this.access_dataset_roles);
+        },
+        toggleDatasetPrivacy(isMakePrivate) {
+            this.services.toggleDatasetPrivacy(
                 this.dataset_id,
+                isMakePrivate,
                 (fetched_permissions) => {
-                    Toast.success("Permissions saved.");
-                    this.permissions = fetched_permissions;
+                    Toast.success(
+                        `${
+                            isMakePrivate
+                                ? "The dataset is now private to you."
+                                : "Access to this dataset is now unrestricted."
+                        }`
+                    );
+                    this.assignFetchedPermissions(fetched_permissions);
+                    this.$refs.access_field.assignValue(this.access_dataset_roles);
                 },
                 (error) => {
                     Toast.error("An error occurred while attempting to set folder permissions.");
@@ -211,7 +224,7 @@ export default {
                 ],
                 (fetched_permissions) => {
                     Toast.success("Permissions saved.");
-                    this.permissions = fetched_permissions;
+                    this.assignFetchedPermissions(fetched_permissions);
                 },
                 (error) => {
                     Toast.error("An error occurred while attempting to set folder permissions.");
