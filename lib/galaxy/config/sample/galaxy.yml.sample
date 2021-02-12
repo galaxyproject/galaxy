@@ -817,6 +817,14 @@ galaxy:
   # your Google Analytics account.  Example: UA-XXXXXXXX-Y
   #ga_code: null
 
+  # Please enter the URL for the Plausible server (including https) so this can be used for tracking
+  # with Plausible (https://plausible.io/).
+  # plausible_server: null
+
+  # Please enter the URL for the Galaxy server so this can be used for tracking
+  # with Plausible (https://plausible.io/).
+  #plausible_domain: null
+
   # Galaxy can display data at various external browsers.  These options
   # specify which browsers should be available.  URLs and builds
   # available at these browsers are defined in the specified files.

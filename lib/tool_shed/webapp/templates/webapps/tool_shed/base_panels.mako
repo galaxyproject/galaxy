@@ -48,6 +48,12 @@
     %if app.config.ga_code:
         ${ galaxy_client.config_google_analytics(app.config.ga_code)}
     %endif
+    %if app.config.plausible_server and app.config.plausible_domain:
+        ${ galaxy_client.config_plausible_analytics(app.config.plausible_server, app.config.plausible_domain) }
+    %endif
+    %if app.config.matomo_server:
+        ${ galaxy_client.config_matomo_analytics(app.config.matomo_server) }
+    %endif
 
     ## start main tag
     <nav id="masthead" class="navbar navbar-expand fixed-top justify-content-center navbar-dark">

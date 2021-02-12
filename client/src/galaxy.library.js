@@ -58,7 +58,7 @@ var LibraryRouter = Backbone.Router.extend({
     },
 
     /**
-     * Track every route change as a page view in Google Analytics.
+     * Track every route change as a page view in Google Analytics or Plausible
      */
     trackPageview: function () {
         var url = Backbone.history.getFragment();
@@ -68,6 +68,13 @@ var LibraryRouter = Backbone.Router.extend({
         }
         if (typeof ga !== "undefined") {
             ga("send", "pageview", `${getAppRoot()}library/list${url}`);
+        }
+        if (typeof plausible !== "undefined") {
+            plausible(`pageview ${getAppRoot()}library/list${url}`);
+        }
+        if (typeof window._paq !== "undefined") {
+            window._paq.push(['setCustomUrl', `${getAppRoot()}library/list${url}`]);
+            window._paq.push(['trackPageView']);
         }
     },
 });
@@ -118,6 +125,22 @@ var GalaxyLibrary = Backbone.View.extend({
             })(window, document, "script", "//www.google-analytics.com/analytics.js", "ga");
             ga("create", Galaxy.config.ga_code, "auto");
             ga("send", "pageview");
+        }
+        if (Galaxy.config.plausible_server && Galaxy.config.plausible_domain) {
+             document.write("<script async defer data-domain=\""+Galaxy.config.plausible_domain+"\" src=\""+Galaxy.config.plausible_server+"/js/plausible.js\"></script>");
+        }
+        if (Galaxy.config.matomo_server && Galaxy.config.matomo_site_id) {
+            var _paq = window._paq = window._paq || [];
+            /* tracker methods like "setCustomDimension" should be called before "trackPageView" */
+            _paq.push(['trackPageView']);
+            _paq.push(['enableLinkTracking']);
+            (function() {
+             var u=Galaxy.config.matomo_server+"/";
+             _paq.push(['setTrackerUrl', u+'matomo.php']);
+             _paq.push(['setSiteId', Galaxy.config.matomo_site_id]);
+             var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+             g.type='text/javascript'; g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
+            })();
         }
 
         Galaxy.libraries = this;

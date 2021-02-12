@@ -70,6 +70,12 @@
     %if t.webapp.name == 'galaxy' and app.config.ga_code:
         ${galaxy_client.config_google_analytics(app.config.ga_code)}
     %endif
+    %if t.webapp.name == 'galaxy' and app.config.plausible_server and app.config.plausible_domain:
+        ${ galaxy_client.config_plausible_analytics(app.config.plausible_server, app.config.plausible_domain) }
+    %endif
+    %if t.webapp.name == 'galaxy' and app.config.matomo_server and app.config.matomo_site_id:
+        ${ galaxy_client.config_matomo_analytics(app.config.matomo_server, app.config.matomo_site_id) }
+    %endif
 
 </%def>
 

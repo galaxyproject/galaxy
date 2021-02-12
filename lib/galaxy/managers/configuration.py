@@ -158,6 +158,10 @@ class ConfigSerializer(base.ModelSerializer):
             'datatypes_disable_auto': _use_config,
             'allow_user_dataset_purge': _defaults_to(False),  # schema default is True
             'ga_code': _use_config,
+            'plausible_server': _use_config,
+            'plausible_domain': _use_config,
+            'matomo_server': _use_config,
+            'matomo_site_id': _use_config,
             'enable_unique_workflow_defaults': _use_config,
             'enable_beta_markdown_export': _use_config,
             'simplified_workflow_run_ui': _use_config,
