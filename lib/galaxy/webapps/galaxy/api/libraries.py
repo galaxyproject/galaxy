@@ -138,14 +138,14 @@ class LibrariesController(BaseAPIController):
         return self.manager.delete(trans, id, undelete)
 
     @expose_api
-    def get_permissions(self, trans, id, **kwd):
+    def get_permissions(self, trans, encoded_library_id, **kwd):
         """
-        * GET /api/libraries/{id}/permissions
+        * GET /api/libraries/{encoded_library_id}/permissions
 
         Load all permissions for the given library id and return it.
 
-        :param  id:     the encoded id of the library
-        :type   id:     an encoded id string
+        :param  encoded_library_id:     the encoded id of the library
+        :type   encoded_library_id:     an encoded id string
 
         :param  scope:      either 'current' or 'available'
         :type   scope:      string
@@ -174,7 +174,7 @@ class LibrariesController(BaseAPIController):
 
         query = kwd.get('q', None)
 
-        return self.manager.get_permissions(trans, id, scope, is_library_access, page, page_limit, query)
+        return self.manager.get_permissions(trans, encoded_library_id, scope, is_library_access, page, page_limit, query)
 
     @expose_api
     def set_permissions(self, trans, encoded_library_id, payload: Dict[str, Any], **kwd):
