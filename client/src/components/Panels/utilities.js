@@ -77,10 +77,9 @@ export function filterTools(layout, results) {
 function normalize_results(results) {
     var norm_results = [];
     results.forEach((result) => {
+        norm_results.push(result);
         if (result.includes("/repos/")) {
             norm_results.push(result.split("/")[3]);
-        } else {
-            norm_results.push(result);
         }
     });
     return norm_results;
