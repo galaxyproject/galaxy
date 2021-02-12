@@ -1,7 +1,6 @@
 import axios from "axios";
 import { rethrowSimple } from "utils/simple-error";
 import { getAppRoot } from "onload/loadConfig";
-import $ from "jquery";
 
 export class Services {
     constructor(options = {}) {
