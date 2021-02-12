@@ -339,7 +339,9 @@ class JobHandlerQueue(Monitors):
                 .outerjoin(model.User) \
                 .filter(and_(*job_filter_conditions)) \
                 .order_by(model.Job.id).subquery()
-            jobs_to_check = self.sa_session.query(ranked).filter(ranked.c.rank <= 1).all()
+            jobs_to_check = self.sa_session.query(model.Job) \
+                .join(ranked, model.Job.id == ranked.c.id) \
+                .filter(ranked.c.rank <= 1).all()
             # Filter jobs with invalid input states
             jobs_to_check = self.__filter_jobs_with_invalid_input_states(jobs_to_check)
             # Fetch all "resubmit" jobs
