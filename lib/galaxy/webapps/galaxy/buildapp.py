@@ -248,6 +248,7 @@ def populate_api_routes(webapp, app):
     ]
 
     # Accesss HDA details via histories/{history_id}/contents/datasets/{hda_id}
+    # and HDCA details via histories/{history_id}/contents/dataset_collections/{hdca_id}
     webapp.mapper.resource("content_typed",
                            "{type:%s}s" % "|".join(valid_history_contents_types),
                            name_prefix="history_",
