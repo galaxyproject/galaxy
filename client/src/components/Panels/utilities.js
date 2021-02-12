@@ -79,7 +79,7 @@ function normalize_results(results) {
     results.forEach((result) => {
         norm_results.push(result);
         if (result.includes("/repos/")) {
-            norm_results.push(result.split("/")[3]);
+            norm_results.push(result.split("/repos/")[1].split("/")[2]);
         }
     });
     return norm_results;
