@@ -113,7 +113,7 @@ class MetadataCollection(Mapping):
             return self.spec[name].wrap(self.spec[name].default, object_session(self.parent))
         if name in self.parent._metadata:
             return self.parent._metadata[name]
-        raise AttributeError
+        return None
 
     def __setattr__(self, name, value):
         if name == "parent":
