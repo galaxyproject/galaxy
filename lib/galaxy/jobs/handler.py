@@ -341,7 +341,7 @@ class JobHandlerQueue(Monitors):
                 .order_by(model.Job.id).subquery()
             jobs_to_check = self.sa_session.query(model.Job) \
                 .join(ranked, model.Job.id == ranked.c.id) \
-                .filter(ranked.c.rank <= 1).all()
+                .filter(ranked.c.rank <= self.app.job_config.handler_ready_window_size).all()
             # Filter jobs with invalid input states
             jobs_to_check = self.__filter_jobs_with_invalid_input_states(jobs_to_check)
             # Fetch all "resubmit" jobs

@@ -328,6 +328,10 @@ runners:
     #pulsar_config: path/to/pulsar/app.yml
 
 handling:
+  #assign:
+  #  - db-skip-locked
+  #max_grab: 8
+  #ready_window_size: 100
   processes:
     handler0:
     handler1:

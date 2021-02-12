@@ -86,6 +86,9 @@ class ConfiguresHandlers:
             max_grab_str = config_element.attrib.get('max_grab', None)
             if max_grab_str:
                 handling_config_dict["max_grab"] = int(max_grab_str)
+            ready_window_size_str = config_element.attrib.get("ready_window_size", None)
+            if ready_window_size_str:
+                handling_config_dict["ready_window_size"] = int(ready_window_size_str)
 
         return handling_config_dict
 
