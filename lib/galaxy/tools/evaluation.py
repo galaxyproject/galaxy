@@ -540,13 +540,14 @@ class ToolEvaluator:
                 is_template = False
             else:
                 is_template = True
-            with tempfile.NamedTemporaryFile(dir=directory, delete=False) as temp:
+            with tempfile.NamedTemporaryFile(dir=directory, prefix="tool_env_", delete=False) as temp:
                 config_filename = temp.name
             self.__write_workdir_file(config_filename, environment_variable_template, param_dict, is_template=is_template, strip=environment_variable_def.get("strip", False))
             config_file_basename = os.path.basename(config_filename)
             # environment setup in job file template happens before `cd $working_directory`
-            environment_variable["value"] = '`cat "$_GALAXY_JOB_DIR/%s"`' % config_file_basename
+            environment_variable["value"] = '`cat "%s/%s"`' % (self.compute_environment.env_config_directory(), config_file_basename)
             environment_variable["raw"] = True
+            environment_variable["job_directory_path"] = config_filename
             environment_variables.append(environment_variable)
 
         home_dir = self.compute_environment.home_directory()

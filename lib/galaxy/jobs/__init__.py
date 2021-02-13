@@ -2586,6 +2586,10 @@ class SharedComputeEnvironment(SimpleComputeEnvironment):
     def working_directory(self):
         return self.job_wrapper.working_directory
 
+    def env_config_directory(self):
+        """Working directory (possibly as environment variable evaluation)."""
+        return "$_GALAXY_JOB_DIR"
+
     def new_file_path(self):
         return os.path.abspath(self.app.config.new_file_path)
 
