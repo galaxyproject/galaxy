@@ -205,6 +205,16 @@ class MutationDict(MutationObj, dict):
     def __setstate__(self, state):
         self.update(state)
 
+    def pop(self, *args, **kw):
+        value = super().pop(*args, **kw)
+        self.changed()
+        return value
+
+    def update(self, *args, **kwargs):
+        value = super().update(*args, **kwargs)
+        self.changed()
+        return value
+
 
 class MutationList(MutationObj, list):
     @classmethod
