@@ -1227,9 +1227,9 @@ model.FormDefinition.table = Table(
     Column("name", TrimmedString(255), nullable=False),
     Column("desc", TEXT),
     Column("form_definition_current_id", Integer, ForeignKey("form_definition_current.id", use_alter=True), index=True, nullable=False),
-    Column("fields", JSONType),
+    Column("fields", SimpleJSONType),
     Column("type", TrimmedString(255), index=True),
-    Column("layout", JSONType))
+    Column("layout", SimpleJSONType))
 
 model.FormValues.table = Table(
     "form_values", metadata,
@@ -1237,7 +1237,7 @@ model.FormValues.table = Table(
     Column("create_time", DateTime, default=now),
     Column("update_time", DateTime, default=now, onupdate=now),
     Column("form_definition_id", Integer, ForeignKey("form_definition.id"), index=True),
-    Column("content", JSONType))
+    Column("content", SimpleJSONType))
 
 model.Page.table = Table(
     "page", metadata,

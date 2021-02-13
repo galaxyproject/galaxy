@@ -1015,7 +1015,7 @@ def roundify(amount, sfs=2):
         return amount[0:sfs] + '0' * (len(amount) - sfs)
 
 
-def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', strip_null=False):
+def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', strip_null=False, log_exception=True):
     """
     Returns a Unicode string or None.
 
@@ -1041,8 +1041,9 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', strip_null=Fals
         if not isinstance(value, str):
             value = str(value, encoding, error)
     except Exception as e:
-        msg = "Value '{}' could not be coerced to Unicode: {}('{}')".format(repr(value), type(e).__name__, e)
-        log.exception(msg)
+        if log_exception:
+            msg = "Value '{}' could not be coerced to Unicode: {}('{}')".format(repr(value), type(e).__name__, e)
+            log.exception(msg)
         raise
     if strip_null:
         return value.replace('\0', '')
