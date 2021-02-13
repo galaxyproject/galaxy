@@ -335,13 +335,21 @@ class JobHandlerQueue(Monitors):
             if self.app.config.user_activation_on:
                 job_filter_conditions = job_filter_conditions + (
                     or_((model.Job.user_id == null()), (model.User.active == true())),)
-            ranked = self.sa_session.query(model.Job, rank).enable_eagerloads(False) \
+            if self.sa_session.bind.name == 'sqlite':
+                query_objects = (model.Job,)
+            else:
+                query_objects = (model.Job, rank)
+            ready_query = self.sa_session.query(*query_objects).enable_eagerloads(False) \
                 .outerjoin(model.User) \
                 .filter(and_(*job_filter_conditions)) \
-                .order_by(model.Job.id).subquery()
-            jobs_to_check = self.sa_session.query(model.Job) \
-                .join(ranked, model.Job.id == ranked.c.id) \
-                .filter(ranked.c.rank <= self.app.job_config.handler_ready_window_size).all()
+                .order_by(model.Job.id)
+            if self.sa_session.bind.name == 'sqlite':
+                jobs_to_check = ready_query.all()
+            else:
+                ranked = ready_query.subquery()
+                jobs_to_check = self.sa_session.query(model.Job) \
+                    .join(ranked, model.Job.id == ranked.c.id) \
+                    .filter(ranked.c.rank <= self.app.job_config.handler_ready_window_size).all()
             # Filter jobs with invalid input states
             jobs_to_check = self.__filter_jobs_with_invalid_input_states(jobs_to_check)
             # Fetch all "resubmit" jobs
