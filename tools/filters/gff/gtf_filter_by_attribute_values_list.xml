@@ -1,5 +1,8 @@
 <tool id="gtf_filter_by_attribute_values_list" name="Filter GTF data by attribute values_list" version="0.2">
     <description></description>
+    <requirements>
+        <requirement type="package" version="3.6">python</requirement>
+    </requirements>
     <command><![CDATA[
 python '$__tool_directory__/gtf_filter_by_attribute_values_list.py' '$input' $attribute_name '$ids' '$output'
     ]]></command>
