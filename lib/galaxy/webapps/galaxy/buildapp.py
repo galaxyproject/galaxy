@@ -1293,8 +1293,9 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
                               args=(statsd_host,
                                     conf.get('statsd_port', 8125),
                                     conf.get('statsd_prefix', 'galaxy'),
-                                    conf.get('statsd_influxdb', False)))
-        log.debug("Enabling 'statsd' middleware")
+                                    conf.get('statsd_influxdb', False),
+                                    conf.get('statsd_mock_calls', False)))
+        log.info("Enabling 'statsd' middleware")
     # If we're using remote_user authentication, add middleware that
     # protects Galaxy from improperly configured authentication in the
     # upstream server
