@@ -325,22 +325,31 @@ class JobHandlerQueue(Monitors):
                 .join(model.Dataset) \
                 .filter(and_(model.Job.state == model.Job.states.NEW,
                              model.Dataset.state.in_(model.Dataset.non_ready_states))).subquery()
+            rank = func.rank().over(partition_by=model.Job.table.c.user_id,
+                                    order_by=model.Job.table.c.id).label('rank')
+            job_filter_conditions = (
+                (model.Job.state == model.Job.states.NEW),
+                (model.Job.handler == self.app.config.server_name),
+                ~model.Job.table.c.id.in_(hda_not_ready),
+                ~model.Job.table.c.id.in_(ldda_not_ready))
             if self.app.config.user_activation_on:
-                jobs_to_check = self.sa_session.query(model.Job).enable_eagerloads(False) \
-                    .outerjoin(model.User) \
-                    .filter(and_((model.Job.state == model.Job.states.NEW),
-                                 or_((model.Job.user_id == null()), (model.User.active == true())),
-                                 (model.Job.handler == self.app.config.server_name),
-                                 ~model.Job.table.c.id.in_(hda_not_ready),
-                                 ~model.Job.table.c.id.in_(ldda_not_ready))) \
-                    .order_by(model.Job.id).all()
+                job_filter_conditions = job_filter_conditions + (
+                    or_((model.Job.user_id == null()), (model.User.active == true())),)
+            if self.sa_session.bind.name == 'sqlite':
+                query_objects = (model.Job,)
             else:
-                jobs_to_check = self.sa_session.query(model.Job).enable_eagerloads(False) \
-                    .filter(and_((model.Job.state == model.Job.states.NEW),
-                                 (model.Job.handler == self.app.config.server_name),
-                                 ~model.Job.table.c.id.in_(hda_not_ready),
-                                 ~model.Job.table.c.id.in_(ldda_not_ready))) \
-                    .order_by(model.Job.id).all()
+                query_objects = (model.Job, rank)
+            ready_query = self.sa_session.query(*query_objects).enable_eagerloads(False) \
+                .outerjoin(model.User) \
+                .filter(and_(*job_filter_conditions)) \
+                .order_by(model.Job.id)
+            if self.sa_session.bind.name == 'sqlite':
+                jobs_to_check = ready_query.all()
+            else:
+                ranked = ready_query.subquery()
+                jobs_to_check = self.sa_session.query(model.Job) \
+                    .join(ranked, model.Job.id == ranked.c.id) \
+                    .filter(ranked.c.rank <= self.app.job_config.handler_ready_window_size).all()
             # Filter jobs with invalid input states
             jobs_to_check = self.__filter_jobs_with_invalid_input_states(jobs_to_check)
             # Fetch all "resubmit" jobs

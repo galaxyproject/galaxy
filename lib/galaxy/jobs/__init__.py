@@ -281,6 +281,8 @@ class JobConfiguration(ConfiguresHandlers):
 
     DEFAULT_NWORKERS = 4
 
+    DEFAULT_HANDLER_READY_WINDOW_SIZE = 100
+
     JOB_RESOURCE_CONDITIONAL_XML = """<conditional name="__job_resource">
         <param name="__job_resource__select" type="select" label="Job Resource Parameters">
             <option value="no">Use default job resource parameters</option>
@@ -302,6 +304,7 @@ class JobConfiguration(ConfiguresHandlers):
         self.handler_assignment_methods = None
         self.handler_assignment_methods_configured = False
         self.handler_max_grab = None
+        self.handler_ready_window_size = None
         self.destinations = {}
         self.destination_tags = {}
         self.default_destination_id = None
@@ -392,6 +395,8 @@ class JobConfiguration(ConfiguresHandlers):
         log.info("Job handler assignment methods set to: %s", ', '.join(self.handler_assignment_methods))
         for tag, handlers in [(t, h) for t, h in self.handlers.items() if isinstance(h, list)]:
             log.info("Tag [%s] handlers: %s", tag, ', '.join(handlers))
+        self.handler_ready_window_size = int(handling_config_dict.get(
+            'ready_window_size', JobConfiguration.DEFAULT_HANDLER_READY_WINDOW_SIZE))
 
         # Parse environments
         job_metrics = self.app.job_metrics
@@ -546,6 +551,7 @@ class JobConfiguration(ConfiguresHandlers):
             self._set_default_handler_assignment_methods()
         else:
             self.app.application_stack.init_job_handling(self)
+        self.handler_ready_window_size = JobConfiguration.DEFAULT_HANDLER_READY_WINDOW_SIZE
         # Set the destination
         self.default_destination_id = 'local'
         self.destinations['local'] = [JobDestination(id='local', runner='local')]
