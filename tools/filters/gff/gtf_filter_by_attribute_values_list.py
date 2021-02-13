@@ -60,9 +60,8 @@ def gff_filter(gff_file, attribute_name, ids_file, output_file):
                 continue
             fields = line.split('\t')
             attributes = parse_gff_attributes(fields[8])
-            if (attribute_name in attributes) and (attributes[attribute_name] in ids_dict):
+            if attribute_name in attributes and attributes[attribute_name] in ids_dict:
                 output.write(line)
-        output.close()
 
 
 if __name__ == "__main__":
