@@ -244,7 +244,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         Lists all versions of this workflow.
         """
-        stored_workflow = self.workflow_manager.get_stored_accessible_workflow(trans, workflow_id, **kwds)
+        stored_workflow = self.workflow_manager.get_stored_accessible_workflow(trans, workflow_id)
         return [{'version': i, 'update_time': str(w.update_time), 'steps': len(w.steps)} for i, w in enumerate(reversed(stored_workflow.workflows))]
 
     @expose_api
