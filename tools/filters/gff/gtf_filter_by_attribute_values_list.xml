@@ -1,4 +1,4 @@
-<tool id="gtf_filter_by_attribute_values_list" name="Filter GTF data by attribute values_list" version="0.1">
+<tool id="gtf_filter_by_attribute_values_list" name="Filter GTF data by attribute values_list" version="0.2">
     <description></description>
     <command>
         python '$__tool_directory__/gtf_filter_by_attribute_values_list.py' '$input' '$attribute_name' '$ids' '$output'
