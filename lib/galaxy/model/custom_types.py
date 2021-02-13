@@ -123,6 +123,12 @@ class MutationObj(Mutable):
 
     And other minor changes to make it work for us.
     """
+
+    def __new__(cls, *args, **kwds):
+        tracked = super().__new__(cls, *args, **kwds)
+        tracked._key = None
+        return tracked
+
     @classmethod
     def coerce(cls, key, value):
         if isinstance(value, dict) and not isinstance(value, MutationDict):
