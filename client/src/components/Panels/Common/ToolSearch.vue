@@ -16,11 +16,11 @@ export default {
     props: {
         query: {
             type: String,
-            default: ''
+            default: "",
         },
         placeholder: {
             type: String,
-            default: "search tools"
+            default: "search tools",
         },
     },
     data() {
