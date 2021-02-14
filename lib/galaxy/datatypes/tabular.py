@@ -1272,6 +1272,7 @@ class MatrixMarket(TabularData):
     def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=5, **kwd):
         if dataset.has_data():
             with open(dataset.file_name) as dataset_fh:
+                l = ''
                 comment_lines = 0
                 for i, l in enumerate(dataset_fh):
                     if l.startswith('%'):
