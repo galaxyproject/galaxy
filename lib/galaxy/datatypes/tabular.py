@@ -1281,8 +1281,8 @@ class MatrixMarket(TabularData):
                 comment_lines = 0
                 if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
                     # If the dataset is larger than optional_metadata, just count comment lines.
-                    for line in dataset_fh:
-                        if line.startswith('%'):
+                    for l in dataset_fh:
+                        if l.startswith('%'):
                             comment_lines += 1
                         else:
                             # No more comments, and the file is too big to look at the whole thing. Give up.
