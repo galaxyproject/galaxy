@@ -1286,6 +1286,7 @@ class MatrixMarket(TabularData):
                     if line.startswith('%'):
                         comment_lines += 1
                     elif count_comments_only:
+                        data_lines = None
                         break
                     else:
                         data_lines += 1
@@ -1294,6 +1295,6 @@ class MatrixMarket(TabularData):
                 else:
                     dataset.metadata.delimiter = '\t'
             dataset.metadata.comment_lines = comment_lines
-            dataset.metadata.data_lines = data_lines + comment_lines if data_lines else None
+            dataset.metadata.data_lines = data_lines
             dataset.metadata.columns = 3
             dataset.metadata.column_types = ['int', 'int', 'float']
