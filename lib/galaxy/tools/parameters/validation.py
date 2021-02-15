@@ -41,6 +41,7 @@ class Validator(abc.ABC):
         return validator_types[_type].from_element(param, elem)
 
     def __init__(self, message, negate=False):
+        log.error("INIT msg %s neg %s" % (message, negate))
         self.message = message
         self.negate = util.asbool(negate)
         super().__init__()
@@ -52,12 +53,14 @@ class Validator(abc.ABC):
 
         return None if positive validation, otherwise a ValueError is raised
         """
+        log.error("VAL value %s" % value)
         if message is None:
             message = self.message
         log.error("validate %s %s" % (value, self.negate))
         if (not self.negate and value) or (self.negate and not value):
             return
         else:
+            # TODO message often makes not sense if negate=True
             raise ValueError(message)
         pass
 
@@ -84,6 +87,26 @@ class RegexValidator(Validator):
     Traceback (most recent call last):
         ...
     ValueError: Not gonna happen
+    >>>
+    >>> p = ToolParameter.build(None, XML('''
+    ... <param name="blah" type="text" value="10">
+    ...     <validator type="regex" message="Not gonna happen" negate="true">[Ff]oo</validator>
+    ... </param>
+    ... '''))
+    >>> t = p.validate("Foo")
+    Traceback (most recent call last):
+        ...
+    ValueError: Not gonna happen
+    >>> t = p.validate("foo")
+    Traceback (most recent call last):
+        ...
+    ValueError: Not gonna happen
+    >>> t = p.validate("Fop")
+    >>> t = p.validate(["Foo", "foo"])
+    Traceback (most recent call last):
+        ...
+    ValueError: Not gonna happen
+    >>> t = p.validate(["Fop", "Fop"])
     """
 
     @classmethod
@@ -95,7 +118,6 @@ class RegexValidator(Validator):
         # Compile later. RE objects used to not be thread safe. Not sure about
         # the sre module.
         self.expression = expression
-        self.invert = util.asbool(negate)
 
     def validate(self, value, trans=None):
         if not isinstance(value, list):
@@ -122,14 +144,29 @@ class ExpressionValidator(Validator):
     Traceback (most recent call last):
         ...
     ValueError: Not gonna happen
+    >>>
+    >>> p = ToolParameter.build(None, XML('''
+    ... <param name="blah" type="text" value="10">
+    ...     <validator type="expression" message="Not gonna happen" negate="true">value.lower() == "foo"</validator>
+    ... </param>
+    ... '''))
+    >>> t = p.validate("Foo")
+    Traceback (most recent call last):
+        ...
+    ValueError: Not gonna happen
+    >>> t = p.validate("foo")
+    Traceback (most recent call last):
+        ...
+    ValueError: Not gonna happen
+    >>> t = p.validate("Fop")
     """
 
     @classmethod
     def from_element(cls, param, elem):
-        return cls(elem.get('message'), elem.text, elem.get('substitute_value_in_message'))
+        return cls(elem.get('message'), elem.text, elem.get('substitute_value_in_message'), elem.get('negate', 'false'))
 
-    def __init__(self, message, expression, substitute_value_in_message):
-        super().__init__(message)
+    def __init__(self, message, expression, substitute_value_in_message, negate):
+        super().__init__(message, negate)
         # TODO 
         self.substitute_value_in_message = substitute_value_in_message
         # Save compiled expression, code objects are thread safe (right?)
@@ -143,13 +180,14 @@ class ExpressionValidator(Validator):
             evalresult = eval(self.expression, dict(value=value))
         except Exception:
             log.debug(f"Validator {self.expression} could not be evaluated on {str(value)}", exc_info=True)
-            super().validate(false, trans, message)
+            super().validate(False, trans, message)
         if not(evalresult):
-            super().validate(false, trans, message)
+            super().validate(False, trans, message)
         else:
-            super().validate(true, trans, message)
+            super().validate(True, trans, message)
 
 
+# TODO This could be a subclass of ExpressionValidator
 class InRangeValidator(Validator):
     """
     Validator that ensures a number is in a specified range
@@ -171,6 +209,22 @@ class InRangeValidator(Validator):
     Traceback (most recent call last):
         ...
     ValueError: Not gonna happen
+    >>>
+    >>> p = ToolParameter.build(None, XML('''
+    ... <param name="blah" type="integer" value="10">
+    ...     <validator type="in_range" message="Not gonna happen" min="10" exclude_min="true" max="20" negate="true"/>
+    ... </param>
+    ... '''))
+    >>> t = p.validate(10)
+    >>> t = p.validate(15)
+    Traceback (most recent call last):
+        ...
+    ValueError: Not gonna happen
+    >>> t = p.validate(20)
+    Traceback (most recent call last):
+        ...
+    ValueError: Not gonna happen
+    >>> t = p.validate(21)
     """
 
     @classmethod
@@ -188,8 +242,6 @@ class InRangeValidator(Validator):
         (1.e., min <= value <= max).  Combinations of exclude_min and exclude_max
         values are allowed.
         """
-        super().__init__(message or f"Value must be {op1} {self_min_str} and {op2} {self_max_str}", negate)
-
         self.min = float(range_min)
         self.exclude_min = util.asbool(exclude_min)
         self.max = float(range_max)
@@ -204,18 +256,21 @@ class InRangeValidator(Validator):
             op1 = '>'
         if self.exclude_max:
             op2 = '<'
+        super().__init__(message or f"Value must be {op1} {self_min_str} and {op2} {self_max_str}", negate)
 
     def validate(self, value, trans=None):
         if self.exclude_min:
-            super().validate(self.min < float(value), trans)
+            mincmp = self.min.__lt__
         else:
-            super().validate(self.min <= float(value), trans)
+            mincmp = self.min.__le__
         if self.exclude_max:
-            super().validate(float(value) < self.max, trans)
+            maxcmp = self.max.__gt__
         else:
-            super().validate(float(value) <= self.max, trans)
+            maxcmp = self.max.__ge__
+        super().validate(mincmp(float(value)) and maxcmp(float(value)), trans)
 
 
+# TODO This could be a subclass of InRangeValidator
 class LengthValidator(Validator):
     """
     Validator that ensures the length of the provided string (value) is in a specific range
@@ -232,128 +287,345 @@ class LengthValidator(Validator):
     >>> t = p.validate("f")
     Traceback (most recent call last):
         ...
-    ValueError: Must have length of at least 2
+    ValueError: Must have length of at least 2 and at most 8
     >>> t = p.validate("foobarbaz")
     Traceback (most recent call last):
         ...
-    ValueError: Must have length no more than 8
+    ValueError: Must have length of at least 2 and at most 8
+    >>>
+    >>> p = ToolParameter.build(None, XML('''
+    ... <param name="blah" type="text" value="foobar">
+    ...     <validator type="length" min="2" max="8" negate="true"/>
+    ... </param>
+    ... '''))
+    >>> t = p.validate("foo")
+    Traceback (most recent call last):
+        ...
+    ValueError: Must have length of at least 2 and at most 8
+    >>> t = p.validate("bar")
+    Traceback (most recent call last):
+        ...
+    ValueError: Must have length of at least 2 and at most 8
+    >>> t = p.validate("f")
+    >>> t = p.validate("foobarbaz")
     """
 
     @classmethod
     def from_element(cls, param, elem):
-        return cls(elem.get('message', None), elem.get('min', None), elem.get('max', None))
+        return cls(elem.get('message', None), elem.get('min', None), elem.get('max', None), elem.get('negate', 'false'))
 
-    def __init__(self, message, length_min, length_max):
-        super().__init__(message)
+    def __init__(self, message, length_min, length_max, negate):
+        super().__init__(message, negate)
         if length_min is not None:
-            length_min = int(length_min)
-        if length_max is not None:
-            length_max = int(length_max)
-        self.min = length_min
-        self.max = length_max
-
-    def validate(self, value, trans=None):
-        if self.min is not None and len(value) < self.min:
-            super().validate(false, trans, self.message or ("Must have length of at least %d" % self.min))
-        elif self.max is not None and len(value) > self.max:
-            super().validate(false, trans, self.message or ("Must have length no more than %d" % self.max))
+            self.min = int(length_min)
         else:
-            super().validate(true, trans)
+            self.min = float('-inf')
+        if length_max is not None:
+            self.max = int(length_max)
+        else:
+            self.max = float('inf')
+    
+    def validate(self, value, trans=None):
+        super().validate(self.min <= len(value) <= self.max, trans, self.message or ("Must have length of at least %d and at most %s" % (self.min, self.max)))
 
 
 class DatasetOkValidator(Validator):
     """
     Validator that checks if a dataset is in an 'ok' state
+
+    >>> from galaxy.datatypes.registry import example_datatype_registry_for_sample
+    >>> from galaxy.model import History, HistoryDatasetAssociation, set_datatypes_registry
+    >>> from galaxy.model.mapping import init
+    >>> from galaxy.util import XML
+    >>> from galaxy.tools.parameters.basic import ToolParameter
+    >>> 
+    >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
+    >>> hist = History()
+    >>> sa_session.add(hist)
+    >>> sa_session.flush()
+    >>> set_datatypes_registry(example_datatype_registry_for_sample())
+    >>> ok_hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='interval', create_dataset=True, sa_session=sa_session))
+    >>> ok_hda.set_dataset_state(model.Dataset.states.OK)
+    >>> notok_hda = hist.add_dataset(HistoryDatasetAssociation(id=2, extension='interval', create_dataset=True, sa_session=sa_session))
+    >>> # TODO I do not get 100% why for state!=OK the validator is called 
+    >>> # TODO because DataToolParameter.validate.do_validate calls the validator only of state=OK
+    >>> # TODO in this light I wonder about the use of this validator at all....
+    >>> notok_hda.set_dataset_state(model.Dataset.states.EMPTY)
+    >>> 
+    >>> p = ToolParameter.build(None, XML('''
+    ... <param name="blah" type="data">
+    ...     <validator type="dataset_ok_validator"/>
+    ... </param>
+    ... '''))
+    >>> t = p.validate(ok_hda)
+    >>> t = p.validate(notok_hda)
+    Traceback (most recent call last):
+        ...
+    ValueError: The selected dataset is still being generated, select another dataset or wait until it is completed
+    >>>
+    >>> p = ToolParameter.build(None, XML('''
+    ... <param name="blah" type="data">
+    ...     <validator type="dataset_ok_validator" negate="true"/>
+    ... </param>
+    ... '''))
+    >>> t = p.validate(ok_hda)
+    Traceback (most recent call last):
+        ...
+    ValueError: The selected dataset is still being generated, select another dataset or wait until it is completed
+    >>> t = p.validate(notok_hda)
     """
 
     @classmethod
     def from_element(cls, param, elem):
-        return cls(elem.get('message', None))
+        return cls(elem.get('message', None), elem.get('negate', 'false'))
 
     def validate(self, value, trans=None):
-        if value and value.state != model.Dataset.states.OK:
-            if self.message is None:
-                self.message = "The selected dataset is still being generated, select another dataset or wait until it is completed"
-            raise ValueError(self.message)
+        # TODO all Dataset Validators should be able to handle lists, or? 
+        if self.message is None:
+            self.message = "The selected dataset is still being generated, select another dataset or wait until it is completed"
+        super().validate(value and value.state == model.Dataset.states.OK)
 
 
 class DatasetEmptyValidator(Validator):
-    """Validator that checks if a dataset has a positive file size."""
+    """
+    Validator that checks if a dataset has a positive file size.
+    
+    >>> from galaxy.datatypes.registry import example_datatype_registry_for_sample
+    >>> from galaxy.model import History, HistoryDatasetAssociation, set_datatypes_registry
+    >>> from galaxy.model.mapping import init
+    >>> from galaxy.util import XML
+    >>> from galaxy.tools.parameters.basic import ToolParameter
+    >>> 
+    >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
+    >>> hist = History()
+    >>> sa_session.add(hist)
+    >>> sa_session.flush()
+    >>> set_datatypes_registry(example_datatype_registry_for_sample())
+    >>> empty_hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='interval', create_dataset=True, sa_session=sa_session))
+    >>> empty_hda.dataset.file_size = 0
+    >>> full_hda = hist.add_dataset(HistoryDatasetAssociation(id=2, extension='interval', create_dataset=True, sa_session=sa_session))
+    >>> full_hda.dataset.file_size = 1
+    >>> 
+    >>> p = ToolParameter.build(None, XML('''
+    ... <param name="blah" type="data">
+    ...     <validator type="empty_dataset"/>
+    ... </param>
+    ... '''))
+    >>> t = p.validate(full_hda)
+    >>> t = p.validate(empty_hda)
+    Traceback (most recent call last):
+        ...
+    ValueError: The selected dataset is empty, this tool expects non-empty files.
+    >>> 
+    >>> p = ToolParameter.build(None, XML('''
+    ... <param name="blah" type="data">
+    ...     <validator type="empty_dataset" negate="true"/>
+    ... </param>
+    ... '''))
+    >>> t = p.validate(full_hda)
+    Traceback (most recent call last):
+        ...
+    ValueError: The selected dataset is empty, this tool expects non-empty files.
+    >>> t = p.validate(empty_hda)
+    """
 
     @classmethod
     def from_element(cls, param, elem):
-        return cls(elem.get('message', None))
+        return cls(elem.get('message', "The selected dataset is empty, this tool expects non-empty files."), elem.get('negate', 'false'))
 
     def validate(self, value, trans=None):
-        if value:
-            if value.get_size() == 0:
-                if self.message is None:
-                    self.message = "The selected dataset is empty, this tool expects non-empty files."
-                raise ValueError(self.message)
+        super().validate(not(value and value.get_size() == 0))
 
 
 class DatasetExtraFilesPathEmptyValidator(Validator):
-    """Validator that checks if a dataset's extra_files_path exists and is not empty."""
+    """
+    Validator that checks if a dataset's extra_files_path exists and is not empty.
+    
+    >>> from galaxy.datatypes.registry import example_datatype_registry_for_sample
+    >>> from galaxy.model import History, HistoryDatasetAssociation, set_datatypes_registry
+    >>> from galaxy.model.mapping import init
+    >>> from galaxy.util import XML
+    >>> from galaxy.tools.parameters.basic import ToolParameter
+    >>> 
+    >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
+    >>> hist = History()
+    >>> sa_session.add(hist)
+    >>> sa_session.flush()
+    >>> set_datatypes_registry(example_datatype_registry_for_sample())
+    >>> has_extra_hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='interval', create_dataset=True, sa_session=sa_session))
+    >>> has_extra_hda.dataset.file_size = 10
+    >>> has_extra_hda.dataset.total_size = 15
+    >>> has_no_extra_hda = hist.add_dataset(HistoryDatasetAssociation(id=2, extension='interval', create_dataset=True, sa_session=sa_session))
+    >>> has_no_extra_hda.dataset.file_size = 10
+    >>> has_no_extra_hda.dataset.total_size = 10
+    >>> 
+    >>> p = ToolParameter.build(None, XML('''
+    ... <param name="blah" type="data">
+    ...     <validator type="empty_extra_files_path"/>
+    ... </param>
+    ... '''))
+    >>> t = p.validate(has_extra_hda)
+    >>> t = p.validate(has_no_extra_hda)
+    Traceback (most recent call last):
+        ...
+    ValueError: The selected dataset's extra_files_path directory is empty or does not exist, this tool expects non-empty extra_files_path directories associated with the selected input.
+    >>> 
+    >>> p = ToolParameter.build(None, XML('''
+    ... <param name="blah" type="data">
+    ...     <validator type="empty_extra_files_path" negate="true"/>
+    ... </param>
+    ... '''))
+    >>> t = p.validate(has_extra_hda)
+    Traceback (most recent call last):
+        ...
+    ValueError: The selected dataset's extra_files_path directory is empty or does not exist, this tool expects non-empty extra_files_path directories associated with the selected input.
+    >>> t = p.validate(has_no_extra_hda)
+    """
 
     @classmethod
     def from_element(cls, param, elem):
-        return cls(elem.get('message', None))
+        return cls(elem.get('message', "The selected dataset's extra_files_path directory is empty or does not exist, this tool expects non-empty extra_files_path directories associated with the selected input."), elem.get('negate', 'false'))
 
     def validate(self, value, trans=None):
-        if value:
-            if value.get_total_size() == value.get_size():
-                if self.message is None:
-                    self.message = "The selected dataset's extra_files_path directory is empty or does not exist, this tool expects non-empty extra_files_path directories associated with the selected input."
-                raise ValueError(self.message)
+        super().validate(not(value and value.get_total_size() == value.get_size()))
 
 
 class MetadataValidator(Validator):
     """
     Validator that checks for missing metadata
+
+    >>> from galaxy.datatypes.registry import example_datatype_registry_for_sample
+    >>> from galaxy.model import History, HistoryDatasetAssociation, set_datatypes_registry
+    >>> from galaxy.model.mapping import init
+    >>> from galaxy.util import XML
+    >>> from galaxy.tools.parameters.basic import ToolParameter
+    >>> 
+    >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
+    >>> hist = History()
+    >>> sa_session.add(hist)
+    >>> sa_session.flush()
+    >>> set_datatypes_registry(example_datatype_registry_for_sample())
+    >>> hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='interval', create_dataset=True, sa_session=sa_session))
+    >>> hda.set_dataset_state(model.Dataset.states.OK)
+    >>> # TODO I did not find a way to remove a metadata from the hda, therefore I used two parameters, ideas?
+    >>> p = ToolParameter.build(None, XML('''
+    ... <param name="blah" type="data">
+    ...     <validator type="metadata" check="dbkey" skip="absent_metadata"/>
+    ... </param>
+    ... '''))
+    >>> p2 = ToolParameter.build(None, XML('''
+    ... <param name="blah" type="data">
+    ...     <validator type="metadata" check="absent_metadata" skip="dbkey"/>
+    ... </param>
+    ... '''))
+    >>> t = p.validate(hda)
+    >>> t = p2.validate(hda)
+    Traceback (most recent call last):
+        ...
+    ValueError: Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes
+    >>> p = ToolParameter.build(None, XML('''
+    ... <param name="blah" type="data">
+    ...     <validator type="metadata" check="dbkey" skip="absent_metadata" negate="true"/>
+    ... </param>
+    ... '''))
+    >>> p2 = ToolParameter.build(None, XML('''
+    ... <param name="blah" type="data">
+    ...     <validator type="metadata" check="absent_metadata" skip="dbkey" negate="true"/>
+    ... </param>
+    ... '''))
+    >>> t = p.validate(hda)
+    Traceback (most recent call last):
+        ...
+    ValueError: Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes
+    >>> t = p2.validate(hda)
     """
     requires_dataset_metadata = True
 
     @classmethod
     def from_element(cls, param, elem):
-        return cls(message=elem.get('message', None), check=elem.get('check', ""), skip=elem.get('skip', ""))
+        return cls(message=elem.get('message', "Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes"),
+                   check=elem.get('check', ""), 
+                   skip=elem.get('skip', ""),
+                   negate=elem.get('negate', 'false'))
 
-    def __init__(self, message=None, check="", skip=""):
-        super().__init__(message)
+    def __init__(self, message=None, check="", skip="", negate='false'):
+        log.error("MetadataValidator")
+        super().__init__(message, negate)
         self.check = check.split(",")
         self.skip = skip.split(",")
 
     def validate(self, value, trans=None):
-        if value:
-            if not isinstance(value, model.DatasetInstance):
-                raise ValueError('A non-dataset value was provided.')
-            if value.missing_meta(check=self.check, skip=self.skip):
-                if self.message is None:
-                    self.message = "Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes"
-                raise ValueError(self.message)
+        log.error("VAL value %s" % value)
+        
+        # TODO why this validator checks for isinstance(value, model.DatasetInstance)
+        super().validate( value and isinstance(value, model.DatasetInstance) and not value.missing_meta(check=self.check, skip=self.skip) )
 
 
 class UnspecifiedBuildValidator(Validator):
     """
     Validator that checks for dbkey not equal to '?'
+
+    >>> from galaxy.datatypes.registry import example_datatype_registry_for_sample
+    >>> from galaxy.model import History, HistoryDatasetAssociation, set_datatypes_registry
+    >>> from galaxy.model.mapping import init
+    >>> from galaxy.util import XML
+    >>> from galaxy.tools.parameters.basic import ToolParameter
+    >>> 
+    >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
+    >>> hist = History()
+    >>> sa_session.add(hist)
+    >>> sa_session.flush()
+    >>> set_datatypes_registry(example_datatype_registry_for_sample())
+    >>> has_dbkey_hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='interval', create_dataset=True, sa_session=sa_session))
+    >>> has_dbkey_hda.set_dataset_state(model.Dataset.states.OK)
+    >>> has_dbkey_hda.metadata.dbkey = 'hg19'
+    >>> has_no_dbkey_hda = hist.add_dataset(HistoryDatasetAssociation(id=2, extension='interval', create_dataset=True, sa_session=sa_session))
+    >>> has_no_dbkey_hda.set_dataset_state(model.Dataset.states.OK)
+    >>> 
+    >>> p = ToolParameter.build(None, XML('''
+    ... <param name="blah" type="data">
+    ...     <validator type="unspecified_build"/>
+    ... </param>
+    ... '''))
+    >>> t = p.validate(has_dbkey_hda)
+    >>> t = p.validate(has_no_dbkey_hda)
+    Traceback (most recent call last):
+        ...
+    ValueError: Unspecified genome build, click the pencil icon in the history item to set the genome build
+    >>> 
+    >>> p = ToolParameter.build(None, XML('''
+    ... <param name="blah" type="data">
+    ...     <validator type="unspecified_build" negate="true"/>
+    ... </param>
+    ... '''))
+    >>> t = p.validate(has_dbkey_hda)
+    Traceback (most recent call last):
+        ...
+    ValueError: Unspecified genome build, click the pencil icon in the history item to set the genome build
+    >>> t = p.validate(has_no_dbkey_hda)
     """
     requires_dataset_metadata = True
 
     @classmethod
     def from_element(cls, param, elem):
-        return cls(elem.get('message', "Unspecified genome build, click the pencil icon in the history item to set the genome build"))
+        return cls(elem.get('message', "Unspecified genome build, click the pencil icon in the history item to set the genome build"),
+                   elem.get('negate', 'false'))
 
     def validate(self, value, trans=None):
         # if value is None, we cannot validate
         if value:
             dbkey = value.metadata.dbkey
+            # TODO can dbkey really be a list?
             if isinstance(dbkey, list):
                 dbkey = dbkey[0]
-            if dbkey == '?':
-                raise ValueError(self.message)
+            super().validate(dbkey != '?')            
 
 
 class NoOptionsValidator(Validator):
-    """Validator that checks for empty select list"""
+    """
+    Validator that checks for empty select list
+
+    """
 
     @classmethod
     def from_element(cls, param, elem):
@@ -365,7 +637,10 @@ class NoOptionsValidator(Validator):
 
 
 class EmptyTextfieldValidator(Validator):
-    """Validator that checks for empty text field"""
+    """
+    Validator that checks for empty text field
+    
+    """
 
     @classmethod
     def from_element(cls, param, elem):
@@ -374,7 +649,7 @@ class EmptyTextfieldValidator(Validator):
     def validate(self, value, trans=None):
         if value == '':
             if self.message is None:
-                self.message = "
+                self.message = ""
             raise ValueError(self.message)
 
 
@@ -562,7 +837,7 @@ class MetadataInRangeValidator(InRangeValidator):
     """
     validator that ensures metadata is in a specified range
     """
-    requires_dataset_metadata = true
+    requires_dataset_metadata = True
 
     @classmethod
     def from_element(cls, param, elem):
