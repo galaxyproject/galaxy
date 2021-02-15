@@ -73,9 +73,7 @@ var LibraryDatasetView = Backbone.View.extend({
         var self = this;
         this.model.fetch({
             success: function () {
-                if (self.options.show_permissions) {
-                    self.showPermissions();
-                } else if (self.options.show_version) {
+                if (self.options.show_version) {
                     self.fetchVersion();
                 } else {
                     self.render();
@@ -489,7 +487,7 @@ var LibraryDatasetView = Backbone.View.extend({
                         </button>
                     <% } %>
                     <% if (item.get("can_user_manage")) { %>
-                        <a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>/permissions">
+                        <a href="<% rootPath %>/library/folders/permissions/<%- item.get("folder_id") %>/dataset/<%- item.id %>">
                             <button data-toggle="tooltip" data-placement="top" title="Manage permissions"
                                 class="btn btn-secondary toolbtn_change_permissions toolbar-item mr-1"
                                 type="button">
