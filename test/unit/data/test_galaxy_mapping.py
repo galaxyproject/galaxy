@@ -384,6 +384,7 @@ class MappingTests(BaseModelTestCase):
         d = self.model.HistoryDatasetAssociation(extension="interval", metadata=metadata, sa_session=self.model.session)
         assert d.metadata.chromCol == 1
         assert d.metadata.anyAttribute is None
+        assert d.metadata.items()
 
     def test_jobs(self):
         model = self.model

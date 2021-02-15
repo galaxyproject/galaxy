@@ -113,8 +113,12 @@ class MetadataCollection(Mapping):
             return self.spec[name].wrap(self.spec[name].default, object_session(self.parent))
         if name in self.parent._metadata:
             return self.parent._metadata[name]
-        # Instead of raising an AttributeError for non-existing metadata, we return None
-        return None
+        try:
+            attr = Mapping.__getattribute__(self, name)
+        except AttributeError:
+            # Instead of raising an AttributeError for non-existing metadata, we return None
+            return None
+        return attr
 
     def __setattr__(self, name, value):
         if name == "parent":
