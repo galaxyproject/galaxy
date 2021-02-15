@@ -2664,7 +2664,7 @@ class Dataset(StorableObject, RepresentById, _HasTable):
 
     def get_size(self, nice_size=False):
         """Returns the size of the data on disk"""
-        if self.file_size:
+        if self.file_size is not None:
             if nice_size:
                 return galaxy.util.nice_size(self.file_size)
             else:
@@ -2682,7 +2682,7 @@ class Dataset(StorableObject, RepresentById, _HasTable):
         calls to get_total_size or set_total_size - potentially avoiding both a database flush and check against
         the file system.
         """
-        if not self.file_size:
+        if self.file_size is not None:
             self.file_size = self._calculate_size()
             if no_extra_files:
                 self.total_size = self.file_size
