@@ -1,5 +1,5 @@
 import deepEqual from "deep-equal";
-import { isObservable, partition, merge, concat, of } from "rxjs";
+import { isObservable, partition, merge, concat, of, pipe } from "rxjs";
 import { tap, map, switchMap, debounceTime, distinctUntilChanged, pluck, filter } from "rxjs/operators";
 import { matchesSelector } from "pouchdb-selector-core";
 import { find } from "./find";
@@ -68,6 +68,37 @@ export const monitorQuery = (cfg = {}) => (request$) => {
             return concat(initial$, updates$);
         })
     );
+};
+
+// prettier-ignore
+export const singleUpdateResult = () => {
+    return pipe(
+        map(update => {
+            const { action, initialMatches = [], doc = null } = update;
+
+            // if no match, result is undefined
+            let result = null;
+
+            switch (action) {
+                case ACTIONS.INITIAL:
+                    if (initialMatches.length) {
+                        result = initialMatches[0];
+                    }
+                    break;
+                case ACTIONS.REMOVE:
+                    result = null;
+                    break;
+                case ACTIONS.UPDATE:
+                case ACTIONS.ADD:
+                    if (doc) {
+                        result = doc;
+                    }
+                    break;
+            }
+
+            return result;
+        })
+    )
 };
 
 export const ACTIONS = {

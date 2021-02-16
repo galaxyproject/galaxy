@@ -1354,6 +1354,38 @@ This tag set defines the tool's input parameters for executing the tool via the
 functional test framework. See [test](#tool-tests-test) documentation for
 some simple examples of parameters.
 
+### Parameter Types
+
+#### ``text``, ``integer``, and ``float``
+
+Values for these parameters are simply given by the desired value.
+
+#### ``boolean``
+
+The value of the test parameter should be set to `true` or `false` corresponding
+to the cases that the parameter is checked or not. Alternatively the value
+specified as `truevalue` or `falsevalue` can be given.
+
+#### ``data``
+
+Data input parameters can be given as a file name. The file should exist in the
+`test-data` folder. Multiple files can be specified as comma separated list.
+
+#### ``select``
+
+The value of a select parameter should be specified as the value of one of the
+legal options. If more than one option is selected (`multiple="true"`) they
+should be given as comma separated list. For optional selects
+(`optional="true"`) the case that no option is selected can be specified with
+`value=""`.
+
+While in general it is preferred to specify the selected cases by their values it
+is also possible to specify them by their name (i.e. the content of the
+`option` tag that is shown to the user). One use case is a dynamic select that is
+generated from a data table with two columns: name and value where the value is
+a path. Since the path changes with the test environment it can not be used to
+select an option for a test.
+
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
@@ -2383,8 +2415,8 @@ The XML configuration is relatively trivial for sections:
 
 ```xml
 <inputs>
-    <section name="adv" title="Advanced Options" expanded="false">
-        <param name="plot_color" type="color" label="Track color" />
+    <section name="section_name" title="Section Title" >
+        <param name="parameter_name" type="text" label="A parameter  label" />
     </section>
 </inputs>
 ```
@@ -2393,7 +2425,44 @@ In your command template, you'll need to include the section name to access the
 variable:
 
 ```
---color $adv.plot_color
+$section_name.parameter_name
+```
+
+In output filters sections are represented as dictionary with the same name as the section:
+
+```
+<filter>section_name['parameter_name']</filter>
+```
+
+In order to reference parameters in sections from tags in the `<outputs>` section, e.g. in the `format_source` attribute of `<data>` tags, the syntax is:
+
+```
+<data name="output" format_source="section_name|parameter_name" metadata_source="section_name|parameter_name"/>
+```
+
+Until profile 21.01 `parameter_name` was sufficient (https://github.com/galaxyproject/galaxy/pull/9493/files).
+
+Note that references to other parameters in the `<inputs>` section are only possible if the reference is in the same section or its parents (and is defined earlier), therefore only `parameter_name` is used.
+
+```
+    <param name="foo" type="data" format="tabular"/>
+    <param name="bar" type="data_column" data_ref="foo"/>
+    <section>
+        <param name="qux" type="data_column" data_ref="foo"/>
+        <param name="foo" type="data" format="tabular"/>
+        <param name="baz" type="data_column" data_ref="foo"/>
+    </section>
+```
+
+In the above example `bar` and `qux` will refer to the first foo outside of the section and `baz` to the `foo` inside the section. This illustrates why non-unique parameter names are strongly discouraged. 
+
+The following will not work:
+
+```
+    <section>
+        <param name="foo" type="data" format="tabular"/>
+    </section>
+    <param name="bar" type="data_column" data_ref="foo"/>
 ```
 
 Further examples can be found in the [test case](https://github.com/galaxyproject/galaxy/blob/master/test/functional/tools/section.xml) from [pull request #35](https://github.com/galaxyproject/galaxy/pull/35).
@@ -3504,10 +3573,61 @@ target file.</xs:documentation>
 
       <xs:documentation xml:lang="en"><![CDATA[
 
-See the
+This tag set is contained within the ``<param>`` tag set - it applies a
+validator to the containing parameter. Tool submission will fail if a
+single validator fails. See the
 [annotation_profiler](https://github.com/galaxyproject/tools-devteam/blob/master/tools/annotation_profiler/annotation_profiler.xml)
-tool for an example of how to use this tag set. This tag set is contained within
-the ``<param>`` tag set - it applies a validator to the containing parameter.
+tool for an example of how to use this tag set.
+
+Note that validators for parameters with ``optional="true"`` are not
+executed if no value is given.
+
+### Generic validators
+
+- ``expression``: Check if a one line python expression given expression
+evaluates to True. The expression is given is the content of the validator tag.
+
+### Validators for ``data`` and ``data_collection`` parameters
+
+In case of ``data_collection`` parameters and
+``data`` parameters with ``multiple="true"`` these validators are executed
+separately for each of the contained data sets. Note that, for ``data``
+parameters a ``metadata`` validator is added automatically.
+
+- ``metadata``: Check for missing metadata.
+- ``unspecified_build``: Check of a build is defined.
+- ``dataset_ok_validator``: Check if the data set is in state OK.
+- ``dataset_metadata_in_range``: Check if a numeric metadata value is within
+a given range.
+- ``dataset_metadata_in_file``: Check if a metadata value is contained in a
+specific column of another data set.
+- ``dataset_metadata_in_data_table`` (``dataset_metadata_not_in_data_table``):
+Check if a metadata value is contained in a column of a data table.
+
+### Validators for textual inputs (``text``, ``select``, ...)
+
+``regex``: Check if a regular expression **matches** the value, i.e. appears
+at the beginning of the value. To enforce a match of the complete value use
+``$`` at the end of the expression. The expression is given is the content 
+of the validator tag. Note that for ``selects`` each option is checked
+separately.
+
+For selects (in particular with dynamically defined options) the following
+validator is useful:
+
+``no_options``: Check if options are available for a ``select`` parameter.
+Useful for parameters with dynamically defined options.
+
+For ``text`` inputs the following validators are useful:
+
+``length``: Check if the length of the value is within a range.
+``empty_field``: Check if the sting is not empty
+``value_in_data_table`` (``value_not_in_data_table``): Check if the value is
+contained in a column of a given data table.
+
+### Validators for numeric inputs (``integer``, ``float``)
+
+``in_range``: Check if the value is in a given range.
 
 ### Examples
 
@@ -4385,6 +4505,7 @@ parameters appear as booleans, not the value of their ``truevalue`` and
 appear as ``$options.selection_mode`` in Cheetah. Similarly ``options["vcf_output"]``
 would appear as ``$options.vcf_output`` having the values ``'--vcf'`` when true and
 ``''`` when false in Cheetah.
+Note that also parameters in sections are accessed via a dictionary.
 
 ### Example
 

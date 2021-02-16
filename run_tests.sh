@@ -149,6 +149,10 @@ Extra options:
  --verbose_errors      Force some tests produce more verbose error reporting.
  --no_cleanup          Do not delete temp files for Python functional tests
                        (-toolshed, -framework, etc...)
+ --coverage            Generate a test coverage report. This option currently
+                       should work with every test that uses pytest, but the
+                       results may not be reliable with selenium or other
+                       frameworks that primarily test the client.
  --debug               On python test error or failure invoke a pdb shell for
                        interactive debugging of the test
  --report_file         Path of HTML report to produce (for Python Galaxy
@@ -506,7 +510,7 @@ do
           shift
           ;;
       -c|--coverage)
-          # Must have coverage installed (try `which coverage`) - only valid with --unit
+          # Must have coverage installed (try `which coverage`) - only works with pytest
           # for now. Would be great to get this to work with functional tests though.
           coverage_arg="--with-coverage"
           shift

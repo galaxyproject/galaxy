@@ -16,7 +16,8 @@ class TagsController(BaseAPIController, UsesTagsMixin):
     @expose_api
     def update(self, trans, payload, **kwd):
         """
-        *PUT /api/tags/
+        PUT /api/tags/
+
         Apply a new set of tags to an item; previous tags are deleted.
         """
         item_id = payload.get("item_id")

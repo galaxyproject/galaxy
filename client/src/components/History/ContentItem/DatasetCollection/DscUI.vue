@@ -6,9 +6,9 @@
         class="dataset dataset-collection collapsed"
         :class="{ selected }"
         :data-state="dsc.state"
-        @keydown.arrow-right.self.stop="eventHub.$emit('selectCollection', dsc)"
+        @keydown.arrow-right.self.stop="$emit('viewCollection')"
         @keydown.space.self.stop.prevent="$emit('update:selected', !selected)"
-        @click.stop="eventHub.$emit('selectCollection', dsc)"
+        @click.stop="$emit('viewCollection')"
     >
         <nav class="d-flex content-top-menu align-items-center justify-content-between">
             <div class="d-flex mr-1 align-items-center" @click.stop>
@@ -27,7 +27,7 @@
                     state="hidden"
                     title="Unhide"
                     icon="fa fa-eye-slash"
-                    @click.stop="$emit('unhideCollection')"
+                    @click.stop="$emit('unhide')"
                 />
 
                 <StateBtn
@@ -35,7 +35,7 @@
                     state="ok"
                     title="Collection"
                     icon="fas fa-folder"
-                    @click.stop="$emit('selectCollection', dsc)"
+                    @click.stop="$emit('viewCollection')"
                 />
             </div>
 
@@ -47,11 +47,26 @@
                 </span>
             </h5>
 
-            <DscMenu class="content-item-menu" v-on="$listeners" />
+            <slot name="menu">
+                <DscMenu v-if="!dsc.deleted" class="content-item-menu" v-on="$listeners" />
+            </slot>
+
+            <StateBtn
+                v-if="dsc.deleted"
+                class="px-1"
+                state="deleted"
+                title="Undelete"
+                icon="fas fa-trash-restore"
+                @click.stop="$emit('undelete')"
+            />
         </nav>
 
+        <!--- read-only tags with name: prefix -->
+        <div v-if="dsc.nameTags.length" class="nametags p-1">
+            <Nametag v-for="tag in dsc.nameTags" :key="tag" :tag="tag" />
+        </div>
+
         <JobStateProgress class="m-2" v-if="dsc.jobSummary" :summary="dsc.jobSummary" />
-        <div v-else>No summary</div>
     </div>
 </template>
 
@@ -60,27 +75,20 @@ import { DatasetCollection } from "../../model/DatasetCollection";
 import { StatusIcon, StateBtn } from "../../StatusIcon";
 import JobStateProgress from "./JobStateProgress";
 import DscMenu from "./DscMenu";
+import { Nametag } from "components/Nametags";
 
 export default {
-    inject: ["listState", "STATES"],
     components: {
         StatusIcon,
         StateBtn,
         JobStateProgress,
         DscMenu,
+        Nametag,
     },
     props: {
         dsc: { type: DatasetCollection, required: true },
         selected: { type: Boolean, required: false, default: false },
-        showHid: { type: Boolean, required: false, default: true },
-    },
-    computed: {
-        counter() {
-            return this.showHid ? this.dsc.hid : "";
-        },
-        showSelection() {
-            return this.listState.showSelection;
-        },
+        showSelection: { type: Boolean, required: false, default: false },
     },
     methods: {
         onStatusClick() {

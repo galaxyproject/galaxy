@@ -1,5 +1,3 @@
-from collections import OrderedDict
-
 from galaxy.util.dictifiable import Dictifiable
 from .output_actions import ToolOutputActionGroup
 from .output_collection_def import dataset_collector_descriptions_from_output_dict
@@ -25,7 +23,7 @@ class ToolOutput(ToolOutputBase):
     Represents an output datasets produced by a tool. For backward
     compatibility this behaves as if it were the tuple::
 
-      (format, metadata_source, parent)
+    (format, metadata_source, parent)
     """
 
     dict_collection_visible_keys = ['name', 'format', 'label', 'hidden', 'output_type', 'format_source',
@@ -123,15 +121,17 @@ class ToolOutputCollection(ToolOutputBase):
     Represents a HistoryDatasetCollectionAssociation of output datasets produced
     by a tool.
 
-    <outputs>
-      <collection type="list" label="${tool.name} on ${on_string} fasta">
-        <discover_datasets pattern="__name__" ext="fasta" visible="True" directory="outputFiles" />
-      </collection>
-      <collection type="paired" label="${tool.name} on ${on_string} paired reads">
-        <data name="forward" format="fastqsanger" />
-        <data name="reverse" format="fastqsanger"/>
-      </collection>
-    <outputs>
+    .. code-block::
+
+        <outputs>
+        <collection type="list" label="${tool.name} on ${on_string} fasta">
+            <discover_datasets pattern="__name__" ext="fasta" visible="True" directory="outputFiles" />
+        </collection>
+        <collection type="paired" label="${tool.name} on ${on_string} paired reads">
+            <data name="forward" format="fastqsanger" />
+            <data name="reverse" format="fastqsanger"/>
+        </collection>
+        <outputs>
     """
     dict_collection_visible_keys = ['name', 'format', 'label', 'hidden', 'output_type', 'default_format',
                                     'default_format_source', 'default_metadata_source', 'inherit_format', 'inherit_metadata']
@@ -154,7 +154,7 @@ class ToolOutputCollection(ToolOutputBase):
         self.collection = True
         self.default_format = default_format
         self.structure = structure
-        self.outputs = OrderedDict()
+        self.outputs = {}
 
         self.inherit_format = inherit_format
         self.inherit_metadata = inherit_metadata

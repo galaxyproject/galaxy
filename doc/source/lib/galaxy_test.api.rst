@@ -113,6 +113,14 @@ galaxy\_test.api.test\_libraries module
    :undoc-members:
    :show-inheritance:
 
+galaxy\_test.api.test\_licenses module
+--------------------------------------
+
+.. automodule:: galaxy_test.api.test_licenses
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy\_test.api.test\_page\_revisions module
 ---------------------------------------------
 

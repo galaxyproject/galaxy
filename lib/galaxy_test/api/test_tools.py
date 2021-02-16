@@ -1217,7 +1217,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         tool_test_dicts = [{
             "inputs": {
                 "input": ["simple_line.txt"],
-                "index": ["hg18"],
+                "index": ["hg18_value"],
             },
             "outputs": {},
             "required_files": [['simple_line.txt', {'value': 'simple_line.txt', 'dbkey': 'hg18'}]],
@@ -1235,7 +1235,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         tool_test_dicts = [{
             "inputs": {
                 "input": ["simple_line.txt"],
-                "index": ["hg18"],
+                "index": ["hg18_value"],
             },
             "outputs": {},
             "required_files": [['simple_line.txt', {'value': 'simple_line.txt', 'dbkey': 'hgnot18'}]],

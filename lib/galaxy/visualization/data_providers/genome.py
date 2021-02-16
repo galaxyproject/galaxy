@@ -586,6 +586,7 @@ class VcfDataProvider(GenomeDataProvider):
 
     Payload format: An array of entries for each locus in the file. Each array
     has the following entries:
+
         1. GUID (unused)
         2. location (0-based)
         3. reference base(s)
@@ -594,7 +595,8 @@ class VcfDataProvider(GenomeDataProvider):
         6. whether variant passed filter
         7. sample genotypes -- a single string with samples separated by commas; empty string
            denotes the reference genotype
-        8-end: allele counts for each alternative
+        8. allele counts for each alternative
+
     """
 
     col_name_data_attr_mapping: Dict[Union[str, int], Dict] = {'Qual': {'index': 6, 'name': 'Qual'}}

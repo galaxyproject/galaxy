@@ -112,14 +112,14 @@ class NavigatesGalaxy(HasDriver):
 
     In most cases, methods for interacting with Galaxy components that appear in
     multiple tests or applications should be refactored into this class for now.
-    Keep in mind that this class is used outside the context of ``TestCase``s as
+    Keep in mind that this class is used outside the context of ``TestCase`` s as
     well - so some methods more explicitly related to test data or assertion checking
     may make more sense in SeleniumTestCase for instance.
 
     Some day this class will likely be split up into smaller mixins for particular
     components of Galaxy, but until that day the best practice is to prefix methods
     for driving or querying the interface with the name of the component or page
-    the method operates on. These serve as psedu-namespaces until we decompose this
+    the method operates on. These serve as pseudo-namespaces until we decompose this
     class. For instance, the method for clicking an option in the workflow editor is
     workflow_editor_click_option instead of click_workflow_editor_option.
     """
@@ -517,14 +517,24 @@ class NavigatesGalaxy(HasDriver):
         center_element = self.driver.find_element_by_css_selector("#center")
         action_chains.move_to_element(center_element).click().perform()
 
-    def perform_upload(self, test_path, ext=None, genome=None, ext_all=None, genome_all=None):
+    def perform_upload(self, test_path, **kwd):
+        self._perform_upload(test_path=test_path, **kwd)
+
+    def perform_upload_of_pasted_content(self, paste_data, **kwd):
+        self._perform_upload(paste_data=paste_data, **kwd)
+
+    def _perform_upload(self, test_path=None, paste_data=None, ext=None, genome=None, ext_all=None, genome_all=None):
         self.home()
         self.upload_start_click()
 
         self.upload_set_footer_extension(ext_all)
         self.upload_set_footer_genome(genome_all)
 
-        self.upload_queue_local_file(test_path)
+        if test_path:
+            self.upload_queue_local_file(test_path)
+        else:
+            assert paste_data is not None
+            self.upload_paste_data(paste_data)
 
         if ext is not None:
             self.wait_for_selector_visible('.upload-extension')
@@ -634,6 +644,13 @@ class NavigatesGalaxy(HasDriver):
 
         file_upload = self.wait_for_selector('div#%s input[type="file"]' % tab_id)
         file_upload.send_keys(test_path)
+
+    def upload_paste_data(self, pasted_content, tab_id="regular"):
+        tab_locator = f"div#{tab_id}"
+        self.wait_for_and_click_selector(f"{tab_locator} button#btn-new")
+
+        textarea = self.wait_for_selector(f"{tab_locator} .upload-text-content")
+        textarea.send_keys(pasted_content)
 
     def upload_rule_start(self):
         self.upload_start_click()
@@ -865,6 +882,11 @@ class NavigatesGalaxy(HasDriver):
         self.wait_for_and_click_selector("#workflow-save-button")
         self.sleep_for(self.wait_types.DATABASE_OPERATION)
 
+    def navigate_to_histories_page(self):
+        self.home()
+        self.click_masthead_user()
+        self.components.masthead.histories.wait_for_and_click()
+
     def navigate_to_user_preferences(self):
         self.home()
         self.click_masthead_user()
@@ -1032,18 +1054,17 @@ class NavigatesGalaxy(HasDriver):
         workflow_button = workflow_row.find_element_by_css_selector(workflow_selector)
         workflow_button.click()
 
-    def workflow_index_click_option(self, option_title, workflow_index=0):
-        self.workflow_click_option(".workflow-dropdown", workflow_index)
+    def select_dropdown_item(self, option_title):
         menu_element = self.wait_for_selector_visible(".dropdown-menu.show")
         menu_options = menu_element.find_elements_by_css_selector("a.dropdown-item")
-        found_option = False
         for menu_option in menu_options:
             if option_title in menu_option.text:
                 menu_option.click()
-                found_option = True
-                break
+                return True
 
-        if not found_option:
+    def workflow_index_click_option(self, option_title, workflow_index=0):
+        self.workflow_click_option(".workflow-dropdown", workflow_index)
+        if not self.select_dropdown_item(option_title):
             raise AssertionError("Failed to find workflow action option with title [%s]" % option_title)
 
     def workflow_index_click_tag_display(self, workflow_index=0):
@@ -1163,6 +1184,18 @@ class NavigatesGalaxy(HasDriver):
     def histories_click_advanced_search(self):
         search_selector = '#standard-search .advanced-search-toggle'
         self.wait_for_and_click_selector(search_selector)
+
+    @retry_during_transitions
+    def histories_get_history_names(self):
+        self.sleep_for(self.wait_types.UX_RENDER)
+        names = []
+        grid = self.wait_for_selector('#grid-table-body')
+        for row in grid.find_elements_by_tag_name('tr'):
+            td = row.find_elements_by_tag_name('td')
+            name = td[1].text if td[0].text == '' else td[0].text
+            if name != "No items" and not name.startswith("No matching entries found"):
+                names.append(name)
+        return names
 
     def history_panel_add_tags(self, tags):
         tag_icon_selector = self.components.history_panel.tag_icon

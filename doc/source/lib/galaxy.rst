@@ -32,6 +32,7 @@ Subpackages
    galaxy.objectstore
    galaxy.openid
    galaxy.quota
+   galaxy.schema
    galaxy.security
    galaxy.selenium
    galaxy.tool_shed

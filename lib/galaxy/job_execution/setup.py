@@ -3,6 +3,9 @@ import os
 
 from galaxy.util import safe_makedirs
 
+TOOL_PROVIDED_JOB_METADATA_FILE = 'galaxy.json'
+TOOL_PROVIDED_JOB_METADATA_KEYS = ['name', 'info', 'dbkey', 'created_from_basename']
+
 
 def ensure_configs_directory(work_dir):
     configs_dir = os.path.join(work_dir, "configs")

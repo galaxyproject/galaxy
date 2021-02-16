@@ -38,17 +38,17 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
     @expose_api_anonymous_and_sessionless
     def index(self, trans, **kwds):
         """
-        GET /api/tools: returns a list of tools defined by parameters::
+        GET /api/tools
 
-            parameters:
+        returns a list of tools defined by parameters
 
-                in_panel  - if true, tools are returned in panel structure,
-                            including sections and labels
-                trackster - if true, only tools that are compatible with
-                            Trackster are returned
-                q         - if present search on the given query will be performed
-                tool_id   - if present the given tool_id will be searched for
-                            all installed versions
+        :param in_panel: if true, tools are returned in panel structure,
+                         including sections and labels
+        :param trackster: if true, only tools that are compatible with
+                          Trackster are returned
+        :param q: if present search on the given query will be performed
+        :param tool_id: if present the given tool_id will be searched for
+                        all installed versions
         """
 
         # Read params.
@@ -272,8 +272,10 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         Attempts to install requirements via the dependency resolver
 
         parameters:
-            index:                   index of dependency resolver to use when installing dependency.
-                                     Defaults to using the highest ranking resolver
+            index:
+                index of dependency resolver to use when installing dependency.
+                Defaults to using the highest ranking resolver
+
             resolver_type:           Use the dependency resolver of this resolver_type to install dependency.
             build_dependency_cache:  If true, attempts to cache dependencies for this tool
             force_rebuild:           If true and cache dir exists, attempts to delete cache dir
@@ -291,12 +293,17 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
     def uninstall_dependencies(self, trans, id, **kwds):
         """
         DELETE /api/tools/{tool_id}/dependencies
+
         Attempts to uninstall requirements via the dependency resolver
 
         parameters:
-            index:                   index of dependency resolver to use when installing dependency.
-                                     Defaults to using the highest ranking resolver
-            resolver_type:           Use the dependency resolver of this resolver_type to install dependency
+
+            index:
+
+                index of dependency resolver to use when installing dependency.
+                Defaults to using the highest ranking resolver
+
+            resolver_type: Use the dependency resolver of this resolver_type to install dependency
         """
         tool = self._get_tool(id, user=trans.user)
         tool._view.uninstall_dependencies(requirements=tool.requirements, **kwds)
@@ -479,8 +486,12 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         POST /api/tools
         Execute tool with a given parameter payload
 
-        :param input_format: input format for the payload. Possible values are the default 'legacy' (where inputs nested inside conditionals or repeats are identified with e.g. '<conditional_name>|<input_name>') or '21.01' (where inputs inside conditionals or repeats are nested elements).
-        :type input_format:  string
+        :param input_format: input format for the payload. Possible values are
+          the default 'legacy' (where inputs nested inside conditionals or
+          repeats are identified with e.g. '<conditional_name>|<input_name>') or
+          '21.01' (where inputs inside conditionals or repeats are nested
+          elements).
+        :type input_format: str
         """
         tool_id = payload.get("tool_id")
         tool_uuid = payload.get("tool_uuid")
@@ -552,7 +563,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         # as a regular tool parameter we accept both.
         use_cached_job = payload.get('use_cached_job', False) or util.string_as_bool(inputs.get('use_cached_job', 'false'))
 
-        input_format = kwd.get('input_format', 'legacy')
+        input_format = str(payload.get('input_format', 'legacy'))
 
         vars = tool.handle_input(trans, incoming, history=target_history, use_cached_job=use_cached_job, input_format=input_format)
 

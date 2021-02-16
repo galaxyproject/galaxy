@@ -1,5 +1,4 @@
 import logging
-from collections import OrderedDict
 
 from markupsafe import escape
 from sqlalchemy import (
@@ -240,6 +239,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     def __init__(self, app):
         super().__init__(app)
         self.history_manager = managers.histories.HistoryManager(app)
+        self.history_export_view = managers.histories.HistoryExportView(app)
         self.history_serializer = managers.histories.HistorySerializer(self.app)
 
     @web.expose
@@ -484,7 +484,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         items = []
         # First go through and group hdas by job, if there is no job they get
         # added directly to items
-        jobs = OrderedDict()
+        jobs = {}
         for hda in history.active_datasets:
             if hda.visible is False:
                 continue
@@ -508,7 +508,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 else:
                     jobs[job] = [(hda, None)]
         # Second, go through the jobs and connect to workflows
-        wf_invocations = OrderedDict()
+        wf_invocations = {}
         for job, hdas in jobs.items():
             # Job is attached to a workflow step, follow it to the
             # workflow_invocation and group
@@ -1097,39 +1097,13 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         # TODO: used in display_base.mako
 
     @web.expose
-    def export_archive(self, trans, id=None, gzip=True, include_hidden=False, include_deleted=False, preview=False):
+    def export_archive(self, trans, id=None, jeha_id="latest"):
         """ Export a history to an archive. """
         #
         # Get history to export.
         #
-        if id:
-            history = self.history_manager.get_accessible(self.decode_id(id), trans.user, current_history=trans.history)
-        else:
-            # Use current history.
-            history = trans.history
-            id = trans.security.encode_id(history.id)
-        if not history:
-            return trans.show_error_message("This history does not exist or you cannot export this history.")
-        # If history has already been exported and it has not changed since export, stream it.
-        jeha = history.latest_export
-        if jeha and jeha.up_to_date:
-            if jeha.ready:
-                if preview:
-                    url = url_for(controller='history', action="export_archive", id=id, qualified=True)
-                    return trans.show_message("History Ready: '%(n)s'. Use this link to download "
-                                              "the archive or import it to another Galaxy server: "
-                                              "<a href='%(u)s'>%(u)s</a>" % ({'n': history.name, 'u': url}))
-                else:
-                    return self.serve_ready_history_export(trans, jeha)
-            elif jeha.preparing:
-                return trans.show_message("Still exporting history %(n)s; please check back soon. Link: <a href='%(s)s'>%(s)s</a>"
-                                          % ({'n': history.name, 's': url_for(controller='history', action="export_archive", id=id, qualified=True)}))
-        self.queue_history_export(trans, history, gzip=gzip, include_hidden=include_hidden, include_deleted=include_deleted)
-        url = url_for(controller='history', action="export_archive", id=id, qualified=True)
-        return trans.show_message("Exporting History '%(n)s'. You will need to <a href='%(share)s' target='_top'>make this history 'accessible'</a> in order to import this to another galaxy sever. <br/>"
-                                  "Use this link to download the archive or import it to another Galaxy server: "
-                                  "<a href='%(u)s'>%(u)s</a>" % ({'share': url_for('/histories/sharing', id=id), 'n': history.name, 'u': url}))
-        # TODO: used in this file and index.mako
+        jeha = self.history_export_view.get_ready_jeha(trans, id, jeha_id)
+        return self.serve_ready_history_export(trans, jeha)
 
     @web.expose
     @web.json
@@ -1233,7 +1207,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             trans.set_history(history)
             return self.history_data(trans, history)
         except exceptions.MessageException as msg_exc:
-            trans.response.status = msg_exc.err_code.code
+            trans.response.status = msg_exc.status_code
             return {'err_msg': msg_exc.err_msg, 'err_code': msg_exc.err_code.code}
 
     @web.json

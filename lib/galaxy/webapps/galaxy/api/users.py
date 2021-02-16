@@ -5,7 +5,6 @@ import copy
 import json
 import logging
 import re
-from collections import OrderedDict
 
 from markupsafe import escape
 from sqlalchemy import (
@@ -20,7 +19,10 @@ from galaxy import (
     web
 )
 from galaxy.exceptions import ObjectInvalid
-from galaxy.managers import users
+from galaxy.managers import (
+    api_keys,
+    users
+)
 from galaxy.security.validate_user_input import (
     validate_email,
     validate_password,
@@ -39,7 +41,6 @@ from galaxy.web.form_builder import AddressField
 from galaxy.webapps.base.controller import (
     BaseAPIController,
     BaseUIController,
-    CreatesApiKeysMixin,
     UsesFormDefinitionsMixin,
     UsesTagsMixin
 )
@@ -48,13 +49,14 @@ from galaxy.webapps.base.controller import (
 log = logging.getLogger(__name__)
 
 
-class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, BaseUIController, UsesFormDefinitionsMixin):
+class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, UsesFormDefinitionsMixin):
 
     def __init__(self, app):
         super().__init__(app)
         self.user_manager = users.UserManager(app)
         self.user_serializer = users.UserSerializer(app)
         self.user_deserializer = users.UserDeserializer(app)
+        self.api_key_manager = api_keys.ApiKeyManager(app)
 
     @expose_api
     def index(self, trans, deleted='False', f_email=None, f_name=None, f_any=None, **kwd):
@@ -413,7 +415,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         # Update email
         if 'email' in payload:
             email = payload.get('email')
-            message = self._validate_email(email) or validate_email(trans, email, user)
+            message = validate_email(trans, email, user)
             if message:
                 raise exceptions.RequestParameterInvalidException(message)
             if user.email != email:
@@ -438,7 +440,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         # Update public name
         if 'username' in payload:
             username = payload.get('username')
-            message = self._validate_publicname(username) or validate_publicname(trans, username, user)
+            message = validate_publicname(trans, username, user)
             if message:
                 raise exceptions.RequestParameterInvalidException(message)
             if user.username != username:
@@ -578,19 +580,6 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         else:
             raise exceptions.ObjectAttributeInvalidException("This type is not supported. Given object_type: %s" % object_type)
 
-    def _validate_email(self, email):
-        ''' Validate email and username using regex '''
-        if email == '' or not isinstance(email, str):
-            return 'Please provide your email address.'
-        if not re.match(r'^(([^<>()[\]\.,;:\s@"]+(\.[^<>()[\]\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$', email):
-            return 'Please provide your valid email address.'
-        if len(email) > 255:
-            return 'Email cannot be more than 255 characters in length.'
-
-    def _validate_publicname(self, username):
-        if not re.match(r'^[a-z0-9\-]{3,255}$', username):
-            return 'Public name must contain only lowercase letters, numbers and "-". It also has to be shorter than 255 characters but longer than 2.'
-
     @expose_api
     def get_password(self, trans, id, payload=None, **kwd):
         """
@@ -720,9 +709,9 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
             inputs.append({'type': 'section', 'title': filter_title, 'name': filter_type, 'expanded': True, 'inputs': filter_inputs})
 
     def _get_filter_types(self, trans):
-        return OrderedDict([('toolbox_tool_filters', {'title': 'Tools', 'config': trans.app.config.user_tool_filters}),
-                            ('toolbox_section_filters', {'title': 'Sections', 'config': trans.app.config.user_tool_section_filters}),
-                            ('toolbox_label_filters', {'title': 'Labels', 'config': trans.app.config.user_tool_label_filters})])
+        return {'toolbox_tool_filters': {'title': 'Tools', 'config': trans.app.config.user_tool_filters},
+                'toolbox_section_filters': {'title': 'Sections', 'config': trans.app.config.user_tool_section_filters},
+                'toolbox_label_filters': {'title': 'Labels', 'config': trans.app.config.user_tool_label_filters}}
 
     @expose_api
     def api_key(self, trans, id, payload=None, **kwd):
@@ -731,7 +720,16 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         """
         payload = payload or {}
         user = self._get_user(trans, id)
-        return self.create_api_key(trans, user)
+        return self.api_key_manager.create_api_key(user)
+
+    @expose_api
+    def get_or_create_api_key(self, trans, id, payload=None, **kwd):
+        """
+        Unified 'get or create' for API key
+        """
+        payload = payload or {}
+        user = self._get_user(trans, id)
+        return self.api_key_manager.get_or_create_api_key(user)
 
     @expose_api
     def get_api_key(self, trans, id, payload=None, **kwd):
@@ -749,7 +747,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         """
         payload = payload or {}
         user = self._get_user(trans, id)
-        self.create_api_key(trans, user)
+        self.api_key_manager.create_api_key(user)
         return self._build_inputs_api_key(user, message='Generated a new web API key.')
 
     def _build_inputs_api_key(self, user, message=''):

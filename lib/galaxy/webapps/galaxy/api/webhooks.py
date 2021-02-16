@@ -17,8 +17,9 @@ class WebhooksController(BaseAPIController):
     @expose_api_anonymous_and_sessionless
     def all_webhooks(self, trans, **kwd):
         """
-        *GET /api/webhooks/
-        Returns all webhooks
+        GET /api/webhooks/
+
+        Return all webhooks.
         """
         return [
             webhook.to_dict()
@@ -28,8 +29,9 @@ class WebhooksController(BaseAPIController):
     @expose_api_anonymous_and_sessionless
     def webhook_data(self, trans, webhook_id, **kwd):
         """
-        *GET /api/webhooks/{webhook_id}/data/{params}
-        Returns the result of executing helper function
+        GET /api/webhooks/{webhook_id}/data/{params}
+
+        Return the result of executing helper function.
         """
         params = {}
 

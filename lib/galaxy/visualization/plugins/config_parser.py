@@ -164,7 +164,7 @@ class VisualizationsConfigParser:
     def parse_entry_point(self, xml_tree):
         """
         Parse the config file for an appropriate entry point: a mako template, a script tag,
-        or an html file, returning as dictionary with: `type`, `file`, and `attr`ibutes of
+        or an html file, returning as dictionary with: ``type``, ``file``, and ``attr`` (-ibutes) of
         the element.
         """
         # (older) mako-only syntax: the template to use in rendering the visualization

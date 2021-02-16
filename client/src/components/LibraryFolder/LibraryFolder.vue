@@ -153,6 +153,10 @@
                     <font-awesome-icon v-if="row.item.type === 'folder'" :icon="['far', 'folder']" title="Folder" />
                     <font-awesome-icon v-else-if="row.item.type === 'file'" title="Dataset" :icon="['far', 'file']" />
                 </template>
+                <template v-slot:cell(type)="row">
+                    <div v-if="row.item.type === 'folder'">{{ row.item.type }}</div>
+                    <div v-else-if="row.item.type === 'file'">{{ row.item.file_ext }}</div>
+                </template>
                 <template v-slot:cell(raw_size)="row">
                     <div v-if="row.item.type === 'file'" v-html="bytesToString(row.item.raw_size)"></div>
                 </template>
@@ -602,6 +606,11 @@ export default {
     },
     watch: {
         currentPage: {
+            handler: function (value) {
+                this.fetchFolderContents(this.include_deleted);
+            },
+        },
+        perPage: {
             handler: function (value) {
                 this.fetchFolderContents(this.include_deleted);
             },

@@ -11,6 +11,18 @@
                     <td>Galaxy Tool Version:</td>
                     <td id="galaxy-tool-version">{{ job.tool_version }}</td>
                 </tr>
+                <tr v-if="job && includeTimes">
+                    <td>Created</td>
+                    <td id="created" v-if="job.create_time">
+                        <UtcDate :date="job.create_time" mode="pretty" />
+                    </td>
+                </tr>
+                <tr v-if="job && includeTimes">
+                    <td>Updated</td>
+                    <td id="created" v-if="job.update_time">
+                        <UtcDate :date="job.update_time" mode="pretty" />
+                    </td>
+                </tr>
                 <code-row id="command-line" v-if="job" :codeLabel="'Command Line'" :codeItem="job.command_line" />
                 <code-row id="stdout" v-if="job" :codeLabel="'Tool Standard Output'" :codeItem="job.tool_stdout" />
                 <code-row id="stderr" v-if="job" :codeLabel="'Tool Standard Error'" :codeItem="job.tool_stderr" />
@@ -46,16 +58,22 @@ import { mapCacheActions } from "vuex-cache";
 import { getAppRoot } from "onload/loadConfig";
 import DecodedId from "../DecodedId.vue";
 import CodeRow from "./CodeRow.vue";
+import UtcDate from "components/UtcDate";
 
 export default {
     components: {
         CodeRow,
         DecodedId,
+        UtcDate,
     },
     props: {
         job_id: {
             type: String,
             required: true,
+        },
+        includeTimes: {
+            type: Boolean,
+            default: false,
         },
     },
     created: function () {

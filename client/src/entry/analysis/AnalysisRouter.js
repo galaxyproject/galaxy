@@ -32,6 +32,7 @@ import InteractiveTools from "components/InteractiveTools/InteractiveTools.vue";
 import LibraryFolder from "components/LibraryFolder/LibraryFolder.vue";
 import WorkflowList from "components/Workflow/WorkflowList.vue";
 import HistoryImport from "components/HistoryImport.vue";
+import { HistoryExport } from "components/HistoryExport/index";
 import HistoryView from "components/HistoryView.vue";
 import WorkflowInvocationReport from "components/Workflow/InvocationReport.vue";
 import WorkflowRun from "components/Workflow/Run/WorkflowRun.vue";
@@ -87,6 +88,7 @@ export const getAnalysisRouter = (Galaxy) =>
             "(/)histories(/)rename(/)": "show_histories_rename",
             "(/)histories(/)sharing(/)": "show_histories_sharing",
             "(/)histories(/)import(/)": "show_histories_import",
+            "(/)histories(/)(:history_id)(/)export(/)": "show_history_export",
             "(/)histories(/)permissions(/)": "show_histories_permissions",
             "(/)histories/view": "show_history_view",
             "(/)histories/show_structure": "show_history_structure",
@@ -249,6 +251,12 @@ export const getAnalysisRouter = (Galaxy) =>
 
         show_histories_import: function () {
             this._display_vue_helper(HistoryImport);
+        },
+
+        show_history_export: function (history_id) {
+            this._display_vue_helper(HistoryExport, {
+                historyId: history_id,
+            });
         },
 
         show_tools_view: function () {

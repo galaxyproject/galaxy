@@ -44,41 +44,40 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
                  column_count=None, column_types=None, parsers=None, parse_columns=True,
                  deliminator='\t', filters=None, **kwargs):
         """
+
         :param indeces: a list of indeces of columns to gather from each row
-            Optional: will default to `None`.
-            If `None`, this provider will return all rows (even when a
-                particular row contains more/less than others).
-            If a row/line does not contain an element at a given index, the
-                provider will-return/fill-with a `None` value as the element.
+                        Optional: will default to `None`.
+                        If `None`, this provider will return all rows (even when a
+                        particular row contains more/less than others).
+                        If a row/line does not contain an element at a given index, the
+                        provider will-return/fill-with a `None` value as the element.
         :type indeces: list or None
 
         :param column_count: an alternate means of defining indeces, use an int
-            here to effectively provide the first N columns.
-            Optional: will default to `None`.
+                             here to effectively provide the first N columns.
+                             Optional: will default to `None`.
         :type column_count: int
 
         :param column_types: a list of string names of types that the
-            provider will use to look up an appropriate parser for the column.
-            (e.g. 'int', 'float', 'str', 'bool')
-            Optional: will default to parsing all columns as strings.
+                             provider will use to look up an appropriate parser for the column.
+                             (e.g. 'int', 'float', 'str', 'bool')
+                             Optional: will default to parsing all columns as strings.
         :type column_types: list of strings
 
         :param parsers: a dictionary keyed with column type strings
-            and with values that are functions to use when parsing those
-            types.
-            Optional: will default to using the function `_get_default_parsers`.
+                        and with values that are functions to use when parsing those
+                        types.
+                        Optional: will default to using the function `_get_default_parsers`.
         :type parsers: dictionary
 
-        :param parse_columns: attempt to parse columns?
-            Optional: defaults to `True`.
+        :param parse_columns: attempt to parse columns? Optional: defaults to `True`.
         :type parse_columns: bool
 
-        :param deliminator: character(s) used to split each row/line of the source.
-            Optional: defaults to the tab character.
+        :param deliminator: character(s) used to split each row/line of the source. Optional: defaults to the tab character.
         :type deliminator: str
 
         .. note:: that the subclass constructors are passed kwargs - so they're
-            params (limit, offset, etc.) are also applicable here.
+                  params (limit, offset, etc.) are also applicable here.
         """
         # TODO: other columnar formats: csv, etc.
         super().__init__(source, **kwargs)

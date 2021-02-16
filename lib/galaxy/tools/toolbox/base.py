@@ -4,10 +4,7 @@ import os
 import string
 import time
 import urllib.request
-from collections import (
-    namedtuple,
-    OrderedDict
-)
+from collections import namedtuple
 from errno import ENOENT
 from urllib.parse import urlparse
 
@@ -103,7 +100,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         # In-memory dictionary that defines the layout of the tool panel.
         self._tool_panel = ToolPanelElements()
         self._index = 0
-        self.data_manager_tools = OrderedDict()
+        self.data_manager_tools = {}
         self._lineage_map = LineageMap(app)
         # Sets self._integrated_tool_panel and self._integrated_tool_panel_config_has_contents
         self._init_integrated_tool_panel(app.config)

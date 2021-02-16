@@ -1,9 +1,9 @@
 <template>
     <b-card>
         <h5>Job Parameters</h5>
-        <job-parameters :job-id="jobId" :include-title="false" />
+        <job-parameters :job-id="job.id" :include-title="false" />
         <h5>Job Metrics</h5>
-        <job-metrics :job-id="jobId" :include-title="false" />
+        <job-metrics :job-id="job.id" :include-title="false" />
     </b-card>
 </template>
 
@@ -17,12 +17,8 @@ export default {
         JobParameters,
     },
     props: {
-        commandLine: {
-            type: String,
-            required: true,
-        },
-        jobId: {
-            type: String,
+        job: {
+            type: Object,
             required: true,
         },
     },

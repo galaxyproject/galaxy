@@ -1,5 +1,5 @@
-export function errorMessageAsString(e) {
-    let message = "Request failed.";
+export function errorMessageAsString(e, defaultMessage = "Request failed.") {
+    let message = defaultMessage;
     if (e && e.response && e.response.data && e.response.data.err_msg) {
         message = e.response.data.err_msg;
     } else if (e && e.response) {

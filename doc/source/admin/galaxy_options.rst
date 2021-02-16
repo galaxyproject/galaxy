@@ -181,7 +181,7 @@
     is valuable to separate these - for instance bootstrapping fresh
     Galaxy instances with pretested installs.  The following option
     can be used to separate the tool shed install database (all other
-    options listed above but prefixed with install_ are also
+    options listed above but prefixed with ``install_`` are also
     available).
     Defaults to the value of the 'database_connection' option.
 :Default: ``None``
@@ -677,8 +677,8 @@
 :Description:
     involucro is a tool used to build Docker or Singularity containers
     for tools from Conda dependencies referenced in tools as
-    `requirement`s. The following path is the location of involucro on
-    the Galaxy host. This is ignored if the relevant container
+    `requirement` s. The following path is the location of involucro
+    on the Galaxy host. This is ignored if the relevant container
     resolver isn't enabled, and will install on demand unless
     involucro_auto_init is set to false.
     The value of this option will be resolved with respect to
@@ -1049,6 +1049,21 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_tool_document_cache``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set this to false to disable the tool document cache. This cache
+    stores expanded xml strings. Disabling the tool cache results in
+    slower startup times. The tool cache is backed by sqlite database,
+    which cannot be stored on certain network disks. The cache
+    location is configurable using the ``tool_cache_data_dir``
+    setting, but can be disabled completely here.
+:Default: ``true``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~
 ``tool_cache_data_dir``
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -1056,7 +1071,7 @@
 :Description:
     Tool related caching. Fully expanded tools and metadata will be
     stored at this path. Per tool_conf cache locations can be
-    configured in (shed_)tool_conf.xml files using the
+    configured in (``shed_``)tool_conf.xml files using the
     tool_cache_data_dir attribute.
     The value of this option will be resolved with respect to
     <data_dir>.
@@ -2950,10 +2965,10 @@
 :Description:
     If use_remote_user is enabled, the header that the upstream proxy
     provides the remote username in defaults to HTTP_REMOTE_USER (the
-    'HTTP_' is prepended by WSGI).  This option allows you to change
-    the header.  Note, you still need to prepend 'HTTP_' to the header
-    in this option, but your proxy server should *not* include 'HTTP_'
-    at the beginning of the header name.
+    ``HTTP_`` is prepended by WSGI).  This option allows you to change
+    the header.  Note, you still need to prepend ``HTTP_`` to the
+    header in this option, but your proxy server should *not* include
+    ``HTTP_`` at the beginning of the header name.
 :Default: ``HTTP_REMOTE_USER``
 :Type: str
 
@@ -3709,7 +3724,7 @@
     you can separate Galaxy into multiple processes.  There are more
     than one way to do this, and they are explained in detail in the
     documentation:
-      https://docs.galaxyproject.org/en/master/admin/scaling.html
+    https://docs.galaxyproject.org/en/master/admin/scaling.html
     By default, Galaxy manages and executes jobs from within a single
     process and notifies itself of new jobs via in-memory queues.
     Jobs are run locally on the system on which Galaxy is started.
@@ -3836,13 +3851,13 @@
 ~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Determines how metadata will be set. Valid values are `directory`,
-    `extended` and `legacy`. In extended mode jobs will decide if a
-    tool run failed, the object stores configuration is serialized and
-    made available to the job and is used for writing output datasets
-    to the object store as part of the job and dynamic output
-    discovery (e.g. discovered datasets <discover_datasets>,
-    unpopulated collections, etc) happens as part of the job.
+    Determines how metadata will be set. Valid values are `directory`
+    and `extended`. In extended mode jobs will decide if a tool run
+    failed, the object stores configuration is serialized and made
+    available to the job and is used for writing output datasets to
+    the object store as part of the job and dynamic output discovery
+    (e.g. discovered datasets <discover_datasets>, unpopulated
+    collections, etc) happens as part of the job.
 :Default: ``directory``
 :Type: str
 
@@ -4085,7 +4100,7 @@
 :Description:
     Prologue Markdown/HTML to apply to markdown exports to PDF.
     Allowing branded headers.
-:Default: ````
+:Default: ``""``
 :Type: str
 
 
@@ -4096,7 +4111,7 @@
 :Description:
     Prologue Markdown/HTML to apply to markdown exports to PDF.
     Allowing branded footers.
-:Default: ````
+:Default: ``""``
 :Type: str
 
 
@@ -4107,7 +4122,7 @@
 :Description:
     Alternative to markdown_export_prologue that applies just to page
     exports.
-:Default: ````
+:Default: ``""``
 :Type: str
 
 
@@ -4118,7 +4133,7 @@
 :Description:
     Alternative to markdown_export_prologue that applies just to
     invocation report exports.
-:Default: ````
+:Default: ``""``
 :Type: str
 
 
@@ -4129,7 +4144,7 @@
 :Description:
     Alternative to markdown_export_epilogue that applies just to page
     exports.
-:Default: ````
+:Default: ``""``
 :Type: str
 
 
@@ -4140,7 +4155,7 @@
 :Description:
     Alternative to markdown_export_epilogue that applies just to
     invocation report exports.
-:Default: ````
+:Default: ``""``
 :Type: str
 
 

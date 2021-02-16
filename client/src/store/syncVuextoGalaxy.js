@@ -10,13 +10,14 @@ import { getGalaxyInstance } from "app";
 import { waitForInit } from "utils/observable/waitForInit";
 
 // store subscriptions
-import { syncUserToGalaxy } from "store/userStore/syncUserToGalaxy";
-import { syncConfigToGalaxy } from "store/configStore/syncConfigToGalaxy";
+import { syncUserToGalaxy } from "store/userStore";
+import { syncConfigToGalaxy } from "store/configStore";
 import { syncCurrentHistoryToGalaxy } from "components/History/model/syncCurrentHistoryToGalaxy";
+import { isBetaHistoryOpen } from "components/History/adapters/betaToggle";
 
 export const syncVuextoGalaxy = (store) => {
     const globalGalaxy$ = defer(() => {
-        return waitForInit(getGalaxyInstance).pipe(shareReplay(1));
+        return waitForInit(() => getGalaxyInstance()).pipe(shareReplay(1));
     });
 
     // sets current user when glaaxy changes
@@ -25,6 +26,8 @@ export const syncVuextoGalaxy = (store) => {
     // configuration
     syncConfigToGalaxy(globalGalaxy$, store);
 
-    // Current History object (from legacy history panel)
-    syncCurrentHistoryToGalaxy(globalGalaxy$, store);
+    // Update Vuex with legacy galaxy history changes only when beta panel is closed.
+    if (!isBetaHistoryOpen()) {
+        syncCurrentHistoryToGalaxy(globalGalaxy$, store);
+    }
 };

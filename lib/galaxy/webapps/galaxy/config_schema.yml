@@ -154,7 +154,7 @@ mapping:
           valuable to separate these - for instance bootstrapping fresh Galaxy
           instances with pretested installs.  The following option can be used to
           separate the tool shed install database (all other options listed above
-          but prefixed with install_ are also available).
+          but prefixed with ``install_`` are also available).
 
           Defaults to the value of the 'database_connection' option.
 
@@ -505,7 +505,7 @@ mapping:
         required: false
         desc: |
           involucro is a tool used to build Docker or Singularity containers for tools from Conda
-          dependencies referenced in tools as `requirement`s. The following path is
+          dependencies referenced in tools as `requirement` s. The following path is
           the location of involucro on the Galaxy host. This is ignored if the relevant
           container resolver isn't enabled, and will install on demand unless
           involucro_auto_init is set to false.
@@ -765,6 +765,17 @@ mapping:
           should be disabled. Containerized jobs always use /bin/sh - so more maximum
           portability tool authors should assume generated commands run in sh.
 
+      enable_tool_document_cache:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          Set this to false to disable the tool document cache. This cache stores
+          expanded xml strings. Disabling the tool cache results in slower startup
+          times. The tool cache is backed by sqlite database, which cannot
+          be stored on certain network disks. The cache location is configurable
+          using the ``tool_cache_data_dir`` setting, but can be disabled completely here.
+
       tool_cache_data_dir:
         type: str
         default: tool_cache
@@ -772,7 +783,7 @@ mapping:
         required: false
         desc: |
           Tool related caching. Fully expanded tools and metadata will be stored at this path.
-          Per tool_conf cache locations can be configured in (shed_)tool_conf.xml files using
+          Per tool_conf cache locations can be configured in (``shed_``)tool_conf.xml files using
           the tool_cache_data_dir attribute.
 
       tool_search_index_dir:
@@ -2149,10 +2160,10 @@ mapping:
         required: false
         desc: |
           If use_remote_user is enabled, the header that the upstream proxy provides
-          the remote username in defaults to HTTP_REMOTE_USER (the 'HTTP_' is prepended
+          the remote username in defaults to HTTP_REMOTE_USER (the ``HTTP_`` is prepended
           by WSGI).  This option allows you to change the header.  Note, you still need
-          to prepend 'HTTP_' to the header in this option, but your proxy server should
-          *not* include 'HTTP_' at the beginning of the header name.
+          to prepend ``HTTP_`` to the header in this option, but your proxy server should
+          *not* include ``HTTP_`` at the beginning of the header name.
 
       remote_user_secret:
         type: str
@@ -2704,7 +2715,7 @@ mapping:
           separate Galaxy into multiple processes.  There are more than one way to do
           this, and they are explained in detail in the documentation:
 
-            https://docs.galaxyproject.org/en/master/admin/scaling.html
+          https://docs.galaxyproject.org/en/master/admin/scaling.html
 
           By default, Galaxy manages and executes jobs from within a single process and
           notifies itself of new jobs via in-memory queues.  Jobs are run locally on
@@ -2807,7 +2818,7 @@ mapping:
         required: false
         default: directory
         desc: |
-          Determines how metadata will be set. Valid values are `directory`, `extended` and `legacy`.
+          Determines how metadata will be set. Valid values are `directory` and `extended`.
           In extended mode jobs will decide if a tool run failed, the object stores
           configuration is serialized and made available to the job and is used for
           writing output datasets to the object store as part of the job and dynamic

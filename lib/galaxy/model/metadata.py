@@ -94,7 +94,7 @@ class MetadataCollection(Mapping):
         try:
             return self.__getattr__(key)
         except Exception:
-            return KeyError
+            raise KeyError
 
     def __len__(self):
         return len(self.spec)
@@ -113,6 +113,8 @@ class MetadataCollection(Mapping):
             return self.spec[name].wrap(self.spec[name].default, object_session(self.parent))
         if name in self.parent._metadata:
             return self.parent._metadata[name]
+        # Instead of raising an AttributeError for non-existing metadata, we return None
+        return None
 
     def __setattr__(self, name, value):
         if name == "parent":
@@ -132,12 +134,13 @@ class MetadataCollection(Mapping):
     def element_is_set(self, name):
         """
         check if the meta data with the given name is set, i.e.
+
         - if the such a metadata actually exists and
         - if its value differs from no_value
 
-        param name the name of the metadata element
-        return True if the value differes from the no_value
-            False if its equal of if no metadata with the name is specified
+        :param name: the name of the metadata element
+        :returns: True if the value differes from the no_value
+                  False if its equal of if no metadata with the name is specified
         """
         try:
             meta_val = self.parent._metadata[name]

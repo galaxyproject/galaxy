@@ -207,14 +207,40 @@
             <!-- The namespace to be used on the Kubernetes cluster, if different from default, this needs to be set
                  accordingly in the PV and PVC detailed above -->
 
-            <!-- <param id="k8s_pod_retrials">4</param> -->
-            <!-- Allows pods to retry up to this number of times, before marking the galaxy job failed. k8s is a state
-                 setter essentially, so by default it will try to take a job submitted to successful completion. A job
-                 submits pods, until the number of successes (1 in this use case) is achieved, assuming that whatever is
-                 making the pods fail will be fixed (such as a stale disk or a dead node that it is being restarted).
-                 This option sets a limit of retrials, so that after that number of failed pods, the job is re-scaled to
-                 zero (no execution) and the stderr/stdout of the k8s job is reported in galaxy (and the galaxy job set
-                 to failed) -->
+            <!-- <param id="k8s_pod_priority_class">medium-priority-class</param> -->
+            <!-- An optional priority class to be assigned to the job, which can control whether or not jobs can
+                 preempt existing pods to make room for new ones.
+                 https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/#priorityclass -->
+
+            <!-- <param id="k8s_affinity">
+                    nodeAffinity:
+                      requiredDuringSchedulingIgnoredDuringExecution:
+                        nodeSelectorTerms:
+                        - matchExpressions:
+                          - key: kubernetes.io/e2e-az-name
+                            operator: In
+                            values:
+                            - e2e-az1
+                            - e2e-az2
+            </param> -->
+            <!-- An affinity to be assigned to the job, useful for preferentially placing jobs on specific nodes,
+                 or for preventing two jobs from being scheduled on the same node.
+                 https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity -->
+
+            <!-- <param id="k8s_node_selector">
+                    kubernetes.io/hostname: my-large-mem-node
+            </param> -->
+            <!-- An optional node selector, so that jobs are scheduled only on nodes with matching labels
+                 https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector -->
+
+            <!-- <param id="k8s_tolerations">
+                    - key: "key1"
+                      operator: "Equal"
+                      value: "value1"
+                      effect: "NoSchedule"
+            </param> -->
+            <!-- An optional toleration, allowing jobs to be scheduled on tainted nodes.
+                 https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/ -->
 
             <!-- <param id="k8s_walltime_limit">172800</param> -->
             <!-- Controls the maximum time before kubernetes terminates the job. Sets activeDeadlineSeconds
@@ -236,6 +262,27 @@
                  then to create the new job (the old job is not trusted to have been instructed to do the same as the
                  new one). This variables controls the timeout for waiting for that job deletion. If the timeout is
                  exceeded and the existing job is not deleted, the new job won't be added to the Galaxy queue. -->
+
+            <!-- <param id="k8s_job_ttl_secs_after_finished">300</param> -->
+            <!-- Sets the ttlSecondsAfterFinished, which will automatically delete the kubernetes job after a specified
+                 number of seconds since its finish. It relies on a k8s alpha feature gate, which must be enabled
+                 https://kubernetes.io/docs/concepts/workloads/controllers/ttlafterfinished/. This property is
+                 complementary to `k8s_cleanup_job` and can be used to delete the job after a specific delay, instead of
+                 immediately, for debugging purposes and is an additional cleanup safeguard. -->
+
+            <!-- <param id="k8s_cleanup_job">always</param> -->
+            <!-- Whether to delete the k8s job after it finishes. This setting is independent of the cleanup
+                 setting in the galaxy config, and determines whether the k8s job (not galaxy job) is deleted
+                 or not. Valid values are "onsuccess", "always" and "never", with the default being "always". -->
+
+            <!-- <param id="k8s_job_metadata">
+                  labels:
+                      mylabel1: myvalue1
+                  annotations:
+                      myannotation1: myvalue1
+                      myannotation2: myvalue2
+                </param> -->
+            <!-- Apply additional labels and annotations to the k8s job spec -->
 
             <!-- <param id="k8s_supplemental_group_id">0</param> -->
             <!-- <param id="k8s_fs_group_id">0</param> -->

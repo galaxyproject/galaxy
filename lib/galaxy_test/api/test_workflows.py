@@ -2487,7 +2487,7 @@ data_input:
                 assert '(int_input) is not optional' in str(e)
                 failed = True
             assert failed
-            self._run_jobs(WORKFLOW_PARAMETER_INPUT_INTEGER_REQUIRED, test_data="""
+            run_response = self._run_jobs(WORKFLOW_PARAMETER_INPUT_INTEGER_REQUIRED, test_data="""
 data_input:
   value: 1.bed
   type: File
@@ -2498,12 +2498,17 @@ int_input:
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             content = self.dataset_populator.get_history_dataset_content(history_id)
             assert len(content.splitlines()) == 1, content
+            invocation = self.workflow_populator.get_invocation(run_response.invocation_id)
+            assert invocation['input_step_parameters']['int_input']['parameter_value'] == 1
 
-            self._run_jobs(WORKFLOW_PARAMETER_INPUT_INTEGER_OPTIONAL, test_data="""
+            run_response = self._run_jobs(WORKFLOW_PARAMETER_INPUT_INTEGER_OPTIONAL, test_data="""
 data_input:
   value: 1.bed
   type: File
 """, history_id=history_id, wait=True, assert_ok=True)
+            invocation = self.workflow_populator.get_invocation(run_response.invocation_id)
+            # Optional step parameter without default value will not be recorded.
+            assert 'int_input' not in invocation['input_step_parameters']
 
     def test_run_with_int_parameter_nested(self):
         with self.dataset_populator.test_history() as history_id:

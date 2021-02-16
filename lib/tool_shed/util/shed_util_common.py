@@ -303,6 +303,7 @@ def get_tool_path_by_shed_tool_conf_filename(app, shed_tool_conf):
 def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_alert=False, admin_only=False):
     """
     There are 2 complementary features that enable a tool shed user to receive email notification:
+
     1. Within User Preferences, they can elect to receive email when the first (or first valid)
        change set is produced for a new repository.
     2. When viewing or managing a repository, they can check the box labeled "Receive email alerts"
@@ -310,18 +311,20 @@ def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_al
        is available on a per-repository basis on the repository grid within the tool shed.
 
     There are currently 4 scenarios for sending email notification when a change is made to a repository:
+
     1. An admin user elects to receive email when the first change set is produced for a new repository
        from User Preferences.  The change set does not have to include any valid content.  This allows for
        the capture of inappropriate content being uploaded to new repositories.
     2. A regular user elects to receive email when the first valid change set is produced for a new repository
        from User Preferences.  This differs from 1 above in that the user will not receive email until a
-       change set tha tincludes valid content is produced.
+       change set that includes valid content is produced.
     3. An admin user checks the "Receive email alerts" check box on the manage repository page.  Since the
        user is an admin user, the email will include information about both HTML and image content that was
        included in the change set.
     4. A regular user checks the "Receive email alerts" check box on the manage repository page.  Since the
        user is not an admin user, the email will not include any information about both HTML and image content
        that was included in the change set.
+
     """
     sa_session = app.model.context.current
     repo = repository.hg_repo
@@ -382,7 +385,7 @@ def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_al
                     email_alerts.append(user.email)
         else:
             subject = "Galaxy tool shed update alert for repository named %s" % str(repository.name)
-            email_alerts = json.loads(repository.email_alerts)
+            email_alerts = repository.email_alerts
         for email in email_alerts:
             to = email.strip()
             # Send it

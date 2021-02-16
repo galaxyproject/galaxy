@@ -2,7 +2,6 @@ import json
 import logging
 import re
 import uuid
-from collections import OrderedDict
 from math import isinf
 
 import packaging.version
@@ -290,12 +289,12 @@ class XmlToolSource(ToolSource):
 
     def parse_outputs(self, tool):
         out_elem = self.root.find("outputs")
-        outputs = OrderedDict()
-        output_collections = OrderedDict()
+        outputs = {}
+        output_collections = {}
         if out_elem is None:
             return outputs, output_collections
 
-        data_dict = OrderedDict()
+        data_dict = {}
 
         def _parse(data_elem, **kwds):
             output_def = self._parse_output(data_elem, tool, **kwds)
@@ -443,6 +442,7 @@ class XmlToolSource(ToolSource):
         parse error handling from command and stdio tag
 
         returns list of exit codes, list of regexes
+
         - exit_codes contain all non-zero exit codes (:-1 and 1:) if
           detect_errors is default (if not legacy), exit_code, or aggressive
         - the oom_exit_code if given and detect_errors is exit_code
@@ -451,6 +451,7 @@ class XmlToolSource(ToolSource):
           and exit codes derived from the properties of the command tag.
           thus more specific regexes of the same or more severe error level
           are triggered first.
+
         """
 
         command_el = self._command_el

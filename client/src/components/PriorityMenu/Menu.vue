@@ -18,7 +18,7 @@
                         <span class="sr-only">...</span>
                     </template>
                     <b-dropdown-item v-for="item in overflow" :key="item.key" v-bind="item.attrs" v-on="item.on">
-                        {{ item.attrs.title }}
+                        {{ item.attrs.title | localize }}
                     </b-dropdown-item>
                 </b-dropdown>
             </div>
@@ -96,8 +96,8 @@ export default {
         // merge weird vnode attributes to get enough to generate a dropdown
         getMenuDataFromNode(vnode) {
             const componentOptions = vnode.componentOptions || {};
-            const attrs = Object.assign({}, vnode.data.attrs || {}, componentOptions.propsData || {});
-            const on = Object.assign({}, vnode.data.on || {}, componentOptions.listeners || {});
+            const attrs = Object.assign({}, (vnode.data && vnode.data.attrs) || {}, componentOptions.propsData || {});
+            const on = Object.assign({}, (vnode.data && vnode.data.on) || {}, componentOptions.listeners || {});
             return { attrs, on, key: vnode.key };
         },
     },
@@ -105,13 +105,15 @@ export default {
 </script>
 
 <style lang="scss">
-/* standard list reset, which we should already
+.priority-menu {
+    /* standard list reset, which we should already
 have but mysteriously dont */
-ul,
-li {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+    ul,
+    li {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
 }
 
 .priority-menu {

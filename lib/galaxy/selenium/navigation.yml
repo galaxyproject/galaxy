@@ -187,6 +187,9 @@ history_panel:
     options_show_history_structure:
       type: xpath
       selector: '//a[text()="Show Structure"]'
+    options_show_export_history_to_file:
+      type: xpath
+      selector: '//a[text()="Export History to File"]'
     new_history_button: '#history-new-button'
     multi_view_button: '#history-view-multi-button'
 
@@ -282,6 +285,9 @@ collection_builders:
     reverse_datasets: ".reverse-column .column-datasets"
 
 histories:
+  labels:
+    import_button: 'Import from file'
+
   sharing:
     selectors:
       unshare_user_button: '.unshare_user'
@@ -290,6 +296,33 @@ histories:
       make_publishable: '.make-publishable label'
     labels:
       unshare: 'Unshare'
+
+files_dialog:
+  selectors:
+    ftp_row: 'span[title="gxftp://"]'
+    row: 'span[title="${uri}"]'
+
+history_export:
+  selectors:
+    export_link: '.export-link'
+    running: '.history-export-component .loading-icon'
+    generated_export_link: '.generated-export-link'
+    copy_export_link: '.copy-export-link'
+    show_job_link: '.show-job-link'
+    job_table: '.info_data_table'
+    job_table_ok: '.job-information-modal .btn-primary'
+    tab_export_to_file: '.tab-export-to-file'
+    directory_input: '.directory-form-input'
+    name_input: '.export-to-remote-file #name'
+    export_button: '.export-button'
+    success_message: '.history-export-component .alert-success'
+
+history_import:
+  selectors:
+    radio_button_remote_files: '.history-import-component .fa-folder-open'
+    import_button: '.import-button'
+    running: '.history-import-component .loading-icon'
+    success_message: '.history-import-component .alert-success'
 
 pages:
   selectors:
@@ -379,6 +412,7 @@ workflow_editor:
 
     label_input: "[tour_id='__label'] input"
     annotation_input: "[tour_id='__annotation'] textarea"
+    tool_version_button: ".tool-versions"
 
     connector_for: "div[output-handle-id='${source_id}'][input-handle-id='${sink_id}']"
 

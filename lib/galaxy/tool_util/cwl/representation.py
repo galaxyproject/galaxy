@@ -1,7 +1,6 @@
 """ This module is responsible for converting between Galaxy's tool
 input description and the CWL description for a job json. """
 
-import collections
 import json
 import logging
 import os
@@ -210,7 +209,7 @@ def collection_wrapper_to_array(inputs_dir, wrapped_value):
 
 
 def collection_wrapper_to_record(inputs_dir, wrapped_value):
-    rval = collections.OrderedDict()
+    rval = {}
     for key, value in wrapped_value.items():
         rval[key] = dataset_wrapper_to_file_json(inputs_dir, value)
     return rval

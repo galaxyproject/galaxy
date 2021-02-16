@@ -10,7 +10,6 @@ import re
 import tarfile
 import tempfile
 import threading
-from collections import OrderedDict
 from datetime import datetime
 from pathlib import Path
 from typing import List, Type
@@ -55,6 +54,7 @@ from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
 from galaxy.tools.cache import ToolDocumentCache
+from galaxy.tools.imp_exp import JobImportHistoryArchiveWrapper
 from galaxy.tools.parameters import (
     check_param,
     params_from_strings,
@@ -304,13 +304,14 @@ class ToolBox(BaseGalaxyToolBox):
         return self._tools_by_id
 
     def get_cache_region(self, tool_cache_data_dir):
-        if tool_cache_data_dir not in self.cache_regions:
-            self.cache_regions[tool_cache_data_dir] = ToolDocumentCache(cache_dir=tool_cache_data_dir)
-        return self.cache_regions[tool_cache_data_dir]
+        if self.app.config.enable_tool_document_cache:
+            if tool_cache_data_dir not in self.cache_regions:
+                self.cache_regions[tool_cache_data_dir] = ToolDocumentCache(cache_dir=tool_cache_data_dir)
+            return self.cache_regions[tool_cache_data_dir]
 
     def create_tool(self, config_file, tool_cache_data_dir=None, **kwds):
         cache = self.get_cache_region(tool_cache_data_dir or self.app.config.tool_cache_data_dir)
-        if config_file.endswith('.xml') and not cache.disabled:
+        if config_file.endswith('.xml') and cache and not cache.disabled:
             tool_document = cache.get(config_file)
             if tool_document:
                 tool_source = self.get_expanded_tool_source(
@@ -1117,11 +1118,11 @@ class Tool(Dictifiable):
 
     def parse_inputs(self, tool_source):
         """
-        Parse the "<inputs>" element and create appropriate `ToolParameter`s.
+        Parse the "<inputs>" element and create appropriate `ToolParameter` s.
         This implementation supports multiple pages and grouping constructs.
         """
         # Load parameters (optional)
-        self.inputs = OrderedDict()
+        self.inputs = {}
         pages = tool_source.parse_input_pages()
         enctypes = set()
         if pages.inputs_defined:
@@ -1234,7 +1235,7 @@ class Tool(Dictifiable):
         groups (repeat, conditional) or param elements. Groups will be parsed
         recursively.
         """
-        rval = OrderedDict()
+        rval = {}
         context = ExpressionContext(rval, context)
         for input_source in page_source.parse_input_sources():
             # Repeat group
@@ -1274,7 +1275,7 @@ class Tool(Dictifiable):
                             page_source = XmlPageSource(XML("<when>%s</when>" % case_inputs))
                             case.inputs = self.parse_input_elem(page_source, enctypes, context)
                         else:
-                            case.inputs = OrderedDict()
+                            case.inputs = {}
                         group.cases.append(case)
                 else:
                     # Should have one child "input" which determines the case
@@ -1302,7 +1303,7 @@ class Tool(Dictifiable):
                                     (self.id, group.name, group.test_param.name, unspecified_case))
                         case = ConditionalWhen()
                         case.value = unspecified_case
-                        case.inputs = OrderedDict()
+                        case.inputs = {}
                         group.cases.append(case)
                 rval[group.name] = group
             elif input_type == "section":
@@ -1670,7 +1671,7 @@ class Tool(Dictifiable):
             log.exception("Exception caught while attempting to execute tool with id '%s':", self.id)
             message = "Error executing tool with id '{}': {}".format(self.id, unicodify(e))
             return False, message
-        if isinstance(out_data, OrderedDict):
+        if isinstance(out_data, dict):
             return job, list(out_data.items())
         else:
             if isinstance(out_data, str):
@@ -2649,6 +2650,12 @@ class ExportHistoryTool(Tool):
 class ImportHistoryTool(Tool):
     tool_type = 'import_history'
 
+    def exec_after_process(self, app, inp_data, out_data, param_dict, job, final_job_state=None, **kwds):
+        super().exec_after_process(app, inp_data, out_data, param_dict, job=job, **kwds)
+        if final_job_state != DETECTED_JOB_STATE.OK:
+            return
+        JobImportHistoryArchiveWrapper(self.app, job.id).cleanup_after_job()
+
 
 class InteractiveTool(Tool):
     tool_type = 'interactive'
@@ -2728,17 +2735,18 @@ class DataManagerTool(OutputParameterJSONTool):
                     history = None
         return history
 
-    def allow_user_access(self, user, attempting_access=True):
-        """
+    def allow_user_access(self, user, attempting_access=True) -> bool:
+        """Check user access to this tool.
+
         :param user: model object representing user.
         :type user: galaxy.model.User
         :param attempting_access: is the user attempting to do something with the
-                               the tool (set false for incidental checks like toolbox
-                               listing)
+                                  the tool (set false for incidental checks like toolbox
+                                  listing)
         :type attempting_access:  bool
 
-        :returns: bool -- Whether the user is allowed to access the tool.
-        Data Manager tools are only accessible to admins.
+        :returns: Whether the user is allowed to access the tool.
+                  Data Manager tools are only accessible to admins.
         """
         if super().allow_user_access(user) and self.app.config.is_admin_user(user):
             return True
@@ -2797,7 +2805,7 @@ class DatabaseOperationTool(Tool):
         return self._outputs_dict()
 
     def _outputs_dict(self):
-        return OrderedDict()
+        return {}
 
 
 class UnzipCollectionTool(DatabaseOperationTool):
@@ -2829,7 +2837,7 @@ class ZipCollectionTool(DatabaseOperationTool):
         reverse_o = incoming["input_reverse"]
 
         forward, reverse = forward_o.copy(), reverse_o.copy()
-        new_elements = OrderedDict()
+        new_elements = {}
         new_elements["forward"] = forward
         new_elements["reverse"] = reverse
         self._add_datasets_to_history(history, [forward, reverse])
@@ -2842,7 +2850,7 @@ class BuildListCollectionTool(DatabaseOperationTool):
     tool_type = 'build_list'
 
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, tags=None, **kwds):
-        new_elements = OrderedDict()
+        new_elements = {}
 
         for i, incoming_repeat in enumerate(incoming["datasets"]):
             if incoming_repeat["input"]:
@@ -2902,7 +2910,7 @@ class MergeCollectionTool(DatabaseOperationTool):
             if dupl_actions in ['suffix_conflict', 'suffix_every', 'suffix_conflict_rest']:
                 suffix_pattern = advanced['conflict']['suffix_pattern']
 
-        new_element_structure = OrderedDict()
+        new_element_structure = {}
 
         # Which inputs does the identifier appear in.
         identifiers_map = {}
@@ -2954,7 +2962,7 @@ class MergeCollectionTool(DatabaseOperationTool):
                     new_element_structure[effective_identifer] = element
 
         # Don't copy until we know everything is fine and we have the structure of the list ready to go.
-        new_elements = OrderedDict()
+        new_elements = {}
         for key, value in new_element_structure.items():
             if getattr(value, "history_content_type", None) == "dataset":
                 copied_value = value.copy(flush=False)
@@ -2971,7 +2979,7 @@ class MergeCollectionTool(DatabaseOperationTool):
 class FilterDatasetsTool(DatabaseOperationTool):
 
     def _get_new_elements(self, history, elements_to_copy):
-        new_elements = OrderedDict()
+        new_elements = {}
         for dce in elements_to_copy:
             element_identifier = dce.element_identifier
             if getattr(dce.element_object, "history_content_type", None) == "dataset":
@@ -3039,7 +3047,7 @@ class FlattenTool(DatabaseOperationTool):
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
         join_identifier = incoming["join_identifier"]
-        new_elements = OrderedDict()
+        new_elements = {}
         copied_datasets = []
 
         def add_elements(collection, prefix=""):
@@ -3067,7 +3075,7 @@ class SortTool(DatabaseOperationTool):
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
         sorttype = incoming["sort_type"]["sort_type"]
-        new_elements = OrderedDict()
+        new_elements = {}
         elements = hdca.collection.elements
         presort_elements = []
         if sorttype == 'alpha':
@@ -3080,7 +3088,7 @@ class SortTool(DatabaseOperationTool):
             hda = incoming["sort_type"]["sort_file"]
             data_lines = hda.metadata.get('data_lines', 0)
             if data_lines == len(elements):
-                old_elements_dict = OrderedDict()
+                old_elements_dict = {}
                 for element in elements:
                     old_elements_dict[element.element_identifier] = element
                 try:
@@ -3113,7 +3121,7 @@ class RelabelFromFileTool(DatabaseOperationTool):
         how_type = incoming["how"]["how_select"]
         new_labels_dataset_assoc = incoming["how"]["labels"]
         strict = string_as_bool(incoming["how"]["strict"])
-        new_elements = OrderedDict()
+        new_elements = {}
 
         def add_copied_value_to_new_elements(new_label, dce_object):
             new_label = new_label.strip()
@@ -3189,7 +3197,7 @@ class TagFromFileTool(DatabaseOperationTool):
         hdca = incoming["input"]
         how = incoming['how']
         new_tags_dataset_assoc = incoming["tags"]
-        new_elements = OrderedDict()
+        new_elements = {}
         new_datasets = []
 
         def add_copied_value_to_new_elements(new_tags_dict, dce):
@@ -3250,8 +3258,8 @@ class FilterFromFileTool(DatabaseOperationTool):
         hdca = incoming["input"]
         how_filter = incoming["how"]["how_filter"]
         filter_dataset_assoc = incoming["how"]["filter_source"]
-        filtered_elements = OrderedDict()
-        discarded_elements = OrderedDict()
+        filtered_elements = {}
+        discarded_elements = {}
 
         filtered_path = filter_dataset_assoc.file_name
         with open(filtered_path) as fh:

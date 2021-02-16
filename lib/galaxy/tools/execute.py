@@ -107,10 +107,11 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
     else:
         # Make sure collections, implicit jobs etc are flushed even if there are no precreated output datasets
         trans.sa_session.flush()
+    tool_id = tool.id
     for job in execution_tracker.successful_jobs:
         # Put the job in the queue if tracking in memory
         tool.app.job_manager.enqueue(job, tool=tool, flush=False)
-        trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
+        trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=tool_id)
     trans.sa_session.flush()
 
     if has_remaining_jobs:
@@ -151,7 +152,7 @@ class ExecutionTracker:
         self.output_datasets = []
         self.output_collections = []
 
-        self.implicit_collections = collections.OrderedDict()
+        self.implicit_collections = {}
 
     @property
     def param_combinations(self):

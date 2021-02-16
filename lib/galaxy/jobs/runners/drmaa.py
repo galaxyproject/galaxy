@@ -261,13 +261,17 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         that could happen in this process. to be called from check_watched_items()
         returns the state or None if exceptions occurred
         in the latter case the job is appended to new_watched if a
+
         1 drmaa.InternalException,
         2 drmaa.InvalidJobExceptionnot, or
         3 drmaa.DrmCommunicationException occurred
+
         (which causes the job to be tested again in the next iteration of check_watched_items)
+
         - the job is finished as errored if any other exception occurs
         - the job is finished OK or errored after the maximum number of retries
           depending on the exception
+
         Note that None is returned in all cases where the loop in check_watched_items
         is to be continued
         """

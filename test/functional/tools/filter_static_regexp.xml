@@ -45,10 +45,10 @@ echo $index_regexp_keep >> '$output' &&
     <tests>
         <!-- can choose a dbkey if it matches input -->
         <test>
-            <param name="index_static" value="hg19" />
-            <param name="index_static_keep" value="hg19" />
-            <param name="index_regexp" value="hg19" />
-            <param name="index_regexp_keep" value="hg19" />
+            <param name="index_static" value="hg19_value" />
+            <param name="index_static_keep" value="hg19_value" />
+            <param name="index_regexp" value="hg19_value" />
+            <param name="index_regexp_keep" value="hg19_value" />
             <output name="output">
                 <assert_contents>
                     <has_text text="hg19" />    
@@ -60,24 +60,24 @@ echo $index_regexp_keep >> '$output' &&
         <!-- Does this make sense - if no dbkey is defined there is no option
              available? -->
         <test expect_failure="true">
-            <param name="index_static" value="hg18" />
-            <param name="index_static_keep" value="hg19" />
-            <param name="index_regexp" value="hg19" />
-            <param name="index_regexp_keep" value="hg19" />
+            <param name="index_static" value="hg18_value" />
+            <param name="index_static_keep" value="hg19_value" />
+            <param name="index_regexp" value="hg19_value" />
+            <param name="index_regexp_keep" value="hg19_value" />
             <output name="output"/>
         </test>
         <test expect_failure="true">
-            <param name="index_static" value="hg19" />
-            <param name="index_static_keep" value="hg18" />
-            <param name="index_regexp" value="hg19" />
-            <param name="index_regexp_keep" value="hg19" />
+            <param name="index_static" value="hg19_value" />
+            <param name="index_static_keep" value="hg18_value" />
+            <param name="index_regexp" value="hg19_value" />
+            <param name="index_regexp_keep" value="hg19_value" />
             <output name="output"/>
         </test>
         <test expect_failure="true">
-            <param name="index_static" value="hg19" />
-            <param name="index_static_keep" value="hg19" />
-            <param name="index_regexp" value="hg18" />
-            <param name="index_regexp_keep" value="hg19" />
+            <param name="index_static" value="hg19_value" />
+            <param name="index_static_keep" value="hg19_value" />
+            <param name="index_regexp" value="hg18_value" />
+            <param name="index_regexp_keep" value="hg19_value" />
             <output name="output"/>
         </test>
         <test expect_failure="true">

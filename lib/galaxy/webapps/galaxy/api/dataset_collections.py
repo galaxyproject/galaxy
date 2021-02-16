@@ -92,7 +92,8 @@ class DatasetCollectionsController(
     @expose_api
     def contents(self, trans, hdca_id, parent_id, instance_type='history', limit=None, offset=None, **kwds):
         """
-        * GET /api/dataset_collection/{hdca_id}/contents/{parent_id}?limit=100&offset=0
+        GET /api/dataset_collection/{hdca_id}/contents/{parent_id}?limit=100&offset=0
+
         Shows direct child contents of indicated dataset collection parent id
 
         :type   string:     encoded string id
@@ -117,7 +118,7 @@ class DatasetCollectionsController(
 
         # check to make sure the dsc is part of the validated hdca
         decoded_parent_id = decode_id(self.app, parent_id)
-        if not hdca.contains_collection(decoded_parent_id):
+        if parent_id != hdca_id and not hdca.contains_collection(decoded_parent_id):
             errmsg = 'Requested dataset collection is not contained within indicated history content'
             raise ObjectNotFound(errmsg)
 

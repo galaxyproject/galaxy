@@ -5,6 +5,7 @@
  */
 import { map, withLatestFrom, pluck } from "rxjs/operators";
 import { throttleDistinct } from "utils/observable/throttleDistinct";
+import { nth } from "utils/observable/nth";
 
 import { bulkCacheDscContent } from "./db";
 import { prependPath } from "./workerConfig";
@@ -33,9 +34,7 @@ export const loadDscContent = (cfg = {}) => (src$) => {
     );
 
     // add contents_url to cache data, will use it as a key
-    const url$ = inputs$.pipe(
-        map((inputs) => inputs[0])
-    );
+    const url$ = inputs$.pipe(nth(0));
 
     // request, throttle frequently repeated requests
     const ajaxResponse$ = inputs$.pipe(

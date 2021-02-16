@@ -1238,18 +1238,20 @@ class MatrixMarket(TabularData):
     suitable for representing sparse matrices. Only nonzero entries need
     be encoded, and the coordinates of each are given explicitly.
 
-    The tabular file format is defined as follows::
+    The tabular file format is defined as follows:
 
-    %%MatrixMarket matrix coordinate real general <--- header line
-    %                                             <--+
-    % comments                                       |-- 0 or more comment lines
-    %                                             <--+
-        M  N  L                                   <--- rows, columns, entries
-        I1  J1  A(I1, J1)                         <--+
-        I2  J2  A(I2, J2)                            |
-        I3  J3  A(I3, J3)                            |-- L lines
-            . . .                                    |
-        IL JL  A(IL, JL)                          <--+
+    .. code-block::
+
+        %%MatrixMarket matrix coordinate real general <--- header line
+        %                                             <--+
+        % comments                                       |-- 0 or more comment lines
+        %                                             <--+
+            M  N  L                                   <--- rows, columns, entries
+            I1  J1  A(I1, J1)                         <--+
+            I2  J2  A(I2, J2)                            |
+            I3  J3  A(I3, J3)                            |-- L lines
+                . . .                                    |
+            IL JL  A(IL, JL)                          <--+
 
     Indices are 1-based, i.e. A(1,1) is the first element.
 
@@ -1275,25 +1277,24 @@ class MatrixMarket(TabularData):
         if dataset.has_data():
             # If the dataset is larger than optional_metadata, just count comment lines.
             with open(dataset.file_name) as dataset_fh:
+                line = ''
+                data_lines = 0
                 comment_lines = 0
-                if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
-                    # If the dataset is larger than optional_metadata, just count comment lines.
-                    for line in dataset_fh:
-                        if line.startswith('%'):
-                            comment_lines += 1
-                        else:
-                            # No more comments, and the file is too big to look at the whole thing. Give up.
-                            dataset.metadata.data_lines = None
-                            break
-                else:
-                    for i, l in enumerate(dataset_fh):
-                        if l.startswith('%'):
-                            comment_lines += 1
-                    dataset.metadata.data_lines = i + 1 - comment_lines
-                if ' ' in l:
+                # If the dataset is larger than optional_metadata, just count comment lines.
+                count_comments_only = self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize
+                for line in dataset_fh:
+                    if line.startswith('%'):
+                        comment_lines += 1
+                    elif count_comments_only:
+                        data_lines = None
+                        break
+                    else:
+                        data_lines += 1
+                if ' ' in line:
                     dataset.metadata.delimiter = ' '
                 else:
                     dataset.metadata.delimiter = '\t'
             dataset.metadata.comment_lines = comment_lines
+            dataset.metadata.data_lines = data_lines
             dataset.metadata.columns = 3
             dataset.metadata.column_types = ['int', 'int', 'float']

@@ -11,21 +11,17 @@
 import Placeholder from "./Placeholder";
 import Dataset from "./Dataset";
 import DatasetCollection from "./DatasetCollection";
+// import SubDataset from "./SubDataset";
 import Subcollection from "./Subcollection";
 
 export default {
-    inject: ["listState", "isSelected", "isExpanded", "setSelected", "setExpanded"],
-
     template: `
         <component :is="contentItemComponent"
             class="content-item p-1"
             :class="{ loading }"
-            :index="index"
             :tabindex="index"
-            :item="item"
-            :selected.sync="selected"
-            :expanded.sync="expanded"
-            :scrolling="scrolling"
+            v-on="$listeners"
+            v-bind="bindProps"
             @mouseover.native.self.stop="setFocus(index)"
             @keydown.native.arrow-up.self.stop="setFocus(index - 1)"
             @keydown.native.arrow-down.self.stop="setFocus(index + 1)"
@@ -36,6 +32,7 @@ export default {
         Placeholder,
         Dataset,
         DatasetCollection,
+        // SubDataset,
         Subcollection,
     },
 
@@ -65,24 +62,8 @@ export default {
             // override me
             return "Placeholder";
         },
-        selected: {
-            get() {
-                return this.isSelected(this.item);
-            },
-            set(val) {
-                this.setSelected(this.item, val);
-            },
-        },
-        expanded: {
-            get() {
-                return this.isExpanded(this.item);
-            },
-            set(val) {
-                this.setExpanded(this.item, val);
-            },
-        },
-        scrolling() {
-            return this.listState.scrolling;
+        bindProps() {
+            return { ...this.$props, ...this.$attrs };
         },
     },
 

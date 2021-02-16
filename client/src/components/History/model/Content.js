@@ -17,13 +17,10 @@ export class Content extends dateMixin(ModelBase) {
     }
 
     get title() {
-        const { name, isDeleted, visible, purged } = this;
-        let result = name;
+        const { name, element_identifier, visible, purged } = this;
+        let result = element_identifier || name;
         const itemStates = [];
-        if (isDeleted) {
-            itemStates.push("Deleted");
-        }
-        if (visible == false) {
+        if (visible == false && !element_identifier) {
             itemStates.push("Hidden");
         }
         if (purged) {
@@ -57,5 +54,11 @@ export class Content extends dateMixin(ModelBase) {
 
     get hdca_id() {
         return this.isCollection ? this.id : null;
+    }
+
+    // subset of tags that start with name:
+    get nameTags() {
+        const allTags = this.tags || [];
+        return allTags.filter((t) => t.includes("name:"));
     }
 }
