@@ -99,6 +99,7 @@ jobs:
       - *restore_repo_cache
       - *install_tox
       - *install_ffprobe
+      - run: tox -e py36-unit
   validate_test_tools:
     docker:
       - image: circleci/python:3.6
