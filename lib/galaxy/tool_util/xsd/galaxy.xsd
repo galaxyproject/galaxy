@@ -2889,12 +2889,14 @@ the column index.
           <xs:annotation>
             <xs:documentation xml:lang="en">This attribute is used only if
 ``type`` attribute value is ``select`` - render a select list as a set of check
-boxes or radio buttons. Defaults to a drop-down menu select list.</xs:documentation>
+boxes (``display="checkboxes"``) or radio buttons (``display="radio"``, note this
+is incompatible with ``multiple="true"`` and ``optional="true"``).
+Defaults to a drop-down menu select list.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="multiple" type="PermissiveBoolean">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Allow multiple valus to be selected.
+            <xs:documentation xml:lang="en">Allow multiple values to be selected.
 Valid with ``data`` and ``select`` parameters. ``select`` parameters with ``multiple="true"`` are optional by default.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
