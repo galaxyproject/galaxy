@@ -41,7 +41,7 @@ DEVTEAM = [
     "tnabtaf", "natefoo", "jgoecks",
     "guerler", "jennaj", "nekrut", "jxtx",
     "VJalili", "WilliamHolden", "Nerdinacan",
-    "ic4f", "mvdbeek"
+    "ic4f", "mvdbeek", "galaxyproject"
 ]
 
 TEMPLATE = """
@@ -479,7 +479,7 @@ def _get_prs(release_name, state="closed"):
         if reached_old_prs:
             break
 
-        if pr.created_at < datetime.datetime(2018, 11, 1, 0, 0):
+        if pr.created_at < datetime.datetime(2020, 5, 1, 0, 0):
             reached_old_prs = True
             pass
         merged_at = pr.merged_at

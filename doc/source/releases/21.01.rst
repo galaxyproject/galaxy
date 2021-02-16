@@ -6,6 +6,63 @@
 
 .. announce_start
 
+TODO:
+
+Convert collection creators to Vue.
+10240
+
+Add default dbkey when collecting builds
+10667
+
+Fix running subworkflows with parameter input steps.
+10722
+
+Drop API Key listings from admin user list
+10745
+
+Fix issues with copying tags and collections.
+10761
+
+Fix various style issues with rule builder.
+10766
+
+Render OpenEBench link in new consolidated tool metadata.
+10789
+
+Rework arguments to a couple model security operations to allow greater reuse.
+10835
+
+Add cancel option to workflow create form.
+10953
+
+Cleanup client unit test removing jquery and mocking ajax calls.
+10904
+
+Add tooltip to workflow node output checkbox.
+10957
+
+More structured workflow create and update parameter handling.
+11016
+
+Drop temporary hacks for upgrading export jobs from Galaxy 19.01 to 19.05.
+10990
+
+Fix workflow preview for tool repeat blocks without ``title``.
+10851
+
+Make Selenium BibTeX rendering test more robust.
+OlegZharkov
+10809
+
+Implement select all box on admin "Manage Dependencies" page.
+OlegZharkov
+10758
+
+Add link to view dataset in dataset params
+simonbray
+10752
+
+
 Enhancements
 -------------------------------
 
@@ -82,7 +139,8 @@ Enhancements
   `Pull Request 11009`_, `Pull Request 11037`_,
   `Pull Request 11022`_, `Pull Request 11007`_,
   `Pull Request 11027`_, `Pull Request 11039`_,
-  `Pull Request 11000`_
+  `Pull Request 11000`_, `Pull Request 10992`_,
+  `Pull Request 11013`_, `Pull Request 11019`_
 * Allow setting file download filename_pattern by client.
   `Pull Request 11108`_
 * Add FastAPI migration of licenses endpoints
@@ -94,12 +152,17 @@ Enhancements
 * Major enhancements for the ``galaxy-tool-test`` script (installed as part of the PyPI
   package ``galaxy-tool-util``).
   `Pull Request 10620`_, `Pull Request 10779`_,
-  `Pull Request 10908`_, `Pull Request 10879`_
+  `Pull Request 10908`_, `Pull Request 10879`_,
+  `Pull Request 10725`_, `Pull Request 10735`_
+  `Pull Request 10767`_
 * Speedup xml replacement when loading tools.
   `Pull Request 10804`_
 * Update askomics interactive tool to 4.1.1
   (thanks to `@abretaud <https://github.com/abretaud>`__).
   `Pull Request 10878`_
+* Revise tool inputs to allow nested parameters and allow ``build_for_rerun`` and other
+  (thanks to `@simonbray <https://github.com/simonbray>`__).
+  `Pull Request 11332`_, `Pull Request 10720`_
 * Allow empty file uploads
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 11079`_
@@ -323,7 +386,7 @@ Enhancements
   `Pull Request 10861`_
 * Allow ``build_list`` tool inputs to be optional
   (thanks to `@innovate-invent <https://github.com/innovate-invent>`__).
-  `Pull Request 10863`_
+  `Pull Request 10863`_, `Pull Request 10871`_
 * Allow selecting dynamic select parameters by name in the API and tool tests
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 10880`_
@@ -621,9 +684,6 @@ Fixes
 * Fix integration tests on CI to deploy postgresql and rabbitmq in Kubernetes
   for robustness.
   `Pull Request 11314`_
-* Submit ``input_format`` to tools API in payload not as a parameter
-  (thanks to `@simonbray <https://github.com/simonbray>`__).
-  `Pull Request 11332`_
 * Fix command line building when using interpreter
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 11343`_
