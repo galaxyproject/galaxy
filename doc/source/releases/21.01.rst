@@ -9,139 +9,111 @@
 Enhancements
 -------------------------------
 
-.. major_feature
-
-
-.. feature
-
-* History component refactor
+* History panel rewrite (available in the UI as a beta option).
   `Pull Request 8441`_
-* Show favourited tools independent of version
-  (thanks to `@juleengraham <https://github.com/juleengraham>`__).
-  `Pull Request 9873`_
-* Irods data migration
-  (thanks to `@kxk302 <https://github.com/kxk302>`__).
-  `Pull Request 10125`_
-* Library Folder Pagination
+* Add workflow invocation detail component.
+  `Pull Request 10976`_
+* Allow organizing the panel via EDAM ontology annotations.  
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
+  `Pull Request 10592`_
+* Various substantial improvements to data library user interface 
   (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
-  `Pull Request 10204`_
-* initial commit for gfa2
-  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
-  `Pull Request 10270`_
+  `Pull Request 10204`_, `Pull Request 11099`_,
+  `Pull Request 10557`_, `Pull Request 10558`_
 * Script for finding missing db indexes
   `Pull Request 10350`_
-* Galaxy schema rendering script
+* Implement Galaxy database model schema rendering script.
   `Pull Request 10571`_
-* Add the OpenSeadragon viewer for deep zoom images
-  (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__).
-  `Pull Request 10756`_
-* Add custom activation email message
+* Allow configuration of activation email message.
   `Pull Request 10959`_
-* Add workflow invocation detail component
-  `Pull Request 10976`_
 * UI & API for Supporting Best Practice Workflows
   `Pull Request 10988`_
+* Implement edit & upgrade subworkflow buttons in workflow editor.
+  `Pull Request 11032`_
+* Allow Galaxy page creation from a workflow invocation report.
+  `Pull Request 10241`_
+* Implement user-facing objectstore metadata.
+  `Pull Request 10233`_
+* Allow embedding visualizations in new markdown-based Galaxy pages.
+  `Pull Request 10288`_
+* Fixes and improvements to favorited tools in the tool panel.
+  `Pull Request 10955`_, `Pull Request 9873`_
+* iRODS data migration script
+  (thanks to `@kxk302 <https://github.com/kxk302>`__).
+  `Pull Request 10125`_
+* Add the OpenSeadragon viewer and extend datatypes for deep zoom images
+  (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__).
+  `Pull Request 10756`_, `Pull Request 11017`_, `Pull Request 10546`_
+* Add gfa2 datatype
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 10270`_
 * Add nifti1 and nifti2 datatype
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 11020`_
-* add tck and trk datatype
+* Add tck and trk datatype
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 11021`_
-* add gifti fileformat
+* Add gifti datatype
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 11028`_
-* Add FastAPI migration of licenses endpoints
-  (thanks to `@davelopez <https://github.com/davelopez>`__).
-  `Pull Request 11056`_
-.. enhancement_tag_viz
-
-* Expand image formats for viewing in OpenSeadragon
-  (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__).
-  `Pull Request 11017`_
-.. enhancement_tag_datatypes
-
-* add ome.tiff datatype
+* Add ome.tiff datatype
   (thanks to `@qiagu <https://github.com/qiagu>`__).
   `Pull Request 10349`_
-* Add support for the dzi (Deep Zoom Image) data format
-  (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__).
-  `Pull Request 10546`_
 * Add datatype converters for various MD filetypes
   (thanks to `@simonbray <https://github.com/simonbray>`__).
   `Pull Request 10757`_
-* mypy type checking for more Galaxy packages
-  `Pull Request 11009`_
-* add basic Apache Parquet datatype
+* Add Apache Parquet datatype
   `Pull Request 11047`_
-* Add minimal `msf` datatype
+* Add msf datatype
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 11084`_
-* Allow setting filename_pattern by client
-  `Pull Request 11108`_
-.. enhancement_tag_tools
-
-* Allow the Apply Rules tool to attach tags to output datasets.
+* Allow the "Apply Rules" tool to attach tags to output datasets.
   `Pull Request 10382`_
-* EDAM tool panel
-  (thanks to `@hexylena <https://github.com/hexylena>`__).
-  `Pull Request 10592`_
+* Implement mypy type checking for the Galaxy Python backend.
+  `Pull Request 11009`_, `Pull Request 11037`_,
+  `Pull Request 11022`_, `Pull Request 11007`_
+* Allow setting file download filename_pattern by client.
+  `Pull Request 11108`_
+* Add FastAPI migration of licenses endpoints
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 11056`_
+* Improvements to workflow imports from GA4GH TRS servers
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 10805`_, `Pull Request 10619`_
 * Enhancements for galaxy-tool-test script.
-  `Pull Request 10620`_
-* Speedup xml replacement
+  `Pull Request 10620`_, `Pull Request 10779`_
+* Speedup xml replacement when loading tools.
   `Pull Request 10804`_
-* Update askomics IT to 4.1.1
+* Update askomics interactive tool to 4.1.1
   (thanks to `@abretaud <https://github.com/abretaud>`__).
   `Pull Request 10878`_
-* allow empty file uploads
-  (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
+* Allow empty file uploads
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 11079`_
-.. enhancement_tag_workflows
-
-* Create Page from Invocation Report
-  `Pull Request 10241`_
-* Add workflow test for assigning subworkflow outputs as outputs.
-  `Pull Request 10478`_
-* auto-import workflow with trs
-  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
-  `Pull Request 10619`_
-* wait_for_invocation should take in an assert_ok flag like other wait methods.
-  `Pull Request 10668`_
-* API workflow test showing structure of default/optionals parameters.
-  `Pull Request 10669`_
-* Implement expression tool for picking non-null values for CWL-style merging of conditional branches in native Galaxy workflows
-  `Pull Request 10712`_
-* Add/document API for publishing/tagging workflows
-  (thanks to `@simonbray <https://github.com/simonbray>`__).
-  `Pull Request 10748`_
-* show warning on trs-workflow import for anonymous users
-  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
-  `Pull Request 10805`_
-* Allow relative paths when staging jobs (e.g. with planemo run)
-  (thanks to `@simonbray <https://github.com/simonbray>`__).
-  `Pull Request 10886`_
-* Only enable the workflow save button if it has changes.
-  `Pull Request 10999`_
-* Simplify workflow editor metadata handling.
-  `Pull Request 11001`_
-* Workflow editor cleanup and unit tests.
-  `Pull Request 11024`_
-* Implement edit & upgrade subworkflow buttons in workflow editor.
-  `Pull Request 11032`_
-* Vue-ify Workflow State Upgrade Message Modal
-  `Pull Request 11036`_
-* Vue-ify warnings about embedded subworkflows.
-  `Pull Request 11042`_
-.. enhancement_tag_ui
-
 * Disable dataset edit button after the dataset has been deleted
   (thanks to `@simonbray <https://github.com/simonbray>`__).
   `Pull Request 10589`_
+* Implement expression tool for picking non-null values for CWL-style merging of
+  conditional branches in native Galaxy workflows.
+  `Pull Request 10712`_
+* Add workflow tests for some newer workflow features.
+  `Pull Request 10478`_, `Pull Request 10669`_
+* wait_for_invocation should take in an assert_ok flag like other wait methods.
+  `Pull Request 10668`_
+* Add and document API for publishing and tagging workflows
+  (thanks to `@simonbray <https://github.com/simonbray>`__).
+  `Pull Request 10748`_
+* Allow relative paths when staging jobs (e.g. with planemo run)
+  (thanks to `@simonbray <https://github.com/simonbray>`__).
+  `Pull Request 10886`_
+* Various small cleanups and improvements to the workflow editor and migrations toward
+  Vue.
+  `Pull Request 10999`_, `Pull Request 11001`_, `Pull Request 11024`_,
+  `Pull Request 10769`_, `Pull Request 11036`_, `Pull Request 11042`_
 *  Replace StreamBall, replace tarballs with zip
   `Pull Request 10919`_
 * Simplify JobInformation and DatasetInformation components
   `Pull Request 10980`_
-.. enhancement_tag_jobs
-
 * Set undesired execution hosts to avoid in LSF
   (thanks to `@pcm32 <https://github.com/pcm32>`__).
   `Pull Request 10260`_
@@ -165,13 +137,9 @@ Enhancements
   `Pull Request 10625`_
 * Python 3 - Convert a bunch of Bunchs to string Enums
   `Pull Request 11027`_
-* Last few typing fixes to enable mypy check of all of lib/
-  `Pull Request 11037`_
 * Allow extra job metadata to be specified for k8s
   (thanks to `@nuwang <https://github.com/nuwang>`__).
   `Pull Request 11078`_
-.. enhancement_tag_admin
-
 * Implement quota interface - with better logic isolation and unit tests.
   `Pull Request 10212`_
 * When compiling dynamic installation confs, ensure location is actually writeable
@@ -184,14 +152,12 @@ Enhancements
 * Allow TRS servers to not be defined
   (thanks to `@selten <https://github.com/selten>`__).
   `Pull Request 10817`_
-* Drop legacy_eager_objectstore_initialization option.
+* Drop ``legacy_eager_objectstore_initialization`` config option.
   `Pull Request 10828`_
-* Clarify `master_api_key` intended use
+* Clarify ``master_api_key`` intended use
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 11067`_
-.. enhancement
-
-* Allow InteractiveTools to use path-based proxying when requires_domain=False
+  `Pull Request 11067`
+* Allow InteractiveTools to use path-based proxying when ``requires_domain=False``.
   `Pull Request 8596`_
 * Add warning for non-existing tool version
   (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
@@ -199,13 +165,9 @@ Enhancements
 * set up confirmation page for new custos/oidc users
   (thanks to `@juleengraham <https://github.com/juleengraham>`__).
   `Pull Request 10198`_
-* User-facing objectstore metadata.
-  `Pull Request 10233`_
 * Add script to diff two release config files.
   (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 10258`_
-* Add Visualizations to Pages
-  `Pull Request 10288`_
 * Tiny upload optimization for uploads.
   `Pull Request 10316`_
 * Allow files config to use keyed dict with ids as dict key.
@@ -274,12 +236,6 @@ Enhancements
   `Pull Request 10540`_
 * Improve performance of copying HDAs and HDCAs
   `Pull Request 10549`_
-* Data library fix races, show spinner on first load
-  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
-  `Pull Request 10557`_
-* Data library: start search on enter
-  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
-  `Pull Request 10558`_
 * Update to new LTS nodejs version
   `Pull Request 10565`_
 * Document data manager repository layout
@@ -328,8 +284,6 @@ Enhancements
   `Pull Request 10751`_
 * Revision of sharing component, adds url copy to clipboard feature
   `Pull Request 10754`_
-* Fix and improve handling of input upload problems while running tool tests.
-  `Pull Request 10779`_
 * list functionality changes with profile in xsd
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 10798`_
@@ -391,13 +345,9 @@ Enhancements
   `Pull Request 10993`_
 * Check Python typing for galaxy-containers and galaxy-tool-util during CI.
   `Pull Request 11000`_
-* Type checking fixes for galaxy-data (datatypes and models).
-  `Pull Request 11007`_
 * Update locale.js
   (thanks to `@shenweiyan <https://github.com/shenweiyan>`__).
   `Pull Request 11011`_
-* More type and package fixes.
-  `Pull Request 11022`_
 * Implementing highlighting and scrolling to nodes in canvas from lint panel.
   `Pull Request 11025`_
 * Document how parameters in sections are referenced
@@ -437,8 +387,6 @@ Enhancements
 * Persist scroll/url information, in chrome, firefox
   (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 11290`_
-.. small_enhancement
-
 * Improve API test for datatype change
   (thanks to `@simonbray <https://github.com/simonbray>`__).
   `Pull Request 10272`_
@@ -503,68 +451,50 @@ Enhancements
 * Build FastAPI app in a single location
   `Pull Request 11074`_
 
-
 Fixes
 -------------------------------
 
-.. major_bug
-
-
-.. bug_tag_viz
-
-* hide purged datasets from visualizations
+* Hide purged datasets from visualizations
   (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
   `Pull Request 10483`_
-* Fix reference error
+* Fix reference error in MVP client application
   (thanks to `@tmcgowan <https://github.com/tmcgowan>`__).
   `Pull Request 10782`_
-.. bug_tag_datatypes
-
-* GTF Sniffer Fix
+* Fix for GTF sniffer
   (thanks to `@mtekman <https://github.com/mtekman>`__).
   `Pull Request 10588`_
-* AnnData Peek Fix
+* Fix AnnData datatype peek
   (thanks to `@mtekman <https://github.com/mtekman>`__).
   `Pull Request 10986`_
-* remove mutatable arguments from function calls
+* Remove mutatable arguments from Pythn function calls
   (thanks to `@bgruening <https://github.com/bgruening>`__).
-  `Pull Request 10998`_
-* More mutable fixes
-  (thanks to `@bgruening <https://github.com/bgruening>`__).
-  `Pull Request 11003`_
-.. bug_tag_tools
-
-* Disable tool cache if there is a problem
+  `Pull Request 10998`_, `Pull Request 11003`_, `Pull Request 11006`_
+* Disable tool cache if there is a problem.
   `Pull Request 10808`_
-* Put new toolshed tools in existing tool panel sections if the ID matches
+* Put new toolshed tools in existing tool panel sections if the ID matches.
   `Pull Request 10984`_
-.. bug_tag_workflows
-
-* Add checks to workflow toolbox, avoid displaying empty sections
+* Add checks to workflow toolbox, avoid displaying empty sections.
   `Pull Request 10363`_
-* Filter duplicate workflow output labels when initializing workflow step outputs
+* Filter duplicate workflow output labels when initializing workflow step outputs.
   `Pull Request 10432`_
-* Properly scale workflow node coordinates before saving workflow
+* Properly scale workflow node coordinates before saving workflow.
   `Pull Request 10511`_
-* Fix changing versions in workflow editor
+* Fix changing versions in workflow editor.
   `Pull Request 10516`_
-* Fix currently failing Selenium tests, move to GitHub workflow
+* Fix currently failing Selenium tests, move to GitHub workflow.
   `Pull Request 10755`_
-* Don't preload editor mako with hidden workflows
+* Don't preload editor mako with hidden workflows.
   `Pull Request 10759`_
 * Fix generation of BCO `object_id` and `etag`
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 10964`_
-* Record invocation_step outputs as appropriate
+* Record invocation_step outputs as appropriate.
   `Pull Request 10970`_
-* Fix workflow parameter text value restriction when connected to select and text parameter
+* Fix workflow parameter text value restriction when connected to select and text parameter.
   `Pull Request 10975`_
-* convert log.warn() to log.warning()
+* Convert deprecated `log.warn()`` calls to ``log.warning()``
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 10996`_
-* more mutable fixes + some extra cleanups
-  (thanks to `@bgruening <https://github.com/bgruening>`__).
-  `Pull Request 11006`_
 * Misc fixes
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 11029`_
@@ -574,107 +504,93 @@ Fixes
   `Pull Request 11257`_
 * Fix populated state for empty collections
   `Pull Request 11312`_
-* Fix Workflow report markdown lost upon renaming WF
+* Fix Workflow report markdown lost upon renaming the workflow
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 11317`_
-.. bug_tag_ui
-
-* Bump axios from 0.19.2 to 0.21.1 in /client
-  (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
+* Bump client axios dependency from 0.19.2 to 0.21.1.
   `Pull Request 11053`_
-.. bug_tag_jobs
-
 * Improved exception handling for missing job parameter field.
   `Pull Request 10298`_
 * Ensure `requirements` in a `DependenciesDescription` is a `ToolRequirements`
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 11044`_
-* Another attempt at using pulsar_app_config_path for secure Pulsar K8S parameters.
-  `Pull Request 11254`_
-* Copy Pulsar params so we don't modify the actual param dict in place
-  `Pull Request 11256`_
-* Copy params so we don't modify the actual param dict in place
-  `Pull Request 11261`_
-.. bug_tag_admin
-
-* Restore the ability to pull containers from admin menu
+* Allow specifying remote Pulsar app configuration external to job destination
+  attributes to prevent persisting connection secrets.
+  `Pull Request 11254`_, `Pull Request 11256`_, `Pull Request 11261`_
+* Restore the ability to pull containers from admin menu.
   `Pull Request 10814`_
-* Fix error on Admin panel when creating new quota
+* Fix error in admin panel when creating new quota
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 11277`_
-.. bug
-
-* Fix quota meter style
+* Fix quota meter style.
   `Pull Request 10299`_
 * Fix pytest breakage in package testing.
   `Pull Request 10320`_
-* add test for data_column parameter referring to non-tabular data (bed) and fix bug
+* Add test for ``data_column`` parameter referring to non-tabular data (bed) and fix bug
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 10365`_
 * Fix assigning default value to variables in ``run_test_wrapper.sh``
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 10381`_
-* Fix handling of collection element identifiers in history panel
+* Fix handling of collection element identifiers in history panel.
   `Pull Request 10427`_
-* Fix report's library function call in dataset_info.mako.
+* Fix report's library function call in ``dataset_info.mako``.
   `Pull Request 10476`_
-* Fix drag and drop highlighting in tool form for data inputs
+* Fix drag and drop highlighting in tool form for data inputs.
   `Pull Request 10494`_
 * Display consistent format for job runtime
   (thanks to `@kxk302 <https://github.com/kxk302>`__).
   `Pull Request 10504`_
-* modified list-of-pairs to copy datasets as hidden
+* Modified list-of-pairs to copy datasets as hidden
   (thanks to `@assuntad23 <https://github.com/assuntad23>`__).
   `Pull Request 10508`_
-* Search info popup hidden on click away
+* Fix search info popup to become hidden on click away
   (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
   `Pull Request 10512`_
 * Disable upload option in default data dialog since history panel is not always available
   `Pull Request 10533`_
-* Fix ObjectUploadTarget handling in tool util staging code.
+* Fix ``ObjectUploadTarget`` handling in tool util staging code.
   `Pull Request 10650`_
-* fix link to job config sample in docs
+* Fix link to job config sample in docs
   (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
   `Pull Request 10673`_
-* Produce a clean list of dataset instances if not datasets in collection
+* Produce a clean list of dataset instances if not datasets in collection.
   `Pull Request 10676`_
-* Add refresh_time to irods configuration, so that connections older than refresh_time are re-created.
+* Add ``refresh_time`` to iRODS configuration, so that connections older than refresh_time are re-created.
   (thanks to `@kxk302 <https://github.com/kxk302>`__).
   `Pull Request 10698`_
-* Cleanup announce samples
+* Cleanup announce samples.
   `Pull Request 10762`_
-* Fix title wrapping in workflow editor
-  `Pull Request 10769`_
-* Fix Example links
+* Fix admin job configuration example links
   (thanks to `@RichardJActon <https://github.com/RichardJActon>`__).
   `Pull Request 10771`_
-* Fix collectl plugin
+* Fix collectl plugin for Python 3.
   `Pull Request 10775`_
-* Improve update handling for switches, use es6 and listento functions
+* Improve update handling for switches, use es6 and listento functions.
   `Pull Request 10785`_
-* Fix list of cached Docker images not getting updated
+* Fix list of cached Docker images not getting updated.
   `Pull Request 10796`_
-* Close empty multi view, fix icon alignment
+* Small fixes to history panel.
   `Pull Request 10802`_
-* fix vue-unit test in toolsview.test.js
+* Fix vue-unit test in toolsview.test.js
   (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
   `Pull Request 10812`_
-* Various bugfixes for reloading the toolbox
+* Various bugfixes for reloading the toolbox.
   `Pull Request 10818`_
-* Cast `ncores` to str for `subprocess.call()`
+* Cast ``ncores`` to str for ``subprocess.call()``
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 10825`_
-* Test cases and fix for config option new_user_dataset_access_role_default_private
+* Test cases and fix for config option ``new_user_dataset_access_role_default_private``.
   `Pull Request 10834`_
-* Fix Label Verifier in Maintenance Bot
+* Fix label verifier in Github Maintenance Bot
   (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
   `Pull Request 10836`_
 * Move new config files samples to `lib/galaxy/config/sample/`
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 10842`_
-* Fix mulled unit test
+* Fix mulled unit test.
   `Pull Request 10857`_
-* Don't fetch dev on dev. Map AWS secrets to environment variables
+* Fixes to Github action for building documentation
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 10866`_
 * Import `Mapping` from `collection.abc`
@@ -683,34 +599,29 @@ Fixes
 * Update lxml for CVE-2020-27783
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 10882`_
-* Update makefile target, verbiage for jest.
+* Update ``Makefile`` target and verbiage for Jest.
   `Pull Request 10910`_
-* Allow YAML list format for config options
+* Allow YAML list format for config options.
   `Pull Request 10945`_
-* Bump tensorflow from 2.3.1 to 2.4.0 in /lib/galaxy/dependencies
-  (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
+* Bump tensorflow Python dependency from 2.3.1 to 2.4.0.
   `Pull Request 10946`_
 * Added handler for history options menu webhook
   (thanks to `@kjetilkl <https://github.com/kjetilkl>`__).
   `Pull Request 10949`_
-* Remove extra word
-  (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
+* Remove extra word in login confirmation.
   `Pull Request 10952`_
-* Allow toggling favorites button in tool panel
-  `Pull Request 10955`_
 * Various documentation fixes
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 10963`_
-* If input file is empty, and you are trying to access anything but column 1 of the input file
-  (thanks to `@kxk302 <https://github.com/kxk302>`__).
+* Fix tool validation for empty files in certain scenarios.
   `Pull Request 10981`_
-* Overwrite uwsgi default py-call-osafterfork
+* Overwrite uwsgi default py-call-osafterfork.
   `Pull Request 10983`_
-* Small improvements to try to get galaxy-app closer to working.
+* Small improvements to package structure to try to get ``galaxy-app`` closer to working.
   `Pull Request 11010`_
-* Fix change feed
+* Fix change feed.
   `Pull Request 11018`_
-* Pass `job` to `setup_external_metadata()` in `SetMetadataToolAction.execute_via_app()`
+* Pass ``job`` to ``setup_external_metadata()`` in ``SetMetadataToolAction.execute_via_app()``
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 11031`_
 * Document min, max, and optional for data parameters
@@ -719,46 +630,35 @@ Fixes
 * Add empty preferences attribute to BootstrapAdminUser
   (thanks to `@simonbray <https://github.com/simonbray>`__).
   `Pull Request 11062`_
-* Make yaml tool parser parse expect_failure
-  (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
+* Make YAML tool parser parse ``expect_failure``.
   `Pull Request 11072`_
 * Fix type column in library folder
   (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
   `Pull Request 11093`_
 * Fix spurious "Select" button in upload.
   `Pull Request 11096`_
-* Cleanup a variety of sphinx warning and update lib structure.
-  `Pull Request 11097`_
-* fix 'per page' in data library
-  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
-  `Pull Request 11099`_
-* Progress toward failing CI on sphinx warnings.
-  `Pull Request 11103`_
-* Don't use copy when serializing JSON in safe_dumps
+* Cleanup a variety of sphinx warnings and update lib structure.
+  `Pull Request 11097`_, `Pull Request 11103`_
+* Don't use copy when serializing JSON in ``safe_dumps``.
   `Pull Request 11169`_
-* Reduce authnz exception exposure
+* Reduce authnz exception exposure.
   `Pull Request 11212`_
-* Fix arguments in create_api_key
+* Fix arguments in ``create_api_key``
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 11243`_
-* Routing fixes for username path components, username validation fixes
+* Routing fixes for username path components and username validation fixes.
   `Pull Request 11260`_
-* Update pulsar lib to 0.14.1
+* Update Python dependency pulsar-galaxy-lib to 0.14.1.
   `Pull Request 11279`_
-* Use nested state tracking with sqlalchemy-mutable
-  `Pull Request 11288`_
-* Deploy postgresql and rabbitmq in kubernetes
+* Fix integration tests on CI to deploy postgresql and rabbitmq in Kubernetes
+  for robustness.
   `Pull Request 11314`_
-* Submit input_format to tools API in payload, not as a parameter
+* Submit ``input_format`` to tools API in payload not as a parameter
   (thanks to `@simonbray <https://github.com/simonbray>`__).
   `Pull Request 11332`_
 * Fix command line building when using interpreter
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 11343`_
-* Change some more JSONType fields to non-tracked variant
-  `Pull Request 11363`_
-* Revert sqlalachemy-json, add unit tests, fix 'MutationList' object has no attribute '_key'
-  `Pull Request 11366`_
 
 .. include:: 21.01_prs.rst
 
