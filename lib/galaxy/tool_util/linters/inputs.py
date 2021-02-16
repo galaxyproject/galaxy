@@ -44,6 +44,12 @@ def lint_inputs(tool_xml, lint_ctx):
             if dynamic_options is None and len(select_options) == 0:
                 message = "No options defined for select [%s]" % param_name
                 lint_ctx.warn(message)
+
+            if param_attrib["display"] == "radio":
+                if param_attrib["optional"] == "true":
+                    lint_ctx.error('Select [%s] display="radio" is incompatible with optional="true"', param_name)
+                if param_attrib["multiple"] == "true":
+                    lint_ctx.error('Select [%s] display="radio" is incompatible with multiple="true"', param_name)
         # TODO: Validate type, much more...
 
     conditional_selects = tool_xml.findall("./inputs//conditional")
