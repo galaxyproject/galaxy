@@ -118,6 +118,7 @@ class UploadsTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         #   https://www.ebi.ac.uk/ena/data/view/PRJDA60709
         self.home()
         self.upload_rule_start()
+        self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("rules_example_1_1_rules_landing")
         self.components.upload.rule_source_content.wait_for_and_send_keys("""study_accession sample_accession    experiment_accession    fastq_ftp
 PRJDA60709  SAMD00016379    DRX000475   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000770/DRR000770.fastq.gz
