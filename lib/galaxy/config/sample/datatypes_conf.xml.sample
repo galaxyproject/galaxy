@@ -321,7 +321,7 @@
     <datatype extension="flowstat1" type="galaxy.datatypes.tabular:Tabular" mimetype="text/tab-separated-values" display_in_upload="true" description="A Flow Stats file with a '.flowstat1' file extension." />
     <datatype extension="flowstat2" type="galaxy.datatypes.tabular:Tabular" mimetype="text/tab-separated-values" display_in_upload="true" description="A Flow Stats file with a '.flowstat2' file extension." />
     <datatype extension="flowstat3" type="galaxy.datatypes.tabular:Tabular" mimetype="text/tab-separated-values" display_in_upload="true" description="A Flow Stats file with a '.flowstat3' file extension." />
-    <datatype extension="flowscore" type="galaxy.datatypes.flow:FlowScore" mimetype="text/tab-separated-values" display_in_upload="true" description="A Flow Score file with a '.flowscore' file extension." />
+    <datatype extension="flowscore" type="galaxy.datatypes.tabular:Tabular" mimetype="text/tab-separated-values" display_in_upload="true" description="A Flow Score file with a '.flowscore' file extension." />
     <datatype extension="flowframe" type="galaxy.datatypes.binary:RData" mimetype="application/octet-stream" subclass="true" display_in_upload="true" description="Data saved from a R session containing just a flowFrame object" />
     <datatype extension="fsom" type="galaxy.datatypes.binary:RData" mimetype="application/octet-stream" subclass="true" display_in_upload="true" description="Data saved from a R session containing just a fSOM object" />
     <datatype extension="flowset" type="galaxy.datatypes.binary:RData" mimetype="application/octet-stream" subclass="true" display_in_upload="true" description="Data saved from a R session containing just a flowSet object" />

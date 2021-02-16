@@ -79,34 +79,3 @@ class FCS(Binary):
     def get_mime(self):
         """Returns the mime type of the datatype"""
         return 'application/octet-stream'
-
-
-class FlowScore(Tabular):
-    """Class describing a Flow Score file"""
-    file_ext = "flowscore"
-
-    def set_peek(self, dataset, is_multi_byte=False):
-        if not dataset.dataset.purged:
-            dataset.peek = "Flow Score file"
-            dataset.blurb = data.nice_size(dataset.get_size())
-        else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
-
-    def display_peek(self, dataset):
-        try:
-            return dataset.peek
-        except Exception:
-            return "Flow Score file (%s)" % (data.nice_size(dataset.get_size()))
-
-    def sniff(self, filename):
-        """Quick test on file formatting and values"""
-        with open(filename, "r") as f:
-            population = f.readline().strip().split("\t")[0]
-            if population != "Population_ID":
-                return False
-            values = f.readline().strip().split("\t")
-            for vals in values:
-                if not is_number(vals):
-                    return False
-            return True
