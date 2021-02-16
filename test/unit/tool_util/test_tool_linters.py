@@ -31,7 +31,7 @@ RADIO_SELECT_INCOMPATIBILITIES = """
     <description>The BWA Mapper</description>
     <version_command interpreter="python">bwa.py --version</version_command>
     <inputs>
-        <param name="select" display="radio" multiple="true" optional="true"/>
+        <param name="select" display="radio" optional="true"/>
     </inputs>
 </tool>
 """
@@ -39,7 +39,7 @@ RADIO_SELECT_INCOMPATIBILITIES = """
 TESTS = [
     (NO_SECTIONS_XML, inputs.lint_inputs, lambda x: 'Found no input parameters.' in x.warn_messages),
     (NO_WHEN_IN_CONDITIONAL_XML, inputs.lint_inputs, lambda x: 'No <when /> block found for select option \'none\' inside conditional \'labels\'' in x.warn_messages),
-    (RADIO_SELECT_INCOMPATIBILITIES, inputs.lint_inputs, lambda x: 'Select [select] display="radio" is incompatible with optional="true"\nSelect [%s] display="radio" is incompatible with multiple="true"' in x.error_messages),
+    (RADIO_SELECT_INCOMPATIBILITIES, inputs.lint_inputs, lambda x: 'Select [select] display="radio" is incompatible with optional="true"' in x.error_messages),
 ]
 
 
