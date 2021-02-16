@@ -31,7 +31,7 @@ RADIO_SELECT_INCOMPATIBILITIES = """
     <description>The BWA Mapper</description>
     <version_command interpreter="python">bwa.py --version</version_command>
     <inputs>
-        <param name="select" display="radio" optional="true"/>
+        <param name="radio_select" type="select" display="radio" optional="true"/>
     </inputs>
 </tool>
 """
@@ -39,7 +39,7 @@ RADIO_SELECT_INCOMPATIBILITIES = """
 TESTS = [
     (NO_SECTIONS_XML, inputs.lint_inputs, lambda x: 'Found no input parameters.' in x.warn_messages),
     (NO_WHEN_IN_CONDITIONAL_XML, inputs.lint_inputs, lambda x: 'No <when /> block found for select option \'none\' inside conditional \'labels\'' in x.warn_messages),
-    (RADIO_SELECT_INCOMPATIBILITIES, inputs.lint_inputs, lambda x: 'Select [select] display="radio" is incompatible with optional="true"' in x.error_messages),
+    (RADIO_SELECT_INCOMPATIBILITIES, inputs.lint_inputs, lambda x: 'Select [radio_select] display="radio" is incompatible with optional="true"' in x.error_messages),
 ]
 
 
@@ -48,4 +48,4 @@ def test_tool_xml(tool_xml, lint_func, assert_func):
     lint_ctx = LintContext('all')
     tree = etree.ElementTree(element=etree.fromstring(tool_xml))
     lint_ctx.lint(name="test_lint", lint_func=lint_func, lint_target=tree)
-    assert assert_func(lint_ctx)
+    assert assert_func(lint_ctx), f"Warnings: {lint_ctx.warn_messages}\nErrors: {lint_ctx.error_messages}"
