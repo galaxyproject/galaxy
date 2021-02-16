@@ -81,25 +81,6 @@ class FCS(Binary):
         return 'application/octet-stream'
 
 
-class FlowText(Tabular):
-    """Class describing an Flow Text file"""
-    file_ext = "flowtext"
-
-    def set_peek(self, dataset, is_multi_byte=False):
-        if not dataset.dataset.purged:
-            dataset.peek = "Text Flow file"
-            dataset.blurb = data.nice_size(dataset.get_size())
-        else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
-
-    def display_peek(self, dataset):
-        try:
-            return dataset.peek
-        except Exception:
-            return "Text Flow file (%s)" % (data.nice_size(dataset.get_size()))
-
-
 class FlowClustered(Tabular):
     """Class describing a Flow Text that has been clustered through FLOCK"""
     file_ext = "flowclr"
