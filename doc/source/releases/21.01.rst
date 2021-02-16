@@ -23,10 +23,11 @@ Enhancements
 * Large overhaul over history import and export - including improved user experience, APIs, and allowing importing and exporting
   to file sources plugins (including FTP).
   `Pull Request 11054`_, `Pull Request 10993`_
-* Various substantial improvements to data library user interface 
+* Various substantial improvements to data library user interface and performance
   (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
   `Pull Request 10204`_, `Pull Request 11099`_,
-  `Pull Request 10557`_, `Pull Request 10558`_
+  `Pull Request 10557`_, `Pull Request 10558`_,
+  `Pull Request 10807`_
 * Script for finding missing db indexes
   `Pull Request 10350`_
 * Implement Galaxy database model schema rendering script.
@@ -34,7 +35,7 @@ Enhancements
 * Allow configuration of activation email message.
   `Pull Request 10959`_
 * UI & API for Supporting Best Practice Workflows
-  `Pull Request 10988`_
+  `Pull Request 10988`_, `Pull Request 11025`_
 * Implement edit & upgrade subworkflow buttons in workflow editor.
   `Pull Request 11032`_
 * Implement user-facing objectstore metadata.
@@ -42,7 +43,10 @@ Enhancements
 * Fixes and improvements to favorited tools in the tool panel.
   `Pull Request 10955`_, `Pull Request 9873`_
 * Move upload button below Tool panel header, increase size, add label.
-  `Pull Request 10499`_
+  `Pull Request 10499`_, `Pull Request 10696`_
+* Add author and license metadata and corresponding web microdata annotations for tools
+  and workflows.
+  `Pull Request 10408`_
 * iRODS data migration script
   (thanks to `@kxk302 <https://github.com/kxk302>`__).
   `Pull Request 10125`_
@@ -77,7 +81,8 @@ Enhancements
 * Implement mypy type checking for the Galaxy Python backend.
   `Pull Request 11009`_, `Pull Request 11037`_,
   `Pull Request 11022`_, `Pull Request 11007`_,
-  `Pull Request 11027`_, `Pull Request 11039`_
+  `Pull Request 11027`_, `Pull Request 11039`_,
+  `Pull Request 11000`_
 * Allow setting file download filename_pattern by client.
   `Pull Request 11108`_
 * Add FastAPI migration of licenses endpoints
@@ -115,10 +120,20 @@ Enhancements
   `Pull Request 10999`_, `Pull Request 11001`_, `Pull Request 11024`_,
   `Pull Request 10769`_, `Pull Request 11036`_, `Pull Request 11042`_,
   `Pull Request 11041`_, `Pull Request 10580`_
+* Add FastAPI as backend and start porting backend to an ASGI webapp to
+  enable modern programming features such a message queues and web sockets.
+  `Pull Request 10823`_, `Pull Request 11074`_
 *  Replace StreamBall, replace tarballs with zip
   `Pull Request 10919`_
-* Simplify JobInformation and DatasetInformation components
-  `Pull Request 10980`_
+* Move upload button below Tool panel header, increase size, add label.
+  `Pull Request 10499`_
+* Convert dataset and job information displays to Vue
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 10327`_, `Pull Request 10353`_, `Pull Request 10980`_
+* Simpler API for getting user API key.
+  `Pull Request 10522`_
+* Add S3 plugin for remote files browser.
+  `Pull Request 10523`_
 * Set undesired execution hosts to avoid in LSF
   (thanks to `@pcm32 <https://github.com/pcm32>`__).
   `Pull Request 10260`_
@@ -174,12 +189,6 @@ Enhancements
   `Pull Request 10316`_
 * More convenient syntax for configuring file source plugins.
   `Pull Request 10326`_
-* Convert dataset information display to Vue
-  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
-  `Pull Request 10327`_
-* Convert job information display to Vue
-  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
-  `Pull Request 10353`_
 * Allow ``planemo run`` to stage in existing datasets without re-uploading
   (thanks to `@simonbray <https://github.com/simonbray>`__).
   `Pull Request 10334`_
@@ -204,17 +213,14 @@ Enhancements
   `Pull Request 10495`_
 * Update developer guidelines with instructions for proper commit messages.
   `Pull Request 10498`_
-* Move upload button below Tool panel header, increase size, add label.
-  `Pull Request 10499`_
 * Use dataset selector in rules input dialog.
   `Pull Request 10505`_
+* List tool functionality/compatiblity changes with profile version in tool schema
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 10798`_
 * Add enumeration restriction to ``detect_errors`` in tool XML schema
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 10510`_
-* Simpler API for getting user API key.
-  `Pull Request 10522`_
-* Add S3 plugin for remote files browser.
-  `Pull Request 10523`_
 * More informative error message for ``/api/authenticate/baseauth``
   (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
   `Pull Request 10524`_
@@ -222,7 +228,7 @@ Enhancements
   `Pull Request 10525`_
 * More comments for rapid testing optional ``galaxy.files`` stuff.
   `Pull Request 10526`_
-* add ``copy to clipboard`` button to datasets
+* Add ``copy to clipboard`` button to datasets
   (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
   `Pull Request 10529`_
 * Add awesome-galaxy repo link to docs
@@ -266,34 +272,27 @@ Enhancements
   `Pull Request 10681`_
 * Harden, formalize 'null' handling around boolean tool parameters
   `Pull Request 10694`_
-* Improve visibility of upload button
-  `Pull Request 10696`_
 * Allow expression tools to output copies of input HDAs.
   `Pull Request 10700`_
 * Update ftp document for rounds=100000
   (thanks to `@linnil1 <https://github.com/linnil1>`__).
   `Pull Request 10701`_
-* Null handling and optional values for integers, floats, and text params.
+* Implement and test proper null handling and optional values for integers, floats,
+  and text parameters in tools and workflows.
   `Pull Request 10703`_
-* Re-sync galaxy.tool_util.cwl with CWL branch of Galaxy.
+* Re-sync ``galaxy.tool_util.cwl`` with CWL branch of Galaxy.
   `Pull Request 10716`_
 * Upgrade syntax using ``pyupgrade --py36-plus``
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 10751`_
 * Revision of sharing component, adds url copy to clipboard feature
   `Pull Request 10754`_
-* list functionality changes with profile in xsd
-  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
-  `Pull Request 10798`_
 * Don't cancel other selenium steps, if one step fails
   (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
   `Pull Request 10801`_
-* extension lookup with lower case extension
+* Extension lookup with lower case extension
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 10803`_
-* Fix Library Folder performance
-  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
-  `Pull Request 10807`_
 * Add GitHub workflow to build docs
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 10811`_
@@ -307,7 +306,7 @@ Enhancements
   `Pull Request 10822`_
 * Improved error handling in API Interactor
   `Pull Request 10833`_
-* Add <filter> inline python example for "select" type
+* Add ``<filter>`` inline python example for ``select`` type in tool schema docs
   (thanks to `@tensionhead <https://github.com/tensionhead>`__).
   `Pull Request 10838`_
 * Use `github-script` action for maintenance_bot job too
@@ -317,16 +316,15 @@ Enhancements
   `Pull Request 10845`_
 * Always expand tool about section if metadata is available
   `Pull Request 10847`_
-* Switch out tag image
-  (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
+* Fix tag image in UI for consistency.
   `Pull Request 10853`_
 * Run CI labeler on reopened PRs, but skip if area labels are present
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 10861`_
-* Allow build_list inputs to be optional
+* Allow ``build_list`` tool inputs to be optional
   (thanks to `@innovate-invent <https://github.com/innovate-invent>`__).
   `Pull Request 10863`_
-* Dynamic select parameters: also allow to choose legal options by name
+* Allow selecting dynamic select parameters by name in the API and tool tests
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 10880`_
 * Add screenshot decorators to selenium tests
@@ -335,13 +333,9 @@ Enhancements
 * Add version tab which links to release notes to help tab
   (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
   `Pull Request 10960`_
-* Check Python typing for galaxy-containers and galaxy-tool-util during CI.
-  `Pull Request 11000`_
 * Update locale.js
   (thanks to `@shenweiyan <https://github.com/shenweiyan>`__).
   `Pull Request 11011`_
-* Implementing highlighting and scrolling to nodes in canvas from lint panel.
-  `Pull Request 11025`_
 * Document how parameters in sections are referenced
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 11026`_
@@ -397,14 +391,12 @@ Enhancements
   `Pull Request 10514`_
 * Add workflow tests for some newer workflow features.
   `Pull Request 10478`_, `Pull Request 10669`_
-* Improve helper code ``wait_for_invocation``.
-  `Pull Request 10668`_
+* Various small changes to test helper code.
+  `Pull Request 10668`_, `Pull Request 10783`_
 * Refactor logic for ``workflow_step.input_type`` into model.
   `Pull Request 10657`_
 * Rename flake8 ignorelist.
   `Pull Request 10702`_
-* Refactor more generally useful Selenium code into reusable library code.
-  `Pull Request 10783`_
 * Rely on emails to determine GitLab users
   (thanks to `@selten <https://github.com/selten>`__).
   `Pull Request 10830`_
@@ -419,7 +411,7 @@ Enhancements
   `Pull Request 10862`_
 * Small edits objectstore code.
   `Pull Request 10867`_
-* Remove trans from stream_dataset_collection()
+* Remove ``trans`` from ``stream_dataset_collection()``
   `Pull Request 10907`_
 * Use ``email_from`` value from schema for tool error report email.
   `Pull Request 10956`_
@@ -428,8 +420,6 @@ Enhancements
   `Pull Request 10991`_
 * Remove unused ``tag_outputs`` workflow controller action.
   `Pull Request 11040`_
-* Build FastAPI app in a single location
-  `Pull Request 11074`_
 
 Fixes
 -------------------------------
