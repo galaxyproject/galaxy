@@ -81,42 +81,6 @@ class FCS(Binary):
         return 'application/octet-stream'
 
 
-class FlowClustered(Tabular):
-    """Class describing a Flow Text that has been clustered through FLOCK"""
-    file_ext = "flowclr"
-
-    def set_peek(self, dataset, is_multi_byte=False):
-        if not dataset.dataset.purged:
-            dataset.peek = "Text Flow Clustered file"
-            dataset.blurb = data.nice_size(dataset.get_size())
-        else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
-
-    def display_peek(self, dataset):
-        try:
-            return dataset.peek
-        except Exception:
-            return "Flow Text Clustered file (%s)" % (data.nice_size(dataset.get_size()))
-
-    def sniff(self, filename):
-        """Quick test on headers and values
-        >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('flowclr_sample_input2.flowclr')
-        >>> FlowClustered().sniff(fname)
-        True
-        """
-        with open(filename, "r") as f:
-            population = f.readline().strip().split("\t")[-1]
-            if population != "Population":
-                return False
-            values = f.readline().strip().split("\t")
-            for vals in values:
-                if not is_number(vals):
-                    return False
-            return True
-
-
 class FlowMFI(Tabular):
     """Class describing a Flow MFI file"""
     file_ext = "flowmfi"

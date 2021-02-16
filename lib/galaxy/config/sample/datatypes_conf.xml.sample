@@ -316,7 +316,7 @@
     <!-- FlowCytometry -->
     <datatype extension="fcs" type="galaxy.datatypes.flow:FCS" mimetype="application/octet-stream" display_in_upload="true" description="A FCS binary sequence file with a '.fcs' file extension." />
     <datatype extension="flowtext" type="galaxy.datatypes.tabular:Tabular" mimetype="text/tab-separated-values" display_in_upload="true" description="A Flow text file with a '.flowtext' file extension." />
-    <datatype extension="flowclr" type="galaxy.datatypes.flow:FlowClustered" mimetype="text/tab-separated-values" display_in_upload="true" description="A Flow text file containing population information with a '.flowclr' file extension." />
+    <datatype extension="flowclr" type="galaxy.datatypes.tabular:Tabular" mimetype="text/tab-separated-values" display_in_upload="true" description="A Flow text file containing population information with a '.flowclr' file extension." />
     <datatype extension="flowmfi" type="galaxy.datatypes.flow:FlowMFI" mimetype="text/tab-separated-values" display_in_upload="true" description="A Flow MFI file with a '.flowmfi' file extension." />
     <datatype extension="flowstat1" type="galaxy.datatypes.flow:FlowStats1" mimetype="text/tab-separated-values" display_in_upload="true" description="A Flow Stats file with a '.flowstat1' file extension." />
     <datatype extension="flowstat2" type="galaxy.datatypes.flow:FlowStats2" mimetype="text/tab-separated-values" display_in_upload="true" description="A Flow Stats file with a '.flowstat2' file extension." />
