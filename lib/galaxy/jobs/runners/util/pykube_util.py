@@ -8,7 +8,9 @@ try:
     from pykube.http import HTTPClient
     from pykube.objects import (
         Job,
-        Pod
+        Pod,
+        Service,
+        Ingress
     )
 except ImportError as exc:
     KubeConfig = None
@@ -21,6 +23,8 @@ except ImportError as exc:
 log = logging.getLogger(__name__)
 
 DEFAULT_JOB_API_VERSION = "batch/v1"
+DEFAULT_SERVICE_API_VERSION = "v1"
+DEFAULT_INGRESS_API_VERSION = "extensions/v1beta1"
 DEFAULT_NAMESPACE = "default"
 INSTANCE_ID_INVALID_MESSAGE = ("Galaxy instance [%s] is either too long "
                                "(>20 characters) or it includes non DNS "
@@ -98,6 +102,32 @@ def job_object_dict(params, job_prefix, spec):
     }
     return k8s_job_obj
 
+def service_object_dict(params, service_name, spec):
+    k8s_service_obj = {
+        "apiVersion": params.get('k8s_service_api_version', DEFAULT_SERVICE_API_VERSION),
+        "kind": "Service",
+        "metadata": {
+                "name": service_name,
+                "namespace": params.get('k8s_namespace', DEFAULT_NAMESPACE),
+        },
+    }
+    k8s_service_obj["metadata"].update(spec.pop("metadata", {}))
+    k8s_service_obj.update(spec)
+    return k8s_service_obj
+
+def ingress_object_dict(params, ingress_name, spec):
+    k8s_ingress_obj = {
+        "apiVersion": params.get('k8s_ingress_api_version', DEFAULT_INGRESS_API_VERSION),
+        "kind": "Ingress",
+        "metadata": {
+                "name": ingress_name,
+                "namespace": params.get('k8s_namespace', DEFAULT_NAMESPACE),
+            # TODO: Add default annotations
+        },
+    }
+    k8s_ingress_obj["metadata"].update(spec.pop("metadata", {}))
+    k8s_ingress_obj.update(spec)
+    return k8s_ingress_obj
 
 def galaxy_instance_id(params):
     """Parse and validate the id of the Galaxy instance from supplied dict.
@@ -122,12 +152,18 @@ def galaxy_instance_id(params):
 
 __all__ = (
     "DEFAULT_JOB_API_VERSION",
+    "DEFAULT_SERVICE_API_VERSION",
+    "DEFAULT_INGRESS_API_VERSION",
     "ensure_pykube",
     "find_job_object_by_name",
     "find_pod_object_by_name",
     "galaxy_instance_id",
     "Job",
+    "Service",
+    "Ingress"
     "job_object_dict",
+    "service_object_dict",
+    "ingress_object_dict",
     "Pod",
     "produce_k8s_job_prefix",
     "pull_policy",

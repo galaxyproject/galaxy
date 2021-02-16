@@ -23,6 +23,10 @@ from galaxy.jobs.runners.util.pykube_util import (
     galaxy_instance_id,
     Job,
     job_object_dict,
+    Service,
+    service_object_dict,
+    Ingress,
+    ingress_object_dict,
     Pod,
     produce_k8s_job_prefix,
     pull_policy,
@@ -98,10 +102,12 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         else:
             volume_claims = {}
         mountable_volumes = [{'name': claim_name, 'persistentVolumeClaim': {'claimName': claim_name}}
-                             for claim_name in volume_claims if claim_name]
+                             for claim_name in volume_claims if claim_name]#.append({'name': 'jupyter', 'persistentVolumeClaim': {'claimName': 'try2-gxy-rls-galaxy-pvc', 'subPath': 'jupyter'}})
         self.runner_params['k8s_mountable_volumes'] = mountable_volumes
         volume_mounts = [{'name': claim_name, 'mountPath': mount_path}
                          for claim_name, mount_path in volume_claims.items() if claim_name]
+        #volume_mounts.extend([{'name': 'try2-gxy-rls-galaxy-pvc', 'mountPath': '/galaxy/server/lib', 'subPath': 'lib'},{'name': 'try2-gxy-rls-galaxy-pvc', 'mountPath': '/galaxy/server/.venv', 'subPath': '.venv'}])
+        #log.debug(volume_mounts)
         self.runner_params['k8s_volume_mounts'] = volume_mounts
 
     def queue_job(self, job_wrapper):
@@ -136,9 +142,35 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_job_prefix,
             self.__get_k8s_job_spec(ajs)
         )
+        k8s_service_obj = service_object_dict(
+            self.runner_params,
+            "{}-{}".format(k8s_job_prefix, self.__force_label_conformity(ajs.job_wrapper.get_id_tag())),
+            self.__get_k8s_service_spec(ajs)
+        )
+        k8s_ingress_obj = ingress_object_dict(
+            self.runner_params,
+            "{}-{}".format(k8s_job_prefix, self.__force_label_conformity(ajs.job_wrapper.get_id_tag())),
+            self.__get_k8s_ingress_spec(ajs)
+        )
 
         job = Job(self._pykube_api, k8s_job_obj)
-        job.create()
+        try:
+            job.create()
+        except Exception as e:
+          log.debug(str(e))
+
+        service = Service(self._pykube_api, k8s_service_obj)
+        try:
+            log.debug(k8s_service_obj)
+            service.create()
+        except Exception as e:
+          log.debug(str(e))
+        ingress = Ingress(self._pykube_api, k8s_ingress_obj)
+        try:
+            log.debug(k8s_ingress_obj)
+            ingress.create()
+        except Exception as e:
+          log.debug(str(e))
         job_id = job.metadata['name']
 
         # define job attributes in the AsyncronousJobState for follow-up
@@ -268,6 +300,98 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         k8s_spec_template["metadata"]["annotations"].update(extra_metadata.get('annotations', {}))
         return k8s_spec_template
 
+
+    def __get_k8s_service_spec(self, ajs):
+        """The k8s spec template is nothing but a Service spec, except that it is nested and does not have an apiversion
+        nor kind."""
+        container = self._find_container(ajs.job_wrapper)
+        guest_ports = container.tool_info.guest_ports
+        if not guest_ports:
+            return None
+        else:
+            k8s_spec_template = {
+                "metadata": {
+                    "labels": {
+                        "app.galaxyproject.org/handler": self.__force_label_conformity(self.app.config.server_name),
+                        "app.galaxyproject.org/destination": self.__force_label_conformity(
+                            str(ajs.job_wrapper.job_destination.id))
+                    },
+                    "annotations": {
+                        "app.galaxyproject.org/tool_id": ajs.job_wrapper.tool.id
+                    }
+                },
+                "spec": {
+                    "ports": [{"name": "job-{}-{}".format(self.__force_label_conformity(ajs.job_wrapper.get_id_tag()), p),
+                                "port": int(p),
+                                "protocol": "TCP",
+                                "targetPort": int(p)} for p in guest_ports],
+                    "selector": {
+                        "app.kubernetes.io/name": self.__force_label_conformity(ajs.job_wrapper.tool.old_id),
+                        "app.kubernetes.io/component": "tool",
+                        "app.galaxyproject.org/job_id": self.__force_label_conformity(ajs.job_wrapper.get_id_tag())
+                    },
+                    "type": "ClusterIP"
+                }
+            }
+            log.debug(k8s_spec_template)
+            return k8s_spec_template
+
+    def __get_k8s_ingress_spec(self, ajs):
+        """The k8s spec template is nothing but a Ingress spec, except that it is nested and does not have an apiversion
+        nor kind."""
+        container = self._find_container(ajs.job_wrapper)
+        guest_ports = container.tool_info.guest_ports
+        if not guest_ports:
+            return None
+        else:
+            if len(guest_ports) > 0:
+                ports_dict = {}
+                for guest_port in guest_ports:
+                    ports_dict[str(guest_port)] = dict(host='manual', port=guest_port, protocol="https")
+                eps = self.app.interactivetool_manager.configure_entry_points(ajs.job_wrapper.get_job(), ports_dict)
+                entry_points = []
+                for entry_point in eps.get('configured', []):
+                    log.debug(entry_point.to_dict())
+                    entry_point_class = entry_point.__class__.__name__.lower()
+                    entry_point_prefix = self.app.config.interactivetools_prefix
+                    entry_point_domain = f'{entry_point.id}-{entry_point.token}.{entry_point_class}.{entry_point_prefix}.{self.app.config.interactivetools_proxy_host}'
+                    entry_points.append({"tool_port": entry_point.tool_port, "domain": entry_point_domain})
+                log.debug("\n\n\n\n\n\n\n\n\nALEX\n\n\n\n\n\n")
+                log.debug(entry_points)
+            k8s_spec_template = {
+                "metadata": {
+                    "labels": {
+                        "app.galaxyproject.org/handler": self.__force_label_conformity(self.app.config.server_name),
+                        "app.galaxyproject.org/destination": self.__force_label_conformity(
+                            str(ajs.job_wrapper.job_destination.id))
+                    },
+                    "annotations": {
+                        "app.galaxyproject.org/tool_id": ajs.job_wrapper.tool.id
+                    }
+                },
+                "spec": {
+                    "rules": [{"host": ep["domain"],
+                                "http": {
+                                    "paths":[{
+                                        "backend": {
+                                            "serviceName": "{}-{}".format(self.__produce_k8s_job_prefix(),
+                                                                          self.__force_label_conformity(ajs.job_wrapper.get_id_tag())),
+                                            "servicePort": int(ep["tool_port"])
+                                            # "service": {
+                                            #     "name": "job-{}-{}".format(self.__force_label_conformity(ajs.job_wrapper.get_id_tag()), p),
+                                            #     "port": { "number": int(p)}
+                                            # }
+                                        },
+                                        "path": "/terminal",
+                                        "pathType": "Prefix"
+                                    }]
+                                }
+                    } for ep in entry_points]
+                }
+            }
+            log.debug(k8s_spec_template)
+            return k8s_spec_template
+
     def __get_k8s_security_context(self):
         security_context = {}
         if self._run_as_user_id:
@@ -300,13 +424,15 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             # command line execution, separated by ;, which is what Galaxy does
             # to assemble the command.
             "command": [ajs.job_wrapper.shell],
-            "args": ["-c", ajs.job_file],
+            "args": ["-c", ajs.job_file], #"source /galaxy/server/.venv/bin/activate && {}".format(ajs.job_file)],
             "workingDir": ajs.job_wrapper.working_directory,
             "volumeMounts": self.runner_params['k8s_volume_mounts']
         }
         guest_ports = container.tool_info.guest_ports
-        if guest_ports:
-            k8s_container["ports"] = [{"containerPort": p} for p in guest_ports]
+        # if guest_ports:
+        #     k8s_container["ports"] = [{"containerPort": p} for p in guest_ports]
+        #     log.debug("\n\n\n\n\n\n\n\n\nALEX\n\n\n\n\n\n\n\n")
+        #     log.debug(guest_ports)
         resources = self.__get_resources(ajs.job_wrapper)
         if resources:
             envs = []
@@ -489,14 +615,15 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 if not job_state.running:
                     job_state.running = True
                     job_state.job_wrapper.change_state(model.Job.states.RUNNING)
-                    guest_ports = job_state.job_wrapper.guest_ports
-                    if len(guest_ports) > 0:
-                        pod = self._get_pod_for_job(job_state)
-                        pod_ip = pod.obj['status']['podIP']
-                        ports_dict = {}
-                        for guest_port in guest_ports:
-                            ports_dict[str(guest_port)] = dict(host=pod_ip, port=guest_port, protocol="http")
-                        self.app.interactivetool_manager.configure_entry_points(job_state.job_wrapper.get_job(), ports_dict)
+                    # guest_ports = job_state.job_wrapper.guest_ports
+                    # if len(guest_ports) > 0:
+                    #     pod = self._get_pod_for_job(job_state)
+                    #     if pod:
+                    #       pod_ip = pod.obj['status']['podIP']
+                    #       ports_dict = {}
+                    #       for guest_port in guest_ports:
+                    #           ports_dict[str(guest_port)] = dict(host=pod_ip, port=guest_port, protocol="http")
+                    #       self.app.interactivetool_manager.configure_entry_points(job_state.job_wrapper.get_job(), ports_dict)
                 return job_state
             elif job_persisted_state == model.Job.states.DELETED:
                 # Job has been deleted via stop_job and job has not been deleted,
@@ -575,7 +702,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         if not pods.response['items']:
             return False
 
-        if pod.obj['status']['phase'] == "Failed" and \
+        pod = self._get_pod_for_job(job_state)
+        if pod and pod.obj['status']['phase'] == "Failed" and \
                 pod.obj['status']['containerStatuses'][0]['state']['terminated']['reason'] == "OOMKilled":
             return True
 
