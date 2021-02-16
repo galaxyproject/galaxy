@@ -9,10 +9,14 @@
 Enhancements
 -------------------------------
 
-* History panel rewrite (available in the UI as a beta option).
-  `Pull Request 8441`_
+* Galaxy Markdown enhancements including integration of visualizations - allow embedding
+  visualizations in Galaxy Markdown (workflow invocation reports and pages) with
+  Markdown editor support and allow exporting workflow reports directly to Galaxy Pages.
+  `Pull Request 10241`_, `Pull Request 10288`_, `Pull Request 10404`_
 * Add workflow invocation detail component.
   `Pull Request 10976`_
+* History panel rewrite (available in the UI as a beta option).
+  `Pull Request 8441`_
 * Allow organizing the panel via EDAM ontology annotations.  
   (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 10592`_
@@ -30,14 +34,12 @@ Enhancements
   `Pull Request 10988`_
 * Implement edit & upgrade subworkflow buttons in workflow editor.
   `Pull Request 11032`_
-* Allow Galaxy page creation from a workflow invocation report.
-  `Pull Request 10241`_
 * Implement user-facing objectstore metadata.
   `Pull Request 10233`_
-* Allow embedding visualizations in new markdown-based Galaxy pages.
-  `Pull Request 10288`_
 * Fixes and improvements to favorited tools in the tool panel.
   `Pull Request 10955`_, `Pull Request 9873`_
+* Move upload button below Tool panel header, increase size, add label.
+  `Pull Request 10499`_
 * iRODS data migration script
   (thanks to `@kxk302 <https://github.com/kxk302>`__).
   `Pull Request 10125`_
@@ -71,7 +73,8 @@ Enhancements
   `Pull Request 10382`_
 * Implement mypy type checking for the Galaxy Python backend.
   `Pull Request 11009`_, `Pull Request 11037`_,
-  `Pull Request 11022`_, `Pull Request 11007`_
+  `Pull Request 11022`_, `Pull Request 11007`_,
+  `Pull Request 11027`_
 * Allow setting file download filename_pattern by client.
   `Pull Request 11108`_
 * Add FastAPI migration of licenses endpoints
@@ -135,12 +138,10 @@ Enhancements
 * Don't specify default bind type for singularity
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 10625`_
-* Python 3 - Convert a bunch of Bunchs to string Enums
-  `Pull Request 11027`_
 * Allow extra job metadata to be specified for k8s
   (thanks to `@nuwang <https://github.com/nuwang>`__).
   `Pull Request 11078`_
-* Implement quota interface - with better logic isolation and unit tests.
+* Implement backend quota interface - with better logic isolation and unit tests.
   `Pull Request 10212`_
 * When compiling dynamic installation confs, ensure location is actually writeable
   `Pull Request 10387`_
@@ -162,60 +163,55 @@ Enhancements
 * Add warning for non-existing tool version
   (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
   `Pull Request 10139`_
-* set up confirmation page for new custos/oidc users
-  (thanks to `@juleengraham <https://github.com/juleengraham>`__).
-  `Pull Request 10198`_
+* Set up confirmation page for new Custos/oidc users.
+  `Pull Request 10198`_, `Pull Request 10952`_
 * Add script to diff two release config files.
   (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 10258`_
-* Tiny upload optimization for uploads.
+* Small optimization for uploads.
   `Pull Request 10316`_
-* Allow files config to use keyed dict with ids as dict key.
+* More convenient syntax for configuring file source plugins.
   `Pull Request 10326`_
-* vuefy dataset information
+* Convert dataset information display to Vue
   (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
   `Pull Request 10327`_
-* Allow 'planemo run' to stage in existing datasets without reuploading
-  (thanks to `@simonbray <https://github.com/simonbray>`__).
-  `Pull Request 10334`_
-* Vuefy Job information
+* Convert job information display to Vue
   (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
   `Pull Request 10353`_
-* Adds Visualization options to Markdown Editor
-  `Pull Request 10404`_
+* Allow ``planemo run`` to stage in existing datasets without re-uploading
+  (thanks to `@simonbray <https://github.com/simonbray>`__).
+  `Pull Request 10334`_
+* Auto-focus upload name in upload dialog.
+  `Pull Request 10487`_
+* Revise style of radio button groups to improve visibility.
+  `Pull Request 10489`_
+* Add update time to workflow version selector in workflow editor.
+  `Pull Request 10492`_
 * Update authnz to include Azure as IDP
   (thanks to `@cginmn <https://github.com/cginmn>`__).
   `Pull Request 10413`_
-* Let python-irodsclient session manage connections
-  (thanks to `@kxk302 <https://github.com/kxk302>`__).
+* Let ``python-irodsclient`` session manage connections.
   `Pull Request 10437`_
-* Document workflow classes
-  (thanks to `@brinkmanlab <https://github.com/brinkmanlab>`__).
+* Document workflow model classes
+  (thanks to `@innovate-invent <https://github.com/innovate-invent>`__).
   `Pull Request 10471`_
-* Autofocus upload name in upload dialog
-  `Pull Request 10487`_
-* Update link for Galaxy configuration file in Galaxy debug document
-  (thanks to `@kxk302 <https://github.com/kxk302>`__).
+* Update link for Galaxy configuration file in Galaxy debug document.
   `Pull Request 10488`_
-* Revise style of radio button groups to improve visibility
-  `Pull Request 10489`_
-* Add update time to workflow version selector in workflow editor
-  `Pull Request 10492`_
 * Add missing documentation for macro elements in XSD
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 10495`_
-* Add guidelines for proper commit messages
+* Update developer guidelines with instructions for proper commit messages.
   `Pull Request 10498`_
-* Move upload button below Tool panel header, increase size, add label
+* Move upload button below Tool panel header, increase size, add label.
   `Pull Request 10499`_
 * Use dataset selector in rules input dialog.
   `Pull Request 10505`_
 * Add enumeration restriction to detect_errors
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 10510`_
-* Simpler API for getting user API key
+* Simpler API for getting user API key.
   `Pull Request 10522`_
-* Add S3 plugin for remote files browser
+* Add S3 plugin for remote files browser.
   `Pull Request 10523`_
 *  informative error message on /api/authenticate/baseauth
   (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
@@ -608,8 +604,6 @@ Fixes
 * Added handler for history options menu webhook
   (thanks to `@kjetilkl <https://github.com/kjetilkl>`__).
   `Pull Request 10949`_
-* Remove extra word in login confirmation.
-  `Pull Request 10952`_
 * Various documentation fixes
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 10963`_
