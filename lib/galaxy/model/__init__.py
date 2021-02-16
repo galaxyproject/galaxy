@@ -2724,8 +2724,7 @@ class DatasetInstance:
         if not dataset and create_dataset:
             # Had to pass the sqlalchemy session in order to create a new dataset
             dataset = Dataset(state=Dataset.states.NEW)
-            if creating_job_id:
-                dataset.job_id = creating_job_id
+            dataset.job_id = creating_job_id
             if flush:
                 sa_session.add(dataset)
                 sa_session.flush()
