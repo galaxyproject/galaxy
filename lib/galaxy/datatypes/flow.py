@@ -6,7 +6,6 @@ import logging
 import math
 
 from galaxy.datatypes.binary import Binary
-from galaxy.datatypes.tabular import Tabular
 from . import data
 
 log = logging.getLogger(__name__)
