@@ -6,63 +6,6 @@
 
 .. announce_start
 
-TODO:
-
-Convert collection creators to Vue.
-10240
-
-Add default dbkey when collecting builds
-10667
-
-Fix running subworkflows with parameter input steps.
-10722
-
-Drop API Key listings from admin user list
-10745
-
-Fix issues with copying tags and collections.
-10761
-
-Fix various style issues with rule builder.
-10766
-
-Render OpenEBench link in new consolidated tool metadata.
-10789
-
-Rework arguments to a couple model security operations to allow greater reuse.
-10835
-
-Add cancel option to workflow create form.
-10953
-
-Cleanup client unit test removing jquery and mocking ajax calls.
-10904
-
-Add tooltip to workflow node output checkbox.
-10957
-
-More structured workflow create and update parameter handling.
-11016
-
-Drop temporary hacks for upgrading export jobs from Galaxy 19.01 to 19.05.
-10990
-
-Fix workflow preview for tool repeat blocks without ``title``.
-10851
-
-Make Selenium BibTeX rendering test more robust.
-OlegZharkov
-10809
-
-Implement select all box on admin "Manage Dependencies" page.
-OlegZharkov
-10758
-
-Add link to view dataset in dataset params
-simonbray
-10752
-
-
 Enhancements
 -------------------------------
 
@@ -107,6 +50,9 @@ Enhancements
 * iRODS data migration script
   (thanks to `@kxk302 <https://github.com/kxk302>`__).
   `Pull Request 10125`_
+* Integrate NORA's image viewer - a medical image viewer and annotation tool.
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 11035`_
 * Add the OpenSeadragon viewer and extend datatypes for deep zoom images
   (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__).
   `Pull Request 10756`_, `Pull Request 11017`_, `Pull Request 10546`_
@@ -166,6 +112,8 @@ Enhancements
 * Allow empty file uploads
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 11079`_
+* Convert collection creator user interface components to Vue.
+  `Pull Request 10240`_
 * Disable dataset edit button after the dataset has been deleted
   (thanks to `@simonbray <https://github.com/simonbray>`__).
   `Pull Request 10589`_
@@ -182,7 +130,7 @@ Enhancements
   Vue.
   `Pull Request 10999`_, `Pull Request 11001`_, `Pull Request 11024`_,
   `Pull Request 10769`_, `Pull Request 11036`_, `Pull Request 11042`_,
-  `Pull Request 11041`_, `Pull Request 10580`_
+  `Pull Request 11041`_, `Pull Request 10580`_, `Pull Request 11046`_
 * Add FastAPI as backend and start porting backend to an ASGI webapp to
   enable modern programming features such a message queues and web sockets.
   `Pull Request 10823`_, `Pull Request 11074`_
@@ -243,6 +191,35 @@ Enhancements
 * Add warning for non-existing tool versions on tool form
   (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
   `Pull Request 10139`_
+* Add default dbkey when collecting builds.
+  `Pull Request 10667`_
+* Fix running subworkflows with parameter input steps.
+  `Pull Request 10722`_
+* Drop API Key listings from admin user list.
+  `Pull Request 10745`_
+* Render OpenEBench link in new consolidated tool metadata.
+  `Pull Request 10789`_
+* Rework arguments to a couple model security operations to allow greater reuse.
+  `Pull Request 10835`_
+* Add cancel option to workflow create form.
+  `Pull Request 10953`_
+* Cleanup client unit test removing jquery and mocking ajax calls.
+  `Pull Request 10904`_
+* Add tooltip to workflow node output checkbox.
+  `Pull Request 10957`_
+* More structured workflow create and update parameter handling.
+  `Pull Request 11016`_
+* Drop temporary hacks for upgrading export jobs from Galaxy 19.01 to 19.05.
+  `Pull Request 10990`_
+* Make Selenium BibTeX rendering test more robust.
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 10809`_
+* Implement select all box on admin "Manage Dependencies" page.
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 10758`_
+* Add link to view dataset in dataset params.
+  (thanks to `@simonbray <https://github.com/simonbray>`__).
+  `Pull Request 10752`_
 * Set up confirmation page for new Custos/oidc users.
   `Pull Request 10198`_, `Pull Request 10952`_
 * Add script to diff two release config files.
@@ -565,6 +542,20 @@ Fixes
 * Fix assigning default value to variables in ``run_test_wrapper.sh``
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 10381`_
+* Fix issues with copying tags and collections.
+  `Pull Request 10761`_
+* Fix various style issues with rule builder.
+  `Pull Request 10766`_
+* Fix certain classes of workflow extraction on copied objects.
+  `Pull Request 11151`_
+* Fix Pulsar client to add tool environment variables to remote jobs.
+  `Pull Request 11349`_
+* Fix workflow preview for tool repeat blocks without ``title``.
+  `Pull Request 10851`_
+* Fix various issues with the sharing user interface component.
+  `Pull Request 11305`_
+* Fix various issues with the admin jobs user interface component.
+  `Pull Request 11205`_
 * Fix handling of collection element identifiers in history panel.
   `Pull Request 10427`_
 * Fix report's library function call in ``dataset_info.mako``.
