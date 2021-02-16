@@ -2887,11 +2887,11 @@ the column index.
         </xs:attribute>
         <xs:attribute name="display" type="DisplayType">
           <xs:annotation>
-            <xs:documentation xml:lang="en">This attribute is used only if
-``type`` attribute value is ``select`` - render a select list as a set of check
-boxes (``display="checkboxes"``) or radio buttons (``display="radio"``, note this
-is incompatible with ``multiple="true"`` and ``optional="true"``).
-Defaults to a drop-down menu select list.</xs:documentation>
+            <xs:documentation xml:lang="en">Render a select list as a set of
+checkboxes (``checkboxes``) or radio buttons (``radio``; note this is
+incompatible with ``multiple="true"`` and ``optional="true"``). Defaults to a
+drop-down menu select list. Used only when the ``type`` attribute value is
+``select``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="multiple" type="PermissiveBoolean">
