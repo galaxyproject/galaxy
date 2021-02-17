@@ -2887,15 +2887,19 @@ is still the column index. Used only when the ``type`` attribute value is
         </xs:attribute>
         <xs:attribute name="display" type="DisplayType">
           <xs:annotation>
-            <xs:documentation xml:lang="en">This attribute is used only if
-``type`` attribute value is ``select`` - render a select list as a set of check
-boxes or radio buttons. Defaults to a drop-down menu select list.</xs:documentation>
+            <xs:documentation xml:lang="en">Render a select list as a set of
+checkboxes (``checkboxes``) or radio buttons (``radio``; note this is
+incompatible with ``multiple="true"`` and ``optional="true"``). Defaults to a
+drop-down menu select list. Used only when the ``type`` attribute value is
+``select``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="multiple" type="PermissiveBoolean">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Allow multiple valus to be selected.
-Valid with ``data`` and ``select`` parameters. ``select`` parameters with ``multiple="true"`` are optional by default.</xs:documentation>
+            <xs:documentation xml:lang="en">Allow multiple values to be
+selected. ``select`` parameters with ``multiple="true"`` are optional by
+default. Used only when the ``type`` attribute value is ``data``, ``group_tag``,
+or ``select``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="numerical" type="PermissiveBoolean">
