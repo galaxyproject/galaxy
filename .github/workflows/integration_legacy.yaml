@@ -1,5 +1,7 @@
 name: Integration Legacy
-on: [push, pull_request]
+on:
+  schedule:
+    - cron: '0 3 * * *'
 env:
   GALAXY_TEST_DBURI: 'postgres://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
   GALAXY_TEST_AMQP_URL: 'amqp://localhost:5672//'
