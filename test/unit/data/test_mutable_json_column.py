@@ -42,7 +42,7 @@ class MutableColumnTest(BaseModelTestCase):
         persisted = self.persist_and_reload(persisted)
         assert persisted.reports_config == {'list': [[1, 2, 3]]}
         copy.deepcopy(persisted.reports_config)
-        persisted.reports_config.pop('list') == [[1, 2, 3]]
+        assert persisted.reports_config.pop('list') == [[1, 2, 3]]
         persisted = self.persist_and_reload(persisted)
         assert persisted.reports_config == {}
         persisted.reports_config.update({'x': 'z'})
