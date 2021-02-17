@@ -234,7 +234,7 @@ class InRangeValidator(Validator):
                    elem.get('exclude_max', 'false'),
                    elem.get('negate', 'false'))
 
-    def __init__(self, message, range_min, range_max, exclude_min, exclude_max, negate):
+    def __init__(self, message, range_min, range_max, exclude_min=False, exclude_max=False, negate=False):
         """
         When the optional exclude_min and exclude_max attributes are set
         to true, the range excludes the end points (i.e., min < value < max),
