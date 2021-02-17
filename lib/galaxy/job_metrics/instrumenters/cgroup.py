@@ -25,6 +25,24 @@ CONVERSION = {
     "memory.oom_control.under_oom": lambda x: "Yes" if x == 1 else "No",
     "cpuacct.usage": lambda x: formatting.seconds_to_str(x / 10**9)  # convert nanoseconds
 }
+CPU_USAGE_TEMPLATE = """
+if [ -e "/proc/$$/cgroup" -a -d "{cgroup_mount}" ]; then
+    cgroup_path=$(cat "/proc/$$/cgroup" | awk -F':' '($2=="cpuacct,cpu") || ($2=="cpu,cpuacct") {{print $3}}');
+    for f in {cgroup_mount}/{{cpu\,cpuacct,cpuacct\,cpu}}$cgroup_path/{{cpu,cpuacct}}.*; do
+        if [ -f "$f" ]; then
+            echo "__$(basename $f)__" >> {metrics}; cat "$f" >> {metrics} 2>/dev/null;
+        fi;
+    done;
+fi
+""".replace("\n", " ").strip()  # noqa: W605
+MEMORY_USAGE_TEMPLATE = """
+if [ -e "/proc/$$/cgroup" -a -d "{cgroup_mount}" ]; then
+    cgroup_path=$(cat "/proc/$$/cgroup" | awk -F':' '$2=="memory"{{print $3}}');
+    for f in {cgroup_mount}/memory$cgroup_path/memory.*; do
+        echo "__$(basename $f)__" >> {metrics}; cat "$f" >> {metrics} 2>/dev/null;
+    done;
+fi
+""".replace("\n", " ").strip()
 
 
 Metric = namedtuple("Metric", ("key", "subkey", "value"))
@@ -74,10 +92,10 @@ class CgroupPlugin(InstrumentPlugin):
 
     def __record_cgroup_cpu_usage(self, job_directory):
         # comounted cgroups (which cpu and cpuacct are on the supported Linux distros) can appear in any order (cpu,cpuacct or cpuacct,cpu)
-        return """if [ -e "/proc/$$/cgroup" -a -d "{cgroup_mount}" ]; then cgroup_path=$(cat "/proc/$$/cgroup" | awk -F':' '($2=="cpuacct,cpu")||($2=="cpu,cpuacct"){{print $3}}'); for f in {cgroup_mount}/{{cpu\,cpuacct,cpuacct\,cpu}}$cgroup_path/{{cpu,cpuacct}}.*; do if [ -f "$f" ]; then echo "__$(basename $f)__" >> {metrics}; cat "$f" >> {metrics} 2>/dev/null; fi; done; fi""".format(metrics=self.__cgroup_metrics_file(job_directory), cgroup_mount=self.cgroup_mount)  # noqa: W605
+        return CPU_USAGE_TEMPLATE.format(metrics=self.__cgroup_metrics_file(job_directory), cgroup_mount=self.cgroup_mount)
 
     def __record_cgroup_memory_usage(self, job_directory):
-        return """if [ -e "/proc/$$/cgroup" -a -d "{cgroup_mount}" ]; then cgroup_path=$(cat "/proc/$$/cgroup" | awk -F':' '$2=="memory"{{print $3}}'); for f in {cgroup_mount}/memory$cgroup_path/memory.*; do echo "__$(basename $f)__" >> {metrics}; cat "$f" >> {metrics} 2>/dev/null; done; fi""".format(metrics=self.__cgroup_metrics_file(job_directory), cgroup_mount=self.cgroup_mount)
+        return MEMORY_USAGE_TEMPLATE.format(metrics=self.__cgroup_metrics_file(job_directory), cgroup_mount=self.cgroup_mount)
 
     def __cgroup_metrics_file(self, job_directory):
         return self._instrument_file_path(job_directory, "_metrics")
