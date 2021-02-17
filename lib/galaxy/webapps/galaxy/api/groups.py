@@ -5,7 +5,10 @@ import logging
 
 from sqlalchemy import false
 
-from galaxy import web
+from galaxy.web import (
+    expose_api,
+    require_admin,
+)
 from galaxy.webapps.base.controller import BaseAPIController, url_for
 
 log = logging.getLogger(__name__)
@@ -13,8 +16,8 @@ log = logging.getLogger(__name__)
 
 class GroupAPIController(BaseAPIController):
 
-    @web.require_admin
-    @web.legacy_expose_api
+    @expose_api
+    @require_admin
     def index(self, trans, **kwd):
         """
         GET /api/groups
@@ -29,7 +32,8 @@ class GroupAPIController(BaseAPIController):
                 rval.append(item)
         return rval
 
-    @web.legacy_expose_api
+    @expose_api
+    @require_admin
     def create(self, trans, payload, **kwd):
         """
         POST /api/groups
@@ -71,8 +75,8 @@ class GroupAPIController(BaseAPIController):
         item['url'] = url_for('group', id=encoded_id)
         return [item]
 
-    @web.require_admin
-    @web.legacy_expose_api
+    @expose_api
+    @require_admin
     def show(self, trans, id, **kwd):
         """
         GET /api/groups/{encoded_group_id}
@@ -97,8 +101,8 @@ class GroupAPIController(BaseAPIController):
         item['roles_url'] = url_for('group_roles', group_id=group_id)
         return item
 
-    @web.require_admin
-    @web.legacy_expose_api
+    @expose_api
+    @require_admin
     def update(self, trans, id, payload, **kwd):
         """
         PUT /api/groups/{encoded_group_id}
