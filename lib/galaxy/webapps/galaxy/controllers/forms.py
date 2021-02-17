@@ -103,7 +103,7 @@ class Forms(BaseUIController):
     @web.require_admin
     def create_form(self, trans, payload=None, **kwd):
         if trans.request.method == 'GET':
-            fd_types = sorted(trans.app.model.FormDefinition.types.items())
+            fd_types = sorted(trans.app.model.FormDefinition.types.__members__.items())
             return {
                 'title'         : 'Create new form',
                 'submit_title'  : 'Create',
@@ -159,7 +159,7 @@ class Forms(BaseUIController):
         form = get_form(trans, id)
         latest_form = form.latest_form
         if trans.request.method == 'GET':
-            fd_types = sorted(trans.app.model.FormDefinition.types.items())
+            fd_types = sorted(trans.app.model.FormDefinition.types.__members__.items())
             ff_types = [(t.__name__.replace('Field', ''), t.__name__) for t in trans.model.FormDefinition.supported_field_types]
             field_cache = []
             field_inputs = [{
