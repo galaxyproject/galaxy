@@ -584,7 +584,6 @@ upload:
     rule_dataset_selector_row:
       selector: '.selection-dialog-modal [aria-rowindex="${rowindex}"]'
     build_btn: '#rule-based #btn-build'
-    tooltip: '.b-tooltip'
 
 rule_builder:
   selectors:
