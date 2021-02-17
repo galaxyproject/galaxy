@@ -91,7 +91,7 @@ def search_names_versions(tool_dict, exact_matches_checked, match_tuples, reposi
 
 def search_repository_metadata(app, exact_matches_checked, tool_ids='', tool_names='', tool_versions='',
                                workflow_names='', all_workflows=False):
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     match_tuples = []
     ok = True
     if tool_ids or tool_names or tool_versions:

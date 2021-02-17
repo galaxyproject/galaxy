@@ -541,7 +541,7 @@ class SeleniumSessionGetPostMixin:
     def _mixin_admin_api_key(self) -> str:
         return getattr(self, "admin_api_key", get_admin_api_key())
 
-    def _get(self, route, data=None, admin=False) -> Response:
+    def _get(self, route, data=None, headers=None, admin=False) -> Response:
         data = data or {}
         full_url = self.selenium_context.build_url("api/" + route, for_selenium=False)
         cookies = None
@@ -549,10 +549,10 @@ class SeleniumSessionGetPostMixin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
         else:
             cookies = self.selenium_context.selenium_to_requests_cookies()
-        response = requests.get(full_url, params=data, cookies=cookies)
+        response = requests.get(full_url, params=data, cookies=cookies, headers=headers)
         return response
 
-    def _post(self, route, data=None, files=None, admin=False, json: bool = False) -> Response:
+    def _post(self, route, data=None, files=None, headers=None, admin=False, json: bool = False) -> Response:
         full_url = self.selenium_context.build_url("api/" + route, for_selenium=False)
         if data is None:
             data = {}
@@ -567,10 +567,10 @@ class SeleniumSessionGetPostMixin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
         else:
             cookies = self.selenium_context.selenium_to_requests_cookies()
-        response = requests.post(full_url, data=data, cookies=cookies, files=files)
+        response = requests.post(full_url, data=data, cookies=cookies, files=files, headers=headers)
         return response
 
-    def _delete(self, route, data=None, admin=False) -> Response:
+    def _delete(self, route, data=None, headers=None, admin=False) -> Response:
         data = data or {}
         full_url = self.selenium_context.build_url("api/" + route, for_selenium=False)
         cookies = None
@@ -578,10 +578,10 @@ class SeleniumSessionGetPostMixin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
         else:
             cookies = self.selenium_context.selenium_to_requests_cookies()
-        response = requests.delete(full_url, data=data, cookies=cookies)
+        response = requests.delete(full_url, data=data, cookies=cookies, headers=headers)
         return response
 
-    def _put(self, route, data=None, admin=False) -> Response:
+    def _put(self, route, data=None, headers=None, admin=False) -> Response:
         data = data or {}
         full_url = self.selenium_context.build_url("api/" + route, for_selenium=False)
         cookies = None
@@ -589,7 +589,7 @@ class SeleniumSessionGetPostMixin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
         else:
             cookies = self.selenium_context.selenium_to_requests_cookies()
-        response = requests.put(full_url, data=data, cookies=cookies)
+        response = requests.put(full_url, data=data, cookies=cookies, headers=headers)
         return response
 
 

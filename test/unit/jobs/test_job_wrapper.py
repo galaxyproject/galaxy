@@ -31,7 +31,7 @@ class BaseWrapperTestCase(UsesApp):
         job.user = User()
         job.object_store_id = "foo"
         self.model_objects = {Job: {345: job}}
-        self.app.model.context = MockContext(self.model_objects)
+        self.app.model._session = MockContext(self.model_objects)
 
         self.app.toolbox = MockToolbox(MockTool(self))
         self.working_directory = os.path.join(self.test_directory, "working")

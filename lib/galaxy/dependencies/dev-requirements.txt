@@ -6,6 +6,8 @@ alabaster==0.7.12; python_version >= "3.5"
 amqp==5.0.3; python_version >= "3.6"
 appdirs==1.4.4; python_version >= "3.6"
 argcomplete==1.12.2; python_version >= "3.6" and python_version < "4"
+async-exit-stack==1.0.1; python_version >= "3.6" and python_version < "3.7"
+async-generator==1.10; python_version >= "3.6" and python_version < "3.7"
 atomicwrites==1.4.0; python_version >= "3.6" and python_full_version < "3.0.0" and sys_platform == "win32" and (python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.6") or sys_platform == "win32" and python_version >= "3.6" and python_full_version >= "3.4.0" and (python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.6")
 attmap==0.12.11
 attrs==20.3.0; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.6"

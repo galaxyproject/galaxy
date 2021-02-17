@@ -293,7 +293,7 @@ class ToolShedRepositoryCache:
 
     def rebuild(self):
         try:
-            session = self.app.install_model.context.current.session_factory()
+            session = self.app.install_model._SessionLocal()
             self.repositories = session.query(self.app.install_model.ToolShedRepository).options(
                 defer(self.app.install_model.ToolShedRepository.metadata),
                 joinedload('tool_dependencies').subqueryload('tool_shed_repository').options(

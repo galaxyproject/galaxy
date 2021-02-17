@@ -3,6 +3,7 @@ This module *does not* contain API routes. It exclusively contains dependencies 
 """
 from typing import (
     cast,
+    Generator,
     Optional,
 )
 
@@ -19,17 +20,32 @@ from galaxy import (
     model,
 )
 from galaxy.app import UniverseApplication
-from galaxy.exceptions import AdminRequiredException
+from galaxy.exceptions import (
+    AdminRequiredException,
+    UserCannotRunAsException,
+    UserInvalidRunAsException,
+)
 from galaxy.managers.jobs import JobManager
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.users import UserManager
 from galaxy.model import User
+from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.web.framework.decorators import require_admin_message
 from galaxy.work.context import SessionRequestContext
 
 
-def get_app() -> UniverseApplication:
-    return cast(UniverseApplication, galaxy_app.app)
+def get_app() -> Generator[UniverseApplication, None, None]:
+    app = cast(UniverseApplication, galaxy_app.app)
+    try:
+        app.model.set_local_session()
+        yield app
+    finally:
+        app.model.dispose_local_session()
+
+
+def get_id_encoding_helper(app: UniverseApplication = Depends(get_app)) -> IdEncodingHelper:
+    return app.security
 
 
 def get_job_manager(app: UniverseApplication = Depends(get_app)) -> JobManager:
@@ -51,21 +67,36 @@ def get_session_manager(app: UniverseApplication = Depends(get_app)) -> GalaxySe
 
 
 def get_session(session_manager: GalaxySessionManager = Depends(get_session_manager),
-                app: UniverseApplication = Depends(get_app),
+                security: IdEncodingHelper = Depends(get_id_encoding_helper),
                 galaxysession: Optional[str] = Cookie(None)) -> Optional[model.GalaxySession]:
     if galaxysession:
-        session_key = app.security.decode_guid(galaxysession)
+        session_key = security.decode_guid(galaxysession)
         if session_key:
             return session_manager.get_session_from_session_key(session_key)
         # TODO: What should we do if there is no session? Since this is the API, maybe nothing is the right choice?
     return None
 
 
-def get_api_user(user_manager: UserManager = Depends(get_user_manager), key: Optional[str] = Query(None), x_api_key: Optional[str] = Header(None)) -> Optional[User]:
+def get_api_user(
+        security: IdEncodingHelper = Depends(get_id_encoding_helper),
+        user_manager: UserManager = Depends(get_user_manager),
+        key: Optional[str] = Query(None),
+        x_api_key: Optional[str] = Header(None),
+        run_as: Optional[EncodedDatabaseIdField] = Header(None, title='Run as User', description='Admins and ')) -> Optional[User]:
     api_key = key or x_api_key
     if not api_key:
         return None
-    return user_manager.by_api_key(api_key=api_key)
+    user = user_manager.by_api_key(api_key=api_key)
+    if run_as:
+        if user_manager.user_can_do_run_as(user):
+            try:
+                decoded_run_as_id = security.decode_id(run_as)
+            except Exception:
+                raise UserInvalidRunAsException
+            return user_manager.by_id(decoded_run_as_id)
+        else:
+            raise UserCannotRunAsException
+    return user
 
 
 def get_user(galaxy_session: Optional[model.GalaxySession] = Depends(get_session), api_user: Optional[User] = Depends(get_api_user)) -> Optional[User]:
