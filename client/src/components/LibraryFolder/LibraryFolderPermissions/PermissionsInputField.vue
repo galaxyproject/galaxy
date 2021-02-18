@@ -1,33 +1,56 @@
 <template>
-    <div v-if="options && value">
-        <multiselect
-            v-model="value"
-            :options="fetched_options"
-            :clear-on-select="true"
-            :preserve-search="true"
-            :multiple="true"
-            label="name"
-            track-by="id"
-            @input="valueChanged"
-            @search-change="searchChanged"
-            :internal-search="false"
-        >
-            <template slot="afterList">
-                <div v-observe-visibility="reachedEndOfList" v-if="hasMorePages">
-                    <span class="spinner fa fa-spinner fa-spin fa-1x" />
+    <div>
+        <h4>
+            {{ title }}
+        </h4>
+        <b-row>
+            <b-col>
+                <div v-if="options && value">
+                    <multiselect
+                        v-model="value"
+                        :options="fetched_options"
+                        :clear-on-select="true"
+                        :preserve-search="true"
+                        :multiple="true"
+                        label="name"
+                        track-by="id"
+                        @input="valueChanged"
+                        @search-change="searchChanged"
+                        :internal-search="false"
+                    >
+                        <template slot="afterList">
+                            <div v-observe-visibility="reachedEndOfList" v-if="hasMorePages">
+                                <span class="spinner fa fa-spinner fa-spin fa-1x" />
+                            </div>
+                        </template>
+                    </multiselect>
                 </div>
-            </template>
-        </multiselect>
+            </b-col>
+            <b-col>
+                <b-alert show variant="info">
+                    <div v-html="alert" />
+                </b-alert>
+            </b-col>
+        </b-row>
     </div>
 </template>
 
 <script>
+import Vue from "vue";
+
+import VueObserveVisibility from "vue-observe-visibility";
 import Multiselect from "vue-multiselect";
 import { Services } from "./services";
+import "vue-multiselect/dist/vue-multiselect.min.css";
 
+Vue.use(VueObserveVisibility);
 export default {
     props: {
-        folder_id: {
+        id: {
+            type: String,
+            required: true,
+        },
+        title: {
             type: String,
             required: true,
         },
@@ -37,6 +60,14 @@ export default {
         },
         initial_value: {
             type: Array,
+            required: true,
+        },
+        apiRootUrl: {
+            type: String,
+            required: true,
+        },
+        alert: {
+            type: String,
             required: true,
         },
     },
@@ -59,7 +90,7 @@ export default {
     created() {
         this.services = new Services({ root: this.root });
         // Avoid mutating a prop directly
-        this.value = this.initial_value;
+        this.assignValue(this.initial_value);
         this.getSelectOptions();
     },
     computed: {
@@ -70,7 +101,7 @@ export default {
     methods: {
         getSelectOptions(searchChanged = false) {
             this.services
-                .getSelectOptions(this.folder_id, true, this.page, this.page_limit, this.searchValue)
+                .getSelectOptions(this.apiRootUrl, this.id, true, this.page, this.page_limit, this.searchValue)
                 .then((response) => {
                     this.options = response;
                     if (searchChanged) this.fetched_options = this.options.roles;
@@ -90,6 +121,9 @@ export default {
             this.page = 1;
             this.searchValue = searchValue;
             this.getSelectOptions(true);
+        },
+        assignValue(value) {
+            this.value = value;
         },
     },
 };
