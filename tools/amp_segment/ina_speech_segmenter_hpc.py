@@ -65,9 +65,10 @@ def main():
 
     # Write the hpc timestamps output
     if "start" in job['job'].keys() and "end" in job['job'].keys():
-        ts_output = dict()
-        ts_output["start"] = job['job']["start"]
-        ts_output["end"] = job['job']["end"]
+        ts_output = {
+            "start_time": job['job']["start"],
+            "end_time": job['job']["end"]
+        }
         write_output_json(ts_output, args.hpc_timestamps)
 
     exit(0)
