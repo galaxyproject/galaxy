@@ -211,6 +211,10 @@ class UpgradeToolAction(BaseAction):
     tool_version: Optional[str]
 
 
+class UpgradeWorkflowAction(BaseAction):
+    action_type: Literal['upgrade_workflow']
+
+
 union_action_classes = Union[
     AddInputAction,
     AddStepAction,
@@ -230,6 +234,7 @@ union_action_classes = Union[
     UpdateStepPositionAction,
     UpgradeSubworkflowAction,
     UpgradeToolAction,
+    UpgradeWorkflowAction,
     RemoveUnlabeledWorkflowOutputs,
 ]
 
