@@ -15,6 +15,7 @@ url = "https://wheels.galaxyproject.org/simple"
 
 [tool.poetry.dependencies]
 aiofiles = "*"
+alembic = "*"
 async-generator = {version = "*", python = "~3.6"}
 async-exit-stack = {version = "*", python = "~3.6"}
 Babel = "*"
