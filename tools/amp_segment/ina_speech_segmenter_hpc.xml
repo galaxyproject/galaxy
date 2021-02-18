@@ -4,7 +4,7 @@
         <requirement type="package" version="8.30">coreutils</requirement>
     </requirements>
   <command detect_errors="exit_code">
-    '$__tool_directory__/ina_speech_segmenter_hpc.py' '$input_audio' '$ina_segments' '$amp_segments'
+    '$__tool_directory__/ina_speech_segmenter_hpc.py' '$__root_dir__' '$input_audio' '$ina_segments' '$amp_segments' '$hpc_timestamps'
   </command>
    <inputs>
    <!-- should be wave data type -->
@@ -13,6 +13,7 @@
   <outputs>
     <data name="ina_segments" format="json" label="INA Segments Generated"/>
     <data name="amp_segments" format="segment" label="AMP Segments Generated"/>
+    <data name="hpc_timestamps" format="json" label="HPC Timestamps"/>
   </outputs>
   <tests>
   </tests>

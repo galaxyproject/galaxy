@@ -1,3 +1,4 @@
+import configparser
 import sys
 import os
 import json
@@ -79,3 +80,8 @@ def write_json_file(object, output_file):
     with open(output_file, 'w') as file:
         json.dump(object, file, default = lambda x: x.__dict__)
         
+# Get the configuration file
+def get_config(root_dir):
+	config = configparser.ConfigParser()
+	config.read(root_dir + "/config/mgm.ini")    
+	return config

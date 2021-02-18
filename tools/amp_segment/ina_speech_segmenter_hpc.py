@@ -8,6 +8,7 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
 import hpc_submit
+import mgm_utils
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
 from segmentation import Segmentation, SegmentationMedia
 
@@ -17,9 +18,11 @@ def main():
     """
     parser = argparse.ArgumentParser(description=main.__doc__)
     parser.add_argument("--debug", default=False, action="store_true", help="Turn on debugging")
+    parser.add_argument("root_dir", help="Galaxy root directory")
     parser.add_argument("input", help="input audio file")
     parser.add_argument("segments", help="INA Speech Segmenter output")
     parser.add_argument("amp_segments", help="AMP Segmentation Schema output")
+    parser.add_argument("hpc_timestamps", help="HPC Timestamps output")
     args = parser.parse_args()
 
     # set up logging
@@ -27,7 +30,8 @@ def main():
                         stream=sys.stderr,
                         format="%(asctime)s %(levelname)s %(message)s")
 
-    dropbox = '/srv/amp/hpc_batch/dropbox'
+    config = mgm_utils.get_config(args.root_dir)
+    dropbox = config["hpc"]["dropbox"]
     
     # job parameters    
     job = {
@@ -58,6 +62,14 @@ def main():
     # Serialize the json and write it to destination file
     write_output_json(seg_schema, args.amp_segments)
 
+    # Write the hpc timestamps output
+    if "start" in job['job'].keys() and "end" in job['job'].keys():
+        ts_output = {
+            "start_time": job['job']["start"],
+            "end_time": job['job']["end"]
+        }
+        write_output_json(ts_output, args.hpc_timestamps)
+
     exit(0)
 
 
@@ -78,10 +90,10 @@ def convert_to_segmentation_schema(filename, segmentation):
     return seg_schema
 
 # Serialize schema obj and write it to output file
-def write_output_json(seg_schema, json_file):
+def write_output_json(data, json_file):
     # Serialize the segmentation object
     with open(json_file, 'w') as outfile:
-        json.dump(seg_schema, outfile, default=lambda x: x.__dict__)
+        json.dump(data, outfile, default=lambda x: x.__dict__)
 
 if __name__ == "__main__":
     main()
