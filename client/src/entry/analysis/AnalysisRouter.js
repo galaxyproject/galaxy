@@ -392,7 +392,7 @@ export const getAnalysisRouter = (Galaxy) =>
         },
 
         show_collection_edit_attributes: function (collection_id) {
-            this._display_vue_helper(CollectionEditView, {collection_id: collection_id});
+            this._display_vue_helper(CollectionEditView, { collection_id: collection_id });
         },
 
         show_dataset_error: function () {

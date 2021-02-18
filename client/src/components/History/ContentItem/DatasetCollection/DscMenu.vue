@@ -23,9 +23,7 @@
             key="edit-collection"
             :title="editButtonTitle"
             :disabled="collection.deleted || isIn(STATES.UPLOAD, STATES.NEW)"
-            @click.stop="
-                backboneRoute('collection/edit/' + collection.hdca_id)
-            "
+            @click.stop="backboneRoute('collection/edit/' + collection.hdca_id)"
             icon="fa fa-pencil"
         />
     </PriorityMenu>
@@ -71,7 +69,7 @@ export default {
         isIn(...states) {
             const goodStates = new Set(states);
             return goodStates.has(this.collection.state);
-        }
+        },
     },
 };
 </script>

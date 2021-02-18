@@ -2,7 +2,11 @@
     <div>
         <h4>{{ l("Edit Collection Attributes") }}</h4>
         <b-alert show variant="warning" dismissible>
-            {{ l("Collections are immutable. This means there will be some things you cannot change without creating a new collection. ") }}
+            {{
+                l(
+                    "Collections are immutable. This means there will be some things you cannot change without creating a new collection. "
+                )
+            }}
         </b-alert>
         <b-tabs content-class="mt-3">
             <b-tab>
@@ -16,15 +20,32 @@
             </b-tab>
             <b-tab>
                 <template v-slot:title> <i class="fa fa-table"></i>{{ l(" Database/Build") }}</template>
-                <p>WIP Database/Build in here</p>
+                <b>{{ l("Database/Build: ") }}</b>
+                <multiselect
+                    v-model="genome"
+                    deselect-label="Can't remove this value"
+                    track-by="id"
+                    label="text"
+                    :options="genomes"
+                    :searchable="true"
+                    :allow-empty="false"
+                >
+                    {{ genome.text }}
+                    <!-- <template slot="afterList">
+                        <div v-observe-visibility="reachedEndOfList" v-if="hasMorePages">
+                            <span class="spinner fa fa-spinner fa-spin fa-1x" />
+                        </div>
+                    </template> -->
+                </multiselect>
+                <i>{{ databaseKeyFromElements }}</i>
             </b-tab>
             <b-tab>
                 <template v-slot:title> <i class="fa fa-gear"></i>{{ l(" Convert") }}</template>
-                <p>WIP Convert Tool in here</p>
+                <b>{{ l("Datatype: ") }}</b> <i>{{ datatypesFromElements }}</i>
             </b-tab>
             <b-tab>
                 <template v-slot:title> <i class="fa fa-database"></i>{{ l(" Datatype") }}</template>
-                <p>WIP Datatypes in here</p>
+                <b>{{ l("Datatype: ") }}</b> <i>{{ datatypesFromElements }}</i>
             </b-tab>
             <b-tab>
                 <template v-slot:title> <i class="fa fa-user"></i>{{ l(" Permissions") }}</template>
@@ -39,17 +60,35 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import axios from "axios";
 import { prependPath } from "utils/redirect";
+import UploadUtils from "mvc/upload/upload-utils";
 import _l from "utils/localization";
+import Multiselect from "vue-multiselect";
+//import VueObserveVisibility from "vue-observe-visibility";
 
+//Vue.use(VueObserveVisibility);
 Vue.use(BootstrapVue);
 export default {
     created() {
         this.apiCallToGetData();
+        UploadUtils.getUploadDatatypes(
+            (extensions) => {
+                this.extensions = extensions;
+                //this.extension = UploadUtils.DEFAULT_EXTENSION;
+            },
+            true,
+            UploadUtils.AUTO_EXTENSION
+        );
+        UploadUtils.getUploadGenomes((genomes) => {
+            this.genomes = genomes;
+            //this.genome = UploadUtils.DEFAULT_GENOME;
+        }, UploadUtils.DEFAULT_GENOME);
     },
-    components: {},
+    components: { Multiselect },
     data: function () {
         return {
             collection_data: {}, //all data from the response
+            extensions: {},
+            genomes: {},
         };
     },
     props: {
@@ -75,6 +114,53 @@ export default {
         collectionElements: {
             get() {
                 return this.collection_data.elements;
+            },
+        },
+        numberOfCollectionElements: {
+            get() {
+                return this.collection_data.element_count;
+            },
+        },
+        databaseKeyFromElements: {
+            get() {
+                const dbkeysInCollection = [];
+                for (var index in this.collectionElements) {
+                    var element = this.collectionElements[index];
+                    if (!dbkeysInCollection.includes(element.object.metadata_dbkey)) {
+                        dbkeysInCollection.push(element.object.metadata_dbkey);
+                    }
+                }
+                if (dbkeysInCollection.length == 1) {
+                    return dbkeysInCollection[0];
+                } else {
+                    return "?";
+                }
+            },
+        },
+        genome: {
+            get() {
+                return this.databaseKeyFromElements;
+            },
+        },
+        datatypesFromElements: {
+            get() {
+                const datatypesInCollection = [];
+                for (var index in this.collectionElements) {
+                    var element = this.collectionElements[index];
+                    if (!datatypesInCollection.includes(element.object.data_type)) {
+                        datatypesInCollection.push(element.object.data_type);
+                    }
+                }
+                if (datatypesInCollection.length == 1) {
+                    return datatypesInCollection[0];
+                } else {
+                    return "?";
+                }
+            },
+        },
+        extension: {
+            get() {
+                return this.datatypesFromElements;
             },
         },
     },
