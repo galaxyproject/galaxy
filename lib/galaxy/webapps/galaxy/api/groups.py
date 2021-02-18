@@ -7,6 +7,7 @@ from typing import (
     Dict,
 )
 
+from galaxy.app import StructuredApp
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.groups import GroupsManager
 from galaxy.schema.fields import EncodedDatabaseIdField
@@ -21,9 +22,9 @@ log = logging.getLogger(__name__)
 
 class GroupAPIController(BaseAPIController):
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
-        self.manager = GroupsManager()
+        self.manager = GroupsManager(app)
 
     @expose_api
     @require_admin
