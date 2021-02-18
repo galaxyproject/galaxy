@@ -1,17 +1,25 @@
+from typing import (
+    Any,
+    Dict,
+)
+
 from sqlalchemy import false
 
+from galaxy import model
+from galaxy.managers.context import ProvidesAppContext
+from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.web import url_for
 
 
 class GroupsManager:
     """Interface/service object shared by controllers for interacting with groups."""
 
-    def index(self, trans, **kwd):
+    def index(self, trans: ProvidesAppContext):
         """
         Displays a collection (list) of groups.
         """
         rval = []
-        for group in trans.sa_session.query(trans.app.model.Group).filter(trans.app.model.Group.table.c.deleted == false()):
+        for group in trans.sa_session.query(model.Group).filter(model.Group.table.c.deleted == false()):
             if trans.user_is_admin:
                 item = group.to_dict(value_mapper={'id': trans.security.encode_id})
                 encoded_id = trans.security.encode_id(group.id)
@@ -19,7 +27,7 @@ class GroupsManager:
                 rval.append(item)
         return rval
 
-    def create(self, trans, payload, **kwd):
+    def create(self, trans: ProvidesAppContext, payload: Dict[str, Any]):
         """
         Creates a new group.
         """
@@ -30,16 +38,16 @@ class GroupsManager:
         if not name:
             trans.response.status = 400
             return "Enter a valid name"
-        if trans.sa_session.query(trans.app.model.Group).filter(trans.app.model.Group.table.c.name == name).first():
+        if trans.sa_session.query(model.Group).filter(model.Group.table.c.name == name).first():
             trans.response.status = 400
             return "A group with that name already exists"
 
-        group = trans.app.model.Group(name=name)
+        group = model.Group(name=name)
         trans.sa_session.add(group)
         user_ids = payload.get('user_ids', [])
-        users = [trans.sa_session.query(trans.model.User).get(trans.security.decode_id(i)) for i in user_ids]
+        users = [trans.sa_session.query(model.User).get(trans.security.decode_id(i)) for i in user_ids]
         role_ids = payload.get('role_ids', [])
-        roles = [trans.sa_session.query(trans.model.Role).get(trans.security.decode_id(i)) for i in role_ids]
+        roles = [trans.sa_session.query(model.Role).get(trans.security.decode_id(i)) for i in role_ids]
         trans.app.security_agent.set_entity_group_associations(groups=[group], roles=roles, users=users)
         """
         # Create the UserGroupAssociations
@@ -55,7 +63,7 @@ class GroupsManager:
         item['url'] = url_for('group', id=encoded_id)
         return [item]
 
-    def show(self, trans, id, **kwd):
+    def show(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField):
         """
         Displays information about a group.
         """
@@ -66,7 +74,7 @@ class GroupsManager:
             trans.response.status = 400
             return "Malformed group id ( %s ) specified, unable to decode." % str(group_id)
         try:
-            group = trans.sa_session.query(trans.app.model.Group).get(decoded_group_id)
+            group = trans.sa_session.query(model.Group).get(decoded_group_id)
         except Exception:
             group = None
         if not group:
@@ -78,7 +86,7 @@ class GroupsManager:
         item['roles_url'] = url_for('group_roles', group_id=group_id)
         return item
 
-    def update(self, trans, id, payload, **kwd):
+    def update(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, payload: Dict[str, Any]):
         """
         Modifies a group.
         """
@@ -89,7 +97,7 @@ class GroupsManager:
             trans.response.status = 400
             return "Malformed group id ( %s ) specified, unable to decode." % str(group_id)
         try:
-            group = trans.sa_session.query(trans.app.model.Group).get(decoded_group_id)
+            group = trans.sa_session.query(model.Group).get(decoded_group_id)
         except Exception:
             group = None
         if not group:
@@ -100,8 +108,8 @@ class GroupsManager:
             group.name = name
             trans.sa_session.add(group)
         user_ids = payload.get('user_ids', [])
-        users = [trans.sa_session.query(trans.model.User).get(trans.security.decode_id(i)) for i in user_ids]
+        users = [trans.sa_session.query(model.User).get(trans.security.decode_id(i)) for i in user_ids]
         role_ids = payload.get('role_ids', [])
-        roles = [trans.sa_session.query(trans.model.Role).get(trans.security.decode_id(i)) for i in role_ids]
+        roles = [trans.sa_session.query(model.Role).get(trans.security.decode_id(i)) for i in role_ids]
         trans.app.security_agent.set_entity_group_associations(groups=[group], roles=roles, users=users, delete_existing_assocs=False)
         trans.sa_session.flush()

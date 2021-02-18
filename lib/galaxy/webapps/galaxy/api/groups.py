@@ -2,8 +2,14 @@
 API operations on Group objects.
 """
 import logging
+from typing import (
+    Any,
+    Dict,
+)
 
+from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.groups import GroupsManager
+from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.web import (
     expose_api,
     require_admin,
@@ -21,7 +27,7 @@ class GroupAPIController(BaseAPIController):
 
     @expose_api
     @require_admin
-    def index(self, trans, **kwd):
+    def index(self, trans: ProvidesAppContext, **kwd):
         """
         GET /api/groups
         Displays a collection (list) of groups.
@@ -30,7 +36,7 @@ class GroupAPIController(BaseAPIController):
 
     @expose_api
     @require_admin
-    def create(self, trans, payload, **kwd):
+    def create(self, trans: ProvidesAppContext, payload: Dict[str, Any], **kwd):
         """
         POST /api/groups
         Creates a new group.
@@ -39,7 +45,7 @@ class GroupAPIController(BaseAPIController):
 
     @expose_api
     @require_admin
-    def show(self, trans, id, **kwd):
+    def show(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, **kwd):
         """
         GET /api/groups/{encoded_group_id}
         Displays information about a group.
@@ -48,7 +54,7 @@ class GroupAPIController(BaseAPIController):
 
     @expose_api
     @require_admin
-    def update(self, trans, id, payload, **kwd):
+    def update(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, payload: Dict[str, Any], **kwd):
         """
         PUT /api/groups/{encoded_group_id}
         Modifies a group.
