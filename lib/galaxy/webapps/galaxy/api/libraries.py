@@ -2,16 +2,13 @@
 API operations on a data library.
 """
 import logging
+from typing import (
+    Any,
+    Dict,
+)
 
-from galaxy import (
-    exceptions,
-    util
-)
-from galaxy.managers import (
-    folders,
-    libraries,
-    roles
-)
+from galaxy import util
+from galaxy.managers import libraries
 from galaxy.web import (
     expose_api,
     expose_api_anonymous,
@@ -25,9 +22,7 @@ class LibrariesController(BaseAPIController):
 
     def __init__(self, app):
         super().__init__(app)
-        self.folder_manager = folders.FolderManager()
-        self.library_manager = libraries.LibraryManager()
-        self.role_manager = roles.RoleManager(app)
+        self.manager = libraries.LibrariesManager(app)
 
     @expose_api_anonymous
     def index(self, trans, **kwd):
@@ -46,25 +41,7 @@ class LibrariesController(BaseAPIController):
 
         """
         deleted = util.string_as_bool_or_none(kwd.get('deleted', None))
-        query, prefetched_ids = self.library_manager.list(trans, deleted)
-        libraries = []
-        for library in query:
-            libraries.append(self.library_manager.get_library_dict(trans, library, prefetched_ids))
-        return libraries
-
-    def __decode_id(self, trans, encoded_id, object_name=None):
-        """
-        Try to decode the id.
-
-        :param  object_name:      Name of the object the id belongs to. (optional)
-        :type   object_name:      str
-        """
-        try:
-            return trans.security.decode_id(encoded_id)
-        except TypeError:
-            raise exceptions.MalformedId('Malformed %s id specified, unable to decode.' % object_name if object_name is not None else '')
-        except ValueError:
-            raise exceptions.MalformedId('Wrong %s id specified, unable to decode.' % object_name if object_name is not None else '')
+        return self.manager.index(trans, deleted)
 
     @expose_api_anonymous
     def show(self, trans, id, deleted='False', **kwd):
@@ -87,12 +64,10 @@ class LibrariesController(BaseAPIController):
 
         :raises: MalformedId, ObjectNotFound
         """
-        library = self.library_manager.get(trans, self.__decode_id(trans, id, 'library'))
-        library_dict = self.library_manager.get_library_dict(trans, library)
-        return library_dict
+        return self.manager.show(trans, id)
 
     @expose_api
-    def create(self, trans, payload=None, **kwd):
+    def create(self, trans, payload: Dict[str, str], **kwd):
         """
         * POST /api/libraries:
             Creates a new library.
@@ -111,21 +86,10 @@ class LibrariesController(BaseAPIController):
         :rtype:     dict
         :raises: RequestParameterMissingException
         """
-        if payload:
-            kwd.update(payload)
-        name = kwd.get('name', None)
-        if not name:
-            raise exceptions.RequestParameterMissingException("Missing required parameter 'name'.")
-        description = kwd.get('description', '')
-        synopsis = kwd.get('synopsis', '')
-        if synopsis in ['None', None]:
-            synopsis = ''
-        library = self.library_manager.create(trans, name, description, synopsis)
-        library_dict = self.library_manager.get_library_dict(trans, library)
-        return library_dict
+        return self.manager.create(trans, payload)
 
     @expose_api
-    def update(self, trans, id, payload=None, **kwd):
+    def update(self, trans, id, payload: Dict[str, str], **kwd):
         """
         * PATCH /api/libraries/{encoded_id}
            Updates the library defined by an ``encoded_id`` with the data in the payload.
@@ -146,20 +110,10 @@ class LibrariesController(BaseAPIController):
         :rtype:     dict
         :raises: RequestParameterMissingException
         """
-        library = self.library_manager.get(trans, self.__decode_id(trans, id, 'library'))
-        if payload:
-            kwd.update(payload)
-        name = kwd.get('name', None)
-        if name == '':
-            raise exceptions.RequestParameterMissingException("Parameter 'name' of library is required. You cannot remove it.")
-        description = kwd.get('description', None)
-        synopsis = kwd.get('synopsis', None)
-        updated_library = self.library_manager.update(trans, library, name, description, synopsis)
-        library_dict = self.library_manager.get_library_dict(trans, updated_library)
-        return library_dict
+        return self.manager.update(trans, id, payload)
 
     @expose_api
-    def delete(self, trans, id, payload=None, **kwd):
+    def delete(self, trans, id, payload: Dict[str, Any] = None, **kwd):
         """
         * DELETE /api/libraries/{id}
             marks the library with the given ``id`` as `deleted` (or removes the `deleted` mark if the `undelete` param is true)
@@ -180,16 +134,13 @@ class LibrariesController(BaseAPIController):
         """
         if payload:
             kwd.update(payload)
-        library = self.library_manager.get(trans, self.__decode_id(trans, id, 'library'))
         undelete = util.string_as_bool(kwd.get('undelete', False))
-        library = self.library_manager.delete(trans, library, undelete)
-        library_dict = self.library_manager.get_library_dict(trans, library)
-        return library_dict
+        return self.manager.delete(trans, id, undelete)
 
     @expose_api
     def get_permissions(self, trans, encoded_library_id, **kwd):
         """
-        * GET /api/libraries/{id}/permissions
+        * GET /api/libraries/{encoded_library_id}/permissions
 
         Load all permissions for the given library id and return it.
 
@@ -207,47 +158,26 @@ class LibrariesController(BaseAPIController):
 
         :raises: InsufficientPermissionsException
         """
-        current_user_roles = trans.get_current_user_roles()
-        is_admin = trans.user_is_admin
-        library = self.library_manager.get(trans, self.__decode_id(trans, encoded_library_id, 'library'))
-        if not (is_admin or trans.app.security_agent.can_manage_library_item(current_user_roles, library)):
-            raise exceptions.InsufficientPermissionsException('You do not have proper permission to access permissions of this library.')
-
         scope = kwd.get('scope', None)
         is_library_access = util.string_as_bool(kwd.get('is_library_access', False))
-
-        if scope == 'current' or scope is None:
-            roles = self.library_manager.get_current_roles(trans, library)
-            return roles
-
-        #  Return roles that are available to select.
-        elif scope == 'available':
-            page = kwd.get('page', None)
-            if page is not None:
-                page = int(page)
-            else:
-                page = 1
-
-            page_limit = kwd.get('page_limit', None)
-            if page_limit is not None:
-                page_limit = int(page_limit)
-            else:
-                page_limit = 10
-
-            query = kwd.get('q', None)
-
-            roles, total_roles = trans.app.security_agent.get_valid_roles(trans, library, query, page, page_limit, is_library_access)
-
-            return_roles = []
-            for role in roles:
-                role_id = trans.security.encode_id(role.id)
-                return_roles.append(dict(id=role_id, name=role.name, type=role.type))
-            return dict(roles=return_roles, page=page, page_limit=page_limit, total=total_roles)
+        page = kwd.get('page', None)
+        if page is not None:
+            page = int(page)
         else:
-            raise exceptions.RequestParameterInvalidException("The value of 'scope' parameter is invalid. Alllowed values: current, available")
+            page = 1
+
+        page_limit = kwd.get('page_limit', None)
+        if page_limit is not None:
+            page_limit = int(page_limit)
+        else:
+            page_limit = 10
+
+        query = kwd.get('q', None)
+
+        return self.manager.get_permissions(trans, encoded_library_id, scope, is_library_access, page, page_limit, query)
 
     @expose_api
-    def set_permissions(self, trans, encoded_library_id, payload=None, **kwd):
+    def set_permissions(self, trans, encoded_library_id, payload: Dict[str, Any], **kwd):
         """
         POST /api/libraries/{encoded_library_id}/permissions
 
@@ -275,115 +205,4 @@ class LibrariesController(BaseAPIController):
         :raises: RequestParameterInvalidException, InsufficientPermissionsException, InternalServerError
                     RequestParameterMissingException
         """
-        if payload:
-            kwd.update(payload)
-        is_admin = trans.user_is_admin
-        current_user_roles = trans.get_current_user_roles()
-        library = self.library_manager.get(trans, self.__decode_id(trans, encoded_library_id, 'library'))
-
-        if not (is_admin or trans.app.security_agent.can_manage_library_item(current_user_roles, library)):
-            raise exceptions.InsufficientPermissionsException('You do not have proper permission to modify permissions of this library.')
-
-        new_access_roles_ids = util.listify(kwd.get('access_ids[]', None))
-        new_add_roles_ids = util.listify(kwd.get('add_ids[]', None))
-        new_manage_roles_ids = util.listify(kwd.get('manage_ids[]', None))
-        new_modify_roles_ids = util.listify(kwd.get('modify_ids[]', None))
-
-        action = kwd.get('action', None)
-        if action is None:
-            if payload is not None:
-                return self.set_permissions_old(trans, library, payload, **kwd)
-            else:
-                raise exceptions.RequestParameterMissingException('The mandatory parameter "action" is missing.')
-        elif action == 'remove_restrictions':
-            is_public = self.library_manager.make_public(trans, library)
-            if not is_public:
-                raise exceptions.InternalServerError('An error occurred while making library public.')
-        elif action == 'set_permissions':
-
-            # ACCESS LIBRARY ROLES
-            valid_access_roles = []
-            invalid_access_roles_names = []
-            for role_id in new_access_roles_ids:
-                role = self.role_manager.get(trans, self.__decode_id(trans, role_id, 'role'))
-                valid_roles, total_roles = trans.app.security_agent.get_valid_roles(trans, library, is_library_access=True)
-                if role in valid_roles:
-                    valid_access_roles.append(role)
-                else:
-                    invalid_access_roles_names.append(role_id)
-            if len(invalid_access_roles_names) > 0:
-                log.warning("The following roles could not be added to the library access permission: " + str(invalid_access_roles_names))
-
-            # ADD TO LIBRARY ROLES
-            valid_add_roles = []
-            invalid_add_roles_names = []
-            for role_id in new_add_roles_ids:
-                role = self.role_manager.get(trans, self.__decode_id(trans, role_id, 'role'))
-                valid_roles, total_roles = trans.app.security_agent.get_valid_roles(trans, library)
-                if role in valid_roles:
-                    valid_add_roles.append(role)
-                else:
-                    invalid_add_roles_names.append(role_id)
-            if len(invalid_add_roles_names) > 0:
-                log.warning("The following roles could not be added to the add library item permission: " + str(invalid_add_roles_names))
-
-            # MANAGE LIBRARY ROLES
-            valid_manage_roles = []
-            invalid_manage_roles_names = []
-            for role_id in new_manage_roles_ids:
-                role = self.role_manager.get(trans, self.__decode_id(trans, role_id, 'role'))
-                valid_roles, total_roles = trans.app.security_agent.get_valid_roles(trans, library)
-                if role in valid_roles:
-                    valid_manage_roles.append(role)
-                else:
-                    invalid_manage_roles_names.append(role_id)
-            if len(invalid_manage_roles_names) > 0:
-                log.warning("The following roles could not be added to the manage library permission: " + str(invalid_manage_roles_names))
-
-            # MODIFY LIBRARY ROLES
-            valid_modify_roles = []
-            invalid_modify_roles_names = []
-            for role_id in new_modify_roles_ids:
-                role = self.role_manager.get(trans, self.__decode_id(trans, role_id, 'role'))
-                valid_roles, total_roles = trans.app.security_agent.get_valid_roles(trans, library)
-                if role in valid_roles:
-                    valid_modify_roles.append(role)
-                else:
-                    invalid_modify_roles_names.append(role_id)
-            if len(invalid_modify_roles_names) > 0:
-                log.warning("The following roles could not be added to the modify library permission: " + str(invalid_modify_roles_names))
-
-            permissions = {trans.app.security_agent.permitted_actions.LIBRARY_ACCESS: valid_access_roles}
-            permissions.update({trans.app.security_agent.permitted_actions.LIBRARY_ADD: valid_add_roles})
-            permissions.update({trans.app.security_agent.permitted_actions.LIBRARY_MANAGE: valid_manage_roles})
-            permissions.update({trans.app.security_agent.permitted_actions.LIBRARY_MODIFY: valid_modify_roles})
-
-            trans.app.security_agent.set_all_library_permissions(trans, library, permissions)
-            trans.sa_session.refresh(library)
-            # Copy the permissions to the root folder
-            trans.app.security_agent.copy_library_permissions(trans, library, library.root_folder)
-        else:
-            raise exceptions.RequestParameterInvalidException('The mandatory parameter "action" has an invalid value.'
-                                                              'Allowed values are: "remove_restrictions", set_permissions"')
-        roles = self.library_manager.get_current_roles(trans, library)
-        return roles
-
-    def set_permissions_old(self, trans, library, payload, **kwd):
-        """
-        *** old implementation for backward compatibility ***
-
-        POST /api/libraries/{encoded_library_id}/permissions
-        Updates the library permissions.
-        """
-        params = util.Params(payload)
-        permissions = {}
-        for k, v in trans.app.model.Library.permitted_actions.items():
-            role_params = params.get(k + '_in', [])
-            in_roles = [trans.sa_session.query(trans.app.model.Role).get(trans.security.decode_id(x)) for x in util.listify(role_params)]
-            permissions[trans.app.security_agent.get_action(v.action)] = in_roles
-        trans.app.security_agent.set_all_library_permissions(trans, library, permissions)
-        trans.sa_session.refresh(library)
-        # Copy the permissions to the root folder
-        trans.app.security_agent.copy_library_permissions(trans, library, library.root_folder)
-        item = library.to_dict(view='element', value_mapper={'id': trans.security.encode_id, 'root_folder_id': trans.security.encode_id})
-        return item
+        return self.manager.set_permissions(trans, encoded_library_id, payload)

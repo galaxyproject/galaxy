@@ -66,6 +66,14 @@ LOGGING_CONFIG_DEFAULT = {
             'level': 'WARN',
             'qualname': 'paste.httpserver.ThreadPool',
         },
+        'sqlalchemy_json.track': {
+            'level': 'WARN',
+            'qualname': 'sqlalchemy_json.track',
+        },
+        'urllib3.connectionpool': {
+            'level': 'WARN',
+            'qualname': 'urllib3.connectionpool',
+        },
         'routes.middleware': {
             'level': 'WARN',
             'qualname': 'routes.middleware',

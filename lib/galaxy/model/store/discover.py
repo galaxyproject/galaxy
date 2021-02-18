@@ -10,7 +10,6 @@ import logging
 import os
 from collections import (
     namedtuple,
-    OrderedDict
 )
 from typing import Any, NamedTuple, Optional
 
@@ -517,7 +516,7 @@ def persist_target_to_export_store(target_dict, export_store, object_store, work
 
 
 def persist_elements_to_hdca(model_persistence_context, elements, hdca, collector=None):
-    filenames = OrderedDict()
+    filenames = {}
 
     def add_to_discovered_files(elements, parent_identifiers=None):
         parent_identifiers = parent_identifiers or []

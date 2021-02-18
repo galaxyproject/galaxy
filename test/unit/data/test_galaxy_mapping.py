@@ -379,6 +379,13 @@ class MappingTests(BaseModelTestCase):
         assert hist1.name == "History 2b"
         # gvk TODO need to ad test for GalaxySessions, but not yet sure what they should look like.
 
+    def test_metadata_spec(self):
+        metadata = dict(chromCol=1, startCol=2, endCol=3)
+        d = self.model.HistoryDatasetAssociation(extension="interval", metadata=metadata, sa_session=self.model.session)
+        assert d.metadata.chromCol == 1
+        assert d.metadata.anyAttribute is None
+        assert 'items' not in d.metadata
+
     def test_jobs(self):
         model = self.model
         u = model.User(email="jobtest@foo.bar.baz", password="password")

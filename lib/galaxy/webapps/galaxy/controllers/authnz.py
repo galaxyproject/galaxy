@@ -3,6 +3,7 @@ OAuth 2.0 and OpenID Connect Authentication and Authorization Controller.
 """
 
 
+import datetime
 import json
 import logging
 
@@ -42,8 +43,23 @@ class OIDC(JSAppLauncher):
             rtv.append({'id': trans.app.security.encode_id(authnz.id), 'provider': authnz.provider, 'email': authnz.uid})
         # Add cilogon and custos identities
         for token in trans.user.custos_auth:
-            userinfo = jwt.decode(token.id_token, options={"verify_signature": False})
-            rtv.append({'id': trans.app.security.encode_id(token.id), 'provider': token.provider, 'email': userinfo['email']})
+            # for purely displaying the info to user, we bypass verification of
+            # signature, audience, and expiration as that's potentially useful
+            # information to share with the end user
+            try:
+                userinfo = jwt.decode(token.id_token, options={'verify_signature': False, 'verify_aud': False, 'verify_exp': False})
+                rtv.append({
+                    'id': trans.app.security.encode_id(token.id),
+                    'provider': token.provider,
+                    'email': userinfo['email'],
+                    'expiration': str(datetime.datetime.utcfromtimestamp(userinfo['exp']))
+                })
+            except Exception:
+                rtv.append({
+                    'id': trans.app.security.encode_id(token.id),
+                    'provider': token.provider,
+                    'error': "Unable to decode token"
+                })
         return rtv
 
     @web.json

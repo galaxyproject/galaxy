@@ -5,6 +5,8 @@ aiofiles==0.6.0
 amqp==5.0.3; python_version >= "3.6"
 appdirs==1.4.4; python_version >= "3.6"
 argcomplete==1.12.2; python_version >= "3.6" and python_version < "4"
+async-exit-stack==1.0.1; python_version >= "3.6" and python_version < "3.7"
+async-generator==1.10; python_version >= "3.6" and python_version < "3.7"
 attmap==0.12.11
 attrs==20.3.0; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.6"
 babel==2.9.0; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.4.0")
@@ -112,7 +114,7 @@ prettytable==0.7.2; python_version >= "3.6"
 protobuf==3.14.0; python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.6.0"
 prov==1.5.1; python_version >= "3.6" and python_version < "4"
 psutil==5.8.0; (python_version >= "2.6" and python_full_version < "3.0.0") or (python_full_version >= "3.4.0")
-pulsar-galaxy-lib==0.14.0.dev4
+pulsar-galaxy-lib==0.14.2
 pyasn1-modules==0.2.8; python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.6.0"
 pyasn1==0.4.8; python_version >= "3.5" and python_version < "4"
 pycparser==2.20; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.6"

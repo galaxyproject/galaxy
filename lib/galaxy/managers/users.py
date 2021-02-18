@@ -225,6 +225,9 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         if self.by_email(email) is not None:
             raise exceptions.Conflict('Email must be unique', email=email)
 
+    def by_id(self, user_id):
+        return self.app.model.session.query(self.model_class).get(user_id)
+
     # ---- filters
     def by_email(self, email, filters=None, **kwargs):
         """
@@ -351,6 +354,15 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         """
         # TODO: seems like this should return the model
         return api_keys.ApiKeyManager(self.app).create_api_key(user)
+
+    def user_can_do_run_as(self, user) -> bool:
+        run_as_users = [u for u in self.app.config.get("api_allow_run_as", "").split(",") if u]
+        if not run_as_users:
+            return False
+        user_in_run_as_users = user and user.email in run_as_users
+        # Can do if explicitly in list or master_api_key supplied.
+        can_do_run_as = user_in_run_as_users or user.bootstrap_admin_user
+        return can_do_run_as
 
     # TODO: possibly move to ApiKeyManager
     def valid_api_key(self, user):
