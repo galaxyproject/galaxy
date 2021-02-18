@@ -1,5 +1,4 @@
 #!/bin/env python3
-import configparser
 import argparse
 import json
 from pathlib import Path
@@ -65,11 +64,6 @@ def main():
             json.dump(ts_output, outfile, default=lambda x: x.__dict__)
 
     exit(0)
-
-def get_config(root_dir):
-	config = configparser.ConfigParser()
-	config.read(root_dir + "/config/mgm.ini")    
-	return config
 
 if __name__ == "__main__":
     main()
