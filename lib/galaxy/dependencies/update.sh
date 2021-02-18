@@ -15,7 +15,7 @@ pip install --upgrade pip setuptools poetry
 if [ $# -gt 0 ]; then
     poetry add --lock "$@"
 else
-    poetry update -vv --lock
+    poetry update -v --lock
 fi
 poetry export -f requirements.txt --without-hashes --output "$THIS_DIRECTORY/pinned-requirements.txt"
 poetry export --dev -f requirements.txt --without-hashes --output "$THIS_DIRECTORY/dev-requirements.txt"
