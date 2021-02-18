@@ -3,7 +3,6 @@ This module *does not* contain API routes. It exclusively contains dependencies 
 """
 from typing import (
     cast,
-    Generator,
     Optional,
 )
 
@@ -35,13 +34,8 @@ from galaxy.web.framework.decorators import require_admin_message
 from galaxy.work.context import SessionRequestContext
 
 
-def get_app() -> Generator[UniverseApplication, None, None]:
-    app = cast(UniverseApplication, galaxy_app.app)
-    try:
-        app.model.set_local_session()
-        yield app
-    finally:
-        app.model.dispose_local_session()
+def get_app() -> UniverseApplication:
+    return cast(UniverseApplication, galaxy_app.app)
 
 
 def get_id_encoding_helper(app: UniverseApplication = Depends(get_app)) -> IdEncodingHelper:

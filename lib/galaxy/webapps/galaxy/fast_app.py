@@ -4,6 +4,8 @@ from fastapi.middleware.wsgi import WSGIMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response
+from starlette_context import plugins
+from starlette_context.middleware import RawContextMiddleware
 
 from galaxy.exceptions import MessageException
 from galaxy.web.framework.base import walk_controller_modules
@@ -116,6 +118,7 @@ def initialize_fast_app(gx_webapp, gx_app):
     app = FastAPI(
         openapi_tags=api_tags_metadata
     )
+    app.add_middleware(RawContextMiddleware, plugins=(plugins.RequestIdPlugin(force_new_uuid=True),))
     add_exception_handler(app)
     add_galaxy_middleware(app, gx_app)
     wsgi_handler = WSGIMiddleware(gx_webapp)

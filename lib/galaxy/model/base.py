@@ -2,6 +2,7 @@
 Shared model and mapping code between Galaxy and Tool Shed, trying to
 generalize to generic database connections.
 """
+import threading
 from inspect import (
     getmembers,
     isclass
@@ -12,8 +13,19 @@ from sqlalchemy.orm import (
     scoped_session,
     sessionmaker
 )
+try:
+    from starlette_context import context as request_context
+except ImportError:
+    request_context = None
 
 from galaxy.util.bunch import Bunch
+
+
+def get_current_request():
+    try:
+        return request_context.data['X-Request-ID']
+    except RuntimeError:
+        return threading.get_ident()
 
 
 # TODO: Refactor this to be a proper class, not a bunch.
@@ -23,12 +35,12 @@ class ModelMapping(Bunch):
         self.engine = engine
         SessionLocal = sessionmaker(autoflush=False, autocommit=True)
         versioned_session(SessionLocal)
-        context = scoped_session(SessionLocal)
+        context = scoped_session(SessionLocal, scopefunc=get_current_request if request_context is not None else None)
         # For backward compatibility with "context.current"
         # deprecated?
         context.current = context
         self._SessionLocal = SessionLocal
-        self._session = context
+        self.session = context
         self.local_session = None
 
         model_classes = {}
@@ -41,23 +53,6 @@ class ModelMapping(Bunch):
 
         context.remove()
         context.configure(bind=engine)
-
-    def set_local_session(self):
-        self.session = self._SessionLocal()
-
-    def dispose_local_session(self):
-        self.session = None
-
-    @property
-    def session(self):
-        return self.local_session or self._session
-
-    @session.setter
-    def session(self, session):
-        # For backward compatibility with "context.current"
-        if session:
-            session.current = session
-        self.local_session = session
 
     @property
     def context(self):
