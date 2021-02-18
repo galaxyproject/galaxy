@@ -4,7 +4,7 @@
         <requirement type="package" version="8.30">coreutils</requirement>
     </requirements>
   <command detect_errors="exit_code">
-    '$__tool_directory__/kaldi_hpc.py' '$input_audio' '$kaldi_transcript_json' '$kaldi_transcript_text' '$amp_transcript'
+    '$__tool_directory__/kaldi_hpc.py' '$__root_dir__' '$input_audio' '$kaldi_transcript_json' '$kaldi_transcript_text' '$amp_transcript' '$hpc_timestamps'
   </command>
    <inputs>
    <!-- should be wave data type -->
@@ -14,6 +14,7 @@
     <data name="kaldi_transcript_json" format="json" label="Kaldi Transcript JSON"/>
     <data name="kaldi_transcript_text" format="txt" label="Kaldi Transcript Text" />
     <data name="amp_transcript" format="transcript" label="AMP Transcript" />
+    <data name="hpc_timestamps" format="json" label="HPC Timestamps"/>
   </outputs>
   <tests>
   </tests>
