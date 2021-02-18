@@ -77,6 +77,7 @@ class GroupsManager:
         group = self._get_group(trans, encoded_id)
         name = payload.get('name', None)
         if name:
+            self._check_duplicated_group_name(trans, name)
             group.name = name
             trans.sa_session.add(group)
         user_ids = payload.get('user_ids', [])

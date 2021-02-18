@@ -28,13 +28,13 @@ class GroupsApiTestCase(ApiTestCase):
         response = self._post("groups", payload, admin=True, json=True)
         self._assert_status_code_is(response, 400)
 
-    def test_create_duplicated_name_raises_400(self):
+    def test_create_duplicated_name_raises_409(self):
         payload = self._build_valid_group_payload()
         response = self._post("groups", payload, admin=True, json=True)
         self._assert_status_code_is(response, 200)
 
         response = self._post("groups", payload, admin=True, json=True)
-        self._assert_status_code_is(response, 400)
+        self._assert_status_code_is(response, 409)
 
     def test_index(self):
         self.test_create_valid()
@@ -65,6 +65,11 @@ class GroupsApiTestCase(ApiTestCase):
         response = self._get(f"groups/{group_id}")
         self._assert_status_code_is(response, 403)
 
+    def test_show_unknown_raises_400(self):
+        group_id = "invalid-group-id"
+        response = self._get(f"groups/{group_id}", admin=True)
+        self._assert_status_code_is(response, 400)
+
     def test_update(self):
         group = self.test_create_valid(group_name="group-test")
 
@@ -82,7 +87,7 @@ class GroupsApiTestCase(ApiTestCase):
         response = self._put(f"groups/{group_id}")
         self._assert_status_code_is(response, 403)
 
-    def test_update_duplicating_name_raises_400(self):
+    def test_update_duplicating_name_raises_409(self):
         group_a = self.test_create_valid()
         group_b = self.test_create_valid()
 
@@ -93,7 +98,7 @@ class GroupsApiTestCase(ApiTestCase):
             "name": updated_name,
         })
         update_response = self._put(f"groups/{group_b_id}", data=update_payload, admin=True)
-        self._assert_error_code_is(update_response, 400)
+        self._assert_status_code_is(update_response, 409)
 
     def _assert_valid_group(self, group, assert_id=None):
         self._assert_has_keys(group, "id", "name", "model_class", "url")
