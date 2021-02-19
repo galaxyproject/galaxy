@@ -70,18 +70,34 @@ Vue.use(BootstrapVue);
 export default {
     created() {
         this.apiCallToGetData();
-        UploadUtils.getUploadDatatypes(
-            (extensions) => {
+        UploadUtils.getUploadDatatypes(true, UploadUtils.AUTO_EXTENSION)
+            .then((extensions) => {
                 this.extensions = extensions;
                 //this.extension = UploadUtils.DEFAULT_EXTENSION;
-            },
-            true,
-            UploadUtils.AUTO_EXTENSION
-        );
-        UploadUtils.getUploadGenomes((genomes) => {
-            this.genomes = genomes;
-            //this.genome = UploadUtils.DEFAULT_GENOME;
-        }, UploadUtils.DEFAULT_GENOME);
+            })
+            .catch((err) => {
+                console.log("Error in RuleCollectionBuilder, unable to load datatypes", err);
+            });
+        UploadUtils.getUploadGenomes(UploadUtils.DEFAULT_GENOME)
+            .then((genomes) => {
+                this.genomes = genomes;
+                //this.genome = UploadUtils.DEFAULT_GENOME;
+            })
+            .catch((err) => {
+                console.log("Error in RuleCollectionBuilder, unable to load genomes", err);
+            });
+    //     UploadUtils.getUploadDatatypes(
+    //         (extensions) => {
+    //             this.extensions = extensions;
+    //             //this.extension = UploadUtils.DEFAULT_EXTENSION;
+    //         },
+    //         true,
+    //         UploadUtils.AUTO_EXTENSION
+    //     );
+    //     UploadUtils.getUploadGenomes((genomes) => {
+    //         this.genomes = genomes;
+    //         //this.genome = UploadUtils.DEFAULT_GENOME;
+    //     }, UploadUtils.DEFAULT_GENOME);
     },
     components: { Multiselect },
     data: function () {
