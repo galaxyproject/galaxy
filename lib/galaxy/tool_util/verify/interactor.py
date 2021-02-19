@@ -8,7 +8,6 @@ import tarfile
 import tempfile
 import time
 import zipfile
-from collections import OrderedDict
 from json import dumps
 from logging import getLogger
 
@@ -43,7 +42,7 @@ DEFAULT_FTYPE = 'auto'
 DEFAULT_DBKEY = os.environ.get("GALAXY_TEST_DEFAULT_DBKEY", "?")
 
 
-class OutputsDict(OrderedDict):
+class OutputsDict(dict):
     """Ordered dict that can also be accessed by index.
 
     >>> out = OutputsDict()
@@ -57,12 +56,7 @@ class OutputsDict(OrderedDict):
         if isinstance(item, int):
             return self[list(self.keys())[item]]
         else:
-            # ideally we'd do `return super(OutputsDict, self)[item]`,
-            # but this fails because OrderedDict has no `__getitem__`. (!?)
-            item = self.get(item)
-            if item is None:
-                raise KeyError(item)
-            return item
+            return super().__getitem__(item)
 
 
 def stage_data_in_history(galaxy_interactor, tool_id, all_test_data, history=None, force_path_paste=False, maxseconds=DEFAULT_TOOL_TEST_WAIT):
@@ -497,7 +491,7 @@ class GalaxyInteractorApi:
         return element_identifiers
 
     def __dictify_output_collections(self, submit_response):
-        output_collections_dict = OrderedDict()
+        output_collections_dict = {}
         for output_collection in submit_response['output_collections']:
             output_collections_dict[output_collection.get("output_name")] = output_collection
         return output_collections_dict
@@ -676,36 +670,36 @@ class GalaxyInteractorApi:
 
         return fetcher
 
-    def api_key_header(self, key, admin, anon):
-        header = {}
+    def api_key_header(self, key, admin, anon, headers):
+        header = headers or {}
         if not anon:
             if not key:
                 key = self.api_key if not admin else self.master_api_key
             header['x-api-key'] = key
         return header
 
-    def _post(self, path, data=None, files=None, key=None, admin=False, anon=False, json=False):
+    def _post(self, path, data=None, files=None, key=None, headers=None, admin=False, anon=False, json=False):
         # If json=True, use post payload using request's json parameter instead of the data
         # parameter (i.e. assume the contents is a jsonified blob instead of form parameters
         # with individual parameters jsonified if needed).
-        headers = self.api_key_header(key=key, admin=admin, anon=anon)
+        headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         url = f"{self.api_url}/{path}"
         return galaxy_requests_post(url, data=data, files=files, as_json=json, headers=headers)
 
-    def _delete(self, path, data=None, key=None, admin=False, anon=False):
-        headers = self.api_key_header(key=key, admin=admin, anon=anon)
+    def _delete(self, path, data=None, key=None, headers=None, admin=False, anon=False):
+        headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         return requests.delete(f"{self.api_url}/{path}", params=data, headers=headers)
 
-    def _patch(self, path, data=None, key=None, admin=False, anon=False):
-        headers = self.api_key_header(key=key, admin=admin, anon=anon)
+    def _patch(self, path, data=None, key=None, headers=None, admin=False, anon=False):
+        headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         return requests.patch(f"{self.api_url}/{path}", data=data, headers=headers)
 
-    def _put(self, path, data=None, key=None, admin=False, anon=False):
-        headers = self.api_key_header(key=key, admin=admin, anon=anon)
+    def _put(self, path, data=None, key=None, headers=None, admin=False, anon=False):
+        headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         return requests.put(f"{self.api_url}/{path}", data=data, headers=headers)
 
-    def _get(self, path, data=None, key=None, admin=False, anon=False):
-        headers = self.api_key_header(key=key, admin=admin, anon=anon)
+    def _get(self, path, data=None, key=None, headers=None, admin=False, anon=False):
+        headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         if path.startswith("/api"):
             path = path[len("/api"):]
         url = f"{self.api_url}/{path}"
@@ -1290,7 +1284,7 @@ class ToolTestDescription:
         self.error = processed_test_dict.get("error", False)
         self.exception = processed_test_dict.get("exception", None)
 
-        self.output_collections = map(TestCollectionOutputDef.from_dict, processed_test_dict.get("output_collections", []))
+        self.output_collections = [TestCollectionOutputDef.from_dict(d) for d in processed_test_dict.get("output_collections", [])]
         self.command_line = processed_test_dict.get("command_line", None)
         self.command_version = processed_test_dict.get("command_version", None)
         self.stdout = processed_test_dict.get("stdout", None)

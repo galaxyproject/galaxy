@@ -4,7 +4,7 @@ import Vue from "vue";
 import DataDialog from "components/DataDialog/DataDialog.vue";
 import { FilesDialog } from "components/FilesDialog";
 import DatasetCollectionDialog from "components/SelectionDialog/DatasetCollectionDialog.vue";
-import { mountUploadModal } from "components/Upload";
+import { openUploadModal } from "components/Upload";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
 
@@ -41,8 +41,7 @@ export function dialog(callback, options = {}) {
             history: history_id,
         });
         if (options.new) {
-            options.modalShow = true;
-            mountUploadModal(options);
+            openUploadModal(options);
         } else {
             _mountSelectionDialog(DataDialog, options);
         }

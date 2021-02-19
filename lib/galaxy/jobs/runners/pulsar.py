@@ -382,6 +382,16 @@ class PulsarJobRunner(AsynchronousJobRunner):
             if os.path.exists(tool_script):
                 log.debug("Registering tool_script for Pulsar transfer [%s]" % tool_script)
                 job_directory_files.append(tool_script)
+            # Following is job destination environment variables
+            env = client.env
+            # extend it with tool defined environment variables
+            tool_envs = job_wrapper.environment_variables
+            env.extend(tool_envs)
+            for tool_env in tool_envs:
+                job_directory_path = tool_env.get("job_directory_path")
+                if job_directory_path:
+                    config_files.append(job_directory_path)
+
             client_job_description = ClientJobDescription(
                 command_line=command_line,
                 input_files=input_files,
@@ -392,7 +402,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 tool=job_wrapper.tool,
                 config_files=config_files,
                 dependencies_description=dependencies_description,
-                env=client.env,
+                env=env,
                 rewrite_paths=rewrite_paths,
                 arbitrary_files=path_rewrites_unstructured,
                 touch_outputs=output_names,
@@ -593,6 +603,8 @@ class PulsarJobRunner(AsynchronousJobRunner):
             files_endpoint=files_endpoint,
             env=env
         )
+        # Turn MutableDict into standard dict for pulsar consumption
+        job_destination_params = dict(job_destination_params.items())
         return self.client_manager.get_client(job_destination_params, **get_client_kwds)
 
     def finish_job(self, job_state):
@@ -871,7 +883,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             remote_job_id = full_status["job_id"]
             if len(remote_job_id) == 32:
                 # It is a UUID - assign_ids = uuid in destination params...
-                sa_session = self.app.model.context.current
+                sa_session = self.app.model.session
                 galaxy_job_id = sa_session.query(model.Job).filter(model.Job.job_runner_external_id == remote_job_id).one().id
             else:
                 galaxy_job_id = remote_job_id
@@ -1053,6 +1065,9 @@ class PulsarComputeEnvironment(ComputeEnvironment):
 
     def working_directory(self):
         return self._working_directory
+
+    def env_config_directory(self):
+        return self.config_directory()
 
     def config_directory(self):
         return self._config_directory

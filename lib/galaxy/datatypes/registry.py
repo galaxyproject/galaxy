@@ -5,8 +5,8 @@ Provides mapping between extensions and datatypes, mime-types, etc.
 import imp
 import logging
 import os
-from collections import OrderedDict
 from string import Template
+from typing import Dict
 
 import yaml
 
@@ -41,7 +41,7 @@ class Registry:
         self.config = config
         self.datatypes_by_extension = {}
         self.mimetypes_by_extension = {}
-        self.datatype_converters = OrderedDict()
+        self.datatype_converters = {}
         # Converters defined in local datatypes_conf.xml
         self.converters = []
         self.converter_tools = set()
@@ -58,7 +58,7 @@ class Registry:
         # tool shed repositories that contain display applications.
         self.proprietary_display_app_containers = []
         # Map a display application id to a display application
-        self.display_applications = OrderedDict()
+        self.display_applications: Dict[str, DisplayApplication] = {}
         # The following 2 attributes are used in the to_xml_file()
         # method to persist the current state into an xml file.
         self.display_path_attr = None
@@ -638,7 +638,7 @@ class Registry:
                 else:
                     toolbox.register_tool(converter)
                     if source_datatype not in self.datatype_converters:
-                        self.datatype_converters[source_datatype] = OrderedDict()
+                        self.datatype_converters[source_datatype] = {}
                     self.datatype_converters[source_datatype][target_datatype] = converter
                     if not hasattr(toolbox.app, 'tool_cache') or converter.id in toolbox.app.tool_cache._new_tool_ids:
                         self.log.debug("Loaded converter: %s", converter.id)
@@ -863,7 +863,7 @@ class Registry:
     def get_converters_by_datatype(self, ext):
         """Returns available converters by source type"""
         if ext not in self._converters_by_datatype:
-            converters = OrderedDict()
+            converters = {}
             source_datatype = type(self.get_datatype_by_extension(ext))
             for ext2, converters_dict in self.datatype_converters.items():
                 converter_datatype = type(self.get_datatype_by_extension(ext2))

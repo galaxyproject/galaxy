@@ -83,7 +83,7 @@ class DisplayApplicationDataParameter(DisplayApplicationParameter):
             data = data.value
         if self.metadata:
             rval = getattr(data.metadata, self.metadata, None)
-            assert rval, f'Unknown metadata name ({self.metadata}) provided for dataset type ({data.datatype.__class__.name}).'
+            assert rval, f'Unknown metadata name "{self.metadata}" provided for dataset type "{data.ext}".'
             return Bunch(file_name=rval.file_name, state=data.state, states=data.states, extension='data')
         elif self.extensions and (self.force_conversion or not isinstance(data.datatype, self.formats)):
             for ext in self.extensions:

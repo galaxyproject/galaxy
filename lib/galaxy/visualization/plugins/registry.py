@@ -7,7 +7,6 @@ Lower level of visualization framework which does three main things:
 import logging
 import os
 import weakref
-from collections import OrderedDict
 
 from galaxy.exceptions import ObjectNotFound
 from galaxy.util import (
@@ -66,7 +65,7 @@ class VisualizationsRegistry:
         self.additional_template_paths = []
         self.directories = []
         self.skip_bad_plugins = skip_bad_plugins
-        self.plugins = OrderedDict()
+        self.plugins = {}
         self.directories = config_directories_from_setting(directories_setting, app.config.root)
         self._load_configuration()
         self._load_plugins()
@@ -107,8 +106,6 @@ class VisualizationsRegistry:
         """
         Search ``self.directories`` for potential plugins, load them, and cache
         in ``self.plugins``.
-        :rtype:                 OrderedDict
-        :returns:               ``self.plugins``
         """
         for plugin_path in self._find_plugins():
             try:

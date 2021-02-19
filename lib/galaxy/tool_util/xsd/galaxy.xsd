@@ -2508,7 +2508,7 @@ parameter being described. All the attributes for the ``param`` element are
 documented below for completeness, but here are the common ones for each
 type are as follows:
 
-$attribute_list:name,type,optional,label,help,argument,load_contents,refresh_on_change:4
+$attribute_list:name,type,optional,label,help,argument,refresh_on_change:4
 
 ### Parameter Types
 
@@ -2619,7 +2619,7 @@ Additionally, a detailed discussion of handling multiple homogenous files can be
 the [Planemo Documentation](https://planemo.readthedocs.io/en/latest/writing_advanced.html#consuming-collections)
 on this topic.
 
-$attribute_list:format,multiple,optional,min,max:5
+$attribute_list:format,multiple,optional,min,max,load_contents:5
 
 #### ``group_tag``
 
@@ -2701,6 +2701,8 @@ sanitizer to prevent Galaxy from escaping the result.
 </param>
 ```
 
+$attribute_list:value,rgb:5
+
 #### ``directory_uri``
 
 This is used to tie into galaxy.files URI infrastructure. This should only be used by
@@ -2708,8 +2710,6 @@ core Galaxy tools until the interface around files has stabilized.
 
 Currently ``directory_uri`` parameters provide user's the option of selecting a writable
 directory destination for unstructured outputs of tools (e.g. history exports).
-
-$attribute_list:value,rgb:5
 
 This covers examples of the most common parameter types, the remaining parameter
 types are more obsecure and less likely to be useful for most tool authors.
@@ -2751,7 +2751,7 @@ periods (e.g. ``.``). Some "reserved" names are ``REDIRECT_URL``,
           <xs:annotation>
             <xs:documentation xml:lang="en">Boolean indicating if this should be
 rendered as a one line text box (if ``false``, the default) or a multi-line text
- area (if ``true``).</xs:documentation>
+ area (if ``true``). Used only when the ``type`` attribute value is ``text``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="argument" type="xs:string">
@@ -2786,7 +2786,7 @@ field.</xs:documentation>
           <xs:annotation>
             <xs:documentation xml:lang="en">Number of bytes that should be
 loaded into the `contents` attribute of the jobs dictionary provided to Expression
-Tools. Applies only to type="data" inputs.</xs:documentation>
+Tools. Used only when the ``type`` attribute value is ``data``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="value" type="xs:string">
@@ -2803,57 +2803,56 @@ parameter.</xs:documentation>
         <xs:attribute name="optional" type="xs:string" default="false">
           <xs:annotation>
             <xs:documentation xml:lang="en">If ``false``, parameter must have a
-value. Defaults to "false".</xs:documentation>
+value. Defaults to ``false`` except when the ``type`` attribute value is
+``select`` and ``multiple`` is ``true``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="rgb" type="xs:string" default="false">
           <xs:annotation>
-            <xs:documentation xml:lang="en">If ``false``, the returned value will be in Hex color code. If ``true``
-it will be a RGB value e.g. 0,0,255. This attribute is only valid when ``type`` is ``color``.</xs:documentation>
+            <xs:documentation xml:lang="en">If ``false``, the returned value
+will be in Hex color code. If ``true``, it will be a RGB value e.g. ``0,0,255``.
+Used only when the ``type`` attribute value is ``color``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="min" type="xs:float">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Minimum valid parameter value - only
-valid when ``type`` is ``integer``, ``float``, or ``data``.</xs:documentation>
+            <xs:documentation xml:lang="en">Minimum valid parameter value. Used
+only when the ``type`` attribute value is ``data``, ``float``, or ``integer``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="max" type="xs:float">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Maximum valid parameter value - only
-valid when ``type`` is ``integer``, ``float``, or ``data``.</xs:documentation>
+            <xs:documentation xml:lang="en">Maximum valid parameter value. Used
+only when the ``type`` attribute value is ``data``, ``float``, or ``integer``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="format" type="xs:string">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Only if ``type`` attribute value is
-``data`` or ``data_collection`` - the list of supported data formats is
-contained in the
+            <xs:documentation xml:lang="en">The comma-separated list of accepted
+data formats for this input. The list of supported data formats is contained in the
 [/config/datatypes_conf.xml.sample](https://github.com/galaxyproject/galaxy/blob/dev/config/datatypes_conf.xml.sample)
-file. Use the file extension.</xs:documentation>
+file (use the file extension). Used only when the ``type`` attribute value is
+``data`` or ``data_collection``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="collection_type" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en"><![CDATA[
-
-This is only valid if ``type`` is ``data_collection``. Restrict the kind of
-collection that can be consumed by this parameter (e.g. ``paired``,
-``list:paired``, ``list``). Multiple such collection types can be specified here
-as a comma-separated list.
-
+Restrict the kind of collection that can be consumed by this parameter (e.g.
+``paired``, ``list:paired``, ``list``). Multiple such collection types can be
+specified here as a comma-separated list. Used only when the ``type`` attribute
+value is ``data_collection``.
               ]]></xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="data_ref" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en"><![CDATA[
-
-Only valid if ``type`` attribute value is ``select``, ``data_column``, or
-``group_tag``. Used with select lists whose options are dynamically generated
+Used with select lists whose options are dynamically generated
 based on certain metadata attributes of the dataset or collection upon which
 this parameter depends (usually but not always the tool's input dataset).
-
+Used only when the ``type`` attribute value is ``data_column``, ``group_tag``,
+or ``select``.
             ]]></xs:documentation>
           </xs:annotation>
         </xs:attribute>
@@ -2864,79 +2863,85 @@ this parameter depends (usually but not always the tool's input dataset).
         </xs:attribute>
         <xs:attribute name="refresh_on_change" type="PermissiveBoolean">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Force a reload of the tool panel when the value of this parameter changes to allow ``code`` file processing. See deprecation-like notice for ``code`` blocks.</xs:documentation>
+            <xs:documentation xml:lang="en">Force a reload of the tool panel
+when the value of this parameter changes to allow ``code`` file processing.
+See deprecation-like notice for ``code`` blocks.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="force_select" type="PermissiveBoolean" gxdocs:deprecated="true">
           <xs:annotation>
-            <xs:documentation xml:lang="en">*Deprecated*. Used only if the ``type`` attribute
-value is ``data_column``, this is deprecated and the inverse of ``optional``.
-Set to ``false`` to not force user to select an option in the list.</xs:documentation>
+            <xs:documentation xml:lang="en">*Deprecated*. This is the inverse of
+``optional``. Set to ``false`` to not force user to select an option in the
+list. Used only when the ``type`` attribute value is ``data_column``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="use_header_names" type="PermissiveBoolean">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Used only if the ``type`` attribute
-value is ``data_column``. If ``true``, Galaxy assumes the first row of ``data_ref``
-is a header and builds the select list with these values rather than the more
-generic ``c1`` ... ``cN`` (i.e. it will be ``c1: head1`` ... ``cN: headN``).
-Note that the content of the Cheetah variable is still
-the column index.
-            </xs:documentation>
+            <xs:documentation xml:lang="en">If ``true``, Galaxy assumes the
+first row of ``data_ref`` is a header and builds the select list with these
+values rather than the more generic ``c1`` ... ``cN`` (i.e. it will be
+``c1: head1`` ... ``cN: headN``). Note that the content of the Cheetah variable
+is still the column index. Used only when the ``type`` attribute value is
+``data_column``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="display" type="DisplayType">
           <xs:annotation>
-            <xs:documentation xml:lang="en">This attribute is used only if
-``type`` attribute value is ``select`` - render a select list as a set of check
-boxes or radio buttons. Defaults to a drop-down menu select list.</xs:documentation>
+            <xs:documentation xml:lang="en">Render a select list as a set of
+checkboxes (``checkboxes``) or radio buttons (``radio``; note this is
+incompatible with ``multiple="true"`` and ``optional="true"``). Defaults to a
+drop-down menu select list. Used only when the ``type`` attribute value is
+``select``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="multiple" type="PermissiveBoolean">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Allow multiple valus to be selected.
-Valid with ``data`` and ``select`` parameters. ``select`` parameters with ``multiple="true"`` are optional by default.</xs:documentation>
+            <xs:documentation xml:lang="en">Allow multiple values to be
+selected. ``select`` parameters with ``multiple="true"`` are optional by
+default. Used only when the ``type`` attribute value is ``data``, ``group_tag``,
+or ``select``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="numerical" type="PermissiveBoolean">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Used only if the ``type`` attribute
-value is ``data_column``, if ``true`` the column will be treated as numerical
-when filtering columns based on metadata.</xs:documentation>
+            <xs:documentation xml:lang="en">If ``true`` a data column will be
+treated as numerical when filtering columns based on metadata. Used only when
+the ``type`` attribute value is ``data_column``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="hierarchy" type="HierarchyType">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Used only if the ``type`` attribute
-value is ``drill_down``, this attribute determines the drill down is
-``recursive`` or ``exact``.</xs:documentation>
+            <xs:documentation xml:lang="en">Determine if a drill down is
+``recursive`` or ``exact``. Used only when the ``type`` attribute value is
+``drill_down``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="checked" type="PermissiveBoolean" default="false">
           <xs:annotation>
             <xs:documentation xml:lang="en">Set to ``true`` if the ``boolean``
-parameter should be checked (or ``true``) by default.</xs:documentation>
+parameter should be checked (or ``true``) by default. Used only when the
+``type`` attribute value is ``boolean``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="truevalue" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">The parameter value in the Cheetah
-template if the parameter is ``true`` or checked by the user. Only valid if
-``type`` is ``boolean``.</xs:documentation>
+template if the parameter is ``true`` or checked by the user. Used only when the
+``type`` attribute value is ``boolean``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="falsevalue" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">The parameter value in the Cheetah
-template if the parameter is ``false`` or not checked by the user. Only valid if
-``type`` is ``boolean``.</xs:documentation>
+template if the parameter is ``false`` or not checked by the user. Used only
+when the ``type`` attribute value is ``boolean``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="size" type="xs:string" gxdocs:deprecated="true">
           <!-- TODO: can be integer or integerxinteger -->
           <xs:annotation>
-            <xs:documentation xml:lang="en">*Deprecated*. Used only if ``type`` attribute
-value is ``text``. Completely ignored since release 16.10.</xs:documentation>
+            <xs:documentation xml:lang="en">*Deprecated*. Completely ignored
+since release 16.10. Used only when the ``type`` attribute value is ``text``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <!-- metadata_name appears in some wrappers but I think this is a copy
@@ -3767,7 +3772,7 @@ being used for validation start with a this attribute value.</xs:documentation>
         </xs:attribute>
         <xs:attribute name="split" type="xs:string">
           <xs:annotation>
-            <xs:documentation xml:lang="en">If ``type`` is `dataset_metadata_in_file``,
+            <xs:documentation xml:lang="en">If ``type`` is ``dataset_metadata_in_file``,
 this attribute is the column separator to use for values in the specified file.
 This default is ``\t`` and due to a bug in older versions of Galaxy, should
 not be modified.</xs:documentation>

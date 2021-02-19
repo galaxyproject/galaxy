@@ -169,11 +169,13 @@ DO_NOT_TEST = [
     'database_connection',  # untestable; refactor config/__init__ to test
     'database_engine_option_max_overflow',  # overridden for tests running on non-sqlite databases
     'database_engine_option_pool_size',  # overridden for tests runnign on non-sqlite databases
+    'database_log_query_counts',  # overridden for tests
     'database_template',  # default value set for tests
     'datatypes_config_file',  # broken
     'default_locale',  # broken
     'dependency_resolution',  # nested properties
     'disable_library_comptypes',  # broken: default overridden with empty string
+    'enable_per_request_sql_debugging',  # overridden for tests
     'expose_dataset_path',  # broken: default overridden
     'ftp_upload_purge',  # broken: default overridden
     'ftp_upload_dir_template',  # dynamically sets os.path.sep
@@ -201,6 +203,7 @@ DO_NOT_TEST = [
     'retry_metadata_internally',  # broken: default overridden
     'simplified_workflow_run_ui',  # set to off in testing
     'statsd_host',  # broken: default overridden with empty string
+    'statsd_influxdb',  # overridden for tests
     'template_cache_path',  # may or may not be able to test; may be broken
     'tool_config_file',  # default not used; may or may not be testable
     'tool_data_table_config_path',  # broken: remove 'config/' prefix from schema
