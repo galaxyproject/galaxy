@@ -62,6 +62,9 @@ def main():
     # Serialize the json and write it to destination file
     write_output_json(seg_schema, args.amp_segments)
 
+    print("Job output:")
+    print(job)
+    
     # Write the hpc timestamps output
     if "start" in job['job'].keys() and "end" in job['job'].keys():
         ts_output = {

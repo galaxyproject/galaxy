@@ -54,6 +54,9 @@ def main():
     print("Convering output to AMP Transcript JSON")
     kaldi_transcript_to_amp_transcript.convert(args.input, args.kaldi_transcript_json, args.kaldi_transcript_txt, args.amp_transcript_json)
     
+    print("Job output:")
+    print(job)
+
     # Write the hpc timestamps output
     if "start" in job['job'].keys() and "end" in job['job'].keys():
         ts_output = {
