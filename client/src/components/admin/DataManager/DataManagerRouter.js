@@ -1,11 +1,10 @@
-<script>
 import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 import VueRouter from "vue-router";
-import DataManager from "./DataManager.vue";
-import DataManagerJobs from "./DataManagerJobs.vue";
-import DataManagerJob from "./DataManagerJob.vue";
-import DataManagerTable from "./DataManagerTable.vue";
+import DataManager from "./DataManager";
+import DataManagerJobs from "./DataManagerJobs";
+import DataManagerJob from "./DataManagerJob";
+import DataManagerTable from "./DataManagerTable";
 
 Vue.use(VueRouter);
 
@@ -42,4 +41,3 @@ export default new VueRouter({
         },
     ],
 });
-</script>

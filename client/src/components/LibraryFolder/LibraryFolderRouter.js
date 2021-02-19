@@ -1,10 +1,9 @@
-<script>
 import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 import VueRouter from "vue-router";
-import LibraryFolderPermissions from "components/LibraryFolder/LibraryFolderPermissions/LibraryFolderPermissions.vue";
-import LibraryFolder from "components/LibraryFolder/LibraryFolder.vue";
-import LibraryFolderDatasetPermissions from "components/LibraryFolder/LibraryFolderPermissions/LibraryFolderDatasetPermissions.vue";
+import LibraryFolderPermissions from "components/LibraryFolder/LibraryFolderPermissions/LibraryFolderPermissions";
+import LibraryFolder from "components/LibraryFolder/LibraryFolder";
+import LibraryFolderDatasetPermissions from "components/LibraryFolder/LibraryFolderPermissions/LibraryFolderDatasetPermissions";
 
 Vue.use(VueRouter);
 
@@ -32,4 +31,3 @@ export default new VueRouter({
         },
     ],
 });
-</script>
