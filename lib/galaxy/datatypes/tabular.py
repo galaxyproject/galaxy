@@ -743,13 +743,12 @@ class BaseVcf(Tabular):
 
     def set_meta(self, dataset, **kwd):
         super().set_meta(dataset, **kwd)
-        source = open(dataset.file_name)
-
-        # Skip comments.
         line = None
-        for line in source:
-            if not line.startswith('##'):
-                break
+        with compression_utils.get_fileobj(dataset.file_name) as fh:
+            # Skip comments.
+            for line in fh:
+                if not line.startswith('##'):
+                    break
 
         if line and line.startswith('#'):
             # Found header line, get sample names.
@@ -815,7 +814,7 @@ class VcfGz(BaseVcf, binary.Binary):
             return binascii.hexlify(last28) == b'1f8b08040000000000ff0600424302001b0003000000000000000000'
 
     def set_meta(self, dataset, **kwd):
-        super(BaseVcf, self).set_meta(dataset, **kwd)
+        super().set_meta(dataset, **kwd)
         """ Creates the index for the VCF file. """
         # These metadata values are not accessible by users, always overwrite
         index_file = dataset.metadata.tabix_index
