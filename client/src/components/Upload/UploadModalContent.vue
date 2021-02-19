@@ -169,23 +169,23 @@ export default {
             return this.currentUserId && this.ftpUploadSite;
         },
         toData: function (items, history_id) {
-            var data = {
+            const data = {
                 fetchRequest: null,
                 uploadRequest: null,
             };
             if (items && items.length > 0) {
-                var split = this.preprocess(items);
+                const split = this.preprocess(items);
                 if (split.urls.length > 0) {
                     data.fetchRequest = this.toFetchData(split.urls, history_id);
                 }
-                if (split.files.length > 0) {
+                else {
                     data.uploadRequest = this.toFileUploadData(split.files, history_id);
                 }
             }
             return data;
         },
         preprocess: function (items) {
-            var data = {
+            const data = {
                 urls: [],
                 files: [],
             };
@@ -200,12 +200,7 @@ export default {
             return data;
         },
         itemIsURL: function (item) {
-            for (var index in this.URI_PREFIXES) {
-                if (item.get("url_paste").startsWith(this.URI_PREFIXES[index])) {
-                    return true;
-                }
-            }
-            return false;
+            return this.URI_PREFIXES.some((prefix) => item.get('url_paste').startsWith(prefix))
         },
         /**
          * Package API data from array of models
