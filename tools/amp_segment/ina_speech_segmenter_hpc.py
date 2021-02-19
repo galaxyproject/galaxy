@@ -1,5 +1,6 @@
 #!/bin/env python3
 import argparse
+from datetime import datetime
 import csv
 from pathlib import Path
 import json
@@ -64,12 +65,13 @@ def main():
 
     print("Job output:")
     print(job)
-    
+
     # Write the hpc timestamps output
     if "start" in job['job'].keys() and "end" in job['job'].keys():
         ts_output = {
             "start_time": job['job']["start"],
-            "end_time": job['job']["end"]
+            "end_time": job['job']["end"],
+            "elapsed_time": (job['job']["end"] - job['job']["start"]).total_seconds()  
         }
         write_output_json(ts_output, args.hpc_timestamps)
 
