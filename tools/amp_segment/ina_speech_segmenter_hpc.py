@@ -71,7 +71,7 @@ def main():
         ts_output = {
             "start_time": job['job']["start"],
             "end_time": job['job']["end"],
-            "elapsed_time": (job['job']["end"] - job['job']["start"]).total_seconds()  
+            "elapsed_time": (datetime.strptime(job['job']["end"], '%Y-%m-%dT%H::%M::%S.%f') - datetime.strptime(job['job']["start"], '%Y-%m-%dT%H::%M::%S.%f')).total_seconds()  
         }
         write_output_json(ts_output, args.hpc_timestamps)
 
