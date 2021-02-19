@@ -73,10 +73,10 @@ import { Toast } from "ui/toast";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
 import PermissionsInputField from "./PermissionsInputField.vue";
-import LibraryPermissionsWarning from "components/LibraryFolder/LibraryFolderPermissions/LibraryPermissionsWarning.vue";
+import LibraryPermissionsWarning from "components/Libraries/LibraryFolder/LibraryFolderPermissions/LibraryPermissionsWarning.vue";
 import { extractRoles } from "./utils";
 
-import { initPermissionsIcons } from "components/LibraryFolder/icons";
+import { initPermissionsIcons } from "components/Libraries/icons";
 
 Vue.use(BootstrapVue);
 initPermissionsIcons();

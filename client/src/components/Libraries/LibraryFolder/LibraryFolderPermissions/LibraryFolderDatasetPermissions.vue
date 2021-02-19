@@ -121,8 +121,8 @@ import { Toast } from "ui/toast";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
 import PermissionsInputField from "./PermissionsInputField.vue";
-import { initPermissionsIcons } from "components/LibraryFolder/icons";
-import LibraryPermissionsWarning from "components/LibraryFolder/LibraryFolderPermissions/LibraryPermissionsWarning.vue";
+import { initPermissionsIcons } from "components/Libraries/icons";
+import LibraryPermissionsWarning from "components/Libraries/LibraryFolder/LibraryFolderPermissions/LibraryPermissionsWarning.vue";
 import { extractRoles } from "./utils";
 
 import "vue-multiselect/dist/vue-multiselect.min.css";

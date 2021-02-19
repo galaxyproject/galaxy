@@ -149,7 +149,7 @@ import Vue from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { showLocInfo } from "./details-modal";
 import { deleteSelectedItems } from "./delete-selected";
-import { initTopBarIcons } from "components/LibraryFolder/icons";
+import { initTopBarIcons } from "components/Libraries/icons";
 import mod_import_dataset from "./import-to-history/import-dataset";
 import mod_import_collection from "./import-to-history/import-collection";
 import mod_add_datasets from "./add-datasets";

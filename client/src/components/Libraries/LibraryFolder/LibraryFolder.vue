@@ -217,11 +217,9 @@
                         <b-button
                             v-if="row.item.can_manage && !row.item.deleted"
                             @click="navigateToPermission(row.item)"
-                            data-toggle="tooltip"
-                            data-placement="top"
                             size="sm"
-                            class="lib-btn permission_folder_btn"
-                            :title="'Permissions of ' + row.item.name"
+                            class="lib-btn permission_lib_btn"
+                            :title="`Permissions of ${row.item.name}`"
                         >
                             <font-awesome-icon icon="users" />
                             Manage
@@ -285,7 +283,7 @@ import linkify from "linkifyjs/html";
 import { fields } from "./table-fields";
 import { Toast } from "ui/toast";
 import FolderTopBar from "./TopToolbar/FolderTopBar";
-import { initFolderTableIcons } from "./icons.js";
+import { initFolderTableIcons } from "components/Libraries/icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 initFolderTableIcons();
