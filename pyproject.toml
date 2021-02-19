@@ -74,6 +74,7 @@ uvicorn = "*"
 WebOb = "*"
 Whoosh = "*"
 zipstream-new = "*"
+alembic = "^1.5.4"
 
 [tool.poetry.dev-dependencies]
 gunicorn = "*"
