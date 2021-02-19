@@ -1,6 +1,19 @@
 import logging
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+)
 
-from galaxy.util import unicodify
+from galaxy import model
+from galaxy.app import StructuredApp
+from galaxy.exceptions import (
+    ObjectNotFound,
+)
+from galaxy.managers.base import decode_id
+from galaxy.managers.context import ProvidesAppContext
+from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.web import url_for
 
 log = logging.getLogger(__name__)
@@ -9,107 +22,92 @@ log = logging.getLogger(__name__)
 class GroupUsersManager:
     """Interface/service object shared by controllers for interacting with group users."""
 
-    def __init__(self, app) -> None:
+    def __init__(self, app: StructuredApp) -> None:
         self._app = app
 
-    def index(self, trans, group_id, **kwd):
+    def index(self, trans: ProvidesAppContext, group_id: EncodedDatabaseIdField) -> List[Dict[str, Any]]:
         """
-        Displays a collection (list) of groups.
+        Returns a collection (list) with some information about users associated with the given group.
         """
-        decoded_group_id = trans.security.decode_id(group_id)
-        try:
-            group = trans.sa_session.query(trans.app.model.Group).get(decoded_group_id)
-        except Exception:
-            group = None
-        if not group:
-            trans.response.status = 400
-            return "Invalid group id ( %s ) specified." % str(group_id)
+        group = self._get_group(trans, group_id)
         rval = []
-        try:
-            for uga in group.users:
-                user = uga.user
-                encoded_id = trans.security.encode_id(user.id)
-                rval.append(dict(id=encoded_id,
-                                 email=user.email,
-                                 url=url_for('group_user', group_id=group_id, id=encoded_id, )))
-        except Exception as e:
-            rval = "Error in group API at listing users"
-            log.error(rval + ": %s", unicodify(e))
-            trans.response.status = 500
+        for uga in group.users:
+            group_user = self._serialize_group_user(group_id, uga.user)
+            rval.append(group_user)
         return rval
 
-    def show(self, trans, id, group_id, **kwd):
+    def show(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, group_id: EncodedDatabaseIdField) -> Dict[str, Any]:
         """
-        Displays information about a group user.
+        Returns information about a group user.
         """
         user_id = id
-        decoded_group_id = trans.security.decode_id(group_id)
-        decoded_user_id = trans.security.decode_id(user_id)
-        item = None
-        try:
-            group = trans.sa_session.query(trans.app.model.Group).get(decoded_group_id)
-            user = trans.sa_session.query(trans.app.model.User).get(decoded_user_id)
-            for uga in group.users:
-                if uga.user == user:
-                    item = dict(id=user_id,
-                                email=user.email,
-                                url=url_for('group_user', group_id=group_id, id=user_id))  # TODO Fix This
-            if not item:
-                item = f"user {user.email} not in group {group.name}"
-        except Exception as e:
-            item = f"Error in group_user API group {group.name} user {user.email}"
-            log.error(item + ": %s", unicodify(e))
-        return item
+        group = self._get_group(trans, group_id)
+        user = self._get_user(trans, user_id)
+        group_user = self._get_group_user(trans, group, user)
+        if group_user is None:
+            raise ObjectNotFound(f"User {user.email} not in group {group.name}")
 
-    def update(self, trans, id, group_id, **kwd):
-        """
-        Adds a user to a group
-        """
-        user_id = id
-        decoded_group_id = trans.security.decode_id(group_id)
-        decoded_user_id = trans.security.decode_id(user_id)
-        item = None
-        try:
-            group = trans.sa_session.query(trans.app.model.Group).get(decoded_group_id)
-            user = trans.sa_session.query(trans.app.model.User).get(decoded_user_id)
-            for uga in group.users:
-                if uga.user == user:
-                    item = dict(id=user_id,
-                                email=user.email,
-                                url=url_for('group_user', group_id=group_id, id=user_id))
-            if not item:
-                uga = trans.app.model.UserGroupAssociation(user, group)
-                # Add UserGroupAssociations
-                trans.sa_session.add(uga)
-                trans.sa_session.flush()
-                item = dict(id=user_id,
-                            email=user.email,
-                            url=url_for('group_user', group_id=group_id, id=user_id))
-        except Exception as e:
-            item = f"Error in group_user API Adding user {user.email} to group {group.name}"
-            log.error(item + ": %s", unicodify(e))
-        return item
+        return self._serialize_group_user(group_id, user)
 
-    def delete(self, trans, id, group_id, **kwd):
+    def update(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, group_id: EncodedDatabaseIdField):
         """
-        Removes a user from a group
+        Adds a user to a group.
         """
         user_id = id
-        decoded_group_id = trans.security.decode_id(group_id)
-        decoded_user_id = trans.security.decode_id(user_id)
-        try:
-            group = trans.sa_session.query(trans.app.model.Group).get(decoded_group_id)
-            user = trans.sa_session.query(trans.app.model.User).get(decoded_user_id)
-            for uga in group.users:
-                if uga.user == user:
-                    trans.sa_session.delete(uga)
-                    trans.sa_session.flush()
-                    item = dict(id=user_id,
-                                email=user.email,
-                                url=url_for('group_user', group_id=group_id, id=user_id))
-            if not item:
-                item = f"user {user.email} not in group {group.name}"
-        except Exception as e:
-            item = f"Error in group_user API Removing user {user.email} from group {group.name}"
-            log.error(item + ": %s", unicodify(e))
-        return item
+        group = self._get_group(trans, group_id)
+        user = self._get_user(trans, user_id)
+        group_user = self._get_group_user(trans, group, user)
+        if group_user is None:
+            self._add_user_to_group(trans, group, user)
+
+        return self._serialize_group_user(group_id, user)
+
+    def delete(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, group_id: EncodedDatabaseIdField):
+        """
+        Removes a user from a group.
+        """
+        user_id = id
+        group = self._get_group(trans, group_id)
+        user = self._get_user(trans, user_id)
+        group_user = self._get_group_user(trans, group, user)
+        if group_user is None:
+            raise ObjectNotFound(f"User {user.email} not in group {group.name}")
+        self._remove_user_from_group(trans, group_user)
+        return self._serialize_group_user(group_id, user)
+
+    def _get_group(self, trans: ProvidesAppContext, encoded_group_id: EncodedDatabaseIdField) -> Any:
+        decoded_group_id = decode_id(self._app, encoded_group_id)
+        group = trans.sa_session.query(model.Group).get(decoded_group_id)
+        if group is None:
+            raise ObjectNotFound(f"Group with id {encoded_group_id} was not found.")
+        return group
+
+    def _get_user(self, trans: ProvidesAppContext, encoded_user_id: EncodedDatabaseIdField) -> model.User:
+        decoded_user_id = decode_id(self._app, encoded_user_id)
+        user = trans.sa_session.query(model.User).get(decoded_user_id)
+        if user is None:
+            raise ObjectNotFound(f"User with id {encoded_user_id} was not found.")
+        return user
+
+    def _get_group_user(self, trans: ProvidesAppContext, group: model.Group, user: model.User) -> Optional[model.UserGroupAssociation]:
+        return trans.sa_session.query(model.UserGroupAssociation).filter(
+            model.UserGroupAssociation.user == user,
+            model.UserGroupAssociation.group == group
+        ).one_or_none()
+
+    def _add_user_to_group(self, trans: ProvidesAppContext, group: model.Group, user: model.User):
+        gra = model.UserGroupAssociation(user, group)
+        trans.sa_session.add(gra)
+        trans.sa_session.flush()
+
+    def _remove_user_from_group(self, trans: ProvidesAppContext, group_user: model.UserGroupAssociation):
+        trans.sa_session.delete(group_user)
+        trans.sa_session.flush()
+
+    def _serialize_group_user(self, encoded_group_id: EncodedDatabaseIdField, user: model.User):
+        encoded_user_id = self._app.security.encode_id(user.id)
+        return {
+            "id": encoded_user_id,
+            "email": user.email,
+            "url": url_for('group_user', group_id=encoded_group_id, id=encoded_user_id)
+        }
