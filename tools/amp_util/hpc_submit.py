@@ -38,5 +38,6 @@ def submit_and_wait(dropbox, job, period=10):
     logging.debug(f"STDERR: {job['job']['stderr']}")
     logging.debug(f"STDOUT: {job['job']['stdout']}")
     logging.debug(f"Return Code: {job['job']['rc']}")
+    logging.debug(job['job'])
     
     return job
