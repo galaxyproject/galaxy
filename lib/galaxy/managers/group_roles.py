@@ -1,6 +1,19 @@
 import logging
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+)
 
-from galaxy.util import unicodify
+from galaxy import model
+from galaxy.app import StructuredApp
+from galaxy.exceptions import (
+    ObjectNotFound,
+)
+from galaxy.managers.base import decode_id
+from galaxy.managers.context import ProvidesAppContext
+from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.web import url_for
 
 log = logging.getLogger(__name__)
@@ -9,107 +22,92 @@ log = logging.getLogger(__name__)
 class GroupRolesManager:
     """Interface/service object shared by controllers for interacting with group roles."""
 
-    def __init__(self, app) -> None:
+    def __init__(self, app: StructuredApp) -> None:
         self._app = app
 
-    def index(self, trans, group_id):
+    def index(self, trans: ProvidesAppContext, group_id: EncodedDatabaseIdField) -> List[Dict[str, Any]]:
         """
-        Returns a collection (list) of roles.
+        Returns a collection roles associated with the given group.
         """
-        decoded_group_id = trans.security.decode_id(group_id)
-        try:
-            group = trans.sa_session.query(trans.app.model.Group).get(decoded_group_id)
-        except Exception:
-            group = None
-        if not group:
-            trans.response.status = 400
-            return "Invalid group id ( %s ) specified." % str(group_id)
+        group = self._get_group(trans, group_id)
         rval = []
-        try:
-            for gra in group.roles:
-                role = gra.role
-                encoded_id = trans.security.encode_id(role.id)
-                rval.append(dict(id=encoded_id,
-                                 name=role.name,
-                                 url=url_for('group_role', group_id=group_id, id=encoded_id, )))
-        except Exception as e:
-            rval = "Error in group API at listing roles"
-            log.error(rval + ": %s", unicodify(e))
-            trans.response.status = 500
+        for gra in group.roles:
+            group_role = self._serialize_group_role(group_id, gra.role)
+            rval.append(group_role)
         return rval
 
-    def show(self, trans, id, group_id):
+    def show(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, group_id: EncodedDatabaseIdField) -> Dict[str, Any]:
         """
         Returns information about a group role.
         """
         role_id = id
-        decoded_group_id = trans.security.decode_id(group_id)
-        decoded_role_id = trans.security.decode_id(role_id)
-        item = None
-        try:
-            group = trans.sa_session.query(trans.app.model.Group).get(decoded_group_id)
-            role = trans.sa_session.query(trans.app.model.Role).get(decoded_role_id)
-            for gra in group.roles:
-                if gra.role == role:
-                    item = dict(id=role_id,
-                                name=role.name,
-                                url=url_for('group_role', group_id=group_id, id=role_id))  # TODO Fix This
-            if not item:
-                item = f"role {role.name} not in group {group.name}"
-        except Exception as e:
-            item = f"Error in group_role API group {group.name} role {role.name}"
-            log.error(item + ": %s", unicodify(e))
-        return item
+        group = self._get_group(trans, group_id)
+        role = self._get_role(trans, role_id)
+        group_role = self._get_group_role(trans, group, role)
+        if group_role is None:
+            raise ObjectNotFound(f"Role {role.name} not in group {group.name}")
 
-    def update(self, trans, id, group_id):
+        return self._serialize_group_role(group_id, role)
+
+    def update(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, group_id: EncodedDatabaseIdField):
         """
-        Adds a role to a group
+        Adds a role to a group if it is not already associated.
         """
         role_id = id
-        decoded_group_id = trans.security.decode_id(group_id)
-        decoded_role_id = trans.security.decode_id(role_id)
-        item = None
-        try:
-            group = trans.sa_session.query(trans.app.model.Group).get(decoded_group_id)
-            role = trans.sa_session.query(trans.app.model.Role).get(decoded_role_id)
-            for gra in group.roles:
-                if gra.role == role:
-                    item = dict(id=role_id,
-                                name=role.name,
-                                url=url_for('group_role', group_id=group_id, id=role_id))
-            if not item:
-                gra = trans.app.model.GroupRoleAssociation(group, role)
-                # Add GroupRoleAssociation
-                trans.sa_session.add(gra)
-                trans.sa_session.flush()
-                item = dict(id=role_id,
-                            name=role.name,
-                            url=url_for('group_role', group_id=group_id, id=role_id))
-        except Exception as e:
-            item = f"Error in group_role API Adding role {role.name} to group {group.name}"
-            log.error(item + ": %s", unicodify(e))
-        return item
+        group = self._get_group(trans, group_id)
+        role = self._get_role(trans, role_id)
+        group_role = self._get_group_role(trans, group, role)
+        if group_role is None:
+            self._add_role_to_group(trans, group, role)
 
-    def delete(self, trans, id, group_id):
+        return self._serialize_group_role(group_id, role)
+
+    def delete(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, group_id: EncodedDatabaseIdField):
         """
-        Removes a role from a group
+        Removes a role from a group.
         """
         role_id = id
-        decoded_group_id = trans.security.decode_id(group_id)
-        decoded_role_id = trans.security.decode_id(role_id)
-        try:
-            group = trans.sa_session.query(trans.app.model.Group).get(decoded_group_id)
-            role = trans.sa_session.query(trans.app.model.Role).get(decoded_role_id)
-            for gra in group.roles:
-                if gra.role == role:
-                    trans.sa_session.delete(gra)
-                    trans.sa_session.flush()
-                    item = dict(id=role_id,
-                                name=role.name,
-                                url=url_for('group_role', group_id=group_id, id=role_id))
-            if not item:
-                item = f"role {role.name} not in group {group.name}"
-        except Exception as e:
-            item = f"Error in group_role API Removing role {role.name} from group {group.name}"
-            log.error(item + ": %s", unicodify(e))
-        return item
+        group = self._get_group(trans, group_id)
+        role = self._get_role(trans, role_id)
+        group_role = self._get_group_role(trans, group, role)
+        if group_role is None:
+            raise ObjectNotFound(f"Role {role.name} not in group {group.name}")
+        self._remove_role_from_group(trans, group_role)
+        return self._serialize_group_role(group_id, role)
+
+    def _get_group(self, trans: ProvidesAppContext, encoded_group_id: EncodedDatabaseIdField) -> Any:
+        decoded_group_id = decode_id(self._app, encoded_group_id)
+        group = trans.sa_session.query(model.Group).get(decoded_group_id)
+        if group is None:
+            raise ObjectNotFound(f"Group with id {encoded_group_id} was not found.")
+        return group
+
+    def _get_role(self, trans: ProvidesAppContext, encoded_role_id: EncodedDatabaseIdField) -> model.Role:
+        decoded_role_id = decode_id(self._app, encoded_role_id)
+        role = trans.sa_session.query(model.Role).get(decoded_role_id)
+        if role is None:
+            raise ObjectNotFound(f"Role with id {encoded_role_id} was not found.")
+        return role
+
+    def _get_group_role(self, trans: ProvidesAppContext, group: model.Group, role: model.Role) -> Optional[model.GroupRoleAssociation]:
+        return trans.sa_session.query(model.GroupRoleAssociation).filter(
+            model.GroupRoleAssociation.group == group,
+            model.GroupRoleAssociation.role == role
+        ).one_or_none()
+
+    def _add_role_to_group(self, trans: ProvidesAppContext, group: model.Group, role: model.Role):
+        gra = model.GroupRoleAssociation(group, role)
+        trans.sa_session.add(gra)
+        trans.sa_session.flush()
+
+    def _remove_role_from_group(self, trans: ProvidesAppContext, group_role: model.GroupRoleAssociation):
+        trans.sa_session.delete(group_role)
+        trans.sa_session.flush()
+
+    def _serialize_group_role(self, encoded_group_id: EncodedDatabaseIdField, role: model.Role):
+        encoded_role_id = self._app.security.encode_id(role.id)
+        return {
+            "id": encoded_role_id,
+            "name": role.name,
+            "url": url_for('group_role', group_id=encoded_group_id, id=encoded_role_id)
+        }
