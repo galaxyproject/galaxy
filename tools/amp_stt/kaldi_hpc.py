@@ -1,5 +1,6 @@
 #!/bin/env python3
 import argparse
+from datetime import datetime
 import json
 from pathlib import Path
 import logging
@@ -61,7 +62,8 @@ def main():
     if "start" in job['job'].keys() and "end" in job['job'].keys():
         ts_output = {
             "start_time": job['job']["start"],
-            "end_time": job['job']["end"]
+            "end_time": job['job']["end"],
+            "elapsed_time": (job['job']["end"] - job['job']["start"]).total_seconds()  
         }
         with open(args.hpc_timestamps, 'w') as outfile:
             json.dump(ts_output, outfile, default=lambda x: x.__dict__)
