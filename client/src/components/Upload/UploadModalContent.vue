@@ -177,8 +177,7 @@ export default {
                 const split = this.preprocess(items);
                 if (split.urls.length > 0) {
                     data.fetchRequest = this.toFetchData(split.urls, history_id);
-                }
-                else {
+                } else {
                     data.uploadRequest = this.toFileUploadData(split.files, history_id);
                 }
             }
@@ -200,7 +199,7 @@ export default {
             return data;
         },
         itemIsURL: function (item) {
-            return this.URI_PREFIXES.some((prefix) => item.get('url_paste').startsWith(prefix))
+            return this.URI_PREFIXES.some((prefix) => item.get("url_paste").startsWith(prefix));
         },
         /**
          * Package API data from array of models
