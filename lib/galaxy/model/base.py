@@ -3,6 +3,7 @@ Shared model and mapping code between Galaxy and Tool Shed, trying to
 generalize to generic database connections.
 """
 import threading
+from contextvars import ContextVar
 from inspect import (
     getmembers,
     isclass
@@ -13,19 +14,9 @@ from sqlalchemy.orm import (
     scoped_session,
     sessionmaker
 )
-try:
-    from starlette_context import context as request_context
-except ImportError:
-    request_context = None
-
 from galaxy.util.bunch import Bunch
 
-
-def get_current_request():
-    try:
-        return request_context.data['X-Request-ID']
-    except RuntimeError:
-        return threading.get_ident()
+REQUEST_ID = ContextVar('request_id', default=None)
 
 
 # TODO: Refactor this to be a proper class, not a bunch.
@@ -35,13 +26,13 @@ class ModelMapping(Bunch):
         self.engine = engine
         SessionLocal = sessionmaker(autoflush=False, autocommit=True)
         versioned_session(SessionLocal)
-        context = scoped_session(SessionLocal, scopefunc=get_current_request if request_context is not None else None)
+        context = scoped_session(SessionLocal, scopefunc=self.request_scopefunc)
         # For backward compatibility with "context.current"
         # deprecated?
         context.current = context
         self._SessionLocal = SessionLocal
         self.session = context
-        self.local_session = None
+        self.scoped_registry = context.registry
 
         model_classes = {}
         for module in model_modules:
@@ -53,6 +44,26 @@ class ModelMapping(Bunch):
 
         context.remove()
         context.configure(bind=engine)
+
+    def request_scopefunc(self):
+        """
+        Return a value that is used as dictionary key for sqlalchemy's ScopedRegistry.
+
+        This ensures that threads or request contexts will receive a single identical session
+        from the ScopedRegistry.
+        """
+        return REQUEST_ID.get() or threading.get_ident()
+
+    def set_request_id(self, request_id):
+        REQUEST_ID.set(request_id)
+
+    def unset_request_id(self, request_id):
+        # Unconditionally calling self.gx_app.model.session.remove()
+        # would create a new session if the session was not accessed
+        # in a request, so we check if there is a sqlalchemy session
+        # for the current request in the registry.
+        if request_id in self.scoped_registry.registry:
+            self.session.remove()
 
     @property
     def context(self):
