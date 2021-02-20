@@ -11,7 +11,7 @@ class GroupRolesApiTestCase(ApiTestCase):
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
     def test_index(self, group_name: str = None):
-        group_name = group_name or "test-group"
+        group_name = group_name or "test-group_roles"
         group = self._create_group(group_name)
         encoded_group_id = group["id"]
 
