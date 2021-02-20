@@ -14,6 +14,7 @@ from sqlalchemy.orm import (
     scoped_session,
     sessionmaker
 )
+
 from galaxy.util.bunch import Bunch
 
 REQUEST_ID = ContextVar('request_id', default=None)

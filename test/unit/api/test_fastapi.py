@@ -10,7 +10,6 @@ from galaxy.webapps.galaxy.fast_app import (
     add_exception_handler,
     add_sa_session_middleware,
 )
-
 from ..unittest_utils.galaxy_mock import MockApp
 
 app = FastAPI()
@@ -27,6 +26,7 @@ def is_valid_uuid(val):
 
 class UnexpectedException(Exception):
     pass
+
 
 def get_app():
     global GX_APP
