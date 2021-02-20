@@ -8,6 +8,7 @@ from inspect import (
     getmembers,
     isclass
 )
+from typing import Dict
 
 from sqlalchemy import event
 from sqlalchemy.orm import (
@@ -17,7 +18,13 @@ from sqlalchemy.orm import (
 
 from galaxy.util.bunch import Bunch
 
-REQUEST_ID = ContextVar('request_id', default=None)
+
+# Create a ContextVar with mutable state, this allows sync tasks in the context
+# of a request (which run within a threadpool) to see changes to the ContextVar
+# state. See https://github.com/tiangolo/fastapi/issues/953#issuecomment-586006249
+# for details
+_request_state: Dict[str, str] = {}
+REQUEST_ID = ContextVar('request_id', default=_request_state.copy())
 
 
 # TODO: Refactor this to be a proper class, not a bunch.
@@ -53,10 +60,14 @@ class ModelMapping(Bunch):
         This ensures that threads or request contexts will receive a single identical session
         from the ScopedRegistry.
         """
-        return REQUEST_ID.get() or threading.get_ident()
+        return REQUEST_ID.get().get('request') or threading.get_ident()
 
-    def set_request_id(self, request_id):
-        REQUEST_ID.set(request_id)
+    @staticmethod
+    def set_request_id(request_id):
+        # Set REQUEST_ID to a new dict.
+        # This new ContextVar value will only be seen by the current asyncio context
+        # and descendant threadpools, but not other threads or asyncio contexts.
+        return REQUEST_ID.set({'request': request_id})
 
     def unset_request_id(self, request_id):
         # Unconditionally calling self.gx_app.model.session.remove()
@@ -64,7 +75,8 @@ class ModelMapping(Bunch):
         # in a request, so we check if there is a sqlalchemy session
         # for the current request in the registry.
         if request_id in self.scoped_registry.registry:
-            self.session.remove()
+            self.scoped_registry.registry[request_id].close()
+            del self.scoped_registry.registry[request_id]
 
     @property
     def context(self):

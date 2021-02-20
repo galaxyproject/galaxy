@@ -2,6 +2,7 @@
 This module *does not* contain API routes. It exclusively contains dependencies to be used in FastAPI routes
 """
 from typing import (
+    AsyncGenerator,
     cast,
     Optional,
 )
@@ -13,6 +14,10 @@ from fastapi import (
     Query,
 )
 from sqlalchemy.orm import Session
+try:
+    from starlette_context import context as request_context
+except ImportError:
+    request_context = None
 
 from galaxy import (
     app as galaxy_app,
@@ -34,8 +39,18 @@ from galaxy.web.framework.decorators import require_admin_message
 from galaxy.work.context import SessionRequestContext
 
 
-def get_app() -> UniverseApplication:
-    return cast(UniverseApplication, galaxy_app.app)
+async def _get_app() -> AsyncGenerator[UniverseApplication, None]:
+    app = cast(UniverseApplication, galaxy_app.app)
+    request_id = request_context.data['X-Request-ID']
+    app.model.set_request_id(request_id)
+    try:
+        yield app
+    finally:
+        app.model.unset_request_id(request_id)
+
+
+async def get_app(app=Depends(_get_app)) -> UniverseApplication:
+    return app
 
 
 def get_id_encoding_helper(app: UniverseApplication = Depends(get_app)) -> IdEncodingHelper:

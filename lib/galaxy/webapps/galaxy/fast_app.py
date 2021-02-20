@@ -1,12 +1,14 @@
-from uuid import uuid4
-
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.wsgi import WSGIMiddleware
 from fastapi.responses import JSONResponse
-from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response
+try:
+    from starlette_context.middleware import RawContextMiddleware
+    from starlette_context.plugins import RequestIdPlugin
+except ImportError:
+    pass
 
 from galaxy.exceptions import MessageException
 from galaxy.web.framework.base import walk_controller_modules
@@ -115,32 +117,17 @@ def add_galaxy_middleware(app: FastAPI, gx_app):
             return response
 
 
-def add_sa_session_middleware(app: FastAPI, gx_app):
-    class CustomHeaderMiddleware(BaseHTTPMiddleware):
-
-        def __init__(self, app, gx_app) -> None:
-            super().__init__(app)
-            self.gx_app = gx_app
-
-        async def dispatch(self, request, call_next):
-            request_id = uuid4().hex
-            self.gx_app.model.set_request_id(request_id)
-            try:
-                response = await call_next(request)
-            finally:
-                self.gx_app.model.unset_request_id(request_id)
-            return response
-
-    app.add_middleware(CustomHeaderMiddleware, gx_app=gx_app)
+def add_request_id_middleware(app: FastAPI):
+    app.add_middleware(RawContextMiddleware, plugins=(RequestIdPlugin(force_new_uuid=True),))
 
 
 def initialize_fast_app(gx_webapp, gx_app):
     app = FastAPI(
         openapi_tags=api_tags_metadata
     )
-    add_sa_session_middleware(app, gx_app)
     add_exception_handler(app)
     add_galaxy_middleware(app, gx_app)
+    add_request_id_middleware(app)
     wsgi_handler = WSGIMiddleware(gx_webapp)
     for _, module in walk_controller_modules('galaxy.webapps.galaxy.api'):
         router = getattr(module, "router", None)
