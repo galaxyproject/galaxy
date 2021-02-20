@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response
 from starlette_context import plugins
+from starlette_context import context
 from starlette_context.middleware import RawContextMiddleware
 
 from galaxy.exceptions import MessageException
@@ -114,10 +115,30 @@ def add_galaxy_middleware(app: FastAPI, gx_app):
             return response
 
 
+class SqlSessionPlugin(plugins.Plugin):
+    """
+    Stores X-Request-ID set by the RequestIdPlugin in a separate contexvar
+    and sets and unsets the session.
+    """
+    key = 'X-Request-ID'
+
+    def __init__(self, *args, gx_app=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.gx_app = gx_app
+
+    async def process_request(self, request):
+        self.gx_app.model.set_request_id(context.data[self.key])
+        return context.data['X-Request-ID']
+
+    async def enrich_response(self, arg) -> None:
+        self.gx_app.model.unset_request_id(context.data[self.key])
+
+
 def initialize_fast_app(gx_webapp, gx_app):
     app = FastAPI(
         openapi_tags=api_tags_metadata
     )
+    app.add_middleware(RawContextMiddleware, plugins=(SqlSessionPlugin(gx_app=gx_app),))
     app.add_middleware(RawContextMiddleware, plugins=(plugins.RequestIdPlugin(force_new_uuid=True),))
     add_exception_handler(app)
     add_galaxy_middleware(app, gx_app)
