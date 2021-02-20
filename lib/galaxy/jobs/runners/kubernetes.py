@@ -102,12 +102,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         else:
             volume_claims = {}
         mountable_volumes = [{'name': claim_name, 'persistentVolumeClaim': {'claimName': claim_name}}
-                             for claim_name in volume_claims if claim_name]#.append({'name': 'jupyter', 'persistentVolumeClaim': {'claimName': 'try2-gxy-rls-galaxy-pvc', 'subPath': 'jupyter'}})
+                             for claim_name in volume_claims if claim_name]
         self.runner_params['k8s_mountable_volumes'] = mountable_volumes
         volume_mounts = [{'name': claim_name, 'mountPath': mount_path}
                          for claim_name, mount_path in volume_claims.items() if claim_name]
-        #volume_mounts.extend([{'name': 'try2-gxy-rls-galaxy-pvc', 'mountPath': '/galaxy/server/lib', 'subPath': 'lib'},{'name': 'try2-gxy-rls-galaxy-pvc', 'mountPath': '/galaxy/server/.venv', 'subPath': '.venv'}])
-        #log.debug(volume_mounts)
         self.runner_params['k8s_volume_mounts'] = volume_mounts
 
     def queue_job(self, job_wrapper):
@@ -142,41 +140,41 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_job_prefix,
             self.__get_k8s_job_spec(ajs)
         )
-        k8s_service_obj = service_object_dict(
-            self.runner_params,
-            "{}-{}".format(k8s_job_prefix, self.__force_label_conformity(ajs.job_wrapper.get_id_tag())),
-            self.__get_k8s_service_spec(ajs)
-        )
-        k8s_ingress_obj = ingress_object_dict(
-            self.runner_params,
-            "{}-{}".format(k8s_job_prefix, self.__force_label_conformity(ajs.job_wrapper.get_id_tag())),
-            self.__get_k8s_ingress_spec(ajs)
-        )
-
         job = Job(self._pykube_api, k8s_job_obj)
         try:
             job.create()
+            job_id = job.metadata.get('name')
+            # define job attributes in the AsyncronousJobState for follow-up
+            ajs.job_id = job_id
+            # store runner information for tracking if Galaxy restarts
+            job_wrapper.set_external_id(job_id)
         except Exception as e:
           log.debug(str(e))
 
-        service = Service(self._pykube_api, k8s_service_obj)
-        try:
-            log.debug(k8s_service_obj)
-            service.create()
-        except Exception as e:
-          log.debug(str(e))
-        ingress = Ingress(self._pykube_api, k8s_ingress_obj)
-        try:
-            log.debug(k8s_ingress_obj)
-            ingress.create()
-        except Exception as e:
-          log.debug(str(e))
-        job_id = job.metadata['name']
+        if ajs.job_wrapper.tool.tool_type == "interactive":
+            k8s_service_obj = service_object_dict(
+                self.runner_params,
+                "{}-{}".format(k8s_job_prefix, self.__force_label_conformity(ajs.job_wrapper.get_id_tag())),
+                self.__get_k8s_service_spec(ajs)
+            )
+            k8s_ingress_obj = ingress_object_dict(
+                self.runner_params,
+                "{}-{}".format(k8s_job_prefix, self.__force_label_conformity(ajs.job_wrapper.get_id_tag())),
+                self.__get_k8s_ingress_spec(ajs)
+            )
+            service = Service(self._pykube_api, k8s_service_obj)
+            try:
+                log.debug(k8s_service_obj)
+                service.create()
+            except Exception as e:
+              log.debug(str(e))
+            ingress = Ingress(self._pykube_api, k8s_ingress_obj)
+            try:
+                log.debug(k8s_ingress_obj)
+                ingress.create()
+            except Exception as e:
+              log.debug(str(e))
 
-        # define job attributes in the AsyncronousJobState for follow-up
-        ajs.job_id = job_id
-        # store runner information for tracking if Galaxy restarts
-        job_wrapper.set_external_id(job_id)
         self.monitor_queue.put(ajs)
 
     def __get_overridable_params(self, job_wrapper, param_key):
@@ -354,10 +352,19 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                     log.debug(entry_point.to_dict())
                     entry_point_class = entry_point.__class__.__name__.lower()
                     entry_point_prefix = self.app.config.interactivetools_prefix
-                    entry_point_domain = f'{entry_point.id}-{entry_point.token}.{entry_point_class}.{entry_point_prefix}.{self.app.config.interactivetools_proxy_host}'
-                    entry_points.append({"tool_port": entry_point.tool_port, "domain": entry_point_domain})
-                log.debug("\n\n\n\n\n\n\n\n\nALEX\n\n\n\n\n\n")
-                log.debug(entry_points)
+                    entry_point_url = entry_point.entry_url
+                    if entry_point_url:
+                        if '?' in entry_point_url:
+                            # Removing all the parameters from the ingress path, but they will still be in the database
+                            # so the link that the user clicks on will still have them
+                            log.warn("IT urls including parameters (eg: /myit?myparam=me) are only experimentally supported on K8S")
+                            entry_point_url = entry_point_url.split('?')[0]
+                        if entry_point_url[0] != "/":
+                            entry_point_url = "/" + entry_point_url
+                    else:
+                        entry_point_url = "/"
+                    entry_point_domain = f'{entry_point.token}.{entry_point_class}.{entry_point_prefix}.dev-cancer.usegvl.org'
+                    entry_points.append({"tool_port": entry_point.tool_port, "domain": entry_point_domain, "entry_url": entry_point_url})
             k8s_spec_template = {
                 "metadata": {
                     "labels": {
@@ -382,7 +389,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                                             #     "port": { "number": int(p)}
                                             # }
                                         },
-                                        "path": "/terminal",
+                                        "path": ep.get("entry_url", '/'),
                                         "pathType": "Prefix"
                                     }]
                                 }
@@ -429,10 +436,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             "volumeMounts": self.runner_params['k8s_volume_mounts']
         }
         guest_ports = container.tool_info.guest_ports
-        # if guest_ports:
-        #     k8s_container["ports"] = [{"containerPort": p} for p in guest_ports]
-        #     log.debug("\n\n\n\n\n\n\n\n\nALEX\n\n\n\n\n\n\n\n")
-        #     log.debug(guest_ports)
         resources = self.__get_resources(ajs.job_wrapper)
         if resources:
             envs = []
