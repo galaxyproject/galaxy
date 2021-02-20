@@ -76,7 +76,7 @@ export default {
                 //this.extension = UploadUtils.DEFAULT_EXTENSION;
             })
             .catch((err) => {
-                console.log("Error in RuleCollectionBuilder, unable to load datatypes", err);
+                console.log("Error in CollectionEditor, unable to load datatypes", err);
             });
         UploadUtils.getUploadGenomes(UploadUtils.DEFAULT_GENOME)
             .then((genomes) => {
@@ -84,7 +84,7 @@ export default {
                 //this.genome = UploadUtils.DEFAULT_GENOME;
             })
             .catch((err) => {
-                console.log("Error in RuleCollectionBuilder, unable to load genomes", err);
+                console.log("Error in CollectionEditor, unable to load genomes", err);
             });
     //     UploadUtils.getUploadDatatypes(
     //         (extensions) => {
@@ -104,7 +104,7 @@ export default {
         return {
             collection_data: {}, //all data from the response
             extensions: {},
-            genomes: {},
+            genomes: [],
         };
     },
     props: {

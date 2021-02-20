@@ -29,7 +29,7 @@
 <script>
 import { DatasetCollection } from "../../model";
 import { PriorityMenu, PriorityMenuItem } from "components/PriorityMenu";
-import { legacyNavigationMixin } from "components/plugins";
+import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 export default {
     components: {
         PriorityMenu,
