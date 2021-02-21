@@ -16,6 +16,8 @@ broken up into easily testable chunks.
 If your javascript needs to talk to the window object, or navigator, etc. wrap
 that in a function call so that it can be easily mocked during testing.
 
+
+#### Your Module
 ```js static
 // myModule.js
 
@@ -25,18 +27,33 @@ export function redirectTo(url) {
     window.location = url;
 }
 
+export function theThingYouReallyCareAbout() {
+    .....
+    redirectTo(somePlace);
+    ....
+}
+```
+
+#### Your test file
+```js static
 // myModule.test.js
+import { theThingYouReallyCareAbout, redirectTo } from "./myModule";
 
-jest.mock("myModule", () => ({
-    redirectTo: (url) => {
-        console.log(`I would have gone to: ${url}`);
-    },
-}));
+// calling jest.mock on the appropriate import path wraps the exports and gives
+// access to new testing methods like mockImplementation
+jest.mock("./myModule");
+redirectTo.mockImplementation((url) => {
+    console.log(`I would have gone to: ${url}`);
+});
 
-describe("some module", () => {
-    // ....
+// You are testing theThingYouReallyCareAbout, but that function needs
+// to call a window.relocate, By wrapping redirectTo as a function it was easy to mock
+// and avoid errors in your test, because native browser objects do not even exist
+// in the unit-testing environment.
+describe("theThingYouReallyCareAbout", () => {
     it("Performs a redirect when Foo is clicked"){
-        expect(redirectTo.mock.calls.length).toBe(1);
+        const result = theThingYouReallyCareAbout(abc123);
+        expect(result).toBe(1);
     }
 });
 ```

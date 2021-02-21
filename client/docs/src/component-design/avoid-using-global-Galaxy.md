@@ -10,8 +10,8 @@ retrieve your values, and bypass importing Galaxy altogether.
 
 #### Sometimes you still need to update Vue from backbone as the legacy environment changes
 There are definitely use-cases where the Backbone models update over time and we need to update some
-value inside Vue. Let me help you solve those problems instead of importing backbone models into Vue
-components. Usually the answer is a backbone event listener that updates some relevant Vuex store.
+value inside Vue. Instead of importing backbone models directly into Vue components, try building a
+backbone event listener that updates some relevant Vuex store.
 
 * [Keeping Vuex in Sync with
   Galaxy](https://github.com/galaxyproject/galaxy/blob/dev/client/src/store/syncVuexToGalaxy.js)
@@ -21,9 +21,6 @@ ecosystem.
 
 
 ## Mount Functions
-
-When writing a new component, your goal should be to replace old Galaxy functionality, not to
-repackage it in another format thereby persisting Galaxy's inherent problems.
 
 In what most people think of as a "standard" Vue application there would be only one place that Vue
 is mounted to the HTML environment, and that would be in a main.j or an app.js. Most modern
