@@ -3,7 +3,7 @@ probably look familiar to anybody whis is already passingly familiar with Vue. H
 information comes in as properties, any internal variables get defined in "data", changes go out as
 events.
 
-## Composition Example
+### Composition Example
 
 ```html static
 <!-- Use of a renderless component with a display component -->

@@ -34,7 +34,7 @@ function getSections() {
     const cmpPath = path.join(__dirname, "src/components");
     const { rootNode: componentDocs } = getDocSections(cmpPath, { ignore: problemChildren });
 
-    return [design, componentDocs, styles];
+    return [design, styles, componentDocs];
 }
 
 module.exports = {
