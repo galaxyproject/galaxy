@@ -5,7 +5,7 @@
         </h4>
         <b-row>
             <b-col>
-                <div v-if="options && value">
+                <div :class="permission_type" v-if="options && value">
                     <multiselect
                         v-model="value"
                         :options="fetched_options"

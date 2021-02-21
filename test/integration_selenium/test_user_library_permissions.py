@@ -25,9 +25,9 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
         email = self.get_logged_in_user()["email"]
         current_user_import_dir = os.path.join(self.user_import_dir(), email)
         os.makedirs(current_user_import_dir)
-        random_text = self._get_random_name()
-        file = open(f'{current_user_import_dir}/{random_text}', "w")
-        file.write(random_text)
+        random_filename = self._get_random_name()
+        file = open(f'{current_user_import_dir}/{random_filename}', "w")
+        file.write(random_filename)
         file.close()
 
         # allow user to add new datasets in the newly created library
@@ -37,8 +37,9 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
         self.libraries_open_with_name(self.name)
         self.assert_num_displayed_items_is(0)
         self.libraries_dataset_import(self.navigation.libraries.folder.labels.from_user_import_dir)
-        self.select_dataset_from_lib_import_modal(random_text)
+        self.select_dataset_from_lib_import_modal(random_filename)
         self.assert_num_displayed_items_is(1)
+        return random_filename, email
 
     @selenium_test
     def test_user_library_import_dir_warning(self):
@@ -55,6 +56,28 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
 
         # assert 'user import folder was not created' warning
         self.components.libraries.folder.toast_warning.wait_for_visible()
+
+    @selenium_test
+    def test_user_library_dataset_permissions(self):
+        dataset_filename, email = self.test_user_library_import_dir()
+        self.logout()
+        admin_email = self.admin_login()
+        self.libraries_open()
+        self.libraries_open_with_name(self.name)
+
+        self.components.libraries.folder.manage_dataset_permissions_btn(name=dataset_filename).wait_for_and_click()
+        self.components.libraries.folder.make_private_btn.wait_for_and_click()
+        access_dataset_roles = self.components.libraries.folder.access_dataset_roles.wait_for_visible()
+
+        assert access_dataset_roles.text == admin_email
+
+        self.components.libraries.folder.btn_open_parent_folder(folder_name=self.name).wait_for_and_click()
+        self.components.libraries.folder.private_dataset_icon.wait_for_visible()
+        self.logout()
+        self.submit_login(email=email)
+        self.libraries_open()
+        self.libraries_open_with_name(self.name)
+        self.assert_num_displayed_items_is(0)
 
     def create_lib_and_permit_adding(self, email):
         # logout of the current user, only admin can create new libraries
