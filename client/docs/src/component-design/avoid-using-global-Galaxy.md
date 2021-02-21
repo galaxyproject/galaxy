@@ -31,7 +31,7 @@ several mounting functions for various components depending on where that compon
 fit into the existing Backbone layouts.
 
 
-### Use the standard mount function
+### Using the standard mount to pass in Galaxy variables as props
 
 A standard mount function has been provided in src/utils. This mount function accepts a component
 definition, and then allows you to start up your Vue component with our standard load-out of plugins
@@ -39,36 +39,35 @@ including localization, Vuex, and a couple other utilities. This is the preferre
 component inside the old Backbone layout until the application is fully converted.
 
 ```js static
-// mountMyComponent.js
+// src/mvc/OldBackboneView.js
 
-import { mountVueComponent } from "utils/mountVueComponent";
-import MyComponent from "./MyComponent";
-
-// this creates a function that will accept a props object and a DOM element on which to mount
-const mounter = mountVueComponent(MyComponent);
-export default mounter;
-```
-
-### Using the standard mount to pass in Galaxy variables as props
-
-```js static
 import { getGalaxyInstance } from "app";
-import mountMyComponent from "./mountMyComponent";
+import MyComponent from "components/MyComponent";
+import { mountVueComponent } from "utils/mountVueComponent";
 
-const HorribleBackboneView = {
+const OldBackboneView = {
 
     someInitMethodYouMake() {
         const Galaxy = getGalaxyInstance();
+        const mounter = mountVueComponent(MyComponent);
 
         // pass in required props
         const props = { 
+
+            // Something peeled off the global galaxy
             somePropVal: Galaxy.someDealie, 
+
+            // ...or the current history
             name: Galaxy.currentHistory.name,
+
+            // or maybe from the backbone model for this view
+            shoeSize: this.model.shoeSize
         };
 
         // VM is a Vue instance.
         // this.$el is some jquery selection, first item is the actual DOM object
-        const vm = mountMyComponent(props, this.$el[0]);
+        const container = this.$el[0];
+        const vm = mounter(props, container);
     }
 }
 ```
