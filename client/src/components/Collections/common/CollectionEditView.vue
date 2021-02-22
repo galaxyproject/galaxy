@@ -73,7 +73,6 @@ export default {
         UploadUtils.getUploadDatatypes(true, UploadUtils.AUTO_EXTENSION)
             .then((extensions) => {
                 this.extensions = extensions;
-                //this.extension = UploadUtils.DEFAULT_EXTENSION;
             })
             .catch((err) => {
                 console.log("Error in CollectionEditor, unable to load datatypes", err);
@@ -81,23 +80,10 @@ export default {
         UploadUtils.getUploadGenomes(UploadUtils.DEFAULT_GENOME)
             .then((genomes) => {
                 this.genomes = genomes;
-                //this.genome = UploadUtils.DEFAULT_GENOME;
             })
             .catch((err) => {
                 console.log("Error in CollectionEditor, unable to load genomes", err);
             });
-    //     UploadUtils.getUploadDatatypes(
-    //         (extensions) => {
-    //             this.extensions = extensions;
-    //             //this.extension = UploadUtils.DEFAULT_EXTENSION;
-    //         },
-    //         true,
-    //         UploadUtils.AUTO_EXTENSION
-    //     );
-    //     UploadUtils.getUploadGenomes((genomes) => {
-    //         this.genomes = genomes;
-    //         //this.genome = UploadUtils.DEFAULT_GENOME;
-    //     }, UploadUtils.DEFAULT_GENOME);
     },
     components: { Multiselect },
     data: function () {
