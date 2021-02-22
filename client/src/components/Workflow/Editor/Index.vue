@@ -109,6 +109,7 @@
                                     @onEdit="onEdit"
                                     @onAttributes="onAttributes"
                                     @onLint="onLint"
+                                    @onUpgrade="onUpgrade"
                                 />
                             </div>
                         </div>
@@ -421,6 +422,9 @@ export default {
             // See notes in Lint.vue about why refresh is needed.
             this.$refs.lint.refresh();
             showLint();
+        },
+        onUpgrade() {
+            this.attemptRefactor([{'action_type': 'upgrade_workflow'}]);
         },
         onEdit() {
             this.isCanvas = true;
