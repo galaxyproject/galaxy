@@ -25,7 +25,7 @@ function getDocSections(rootPath, options = {}) {
     sections.set(rootPath, rootNode);
     childToParent.set(rootPath, null);
 
-    // const singleGlob = path.join(rootPath, "**/*.(md|js|vue)");
+    // get all matching doc files
     const selector = path.join(rootPath, "**", docSelector);
     const allFiles = glob.sync(selector, { ignore });
 
@@ -50,9 +50,9 @@ function getDocSections(rootPath, options = {}) {
             midFolders.pop();
         }
 
-        // add file to section now that it exists
+        // if it's a MD file, add to parent as a subsection
         const section = sections.get(p.dir);
-        if (section && file !== section.content) {
+        if (section && file !== section.content && p.ext == ".md") {
             section.children.add({
                 name: titleize(humanize(p.name)),
                 content: file,
