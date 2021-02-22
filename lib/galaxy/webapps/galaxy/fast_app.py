@@ -71,11 +71,11 @@ def add_exception_handler(
 ) -> None:
 
     @app.exception_handler(RequestValidationError)
-    async def validate_exception_middleware(request: Request, exc: MessageException) -> Response:
+    async def validate_exception_middleware(request: Request, exc: RequestValidationError) -> Response:
         exc = validation_error_to_message_exception(exc)
         error_dict = api_error_message(None, exception=exc)
         return JSONResponse(
-            status_code=exc.status_code,
+            status_code=400,
             content=error_dict
         )
 

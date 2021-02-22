@@ -7,15 +7,16 @@ API operations for for querying and recording user metrics from some client
 import datetime
 import logging
 
+from galaxy.structured_app import StructuredApp
 from galaxy.web import expose_api_anonymous
-from galaxy.webapps.base.controller import BaseAPIController
+from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
 
 
-class MetricsController(BaseAPIController):
+class MetricsController(BaseGalaxyAPIController):
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
         #: set to true to send additional debugging info to the log
         self.debugging = True

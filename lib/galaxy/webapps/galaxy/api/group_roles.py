@@ -10,16 +10,13 @@ from galaxy.web import (
     expose_api,
     require_admin,
 )
-from galaxy.webapps.base.controller import BaseAPIController
+from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
 
 
-class GroupRolesAPIController(BaseAPIController):
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.manager = GroupRolesManager(app)
+class GroupRolesAPIController(BaseGalaxyAPIController):
+    manager = depends(GroupRolesManager)
 
     @require_admin
     @expose_api
