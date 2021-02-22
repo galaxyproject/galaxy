@@ -451,6 +451,9 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> fname = get_test_fname('1.mtx')
     >>> guess_ext(fname, sniff_order)
     'mtx'
+    >>> fname = get_test_fname('mc_preprocess_summ.metacyto_summary.txt')
+    >>> guess_ext(fname, sniff_order)
+    'metacyto_summary.txt'
     >>> fname = get_test_fname('1imzml')
     >>> guess_ext(fname, sniff_order)  # This test case is ensuring doesn't throw exception, actual value could change if non-utf encoding handling improves.
     'data'

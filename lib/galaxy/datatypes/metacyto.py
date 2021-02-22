@@ -5,13 +5,9 @@ MetaCyto analysis datatypes.
 import logging
 
 from galaxy.datatypes.tabular import Tabular
-from . import data
+from galaxy.util import nice_size
 
 log = logging.getLogger(__name__)
-
-
-def check_all_required_fields(fields, required_fields):
-    return len(set(fields).intersection(required_fields)) == len(required_fields)
 
 
 class mStats(Tabular):
@@ -20,8 +16,8 @@ class mStats(Tabular):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = "MetaCyto Cluster Stats file"
-            dataset.blurb = data.nice_size(dataset.get_size())
+            dataset.peek = "MetaCyto Cluster Stats"
+            dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -30,17 +26,16 @@ class mStats(Tabular):
         try:
             return dataset.peek
         except Exception:
-            return "MetaCyto Cluster Stats file (%s)" % (data.nice_size(dataset.get_size()))
+            return "MetaCyto Cluster Stats"
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """Quick test on file headings"""
-        with open(filename, "r") as f:
-            # last one == fraction
-            headers = f.readline().strip().split("\t")
-        if headers[-1] != "fraction":
-            return False
-        hdrs = {"fcs_files", "cluster_id", "label", "fcs_names"}
-        return check_all_required_fields(fields=headers, required_fields=hdrs)
+        if file_prefix.startswith("fcs_files\tcluster_id\tlabel\tfcs_names"):
+            header_line = file_prefix.string_io().readline()
+            if header_line.strip().split("\t")[-1] == 'fraction':
+                return True
+            elif file_prefix.truncated and file_prefix.string_io().read() == header_line:
+                return True
 
 
 class mClrList(Tabular):
@@ -50,7 +45,7 @@ class mClrList(Tabular):
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             dataset.peek = "MetaCyto Cluster Definitions List file"
-            dataset.blurb = data.nice_size(dataset.get_size())
+            dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -59,7 +54,7 @@ class mClrList(Tabular):
         try:
             return dataset.peek
         except Exception:
-            return "MetaCyto Cluster Definitions List file (%s)" % (data.nice_size(dataset.get_size()))
+            return "MetaCyto Cluster Definitions List"
 
 
 class mSummary(Tabular):
@@ -68,8 +63,8 @@ class mSummary(Tabular):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = "MetaCyto Preprocessing Summary file"
-            dataset.blurb = data.nice_size(dataset.get_size())
+            dataset.peek = "MetaCyto Preprocessing Summary"
+            dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -78,16 +73,7 @@ class mSummary(Tabular):
         try:
             return dataset.peek
         except Exception:
-            return "MetaCyto Preprocessing Summary file (%s)" % (data.nice_size(dataset.get_size()))
+            return "MetaCyto Preprocessing Summary"
 
-    def sniff(self, filename):
-        """Quick test on file formatting
-        >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('mc_preprocess_summ.metacyto_summary.txt')
-        >>> mSummary().sniff(fname)
-        True
-        """
-        with open(filename, "r") as f:
-            headings = f.readline().strip().split("\t")
-        hdgs = {"study_id", "antibodies", "filenames"}
-        return check_all_required_fields(fields=headings, required_fields=hdgs)
+    def sniff_prefix(self, file_prefix):
+        return file_prefix.startswith('study_id\tantibodies\tfilenames')
