@@ -883,7 +883,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             remote_job_id = full_status["job_id"]
             if len(remote_job_id) == 32:
                 # It is a UUID - assign_ids = uuid in destination params...
-                sa_session = self.app.model.context.current
+                sa_session = self.app.model.session
                 galaxy_job_id = sa_session.query(model.Job).filter(model.Job.job_runner_external_id == remote_job_id).one().id
             else:
                 galaxy_job_id = remote_job_id

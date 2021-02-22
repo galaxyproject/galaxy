@@ -461,7 +461,8 @@ export default {
             else if (element.type === "folder") return `${this.root}library/folders/${element.id}`;
         },
         navigateToPermission(element) {
-            if (element.type === "file") window.location.replace(`${this.createContentLink(element)}/permissions`);
+            if (element.type === "file")
+                this.$router.push({ path: `/permissions/${this.folder_id}/dataset/${element.id}` });
             else if (element.type === "folder") this.$router.push({ path: `/permissions/${element.id}` });
         },
         getMessage(element) {

@@ -670,36 +670,36 @@ class GalaxyInteractorApi:
 
         return fetcher
 
-    def api_key_header(self, key, admin, anon):
-        header = {}
+    def api_key_header(self, key, admin, anon, headers):
+        header = headers or {}
         if not anon:
             if not key:
                 key = self.api_key if not admin else self.master_api_key
             header['x-api-key'] = key
         return header
 
-    def _post(self, path, data=None, files=None, key=None, admin=False, anon=False, json=False):
+    def _post(self, path, data=None, files=None, key=None, headers=None, admin=False, anon=False, json=False):
         # If json=True, use post payload using request's json parameter instead of the data
         # parameter (i.e. assume the contents is a jsonified blob instead of form parameters
         # with individual parameters jsonified if needed).
-        headers = self.api_key_header(key=key, admin=admin, anon=anon)
+        headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         url = f"{self.api_url}/{path}"
         return galaxy_requests_post(url, data=data, files=files, as_json=json, headers=headers)
 
-    def _delete(self, path, data=None, key=None, admin=False, anon=False):
-        headers = self.api_key_header(key=key, admin=admin, anon=anon)
+    def _delete(self, path, data=None, key=None, headers=None, admin=False, anon=False):
+        headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         return requests.delete(f"{self.api_url}/{path}", params=data, headers=headers)
 
-    def _patch(self, path, data=None, key=None, admin=False, anon=False):
-        headers = self.api_key_header(key=key, admin=admin, anon=anon)
+    def _patch(self, path, data=None, key=None, headers=None, admin=False, anon=False):
+        headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         return requests.patch(f"{self.api_url}/{path}", data=data, headers=headers)
 
-    def _put(self, path, data=None, key=None, admin=False, anon=False):
-        headers = self.api_key_header(key=key, admin=admin, anon=anon)
+    def _put(self, path, data=None, key=None, headers=None, admin=False, anon=False):
+        headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         return requests.put(f"{self.api_url}/{path}", data=data, headers=headers)
 
-    def _get(self, path, data=None, key=None, admin=False, anon=False):
-        headers = self.api_key_header(key=key, admin=admin, anon=anon)
+    def _get(self, path, data=None, key=None, headers=None, admin=False, anon=False):
+        headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         if path.startswith("/api"):
             path = path[len("/api"):]
         url = f"{self.api_url}/{path}"

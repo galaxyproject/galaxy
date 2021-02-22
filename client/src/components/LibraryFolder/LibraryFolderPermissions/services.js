@@ -16,6 +16,24 @@ export class Services {
             rethrowSimple(e);
         }
     }
+    async getDatasetPermissions(id) {
+        const url = `${this.root}api/libraries/datasets/${id}/permissions?scope=current`;
+        try {
+            const response = await axios.get(url);
+            return response.data;
+        } catch (e) {
+            rethrowSimple(e);
+        }
+    }
+    async getDataset(id) {
+        const url = `${this.root}api/libraries/datasets/${id}`;
+        try {
+            const response = await axios.get(url);
+            return response.data;
+        } catch (e) {
+            rethrowSimple(e);
+        }
+    }
     async getFolder(id) {
         const url = `${this.root}api/folders/${id}`;
         try {
@@ -25,9 +43,9 @@ export class Services {
             rethrowSimple(e);
         }
     }
-    async getSelectOptions(id, is_library_access, page, page_limit, searchQuery) {
+    async getSelectOptions(apiRootUrl, id, is_library_access, page, page_limit, searchQuery) {
         searchQuery = searchQuery ? `&q=${searchQuery}` : "";
-        const url = `${this.root}api/folders/${id}/permissions?scope=available&is_library_access=${is_library_access}&page_limit=${page_limit}&page=${page}${searchQuery}`;
+        const url = `${apiRootUrl}/${id}/permissions?scope=available&is_library_access=${is_library_access}&page_limit=${page_limit}&page=${page}${searchQuery}`;
         try {
             const response = await axios.get(url);
             return response.data;
@@ -35,29 +53,38 @@ export class Services {
             rethrowSimple(e);
         }
     }
-    async setPermissions(id, add_ids, manage_ids, modify_ids, onSuccess, onError) {
+
+    async setPermissions(apiRootUrl, id, new_roles_ids, onSuccess, onError) {
         var formData = new FormData();
-        formData.append(
-            "add_ids[]",
-            add_ids.map((a) => a.id)
-        );
-        formData.append(
-            "manage_ids[]",
-            manage_ids.map((a) => a.id)
-        );
-        formData.append(
-            "modify_ids[]",
-            modify_ids.map((a) => a.id)
-        );
+        new_roles_ids.forEach((permissionType) => {
+            Object.keys(permissionType).map(function (k) {
+                const ids = permissionType[k].map((a) => a.id);
+                formData.append(k, ids);
+            });
+        });
 
         axios({
             method: "post",
-            url: `${getAppRoot()}api/folders/${id}/permissions?action=set_permissions`,
+            url: `${apiRootUrl}/${id}/permissions?action=set_permissions`,
             data: formData,
             headers: { "Content-Type": "multipart/form-data" },
         })
             .then(function (response) {
                 onSuccess(response);
+            })
+            .catch((response) => {
+                onError(response);
+            });
+    }
+    async toggleDatasetPrivacy(id, isMakePrivate, onSuccess, onError) {
+        await axios
+            .post(
+                `${getAppRoot()}api/libraries/datasets/${id}/permissions?action=${
+                    isMakePrivate ? "make_private" : "remove_restrictions"
+                }`
+            )
+            .then((fetched_permissions) => {
+                onSuccess(fetched_permissions.data);
             })
             .catch((response) => {
                 onError(response);

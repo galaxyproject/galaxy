@@ -3,6 +3,7 @@ galaxy-sequence-utils
 galaxy-util[template]
 bdbag
 bx-python
+contextvars; python_version >= "3.6" and python_version < "3.7"
 h5py
 isa-rwval
 parsley
@@ -12,7 +13,6 @@ pydantic
 pysam
 social-auth-core[openidconnect]==3.3.0
 SQLAlchemy
-sqlalchemy-json
 sqlalchemy-migrate
 sqlalchemy-utils
 WebOb

@@ -38,7 +38,7 @@ def build_index(whoosh_index_dir, file_path, hgweb_config_dir, dburi, **kwargs):
     Returns a tuple with number of repos and tools that were indexed.
     """
     model = ts_mapping.init(file_path, dburi, engine_options={}, create_tables=False)
-    sa_session = model.context.current
+    sa_session = model.session
     repo_index, tool_index = _get_or_create_index(whoosh_index_dir)
 
     repo_index_writer = AsyncWriter(repo_index)

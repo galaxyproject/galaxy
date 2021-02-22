@@ -294,6 +294,17 @@ runners:
     galaxy_url: http://docker.for.mac.localhost:8080
     amqp_url: amqp://guest:guest@localhost:5672//
 
+    # Limits can be applied the same way as in the standard KubernetesJobRunner,
+    # but these are applied uniformly to each container in the pod:
+    #requests_cpu: 500m
+    #requests_memory: 500Mi
+    #limits_cpu: 2
+    #limits_memory: 2Gi
+
+    # They can also be applied separately for the pulsar and tool containers:
+    #pulsar_limits_cpu: 1
+    #tool_limits_cpu: 4
+
   pulsar_legacy:
     # Pulsar job runner with default parameters matching those
     # of old LWR job runner. If your Pulsar server is running on a

@@ -92,9 +92,18 @@ class MetadataCollection(Mapping):
 
     def __getitem__(self, key):
         try:
-            return self.__getattr__(key)
-        except Exception:
-            raise KeyError
+            self.__getattribute__(key)
+        except AttributeError:
+            try:
+                return self.__getattr__(key)
+            except Exception:
+                raise KeyError
+        # `key` is an attribute of this instance, not some metadata: raise
+        # KeyError to prevent e.g. `'items' in dataset.metadata` from returning
+        # True
+        # Not doing this would also break Cheetah's NameMapper._valueForName()
+        # since dataset.metadata['items'] would be None
+        raise KeyError
 
     def __len__(self):
         return len(self.spec)

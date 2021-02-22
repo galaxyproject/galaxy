@@ -271,7 +271,7 @@ def get_tool_shed_repository_url(app, tool_shed, owner, name):
 
 def get_user_by_username(app, username):
     """Get a user from the database by username."""
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     try:
         user = sa_session.query(app.model.User) \
                          .filter(app.model.User.table.c.username == username) \

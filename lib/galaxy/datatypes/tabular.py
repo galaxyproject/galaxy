@@ -744,13 +744,12 @@ class BaseVcf(Tabular):
 
     def set_meta(self, dataset, **kwd):
         super().set_meta(dataset, **kwd)
-        source = open(dataset.file_name)
-
-        # Skip comments.
         line = None
-        for line in source:
-            if not line.startswith('##'):
-                break
+        with compression_utils.get_fileobj(dataset.file_name) as fh:
+            # Skip comments.
+            for line in fh:
+                if not line.startswith('##'):
+                    break
 
         if line and line.startswith('#'):
             # Found header line, get sample names.
@@ -816,7 +815,7 @@ class VcfGz(BaseVcf, binary.Binary):
             return binascii.hexlify(last28) == b'1f8b08040000000000ff0600424302001b0003000000000000000000'
 
     def set_meta(self, dataset, **kwd):
-        super(BaseVcf, self).set_meta(dataset, **kwd)
+        super().set_meta(dataset, **kwd)
         """ Creates the index for the VCF file. """
         # These metadata values are not accessible by users, always overwrite
         index_file = dataset.metadata.tabix_index
@@ -1277,25 +1276,24 @@ class MatrixMarket(TabularData):
         if dataset.has_data():
             # If the dataset is larger than optional_metadata, just count comment lines.
             with open(dataset.file_name) as dataset_fh:
+                line = ''
+                data_lines = 0
                 comment_lines = 0
-                if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
-                    # If the dataset is larger than optional_metadata, just count comment lines.
-                    for line in dataset_fh:
-                        if line.startswith('%'):
-                            comment_lines += 1
-                        else:
-                            # No more comments, and the file is too big to look at the whole thing. Give up.
-                            dataset.metadata.data_lines = None
-                            break
-                else:
-                    for i, l in enumerate(dataset_fh):  # noqa: B007
-                        if l.startswith('%'):
-                            comment_lines += 1
-                    dataset.metadata.data_lines = i + 1 - comment_lines
-                if ' ' in l:
+                # If the dataset is larger than optional_metadata, just count comment lines.
+                count_comments_only = self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize
+                for line in dataset_fh:
+                    if line.startswith('%'):
+                        comment_lines += 1
+                    elif count_comments_only:
+                        data_lines = None
+                        break
+                    else:
+                        data_lines += 1
+                if ' ' in line:
                     dataset.metadata.delimiter = ' '
                 else:
                     dataset.metadata.delimiter = '\t'
             dataset.metadata.comment_lines = comment_lines
+            dataset.metadata.data_lines = data_lines
             dataset.metadata.columns = 3
             dataset.metadata.column_types = ['int', 'int', 'float']
