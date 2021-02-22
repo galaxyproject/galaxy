@@ -149,31 +149,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             # store runner information for tracking if Galaxy restarts
             job_wrapper.set_external_id(job_id)
         except Exception as e:
-          log.debug(str(e))
-
-        if ajs.job_wrapper.tool.tool_type == "interactive":
-            k8s_service_obj = service_object_dict(
-                self.runner_params,
-                "{}-{}".format(k8s_job_prefix, self.__force_label_conformity(ajs.job_wrapper.get_id_tag())),
-                self.__get_k8s_service_spec(ajs)
-            )
-            k8s_ingress_obj = ingress_object_dict(
-                self.runner_params,
-                "{}-{}".format(k8s_job_prefix, self.__force_label_conformity(ajs.job_wrapper.get_id_tag())),
-                self.__get_k8s_ingress_spec(ajs)
-            )
-            service = Service(self._pykube_api, k8s_service_obj)
-            try:
-                log.debug(k8s_service_obj)
-                service.create()
-            except Exception as e:
-              log.debug(str(e))
-            ingress = Ingress(self._pykube_api, k8s_ingress_obj)
-            try:
-                log.debug(k8s_ingress_obj)
-                ingress.create()
-            except Exception as e:
-              log.debug(str(e))
+            log.debug(str(e))
 
         self.monitor_queue.put(ajs)
 
@@ -350,21 +326,18 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 entry_points = []
                 for entry_point in eps.get('configured', []):
                     log.debug(entry_point.to_dict())
-                    entry_point_class = entry_point.__class__.__name__.lower()
-                    entry_point_prefix = self.app.config.interactivetools_prefix
-                    entry_point_url = entry_point.entry_url
-                    if entry_point_url:
-                        if '?' in entry_point_url:
-                            # Removing all the parameters from the ingress path, but they will still be in the database
-                            # so the link that the user clicks on will still have them
-                            log.warn("IT urls including parameters (eg: /myit?myparam=me) are only experimentally supported on K8S")
-                            entry_point_url = entry_point_url.split('?')[0]
-                        if entry_point_url[0] != "/":
-                            entry_point_url = "/" + entry_point_url
-                    else:
-                        entry_point_url = "/"
-                    entry_point_domain = f'{entry_point.token}.{entry_point_class}.{entry_point_prefix}.dev-cancer.usegvl.org'
-                    entry_points.append({"tool_port": entry_point.tool_port, "domain": entry_point_domain, "entry_url": entry_point_url})
+                    # sending in self.app as `trans` since it's only used for `.security` so seems to work
+                    entry_point_path = self.app.interactivetool_manager.get_entry_point_path(self.app, entry_point)
+                    if '?' in entry_point_path:
+                        # Removing all the parameters from the ingress path, but they will still be in the database
+                        # so the link that the user clicks on will still have them
+                        log.warn("IT urls including parameters (eg: /myit?mykey=myvalue) are only experimentally supported on K8S")
+                        entry_point_path = entry_point_path.split('?')[0]
+                    entry_point_domain = f'{self.app.config.interactivetools_proxy_host}'
+                    if entry_point.requires_domain:
+                        entry_point_subdomain = self.app.interactivetool_manager.get_entry_point_subdomain(self.app, entry_point)
+                        entry_point_domain = f'{entry_point_subdomain}.{entry_point_domain}'
+                    entry_points.append({"tool_port": entry_point.tool_port, "domain": entry_point_domain, "entry_path": entry_point_path})
             k8s_spec_template = {
                 "metadata": {
                     "labels": {
@@ -389,7 +362,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                                             #     "port": { "number": int(p)}
                                             # }
                                         },
-                                        "path": ep.get("entry_url", '/'),
+                                        "path": ep.get("entry_path", '/'),
                                         "pathType": "Prefix"
                                     }]
                                 }
@@ -618,7 +591,32 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 if not job_state.running:
                     job_state.running = True
                     job_state.job_wrapper.change_state(model.Job.states.RUNNING)
-                    # guest_ports = job_state.job_wrapper.guest_ports
+                    guest_ports = job_state.job_wrapper.guest_ports
+                    if job_state.job_wrapper.tool.tool_type == "interactive":
+                        k8s_job_prefix = self.__produce_k8s_job_prefix()
+                        log.debug(f'Configuring entry points and deploying service/ingress for job with ID {job_state.job_id}')
+                        k8s_service_obj = service_object_dict(
+                            self.runner_params,
+                            "{}-{}".format(k8s_job_prefix, self.__force_label_conformity(job_state.job_wrapper.get_id_tag())),
+                            self.__get_k8s_service_spec(job_state)
+                        )
+                        k8s_ingress_obj = ingress_object_dict(
+                            self.runner_params,
+                            "{}-{}".format(k8s_job_prefix, self.__force_label_conformity(job_state.job_wrapper.get_id_tag())),
+                            self.__get_k8s_ingress_spec(job_state)
+                        )
+                        service = Service(self._pykube_api, k8s_service_obj)
+                        try:
+                            log.debug(k8s_service_obj)
+                            service.create()
+                        except Exception as e:
+                            log.debug(str(e))
+                        ingress = Ingress(self._pykube_api, k8s_ingress_obj)
+                        try:
+                            log.debug(k8s_ingress_obj)
+                            ingress.create()
+                        except Exception as e:
+                            log.debug(str(e))
                     # if len(guest_ports) > 0:
                     #     pod = self._get_pod_for_job(job_state)
                     #     if pod:

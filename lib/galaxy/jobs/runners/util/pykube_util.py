@@ -72,6 +72,14 @@ def find_pod_object_by_name(pykube_api, job_name, namespace=None):
     return Pod.objects(pykube_api).filter(selector="job-name=" + job_name, namespace=namespace)
 
 
+def find_service_object_by_name(pykube_api, service_name, namespace=None):
+    return Service.objects(pykube_api),filter(field_selector={"metadata.name": service_name}, namespace=namespace)
+
+
+def find_ingress_object_by_name(pykube_api, ingress_name, namespace=None):
+    return Ingress.objects(pykube_api),filter(field_selector={"metadata.name": ingress_name}, namespace=namespace)
+
+
 def stop_job(job, cleanup="always"):
     job_failed = (job.obj['status']['failed'] > 0
                   if 'failed' in job.obj['status'] else False)
