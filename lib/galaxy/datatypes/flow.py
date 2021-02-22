@@ -3,22 +3,15 @@ Flow analysis datatypes.
 """
 
 import logging
-import math
 
 from galaxy.datatypes.binary import Binary
+from galaxy.datatypes.sniff import build_sniff_from_prefix
 from . import data
 
 log = logging.getLogger(__name__)
 
 
-def is_number(s):
-    try:
-        float(s)
-        return True
-    except ValueError:
-        return False
-
-
+@build_sniff_from_prefix
 class FCS(Binary):
     """Class describing an FCS binary file"""
     file_ext = "fcs"
@@ -35,44 +28,22 @@ class FCS(Binary):
         try:
             return dataset.peek
         except Exception:
-            return "Binary FCSfile (%s)" % (data.nice_size(dataset.get_size()))
+            return "Binary FCS file"
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Checking if the file is in FCS format. Should read FCS2.0, FCS3.0
         and FCS3.1
 
         Based on flowcore:
         https://github.com/RGLab/flowCore/blob/27141b792ad65ae8bd0aeeef26e757c39cdaefe7/R/IO.R#L667
-
-        Try to guess if the file is a fcs file.
-        >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('Accuri_C6_A01_H2O.fcs')
-        >>> FCS().sniff(fname)
-        True
         """
-        try:
-            with open(filename, 'rb') as f:
-                # assume 1 byte = 1 char
-                version = f.read(6).decode("utf8", errors="ignore")
-                if version not in ["FCS2.0", "FCS3.0", "FCS3.1"]:
-                    return False
-                version = version.replace("FCS", "")
-                tmp = f.read(4).decode("utf8", errors="ignore")
-                if tmp != "    ":
-                    return False
-                coffs = []
-                # we only need to check ioffs 2 to 5
-                for _i in range(4):
-                    coffs.append(f.read(8).decode("utf8", errors="ignore"))
-
-            ioffs = [float(version)] + [int(x) for x in coffs]
-            for ioff in ioffs:
-                if ioff is None or math.isnan(ioff):
-                    return False
-        except Exception:
-            return False
-
+        content = file_prefix.contents_header_bytes[:42].decode()
+        version = content[:6]
+        assert version in ["FCS2.0", "FCS3.0", "FCS3.1"]
+        assert content[6:10] == '    '
+        # we only need to check ioffs 2 to 5
+        int(content[10:42].replace(' ', ''))
         return True
 
     def get_mime(self):
