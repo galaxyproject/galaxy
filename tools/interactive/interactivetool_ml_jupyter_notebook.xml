@@ -1,6 +1,6 @@
 <tool id="interactive_ml_tool_jupyter_notebook" tool_type="interactive" name="Interactive Machine Learning Jupyter Notebook" version="0.1">
     <requirements>
-        <container type="docker">docker.io/anupkumar/sample-docker-ml-jupyter:latest</container>
+        <container type="docker">docker.io/anupkumar/docker-ml-jupyter:latest</container>
     </requirements>
     <entry_points>
         <entry_point name="Jupyter Interactive Tool" requires_domain="True">
