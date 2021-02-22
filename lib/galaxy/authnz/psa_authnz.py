@@ -1,4 +1,5 @@
 import json
+import logging
 
 import requests
 from social_core.actions import do_auth, do_complete, do_disconnect
@@ -8,9 +9,11 @@ from social_core.utils import module_member, setting_name
 from sqlalchemy.exc import IntegrityError
 
 from galaxy.exceptions import MalformedContents
+from galaxy.util import listify
 from ..authnz import IdentityProvider
 from ..model import PSAAssociation, PSACode, PSANonce, PSAPartial, UserAuthnzToken
 
+log = logging.getLogger(__name__)
 
 # key: a component name which PSA requests.
 # value: is the name of a class associated with that key.
@@ -122,6 +125,9 @@ class PSAAuthnz(IdentityProvider):
             if 'SOCIAL_AUTH_SECONDARY_AUTH_ENDPOINT' in self.config:
                 del self.config["SOCIAL_AUTH_SECONDARY_AUTH_ENDPOINT"]
 
+        if oidc_config.get('USER_FIELDS') is not None:
+            self.config[setting_name('USER_FIELDS')] = listify(oidc_config.get('USER_FIELDS'))
+
     def _setup_idp(self, oidc_backend_config):
         self.config[setting_name('AUTH_EXTRA_ARGUMENTS')] = {'access_type': 'offline'}
         self.config['KEY'] = oidc_backend_config.get('client_id')
@@ -166,7 +172,8 @@ class PSAAuthnz(IdentityProvider):
             backend,
             login=lambda backend, user, social_user: self._login_user(backend, user, social_user),
             user=trans.user,
-            state=state_token)
+            state=state_token,
+            app=trans.app)
         return redirect_url, self.config.get('user', None)
 
     def disconnect(self, provider, trans, disconnect_redirect_url=None, association_id=None):
@@ -183,12 +190,14 @@ class PSAAuthnz(IdentityProvider):
 
 class Strategy(BaseStrategy):
 
-    def __init__(self, request, session, storage, config, tpl=None):
+    def __init__(self, request, session, storage, config, tpl=None, app=None):
         self.request = request
         self.session = session if session else {}
         self.config = config
         self.config['SOCIAL_AUTH_REDIRECT_IS_HTTPS'] = True if self.request and self.request.host.startswith('https:') else False
         self.config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_EXTRA_DATA'] = ['id_token']
+        if app:
+            self.app = app
         super().__init__(storage, tpl)
 
     def get_setting(self, name):

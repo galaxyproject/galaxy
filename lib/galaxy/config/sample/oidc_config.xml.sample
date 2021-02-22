@@ -24,4 +24,9 @@ Note that the values of these attributes are case-sensitive.
     <Setter Property="SECONDARY_AUTH_PROVIDER" Value="..." Type="str" />
     <Setter Property="SECONDARY_AUTH_ENDPOINT" Value="..." Type="str" />
     -->
+
+    <!-- Only configure this if you want to use scripts upon user creation in combination with OIDC. -->
+    <!--
+    <Setter Property="USER_FIELDS" Value="username,email,app" Type="str"/>
+    -->
 </OIDC>

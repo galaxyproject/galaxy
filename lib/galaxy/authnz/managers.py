@@ -310,7 +310,7 @@ class AuthnzManager:
             success, message, backend = self._get_authnz_backend(provider)
             if success is False:
                 return False, message, (None, None)
-            return success, message, backend.create_user(token, trans, login_redirect_url)
+            return success, message, backend.create_user(token, trans, login_redirect_url, app=self.app)
         except exceptions.AuthenticationFailed:
             log.exception("Error creating user")
             raise

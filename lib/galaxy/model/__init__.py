@@ -6115,6 +6115,11 @@ class UserAuthnzToken(UserMixin, RepresentById):
         This is used by PSA authnz, do not use directly.
         Prefer using the user manager.
         """
+        # Determine if we have app included, this is needed for post user create, not for user creation
+        app = kwargs.get('app', None)
+        if app is not None:
+            # Delete the argument for user creation
+            del kwargs['app']
         model = cls.user_model()
         instance = model(*args, **kwargs)
         if cls.get_users_by_email(instance.email).first():
@@ -6122,6 +6127,9 @@ class UserAuthnzToken(UserMixin, RepresentById):
         instance.set_random_password()
         cls.sa_session.add(instance)
         cls.sa_session.flush()
+        # Run post user creation scripts
+        if app is not None:
+            app.user_manager.post_user_create(instance)
         return instance
 
     @classmethod
