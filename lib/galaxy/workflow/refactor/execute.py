@@ -136,7 +136,7 @@ class WorkflowRefactorExecutor:
         if input_type in ["data", "dataset"]:
             module_type = "data_input"
         elif input_type in ["data_collection", "dataset_collection"]:
-            module_type == "data_collection_input"
+            module_type = "data_collection_input"
             tool_state["collection_type"] = action.collection_type
         else:
             if input_type not in InputParameterModule.POSSIBLE_PARAMETER_TYPES:
@@ -337,7 +337,7 @@ class WorkflowRefactorExecutor:
         )
         new_input_order_index = self._add_input_get_order_index(input_action, execution)
 
-        for order_index, tool_input, prefixed_name in target_tool_inputs:
+        for order_index, _tool_input, prefixed_name in target_tool_inputs:
             connect_input = InputReferenceByOrderIndex(order_index=order_index, input_name=prefixed_name)
             connect_action = ConnectAction(
                 action_type="connect",

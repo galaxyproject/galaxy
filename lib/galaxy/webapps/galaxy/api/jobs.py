@@ -31,6 +31,7 @@ from galaxy.managers.jobs import (
     summarize_job_parameters,
     view_show_job,
 )
+from galaxy.model import Job
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.web import (
     expose_api,
@@ -127,9 +128,9 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
         user_details = kwd.get('user_details', False)
 
         if is_admin:
-            query = trans.sa_session.query(trans.app.model.Job)
+            query = trans.sa_session.query(Job)
         else:
-            query = trans.sa_session.query(trans.app.model.Job).filter(trans.app.model.Job.user == trans.user)
+            query = trans.sa_session.query(Job).filter(Job.table.c.user_id == trans.user.id)
 
         def build_and_apply_filters(query, objects, filter_func):
             if objects is not None:
@@ -142,27 +143,27 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
                     query = query.filter(or_(*t))
             return query
 
-        query = build_and_apply_filters(query, state, lambda s: trans.app.model.Job.state == s)
+        query = build_and_apply_filters(query, state, lambda s: Job.table.c.state == s)
 
-        query = build_and_apply_filters(query, kwd.get('tool_id', None), lambda t: trans.app.model.Job.tool_id == t)
-        query = build_and_apply_filters(query, kwd.get('tool_id_like', None), lambda t: trans.app.model.Job.tool_id.like(t))
+        query = build_and_apply_filters(query, kwd.get('tool_id', None), lambda t: Job.tool_id == t)
+        query = build_and_apply_filters(query, kwd.get('tool_id_like', None), lambda t: Job.tool_id.like(t))
 
-        query = build_and_apply_filters(query, kwd.get('date_range_min', None), lambda dmin: trans.app.model.Job.table.c.update_time >= dmin)
-        query = build_and_apply_filters(query, kwd.get('date_range_max', None), lambda dmax: trans.app.model.Job.table.c.update_time <= dmax)
+        query = build_and_apply_filters(query, kwd.get('date_range_min', None), lambda dmin: Job.table.c.update_time >= dmin)
+        query = build_and_apply_filters(query, kwd.get('date_range_max', None), lambda dmax: Job.table.c.update_time <= dmax)
 
         history_id = kwd.get('history_id', None)
         if history_id is not None:
             try:
                 decoded_history_id = self.decode_id(history_id)
-                query = query.filter(trans.app.model.Job.history_id == decoded_history_id)
+                query = query.filter(Job.table.c.history_id == decoded_history_id)
             except Exception:
                 raise exceptions.ObjectAttributeInvalidException()
 
         out = []
         if kwd.get('order_by') == 'create_time':
-            order_by = trans.app.model.Job.create_time.desc()
+            order_by = Job.table.c.create_time.desc()
         else:
-            order_by = trans.app.model.Job.update_time.desc()
+            order_by = Job.table.c.update_time.desc()
         for job in query.order_by(order_by).all():
             job_dict = job.to_dict('collection', system_details=is_admin)
             j = self.encode_all_ids(trans, job_dict, True)

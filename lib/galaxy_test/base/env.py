@@ -4,11 +4,12 @@ import fcntl
 import os
 import socket
 import struct
+from typing import Optional, Tuple
 
 DEFAULT_WEB_HOST = socket.gethostbyname('localhost')
 
 
-def setup_keep_outdir():
+def setup_keep_outdir() -> str:
     keep_outdir = os.environ.get('GALAXY_TEST_SAVE', '')
     if keep_outdir > '':
         try:
@@ -18,15 +19,18 @@ def setup_keep_outdir():
     return keep_outdir
 
 
-def target_url_parts():
+def target_url_parts() -> Tuple[str, Optional[str], str]:
     host = socket.gethostbyname(os.environ.get('GALAXY_TEST_HOST', DEFAULT_WEB_HOST))
     port = os.environ.get('GALAXY_TEST_PORT')
-    default_url = f"http://{host}:{port}"
+    if port:
+        default_url = f"http://{host}:{port}"
+    else:
+        default_url = f"http://{host}"
     url = os.environ.get('GALAXY_TEST_EXTERNAL', default_url)
     return host, port, url
 
 
-def get_ip_address(ifname):
+def get_ip_address(ifname: str) -> str:
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     return socket.inet_ntoa(fcntl.ioctl(
         s.fileno(),

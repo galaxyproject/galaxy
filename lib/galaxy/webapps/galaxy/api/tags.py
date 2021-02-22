@@ -3,42 +3,73 @@ API Controller providing Galaxy Tags
 """
 import logging
 
-from galaxy.exceptions import MessageException
+from fastapi import (
+    Body,
+    status,
+)
+# TODO: replace with Router after merging #11219
+from fastapi_utils.cbv import cbv
+from fastapi_utils.inferring_router import InferringRouter as APIRouter
+
+from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.tags import (
+    ItemTagsPayload,
+    TagsManager,
+)
 from galaxy.web import expose_api
-from galaxy.webapps.base.controller import BaseAPIController, UsesTagsMixin
+from galaxy.webapps.base.controller import BaseAPIController
+from . import (
+    Depends,
+    get_trans,
+)
 
 log = logging.getLogger(__name__)
 
+router = APIRouter(tags=['tags'])
 
-class TagsController(BaseAPIController, UsesTagsMixin):
+
+def get_tags_manager() -> TagsManager:
+    return TagsManager()  # TODO: remove/refactor after merging #11180
+
+
+@cbv(router)
+class FastAPITags:
+    manager: TagsManager = Depends(get_tags_manager)
+
+    @router.put(
+        '/api/tags',
+        summary="Apply a new set of tags to an item.",
+        status_code=status.HTTP_204_NO_CONTENT,
+    )
+    def update(
+        self,
+        trans: ProvidesUserContext = Depends(get_trans),
+        payload: ItemTagsPayload = Body(
+            ...,  # Required
+            title="Payload",
+            description="Request body containing the item and the tags to be assigned.",
+        ),
+    ):
+        """Replaces the tags associated with an item with the new ones specified in the payload.
+
+        - The previous tags will be __deleted__.
+        - If no tags are provided in the request body, the currently associated tags will also be __deleted__.
+        """
+        self.manager.update(trans, payload)
+
+
+class TagsController(BaseAPIController):
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.manager = TagsManager()
 
     # Retag an item. All previous tags are deleted and new tags are applied.
     @expose_api
-    def update(self, trans, payload, **kwd):
+    def update(self, trans: ProvidesUserContext, payload: dict, **kwd):
         """
         PUT /api/tags/
 
         Apply a new set of tags to an item; previous tags are deleted.
         """
-        item_id = payload.get("item_id")
-        item_class = payload.get("item_class")
-        item_tags = payload.get("item_tags")
-        if item_id is None:
-            raise MessageException("Please provide the item id (item_id).")
-        if item_class is None:
-            raise MessageException("Please provide the item class (item_class).")
-        if item_tags and len(item_tags) > 0:
-            item_tags = ",".join(item_tags)
-        item = self._get_item(trans, item_class, trans.security.decode_id(item_id))
-        user = trans.user
-        self.get_tag_handler(trans).delete_item_tags(user, item)
-        self.get_tag_handler(trans).apply_item_tags(user, item, item_tags)
-        trans.sa_session.flush()
-
-    def _get_item(self, trans, item_class_name, id):
-        """
-        Get an item based on type and id.
-        """
-        item_class = self.get_tag_handler(trans).item_tag_assoc_info[item_class_name].item_class
-        item = trans.sa_session.query(item_class).filter(item_class.id == id).first()
-        return item
+        self.manager.update(trans, ItemTagsPayload(**payload))

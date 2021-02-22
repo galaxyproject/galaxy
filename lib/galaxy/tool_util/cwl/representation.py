@@ -1,7 +1,6 @@
 """ This module is responsible for converting between Galaxy's tool
 input description and the CWL description for a job json. """
 
-import collections
 import json
 import logging
 import os
@@ -114,8 +113,8 @@ def type_representation_from_name(type_representation_name):
     for type_representation in TYPE_REPRESENTATIONS:
         if type_representation.name == type_representation_name:
             return type_representation
-
-    assert False
+    else:
+        raise ValueError(f"No type representation for {type_representation_name}")
 
 
 def type_descriptions_for_field_types(field_types):
@@ -210,7 +209,7 @@ def collection_wrapper_to_array(inputs_dir, wrapped_value):
 
 
 def collection_wrapper_to_record(inputs_dir, wrapped_value):
-    rval = collections.OrderedDict()
+    rval = {}
     for key, value in wrapped_value.items():
         rval[key] = dataset_wrapper_to_file_json(inputs_dir, value)
     return rval
@@ -343,7 +342,7 @@ def to_galaxy_parameters(tool, as_dict):
                 continue
 
             only_input = next(iter(input.inputs.values()))
-            for index, value in enumerate(as_dict_value):
+            for value in as_dict_value:
                 key = f"{input_name}_repeat_0|{only_input.name}"
                 galaxy_value = from_simple_value(only_input, value)
                 galaxy_request[key] = galaxy_value

@@ -10,7 +10,6 @@ import logging
 import os
 from collections import (
     namedtuple,
-    OrderedDict
 )
 from typing import Any, NamedTuple, Optional
 
@@ -460,7 +459,7 @@ def persist_extra_files(object_store, src_extra_files_path, primary_data):
     if src_extra_files_path and os.path.exists(src_extra_files_path):
         primary_data.dataset.create_extra_files_path()
         target_extra_files_path = primary_data.extra_files_path
-        for root, dirs, files in os.walk(src_extra_files_path):
+        for root, _dirs, files in os.walk(src_extra_files_path):
             extra_dir = os.path.join(target_extra_files_path, root.replace(src_extra_files_path, '', 1).lstrip(os.path.sep))
             extra_dir = os.path.normpath(extra_dir)
             for f in files:
@@ -517,7 +516,7 @@ def persist_target_to_export_store(target_dict, export_store, object_store, work
 
 
 def persist_elements_to_hdca(model_persistence_context, elements, hdca, collector=None):
-    filenames = OrderedDict()
+    filenames = {}
 
     def add_to_discovered_files(elements, parent_identifiers=None):
         parent_identifiers = parent_identifiers or []

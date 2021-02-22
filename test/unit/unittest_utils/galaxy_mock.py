@@ -170,6 +170,7 @@ class MockAppConfig(Bunch):
 
         # set by MockDir
         self.root = root
+        self.enable_tool_document_cache = False
         self.tool_cache_data_dir = os.path.join(root, 'tool_cache')
         self.delay_tool_initialization = True
         self.external_chown_script = None
@@ -220,7 +221,7 @@ class MockTrans:
         self.history = history
 
         self.request = Bunch(headers={}, body=None)
-        self.response = Bunch(headers={}, set_content_type=lambda i : None)
+        self.response = Bunch(headers={}, set_content_type=lambda i: None)
 
     def check_csrf_token(self, payload):
         pass

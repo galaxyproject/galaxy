@@ -818,11 +818,11 @@ class UtilityContainerManager:
         elif len(components_list) == 6:
             key_prior_installation_required = components_list[4]
             key_only_if_compiling_contained_td = components_list[5]
-        if (repository_name == key_name and
-                repository_owner == key_owner and
-                changeset_revision == key_changeset_revision and
-                prior_installation_required == key_prior_installation_required and
-                only_if_compiling_contained_td == key_only_if_compiling_contained_td):
+        if (repository_name == key_name
+                and repository_owner == key_owner
+                and changeset_revision == key_changeset_revision
+                and prior_installation_required == key_prior_installation_required
+                and only_if_compiling_contained_td == key_only_if_compiling_contained_td):
             return True
         return False
 

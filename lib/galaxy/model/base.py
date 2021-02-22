@@ -21,14 +21,15 @@ class ModelMapping(Bunch):
 
     def __init__(self, model_modules, engine):
         self.engine = engine
-        Session = sessionmaker(autoflush=False, autocommit=True)
-        versioned_session(Session)
-        context = scoped_session(Session)
+        SessionLocal = sessionmaker(autoflush=False, autocommit=True)
+        versioned_session(SessionLocal)
+        context = scoped_session(SessionLocal)
         # For backward compatibility with "context.current"
         # deprecated?
         context.current = context
-        self.context = context
-        self.session = context
+        self._SessionLocal = SessionLocal
+        self._session = context
+        self.local_session = None
 
         model_classes = {}
         for module in model_modules:
@@ -40,6 +41,27 @@ class ModelMapping(Bunch):
 
         context.remove()
         context.configure(bind=engine)
+
+    def set_local_session(self):
+        self.session = self._SessionLocal()
+
+    def dispose_local_session(self):
+        self.session = None
+
+    @property
+    def session(self):
+        return self.local_session or self._session
+
+    @session.setter
+    def session(self, session):
+        # For backward compatibility with "context.current"
+        if session:
+            session.current = session
+        self.local_session = session
+
+    @property
+    def context(self):
+        return self.session
 
     @property
     def Session(self):

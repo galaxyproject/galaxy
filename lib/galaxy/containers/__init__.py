@@ -242,25 +242,25 @@ class ContainerInterface(metaclass=ABCMeta):
     def _stringify_kwopt_list_of_kvpairs(self, flag, val):
         """
         """
-        l = []
+        kwopt_list = []
         if isinstance(val, list):
             # ['foo=bar', 'baz=quux']
-            l = val
+            kwopt_list = val
         else:
             # {'foo': 'bar', 'baz': 'quux'}
             for k, v in dict(val).items():
-                l.append(f'{k}={v}')
-        return self._stringify_kwopt_list(flag, l)
+                kwopt_list.append(f'{k}={v}')
+        return self._stringify_kwopt_list(flag, kwopt_list)
 
     def _stringify_kwopt_list_of_kovtrips(self, flag, val):
         """
         """
         if isinstance(val, str):
             return self._stringify_kwopt_string(flag, val)
-        l = []
+        kwopt_list = []
         for k, o, v in val:
-            l.append(f'{k}{o}{v}')
-        return self._stringify_kwopt_list(flag, l)
+            kwopt_list.append(f'{k}{o}{v}')
+        return self._stringify_kwopt_list(flag, kwopt_list)
 
     def _run_command(self, command, verbose=False):
         if verbose:
@@ -377,7 +377,7 @@ def _get_interface_modules():
     modules = import_submodules(sys.modules[__name__])
     for module in modules:
         module_names = [getattr(module, _) for _ in dir(module)]
-        classes = [_ for _ in module_names if inspect.isclass(_) and
-            not _ == ContainerInterface and issubclass(_, ContainerInterface)]
+        classes = [_ for _ in module_names if inspect.isclass(_)
+            and not _ == ContainerInterface and issubclass(_, ContainerInterface)]
         interfaces.extend(classes)
     return {x.container_type: x for x in interfaces}

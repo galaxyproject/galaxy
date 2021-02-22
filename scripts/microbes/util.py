@@ -39,7 +39,7 @@ class Region:
 
 class GenBankFeatureParser:
     """Parses Features from Single Locus GenBank file"""
-    def __init__(self, fh, features_list=[]):
+    def __init__(self, fh):
         self.fh = fh
         self.features = {}
         fh.seek(0)
@@ -63,12 +63,11 @@ class GenBankFeatureParser:
                     last_attr_name = None
                     fields = lstrip.split(None, 1)
                     last_feature_name = fields[0].strip()
-                    if not features_list or (features_list and last_feature_name in features_list):
-                        if last_feature_name not in self.features:
-                            self.features[last_feature_name] = []
-                        region = Region()
-                        region.set_coordinates_by_location(fields[1])
-                        self.features[last_feature_name].append(region)
+                    if last_feature_name not in self.features:
+                        self.features[last_feature_name] = []
+                    region = Region()
+                    region.set_coordinates_by_location(fields[1])
+                    self.features[last_feature_name].append(region)
                 else:
                     # add info to last known feature
                     line = line.strip()

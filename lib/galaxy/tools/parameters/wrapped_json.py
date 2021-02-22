@@ -100,10 +100,13 @@ def _json_wrap_input(input, value_wrapper, profile, handle_files="skip"):
         else:
             json_value = _cast_if_not_none(value_wrapper, bool, empty_to_none=input.optional)
     elif input_type == "select":
-        if input.multiple and packaging.version.parse(str(profile)) >= packaging.version.parse('20.05'):
-            json_value = [_ for _ in _cast_if_not_none(value_wrapper.value, list)]
-        else:
+        if packaging.version.parse(str(profile)) < packaging.version.parse('20.05'):
             json_value = _cast_if_not_none(value_wrapper, str)
+        else:
+            if input.multiple:
+                json_value = [str(_) for _ in _cast_if_not_none(value_wrapper.value, list)]
+            else:
+                json_value = _cast_if_not_none(value_wrapper.value, str)
     elif input_type == "data_column":
         # value is a SelectToolParameterWrapper()
         if input.multiple:

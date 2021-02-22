@@ -6,6 +6,7 @@ import _l from "utils/localization";
 import PopupMenu from "mvc/ui/popup-menu";
 import historyCopyDialog from "mvc/history/copy-dialog";
 import Webhooks from "mvc/webhooks";
+import { switchToBetaHistoryPanel } from "../../components/History/adapters/betaToggle";
 
 // ============================================================================
 var menu = [
@@ -165,8 +166,7 @@ var menu = [
         html: _l("Use Beta History Panel"),
         anon: false,
         func: function () {
-            sessionStorage.setItem("useBetaHistory", 1);
-            window.location.reload(false);
+            switchToBetaHistoryPanel();
         },
     },
 ];

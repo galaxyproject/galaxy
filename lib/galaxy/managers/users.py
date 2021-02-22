@@ -9,6 +9,7 @@ import time
 from datetime import datetime
 
 from markupsafe import escape
+from pydantic import BaseModel, Field
 from sqlalchemy import and_, desc, exc, func, true
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -46,6 +47,17 @@ you may want to notify an administrator.
 If you're having trouble using the link when clicking it from email client, you
 can also copy and paste it into your browser.
 """
+
+
+class UserModel(BaseModel):
+    """User in a transaction context."""
+    id: int = Field(title='ID', description='User ID')
+    username: str = Field(title='Username', description='User username')
+    email: str = Field(title='Email', description='User email')
+    active: bool = Field(title='Active', description='User is active')
+    deleted: bool = Field(title='Deleted', description='User is deleted')
+    last_password_change: datetime = Field(title='Last password change', description='')
+    model_class: str = Field(title='Model class', description='Database model class (User)')
 
 
 class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
@@ -213,6 +225,9 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         if self.by_email(email) is not None:
             raise exceptions.Conflict('Email must be unique', email=email)
 
+    def by_id(self, user_id):
+        return self.app.model.session.query(self.model_class).get(user_id)
+
     # ---- filters
     def by_email(self, email, filters=None, **kwargs):
         """
@@ -339,6 +354,15 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         """
         # TODO: seems like this should return the model
         return api_keys.ApiKeyManager(self.app).create_api_key(user)
+
+    def user_can_do_run_as(self, user) -> bool:
+        run_as_users = [u for u in self.app.config.get("api_allow_run_as", "").split(",") if u]
+        if not run_as_users:
+            return False
+        user_in_run_as_users = user and user.email in run_as_users
+        # Can do if explicitly in list or master_api_key supplied.
+        can_do_run_as = user_in_run_as_users or user.bootstrap_admin_user
+        return can_do_run_as
 
     # TODO: possibly move to ApiKeyManager
     def valid_api_key(self, user):
@@ -628,18 +652,18 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
         deletable.PurgableSerializerMixin.add_serializers(self)
 
         self.serializers.update({
-            'id'            : self.serialize_id,
-            'create_time'   : self.serialize_date,
-            'update_time'   : self.serialize_date,
-            'is_admin'      : lambda i, k, **c: self.user_manager.is_admin(i),
+            'id': self.serialize_id,
+            'create_time': self.serialize_date,
+            'update_time': self.serialize_date,
+            'is_admin': lambda i, k, **c: self.user_manager.is_admin(i),
 
-            'preferences'   : lambda i, k, **c: self.user_manager.preferences(i),
+            'preferences': lambda i, k, **c: self.user_manager.preferences(i),
 
-            'total_disk_usage' : lambda i, k, **c: float(i.total_disk_usage),
-            'quota_percent' : lambda i, k, **c: self.user_manager.quota(i),
-            'quota'         : lambda i, k, **c: self.user_manager.quota(i, total=True),
+            'total_disk_usage': lambda i, k, **c: float(i.total_disk_usage),
+            'quota_percent': lambda i, k, **c: self.user_manager.quota(i),
+            'quota': lambda i, k, **c: self.user_manager.quota(i, total=True),
 
-            'tags_used'     : lambda i, k, **c: self.user_manager.tags_used(i),
+            'tags_used': lambda i, k, **c: self.user_manager.tags_used(i),
         })
 
 
@@ -653,7 +677,7 @@ class UserDeserializer(base.ModelDeserializer):
     def add_deserializers(self):
         super().add_deserializers()
         self.deserializers.update({
-            'username'  : self.deserialize_username,
+            'username': self.deserialize_username,
         })
 
     def deserialize_username(self, item, key, username, trans=None, **context):
@@ -690,10 +714,10 @@ class CurrentUserSerializer(UserSerializer):
 
         # a very small subset of keys available
         values = {
-            'id'                    : None,
-            'total_disk_usage'      : float(usage),
-            'nice_total_disk_usage' : util.nice_size(usage),
-            'quota_percent'         : percent,
+            'id': None,
+            'total_disk_usage': float(usage),
+            'nice_total_disk_usage': util.nice_size(usage),
+            'quota_percent': percent,
         }
         serialized = {}
         for key in keys:
@@ -712,10 +736,10 @@ class AdminUserFilterParser(base.ModelFilterParser, deletable.PurgableFiltersMix
 
         # PRECONDITION: user making the query has been verified as an admin
         self.orm_filter_parsers.update({
-            'email'         : {'op': ('eq', 'contains', 'like')},
-            'username'      : {'op': ('eq', 'contains', 'like')},
-            'active'        : {'op': ('eq')},
-            'disk_usage'    : {'op': ('le', 'ge')}
+            'email': {'op': ('eq', 'contains', 'like')},
+            'username': {'op': ('eq', 'contains', 'like')},
+            'active': {'op': ('eq')},
+            'disk_usage': {'op': ('le', 'ge')}
         })
 
         self.fn_filter_parsers.update({})

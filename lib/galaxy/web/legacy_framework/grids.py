@@ -1,6 +1,5 @@
 import logging
 import math
-from collections import OrderedDict
 from json import dumps, loads
 from typing import Dict, List, Optional
 
@@ -457,7 +456,7 @@ class SharingStatusColumn(GridColumn):
 
     def get_accepted_filters(self):
         """ Returns a list of accepted filters for this column. """
-        accepted_filter_labels_and_vals = OrderedDict()
+        accepted_filter_labels_and_vals = {}
         accepted_filter_labels_and_vals["private"] = "private"
         accepted_filter_labels_and_vals["shared"] = "shared"
         accepted_filter_labels_and_vals["accessible"] = "accessible"
@@ -810,8 +809,8 @@ class Grid:
                                    use_panels=self.use_panels,
                                    use_hide_message=self.use_hide_message,
                                    advanced_search=self.advanced_search,
-                                   show_item_checkboxes=(self.show_item_checkboxes or
-                                                         kwargs.get('show_item_checkboxes', '') in ['True', 'true']),
+                                   show_item_checkboxes=(self.show_item_checkboxes
+                                                         or kwargs.get('show_item_checkboxes', '') in ['True', 'true']),
                                    # Pass back kwargs so that grid template can set and use args without
                                    # grid explicitly having to pass them.
                                    kwargs=kwargs)

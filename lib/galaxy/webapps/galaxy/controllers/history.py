@@ -1,5 +1,4 @@
 import logging
-from collections import OrderedDict
 
 from markupsafe import escape
 from sqlalchemy import (
@@ -475,9 +474,9 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         history = trans.sa_session.query(model.History).options(
             joinedload('active_datasets').joinedload('creating_job_associations').joinedload('job').joinedload('workflow_invocation_step').joinedload('workflow_invocation').joinedload('workflow'),
         ).get(id)
-        if not (history and ((history.user and trans.user and history.user.id == trans.user.id) or
-                             (trans.history and history.id == trans.history.id) or
-                             trans.user_is_admin)):
+        if not (history and ((history.user and trans.user and history.user.id == trans.user.id)
+                             or (trans.history and history.id == trans.history.id)
+                             or trans.user_is_admin)):
             return trans.show_error_message("Cannot display history structure.")
         # Resolve jobs and workflow invocations for the datasets in the history
         # items is filled with items (hdas, jobs, or workflows) that go at the
@@ -485,7 +484,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         items = []
         # First go through and group hdas by job, if there is no job they get
         # added directly to items
-        jobs = OrderedDict()
+        jobs = {}
         for hda in history.active_datasets:
             if hda.visible is False:
                 continue
@@ -509,7 +508,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 else:
                     jobs[job] = [(hda, None)]
         # Second, go through the jobs and connect to workflows
-        wf_invocations = OrderedDict()
+        wf_invocations = {}
         for job, hdas in jobs.items():
             # Job is attached to a workflow step, follow it to the
             # workflow_invocation and group
@@ -579,8 +578,8 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             if isinstance(exc, exceptions.ItemAccessibilityException):
                 error_msg = 'You do not have permission to view this history.'
             else:
-                error_msg = ('An error occurred getting the history data from the server. ' +
-                             'Please contact a Galaxy administrator if the problem persists.')
+                error_msg = ('An error occurred getting the history data from the server. '
+                             + 'Please contact a Galaxy administrator if the problem persists.')
             return trans.show_error_message(error_msg, use_panels=use_panels)
 
         return {
@@ -661,16 +660,16 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 for a in current_actions:
                     if a.action == action.action:
                         in_roles.add(a.role)
-                inputs.append({'type'      : 'select',
-                               'multiple'  : True,
-                               'optional'  : True,
+                inputs.append({'type': 'select',
+                               'multiple': True,
+                               'optional': True,
                                'individual': True,
-                               'name'      : action_key,
-                               'label'     : action.action,
-                               'help'      : action.description,
-                               'options'   : [(role.name, trans.security.encode_id(role.id)) for role in set(all_roles)],
-                               'value'     : [trans.security.encode_id(role.id) for role in in_roles]})
-            return {'title'  : 'Change default dataset permissions for history \'%s\'' % history.name, 'inputs' : inputs}
+                               'name': action_key,
+                               'label': action.action,
+                               'help': action.description,
+                               'options': [(role.name, trans.security.encode_id(role.id)) for role in set(all_roles)],
+                               'value': [trans.security.encode_id(role.id) for role in in_roles]})
+            return {'title': 'Change default dataset permissions for history \'%s\'' % history.name, 'inputs': inputs}
         else:
             permissions = {}
             for action_key, action in trans.app.model.Dataset.permitted_actions.items():
@@ -1152,11 +1151,11 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 histories.append(history)
         if trans.request.method == 'GET':
             return {
-                'title'  : 'Change history name(s)',
-                'inputs' : [{
-                    'name'  : 'name_%i' % i,
-                    'label' : 'Current: %s' % h.name,
-                    'value' : h.name
+                'title': 'Change history name(s)',
+                'inputs': [{
+                    'name': 'name_%i' % i,
+                    'label': 'Current: %s' % h.name,
+                    'value': h.name
                 } for i, h in enumerate(histories)]
             }
         else:
@@ -1208,7 +1207,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             trans.set_history(history)
             return self.history_data(trans, history)
         except exceptions.MessageException as msg_exc:
-            trans.response.status = msg_exc.err_code.code
+            trans.response.status = msg_exc.status_code
             return {'err_msg': msg_exc.err_msg, 'err_code': msg_exc.err_code.code}
 
     @web.json

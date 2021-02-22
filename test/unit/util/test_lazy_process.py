@@ -18,7 +18,7 @@ def test_lazy_process():
     assert lazy_process.process.poll() is None
     lazy_process.shutdown()
     ret_val = None
-    for i in range(10):
+    for _ in range(10):
         ret_val = lazy_process.process.poll()
         if ret_val is not None:
             break

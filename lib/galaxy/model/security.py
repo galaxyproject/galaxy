@@ -1211,21 +1211,20 @@ class GalaxyRBACAgent(RBACAgent):
                     permissions[role_assoc.action] = [role_assoc.role]
         self.set_all_library_permissions(trans, target_library_item, permissions)
         if user:
-            item_class = None
             for item_class, permission_class in self.library_item_assocs:
                 if isinstance(target_library_item, item_class):
+                    found_permission_class = permission_class
                     break
-            if item_class:
-                # Make sure user's private role is included
-                private_role = self.model.security_agent.get_private_user_role(user)
-                for action in self.permitted_actions.values():
-                    if not permission_class.filter_by(role_id=private_role.id, action=action.action).first():
-                        lp = permission_class(action.action, target_library_item, private_role)
-                        self.sa_session.add(lp)
-                        self.sa_session.flush()
             else:
                 raise Exception('Invalid class (%s) specified for target_library_item (%s)' %
                                 (target_library_item.__class__, target_library_item.__class__.__name__))
+            # Make sure user's private role is included
+            private_role = self.model.security_agent.get_private_user_role(user)
+            for action in self.permitted_actions.values():
+                if not found_permission_class.filter_by(role_id=private_role.id, action=action.action).first():
+                    lp = found_permission_class(action.action, target_library_item, private_role)
+                    self.sa_session.add(lp)
+                    self.sa_session.flush()
 
     def get_permitted_libraries(self, trans, user, actions):
         """

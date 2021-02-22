@@ -4,6 +4,8 @@ are encapsulated here.
 """
 
 import logging
+from threading import local
+from typing import Optional
 
 from sqlalchemy import (
     and_,
@@ -38,7 +40,12 @@ from sqlalchemy.types import BigInteger
 
 from galaxy import model
 from galaxy.model.base import ModelMapping
-from galaxy.model.custom_types import JSONType, MetadataType, TrimmedString, UUIDType
+from galaxy.model.custom_types import (
+    JSONType,
+    MetadataType,
+    TrimmedString,
+    UUIDType,
+)
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
 from galaxy.model.security import GalaxyRBACAgent
@@ -187,7 +194,7 @@ model.DynamicTool.table = Table(
     Column("tool_directory", Unicode(255)),
     Column("hidden", Boolean, default=True),
     Column("active", Boolean, default=True),
-    Column("value", JSONType()),
+    Column("value", JSONType),
 )
 
 
@@ -233,7 +240,7 @@ model.HistoryDatasetAssociation.table = Table(
     Column("peek", TEXT, key="_peek"),
     Column("tool_version", TEXT),
     Column("extension", TrimmedString(64)),
-    Column("metadata", MetadataType(), key="_metadata"),
+    Column("metadata", MetadataType, key="_metadata"),
     Column("parent_id", Integer, ForeignKey("history_dataset_association.id"), nullable=True),
     Column("designation", TrimmedString(255)),
     Column("deleted", Boolean, index=True, default=False),
@@ -256,7 +263,7 @@ model.HistoryDatasetAssociationHistory.table = Table(
     Column("version", Integer),
     Column("name", TrimmedString(255)),
     Column("extension", TrimmedString(64)),
-    Column("metadata", MetadataType(), key="_metadata"),
+    Column("metadata", MetadataType, key="_metadata"),
     Column("extended_metadata_id", Integer, ForeignKey("extended_metadata.id"), index=True),
 )
 
@@ -511,7 +518,7 @@ model.LibraryDatasetDatasetAssociation.table = Table(
     Column("peek", TEXT, key="_peek"),
     Column("tool_version", TEXT),
     Column("extension", TrimmedString(64)),
-    Column("metadata", MetadataType(), key="_metadata"),
+    Column("metadata", MetadataType, key="_metadata"),
     Column("parent_id", Integer, ForeignKey("library_dataset_dataset_association.id"), nullable=True),
     Column("designation", TrimmedString(255)),
     Column("deleted", Boolean, index=True, default=False),
@@ -1219,9 +1226,9 @@ model.FormDefinition.table = Table(
     Column("name", TrimmedString(255), nullable=False),
     Column("desc", TEXT),
     Column("form_definition_current_id", Integer, ForeignKey("form_definition_current.id", use_alter=True), index=True, nullable=False),
-    Column("fields", JSONType()),
+    Column("fields", JSONType),
     Column("type", TrimmedString(255), index=True),
-    Column("layout", JSONType()))
+    Column("layout", JSONType))
 
 model.FormValues.table = Table(
     "form_values", metadata,
@@ -1229,7 +1236,7 @@ model.FormValues.table = Table(
     Column("create_time", DateTime, default=now),
     Column("update_time", DateTime, default=now, onupdate=now),
     Column("form_definition_id", Integer, ForeignKey("form_definition.id"), index=True),
-    Column("content", JSONType()))
+    Column("content", JSONType))
 
 model.Page.table = Table(
     "page", metadata,
@@ -1723,24 +1730,24 @@ simple_mapping(model.HistoryDatasetAssociation,
         primaryjoin=(model.Dataset.table.c.id == model.HistoryDatasetAssociation.table.c.dataset_id), lazy=False),
     # .history defined in History mapper
     copied_from_history_dataset_association=relation(model.HistoryDatasetAssociation,
-        primaryjoin=(model.HistoryDatasetAssociation.table.c.copied_from_history_dataset_association_id ==
-                     model.HistoryDatasetAssociation.table.c.id),
+        primaryjoin=(model.HistoryDatasetAssociation.table.c.copied_from_history_dataset_association_id
+                     == model.HistoryDatasetAssociation.table.c.id),
         remote_side=[model.HistoryDatasetAssociation.table.c.id],
         uselist=False),
     copied_to_history_dataset_associations=relation(model.HistoryDatasetAssociation,
-        primaryjoin=(model.HistoryDatasetAssociation.table.c.copied_from_history_dataset_association_id ==
-                     model.HistoryDatasetAssociation.table.c.id)),
+        primaryjoin=(model.HistoryDatasetAssociation.table.c.copied_from_history_dataset_association_id
+                     == model.HistoryDatasetAssociation.table.c.id)),
     copied_from_library_dataset_dataset_association=relation(
         model.LibraryDatasetDatasetAssociation,
-        primaryjoin=(model.HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id ==
-                     model.LibraryDatasetDatasetAssociation.table.c.id),
+        primaryjoin=(model.HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id
+                     == model.LibraryDatasetDatasetAssociation.table.c.id),
         uselist=False),
     copied_to_library_dataset_dataset_associations=relation(model.LibraryDatasetDatasetAssociation,
-        primaryjoin=(model.HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id ==
-                     model.LibraryDatasetDatasetAssociation.table.c.id)),
+        primaryjoin=(model.HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id
+                     == model.LibraryDatasetDatasetAssociation.table.c.id)),
     implicitly_converted_datasets=relation(model.ImplicitlyConvertedDatasetAssociation,
-        primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.hda_parent_id ==
-                     model.HistoryDatasetAssociation.table.c.id)),
+        primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.hda_parent_id
+                     == model.HistoryDatasetAssociation.table.c.id)),
     tags=relation(model.HistoryDatasetAssociationTagAssociation,
         order_by=model.HistoryDatasetAssociationTagAssociation.table.c.id,
         backref='history_tag_associations'),
@@ -1751,11 +1758,11 @@ simple_mapping(model.HistoryDatasetAssociation,
         order_by=model.HistoryDatasetAssociationRatingAssociation.table.c.id,
         backref="hdas"),
     extended_metadata=relation(model.ExtendedMetadata,
-        primaryjoin=(model.HistoryDatasetAssociation.table.c.extended_metadata_id ==
-                     model.ExtendedMetadata.table.c.id)),
+        primaryjoin=(model.HistoryDatasetAssociation.table.c.extended_metadata_id
+                     == model.ExtendedMetadata.table.c.id)),
     hidden_beneath_collection_instance=relation(model.HistoryDatasetCollectionAssociation,
-        primaryjoin=(model.HistoryDatasetAssociation.table.c.hidden_beneath_collection_instance_id ==
-                     model.HistoryDatasetCollectionAssociation.table.c.id),
+        primaryjoin=(model.HistoryDatasetAssociation.table.c.hidden_beneath_collection_instance_id
+                     == model.HistoryDatasetCollectionAssociation.table.c.id),
         uselist=False,
         backref="hidden_dataset_instances"),
     _metadata=deferred(model.HistoryDatasetAssociation.table.c._metadata)
@@ -1766,19 +1773,19 @@ simple_mapping(model.Dataset,
         primaryjoin=(model.Dataset.table.c.id == model.HistoryDatasetAssociation.table.c.dataset_id)),
     active_history_associations=relation(model.HistoryDatasetAssociation,
         primaryjoin=(
-            (model.Dataset.table.c.id == model.HistoryDatasetAssociation.table.c.dataset_id) &
-            (model.HistoryDatasetAssociation.table.c.deleted == false()) &
-            (model.HistoryDatasetAssociation.table.c.purged == false()))),
+            (model.Dataset.table.c.id == model.HistoryDatasetAssociation.table.c.dataset_id)
+            & (model.HistoryDatasetAssociation.table.c.deleted == false())
+            & (model.HistoryDatasetAssociation.table.c.purged == false()))),
     purged_history_associations=relation(model.HistoryDatasetAssociation,
         primaryjoin=(
-            (model.Dataset.table.c.id == model.HistoryDatasetAssociation.table.c.dataset_id) &
-            (model.HistoryDatasetAssociation.table.c.purged == true()))),
+            (model.Dataset.table.c.id == model.HistoryDatasetAssociation.table.c.dataset_id)
+            & (model.HistoryDatasetAssociation.table.c.purged == true()))),
     library_associations=relation(model.LibraryDatasetDatasetAssociation,
         primaryjoin=(model.Dataset.table.c.id == model.LibraryDatasetDatasetAssociation.table.c.dataset_id)),
     active_library_associations=relation(model.LibraryDatasetDatasetAssociation,
         primaryjoin=(
-            (model.Dataset.table.c.id == model.LibraryDatasetDatasetAssociation.table.c.dataset_id) &
-            (model.LibraryDatasetDatasetAssociation.table.c.deleted == false()))),
+            (model.Dataset.table.c.id == model.LibraryDatasetDatasetAssociation.table.c.dataset_id)
+            & (model.LibraryDatasetDatasetAssociation.table.c.deleted == false()))),
 )
 
 mapper(model.DatasetHash, model.DatasetHash.table, properties=dict(
@@ -1802,27 +1809,27 @@ mapper(model.HistoryDatasetAssociationDisplayAtAuthorization, model.HistoryDatas
 
 mapper(model.HistoryDatasetAssociationSubset, model.HistoryDatasetAssociationSubset.table, properties=dict(
     hda=relation(model.HistoryDatasetAssociation,
-        primaryjoin=(model.HistoryDatasetAssociationSubset.table.c.history_dataset_association_id ==
-                     model.HistoryDatasetAssociation.table.c.id)),
+        primaryjoin=(model.HistoryDatasetAssociationSubset.table.c.history_dataset_association_id
+                     == model.HistoryDatasetAssociation.table.c.id)),
     subset=relation(model.HistoryDatasetAssociation,
-        primaryjoin=(model.HistoryDatasetAssociationSubset.table.c.history_dataset_association_subset_id ==
-                     model.HistoryDatasetAssociation.table.c.id))
+        primaryjoin=(model.HistoryDatasetAssociationSubset.table.c.history_dataset_association_subset_id
+                     == model.HistoryDatasetAssociation.table.c.id))
 ))
 
 mapper(model.ImplicitlyConvertedDatasetAssociation, model.ImplicitlyConvertedDatasetAssociation.table, properties=dict(
     parent_hda=relation(model.HistoryDatasetAssociation,
-        primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.hda_parent_id ==
-                     model.HistoryDatasetAssociation.table.c.id)),
+        primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.hda_parent_id
+                     == model.HistoryDatasetAssociation.table.c.id)),
     parent_ldda=relation(model.LibraryDatasetDatasetAssociation,
-        primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.ldda_parent_id ==
-                     model.LibraryDatasetDatasetAssociation.table.c.id)),
+        primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.ldda_parent_id
+                     == model.LibraryDatasetDatasetAssociation.table.c.id)),
     dataset_ldda=relation(model.LibraryDatasetDatasetAssociation,
-        primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.ldda_id ==
-                     model.LibraryDatasetDatasetAssociation.table.c.id),
+        primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.ldda_id
+                     == model.LibraryDatasetDatasetAssociation.table.c.id),
         backref="implicitly_converted_parent_datasets"),
     dataset=relation(model.HistoryDatasetAssociation,
-        primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.hda_id ==
-                     model.HistoryDatasetAssociation.table.c.id),
+        primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.hda_id
+                     == model.HistoryDatasetAssociation.table.c.id),
         backref="implicitly_converted_parent_datasets")
 ))
 
@@ -1836,31 +1843,31 @@ mapper(model.History, model.History.table, properties=dict(
         order_by=desc(model.JobExportHistoryArchive.table.c.id)),
     active_datasets=relation(model.HistoryDatasetAssociation,
         primaryjoin=(
-            (model.HistoryDatasetAssociation.table.c.history_id == model.History.table.c.id) &
-            not_(model.HistoryDatasetAssociation.table.c.deleted)
+            (model.HistoryDatasetAssociation.table.c.history_id == model.History.table.c.id)
+            & not_(model.HistoryDatasetAssociation.table.c.deleted)
         ),
         order_by=asc(model.HistoryDatasetAssociation.table.c.hid),
         viewonly=True),
     active_dataset_collections=relation(model.HistoryDatasetCollectionAssociation,
         primaryjoin=(
-            (model.HistoryDatasetCollectionAssociation.table.c.history_id == model.History.table.c.id) &
-            not_(model.HistoryDatasetCollectionAssociation.table.c.deleted)
+            (model.HistoryDatasetCollectionAssociation.table.c.history_id == model.History.table.c.id)
+            & not_(model.HistoryDatasetCollectionAssociation.table.c.deleted)
         ),
         order_by=asc(model.HistoryDatasetCollectionAssociation.table.c.hid),
         viewonly=True),
     visible_datasets=relation(model.HistoryDatasetAssociation,
         primaryjoin=(
-            (model.HistoryDatasetAssociation.table.c.history_id == model.History.table.c.id) &
-            not_(model.HistoryDatasetAssociation.table.c.deleted) &
-            model.HistoryDatasetAssociation.table.c.visible
+            (model.HistoryDatasetAssociation.table.c.history_id == model.History.table.c.id)
+            & not_(model.HistoryDatasetAssociation.table.c.deleted)
+            & model.HistoryDatasetAssociation.table.c.visible
         ),
         order_by=asc(model.HistoryDatasetAssociation.table.c.hid),
         viewonly=True),
     visible_dataset_collections=relation(model.HistoryDatasetCollectionAssociation,
         primaryjoin=(
-            (model.HistoryDatasetCollectionAssociation.table.c.history_id == model.History.table.c.id) &
-            not_(model.HistoryDatasetCollectionAssociation.table.c.deleted) &
-            model.HistoryDatasetCollectionAssociation.table.c.visible
+            (model.HistoryDatasetCollectionAssociation.table.c.history_id == model.History.table.c.id)
+            & not_(model.HistoryDatasetCollectionAssociation.table.c.deleted)
+            & model.HistoryDatasetCollectionAssociation.table.c.visible
         ),
         order_by=asc(model.HistoryDatasetCollectionAssociation.table.c.hid),
         viewonly=True),
@@ -1899,8 +1906,8 @@ mapper(model.User, model.User.table, properties=dict(
         order_by=desc(model.History.table.c.update_time)),
     active_histories=relation(model.History,
         primaryjoin=(
-            (model.History.table.c.user_id == model.User.table.c.id) &
-            (not_(model.History.table.c.deleted))
+            (model.History.table.c.user_id == model.User.table.c.id)
+            & (not_(model.History.table.c.deleted))
         ),
         order_by=desc(model.History.table.c.update_time)),
 
@@ -1908,9 +1915,9 @@ mapper(model.User, model.User.table, properties=dict(
         order_by=desc(model.GalaxySession.table.c.update_time)),
     stored_workflow_menu_entries=relation(model.StoredWorkflowMenuEntry,
         primaryjoin=(
-            (model.StoredWorkflowMenuEntry.table.c.user_id == model.User.table.c.id) &
-            (model.StoredWorkflowMenuEntry.table.c.stored_workflow_id == model.StoredWorkflow.table.c.id) &
-            not_(model.StoredWorkflow.table.c.deleted)
+            (model.StoredWorkflowMenuEntry.table.c.user_id == model.User.table.c.id)
+            & (model.StoredWorkflowMenuEntry.table.c.stored_workflow_id == model.StoredWorkflow.table.c.id)
+            & not_(model.StoredWorkflow.table.c.deleted)
         ),
         backref="user",
         cascade="all, delete-orphan",
@@ -1967,9 +1974,9 @@ mapper(model.UserRoleAssociation, model.UserRoleAssociation.table, properties=di
         model.User,
         backref="non_private_roles",
         primaryjoin=(
-            (model.User.table.c.id == model.UserRoleAssociation.table.c.user_id) &
-            (model.UserRoleAssociation.table.c.role_id == model.Role.table.c.id) &
-            not_(model.Role.table.c.name == model.User.table.c.email))
+            (model.User.table.c.id == model.UserRoleAssociation.table.c.user_id)
+            & (model.UserRoleAssociation.table.c.role_id == model.Role.table.c.id)
+            & not_(model.Role.table.c.name == model.User.table.c.email))
     ),
     role=relation(model.Role)
 ))
@@ -2043,8 +2050,8 @@ mapper(model.ExtendedMetadataIndex, model.ExtendedMetadataIndex.table, propertie
 mapper(model.LibraryInfoAssociation, model.LibraryInfoAssociation.table, properties=dict(
     library=relation(model.Library,
         primaryjoin=(
-            (model.LibraryInfoAssociation.table.c.library_id == model.Library.table.c.id) &
-            (not_(model.LibraryInfoAssociation.table.c.deleted))
+            (model.LibraryInfoAssociation.table.c.library_id == model.Library.table.c.id)
+            & (not_(model.LibraryInfoAssociation.table.c.deleted))
         ),
         backref="info_association"),
     template=relation(model.FormDefinition,
@@ -2062,8 +2069,8 @@ mapper(model.LibraryFolder, model.LibraryFolder.table, properties=dict(
             remote_side=[model.LibraryFolder.table.c.id])),
     active_folders=relation(model.LibraryFolder,
         primaryjoin=(
-            (model.LibraryFolder.table.c.parent_id == model.LibraryFolder.table.c.id) &
-            (not_(model.LibraryFolder.table.c.deleted))
+            (model.LibraryFolder.table.c.parent_id == model.LibraryFolder.table.c.id)
+            & (not_(model.LibraryFolder.table.c.deleted))
         ),
         order_by=asc(model.LibraryFolder.table.c.name),
         # """sqlalchemy.exc.ArgumentError: Error creating eager relationship 'active_folders'
@@ -2078,8 +2085,8 @@ mapper(model.LibraryFolder, model.LibraryFolder.table, properties=dict(
         viewonly=True),
     active_datasets=relation(model.LibraryDataset,
         primaryjoin=(
-            (model.LibraryDataset.table.c.folder_id == model.LibraryFolder.table.c.id) &
-            (not_(model.LibraryDataset.table.c.deleted))
+            (model.LibraryDataset.table.c.folder_id == model.LibraryFolder.table.c.id)
+            & (not_(model.LibraryDataset.table.c.deleted))
         ),
         order_by=asc(model.LibraryDataset.table.c._name),
         lazy=True,
@@ -2089,8 +2096,8 @@ mapper(model.LibraryFolder, model.LibraryFolder.table, properties=dict(
 mapper(model.LibraryFolderInfoAssociation, model.LibraryFolderInfoAssociation.table, properties=dict(
     folder=relation(model.LibraryFolder,
         primaryjoin=(
-            (model.LibraryFolderInfoAssociation.table.c.library_folder_id == model.LibraryFolder.table.c.id) &
-            (not_(model.LibraryFolderInfoAssociation.table.c.deleted))
+            (model.LibraryFolderInfoAssociation.table.c.library_folder_id == model.LibraryFolder.table.c.id)
+            & (not_(model.LibraryFolderInfoAssociation.table.c.deleted))
         ),
         backref="info_association"),
     template=relation(model.FormDefinition,
@@ -2107,9 +2114,9 @@ mapper(model.LibraryDataset, model.LibraryDataset.table, properties=dict(
     expired_datasets=relation(model.LibraryDatasetDatasetAssociation,
         foreign_keys=[model.LibraryDataset.table.c.id, model.LibraryDataset.table.c.library_dataset_dataset_association_id],
         primaryjoin=(
-            (model.LibraryDataset.table.c.id == model.LibraryDatasetDatasetAssociation.table.c.library_dataset_id) &
-            (not_(model.LibraryDataset.table.c.library_dataset_dataset_association_id ==
-                  model.LibraryDatasetDatasetAssociation.table.c.id))
+            (model.LibraryDataset.table.c.id == model.LibraryDatasetDatasetAssociation.table.c.library_dataset_id)
+            & (not_(model.LibraryDataset.table.c.library_dataset_dataset_association_id
+                  == model.LibraryDatasetDatasetAssociation.table.c.id))
         ),
         viewonly=True,
         uselist=True)
@@ -2122,23 +2129,23 @@ mapper(model.LibraryDatasetDatasetAssociation, model.LibraryDatasetDatasetAssoci
     # user=relation( model.User.mapper ),
     user=relation(model.User),
     copied_from_library_dataset_dataset_association=relation(model.LibraryDatasetDatasetAssociation,
-        primaryjoin=(model.LibraryDatasetDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id ==
-                     model.LibraryDatasetDatasetAssociation.table.c.id),
+        primaryjoin=(model.LibraryDatasetDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id
+                     == model.LibraryDatasetDatasetAssociation.table.c.id),
         remote_side=[model.LibraryDatasetDatasetAssociation.table.c.id],
         uselist=False),
     copied_to_library_dataset_dataset_associations=relation(model.LibraryDatasetDatasetAssociation,
-        primaryjoin=(model.LibraryDatasetDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id ==
-                     model.LibraryDatasetDatasetAssociation.table.c.id)),
+        primaryjoin=(model.LibraryDatasetDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id
+                     == model.LibraryDatasetDatasetAssociation.table.c.id)),
     copied_from_history_dataset_association=relation(model.HistoryDatasetAssociation,
-        primaryjoin=(model.LibraryDatasetDatasetAssociation.table.c.copied_from_history_dataset_association_id ==
-                     model.HistoryDatasetAssociation.table.c.id),
+        primaryjoin=(model.LibraryDatasetDatasetAssociation.table.c.copied_from_history_dataset_association_id
+                     == model.HistoryDatasetAssociation.table.c.id),
         uselist=False),
     copied_to_history_dataset_associations=relation(model.HistoryDatasetAssociation,
-        primaryjoin=(model.HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id ==
-                     model.LibraryDatasetDatasetAssociation.table.c.id)),
+        primaryjoin=(model.HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id
+                     == model.LibraryDatasetDatasetAssociation.table.c.id)),
     implicitly_converted_datasets=relation(model.ImplicitlyConvertedDatasetAssociation,
-        primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.ldda_parent_id ==
-                     model.LibraryDatasetDatasetAssociation.table.c.id)),
+        primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.ldda_parent_id
+                     == model.LibraryDatasetDatasetAssociation.table.c.id)),
     tags=relation(model.LibraryDatasetDatasetAssociationTagAssociation,
                   order_by=model.LibraryDatasetDatasetAssociationTagAssociation.table.c.id,
                   backref='history_tag_associations'),
@@ -2151,9 +2158,9 @@ mapper(model.LibraryDatasetDatasetAssociation, model.LibraryDatasetDatasetAssoci
 mapper(model.LibraryDatasetDatasetInfoAssociation, model.LibraryDatasetDatasetInfoAssociation.table, properties=dict(
     library_dataset_dataset_association=relation(model.LibraryDatasetDatasetAssociation,
         primaryjoin=(
-            (model.LibraryDatasetDatasetInfoAssociation.table.c.library_dataset_dataset_association_id ==
-             model.LibraryDatasetDatasetAssociation.table.c.id) &
-            (not_(model.LibraryDatasetDatasetInfoAssociation.table.c.deleted))
+            (model.LibraryDatasetDatasetInfoAssociation.table.c.library_dataset_dataset_association_id
+             == model.LibraryDatasetDatasetAssociation.table.c.id)
+            & (not_(model.LibraryDatasetDatasetInfoAssociation.table.c.deleted))
         ),
         backref="info_association"),
     template=relation(model.FormDefinition,
@@ -2230,8 +2237,8 @@ simple_mapping(model.TaskMetricNumeric,
 
 simple_mapping(model.ImplicitlyCreatedDatasetCollectionInput,
     input_dataset_collection=relation(model.HistoryDatasetCollectionAssociation,
-        primaryjoin=(model.HistoryDatasetCollectionAssociation.table.c.id ==
-                     model.ImplicitlyCreatedDatasetCollectionInput.table.c.input_dataset_collection_id),
+        primaryjoin=(model.HistoryDatasetCollectionAssociation.table.c.id
+                     == model.ImplicitlyCreatedDatasetCollectionInput.table.c.input_dataset_collection_id),
         # backref="implicitly_created_dataset_collections",
     ),
 )
@@ -2329,16 +2336,16 @@ simple_mapping(model.HistoryDatasetCollectionAssociation,
     history=relation(model.History,
         backref='dataset_collections'),
     copied_from_history_dataset_collection_association=relation(model.HistoryDatasetCollectionAssociation,
-        primaryjoin=(model.HistoryDatasetCollectionAssociation.table.c.copied_from_history_dataset_collection_association_id ==
-                     model.HistoryDatasetCollectionAssociation.table.c.id),
+        primaryjoin=(model.HistoryDatasetCollectionAssociation.table.c.copied_from_history_dataset_collection_association_id
+                     == model.HistoryDatasetCollectionAssociation.table.c.id),
         remote_side=[model.HistoryDatasetCollectionAssociation.table.c.id],
         uselist=False),
     copied_to_history_dataset_collection_associations=relation(model.HistoryDatasetCollectionAssociation,
-        primaryjoin=(model.HistoryDatasetCollectionAssociation.table.c.copied_from_history_dataset_collection_association_id ==
-                     model.HistoryDatasetCollectionAssociation.table.c.id)),
+        primaryjoin=(model.HistoryDatasetCollectionAssociation.table.c.copied_from_history_dataset_collection_association_id
+                     == model.HistoryDatasetCollectionAssociation.table.c.id)),
     implicit_input_collections=relation(model.ImplicitlyCreatedDatasetCollectionInput,
-        primaryjoin=(model.HistoryDatasetCollectionAssociation.table.c.id ==
-                     model.ImplicitlyCreatedDatasetCollectionInput.table.c.dataset_collection_id),
+        primaryjoin=(model.HistoryDatasetCollectionAssociation.table.c.id
+                     == model.ImplicitlyCreatedDatasetCollectionInput.table.c.dataset_collection_id),
         backref="dataset_collection",
     ),
     implicit_collection_jobs=relation(
@@ -2865,9 +2872,15 @@ def _workflow_invocation_update(self):
 model.WorkflowInvocation.update = _workflow_invocation_update  # type: ignore
 
 
+class GalaxyModelMapping(ModelMapping):
+    security_agent: GalaxyRBACAgent
+    thread_local_log: Optional[local]
+    create_tables: bool
+
+
 def init(file_path, url, engine_options=None, create_tables=False, map_install_models=False,
         database_query_profiling_proxy=False, object_store=None, trace_logger=None, use_pbkdf2=True,
-        slow_query_log_threshold=0, thread_local_log=None, log_query_counts=False):
+        slow_query_log_threshold=0, thread_local_log: Optional[local] = None, log_query_counts=False) -> GalaxyModelMapping:
     """Connect mappings to the database"""
     if engine_options is None:
         engine_options = {}
@@ -2890,7 +2903,7 @@ def init(file_path, url, engine_options=None, create_tables=False, map_install_m
         galaxy.model.tool_shed_install.mapping.init(url=url, engine_options=engine_options, create_tables=create_tables)
         model_modules.append(tool_shed_install)
 
-    result = ModelMapping(model_modules, engine=engine)
+    result = GalaxyModelMapping(model_modules, engine=engine)
 
     # Create tables if needed
     if create_tables:

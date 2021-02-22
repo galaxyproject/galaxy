@@ -15,13 +15,13 @@ import galaxy.model
 from galaxy import util
 from galaxy.tool_util.parser import get_input_source as ensure_input_source
 from galaxy.util import (
+    dbkeys,
     sanitize_param,
     string_as_bool,
     string_as_bool_or_none,
     unicodify,
     XML,
 )
-from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.rules_dsl import RuleSet
@@ -38,7 +38,12 @@ from .sanitize import ToolParameterSanitizer
 
 log = logging.getLogger(__name__)
 
-workflow_building_modes = Bunch(DISABLED=False, ENABLED=True, USE_HISTORY=1)
+
+class workflow_building_modes:
+    DISABLED = False
+    ENABLED = True
+    USE_HISTORY = 1
+
 
 WORKFLOW_PARAMETER_REGULAR_EXPRESSION = re.compile(r'\$\{.+?\}')
 
@@ -58,8 +63,8 @@ def contains_workflow_parameter(value, search=False):
 
 
 def is_runtime_value(value):
-    return isinstance(value, RuntimeValue) or (isinstance(value, dict) and
-        value.get("__class__") in ["RuntimeValue", "ConnectedValue"])
+    return isinstance(value, RuntimeValue) or (isinstance(value, dict)
+        and value.get("__class__") in ["RuntimeValue", "ConnectedValue"])
 
 
 def is_runtime_context(trans, other_values):
@@ -70,8 +75,8 @@ def is_runtime_context(trans, other_values):
             return True
         for v in util.listify(context_value):
             if isinstance(v, trans.app.model.HistoryDatasetAssociation) and \
-                    ((hasattr(v, 'state') and v.state != galaxy.model.Dataset.states.OK) or
-                    hasattr(v, 'implicit_conversion')):
+                    ((hasattr(v, 'state') and v.state != galaxy.model.Dataset.states.OK)
+                    or hasattr(v, 'implicit_conversion')):
                 return True
     return False
 
@@ -141,7 +146,6 @@ class ToolParameter(Dictifiable):
         self.name = self.__class__.parse_name(input_source)
         self.type = input_source.get("type")
         self.hidden = input_source.get_bool("hidden", False)
-        self.load_contents = int(input_source.get("load_contents", 0))
         self.refresh_on_change = input_source.get_bool("refresh_on_change", False)
         self.optional = input_source.parse_optional()
         self.is_dynamic = False
@@ -422,7 +426,7 @@ class IntegerToolParameter(TextToolParameter):
             raise err
 
     def get_initial_value(self, trans, other_values):
-        if self.value:
+        if self.value not in {None, ''}:
             return int(self.value)
         else:
             return None
@@ -1038,7 +1042,7 @@ class GenomeBuildParameter(SelectToolParameter):
 
     >>> # Create a mock transaction with 'hg17' as the current build
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch(app=None, history=Bunch(genome_build='hg17'), db_builds=util.read_dbnames(None))
+    >>> trans = Bunch(app=None, history=Bunch(genome_build='hg17'), db_builds=dbkeys.read_dbnames(None))
     >>> p = GenomeBuildParameter(None, XML('<param name="_name" type="genomebuild" value="hg17" />'))
     >>> print(p.name)
     _name
@@ -1092,7 +1096,7 @@ class GenomeBuildParameter(SelectToolParameter):
     def _get_dbkey_names(self, trans=None):
         if not self.tool:
             # Hack for unit tests, since we have no tool
-            return util.read_dbnames(None)
+            return dbkeys.read_dbnames(None)
         return self.tool.app.genome_builds.get_genome_build_names(trans=trans)
 
 
@@ -1358,6 +1362,7 @@ class ColumnListParameter(SelectToolParameter):
 
         value = other_values.get(self.name)
         if value is not None and value not in legal_values and self.is_file_empty(trans, other_values):
+            value = value if isinstance(value, list) else [value]
             legal_values.extend(value)
 
         return set(legal_values)
@@ -1388,7 +1393,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
     Creating a hierarchical select menu, which allows users to 'drill down' a tree-like set of options.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch(app=None, history=Bunch(genome_build='hg17'), db_builds=util.read_dbnames(None))
+    >>> trans = Bunch(app=None, history=Bunch(genome_build='hg17'), db_builds=dbkeys.read_dbnames(None))
     >>> p = DrillDownSelectToolParameter(None, XML(
     ... '''
     ... <param name="_name" type="drill_down" display="checkbox" hierarchy="recurse" multiple="true">
@@ -1838,6 +1843,7 @@ class DataToolParameter(BaseDataToolParameter):
     def __init__(self, tool, input_source, trans=None):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source, trans)
+        self.load_contents = int(input_source.get("load_contents", 0))
         # Add metadata validator
         if not input_source.get_bool('no_validation', False):
             self.validators.append(validation.MetadataValidator())

@@ -84,7 +84,7 @@ class JobManager:
     def stop(self, job, message=None):
         if not job.finished:
             job.mark_deleted(self.app.config.track_jobs_in_database)
-            self.app.model.context.current.flush()
+            self.app.model.session.flush()
             self.app.job_manager.stop(job, message=message)
             return True
         else:
@@ -610,7 +610,9 @@ def summarize_destination_params(trans, job):
     destination_params = {'Runner': job.job_runner_name,
                           'Runner Job ID': job.job_runner_external_id,
                           'Handler': job.handler}
-    destination_params.update(job.destination_params)
+    job_destination_params = job.destination_params
+    if job_destination_params:
+        destination_params.update(job_destination_params)
     return destination_params
 
 

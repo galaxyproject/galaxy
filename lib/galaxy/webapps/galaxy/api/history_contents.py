@@ -281,7 +281,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
     @expose_api_raw_anonymous
     def download_dataset_collection(self, trans, id, history_id=None, **kwd):
         """
-        GET /api/histories/{history_id}/contents/{id}/download
+        GET /api/histories/{history_id}/contents/dataset_collections/{id}/download
         GET /api/dataset_collection/{id}/download
 
         Download the content of a HistoryDatasetCollection as a tgz archive

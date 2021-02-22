@@ -14,7 +14,6 @@ import os.path
 import re
 import string
 import time
-from collections import OrderedDict
 from glob import glob
 from tempfile import NamedTemporaryFile
 from typing import List
@@ -256,7 +255,7 @@ class ToolDataTable:
         self.empty_field_values = {}
         self.allow_duplicate_entries = util.asbool(config_element.get('allow_duplicate_entries', True))
         self.here = filename and os.path.dirname(filename)
-        self.filenames = OrderedDict()
+        self.filenames = {}
         self.tool_data_path = tool_data_path
         self.tool_data_path_files = tool_data_path_files
         self.other_config_dict = other_config_dict or {}
@@ -264,7 +263,7 @@ class ToolDataTable:
         # increment this variable any time a new entry is added, or when the table is totally reloaded
         # This value has no external meaning, and does not represent an abstract version of the underlying data
         self._loaded_content_version = 1
-        self._load_info = ([config_element, tool_data_path], {'from_shed_config': from_shed_config, 'tool_data_path_files': self.tool_data_path_files, 'other_config_dict': other_config_dict})
+        self._load_info = ([config_element, tool_data_path], {'from_shed_config': from_shed_config, 'tool_data_path_files': self.tool_data_path_files, 'other_config_dict': other_config_dict, 'filename': filename})
         self._merged_load_info = []
 
     def _update_version(self, version=None):
@@ -395,7 +394,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                 filename = os.path.join(tool_data_path, filename)
             if self.tool_data_path_files.exists(filename):
                 found = True
-            else:
+            elif not os.path.isabs(filename):
                 # Since the path attribute can include a hard-coded path to a specific directory
                 # (e.g., <file path="tool-data/cg_crr_files.loc" />) which may not be the same value
                 # as self.tool_data_path, we'll parse the path to get the filename and see if it is

@@ -451,7 +451,7 @@ class UploadConfig:
         self.registry = registry
         self.working_directory = working_directory
         self.allow_failed_collections = allow_failed_collections
-        self.check_content = request.get("check_content" , True)
+        self.check_content = request.get("check_content", True)
         self.to_posix_lines = request.get("to_posix_lines", False)
         self.space_to_tab = request.get("space_to_tab", False)
         self.auto_decompress = request.get("auto_decompress", False)

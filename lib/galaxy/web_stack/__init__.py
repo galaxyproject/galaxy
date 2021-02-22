@@ -573,7 +573,7 @@ class WeblessApplicationStack(ApplicationStack):
         return (self.config.server_name,) if self.in_pool(pool_name) else None
 
 
-def application_stack_class():
+def application_stack_class() -> Type[ApplicationStack]:
     """Returns the correct ApplicationStack class for the stack under which
     this Galaxy process is running.
     """
@@ -587,7 +587,7 @@ def application_stack_class():
     return WeblessApplicationStack
 
 
-def application_stack_instance(app=None, config=None):
+def application_stack_instance(app=None, config=None) -> ApplicationStack:
     stack_class = application_stack_class()
     return stack_class(app=app, config=config)
 

@@ -31,11 +31,11 @@ class JsonPlugin(ErrorPlugin):
         path = os.path.join(self.report_directory, str(dataset.id))
         with open(path, 'w') as handle:
             data = {
-                'info' : job.info,
-                'id' : job.id,
-                'command_line' : job.command_line,
+                'info': job.info,
+                'id': job.id,
+                'command_line': job.command_line,
                 'destination_id': job.destination_id,
-                'stderr' : job.stderr,
+                'stderr': job.stderr,
                 'traceback': job.traceback,
                 'exit_code': job.exit_code,
                 'stdout': job.stdout,

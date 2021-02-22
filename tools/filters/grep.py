@@ -70,14 +70,14 @@ def main():
 
     # replace if input has been escaped, remove sq
     # characters that are allowed but need to be escaped
-    mapped_chars = {'>' : '__gt__',
-                    '<' : '__lt__',
+    mapped_chars = {'>': '__gt__',
+                    '<': '__lt__',
                     '\'': '__sq__',
-                    '"' : '__dq__',
-                    '[' : '__ob__',
-                    ']' : '__cb__',
-                    '{' : '__oc__',
-                    '}' : '__cc__'}
+                    '"': '__dq__',
+                    '[': '__ob__',
+                    ']': '__cb__',
+                    '{': '__oc__',
+                    '}': '__cc__'}
 
     # with new sanitizing we only need to replace for single quote,
     # but this needs to remain for backwards compatibility

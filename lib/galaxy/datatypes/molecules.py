@@ -107,8 +107,8 @@ class SDF(GenericMolFile):
             if idx < 4:
                 continue
             elif idx == 4:
-                if len(line) != 39 or not(line.endswith(' V2000') or
-                        line.endswith(' V3000')):
+                if len(line) != 39 or not(line.endswith(' V2000')
+                        or line.endswith(' V3000')):
                     return False
             elif not m_end_found:
                 if line == 'M  END':

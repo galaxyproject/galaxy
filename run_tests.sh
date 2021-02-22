@@ -162,10 +162,6 @@ Extra options:
                        functional tests).
  --skip-venv           Do not create .venv (passes this flag to
                        common_startup.sh)
- --dockerize           Run tests in a pre-configured Docker container (must be
-                       first argument if present).
- --db <type>           For use with --dockerize, run tests using partially
-                       migrated 'postgres', 'mysql', or 'sqlite' databases.
  --external_url        External URL to use for Galaxy testing (only certain
                        tests).
  --external_master_key Master API key used to configure external tests.
@@ -270,74 +266,18 @@ exists() {
     type "$1" >/dev/null 2>/dev/null
 }
 
-DOCKER_DEFAULT_IMAGE='galaxy/testing-base:20.05.00'
-
 test_script="./scripts/functional_tests.py"
 report_file="run_functional_tests.html"
 coverage_arg=""
 xunit_report_file=""
 structured_data_report_file=""
+structured_data_html=0
 SKIP_CLIENT_BUILD=${GALAXY_SKIP_CLIENT_BUILD:-1}
 if [ "$SKIP_CLIENT_BUILD" = "1" ];
 then
     skip_client_build="--skip-client-build"
 else
     skip_client_build=""
-fi
-
-if [ "$1" = "--dockerize" ];
-then
-    shift
-    DOCKER_EXTRA_ARGS=${DOCKER_ARGS:-""}
-    DOCKER_RUN_EXTRA_ARGS=${DOCKER_RUN_EXTRA_ARGS:-""}
-    DOCKER_IMAGE=${DOCKER_IMAGE:-${DOCKER_DEFAULT_IMAGE}}
-    db_type="sqlite"
-    while [ $# -gt 0 ]; do
-        case "$1" in
-            --python3)
-                DOCKER_RUN_EXTRA_ARGS="${DOCKER_RUN_EXTRA_ARGS} -e GALAXY_VIRTUAL_ENV=/galaxy_venv3"
-                shift 1
-                ;;
-            --db)
-                db_type=$2
-                shift 2
-                ;;
-            *)
-                break
-                ;;
-        esac
-    done
-    # Skip client build process in the Docker container for all tests except Selenium
-    GALAXY_SKIP_CLIENT_BUILD=1
-    case "$*" in
-        *-selenium*)
-            GALAXY_SKIP_CLIENT_BUILD=0
-            ;;
-    esac
-    MY_UID=$(id -u)
-    DOCKER_RUN_EXTRA_ARGS="${DOCKER_RUN_EXTRA_ARGS} -e GALAXY_TEST_UID=${MY_UID} -e GALAXY_SKIP_CLIENT_BUILD=${GALAXY_SKIP_CLIENT_BUILD}"
-    echo "Docker version:"
-    docker --version
-    echo "Launching docker container for testing with extra args ${DOCKER_RUN_EXTRA_ARGS}..."
-    name=$(python -c 'import re; import uuid; print(re.sub("-", "", str(uuid.uuid4())))')
-    # Create a cache dir for pip, so it has the right owner
-    DOCKER_PIP_CACHE_DIR="$HOME"/.cache/docker_galaxy_pip
-    mkdir -p "$DOCKER_PIP_CACHE_DIR"
-    _on_exit() {
-        docker kill "$name"
-    }
-    trap _on_exit 0
-    docker $DOCKER_EXTRA_ARGS run $DOCKER_RUN_EXTRA_ARGS \
-        -e "BUILD_NUMBER=$BUILD_NUMBER" \
-        -e "GALAXY_TEST_DATABASE_TYPE=$db_type" \
-        -e "LC_ALL=C" \
-        -e "PIP_CACHE_DIR=/pip_cache_dir" \
-        --rm \
-        --name="$name" \
-        -v "$DOCKER_PIP_CACHE_DIR":/pip_cache_dir \
-        -v "$(pwd)":/galaxy \
-        -v "$(pwd)"/test/docker/base/run_test_wrapper.sh:/usr/local/bin/run_test_wrapper.sh "$DOCKER_IMAGE" "$@"
-    exit $?
 fi
 
 # If in Jenkins environment, create xunit-${BUILD_NUMBER}.xml by default.
@@ -504,9 +444,28 @@ do
               exit 1
           fi
           ;;
+      --structured_data_html)
+          structured_data_html=1
+          shift
+          ;;
       --verbose_errors)
           GALAXY_TEST_VERBOSE_ERRORS=True
           export GALAXY_TEST_VERBOSE_ERRORS
+          shift
+          ;;
+      --ci_test_metrics)
+          GALAXY_CONFIG_OVERRIDE_STATSD_PREFIX="galaxy"
+          export GALAXY_CONFIG_OVERRIDE_STATSD_PREFIX
+          GALAXY_CONFIG_OVERRIDE_STATSD_HOST="localhost"
+          export GALAXY_CONFIG_OVERRIDE_STATSD_HOST
+          GALAXY_CONFIG_OVERRIDE_STATSD_INFLUXDB="true"
+          export GALAXY_CONFIG_OVERRIDE_STATSD_INFLUXDB
+          GALAXY_CONFIG_OVERRIDE_DATABASE_LOG_QUERY_COUNTS="true"
+          export GALAXY_CONFIG_OVERRIDE_DATABASE_LOG_QUERY_COUNTS
+          GALAXY_CONFIG_OVERRIDE_ENABLE_PER_REQUEST_SQL_DEBUGGING="true"
+          export GALAXY_CONFIG_OVERRIDE_ENABLE_PER_REQUEST_SQL_DEBUGGING
+          GALAXY_CONFIG_OVERRIDE_STATSD_MOCK_CALLS="true"
+          export GALAXY_CONFIG_OVERRIDE_STATSD_MOCK_CALLS
           shift
           ;;
       -c|--coverage)
@@ -651,7 +610,11 @@ else
     xunit_args=""
 fi
 if [ -n "$structured_data_report_file" ]; then
-    structured_data_args="--with-structureddata --structured-data-file $structured_data_report_file"
+    if [ "$test_script" = 'pytest' ]; then
+        structured_data_args="--json-report --json-report-file $structured_data_report_file"
+    else
+        structured_data_args="--with-structureddata --structured-data-file $structured_data_report_file"
+    fi
 else
     structured_data_args=""
 fi
@@ -665,11 +628,14 @@ if [ "$test_script" = 'pytest' ]; then
     else
         marker_args=()
     fi
-    args=(-v --html "$report_file" --self-contained-html $coverage_arg $xunit_args $extra_args "${marker_args[@]}" "$@")
+    args=(-v $structured_data_args --html "$report_file" --self-contained-html $coverage_arg $xunit_args $extra_args "${marker_args[@]}" "$@")
     "$test_script" "${args[@]}"
 else
     python "$test_script" $coverage_arg -v --with-nosehtml --html-report-file $report_file $xunit_args $structured_data_args $extra_args "$@"
 fi
 exit_status=$?
 echo "Testing complete. HTML report is in \"$report_file\"." 1>&2
+if [ "$structured_data_html" = '1' ]; then
+   python scripts/tests_markdown.py --output_path "${structured_data_report_file%.json}.html" "$structured_data_report_file"
+fi
 exit ${exit_status}

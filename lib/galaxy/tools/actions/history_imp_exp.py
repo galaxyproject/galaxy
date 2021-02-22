@@ -2,7 +2,6 @@ import datetime
 import logging
 import os
 import tempfile
-from collections import OrderedDict
 
 from galaxy.job_execution.setup import create_working_directory_for_job
 from galaxy.tools.actions import ToolAction
@@ -73,7 +72,7 @@ class ImportHistoryToolAction(ToolAction):
         trans.app.job_manager.enqueue(job, tool=tool)
         trans.log_event("Added import history job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
 
-        return job, OrderedDict()
+        return job, {}
 
 
 class ExportHistoryToolAction(ToolAction):
@@ -173,4 +172,4 @@ class ExportHistoryToolAction(ToolAction):
         trans.app.job_manager.enqueue(job, tool=tool)
         trans.log_event("Added export history job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
 
-        return job, OrderedDict()
+        return job, {}

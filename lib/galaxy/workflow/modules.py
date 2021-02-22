@@ -4,7 +4,7 @@ Modules used in building workflows
 import json
 import logging
 import re
-from collections import defaultdict, OrderedDict
+from collections import defaultdict
 
 import packaging.version
 
@@ -215,7 +215,7 @@ class WorkflowModule:
     def get_config_form(self, step=None):
         """ Serializes input parameters of a module into input dictionaries. """
         return {
-            'title' : self.name,
+            'title': self.name,
             'inputs': [param.to_dict(self.trans) for param in self.get_inputs().values()]
         }
 
@@ -707,7 +707,7 @@ class InputDataModule(InputModule):
     def get_inputs(self):
         parameter_def = self._parse_state_into_dict()
         optional = parameter_def["optional"]
-        inputs = OrderedDict()
+        inputs = {}
         inputs["optional"] = optional_param(optional)
         inputs["format"] = format_param(self.trans, parameter_def.get("format"))
         return inputs
@@ -730,7 +730,7 @@ class InputDataCollectionModule(InputModule):
             {"value": "list:paired", "label": "List of Dataset Pairs"},
         ]
         input_collection_type = TextToolParameter(None, collection_type_source)
-        inputs = OrderedDict()
+        inputs = {}
         inputs["collection_type"] = input_collection_type
         inputs["optional"] = optional_param(optional)
         inputs["format"] = format_param(self.trans, parameter_def.get("format"))
@@ -859,7 +859,7 @@ class InputParameterModule(WorkflowModule):
 
             when_this_type = ConditionalWhen()
             when_this_type.value = param_type
-            when_this_type.inputs = OrderedDict()
+            when_this_type.inputs = {}
             when_this_type.inputs["optional"] = optional_cond
 
             specify_default_checked = "default" in parameter_def
@@ -871,24 +871,24 @@ class InputParameterModule(WorkflowModule):
 
             when_specify_default_true = ConditionalWhen()
             when_specify_default_true.value = "true"
-            when_specify_default_true.inputs = OrderedDict()
+            when_specify_default_true.inputs = {}
             when_specify_default_true.inputs["default"] = input_default_value
 
             when_specify_default_false = ConditionalWhen()
             when_specify_default_false.value = "false"
-            when_specify_default_false.inputs = OrderedDict()
+            when_specify_default_false.inputs = {}
 
             specify_default_cond_cases = [when_specify_default_true, when_specify_default_false]
             specify_default_cond.cases = specify_default_cond_cases
 
             when_true = ConditionalWhen()
             when_true.value = "true"
-            when_true.inputs = OrderedDict()
+            when_true.inputs = {}
             when_true.inputs["default"] = specify_default_cond
 
             when_false = ConditionalWhen()
             when_false.value = "false"
-            when_false.inputs = OrderedDict()
+            when_false.inputs = {}
 
             optional_cases = [when_true, when_false]
             optional_cond.cases = optional_cases
@@ -916,19 +916,19 @@ class InputParameterModule(WorkflowModule):
 
                 when_restrict_none = ConditionalWhen()
                 when_restrict_none.value = "none"
-                when_restrict_none.inputs = OrderedDict()
+                when_restrict_none.inputs = {}
 
                 when_restrict_connections = ConditionalWhen()
                 when_restrict_connections.value = "onConnections"
-                when_restrict_connections.inputs = OrderedDict()
+                when_restrict_connections.inputs = {}
 
                 when_restrict_static_restrictions = ConditionalWhen()
                 when_restrict_static_restrictions.value = "staticRestrictions"
-                when_restrict_static_restrictions.inputs = OrderedDict()
+                when_restrict_static_restrictions.inputs = {}
 
                 when_restrict_static_suggestions = ConditionalWhen()
                 when_restrict_static_suggestions.value = "staticSuggestions"
-                when_restrict_static_suggestions.inputs = OrderedDict()
+                when_restrict_static_suggestions.inputs = {}
 
                 # Repeats don't work - so use common separated list for now.
 
@@ -953,7 +953,7 @@ class InputParameterModule(WorkflowModule):
             cases.append(when_this_type)
 
         parameter_type_cond.cases = cases
-        return OrderedDict([("parameter_definition", parameter_type_cond)])
+        return {"parameter_definition": parameter_type_cond}
 
     def get_runtime_inputs(self, connections=None, **kwds):
         parameter_def = self._parse_state_into_dict()
@@ -1434,7 +1434,7 @@ class ToolModule(WorkflowModule):
         data_outputs = []
         if self.tool:
             for name, tool_output in self.tool.outputs.items():
-                if filter_output(tool_output, self.state.inputs):
+                if filter_output(self.tool, tool_output, self.state.inputs):
                     continue
                 extra_kwds = {}
                 if isinstance(tool_output, ToolExpressionOutput):
@@ -1445,12 +1445,10 @@ class ToolModule(WorkflowModule):
                     if not collection_type and tool_output.structure.collection_type_from_rules:
                         rule_param = tool_output.structure.collection_type_from_rules
                         if rule_param in self.state.inputs:
-                            rule_json_str = self.state.inputs[rule_param]
-                            if rule_json_str:  # initialized to None...
-                                rules = rule_json_str
-                                if rules:
-                                    rule_set = RuleSet(rules)
-                                    collection_type = rule_set.collection_type
+                            rules = self.state.inputs[rule_param]
+                            if rules:
+                                rule_set = RuleSet(rules)
+                                collection_type = rule_set.collection_type
                     extra_kwds["collection_type"] = collection_type
                     extra_kwds["collection_type_source"] = tool_output.structure.collection_type_source
                     formats = ['input']  # TODO: fix
