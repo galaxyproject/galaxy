@@ -28,7 +28,7 @@ export function getMissingMetadata(nodes) {
                 warningLabel = "Missing a label and annotation";
             } else if (noLabel) {
                 warningLabel = "Missing a label";
-            } else {
+            } else if (noAnnotation) {
                 warningLabel = "Missing an annotation";
             }
             if (warningLabel) {
@@ -53,12 +53,14 @@ export function getUnlabeledOutputs(nodes) {
         }
         const activeOutputs = node.activeOutputs;
         for (const outputDef of activeOutputs.getAll()) {
-            outputs.push({
-                stepId: node.id,
-                stepLabel: node.title, // label but falls back to tool title...
-                warningLabel: outputDef.output_name,
-                autofix: true,
-            });
+            if (!outputDef.label) {
+                outputs.push({
+                    stepId: node.id,
+                    stepLabel: node.title, // label but falls back to tool title...
+                    warningLabel: outputDef.output_name,
+                    autofix: true,
+                });
+            }
         }
     });
     return outputs;
