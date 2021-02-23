@@ -57,7 +57,7 @@ jobs:
           path: ~/.cache/pip
           key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
       - name: Install ffmpeg
-        run: sudo apt-get update && sudo apt-get install ffmpeg -y
+        run: sudo apt-get update && sudo apt-get -y install ffmpeg
         if: matrix.subset == 'upload_datatype'
       - name: Run tests
         if: matrix.subset != 'kubernetes'

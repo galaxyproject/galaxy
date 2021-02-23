@@ -1,4 +1,4 @@
-name: "Labels Verifier"
+name: Labels Verifier
 on:
   pull_request_target:
     types: [closed]
