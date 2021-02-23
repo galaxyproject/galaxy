@@ -65,7 +65,7 @@ to the rendering, the re-usability of your components craters.
 
 ## The Provider
 
-As the opposite of the rendering component, a provider or renderless component, is pure lobic. It
+As the opposite of the rendering component, a provider or renderless component, is pure logic. It
 should not know or care what your renderer is going to do with the data it provides. It is simply a
 fancy way of configuring some data manipulation methods. This is one of the many ways of reusing
 functionality available in Vue. Some others are [Mixins](https://vuejs.org/v2/guide/mixins.html),

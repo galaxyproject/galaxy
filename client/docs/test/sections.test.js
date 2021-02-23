@@ -19,7 +19,7 @@ describe("getDocSections", () => {
 
     test("section generation", () => {
         expect(rootNode.name).toEqual("Sample Docs");
-        expect(rootNode.sections.length).toEqual(6);
+        expect(rootNode.sections.length).toEqual(7);
         expect(rootNode.content).toBeUndefined();
     });
 
@@ -53,5 +53,10 @@ describe("getDocSections", () => {
     test("ignored subdirectory", () => {
         const ignoredSection = getSectionByName(rootNode.sections, "Ignored");
         expect(ignoredSection).toBeUndefined();
+    });
+
+    test("should not create a section for a component example file", () => {
+        const section = getSectionByName(rootNode.sections, "Component Example");
+        expect(section.sections.length).toEqual(0);
     });
 });

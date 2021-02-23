@@ -5,6 +5,7 @@
  */
 
 const path = require("path");
+const fs = require("fs");
 const glob = require("glob");
 const { humanize, titleize } = require("underscore.string");
 
@@ -52,7 +53,7 @@ function getDocSections(rootPath, options = {}) {
 
         // if it's a MD file, add to parent as a subsection
         const section = sections.get(p.dir);
-        if (section && file !== section.content && p.ext == ".md") {
+        if (section && isSubsection(section, file)) {
             section.children.add({
                 name: titleize(humanize(p.name)),
                 content: file,
@@ -66,6 +67,23 @@ function getDocSections(rootPath, options = {}) {
     // rootNode is the main result, returning the maps so the user has the option to manipulate the
     // tree before handing it over to the styleguide configs
     return { sections, childToParent, rootNode };
+}
+
+function isSubsection(section, file) {
+    const p = path.parse(file);
+
+    // it's not a subsection if it's not a markdown file
+    if (p.ext !== ".md") return false;
+
+    // it's not a subsection if it's the same file as the section content
+    if (file === section.content) return false;
+
+    // it's not a subsection if it's an example for an existing component
+    const matchingComponentPath = path.join(p.dir, `${p.name}.vue`);
+    const componentExists = fs.existsSync(matchingComponentPath);
+    if (componentExists) return false;
+
+    return true;
 }
 
 /**
