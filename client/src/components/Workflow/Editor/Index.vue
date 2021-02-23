@@ -424,7 +424,7 @@ export default {
             showLint();
         },
         onUpgrade() {
-            this.attemptRefactor([{'action_type': 'upgrade_workflow'}]);
+            this.attemptRefactor([{ action_type: "upgrade_all_steps" }]);
         },
         onEdit() {
             this.isCanvas = true;

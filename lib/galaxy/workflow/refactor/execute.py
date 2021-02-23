@@ -38,9 +38,9 @@ from .schema import (
     UpdateReportAction,
     UpdateStepLabelAction,
     UpdateStepPositionAction,
+    UpgradeAllStepsAction,
     UpgradeSubworkflowAction,
     UpgradeToolAction,
-    UpgradeWorkflowAction,
 )
 from ..modules import (
     InputParameterModule,
@@ -393,14 +393,14 @@ class WorkflowRefactorExecutor:
         step_def["tool_state"] = step.module.get_tool_state()
         self._patch_step(execution, step, step_def)
 
-    def _apply_upgrade_workflow(self, action: UpgradeWorkflowAction, execution: RefactorActionExecution):
+    def _apply_upgrade_all_steps(self, action: UpgradeAllStepsAction, execution: RefactorActionExecution):
         for step_order_index, step in self._as_dict["steps"].items():
             if step.get('type') == 'subworkflow':
-                action = UpgradeSubworkflowAction(action_type='upgrade_subworkflow', step={'order_index': step_order_index})
-                self._apply_upgrade_subworkflow(action, execution)
+                step_action = UpgradeSubworkflowAction(action_type='upgrade_subworkflow', step={'order_index': step_order_index})
+                self._apply_upgrade_subworkflow(step_action, execution)
             elif step.get('type') == 'tool':
-                action = UpgradeToolAction(action_type='upgrade_tool', step={'order_index': step_order_index})
-                self._apply_upgrade_tool(action, execution)
+                step_action = UpgradeToolAction(action_type='upgrade_tool', step={'order_index': step_order_index})  # type: ignore
+                self._apply_upgrade_tool(step_action, execution)  # type: ignore
 
     def _find_step(self, step_reference: step_reference_union):
         order_index = None
