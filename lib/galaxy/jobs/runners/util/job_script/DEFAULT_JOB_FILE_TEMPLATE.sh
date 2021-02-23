@@ -33,7 +33,6 @@ _GALAXY_VIRTUAL_ENV="$galaxy_virtual_env"
 PRESERVE_GALAXY_ENVIRONMENT="$preserve_python_environment"
 GALAXY_LIB="$galaxy_lib"
 _galaxy_setup_environment "$PRESERVE_GALAXY_ENVIRONMENT"
-export _GALAXY_JOB_HOME_DIR
 export _GALAXY_JOB_TMP_DIR
 GALAXY_PYTHON=`command -v python`
 cd $working_directory
