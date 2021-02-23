@@ -1294,15 +1294,12 @@ class MatrixMarket(TabularData):
 @build_sniff_from_prefix
 class CMAP(TabularData):
 
-
     MetadataElement(name="comment_lines", default=0, desc="Number of comment lines", readonly=False, optional=True, no_value=0)
     MetadataElement(name="cmap_version", default='0.2', desc="version of cmap", readonly=True, visible=True, optional=False, no_value='0.2')
     MetadataElement(name="label_channels", default=[], desc="The number of label channels", readonly=True, visible=True, optional=False, no_value=[])
     MetadataElement(name="nickname_recognition_site_1", default=[], desc="Comma separated list of label motif recognition sequences for channel 1", readonly=True, visible=True, optional=False, no_value=[])
     MetadataElement(name="number_of_consensus_nanomaps", default=[], desc="The total number of consensus genome maps in the CMAP file", readonly=True, visible=True, optional=False, no_value=[])
     MetadataElement(name="nickname_recognition_site_2", default=[], desc="Comma separated list of label motif recognition sequences for channel 2 ", readonly=True, visible=True, optional=True, no_value=[])
-
-
 
     """
     # CMAP File Version:    2.0
@@ -1316,10 +1313,7 @@ class CMAP(TabularData):
     182 58474736.7  10235   1   1   58820.9 35.4    13.5    13.5    -1.00   -1.00   -1.00   3.63    0.00    0.00    -1.00   0
     182 58474736.7  10235   1   1   58820.9 35.4    13.5    13.5    -1.00   -1.00   -1.00   3.63    0.00    0.00    -1.00   0
     """
-   
-
     file_ext = "cmap"
-
 
     def sniff_prefix(self, file_prefix):
         return file_prefix.startswith('# CMAP File Version:')
@@ -1350,10 +1344,9 @@ class CMAP(TabularData):
                             elif fields[0] == '# Nickase Recognition Site 1:':
                                 dataset.metadata.nickname_recognition_site_1 = fields[1]
                             elif fields[0] == '# Number of Consensus Maps:':
-                                dataset.metadata.number_of_consensus_nanomaps= fields[1]
+                                dataset.metadata.number_of_consensus_nanomaps = fields[1]
                             elif fields[0] == '# Nickase Recognition Site 2:':
-                                dataset.metadata.nickname_recognition_site_2= fields[1]
-
+                                dataset.metadata.nickname_recognition_site_2 = fields[1]
 
                     elif self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
                         # If the dataset is larger than optional_metadata, just count comment lines.
@@ -1361,9 +1354,8 @@ class CMAP(TabularData):
                         dataset.metadata.data_lines = None
                         break
 
-                    elif i == comment_lines+1:
+                    elif i == comment_lines + 1:
                         number_of_columns = len(l.split('\t'))
-
 
                 if not (self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize):
                     dataset.metadata.data_lines = i + 1 - comment_lines
