@@ -75,7 +75,7 @@
                 @onMouseLeave="onUnhighlight"
                 @onClick="onFixUnlabeledOutputs"
             />
-            <div v-if="warningUnlabeledOutputs.length == 0">
+            <div v-if="!hasActiveOutputs">
                 <font-awesome-icon icon="exclamation-triangle" class="text-warning" />
                 <span>This workflow has no labeled outputs, please select and label at least one output.</span>
             </div>
@@ -195,6 +195,15 @@ export default {
         },
     },
     computed: {
+        hasActiveOutputs() {
+            this.forceRefresh;
+            for (const node of Object.values(this.nodes)) {
+                if (node.activeOutputs.getAll().length > 0) {
+                    return true;
+                }
+            }
+            return false;
+        },
         showRefactor() {
             // we could be even more precise here and check the inputs and such, because
             // some of these extractions may not be possible.
