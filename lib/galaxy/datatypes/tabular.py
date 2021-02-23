@@ -1289,3 +1289,88 @@ class MatrixMarket(TabularData):
             dataset.metadata.comment_lines = comment_lines
             dataset.metadata.columns = 3
             dataset.metadata.column_types = ['int', 'int', 'float']
+
+
+@build_sniff_from_prefix
+class CMAP(TabularData):
+
+
+    MetadataElement(name="comment_lines", default=0, desc="Number of comment lines", readonly=False, optional=True, no_value=0)
+    MetadataElement(name="cmap_version", default='0.2', desc="version of cmap", readonly=True, visible=True, optional=False, no_value='0.2')
+    MetadataElement(name="label_channels", default=[], desc="The number of label channels", readonly=True, visible=True, optional=False, no_value=[])
+    MetadataElement(name="nickname_recognition_site_1", default=[], desc="Comma separated list of label motif recognition sequences for channel 1", readonly=True, visible=True, optional=False, no_value=[])
+    MetadataElement(name="number_of_consensus_nanomaps", default=[], desc="The total number of consensus genome maps in the CMAP file", readonly=True, visible=True, optional=False, no_value=[])
+    MetadataElement(name="nickname_recognition_site_2", default=[], desc="Comma separated list of label motif recognition sequences for channel 2 ", readonly=True, visible=True, optional=True, no_value=[])
+
+
+
+    """
+    # CMAP File Version:    2.0
+    # Label Channels:   1
+    # Nickase Recognition Site 1:   cttaag;green_01
+    # Number of Consensus Maps: 459
+    # Values corresponding to intervals (StdDev, HapDelta) refer to the interval between current site and next site
+    #h  CMapId  ContigLength    NumSites    SiteID  LabelChannel    Position    StdDev  Coverage    Occurrence  ChimQuality SegDupL SegDupR FragileL    FragileR    OutlierFrac ChimNorm    Mask
+    #f  int float   int int int float   float   float   float   float   float   float   float   float   float   float   Hex
+    182 58474736.7  10235   1   1   58820.9 35.4    13.5    13.5    -1.00   -1.00   -1.00   3.63    0.00    0.00    -1.00   0
+    182 58474736.7  10235   1   1   58820.9 35.4    13.5    13.5    -1.00   -1.00   -1.00   3.63    0.00    0.00    -1.00   0
+    182 58474736.7  10235   1   1   58820.9 35.4    13.5    13.5    -1.00   -1.00   -1.00   3.63    0.00    0.00    -1.00   0
+    """
+   
+
+    file_ext = "cmap"
+
+
+    def sniff_prefix(self, file_prefix):
+        return file_prefix.startswith('# CMAP File Version:')
+
+    def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=7, **kwd):
+        if dataset.has_data():
+            with open(dataset.file_name) as dataset_fh:
+                comment_lines = 0
+                for i, l in enumerate(dataset_fh):
+                    if l.startswith('#'):
+                        if l.startswith('#h'):
+                            column_headers = l.split("\t")[1:]
+                        elif l.startswith('#f'):
+                            cleaned_column_types = []
+                            for i in l.split('\t')[1:]:
+                                if i.strip("\n") == 'Hex':
+                                    cleaned_column_types.append('str')
+                                else:
+                                    cleaned_column_types.append(i)
+
+                        comment_lines += 1
+                        fields = l.split('\t')
+                        if len(fields) == 2:
+                            if fields[0] == '# CMAP File Version:':
+                                dataset.metadata.cmap_version == fields[1]
+                            elif fields[0] == '# Label Channels:':
+                                dataset.metadata.label_channels = fields[1]
+                            elif fields[0] == '# Nickase Recognition Site 1:':
+                                dataset.metadata.nickname_recognition_site_1 = fields[1]
+                            elif fields[0] == '# Number of Consensus Maps:':
+                                dataset.metadata.number_of_consensus_nanomaps= fields[1]
+                            elif fields[0] == '# Nickase Recognition Site 2:':
+                                dataset.metadata.nickname_recognition_site_2= fields[1]
+
+
+                    elif self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
+                        # If the dataset is larger than optional_metadata, just count comment lines.
+                        # No more comments, and the file is too big to look at the whole thing. Give up.
+                        dataset.metadata.data_lines = None
+                        break
+
+                    elif i == comment_lines+1:
+                        number_of_columns = len(l.split('\t'))
+
+
+                if not (self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize):
+                    dataset.metadata.data_lines = i + 1 - comment_lines
+
+            dataset.metadata.comment_lines = comment_lines
+            dataset.metadata.columns = 17
+            dataset.metadata.column_names = column_headers
+            dataset.metadata.column_types = cleaned_column_types
+            dataset.metadata.columns = number_of_columns
+            dataset.metadata.delimiter = '\t'
