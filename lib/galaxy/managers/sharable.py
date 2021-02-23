@@ -25,6 +25,7 @@ from galaxy.managers import (
     users
 )
 from galaxy.model import UserShareAssociation
+from galaxy.structured_app import StructuredApp
 
 log = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
     #: the single character abbreviation used in username_and_slug: e.g. 'h' for histories: u/user/h/slug
     SINGLE_CHAR_ABBR: Optional[str] = None
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
         # user manager is needed to check access/ownership/admin
         self.user_manager = users.UserManager(app)

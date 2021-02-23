@@ -8,20 +8,21 @@ from galaxy.exceptions import (
     MessageException,
     RequestParameterInvalidException
 )
-from galaxy.managers import (
-    hdas,
-    histories,
-    lddas,
-)
 from galaxy.managers.collections_util import validate_input_element_identifiers
-from galaxy.model import tags
 from galaxy.model.dataset_collections import builder
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.dataset_collections.registry import DATASET_COLLECTION_TYPES_REGISTRY
 from galaxy.model.dataset_collections.type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
+from galaxy.model.mapping import GalaxyModelMapping
+from galaxy.model.tags import GalaxyTagHandler
+from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import (
     validation
 )
+from .hdas import HDAManager
+from .histories import HistoryManager
+from .lddas import LDDAManager
+
 
 log = logging.getLogger(__name__)
 
@@ -36,16 +37,24 @@ class DatasetCollectionManager:
     """
     ELEMENTS_UNINITIALIZED = object()
 
-    def __init__(self, app):
+    def __init__(
+        self,
+        model: GalaxyModelMapping,
+        security: IdEncodingHelper,
+        hda_manager: HDAManager,
+        history_manager: HistoryManager,
+        tag_handler: GalaxyTagHandler,
+        ldda_manager: LDDAManager,
+    ):
         self.type_registry = DATASET_COLLECTION_TYPES_REGISTRY
         self.collection_type_descriptions = COLLECTION_TYPE_DESCRIPTION_FACTORY
-        self.model = app.model
-        self.security = app.security
+        self.model = model
+        self.security = security
 
-        self.hda_manager = hdas.HDAManager(app)
-        self.history_manager = histories.HistoryManager(app)
-        self.tag_handler = tags.GalaxyTagHandler(app.model.context)
-        self.ldda_manager = lddas.LDDAManager(app)
+        self.hda_manager = hda_manager
+        self.history_manager = history_manager
+        self.tag_handler = tag_handler
+        self.ldda_manager = ldda_manager
 
     def precreate_dataset_collection_instance(self, trans, parent, name, structure, implicit_inputs=None, implicit_output_name=None, tags=None, completed_collection=None):
         # TODO: prebuild all required HIDs and send them in so no need to flush in between.
@@ -136,7 +145,7 @@ class DatasetCollectionManager:
 
     def _create_instance_for_collection(self, trans, parent, name, dataset_collection, implicit_output_name=None, implicit_inputs=None, tags=None, set_hid=True, flush=True):
         if isinstance(parent, model.History):
-            dataset_collection_instance = self.model.HistoryDatasetCollectionAssociation(
+            dataset_collection_instance = model.HistoryDatasetCollectionAssociation(
                 collection=dataset_collection,
                 name=name,
             )
@@ -153,7 +162,7 @@ class DatasetCollectionManager:
                 parent.add_dataset_collection(dataset_collection_instance)
 
         elif isinstance(parent, model.LibraryFolder):
-            dataset_collection_instance = self.model.LibraryDatasetCollectionAssociation(
+            dataset_collection_instance = model.LibraryDatasetCollectionAssociation(
                 collection=dataset_collection,
                 folder=parent,
                 name=name,

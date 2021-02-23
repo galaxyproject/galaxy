@@ -6,12 +6,12 @@ import logging
 from galaxy import web
 from galaxy.forms.forms import form_factory
 from galaxy.util import XML
-from galaxy.webapps.base.controller import BaseAPIController, url_for
-
+from galaxy.webapps.base.controller import url_for
+from . import BaseGalaxyAPIController
 log = logging.getLogger(__name__)
 
 
-class FormDefinitionAPIController(BaseAPIController):
+class FormDefinitionAPIController(BaseGalaxyAPIController):
 
     @web.legacy_expose_api
     def index(self, trans, **kwd):

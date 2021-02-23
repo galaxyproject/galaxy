@@ -7,6 +7,7 @@ import tempfile
 import zlib
 from collections import defaultdict
 from threading import Lock
+from typing import Dict, List, Tuple
 
 from sqlalchemy.orm import (
     defer,
@@ -14,8 +15,12 @@ from sqlalchemy.orm import (
 )
 from sqlitedict import SqliteDict
 
+from galaxy.model.tool_shed_install import ToolShedRepository
+from galaxy.structured_app import StructuredApp
+from galaxy.tools.toolbox.base import ToolConfRepository
 from galaxy.util import unicodify
 from galaxy.util.hash_util import md5_hash_file
+
 
 log = logging.getLogger(__name__)
 
@@ -277,8 +282,11 @@ class ToolShedRepositoryCache:
     """
     Cache installed ToolShedRepository objects.
     """
+    local_repositories: List[ToolConfRepository]
+    repositories: List[ToolShedRepository]
+    repos_by_tuple: Dict[Tuple[str, str, str], List[ToolConfRepository]]
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         self.app = app
         # Contains ToolConfRepository objects created from shed_tool_conf.xml entries
         self.local_repositories = []
@@ -294,10 +302,10 @@ class ToolShedRepositoryCache:
     def rebuild(self):
         try:
             session = self.app.install_model._SessionLocal()
-            self.repositories = session.query(self.app.install_model.ToolShedRepository).options(
-                defer(self.app.install_model.ToolShedRepository.metadata),
+            self.repositories = session.query(ToolShedRepository).options(
+                defer(ToolShedRepository.metadata),
                 joinedload('tool_dependencies').subqueryload('tool_shed_repository').options(
-                    defer(self.app.install_model.ToolShedRepository.metadata)
+                    defer(ToolShedRepository.metadata)
                 ),
             ).all()
             repos_by_tuple = defaultdict(list)

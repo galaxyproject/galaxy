@@ -29,6 +29,7 @@ class UsesApp:
         self.app = galaxy_mock.MockApp()
         self.app.config.new_file_path = os.path.join(self.test_directory, "new_files")
         self.app.config.admin_users = "mary@example.com"
+        self.app.job_search = None
 
     def tear_down_app(self):
         shutil.rmtree(self.test_directory)

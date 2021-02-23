@@ -23,7 +23,6 @@ from galaxy.managers import (
 )
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.schema.fields import EncodedDatabaseIdField
-from galaxy.structured_app import StructuredApp
 from galaxy.util import (
     pretty_print_time_interval,
     unicodify,
@@ -37,9 +36,6 @@ class LibraryManager:
     """
     Interface/service object for interacting with libraries.
     """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 
     def get(self, trans, decoded_library_id, check_accessible=True):
         """
@@ -329,10 +325,15 @@ class LibrariesManager:
     Interface/service object for sharing logic between controllers.
     """
 
-    def __init__(self, app: StructuredApp):
-        self.folder_manager = folders.FolderManager()
-        self.library_manager = LibraryManager()
-        self.role_manager = roles.RoleManager(app)
+    def __init__(
+        self,
+        folder_manager: folders.FolderManager,
+        library_manager: LibraryManager,
+        role_manager: roles.RoleManager,
+    ):
+        self.folder_manager = folder_manager
+        self.library_manager = library_manager
+        self.role_manager = role_manager
 
     def index(self, trans: ProvidesAppContext, deleted: Optional[bool] = False) -> List[Any]:
         """Returns a list of summary data for all libraries.

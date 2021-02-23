@@ -8,17 +8,17 @@ from galaxy import (
     web
 )
 from galaxy.webapps.base.controller import (
-    BaseAPIController,
     HTTPNotImplemented,
     UsesExtendedMetadataMixin,
     UsesLibraryMixinItems,
     UsesStoredWorkflowMixin
 )
+from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
 
 
-class BaseExtendedMetadataController(BaseAPIController, UsesExtendedMetadataMixin, UsesLibraryMixinItems, UsesStoredWorkflowMixin):
+class BaseExtendedMetadataController(BaseGalaxyAPIController, UsesExtendedMetadataMixin, UsesLibraryMixinItems, UsesStoredWorkflowMixin):
 
     @web.legacy_expose_api
     def index(self, trans, **kwd):
@@ -75,10 +75,7 @@ class LibraryDatasetExtendMetadataController(BaseExtendedMetadataController):
 class HistoryDatasetExtendMetadataController(BaseExtendedMetadataController):
     controller_name = "history_dataset_extended_metadata"
     exmeta_item_id = "history_content_id"
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.hda_manager = managers.hdas.HDAManager(app)
+    hda_manager: managers.hdas.HDAManager = depends(managers.hdas.HDAManager)
 
     def _get_item_from_id(self, trans, idstr, check_writable=True):
         decoded_idstr = self.decode_id(idstr)

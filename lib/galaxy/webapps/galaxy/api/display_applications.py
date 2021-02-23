@@ -3,22 +3,18 @@ API operations on annotations.
 """
 import logging
 
-from galaxy.app import StructuredApp
 from galaxy.managers.display_applications import DisplayApplicationsManager
 from galaxy.web import (
     expose_api,
     require_admin,
 )
-from galaxy.webapps.base.controller import BaseAPIController
+from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
 
 
-class DisplayApplicationsController(BaseAPIController):
-
-    def __init__(self, app: StructuredApp):
-        super().__init__(app)
-        self.manager = DisplayApplicationsManager(app)
+class DisplayApplicationsController(BaseGalaxyAPIController):
+    manager = depends(DisplayApplicationsManager)
 
     @expose_api
     def index(self, trans, **kwd):

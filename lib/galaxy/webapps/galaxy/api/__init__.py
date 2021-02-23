@@ -2,45 +2,52 @@
 This module *does not* contain API routes. It exclusively contains dependencies to be used in FastAPI routes
 """
 from typing import (
+    Any,
     AsyncGenerator,
     cast,
     Optional,
+    Type,
+    TypeVar,
 )
 
 from fastapi import (
     Cookie,
-    Depends,
     Header,
     Query,
 )
-from sqlalchemy.orm import Session
+from fastapi.params import Depends
 try:
     from starlette_context import context as request_context
 except ImportError:
     request_context = None
+from starlette.requests import Request
 
 from galaxy import (
     app as galaxy_app,
     model,
 )
-from galaxy.app import UniverseApplication
 from galaxy.exceptions import (
     AdminRequiredException,
     UserCannotRunAsException,
     UserInvalidRunAsException,
 )
-from galaxy.managers.jobs import JobManager
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.users import UserManager
 from galaxy.model import User
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.structured_app import StructuredApp
 from galaxy.web.framework.decorators import require_admin_message
+from galaxy.webapps.base.controller import BaseAPIController
 from galaxy.work.context import SessionRequestContext
 
 
-async def _get_app() -> AsyncGenerator[UniverseApplication, None]:
-    app = cast(UniverseApplication, galaxy_app.app)
+def get_app() -> StructuredApp:
+    return cast(StructuredApp, galaxy_app.app)
+
+
+async def get_app_with_request_session() -> AsyncGenerator[StructuredApp, None]:
+    app = get_app()
     request_id = request_context.data['X-Request-ID']
     app.model.set_request_id(request_id)
     try:
@@ -49,34 +56,35 @@ async def _get_app() -> AsyncGenerator[UniverseApplication, None]:
         app.model.unset_request_id(request_id)
 
 
-async def get_app(app=Depends(_get_app)) -> UniverseApplication:
-    return app
+DependsOnApp = Depends(get_app_with_request_session)
 
 
-def get_id_encoding_helper(app: UniverseApplication = Depends(get_app)) -> IdEncodingHelper:
-    return app.security
+T = TypeVar("T")
 
 
-def get_job_manager(app: UniverseApplication = Depends(get_app)) -> JobManager:
-    return JobManager(app=app)
+class GalaxyTypeDepends(Depends):
+    """Variant of fastapi Depends that can also work on WSGI Galaxy controllers."""
+
+    def __init__(self, callable, dep_type):
+        super().__init__(callable)
+        self.galaxy_type_depends = dep_type
 
 
-def get_db(app: UniverseApplication = Depends(get_app)) -> Session:
-    # TODO: return sqlachemy 2.0 style session without autocommit and expire_on_commit!
-    return app.model.session
+def depends(dep_type: Type[T]) -> Any:
+
+    def _do_resolve(request: Request):
+        return get_app().resolve(dep_type)
+
+    return GalaxyTypeDepends(_do_resolve, dep_type)
 
 
-def get_user_manager(app: UniverseApplication = Depends(get_app)) -> UserManager:
-    return UserManager(app)
-
-
-def get_session_manager(app: UniverseApplication = Depends(get_app)) -> GalaxySessionManager:
+def get_session_manager(app: StructuredApp = DependsOnApp) -> GalaxySessionManager:
     # TODO: find out how to adapt dependency for Galaxy/Report/TS
     return GalaxySessionManager(app.model)
 
 
 def get_session(session_manager: GalaxySessionManager = Depends(get_session_manager),
-                security: IdEncodingHelper = Depends(get_id_encoding_helper),
+                security: IdEncodingHelper = depends(IdEncodingHelper),
                 galaxysession: Optional[str] = Cookie(None)) -> Optional[model.GalaxySession]:
     if galaxysession:
         session_key = security.decode_guid(galaxysession)
@@ -87,8 +95,8 @@ def get_session(session_manager: GalaxySessionManager = Depends(get_session_mana
 
 
 def get_api_user(
-        security: IdEncodingHelper = Depends(get_id_encoding_helper),
-        user_manager: UserManager = Depends(get_user_manager),
+        security: IdEncodingHelper = depends(IdEncodingHelper),
+        user_manager: UserManager = depends(UserManager),
         key: Optional[str] = Query(None),
         x_api_key: Optional[str] = Header(None),
         run_as: Optional[EncodedDatabaseIdField] = Header(None, title='Run as User', description='Admins and ')) -> Optional[User]:
@@ -114,13 +122,28 @@ def get_user(galaxy_session: Optional[model.GalaxySession] = Depends(get_session
     return api_user
 
 
-def get_trans(app: UniverseApplication = Depends(get_app), user: Optional[User] = Depends(get_user),
+DependsOnUser = Depends(get_user)
+
+
+def get_trans(app: StructuredApp = DependsOnApp, user: Optional[User] = Depends(get_user),
               galaxy_session: Optional[model.GalaxySession] = Depends(get_session),
               ) -> SessionRequestContext:
     return SessionRequestContext(app=app, user=user, galaxy_session=galaxy_session)
 
 
-def get_admin_user(trans: SessionRequestContext = Depends(get_trans)):
+DependsOnTrans = Depends(get_trans)
+
+
+def get_admin_user(trans: SessionRequestContext = DependsOnTrans):
     if not trans.user_is_admin:
         raise AdminRequiredException(require_admin_message(trans.app.config, trans.user))
     return trans.user
+
+
+AdminUserRequired = Depends(get_admin_user)
+
+
+class BaseGalaxyAPIController(BaseAPIController):
+
+    def __init__(self, app: StructuredApp):
+        super().__init__(app)
