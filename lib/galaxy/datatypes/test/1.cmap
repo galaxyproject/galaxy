@@ -1,6 +1,7 @@
 # CMAP File Version:	2.0
 # Label Channels:	1
 # Nickase Recognition Site 1:	cttaag;green_01
+# Nickase Recognition Site 2:   cctcagc;red_01
 # Number of Consensus Maps:	459
 # Values corresponding to intervals (StdDev, HapDelta) refer to the interval between current site and next site
 #h	CMapId	ContigLength	NumSites	SiteID	LabelChannel	Position	StdDev	Coverage	Occurrence	ChimQuality	SegDupL	SegDupR	FragileL	FragileR	OutlierFrac	ChimNorm	Mask
