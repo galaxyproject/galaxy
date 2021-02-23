@@ -2,7 +2,6 @@
 Image classes
 """
 import base64
-import contextlib
 import logging
 import zipfile
 from io import StringIO
@@ -306,16 +305,15 @@ class Mrc2014(Binary):
     def sniff(self, filename):
         # Handle the wierdness of mrcfile:
         # https://github.com/ccpem/mrcfile/blob/master/mrcfile/validator.py#L88
-        with contextlib.redirect_stdout(StringIO()):
-            try:
-                # An exception is thrown
-                # if the file is not an
-                # mrc2014 file.
-                if mrcfile.validate(filename):
-                    return True
-            except Exception:
-                return False
+        try:
+            # An exception is thrown
+            # if the file is not an
+            # mrc2014 file.
+            if mrcfile.validate(filename, print_file=StringIO()):
+                return True
+        except Exception:
             return False
+        return False
 
 
 class Gmaj(data.Data):
