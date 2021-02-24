@@ -1314,15 +1314,19 @@ class CMAP(TabularData):
     182 58474736.7  10235   1   1   58820.9 35.4    13.5    13.5    -1.00   -1.00   -1.00   3.63    0.00    0.00    -1.00   0
     """
     file_ext = "cmap"
+
     def sniff_prefix(self, file_prefix):
         return file_prefix.startswith('# CMAP File Version:')
+
     def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=7, **kwd):
         if dataset.has_data():
             with open(dataset.file_name) as dataset_fh:
                 comment_lines = 0
                 for i, l in enumerate(dataset_fh):
                     if l.startswith('#'):
+
                         if l.startswith('#h'):
+
                             column_headers = l.strip('\n').split("\t")[1:]
                         elif l.startswith('#f'):
                             cleaned_column_types = []
