@@ -1,6 +1,6 @@
 <tool id="interactive_ml_tool_jupyter_notebook" tool_type="interactive" name="Interactive Jupyter Notebook for Machine learning" version="0.1">
     <requirements>
-	    <container type="docker">docker.io/anupkumar/sample-docker-ml-jupyter:latest</container>
+        <container type="docker">docker.io/anupkumar/sample-docker-ml-jupyter:latest</container>
     </requirements>
     <entry_points>
         <entry_point name="Jupyter Interactive Tool" requires_domain="True">
@@ -17,7 +17,8 @@
         <environment_variable name="API_KEY" inject="api_key" />
     </environment_variables>
     <command detect_errors="aggressive"><![CDATA[
-        #import re
+	#import re
+	echo "Inside tool definition....================" &&
         export GALAXY_WORKING_DIR=`pwd` &&
         mkdir -p ./jupyter/outputs/ &&
         mkdir -p ./jupyter/data &&
@@ -27,9 +28,9 @@
 
         ## change into the directory where the notebooks are located
         cd ./jupyter/ &&
-	export PATH=/usr/local/bin:\$PATH &&
+	##export PATH=/usr/local/bin:\$PATH &&
 	cp '$__tool_directory__/default_notebook_ml.ipynb' ./ipython_galaxy_notebook_ml.ipynb &&
-	chown -R \$NB_USER `pwd` &&
+	chown -R \$NB_USER:users `pwd` &&
 	##chown \$NB_USER ./ipython_galaxy_notebook_ml.ipynb &&
         jupyter trust ./ipython_galaxy_notebook_ml.ipynb &&
 	/usr/local/bin/start-notebook.sh 
