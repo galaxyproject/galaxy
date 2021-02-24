@@ -24,6 +24,9 @@
 import { DatasetCollection } from "../model/DatasetCollection";
 import { STATES } from "../model";
 
+/**
+ * A dataset collection contained within another collection. Read-only
+ */
 export default {
     props: {
         item: { type: Object, required: true },

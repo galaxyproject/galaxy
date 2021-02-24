@@ -34,7 +34,17 @@ export default {
     mixins: [Focusable],
 
     props: {
+        /**
+         * Collection content result, raw props for either a nested dataset or a nested collection,
+         * both of which typically have less props than the root versions.
+         *
+         * @var {Object}
+         */
         item: { type: Object, required: true, validator: DatasetCollection.isValidCollectionProps },
+        /**
+         * Position within the rendered list of collection content. This is not a data derived index
+         * like HID, and only reprsents the position within the currently rendered window of contents.
+         */
         index: { type: Number, required: true },
     },
 

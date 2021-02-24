@@ -22,6 +22,9 @@ the data for the dataset on-click
 import { DatasetProvider } from "../providers";
 import { DatasetUI } from "./Dataset";
 
+/**
+ * A dataset contained within a dataset collection. Read-only
+ */
 export default {
     components: {
         DatasetProvider,

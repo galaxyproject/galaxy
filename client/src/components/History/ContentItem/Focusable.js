@@ -1,5 +1,7 @@
-// Mixin with focus-hilight dom stuff
-
+/**
+ * This mixin provides minor highlighting behavior through direct DOM focus manipulation. Simply
+ * lets the user flip up and down the list with the arrow keys.
+ */
 export default {
     data: () => ({
         suppressFocus: false,

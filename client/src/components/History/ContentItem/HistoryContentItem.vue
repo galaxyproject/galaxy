@@ -28,6 +28,10 @@ import { Content } from "../model";
 import { deleteContent, updateContentFields } from "../model/queries";
 import { cacheContent } from "../caching";
 
+/**
+ * A component representing a direct child of the history. Datasets and collections not nested
+ * inside a collection.
+ */
 export default {
     components: {
         Placeholder,
@@ -38,7 +42,17 @@ export default {
     mixins: [Focusable],
 
     props: {
+        /**
+         * Content result, raw props for either a dataset or dataset collection at the root of the history.
+         *
+         * @var {Object}
+         */
         item: { type: Object, required: true, validator: Content.isValidContentProps },
+
+        /**
+         * Number in the currently rendered list of content. This is not an index representing the
+         * position in the history, just the current list of rendered list.
+         */
         index: { type: Number, required: true },
     },
 

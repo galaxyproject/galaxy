@@ -9,6 +9,11 @@
 </template>
 
 <script>
+/**
+ * The placeholder is an error condition, and potentially a loading scenario for content that fails
+ * to load. We may use this later to enable fanster rendering when the user is scrolling very
+ * quickly through a large list.
+ */
 export default {
     props: {
         item: { type: Object, required: true },
