@@ -40,7 +40,7 @@ const tableIcons = [
 
 const manageIcons = [faAngleDoubleLeft, faSave, faFile];
 const topBarIcons = [faHome, faPlus, faInfoCircle, faTrash, faDownload, faBook];
-const librariesIcons = [faGlobe];
+const librariesIcons = [faGlobe, faPencilAlt];
 
 export function initFolderTableIcons() {
     tableIcons.forEach((icon) => {

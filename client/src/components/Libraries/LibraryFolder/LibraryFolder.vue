@@ -284,6 +284,7 @@ import { fields } from "./table-fields";
 import { Toast } from "ui/toast";
 import FolderTopBar from "./TopToolbar/FolderTopBar";
 import { initFolderTableIcons } from "components/Libraries/icons";
+import { MAX_DESCRIPTION_LENGTH, DEFAULT_PER_PAGE } from "components/Libraries/library-utils";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 initFolderTableIcons();
@@ -315,8 +316,8 @@ export default {
             unselected: [],
             expandedMessage: [],
             folderContents: [],
-            perPage: 15,
-            maxDescriptionLength: 40,
+            perPage: DEFAULT_PER_PAGE,
+            maxDescriptionLength: MAX_DESCRIPTION_LENGTH,
             filter: null,
             include_deleted: false,
             filterOn: [],
