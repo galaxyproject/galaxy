@@ -165,11 +165,6 @@ export const getAnalysisRouter = (Galaxy) => {
         },
 
         show_library_folder: function (folder_id) {
-            console.log("!!!!!!!");
-            console.log("!!!!!!!");
-            console.log("!!!!!!!");
-            console.log("!!!!!!!");
-            console.log("!!!!!!!");
             this.page.toolPanel?.component.hide(0);
             this.page.panels.right.hide();
             this._display_vue_router(LibraryFolderRouter, { folder_id: folder_id });

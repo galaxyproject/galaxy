@@ -20,14 +20,21 @@
             </template>
             <template v-slot:cell(description)="row">
                 <LibraryEditField
-                    @refreshTable="refreshTable"
-                    class="description-field"
-                    property="description"
-                    :item="row.item"
+                    @toggleDescriptionExpand="toggleDescriptionExpand(row.item)"
+                    :ref="`description-${row.item.id}`"
+                    :isExpanded="row.item.isExpanded"
+                    :isEditMode="row.item.editMode"
+                    :text="row.item.description"
                 />
             </template>
             <template v-slot:cell(synopsis)="row">
-                <LibraryEditField @refreshTable="refreshTable" property="synopsis" :item="row.item" />
+                <LibraryEditField
+                    @toggleDescriptionExpand="toggleDescriptionExpand(row.item)"
+                    :ref="`synopsis-${row.item.id}`"
+                    :isExpanded="row.item.isExpanded"
+                    :isEditMode="row.item.editMode"
+                    :text="row.item.synopsis"
+                />
             </template>
             <template v-slot:cell(is_unrestricted)="row">
                 <font-awesome-icon
@@ -44,11 +51,17 @@
                     :title="`Edit ${row.item.name}`"
                     @click="toggleEditMode(row.item)"
                 >
-                    <font-awesome-icon icon="pencil-alt" />
-                    {{ row.item.editMode ? "Cancel" : "Edit" }}
+                    <div v-if="!row.item.editMode">
+                        <font-awesome-icon icon="pencil-alt" />
+                        Edit
+                    </div>
+                    <div v-else>
+                        <font-awesome-icon :icon="['fas', 'times']" />
+                        Cancel
+                    </div>
                 </b-button>
                 <b-button
-                    v-if="row.item.can_user_manage"
+                    v-if="row.item.can_user_manage && !row.item.editMode"
                     size="sm"
                     class="lib-btn permission_folder_btn"
                     :title="'Permissions of ' + row.item.name"
@@ -56,6 +69,16 @@
                 >
                     <font-awesome-icon icon="users" />
                     Manage
+                </b-button>
+                <b-button
+                    v-if="row.item.can_user_modify && row.item.editMode"
+                    size="sm"
+                    class="lib-btn permission_folder_btn"
+                    :title="'Permissions of ' + row.item.name"
+                    @click="saveChanges(row.item)"
+                >
+                    <font-awesome-icon :icon="['far', 'save']" />
+                    Save
                 </b-button>
             </template>
         </b-table>
@@ -100,13 +123,12 @@ import { getAppRoot } from "onload/loadConfig";
 import BootstrapVue from "bootstrap-vue";
 import { Services } from "./services";
 import { fields } from "./table-fields";
-// import { Toast } from "ui/toast";
+import { Toast } from "ui/toast";
 import { initLibariesIcons } from "components/Libraries/icons";
 import { MAX_DESCRIPTION_LENGTH, DEFAULT_PER_PAGE } from "components/Libraries/library-utils";
 import LibraryEditField from "components/Libraries/LibraryEditField";
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import linkify from "linkifyjs/html";
 
 initLibariesIcons();
 
@@ -144,15 +166,25 @@ export default {
         },
         toggleDescriptionExpand(item) {
             item.isExpanded = !item.isExpanded;
-            console.log("isExpanded");
-            console.log(item.isExpanded);
-            this.$emit("refreshTable");
-        },
-        refreshTable() {
-            console.log("!!!!!!");
-            console.log("refresh");
-            console.log("!!!!!!");
             this.$refs.libraries_list.refresh();
+        },
+        saveChanges(item) {
+            item.description = this.$refs[`description-${item.id}`].textField;
+            item.synopsis = this.$refs[`synopsis-${item.id}`].textField;
+            this.services.saveChanges(
+                item,
+                () => {
+                    Toast.success("Changes to library saved");
+                },
+                (error) => {
+                    if (typeof error.responseJSON !== "undefined") {
+                        Toast.error(error.responseJSON.err_msg);
+                    } else {
+                        Toast.error("An error occurred while attempting to update the library.");
+                    }
+                }
+            );
+            this.toggleEditMode(item);
         },
     },
 };

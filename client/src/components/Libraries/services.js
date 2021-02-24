@@ -16,4 +16,20 @@ export class Services {
             rethrowSimple(e);
         }
     }
+    async saveChanges(lib, onSucess, onError) {
+        const url = `http://localhost:8080/api/libraries/${lib.id}`;
+        try {
+            const response = axios
+                .patch(url, lib)
+                .then((response) => {
+                    onSucess(response.data);
+                })
+                .catch((error) => {
+                    onError(error);
+                });
+            return response.data;
+        } catch (e) {
+            rethrowSimple(e);
+        }
+    }
 }

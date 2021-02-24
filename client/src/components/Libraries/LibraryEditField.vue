@@ -1,12 +1,12 @@
 <template>
     <div>
-        <div class="description-field" v-if="text">
+        <div class="description-field">
             <!-- edit mode -->
-            <div v-if="item.editMode">
-                <textarea class="form-control" :ref="`description-${item.id}`" :value="text" rows="3" />
+            <div v-if="isEditMode">
+                <textarea class="form-control" v-model="textField" rows="3" />
             </div>
             <!-- shrink long text -->
-            <div v-else-if="text > maxDescriptionLength && !item.isExpanded">
+            <div v-else-if="text.length > maxDescriptionLength && !isExpanded">
                 <span
                     class="shrinked-description"
                     :title="text"
@@ -14,7 +14,7 @@
                 >
                 </span>
                 <span :title="text">...</span>
-                <a class="more-text-btn" @click="toggleDescriptionExpand(item)" href="javascript:void(0)">(more) </a>
+                <a class="more-text-btn" @click="toggleDescriptionExpand" href="javascript:void(0)">(more) </a>
             </div>
             <!-- Regular -->
             <div v-else>
@@ -23,7 +23,7 @@
                 <a
                     v-if="text.length > maxDescriptionLength"
                     class="more-text-btn"
-                    @click="toggleDescriptionExpand(item)"
+                    @click="toggleDescriptionExpand"
                     href="javascript:void(0)"
                     >(less)
                 </a>
@@ -42,8 +42,8 @@ Vue.use(BootstrapVue);
 
 export default {
     props: {
-        item: {
-            type: Object,
+        text: {
+            type: String,
         },
         isEditMode: {
             type: Boolean,
@@ -51,23 +51,17 @@ export default {
         isExpanded: {
             type: Boolean,
         },
-        property: {
-            type: String,
-        },
     },
     data() {
         return {
             maxDescriptionLength: MAX_DESCRIPTION_LENGTH,
+            textField: this.text,
         };
     },
-    computed: {
-        text() {
-            return this.item[this.property];
-        },
-    },
     methods: {
-
-
+        toggleDescriptionExpand() {
+            this.$emit("toggleDescriptionExpand")
+        },
         linkify(raw_text) {
             return linkify(raw_text);
         },
