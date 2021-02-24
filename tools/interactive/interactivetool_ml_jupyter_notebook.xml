@@ -27,8 +27,12 @@
 
         ## change into the directory where the notebooks are located
         cd ./jupyter/ &&
-	export PATH=/home/jovyan/.local/bin:/usr/local/bin:\$PATH &&
-        /usr/local/bin/start-notebook.sh
+	export PATH=/usr/local/bin:\$PATH &&
+	cp '$__tool_directory__/default_notebook_ml.ipynb' ./ipython_galaxy_notebook_ml.ipynb &&
+	chown -R \$NB_USER `pwd` &&
+	##chown \$NB_USER ./ipython_galaxy_notebook_ml.ipynb &&
+        jupyter trust ./ipython_galaxy_notebook_ml.ipynb &&
+	/usr/local/bin/start-notebook.sh 
 	
 	##if $mode.mode_select == 'scratch':
             ## copy default notebook
