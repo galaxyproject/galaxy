@@ -1339,7 +1339,7 @@ class CMAP(TabularData):
                         fields = l.split('\t')
                         if len(fields) == 2:
                             if fields[0] == '# CMAP File Version:':
-                                dataset.metadata.cmap_version == fields[1].strip('\n')
+                                dataset.metadata.cmap_version = fields[1].strip('\n')
                             elif fields[0] == '# Label Channels:':
                                 dataset.metadata.label_channels = int(fields[1].strip('\n'))
                             elif fields[0] == '# Nickase Recognition Site 1:':
