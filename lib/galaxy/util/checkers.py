@@ -1,15 +1,12 @@
 import bz2
 import gzip
-import io
 import re
 import tarfile
 import zipfile
-
-from six import (
+from io import (
     BytesIO,
     StringIO
 )
-from six.moves import filter
 
 from galaxy import util
 from galaxy.util.image_util import image_type
@@ -31,7 +28,7 @@ def check_html(name, file_path=True):
     """
     # Handles files if file_path is True or text if file_path is False
     if file_path:
-        temp = io.open(name, "r", encoding='utf-8')
+        temp = open(name, encoding='utf-8')
     else:
         temp = StringIO(util.unicodify(name))
     try:

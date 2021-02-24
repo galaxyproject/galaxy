@@ -17,7 +17,7 @@ try:
     from boto.s3.connection import S3Connection
     from boto.s3.key import Key
 except ImportError:
-    boto = None
+    boto = None  # type: ignore
 
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.util import (
@@ -69,7 +69,7 @@ def parse_config_xml(config_xml):
         tag, attrs = 'extra_dir', ('type', 'path')
         extra_dirs = config_xml.findall(tag)
         if not extra_dirs:
-            msg = 'No {tag} element in XML tree'.format(tag=tag)
+            msg = f'No {tag} element in XML tree'
             log.error(msg)
             raise Exception(msg)
         extra_dirs = [{k: e.get(k) for k in attrs} for e in extra_dirs]

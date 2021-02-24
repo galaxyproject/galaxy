@@ -6,8 +6,7 @@ import copy
 import logging
 import os
 import re
-
-from six import StringIO
+from io import StringIO
 
 from galaxy.model import (
     HistoryDatasetAssociation,
@@ -166,7 +165,7 @@ class DataMetaFilter(Filter):
             if isinstance(m, list):
                 meta_value |= set(m)
             elif isinstance(m, dict):
-                meta_value |= set(["%s,%s" % (k, v) for k, v in m.items()])
+                meta_value |= {f"{k},{v}" for k, v in m.items()}
             elif isinstance(m, str) and os.path.isfile(m):
                 with open(m) as fh:
                     for line in fh:
@@ -190,10 +189,10 @@ class DataMetaFilter(Filter):
         try:
             ref = _get_ref_data(other_values, self.ref_name)
         except KeyError:  # no such dataset
-            log.warn("could not filter by metadata: %s unknown" % self.ref_name)
+            log.warning("could not filter by metadata: %s unknown" % self.ref_name)
             return []
         except ValueError:  # not a valid dataset
-            log.warn("could not filter by metadata: %s not a data or collection parameter" % self.ref_name)
+            log.warning("could not filter by metadata: %s not a data or collection parameter" % self.ref_name)
             return []
         # get the metadata value.
         # - for lists: (of data sets) and collections the meta data values of all
@@ -662,10 +661,10 @@ class DynamicOptions:
             try:
                 datasets = _get_ref_data(other_values, self.dataset_ref_name)
             except KeyError:  # no such dataset
-                log.warn("could not create dynamic options from_dataset: %s unknown" % self.dataset_ref_name)
+                log.warning("could not create dynamic options from_dataset: %s unknown" % self.dataset_ref_name)
                 return []
             except ValueError:  # not a valid dataset
-                log.warn("could not create dynamic options from_dataset: %s not a data or collection parameter" % self.dataset_ref_name)
+                log.warning("could not create dynamic options from_dataset: %s not a data or collection parameter" % self.dataset_ref_name)
                 return []
 
             options = []
@@ -680,7 +679,7 @@ class DynamicOptions:
                 else:
                     # Pass just the first megabyte to parse_file_fields.
                     log.warning("Attempting to load options from large file, reading just first megabyte")
-                    with open(path, 'r') as fh:
+                    with open(path) as fh:
                         contents = fh.read(1048576)
                     options += self.parse_file_fields(StringIO(contents))
         elif self.tool_data_table:

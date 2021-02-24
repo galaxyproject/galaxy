@@ -12,7 +12,6 @@ import random
 import shutil
 import threading
 import time
-from collections import OrderedDict
 
 import yaml
 
@@ -171,11 +170,33 @@ class ObjectStore(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def get_object_url(self, obj, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False):
         """
-        Return the URL for direct acces if supported, otherwise return None.
+        Return the URL for direct access if supported, otherwise return None.
 
         Note: need to be careful to not bypass dataset security with this.
         """
         raise NotImplementedError()
+
+    @abc.abstractmethod
+    def get_concrete_store_name(self, obj):
+        """Return a display name or title of the objectstore corresponding to obj.
+
+        To accommodate nested objectstores, obj is passed in so this metadata can
+        be returned for the ConcreteObjectStore corresponding to the object.
+
+        If the dataset is in a new or discarded state and an object_store_id has not
+        yet been set, this may return ``None``.
+        """
+
+    @abc.abstractmethod
+    def get_concrete_store_description_markdown(self, obj):
+        """Return a longer description of how data 'obj' is stored.
+
+        To accommodate nested objectstores, obj is passed in so this metadata can
+        be returned for the ConcreteObjectStore corresponding to the object.
+
+        If the dataset is in a new or discarded state and an object_store_id has not
+        yet been set, this may return ``None``.
+        """
 
     @abc.abstractmethod
     def get_store_usage_percent(self):
@@ -296,6 +317,12 @@ class BaseObjectStore(ObjectStore):
     def get_object_url(self, obj, **kwargs):
         return self._invoke('get_object_url', obj, **kwargs)
 
+    def get_concrete_store_name(self, obj):
+        return self._invoke('get_concrete_store_name', obj)
+
+    def get_concrete_store_description_markdown(self, obj):
+        return self._invoke('get_concrete_store_description_markdown', obj)
+
     def get_store_usage_percent(self):
         return self._invoke('get_store_usage_percent')
 
@@ -327,11 +354,21 @@ class ConcreteObjectStore(BaseObjectStore):
             config_dict = {}
         super().__init__(config=config, config_dict=config_dict, **kwargs)
         self.store_by = config_dict.get("store_by", None) or getattr(config, "object_store_store_by", "id")
+        self.name = config_dict.get("name", None)
+        self.description = config_dict.get("description", None)
 
     def to_dict(self):
         rval = super().to_dict()
         rval["store_by"] = self.store_by
+        rval["name"] = self.name
+        rval["description"] = self.description
         return rval
+
+    def _get_concrete_store_name(self, obj):
+        return self.name
+
+    def _get_concrete_store_description_markdown(self, obj):
+        return self.description
 
     def _get_store_by(self, obj):
         return self.store_by
@@ -382,9 +419,14 @@ class DiskObjectStore(ConcreteObjectStore):
             store_by = config_xml.attrib.get('store_by', None)
             if store_by is not None:
                 config_dict['store_by'] = store_by
+            name = config_xml.attrib.get('name', None)
+            if name is not None:
+                config_dict['name'] = name
             for e in config_xml:
                 if e.tag == 'files_dir':
                     config_dict["files_dir"] = e.get('path')
+                elif e.tag == 'description':
+                    config_dict["description"] = e.text
                 else:
                     extra_dirs.append({"type": e.get('type'), "path": e.get('path')})
 
@@ -663,6 +705,12 @@ class NestedObjectStore(BaseObjectStore):
         """For the first backend that has this `obj`, get its URL."""
         return self._call_method('_get_object_url', obj, None, False, **kwargs)
 
+    def _get_concrete_store_name(self, obj):
+        return self._call_method('_get_concrete_store_name', obj, None, False)
+
+    def _get_concrete_store_description_markdown(self, obj):
+        return self._call_method('_get_concrete_store_description_markdown', obj, None, False)
+
     def _get_store_by(self, obj):
         return self._call_method('_get_store_by', obj, None, False)
 
@@ -670,7 +718,7 @@ class NestedObjectStore(BaseObjectStore):
         try:
             # there are a few objects in python that don't have __class__
             obj_id = self._get_object_id(obj)
-            return '{}({}={})'.format(obj.__class__.__name__, self.store_by, obj_id)
+            return f'{obj.__class__.__name__}({self.store_by}={obj_id})'
         except AttributeError:
             return str(obj)
 
@@ -886,10 +934,10 @@ class HierarchicalObjectStore(NestedObjectStore):
     store_type = 'hierarchical'
 
     def __init__(self, config, config_dict, fsmon=False):
-        """The default contructor. Extends `NestedObjectStore`."""
+        """The default constructor. Extends `NestedObjectStore`."""
         super().__init__(config, config_dict)
 
-        backends = OrderedDict()
+        backends = {}
         for order, backend_def in enumerate(config_dict["backends"]):
             backends[order] = build_object_store_from_config(config, config_dict=backend_def, fsmon=fsmon)
 
@@ -1008,7 +1056,7 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None, config_
 
     objectstore_class, objectstore_constructor_kwds = type_to_object_store_class(store, fsmon=fsmon)
     if objectstore_class is None:
-        log.error("Unrecognized object store definition: {}".format(store))
+        log.error(f"Unrecognized object store definition: {store}")
 
     if from_object == 'xml':
         return objectstore_class.from_xml(config=config, config_xml=config_xml, **objectstore_constructor_kwds)

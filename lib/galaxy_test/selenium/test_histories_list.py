@@ -1,6 +1,5 @@
 from .framework import (
     retry_assertion_during_transitions,
-    retry_during_transitions,
     selenium_test,
     SharedStateSeleniumTestCase,
 )
@@ -43,7 +42,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
         # Publish the history
         self.click_grid_popup_option(self.history2_name, 'Share or Publish')
-        self.components.histories.sharing.make_accessible_and_publish.wait_for_and_click()
+        self.make_accessible_and_publishable()
 
         self.navigate_to_histories_page()
 
@@ -251,17 +250,8 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         else:
             self.assertEqual(intersection, set())
 
-    @retry_during_transitions
     def get_histories(self):
-        self.sleep_for(self.wait_types.UX_RENDER)
-        names = []
-        grid = self.wait_for_selector('#grid-table-body')
-        for row in grid.find_elements_by_tag_name('tr'):
-            td = row.find_elements_by_tag_name('td')
-            name = td[1].text if td[0].text == '' else td[0].text
-            if name != "No items" and not name.startswith("No matching entries found"):
-                names.append(name)
-        return names
+        return self.histories_get_history_names()
 
     def set_filter(self, selector, value):
         filter_input = self.wait_for_selector_clickable(selector)
@@ -274,11 +264,6 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
             (filter_key, filter_value)
         self.wait_for_and_click_selector(close_button_selector)
         self.sleep_for(self.wait_types.UX_RENDER)
-
-    def navigate_to_histories_page(self):
-        self.home()
-        self.click_masthead_user()  # Open masthead menu
-        self.components.masthead.histories.wait_for_and_click()
 
     def setup_shared_state(self):
         SavedHistoriesTestCase.user_email = self._get_random_email()

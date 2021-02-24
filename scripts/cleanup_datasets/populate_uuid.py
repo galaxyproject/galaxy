@@ -6,7 +6,6 @@ Populates blank uuid fields in datasets with randomly generated values
 Going forward, these ids will be generated for all new datasets. This
 script fixes datasets that were generated before the change.
 """
-from __future__ import print_function
 
 import argparse
 import os

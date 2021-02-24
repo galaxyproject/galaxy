@@ -67,6 +67,11 @@ module.exports = (env = {}, argv = {}) => {
                     loader: "vue-loader",
                 },
                 {
+                         test: /\.mjs$/,
+                         include: /node_modules/,
+                         type: 'javascript/auto'
+                },
+                {
                     test: /\.js$/,
                     /*
                      * Babel transpile excludes for:
@@ -177,6 +182,10 @@ module.exports = (env = {}, argv = {}) => {
                 {
                     test: /\.(txt|tmpl)$/,
                     loader: "raw-loader",
+                },
+                {
+                    test: /\.worker\.js$/,
+                    use: { loader: 'worker-loader' },
                 },
             ],
         },

@@ -44,7 +44,7 @@ class UsersController(BaseAPIController):
                                   confirm=password,
                                   username=username)
         if message:
-            message = 'email: {}, username: {} - {}'.format(email, username, message)
+            message = f'email: {email}, username: {username} - {message}'
             user_dict['message'] = message
             user_dict['status'] = 'error'
         else:
@@ -72,7 +72,7 @@ class UsersController(BaseAPIController):
         return user
 
     def __get_value_mapper(self, trans):
-        value_mapper = {'id' : trans.security.encode_id}
+        value_mapper = {'id': trans.security.encode_id}
         return value_mapper
 
     @web.legacy_expose_api_anonymous

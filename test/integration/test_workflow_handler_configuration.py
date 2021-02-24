@@ -81,13 +81,11 @@ steps:
 
 
 def config_file(template, assign_with=''):
-    fd, path = tempfile.mkstemp(suffix=".xml", prefix="workflow_handler_config_")
-    os.close(fd)
-    with open(path, 'w') as config:
+    with tempfile.NamedTemporaryFile(mode='w', suffix=".xml", prefix="workflow_handler_config_", delete=False) as config:
         if assign_with:
-            assign_with = 'assign_with="{}"'.format(assign_with)
+            assign_with = f'assign_with="{assign_with}"'
         config.write(template.substitute(assign_with=assign_with))
-    return path
+    return config.name
 
 
 class BaseWorkflowHandlerConfigurationTestCase(integration_util.IntegrationTestCase):
@@ -96,7 +94,7 @@ class BaseWorkflowHandlerConfigurationTestCase(integration_util.IntegrationTestC
     assign_with = ""
 
     def setUp(self):
-        super(BaseWorkflowHandlerConfigurationTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
         self.history_id = self.dataset_populator.new_history()
@@ -117,7 +115,7 @@ class BaseWorkflowHandlerConfigurationTestCase(integration_util.IntegrationTestC
         request["inputs"] = dumps(index_map)
         request["inputs_by"] = 'step_index'
         url = "workflows/%s/invocations" % (workflow_id)
-        for i in range(n):
+        for _ in range(n):
             self._post(url, data=request)
 
     def _get_workflow_invocations(self):

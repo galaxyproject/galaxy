@@ -4,13 +4,13 @@
             <div class="unified-panel-header-inner">
                 <div class="panel-header-buttons">
                     <favorites-button :query="query" @onFavorites="onFavorites" v-if="isUser" />
-                    <upload-button />
                 </div>
                 <div class="panel-header-text">Tools</div>
             </div>
         </div>
         <div class="unified-panel-controls">
             <tool-search :query="query" placeholder="search tools" @onQuery="onQuery" @onResults="onResults" />
+            <upload-button />
             <div class="py-2" v-if="hasResults">
                 <b-button @click="onToggle" size="sm" class="w-100">
                     <span :class="buttonIcon" />
@@ -18,10 +18,10 @@
                 </b-button>
             </div>
             <div class="py-2" v-else-if="queryTooShort">
-                <b-badge class="w-100">Search string too short!</b-badge>
+                <b-badge class="alert-danger w-100">Search string too short!</b-badge>
             </div>
             <div class="py-2" v-else-if="queryFinished">
-                <b-badge class="w-100">No results found!</b-badge>
+                <b-badge class="alert-danger w-100">No results found!</b-badge>
             </div>
         </div>
         <div class="unified-panel-body">
@@ -35,9 +35,7 @@
                         @onClick="onOpen"
                     />
                 </div>
-
                 <tool-section :category="{ text: workflowTitle }" />
-
                 <div id="internal-workflows" class="toolSectionBody">
                     <div class="toolSectionBg" />
                     <div class="toolTitle" v-for="wf in workflows" :key="wf.id">
@@ -52,7 +50,7 @@
 <script>
 import ToolSection from "./Common/ToolSection";
 import ToolSearch from "./Common/ToolSearch";
-import UploadButton from "./Buttons/UploadButton";
+import { UploadButton } from "components/Upload";
 import FavoritesButton from "./Buttons/FavoritesButton";
 import { filterToolSections, filterTools } from "./utilities";
 import { getGalaxyInstance } from "app";
@@ -145,12 +143,12 @@ export default {
             this.query = term;
         },
         onOpen(tool, evt) {
-            const Galaxy = getGalaxyInstance();
             if (tool.id === "upload1") {
                 evt.preventDefault();
-                Galaxy.upload.show();
+                this.eventHub.$emit("upload:open");
             } else if (tool.form_style === "regular") {
                 evt.preventDefault();
+                const Galaxy = getGalaxyInstance();
                 Galaxy.router.push("/", {
                     tool_id: tool.id,
                     version: tool.version,

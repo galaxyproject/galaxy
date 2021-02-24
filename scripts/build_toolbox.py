@@ -1,11 +1,10 @@
-from __future__ import print_function
-
 import os
+from collections import defaultdict
+from xml.dom import minidom
 from xml.etree import ElementTree as ET
 
 
 def prettify(elem):
-    from xml.dom import minidom
     rough_string = ET.tostring(elem, 'utf-8')
     repaired = minidom.parseString(rough_string)
     return repaired.toprettyxml(indent='  ')
@@ -14,7 +13,7 @@ def prettify(elem):
 # Build a list of all toolconf xml files in the tools directory
 def getfilenamelist(startdir):
     filenamelist = []
-    for root, dirs, files in os.walk(startdir):
+    for root, _dirs, files in os.walk(startdir):
         for fn in files:
             fullfn = os.path.join(root, fn)
             if fn.endswith('toolconf.xml'):
@@ -36,9 +35,8 @@ def getfilenamelist(startdir):
     return filenamelist
 
 
-class ToolBox(object):
+class ToolBox:
     def __init__(self):
-        from collections import defaultdict
         self.tools = defaultdict(list)
         self.sectionorders = {}
 
@@ -157,7 +155,7 @@ def scanfiles(filenamelist):
 def assemble():
     filenamelist = []
     for directorytree in ['tools']:
-        filenamelist.extend(getfilenamelist('tools'))
+        filenamelist.extend(getfilenamelist(directorytree))
     filenamelist.sort()
 
     toolbox = scanfiles(filenamelist)

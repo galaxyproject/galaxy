@@ -5,9 +5,9 @@ import os
 import shutil
 import sys
 import tempfile
+from io import StringIO
 
 import bdbag.bdbag_api
-from six.moves import StringIO
 
 from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry
@@ -384,7 +384,7 @@ def _has_src_to_path(upload_config, item, is_dataset=False):
         try:
             path = sniff.stream_url_to_file(url, file_sources=get_file_sources(upload_config.working_directory))
         except Exception as e:
-            raise Exception("Failed to fetch url %s. %s" % (url, str(e)))
+            raise Exception("Failed to fetch url {}. {}".format(url, str(e)))
 
         if not is_dataset:
             # Actual target dataset will validate and put results in dict
@@ -411,7 +411,7 @@ def _handle_hash_validation(upload_config, hash_function, hash_value, path):
     if upload_config.validate_hashes:
         calculated_hash_value = memory_bound_hexdigest(hash_func_name=hash_function, path=path)
         if calculated_hash_value != hash_value:
-            raise Exception("Failed to validate upload with [{}] - expected [{}] got [{}]".format(hash_function, hash_value, calculated_hash_value))
+            raise Exception(f"Failed to validate upload with [{hash_function}] - expected [{hash_value}] got [{calculated_hash_value}]")
 
 
 def _arg_parser():
@@ -451,7 +451,7 @@ class UploadConfig:
         self.registry = registry
         self.working_directory = working_directory
         self.allow_failed_collections = allow_failed_collections
-        self.check_content = request.get("check_content" , True)
+        self.check_content = request.get("check_content", True)
         self.to_posix_lines = request.get("to_posix_lines", False)
         self.space_to_tab = request.get("space_to_tab", False)
         self.auto_decompress = request.get("auto_decompress", False)
@@ -510,7 +510,7 @@ def _for_each_src(f, obj):
     if isinstance(obj, dict):
         if "src" in obj:
             f(obj)
-        for key, value in obj.items():
+        for value in obj.values():
             _for_each_src(f, value)
 
 

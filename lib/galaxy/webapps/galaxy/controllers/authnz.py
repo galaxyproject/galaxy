@@ -3,6 +3,7 @@ OAuth 2.0 and OpenID Connect Authentication and Authorization Controller.
 """
 
 
+import datetime
 import json
 import logging
 
@@ -42,8 +43,23 @@ class OIDC(JSAppLauncher):
             rtv.append({'id': trans.app.security.encode_id(authnz.id), 'provider': authnz.provider, 'email': authnz.uid})
         # Add cilogon and custos identities
         for token in trans.user.custos_auth:
-            userinfo = jwt.decode(token.id_token, verify=False)
-            rtv.append({'id': trans.app.security.encode_id(token.id), 'provider': token.provider, 'email': userinfo['email']})
+            # for purely displaying the info to user, we bypass verification of
+            # signature, audience, and expiration as that's potentially useful
+            # information to share with the end user
+            try:
+                userinfo = jwt.decode(token.id_token, options={'verify_signature': False, 'verify_aud': False, 'verify_exp': False})
+                rtv.append({
+                    'id': trans.app.security.encode_id(token.id),
+                    'provider': token.provider,
+                    'email': userinfo['email'],
+                    'expiration': str(datetime.datetime.utcfromtimestamp(userinfo['exp']))
+                })
+            except Exception:
+                rtv.append({
+                    'id': trans.app.security.encode_id(token.id),
+                    'provider': token.provider,
+                    'error': "Unable to decode token"
+                })
         return rtv
 
     @web.json
@@ -63,7 +79,7 @@ class OIDC(JSAppLauncher):
     def callback(self, trans, provider, idphint=None, **kwargs):
         user = trans.user.username if trans.user is not None else 'anonymous'
         if not bool(kwargs):
-            log.error("OIDC callback received no data for provider `{}` and user `{}`".format(provider, user))
+            log.error(f"OIDC callback received no data for provider `{provider}` and user `{user}`")
             return trans.show_error_message(
                 'Did not receive any information from the `{}` identity provider to complete user `{}` authentication '
                 'flow. Please try again, and if the problem persists, contact the Galaxy instance admin. Also note '
@@ -86,6 +102,11 @@ class OIDC(JSAppLauncher):
             raise
         if success is False:
             return trans.show_error_message(message)
+        if "?confirm" in redirect_url:
+            return trans.response.send_redirect(url_for(redirect_url))
+        elif redirect_url is None:
+            redirect_url = url_for('/')
+
         user = user if user is not None else trans.user
         if user is None:
             return trans.show_error_message("An unknown error occurred when handling the callback from `{}` "
@@ -94,7 +115,31 @@ class OIDC(JSAppLauncher):
         trans.handle_user_login(user)
         # Record which idp provider was logged into, so we can logout of it later
         trans.set_cookie(value=provider, name=PROVIDER_COOKIE_NAME)
-        return trans.response.send_redirect(url_for('/'))
+        return trans.response.send_redirect(url_for(redirect_url))
+
+    @web.expose
+    def create_user(self, trans, provider, **kwargs):
+        try:
+            success, message, (redirect_url, user) = trans.app.authnz_manager.create_user(provider,
+                                                                                          token=kwargs.get('token', ' '),
+                                                                                          trans=trans,
+                                                                                          login_redirect_url=url_for('/'))
+        except exceptions.AuthenticationFailed as e:
+            return trans.response.send_redirect(trans.request.base + url_for('/') + 'root/login?message=' + (str(e) or "Duplicate Email"))
+
+        if success is False:
+            return trans.show_error_message(message)
+        user = user if user is not None else trans.user
+        if user is None:
+            return trans.show_error_message("An unknown error occurred when handling the callback from `{}` "
+                                            "identity provider. Please try again, and if the problem persists, "
+                                            "contact the Galaxy instance admin.".format(provider))
+        trans.handle_user_login(user)
+        # Record which idp provider was logged into, so we can logout of it later
+        trans.set_cookie(value=provider, name=PROVIDER_COOKIE_NAME)
+        if redirect_url is None:
+            redirect_url = url_for('/')
+        return trans.response.send_redirect(url_for(redirect_url))
 
     @web.expose
     @web.require_login("authenticate against the selected identity provider")

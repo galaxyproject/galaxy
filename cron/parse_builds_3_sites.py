@@ -2,7 +2,6 @@
 """
 Connects to sites and determines which builds are available at each.
 """
-from __future__ import print_function
 
 import xml.etree.ElementTree as ElementTree
 

@@ -4,9 +4,12 @@ Job control via the DRMAA API / qstat and qacct.
 Known to work on the UNIVA grid engine.
 
 known bugs/problems:
+
 - if a job runs longer than the time limits of the queue two things happen
+
   1. at the soft limit (s_rt) SIGUSR1 is sent to the job
   2. at the hard limit (h_rt) SIGKILL is sent to the job
+
   The second case is covered by the runner -- it's the same mechanism that
   kills a job when the job time limit is reached. The first case is currently
   not covered. The good thing is that most programs ignore SIGUSR1.
@@ -14,11 +17,12 @@ known bugs/problems:
   at random.
 
   Possible solutions:
+
   - configure the job destinations such that the queue limits are never reached.
     the time limits can be determined with
     `for i in `qconf -sql`; do qconf -sq $i | grep -E '(h|s)_rt'; done`
-
   - extend the job runner to cover s_rt cases (some ideas):
+
     * I'm unsure if the programs reaction to SIGUSR1 can be determined easily
       because it depends on the program. It seems that exit code is in most
       cases 10.
@@ -91,13 +95,13 @@ class UnivaJobRunner(DRMAAJobRunner):
                 ajs.fail_message = "This job failed because it was cancelled."
                 drmaa_state = self.drmaa.JobState.FAILED
             elif ("signal" in extinfo and extinfo["signal"] == "SIGKILL") and time_wasted > time_granted:
-                log.error('({tag}/{jobid}) Job hit walltime'.format(tag=ajs.job_wrapper.get_id_tag(), jobid=ajs.job_id))
+                log.error(f'({ajs.job_wrapper.get_id_tag()}/{ajs.job_id}) Job hit walltime')
                 ajs.fail_message = "This job was terminated because it ran longer than the maximum allowed job run time."
                 ajs.runner_state = ajs.runner_states.WALLTIME_REACHED
                 drmaa_state = self.drmaa.JobState.FAILED
             # test wasted>granted memory only if failed != 0 and exit_status != 0, ie if marked as failed
             elif state == self.drmaa.JobState.FAILED and mem_wasted > mem_granted * slots:
-                log.error('({idtag}/{jobid}) Job hit memory limit ({used}>{limit})'.format(idtag=ajs.job_wrapper.get_id_tag(), jobid=ajs.job_id, used=mem_wasted, limit=mem_granted))
+                log.error(f'({ajs.job_wrapper.get_id_tag()}/{ajs.job_id}) Job hit memory limit ({mem_wasted}>{mem_granted})')
                 ajs.fail_message = "This job was terminated because it used more than the maximum allowed memory."
                 ajs.runner_state = ajs.runner_states.MEMORY_LIMIT_REACHED
                 drmaa_state = self.drmaa_job_states.FAILED
@@ -106,10 +110,10 @@ class UnivaJobRunner(DRMAAJobRunner):
             # TODO return True?
             return True  # job was not actually terminal
         elif state == self.drmaa.JobState.UNDETERMINED:
-            log.warning('({tag}/{jobid}) Job state could not be determined'.format(tag=ajs.job_wrapper.get_id_tag(), jobid=ajs.job_id))
+            log.warning(f'({ajs.job_wrapper.get_id_tag()}/{ajs.job_id}) Job state could not be determined')
             drmaa_state = self.drmaa_job_states.FAILED
         else:
-            log.error("DRMAAUniva: job {job_id} determined unknown state {state}".format(job_id=ajs.job_id, state=state))
+            log.error(f"DRMAAUniva: job {ajs.job_id} determined unknown state {state}")
             drmaa_state = self.drmaa_job_states.FAILED
         # by default, finish the job with the state from drmaa
         return super()._complete_terminal_job(ajs, drmaa_state=drmaa_state)
@@ -203,7 +207,7 @@ class UnivaJobRunner(DRMAAJobRunner):
             try:
                 stdout = commands.execute(cmd).strip()
             except commands.CommandLineException as e:
-                if slp <= 32 and "job id {jobid} not found".format(jobid=job_id) in e.stderr:
+                if slp <= 32 and f"job id {job_id} not found" in e.stderr:
                     time.sleep(slp)
                     slp *= 2
                     continue
@@ -397,7 +401,7 @@ class UnivaJobRunner(DRMAAJobRunner):
         extinfo["slots"] = float(rv.resourceUsage['slots'])
         # log.debug("wait -> \texitStatus {0}\thasCoreDump {1}\thasExited {2}\thasSignal {3}\tjobId {4}\t\tterminatedSignal {5}\twasAborted {6}\tresourceUsage {7}".format(rv.exitStatus, rv.hasCoreDump, rv.hasExited, rv.hasSignal, rv.jobId, rv.terminatedSignal, rv.wasAborted, rv.resourceUsage))
         if rv.wasAborted:
-            log.error("DRMAAUniva: job {job_id} was aborted according to wait()".format(job_id=job_id))
+            log.error(f"DRMAAUniva: job {job_id} was aborted according to wait()")
             extinfo["deleted"] = True
             return self.drmaa.JobState.FAILED
 
@@ -405,19 +409,19 @@ class UnivaJobRunner(DRMAAJobRunner):
         # but also violation of scheduler constraints
         state = self.drmaa.JobState.DONE
         if rv.exitStatus != 0:
-            log.error("DRMAAUniva: job {job_id} has exit status {status}".format(job_id=job_id, status=rv.exitStatus))
+            log.error(f"DRMAAUniva: job {job_id} has exit status {rv.exitStatus}")
             extinfo["state"] = self.drmaa.JobState.FAILED
 
         if not rv.hasExited or rv.hasSignal:
             if rv.hasCoreDump != 0:
-                log.error("DRMAAUniva: job {job_id} has core dump".format(job_id=job_id))
+                log.error(f"DRMAAUniva: job {job_id} has core dump")
                 extinfo["state"] = self.drmaa.JobState.FAILED
             elif len(rv.terminatedSignal) > 0:
-                log.error("DRMAAUniva: job {job_id} was kill by signal {signal}".format(job_id=job_id, signal=rv.terminatedSignal))
+                log.error(f"DRMAAUniva: job {job_id} was kill by signal {rv.terminatedSignal}")
                 state = self.drmaa.JobState.FAILED
                 extinfo["signal"] = rv.terminatedSignal
             elif rv.wasAborted == 0:
-                log.error("DRMAAUniva: job {job_id} has finished in unclear condition".format(job_id=job_id))
+                log.error(f"DRMAAUniva: job {job_id} has finished in unclear condition")
                 state = self.drmaa.JobState.FAILED
         # log.debug("UnivaJobRunner._get_drmaa_state_wait ({jobid}) -> {state}".format(jobid=job_id, state=self.drmaa_job_state_strings[state]))
         return state
@@ -535,7 +539,7 @@ class UnivaJobRunner(DRMAAJobRunner):
         elif "w" in state:
             return self.drmaa.JobState.QUEUED_ACTIVE
         else:
-            log.error("DRMAAUniva: job {job_id} unknown state from qstat: {state}".format(job_id=job_id, state=state))
+            log.error(f"DRMAAUniva: job {job_id} unknown state from qstat: {state}")
             return self.drmaa.JobState.UNDETERMINED
 
 
@@ -569,12 +573,12 @@ def _parse_native_specs(job_id, native_spec):
     if m is not None:
         tme = _parse_time(m.group(1))
         if tme is None:
-            log.error("DRMAAUniva: job {job_id} has unparsable time native spec {spec}".format(job_id=job_id, spec=native_spec))
+            log.error(f"DRMAAUniva: job {job_id} has unparsable time native spec {native_spec}")
     # parse memory
     m = re.search(r"mem=([\d.]+[KGMT]?)[\s,]*", native_spec)
     if m is not None:
         mem = size_to_bytes(m.group(1))
         # mem = _parse_mem(m.group(1))
         if mem is None:
-            log.error("DRMAAUniva: job {job_id} has unparsable memory native spec {spec}".format(job_id=job_id, spec=native_spec))
+            log.error(f"DRMAAUniva: job {job_id} has unparsable memory native spec {native_spec}")
     return tme, mem

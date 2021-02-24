@@ -119,9 +119,10 @@ mapper(install_model.ToolVersion, install_model.ToolVersion.table,
 mapper(install_model.ToolVersionAssociation, install_model.ToolVersionAssociation.table)
 
 
-def init(url, engine_options={}, create_tables=False):
+def init(url, engine_options=None, create_tables=False):
     """Connect mappings to the database"""
     # Load the appropriate db module
+    engine_options = engine_options or {}
     engine = build_engine(url, engine_options)
     # Connect the metadata to the database.
     metadata.bind = engine

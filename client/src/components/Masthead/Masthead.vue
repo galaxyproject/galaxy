@@ -2,22 +2,19 @@
     <b-navbar id="masthead" type="dark" role="navigation" aria-label="Main" class="justify-content-center">
         <b-navbar-brand :href="brandLink" aria-label="homepage">
             <img alt="logo" class="navbar-brand-image" :src="brandImage" />
+            <img alt="logo" class="navbar-brand-image" :src="brandImageSecondary" v-if="brandImageSecondary" />
             <span class="navbar-brand-title">{{ brandTitle }}</span>
         </b-navbar-brand>
-
         <b-navbar-nav>
             <masthead-item
                 v-for="(tab, idx) in tabs"
                 :tab="tab"
                 :active-tab="activeTab"
                 :key="`tab-${idx}`"
-                :app-root="appRoot"
-                :galaxy="galaxy"
                 v-show="!(tab.hidden === undefined ? false : tab.hidden)"
             >
             </masthead-item>
         </b-navbar-nav>
-
         <div ref="quota-meter-container" class="quota-meter-container" />
     </b-navbar>
 </template>
@@ -37,27 +34,31 @@ export default {
         },
         brand: {
             type: String,
+            default: null,
         },
         brandLink: {
             type: String,
+            default: null,
         },
         brandImage: {
             type: String,
+            default: null,
+        },
+        brandImageSecondary: {
+            type: String,
+            default: null,
         },
         activeTab: {
             type: String,
+            default: null,
         },
         mastheadState: {
             type: Object,
-        },
-        appRoot: {
-            type: String,
-        },
-        galaxy: {
-            type: Object,
+            default: null,
         },
         menuOptions: {
             type: Object,
+            default: null,
         },
     },
     components: {
@@ -134,5 +135,3 @@ export default {
     },
 };
 </script>
-
-<style scoped></style>

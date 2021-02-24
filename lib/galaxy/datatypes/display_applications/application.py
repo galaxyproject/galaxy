@@ -1,9 +1,7 @@
 # Contains objects for using external display applications
 import logging
-from collections import OrderedDict
 from copy import deepcopy
-
-from six.moves.urllib.parse import quote_plus
+from urllib.parse import quote_plus
 
 from galaxy.util import (
     parse_xml,
@@ -47,7 +45,7 @@ class DisplayApplicationLink:
 
     def __init__(self, display_application):
         self.display_application = display_application
-        self.parameters = OrderedDict()  # parameters are populated in order, allowing lower listed ones to have values of higher listed ones
+        self.parameters = {}
         self.url_param_name_map = {}
         self.url = None
         self.id = None
@@ -65,9 +63,9 @@ class DisplayApplicationLink:
 
     def get_inital_values(self, data, trans):
         if self.other_values:
-            rval = OrderedDict(self.other_values)
+            rval = dict(self.other_values)
         else:
-            rval = OrderedDict()
+            rval = {}
         rval.update({'BASE_URL': trans.request.base, 'APP': trans.app})  # trans automatically appears as a response, need to add properties of trans that we want here
         BASE_PARAMS = {'qp': quote_plus_string, 'url_for': trans.app.url_for}
         for key, value in BASE_PARAMS.items():  # add helper functions/variables
@@ -192,7 +190,7 @@ class DynamicDisplayApplicationBuilder:
                 # now populate
                 links.append(DisplayApplicationLink.from_elem(new_elem, display_application, other_values=dynamic_values))
             else:
-                log.warning('Invalid dynamic display application link specified in {}: "{}"'.format(filename, line))
+                log.warning(f'Invalid dynamic display application link specified in {filename}: "{line}"')
         self.links = links
 
     def __iter__(self):
@@ -290,7 +288,7 @@ class DisplayApplication:
         if version is None:
             version = "1.0.0"
         self.version = version
-        self.links = OrderedDict()
+        self.links = {}
         self._filename = filename
         self._elem = elem
         self._data_table_versions = {}

@@ -1,6 +1,5 @@
 import logging
-
-import six
+import types
 
 
 class TraceLogger:
@@ -24,5 +23,5 @@ def trace(self, message, *args, **kws):
 
 def get_logger(name=None):
     logger = logging.getLogger(name)
-    logger.trace = six.create_bound_method(trace, logger)
+    logger.trace = types.MethodType(trace, logger)
     return logger

@@ -3,7 +3,7 @@ import logging
 from markupsafe import escape
 from sqlalchemy import and_, false, null, or_, true
 
-from galaxy.webapps.reports.framework import grids
+from galaxy.web.legacy_framework import grids
 from tool_shed.grids.repository_grids import RepositoryGrid
 from tool_shed.util import hg_util, metadata_util
 from tool_shed.webapp import model
@@ -37,15 +37,11 @@ class ComponentGrid(grids.Grid):
                           key="Component.description",
                           attach_popup=False)
     ]
-    default_filter = {}
     global_actions = [
         grids.GridAction("Add new component",
                          dict(controller='repository_review', action='manage_components', operation='create'))
     ]
-    operations = []
-    standard_filters = []
     num_rows_per_page = 50
-    use_paging = False
 
 
 class RepositoriesWithReviewsGrid(RepositoryGrid):
@@ -92,7 +88,8 @@ class RepositoriesWithReviewsGrid(RepositoryGrid):
                 for user in repository.reviewers:
                     rval += '<a class="view-info" href="repository_reviews_by_user?id=%s">' % trans.security.encode_id(user.id)
                     rval += '%s</a> | ' % user.username
-                rval = rval.rstrip(' | ')
+                if rval[-3:] == ' | ':
+                    rval = rval[:-3]
             return rval
 
     class RatingColumn(grids.TextColumn):
@@ -299,7 +296,7 @@ class RepositoryReviewsByUserGrid(grids.Grid):
                                                         review.changeset_revision,
                                                         include_date=True,
                                                         include_hash=False)
-            rval += '?id={}">{}</a>'.format(encoded_review_id, revision_label)
+            rval += f'?id={encoded_review_id}">{revision_label}</a>'
             return rval
 
     class RatingColumn(grids.TextColumn):
@@ -337,18 +334,13 @@ class RepositoryReviewsByUserGrid(grids.Grid):
         RevisionColumn("Revision", attach_popup=False),
         RatingColumn("Rating", attach_popup=False),
     ]
-    # Override these
-    default_filter = {}
-    global_actions = []
     operations = [
         grids.GridOperation("Inspect repository revisions",
                             allow_multiple=False,
                             condition=(lambda item: not item.deleted),
                             async_compatible=False)
     ]
-    standard_filters = []
     num_rows_per_page = 50
-    use_paging = False
 
     def build_initial_query(self, trans, **kwd):
         user_id = trans.security.decode_id(kwd['id'])

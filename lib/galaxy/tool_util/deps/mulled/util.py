@@ -48,7 +48,7 @@ def quay_versions(namespace, pkg_name, session=None):
 def quay_repository(namespace, pkg_name, session=None):
     assert namespace is not None
     assert pkg_name is not None
-    url = 'https://quay.io/api/v1/repository/{}/{}'.format(namespace, pkg_name)
+    url = f'https://quay.io/api/v1/repository/{namespace}/{pkg_name}'
     if not session:
         session = requests.session()
     response = session.get(url, timeout=QUAY_IO_TIMEOUT)
@@ -187,7 +187,7 @@ def _simple_image_name(targets, image_build=None):
         suffix += ":%s" % target.version
         if build is not None:
             suffix += "--%s" % build
-    return "{}{}".format(target.package_name, suffix)
+    return f"{target.package_name}{suffix}"
 
 
 def v1_image_name(targets, image_build=None, name_override=None):
@@ -224,7 +224,7 @@ def v1_image_name(targets, image_build=None, name_override=None):
         m = hashlib.sha1()
         m.update(requirements_buffer.encode())
         suffix = "" if not image_build else ":%s" % image_build
-        return "mulled-v1-{}{}".format(m.hexdigest(), suffix)
+        return f"mulled-v1-{m.hexdigest()}{suffix}"
 
 
 def v2_image_name(targets, image_build=None, name_override=None):
@@ -290,8 +290,8 @@ def v2_image_name(targets, image_build=None, name_override=None):
             build_suffix = image_build
         suffix = ""
         if version_hash_str or build_suffix:
-            suffix = ":{}{}".format(version_hash_str, build_suffix)
-        return "mulled-v2-{}{}".format(package_hash.hexdigest(), suffix)
+            suffix = f":{version_hash_str}{build_suffix}"
+        return f"mulled-v2-{package_hash.hexdigest()}{suffix}"
 
 
 def get_file_from_recipe_url(url):

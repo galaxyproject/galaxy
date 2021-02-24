@@ -5,6 +5,8 @@ import inspect
 import json
 import logging
 import os
+from typing import Callable, Dict, FrozenSet, List, Optional, Tuple, Type
+from urllib.request import install_opener
 
 # The uwsgi module is automatically injected by the parent uwsgi process and only exists that way.  If anything works,
 # this is a uwsgi-managed process.
@@ -42,10 +44,10 @@ class UWSGILogFilter(logging.Filter):
 
 
 class ApplicationStack:
-    name = None
-    prohibited_middleware = frozenset()
+    name: Optional[str] = None
+    prohibited_middleware: FrozenSet[str] = frozenset()
     transport_class = ApplicationStackTransport
-    log_filter_class = ApplicationStackLogFilter
+    log_filter_class: Type[logging.Filter] = ApplicationStackLogFilter
     log_format = '%(name)s %(levelname)s %(asctime)s %(message)s'
     # TODO: this belongs in the pool configuration
     server_name_template = '{server_name}'
@@ -234,7 +236,7 @@ class UWSGIApplicationStack(MessageApplicationStack):
     log_format = '%(name)s %(levelname)s %(asctime)s [p:%(process)s,w:%(worker_id)s,m:%(mule_id)s] [%(threadName)s] %(message)s'
     server_name_template = '{server_name}.{pool_name}.{instance_id}'
 
-    postfork_functions = []
+    postfork_functions: List[Tuple[Callable, List, Dict]] = []
 
     localhost_addrs = ('127.0.0.1', '[::1]')
     bind_all_addrs = ('', '0.0.0.0', '[::]')
@@ -276,7 +278,7 @@ class UWSGIApplicationStack(MessageApplicationStack):
                 host = UWSGIApplicationStack.localhost_addrs[0]
             return proto + host + port
         except (IndexError, AttributeError):
-            return '{} {}'.format(opt, val)
+            return f'{opt} {val}'
 
     @staticmethod
     def _socket_opts():
@@ -571,7 +573,7 @@ class WeblessApplicationStack(ApplicationStack):
         return (self.config.server_name,) if self.in_pool(pool_name) else None
 
 
-def application_stack_class():
+def application_stack_class() -> Type[ApplicationStack]:
     """Returns the correct ApplicationStack class for the stack under which
     this Galaxy process is running.
     """
@@ -585,7 +587,7 @@ def application_stack_class():
     return WeblessApplicationStack
 
 
-def application_stack_instance(app=None, config=None):
+def application_stack_instance(app=None, config=None) -> ApplicationStack:
     stack_class = application_stack_class()
     return stack_class(app=app, config=config)
 
@@ -627,7 +629,6 @@ def _do_uwsgi_postfork():
 
 
 def _mule_fixup():
-    from six.moves.urllib.request import install_opener
     install_opener(None)
 
 

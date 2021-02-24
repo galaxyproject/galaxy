@@ -6,7 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.5, 3.9]
+        python-version: ['3.6', '3.9']
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-python@v2
@@ -16,8 +16,12 @@ jobs:
       uses: actions/cache@v2
       with:
         path: ~/.cache/pip
-        key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
+        key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('lib/galaxy/dependencies/pinned-lint-requirements.txt') }}
     - name: Install tox
       run: pip install tox
-    - name: run tests
+    - name: Run linting
       run: tox -e lint
+    - name: Run docstring linting
+      run: tox -e py36-lint_docstring_include_list
+    - name: Run mypy checks
+      run: tox -e mypy

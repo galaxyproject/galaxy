@@ -74,10 +74,8 @@ class Otu(Text):
             # Set the discovered metadata values for the dataset
             dataset.metadata.data_lines = data_lines
             dataset.metadata.columns = ncols
-            dataset.metadata.labels = list(label_names)
-            dataset.metadata.labels.sort()
-            dataset.metadata.otulabels = list(otulabel_names)
-            dataset.metadata.otulabels.sort()
+            dataset.metadata.labels = sorted(label_names)
+            dataset.metadata.otulabels = sorted(otulabel_names)
 
     def sniff_prefix(self, file_prefix):
         """
@@ -193,10 +191,8 @@ class GroupAbund(Otu):
             # Set the discovered metadata values for the dataset
             dataset.metadata.data_lines = data_lines
             dataset.metadata.columns = ncols
-            dataset.metadata.labels = list(label_names)
-            dataset.metadata.labels.sort()
-            dataset.metadata.groups = list(group_names)
-            dataset.metadata.groups.sort()
+            dataset.metadata.labels = sorted(label_names)
+            dataset.metadata.groups = sorted(group_names)
             dataset.metadata.skip = skip
 
     def sniff_prefix(self, file_prefix, vals_are_int=False):
@@ -357,6 +353,7 @@ class LowerTriangleDistanceMatrix(DistanceMatrix):
         Determines whether the file is a lower-triangle distance matrix (phylip) format
         The first line has the number of sequences in the matrix.
         The remaining lines have the sequence name followed by a list of distances from all preceeding sequences
+
                 5  # possibly but not always preceded by a tab :/
                 U68589
                 U68590	0.3371
@@ -422,6 +419,7 @@ class SquareDistanceMatrix(DistanceMatrix):
         The first line has the number of sequences in the matrix.
         The following lines have the sequence name in the first column plus a column for the distance to each sequence
         in the row order in which they appear in the matrix.
+
                3
                U68589  0.0000  0.3371  0.3610
                U68590  0.3371  0.0000  0.3783
@@ -623,11 +621,14 @@ class Frequency(Tabular):
     def sniff_prefix(self, file_prefix):
         """
         Determines whether the file is a frequency tabular format for chimera analysis
-        #1.14.0
-        0	0.000
-        1	0.000
-        ...
-        155	0.975
+
+        .. code-block::
+
+            #1.14.0
+            0	0.000
+            1	0.000
+            ...
+            155	0.975
 
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'mothur_datatypetest_true.mothur.freq' )
@@ -685,10 +686,13 @@ class Quantile(Tabular):
     def sniff_prefix(self, file_prefix):
         """
         Determines whether the file is a quantiles tabular format for chimera analysis
-        1	0	0	0	0	0	0
-        2       0.309198        0.309198        0.37161 0.37161 0.37161 0.37161
-        3       0.510982        0.563213        0.693529        0.858939        1.07442 1.20608
-        ...
+
+        .. code-block::
+
+            1	0	0	0	0	0	0
+            2       0.309198        0.309198        0.37161 0.37161 0.37161 0.37161
+            3       0.510982        0.563213        0.693529        0.858939        1.07442 1.20608
+            ...
 
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'mothur_datatypetest_true.mothur.quan' )
@@ -805,17 +809,26 @@ class RefTaxonomy(Tabular):
 
         http://www.mothur.org/wiki/Taxonomy_outline
         A table with 2 or 3 columns:
+
         - SequenceName
         - Taxonomy (semicolon-separated taxonomy in descending order)
         - integer ?
+
         Example: 2-column (http://www.mothur.org/wiki/Taxonomy_outline)
-          X56533.1        Eukaryota;Alveolata;Ciliophora;Intramacronucleata;Oligohymenophorea;Hymenostomatida;Tetrahymenina;Glaucomidae;Glaucoma;
-          X97975.1        Eukaryota;Parabasalidea;Trichomonada;Trichomonadida;unclassified_Trichomonadida;
-          AF052717.1      Eukaryota;Parabasalidea;
+
+        .. code-block::
+
+            X56533.1        Eukaryota;Alveolata;Ciliophora;Intramacronucleata;Oligohymenophorea;Hymenostomatida;Tetrahymenina;Glaucomidae;Glaucoma;
+            X97975.1        Eukaryota;Parabasalidea;Trichomonada;Trichomonadida;unclassified_Trichomonadida;
+            AF052717.1      Eukaryota;Parabasalidea;
+
         Example: 3-column (http://vamps.mbl.edu/resources/databases.php)
-          v3_AA008	Bacteria;Firmicutes;Bacilli;Lactobacillales;Streptococcaceae;Streptococcus	5
-          v3_AA016	Bacteria	120
-          v3_AA019	Archaea;Crenarchaeota;Marine_Group_I	1
+
+        .. code-block::
+
+            v3_AA008	Bacteria;Firmicutes;Bacilli;Lactobacillales;Streptococcaceae;Streptococcus	5
+            v3_AA016	Bacteria	120
+            v3_AA019	Archaea;Crenarchaeota;Marine_Group_I	1
 
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'mothur_datatypetest_true.mothur.ref.taxonomy' )
@@ -882,16 +895,19 @@ class Axes(Tabular):
         Determines whether the file is an axes format
         The first line may have column headings.
         The following lines have the name in the first column plus float columns for each axis.
-        ==> 98_sq_phylip_amazon.fn.unique.pca.axes <==
-           group   axis1   axis2
-           forest  0.000000        0.145743
-           pasture 0.145743        0.000000
 
-        ==> 98_sq_phylip_amazon.nmds.axes <==
-                   axis1   axis2
-           U68589  0.262608        -0.077498
-           U68590  0.027118        0.195197
-           U68591  0.329854        0.014395
+        .. code-block::
+
+            group   axis1   axis2
+            forest  0.000000        0.145743
+            pasture 0.145743        0.000000
+
+        .. code-block::
+
+                    axis1   axis2
+            U68589  0.262608        -0.077498
+            U68590  0.027118        0.195197
+            U68591  0.329854        0.014395
 
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'mothur_datatypetest_true.mothur.axes' )
@@ -943,14 +959,20 @@ class SffFlow(Tabular):
         https://mothur.org/wiki/flow_file/
         The first line is the total number of flow values - 800 for Titanium data. For GS FLX it would be 400.
         Following lines contain:
+
         - SequenceName
         - the number of useable flows as defined by 454's software
         - the flow intensity for each base going in the order of TACG.
+
         Example:
+
+        .. code-block::
+
           800
           GQY1XT001CQL4K 85 1.04 0.00 1.00 0.02 0.03 1.02 0.05 ...
           GQY1XT001CQIRF 84 1.02 0.06 0.98 0.06 0.09 1.05 0.07 ...
           GQY1XT001CF5YW 88 1.02 0.02 1.01 0.04 0.06 1.02 0.03 ...
+
     """
 
     def __init__(self, **kwd):

@@ -79,13 +79,12 @@ class UploadController(BaseUIController):
                     status = 'error'
                     uploaded_file = None
                 if valid_url:
-                    fd, uploaded_file_name = tempfile.mkstemp()
-                    os.close(fd)
-                    uploaded_file = open(uploaded_file_name, 'wb')
-                    for chunk in stream.iter_content(chunk_size=util.CHUNK_SIZE):
-                        if chunk:
-                            uploaded_file.write(chunk)
-                    uploaded_file.flush()
+                    with tempfile.NamedTemporaryFile(mode='wb', delete=False) as uploaded_file:
+                        uploaded_file_name = uploaded_file.name
+                        for chunk in stream.iter_content(chunk_size=util.CHUNK_SIZE):
+                            if chunk:
+                                uploaded_file.write(chunk)
+                        uploaded_file.flush()
                     uploaded_file_filename = url.split('/')[-1]
                     isempty = os.path.getsize(os.path.abspath(uploaded_file_name)) == 0
             elif file_data not in ('', None):
@@ -219,7 +218,7 @@ class UploadController(BaseUIController):
                                 # dictionary.
                                 error, error_message = stdtm.handle_sample_tool_data_table_conf_file(full_path, persist=False)
                                 if error:
-                                    message = '{}<br/>{}'.format(message, error_message)
+                                    message = f'{message}<br/>{error_message}'
                             # See if the content of the change set was valid.
                             admin_only = len(repository.downloadable_revisions) != 1
                             suc.handle_email_alerts(trans.app,
@@ -341,7 +340,7 @@ class UploadController(BaseUIController):
         else:
             full_path = os.path.abspath(repo_dir)
         filenames_in_archive = []
-        for root, dirs, files in os.walk(uploaded_directory):
+        for root, _dirs, files in os.walk(uploaded_directory):
             for uploaded_file in files:
                 relative_path = os.path.normpath(os.path.join(os.path.relpath(root, uploaded_directory), uploaded_file))
                 if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION:

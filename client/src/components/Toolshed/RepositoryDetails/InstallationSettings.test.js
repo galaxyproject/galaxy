@@ -1,16 +1,12 @@
 import { mount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 import InstallationSettings from "./InstallationSettings";
-import { __RewireAPI__ as rewire } from "./InstallationSettings";
+
+jest.mock("app");
+
+const localVue = getLocalVue();
 
 describe("InstallationSettings", () => {
-    beforeEach(() => {
-        rewire.__Rewire__("getGalaxyInstance", () => {
-            return {
-                config: {},
-            };
-        });
-    });
-
     it("test tool repository installer interface", () => {
         const wrapper = mount(InstallationSettings, {
             propsData: {
@@ -25,6 +21,7 @@ describe("InstallationSettings", () => {
                 requiresPanel: true,
                 toolshedUrl: "toolshedUrl",
             },
+            localVue,
         });
         expect(wrapper.find(".title").text()).toBe("Installing 'name'");
         expect(wrapper.find(".description").text()).toBe("long_description");

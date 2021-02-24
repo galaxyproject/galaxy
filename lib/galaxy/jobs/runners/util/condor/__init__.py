@@ -58,7 +58,7 @@ def build_submit_description(executable, output, error, user_log, query_params):
 
     submit_description = []
     for key, value in all_query_params.items():
-        submit_description.append('{} = {}'.format(key, value))
+        submit_description.append(f'{key} = {value}')
     submit_description.append('executable = ' + executable)
     submit_description.append('output = ' + output)
     submit_description.append('error = ' + error)

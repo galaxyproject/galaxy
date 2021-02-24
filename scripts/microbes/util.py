@@ -7,7 +7,7 @@ assert sys.version_info[:2] >= (2, 4)
 
 
 # genbank_to_bed
-class Region(object):
+class Region:
     def __init__(self):
         self.qualifiers = {}
         self.start = None
@@ -37,9 +37,9 @@ class Region(object):
                     self.end = end
 
 
-class GenBankFeatureParser(object):
+class GenBankFeatureParser:
     """Parses Features from Single Locus GenBank file"""
-    def __init__(self, fh, features_list=[]):
+    def __init__(self, fh):
         self.fh = fh
         self.features = {}
         fh.seek(0)
@@ -63,12 +63,11 @@ class GenBankFeatureParser(object):
                     last_attr_name = None
                     fields = lstrip.split(None, 1)
                     last_feature_name = fields[0].strip()
-                    if not features_list or (features_list and last_feature_name in features_list):
-                        if last_feature_name not in self.features:
-                            self.features[last_feature_name] = []
-                        region = Region()
-                        region.set_coordinates_by_location(fields[1])
-                        self.features[last_feature_name].append(region)
+                    if last_feature_name not in self.features:
+                        self.features[last_feature_name] = []
+                    region = Region()
+                    region.set_coordinates_by_location(fields[1])
+                    self.features[last_feature_name].append(region)
                 else:
                     # add info to last known feature
                     line = line.strip()
@@ -90,9 +89,9 @@ class GenBankFeatureParser(object):
                     else:
                         # continuation of multi-line qualifier content
                         if last_feature_name.lower() in ['translation']:
-                            self.features[last_feature_name][-1].qualifiers[last_attr_name][-1] = "%s%s" % (self.features[last_feature_name][-1].qualifiers[last_attr_name][-1], line.rstrip('"'))
+                            self.features[last_feature_name][-1].qualifiers[last_attr_name][-1] = "{}{}".format(self.features[last_feature_name][-1].qualifiers[last_attr_name][-1], line.rstrip('"'))
                         else:
-                            self.features[last_feature_name][-1].qualifiers[last_attr_name][-1] = "%s %s" % (self.features[last_feature_name][-1].qualifiers[last_attr_name][-1], line.rstrip('"'))
+                            self.features[last_feature_name][-1].qualifiers[last_attr_name][-1] = "{} {}".format(self.features[last_feature_name][-1].qualifiers[last_attr_name][-1], line.rstrip('"'))
 
     def get_features_by_type(self, feature_type):
         if feature_type not in self.features:
@@ -117,7 +116,7 @@ def get_bed_from_genbank(gb_file, chrom, feature_list):
             if not name:
                 name = "unknown"
 
-            features[feature_type].append("%s\t%s\t%s\t%s\t%s\t%s" % (chrom, feature.start, feature.end, name, 0, feature.strand))  # append new bed field here
+            features[feature_type].append("{}\t{}\t{}\t{}\t{}\t{}".format(chrom, feature.start, feature.end, name, 0, feature.strand))  # append new bed field here
     return features
 
 

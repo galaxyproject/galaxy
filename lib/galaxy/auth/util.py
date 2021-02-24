@@ -86,7 +86,7 @@ def parse_auth_results(trans, auth_results, options):
             i += 1
         else:
             raise Conflict("Cannot make unique username")
-    log.debug("Email: {}, auto-register with username: {}".format(auto_email, auto_username))
+    log.debug(f"Email: {auto_email}, auto-register with username: {auto_username}")
     auth_return["auto_reg"] = string_as_bool(options.get('auto-register', False))
     auth_return["email"] = auto_email
     auth_return["username"] = auto_username

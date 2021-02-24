@@ -48,7 +48,7 @@ class CollectlFormatter(formatting.JobMetricFormatter):
             else:
                 value_str = str(value)
             resource_title = FORMATTED_RESOURCE_TITLES.get(resource_type, resource_type)
-            return ("{} ({})".format(resource_title, stat_type), value_str)
+            return (f"{resource_title} ({stat_type})", value_str)
 
 
 class CollectlPlugin(InstrumentPlugin):
@@ -101,8 +101,8 @@ class CollectlPlugin(InstrumentPlugin):
         try:
             rel_path = next(iter(filter(self._is_instrumented_collectl_log, contents)))
             path = os.path.join(job_directory, rel_path)
-        except StopIteration:
-            message = "Failed to find collectl log in directory {}, files were {}".format(job_directory, contents)
+        except IndexError:
+            message = f"Failed to find collectl log in directory {job_directory}, files were {contents}"
             raise Exception(message)
 
         properties = dict(

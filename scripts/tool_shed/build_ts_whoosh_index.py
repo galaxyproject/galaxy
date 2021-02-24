@@ -10,7 +10,6 @@ Make sure you adjust your Toolshed config to:
 
 This script expects the Tool Shed's runtime virtualenv to be active.
 """
-from __future__ import print_function
 
 import argparse
 import logging

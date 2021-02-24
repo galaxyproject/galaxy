@@ -184,6 +184,6 @@ class DatasetMatcherTestCase(TestCase, UsesApp):
         return self._test_context
 
 
-class MockMetadata(object):
+class MockMetadata:
     def __init__(self):
         self.foo = None

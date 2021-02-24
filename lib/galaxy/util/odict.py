@@ -8,7 +8,8 @@ Whenever possible the stdlib `collections.OrderedDict` should be used instead of
 this custom implementation.
 """
 
-from six.moves import UserDict
+from collections import UserDict
+
 dict_alias = dict
 
 

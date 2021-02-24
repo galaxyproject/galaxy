@@ -1,8 +1,8 @@
-<tool id="implicit_default_conds" name="implicit_default_conds">
-    <command>
-        echo "$param_group[0].p1.val"  >> $out_file1;
-        echo "$param_group[0].p2.val"  >> $out_file1;
-    </command>
+<tool id="implicit_default_conds" name="implicit_default_conds" version="1.0.0">
+    <command><![CDATA[
+echo '$param_group[0].p1.val' > '$out_file1' &&
+echo '$param_group[0].p2.val' >> '$out_file1'
+    ]]></command>
     <inputs>
         <repeat name="param_group" title="Param Group" min="1">
             <conditional name="p1">
@@ -11,10 +11,10 @@
                     <option value="different">A different value</option>
                 </param>
                 <when value="default">
-                    <param name="val" value="p1default" type="text" />
+                    <param name="val" type="text" value="p1default" />
                 </when>
                 <when value="different">
-                    <param name="val" value="p1different" type="text" />
+                    <param name="val" type="text" value="p1different" />
                 </when>
             </conditional>
             <conditional name="p2">
@@ -23,10 +23,10 @@
                     <option value="different" selected="true">A different value</option>
                 </param>
                 <when value="default">
-                    <param name="val" value="p2default" type="text" />
+                    <param name="val" type="text" value="p2default" />
                 </when>
                 <when value="different">
-                    <param name="val" value="p2different" type="text" />
+                    <param name="val" type="text" value="p2different" />
                 </when>
             </conditional>
             <param name="int_param" type="integer" value="8" />

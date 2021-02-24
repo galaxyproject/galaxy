@@ -11,6 +11,7 @@ A sharable Galaxy object:
 """
 import logging
 import re
+from typing import Optional, Type
 
 from sqlalchemy import true
 
@@ -23,6 +24,8 @@ from galaxy.managers import (
     taggable,
     users
 )
+from galaxy.model import UserShareAssociation
+from galaxy.structured_app import StructuredApp
 
 log = logging.getLogger(__name__)
 
@@ -33,12 +36,12 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
     # base.DeleteableModelMixin? (all four are deletable)
 
     #: the model used for UserShareAssociations with this model
-    user_share_model = None
+    user_share_model: Type[UserShareAssociation]
 
     #: the single character abbreviation used in username_and_slug: e.g. 'h' for histories: u/user/h/slug
-    SINGLE_CHAR_ABBR = None
+    SINGLE_CHAR_ABBR: Optional[str] = None
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
         # user manager is needed to check access/ownership/admin
         self.user_manager = users.UserManager(app)
@@ -316,7 +319,7 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
 class SharableModelSerializer(base.ModelSerializer,
        taggable.TaggableSerializerMixin, annotatable.AnnotatableSerializerMixin, ratable.RatableSerializerMixin):
     # TODO: stub
-    SINGLE_CHAR_ABBR = None
+    SINGLE_CHAR_ABBR: Optional[str] = None
 
     def __init__(self, app, **kwargs):
         super().__init__(app, **kwargs)
@@ -335,10 +338,10 @@ class SharableModelSerializer(base.ModelSerializer,
         annotatable.AnnotatableSerializerMixin.add_serializers(self)
         ratable.RatableSerializerMixin.add_serializers(self)
         self.serializers.update({
-            'id'                : self.serialize_id,
-            'title'             : self.serialize_title,
-            'username_and_slug' : self.serialize_username_and_slug,
-            'users_shared_with' : self.serialize_users_shared_with
+            'id': self.serialize_id,
+            'title': self.serialize_title,
+            'username_and_slug': self.serialize_username_and_slug,
+            'users_shared_with': self.serialize_users_shared_with
         })
         # these use the default serializer but must still be white-listed
         self.serializable_keyset.update([
@@ -385,9 +388,9 @@ class SharableModelDeserializer(base.ModelDeserializer,
         ratable.RatableDeserializerMixin.add_deserializers(self)
 
         self.deserializers.update({
-            'published'         : self.deserialize_published,
-            'importable'        : self.deserialize_importable,
-            'users_shared_with' : self.deserialize_users_shared_with,
+            'published': self.deserialize_published,
+            'importable': self.deserialize_importable,
+            'users_shared_with': self.deserialize_users_shared_with,
         })
 
     def deserialize_published(self, item, key, val, **context):
@@ -452,9 +455,9 @@ class SharableModelFilters(base.ModelFilterParser,
         ratable.RatableFilterMixin._add_parsers(self)
 
         self.orm_filter_parsers.update({
-            'importable'    : {'op': ('eq'), 'val': self.parse_bool},
-            'published'     : {'op': ('eq'), 'val': self.parse_bool},
-            'slug'          : {'op': ('eq', 'contains', 'like')},
+            'importable': {'op': ('eq'), 'val': self.parse_bool},
+            'published': {'op': ('eq'), 'val': self.parse_bool},
+            'slug': {'op': ('eq', 'contains', 'like')},
             # chose by user should prob. only be available for admin? (most often we'll only need trans.user)
             # 'user'          : { 'op': ( 'eq' ), 'val': self.parse_id_list },
         })

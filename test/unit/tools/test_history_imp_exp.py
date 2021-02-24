@@ -1,11 +1,8 @@
 import json
 import os
 import tarfile
+import tempfile
 from shutil import rmtree
-from tempfile import (
-    mkdtemp,
-    mkstemp,
-)
 
 from galaxy import model
 from galaxy.exceptions import MalformedContents
@@ -23,7 +20,7 @@ HISTORY_ATTRS = '''{"hid_counter": 2, "update_time": "2016-02-08 18:38:38.705058
 JOBS_ATTRS = '''[{"info": null, "tool_id": "upload1", "update_time": "2016-02-08T18:39:23.356482", "stdout": "", "input_mapping": {}, "tool_version": "1.1.4", "traceback": null, "command_line": "python /galaxy/tools/data_source/upload.py /galaxy /scratch/tmppwU9rD /scratch/tmpP4_45Y 1:/scratch/jobs/000/dataset_1_files:/data/000/dataset_1.dat", "exit_code": 0, "output_datasets": [1], "state": "ok", "create_time": "2016-02-08T18:38:39.153873", "params": {"files": [{"to_posix_lines": "Yes", "NAME": "None", "file_data": null, "space_to_tab": null, "url_paste": "/scratch/strio_url_paste_o6nrv8", "__index__": 0, "ftp_files": "", "uuid": "None"}], "paramfile": "/scratch/tmpP4_45Y", "file_type": "auto", "files_metadata": {"file_type": "auto", "__current_case__": 41}, "async_datasets": "None", "dbkey": "?"}, "stderr": ""}]'''
 
 
-class MockSetExternalTool(object):
+class MockSetExternalTool:
 
     def regenerate_imported_metadata_if_needed(self, *args, **kwds):
         pass
@@ -53,31 +50,32 @@ def _mock_app(store_by="id"):
 def _run_jihaw_cleanup_check_secure(history_archive, msg):
     malformed = False
     try:
-        app, _ = _run_jihaw_cleanup(history_archive.arc_directory)
+        _run_jihaw_cleanup(history_archive.arc_directory)
     except MalformedContents:
         malformed = True
     assert malformed
 
 
 def test_create_archive():
-    tempdir = mkdtemp()
-    _, out_file = mkstemp()
-    dataset = os.path.join(tempdir, 'datasets/Pasted_Entry_1.txt')
-    history_attrs_file = os.path.join(tempdir, 'history_attrs.txt')
-    datasets_attrs_file = os.path.join(tempdir, 'datasets_attrs.txt')
-    jobs_attrs_file = os.path.join(tempdir, 'jobs_attrs.txt')
-    os.makedirs(os.path.join(tempdir, 'datasets'))
-    with open(dataset, 'w') as out:
-        out.write('Hello\n')
-    with open(history_attrs_file, 'w') as out:
-        out.write(HISTORY_ATTRS)
-    with open(datasets_attrs_file, 'w') as out:
-        out.write(DATASETS_ATTRS_EXPORT.format(file_name=dataset))
-    with open(jobs_attrs_file, 'w') as out:
-        out.write(JOBS_ATTRS)
-    create_archive(tempdir, out_file, gzip=True)
-    with tarfile.open(out_file) as t:
-        assert sorted(t.getnames()) == sorted(['datasets', 'datasets/Pasted_Entry_1.txt', 'history_attrs.txt', 'datasets_attrs.txt', 'jobs_attrs.txt']), t.getnames()
+    tempdir = tempfile.mkdtemp()
+    with tempfile.NamedTemporaryFile() as temp:
+        out_file = temp.name
+        dataset = os.path.join(tempdir, 'datasets/Pasted_Entry_1.txt')
+        history_attrs_file = os.path.join(tempdir, 'history_attrs.txt')
+        datasets_attrs_file = os.path.join(tempdir, 'datasets_attrs.txt')
+        jobs_attrs_file = os.path.join(tempdir, 'jobs_attrs.txt')
+        os.makedirs(os.path.join(tempdir, 'datasets'))
+        with open(dataset, 'w') as out:
+            out.write('Hello\n')
+        with open(history_attrs_file, 'w') as out:
+            out.write(HISTORY_ATTRS)
+        with open(datasets_attrs_file, 'w') as out:
+            out.write(DATASETS_ATTRS_EXPORT.format(file_name=dataset))
+        with open(jobs_attrs_file, 'w') as out:
+            out.write(JOBS_ATTRS)
+        create_archive(tempdir, out_file, gzip=True)
+        with tarfile.open(out_file) as t:
+            assert sorted(t.getnames()) == sorted(['datasets', 'datasets/Pasted_Entry_1.txt', 'history_attrs.txt', 'datasets_attrs.txt', 'jobs_attrs.txt']), t.getnames()
 
 
 def test_history_import_symlink():
@@ -149,9 +147,9 @@ def test_export_dataset():
     assert datasets[0].state == 'ok'
     assert datasets[1].state == 'ok'
 
-    with open(datasets[0].file_name, "r") as f:
+    with open(datasets[0].file_name) as f:
         assert f.read().startswith("chr1    4225    19670")
-    with open(datasets[1].file_name, "r") as f:
+    with open(datasets[1].file_name) as f:
         assert f.read().startswith("chr1\t147962192\t147962580\tNM_005997_cds_0_0_chr1_147962193_r\t0\t-")
 
 
@@ -250,9 +248,9 @@ def test_multi_inputs():
     for hid in [1, 2]:
         assert hid in hids
 
-    with open(datasets[0].file_name, "r") as f:
+    with open(datasets[0].file_name) as f:
         assert f.read().startswith("chr1    4225    19670")
-    with open(datasets[1].file_name, "r") as f:
+    with open(datasets[1].file_name) as f:
         assert f.read().startswith("chr1\t147962192\t147962580\tNM_005997_cds_0_0_chr1_147962193_r\t0\t-")
 
 
@@ -477,7 +475,7 @@ def test_export_copied_collection():
     sa_session.flush()
 
     hc2 = hc1.copy(element_destination=h)
-    h.add_dataset_collection(hc2)
+    h.add_pending_items()
     assert h.hid_counter == 7
 
     sa_session.add(hc2)
@@ -513,7 +511,6 @@ def test_export_copied_objects_copied_outside_history():
     sa_session.flush()
 
     hc2 = hc1.copy(element_destination=h)
-    h.add_dataset_collection(hc2)
 
     sa_session.add(hc2)
 
@@ -521,13 +518,11 @@ def test_export_copied_objects_copied_outside_history():
     sa_session.add(other_h)
 
     hc3 = hc2.copy(element_destination=other_h)
-    other_h.add_dataset_collection(hc3)
-    sa_session.add(hc3)
-    sa_session.flush()
+    other_h.add_pending_items()
 
     hc4 = hc3.copy(element_destination=h)
-    h.add_dataset_collection(hc4)
     sa_session.add(hc4)
+    h.add_pending_items()
     sa_session.flush()
 
     assert h.hid_counter == 10
@@ -602,8 +597,8 @@ def _hid_dict(history):
     return hids
 
 
-def _assert_distinct(l):
-    assert len(l) == len(set(l))
+def _assert_distinct(list_):
+    assert len(list_) == len(set(list_))
 
 
 def _create_datasets(sa_session, history, n, extension="txt"):
@@ -623,16 +618,15 @@ def _setup_history_for_export(history_name):
 
 def _import_export(app, h, dest_export=None):
     if dest_export is None:
-        dest_parent = mkdtemp()
+        dest_parent = tempfile.mkdtemp()
         dest_export = os.path.join(dest_parent, "moo.tgz")
 
-    dataset = model.Dataset(id=100)
-
-    jeha = model.JobExportHistoryArchive(job=model.Job(), history=h,
-                                         dataset=dataset,
-                                         compressed=True)
-    wrapper = JobExportHistoryArchiveWrapper(app, 1)
-    wrapper.setup_job(jeha)
+    job = model.Job()
+    jeha = model.JobExportHistoryArchive.create_for_history(
+        h, job, app.model.context, app.object_store, compressed=True
+    )
+    wrapper = JobExportHistoryArchiveWrapper(app, job.id)
+    wrapper.setup_job(h, jeha.temp_directory)
 
     from galaxy.tools.imp_exp import export_history
     ret = export_history.main(["--gzip", jeha.temp_directory, dest_export])
@@ -684,7 +678,7 @@ def test_import_1901_default():
 
 
 def import_archive(archive_path, app=None):
-    dest_parent = mkdtemp()
+    dest_parent = tempfile.mkdtemp()
     dest_dir = os.path.join(dest_parent, 'dest')
 
     options = Dummy()
@@ -718,7 +712,7 @@ def test_history_import_relpath_in_archive():
     """ Ensure that a history import archive cannot reference a relative path
     outside the archive
     """
-    dest_parent = mkdtemp()
+    dest_parent = tempfile.mkdtemp()
     with HistoryArchive(arcname_prefix='../insecure') as history_archive:
 
         history_archive.write_metafiles()
@@ -731,7 +725,7 @@ def test_history_import_abspath_in_archive():
     """ Ensure that a history import archive cannot reference a absolute path
     outside the archive
     """
-    dest_parent = mkdtemp()
+    dest_parent = tempfile.mkdtemp()
     arcname_prefix = os.path.abspath(os.path.join(dest_parent, 'insecure'))
 
     with HistoryArchive(arcname_prefix=arcname_prefix) as history_archive:
@@ -741,9 +735,9 @@ def test_history_import_abspath_in_archive():
         _run_unpack(history_archive, dest_parent, 'Absolute path in import archive allowed')
 
 
-class HistoryArchive(object):
+class HistoryArchive:
     def __init__(self, arcname_prefix=None):
-        self.temp_directory = mkdtemp()
+        self.temp_directory = tempfile.mkdtemp()
         self.arc_directory = os.path.join(self.temp_directory, 'archive')
         self.arcname_prefix = arcname_prefix
         self.tar_file_path = os.path.join(self.temp_directory, 'archive.tar.gz')
@@ -797,5 +791,5 @@ class HistoryArchive(object):
         self.tar_file.close()
 
 
-class Dummy(object):
+class Dummy:
     pass

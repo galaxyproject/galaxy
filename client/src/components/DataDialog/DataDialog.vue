@@ -23,7 +23,7 @@
                 <div class="fa fa-caret-left mr-1" />
                 Back
             </b-btn>
-            <b-btn size="sm" class="float-left mr-1" @click="onUpload">
+            <b-btn v-if="allowUpload" size="sm" class="float-left mr-1" @click="onUpload">
                 <div class="fa fa-upload ml-1" />
                 Upload
             </b-btn>
@@ -49,7 +49,7 @@ import { UrlTracker } from "./utilities";
 import { Model } from "./model";
 import { Services } from "./services";
 import { getAppRoot } from "onload/loadConfig";
-import { mountUploadModal } from "components/Upload";
+import { openUploadModal } from "components/Upload";
 
 Vue.use(BootstrapVue);
 
@@ -75,6 +75,10 @@ export default {
         modalStatic: {
             type: Boolean,
             default: false,
+        },
+        allowUpload: {
+            type: Boolean,
+            default: true,
         },
     },
     data() {
@@ -131,7 +135,7 @@ export default {
                 callback: this.callback,
                 modalShow: true,
             };
-            mountUploadModal(propsData);
+            openUploadModal(propsData);
             this.modalShow = false;
         },
         /** Called when selection is complete, values are formatted and parsed to external callback **/

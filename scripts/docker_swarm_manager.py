@@ -2,7 +2,6 @@
 """
 Docker Swarm mode management
 """
-from __future__ import absolute_import, print_function
 
 import argparse
 import errno
@@ -58,7 +57,7 @@ SWARM_MANAGER_CONF_DEFAULTS = {
 log = logging.getLogger(__name__)
 
 
-class SwarmManager(object):
+class SwarmManager:
 
     def __init__(self, conf, docker_interface):
         self._conf = conf
@@ -93,7 +92,7 @@ class SwarmManager(object):
             p = subprocess.Popen(raw_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, shell=True)
             stdout, stderr = p.communicate()
             if p.returncode not in allowed_returncodes:
-                msg = "error running '%s': returned %s" % (raw_cmd, p.returncode)
+                msg = f"error running '{raw_cmd}': returned {p.returncode}"
                 if attempt < command_retries + 1:
                     msg += ', waiting %s seconds' % self._conf.command_retry_wait
                     time.sleep(self._conf.command_retry_wait)
@@ -172,10 +171,10 @@ class SwarmManager(object):
         node_task_ids = [t.id for nt in [n.tasks for n in nodes] for t in nt]
         envs = {}
         for service in services:
-            envs[service.id] = ['%s=%s' % (k, service.env.get(k, 'unset')) for k in self._conf.log_environment_variables]
+            envs[service.id] = ['{}={}'.format(k, service.env.get(k, 'unset')) for k in self._conf.log_environment_variables]
         log.info('%s nodes, %s services (%s terminal)', len(nodes), len(services), len(terminal))
         if terminal:
-            service_strs = ['%s (state: %s)' % (s.name, s.state) for s in terminal]
+            service_strs = [f'{s.name} (state: {s.state})' for s in terminal]
             log.info('terminal services: %s', ', '.join(service_strs) or 'none')
         for service in services:
             unassigned_tasks = [t for t in service.tasks if t.id not in node_task_ids]
@@ -291,7 +290,7 @@ class SwarmManager(object):
         return ready
 
 
-class SwarmState(object):
+class SwarmState:
 
     def __init__(self, conf, interface_conf):
         self._conf = conf
@@ -363,8 +362,8 @@ class SwarmState(object):
             total += node.cpus / self._cpus
         # need at least this many slots
         needed = used + self.get_limit(constraints, 'slots_min_spare')
-        if (len(services) > self._conf.service_wait_count_limit and
-                time.time() - self._waiting_since.get(constraints, time.time()) > self._conf.service_wait_time_limit):
+        if (len(services) > self._conf.service_wait_count_limit
+                and time.time() - self._waiting_since.get(constraints, time.time()) > self._conf.service_wait_time_limit):
             # add slots for waiting services that have exceeded limits
             needed += sum([s.cpus for s in services]) / self._cpus
         # subtract slots for spawning nodes
@@ -558,7 +557,7 @@ def _load_xdg_environment():
 def _swarm_manager_pidfile(conf):
     try:
         os.makedirs(os.path.dirname(conf['pid_file']))
-    except (IOError, OSError) as exc:
+    except OSError as exc:
         if exc.errno != errno.EEXIST:
             raise
     return daemon.pidfile.PIDLockFile(conf['pid_file'])

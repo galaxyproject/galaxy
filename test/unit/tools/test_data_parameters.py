@@ -18,7 +18,7 @@ class DataToolParameterTestCase(BaseParameterTestCase):
     def test_to_python_multi_hdas(self):
         hda1 = self._new_hda()
         hda2 = self._new_hda()
-        as_python = self.param.to_python("%s,%s" % (hda1.id, hda2.id), self.app)
+        as_python = self.param.to_python(f"{hda1.id},{hda2.id}", self.app)
         assert as_python == [hda1, hda2]
 
     def test_to_python_multi_none(self):
@@ -50,7 +50,7 @@ class DataToolParameterTestCase(BaseParameterTestCase):
         hda1.visible = False
         hda2.visible = False
         self.stub_active_datasets(hda1, hda2)
-        field = self._simple_field(other_values={"data2" : hda2})
+        field = self._simple_field(other_values={"data2": hda2})
         assert len(field['options']['hda']) == 1  # hda1 not an option, not visible or selected
         assert field['options']['hda'][0]['name'] == "(hidden) hda2"
 
@@ -60,7 +60,7 @@ class DataToolParameterTestCase(BaseParameterTestCase):
         hda1.visible = False
         hda2.deleted = True
         self.stub_active_datasets(hda1, hda2)
-        field = self._simple_field(other_values={"data2" : hda2})
+        field = self._simple_field(other_values={"data2": hda2})
         assert len(field['options']['hda']) == 1  # hda1 not an option, not visible or selected
         assert field['options']['hda'][0]['name'] == "(deleted) hda2"
 
@@ -146,7 +146,7 @@ class DataToolParameterTestCase(BaseParameterTestCase):
         return hda
 
     def setUp(self):
-        super(DataToolParameterTestCase, self).setUp()
+        super().setUp()
         self.test_history = model.History()
         self.app.model.context.add(self.test_history)
         self.app.model.context.flush()
@@ -178,7 +178,7 @@ class DataToolParameterTestCase(BaseParameterTestCase):
         return self._param
 
 
-class MockHistoryDatasetAssociation(object):
+class MockHistoryDatasetAssociation:
     """ Fake HistoryDatasetAssociation stubbed out for testing matching and
     stuff like that.
     """

@@ -158,7 +158,7 @@ class KubernetesDatasetPopulator(DatasetPopulator):
 
     def wait_for_history(self, *args, **kwargs):
         try:
-            super(KubernetesDatasetPopulator, self).wait_for_history(*args, **kwargs)
+            super().wait_for_history(*args, **kwargs)
         except AssertionError:
             print("Kubernetes status:\n %s" % unicodify(subprocess.check_output(['kubectl', 'describe', 'nodes'])))
             raise
@@ -168,7 +168,7 @@ class KubernetesDatasetPopulator(DatasetPopulator):
 class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases):
 
     def setUp(self):
-        super(BaseKubernetesIntegrationTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = KubernetesDatasetPopulator(self.galaxy_interactor)
         self.history_id = self.dataset_populator.new_history()
 
@@ -190,7 +190,7 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
             claim_obj.setup()
             cls.persistent_volume_claims.append(claim_obj)
         cls.job_config = job_config(jobs_directory=cls.jobs_directory)
-        super(BaseKubernetesIntegrationTestCase, cls).setUpClass()
+        super().setUpClass()
 
     @classmethod
     def tearDownClass(cls):
@@ -198,7 +198,7 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
             claim.teardown()
         for volume in cls.persistent_volumes:
             volume.teardown()
-        super(BaseKubernetesIntegrationTestCase, cls).tearDownClass()
+        super().tearDownClass()
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):

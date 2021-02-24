@@ -23,7 +23,6 @@ usage: %prog [options]
    -a, --append=a: Append to existing all_fasta.loc file rather than create new
    -p, --sample-text=p: Copy over text from all_fasta.loc.sample file (false if set to append)
 """
-from __future__ import print_function
 
 import optparse
 import os
@@ -197,7 +196,7 @@ def __main__():
     if len(options.fasta_exts) == 1:
         print('with the extension %s.' % ', '.join(fasta_exts[:-1]))
     else:
-        print('with the extension %s or %s.' % (', '.join(fasta_exts[:-1]), fasta_exts[-1]))
+        print('with the extension {} or {}.'.format(', '.join(fasta_exts[:-1]), fasta_exts[-1]))
     print('\nSkipping the following:\n\t%s' % '\n\t'.join(exemptions))
 
     # get column names
@@ -217,7 +216,7 @@ def __main__():
             if cols:
                 col_values = [col.strip() for col in cols.split(',')]
     if not col_values or not loc_path:
-        raise Exception('No columns can be found for this data table (%s) in %s' % (options.data_table, options.data_table_xml))
+        raise Exception(f'No columns can be found for this data table ({options.data_table}) in {options.data_table_xml}')
 
     # get all fasta paths under genome directory
     fasta_locs = {}
@@ -225,10 +224,10 @@ def __main__():
     genome_subdirs = [dr for dr in os.listdir(options.genome_dir) if dr not in exemptions]
     for genome_subdir in genome_subdirs:
         possible_names = [genome_subdir]
-        possible_names.extend(['%s%s' % (genome_subdir, _) for _ in variants])
+        possible_names.extend([f'{genome_subdir}{_}' for _ in variants])
         # get paths to all fasta files
         for path_to_look_in in paths_to_look_in:
-            for dirpath, dirnames, filenames in os.walk(path_to_look_in % genome_subdir):
+            for dirpath, _dirnames, filenames in os.walk(path_to_look_in % genome_subdir):
                 for fn in filenames:
                     ext = os.path.splitext(fn)[-1]
                     fasta_base = os.path.splitext(fn)[0]
@@ -238,17 +237,17 @@ def __main__():
                                 name = DBKEY_DESCRIPTION_MAP[genome_subdir]
                             else:
                                 try:
-                                    name = '%s %s' % (DBKEY_DESCRIPTION_MAP[genome_subdir], VARIANT_MAP[fasta_base.replace(genome_subdir, '')])
+                                    name = '{} {}'.format(DBKEY_DESCRIPTION_MAP[genome_subdir], VARIANT_MAP[fasta_base.replace(genome_subdir, '')])
                                 except KeyError:
-                                    name = '%s %s' % (DBKEY_DESCRIPTION_MAP[genome_subdir], fasta_base.replace(genome_subdir, ''))
+                                    name = '{} {}'.format(DBKEY_DESCRIPTION_MAP[genome_subdir], fasta_base.replace(genome_subdir, ''))
                             fasta_locs[fasta_base] = {'value': fasta_base, 'dbkey': genome_subdir, 'name': name, 'path': os.path.join(dirpath, fn)}
                         else:
                             unmatching_fasta_paths.append(os.path.join(dirpath, fn))
         # remove redundant fasta files
         for k, v in variant_exclusions.items():
-            leave_in = '%s%s' % (genome_subdir, k)
+            leave_in = f'{genome_subdir}{k}'
             if leave_in in fasta_locs:
-                to_remove = ['%s%s' % (genome_subdir, _) for _ in v]
+                to_remove = [f'{genome_subdir}{_}' for _ in v]
                 for tr in to_remove:
                     if tr in fasta_locs:
                         del fasta_locs[tr]

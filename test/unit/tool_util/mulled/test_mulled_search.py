@@ -11,7 +11,7 @@ def test_quay_search():
     search1 = t.search_repository("adsfasdf", True)
     search2 = t.search_repository("bioconductor-gosemsim", True)
     assert search1 == []
-    assert {'version': u'2.2.0--0', 'package': u'bioconductor-gosemsim'} in search2
+    assert {'version': '2.2.0--0', 'package': 'bioconductor-gosemsim'} in search2
 
 
 @external_dependency_management
@@ -21,9 +21,9 @@ def test_conda_search():
     search1 = t.get_json("asdfasdf")
     search2 = t.get_json("bioconductor-gosemsim")
     assert search1 == []
-    assert search2['version'] == u'2.2.0'
-    assert search2['package'] == u'bioconductor-gosemsim'
-    assert search2['build'] == u'0'
+    assert search2['version'] == '2.2.0'
+    assert search2['package'] == 'bioconductor-gosemsim'
+    assert search2['build'] == '0'
 
 
 @external_dependency_management

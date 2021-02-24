@@ -11,6 +11,8 @@ the exception and displays an error page.
 """
 import sys
 import traceback
+from io import StringIO
+from typing import cast
 
 import markupsafe
 from paste import (
@@ -18,7 +20,6 @@ from paste import (
     wsgilib
 )
 from paste.exceptions import collector, formatter, reporter
-from six.moves import cStringIO as StringIO
 
 __all__ = ('ErrorMiddleware', 'handle_exception')
 
@@ -112,10 +113,10 @@ class ErrorMiddleware:
             show_exceptions_in_wsgi_errors = converters.asbool(global_conf.get('show_exceptions_in_wsgi_errors'))
         self.debug_mode = converters.asbool(debug)
         if error_email is None:
-            error_email = (global_conf.get('error_email') or
-                           global_conf.get('admin_email') or
-                           global_conf.get('webmaster_email') or
-                           global_conf.get('sysadmin_email'))
+            error_email = (global_conf.get('error_email')
+                           or global_conf.get('admin_email')
+                           or global_conf.get('webmaster_email')
+                           or global_conf.get('sysadmin_email'))
         self.error_email = converters.aslist(error_email)
         self.error_log = error_log
         self.show_exceptions_in_wsgi_errors = show_exceptions_in_wsgi_errors
@@ -489,7 +490,7 @@ def make_error_middleware(app, global_conf, **kw):
     return ErrorMiddleware(app, global_conf=global_conf, **kw)
 
 
-doc_lines = ErrorMiddleware.__doc__.splitlines(True)
+doc_lines = cast(str, ErrorMiddleware.__doc__).splitlines(True)
 for i in range(len(doc_lines)):
     if doc_lines[i].strip().startswith('Settings'):
         make_error_middleware.__doc__ = ''.join(doc_lines[i:])

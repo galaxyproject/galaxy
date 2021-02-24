@@ -27,7 +27,6 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
 
     If the callback returns a value, it will be replace the old value.
 
-    >>> from collections import OrderedDict
     >>> from galaxy.util import XML
     >>> from galaxy.util.bunch import Bunch
     >>> from galaxy.tools.parameters.basic import TextToolParameter, BooleanToolParameter
@@ -43,9 +42,9 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     >>> i = TextToolParameter(None, XML('<param name="i"/>'))
     >>> j = TextToolParameter(None, XML('<param name="j"/>'))
     >>> b.name = b.title = 'b'
-    >>> b.inputs = OrderedDict([ ('c', c), ('d', d) ])
+    >>> b.inputs = dict([ ('c', c), ('d', d) ])
     >>> d.name = d.title = 'd'
-    >>> d.inputs = OrderedDict([ ('e', e), ('f', f) ])
+    >>> d.inputs = dict([ ('e', e), ('f', f) ])
     >>> f.test_param = g
     >>> f.name = 'f'
     >>> f.cases = [Bunch(value='true', inputs= {'h': h}), Bunch(value='false', inputs= { 'i': i })]
@@ -54,8 +53,8 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     ...     print('name=%s, prefix=%s, prefixed_name=%s, prefixed_label=%s, value=%s' % (input.name, prefix, prefixed_name, prefixed_label, value))
     ...     if error:
     ...         print(error)
-    >>> inputs = OrderedDict([('a', a),('b', b)])
-    >>> nested = OrderedDict([('a', 1), ('b', [OrderedDict([('c', 3), ('d', [OrderedDict([ ('e', 5), ('f', OrderedDict([ ('g', True), ('h', 7)]))])])])])])
+    >>> inputs = dict([('a', a),('b', b)])
+    >>> nested = dict([('a', 1), ('b', [dict([('c', 3), ('d', [dict([ ('e', 5), ('f', dict([ ('g', True), ('h', 7)]))])])])])])
     >>> visit_input_values(inputs, nested, visitor)
     name=a, prefix=, prefixed_name=a, prefixed_label=a, value=1
     name=c, prefix=b_0|, prefixed_name=b_0|c, prefixed_label=b 1 > c, value=3
@@ -103,7 +102,7 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     No value found for 'b 1 > d 1 > j'.
 
     >>> # Other parameters are missing in state
-    >>> nested = OrderedDict([('b', [OrderedDict([( 'd', [OrderedDict([('f', OrderedDict([('g', True), ('h', 7)]))])])])])])
+    >>> nested = dict([('b', [dict([( 'd', [dict([('f', dict([('g', True), ('h', 7)]))])])])])])
     >>> visit_input_values(inputs, nested, visitor)
     name=a, prefix=, prefixed_name=a, prefixed_label=a, value=None
     No value found for 'a'.
@@ -117,14 +116,14 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     def callback_helper(input, input_values, name_prefix, label_prefix, parent_prefix, context=None, error=None):
         value = input_values.get(input.name)
         args = {
-            'input'             : input,
-            'parent'            : input_values,
-            'value'             : value,
-            'prefixed_name'     : '{}{}'.format(name_prefix, input.name),
-            'prefixed_label'    : '{}{}'.format(label_prefix, input.label or input.name),
-            'prefix'            : parent_prefix,
-            'context'           : context,
-            'error'             : error
+            'input': input,
+            'parent': input_values,
+            'value': value,
+            'prefixed_name': f'{name_prefix}{input.name}',
+            'prefixed_label': '{}{}'.format(label_prefix, input.label or input.name),
+            'prefix': parent_prefix,
+            'context': context,
+            'error': error
         }
         if input.name not in input_values:
             args['error'] = 'No value found for \'%s\'.' % args.get('prefixed_label')
@@ -206,7 +205,7 @@ def params_to_strings(params, param_values, app, nested=False, use_security=Fals
     for key, value in param_values.items():
         if key in params:
             value = params[key].value_to_basic(value, app, use_security=use_security)
-        rval[key] = value if nested else str(dumps(value, sort_keys=True))
+        rval[key] = value if nested or value is None else str(dumps(value, sort_keys=True))
     return rval
 
 
@@ -220,9 +219,17 @@ def params_from_strings(params, param_values, app, ignore_errors=False):
     rval = dict()
     param_values = param_values or {}
     for key, value in param_values.items():
-        value = safe_loads(value)
-        if key in params:
-            value = params[key].value_from_basic(value, app, ignore_errors)
+        param = params.get(key)
+        if not param or not (param.type == 'text' and value == 'null'):
+            # safe_loads attempts to handle some, but not all divergent handling
+            # between JSON types and python types. TODO: We should let the
+            # parameters handle all conversion, since they know what is an
+            # appropriate coercion between types. e.g 'false' should be a string
+            # in a text parameter, while it should be a boolean in a boolean parameter.
+            # This would resolve a lot of back and forth in the various to/from methods.
+            value = safe_loads(value)
+        if param:
+            value = param.value_from_basic(value, app, ignore_errors)
         rval[key] = value
     return rval
 
@@ -261,7 +268,7 @@ def update_dataset_ids(input_values, translate_values, src):
         """Exchanges dataset_ids (HDA, LDA, HDCA, not Dataset) in input_values with dataset ids used in job."""
         current_case = input_values
         if key == 'id':
-            for i, p in enumerate(path):
+            for p in path:
                 if isinstance(current_case, (list, dict)):
                     current_case = current_case[p]
             if src == current_case.get('src'):
@@ -271,10 +278,9 @@ def update_dataset_ids(input_values, translate_values, src):
     return remap(input_values, visit=replace_dataset_ids)
 
 
-def populate_state(request_context, inputs, incoming, state, errors={}, prefix='', context=None, check=True, simple_errors=True):
+def populate_state(request_context, inputs, incoming, state, errors=None, context=None, check=True, simple_errors=True, input_format='legacy'):
     """
     Populates nested state dict from incoming parameter values.
-    >>> from collections import OrderedDict
     >>> from galaxy.util import XML
     >>> from galaxy.util.bunch import Bunch
     >>> from galaxy.tools.parameters.basic import TextToolParameter, BooleanToolParameter
@@ -294,15 +300,15 @@ def populate_state(request_context, inputs, incoming, state, errors={}, prefix='
     >>> h = TextToolParameter(None, XML('<param name="h"/>'))
     >>> i = TextToolParameter(None, XML('<param name="i"/>'))
     >>> b.name = 'b'
-    >>> b.inputs = OrderedDict([('c', c), ('d', d)])
+    >>> b.inputs = dict([('c', c), ('d', d)])
     >>> d.name = 'd'
-    >>> d.inputs = OrderedDict([('e', e), ('f', f)])
+    >>> d.inputs = dict([('e', e), ('f', f)])
     >>> f.test_param = g
     >>> f.name = 'f'
     >>> f.cases = [Bunch(value='true', inputs= { 'h': h }), Bunch(value='false', inputs= { 'i': i })]
-    >>> inputs = OrderedDict([('a',a),('b',b)])
-    >>> flat = OrderedDict([('a', 1), ('b_0|c', 2), ('b_0|d_0|e', 3), ('b_0|d_0|f|h', 4), ('b_0|d_0|f|g', True)])
-    >>> state = OrderedDict()
+    >>> inputs = dict([('a',a),('b',b)])
+    >>> flat = dict([('a', 1), ('b_0|c', 2), ('b_0|d_0|e', 3), ('b_0|d_0|f|h', 4), ('b_0|d_0|f|g', True)])
+    >>> state = {}
     >>> populate_state(trans, inputs, flat, state, check=False)
     >>> print(state['a'])
     1
@@ -312,7 +318,81 @@ def populate_state(request_context, inputs, incoming, state, errors={}, prefix='
     3
     >>> print(state['b'][0]['d'][0]['f']['h'])
     4
+    >>> # now test with input_format='21.01'
+    >>> nested = {'a': 1, 'b': [{'c': 2, 'd': [{'e': 3, 'f': {'h': 4, 'g': True}}]}]}
+    >>> state_new = {}
+    >>> populate_state(trans, inputs, nested, state_new, check=False, input_format='21.01')
+    >>> print(state_new['a'])
+    1
+    >>> print(state_new['b'][0]['c'])
+    2
+    >>> print(state_new['b'][0]['d'][0]['e'])
+    3
+    >>> print(state_new['b'][0]['d'][0]['f']['h'])
+    4
+
     """
+    if errors is None:
+        errors = {}
+    if input_format == 'legacy':
+        _populate_state_legacy(request_context, inputs, incoming, state, errors=errors, context=context, check=check, simple_errors=simple_errors)
+        return
+    elif input_format == '21.01':
+        context = ExpressionContext(state, context)
+        for input in inputs.values():
+            state[input.name] = input.get_initial_value(request_context, context)
+            group_state = state[input.name]
+            if input.type == 'repeat':
+                if len(incoming[input.name]) > input.max or len(incoming[input.name]) < input.min:
+                    errors[input.name] = 'The number of repeat elements is outside the range specified by the tool.'
+                else:
+                    del group_state[:]
+                    for rep in incoming[input.name]:
+                        new_state = {}
+                        group_state.append(new_state)
+                        new_errors = {}
+                        populate_state(request_context, input.inputs, rep, new_state, new_errors, context=context, check=check, simple_errors=simple_errors, input_format=input_format)
+                        if new_errors:
+                            errors[input.name] = new_errors
+
+            elif input.type == 'conditional':
+                test_param_value = incoming.get(input.name, {}).get(input.test_param.name)
+                value, error = check_param(request_context, input.test_param, test_param_value, context, simple_errors=simple_errors) if check else [test_param_value, None]
+                if error:
+                    errors[input.test_param.name] = error
+                else:
+                    try:
+                        current_case = input.get_current_case(value)
+                        group_state = state[input.name] = {}
+                        new_errors = {}
+                        populate_state(request_context, input.cases[current_case].inputs, incoming.get(input.name), group_state, new_errors, context=context, check=check, simple_errors=simple_errors, input_format=input_format)
+                        if new_errors:
+                            errors[input.name] = new_errors
+                        group_state['__current_case__'] = current_case
+                    except Exception:
+                        errors[input.test_param.name] = 'The selected case is unavailable/invalid.'
+                group_state[input.test_param.name] = value
+
+            elif input.type == 'section':
+                new_errors = {}
+                populate_state(request_context, input.inputs, incoming.get(input.name), group_state, new_errors, context=context, check=check, simple_errors=simple_errors, input_format=input_format)
+                if new_errors:
+                    errors[input.name] = new_errors
+
+            elif input.type == 'upload_dataset':
+                raise NotImplementedError
+
+            else:
+                param_value = _get_incoming_value(incoming, input.name, state.get(input.name))
+                value, error = check_param(request_context, input, param_value, context, simple_errors=simple_errors) if check else [param_value, None]
+                if error:
+                    errors[input.name] = error
+                state[input.name] = value
+    else:
+        raise Exception(f'Input format {input_format} not recognized; input_format must be either legacy or 21.01.')
+
+
+def _populate_state_legacy(request_context, inputs, incoming, state, errors, prefix='', context=None, check=True, simple_errors=True):
     context = ExpressionContext(state, context)
     for input in inputs.values():
         state[input.name] = input.get_initial_value(request_context, context)
@@ -327,9 +407,9 @@ def populate_state(request_context, inputs, incoming, state, errors={}, prefix='
                 if not any(incoming_key.startswith(rep_prefix) for incoming_key in incoming.keys()) and rep_index >= input.min:
                     break
                 if rep_index < input.max:
-                    new_state = {'__index__' : rep_index}
+                    new_state = {'__index__': rep_index}
                     group_state.append(new_state)
-                    populate_state(request_context, input.inputs, incoming, new_state, errors, prefix=rep_prefix + '|', context=context, check=check, simple_errors=simple_errors)
+                    _populate_state_legacy(request_context, input.inputs, incoming, new_state, errors, prefix=rep_prefix + '|', context=context, check=check, simple_errors=simple_errors)
                 rep_index += 1
         elif input.type == 'conditional':
             if input.value_ref and not input.value_ref_in_group:
@@ -344,26 +424,26 @@ def populate_state(request_context, inputs, incoming, state, errors={}, prefix='
                 try:
                     current_case = input.get_current_case(value)
                     group_state = state[input.name] = {}
-                    populate_state(request_context, input.cases[current_case].inputs, incoming, group_state, errors, prefix=group_prefix, context=context, check=check, simple_errors=simple_errors)
+                    _populate_state_legacy(request_context, input.cases[current_case].inputs, incoming, group_state, errors, prefix=group_prefix, context=context, check=check, simple_errors=simple_errors)
                     group_state['__current_case__'] = current_case
                 except Exception:
                     errors[test_param_key] = 'The selected case is unavailable/invalid.'
             group_state[input.test_param.name] = value
         elif input.type == 'section':
-            populate_state(request_context, input.inputs, incoming, group_state, errors, prefix=group_prefix, context=context, check=check, simple_errors=simple_errors)
+            _populate_state_legacy(request_context, input.inputs, incoming, group_state, errors, prefix=group_prefix, context=context, check=check, simple_errors=simple_errors)
         elif input.type == 'upload_dataset':
             file_count = input.get_file_count(request_context, context)
             while len(group_state) > file_count:
                 del group_state[-1]
             while file_count > len(group_state):
-                new_state = {'__index__' : len(group_state)}
+                new_state = {'__index__': len(group_state)}
                 for upload_item in input.inputs.values():
                     new_state[upload_item.name] = upload_item.get_initial_value(request_context, context)
                 group_state.append(new_state)
-            for i, rep_state in enumerate(group_state):
+            for rep_state in group_state:
                 rep_index = rep_state['__index__']
                 rep_prefix = '%s_%d|' % (key, rep_index)
-                populate_state(request_context, input.inputs, incoming, rep_state, errors, prefix=rep_prefix, context=context, check=check, simple_errors=simple_errors)
+                _populate_state_legacy(request_context, input.inputs, incoming, rep_state, errors, prefix=rep_prefix, context=context, check=check, simple_errors=simple_errors)
         else:
             param_value = _get_incoming_value(incoming, key, state.get(input.name))
             value, error = check_param(request_context, input, param_value, context, simple_errors=simple_errors) if check else [param_value, None]

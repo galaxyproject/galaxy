@@ -86,13 +86,19 @@ def _json_wrap_input(input, value_wrapper, profile, handle_files="skip"):
             return SKIP_INPUT
         raise NotImplementedError()
     elif input_type in ["text", "color", "hidden"]:
-        json_value = _cast_if_not_none(value_wrapper, str)
+        if getattr(input, "optional", False) and value_wrapper is not None and value_wrapper.value is None:
+            json_value = None
+        else:
+            json_value = _cast_if_not_none(value_wrapper, str)
     elif input_type == "float":
         json_value = _cast_if_not_none(value_wrapper, float, empty_to_none=True)
     elif input_type == "integer":
         json_value = _cast_if_not_none(value_wrapper, int, empty_to_none=True)
     elif input_type == "boolean":
-        json_value = _cast_if_not_none(value_wrapper, bool)
+        if input.optional and value_wrapper is not None and value_wrapper.value is None:
+            json_value = None
+        else:
+            json_value = _cast_if_not_none(value_wrapper, bool, empty_to_none=input.optional)
     elif input_type == "select":
         if packaging.version.parse(str(profile)) < packaging.version.parse('20.05'):
             json_value = _cast_if_not_none(value_wrapper, str)
@@ -123,8 +129,10 @@ def _hda_to_object(hda):
 
     return {
         'file_ext': hda_dict['file_ext'],
+        'file_size': hda_dict['file_size'],
         'name': hda_dict['name'],
         'metadata': metadata_dict,
+        'src': {'src': 'hda', 'id': hda.id},
     }
 
 

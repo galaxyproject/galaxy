@@ -62,11 +62,9 @@ def user_context_fixture(user_ftp_dir=None):
 
 def assert_realizes_as(file_sources, uri, expected, user_context=None):
     file_source_path = file_sources.get_file_source_path(uri)
-    _, temp_name = tempfile.mkstemp()
-    file_source_path.file_source.realize_to(file_source_path.path, temp_name, user_context=user_context)
-    try:
-        with open(temp_name, "r") as f:
-            realized_contents = f.read()
+    with tempfile.NamedTemporaryFile(mode='r') as temp:
+        file_source_path.file_source.realize_to(file_source_path.path, temp.name, user_context=user_context)
+        realized_contents = temp.read()
         if realized_contents != expected:
             message = "Expected to realize contents at [{}] as [{}], instead found [{}]".format(
                 uri,
@@ -74,14 +72,24 @@ def assert_realizes_as(file_sources, uri, expected, user_context=None):
                 realized_contents,
             )
             raise AssertionError(message)
-    finally:
-        os.remove(temp_name)
-    return temp_name
+
+
+def assert_realizes_contains(file_sources, uri, expected, user_context=None):
+    file_source_path = file_sources.get_file_source_path(uri)
+    with tempfile.NamedTemporaryFile(mode='r') as temp:
+        file_source_path.file_source.realize_to(file_source_path.path, temp.name, user_context=user_context)
+        realized_contents = temp.read()
+        if expected not in realized_contents:
+            message = "Expected to realize contents at [{}] to contain [{}], instead found [{}]".format(
+                uri,
+                expected,
+                realized_contents,
+            )
+            raise AssertionError(message)
 
 
 def write_from(file_sources, uri, content, user_context=None):
     file_source_path = file_sources.get_file_source_path(uri)
-    fd, temp_name = tempfile.mkstemp()
-    with open(fd, 'w') as f:
+    with tempfile.NamedTemporaryFile(mode='w') as f:
         f.write(content)
-    file_source_path.file_source.write_from(file_source_path.path, temp_name, user_context=user_context)
+        file_source_path.file_source.write_from(file_source_path.path, f.name, user_context=user_context)

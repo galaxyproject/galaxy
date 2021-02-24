@@ -7,7 +7,8 @@ for some activity such as queuing up jobs or scheduling workflows.
 import logging
 import os
 import random
-from collections import namedtuple
+from enum import Enum
+from typing import Set, Tuple
 
 from sqlalchemy.orm import object_session
 
@@ -19,12 +20,18 @@ from galaxy.util import (
 
 log = logging.getLogger(__name__)
 
-_handler_assignment_methods = (
-    'MEM_SELF', 'DB_SELF', 'DB_PREASSIGN', 'DB_TRANSACTION_ISOLATION', 'DB_SKIP_LOCKED', 'UWSGI_MULE_MESSAGE'
-)
-HANDLER_ASSIGNMENT_METHODS = namedtuple('JOB_HANDLER_ASSIGNMENT_METHODS', _handler_assignment_methods)(
-    *[x.lower().replace('_', '-') for x in _handler_assignment_methods]
-)
+
+class HANDLER_ASSIGNMENT_METHODS(str, Enum):
+    MEM_SELF = 'mem-self'
+    DB_SELF = 'db-self'
+    DB_PREASSIGN = 'db-preassign'
+    DB_TRANSACTION_ISOLATION = 'db-transaction-isolation'
+    DB_SKIP_LOCKED = 'db-skip-locked'
+    UWSGI_MULE_MESSAGE = 'uwsgi-mule-message'
+
+    @classmethod
+    def has_value(cls, value):
+        return value in cls._value2member_map_
 
 
 class HandlerAssignmentSkip(Exception):
@@ -34,8 +41,8 @@ class HandlerAssignmentSkip(Exception):
 
 class ConfiguresHandlers:
     DEFAULT_HANDLER_TAG = '_default_'
-    DEFAULT_BASE_HANDLER_POOLS = ()
-    UNSUPPORTED_HANDLER_ASSIGNMENT_METHODS = ()
+    DEFAULT_BASE_HANDLER_POOLS: Tuple[str, ...] = ()
+    UNSUPPORTED_HANDLER_ASSIGNMENT_METHODS: Set[str] = set()
 
     def add_handler(self, handler_id, tags):
         if handler_id not in self.handlers:
@@ -79,6 +86,9 @@ class ConfiguresHandlers:
             max_grab_str = config_element.attrib.get('max_grab', None)
             if max_grab_str:
                 handling_config_dict["max_grab"] = int(max_grab_str)
+            ready_window_size_str = config_element.attrib.get("ready_window_size", None)
+            if ready_window_size_str:
+                handling_config_dict["ready_window_size"] = int(ready_window_size_str)
 
         return handling_config_dict
 
@@ -112,9 +122,9 @@ class ConfiguresHandlers:
         if handling_config_dict:
             for method in handling_config_dict.get("assign", []):
                 method = method.lower()
-                assert method in HANDLER_ASSIGNMENT_METHODS, \
+                assert HANDLER_ASSIGNMENT_METHODS.has_value(method), \
                     "Invalid job handler assignment method '{}', must be one of: {}".format(
-                        method, ', '.join(HANDLER_ASSIGNMENT_METHODS))
+                        method, ', '.join([h.value for h in HANDLER_ASSIGNMENT_METHODS]))
                 try:
                     self.handler_assignment_methods.append(method)
                 except AttributeError:
@@ -214,7 +224,7 @@ class ConfiguresHandlers:
         for elem in parent.findall(match):
             for attrib in attribs:
                 if attrib not in elem.attrib:
-                    log.warning("required '{}' attribute is missing from <{}> element".format(attrib, match))
+                    log.warning(f"required '{attrib}' attribute is missing from <{match}> element")
                     break
             else:
                 rval.append(elem)
@@ -427,7 +437,7 @@ class ConfiguresHandlers:
     def assign_handler(self, obj, configured=None, **kwargs):
         """Set a job handler, flush obj
 
-        Called assignment methods should raise :exception:`HandlerAssignmentSkip` to indicate that the next method
+        Called assignment methods should raise py:class:`HandlerAssignmentSkip` to indicate that the next method
         should be tried.
 
         :param obj:         Object to assign a handler to (must be a model object with ``handler`` attribute and
@@ -468,4 +478,4 @@ def _timed_flush_obj(obj):
     obj_flush_timer = ExecutionTimer()
     sa_session = object_session(obj)
     sa_session.flush()
-    log.info("Flushed transaction for {} {}".format(obj.log_str(), obj_flush_timer))
+    log.info(f"Flushed transaction for {obj.log_str()} {obj_flush_timer}")

@@ -5,9 +5,9 @@ import logging
 import math
 import sys
 import tempfile
+from urllib.parse import quote_plus
 
 from bx.intervals.io import GenomicIntervalReader, ParseError
-from six.moves.urllib.parse import quote_plus
 
 from galaxy import util
 from galaxy.datatypes import metadata
@@ -31,11 +31,11 @@ log = logging.getLogger(__name__)
 # Contains the meta columns and the words that map to it; list aliases on the
 # right side of the : in decreasing order of priority
 alias_spec = {
-    'chromCol'  : ['chrom', 'CHROMOSOME', 'CHROM', 'Chromosome Name'],
-    'startCol'  : ['start', 'START', 'chromStart', 'txStart', 'Start Position (bp)'],
-    'endCol'    : ['end', 'END', 'STOP', 'chromEnd', 'txEnd', 'End Position (bp)'],
-    'strandCol' : ['strand', 'STRAND', 'Strand'],
-    'nameCol'   : ['name', 'NAME', 'Name', 'name2', 'NAME2', 'Name2', 'Ensembl Gene ID', 'Ensembl Transcript ID', 'Ensembl Peptide ID']
+    'chromCol': ['chrom', 'CHROMOSOME', 'CHROM', 'Chromosome Name'],
+    'startCol': ['start', 'START', 'chromStart', 'txStart', 'Start Position (bp)'],
+    'endCol': ['end', 'END', 'STOP', 'chromEnd', 'txEnd', 'End Position (bp)'],
+    'strandCol': ['strand', 'STRAND', 'Strand'],
+    'nameCol': ['name', 'NAME', 'Name', 'name2', 'NAME2', 'Name2', 'Ensembl Gene ID', 'Ensembl Transcript ID', 'Ensembl Peptide ID']
 }
 
 # a little faster lookup
@@ -264,7 +264,7 @@ class Interval(Tabular):
                                      (base_url, app.url_for(controller='root'), dataset.id, type))
             redirect_url = quote_plus("%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" %
                                       (site_url, dataset.dbkey, chrom, start, stop))
-            link = '{}?redirect_url={}&display_url={}'.format(internal_url, redirect_url, display_url)
+            link = f'{internal_url}?redirect_url={redirect_url}&display_url={display_url}'
             ret_val.append((site_name, link))
         return ret_val
 
@@ -393,9 +393,9 @@ class Bed(Interval):
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         """Sets the metadata information for datasets previously determined to be in bed format."""
-        i = 0
         if dataset.has_data():
-            for i, line in enumerate(open(dataset.file_name)):
+            i = 0
+            for i, line in enumerate(open(dataset.file_name)):  # noqa: B007
                 line = line.rstrip('\r\n')
                 if line and not line.startswith('#'):
                     elems = line.split('\t')
@@ -605,11 +605,11 @@ class _RemoteCallMixin:
         the data available, followed by redirecting to the remote site with a
         link back to the available information.
         """
-        internal_url = "%s" % app.url_for(controller='dataset', dataset_id=dataset.id, action='display_at', filename='{}_{}'.format(type, site_name))
+        internal_url = "%s" % app.url_for(controller='dataset', dataset_id=dataset.id, action='display_at', filename=f'{type}_{site_name}')
         base_url = app.config.get("display_at_callback", base_url)
         display_url = quote_plus("%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" %
                                  (base_url, app.url_for(controller='root'), dataset.id, type))
-        link = '{}?redirect_url={}&display_url={}'.format(internal_url, redirect_url, display_url)
+        link = f'{internal_url}?redirect_url={redirect_url}&display_url={display_url}'
         return link
 
 
@@ -684,7 +684,7 @@ class Gff(Tabular, _RemoteCallMixin):
 
         i = 0
         with compression_utils.get_fileobj(dataset.file_name) as in_fh:
-            for i, line in enumerate(in_fh):
+            for i, line in enumerate(in_fh):  # noqa: B007
                 line = line.rstrip('\r\n')
                 if line and not line.startswith('#'):
                     elems = line.split('\t')
@@ -795,7 +795,7 @@ class Gff(Tabular, _RemoteCallMixin):
                 if site_name in app.datatypes_registry.get_display_sites('gbrowse'):
                     if seqid.startswith('chr') and len(seqid) > 3:
                         seqid = seqid[3:]
-                    redirect_url = quote_plus("{}/?q={}:{}..{}&eurl=%s".format(site_url, seqid, start, stop))
+                    redirect_url = quote_plus(f"{site_url}/?q={seqid}:{start}..{stop}&eurl=%s")
                     link = self._get_remote_call_url(redirect_url, site_name, dataset, type, app, base_url)
                     ret_val.append((site_name, link))
         return ret_val
@@ -895,7 +895,7 @@ class Gff3(Gff):
         self.set_attribute_metadata(dataset)
         i = 0
         with compression_utils.get_fileobj(dataset.file_name) as in_fh:
-            for i, line in enumerate(in_fh):
+            for i, line in enumerate(in_fh):  # noqa: B007
                 line = line.rstrip('\r\n')
                 if line and not line.startswith('#'):
                     elems = line.split('\t')
@@ -1162,7 +1162,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
                 if site_name in app.datatypes_registry.get_display_sites('gbrowse'):
                     if chrom.startswith('chr') and len(chrom) > 3:
                         chrom = chrom[3:]
-                    redirect_url = quote_plus("{}/?q={}:{}..{}&eurl=%s".format(site_url, chrom, start, stop))
+                    redirect_url = quote_plus(f"{site_url}/?q={chrom}:{start}..{stop}&eurl=%s")
                     link = self._get_remote_call_url(redirect_url, site_name, dataset, type, app, base_url)
                     ret_val.append((site_name, link))
         return ret_val
@@ -1173,7 +1173,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
         if chrom is not None:
             for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build('ucsc', dataset.dbkey):
                 if site_name in app.datatypes_registry.get_display_sites('ucsc'):
-                    redirect_url = quote_plus("{}db={}&position={}:{}-{}&hgt.customText=%s".format(site_url, dataset.dbkey, chrom, start, stop))
+                    redirect_url = quote_plus(f"{site_url}db={dataset.dbkey}&position={chrom}:{start}-{stop}&hgt.customText=%s")
                     link = self._get_remote_call_url(redirect_url, site_name, dataset, type, app, base_url)
                     ret_val.append((site_name, link))
         return ret_val
@@ -1185,7 +1185,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
     def set_meta(self, dataset, overwrite=True, **kwd):
         max_data_lines = None
         i = 0
-        for i, line in enumerate(open(dataset.file_name)):
+        for i, line in enumerate(open(dataset.file_name)):  # noqa: B007
             line = line.rstrip('\r\n')
             if line and not line.startswith('#'):
                 elems = line.split('\t')
@@ -1340,8 +1340,8 @@ class CustomTrack(Tabular):
                 if site_name in app.datatypes_registry.get_display_sites('ucsc'):
                     internal_url = "%s" % app.url_for(controller='dataset', dataset_id=dataset.id, action='display_at', filename='ucsc_' + site_name)
                     display_url = quote_plus("%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % (base_url, app.url_for(controller='root'), dataset.id, type))
-                    redirect_url = quote_plus("{}db={}&position={}:{}-{}&hgt.customText=%s".format(site_url, dataset.dbkey, chrom, start, stop))
-                    link = '{}?redirect_url={}&display_url={}'.format(internal_url, redirect_url, display_url)
+                    redirect_url = quote_plus(f"{site_url}db={dataset.dbkey}&position={chrom}:{start}-{stop}&hgt.customText=%s")
+                    link = f'{internal_url}?redirect_url={redirect_url}&display_url={display_url}'
                     ret_val.append((site_name, link))
         return ret_val
 

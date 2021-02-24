@@ -21,7 +21,7 @@ export default Backbone.View.extend({
             hide_operations: false,
             onchange: function () {},
         }).set(options);
-        this.setElement("<div/>");
+        this.setElement(options.el || "<div/>");
         this.render();
     },
 

@@ -26,7 +26,7 @@ JobEnviromentProperties = collections.namedtuple("JobEnvironmentProperties", [
 ])
 
 
-class RunsEnvironmentJobs(object):
+class RunsEnvironmentJobs:
 
     def _run_and_get_environment_properties(self, tool_id="job_environment_default"):
         with self.dataset_populator.test_history() as history_id:
@@ -53,7 +53,7 @@ class BaseJobEnvironmentIntegrationTestCase(integration_util.IntegrationTestCase
     framework_tool_and_types = True
 
     def setUp(self):
-        super(BaseJobEnvironmentIntegrationTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
 

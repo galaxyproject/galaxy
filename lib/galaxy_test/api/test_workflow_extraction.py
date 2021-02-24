@@ -378,7 +378,7 @@ test_data:
     def _job_for_tool(self, jobs, tool_id):
         tool_jobs = [j for j in jobs if j["tool_id"] == tool_id]
         if not tool_jobs:
-            assert False, "Failed to find job for tool %s" % tool_id
+            raise ValueError(f"Failed to find job for tool {tool_id}")
         # if len( tool_jobs ) > 1:
         #     assert False, "Found multiple jobs for tool %s" % tool_id
         return tool_jobs[-1]
@@ -523,7 +523,7 @@ test_data:
                 if "job_ids" in extract_payload:
                     job_ids = extract_payload["job_ids"]
                     new_job_ids = []
-                    for i, job_id in enumerate(job_ids):
+                    for job_id in job_ids:
                         new_job_ids.append(new_history_job_ids[history_job_ids.index(job_id)])
 
                     extract_payload["job_ids"] = new_job_ids
@@ -559,7 +559,7 @@ test_data:
         return sorted(steps, key=operator.itemgetter("id"))
 
     def __job_id(self, history_id, dataset_id):
-        url = "histories/{}/contents/{}/provenance".format(history_id, dataset_id)
+        url = f"histories/{history_id}/contents/{dataset_id}/provenance"
         prov_response = self._get(url, data=dict(follow=False))
         self._assert_status_code_is(prov_response, 200)
         return prov_response.json()["job_id"]
@@ -610,7 +610,7 @@ test_data:
     def __assert_connected(self, workflow, steps):
         disconnected_inputs = []
 
-        for key, value in steps.items():
+        for value in steps.values():
             if value['type'] == "tool":
                 input_connections = value["input_connections"]
                 if not input_connections:

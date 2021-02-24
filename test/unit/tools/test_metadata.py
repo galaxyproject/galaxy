@@ -13,7 +13,7 @@ from .. import tools_support
 class MetadataTestCase(unittest.TestCase, tools_support.UsesApp, tools_support.UsesTools):
 
     def setUp(self):
-        super(MetadataTestCase, self).setUp()
+        super().setUp()
         self.setup_app()
         model.Dataset.object_store = self.app.object_store
         job = model.Job()
@@ -30,12 +30,8 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesApp, tools_support.U
         os.mkdir(self.tool_working_directory)
 
     def tearDown(self):
-        super(MetadataTestCase, self).tearDown()
+        super().tearDown()
         self.metadata_compute_strategy = None
-
-    def test_simple_output_legacy(self):
-        self.app.config.metadata_strategy = "legacy"
-        self._test_simple_output()
 
     def test_simple_output_directory(self):
         self.app.config.metadata_strategy = "directory"
@@ -66,10 +62,6 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesApp, tools_support.U
         assert output_dataset.metadata.data_lines == 2
         assert output_dataset.metadata.sequences == 1
 
-    def test_primary_dataset_output_extension_legacy(self):
-        self.app.config.metadata_strategy = "legacy"
-        self._test_primary_dataset_output_extension()
-
     def test_primary_dataset_output_extension_directory(self):
         self.app.config.metadata_strategy = "directory"
         self._test_primary_dataset_output_extension()
@@ -98,10 +90,6 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesApp, tools_support.U
         self.metadata_compute_strategy.load_metadata(output_dataset, "out_file1", sa_session, working_directory=self.job_working_directory)
         assert output_dataset.metadata.data_lines == 2
         assert output_dataset.metadata.sequences == 1
-
-    def test_primary_dataset_output_metadata_override_legacy(self):
-        self.app.config.metadata_strategy = "legacy"
-        self._test_primary_dataset_output_metadata_override()
 
     def test_primary_dataset_output_metadata_override_directory(self):
         self.app.config.metadata_strategy = "directory"
@@ -239,9 +227,9 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesApp, tools_support.U
 
     def print_command_output(self):
         print(">unit test of external metadata setting (command standard output)")
-        print(open(self.stdout_path, "r").read())
+        print(open(self.stdout_path).read())
         print(">unit test of external metadata setting (command standard error)")
-        print(open(self.stderr_path, "r").read())
+        print(open(self.stderr_path).read())
 
     @property
     def stdout_path(self):

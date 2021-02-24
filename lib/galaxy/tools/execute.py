@@ -6,9 +6,6 @@ collections from matched collections.
 import collections
 import logging
 
-import six
-import six.moves
-
 from galaxy import model
 from galaxy.model.dataset_collections.structure import get_structure, tool_output_to_structure
 from galaxy.tool_util.parser import ToolOutputCollectionPart
@@ -106,7 +103,7 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
 
     if execution_slice:
         # a side effect of adding datasets to a history is a commit within db_next_hid (even with flush=False).
-        history.add_pending_datasets()
+        history.add_pending_items()
     else:
         # Make sure collections, implicit jobs etc are flushed even if there are no precreated output datasets
         trans.sa_session.flush()
@@ -155,7 +152,7 @@ class ExecutionTracker:
         self.output_datasets = []
         self.output_collections = []
 
-        self.implicit_collections = collections.OrderedDict()
+        self.implicit_collections = {}
 
     @property
     def param_combinations(self):
@@ -205,7 +202,7 @@ class ExecutionTracker:
                 job_params=None,
             )
         except Exception:
-            output_collection_name = "{} across {}".format(self.tool.name, on_text)
+            output_collection_name = f"{self.tool.name} across {on_text}"
 
         return output_collection_name
 
@@ -290,7 +287,7 @@ class ExecutionTracker:
 
         implicit_collection_jobs = model.ImplicitCollectionJobs()
         for output_name, output in self.tool.outputs.items():
-            if filter_output(output, self.example_params):
+            if filter_output(self.tool, output, self.example_params):
                 continue
             output_collection_name = self.output_name(trans, history, params, output)
             effective_structure = self._mapped_output_structure(trans, output)
@@ -407,7 +404,7 @@ class ToolExecutionTracker(ExecutionTracker):
             self.outputs_by_output_name[job_output.name].append(job_output.dataset_collection)
 
     def new_collection_execution_slices(self):
-        for job_index, (param_combination, dataset_collection_elements) in enumerate(six.moves.zip(self.param_combinations, self.walk_implicit_collections())):
+        for job_index, (param_combination, dataset_collection_elements) in enumerate(zip(self.param_combinations, self.walk_implicit_collections())):
             completed_job = self.completed_jobs and self.completed_jobs[job_index]
             if not completed_job:
                 for dataset_collection_element in dataset_collection_elements.values():
@@ -430,7 +427,7 @@ class WorkflowStepExecutionTracker(ExecutionTracker):
             self.invocation_step.job = job
 
     def new_collection_execution_slices(self):
-        for job_index, (param_combination, dataset_collection_elements) in enumerate(six.moves.zip(self.param_combinations, self.walk_implicit_collections())):
+        for job_index, (param_combination, dataset_collection_elements) in enumerate(zip(self.param_combinations, self.walk_implicit_collections())):
             completed_job = self.completed_jobs and self.completed_jobs[job_index]
             if not completed_job:
                 found_result = False

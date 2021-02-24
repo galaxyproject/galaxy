@@ -2,6 +2,7 @@
     <invocations
         :invocation-items="invocationItems"
         :loading="loading"
+        @reload-invocations="fetchRecentInvocations"
         no-invocations-message="There are no invocations to be shown."
     >
     </invocations>
@@ -22,14 +23,17 @@ export default {
         };
     },
     created() {
-        getRecentInvocations()
-            .then((response) => {
-                this.invocationItems = response.data;
-                this.loading = false;
-            })
-            .catch(this.handleError);
+        this.fetchRecentInvocations();
     },
     methods: {
+        fetchRecentInvocations() {
+            getRecentInvocations()
+                .then((response) => {
+                    this.invocationItems = response.data;
+                    this.loading = false;
+                })
+                .catch(this.handleError);
+        },
         handleError(error) {
             console.error(error);
         },

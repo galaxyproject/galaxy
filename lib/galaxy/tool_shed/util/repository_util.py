@@ -2,9 +2,9 @@ import logging
 import os
 import re
 import shutil
+from urllib.error import HTTPError
 
 from markupsafe import escape
-from six.moves.urllib.error import HTTPError
 from sqlalchemy import (
     and_,
     false,
@@ -173,7 +173,7 @@ def get_absolute_path_to_file_in_repository(repo_files_dir, file_name):
     """Return the absolute path to a specified disk file contained in a repository."""
     stripped_file_name = basic_util.strip_path(file_name)
     file_path = None
-    for root, dirs, files in os.walk(repo_files_dir):
+    for root, _, files in os.walk(repo_files_dir):
         if root.find('.hg') < 0:
             for name in files:
                 if name == stripped_file_name:
@@ -308,7 +308,7 @@ def get_repository_by_id(app, id):
     if is_tool_shed_client(app):
         return app.install_model.context.query(app.install_model.ToolShedRepository).get(app.security.decode_id(id))
     else:
-        sa_session = app.model.context.current
+        sa_session = app.model.session
         return sa_session.query(app.model.Repository).get(app.security.decode_id(id))
 
 
@@ -495,7 +495,7 @@ def get_repository_query(app):
 
 def get_role_by_id(app, role_id):
     """Get a Role from the database by id."""
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     return sa_session.query(app.model.Role).get(app.security.decode_id(role_id))
 
 

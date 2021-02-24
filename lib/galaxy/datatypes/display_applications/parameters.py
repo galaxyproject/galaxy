@@ -1,7 +1,7 @@
 # Contains parameters that are used in Display Applications
 import mimetypes
-
-from six.moves.urllib.parse import quote_plus
+from typing import Optional
+from urllib.parse import quote_plus
 
 from galaxy.util import string_as_bool
 from galaxy.util.bunch import Bunch
@@ -13,7 +13,7 @@ DEFAULT_DATASET_NAME = 'dataset'
 class DisplayApplicationParameter:
     """ Abstract Class for Display Application Parameters """
 
-    type = None
+    type: Optional[str] = None
 
     @classmethod
     def from_elem(cls, elem, link):
@@ -83,7 +83,7 @@ class DisplayApplicationDataParameter(DisplayApplicationParameter):
             data = data.value
         if self.metadata:
             rval = getattr(data.metadata, self.metadata, None)
-            assert rval, 'Unknown metadata name "{}" provided for datatype "{}".'.format(self.metadata, data.ext)
+            assert rval, f'Unknown metadata name "{self.metadata}" provided for dataset type "{data.ext}".'
             return Bunch(file_name=rval.file_name, state=data.state, states=data.states, extension='data')
         elif self.extensions and (self.force_conversion or not isinstance(data.datatype, self.formats)):
             for ext in self.extensions:

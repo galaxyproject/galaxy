@@ -109,23 +109,23 @@ class PAM(AuthProvider):
 
         pam_service = options.get('pam-service', 'galaxy')
         use_helper = string_as_bool(options.get('use-external-helper', False))
-        log.debug("PAM auth: will use external helper: {}".format(use_helper))
+        log.debug(f"PAM auth: will use external helper: {use_helper}")
         authenticated = False
         if use_helper:
             authentication_helper = options.get('authentication-helper-script', '/bin/false').strip()
-            log.debug("PAM auth: external helper script: {}".format(authentication_helper))
+            log.debug(f"PAM auth: external helper script: {authentication_helper}")
             if not authentication_helper.startswith('/'):
                 # don't accept relative path
                 authenticated = False
             else:
-                auth_cmd = shlex.split('/usr/bin/sudo -n {}'.format(authentication_helper))
-                log.debug("PAM auth: external helper cmd: {}".format(auth_cmd))
-                message = '{}\n{}\n{}\n'.format(pam_service, pam_username, password)
+                auth_cmd = shlex.split(f'/usr/bin/sudo -n {authentication_helper}')
+                log.debug(f"PAM auth: external helper cmd: {auth_cmd}")
+                message = f'{pam_service}\n{pam_username}\n{password}\n'
                 try:
                     output = commands.execute(auth_cmd, input=message)
                 except commands.CommandLineException as e:
                     if e.stderr != '':
-                        log.debug("PAM auth: external authentication script had errors: status {} error {}".format(e.returncode, e.stderr))
+                        log.debug(f"PAM auth: external authentication script had errors: status {e.returncode} error {e.stderr}")
                     output = e.stdout
                 if output.strip() == 'True':
                     authenticated = True

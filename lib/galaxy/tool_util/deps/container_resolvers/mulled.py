@@ -1,10 +1,9 @@
 """This module describes the :class:`MulledContainerResolver` ContainerResolver plugin."""
 
-import collections
 import logging
 import os
 import subprocess
-
+from typing import NamedTuple, Optional
 
 from galaxy.util import (
     safe_makedirs,
@@ -40,27 +39,40 @@ from ..requirements import (
 log = logging.getLogger(__name__)
 
 
-CachedMulledImageSingleTarget = collections.namedtuple("CachedMulledImageSingleTarget", ["package_name", "version", "build", "image_identifier"])
-CachedV1MulledImageMultiTarget = collections.namedtuple("CachedV1MulledImageMultiTarget", ["hash", "build", "image_identifier"])
-CachedV2MulledImageMultiTarget = collections.namedtuple("CachedV2MulledImageMultiTarget", ["image_name", "version_hash", "build", "image_identifier"])
+class CachedMulledImageSingleTarget(NamedTuple):
+    package_name: str
+    version: str
+    build: str
+    image_identifier: str
 
-CachedMulledImageSingleTarget.multi_target = False
-CachedV1MulledImageMultiTarget.multi_target = "v1"
-CachedV2MulledImageMultiTarget.multi_target = "v2"
-
-
-@property
-def _package_hash(target):
-    # Make this work for Singularity file name or fully qualified Docker repository
-    # image names.
-    image_name = target.image_name
-    if "/" not in image_name:
-        return image_name
-    else:
-        return image_name.rsplit("/")[-1]
+    multi_target: bool = False
 
 
-CachedV2MulledImageMultiTarget.package_hash = _package_hash
+class CachedV1MulledImageMultiTarget(NamedTuple):
+    hash: str
+    build: str
+    image_identifier: str
+
+    multi_target: str = "v1"
+
+
+class CachedV2MulledImageMultiTarget(NamedTuple):
+    image_name: str
+    version_hash: str
+    build: str
+    image_identifier: str
+
+    multi_target: str = "v2"
+
+    @property
+    def package_hash(target):
+        # Make this work for Singularity file name or fully qualified Docker repository
+        # image names.
+        image_name = target.image_name
+        if "/" not in image_name:
+            return image_name
+        else:
+            return image_name.rsplit("/")[-1]
 
 
 def list_docker_cached_mulled_images(namespace=None, hash_func="v2", resolution_cache=None):
@@ -74,7 +86,7 @@ def list_docker_cached_mulled_images(namespace=None, hash_func="v2", resolution_
         except subprocess.CalledProcessError:
             log.info("Call to `docker images` failed, configured container resolution may be broken")
             return []
-        images_and_versions = [":".join(l.split()[0:2]) for l in images_and_versions[1:]]
+        images_and_versions = [":".join(line.split()[0:2]) for line in images_and_versions[1:]]
         if resolution_cache is not None:
             resolution_cache[cache_key] = images_and_versions
 
@@ -260,7 +272,7 @@ def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None,
     if len(targets) == 1:
         target = targets[0]
         target_version = target.version
-        cache_key = "ns[{}]__single__{}__@__{}".format(namespace, target.package_name, target_version)
+        cache_key = f"ns[{namespace}]__single__{target.package_name}__@__{target_version}"
         if cache_key in unresolved_cache:
             return None
         name = cached_name(cache_key)
@@ -276,7 +288,7 @@ def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None,
                 else:
                     version = tag
                 if target_version and version == target_version:
-                    name = "{}:{}".format(target.package_name, tag)
+                    name = f"{target.package_name}:{tag}"
                     break
 
     else:
@@ -296,7 +308,7 @@ def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None,
         else:
             raise Exception("Unimplemented mulled hash_func [%s]" % hash_func)
 
-        cache_key = "ns[{}]__{}__{}".format(namespace, hash_func, base_image_name)
+        cache_key = f"ns[{namespace}]__{hash_func}__{base_image_name}"
         if cache_key in unresolved_cache:
             return None
         name = cached_name(cache_key)
@@ -313,7 +325,7 @@ def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None,
             else:
                 # base_image_name of form <package_hash>, simply add build number
                 # as tag to fully qualify image.
-                name = "{}:{}".format(base_image_name, tag)
+                name = f"{base_image_name}:{tag}"
 
     if name and mulled_resolution_cache:
         mulled_resolution_cache.put(cache_key, name)
@@ -402,7 +414,7 @@ class MulledDockerContainerResolver(CliContainerResolver):
 
     resolver_type = "mulled"
     shell = '/bin/bash'
-    protocol = None
+    protocol: Optional[str] = None
 
     def __init__(self, app_info=None, namespace="biocontainers", hash_func="v2", auto_install=True, **kwds):
         super().__init__(app_info=app_info, **kwds)
@@ -439,9 +451,9 @@ class MulledDockerContainerResolver(CliContainerResolver):
 
         name = targets_to_mulled_name(targets=targets, hash_func=self.hash_func, namespace=self.namespace, resolution_cache=resolution_cache, session=session)
         if name:
-            container_id = "quay.io/{}/{}".format(self.namespace, name)
+            container_id = f"quay.io/{self.namespace}/{name}"
             if self.protocol:
-                container_id = "{}{}".format(self.protocol, container_id)
+                container_id = f"{self.protocol}{container_id}"
             container_description = ContainerDescription(
                 container_id,
                 type=self.container_type,

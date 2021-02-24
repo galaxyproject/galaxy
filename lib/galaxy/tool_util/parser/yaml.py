@@ -1,5 +1,3 @@
-from collections import OrderedDict
-
 import packaging.version
 
 from galaxy.tool_util.deps import requirements
@@ -117,10 +115,10 @@ class YamlToolSource(ToolSource):
             else:
                 message = "Unknown output_type [%s] encountered." % output_type
                 raise Exception(message)
-        outputs = OrderedDict()
+        outputs = {}
         for output in output_defs:
             outputs[output.name] = output
-        output_collections = OrderedDict()
+        output_collections = {}
         for output in output_collection_defs:
             output_collections[output.name] = output
 
@@ -179,6 +177,9 @@ class YamlToolSource(ToolSource):
 
     def parse_profile(self):
         return self.root_dict.get("profile", "16.04")
+
+    def parse_license(self):
+        return self.root_dict.get("license")
 
     def parse_interactivetool(self):
         return self.root_dict.get("entry_points", [])
@@ -247,7 +248,7 @@ def _parse_test(i, test_dict):
     test_dict["stdout"] = __to_test_assert_list(test_dict.get("stdout", []))
     test_dict["stderr"] = __to_test_assert_list(test_dict.get("stderr", []))
     test_dict["expect_exit_code"] = test_dict.get("expect_exit_code", None)
-    test_dict["expect_failure"] = test_dict.get("expect_exit_code", False)
+    test_dict["expect_failure"] = test_dict.get("expect_failure", False)
     return test_dict
 
 
@@ -339,7 +340,7 @@ class YamlInputSource(InputSource):
     def parse_static_options(self):
         static_options = list()
         input_dict = self.input_dict
-        for index, option in enumerate(input_dict.get("options", {})):
+        for option in input_dict.get("options", {}):
             value = option.get("value")
             label = option.get("label", value)
             selected = option.get("selected", False)

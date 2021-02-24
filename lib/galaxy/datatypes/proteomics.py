@@ -22,11 +22,10 @@ class Wiff(Binary):
     edam_data = "data_2536"
     edam_format = "format_3710"
     file_ext = 'wiff'
-    allow_datatype_change = False
     composite_type = 'auto_primary_file'
 
     def __init__(self, **kwd):
-        Binary.__init__(self, **kwd)
+        super().__init__(**kwd)
 
         self.add_composite_file(
             'wiff',
@@ -49,7 +48,7 @@ class Wiff(Binary):
             if composite_file.get('description'):
                 rval.append('<li><a href="{}" type="text/plain">{} ({})</a>{}</li>'.format(fn, fn, composite_file.get('description'), opt_text))
             else:
-                rval.append('<li><a href="{}" type="text/plain">{}</a>{}</li>'.format(fn, fn, opt_text))
+                rval.append(f'<li><a href="{fn}" type="text/plain">{fn}</a>{opt_text}</li>')
         rval.append('</ul></div></html>')
         return "\n".join(rval)
 
@@ -323,7 +322,7 @@ class Dta(TabularData):
         data_lines = 0
         if dataset.has_data():
             with open(dataset.file_name) as dtafile:
-                for line in dtafile:
+                for _ in dtafile:
                     data_lines += 1
 
         # Guess column types
@@ -881,7 +880,7 @@ class SPLib(Msp):
     composite_type = 'auto_primary_file'
 
     def __init__(self, **kwd):
-        Msp.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.add_composite_file('library.splib',
                                 description='Spectral Library. Contains actual library spectra',
                                 is_binary=False)
@@ -901,7 +900,7 @@ class SPLib(Msp):
             if composite_file.get('description'):
                 rval.append('<li><a href="{}" type="text/plain">{} ({})</a>{}</li>'.format(fn, fn, composite_file.get('description'), opt_text))
             else:
-                rval.append('<li><a href="{}" type="text/plain">{}</a>{}</li>'.format(fn, fn, opt_text))
+                rval.append(f'<li><a href="{fn}" type="text/plain">{fn}</a>{opt_text}</li>')
         rval.append('</ul></div></html>')
         return "\n".join(rval)
 
@@ -970,11 +969,10 @@ class ImzML(Binary):
     """
     edam_format = "format_3682"
     file_ext = 'imzml'
-    allow_datatype_change = False
     composite_type = 'auto_primary_file'
 
     def __init__(self, **kwd):
-        Binary.__init__(self, **kwd)
+        super().__init__(**kwd)
 
         """The metadata"""
         self.add_composite_file(
@@ -997,53 +995,6 @@ class ImzML(Binary):
             if composite_file.get('description'):
                 rval.append('<li><a href="{}" type="text/plain">{} ({})</a>{}</li>'.format(fn, fn, composite_file.get('description'), opt_text))
             else:
-                rval.append('<li><a href="{}" type="text/plain">{}</a>{}</li>'.format(fn, fn, opt_text))
-        rval.append('</ul></div></html>')
-        return "\n".join(rval)
-
-
-class Analyze75(Binary):
-    """
-        Mayo Analyze 7.5 files
-        http://www.imzml.org
-    """
-    file_ext = 'analyze75'
-    allow_datatype_change = False
-    composite_type = 'auto_primary_file'
-
-    def __init__(self, **kwd):
-        Binary.__init__(self, **kwd)
-
-        """The header file. Provides information about dimensions, identification, and processing history."""
-        self.add_composite_file(
-            'hdr',
-            description='The Analyze75 header file.',
-            is_binary=True)
-
-        """The image file.  Image data, whose data type and ordering are described by the header file."""
-        self.add_composite_file(
-            'img',
-            description='The Analyze75 image file.',
-            is_binary=True)
-
-        """The optional t2m file."""
-        self.add_composite_file(
-            't2m',
-            description='The Analyze75 t2m file.',
-            optional=True,
-            is_binary=True)
-
-    def generate_primary_file(self, dataset=None):
-        rval = ['<html><head><title>Analyze75 Composite Dataset.</title></head><p/>']
-        rval.append('<div>This composite dataset is composed of the following files:<p/><ul>')
-        for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
-            fn = composite_name
-            opt_text = ''
-            if composite_file.optional:
-                opt_text = ' (optional)'
-            if composite_file.get('description'):
-                rval.append('<li><a href="{}" type="text/plain">{} ({})</a>{}</li>'.format(fn, fn, composite_file.get('description'), opt_text))
-            else:
-                rval.append('<li><a href="{}" type="text/plain">{}</a>{}</li>'.format(fn, fn, opt_text))
+                rval.append(f'<li><a href="{fn}" type="text/plain">{fn}</a>{opt_text}</li>')
         rval.append('</ul></div></html>')
         return "\n".join(rval)

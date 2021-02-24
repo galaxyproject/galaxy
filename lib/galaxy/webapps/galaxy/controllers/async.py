@@ -2,13 +2,12 @@
 Upload class
 """
 
-
 import logging
+from urllib.parse import urlencode
 
 import requests
-from six.moves.urllib.parse import urlencode
 
-from galaxy import jobs, web
+from galaxy import web
 from galaxy.util import (
     Params,
     unicodify,
@@ -71,7 +70,7 @@ class ASync(BaseUIController):
                 data.state = data.blurb = data.states.RUNNING
                 log.debug('executing tool %s' % tool.id)
                 trans.log_event('Async executing tool %s' % tool.id, tool_id=tool.id)
-                galaxy_url = trans.request.base + '/async/{}/{}/{}'.format(tool_id, data.id, key)
+                galaxy_url = trans.request.base + f'/async/{tool_id}/{data.id}/{key}'
                 galaxy_url = params.get("GALAXY_URL", galaxy_url)
                 params = dict(URL=URL, GALAXY_URL=galaxy_url, name=data.name, info=data.info, dbkey=data.dbkey, data_type=data.ext)
 
@@ -93,12 +92,12 @@ class ASync(BaseUIController):
             else:
                 log.debug('async error -> %s' % STATUS)
                 trans.log_event('Async error -> %s' % STATUS)
-                data.state = data.blurb = jobs.JOB_ERROR
+                data.state = data.blurb = "error"
                 data.info = "Error -> %s" % STATUS
 
             trans.sa_session.flush()
 
-            return "Data {} with status {} received. OK".format(data_id, STATUS)
+            return f"Data {data_id} with status {STATUS} received. OK"
         else:
             #
             # no data_id must be parameter submission
@@ -155,7 +154,7 @@ class ASync(BaseUIController):
 
             try:
                 key = hmac_new(trans.app.config.tool_secret, "%d:%d" % (data.id, data.history_id))
-                galaxy_url = trans.request.base + '/async/{}/{}/{}'.format(tool_id, data.id, key)
+                galaxy_url = trans.request.base + f'/async/{tool_id}/{data.id}/{key}'
                 params.update({'GALAXY_URL': galaxy_url})
                 params.update({'data_id': data.id})
 

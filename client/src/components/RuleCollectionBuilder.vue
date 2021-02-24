@@ -385,8 +385,8 @@
                                     manage column definitions.
                                 </div>
                             </ol>
-                            <div class="rules-buttons">
-                                <div class="btn-group dropup">
+                            <div class="rules-buttons btn-group">
+                                <div class="dropup">
                                     <button
                                         type="button"
                                         v-b-tooltip.hover.bottom
@@ -411,7 +411,7 @@
                                         >
                                     </div>
                                 </div>
-                                <div class="btn-group dropup">
+                                <div class="dropup">
                                     <button
                                         type="button"
                                         v-b-tooltip.hover.bottom
@@ -431,7 +431,7 @@
                                         <rule-target-component :builder="this" rule-type="add_filter_count" />
                                     </div>
                                 </div>
-                                <div class="btn-group dropup">
+                                <div class="dropup">
                                     <button
                                         type="button"
                                         v-b-tooltip.hover.bottom
@@ -701,7 +701,7 @@ export default {
             ),
             titleInvertFilterRegex: _l("Remove rows not matching the specified regular expression at specified column"),
             titleInvertFilterEmpty: _l("Remove rows that have non-empty values at specified column"),
-            titleInvertFilterMatches: _l("Remove rows not matching supplied value"),
+            titleInvertFilterMatches: _l("Remove rows matching supplied value"),
             titleViewSource: _l(
                 "Advanced Option: View and or edit the JSON representation of the rules to apply to this tabular data"
             ),
@@ -1650,18 +1650,26 @@ export default {
                     }
                 }
             }
-            UploadUtils.getUploadDatatypes(
-                (extensions) => {
+
+            // TODO: provider...
+            UploadUtils.getUploadDatatypes(false, UploadUtils.AUTO_EXTENSION)
+                .then((extensions) => {
                     this.extensions = extensions;
                     this.extension = UploadUtils.DEFAULT_EXTENSION;
-                },
-                false,
-                UploadUtils.AUTO_EXTENSION
-            );
-            UploadUtils.getUploadGenomes((genomes) => {
-                this.genomes = genomes;
-                this.genome = UploadUtils.DEFAULT_GENOME;
-            }, UploadUtils.DEFAULT_GENOME);
+                })
+                .catch((err) => {
+                    console.log("Error in RuleCollectionBuilder, unable to load datatypes", err);
+                });
+
+            // TODO: provider...
+            UploadUtils.getUploadGenomes(UploadUtils.DEFAULT_GENOME)
+                .then((genomes) => {
+                    this.genomes = genomes;
+                    this.genome = UploadUtils.DEFAULT_GENOME;
+                })
+                .catch((err) => {
+                    console.log("Error in RuleCollectionBuilder, unable to load genomes", err);
+                });
         }
     },
     watch: {
@@ -1729,7 +1737,7 @@ export default {
     padding: 5px;
 }
 .rules-container-vertical {
-    width: 280px;
+    width: 300px;
     height: 400px;
 }
 .rules-container-horizontal {

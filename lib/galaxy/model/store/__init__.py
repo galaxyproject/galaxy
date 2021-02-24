@@ -14,7 +14,7 @@ from uuid import uuid4
 
 from bdbag import bdbag_api as bdb
 from boltons.iterutils import remap
-from sqlalchemy.orm import eagerload_all
+from sqlalchemy.orm import joinedload
 from sqlalchemy.sql import expression
 
 from galaxy.exceptions import MalformedContents, ObjectNotFound
@@ -78,7 +78,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         self.object_store = object_store
         self.app = app
         if app is not None:
-            self.sa_session = app.model.context.current
+            self.sa_session = app.model.session
             self.sessionless = False
         else:
             self.sa_session = SessionlessContext()
@@ -119,7 +119,6 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         and a history may contain multiple objects with the same 'hid'.
         """
 
-    @abc.abstractproperty
     def trust_hid(self, obj_attrs):
         """Trust HID when importing objects into a new History."""
 
@@ -336,7 +335,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         if dataset_extra_files_path:
                             dir_name = dataset_instance.dataset.extra_files_path_name
                             dataset_extra_files_path = os.path.join(self.archive_dir, dataset_extra_files_path)
-                            for root, dirs, files in safe_walk(dataset_extra_files_path):
+                            for root, _dirs, files in safe_walk(dataset_extra_files_path):
                                 extra_dir = os.path.join(dir_name, root.replace(dataset_extra_files_path, '', 1).lstrip(os.path.sep))
                                 extra_dir = os.path.normpath(extra_dir)
                                 for extra_file in files:
@@ -371,7 +370,11 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         assert 'id' in dataset_attrs
                         object_import_tracker.hdas_by_id[dataset_attrs['id']] = dataset_instance
                 else:
-                    object_import_tracker.lddas_by_key[dataset_attrs[object_key]] = dataset_instance
+                    if object_key in dataset_attrs:
+                        object_import_tracker.lddas_by_key[dataset_attrs[object_key]] = dataset_instance
+                    else:
+                        assert 'id' in dataset_attrs
+                        object_import_tracker.lddas_by_key[dataset_attrs['id']] = dataset_instance
 
     def _import_libraries(self, object_import_tracker):
         object_key = self.object_key
@@ -449,12 +452,12 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                             if hda_key in hdas_by_key:
                                 hda = hdas_by_key[hda_key]
                             else:
-                                raise KeyError("Failed to find exported hda with key [{}] of type [{}] in [{}]".format(hda_key, object_key, hdas_by_key))
+                                raise KeyError(f"Failed to find exported hda with key [{hda_key}] of type [{object_key}] in [{hdas_by_key}]")
                         else:
                             hda_id = hda_attrs["id"]
                             hdas_by_id = object_import_tracker.hdas_by_id
                             if hda_id not in hdas_by_id:
-                                raise Exception("Failed to find HDA with id [{}] in [{}]".format(hda_id, hdas_by_id))
+                                raise Exception(f"Failed to find HDA with id [{hda_id}] in [{hdas_by_id}]")
                             hda = hdas_by_id[hda_id]
                         dce.hda = hda
                     elif 'child_collection' in element_attrs:
@@ -487,29 +490,32 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             return dc
 
         for collection_attrs in collections_attrs:
-            dc = import_collection(collection_attrs["collection"])
-            if 'id' in collection_attrs and self.import_options.allow_edit and not self.sessionless:
-                hdca = self.sa_session.query(model.HistoryDatasetCollectionAssociation).get(collection_attrs["id"])
-                # TODO: edit attributes...
-            else:
-                hdca = model.HistoryDatasetCollectionAssociation(collection=dc,
-                                                                 visible=True,
-                                                                 name=collection_attrs['display_name'],
-                                                                 implicit_output_name=collection_attrs.get("implicit_output_name"))
-                self._attach_raw_id_if_editing(hdca, collection_attrs)
-
-                hdca.history = history
-                if new_history and self.trust_hid(collection_attrs):
-                    hdca.hid = collection_attrs['hid']
+            if 'collection' in collection_attrs:
+                dc = import_collection(collection_attrs["collection"])
+                if 'id' in collection_attrs and self.import_options.allow_edit and not self.sessionless:
+                    hdca = self.sa_session.query(model.HistoryDatasetCollectionAssociation).get(collection_attrs["id"])
+                    # TODO: edit attributes...
                 else:
-                    object_import_tracker.requires_hid.append(hdca)
+                    hdca = model.HistoryDatasetCollectionAssociation(collection=dc,
+                                                                     visible=True,
+                                                                     name=collection_attrs['display_name'],
+                                                                     implicit_output_name=collection_attrs.get("implicit_output_name"))
+                    self._attach_raw_id_if_editing(hdca, collection_attrs)
 
-            self._session_add(hdca)
-            if object_key in collection_attrs:
-                object_import_tracker.hdcas_by_key[collection_attrs[object_key]] = hdca
+                    hdca.history = history
+                    if new_history and self.trust_hid(collection_attrs):
+                        hdca.hid = collection_attrs['hid']
+                    else:
+                        object_import_tracker.requires_hid.append(hdca)
+
+                self._session_add(hdca)
+                if object_key in collection_attrs:
+                    object_import_tracker.hdcas_by_key[collection_attrs[object_key]] = hdca
+                else:
+                    assert 'id' in collection_attrs
+                    object_import_tracker.hdcas_by_id[collection_attrs['id']] = hdca
             else:
-                assert 'id' in collection_attrs
-                object_import_tracker.hdcas_by_id[collection_attrs['id']] = hdca
+                import_collection(collection_attrs)
 
     def _attach_raw_id_if_editing(self, obj, attrs):
         if self.sessionless and 'id' in attrs and self.import_options.allow_edit:
@@ -1131,7 +1137,7 @@ class DirectoryModelExportStore(ModelExportStore):
         with open(history_attrs_filename, 'w') as history_attrs_out:
             dump(history_attrs, history_attrs_out)
 
-        sa_session = app.model.context.current
+        sa_session = app.model.session
 
         # Write collections' attributes (including datasets list) to file.
         query = (sa_session.query(model.HistoryDatasetCollectionAssociation)
@@ -1162,7 +1168,7 @@ class DirectoryModelExportStore(ModelExportStore):
         query = (sa_session.query(model.HistoryDatasetAssociation)
                  .filter(model.HistoryDatasetAssociation.history == history)
                  .join("dataset")
-                 .options(eagerload_all("dataset.actions"))
+                 .options(joinedload("dataset").joinedload("actions"))
                  .order_by(model.HistoryDatasetAssociation.hid)
                  .filter(model.Dataset.purged == expression.false()))
         datasets = query.all()
@@ -1217,7 +1223,7 @@ class DirectoryModelExportStore(ModelExportStore):
 
         datasets_attrs = []
         provenance_attrs = []
-        for dataset_id, (dataset, include_files) in self.included_datasets.items():
+        for dataset, include_files in self.included_datasets.values():
             if include_files:
                 datasets_attrs.append(dataset)
             else:
@@ -1252,7 +1258,8 @@ class DirectoryModelExportStore(ModelExportStore):
         def record_associated_jobs(obj):
             # Get the job object.
             job = None
-            for assoc in obj.creating_job_associations:
+            for assoc in getattr(obj, 'creating_job_associations', []):
+                # For mapped over jobs obj could be DatasetCollection, which has no creating_job_association
                 job = assoc.job
                 break
             if not job:
@@ -1265,7 +1272,7 @@ class DirectoryModelExportStore(ModelExportStore):
                 implicit_collection_jobs = icja.implicit_collection_jobs
                 implicit_collection_jobs_dict[implicit_collection_jobs.id] = implicit_collection_jobs
 
-        for hda_id, (hda, include_files) in self.included_datasets.items():
+        for hda, _include_files in self.included_datasets.values():
             # Get the associated job, if any. If this hda was copied from another,
             # we need to find the job that created the origial hda
             job_hda = hda
@@ -1282,7 +1289,7 @@ class DirectoryModelExportStore(ModelExportStore):
 
         # Get jobs' attributes.
         jobs_attrs = []
-        for id, job in jobs_dict.items():
+        for job in jobs_dict.values():
             # Don't attempt to serialize jobs for editing... yet at least.
             if self.serialization_options.for_edit:
                 continue
@@ -1369,7 +1376,7 @@ class DirectoryModelExportStore(ModelExportStore):
             jobs_attrs.append({"id": job_id, 'output_dataset_mapping': output_dataset_mapping})
 
         icjs_attrs = []
-        for icj_id, icj in implicit_collection_jobs_dict.items():
+        for icj in implicit_collection_jobs_dict.values():
             icj_attrs = icj.serialize(self.security, self.serialization_options)
             icjs_attrs.append(icj_attrs)
 
@@ -1449,7 +1456,7 @@ def get_export_dataset_filename(name, ext, hid):
     Builds a filename for a dataset using its name an extension.
     """
     base = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in name)
-    return base + "_{}.{}".format(hid, ext)
+    return base + f"_{hid}.{ext}"
 
 
 def imported_store_for_metadata(directory, object_store=None):

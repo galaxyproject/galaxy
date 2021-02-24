@@ -1,0 +1,44 @@
+<tool name="expression_pick_larger_file" id="expression_pick_larger_file"
+      version="0.1.0" tool_type="expression">
+    <expression type="ecma5.1"><![CDATA[
+        {
+            var input1 = $job.input1;
+            var input2 = $job.input2;
+            var input1_size = input1 && input1.file_size;
+            var input2_size = input2 && input2.file_size;
+            var output;
+            if( !input2 || !input2_size || input1_size >= input2_size ) {
+                output = input1.src;
+            } else {
+                output = input2.src;
+            }
+            return {'output': output};
+        }
+    ]]></expression>
+    <inputs>
+        <param name="input1" type="data" optional="true" label="First file" />
+        <param name="input2" type="data" optional="true" label="Second file" />
+    </inputs>
+    <outputs>
+        <output name="larger_file" type="data" from="output" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input1" value="simple_line.txt" />
+            <param name="input2" value="simple_line_alternative.txt" />
+            <output name="larger_file" file="simple_line_alternative.txt"/>
+        </test>
+        <test>
+            <param name="input1" value="simple_line_alternative.txt" />
+            <param name="input2" value_json="null" />
+            <output name="larger_file" file="simple_line_alternative.txt"/>
+        </test>
+        <test>
+            <param name="input1" value_json="null" />
+            <param name="input2" value_json="simple_line.txt" />
+            <output name="larger_file" file="simple_line.txt"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

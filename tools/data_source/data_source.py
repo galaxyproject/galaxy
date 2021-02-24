@@ -27,11 +27,11 @@ def stop_err(msg):
 def load_input_parameters(filename, erase_file=True):
     datasource_params = {}
     try:
-        json_params = loads(open(filename, 'r').read())
+        json_params = loads(open(filename).read())
         datasource_params = json_params.get('param_dict')
     except Exception:
         json_params = None
-        for line in open(filename, 'r'):
+        for line in open(filename):
             try:
                 line = line.strip()
                 fields = line.split('\t')

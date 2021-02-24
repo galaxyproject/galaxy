@@ -20,11 +20,11 @@ user3_data = dict(email='user3@user3.user3', username='user3', password=default_
 class DatasetCollectionManagerTestCase(BaseTestCase, CreatesCollectionsMixin):
 
     def set_up_managers(self):
-        super(DatasetCollectionManagerTestCase, self).set_up_managers()
-        self.dataset_manager = DatasetManager(self.app)
-        self.hda_manager = HDAManager(self.app)
-        self.history_manager = HistoryManager(self.app)
-        self.collection_manager = DatasetCollectionManager(self.app)
+        super().set_up_managers()
+        self.dataset_manager = self.app[DatasetManager]
+        self.hda_manager = self.app[HDAManager]
+        self.history_manager = self.app[HistoryManager]
+        self.collection_manager = self.app[DatasetCollectionManager]
 
     def test_create_simple_list(self):
         owner = self.user_manager.create(**user2_data)

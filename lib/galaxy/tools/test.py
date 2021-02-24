@@ -8,6 +8,7 @@ import galaxy.tools.parameters.grouping
 from galaxy.tool_util.verify.interactor import ToolTestDescription
 from galaxy.util import (
     string_as_bool,
+    string_as_bool_or_none,
     unicodify,
 )
 
@@ -86,7 +87,7 @@ def _process_raw_inputs(tool, tool_inputs, raw_inputs, required_files, required_
     """
     parent_context = parent_context or RootParamContext()
     expanded_inputs = {}
-    for key, value in tool_inputs.items():
+    for value in tool_inputs.values():
         if isinstance(value, galaxy.tools.parameters.grouping.Conditional):
             cond_context = ParamContext(name=value.name, parent_context=parent_context)
             case_context = ParamContext(name=value.test_param.name, parent_context=cond_context)
@@ -111,7 +112,7 @@ def _process_raw_inputs(tool, tool_inputs, raw_inputs, required_files, required_
                     expanded_inputs[case_context.for_state()] = processed_value
         elif isinstance(value, galaxy.tools.parameters.grouping.Section):
             context = ParamContext(name=value.name, parent_context=parent_context)
-            for r_name, r_value in value.inputs.items():
+            for r_value in value.inputs.values():
                 expanded_input = _process_raw_inputs(tool, {context.for_state(): r_value}, raw_inputs, required_files, required_data_tables, required_loc_files, parent_context=context)
                 if expanded_input:
                     expanded_inputs.update(expanded_input)
@@ -120,7 +121,7 @@ def _process_raw_inputs(tool, tool_inputs, raw_inputs, required_files, required_
             while True:
                 context = ParamContext(name=value.name, index=repeat_index, parent_context=parent_context)
                 updated = False
-                for r_name, r_value in value.inputs.items():
+                for r_value in value.inputs.values():
                     expanded_input = _process_raw_inputs(tool, {context.for_state(): r_value}, raw_inputs, required_files, required_data_tables, required_loc_files, parent_context=context)
                     if expanded_input:
                         expanded_inputs.update(expanded_input)
@@ -167,7 +168,7 @@ def _process_simple_value(param, param_value, required_data_tables, required_loc
         def process_param_value(param_value):
             found_value = False
             value_for_text = None
-            for (text, opt_value, selected) in getattr(param, 'static_options', []):
+            for (text, opt_value, _) in getattr(param, 'static_options', []):
                 if param_value == opt_value:
                     found_value = True
                 if value_for_text is None and param_value == text:
@@ -218,7 +219,7 @@ def _matching_case_for_value(tool, cond, declared_value):
             # No explicit value in test case, not much to do if options are dynamic but
             # if static options are available can find the one specified as default or
             # fallback on top most option (like GUI).
-            for (name, value, selected) in test_param.static_options:
+            for (name, _, selected) in test_param.static_options:
                 if selected:
                     default_option = name
             else:
@@ -237,7 +238,7 @@ def _matching_case_for_value(tool, cond, declared_value):
 
     # Check the tool's defined cases against predicate to determine
     # selected or default.
-    for i, case in enumerate(cond.cases):
+    for case in cond.cases:
         if matches_declared_value(case.value):
             return case
     else:
@@ -271,7 +272,10 @@ def _process_bool_param_value(param, param_value):
     elif param.falsevalue == param_value:
         processed_value = False
     else:
-        processed_value = string_as_bool(param_value)
+        if param.optional:
+            processed_value = string_as_bool_or_none(param_value)
+        else:
+            processed_value = string_as_bool(param_value)
     return [processed_value] if was_list else processed_value
 
 
@@ -302,7 +306,7 @@ class ParamContext:
         name = self.name if self.index is None else "%s_%d" % (self.name, self.index)
         parent_for_state = self.parent_context.for_state()
         if parent_for_state:
-            return "{}|{}".format(parent_for_state, name)
+            return f"{parent_for_state}|{name}"
         else:
             return name
 
@@ -314,7 +318,7 @@ class ParamContext:
             if self.index is not None:
                 yield "%s|%s_%d" % (parent_context_param, self.name, self.index)
             else:
-                yield "{}|{}".format(parent_context_param, self.name)
+                yield f"{parent_context_param}|{self.name}"
         if self.index is not None:
             yield "%s_%d" % (self.name, self.index)
         else:

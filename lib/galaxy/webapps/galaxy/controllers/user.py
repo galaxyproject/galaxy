@@ -4,9 +4,9 @@ Contains the user interface in the Universe class
 
 import logging
 from datetime import datetime, timedelta
+from urllib.parse import unquote
 
 from markupsafe import escape
-from six.moves.urllib.parse import unquote
 from sqlalchemy.orm.exc import NoResultFound
 
 from galaxy import (
@@ -20,6 +20,7 @@ from galaxy.security.validate_user_input import (
     validate_email,
     validate_publicname
 )
+from galaxy.structured_app import StructuredApp
 from galaxy.web import expose_api_anonymous_and_sessionless
 from galaxy.web import url_for
 from galaxy.webapps.base.controller import (
@@ -27,6 +28,7 @@ from galaxy.webapps.base.controller import (
     CreatesApiKeysMixin,
     UsesFormDefinitionsMixin
 )
+from ..api import depends
 
 log = logging.getLogger(__name__)
 
@@ -36,11 +38,11 @@ def _filtered_registration_params_dict(payload):
 
 
 class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
+    user_manager: users.UserManager = depends(users.UserManager)
     installed_len_files = None
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
-        self.user_manager = users.UserManager(app)
 
     def __handle_role_and_group_auto_creation(self, trans, user, roles, auto_create_roles=False,
                                               auto_create_groups=False, auto_assign_roles_to_groups_only=False):
@@ -84,7 +86,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         try:
             autoreg = trans.app.auth_manager.check_auto_registration(trans, login, password)
         except Conflict as conflict:
-            return "Auto-registration failed, {}".format(conflict), None
+            return f"Auto-registration failed, {conflict}", None
         user = None
         if autoreg["auto_reg"]:
             email = autoreg["email"]
@@ -114,10 +116,11 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         return message, user
 
     @expose_api_anonymous_and_sessionless
-    def login(self, trans, payload={}, **kwd):
+    def login(self, trans, payload=None, **kwd):
+        payload = payload or {}
         return self.__validate_login(trans, payload, **kwd)
 
-    def __validate_login(self, trans, payload={}, **kwd):
+    def __validate_login(self, trans, payload=None, **kwd):
         '''Handle Galaxy Log in'''
         if not payload:
             payload = kwd
@@ -229,7 +232,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         return {"message": "Success."}
 
     @expose_api_anonymous_and_sessionless
-    def create(self, trans, payload={}, **kwd):
+    def create(self, trans, payload=None, **kwd):
         if not payload:
             payload = kwd
         message = trans.check_csrf_token(payload)
@@ -277,7 +280,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         return
 
     @expose_api_anonymous_and_sessionless
-    def change_password(self, trans, payload={}, **kwd):
+    def change_password(self, trans, payload=None, **kwd):
         """
         Allows to change own password.
 
@@ -289,6 +292,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
             * password:         new password
             * confirm:          new password (confirmation)
         """
+        payload = payload or {}
         user, message = self.user_manager.change_password(trans, **payload)
         if user is None:
             return self.message_exception(trans, message)
@@ -296,8 +300,9 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         return {"message": "Password has been changed."}
 
     @expose_api_anonymous_and_sessionless
-    def reset_password(self, trans, payload={}, **kwd):
+    def reset_password(self, trans, payload=None, **kwd):
         """Reset the user's password. Send an email with token that allows a password change."""
+        payload = payload or {}
         message = self.user_manager.send_reset_email(trans, payload)
         if message:
             return self.message_exception(trans, message)

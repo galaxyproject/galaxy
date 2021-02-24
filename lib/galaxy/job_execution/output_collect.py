@@ -4,7 +4,6 @@ import logging
 import operator
 import os
 import re
-from collections import OrderedDict
 from tempfile import NamedTemporaryFile
 
 import galaxy.model
@@ -173,7 +172,7 @@ class BaseJobContext:
         pass
 
     def find_files(self, output_name, collection, dataset_collectors):
-        filenames = OrderedDict()
+        filenames = {}
         for discovered_file in discover_files(output_name, self.tool_provided_metadata, dataset_collectors, self.job_working_directory, collection):
             filenames[discovered_file.path] = discovered_file
         return filenames
@@ -373,7 +372,7 @@ def collect_primary_datasets(job_context, output, input_ext):
         output_def = job_context.output_def(name)
         if output_def is not None:
             dataset_collectors = [dataset_collector(description) for description in output_def.dataset_collector_descriptions]
-        filenames = OrderedDict()
+        filenames = {}
         for discovered_file in discover_files(name, job_context.tool_provided_metadata, dataset_collectors, job_working_directory, outdata):
             filenames[discovered_file.path] = discovered_file
         for filename_index, (filename, discovered_file) in enumerate(filenames.items()):
@@ -390,7 +389,7 @@ def collect_primary_datasets(job_context, output, input_ext):
             if dbkey == INPUT_DBKEY_TOKEN:
                 dbkey = job_context.input_dbkey
             if filename_index == 0 and extra_file_collector.assign_primary_output and output_index == 0:
-                new_outdata_name = fields_match.name or "{} ({})".format(outdata.name, designation)
+                new_outdata_name = fields_match.name or f"{outdata.name} ({designation})"
                 outdata.change_datatype(ext)
                 outdata.dbkey = dbkey
                 outdata.designation = designation
@@ -400,10 +399,10 @@ def collect_primary_datasets(job_context, output, input_ext):
                 primary_output_assigned = True
                 continue
             if name not in primary_datasets:
-                primary_datasets[name] = OrderedDict()
+                primary_datasets[name] = {}
             visible = fields_match.visible
             # Create new primary dataset
-            new_primary_name = fields_match.name or "{} ({})".format(outdata.name, designation)
+            new_primary_name = fields_match.name or f"{outdata.name} ({designation})"
             info = outdata.info
 
             # TODO: should be able to disambiguate files in different directories...
@@ -422,7 +421,7 @@ def collect_primary_datasets(job_context, output, input_ext):
                 dataset_attributes=new_primary_datasets_attributes,
             )
             # Associate new dataset with job
-            job_context.add_output_dataset_association('__new_primary_file_{}|{}__'.format(name, designation), primary_data)
+            job_context.add_output_dataset_association(f'__new_primary_file_{name}|{designation}__', primary_data)
 
             if new_primary_datasets_attributes:
                 extra_files_path = new_primary_datasets_attributes.get('extra_files', None)
@@ -581,7 +580,7 @@ def read_exit_code_from(exit_code_file, id_tag):
         exit_code = int(exit_code_str)
     except ValueError:
         galaxy_id_tag = id_tag
-        log.warning("({}) Exit code '{}' invalid. Using 0.".format(galaxy_id_tag, exit_code_str))
+        log.warning(f"({galaxy_id_tag}) Exit code '{exit_code_str}' invalid. Using 0.")
         exit_code = 0
 
     return exit_code
@@ -600,7 +599,7 @@ def collect_extra_files(object_store, dataset, job_working_directory):
         # automatically creates them.  However, empty directories will
         # not be created in the object store at all, which might be a
         # problem.
-        for root, dirs, files in os.walk(temp_file_path):
+        for root, _dirs, files in os.walk(temp_file_path):
             extra_dir = root.replace(os.path.join(job_working_directory, "working"), '', 1).lstrip(os.path.sep)
             for f in files:
                 object_store.update_from_file(

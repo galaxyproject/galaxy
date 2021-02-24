@@ -16,12 +16,8 @@ from errno import EMFILE
 import bx.align.maf
 import bx.interval_index_file
 import bx.intervals
-from six.moves import xrange
 
-try:
-    maketrans = str.maketrans
-except AttributeError:
-    from string import maketrans
+maketrans = str.maketrans
 
 log = logging.getLogger(__name__)
 
@@ -132,7 +128,7 @@ class TempFileHandler:
             self.files[index].flush()
 
     def __del__(self):
-        for i in xrange(len(self.files)):
+        for i in range(len(self.files)):
             self.close(i, delete=True)
 
 
@@ -142,8 +138,9 @@ class RegionAlignment:
     DNA_COMPLEMENT = maketrans("ACGTacgt", "TGCAtgca")
     MAX_SEQUENCE_SIZE = sys.maxsize  # Maximum length of sequence allowed
 
-    def __init__(self, size, species=[], temp_file_handler=None):
+    def __init__(self, size, species=None, temp_file_handler=None):
         assert size <= self.MAX_SEQUENCE_SIZE, "Maximum length allowed for an individual sequence has been exceeded (%i > %i)." % (size, self.MAX_SEQUENCE_SIZE)
+        species = species or []
         self.size = size
         if not temp_file_handler:
             temp_file_handler = TempFileHandler()
@@ -162,7 +159,8 @@ class RegionAlignment:
         fh.write("-" * self.size)
 
     # returns the names for species found in alignment, skipping names as requested
-    def get_species_names(self, skip=[]):
+    def get_species_names(self, skip=None):
+        skip = skip or []
         if not isinstance(skip, list):
             skip = [skip]
         names = list(self.sequences.keys())
@@ -215,7 +213,8 @@ class RegionAlignment:
 
 class GenomicRegionAlignment(RegionAlignment):
 
-    def __init__(self, start, end, species=[], temp_file_handler=None):
+    def __init__(self, start, end, species=None, temp_file_handler=None):
+        species = species or []
         RegionAlignment.__init__(self, end - start, species, temp_file_handler=temp_file_handler)
         self.start = start
         self.end = end
@@ -225,7 +224,8 @@ class SplicedAlignment:
 
     DNA_COMPLEMENT = maketrans("ACGTacgt", "TGCAtgca")
 
-    def __init__(self, exon_starts, exon_ends, species=[], temp_file_handler=None):
+    def __init__(self, exon_starts, exon_ends, species=None, temp_file_handler=None):
+        species = species or []
         if not isinstance(exon_starts, list):
             exon_starts = [exon_starts]
         if not isinstance(exon_ends, list):
@@ -239,7 +239,8 @@ class SplicedAlignment:
             self.exons.append(GenomicRegionAlignment(exon_starts[i], exon_ends[i], species, temp_file_handler=temp_file_handler))
 
     # returns the names for species found in alignment, skipping names as requested
-    def get_species_names(self, skip=[]):
+    def get_species_names(self, skip=None):
+        skip = skip or []
         if not isinstance(skip, list):
             skip = [skip]
         names = []
@@ -295,7 +296,7 @@ def maf_index_by_uid(maf_uid, index_location_file):
                     maf_files = fields[4].replace("\n", "").replace("\r", "").split(",")
                     return bx.align.maf.MultiIndexed(maf_files, keep_open=True, parse_e_rows=False)
                 except Exception as e:
-                    raise Exception('MAF UID ({}) found, but configuration appears to be malformed: {}'.format(maf_uid, e))
+                    raise Exception(f'MAF UID ({maf_uid}) found, but configuration appears to be malformed: {e}')
         except Exception:
             pass
     return None
@@ -347,19 +348,18 @@ def build_maf_index_species_chromosomes(filename, index_species=None):
                         indexes.add(c.src, forward_strand_start, forward_strand_end, pos, max=c.src_size)
     except Exception as e:
         # most likely a bad MAF
-        log.debug('Building MAF index on {} failed: {}'.format(filename, e))
+        log.debug(f'Building MAF index on {filename} failed: {e}')
         return (None, [], {}, 0)
     return (indexes, species, species_chromosomes, blocks)
 
 
 # builds and returns ( index, index_filename ) for specified maf_file
 def build_maf_index(maf_file, species=None):
-    indexes, found_species, species_chromosomes, blocks = build_maf_index_species_chromosomes(maf_file, species)
+    indexes, *_ = build_maf_index_species_chromosomes(maf_file, species)
     if indexes is not None:
-        fd, index_filename = tempfile.mkstemp()
-        with os.fdopen(fd, 'w') as out:
-            indexes.write(out)
-        return (bx.align.maf.Indexed(maf_file, index_filename=index_filename, keep_open=True, parse_e_rows=False), index_filename)
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as index:
+            indexes.write(index)
+        return (bx.align.maf.Indexed(maf_file, index_filename=index.name, keep_open=True, parse_e_rows=False), index.name)
     return (None, None)
 
 
@@ -426,7 +426,7 @@ def orient_block_by_region(block, src, region, force_strand=None):
 
 
 def get_oriented_chopped_blocks_for_region(index, src, region, species=None, mincols=0, force_strand=None):
-    for block, idx, offset in get_oriented_chopped_blocks_with_index_offset_for_region(index, src, region, species, mincols, force_strand):
+    for block, _, _ in get_oriented_chopped_blocks_with_index_offset_for_region(index, src, region, species, mincols, force_strand):
         yield block
 
 
@@ -487,7 +487,7 @@ def iter_blocks_split_by_species(block, species=None):
 
 # generator yielding only chopped and valid blocks for a specified region
 def get_chopped_blocks_for_region(index, src, region, species=None, mincols=0):
-    for block, idx, offset in get_chopped_blocks_with_index_offset_for_region(index, src, region, species, mincols):
+    for block, _, _ in get_chopped_blocks_with_index_offset_for_region(index, src, region, species, mincols):
         yield block
 
 
@@ -511,7 +511,7 @@ def get_region_alignment(index, primary_species, chrom, start, end, strand='+', 
 def reduce_block_by_primary_genome(block, species, chromosome, region_start):
     # returns ( startIndex, {species:texts}
     # where texts' contents are reduced to only positions existing in the primary genome
-    src = "{}.{}".format(species, chromosome)
+    src = f"{species}.{chromosome}"
     ref = block.get_component_by_src(src)
     start_offset = ref.start - region_start
     species_texts = {}
@@ -532,7 +532,7 @@ def fill_region_alignment(alignment, index, primary_species, chrom, start, end, 
     region = bx.intervals.Interval(start, end)
     region.chrom = chrom
     region.strand = strand
-    primary_src = "{}.{}".format(primary_species, chrom)
+    primary_src = f"{primary_species}.{chrom}"
 
     # Order blocks overlaping this position by score, lowest first
     blocks = []
@@ -680,12 +680,13 @@ def remove_temp_index_file(index_filename):
 # Below are methods to deal with FASTA files
 
 
-def get_fasta_header(component, attributes={}, suffix=None):
+def get_fasta_header(component, attributes=None, suffix=None):
+    attributes = attributes or {}
     header = ">%s(%s):%i-%i|" % (component.src, component.strand, component.get_forward_strand_start(), component.get_forward_strand_end())
     for key, value in attributes.items():
-        header = "{}{}={}|".format(header, key, value)
+        header = f"{header}{key}={value}|"
     if suffix:
-        header = "{}{}".format(header, suffix)
+        header = f"{header}{suffix}"
     else:
         header = "{}{}".format(header, src_split(component.src)[0])
     return header

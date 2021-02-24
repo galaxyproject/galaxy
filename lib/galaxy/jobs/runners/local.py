@@ -94,7 +94,7 @@ class LocalJobRunner(BaseJobRunner):
         try:
             stdout_file = tempfile.NamedTemporaryFile(mode='wb+', suffix='_stdout', dir=job_wrapper.working_directory)
             stderr_file = tempfile.NamedTemporaryFile(mode='wb+', suffix='_stderr', dir=job_wrapper.working_directory)
-            log.debug('({}) executing job script: {}'.format(job_id, job_file))
+            log.debug(f'({job_id}) executing job script: {job_file}')
             # The preexec_fn argument of Popen() is used to call os.setpgrp() in
             # the child process just before the child is executed. This will set
             # the PGID of the child process to its PID (i.e. ensures that it is

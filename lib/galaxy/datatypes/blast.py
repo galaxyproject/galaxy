@@ -89,6 +89,7 @@ class BlastXml(GenericXml):
             return False
         return True
 
+    @staticmethod
     def merge(split_files, output_file):
         """Merging multiple XML files is non-trivial and must be done in subclasses."""
         if len(split_files) == 1:
@@ -147,7 +148,7 @@ class BlastXml(GenericXml):
                         raise ValueError("The header in BLAST XML file %s is too long" % f)
                 if "<BlastOutput>" not in header:
                     h.close()
-                    raise ValueError("{} is not a BLAST XML file:\n{}\n...".format(f, header))
+                    raise ValueError(f"{f} is not a BLAST XML file:\n{header}\n...")
                 if f == split_files[0]:
                     out.write(header)
                     old_header = header
@@ -167,7 +168,6 @@ class BlastXml(GenericXml):
                 h.close()
             out.write("  </BlastOutput_iterations>\n")
             out.write("</BlastOutput>\n")
-    merge = staticmethod(merge)
 
 
 class _BlastDb(Data):
@@ -223,7 +223,7 @@ class _BlastDb(Data):
         if not msg:
             msg = title
         # Galaxy assumes HTML for the display of composite datatypes,
-        return smart_str("<html><head><title>{}</title></head><body><pre>{}</pre></body></html>".format(title, msg))
+        return smart_str(f"<html><head><title>{title}</title></head><body><pre>{msg}</pre></body></html>")
 
     def merge(split_files, output_file):
         """Merge BLAST databases (not implemented for now)."""
@@ -236,14 +236,13 @@ class _BlastDb(Data):
         raise NotImplementedError("Can't split BLAST databases")
 
 
-class BlastNucDb(_BlastDb, Data):
+class BlastNucDb(_BlastDb):
     """Class for nucleotide BLAST database files."""
     file_ext = 'blastdbn'
-    allow_datatype_change = False
     composite_type = 'basic'
 
     def __init__(self, **kwd):
-        Data.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.add_composite_file('blastdb.nhr', is_binary=True)  # sequence headers
         self.add_composite_file('blastdb.nin', is_binary=True)  # index file
         self.add_composite_file('blastdb.nsq', is_binary=True)  # nucleotide sequences
@@ -264,14 +263,13 @@ class BlastNucDb(_BlastDb, Data):
 # The previous 3 lines should be repeated for each WriteDB column, with filename extensions like ('.nba', '.nbb', '.nbc'), ('.nca', '.ncb', '.ncc'), etc.
 
 
-class BlastProtDb(_BlastDb, Data):
+class BlastProtDb(_BlastDb):
     """Class for protein BLAST database files."""
     file_ext = 'blastdbp'
-    allow_datatype_change = False
     composite_type = 'basic'
 
     def __init__(self, **kwd):
-        Data.__init__(self, **kwd)
+        super().__init__(**kwd)
 # Component file comments are as in BlastNucDb except where noted
         self.add_composite_file('blastdb.phr', is_binary=True)
         self.add_composite_file('blastdb.pin', is_binary=True)
@@ -289,14 +287,13 @@ class BlastProtDb(_BlastDb, Data):
 # The last 3 lines should be repeated for each WriteDB column, with filename extensions like ('.pba', '.pbb', '.pbc'), ('.pca', '.pcb', '.pcc'), etc.
 
 
-class BlastDomainDb(_BlastDb, Data):
+class BlastDomainDb(_BlastDb):
     """Class for domain BLAST database files."""
     file_ext = 'blastdbd'
-    allow_datatype_change = False
     composite_type = 'basic'
 
     def __init__(self, **kwd):
-        Data.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.add_composite_file('blastdb.phr', is_binary=True)
         self.add_composite_file('blastdb.pin', is_binary=True)
         self.add_composite_file('blastdb.psq', is_binary=True)
@@ -311,7 +308,6 @@ class BlastDomainDb(_BlastDb, Data):
 class LastDb(Data):
     """Class for LAST database files."""
     file_ext = 'lastdb'
-    allow_datatype_change = False
     composite_type = 'basic'
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -331,7 +327,7 @@ class LastDb(Data):
             return "LAST database (multiple files)"
 
     def __init__(self, **kwd):
-        Data.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.add_composite_file('lastdb.bck', is_binary=True)
         self.add_composite_file('lastdb.des', description="Description file", is_binary=False)
         self.add_composite_file('lastdb.prj', description="Project resume file", is_binary=False)
@@ -341,14 +337,13 @@ class LastDb(Data):
         self.add_composite_file('lastdb.tis', is_binary=True)
 
 
-class BlastNucDb5(_BlastDb, Data):
+class BlastNucDb5(_BlastDb):
     """Class for nucleotide BLAST database files."""
     file_ext = 'blastdbn5'
-    allow_datatype_change = False
     composite_type = 'basic'
 
     def __init__(self, **kwd):
-        Data.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.add_composite_file('blastdb.nhr', is_binary=True)  # sequence headers
         self.add_composite_file('blastdb.nin', is_binary=True)  # index file
         self.add_composite_file('blastdb.nsq', is_binary=True)  # nucleotide sequences
@@ -369,14 +364,13 @@ class BlastNucDb5(_BlastDb, Data):
 # The previous 3 lines should be repeated for each WriteDB column, with filename extensions like ('.nba', '.nbb', '.nbc'), ('.nca', '.ncb', '.ncc'), etc.
 
 
-class BlastProtDb5(_BlastDb, Data):
+class BlastProtDb5(_BlastDb):
     """Class for protein BLAST database files."""
     file_ext = 'blastdbp5'
-    allow_datatype_change = False
     composite_type = 'basic'
 
     def __init__(self, **kwd):
-        Data.__init__(self, **kwd)
+        super().__init__(**kwd)
 # Component file comments are as in BlastNucDb except where noted
         self.add_composite_file('blastdb.phr', is_binary=True)
         self.add_composite_file('blastdb.pin', is_binary=True)
@@ -394,14 +388,13 @@ class BlastProtDb5(_BlastDb, Data):
 # The last 3 lines should be repeated for each WriteDB column, with filename extensions like ('.pba', '.pbb', '.pbc'), ('.pca', '.pcb', '.pcc'), etc.
 
 
-class BlastDomainDb5(_BlastDb, Data):
+class BlastDomainDb5(_BlastDb):
     """Class for domain BLAST database files."""
     file_ext = 'blastdbd5'
-    allow_datatype_change = False
     composite_type = 'basic'
 
     def __init__(self, **kwd):
-        Data.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.add_composite_file('blastdb.phr', is_binary=True)
         self.add_composite_file('blastdb.pin', is_binary=True)
         self.add_composite_file('blastdb.psq', is_binary=True)

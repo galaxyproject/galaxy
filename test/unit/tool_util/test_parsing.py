@@ -15,6 +15,15 @@ TOOL_XML_1 = """
     <xrefs>
         <xref type="bio.tools">bwa</xref>
     </xrefs>
+    <creator>
+        <person
+            givenName="Björn"
+            familyName="Grüning"
+            identifier="http://orcid.org/0000-0002-3079-6586" />
+        <organization
+            url="https://galaxyproject.org/iuc/"
+            name="Galaxy IUC" />
+    </creator>
     <version_command interpreter="python">bwa.py --version</version_command>
     <parallelism method="multi" split_inputs="input1" split_mode="to_size" split_size="1" merge_outputs="out_file1" />
     <command interpreter="python">bwa.py --arg1=42</command>
@@ -387,6 +396,17 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
         with self.assertRaises(Exception):
             self._get_tool_source(source_contents=TOOL_WITH_RECURSIVE_TOKEN)
 
+    def test_creator(self):
+        creators = self._tool_source.parse_creator()
+        assert len(creators) == 2
+        creator1 = creators[0]
+        assert creator1["class"] == "Person"
+        assert creator1["identifier"] == "http://orcid.org/0000-0002-3079-6586"
+
+        creator2 = creators[1]
+        assert creator2["class"] == "Organization"
+        assert creator2["name"] == "Galaxy IUC"
+
 
 class YamlLoaderTestCase(BaseLoaderTestCase):
     source_file_name = "bwa.yml"
@@ -587,6 +607,47 @@ class BuildListToolLoaderTestCase(BaseLoaderTestCase):
         tool_module = self._tool_source.parse_tool_module()
         assert tool_module[0] == "galaxy.tools"
         assert tool_module[1] == "BuildListCollectionTool"
+
+
+class ExpressionTestToolLoaderTestCase(BaseLoaderTestCase):
+    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/expression_null_handling_boolean.xml")
+    source_contents = None
+
+    def test_test(self):
+        test_dicts = self._tool_source.parse_tests_to_dict()['tests']
+        assert len(test_dicts) == 3
+        test_dict_0 = test_dicts[0]
+        assert 'outputs' in test_dict_0, test_dict_0
+        outputs = test_dict_0['outputs']
+        output0 = outputs[0]
+        assert 'object' in output0['attributes']
+        assert output0['attributes']['object'] is True
+
+        test_dict_1 = test_dicts[1]
+        assert 'outputs' in test_dict_1, test_dict_1
+        outputs = test_dict_1['outputs']
+        output0 = outputs[0]
+        assert 'object' in output0['attributes']
+        assert output0['attributes']['object'] is False
+
+        test_dict_2 = test_dicts[2]
+        assert 'outputs' in test_dict_2, test_dict_2
+        outputs = test_dict_2['outputs']
+        output0 = outputs[0]
+        assert 'object' in output0['attributes']
+        assert output0['attributes']['object'] is None
+
+
+class ExpressionOutputDataToolLoaderTestCase(BaseLoaderTestCase):
+    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/expression_pick_larger_file.xml")
+    source_contents = None
+
+    def test_output_parsing(self):
+        outputs, _ = self._tool_source.parse_outputs(None)
+        assert 'larger_file' in outputs
+        tool_output = outputs['larger_file']
+        assert tool_output.format == "data"
+        assert tool_output.from_expression == "output"
 
 
 class SpecialToolLoaderTestCase(BaseLoaderTestCase):

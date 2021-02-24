@@ -7,6 +7,7 @@ it, hence support for it will be minimal. The Galaxy team eagerly welcomes
 community contribution and maintenance however.
 """
 import logging
+from io import StringIO
 from os import (
     environ,
     pathsep
@@ -20,8 +21,6 @@ from subprocess import (
     PIPE,
     Popen
 )
-
-from six import StringIO
 
 from . import (
     Dependency,
@@ -208,7 +207,7 @@ class ModuleDependency(Dependency):
     def shell_commands(self):
         module_to_load = self.module_name
         if self.module_version:
-            module_to_load = '{}/{}'.format(self.module_name, self.module_version)
+            module_to_load = f'{self.module_name}/{self.module_version}'
         command = 'MODULEPATH={}; export MODULEPATH; eval `{} sh load {}`'.format(self.module_dependency_resolver.modulepath,
                                                                               self.module_dependency_resolver.modulecmd,
                                                                               module_to_load)

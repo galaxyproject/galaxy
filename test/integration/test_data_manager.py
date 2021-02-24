@@ -42,7 +42,7 @@ class DataManagerIntegrationTestCase(integration_util.IntegrationTestCase, UsesS
     use_shared_connection_for_amqp = True
 
     def setUp(self):
-        super(DataManagerIntegrationTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
     @classmethod

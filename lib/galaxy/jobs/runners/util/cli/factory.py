@@ -5,7 +5,7 @@ try:
     )
     code_dir = 'lib'
 except ImportError:
-    from pulsar.managers.util.cli import (
+    from pulsar.managers.util.cli import (  # type: ignore
         CliInterface,
         split_params
     )

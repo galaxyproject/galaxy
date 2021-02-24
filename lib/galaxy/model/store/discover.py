@@ -10,9 +10,8 @@ import logging
 import os
 from collections import (
     namedtuple,
-    OrderedDict
 )
-
+from typing import Any, NamedTuple, Optional
 
 import galaxy.model
 from galaxy import util
@@ -280,7 +279,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
 
             # Associate new dataset with job
             element_identifier_str = ":".join(element_identifiers)
-            association_name = '__new_primary_file_{}|{}__'.format(name, element_identifier_str)
+            association_name = f'__new_primary_file_{name}|{element_identifier_str}__'
             self.add_output_dataset_association(association_name, dataset)
 
         self.update_object_store_with_datasets(datasets=element_datasets['datasets'], paths=element_datasets['paths'], extra_files=element_datasets['extra_files'])
@@ -460,7 +459,7 @@ def persist_extra_files(object_store, src_extra_files_path, primary_data):
     if src_extra_files_path and os.path.exists(src_extra_files_path):
         primary_data.dataset.create_extra_files_path()
         target_extra_files_path = primary_data.extra_files_path
-        for root, dirs, files in os.walk(src_extra_files_path):
+        for root, _dirs, files in os.walk(src_extra_files_path):
             extra_dir = os.path.join(target_extra_files_path, root.replace(src_extra_files_path, '', 1).lstrip(os.path.sep))
             extra_dir = os.path.normpath(extra_dir)
             for f in files:
@@ -517,9 +516,10 @@ def persist_target_to_export_store(target_dict, export_store, object_store, work
 
 
 def persist_elements_to_hdca(model_persistence_context, elements, hdca, collector=None):
-    filenames = OrderedDict()
+    filenames = {}
 
-    def add_to_discovered_files(elements, parent_identifiers=[]):
+    def add_to_discovered_files(elements, parent_identifiers=None):
+        parent_identifiers = parent_identifiers or []
         for element in elements:
             if "elements" in element:
                 add_to_discovered_files(element["elements"], parent_identifiers + [element["name"]])
@@ -696,11 +696,10 @@ def replace_request_syntax_sugar(obj):
 
 
 DiscoveredFile = namedtuple('DiscoveredFile', ['path', 'collector', 'match'])
-DiscoveredFileError = namedtuple('DiscoveredFileError', ['error_message', 'collector', 'match'])
-DiscoveredFileError.path = None
 
 
-def discovered_file_for_element(dataset, job_working_directory, parent_identifiers=[], collector=None):
+def discovered_file_for_element(dataset, job_working_directory, parent_identifiers=None, collector=None):
+    parent_identifiers = parent_identifiers or []
     target_directory = discover_target_directory(getattr(collector, "directory", None), job_working_directory)
     filename = dataset.get("filename")
     error_message = dataset.get("error_message")
@@ -730,7 +729,8 @@ def discover_target_directory(dir_name, job_working_directory):
 
 class JsonCollectedDatasetMatch:
 
-    def __init__(self, as_dict, collector, filename, path=None, parent_identifiers=[]):
+    def __init__(self, as_dict, collector, filename, path=None, parent_identifiers=None):
+        parent_identifiers = parent_identifiers or []
         self.as_dict = as_dict
         self.collector = collector
         self.filename = filename
@@ -825,3 +825,10 @@ class RegexCollectedDatasetMatch(JsonCollectedDatasetMatch):
         super().__init__(
             re_match.groupdict(), collector, filename, path=path
         )
+
+
+class DiscoveredFileError(NamedTuple):
+    error_message: str
+    collector: Any   # TODO: setup interface for this
+    match: JsonCollectedDatasetMatch
+    path: Optional[str] = None

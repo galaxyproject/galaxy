@@ -5,7 +5,6 @@ import copy
 import json
 import logging
 import re
-from collections import OrderedDict
 
 from markupsafe import escape
 from sqlalchemy import (
@@ -20,7 +19,12 @@ from galaxy import (
     web
 )
 from galaxy.exceptions import ObjectInvalid
-from galaxy.managers import users
+from galaxy.managers import (
+    api_keys,
+    users
+)
+from galaxy.managers.context import ProvidesUserContext
+from galaxy.model import User, UserAddress
 from galaxy.security.validate_user_input import (
     validate_email,
     validate_password,
@@ -37,27 +41,24 @@ from galaxy.web import (
 )
 from galaxy.web.form_builder import AddressField
 from galaxy.webapps.base.controller import (
-    BaseAPIController,
     BaseUIController,
-    CreatesApiKeysMixin,
     UsesFormDefinitionsMixin,
     UsesTagsMixin
 )
-
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
+from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
 
 
-class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, BaseUIController, UsesFormDefinitionsMixin):
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.user_manager = users.UserManager(app)
-        self.user_serializer = users.UserSerializer(app)
-        self.user_deserializer = users.UserDeserializer(app)
+class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController, UsesFormDefinitionsMixin):
+    user_manager: users.UserManager = depends(users.UserManager)
+    user_serializer: users.UserSerializer = depends(users.UserSerializer)
+    user_deserializer: users.UserDeserializer = depends(users.UserDeserializer)
+    api_key_manager: api_keys.ApiKeyManager = depends(api_keys.ApiKeyManager)
 
     @expose_api
-    def index(self, trans, deleted='False', f_email=None, f_name=None, f_any=None, **kwd):
+    def index(self, trans: ProvidesUserContext, deleted='False', f_email=None, f_name=None, f_any=None, **kwd):
         """
         GET /api/users
         GET /api/users/deleted
@@ -83,37 +84,37 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         :type  f_any: str
         """
         rval = []
-        query = trans.sa_session.query(trans.app.model.User)
+        query = trans.sa_session.query(User)
         deleted = util.string_as_bool(deleted)
 
         if f_email and (trans.user_is_admin or trans.app.config.expose_user_email):
-            query = query.filter(trans.app.model.User.email.like("%%%s%%" % f_email))
+            query = query.filter(User.email.like("%%%s%%" % f_email))
 
         if f_name and (trans.user_is_admin or trans.app.config.expose_user_name):
-            query = query.filter(trans.app.model.User.username.like("%%%s%%" % f_name))
+            query = query.filter(User.username.like("%%%s%%" % f_name))
 
         if f_any:
             if trans.user_is_admin:
                 query = query.filter(or_(
-                    trans.app.model.User.email.like("%%%s%%" % f_any),
-                    trans.app.model.User.username.like("%%%s%%" % f_any)
+                    User.email.like("%%%s%%" % f_any),
+                    User.username.like("%%%s%%" % f_any)
                 ))
             else:
                 if trans.app.config.expose_user_email and trans.app.config.expose_user_name:
                     query = query.filter(or_(
-                        trans.app.model.User.email.like("%%%s%%" % f_any),
-                        trans.app.model.User.username.like("%%%s%%" % f_any)
+                        User.email.like("%%%s%%" % f_any),
+                        User.username.like("%%%s%%" % f_any)
                     ))
                 elif trans.app.config.expose_user_email:
-                    query = query.filter(trans.app.model.User.email.like("%%%s%%" % f_any))
+                    query = query.filter(User.email.like("%%%s%%" % f_any))
                 elif trans.app.config.expose_user_name:
-                    query = query.filter(trans.app.model.User.username.like("%%%s%%" % f_any))
+                    query = query.filter(User.username.like("%%%s%%" % f_any))
 
         if deleted:
             # only admins can see deleted users
             if not trans.user_is_admin:
                 return []
-            query = query.filter(trans.app.model.User.table.c.deleted == true())
+            query = query.filter(User.table.c.deleted == true())
         else:
             # special case: user can see only their own user
             # special case2: if the galaxy admin has specified that other user email/names are
@@ -121,7 +122,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
             if not trans.user_is_admin and not trans.app.config.expose_user_name and not trans.app.config.expose_user_email:
                 item = trans.user.to_dict(value_mapper={'id': trans.security.encode_id})
                 return [item]
-            query = query.filter(trans.app.model.User.table.c.deleted == false())
+            query = query.filter(User.table.c.deleted == false())
         for user in query:
             item = user.to_dict(value_mapper={'id': trans.security.encode_id})
             # If NOT configured to expose_email, do not expose email UNLESS the user is self, or
@@ -143,7 +144,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         return rval
 
     @expose_api_anonymous
-    def show(self, trans, id, deleted='False', **kwd):
+    def show(self, trans: ProvidesUserContext, id, deleted='False', **kwd):
         """
         GET /api/users/{encoded_id}
         GET /api/users/deleted/{encoded_id}
@@ -175,7 +176,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         return self.user_serializer.serialize_to_view(user, view='detailed')
 
     @expose_api
-    def create(self, trans, payload, **kwd):
+    def create(self, trans: GalaxyWebTransaction, payload: dict, **kwd):
         """
         POST /api/users
         Creates a new Galaxy user.
@@ -202,7 +203,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         return item
 
     @expose_api
-    def update(self, trans, id, payload, **kwd):
+    def update(self, trans: ProvidesUserContext, id: str, payload: dict, **kwd):
         """
         update( self, trans, id, payload, **kwd )
         * PUT /api/users/{id}
@@ -222,7 +223,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
 
         # only allow updating other users if they're admin
         editing_someone_else = current_user != user_to_update
-        is_admin = trans.api_inherit_admin or self.user_manager.is_admin(current_user)
+        is_admin = self.user_manager.is_admin(current_user)
         if editing_someone_else and not is_admin:
             raise exceptions.InsufficientPermissionsException('You are not allowed to update that user', id=id)
 
@@ -303,7 +304,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
                     help = input.get('help', '')
                     required = 'Required' if util.string_as_bool(input.get('required')) else ''
                     if help:
-                        input['help'] = "{} {}".format(help, required)
+                        input['help'] = f"{help} {required}"
                     else:
                         input['help'] = required
                     field = item + '|' + input['name']
@@ -397,7 +398,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         }
 
     @expose_api
-    def set_information(self, trans, id, payload={}, **kwd):
+    def set_information(self, trans, id, payload=None, **kwd):
         """
         PUT /api/users/{id}/information/inputs
         Save a user's email, username, addresses etc.
@@ -408,11 +409,12 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         :param payload: data with new settings
         :type  payload: dict
         """
+        payload = payload or {}
         user = self._get_user(trans, id)
         # Update email
         if 'email' in payload:
             email = payload.get('email')
-            message = self._validate_email(email) or validate_email(trans, email, user)
+            message = validate_email(trans, email, user)
             if message:
                 raise exceptions.RequestParameterInvalidException(message)
             if user.email != email:
@@ -437,7 +439,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         # Update public name
         if 'username' in payload:
             username = payload.get('username')
-            message = self._validate_publicname(username) or validate_publicname(trans, username, user)
+            message = validate_publicname(trans, username, user)
             if message:
                 raise exceptions.RequestParameterInvalidException(message)
             if user.username != username:
@@ -491,11 +493,11 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
             d = address_dicts[index]
             if d.get('id'):
                 try:
-                    user_address = trans.sa_session.query(trans.app.model.UserAddress).get(trans.security.decode_id(d['id']))
+                    user_address = trans.sa_session.query(UserAddress).get(trans.security.decode_id(d['id']))
                 except Exception as e:
                     raise exceptions.ObjectNotFound('Failed to access user address ({}). {}'.format(d['id'], e))
             else:
-                user_address = trans.model.UserAddress()
+                user_address = UserAddress()
                 trans.log_event('User address added')
             for field in AddressField.fields():
                 if str(field[2]).lower() == 'required' and not d.get(field[0]):
@@ -510,7 +512,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         return {'message': 'User information has been saved.'}
 
     @expose_api
-    def set_favorite(self, trans, id, object_type, payload={}, **kwd):
+    def set_favorite(self, trans, id, object_type, payload=None, **kwd):
         """Add the object to user's favorites
         PUT /api/users/{id}/favorites/{object_type}
 
@@ -521,6 +523,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         :param object_id: the id of an object that users wants to favorite
         :type  object_id: str
         """
+        payload = payload or {}
         self._validate_favorite_object_type(object_type)
         user = self._get_user(trans, id)
         favorites = json.loads(user.preferences['favorites']) if 'favorites' in user.preferences else {}
@@ -543,7 +546,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         return favorites
 
     @expose_api
-    def remove_favorite(self, trans, id, object_type, object_id, payload={}, **kwd):
+    def remove_favorite(self, trans, id, object_type, object_id, payload=None, **kwd):
         """Remove the object from user's favorites
         DELETE /api/users/{id}/favorites/{object_type}/{object_id:.*?}
 
@@ -554,6 +557,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         :param object_id: the id of an object that users wants to remove from favorites
         :type  object_id: str
         """
+        payload = payload or {}
         self._validate_favorite_object_type(object_type)
         user = self._get_user(trans, id)
         favorites = json.loads(user.preferences['favorites']) if 'favorites' in user.preferences else {}
@@ -575,43 +579,33 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         else:
             raise exceptions.ObjectAttributeInvalidException("This type is not supported. Given object_type: %s" % object_type)
 
-    def _validate_email(self, email):
-        ''' Validate email and username using regex '''
-        if email == '' or not isinstance(email, str):
-            return 'Please provide your email address.'
-        if not re.match(r'^(([^<>()[\]\.,;:\s@"]+(\.[^<>()[\]\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$', email):
-            return 'Please provide your valid email address.'
-        if len(email) > 255:
-            return 'Email cannot be more than 255 characters in length.'
-
-    def _validate_publicname(self, username):
-        if not re.match(r'^[a-z0-9\-]{3,255}$', username):
-            return 'Public name must contain only lowercase letters, numbers and "-". It also has to be shorter than 255 characters but longer than 2.'
-
     @expose_api
-    def get_password(self, trans, id, payload={}, **kwd):
+    def get_password(self, trans, id, payload=None, **kwd):
         """
         Return available password inputs.
         """
+        payload = payload or {}
         return {'inputs': [{'name': 'current', 'type': 'password', 'label': 'Current password'},
                            {'name': 'password', 'type': 'password', 'label': 'New password'},
                            {'name': 'confirm', 'type': 'password', 'label': 'Confirm password'}]}
 
     @expose_api
-    def set_password(self, trans, id, payload={}, **kwd):
+    def set_password(self, trans, id, payload=None, **kwd):
         """
         Allows to the logged-in user to change own password.
         """
+        payload = payload or {}
         user, message = self.user_manager.change_password(trans, id=id, **payload)
         if user is None:
             raise exceptions.AuthenticationRequired(message)
         return {"message": "Password has been changed."}
 
     @expose_api
-    def get_permissions(self, trans, id, payload={}, **kwd):
+    def get_permissions(self, trans, id, payload=None, **kwd):
         """
         Get the user's default permissions for the new histories
         """
+        payload = payload or {}
         user = self._get_user(trans, id)
         roles = user.all_roles()
         inputs = []
@@ -627,10 +621,11 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         return {'inputs': inputs}
 
     @expose_api
-    def set_permissions(self, trans, id, payload={}, **kwd):
+    def set_permissions(self, trans, id, payload=None, **kwd):
         """
         Set the user's default permissions for the new histories
         """
+        payload = payload or {}
         user = self._get_user(trans, id)
         permissions = {}
         for index, action in trans.app.model.Dataset.permitted_actions.items():
@@ -640,11 +635,12 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         return {'message': 'Permissions have been saved.'}
 
     @expose_api
-    def get_toolbox_filters(self, trans, id, payload={}, **kwd):
+    def get_toolbox_filters(self, trans, id, payload=None, **kwd):
         """
         API call for fetching toolbox filters data. Toolbox filters are specified in galaxy.ini.
         The user can activate them and the choice is stored in user_preferences.
         """
+        payload = payload or {}
         user = self._get_user(trans, id)
         filter_types = self._get_filter_types(trans)
         saved_values = {}
@@ -663,10 +659,11 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         return {'inputs': inputs, 'errors': errors}
 
     @expose_api
-    def set_toolbox_filters(self, trans, id, payload={}, **kwd):
+    def set_toolbox_filters(self, trans, id, payload=None, **kwd):
         """
         API call to update toolbox filters data.
         """
+        payload = payload or {}
         user = self._get_user(trans, id)
         filter_types = self._get_filter_types(trans)
         for filter_type in filter_types:
@@ -688,7 +685,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         for filter_name in filter_config:
             function = factory.build_filter_function(filter_name)
             if function is None:
-                errors['{}|{}'.format(filter_type, filter_name)] = 'Filter function not found.'
+                errors[f'{filter_type}|{filter_name}'] = 'Filter function not found.'
 
             short_description, description = None, None
             doc_string = docstring_trim(function.__doc__)
@@ -711,33 +708,45 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
             inputs.append({'type': 'section', 'title': filter_title, 'name': filter_type, 'expanded': True, 'inputs': filter_inputs})
 
     def _get_filter_types(self, trans):
-        return OrderedDict([('toolbox_tool_filters', {'title': 'Tools', 'config': trans.app.config.user_tool_filters}),
-                            ('toolbox_section_filters', {'title': 'Sections', 'config': trans.app.config.user_tool_section_filters}),
-                            ('toolbox_label_filters', {'title': 'Labels', 'config': trans.app.config.user_tool_label_filters})])
+        return {'toolbox_tool_filters': {'title': 'Tools', 'config': trans.app.config.user_tool_filters},
+                'toolbox_section_filters': {'title': 'Sections', 'config': trans.app.config.user_tool_section_filters},
+                'toolbox_label_filters': {'title': 'Labels', 'config': trans.app.config.user_tool_label_filters}}
 
     @expose_api
-    def api_key(self, trans, id, payload={}, **kwd):
+    def api_key(self, trans, id, payload=None, **kwd):
         """
         Create API key.
         """
+        payload = payload or {}
         user = self._get_user(trans, id)
-        return self.create_api_key(trans, user)
+        return self.api_key_manager.create_api_key(user)
 
     @expose_api
-    def get_api_key(self, trans, id, payload={}, **kwd):
+    def get_or_create_api_key(self, trans, id, payload=None, **kwd):
+        """
+        Unified 'get or create' for API key
+        """
+        payload = payload or {}
+        user = self._get_user(trans, id)
+        return self.api_key_manager.get_or_create_api_key(user)
+
+    @expose_api
+    def get_api_key(self, trans, id, payload=None, **kwd):
         """
         Get API key inputs.
         """
+        payload = payload or {}
         user = self._get_user(trans, id)
         return self._build_inputs_api_key(user)
 
     @expose_api
-    def set_api_key(self, trans, id, payload={}, **kwd):
+    def set_api_key(self, trans, id, payload=None, **kwd):
         """
         Get API key inputs with new API key.
         """
+        payload = payload or {}
         user = self._get_user(trans, id)
-        self.create_api_key(trans, user)
+        self.api_key_manager.create_api_key(user)
         return self._build_inputs_api_key(user, message='Generated a new web API key.')
 
     def _build_inputs_api_key(self, user, message=''):
@@ -753,34 +762,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         return {'message': message, 'inputs': inputs}
 
     @expose_api
-    def get_communication(self, trans, id, payload={}, **kwd):
-        """
-        Build communication server inputs.
-        """
-        user = self._get_user(trans, id)
-        return {'inputs': [{'name': 'enable',
-                            'type': 'boolean',
-                            'label': 'Enable communication',
-                            'value': user.preferences.get('communication_server', 'false')}]}
-
-    @expose_api
-    def set_communication(self, trans, id, payload={}, **kwd):
-        """
-        Allows the user to activate/deactivate the communication server.
-        """
-        user = self._get_user(trans, id)
-        enable = payload.get('enable', 'false')
-        if enable == 'true':
-            message = 'Your communication server has been activated.'
-        else:
-            message = 'Your communication server has been disabled.'
-        user.preferences['communication_server'] = enable
-        trans.sa_session.add(user)
-        trans.sa_session.flush()
-        return {'message': message}
-
-    @expose_api
-    def get_custom_builds(self, trans, id, payload={}, **kwd):
+    def get_custom_builds(self, trans, id, payload=None, **kwd):
         """
         GET /api/users/{id}/custom_builds
         Returns collection of custom builds.
@@ -788,6 +770,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         :param id: the encoded id of the user
         :type  id: str
         """
+        payload = payload or {}
         user = self._get_user(trans, id)
         dbkeys = json.loads(user.preferences['dbkeys']) if 'dbkeys' in user.preferences else {}
         valid_dbkeys = {}
@@ -811,7 +794,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         return dbkey_collection
 
     @expose_api
-    def add_custom_builds(self, trans, id, key, payload={}, **kwd):
+    def add_custom_builds(self, trans, id, key, payload=None, **kwd):
         """
         PUT /api/users/{id}/custom_builds/{key}
         Add new custom build.
@@ -825,6 +808,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         :param payload: data with new build details
         :type  payload: dict
         """
+        payload = payload or {}
         user = self._get_user(trans, id)
         dbkeys = json.loads(user.preferences['dbkeys']) if 'dbkeys' in user.preferences else {}
         name = payload.get('name')
@@ -874,7 +858,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
                             lines_skipped += 1
                             continue
                         counter += 1
-                        f.write('{}\t{}\n'.format(chrom, length))
+                        f.write(f'{chrom}\t{length}\n')
                 build_dict['len'] = new_len.id
                 build_dict['count'] = counter
             else:
@@ -893,7 +877,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
             return build_dict
 
     @expose_api
-    def delete_custom_builds(self, trans, id, key, payload={}, **kwd):
+    def delete_custom_builds(self, trans, id, key, payload=None, **kwd):
         """
         DELETE /api/users/{id}/custom_builds/{key}
         Delete a custom build.
@@ -904,6 +888,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         :param id: custom build key to be deleted
         :type  id: str
         """
+        payload = payload or {}
         user = self._get_user(trans, id)
         dbkeys = json.loads(user.preferences['dbkeys']) if 'dbkeys' in user.preferences else {}
         if key and key in dbkeys:

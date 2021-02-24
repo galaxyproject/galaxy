@@ -7,7 +7,11 @@ from galaxy.util import bunch
 class TestTransaction(context.ProvidesAppContext):
 
     def __init__(self):
-        self.app = TestApp()
+        self._app = TestApp()
+
+    @property
+    def app(self):
+        return self._app
 
 
 def test_logging_events_off():
@@ -60,7 +64,7 @@ def test_expunge_all():
     assert trans.sa_session.query(model.User).first().password == "bar2"
 
 
-class TestApp(object):
+class TestApp:
 
     def __init__(self):
         self.config = bunch.Bunch(

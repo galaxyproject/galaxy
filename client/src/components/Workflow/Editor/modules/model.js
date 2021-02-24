@@ -8,6 +8,9 @@ export function fromSimple(workflow, data, appendData = false) {
     } else {
         workflow.nodeIndex = 0;
         workflow.name = data.name;
+        workflow.annotation = data.annotation;
+        workflow.license = data.license;
+        workflow.creator = data.creator;
         Object.values(workflow.nodes).forEach((node) => {
             node.onRemove();
         });
@@ -28,6 +31,13 @@ export function fromSimple(workflow, data, appendData = false) {
         });
         Vue.nextTick(() => {
             // Second pass, connections
+            let using_workflow_outputs = false;
+            Object.entries(data.steps).forEach(([id, step]) => {
+                if (step.workflow_outputs && step.workflow_outputs.length > 0) {
+                    using_workflow_outputs = true;
+                }
+            });
+
             Object.entries(data.steps).forEach(([id, step]) => {
                 const nodeIndex = parseInt(id) + offset;
                 const node = workflow.nodes[nodeIndex];
@@ -46,12 +56,14 @@ export function fromSimple(workflow, data, appendData = false) {
                     }
                 });
 
-                // Older workflows contain HideDatasetActions only, but no active outputs yet.
-                Object.values(node.outputs).forEach((ot) => {
-                    if (!node.postJobActions[`HideDatasetAction${ot.name}`]) {
-                        node.activeOutputs.add(ot.name);
-                    }
-                });
+                if (!using_workflow_outputs) {
+                    // Older workflows contain HideDatasetActions only, but no active outputs yet.
+                    Object.values(node.outputs).forEach((ot) => {
+                        if (!node.postJobActions[`HideDatasetAction${ot.name}`]) {
+                            node.activeOutputs.add(ot.name);
+                        }
+                    });
+                }
             });
         });
     });
@@ -113,7 +125,11 @@ export function toSimple(workflow) {
         nodes[node.id] = node_data;
     });
     const report = workflow.report;
-    return { steps: nodes, report: report };
+    const license = workflow.license;
+    const creator = workflow.creator;
+    const annotation = workflow.annotation;
+    const name = workflow.name;
+    return { steps: nodes, report, license, creator, annotation, name };
 }
 
 function _scaledBoundingClientRect(element, canvasZoom) {

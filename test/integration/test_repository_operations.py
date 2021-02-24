@@ -6,7 +6,8 @@ from galaxy_test.driver import integration_util
 from tool_shed.util import hg_util
 from .uses_shed import UsesShed
 
-REPO = namedtuple('Repository', 'name owner changeset')(
+REPO_TYPE = namedtuple('Repository', 'name owner changeset')
+REPO = REPO_TYPE(
     'collection_column_join',
     'iuc',
     'dfde09461b1e',  # revision 2, a known installable revision
@@ -24,7 +25,7 @@ class TestRepositoryInstallIntegrationTestCase(integration_util.IntegrationTestC
         cls.configure_shed(config)
 
     def setUp(self):
-        super(TestRepositoryInstallIntegrationTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
     def tearDown(self):

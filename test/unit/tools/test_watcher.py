@@ -52,7 +52,7 @@ def test_tool_conf_watcher():
 
 def wait_for_reload(check):
     reloaded = False
-    for i in range(10):
+    for _ in range(10):
         reloaded = check()
         if reloaded:
             break
@@ -60,7 +60,7 @@ def wait_for_reload(check):
     assert reloaded
 
 
-class Toolbox(object):
+class Toolbox:
 
     def __init__(self):
         self.reloaded = {}
@@ -72,7 +72,7 @@ class Toolbox(object):
         return self.reloaded.get(tool_id, False)
 
 
-class CallbackRecorder(object):
+class CallbackRecorder:
 
     def __init__(self):
         self.called = False

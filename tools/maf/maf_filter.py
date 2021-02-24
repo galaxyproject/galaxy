@@ -36,7 +36,7 @@ def main():
 
     # Open input and output MAF files
     try:
-        maf_reader = bx.align.maf.Reader(open(maf_file, 'r'))
+        maf_reader = bx.align.maf.Reader(open(maf_file))
         maf_writer = bx.align.maf.Writer(open(out_file, 'w'))
     except Exception:
         print("Your MAF file appears to be malformed.", file=sys.stderr)
@@ -51,7 +51,7 @@ def main():
     # 'ret_val' should be set to True if the block is to be kept
     i = 0
     blocks_kept = 0
-    for i, maf_block in enumerate(maf_reader):
+    for i, maf_block in enumerate(maf_reader):  # noqa: B007
         if min_size <= maf_block.text_size <= max_size:
             local = {'maf_block': maf_block, 'ret_val': False}
             exec(compile(open(script_file).read(), script_file, 'exec'), {}, local)

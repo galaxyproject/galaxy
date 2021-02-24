@@ -1,44 +1,40 @@
-"""
-API key retrieval through BaseAuth
-Sample usage:
+"""API key retrieval through BaseAuth
 
-curl --user zipzap@foo.com:password http://localhost:8080/api/authenticate/baseauth
+Sample usage
 
-Returns:
+.. code-block::
 
-{
-    "api_key": "baa4d6e3a156d3033f05736255f195f9"
-}
+    curl --user zipzap@foo.com:password http://localhost:8080/api/authenticate/baseauth
+
+Returns
+
+.. code-block:: json
+
+    {
+        "api_key": "baa4d6e3a156d3033f05736255f195f9"
+    }
+
 """
 import logging
 from base64 import b64decode
-
-from six.moves.urllib.parse import unquote
+from urllib.parse import unquote
 
 from galaxy import exceptions
-from galaxy.managers import (
-    api_keys,
-    users,
-)
 from galaxy.util import (
     smart_str,
     unicodify
 )
 from galaxy.web import expose_api_anonymous_and_sessionless
-from galaxy.webapps.base.controller import BaseAPIController
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
+from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
 
 
-class AuthenticationController(BaseAPIController):
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.user_manager = users.UserManager(app)
-        self.api_keys_manager = api_keys.ApiKeyManager(app)
+class AuthenticationController(BaseGalaxyAPIController):
 
     @expose_api_anonymous_and_sessionless
-    def options(self, trans, **kwd):
+    def options(self, trans: GalaxyWebTransaction, **kwd):
         """
         A no-op endpoint to return generic OPTIONS for the API.
         Any OPTIONS request to /api/* maps here.
@@ -52,10 +48,9 @@ class AuthenticationController(BaseAPIController):
         # trans.response.headers['Access-Control-Allow-Methods'] = 'POST, PUT, GET, OPTIONS, DELETE'
 
     @expose_api_anonymous_and_sessionless
-    def get_api_key(self, trans, **kwd):
+    def get_api_key(self, trans: GalaxyWebTransaction, **kwd):
         """
-        def get_api_key( self, trans, **kwd )
-        * GET /api/authenticate/baseauth
+        GET /api/authenticate/baseauth
           returns an API key for authenticated user based on BaseAuth headers
 
         :returns: api_key in json format
@@ -65,12 +60,12 @@ class AuthenticationController(BaseAPIController):
         """
         identity, password = self._decode_baseauth(trans.environ.get('HTTP_AUTHORIZATION'))
         # check if this is an email address or username
-        user = self.user_manager.get_user_by_identity(identity)
+        user = self.app.user_manager.get_user_by_identity(identity)
         if not user:
             raise exceptions.ObjectNotFound('The user does not exist.')
         is_valid_user = self.app.auth_manager.check_password(user, password)
         if is_valid_user:
-            key = self.api_keys_manager.get_or_create_api_key(user)
+            key = self.app.api_keys_manager.get_or_create_api_key(user)
             return dict(api_key=key)
         else:
             raise exceptions.AuthenticationFailed('Invalid password.')
@@ -91,7 +86,10 @@ class AuthenticationController(BaseAPIController):
 
         :raises: HTTPBadRequest
         """
-        split = encoded_str.strip().split(' ')
+        try:
+            split = encoded_str.strip().split(' ')
+        except AttributeError:
+            raise exceptions.RequestParameterInvalidException('Authentication is missing')
 
         # If split is only one element, try to decode the email and password
         # directly.
