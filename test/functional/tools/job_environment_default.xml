@@ -3,7 +3,6 @@
       <container type="docker">busybox:ubuntu-14.04</container>
     </requirements>
     <command detect_errors="exit_code"><![CDATA[
-<<<<<<< HEAD
       echo 'Writing environment properties to output files.' &&
       (>&2 echo 'Example tool stderr output.') &&
       echo `id -u` > '$user_id' &&
@@ -12,21 +11,8 @@
       echo "\$HOME" > '$home' &&
       echo "\$TMP"  > '$tmp' &&
       echo "\$SOME_ENV_VAR" > '$some_env_var' &&
-      touch '\$_GALAXY_JOB_TMP_DIR/test' &&
-      touch '\$_GALAXY_JOB_HOME_DIR/test
-=======
-echo 'Writing environment properties to output files.' &&
-(>&2 echo 'Example tool stderr output.') &&
-echo \$(id -u) > '$user_id' &&
-echo \$(id -g) > '$group_id' &&
-echo \$(pwd) > '$pwd' &&
-echo "\$HOME" > '$home' &&
-echo "\$TMP"  > '$tmp' &&
-echo "\$SOME_ENV_VAR" > '$some_env_var' &&
-## test if job home and tmp are mounted rw
-touch "\$_GALAXY_JOB_TMP_DIR/test" &&
-touch "\$_GALAXY_JOB_HOME_DIR/test"
->>>>>>> 75b43147fe... fix quoting
+      touch "\$_GALAXY_JOB_TMP_DIR/tmp_test" &&
+      touch "\$_GALAXY_JOB_HOME_DIR/home_test"
     ]]></command>
     <inputs>
     </inputs>
