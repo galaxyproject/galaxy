@@ -1293,7 +1293,6 @@ class MatrixMarket(TabularData):
 
 @build_sniff_from_prefix
 class CMAP(TabularData):
-
     MetadataElement(name="cmap_version", default='0.2', desc="version of cmap", readonly=True, visible=True, optional=False, no_value='0.2')
     MetadataElement(name="label_channels", default=1, desc="the number of label channels", readonly=True, visible=True, optional=False, no_value=1)
     MetadataElement(name="nickase_recognition_site_1", default=[], desc="comma separated list of label motif recognition sequences for channel 1", readonly=True, visible=True, optional=False, no_value=[])
@@ -1301,7 +1300,6 @@ class CMAP(TabularData):
     MetadataElement(name="nickase_recognition_site_2", default=[], desc="comma separated list of label motif recognition sequences for channel 2 ", readonly=True, visible=True, optional=True, no_value=[])
     MetadataElement(name="channel_1_color", default=[], desc="channel 1 color", readonly=True, visible=True, optional=True, no_value=[])
     MetadataElement(name="channel_2_color", default=[], desc="channel 2 color", readonly=True, visible=True, optional=True, no_value=[])
-
     """
     # CMAP File Version:    2.0
     # Label Channels:   1
@@ -1316,10 +1314,8 @@ class CMAP(TabularData):
     182 58474736.7  10235   1   1   58820.9 35.4    13.5    13.5    -1.00   -1.00   -1.00   3.63    0.00    0.00    -1.00   0
     """
     file_ext = "cmap"
-
     def sniff_prefix(self, file_prefix):
         return file_prefix.startswith('# CMAP File Version:')
-
     def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=7, **kwd):
         if dataset.has_data():
             with open(dataset.file_name) as dataset_fh:
@@ -1335,7 +1331,6 @@ class CMAP(TabularData):
                                     cleaned_column_types.append('str')
                                 else:
                                     cleaned_column_types.append(i)
-
                         comment_lines += 1
                         fields = l.split('\t')
                         if len(fields) == 2:
@@ -1344,31 +1339,26 @@ class CMAP(TabularData):
                             elif fields[0] == '# Label Channels:':
                                 dataset.metadata.label_channels = int(fields[1].strip('\n'))
                             elif fields[0] == '# Nickase Recognition Site 1:':
-                                if ';' in fields[1]:
-                                    dataset.metadata.nickase_recognition_site_1 = fields[1].strip('\n').split(';')[0].split(',')
-                                    dataset.metadata.channel_1_color = fields[1].strip('\n').split(';')[1]
-                                else:
-                                    dataset.metadata.nickase_recognition_site_1 = fields[1].strip('\n').split(',')
+                                fields2 = fields[1].strip('\n').split(';')
+                                if len(fields2) == 2:
+                                    dataset.metadata.channel_1_color = fields2[1]
+                                dataset.metadata.nickase_recognition_site_1 = fields2[0].split(',')
                             elif fields[0] == '# Number of Consensus Maps:':
                                 dataset.metadata.number_of_consensus_nanomaps = int(fields[1].strip('\n'))
                             elif fields[0] == '# Nickase Recognition Site 2:':
-                                if ';' in fields[1]:
-                                    dataset.metadata.nickase_recognition_site_2 = fields[1].strip('\n').split(';')[0].split(',')
-                                    dataset.metadata.channel_2_color = fields[1].strip('\n').split(';')[1]
-                                else:
-                                    dataset.metadata.nickase_recognition_site_2 = fields[1].strip('\n').split(',')
+                                fields2 = fields[1].strip('\n').split(';')
+                                if len(fields2) == 2:
+                                    dataset.metadata.channel_2_color = fields2[1]
+                                dataset.metadata.nickase_recognition_site_2 = fields2[0].split(',')
                     elif self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
                         # If the dataset is larger than optional_metadata, just count comment lines.
                         # No more comments, and the file is too big to look at the whole thing. Give up.
                         dataset.metadata.data_lines = None
                         break
-
                     elif i == comment_lines + 1:
                         number_of_columns = int(len(l.split('\t')))
-
                 if not (self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize):
                     dataset.metadata.data_lines = i + 1 - comment_lines
-
             dataset.metadata.comment_lines = int(comment_lines)
             dataset.metadata.column_names = column_headers
             dataset.metadata.column_types = cleaned_column_types
