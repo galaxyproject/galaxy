@@ -7,12 +7,17 @@ import os
 
 from galaxy import (
     exceptions as galaxy_exceptions,
-    managers,
     model,
     util,
     web
 )
 from galaxy.datatypes import dataproviders
+from galaxy.managers.hdas import HDAManager, HDASerializer
+from galaxy.managers.hdcas import HDCASerializer
+from galaxy.managers.histories import HistoryManager
+from galaxy.managers.history_contents import HistoryContentsFilters
+from galaxy.managers.history_contents import HistoryContentsManager
+from galaxy.managers.lddas import LDDAManager
 from galaxy.util.path import (
     safe_walk
 )
@@ -22,26 +27,24 @@ from galaxy.visualization.data_providers.genome import (
     SamDataProvider
 )
 from galaxy.web.framework.helpers import is_true
-from galaxy.webapps.base.controller import (
-    BaseAPIController,
-    UsesVisualizationMixin
-)
+from galaxy.webapps.base.controller import UsesVisualizationMixin
+from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
 
 
-class DatasetsController(BaseAPIController, UsesVisualizationMixin):
+class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
+    history_manager: HistoryManager = depends(HistoryManager)
+    hda_manager: HDAManager = depends(HDAManager)
+    hda_serializer: HDASerializer = depends(HDASerializer)
+    hdca_serializer: HDCASerializer = depends(HDCASerializer)
+    ldda_manager: LDDAManager = depends(LDDAManager)
+    history_contents_manager: HistoryContentsManager = depends(HistoryContentsManager)
+    history_contents_filters: HistoryContentsFilters = depends(HistoryContentsFilters)
 
-    def __init__(self, app):
-        super().__init__(app)
-        self.history_manager = managers.histories.HistoryManager(app)
-        self.hda_manager = managers.hdas.HDAManager(app)
-        self.hda_serializer = managers.hdas.HDASerializer(app)
-        self.hdca_serializer = managers.hdcas.HDCASerializer(app)
-        self.serializer_by_type = {'dataset': self.hda_serializer, 'dataset_collection': self.hdca_serializer}
-        self.ldda_manager = managers.lddas.LDDAManager(app)
-        self.history_contents_manager = managers.history_contents.HistoryContentsManager(app)
-        self.history_contents_filters = managers.history_contents.HistoryContentsFilters(app)
+    @property
+    def serializer_by_type(self):
+        return {'dataset': self.hda_serializer, 'dataset_collection': self.hdca_serializer}
 
     def _parse_serialization_params(self, kwd, default_view):
         view = kwd.get('view', None)

@@ -311,6 +311,17 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         error_response = self._get(fake_contents_url)
         assert_object_id_error(error_response)
 
+    def test_show_dataset_collection(self):
+        fetch_response = self.dataset_collection_populator.create_list_in_history(self.history_id, direct_upload=True).json()
+        dataset_collection = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
+        returned_dce = dataset_collection["elements"]
+        assert len(returned_dce) == 3, dataset_collection
+        hdca_id = dataset_collection['id']
+        dataset_collection_url = f"/api/dataset_collections/{hdca_id}"
+        dataset_collection = self._get(dataset_collection_url).json()
+        assert dataset_collection['id'] == hdca_id
+        assert dataset_collection['collection_type'] == 'list'
+
     def test_show_dataset_collection_contents(self):
         # Get contents_url from history contents, use it to show the first level
         # of collection contents in the created HDCA, then use it again to drill

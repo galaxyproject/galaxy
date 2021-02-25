@@ -273,6 +273,15 @@ def test_hierarchical_store():
             _assert_key_has_value(as_dict, "type", "hierarchical")
 
 
+def test_concrete_name_without_objectstore_id():
+    for config_str in [HIERARCHICAL_TEST_CONFIG, HIERARCHICAL_TEST_CONFIG_YAML]:
+        with TestConfig(config_str) as (directory, object_store):
+            files1_desc = object_store.get_concrete_store_description_markdown(MockDataset(3))
+            files1_name = object_store.get_concrete_store_name(MockDataset(3))
+            assert files1_desc is None
+            assert files1_name is None
+
+
 MIXED_STORE_BY_HIERARCHICAL_TEST_CONFIG = """<?xml version="1.0"?>
 <object_store type="hierarchical">
     <backends>

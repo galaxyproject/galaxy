@@ -27,9 +27,6 @@ var LibraryDatasetView = Backbone.View.extend({
         "click .toolbtn-download-dataset": "downloadDataset",
         "click .toolbtn-import-dataset": "importIntoHistory",
         "click .copy-link-to-clipboard": "copyToClipboard",
-        "click .make-private": "makeDatasetPrivate",
-        "click .remove-restrictions": "removeDatasetRestrictions",
-        "click .toolbtn_save_permissions": "savePermissions",
         "click .toolbtn_save_modifications": "saveModifications",
         "click .toolbtn_detect_datatype": "detectDatatype",
     },
@@ -76,9 +73,7 @@ var LibraryDatasetView = Backbone.View.extend({
         var self = this;
         this.model.fetch({
             success: function () {
-                if (self.options.show_permissions) {
-                    self.showPermissions();
-                } else if (self.options.show_version) {
+                if (self.options.show_version) {
                     self.fetchVersion();
                 } else {
                     self.render();
@@ -298,122 +293,6 @@ var LibraryDatasetView = Backbone.View.extend({
         );
     },
 
-    showPermissions: function (options) {
-        const Galaxy = getGalaxyInstance();
-        var template = this.templateDatasetPermissions();
-        var self = this;
-        this.options = _.extend(this.options, options);
-        $(".tooltip").remove();
-        if (this.options.fetched_permissions !== undefined) {
-            if (this.options.fetched_permissions.access_dataset_roles.length === 0) {
-                this.model.set({ is_unrestricted: true });
-            } else {
-                this.model.set({ is_unrestricted: false });
-            }
-        }
-        this.$el.html(
-            template({
-                item: this.model,
-                is_admin: Galaxy.config.is_admin_user,
-                rootPath: getAppRoot(),
-            })
-        );
-        $.get(`${getAppRoot()}api/libraries/datasets/${self.id}/permissions?scope=current`)
-            .done((fetched_permissions) => {
-                self.prepareSelectBoxes({
-                    fetched_permissions: fetched_permissions,
-                    is_admin: Galaxy.config.is_admin_user,
-                });
-            })
-            .fail(() => {
-                Toast.error("An error occurred while attempting to fetch dataset permissions.");
-            });
-        $('#center [data-toggle="tooltip"]').tooltip({ trigger: "hover" });
-        $("#center").css("overflow", "auto");
-    },
-
-    _serializeRoles: function (role_list) {
-        var selected_roles = [];
-        for (var i = 0; i < role_list.length; i++) {
-            // Replace the : and , in role's name since these are select2 separators for initialData
-            selected_roles.push(`${role_list[i][1]}:${role_list[i][0].replace(":", " ").replace(",", " &")}`);
-        }
-        return selected_roles;
-    },
-
-    prepareSelectBoxes: function (options) {
-        this.options = _.extend(this.options, options);
-        this.accessSelectObject = new mod_select.View(
-            this._generate_select_options({
-                selector: "access_perm",
-                initialData: this._serializeRoles(this.options.fetched_permissions.access_dataset_roles),
-            })
-        );
-        this.modifySelectObject = new mod_select.View(
-            this._generate_select_options({
-                selector: "modify_perm",
-                initialData: this._serializeRoles(this.options.fetched_permissions.modify_item_roles),
-            })
-        );
-        this.manageSelectObject = new mod_select.View(
-            this._generate_select_options({
-                selector: "manage_perm",
-                initialData: this._serializeRoles(this.options.fetched_permissions.manage_dataset_roles),
-            })
-        );
-    },
-
-    _generate_select_options: function (options) {
-        var select_options = {
-            minimumInputLength: 0,
-            multiple: true,
-            placeholder: "Click to select a role",
-            formatResult: function roleFormatResult(role) {
-                return `${role.name} type: ${role.type}`;
-            },
-            formatSelection: function roleFormatSelection(role) {
-                return role.name;
-            },
-            initSelection: function (element, callback) {
-                // the input tag has a value attribute preloaded that points to a preselected role's id
-                // this function resolves that id attribute to an object that select2 can render
-                // using its formatResult renderer - that way the role name is shown preselected
-                var data = [];
-                $(element.val().split(",")).each(function () {
-                    var item = this.split(":");
-                    data.push({
-                        id: item[0],
-                        name: item[1],
-                    });
-                });
-                callback(data);
-            },
-            dropdownCssClass: "bigdrop", // apply css that makes the dropdown taller
-        };
-        select_options.container = this.$el.find(`#${options.selector}`);
-        select_options.css = options.selector;
-        select_options.initialData = options.initialData.join(",");
-        select_options.ajax = {
-            url: `${getAppRoot()}api/libraries/datasets/${this.id}/permissions?scope=available`,
-            dataType: "json",
-            quietMillis: 100,
-            data: function (term, page) {
-                // page is the one-based page number tracked by Select2
-                return {
-                    q: term, //search term
-                    page_limit: 10, // page size, should be same as used in 'more' variable below
-                    page: page, // page number
-                };
-            },
-            results: function (data, page) {
-                var more = page * 10 < data.total; // whether or not there are more results available
-                // notice we return the value of more so Select2 knows if more results can be loaded
-                return { results: data.roles, more: more };
-            },
-        };
-        return select_options;
-    },
-
     detectDatatype: function (options) {
         const ld = this.model;
         ld.set("file_ext", "auto");
@@ -490,36 +369,6 @@ var LibraryDatasetView = Backbone.View.extend({
         window.prompt("Copy to clipboard: Ctrl+C, Enter", href);
     },
 
-    makeDatasetPrivate: function () {
-        var self = this;
-        $.post(`${getAppRoot()}api/libraries/datasets/${self.id}/permissions?action=make_private`)
-            .done((fetched_permissions) => {
-                self.model.set({ is_unrestricted: false });
-                self.showPermissions({
-                    fetched_permissions: fetched_permissions,
-                });
-                Toast.success("The dataset is now private to you.");
-            })
-            .fail(() => {
-                Toast.error("An error occurred while attempting to make dataset private.");
-            });
-    },
-
-    removeDatasetRestrictions: function () {
-        var self = this;
-        $.post(`${getAppRoot()}api/libraries/datasets/${self.id}/permissions?action=remove_restrictions`)
-            .done((fetched_permissions) => {
-                self.model.set({ is_unrestricted: true });
-                self.showPermissions({
-                    fetched_permissions: fetched_permissions,
-                });
-                Toast.success("Access to this dataset is now unrestricted.");
-            })
-            .fail(() => {
-                Toast.error("An error occurred while attempting to make dataset unrestricted.");
-            });
-    },
-
     /**
      * Extract the role ids from Select2 elements's 'data'
      */
@@ -529,30 +378,6 @@ var LibraryDatasetView = Backbone.View.extend({
             ids_list.push(roles_list[i].id);
         }
         return ids_list;
-    },
-
-    /**
-     * Save the permissions for roles entered in the select boxes.
-     */
-    savePermissions: function (event) {
-        var self = this;
-        var access_ids = this._extractIds(this.accessSelectObject.$el.select2("data"));
-        var manage_ids = this._extractIds(this.manageSelectObject.$el.select2("data"));
-        var modify_ids = this._extractIds(this.modifySelectObject.$el.select2("data"));
-        $.post(`${getAppRoot()}api/libraries/datasets/${self.id}/permissions?action=set_permissions`, {
-            "access_ids[]": access_ids,
-            "manage_ids[]": manage_ids,
-            "modify_ids[]": modify_ids,
-        })
-            .done((fetched_permissions) => {
-                self.showPermissions({
-                    fetched_permissions: fetched_permissions,
-                });
-                Toast.success("Permissions saved.");
-            })
-            .fail(() => {
-                Toast.error("An error occurred while attempting to set dataset permissions.");
-            });
     },
 
     /**
@@ -653,7 +478,7 @@ var LibraryDatasetView = Backbone.View.extend({
                         </button>
                     <% } %>
                     <% if (item.get("can_user_manage")) { %>
-                        <a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>/permissions">
+                        <a href="<% rootPath %>/library/folders/permissions/<%- item.get("folder_id") %>/dataset/<%- item.id %>">
                             <button data-toggle="tooltip" data-placement="top" title="Manage permissions"
                                 class="btn btn-secondary toolbtn_change_permissions toolbar-item mr-1"
                                 type="button">
@@ -1110,101 +935,6 @@ var LibraryDatasetView = Backbone.View.extend({
             </div>`
         );
     },
-
-    templateDatasetPermissions: function () {
-        return _.template(
-            `<!-- CONTAINER START -->
-            <div class="library_style_container">
-                <div class="d-flex mb-2">
-                    <a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>">
-                        <button data-toggle="tooltip" data-placement="top" title="Go back to dataset"
-                            class="btn btn-secondary toolbar-item mr-1" type="button">
-                            <span class="fa fa-file-o"></span>
-                            &nbsp;Dataset Details
-                        </button>
-                    </a>
-                </div>
-
-                <!-- BREADCRUMBS -->
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item">
-                        <a title="Return to the list of libraries" href="#">Libraries</a>
-                    </li>
-                    <% _.each(item.get("full_path"), function(path_item) { %>
-                        <% if (path_item[0] != item.id) { %>
-                            <li class="breadcrumb-item">
-                                <a title="Return to this folder" href="<% rootPath %>folders/<%- path_item[0] %>">
-                                    <%- path_item[1] %>
-                                </a>
-                            </li>
-                        <% } else { %>
-                            <li class="breadcrumb-item active">
-                                <span title="You are here">
-                                    <%- path_item[1] %>
-                                </span>
-                            </li>
-                        <% } %>
-                    <% }); %>
-                </ol>
-
-                <h1>Dataset: <%= _.escape(item.get("name")) %></h1>
-                <div class="alert alert-warning">
-                    <% if (is_admin) { %>
-                        You are logged in as an <strong>administrator</strong> therefore you can manage any dataset
-                        on this Galaxy instance. Please make sure you understand the consequences.
-                    <% } else { %>
-                        You can assign any number of roles to any of the following permission types. However please
-                        read carefully the implications of such actions.
-                    <% } %>
-                </div>
-                <div class="dataset_table">
-                    <h2>Library-related permissions</h2>
-                    <h4>Roles that can modify the library item</h4>
-                    <div id="modify_perm" class="modify_perm roles-selection"></div>
-                    <div class="alert alert-info roles-selection">
-                        User with <strong>any</strong> of these roles can modify name, metadata,
-                        and other information about this library item.
-                    </div>
-                    <hr/>
-                    <h2>Dataset-related permissions</h2>
-                    <div class="alert alert-warning">
-                        Changes made below will affect <strong>every</strong> library item that was created from
-                        this dataset and also every history this dataset is part of.
-                    </div>
-                    <% if (!item.get("is_unrestricted")) { %>
-                        <p>
-                            You can <span class="remove-restrictions">
-                            <a href="javascript:void(0)">remove all access restrictions</a></span> on this dataset.
-                        </p>
-                    <% } else { %>
-                        <p>
-                            You can <span class="make-private">
-                            <a href="javascript:void(0)">make this dataset private</a></span> to you.</p>
-                    <% } %>
-                    <h4>Roles that can access the dataset</h4>
-                    <div id="access_perm" class="access_perm roles-selection"></div>
-                    <div class="alert alert-info roles-selection">
-                        User has to have <strong>all these roles</strong> in order to access this dataset.
-                        Users without access permission <strong>cannot</strong> have other permissions on this dataset.
-                        If there are no access roles set on the dataset it is considered <strong>unrestricted</strong>.
-                    </div>
-                    <h4>Roles that can manage permissions on the dataset</h4>
-                    <div id="manage_perm" class="manage_perm roles-selection"></div>
-                    <div class="alert alert-info roles-selection">
-                        User with <strong>any</strong> of these roles can manage permissions of this dataset.
-                        If you remove yourself you will lose the ability manage this dataset unless you are an admin.
-                    </div>
-                    <button data-toggle="tooltip" data-placement="top" title="Save modifications made on this page"
-                        class="btn btn-secondary toolbtn_save_permissions type="button">
-                        <span class="fa fa-floppy-o"></span>
-                        &nbsp;Save
-                    </button>
-                </div>
-            <!-- CONTAINER END -->
-            </div>`
-        );
-    },
-
     templateBulkImportInModal: function () {
         return _.template(
             `<div>

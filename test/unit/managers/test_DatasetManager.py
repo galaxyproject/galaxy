@@ -216,7 +216,7 @@ class DatasetSerializerTestCase(BaseTestCase):
     def set_up_managers(self):
         super().set_up_managers()
         self.dataset_manager = DatasetManager(self.app)
-        self.dataset_serializer = DatasetSerializer(self.app)
+        self.dataset_serializer = DatasetSerializer(self.app, self.user_manager)
         self.role_manager = RoleManager(self.app)
 
     def test_views(self):

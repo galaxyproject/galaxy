@@ -22,6 +22,7 @@ from galaxy_test.base.populators import (
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_NESTED_RUNTIME_PARAMETER,
     WORKFLOW_NESTED_SIMPLE,
+    WORKFLOW_NESTED_WITH_MULTIPLE_VERSIONS_TOOL,
 )
 from galaxy_test.driver import integration_util
 
@@ -690,6 +691,40 @@ steps:
         assert message.step_label == "nested_workflow"
         assert message.output_name == "workflow_output"
         assert message.output_label == "outer_output"
+
+    def test_upgrade_all_steps(self):
+        self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_WITH_MULTIPLE_VERSIONS_TOOL)
+        nested_stored_workflow = self._recent_stored_workflow(2)
+        assert self._latest_workflow.step_by_label("tool_update_step").tool_version == "0.1"
+        updated_nested_step = nested_stored_workflow.latest_workflow.step_by_label("random_lines")
+        assert updated_nested_step.tool_inputs["num_lines"] == "1"
+
+        self._increment_nested_workflow_version(
+            nested_stored_workflow,
+            num_lines_from="1",
+            num_lines_to="2"
+        )
+        self._app.model.session.expunge(nested_stored_workflow)
+        # ensure subworkflow updated properly...
+        nested_stored_workflow = self._recent_stored_workflow(2)
+        assert len(nested_stored_workflow.workflows) == 2
+        actions = [
+            {"action_type": "upgrade_all_steps"},
+        ]
+        action_executions = self._refactor(actions).action_executions
+        assert self._latest_workflow.step_by_label("tool_update_step").tool_version == "0.2"
+        nested_stored_workflow = self._recent_stored_workflow(2)
+        updated_nested_step = nested_stored_workflow.latest_workflow.step_by_label("random_lines")
+        assert updated_nested_step.tool_inputs["num_lines"] == "2"
+
+        assert len(action_executions) == 1
+        messages = action_executions[0].messages
+        assert len(messages) == 1
+        message = messages[0]
+        assert message.message_type == RefactorActionExecutionMessageTypeEnum.connection_drop_forced
+        assert message.order_index == 1
+        assert message.step_label == "tool_update_step"
+        assert message.output_name == "output"
 
     def _download_native(self, workflow=None):
         workflow = workflow or self._most_recent_stored_workflow

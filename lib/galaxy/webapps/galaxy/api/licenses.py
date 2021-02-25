@@ -1,7 +1,6 @@
 from typing import List
 
 from fastapi import (
-    Depends,
     Path
 )
 from fastapi_utils.cbv import cbv
@@ -12,7 +11,10 @@ from galaxy.managers.licenses import (
     LicensesManager
 )
 from galaxy.web import expose_api_anonymous_and_sessionless
-from galaxy.webapps.base.controller import BaseAPIController
+from . import (
+    BaseGalaxyAPIController,
+    depends,
+)
 
 router = APIRouter(tags=['licenses'])
 
@@ -24,13 +26,9 @@ LicenseIdPath: str = Path(
 )
 
 
-def get_licenses_manager() -> LicensesManager:
-    return LicensesManager()
-
-
 @cbv(router)
 class FastAPILicenses:
-    licenses_manager: LicensesManager = Depends(get_licenses_manager)
+    licenses_manager: LicensesManager = depends(LicensesManager)
 
     @router.get('/api/licenses',
         summary="Lists all available SPDX licenses",
@@ -48,10 +46,8 @@ class FastAPILicenses:
         return self.licenses_manager.get_license_by_id(id)
 
 
-class LicensesController(BaseAPIController):
-
-    def __init__(self, app):
-        self.licenses_manager = LicensesManager()
+class LicensesController(BaseGalaxyAPIController):
+    licenses_manager: LicensesManager = depends(LicensesManager)
 
     @expose_api_anonymous_and_sessionless
     def index(self, trans, **kwd):

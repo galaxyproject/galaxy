@@ -20,24 +20,21 @@ from galaxy.managers.visualizations import (
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.web import expose_api
 from galaxy.webapps.base.controller import (
-    BaseAPIController,
     SharableMixin,
     UsesVisualizationMixin
 )
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
+from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
 
 
-class VisualizationsController(BaseAPIController, UsesVisualizationMixin, SharableMixin, UsesAnnotations):
+class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, SharableMixin, UsesAnnotations):
     """
     RESTful controller for interactions with visualizations.
     """
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.manager = VisualizationManager(app)
-        self.serializer = VisualizationSerializer(app)
+    manager: VisualizationManager = depends(VisualizationManager)
+    serializer: VisualizationSerializer = depends(VisualizationSerializer)
 
     @expose_api
     def index(self, trans: GalaxyWebTransaction, **kwargs):

@@ -146,7 +146,6 @@ class ToolParameter(Dictifiable):
         self.name = self.__class__.parse_name(input_source)
         self.type = input_source.get("type")
         self.hidden = input_source.get_bool("hidden", False)
-        self.load_contents = int(input_source.get("load_contents", 0))
         self.refresh_on_change = input_source.get_bool("refresh_on_change", False)
         self.optional = input_source.parse_optional()
         self.is_dynamic = False
@@ -1363,6 +1362,7 @@ class ColumnListParameter(SelectToolParameter):
 
         value = other_values.get(self.name)
         if value is not None and value not in legal_values and self.is_file_empty(trans, other_values):
+            value = value if isinstance(value, list) else [value]
             legal_values.extend(value)
 
         return set(legal_values)
@@ -1843,6 +1843,7 @@ class DataToolParameter(BaseDataToolParameter):
     def __init__(self, tool, input_source, trans=None):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source, trans)
+        self.load_contents = int(input_source.get("load_contents", 0))
         # Add metadata validator
         if not input_source.get_bool('no_validation', False):
             self.validators.append(validation.MetadataValidator())

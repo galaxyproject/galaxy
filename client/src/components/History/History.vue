@@ -60,7 +60,7 @@
                     <template v-slot:listing>
                         <HistoryEmpty v-if="history.empty" class="m-2" />
 
-                        <VirtualScroller
+                        <Scroller
                             v-else
                             :class="{ loadingBackground: loading }"
                             key-field="hid"
@@ -83,7 +83,7 @@
                                     @viewCollection="$emit('viewCollection', item)"
                                 />
                             </template>
-                        </VirtualScroller>
+                        </Scroller>
                     </template>
 
                     <template v-slot:modals>
@@ -104,7 +104,7 @@ import HistoryDetails from "./HistoryDetails";
 import HistoryEmpty from "./HistoryEmpty";
 import ContentOperations from "./ContentOperations";
 import ToolHelpModal from "./ToolHelpModal";
-import VirtualScroller from "../VirtualScroller";
+import Scroller from "./Scroller";
 import { HistoryContentItem } from "./ContentItem";
 
 export default {
@@ -116,7 +116,7 @@ export default {
         HistoryEmpty,
         ContentOperations,
         ToolHelpModal,
-        VirtualScroller,
+        Scroller,
         HistoryContentItem,
         ExpandedItems,
         SelectedItems,

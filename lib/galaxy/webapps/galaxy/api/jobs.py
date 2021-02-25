@@ -7,7 +7,6 @@ API operations on a jobs.
 import logging
 import typing
 
-from fastapi import Depends
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter as APIRouter
 from sqlalchemy import (
@@ -19,7 +18,6 @@ from galaxy import (
     model,
     util,
 )
-from galaxy.app import UniverseApplication
 from galaxy.managers import hdas
 from galaxy.managers.context import ProvidesHistoryContext, ProvidesUserContext
 from galaxy.managers.jobs import (
@@ -39,16 +37,15 @@ from galaxy.web import (
     require_admin,
 )
 from galaxy.webapps.base.controller import (
-    BaseAPIController,
     UsesVisualizationMixin
 )
 from galaxy.work.context import (
     WorkRequestContext,
 )
 from . import (
-    get_app,
-    get_job_manager,
-    get_trans,
+    BaseGalaxyAPIController,
+    depends,
+    DependsOnTrans,
 )
 
 log = logging.getLogger(__name__)
@@ -56,22 +53,14 @@ log = logging.getLogger(__name__)
 router = APIRouter(tags=["jobs"])
 
 
-def get_job_search(app: UniverseApplication = Depends(get_app)) -> JobSearch:
-    return JobSearch(app=app)
-
-
-def get_hda_manager(app: UniverseApplication = Depends(get_app)) -> hdas.HDAManager:
-    return app.hda_manager
-
-
 @cbv(router)
 class FastAPIJobs:
-    job_manager: JobManager = Depends(get_job_manager)
-    job_search: JobSearch = Depends(get_job_search)
-    hda_manager: hdas.HDAManager = Depends(get_hda_manager)
+    job_manager: JobManager = depends(JobManager)
+    job_search: JobSearch = depends(JobSearch)
+    hda_manager: hdas.HDAManager = depends(hdas.HDAManager)
 
     @router.get("/api/job/{id}")
-    def show(self, id: EncodedDatabaseIdField, trans: ProvidesUserContext = Depends(get_trans), view='element', full: typing.Optional[bool] = False) -> typing.Dict:
+    def show(self, id: EncodedDatabaseIdField, trans: ProvidesUserContext = DependsOnTrans, view='element', full: typing.Optional[bool] = False) -> typing.Dict:
         """
         Return dictionary containing description of job data
 
@@ -84,13 +73,10 @@ class FastAPIJobs:
         return view_show_job(trans, job, view, bool(full))
 
 
-class JobController(BaseAPIController, UsesVisualizationMixin):
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.job_manager = JobManager(app)
-        self.job_search = JobSearch(app)
-        self.hda_manager = hdas.HDAManager(app)
+class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
+    job_manager = depends(JobManager)
+    job_search = depends(JobSearch)
+    hda_manager = depends(hdas.HDAManager)
 
     @expose_api
     def index(self, trans: ProvidesUserContext, **kwd):

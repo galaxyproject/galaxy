@@ -5,23 +5,19 @@ Information on TRS can be found at https://github.com/ga4gh/tool-registry-servic
 import logging
 
 from galaxy.web import expose_api
-from galaxy.webapps.base.controller import (
-    BaseAPIController
-)
-from galaxy.workflow.trs_proxy import parse_search_kwds
+from galaxy.workflow.trs_proxy import parse_search_kwds, TrsProxy
+from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
 
 
-class TrsSearchAPIController(BaseAPIController):
+class TrsSearchAPIController(BaseGalaxyAPIController):
     """Controller for TRS searching.
 
     Not trying to emulate the actual underlying GA4GH API interface so throwing
     the search functionality into a different controller than the trs_consumer.
     """
-
-    def __init__(self, app):
-        self._trs_proxy = app.trs_proxy
+    _trs_proxy: TrsProxy = depends(TrsProxy)
 
     @expose_api
     def index(self, trans, trs_server=None, query=None, **kwd):

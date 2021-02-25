@@ -52,6 +52,7 @@ Members
 - Nate Coraor (@natefoo)
 - Jeremy Goecks (@jgoecks)
 - Sergey Golitsynskiy (@ic4f)
+- Nuwan Goonasekera (@nuwang)
 - Björn Grüning (@bgruening)
 - Aysam Guerler (@guerler)
 - Jennifer Hillman Jackson (@jennaj)

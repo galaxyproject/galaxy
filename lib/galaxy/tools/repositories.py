@@ -40,6 +40,7 @@ class ValidationContext:
         # not appear to be an issue with the len_file_path config option.
         self.config.builds_file_path = None
         self.genome_builds = GenomeBuilds(self)
+        self.job_search = None
 
     def __enter__(self):
         return self

@@ -1015,7 +1015,7 @@ def roundify(amount, sfs=2):
         return amount[0:sfs] + '0' * (len(amount) - sfs)
 
 
-def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', strip_null=False):
+def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', strip_null=False, log_exception=True):
     """
     Returns a Unicode string or None.
 
@@ -1041,8 +1041,9 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', strip_null=Fals
         if not isinstance(value, str):
             value = str(value, encoding, error)
     except Exception as e:
-        msg = "Value '{}' could not be coerced to Unicode: {}('{}')".format(repr(value), type(e).__name__, e)
-        log.exception(msg)
+        if log_exception:
+            msg = "Value '{}' could not be coerced to Unicode: {}('{}')".format(repr(value), type(e).__name__, e)
+            log.exception(msg)
         raise
     if strip_null:
         return value.replace('\0', '')
@@ -1084,19 +1085,6 @@ def smart_str(s, encoding=DEFAULT_ENCODING, strings_only=False, errors='strict')
 def strip_control_characters(s):
     """Strip unicode control characters from a string."""
     return "".join(c for c in unicodify(s) if unicodedata.category(c) != "Cc")
-
-
-def strip_control_characters_nested(item):
-    """Recursively strips control characters from lists, dicts, tuples."""
-
-    def visit(path, key, value):
-        if isinstance(key, str):
-            key = strip_control_characters(key)
-        if isinstance(value, str):
-            value = strip_control_characters(value)
-        return key, value
-
-    return remap(item, visit)
 
 
 def object_to_string(obj):

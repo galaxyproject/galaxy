@@ -1,5 +1,4 @@
 import logging
-from collections import OrderedDict
 
 from sqlalchemy.orm import joinedload, Query
 
@@ -9,20 +8,21 @@ from galaxy.exceptions import (
     MessageException,
     RequestParameterInvalidException
 )
-from galaxy.managers import (
-    hdas,
-    histories,
-    lddas,
-)
 from galaxy.managers.collections_util import validate_input_element_identifiers
-from galaxy.model import tags
 from galaxy.model.dataset_collections import builder
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.dataset_collections.registry import DATASET_COLLECTION_TYPES_REGISTRY
 from galaxy.model.dataset_collections.type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
+from galaxy.model.mapping import GalaxyModelMapping
+from galaxy.model.tags import GalaxyTagHandler
+from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import (
     validation
 )
+from .hdas import HDAManager
+from .histories import HistoryManager
+from .lddas import LDDAManager
+
 
 log = logging.getLogger(__name__)
 
@@ -37,16 +37,24 @@ class DatasetCollectionManager:
     """
     ELEMENTS_UNINITIALIZED = object()
 
-    def __init__(self, app):
+    def __init__(
+        self,
+        model: GalaxyModelMapping,
+        security: IdEncodingHelper,
+        hda_manager: HDAManager,
+        history_manager: HistoryManager,
+        tag_handler: GalaxyTagHandler,
+        ldda_manager: LDDAManager,
+    ):
         self.type_registry = DATASET_COLLECTION_TYPES_REGISTRY
         self.collection_type_descriptions = COLLECTION_TYPE_DESCRIPTION_FACTORY
-        self.model = app.model
-        self.security = app.security
+        self.model = model
+        self.security = security
 
-        self.hda_manager = hdas.HDAManager(app)
-        self.history_manager = histories.HistoryManager(app)
-        self.tag_handler = tags.GalaxyTagHandler(app.model.context)
-        self.ldda_manager = lddas.LDDAManager(app)
+        self.hda_manager = hda_manager
+        self.history_manager = history_manager
+        self.tag_handler = tag_handler
+        self.ldda_manager = ldda_manager
 
     def precreate_dataset_collection_instance(self, trans, parent, name, structure, implicit_inputs=None, implicit_output_name=None, tags=None, completed_collection=None):
         # TODO: prebuild all required HIDs and send them in so no need to flush in between.
@@ -137,7 +145,7 @@ class DatasetCollectionManager:
 
     def _create_instance_for_collection(self, trans, parent, name, dataset_collection, implicit_output_name=None, implicit_inputs=None, tags=None, set_hid=True, flush=True):
         if isinstance(parent, model.History):
-            dataset_collection_instance = self.model.HistoryDatasetCollectionAssociation(
+            dataset_collection_instance = model.HistoryDatasetCollectionAssociation(
                 collection=dataset_collection,
                 name=name,
             )
@@ -154,7 +162,7 @@ class DatasetCollectionManager:
                 parent.add_dataset_collection(dataset_collection_instance)
 
         elif isinstance(parent, model.LibraryFolder):
-            dataset_collection_instance = self.model.LibraryDatasetCollectionAssociation(
+            dataset_collection_instance = model.LibraryDatasetCollectionAssociation(
                 collection=dataset_collection,
                 folder=parent,
                 name=name,
@@ -378,7 +386,7 @@ class DatasetCollectionManager:
         if elements is self.ELEMENTS_UNINITIALIZED:
             return
 
-        new_elements = OrderedDict()
+        new_elements = {}
         for key, element in elements.items():
             if isinstance(element, model.DatasetCollection):
                 continue
@@ -387,7 +395,7 @@ class DatasetCollectionManager:
                 continue
 
             # element is a dict with src new_collection and
-            # and OrderedDict of named elements
+            # and dict of named elements
             collection_type = element.get("collection_type")
             sub_elements = element["elements"]
             collection = self.create_dataset_collection(
@@ -402,7 +410,7 @@ class DatasetCollectionManager:
         elements.update(new_elements)
 
     def __load_elements(self, trans, element_identifiers, hide_source_items=False, copy_elements=False, history=None):
-        elements = OrderedDict()
+        elements = {}
         for element_identifier in element_identifiers:
             elements[element_identifier["name"]] = self.__load_element(trans,
                                                                        element_identifier=element_identifier,
@@ -500,7 +508,7 @@ class DatasetCollectionManager:
     def _build_elements_from_rule_data(self, collection_type_description, rule_set, data, sources, handle_dataset):
         identifier_columns = rule_set.identifier_columns
         mapping_as_dict = rule_set.mapping_as_dict
-        elements = OrderedDict()
+        elements = {}
         for data_index, row_data in enumerate(data):
             # For each row, find place in depth for this element.
             collection_type_at_depth = collection_type_description
@@ -546,7 +554,7 @@ class DatasetCollectionManager:
                         sub_collection = {}
                         sub_collection["src"] = "new_collection"
                         sub_collection["collection_type"] = collection_type_at_depth.collection_type
-                        sub_collection["elements"] = OrderedDict()
+                        sub_collection["elements"] = {}
                         elements_at_depth[identifier] = sub_collection
                         elements_at_depth = sub_collection["elements"]
 

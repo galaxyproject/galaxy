@@ -17,3 +17,4 @@ sortedcontainers
 Markdown
 refgenconf
 Fabric3
+lagom

@@ -1930,6 +1930,14 @@ mapping:
           Instead of sending prefix + dot-separated-path, Galaxy will send
           prefix with a tag path set to the page url
 
+      statsd_mock_calls:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Mock out statsd client calls - only used by testing infrastructure really.
+          Do not set this in production environments.
+
       library_import_dir:
         type: str
         required: false
@@ -2817,7 +2825,7 @@ mapping:
         required: false
         default: directory
         desc: |
-          Determines how metadata will be set. Valid values are `directory`, `extended` and `legacy`.
+          Determines how metadata will be set. Valid values are `directory` and `extended`.
           In extended mode jobs will decide if a tool run failed, the object stores
           configuration is serialized and made available to the job and is used for
           writing output datasets to the object store as part of the job and dynamic

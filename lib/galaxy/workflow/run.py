@@ -1,6 +1,5 @@
 import logging
 import uuid
-from collections import OrderedDict
 
 from galaxy import model
 from galaxy.util import ExecutionTimer
@@ -274,7 +273,7 @@ STEP_OUTPUT_DELAYED = object()
 class WorkflowProgress:
 
     def __init__(self, workflow_invocation, inputs_by_step_id, module_injector, param_map, jobs_per_scheduling_iteration=-1):
-        self.outputs = OrderedDict()
+        self.outputs = {}
         self.module_injector = module_injector
         self.workflow_invocation = workflow_invocation
         self.inputs_by_step_id = inputs_by_step_id
