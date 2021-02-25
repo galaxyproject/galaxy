@@ -1,6 +1,6 @@
 <tool id="interactive_ml_tool_jupyter_notebook" tool_type="interactive" name="Interactive Jupyter Notebook for Machine learning" version="0.1">
     <requirements>
-        <container type="docker">docker.io/anupkumar/sample-docker-ml-jupyter:latest</container>
+        <container type="docker">docker.io/anupkumar/docker-ml-jupyterlab:galaxy-integration</container>
     </requirements>
     <entry_points>
         <entry_point name="Jupyter Interactive Tool" requires_domain="True">
@@ -18,7 +18,6 @@
     </environment_variables>
     <command detect_errors="aggressive"><![CDATA[
 	#import re
-	echo "Inside tool definition....================" &&
         export GALAXY_WORKING_DIR=`pwd` &&
         mkdir -p ./jupyter/outputs/ &&
         mkdir -p ./jupyter/data &&
@@ -29,21 +28,21 @@
         ## change into the directory where the notebooks are located
 	cd ./jupyter/ &&
 	chown -R \$NB_USER:users `pwd` &&
-	##export PATH=/usr/local/bin:\$PATH &&
 	#if $mode.mode_select == 'scratch':
-	    cp '$__tool_directory__/default_notebook_ml.ipynb' ./ipython_galaxy_notebook_ml.ipynb &&
-            jupyter trust ./ipython_galaxy_notebook_ml.ipynb &&
+	    cp '$__tool_directory__/default_tensorflow_notebook.ipynb' ./default_tensorflow_notebook.ipynb &&
+            chown \$NB_USER ./default_tensorflow_notebook.ipynb &&
+            jupyter trust ./default_tensorflow_notebook.ipynb &&
 	    /usr/local/bin/start-notebook.sh
-	#else:
-	    #set $cleaned_name = re.sub('[^\w\-\.]', '_', str($input.element_identifier))
-            cp '$mode.ipynb' ./${cleaned_name}.ipynb &&
-            jupyter trust ./${cleaned_name}.ipynb &&
-            #if $mode.run_it:
-                jupyter nbconvert --to notebook --execute --output ./ipython_galaxy_notebook_ml.ipynb --allow-errors  ./*.ipynb &&
-            #else:
-                jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True &&
-            #end if
-            cp ./ipython_galaxy_notebook_ml.ipynb '$jupyter_notebook'
+	##else:
+	    ##set $cleaned_name = re.sub('[^\w\-\.]', '_', str($input.element_identifier))
+            ##cp '$mode.ipynb' ./${cleaned_name}.ipynb &&
+            ##jupyter trust ./${cleaned_name}.ipynb &&
+            ##if $mode.run_it:
+                ##jupyter nbconvert --to notebook --execute --output ./default_tensorflow_notebook.ipynb --allow-errors  ./*.ipynb &&
+            ##else:
+                ##jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True &&
+            ###end if
+            ##cp ./default_tensorflow_notebook.ipynb '$jupyter_notebook'
 	#end if
 	
 	##if $mode.mode_select == 'scratch':
