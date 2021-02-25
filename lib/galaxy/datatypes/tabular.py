@@ -1305,7 +1305,7 @@ class CMAP(TabularData):
     MetadataElement(name="label_channels", default=1, desc="the number of label channels", readonly=True, visible=True, optional=False, no_value=1)
     MetadataElement(name="nickase_recognition_site_1", default=[], desc="comma separated list of label motif recognition sequences for channel 1", readonly=True, visible=True, optional=False, no_value=[])
     MetadataElement(name="number_of_consensus_nanomaps", default=0, desc="the total number of consensus genome maps in the CMAP file", readonly=True, visible=True, optional=False, no_value=0)
-    MetadataElement(name="nickase_recognition_site_2", default=[], desc="comma separated list of label motif recognition sequences for channel 2 ", readonly=True, visible=True, optional=True, no_value=[])
+    MetadataElement(name="nickase_recognition_site_2", default=[], desc="comma separated list of label motif recognition sequences for channel 2", readonly=True, visible=True, optional=True, no_value=[])
     MetadataElement(name="channel_1_color", default=[], desc="channel 1 color", readonly=True, visible=True, optional=True, no_value=[])
     MetadataElement(name="channel_2_color", default=[], desc="channel 2 color", readonly=True, visible=True, optional=True, no_value=[])
     """
@@ -1371,8 +1371,8 @@ class CMAP(TabularData):
                         number_of_columns = int(len(l.split('\t')))
                 if not (self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize):
                     dataset.metadata.data_lines = i + 1 - comment_lines
-            dataset.metadata.comment_lines = int(comment_lines)
+            dataset.metadata.comment_lines = comment_lines
             dataset.metadata.column_names = column_headers
             dataset.metadata.column_types = cleaned_column_types
-            dataset.metadata.columns = int(number_of_columns)
+            dataset.metadata.columns = number_of_columns
             dataset.metadata.delimiter = '\t'

@@ -1011,11 +1011,11 @@
     <sniffer type="galaxy.datatypes.genetics:AllegroLOD"/>
     <sniffer type="galaxy.datatypes.sequence:RNADotPlotMatrix"/>
     <sniffer type="galaxy.datatypes.sequence:DotBracket"/>
+    <sniffer type="galaxy.datatypes.tabular:CMAP"/>
     <sniffer type="galaxy.datatypes.tabular:ConnectivityTable"/>
     <sniffer type="galaxy.datatypes.tabular:CSV"/>
     <sniffer type="galaxy.datatypes.tabular:TSV"/>
     <sniffer type="galaxy.datatypes.tabular:MatrixMarket"/>
-    <sniffer type="galaxy.datatypes.tabular:CMAP"/>
     <sniffer type="galaxy.datatypes.msa:Hmmer2"/>
     <sniffer type="galaxy.datatypes.msa:Hmmer3"/>
     <sniffer type="galaxy.datatypes.msa:Stockholm_1_0"/>
