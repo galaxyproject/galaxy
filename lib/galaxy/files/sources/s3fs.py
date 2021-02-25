@@ -29,9 +29,6 @@ class S3FsFilesSource(BaseFilesSource):
             res = []
             bucket_path = self._bucket_path(path)
             for p, dirs, files in fs.walk(bucket_path, detail=True):
-                # print(p)
-                # print(dirs)
-                # bucket_path = bucket_path + "/" + p
                 to_dict = functools.partial(self._resource_info_to_dict, p)
                 res.extend(map(to_dict, dirs.values()))
                 res.extend(map(to_dict, files.values()))
