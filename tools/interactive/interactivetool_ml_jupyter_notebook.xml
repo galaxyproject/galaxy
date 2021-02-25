@@ -27,13 +27,24 @@
         ln -sf '$input' './jupyter/data/${cleaned_name}' &&
 
         ## change into the directory where the notebooks are located
-        cd ./jupyter/ &&
-	##export PATH=/usr/local/bin:\$PATH &&
-	cp '$__tool_directory__/default_notebook_ml.ipynb' ./ipython_galaxy_notebook_ml.ipynb &&
+	cd ./jupyter/ &&
 	chown -R \$NB_USER:users `pwd` &&
-	##chown \$NB_USER ./ipython_galaxy_notebook_ml.ipynb &&
-        jupyter trust ./ipython_galaxy_notebook_ml.ipynb &&
-	/usr/local/bin/start-notebook.sh 
+	##export PATH=/usr/local/bin:\$PATH &&
+	#if $mode.mode_select == 'scratch':
+	    cp '$__tool_directory__/default_notebook_ml.ipynb' ./ipython_galaxy_notebook_ml.ipynb &&
+            jupyter trust ./ipython_galaxy_notebook_ml.ipynb &&
+	    /usr/local/bin/start-notebook.sh
+	#else:
+	    #set $cleaned_name = re.sub('[^\w\-\.]', '_', str($input.element_identifier))
+            cp '$mode.ipynb' ./${cleaned_name}.ipynb &&
+            jupyter trust ./${cleaned_name}.ipynb &&
+            #if $mode.run_it:
+                jupyter nbconvert --to notebook --execute --output ./ipython_galaxy_notebook_ml.ipynb --allow-errors  ./*.ipynb &&
+            #else:
+                jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True &&
+            #end if
+            cp ./ipython_galaxy_notebook_ml.ipynb '$jupyter_notebook'
+	#end if
 	
 	##if $mode.mode_select == 'scratch':
             ## copy default notebook
