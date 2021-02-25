@@ -195,6 +195,13 @@ export default FormBase.extend({
                 );
             },
         });
+        menu_button.addMenu({
+            icon: "fa-files-o",
+            title: _l("Copy tool ID"),
+            onclick: function () {
+                copy(`${options.id}`, "Tool ID was copied to your clipboard");
+            },
+        });
 
         // add admin operations
         if (Galaxy.user && Galaxy.user.get("is_admin")) {
