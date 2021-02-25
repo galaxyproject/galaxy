@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div class="description-field">
+        <div class="text-field">
             <!-- edit mode -->
             <div v-if="isEditMode">
                 <textarea class="form-control" v-model="textField" rows="3" />
@@ -60,7 +60,7 @@ export default {
     },
     methods: {
         toggleDescriptionExpand() {
-            this.$emit("toggleDescriptionExpand")
+            this.$emit("toggleDescriptionExpand");
         },
         linkify(raw_text) {
             return linkify(raw_text);
@@ -68,3 +68,8 @@ export default {
     },
 };
 </script>
+<style scoped>
+.text-field {
+    min-width: 20rem;
+}
+</style>

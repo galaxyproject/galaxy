@@ -45,6 +45,16 @@
             </template>
             <template v-slot:cell(buttons)="row">
                 <b-button
+                    v-if="row.item.can_user_modify && row.item.editMode"
+                    size="sm"
+                    class="lib-btn permission_folder_btn"
+                    :title="'Permissions of ' + row.item.name"
+                    @click="saveChanges(row.item)"
+                >
+                    <font-awesome-icon :icon="['far', 'save']" />
+                    Save
+                </b-button>
+                <b-button
                     v-if="row.item.can_user_modify"
                     size="sm"
                     class="lib-btn edit-btn"
@@ -71,14 +81,14 @@
                     Manage
                 </b-button>
                 <b-button
-                    v-if="row.item.can_user_modify && row.item.editMode"
+                    v-if="row.item.editMode"
                     size="sm"
-                    class="lib-btn permission_folder_btn"
-                    :title="'Permissions of ' + row.item.name"
-                    @click="saveChanges(row.item)"
+                    class="lib-btn delete-lib-btn"
+                    :title="`Delete ${row.item.name}`"
+                    @click="deleteLibrary(row.item)"
                 >
-                    <font-awesome-icon :icon="['far', 'save']" />
-                    Save
+                    <font-awesome-icon icon="trash" />
+                    Delete
                 </b-button>
             </template>
         </b-table>
@@ -125,7 +135,7 @@ import { Services } from "./services";
 import { fields } from "./table-fields";
 import { Toast } from "ui/toast";
 import { initLibariesIcons } from "components/Libraries/icons";
-import { MAX_DESCRIPTION_LENGTH, DEFAULT_PER_PAGE } from "components/Libraries/library-utils";
+import { MAX_DESCRIPTION_LENGTH, DEFAULT_PER_PAGE, onError } from "components/Libraries/library-utils";
 import LibraryEditField from "components/Libraries/LibraryEditField";
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -176,15 +186,23 @@ export default {
                 () => {
                     Toast.success("Changes to library saved");
                 },
-                (error) => {
-                    if (typeof error.responseJSON !== "undefined") {
-                        Toast.error(error.responseJSON.err_msg);
-                    } else {
-                        Toast.error("An error occurred while attempting to update the library.");
-                    }
-                }
+                (error) => onError(error)
             );
             this.toggleEditMode(item);
+        },
+        deleteLibrary(deletedLib) {
+            this.services.deleteLibrary(
+                deletedLib,
+                () => {
+                    Toast.success("Library has been marked deleted.");
+                    this.librariesList = this.librariesList.filter((lib) => {
+                        if (lib.id !== deletedLib.id) {
+                            return lib;
+                        }
+                    });
+                },
+                (error) => onError(error)
+            );
         },
     },
 };

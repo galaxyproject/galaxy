@@ -8,7 +8,7 @@ export class Services {
     }
 
     async getLibraries(id, include_deleted = false) {
-        const url = `http://localhost:8080/api/libraries?${include_deleted}=false`;
+        const url = `http://localhost:8080/api/libraries?deleted=${include_deleted}`;
         try {
             const response = await axios.get(url);
             return response.data;
@@ -21,6 +21,22 @@ export class Services {
         try {
             const response = axios
                 .patch(url, lib)
+                .then((response) => {
+                    onSucess(response.data);
+                })
+                .catch((error) => {
+                    onError(error);
+                });
+            return response.data;
+        } catch (e) {
+            rethrowSimple(e);
+        }
+    }
+    async deleteLibrary(lib, onSucess, onError) {
+        const url = `http://localhost:8080/api/libraries/${lib.id}`;
+        try {
+            const response = axios
+                .delete(url, lib)
                 .then((response) => {
                     onSucess(response.data);
                 })
