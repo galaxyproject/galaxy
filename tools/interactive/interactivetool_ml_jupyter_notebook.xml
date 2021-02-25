@@ -40,7 +40,8 @@
 
         <conditional name="mode">
             <param name="mode_select" type="select" label="Do you already have a notebook?" help="If not, no problem we will provide you with a default one.">
-                <option value="scratch">Start with a fresh notebook</option>
+		<option value="scratch">Start with a fresh notebook</option>
+	        <option value="previous">Load a previous notebook</option>
             </param>
             <when value="scratch"/>
             <when value="previous">
