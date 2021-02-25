@@ -34,7 +34,7 @@ from galaxy.web import (
     require_admin,
     url_for
 )
-from galaxy.webapps.base.controller import BaseAPIController
+from . import BaseGalaxyAPIController
 
 
 log = logging.getLogger(__name__)
@@ -50,7 +50,7 @@ def get_message_for_no_shed_tool_config():
     return message
 
 
-class ToolShedRepositoriesController(BaseAPIController):
+class ToolShedRepositoriesController(BaseGalaxyAPIController):
     """RESTful controller for interactions with tool shed repositories."""
 
     def __ensure_can_install_repos(self, trans):

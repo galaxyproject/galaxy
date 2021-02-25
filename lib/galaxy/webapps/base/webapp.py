@@ -77,6 +77,7 @@ class WebApplication(base.WebApplication):
         * builds mako template lookups.
         * generates GalaxyWebTransactions.
     """
+    injection_aware: bool = False
 
     def __init__(self, galaxy_app, session_cookie='galaxysession', name=None):
         self.name = name
@@ -152,7 +153,17 @@ class WebApplication(base.WebApplication):
         """ Extension point, allow apps to construct controllers differently,
         really just used to stub out actual controllers for routes testing.
         """
-        return T(app)
+        controller = None
+        if self.injection_aware:
+            controller = app.resolve_or_none(T)
+            if controller is not None:
+                for key, value in T.__dict__.items():
+                    if hasattr(value, "galaxy_type_depends"):
+                        value_type = value.galaxy_type_depends
+                        setattr(controller, key, app[value_type])
+        if controller is None:
+            controller = T(app)
+        return controller
 
 
 def config_allows_origin(origin_raw, config):
@@ -187,8 +198,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
     def __init__(self, environ: Dict[str, Any], app, webapp, session_cookie=None) -> None:
         self._app = app
         self.webapp = webapp
-        self.user_manager = UserManager(app)
-        self.session_manager = GalaxySessionManager(app.model)
+        self.user_manager = app[UserManager]
+        self.session_manager = app[GalaxySessionManager]
         base.DefaultWebTransaction.__init__(self, environ)
         self.setup_i18n()
         self.expunge_all()

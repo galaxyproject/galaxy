@@ -9,6 +9,7 @@ from sqlalchemy.sql.expression import null
 from galaxy.exceptions import HandlerAssignmentError, ToolExecutionError
 from galaxy.jobs import handler, NoopQueue
 from galaxy.model import Job
+from galaxy.structured_app import StructuredApp
 from galaxy.web_stack.message import JobHandlerMessage
 
 log = logging.getLogger(__name__)
@@ -18,7 +19,9 @@ class JobManager:
     """
     Highest level interface to job management.
     """
-    def __init__(self, app):
+    job_handler: handler.JobHandlerI
+
+    def __init__(self, app: StructuredApp):
         self.app = app
         self.job_lock = False
         if self.app.is_job_handler:
@@ -110,7 +113,7 @@ class NoopManager:
         pass
 
 
-class NoopHandler:
+class NoopHandler(handler.JobHandlerI):
     """
     Implements the JobHandler interface but does nothing
     """

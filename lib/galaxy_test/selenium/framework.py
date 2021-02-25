@@ -370,6 +370,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin):
         )
         with self.main_panel():
             self.assert_no_error_message()
+        return GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL
 
     def workflow_upload_yaml_with_random_name(self, content, **kwds):
         workflow_populator = self.workflow_populator

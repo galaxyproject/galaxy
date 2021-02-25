@@ -7,12 +7,12 @@ import re
 
 from galaxy import exceptions
 from galaxy.web import legacy_expose_api_anonymous
-from galaxy.webapps.base.controller import BaseAPIController
+from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
 
 
-class UploadsAPIController(BaseAPIController):
+class UploadsAPIController(BaseGalaxyAPIController):
 
     READ_CHUNK_SIZE = 2 ** 16
 

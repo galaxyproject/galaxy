@@ -1,5 +1,4 @@
 """Galaxy Quotas"""
-import abc
 import logging
 
 import galaxy.util
@@ -7,7 +6,7 @@ import galaxy.util
 log = logging.getLogger(__name__)
 
 
-class QuotaAgent(metaclass=abc.ABCMeta):
+class QuotaAgent():  # metaclass=abc.ABCMeta
     """Abstraction around querying Galaxy for quota available and used.
 
     Certain parts of the app that deal directly with modifying the quota assume more than
@@ -21,7 +20,7 @@ class QuotaAgent(metaclass=abc.ABCMeta):
     the quota in other apps (LDAP maybe?) or via configuration files.
     """
 
-    @abc.abstractmethod
+    # TODO: make abstractmethod after they work better with mypy
     def get_quota(self, user):
         """Return quota in bytes or None if no quota is set."""
 
@@ -34,7 +33,7 @@ class QuotaAgent(metaclass=abc.ABCMeta):
             quota_str = 'unlimited'
         return quota_str
 
-    @abc.abstractmethod
+    # TODO: make abstractmethod after they work better with mypy
     def get_percent(self, trans=None, user=False, history=False, usage=False, quota=False):
         """Return the percentage of any storage quota applicable to the user/transaction."""
 
@@ -228,7 +227,8 @@ class DatabaseQuotaAgent(QuotaAgent):
         return False
 
 
-def get_quota_agent(config, model):
+def get_quota_agent(config, model) -> QuotaAgent:
+    quota_agent: QuotaAgent
     if config.enable_quotas:
         quota_agent = galaxy.quota.DatabaseQuotaAgent(model)
     else:
