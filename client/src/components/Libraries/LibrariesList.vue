@@ -167,7 +167,6 @@ export default {
         this.root = getAppRoot();
         this.services = new Services({ root: this.root });
         this.services.getLibraries().then((result) => (this.librariesList = result));
-        console.log("this.librariesList", this.librariesList);
     },
     methods: {
         toggleEditMode(item) {
