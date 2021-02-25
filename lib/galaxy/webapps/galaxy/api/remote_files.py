@@ -4,7 +4,6 @@ API operations on remote files.
 import logging
 from typing import Any, Dict, List, Optional
 
-from fastapi import Depends
 from fastapi.param_functions import Query
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter as APIRouter
@@ -17,12 +16,11 @@ from galaxy.files._schema import (
 )
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.remote_files import RemoteFilesManager
-from galaxy.structured_app import StructuredApp
 from galaxy.web import expose_api
-from galaxy.webapps.base.controller import BaseAPIController
 from . import (
-    get_app,
-    get_trans,
+    BaseGalaxyAPIController,
+    depends,
+    DependsOnTrans,
 )
 
 log = logging.getLogger(__name__)
@@ -67,13 +65,9 @@ DisableModeQueryParam: Optional[RemoteFilesDisableMode] = Query(
 )
 
 
-def get_remote_files_manager(app: StructuredApp = Depends(get_app)) -> RemoteFilesManager:
-    return RemoteFilesManager(app)  # TODO: remove/refactor after merging #11180
-
-
 @cbv(router)
 class FastAPIRemoteFiles:
-    manager: RemoteFilesManager = Depends(get_remote_files_manager)
+    manager: RemoteFilesManager = depends(RemoteFilesManager)
 
     @router.get(
         '/api/remote_files',
@@ -82,7 +76,7 @@ class FastAPIRemoteFiles:
     )
     async def index(
         self,
-        user_ctx: ProvidesUserContext = Depends(get_trans),
+        user_ctx: ProvidesUserContext = DependsOnTrans,
         target: str = TargetQueryParam,
         format: Optional[RemoteFilesFormat] = FormatQueryParam,
         recursive: Optional[bool] = RecursiveQueryParam,
@@ -98,17 +92,14 @@ class FastAPIRemoteFiles:
     )
     async def plugins(
         self,
-        user_ctx: ProvidesUserContext = Depends(get_trans),
+        user_ctx: ProvidesUserContext = DependsOnTrans,
     ) -> FilesSourcePluginList:
         """Display plugin information for each of the gxfiles:// URI targets available."""
         return self.manager.get_files_source_plugins()
 
 
-class RemoteFilesAPIController(BaseAPIController):
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.manager = RemoteFilesManager(app)
+class RemoteFilesAPIController(BaseGalaxyAPIController):
+    manager: RemoteFilesManager = depends(RemoteFilesManager)
 
     @expose_api
     def index(self, trans: ProvidesUserContext, **kwd):

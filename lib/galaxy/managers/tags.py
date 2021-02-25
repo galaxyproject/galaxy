@@ -62,6 +62,7 @@ class TagsManager:
         """
         tag_handler = GalaxyTagHandlerSession(trans.sa_session)
         id = trans.security.decode_id(payload.item_id)
-        item_class = tag_handler.item_tag_assoc_info[payload.item_class].item_class
+        item_class_name = str(payload.item_class)
+        item_class = tag_handler.item_tag_assoc_info[item_class_name].item_class
         item = trans.sa_session.query(item_class).filter(item_class.id == id).first()
         return item

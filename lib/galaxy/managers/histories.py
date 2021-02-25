@@ -21,6 +21,7 @@ from galaxy.managers import (
     history_contents,
     sharable
 )
+from galaxy.structured_app import StructuredApp
 
 log = logging.getLogger(__name__)
 
@@ -37,11 +38,11 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
 
     # TODO: incorporate imp/exp (or alias to)
 
-    def __init__(self, app, *args, **kwargs):
-        super().__init__(app, *args, **kwargs)
-        self.hda_manager = hdas.HDAManager(app)
-        self.contents_manager = history_contents.HistoryContentsManager(app)
-        self.contents_filters = history_contents.HistoryContentsFilters(app)
+    def __init__(self, app: StructuredApp, hda_manager: hdas.HDAManager, contents_manager: history_contents.HistoryContentsManager, contents_filters: history_contents.HistoryContentsFilters):
+        super().__init__(app)
+        self.hda_manager = hda_manager
+        self.contents_manager = contents_manager
+        self.contents_filters = contents_filters
 
     def copy(self, history, user, **kwargs):
         """
@@ -171,7 +172,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
 
 class HistoryExportView:
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         self.app = app
 
     def get_exports(self, trans, history_id):
@@ -223,13 +224,13 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
     model_manager_class = HistoryManager
     SINGLE_CHAR_ABBR = 'h'
 
-    def __init__(self, app, **kwargs):
-        super().__init__(app, **kwargs)
+    def __init__(self, app: StructuredApp, hda_manager: hdas.HDAManager, hda_serializer: hdas.HDASerializer, history_contents_serializer: history_contents.HistoryContentsSerializer):
+        super().__init__(app)
 
         self.history_manager = self.manager
-        self.hda_manager = hdas.HDAManager(app)
-        self.hda_serializer = hdas.HDASerializer(app)
-        self.history_contents_serializer = history_contents.HistoryContentsSerializer(app)
+        self.hda_manager = hda_manager
+        self.hda_serializer = hda_serializer
+        self.history_contents_serializer = history_contents_serializer
 
         self.default_view = 'summary'
         self.add_view('summary', [
@@ -442,7 +443,7 @@ class HistoryDeserializer(sharable.SharableModelDeserializer, deletable.Purgable
     """
     model_manager_class = HistoryManager
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
         self.history_manager = self.manager
 

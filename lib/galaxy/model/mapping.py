@@ -5,7 +5,7 @@ are encapsulated here.
 
 import logging
 from threading import local
-from typing import Optional
+from typing import Optional, Type
 
 from sqlalchemy import (
     and_,
@@ -39,7 +39,7 @@ from sqlalchemy.sql import exists
 from sqlalchemy.types import BigInteger
 
 from galaxy import model
-from galaxy.model.base import ModelMapping
+from galaxy.model.base import SharedModelMapping
 from galaxy.model.custom_types import (
     JSONType,
     MetadataType,
@@ -2872,10 +2872,12 @@ def _workflow_invocation_update(self):
 model.WorkflowInvocation.update = _workflow_invocation_update  # type: ignore
 
 
-class GalaxyModelMapping(ModelMapping):
+class GalaxyModelMapping(SharedModelMapping):
     security_agent: GalaxyRBACAgent
     thread_local_log: Optional[local]
     create_tables: bool
+    User: Type
+    GalaxySession: Type
 
 
 def init(file_path, url, engine_options=None, create_tables=False, map_install_models=False,

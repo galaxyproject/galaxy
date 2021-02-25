@@ -11,23 +11,19 @@ from galaxy.managers.collections_util import (
     dictify_element_reference
 )
 from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.managers.histories import HistoryManager
 from galaxy.web import expose_api
-from galaxy.webapps.base.controller import (
-    BaseAPIController,
-    UsesLibraryMixinItems
-)
+from galaxy.webapps.base.controller import UsesLibraryMixinItems
+from . import BaseGalaxyAPIController, depends
 
 log = getLogger(__name__)
 
 
 class DatasetCollectionsController(
-    BaseAPIController,
+    BaseGalaxyAPIController,
     UsesLibraryMixinItems,
 ):
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.history_manager = app.history_manager
+    history_manager: HistoryManager = depends(HistoryManager)
 
     @expose_api
     def index(self, trans, **kwd):

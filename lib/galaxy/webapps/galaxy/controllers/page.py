@@ -25,6 +25,7 @@ from galaxy.managers.pages import (
 )
 from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model.item_attrs import UsesItemRatings
+from galaxy.structured_app import StructuredApp
 from galaxy.util import unicodify
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import (
@@ -41,6 +42,7 @@ from galaxy.webapps.base.controller import (
     UsesStoredWorkflowMixin,
     UsesVisualizationMixin
 )
+from ..api import depends
 
 
 def format_bool(b):
@@ -269,14 +271,14 @@ class PageController(BaseUIController, SharableMixin,
     _datasets_selection_grid = HistoryDatasetAssociationSelectionGrid()
     _page_selection_grid = PageSelectionGrid()
     _visualization_selection_grid = VisualizationSelectionGrid()
+    page_manager: PageManager = depends(PageManager)
+    history_manager: HistoryManager = depends(HistoryManager)
+    history_serializer: HistorySerializer = depends(HistorySerializer)
+    hda_manager: HDAManager = depends(HDAManager)
+    workflow_manager: WorkflowsManager = depends(WorkflowsManager)
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
-        self.page_manager = PageManager(app)
-        self.history_manager = HistoryManager(app)
-        self.history_serializer = HistorySerializer(self.app)
-        self.hda_manager = HDAManager(app)
-        self.workflow_manager = WorkflowsManager(app)
 
     @web.expose
     @web.json

@@ -85,6 +85,7 @@ jsonpatch==1.28; python_version >= "3.6" and python_full_version < "3.0.0" or py
 jsonpointer==2.0; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.6"
 keystoneauth1==4.3.0; python_version >= "3.6"
 kombu==5.0.2; python_version >= "3.6"
+lagom==1.0.0; python_version >= "3.6" and python_version < "4.0"
 lockfile==0.12.2; python_version >= "3.6" and python_version < "4"
 lxml==4.6.2; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.5.0")
 mako==1.1.4; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.4.0")

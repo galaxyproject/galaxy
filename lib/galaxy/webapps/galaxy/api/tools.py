@@ -5,6 +5,8 @@ from typing import Any, cast, Dict, Optional
 
 from galaxy import exceptions, util, web
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
+from galaxy.managers.hdas import HDAManager
+from galaxy.managers.histories import HistoryManager
 from galaxy.model import PostJobAction
 from galaxy.tools import global_tool_errors
 from galaxy.util.zipstream import ZipstreamWrapper
@@ -14,9 +16,9 @@ from galaxy.web import (
     expose_api_anonymous_and_sessionless,
     expose_api_raw_anonymous_and_sessionless,
 )
-from galaxy.webapps.base.controller import BaseAPIController
 from galaxy.webapps.base.controller import UsesVisualizationMixin
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
+from . import BaseGalaxyAPIController, depends
 from ._fetch_util import validate_and_normalize_targets
 
 log = logging.getLogger(__name__)
@@ -28,15 +30,12 @@ PROTECTED_TOOLS = ["__DATA_FETCH__"]
 SEARCH_RESERVED_TERMS_FAVORITES = ['#favs', '#favorites', '#favourites']
 
 
-class ToolsController(BaseAPIController, UsesVisualizationMixin):
+class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
     """
     RESTful controller for interactions with tools.
     """
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.history_manager = app.history_manager
-        self.hda_manager = app.hda_manager
+    history_manager: HistoryManager = depends(HistoryManager)
+    hda_manager: HDAManager = depends(HDAManager)
 
     @expose_api_anonymous_and_sessionless
     def index(self, trans: GalaxyWebTransaction, **kwds):

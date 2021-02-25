@@ -18,6 +18,7 @@ from abc import (
     abstractmethod,
 )
 from json import loads
+from typing import Any, Dict, List
 
 import packaging.version
 import yaml
@@ -56,6 +57,7 @@ from galaxy.jobs.runners import BaseJobRunner, JobState
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model import store
 from galaxy.objectstore import ObjectStorePopulator
+from galaxy.structured_app import StructuredApp
 from galaxy.tool_util.deps import requirements
 from galaxy.tool_util.output_checker import (
     check_output,
@@ -277,6 +279,13 @@ class JobConfiguration(ConfiguresHandlers):
 
     These features are configured in the job configuration, by default, ``job_conf.xml``
     """
+    runner_plugins: List[dict]
+    handlers: dict
+    handler_runner_plugins: Dict[str, str]
+    tools: Dict[str, list]
+    resource_groups: Dict[str, list]
+    destinations: Dict[str, tuple]
+    resource_parameters: Dict[str, Any]
     DEFAULT_BASE_HANDLER_POOLS = ('job-handlers',)
 
     DEFAULT_NWORKERS = 4
@@ -292,7 +301,7 @@ class JobConfiguration(ConfiguresHandlers):
         <when value="yes"/>
     </conditional>"""
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         """Parse the job configuration XML.
         """
         self.app = app
@@ -306,7 +315,6 @@ class JobConfiguration(ConfiguresHandlers):
         self.handler_max_grab = None
         self.handler_ready_window_size = None
         self.destinations = {}
-        self.destination_tags = {}
         self.default_destination_id = None
         self.tools = {}
         self.resource_groups = {}

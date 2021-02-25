@@ -16,6 +16,7 @@ from galaxy.managers import (
     taggable
 )
 from galaxy.managers.collections_util import get_hda_and_element_identifiers
+from galaxy.structured_app import StructuredApp
 from galaxy.util.zipstream import ZipstreamWrapper
 
 
@@ -55,12 +56,6 @@ class HDCAManager(
     tag_assoc = model.HistoryDatasetCollectionTagAssociation
     annotation_assoc = model.HistoryDatasetCollectionAssociationAnnotationAssociation
 
-    def __init__(self, app):
-        """
-        Set up and initialize other managers needed by hdcas.
-        """
-        super().__init__(app)
-
     def map_datasets(self, content, fn, *parents):
         """
         Iterate over the datasets of a given collection, recursing into collections, and
@@ -92,7 +87,7 @@ class DCESerializer(base.ModelSerializer):
     Serializer for DatasetCollectionElements.
     """
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
         self.hda_serializer = hdas.HDASerializer(app)
         self.dc_serializer = DCSerializer(app, dce_serializer=self)
@@ -126,7 +121,7 @@ class DCSerializer(base.ModelSerializer):
     Serializer for DatasetCollections.
     """
 
-    def __init__(self, app, dce_serializer=None):
+    def __init__(self, app: StructuredApp, dce_serializer=None):
         super().__init__(app)
         self.dce_serializer = dce_serializer or DCESerializer(app)
 
@@ -165,7 +160,7 @@ class DCASerializer(base.ModelSerializer):
     Base (abstract) Serializer class for HDCAs and LDCAs.
     """
 
-    def __init__(self, app, dce_serializer=None):
+    def __init__(self, app: StructuredApp, dce_serializer=None):
         super().__init__(app)
         self.dce_serializer = dce_serializer or DCESerializer(app)
 
@@ -220,7 +215,7 @@ class HDCASerializer(
     Serializer for HistoryDatasetCollectionAssociations.
     """
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
         self.hdca_manager = HDCAManager(app)
 
