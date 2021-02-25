@@ -5,7 +5,14 @@
             <tbody>
                 <tr v-if="job && job.tool_id">
                     <td>Galaxy Tool ID:</td>
-                    <td id="galaxy-tool-id">{{ job.tool_id }}</td>
+                    <td id="galaxy-tool-id">
+                        {{ job.tool_id }}
+                        <font-awesome-icon
+                            title="Copy Tool ID"
+                            icon="copy"
+                            @click="copyToolId(job.tool_id)"
+                        ></font-awesome-icon>
+                    </td>
                 </tr>
                 <tr v-if="job && job.tool_version">
                     <td>Galaxy Tool Version:</td>
@@ -59,12 +66,19 @@ import { getAppRoot } from "onload/loadConfig";
 import DecodedId from "../DecodedId.vue";
 import CodeRow from "./CodeRow.vue";
 import UtcDate from "components/UtcDate";
+import { copy } from "utils/clipboard";
+import { faCopy } from "@fortawesome/free-regular-svg-icons";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+
+library.add(faCopy);
 
 export default {
     components: {
         CodeRow,
         DecodedId,
         UtcDate,
+        FontAwesomeIcon
     },
     props: {
         job_id: {
@@ -89,6 +103,9 @@ export default {
         ...mapCacheActions(["fetchJob"]),
         getAppRoot() {
             return getAppRoot();
+        },
+        copyToolId(id) {
+            return copy(id,  "Tool ID was copied to your clipboard");
         },
     },
 };
