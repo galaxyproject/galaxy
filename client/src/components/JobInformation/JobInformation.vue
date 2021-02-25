@@ -5,7 +5,14 @@
             <tbody>
                 <tr v-if="job && job.tool_id">
                     <td>Galaxy Tool ID:</td>
-                    <td id="galaxy-tool-id">{{ job.tool_id }}</td>
+                    <td id="galaxy-tool-id">
+                        {{ job.tool_id }}
+                        <copy-to-clipboard
+                            message="Tool ID was copied to your clipboard"
+                            :text="job.tool_id"
+                            title="Copy Tool ID"
+                        />
+                    </td>
                 </tr>
                 <tr v-if="job && job.tool_version">
                     <td>Galaxy Tool Version:</td>
@@ -59,12 +66,14 @@ import { getAppRoot } from "onload/loadConfig";
 import DecodedId from "../DecodedId.vue";
 import CodeRow from "./CodeRow.vue";
 import UtcDate from "components/UtcDate";
+import CopyToClipboard from "components/CopyToClipboard";
 
 export default {
     components: {
         CodeRow,
         DecodedId,
         UtcDate,
+        CopyToClipboard,
     },
     props: {
         job_id: {
