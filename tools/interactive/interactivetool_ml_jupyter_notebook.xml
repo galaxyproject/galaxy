@@ -41,7 +41,6 @@
         <conditional name="mode">
             <param name="mode_select" type="select" label="Do you already have a notebook?" help="If not, no problem we will provide you with a default one.">
                 <option value="scratch">Start with a fresh notebook</option>
-                <option value="previous">Load a previous notebook</option>
             </param>
             <when value="scratch"/>
             <when value="previous">
@@ -72,9 +71,8 @@
     Galaxy offers you to use Jupyter Lab directly in Galaxy accessing and interacting with Galaxy datasets as you like. A very common use-case is to
     do the heavy lifting such as performing computation on GPUs and data reduction steps in Galaxy and the plotting and more `interactive` part on smaller datasets in Jupyter Lab.
 
-    You can start with a new Jupyter notebook from scratch or load an already existing one, e.g. from your collegue and execute it on your dataset.
-    If you have a defined input dataset you can even execute a Jupyter notebook in a workflow, given that the notebook is writing the output back to the history.
+    You can start with a new Jupyter Lab notebook from scratch and wait until the job starts running. Running job will provide you a link which can be opened in the same or another 
+    browser tab. This link opens Jupyter Lab notebook which can be used to prototype machine learning solutions.
 
-    You can import data into the notebook via a predefined `get()` function and write results back to Galaxy with a `put()` function.
     </help>
 </tool>
