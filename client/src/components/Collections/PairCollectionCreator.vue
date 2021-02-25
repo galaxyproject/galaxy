@@ -82,7 +82,9 @@
                     @onUpdateHideSourceItems="onUpdateHideSourceItems"
                     @clicked-create="clickedCreate"
                     @remove-extensions-toggle="removeExtensionsToggle"
+                    :renderExtensionsToggle="true"
                     :creationFn="creationFn"
+                    :suggestedName="initialSuggestedName"
                 >
                     <template v-slot:help-content>
                         <p>
@@ -163,6 +165,11 @@ export default {
     mixins: [mixin],
     created() {
         this._elementsSetUp();
+        this.initialSuggestedName = this._guessNameForPair(
+            this.workingElements[0],
+            this.workingElements[1],
+            this.removeExtensions
+        );
     },
     data: function () {
         return {
@@ -178,6 +185,8 @@ export default {
             minElements: 2,
             workingElements: [],
             invalidElements: [],
+            removeExtensions: true,
+            initialSuggestedName: "",
         };
     },
     computed: {
@@ -263,6 +272,73 @@ export default {
         /** string rep */
         toString: function () {
             return "PairCollectionCreator";
+        },
+        removeExtensionsToggle: function () {
+            this.removeExtensions = !this.removeExtensions;
+            this.initialSuggestedName = this._guessNameForPair(
+                this.workingElements[0],
+                this.workingElements[1],
+                this.removeExtensions
+            );
+        },
+        _guessNameForPair: function (fwd, rev, removeExtensions) {
+            removeExtensions = removeExtensions ? removeExtensions : this.removeExtensions;
+            var fwdName = fwd.name;
+            var revName = rev.name;
+
+            var lcs = this._naiveStartingAndEndingLCS(fwdName, revName);
+
+            /** remove url prefix if files were uploaded by url */
+            var lastSlashIndex = lcs.lastIndexOf("/");
+            if (lastSlashIndex > 0) {
+                var urlprefix = lcs.slice(0, lastSlashIndex + 1);
+                lcs = lcs.replace(urlprefix, "");
+                fwdName = fwdName.replace(extension, "");
+                revName = revName.replace(extension, "");
+            }
+
+            if (removeExtensions) {
+                var lastDotIndex = lcs.lastIndexOf(".");
+                if (lastDotIndex > 0) {
+                    var extension = lcs.slice(lastDotIndex, lcs.length);
+                    lcs = lcs.replace(extension, "");
+                    fwdName = fwdName.replace(extension, "");
+                    revName = revName.replace(extension, "");
+                }
+            }
+            return lcs || `${fwdName} & ${revName}`;
+        },
+        /** return the concat'd longest common prefix and suffix from two strings */
+        _naiveStartingAndEndingLCS: function (s1, s2) {
+            var fwdLCS = "";
+            var revLCS = "";
+            var i = 0;
+            var j = 0;
+            while (i < s1.length && i < s2.length) {
+                if (s1[i] !== s2[i]) {
+                    break;
+                }
+                fwdLCS += s1[i];
+                i += 1;
+            }
+            if (i === s1.length) {
+                return s1;
+            }
+            if (i === s2.length) {
+                return s2;
+            }
+
+            i = s1.length - 1;
+            j = s2.length - 1;
+            while (i >= 0 && j >= 0) {
+                if (s1[i] !== s2[j]) {
+                    break;
+                }
+                revLCS = [s1[i], revLCS].join("");
+                i -= 1;
+                j -= 1;
+            }
+            return fwdLCS + revLCS;
         },
     },
 };

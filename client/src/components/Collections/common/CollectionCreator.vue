@@ -101,6 +101,11 @@ export default {
             type: Boolean,
             required: true,
         },
+        suggestedName: {
+            type: String,
+            required: false,
+            default: "",
+        },
     },
     computed: {
         validInput: function () {
@@ -115,7 +120,7 @@ export default {
             placeholderEnterName: _l("Enter a name for your new collection"),
             dropdownText: _l("Create a <i>single</> pair"),
             isExpanded: false,
-            collectionName: "",
+            collectionName: this.suggestedName,
             removeFileExtensionsText: "Remove file extensions?",
             localHideSourceItems: this.hideSourceItems,
         };
