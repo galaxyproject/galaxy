@@ -1,5 +1,5 @@
 <template>
-    <tr @click="expandCode">
+    <tr @click="toggleExpanded">
         <td>
             {{ codeLabel }}
         </td>
@@ -28,9 +28,9 @@ export default {
         return { expanded: false };
     },
     methods: {
-        expandCode() {
+        toggleExpanded() {
             if (this.codeItem) {
-                this.expanded = true;
+                this.expanded = !this.expanded;
             }
         },
     },
