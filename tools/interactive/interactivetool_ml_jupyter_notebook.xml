@@ -1,9 +1,9 @@
-<tool id="interactive_ml_tool_jupyter_notebook" tool_type="interactive" name="Interactive Jupyter Notebook for Machine learning" version="0.1">
+<tool id="interactive_ml_tool_jupyter_notebook" tool_type="interactive" name="GPU enabled Interactive Jupyter Notebook for Machine Learning" version="0.1">
     <requirements>
         <container type="docker">docker.io/anupkumar/docker-ml-jupyterlab:galaxy-integration</container>
     </requirements>
     <entry_points>
-        <entry_point name="Jupyter Interactive Tool" requires_domain="True">
+        <entry_point name="GPU enabled Interactive Jupyter Notebook for Machine Learning" requires_domain="True">
             <port>8888</port>
 	    <url>ipython/lab</url>
         </entry_point>
@@ -33,35 +33,7 @@
             chown \$NB_USER ./default_tensorflow_notebook.ipynb &&
             jupyter trust ./default_tensorflow_notebook.ipynb &&
 	    /usr/local/bin/start-notebook.sh
-	##else:
-	    ##set $cleaned_name = re.sub('[^\w\-\.]', '_', str($input.element_identifier))
-            ##cp '$mode.ipynb' ./${cleaned_name}.ipynb &&
-            ##jupyter trust ./${cleaned_name}.ipynb &&
-            ##if $mode.run_it:
-                ##jupyter nbconvert --to notebook --execute --output ./default_tensorflow_notebook.ipynb --allow-errors  ./*.ipynb &&
-            ##else:
-                ##jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True &&
-            ###end if
-            ##cp ./default_tensorflow_notebook.ipynb '$jupyter_notebook'
 	#end if
-	
-	##if $mode.mode_select == 'scratch':
-            ## copy default notebook
-	    ##cp '$__tool_directory__/default_notebook_ml.ipynb' ./ipython_galaxy_notebook_ml.ipynb &&
-            ##jupyter trust ./ipython_galaxy_notebook_ml.ipynb &&
-            ##jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True &&
-            ##cp ./ipython_galaxy_notebook_ml.ipynb '$jupyter_notebook'
-        ##else:
-            ##set $cleaned_name = re.sub('[^\w\-\.]', '_', str($input.element_identifier))
-            ##cp '$mode.ipynb' ./${cleaned_name}.ipynb &&
-            ##jupyter trust ./${cleaned_name}.ipynb &&
-            ##if $mode.run_it:
-                ##jupyter nbconvert --to notebook --execute --output ./ipython_galaxy_notebook_ml.ipynb --allow-errors  ./*.ipynb &&
-            ##else:
-                ##jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True &&
-            ##end if
-            ##cp ./ipython_galaxy_notebook_ml.ipynb '$jupyter_notebook'
-        ##end if
     ]]>
     </command>
     <inputs>
@@ -93,12 +65,12 @@
         </test>
     </tests>
     <help>
-    The Jupyter Notebook is an open-source web application that allows you to create and share documents that contain live code, equations,
-    visualizations and narrative text. Uses include: data cleaning and transformation, numerical simulation, statistical modeling, data visualization,
-    machine learning, and much more.
+    
+    JupyterLab is a next-generation web-based user interface for Project Jupyter. JupyterLab enables you to work with documents and activities such as Jupyter notebooks, text editors, 
+    terminals, and custom components in a flexible, integrated, and extensible manner.
 
-    Galaxy offers you to use Jupyter Notebooks directly in Galaxy accessing and interacting with Galaxy datasets as you like. A very common use-case is to
-    do the heavy lifting and data reduction steps in Galaxy and the plotting and more `interactive` part on smaller datasets in Jupyter.
+    Galaxy offers you to use Jupyter Lab directly in Galaxy accessing and interacting with Galaxy datasets as you like. A very common use-case is to
+    do the heavy lifting such as performing computation on GPUs and data reduction steps in Galaxy and the plotting and more `interactive` part on smaller datasets in Jupyter Lab.
 
     You can start with a new Jupyter notebook from scratch or load an already existing one, e.g. from your collegue and execute it on your dataset.
     If you have a defined input dataset you can even execute a Jupyter notebook in a workflow, given that the notebook is writing the output back to the history.
