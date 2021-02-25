@@ -1,6 +1,8 @@
 <template>
     <div>
-        <div v-if="librariesList.length > 0"></div>
+        <b-button title="go to first page">
+            <font-awesome-icon @click="gotoFirstPage" icon="home" />
+        </b-button>
         <b-table
             id="libraries_list"
             striped
@@ -161,14 +163,18 @@ export default {
             perPage: DEFAULT_PER_PAGE,
             librariesList: [],
             maxDescriptionLength: MAX_DESCRIPTION_LENGTH,
+            include_deleted: false,
         };
     },
     created() {
         this.root = getAppRoot();
         this.services = new Services({ root: this.root });
-        this.services.getLibraries().then((result) => (this.librariesList = result));
+        this.loadLibraries(this.include_deleted);
     },
     methods: {
+        loadLibraries(include_deleted) {
+            this.services.getLibraries(include_deleted).then((result) => (this.librariesList = result));
+        },
         toggleEditMode(item) {
             item.editMode = !item.editMode;
             this.$refs.libraries_list.refresh();
@@ -202,6 +208,10 @@ export default {
                 },
                 (error) => onError(error)
             );
+        },
+        gotoFirstPage() {
+            this.currentPage = 1;
+            this.$refs.libraries_list.refresh();
         },
     },
 };
