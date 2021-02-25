@@ -167,7 +167,7 @@ class ExpressionValidator(Validator):
 
     def __init__(self, message, expression, substitute_value_in_message, negate):
         super().__init__(message, negate)
-        # TODO 
+        # TODO
         self.substitute_value_in_message = substitute_value_in_message
         # Save compiled expression, code objects are thread safe (right?)
         self.expression = compile(expression, '<string>', 'eval')
@@ -324,7 +324,7 @@ class LengthValidator(Validator):
             self.max = int(length_max)
         else:
             self.max = float('inf')
-    
+
     def validate(self, value, trans=None):
         super().validate(self.min <= len(value) <= self.max, trans, self.message or ("Must have length of at least %d and at most %s" % (self.min, self.max)))
 
@@ -338,7 +338,7 @@ class DatasetOkValidator(Validator):
     >>> from galaxy.model.mapping import init
     >>> from galaxy.util import XML
     >>> from galaxy.tools.parameters.basic import ToolParameter
-    >>> 
+    >>>
     >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
     >>> hist = History()
     >>> sa_session.add(hist)
@@ -347,11 +347,11 @@ class DatasetOkValidator(Validator):
     >>> ok_hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='interval', create_dataset=True, sa_session=sa_session))
     >>> ok_hda.set_dataset_state(model.Dataset.states.OK)
     >>> notok_hda = hist.add_dataset(HistoryDatasetAssociation(id=2, extension='interval', create_dataset=True, sa_session=sa_session))
-    >>> # TODO I do not get 100% why for state!=OK the validator is called 
+    >>> # TODO I do not get 100% why for state!=OK the validator is called
     >>> # TODO because DataToolParameter.validate.do_validate calls the validator only of state=OK
     >>> # TODO in this light I wonder about the use of this validator at all....
     >>> notok_hda.set_dataset_state(model.Dataset.states.EMPTY)
-    >>> 
+    >>>
     >>> p = ToolParameter.build(None, XML('''
     ... <param name="blah" type="data">
     ...     <validator type="dataset_ok_validator"/>
@@ -380,22 +380,23 @@ class DatasetOkValidator(Validator):
         return cls(elem.get('message', None), elem.get('negate', 'false'))
 
     def validate(self, value, trans=None):
-        # TODO all Dataset Validators should be able to handle lists, or? 
-        if self.message is None:
-            self.message = "The selected dataset is still being generated, select another dataset or wait until it is completed"
-        super().validate(value and value.state == model.Dataset.states.OK)
+        if value:
+            # TODO all Dataset Validators should be able to handle lists, or?
+            if self.message is None:
+                self.message = "The selected dataset is still being generated, select another dataset or wait until it is completed"
+            super().validate(value.state == model.Dataset.states.OK)
 
 
 class DatasetEmptyValidator(Validator):
     """
     Validator that checks if a dataset has a positive file size.
-    
+   
     >>> from galaxy.datatypes.registry import example_datatype_registry_for_sample
     >>> from galaxy.model import History, HistoryDatasetAssociation, set_datatypes_registry
     >>> from galaxy.model.mapping import init
     >>> from galaxy.util import XML
     >>> from galaxy.tools.parameters.basic import ToolParameter
-    >>> 
+    >>>
     >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
     >>> hist = History()
     >>> sa_session.add(hist)
@@ -405,7 +406,7 @@ class DatasetEmptyValidator(Validator):
     >>> empty_hda.dataset.file_size = 0
     >>> full_hda = hist.add_dataset(HistoryDatasetAssociation(id=2, extension='interval', create_dataset=True, sa_session=sa_session))
     >>> full_hda.dataset.file_size = 1
-    >>> 
+    >>>
     >>> p = ToolParameter.build(None, XML('''
     ... <param name="blah" type="data">
     ...     <validator type="empty_dataset"/>
@@ -416,7 +417,7 @@ class DatasetEmptyValidator(Validator):
     Traceback (most recent call last):
         ...
     ValueError: The selected dataset is empty, this tool expects non-empty files.
-    >>> 
+    >>>
     >>> p = ToolParameter.build(None, XML('''
     ... <param name="blah" type="data">
     ...     <validator type="empty_dataset" negate="true"/>
@@ -434,19 +435,20 @@ class DatasetEmptyValidator(Validator):
         return cls(elem.get('message', "The selected dataset is empty, this tool expects non-empty files."), elem.get('negate', 'false'))
 
     def validate(self, value, trans=None):
-        super().validate(not(value and value.get_size() == 0))
+        if value:
+            super().validate(value.get_size() != 0)
 
 
 class DatasetExtraFilesPathEmptyValidator(Validator):
     """
     Validator that checks if a dataset's extra_files_path exists and is not empty.
-    
+   
     >>> from galaxy.datatypes.registry import example_datatype_registry_for_sample
     >>> from galaxy.model import History, HistoryDatasetAssociation, set_datatypes_registry
     >>> from galaxy.model.mapping import init
     >>> from galaxy.util import XML
     >>> from galaxy.tools.parameters.basic import ToolParameter
-    >>> 
+    >>>
     >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
     >>> hist = History()
     >>> sa_session.add(hist)
@@ -458,7 +460,7 @@ class DatasetExtraFilesPathEmptyValidator(Validator):
     >>> has_no_extra_hda = hist.add_dataset(HistoryDatasetAssociation(id=2, extension='interval', create_dataset=True, sa_session=sa_session))
     >>> has_no_extra_hda.dataset.file_size = 10
     >>> has_no_extra_hda.dataset.total_size = 10
-    >>> 
+    >>>
     >>> p = ToolParameter.build(None, XML('''
     ... <param name="blah" type="data">
     ...     <validator type="empty_extra_files_path"/>
@@ -469,7 +471,7 @@ class DatasetExtraFilesPathEmptyValidator(Validator):
     Traceback (most recent call last):
         ...
     ValueError: The selected dataset's extra_files_path directory is empty or does not exist, this tool expects non-empty extra_files_path directories associated with the selected input.
-    >>> 
+    >>>
     >>> p = ToolParameter.build(None, XML('''
     ... <param name="blah" type="data">
     ...     <validator type="empty_extra_files_path" negate="true"/>
@@ -487,7 +489,8 @@ class DatasetExtraFilesPathEmptyValidator(Validator):
         return cls(elem.get('message', "The selected dataset's extra_files_path directory is empty or does not exist, this tool expects non-empty extra_files_path directories associated with the selected input."), elem.get('negate', 'false'))
 
     def validate(self, value, trans=None):
-        super().validate(not(value and value.get_total_size() == value.get_size()))
+        if value:
+            super().validate(value.get_total_size() != value.get_size())
 
 
 class MetadataValidator(Validator):
@@ -499,7 +502,7 @@ class MetadataValidator(Validator):
     >>> from galaxy.model.mapping import init
     >>> from galaxy.util import XML
     >>> from galaxy.tools.parameters.basic import ToolParameter
-    >>> 
+    >>>
     >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
     >>> hist = History()
     >>> sa_session.add(hist)
@@ -544,7 +547,7 @@ class MetadataValidator(Validator):
     @classmethod
     def from_element(cls, param, elem):
         return cls(message=elem.get('message', "Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes"),
-                   check=elem.get('check', ""), 
+                   check=elem.get('check', ""),
                    skip=elem.get('skip', ""),
                    negate=elem.get('negate', 'false'))
 
@@ -556,9 +559,9 @@ class MetadataValidator(Validator):
 
     def validate(self, value, trans=None):
         log.error("VAL value %s" % value)
-        
-        # TODO why this validator checks for isinstance(value, model.DatasetInstance)
-        super().validate( value and isinstance(value, model.DatasetInstance) and not value.missing_meta(check=self.check, skip=self.skip) )
+        if value:
+            # TODO why this validator checks for isinstance(value, model.DatasetInstance)
+            super().validate(isinstance(value, model.DatasetInstance) and not value.missing_meta(check=self.check, skip=self.skip))
 
 
 class UnspecifiedBuildValidator(Validator):
@@ -570,7 +573,7 @@ class UnspecifiedBuildValidator(Validator):
     >>> from galaxy.model.mapping import init
     >>> from galaxy.util import XML
     >>> from galaxy.tools.parameters.basic import ToolParameter
-    >>> 
+    >>>
     >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
     >>> hist = History()
     >>> sa_session.add(hist)
@@ -581,7 +584,7 @@ class UnspecifiedBuildValidator(Validator):
     >>> has_dbkey_hda.metadata.dbkey = 'hg19'
     >>> has_no_dbkey_hda = hist.add_dataset(HistoryDatasetAssociation(id=2, extension='interval', create_dataset=True, sa_session=sa_session))
     >>> has_no_dbkey_hda.set_dataset_state(model.Dataset.states.OK)
-    >>> 
+    >>>
     >>> p = ToolParameter.build(None, XML('''
     ... <param name="blah" type="data">
     ...     <validator type="unspecified_build"/>
@@ -592,7 +595,7 @@ class UnspecifiedBuildValidator(Validator):
     Traceback (most recent call last):
         ...
     ValueError: Unspecified genome build, click the pencil icon in the history item to set the genome build
-    >>> 
+    >>>
     >>> p = ToolParameter.build(None, XML('''
     ... <param name="blah" type="data">
     ...     <validator type="unspecified_build" negate="true"/>
@@ -618,7 +621,7 @@ class UnspecifiedBuildValidator(Validator):
             # TODO can dbkey really be a list?
             if isinstance(dbkey, list):
                 dbkey = dbkey[0]
-            super().validate(dbkey != '?')            
+            super().validate(dbkey != '?')           
 
 
 class NoOptionsValidator(Validator):
@@ -639,7 +642,7 @@ class NoOptionsValidator(Validator):
 class EmptyTextfieldValidator(Validator):
     """
     Validator that checks for empty text field
-    
+   
     """
 
     @classmethod
@@ -841,7 +844,7 @@ class MetadataInRangeValidator(InRangeValidator):
 
     @classmethod
     def from_element(cls, param, elem):
-        metadata_name = elem.get('metadata_name', none)
+        metadata_name = elem.get('metadata_name', None)
         assert metadata_name, "dataset_metadata_in_range validator requires metadata_name attribute."
         metadata_name = metadata_name.strip()
         return cls(metadata_name, elem.get('message', None),
@@ -864,7 +867,7 @@ class MetadataInRangeValidator(InRangeValidator):
             except ValueError:
                 raise ValueError(f'{self.metadata_name} must be a float or an integer')
             super().validate(value_to_check, trans)
-        super().validate(true, trans)
+        super().validate(True, trans)
 
 
 validator_types = dict(
