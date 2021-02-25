@@ -13,11 +13,11 @@
                     <td>Galaxy Tool Version:</td>
                     <td id="galaxy-tool-version">{{ job.tool_version }}</td>
                 </tr>
-                <tr v-if="job">
+                <tr v-if="job && showWorkflowInfo">
                     <td>Created by workflow?</td>
                     <td id="created-by-workflow">{{ job.workflow_invocation_step != None }}</td>
                 </tr>
-                <tr v-if="job && job.workflow_invocation_step">
+                <tr v-if="job && job.workflow_invocation_step && showWorkflowInfo">
                     <td>Workflow ID:</td>
                     <td id="workflow-id">
                         {{ job.workflow_invocation_step.id }} (<a
@@ -27,7 +27,7 @@
                         >)
                     </td>
                 </tr>
-                <tr v-if="job && job.workflow_invocation_step">
+                <tr v-if="job && job.workflow_invocation_step && showWorkflowInfo">
                     <td>Invocation ID:</td>
                     <td id="invocation-id">{{ job.workflow_invocation_step.workflow_invocation_id }}</td>
                 </tr>
@@ -98,6 +98,10 @@ export default {
         includeTimes: {
             type: Boolean,
             default: false,
+        },
+        showWorkflowInfo: {
+            type: Boolean,
+            default: true,
         },
     },
     created: function () {

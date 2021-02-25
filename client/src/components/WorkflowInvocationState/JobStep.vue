@@ -11,7 +11,7 @@
                 >
                     <div v-if="loading"><b-spinner label="Loading Job..."></b-spinner></div>
                     <div v-else>
-                        <job-information :job_id="item.id" v-if="item" />
+                        <job-information :job_id="item.id" v-if="item" :showWorkflowInfo="false"/>
                         <p></p>
                         <job-parameters v-if="item" :jobId="item.id" :includeTitle="false" />
                     </div>
