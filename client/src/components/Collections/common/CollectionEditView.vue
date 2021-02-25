@@ -37,7 +37,7 @@
                         </div>
                     </template> -->
                 </multiselect>
-                <i>{{ databaseKeyFromElements }}</i>
+                <i>original input: {{ databaseKeyFromElements }}</i>
             </b-tab>
             <b-tab>
                 <template v-slot:title> <i class="fa fa-gear"></i>{{ l(" Convert") }}</template>
@@ -104,6 +104,7 @@ export default {
             get() {
                 return this.collection_data.name;
             },
+            //TODO : #6966
             // set(collection_name) {
             //     this.collection_data.name = collection_name;
             // },
@@ -141,7 +142,11 @@ export default {
         },
         genome: {
             get() {
-                return this.databaseKeyFromElements;
+                return this.genomes.find((element) => (element.id = this.databaseKeyFromElements));
+            },
+            set(id) {
+                var selectedGenome = this.genomes.filter((genome) => genome.id === id);
+                this.genome = selectedGenome;
             },
         },
         datatypesFromElements: {
