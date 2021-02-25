@@ -425,7 +425,7 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         return rval
 
-    @web.legacy_expose_api_raw_anonymous
+    @web.expose_api_raw_anonymous
     def display(self, trans, history_content_id, history_id,
                 preview=False, filename=None, to_ext=None, raw=False, **kwd):
         """
@@ -457,11 +457,12 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
                 if 'key' in display_kwd:
                     del display_kwd["key"]
                 rval = hda.datatype.display_data(trans, hda, preview, filename, to_ext, **display_kwd)
+        except galaxy_exceptions.MessageException:
+            raise
         except Exception as e:
-            log.exception("Error getting display data for dataset (%s) from history (%s)",
+            log.exception("Server error getting display data for dataset (%s) from history (%s)",
                           history_content_id, history_id)
-            trans.response.status = 500
-            rval = "Could not get display data for dataset: %s" % util.unicodify(e)
+            raise galaxy_exceptions.InternalServerError(f"Could not get display data for dataset: {util.unicodify(e)}")
         return rval
 
     @web.expose_api
