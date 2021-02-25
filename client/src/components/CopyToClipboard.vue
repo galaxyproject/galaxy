@@ -1,5 +1,5 @@
 <template>
-    <font-awesome-icon title="Copy Tool ID" icon="copy" @click="copy(text, message)"></font-awesome-icon>
+    <font-awesome-icon :title="title" icon="copy" @click="copy(text, message)"></font-awesome-icon>
 </template>
 
 <script>
@@ -22,6 +22,11 @@ export default {
         message: {
             type: String,
             required: true,
+        },
+        title: {
+            type: String,
+            default: "copy to clipboard",
+            required: false,
         },
     },
     methods: {

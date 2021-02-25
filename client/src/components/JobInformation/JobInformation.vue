@@ -7,7 +7,11 @@
                     <td>Galaxy Tool ID:</td>
                     <td id="galaxy-tool-id">
                         {{ job.tool_id }}
-                        <copy-to-clipboard message="Tool ID was copied to your clipboard" :text="job.tool_id" />
+                        <copy-to-clipboard
+                            message="Tool ID was copied to your clipboard"
+                            :text="job.tool_id"
+                            title="Copy Tool ID"
+                        />
                     </td>
                 </tr>
                 <tr v-if="job && job.tool_version">
