@@ -1330,35 +1330,39 @@ class CMAP(TabularData):
         if dataset.has_data():
             with open(dataset.file_name) as dataset_fh:
                 comment_lines = 0
-                for i, l in enumerate(dataset_fh):
-                    if l.startswith('#'):
+                column_headers = None
+                cleaned_column_types = None
+                number_of_columns = 0
+                for i, line in enumerate(dataset_fh):
+                    line = line.strip('\n')
+                    if line.startswith('#'):
 
-                        if l.startswith('#h'):
+                        if line.startswith('#h'):
 
-                            column_headers = l.strip('\n').split("\t")[1:]
-                        elif l.startswith('#f'):
+                            column_headers = line.split("\t")[1:]
+                        elif line.startswith('#f'):
                             cleaned_column_types = []
-                            for i in l.split('\t')[1:]:
-                                if i.strip("\n") == 'Hex':
+                            for column_type in line.split('\t')[1:]:
+                                if column_type == 'Hex':
                                     cleaned_column_types.append('str')
                                 else:
-                                    cleaned_column_types.append(i)
+                                    cleaned_column_types.append(column_type)
                         comment_lines += 1
-                        fields = l.split('\t')
+                        fields = line.split('\t')
                         if len(fields) == 2:
                             if fields[0] == '# CMAP File Version:':
-                                dataset.metadata.cmap_version = fields[1].strip('\n')
+                                dataset.metadata.cmap_version = fields[1]
                             elif fields[0] == '# Label Channels:':
-                                dataset.metadata.label_channels = int(fields[1].strip('\n'))
+                                dataset.metadata.label_channels = int(fields[1])
                             elif fields[0] == '# Nickase Recognition Site 1:':
-                                fields2 = fields[1].strip('\n').split(';')
+                                fields2 = fields[1].split(';')
                                 if len(fields2) == 2:
                                     dataset.metadata.channel_1_color = fields2[1]
                                 dataset.metadata.nickase_recognition_site_1 = fields2[0].split(',')
                             elif fields[0] == '# Number of Consensus Maps:':
-                                dataset.metadata.number_of_consensus_nanomaps = int(fields[1].strip('\n'))
+                                dataset.metadata.number_of_consensus_nanomaps = int(fields[1])
                             elif fields[0] == '# Nickase Recognition Site 2:':
-                                fields2 = fields[1].strip('\n').split(';')
+                                fields2 = fields[1].split(';')
                                 if len(fields2) == 2:
                                     dataset.metadata.channel_2_color = fields2[1]
                                 dataset.metadata.nickase_recognition_site_2 = fields2[0].split(',')
@@ -1368,7 +1372,7 @@ class CMAP(TabularData):
                         dataset.metadata.data_lines = None
                         break
                     elif i == comment_lines + 1:
-                        number_of_columns = int(len(l.split('\t')))
+                        number_of_columns = len(line.split('\t'))
                 if not (self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize):
                     dataset.metadata.data_lines = i + 1 - comment_lines
             dataset.metadata.comment_lines = comment_lines
