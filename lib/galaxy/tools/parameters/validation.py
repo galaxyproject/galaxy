@@ -229,8 +229,8 @@ class InRangeValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
-        return cls(elem.get('message', None), elem.get('min', '-inf'),
-                   elem.get('max', 'inf'), elem.get('exclude_min', 'false'),
+        return cls(elem.get('message', None), elem.get('min'),
+                   elem.get('max'), elem.get('exclude_min', 'false'),
                    elem.get('exclude_max', 'false'),
                    elem.get('negate', 'false'))
 
@@ -242,9 +242,9 @@ class InRangeValidator(Validator):
         (1.e., min <= value <= max).  Combinations of exclude_min and exclude_max
         values are allowed.
         """
-        self.min = float(range_min)
+        self.min = float(range_min if range_min is not None else '-inf')
         self.exclude_min = util.asbool(exclude_min)
-        self.max = float(range_max)
+        self.max = float(range_max if range_max is not None else 'inf')
         self.exclude_max = util.asbool(exclude_max)
         assert self.min <= self.max, 'min must be less than or equal to max'
         # Remove unneeded 0s and decimal from floats to make message pretty.
@@ -631,7 +631,7 @@ class NoOptionsValidator(Validator):
     >>> from galaxy.util import XML
     >>> from galaxy.tools.parameters.basic import ToolParameter
     >>> p = ToolParameter.build(None, XML('''
-    ... <param name="index" type="select" label="Select reference genome" help="If your genome of interest is not listed, contact the Galaxy team">
+    ... <param name="index" type="select" label="Select reference genome">
     ...     <options from_data_table="bowtie2_indexes"/>
     ...     <validator type="no_options" message="No indexes are available for the selected input dataset"/>
     ... </param>
@@ -643,7 +643,7 @@ class NoOptionsValidator(Validator):
     ValueError: No options available for selection
     >>>
     >>> p = ToolParameter.build(None, XML('''
-    ... <param name="index" type="select" label="Select reference genome" help="If your genome of interest is not listed, contact the Galaxy team">
+    ... <param name="index" type="select" label="Select reference genome">
     ...     <options from_data_table="bowtie2_indexes"/>
     ...     <validator type="no_options" message="No indexes are available for the selected input dataset" negate="true"/>
     ... </param>
@@ -660,7 +660,7 @@ class NoOptionsValidator(Validator):
         return cls(elem.get('message', "No options available for selection"), elem.get('negate', 'false'))
 
     def validate(self, value, trans=None):
-        super().validate( value is None )
+        super().validate(value is None)
 
 
 class EmptyTextfieldValidator(Validator):
