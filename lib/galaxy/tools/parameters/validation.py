@@ -41,7 +41,6 @@ class Validator(abc.ABC):
         return validator_types[_type].from_element(param, elem)
 
     def __init__(self, message, negate=False):
-        log.error("INIT msg %s neg %s" % (message, negate))
         self.message = message
         self.negate = util.asbool(negate)
         super().__init__()
@@ -552,7 +551,6 @@ class MetadataValidator(Validator):
                    negate=elem.get('negate', 'false'))
 
     def __init__(self, message=None, check="", skip="", negate='false'):
-        log.error("MetadataValidator")
         super().__init__(message, negate)
         self.check = check.split(",")
         self.skip = skip.split(",")
@@ -632,7 +630,6 @@ class NoOptionsValidator(Validator):
     >>> from galaxy.tools.parameters.basic import ToolParameter
     >>> p = ToolParameter.build(None, XML('''
     ... <param name="index" type="select" label="Select reference genome">
-    ...     <options from_data_table="bowtie2_indexes"/>
     ...     <validator type="no_options" message="No indexes are available for the selected input dataset"/>
     ... </param>
     ... '''))
@@ -660,7 +657,7 @@ class NoOptionsValidator(Validator):
         return cls(elem.get('message', "No options available for selection"), elem.get('negate', 'false'))
 
     def validate(self, value, trans=None):
-        super().validate(value is None)
+        super().validate(value is not None)
 
 
 class EmptyTextfieldValidator(Validator):
