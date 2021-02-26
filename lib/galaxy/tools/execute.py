@@ -427,6 +427,8 @@ class WorkflowStepExecutionTracker(ExecutionTracker):
         if not self.collection_info:
             for output_name, output in outputs:
                 self.invocation_step.add_output(output_name, output)
+            for jtodca in job.output_dataset_collection_instances:
+                self.invocation_step.add_output(jtodca.name, jtodca.dataset_collection_instance)
             self.invocation_step.job = job
 
     def new_collection_execution_slices(self):
