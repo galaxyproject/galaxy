@@ -16,7 +16,7 @@ from galaxy.webapps.base.controller import JSAppLauncher
 
 log = logging.getLogger(__name__)
 
-PROVIDER_COOKIE_NAME = 'oidc-provider'
+PROVIDER_COOKIE_NAME = 'galaxy-oidc-provider'
 
 
 class OIDC(JSAppLauncher):
