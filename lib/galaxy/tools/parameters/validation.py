@@ -390,7 +390,7 @@ class DatasetOkValidator(Validator):
 class DatasetEmptyValidator(Validator):
     """
     Validator that checks if a dataset has a positive file size.
-   
+
     >>> from galaxy.datatypes.registry import example_datatype_registry_for_sample
     >>> from galaxy.model import History, HistoryDatasetAssociation, set_datatypes_registry
     >>> from galaxy.model.mapping import init
@@ -442,7 +442,7 @@ class DatasetEmptyValidator(Validator):
 class DatasetExtraFilesPathEmptyValidator(Validator):
     """
     Validator that checks if a dataset's extra_files_path exists and is not empty.
-   
+
     >>> from galaxy.datatypes.registry import example_datatype_registry_for_sample
     >>> from galaxy.model import History, HistoryDatasetAssociation, set_datatypes_registry
     >>> from galaxy.model.mapping import init
@@ -621,28 +621,51 @@ class UnspecifiedBuildValidator(Validator):
             # TODO can dbkey really be a list?
             if isinstance(dbkey, list):
                 dbkey = dbkey[0]
-            super().validate(dbkey != '?')           
+            super().validate(dbkey != '?')
 
 
 class NoOptionsValidator(Validator):
     """
     Validator that checks for empty select list
 
+    >>> from galaxy.util import XML
+    >>> from galaxy.tools.parameters.basic import ToolParameter
+    >>> p = ToolParameter.build(None, XML('''
+    ... <param name="index" type="select" label="Select reference genome" help="If your genome of interest is not listed, contact the Galaxy team">
+    ...     <options from_data_table="bowtie2_indexes"/>
+    ...     <validator type="no_options" message="No indexes are available for the selected input dataset"/>
+    ... </param>
+    ... '''))
+    >>> t = p.validate('foo')
+    >>> t = p.validate(None)
+    Traceback (most recent call last):
+        ...
+    ValueError: No options available for selection
+    >>>
+    >>> p = ToolParameter.build(None, XML('''
+    ... <param name="index" type="select" label="Select reference genome" help="If your genome of interest is not listed, contact the Galaxy team">
+    ...     <options from_data_table="bowtie2_indexes"/>
+    ...     <validator type="no_options" message="No indexes are available for the selected input dataset" negate="true"/>
+    ... </param>
+    ... '''))
+    >>> t = p.validate('foo')
+    Traceback (most recent call last):
+        ...
+    ValueError: No options available for selection
+    >>> t = p.validate(None)
     """
 
     @classmethod
     def from_element(cls, param, elem):
-        return cls(elem.get('message', "No options available for selection"))
+        return cls(elem.get('message', "No options available for selection"), elem.get('negate', 'false'))
 
     def validate(self, value, trans=None):
-        if value is None:
-            raise ValueError(self.message)
+        super().validate( value is None )
 
 
 class EmptyTextfieldValidator(Validator):
     """
     Validator that checks for empty text field
-   
     """
 
     @classmethod
