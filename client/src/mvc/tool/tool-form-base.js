@@ -157,7 +157,7 @@ export default FormBase.extend({
         });
 
         if (!options.sustain_version && options.versions && options.versions.length > 1) {
-            for (var i in options.versions) {
+            for (var i in options.versions.reverse()) {
                 var version = options.versions[i];
                 if (version != options.version) {
                     versions_button.addMenu({
