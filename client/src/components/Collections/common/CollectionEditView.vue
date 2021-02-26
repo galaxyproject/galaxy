@@ -91,6 +91,8 @@ export default {
             collection_data: {}, //all data from the response
             extensions: {},
             genomes: [],
+            selectedGenome: null,
+            databaseKeyFromElements: null,
         };
     },
     props: {
@@ -124,30 +126,33 @@ export default {
                 return this.collection_data.element_count;
             },
         },
-        databaseKeyFromElements: {
-            get() {
-                const dbkeysInCollection = [];
-                for (var index in this.collectionElements) {
-                    var element = this.collectionElements[index];
-                    if (!dbkeysInCollection.includes(element.object.metadata_dbkey)) {
-                        dbkeysInCollection.push(element.object.metadata_dbkey);
-                    }
-                }
-                if (dbkeysInCollection.length == 1) {
-                    return dbkeysInCollection[0];
-                } else {
-                    return "?";
-                }
-            },
-        },
+        // databaseKeyFromElements: {
+        //     get() {
+        //         const dbkeysInCollection = [];
+        //         for (var index in this.collectionElements) {
+        //             var element = this.collectionElements[index];
+        //             if (!dbkeysInCollection.includes(element.object.metadata_dbkey)) {
+        //                 dbkeysInCollection.push(element.object.metadata_dbkey);
+        //             }
+        //         }
+        //         if (dbkeysInCollection.length == 1) {
+        //             return dbkeysInCollection[0];
+        //         } else {
+        //             return "?";
+        //         }
+        //     },
+        // },
         genome: {
             get() {
-                return this.genomes.find((element) => (element.id = this.databaseKeyFromElements));
+                // return this.genomes.find((element) => (element.id == this.databaseKeyFromElements));
+                return this.selectedGenome;
             },
-            set(id) {
-                var selectedGenome = this.genomes.filter((genome) => genome.id === id);
-                this.genome = selectedGenome;
+            set(element) {
+                this.selectedGenome = element;
             },
+            // set(element) {
+            //     this.genome = element;
+            // },
         },
         datatypesFromElements: {
             get() {
@@ -181,10 +186,26 @@ export default {
                 .get(prependPath("/api/dataset_collections/" + this.collection_id + "?instance_type=history"))
                 .then((response) => {
                     this.collection_data = response.data;
+                    this.getDatabaseKeyFromElements();
                     console.log("collection_data", this.collection_data);
                 });
 
             //TODO error handling
+        },
+        getDatabaseKeyFromElements: function () {
+            const dbkeysInCollection = [];
+            for (var index in this.collectionElements) {
+                var element = this.collectionElements[index];
+                if (!dbkeysInCollection.includes(element.object.metadata_dbkey)) {
+                    dbkeysInCollection.push(element.object.metadata_dbkey);
+                }
+            }
+            if (dbkeysInCollection.length == 1) {
+                this.databaseKeyFromElements = dbkeysInCollection[0];
+            } else {
+                this.databaseKeyFromElements = "?";
+            }
+            this.selectedGenome = this.genomes.find((element) => (element.id == this.databaseKeyFromElements));
         },
     },
 };
