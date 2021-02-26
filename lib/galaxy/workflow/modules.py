@@ -1776,7 +1776,8 @@ class ToolModule(WorkflowModule):
         else:
             step_outputs = dict(execution_tracker.output_datasets)
             step_outputs.update(execution_tracker.output_collections)
-        progress.set_step_outputs(invocation_step, step_outputs, already_persisted=not invocation_step.is_new)
+        if complete:
+            progress.set_step_outputs(invocation_step, step_outputs, already_persisted=False)
 
         if collection_info:
             step_inputs = mapping_params.param_template

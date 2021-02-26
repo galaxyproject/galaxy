@@ -612,6 +612,7 @@ class DefaultToolAction:
                 # Dispatch to a job handler. enqueue() is responsible for flushing the job
                 app.job_manager.enqueue(job, tool=tool)
                 trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
+            out_data.update(output_collections.out_collection_instances)
             return job, out_data, history
 
     def _remap_job_on_rerun(self, trans, galaxy_session, rerun_remap_job_id, current_job, out_data):
