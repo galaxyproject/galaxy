@@ -630,7 +630,7 @@ class NoOptionsValidator(Validator):
     >>> from galaxy.tools.parameters.basic import ToolParameter
     >>> p = ToolParameter.build(None, XML('''
     ... <param name="index" type="select" label="Select reference genome">
-    ...     <validator type="no_options" message="No indexes are available for the selected input dataset"/>
+    ...     <validator type="no_options" message="No options available for selection"/>
     ... </param>
     ... '''))
     >>> t = p.validate('foo')
@@ -642,7 +642,7 @@ class NoOptionsValidator(Validator):
     >>> p = ToolParameter.build(None, XML('''
     ... <param name="index" type="select" label="Select reference genome">
     ...     <options from_data_table="bowtie2_indexes"/>
-    ...     <validator type="no_options" message="No indexes are available for the selected input dataset" negate="true"/>
+    ...     <validator type="no_options" negate="true"/>
     ... </param>
     ... '''))
     >>> t = p.validate('foo')
