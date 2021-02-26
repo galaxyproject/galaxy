@@ -167,15 +167,11 @@ class FakeJob:
 
     def _guess_name_from_dataset(self, dataset) -> Optional[str]:
         """Tries to guess the name of the fake job from the dataset associations."""
-        name = None
-        try:
-            if dataset.copied_from_history_dataset_association:
-                name = "Import from History"
-            elif dataset.copied_from_library_dataset_dataset_association:
-                name = "Import from Library"
-            return name
-        except Exception:
-            return None
+        if dataset.copied_from_history_dataset_association:
+            return "Import from History"
+        if dataset.copied_from_library_dataset_dataset_association:
+            return "Import from Library"
+        return None
 
 
 class DatasetCollectionCreationJob:
