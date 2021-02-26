@@ -724,8 +724,8 @@ input dataset.
 <param name="field_name" type="select" label="Field name" refresh_on_change="true">
     <options>
         <filter type="data_meta" ref="input" key="field_names"/>
-        <validator type="no_options" message="The selected shape has no uncolored surface fields." />
     </options>
+    <validator type="no_options" message="The selected shape has no uncolored surface fields." />
 </param>
 ```
 
@@ -2204,8 +2204,8 @@ the [Bowtie 2](https://github.com/galaxyproject/tools-iuc/blob/master/tools/bowt
     <param name="index" type="select" label="Select reference genome" help="If your genome of interest is not listed, contact the Galaxy team">
       <options from_data_table="bowtie2_indexes">
         <filter type="sort_by" column="2"/>
-        <validator type="no_options" message="No indexes are available for the selected input dataset"/>
       </options>
+      <validator type="no_options" message="No indexes are available for the selected input dataset"/>
     </param>
   </when>
   <when value="history">
@@ -3384,8 +3384,8 @@ alternative to local reference data.
     <param name="index" type="select" label="Select reference genome" help="If your genome of interest is not listed, contact the Galaxy team">
       <options from_data_table="bowtie2_indexes">
         <filter type="sort_by" column="2"/>
-        <validator type="no_options" message="No indexes are available for the selected input dataset"/>
       </options>
+      <validator type="no_options" message="No indexes are available for the selected input dataset"/>
     </param>
   </when>
   <when value="history">
@@ -4038,8 +4038,8 @@ tool demonstrates filtering values from a tool data table.
 <param help="If your genome of interest is not listed, contact the Galaxy team" label="Select a reference genome" name="index" type="select">
     <options from_data_table="hisat2_indexes">
         <filter column="2" type="sort_by" />
-        <validator message="No genomes are available for the selected input dataset" type="no_options" />
     </options>
+    <validator message="No genomes are available for the selected input dataset" type="no_options" />
 </param>
 ```
 
