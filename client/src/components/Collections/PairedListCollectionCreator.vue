@@ -105,7 +105,6 @@
                     @clicked-create="clickedCreate"
                     @remove-extensions-toggle="removeExtensionsToggle"
                     :render-extensions-toggle="true"
-                    :creation-fn="creationFn"
                 >
                     <template v-slot:help-content>
                         <p>

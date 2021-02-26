@@ -66,7 +66,6 @@
                     :hide-source-items="hideSourceItems"
                     @onUpdateHideSourceItems="onUpdateHideSourceItems"
                     @clicked-create="clickedCreate"
-                    :creation-fn="creationFn"
                 >
                     <template v-slot:help-content>
                         <p>
