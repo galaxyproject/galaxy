@@ -2,6 +2,7 @@
 histories.
 """
 import logging
+from typing import Optional
 
 from galaxy import exceptions, model
 from galaxy.tool_util.parser import ToolOutputCollectionPart
@@ -161,7 +162,16 @@ class FakeJob:
 
     def __init__(self, dataset):
         self.is_fake = True
-        self.id = "fake_%s" % dataset.id
+        self.id = f"fake_{dataset.id}"
+        self.name = self._guess_name_from_dataset(dataset)
+
+    def _guess_name_from_dataset(self, dataset) -> Optional[str]:
+        """Tries to guess the name of the fake job from the dataset associations."""
+        if dataset.copied_from_history_dataset_association:
+            return "Import from History"
+        if dataset.copied_from_library_dataset_dataset_association:
+            return "Import from Library"
+        return None
 
 
 class DatasetCollectionCreationJob:
