@@ -568,7 +568,7 @@ export default {
             this.selectedDatasetElems = [];
             this.initialFiltersSet();
             // copy initial list, sort, add ids if needed
-            this.workingElements = this.initialElements.slice(0);
+            this.workingElements = JSON.parse(JSON.stringify(this.initialElements.slice(0)));
             this._ensureElementIds();
             this._validateElements();
             this._sortInitialList();
@@ -968,7 +968,6 @@ export default {
         },
         clickedCreate: function (collectionName) {
             this.checkForDuplicates();
-            console.log(this.state, " = state");
             if (this.state == "build") {
                 this.$emit("clicked-create", this.workingElements, this.collectionName, this.hideSourceItems);
                 return this.creationFn(this.pairedElements, collectionName, this.hideSourceItems)
@@ -982,7 +981,6 @@ export default {
             var existingPairNames = {};
             this.duplicatePairNames = [];
             var valid = true;
-            console.log("in check for dupes");
             this.pairedElements.forEach((pair) => {
                 if (Object.prototype.hasOwnProperty.call(existingPairNames, pair.name)) {
                     valid = false;
@@ -991,7 +989,6 @@ export default {
                 }
                 existingPairNames[pair.name] = true;
             });
-            console.log("valid = false, right? :", valid);
             this.state = valid ? "build" : "duplicates";
         },
         stripExtension(name) {
