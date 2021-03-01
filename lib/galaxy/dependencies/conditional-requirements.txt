@@ -16,6 +16,7 @@ galaxycloudrunner
 # For file sources plugins
 fs.webdavfs  # type: webdav
 fs.dropboxfs  # type: dropbox
+fs.sshfs  # type: ssh
 fs-s3fs  # type: s3
 s3fs  # type: s3fs
 
