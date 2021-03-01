@@ -232,7 +232,7 @@ export default {
                     Toast.success("Library has been marked deleted.");
                     deletedLib.delete = true;
                     if (this.include_deleted)
-                        this.librariesList = this.librariesList.find((lib) => {
+                        this.librariesList = this.librariesList.filter((lib) => {
                             if (lib.id !== deletedLib.id) {
                                 return lib;
                             }
