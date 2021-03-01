@@ -60,7 +60,7 @@ class QIIME2Result(CompressedZipArchive):
             return False
 
 
-class QIIME2Artifact(Qiime2Result):
+class QIIME2Artifact(QIIME2Result):
     file_ext = "qza"
 
     def sniff(self, filename):
@@ -68,7 +68,7 @@ class QIIME2Artifact(Qiime2Result):
         return metadata and metadata['semantic_type'] != 'Visualization'
 
 
-class QIIME2Visualization(Qiime2Result):
+class QIIME2Visualization(QIIME2Result):
     file_ext = "qzv"
 
     def sniff(self, filename):
