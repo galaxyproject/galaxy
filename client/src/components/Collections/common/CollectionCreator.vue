@@ -89,10 +89,6 @@ export default {
             type: Function,
             required: true,
         },
-        creationFn: {
-            type: Function,
-            required: true,
-        },
         renderExtensionsToggle: {
             type: Boolean,
             default: false,

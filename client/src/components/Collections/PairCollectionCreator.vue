@@ -82,7 +82,6 @@
                     @onUpdateHideSourceItems="onUpdateHideSourceItems"
                     @clicked-create="clickedCreate"
                     @remove-extensions-toggle="removeExtensionsToggle"
-                    :creation-fn="creationFn"
                 >
                     <template v-slot:help-content>
                         <p>
@@ -209,7 +208,7 @@ export default {
             /** data for list in progress */
             this.workingElements = [];
             // copy initial list, sort, add ids if needed
-            this.workingElements = this.initialElements.slice(0);
+            this.workingElements = JSON.parse(JSON.stringify(this.initialElements.slice(0)));
             this._ensureElementIds();
             this._validateElements();
         },
