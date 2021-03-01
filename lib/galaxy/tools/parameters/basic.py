@@ -1359,7 +1359,7 @@ class ColumnListParameter(SelectToolParameter):
 
         value = other_values.get(self.name)
         if value is not None:
-            # There are cases where 'value' is a string of comma separated values. This ensures 
+            # There are cases where 'value' is a string of comma separated values. This ensures
             # that it is converted into a list, with extra whitespace around items removed.
             value = util.listify(value, do_strip=True)
             if not set(value).issubset(set(legal_values)) and self.is_file_empty(trans, other_values):
