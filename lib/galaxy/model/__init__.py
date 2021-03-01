@@ -2296,7 +2296,7 @@ class DefaultQuotaAssociation(Quota, Dictifiable, RepresentById):
         REGISTERED = 'registered'
 
     def __init__(self, type, quota):
-        assert type in self.types.__dict__.values(), 'Invalid type'
+        assert type in self.types.__members__.values(), 'Invalid type'
         self.type = type
         self.quota = quota
 
@@ -2660,6 +2660,7 @@ class DatasetSourceHash(RepresentById):
 
 class DatasetHash(RepresentById):
     """ """
+
     def serialize(self, id_encoder, serialization_options):
         # serialize Dataset objects only for jobs that can actually modify these models.
         rval = dict_for(
