@@ -32,8 +32,8 @@ export class Services {
             rethrowSimple(e);
         }
     }
-    async deleteLibrary(lib, onSucess, onError) {
-        const url = `http://localhost:8080/api/libraries/${lib.id}`;
+    async deleteLibrary(lib, onSucess, onError, isUndelete = false) {
+        const url = `http://localhost:8080/api/libraries/${lib.id}${isUndelete ? "?undelete=true" : ""}`;
         try {
             const response = axios
                 .delete(url, lib)

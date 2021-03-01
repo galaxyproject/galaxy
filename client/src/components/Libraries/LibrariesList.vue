@@ -230,13 +230,9 @@ export default {
                 deletedLib,
                 () => {
                     Toast.success("Library has been marked deleted.");
-                    deletedLib.delete = true;
-                    if (this.include_deleted)
-                        this.librariesList = this.librariesList.filter((lib) => {
-                            if (lib.id !== deletedLib.id) {
-                                return lib;
-                            }
-                        });
+                    deletedLib.deleted = true;
+                    this.toggleEditMode(deletedLib);
+                    this.hideOn("deleted", false);
                 },
                 (error) => onError(error)
             );
@@ -270,7 +266,18 @@ export default {
                 }
             });
         },
-        undelete() {},
+        undelete(item) {
+            this.services.deleteLibrary(
+                item,
+                () => {
+                    item.deleted = false;
+                    Toast.success("Library has been undeleted.");
+                    this.$refs.libraries_list.refresh();
+                },
+                (error) => onError(error),
+                true
+            );
+        },
     },
 };
 </script>

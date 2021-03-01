@@ -6,6 +6,6 @@ export function onError(error) {
     if (typeof error.responseJSON !== "undefined") {
         Toast.error(error.responseJSON.err_msg);
     } else {
-        Toast.error("An error occurred during deleting the library.");
+        Toast.error("An error occurred during with the last library interaction");
     }
 }
