@@ -7,7 +7,7 @@ export class Services {
         this.root = options.root || getAppRoot();
     }
 
-    async getLibraries(id, include_deleted = false) {
+    async getLibraries(include_deleted = false) {
         const url = `http://localhost:8080/api/libraries?deleted=${include_deleted}`;
         try {
             const response = await axios.get(url);

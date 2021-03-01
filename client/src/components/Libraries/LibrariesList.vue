@@ -5,6 +5,9 @@
                 <font-awesome-icon icon="home" />
             </b-button>
             <SearchField :typingDelay="0" @updateSearch="searchValue($event)" />
+            <b-form-checkbox @input="toggle_include_deleted($event)">
+                include deleted
+            </b-form-checkbox>
         </div>
         <b-table
             id="libraries_list"
@@ -21,10 +24,18 @@
             :filterIncludedFields="filterOn"
         >
             <template v-slot:cell(name)="row">
-                <b-link v-if="!row.item.editMode" :to="{ path: `/folders/${row.item.root_folder_id}` }">{{
+                <textarea
+                    v-if="row.item.editMode"
+                    class="form-control"
+                    :ref="`name-${row.item.id}`"
+                    :value="row.item.name"
+                    rows="3"
+                />
+
+                <div class="deleted-item" v-else-if="row.item.deleted && include_deleted">{{ row.item.name }}</div>
+                <b-link :disabled="true" v-else :to="{ path: `/folders/${row.item.root_folder_id}` }">{{
                     row.item.name
                 }}</b-link>
-                <textarea v-else class="form-control" :ref="`name-${row.item.id}`" :value="row.item.name" rows="3" />
             </template>
             <template v-slot:cell(description)="row">
                 <LibraryEditField
@@ -52,52 +63,58 @@
                 />
             </template>
             <template v-slot:cell(buttons)="row">
-                <b-button
-                    v-if="row.item.can_user_modify && row.item.editMode"
-                    size="sm"
-                    class="lib-btn permission_folder_btn"
-                    :title="'Permissions of ' + row.item.name"
-                    @click="saveChanges(row.item)"
-                >
-                    <font-awesome-icon :icon="['far', 'save']" />
-                    Save
+                <b-button @click="undelete(row.item)" v-if="row.item.deleted" :title="'Undelete ' + row.item.name">
+                    <font-awesome-icon icon="unlock" />
+                    Undelete
                 </b-button>
-                <b-button
-                    v-if="row.item.can_user_modify"
-                    size="sm"
-                    class="lib-btn edit-btn"
-                    :title="`Edit ${row.item.name}`"
-                    @click="toggleEditMode(row.item)"
-                >
-                    <div v-if="!row.item.editMode">
-                        <font-awesome-icon icon="pencil-alt" />
-                        Edit
-                    </div>
-                    <div v-else>
-                        <font-awesome-icon :icon="['fas', 'times']" />
-                        Cancel
-                    </div>
-                </b-button>
-                <b-button
-                    v-if="row.item.can_user_manage && !row.item.editMode"
-                    size="sm"
-                    class="lib-btn permission_folder_btn"
-                    :title="'Permissions of ' + row.item.name"
-                    :href="`${root}library/list#library/${row.item.id}/permissions`"
-                >
-                    <font-awesome-icon icon="users" />
-                    Manage
-                </b-button>
-                <b-button
-                    v-if="row.item.editMode"
-                    size="sm"
-                    class="lib-btn delete-lib-btn"
-                    :title="`Delete ${row.item.name}`"
-                    @click="deleteLibrary(row.item)"
-                >
-                    <font-awesome-icon icon="trash" />
-                    Delete
-                </b-button>
+                <div v-else>
+                    <b-button
+                        v-if="row.item.can_user_modify && row.item.editMode"
+                        size="sm"
+                        class="lib-btn permission_folder_btn"
+                        :title="'Permissions of ' + row.item.name"
+                        @click="saveChanges(row.item)"
+                    >
+                        <font-awesome-icon :icon="['far', 'save']" />
+                        Save
+                    </b-button>
+                    <b-button
+                        v-if="row.item.can_user_modify"
+                        size="sm"
+                        class="lib-btn edit-btn"
+                        :title="`Edit ${row.item.name}`"
+                        @click="toggleEditMode(row.item)"
+                    >
+                        <div v-if="!row.item.editMode">
+                            <font-awesome-icon icon="pencil-alt" />
+                            Edit
+                        </div>
+                        <div v-else>
+                            <font-awesome-icon :icon="['fas', 'times']" />
+                            Cancel
+                        </div>
+                    </b-button>
+                    <b-button
+                        v-if="row.item.can_user_manage && !row.item.editMode"
+                        size="sm"
+                        class="lib-btn permission_folder_btn"
+                        :title="'Permissions of ' + row.item.name"
+                        :href="`${root}library/list#library/${row.item.id}/permissions`"
+                    >
+                        <font-awesome-icon icon="users" />
+                        Manage
+                    </b-button>
+                    <b-button
+                        v-if="row.item.editMode"
+                        size="sm"
+                        class="lib-btn delete-lib-btn"
+                        :title="`Delete ${row.item.name}`"
+                        @click="deleteLibrary(row.item)"
+                    >
+                        <font-awesome-icon icon="trash" />
+                        Delete
+                    </b-button>
+                </div>
             </template>
         </b-table>
 
@@ -137,6 +154,7 @@
 
 <script>
 import Vue from "vue";
+import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
 import BootstrapVue from "bootstrap-vue";
 import { Services } from "./services";
@@ -165,6 +183,7 @@ export default {
         },
     },
     data() {
+        const galaxy = getGalaxyInstance();
         return {
             currentPage: 1,
             fields: fields,
@@ -174,6 +193,7 @@ export default {
             include_deleted: false,
             filterOn: [],
             filter: null,
+            isAdmin: galaxy.user.isAdmin(),
         };
     },
     created() {
@@ -182,7 +202,7 @@ export default {
         this.loadLibraries(this.include_deleted);
     },
     methods: {
-        loadLibraries(include_deleted) {
+        loadLibraries(include_deleted = false) {
             this.services.getLibraries(include_deleted).then((result) => (this.librariesList = result));
         },
         toggleEditMode(item) {
@@ -210,11 +230,13 @@ export default {
                 deletedLib,
                 () => {
                     Toast.success("Library has been marked deleted.");
-                    this.librariesList = this.librariesList.filter((lib) => {
-                        if (lib.id !== deletedLib.id) {
-                            return lib;
-                        }
-                    });
+                    deletedLib.delete = true;
+                    if (this.include_deleted)
+                        this.librariesList = this.librariesList.find((lib) => {
+                            if (lib.id !== deletedLib.id) {
+                                return lib;
+                            }
+                        });
                 },
                 (error) => onError(error)
             );
@@ -230,6 +252,31 @@ export default {
         searchValue(value) {
             this.filter = value;
         },
+        toggle_include_deleted(isDeletedIncluded) {
+            this.include_deleted = isDeletedIncluded;
+            if (this.include_deleted) {
+                this.services.getLibraries(this.include_deleted).then((result) => {
+                    this.librariesList = this.librariesList.concat(result);
+                    this.$refs.libraries_list.refresh();
+                });
+            } else {
+                this.hideOn("deleted", false);
+            }
+        },
+        hideOn(property, value) {
+            this.librariesList = this.librariesList.filter((lib) => {
+                if (lib[property] === value) {
+                    return lib;
+                }
+            });
+        },
+        undelete() {},
     },
 };
 </script>
+<style scoped>
+.deleted-item {
+    cursor: not-allowed;
+    color: gray;
+}
+</style>
