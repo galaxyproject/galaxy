@@ -1,7 +1,7 @@
 <template>
     <div>
-        <b-button title="go to first page">
-            <font-awesome-icon @click="gotoFirstPage" icon="home" />
+        <b-button @click="gotoFirstPage" title="go to first page">
+            <font-awesome-icon icon="home" />
         </b-button>
         <b-table
             id="libraries_list"
@@ -211,7 +211,6 @@ export default {
         },
         gotoFirstPage() {
             this.currentPage = 1;
-            this.$refs.libraries_list.refresh();
         },
     },
 };
