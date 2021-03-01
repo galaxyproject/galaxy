@@ -142,8 +142,8 @@ class ExtractInputAction(BaseAction):
     position: Optional[Position]
 
 
-class ExtractLegacyParameter(BaseAction):
-    action_type: Literal['extract_legacy_parameter']
+class ExtractUntypedParameter(BaseAction):
+    action_type: Literal['extract_untyped_parameter']
     name: str
     label: Optional[str]  # defaults to name if unset
     position: Optional[Position]
@@ -221,7 +221,7 @@ union_action_classes = Union[
     ConnectAction,
     DisconnectAction,
     ExtractInputAction,
-    ExtractLegacyParameter,
+    ExtractUntypedParameter,
     FileDefaultsAction,
     FillStepDefaultsAction,
     UpdateAnnotationAction,

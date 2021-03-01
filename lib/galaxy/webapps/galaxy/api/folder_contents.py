@@ -328,7 +328,7 @@ class FolderContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesLi
         folders = check_deleted(folder.folders, include_deleted)
 
         if search_text is not None:
-            folders = [item for item in folders if item.description and search_text in item.name or search_text in item.description]
+            folders = [item for item in folders if search_text in item.name or search_text in item.description]
             datasets = list(filter(filter_searched_datasets, datasets))
 
         return folders, datasets

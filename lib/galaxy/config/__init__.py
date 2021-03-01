@@ -82,6 +82,10 @@ LOGGING_CONFIG_DEFAULT = {
             'level': 'INFO',
             'qualname': 'amqp',
         },
+        'botocore': {
+            'level': 'INFO',
+            'qualname': 'botocore',
+        },
     },
     'filters': {
         'stack': {

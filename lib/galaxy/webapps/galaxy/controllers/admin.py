@@ -809,7 +809,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         if trans.request.method == 'GET':
             default_value = quota.default[0].type if quota.default else 'no'
             default_options = [('No', 'no')]
-            for typ in trans.app.model.DefaultQuotaAssociation.types.__dict__.values():
+            for typ in trans.app.model.DefaultQuotaAssociation.types.__members__.values():
                 default_options.append(('Yes, ' + typ, typ))
             return {
                 'title': 'Set quota default for \'%s\'' % util.sanitize_text(quota.name),
