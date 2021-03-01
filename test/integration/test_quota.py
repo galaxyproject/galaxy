@@ -173,7 +173,12 @@ class QuotaIntegrationTestCase(integration_util.IntegrationTestCase):
         }
 
     def _delete_and_purge(self, url):
-        headers = self.galaxy_interactor.api_key_header(self.galaxy_interactor.api_key, admin=True, anon=False)
+        headers = self.galaxy_interactor.api_key_header(
+            key=self.galaxy_interactor.api_key,
+            admin=True,
+            anon=False,
+            headers=None,
+        )
         json_data = json.dumps({
             'purge': 'true'
         })
