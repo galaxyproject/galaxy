@@ -8,7 +8,7 @@ from galaxy.datatypes.binary import CompressedZipArchive
 from galaxy.datatypes.metadata import MetadataElement
 
 
-class Qiime2Result(CompressedZipArchive):
+class QIIME2Result(CompressedZipArchive):
     MetadataElement(name="semantic_type", readonly=True)
     MetadataElement(name="semantic_type_simple", readonly=True, visible=False)
     MetadataElement(name="uuid", readonly=True)
@@ -60,7 +60,7 @@ class Qiime2Result(CompressedZipArchive):
             return False
 
 
-class Qiime2Artifact(Qiime2Result):
+class QIIME2Artifact(Qiime2Result):
     file_ext = "qza"
 
     def sniff(self, filename):
@@ -68,7 +68,7 @@ class Qiime2Artifact(Qiime2Result):
         return metadata and metadata['semantic_type'] != 'Visualization'
 
 
-class Qiime2Visualization(Qiime2Result):
+class QIIME2Visualization(Qiime2Result):
     file_ext = "qzv"
 
     def sniff(self, filename):
