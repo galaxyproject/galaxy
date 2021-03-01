@@ -1,8 +1,11 @@
 <template>
     <div>
-        <b-button @click="gotoFirstPage" title="go to first page">
-            <font-awesome-icon icon="home" />
-        </b-button>
+        <div class="form-inline d-flex align-items-center mb-2">
+            <b-button @click="gotoFirstPage" title="go to first page">
+                <font-awesome-icon icon="home" />
+            </b-button>
+            <SearchField :typingDelay="0" @updateSearch="searchValue($event)" />
+        </div>
         <b-table
             id="libraries_list"
             striped
@@ -13,6 +16,9 @@
             :current-page="currentPage"
             show-empty
             ref="libraries_list"
+            @filtered="onFiltered"
+            :filter="filter"
+            :filterIncludedFields="filterOn"
         >
             <template v-slot:cell(name)="row">
                 <b-link v-if="!row.item.editMode" :to="{ path: `/folders/${row.item.root_folder_id}` }">{{
@@ -139,6 +145,7 @@ import { Toast } from "ui/toast";
 import { initLibariesIcons } from "components/Libraries/icons";
 import { MAX_DESCRIPTION_LENGTH, DEFAULT_PER_PAGE, onError } from "components/Libraries/library-utils";
 import LibraryEditField from "components/Libraries/LibraryEditField";
+import SearchField from "components/Libraries/LibraryFolder/SearchField";
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
@@ -150,6 +157,7 @@ export default {
     components: {
         FontAwesomeIcon,
         LibraryEditField,
+        SearchField,
     },
     computed: {
         rows() {
@@ -164,6 +172,8 @@ export default {
             librariesList: [],
             maxDescriptionLength: MAX_DESCRIPTION_LENGTH,
             include_deleted: false,
+            filterOn: [],
+            filter: null,
         };
     },
     created() {
@@ -211,6 +221,14 @@ export default {
         },
         gotoFirstPage() {
             this.currentPage = 1;
+        },
+        onFiltered(filteredItems) {
+            // Trigger pagination to update the number of buttons/pages due to filtering
+            this.totalRows = filteredItems.length;
+            this.currentPage = 1;
+        },
+        searchValue(value) {
+            this.filter = value;
         },
     },
 };
