@@ -1398,12 +1398,6 @@ class SharableMixin:
         raise NotImplementedError()
 
 
-class UsesQuotaMixin:
-
-    def get_quota(self, trans, id, check_ownership=False, check_accessible=False, deleted=None):
-        return self.get_object(trans, id, 'Quota', check_ownership=False, check_accessible=False, deleted=deleted)
-
-
 class UsesTagsMixin(SharableItemSecurityMixin):
 
     def get_tag_handler(self, trans) -> tags.GalaxyTagHandler:
