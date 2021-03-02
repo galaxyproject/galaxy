@@ -9,7 +9,7 @@
                     <template v-for="path_item in this.dataset.full_path">
                         <b-breadcrumb-item
                             :key="path_item[0]"
-                            :to="{ path: `/${path_item[0]}` }"
+                            :to="{ path: `/folders/${path_item[0]}` }"
                             :active="path_item[0] === dataset_id"
                             href="#"
                             >{{ path_item[1] }}</b-breadcrumb-item

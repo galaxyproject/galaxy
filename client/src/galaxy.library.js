@@ -6,11 +6,7 @@
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
-// import mod_utils from "utils/utils";
 import mod_baseMVC from "mvc/base-mvc";
-// import mod_library_model from "mvc/library/library-model";
-import mod_librarylist_view from "mvc/library/library-librarylist-view";
-import mod_librarytoolbar_view from "mvc/library/library-librarytoolbar-view";
 import mod_library_dataset_view from "mvc/library/library-dataset-view";
 import mod_library_library_view from "mvc/library/library-library-view";
 // ============================================================================
