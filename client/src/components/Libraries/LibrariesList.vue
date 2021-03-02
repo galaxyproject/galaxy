@@ -1,12 +1,15 @@
 <template>
     <div>
         <div class="form-inline d-flex align-items-center mb-2">
-            <b-button @click="gotoFirstPage" title="go to first page">
+            <b-button class="mr-1" @click="gotoFirstPage" title="go to first page">
                 <font-awesome-icon icon="home" />
             </b-button>
             <SearchField :typingDelay="0" @updateSearch="searchValue($event)" />
-            <b-form-checkbox @input="toggle_include_deleted($event)">
+            <b-form-checkbox class="mr-1" @input="toggle_include_deleted($event)">
                 include deleted
+            </b-form-checkbox>
+            <b-form-checkbox class="mr-1" @input="toggle_exclude_restricted($event)">
+                exclude restricted
             </b-form-checkbox>
         </div>
         <b-table
@@ -191,7 +194,9 @@ export default {
             librariesList: [],
             maxDescriptionLength: MAX_DESCRIPTION_LENGTH,
             include_deleted: false,
+            exclude_restricted: false,
             filterOn: [],
+            excluded: [],
             filter: null,
             isAdmin: galaxy.user.isAdmin(),
         };
@@ -259,12 +264,21 @@ export default {
                 this.hideOn("deleted", false);
             }
         },
+        toggle_exclude_restricted(isRestrictedIncluded) {
+            this.exclude_restricted = isRestrictedIncluded;
+            if (this.exclude_restricted) {
+                this.excluded = this.hideOn("public", true);
+            } else {
+                this.librariesList = this.librariesList.concat(this.excluded);
+            }
+        },
         hideOn(property, value) {
+            const filtered = [];
             this.librariesList = this.librariesList.filter((lib) => {
-                if (lib[property] === value) {
-                    return lib;
-                }
+                if (lib[property] === value) return lib;
+                else filtered.push(lib);
             });
+            return filtered;
         },
         undelete(item) {
             this.services.deleteLibrary(
