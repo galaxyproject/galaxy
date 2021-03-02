@@ -30,27 +30,24 @@ from galaxy.web import (
     expose_api_raw_anonymous
 )
 from galaxy.webapps.base.controller import (
-    BaseAPIController,
     UsesLibraryMixin,
     UsesLibraryMixinItems,
     UsesTagsMixin
 )
+from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
 
 
-class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems, UsesTagsMixin):
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.hda_manager = hdas.HDAManager(app)
-        self.history_manager = histories.HistoryManager(app)
-        self.history_contents_manager = history_contents.HistoryContentsManager(app)
-        self.folder_manager = folders.FolderManager()
-        self.hda_serializer = hdas.HDASerializer(app)
-        self.hda_deserializer = hdas.HDADeserializer(app)
-        self.hdca_serializer = hdcas.HDCASerializer(app)
-        self.history_contents_filters = history_contents.HistoryContentsFilters(app)
+class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesLibraryMixinItems, UsesTagsMixin):
+    hda_manager: hdas.HDAManager = depends(hdas.HDAManager)
+    history_manager: histories.HistoryManager = depends(histories.HistoryManager)
+    history_contents_manager: history_contents.HistoryContentsManager = depends(history_contents.HistoryContentsManager)
+    folder_manager: folders.FolderManager = depends(folders.FolderManager)
+    hda_serializer: hdas.HDASerializer = depends(hdas.HDASerializer)
+    hda_deserializer: hdas.HDADeserializer = depends(hdas.HDADeserializer)
+    hdca_serializer: hdcas.HDCASerializer = depends(hdcas.HDCASerializer)
+    history_contents_filters: history_contents.HistoryContentsFilters = depends(history_contents.HistoryContentsFilters)
 
     @expose_api_anonymous
     def index(self, trans, history_id, ids=None, v=None, **kwd):

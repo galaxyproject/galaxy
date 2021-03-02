@@ -17,10 +17,10 @@ from galaxy.managers.tags import (
     TagsManager,
 )
 from galaxy.web import expose_api
-from galaxy.webapps.base.controller import BaseAPIController
 from . import (
-    Depends,
-    get_trans,
+    BaseGalaxyAPIController,
+    depends,
+    DependsOnTrans,
 )
 
 log = logging.getLogger(__name__)
@@ -28,13 +28,9 @@ log = logging.getLogger(__name__)
 router = APIRouter(tags=['tags'])
 
 
-def get_tags_manager() -> TagsManager:
-    return TagsManager()  # TODO: remove/refactor after merging #11180
-
-
 @cbv(router)
 class FastAPITags:
-    manager: TagsManager = Depends(get_tags_manager)
+    manager: TagsManager = depends(TagsManager)
 
     @router.put(
         '/api/tags',
@@ -43,7 +39,7 @@ class FastAPITags:
     )
     def update(
         self,
-        trans: ProvidesUserContext = Depends(get_trans),
+        trans: ProvidesUserContext = DependsOnTrans,
         payload: ItemTagsPayload = Body(
             ...,  # Required
             title="Payload",
@@ -58,11 +54,8 @@ class FastAPITags:
         self.manager.update(trans, payload)
 
 
-class TagsController(BaseAPIController):
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.manager = TagsManager()
+class TagsController(BaseGalaxyAPIController):
+    manager: TagsManager = depends(TagsManager)
 
     # Retag an item. All previous tags are deleted and new tags are applied.
     @expose_api

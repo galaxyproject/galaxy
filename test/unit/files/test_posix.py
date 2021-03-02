@@ -89,8 +89,8 @@ def test_posix_link_security_allowlist():
 
 def test_posix_link_security_allowlist_write():
     file_sources = _configured_file_sources(include_allowlist=True, writable=True)
-    write_from(file_sources, "gxfiles://test1/unsafe", "my test content")
-    with open(os.path.join(file_sources.test_root, "unsafe")) as f:
+    write_from(file_sources, "gxfiles://test1/unsafe_dir/foo", "my test content")
+    with open(os.path.join(file_sources.test_root, "subdir1", "foo")) as f:
         assert f.read() == "my test content"
 
 
@@ -305,6 +305,7 @@ def _write_file_fixtures(tmp, root):
     with open(os.path.join(subdir2, "d"), "w") as f:
         f.write("d\n")
 
+    os.symlink(subdir1, os.path.join(root, "unsafe_dir"))
     return tmp, root
 
 

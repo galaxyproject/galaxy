@@ -39,15 +39,18 @@ class ConfiguredFileSources:
                         return
                 stock_file_source_conf_dict.append({'type': plugin_type})
 
+            if file_sources_config.ftp_upload_dir is not None:
+                _ensure_loaded('gxftp')
             if file_sources_config.library_import_dir is not None:
                 _ensure_loaded('gximport')
             if file_sources_config.user_library_import_dir is not None:
                 _ensure_loaded('gxuserimport')
-            if file_sources_config.ftp_upload_dir is not None:
-                _ensure_loaded('gxftp')
             if stock_file_source_conf_dict:
                 stock_plugin_source = plugin_config.plugin_source_from_dict(stock_file_source_conf_dict)
-                file_sources.extend(self._parse_plugin_source(stock_plugin_source))
+                # insert at begining instead of append so FTP and library import appear
+                # at the top of the list (presumably the most common options). Admins can insert
+                # these explicitly for greater control.
+                file_sources = self._parse_plugin_source(stock_plugin_source) + file_sources
 
         self._file_sources = file_sources
         self.custom_sources_configured = custom_sources_configured

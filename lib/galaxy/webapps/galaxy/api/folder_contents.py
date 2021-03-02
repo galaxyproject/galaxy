@@ -5,29 +5,27 @@ import logging
 
 from galaxy import (
     exceptions,
-    managers,
     util
 )
-from galaxy.managers import folders
+from galaxy.managers.folders import FolderManager
+from galaxy.managers.hdas import HDAManager
 from galaxy.model import tags
 from galaxy.web import (
     expose_api,
     expose_api_anonymous
 )
-from galaxy.webapps.base.controller import BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems
+from galaxy.webapps.base.controller import UsesLibraryMixin, UsesLibraryMixinItems
+from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
 
 
-class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems):
+class FolderContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesLibraryMixinItems):
     """
     Class controls retrieval, creation and updating of folder contents.
     """
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.folder_manager = folders.FolderManager()
-        self.hda_manager = managers.hdas.HDAManager(app)
+    hda_manager: HDAManager = depends(HDAManager)
+    folder_manager: FolderManager = depends(FolderManager)
 
     @expose_api_anonymous
     def index(self, trans, folder_id, limit=None, offset=None, search_text=None, **kwd):
@@ -330,7 +328,7 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
         folders = check_deleted(folder.folders, include_deleted)
 
         if search_text is not None:
-            folders = [item for item in folders if item.description and search_text in item.name or search_text in item.description]
+            folders = [item for item in folders if search_text in item.name or search_text in item.description]
             datasets = list(filter(filter_searched_datasets, datasets))
 
         return folders, datasets

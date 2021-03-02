@@ -5,6 +5,7 @@ from typing import (
 )
 
 from galaxy.datatypes.registry import Registry
+from galaxy.structured_app import StructuredApp
 
 log = logging.getLogger(__name__)
 
@@ -12,7 +13,7 @@ log = logging.getLogger(__name__)
 class DisplayApplicationsManager:
     """Interface/service object for sharing logic between controllers."""
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         self._app = app
 
     @property

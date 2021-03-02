@@ -61,7 +61,7 @@
             <p class="text-center" v-if="is_unrestricted">
                 You can
                 <strong @click="toggleDatasetPrivacy(true)" class="make-private">
-                    <a href="javascript:void(0)">make this dataset private</a>
+                    <a id="make-private" href="javascript:void(0)">make this dataset private</a>
                 </strong>
                 to you.
             </p>

@@ -370,6 +370,7 @@ class JobLike:
 class User(Dictifiable, RepresentById):
     use_pbkdf2 = True
     bootstrap_admin_user = False
+    api_keys: 'List[APIKeys]'
     """
     Data for a Galaxy user or admin and relations to their
     histories, credentials, and roles.
@@ -2291,7 +2292,7 @@ class DefaultQuotaAssociation(Quota, Dictifiable, RepresentById):
         REGISTERED = 'registered'
 
     def __init__(self, type, quota):
-        assert type in self.types.__dict__.values(), 'Invalid type'
+        assert type in self.types.__members__.values(), 'Invalid type'
         self.type = type
         self.quota = quota
 
@@ -2655,6 +2656,7 @@ class DatasetSourceHash(RepresentById):
 
 class DatasetHash(RepresentById):
     """ """
+
     def serialize(self, id_encoder, serialization_options):
         # serialize Dataset objects only for jobs that can actually modify these models.
         rval = dict_for(

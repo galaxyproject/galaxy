@@ -18,9 +18,11 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import eagerload, undefer
 
-from galaxy import managers, model, util, web
+from galaxy import model, util, web
 from galaxy.datatypes.interval import Bed
+from galaxy.managers.hdas import HDAManager
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
+from galaxy.structured_app import StructuredApp
 from galaxy.util import sanitize_text, unicodify
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.visualization.data_providers.genome import RawBedDataProvider
@@ -34,6 +36,7 @@ from galaxy.webapps.base.controller import (
     SharableMixin,
     UsesVisualizationMixin
 )
+from ..api import depends
 
 log = logging.getLogger(__name__)
 
@@ -231,10 +234,10 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
     _history_datasets_grid = HistoryDatasetsSelectionGrid()
     _library_datasets_grid = LibraryDatasetsSelectionGrid()
     _tracks_grid = TracksterSelectionGrid()
+    hda_manager: HDAManager = depends(HDAManager)
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
-        self.hda_manager = managers.hdas.HDAManager(app)
 
     #
     # -- Functions for listing visualizations. --

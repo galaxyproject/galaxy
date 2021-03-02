@@ -14,6 +14,7 @@ from importlib import import_module
 
 import routes
 import webob.compat
+import webob.cookies
 import webob.exc
 import webob.exc as httpexceptions  # noqa: F401
 # We will use some very basic HTTP/wsgi utilities from the paste library
@@ -383,7 +384,8 @@ class Request(webob.Request):
         cookies = SimpleCookie()
         cookie_header = self.environ.get("HTTP_COOKIE")
         if cookie_header:
-            galaxy_cookies = "; ".join(x.strip() for x in cookie_header.split('; ') if x.startswith('galaxy'))
+            all_cookies = webob.cookies.parse_cookie(cookie_header)
+            galaxy_cookies = {k.decode(): v.decode() for k, v in all_cookies if k.startswith(b'galaxy')}
             if galaxy_cookies:
                 try:
                     cookies.load(galaxy_cookies)
