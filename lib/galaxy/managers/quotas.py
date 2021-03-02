@@ -109,7 +109,8 @@ class QuotaManager:
         else:
             old_name = quota.name
             quota.name = params.name
-            quota.description = params.description
+            if params.description:
+                quota.description = params.description
             self.sa_session.add(quota)
             self.sa_session.flush()
             message = f"Quota '{old_name}' has been renamed to '{params.name}'."
