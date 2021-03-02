@@ -45,7 +45,23 @@
             </b-tab>
             <b-tab>
                 <template v-slot:title> <i class="fa fa-database"></i>{{ l(" Datatype") }}</template>
-                <b>{{ l("Datatype: ") }}</b> <i>{{ datatypesFromElements }}</i>
+                <b>{{ l("Datatype: ") }}</b>
+                <multiselect
+                    v-model="extension"
+                    deselect-label="Can't remove this value"
+                    track-by="id"
+                    label="text"
+                    :options="extensions"
+                    :searchable="true"
+                    :allow-empty="false"
+                >
+                    {{ extension.text }}
+                    <!-- <template slot="afterList">
+                        <div v-observe-visibility="reachedEndOfList" v-if="hasMorePages">
+                            <span class="spinner fa fa-spinner fa-spin fa-1x" />
+                        </div>
+                    </template> --> </multiselect
+                ><i>{{ datatypesFromElements }}</i>
             </b-tab>
             <b-tab>
                 <template v-slot:title> <i class="fa fa-user"></i>{{ l(" Permissions") }}</template>
@@ -89,10 +105,12 @@ export default {
     data: function () {
         return {
             collection_data: {}, //all data from the response
-            extensions: {},
+            extensions: [],
             genomes: [],
-            selectedGenome: null,
+            selectedGenome: "",
+            selectedExtension: "",
             databaseKeyFromElements: null,
+            datatypeFromElements: null,
         };
     },
     props: {
@@ -126,53 +144,20 @@ export default {
                 return this.collection_data.element_count;
             },
         },
-        // databaseKeyFromElements: {
-        //     get() {
-        //         const dbkeysInCollection = [];
-        //         for (var index in this.collectionElements) {
-        //             var element = this.collectionElements[index];
-        //             if (!dbkeysInCollection.includes(element.object.metadata_dbkey)) {
-        //                 dbkeysInCollection.push(element.object.metadata_dbkey);
-        //             }
-        //         }
-        //         if (dbkeysInCollection.length == 1) {
-        //             return dbkeysInCollection[0];
-        //         } else {
-        //             return "?";
-        //         }
-        //     },
-        // },
         genome: {
             get() {
-                // return this.genomes.find((element) => (element.id == this.databaseKeyFromElements));
                 return this.selectedGenome;
             },
             set(element) {
                 this.selectedGenome = element;
             },
-            // set(element) {
-            //     this.genome = element;
-            // },
-        },
-        datatypesFromElements: {
-            get() {
-                const datatypesInCollection = [];
-                for (var index in this.collectionElements) {
-                    var element = this.collectionElements[index];
-                    if (!datatypesInCollection.includes(element.object.data_type)) {
-                        datatypesInCollection.push(element.object.data_type);
-                    }
-                }
-                if (datatypesInCollection.length == 1) {
-                    return datatypesInCollection[0];
-                } else {
-                    return "?";
-                }
-            },
         },
         extension: {
             get() {
-                return this.datatypesFromElements;
+                return this.selectedExtension;
+            },
+            set(element) {
+                this.selectedExtension = element;
             },
         },
     },
@@ -187,6 +172,7 @@ export default {
                 .then((response) => {
                     this.collection_data = response.data;
                     this.getDatabaseKeyFromElements();
+                    this.getExtensionFromElements();
                     console.log("collection_data", this.collection_data);
                 });
 
@@ -205,7 +191,23 @@ export default {
             } else {
                 this.databaseKeyFromElements = "?";
             }
-            this.selectedGenome = this.genomes.find((element) => (element.id == this.databaseKeyFromElements));
+            this.selectedGenome = this.genomes.find((element) => element.id == this.databaseKeyFromElements);
+            console.log(this.selectedGenome, "in getDBfromE");
+        },
+        getExtensionFromElements: function () {
+            const datatypesInCollection = [];
+            for (var index in this.collectionElements) {
+                var element = this.collectionElements[index];
+                if (!datatypesInCollection.includes(element.object.file_ext)) {
+                    datatypesInCollection.push(element.object.file_ext);
+                }
+            }
+            if (datatypesInCollection.length == 1) {
+                this.datatypeFromElements = datatypesInCollection[0];
+            } else {
+                this.datatypeFromElements = UploadUtils.DEFAULT_EXTENSION.id;
+            }
+            this.selectedExtension = this.extensions.find((element) => element.id == this.datatypeFromElements);
         },
     },
 };
