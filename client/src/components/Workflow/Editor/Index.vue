@@ -135,7 +135,7 @@
                                     id="lint-panel"
                                     class="right-content"
                                     ref="lint"
-                                    style="display: none;"
+                                    style="display: none"
                                     :untyped-parameters="parameters"
                                     :annotation="annotation"
                                     :creator="creator"
