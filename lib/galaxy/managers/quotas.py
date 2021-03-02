@@ -33,9 +33,7 @@ from galaxy.quota._schema import (
     UpdateQuotaParams,
 )
 from galaxy.schema.fields import EncodedDatabaseIdField
-from galaxy.webapps.base.controller import (
-    url_for,
-)
+from galaxy.web import url_for
 
 log = logging.getLogger(__name__)
 
