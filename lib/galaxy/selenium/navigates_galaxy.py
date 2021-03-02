@@ -684,6 +684,7 @@ class NavigatesGalaxy(HasDriver):
         rule_builder = self.components.rule_builder
         name_element = rule_builder.collection_name_input.wait_for_and_click()
         name_element.send_keys(name)
+        self.sleep_for(WAIT_TYPES.UX_RENDER)
 
     def rule_builder_set_extension(self, extension):
         self.select2_set_value(self.navigation.rule_builder.selectors.extension_select, extension)

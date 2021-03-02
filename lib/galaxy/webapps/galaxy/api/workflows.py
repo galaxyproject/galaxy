@@ -28,6 +28,7 @@ from galaxy.managers.workflows import (
     WorkflowUpdateOptions,
 )
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.structured_app import StructuredApp
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 from galaxy.tools import recommendations
 from galaxy.tools.parameters import populate_state
@@ -42,7 +43,6 @@ from galaxy.web import (
     format_return_as_json,
 )
 from galaxy.webapps.base.controller import (
-    BaseAPIController,
     SharableMixin,
     url_for,
     UsesStoredWorkflowMixin
@@ -52,13 +52,14 @@ from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.modules import module_factory
 from galaxy.workflow.run import invoke, queue_invoke
 from galaxy.workflow.run_request import build_workflow_run_configs
+from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
 
 
-class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnnotations, SharableMixin):
+class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, UsesAnnotations, SharableMixin):
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
         self.history_manager = app.history_manager
         self.workflow_manager = app.workflow_manager
@@ -258,7 +259,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         Lists all versions of this workflow.
         """
-        stored_workflow = self.workflow_manager.get_stored_accessible_workflow(trans, workflow_id, **kwds)
+        instance = util.string_as_bool(kwds.get("instance", "false"))
+        stored_workflow = self.workflow_manager.get_stored_accessible_workflow(trans, workflow_id, by_stored_id=not instance)
         return [{'version': i, 'update_time': str(w.update_time), 'steps': len(w.steps)} for i, w in enumerate(reversed(stored_workflow.workflows))]
 
     @expose_api

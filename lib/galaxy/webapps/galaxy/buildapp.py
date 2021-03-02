@@ -16,7 +16,7 @@ import galaxy.model.mapping
 import galaxy.web.framework
 import galaxy.webapps.base.webapp
 from galaxy import util
-from galaxy.security.validate_user_input import VALID_PUBLICNAME_SUB
+from galaxy.security.validate_user_input import VALID_PUBLICNAME_RE
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
 from galaxy.web.framework.middleware.batch import BatchMiddleware
@@ -29,7 +29,7 @@ log = logging.getLogger(__name__)
 
 
 class GalaxyWebApplication(galaxy.webapps.base.webapp.WebApplication):
-    pass
+    injection_aware = True
 
 
 def app_factory(*args, **kwargs):
@@ -102,7 +102,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
                      controller='dataset', action='display_application', dataset_id=None, user_id=None,
                      app_name=None, link_name=None, app_action=None, action_param=None, action_param_extra=None)
 
-    USERNAME_REQS = {'username': VALID_PUBLICNAME_SUB.pattern}
+    USERNAME_REQS = {'username': VALID_PUBLICNAME_RE.pattern.strip("^$")}
     webapp.add_route('/u/{username}/d/{slug}/{filename}', controller='dataset', action='display_by_username_and_slug', filename=None, requirements=USERNAME_REQS)
     webapp.add_route('/u/{username}/p/{slug}', controller='page', action='display_by_username_and_slug', requirements=USERNAME_REQS)
     webapp.add_route('/u/{username}/h/{slug}', controller='history', action='display_by_username_and_slug', requirements=USERNAME_REQS)
@@ -192,6 +192,8 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route('/custom_builds')
     webapp.add_client_route('/interactivetool_entry_points/list')
     webapp.add_client_route('/library/folders/{folder_id}')
+    webapp.add_client_route('/library/folders/permissions/{folder_id}')
+    webapp.add_client_route('/library/folders/permissions/{folder_id}/dataset/{dataset_id}')
 
     # ==== Done
     # Indicate that all configuration settings have been provided
@@ -247,6 +249,7 @@ def populate_api_routes(webapp, app):
     ]
 
     # Accesss HDA details via histories/{history_id}/contents/datasets/{hda_id}
+    # and HDCA details via histories/{history_id}/contents/dataset_collections/{hdca_id}
     webapp.mapper.resource("content_typed",
                            "{type:%s}s" % "|".join(valid_history_contents_types),
                            name_prefix="history_",
@@ -1291,8 +1294,9 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
                               args=(statsd_host,
                                     conf.get('statsd_port', 8125),
                                     conf.get('statsd_prefix', 'galaxy'),
-                                    conf.get('statsd_influxdb', False)))
-        log.debug("Enabling 'statsd' middleware")
+                                    conf.get('statsd_influxdb', False),
+                                    conf.get('statsd_mock_calls', False)))
+        log.info("Enabling 'statsd' middleware")
     # If we're using remote_user authentication, add middleware that
     # protects Galaxy from improperly configured authentication in the
     # upstream server

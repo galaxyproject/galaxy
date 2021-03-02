@@ -56,15 +56,12 @@
 import ParameterStep from "./ParameterStep.vue";
 import WorkflowInvocationDataContents from "./WorkflowInvocationDataContents";
 import WorkflowInvocationStep from "./WorkflowInvocationStep";
-import ListMixin from "components/History/ListMixin";
 import { monitorHistoryUntilTrue } from "./providers/monitors";
 
 import { mapGetters } from "vuex";
 import { mapCacheActions } from "vuex-cache";
-import { vueRxShortcuts } from "components/plugins";
 
 export default {
-    mixins: [ListMixin, vueRxShortcuts],
     components: {
         WorkflowInvocationDataContents,
         WorkflowInvocationStep,

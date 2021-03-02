@@ -1650,18 +1650,26 @@ export default {
                     }
                 }
             }
-            UploadUtils.getUploadDatatypes(
-                (extensions) => {
+
+            // TODO: provider...
+            UploadUtils.getUploadDatatypes(false, UploadUtils.AUTO_EXTENSION)
+                .then((extensions) => {
                     this.extensions = extensions;
                     this.extension = UploadUtils.DEFAULT_EXTENSION;
-                },
-                false,
-                UploadUtils.AUTO_EXTENSION
-            );
-            UploadUtils.getUploadGenomes((genomes) => {
-                this.genomes = genomes;
-                this.genome = UploadUtils.DEFAULT_GENOME;
-            }, UploadUtils.DEFAULT_GENOME);
+                })
+                .catch((err) => {
+                    console.log("Error in RuleCollectionBuilder, unable to load datatypes", err);
+                });
+
+            // TODO: provider...
+            UploadUtils.getUploadGenomes(UploadUtils.DEFAULT_GENOME)
+                .then((genomes) => {
+                    this.genomes = genomes;
+                    this.genome = UploadUtils.DEFAULT_GENOME;
+                })
+                .catch((err) => {
+                    console.log("Error in RuleCollectionBuilder, unable to load genomes", err);
+                });
         }
     },
     watch: {

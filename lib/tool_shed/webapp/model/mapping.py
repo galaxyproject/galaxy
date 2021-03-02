@@ -9,7 +9,7 @@ from sqlalchemy.orm import backref, mapper, relation
 
 import tool_shed.webapp.model
 import tool_shed.webapp.util.shed_statistics as shed_statistics
-from galaxy.model.base import ModelMapping
+from galaxy.model.base import SharedModelMapping
 from galaxy.model.custom_types import JSONType, TrimmedString
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
@@ -118,7 +118,7 @@ Repository.table = Table("repository", metadata,
                          Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
                          Column("private", Boolean, default=False),
                          Column("deleted", Boolean, index=True, default=False),
-                         Column("email_alerts", JSONType, nullable=True),
+                         Column("email_alerts", JSONType, nullable=True, default=list),
                          Column("times_downloaded", Integer),
                          Column("deprecated", Boolean, default=False))
 
@@ -310,7 +310,13 @@ mapper(RepositoryCategoryAssociation, RepositoryCategoryAssociation.table,
            repository=relation(Repository)))
 
 
-def init(file_path, url, engine_options=None, create_tables=False):
+class ToolShedModelMapping(SharedModelMapping):
+    security_agent: CommunityRBACAgent
+    shed_counter: shed_statistics.ShedCounter
+    create_tables: bool
+
+
+def init(file_path, url, engine_options=None, create_tables=False) -> ToolShedModelMapping:
     """Connect mappings to the database"""
     engine_options = engine_options or {}
     # Create the database engine
@@ -318,7 +324,7 @@ def init(file_path, url, engine_options=None, create_tables=False):
     # Connect the metadata to the database.
     metadata.bind = engine
 
-    result = ModelMapping([tool_shed.webapp.model], engine=engine)
+    result = ToolShedModelMapping([tool_shed.webapp.model], engine=engine)
 
     if create_tables:
         metadata.create_all()

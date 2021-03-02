@@ -34,7 +34,7 @@
             </select2>
         </template>
         <template v-slot:buttons>
-            <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="app.dismiss()">
+            <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="$emit('dismiss')">
                 {{ btnCloseTitle }}
             </b-button>
             <b-button
@@ -235,7 +235,7 @@ export default {
                 };
             });
             this.callback(asDict);
-            this.app.cancel();
+            this.$emit("cancel");
         },
         _newUploadModelProps: function (index, file) {
             return {

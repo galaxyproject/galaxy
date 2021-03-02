@@ -66,6 +66,14 @@ LOGGING_CONFIG_DEFAULT = {
             'level': 'WARN',
             'qualname': 'paste.httpserver.ThreadPool',
         },
+        'sqlalchemy_json.track': {
+            'level': 'WARN',
+            'qualname': 'sqlalchemy_json.track',
+        },
+        'urllib3.connectionpool': {
+            'level': 'WARN',
+            'qualname': 'urllib3.connectionpool',
+        },
         'routes.middleware': {
             'level': 'WARN',
             'qualname': 'routes.middleware',
@@ -73,6 +81,10 @@ LOGGING_CONFIG_DEFAULT = {
         'amqp': {
             'level': 'INFO',
             'qualname': 'amqp',
+        },
+        'botocore': {
+            'level': 'INFO',
+            'qualname': 'botocore',
         },
     },
     'filters': {
@@ -808,7 +820,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         # InteractiveTools propagator mapping file
         self.interactivetools_map = self._in_root_dir(kwargs.get("interactivetools_map", self._in_data_dir("interactivetools_map.sqlite")))
         self.interactivetools_prefix = kwargs.get("interactivetools_prefix", "interactivetool")
-        self.interactivetools_proxy_host = kwargs.get("interactivetool_proxy_host", None)
+        self.interactivetools_proxy_host = kwargs.get("interactivetools_proxy_host", None)
 
         self.containers_conf = parse_containers_config(self.containers_config_file)
 

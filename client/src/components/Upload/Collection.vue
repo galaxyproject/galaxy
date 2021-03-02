@@ -42,7 +42,7 @@
             </select2>
         </template>
         <template v-slot:buttons>
-            <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="app.dismiss()">
+            <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="$emit('dismiss')">
                 {{ btnCloseTitle }}
             </b-button>
             <b-button
@@ -262,7 +262,7 @@ export default {
             this.counterRunning = 0;
             this._updateStateForCounters();
             this._eventReset();
-            this.app.hide();
+            this.$emit("hide");
         },
 
         /** Start upload process */

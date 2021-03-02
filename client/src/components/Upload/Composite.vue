@@ -34,7 +34,7 @@
             </select2>
         </template>
         <template v-slot:buttons>
-            <b-button ref="btnClose" class="ui-button-default" @click="app.dismiss()">
+            <b-button ref="btnClose" class="ui-button-default" @click="$emit('dismiss')">
                 {{ btnCloseTitle }}
             </b-button>
             <b-button

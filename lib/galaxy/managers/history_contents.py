@@ -32,6 +32,7 @@ from galaxy.managers import (
     taggable,
     tools
 )
+from galaxy.structured_app import StructuredApp
 
 log = logging.getLogger(__name__)
 
@@ -72,10 +73,10 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
     )
     default_order_by = 'hid'
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         self.app = app
-        self.contained_manager = self.contained_class_manager_class(app)
-        self.subcontainer_manager = self.subcontainer_class_manager_class(app)
+        self.contained_manager = app[self.contained_class_manager_class]
+        self.subcontainer_manager = app[self.subcontainer_class_manager_class]
 
     # ---- interface
     def contained(self, container, filters=None, limit=None, offset=None, order_by=None, **kwargs):
@@ -426,7 +427,7 @@ class HistoryContentsSerializer(base.ModelSerializer, deletable.PurgableSerializ
     """
     model_manager_class = HistoryContentsManager
 
-    def __init__(self, app, **kwargs):
+    def __init__(self, app: StructuredApp, **kwargs):
         super().__init__(app, **kwargs)
 
         self.default_view = 'summary'

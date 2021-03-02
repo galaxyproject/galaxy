@@ -4,6 +4,11 @@ from fastapi.middleware.wsgi import WSGIMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response
+try:
+    from starlette_context.middleware import RawContextMiddleware
+    from starlette_context.plugins import RequestIdPlugin
+except ImportError:
+    pass
 
 from galaxy.exceptions import MessageException
 from galaxy.web.framework.base import walk_controller_modules
@@ -25,8 +30,16 @@ api_tags_metadata = [
         "description": "Operations with supported data types.",
     },
     {
+        "name": "genomes",
+        "description": "Operations with genome data.",
+    },
+    {
         "name": "licenses",
         "description": "Operations with [SPDX licenses](https://spdx.org/licenses/).",
+    },
+    {
+        "name": "tags",
+        "description": "Operations with tags.",
     },
     {
         "name": "tool data tables",
@@ -58,11 +71,11 @@ def add_exception_handler(
 ) -> None:
 
     @app.exception_handler(RequestValidationError)
-    async def validate_exception_middleware(request: Request, exc: MessageException) -> Response:
+    async def validate_exception_middleware(request: Request, exc: RequestValidationError) -> Response:
         exc = validation_error_to_message_exception(exc)
         error_dict = api_error_message(None, exception=exc)
         return JSONResponse(
-            status_code=exc.status_code,
+            status_code=400,
             content=error_dict
         )
 
@@ -104,12 +117,17 @@ def add_galaxy_middleware(app: FastAPI, gx_app):
             return response
 
 
+def add_request_id_middleware(app: FastAPI):
+    app.add_middleware(RawContextMiddleware, plugins=(RequestIdPlugin(force_new_uuid=True),))
+
+
 def initialize_fast_app(gx_webapp, gx_app):
     app = FastAPI(
         openapi_tags=api_tags_metadata
     )
     add_exception_handler(app)
     add_galaxy_middleware(app, gx_app)
+    add_request_id_middleware(app)
     wsgi_handler = WSGIMiddleware(gx_webapp)
     for _, module in walk_controller_modules('galaxy.webapps.galaxy.api'):
         router = getattr(module, "router", None)

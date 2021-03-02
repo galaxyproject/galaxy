@@ -109,6 +109,7 @@
                                     @onEdit="onEdit"
                                     @onAttributes="onAttributes"
                                     @onLint="onLint"
+                                    @onUpgrade="onUpgrade"
                                 />
                             </div>
                         </div>
@@ -134,15 +135,17 @@
                                     id="lint-panel"
                                     class="right-content"
                                     ref="lint"
-                                    style="display: none"
-                                    :legacy-parameters="parameters"
+                                    style="display: none;"
+                                    :untyped-parameters="parameters"
                                     :annotation="annotation"
                                     :creator="creator"
                                     :license="license"
                                     :nodes="nodes"
                                     @onAttributes="onAttributes"
-                                    @refactor="attemptRefactor"
-                                    @scrollTo="scrollTo"
+                                    @onHighlight="onHighlight"
+                                    @onUnhighlight="onUnhighlight"
+                                    @onRefactor="onAttemptRefactor"
+                                    @onScrollTo="onScrollTo"
                                 />
                                 <div id="right-content" class="right-content" />
                             </div>
@@ -158,10 +161,10 @@
 import { getDatatypesMapper } from "components/Datatypes";
 import { fromSimple } from "./modules/model";
 import { getModule, getVersions, saveWorkflow, loadWorkflow } from "./modules/services";
+import { getUntypedWorkflowParameters } from "./modules/parameters";
 import {
     getStateUpgradeMessages,
     copyIntoWorkflow,
-    getLegacyWorkflowParameters,
     showAttributes,
     showForm,
     showLint,
@@ -301,7 +304,7 @@ export default {
             showForm(this, node, this.datatypes);
             this.canvasManager.drawOverview();
         },
-        attemptRefactor(actions) {
+        onAttemptRefactor(actions) {
             if (this.hasChanges) {
                 const r = window.confirm(
                     "You've made changes to your workflow that need to be saved before attempting the requested action. Save those changes and continue?"
@@ -413,15 +416,27 @@ export default {
             showAttributes();
             this._ensureParametersSet();
         },
-        scrollTo(node) {
+        onScrollTo(nodeId) {
+            const node = this.nodes[nodeId];
             this.canvasManager.scrollToNode(node);
             node.onScrollTo();
+        },
+        onHighlight(nodeId) {
+            const node = this.nodes[nodeId];
+            node.onHighlight();
+        },
+        onUnhighlight(nodeId) {
+            const node = this.nodes[nodeId];
+            node.onUnhighlight();
         },
         onLint() {
             this._ensureParametersSet();
             // See notes in Lint.vue about why refresh is needed.
             this.$refs.lint.refresh();
             showLint();
+        },
+        onUpgrade() {
+            this.attemptRefactor([{ action_type: "upgrade_all_steps" }]);
         },
         onEdit() {
             this.isCanvas = true;
@@ -486,7 +501,7 @@ export default {
             }
         },
         _ensureParametersSet() {
-            this.parameters = getLegacyWorkflowParameters(this.nodes);
+            this.parameters = getUntypedWorkflowParameters(this.nodes);
         },
         _insertStep(contentId, name, type) {
             if (!this.isCanvas) {

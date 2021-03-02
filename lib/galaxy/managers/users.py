@@ -30,6 +30,7 @@ from galaxy.security.validate_user_input import (
     validate_password,
     validate_publicname
 )
+from galaxy.structured_app import BasicApp, StructuredApp
 from galaxy.util.hash_util import new_secure_hash
 from galaxy.web import url_for
 
@@ -69,7 +70,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
     # TODO: incorp BaseAPIController.validate_in_users_and_groups
     # TODO: incorp CreatesApiKeysMixin
     # TODO: incorporate UsesFormDefinitionsMixin?
-    def __init__(self, app):
+    def __init__(self, app: BasicApp):
         self.model_class = app.model.User
         super().__init__(app)
 
@@ -225,6 +226,9 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         if self.by_email(email) is not None:
             raise exceptions.Conflict('Email must be unique', email=email)
 
+    def by_id(self, user_id):
+        return self.app.model.session.query(self.model_class).get(user_id)
+
     # ---- filters
     def by_email(self, email, filters=None, **kwargs):
         """
@@ -236,14 +240,6 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             return super().one(filters=filters, **kwargs)
         except exceptions.ObjectNotFound:
             return None
-
-    def by_email_like(self, email_with_wildcards, filters=None, order_by=None, **kwargs):
-        """
-        Find a user searching with SQL wildcards.
-        """
-        filters = self._munge_filters(self.model_class.email.like(email_with_wildcards), filters)
-        order_by = order_by or (model.User.email, )
-        return super().list(filters=filters, order_by=order_by, **kwargs)
 
     def by_api_key(self, api_key, sa_session=None):
         """
@@ -350,7 +346,17 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         Create and return an API key for `user`.
         """
         # TODO: seems like this should return the model
+        # Also TODO: seems unused? drop and see what happens? -John
         return api_keys.ApiKeyManager(self.app).create_api_key(user)
+
+    def user_can_do_run_as(self, user) -> bool:
+        run_as_users = [u for u in self.app.config.get("api_allow_run_as", "").split(",") if u]
+        if not run_as_users:
+            return False
+        user_in_run_as_users = user and user.email in run_as_users
+        # Can do if explicitly in list or master_api_key supplied.
+        can_do_run_as = user_in_run_as_users or user.bootstrap_admin_user
+        return can_do_run_as
 
     # TODO: possibly move to ApiKeyManager
     def valid_api_key(self, user):
@@ -605,7 +611,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
 class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
     model_manager_class = UserManager
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         """
         Convert a User and associated data to a dictionary representation.
         """

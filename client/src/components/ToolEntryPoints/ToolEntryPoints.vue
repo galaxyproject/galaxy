@@ -15,8 +15,10 @@
             <ul>
                 <li v-for="entryPoint of entryPoints" :key="entryPoint.id">
                     {{ entryPoint.name }}
-                    <span v-if="entryPoint.active"> (<a :href="entryPoints[0].target">click here to display</a>) </span>
-                    <span v-else> (waiting to become active...) </span>
+                    <span v-if="entryPoint.active"> (<a :href="entryPoint.target">click here to display</a>) </span>
+                    <span v-else>
+                        (waiting to become active...)
+                    </span>
                 </li>
             </ul>
         </div>

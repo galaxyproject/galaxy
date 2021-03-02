@@ -2,7 +2,7 @@
 histories.
 """
 import logging
-from collections import OrderedDict
+from typing import Optional
 
 from galaxy import exceptions, model
 from galaxy.tool_util.parser import ToolOutputCollectionPart
@@ -162,7 +162,16 @@ class FakeJob:
 
     def __init__(self, dataset):
         self.is_fake = True
-        self.id = "fake_%s" % dataset.id
+        self.id = f"fake_{dataset.id}"
+        self.name = self._guess_name_from_dataset(dataset)
+
+    def _guess_name_from_dataset(self, dataset) -> Optional[str]:
+        """Tries to guess the name of the fake job from the dataset associations."""
+        if dataset.copied_from_history_dataset_association:
+            return "Import from History"
+        if dataset.copied_from_library_dataset_dataset_association:
+            return "Import from Library"
+        return None
 
 
 class DatasetCollectionCreationJob:
@@ -196,7 +205,7 @@ class WorkflowSummary:
             history = trans.get_history()
         self.history = history
         self.warnings = set()
-        self.jobs = OrderedDict()
+        self.jobs = {}
         self.job_id2representative_job = {}  # map a non-fake job id to its representative job
         self.implicit_map_jobs = []
         self.collection_types = {}

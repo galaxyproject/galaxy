@@ -13,7 +13,6 @@ import mod_librarylist_view from "mvc/library/library-librarylist-view";
 import mod_librarytoolbar_view from "mvc/library/library-librarytoolbar-view";
 import mod_library_dataset_view from "mvc/library/library-dataset-view";
 import mod_library_library_view from "mvc/library/library-library-view";
-import mod_library_folder_view from "mvc/library/library-folder-view";
 // ============================================================================
 /**
  * The Data Libraries router. Takes care about triggering routes
@@ -184,16 +183,6 @@ var GalaxyLibrary = Backbone.View.extend({
             }
             Galaxy.libraries.libraryView = new mod_library_library_view.LibraryView({
                 id: library_id,
-                show_permissions: true,
-            });
-        });
-
-        this.library_router.on("route:folder_permissions", (folder_id) => {
-            if (Galaxy.libraries.folderView) {
-                Galaxy.libraries.folderView.$el.unbind("click");
-            }
-            Galaxy.libraries.folderView = new mod_library_folder_view.FolderView({
-                id: folder_id,
                 show_permissions: true,
             });
         });

@@ -4,13 +4,16 @@ from typing import Any, Optional
 from kombu import Connection
 
 from galaxy.auth import AuthManager
+from galaxy.datatypes.registry import Registry
+from galaxy.di import Container
 from galaxy.files import ConfiguredFileSources
 from galaxy.job_metrics import JobMetrics
-from galaxy.model.base import ModelMapping
+from galaxy.model.base import ModelMapping, SharedModelMapping
 from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.model.security import GalaxyRBACAgent
 from galaxy.model.security import HostAgent
 from galaxy.model.tags import GalaxyTagHandler
+from galaxy.quota import QuotaAgent
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.tool_util.deps.views import DependencyResolversView
 from galaxy.tool_util.verify import test_data
@@ -20,7 +23,25 @@ from galaxy.webhooks import WebhooksRegistry
 from galaxy.workflow.trs_proxy import TrsProxy
 
 
-class StructuredApp:
+class BasicApp(Container):
+    """Stripped down version of the ``app`` shared between Galaxy and ToolShed.
+
+    Code that is shared between Galaxy and the Tool Shed should be annotated as
+    using BasicApp instead of StructuredApp below.
+    """
+    name: str
+    config: Any
+    application_stack: ApplicationStack
+    model: SharedModelMapping
+    security: IdEncodingHelper
+    auth_manager: AuthManager
+    toolbox: Any
+    security_agent: Any
+    quota_agent: QuotaAgent
+    datatypes_registry: Registry
+
+
+class StructuredApp(BasicApp):
     """Interface defining typed description of the Galaxy UniverseApplication.
 
     Ideally nothing that depends on StructuredApp should require
@@ -31,12 +52,9 @@ class StructuredApp:
     (cyclical imports), we're just setting the class attributes to
     Any.
     """
-    name: str
     is_webapp: bool  # is_webapp will be set to true when building WSGI app
     new_installation: bool
-    config: Any
     tag_handler: GalaxyTagHandler
-    application_stack: ApplicationStack
     amqp_internal_connection_obj: Optional[Connection]
     dependency_resolvers_view: DependencyResolversView
     test_data_resolver: test_data.TestDataResolver
@@ -45,10 +63,8 @@ class StructuredApp:
     job_metrics: JobMetrics
     model: GalaxyModelMapping
     install_model: ModelMapping
-    security: IdEncodingHelper
     security_agent: GalaxyRBACAgent
     host_security_agent: HostAgent
-    auth_manager: AuthManager
     trs_proxy: TrsProxy
     webhooks_registry: WebhooksRegistry
 
@@ -73,6 +89,10 @@ class StructuredApp:
     installed_repository_manager: Any  # 'galaxy.tool_shed.galaxy_install.installed_repository_manager.InstalledRepositoryManager'
     workflow_scheduling_manager: Any  # 'galaxy.workflow.scheduling_manager.WorkflowSchedulingManager'
     interactivetool_manager: Any
+    job_manager: Any  # galaxy.jobs.manager.JobManager
     user_manager: Any
     api_keys_manager: Any
-    toolbox: Any
+
+    @property
+    def is_job_handler(self) -> bool:
+        pass

@@ -2,7 +2,7 @@
 Contains functionality needed in every web interface
 """
 import logging
-from typing import Optional
+from typing import Any, Optional
 
 from sqlalchemy import true
 from webob.exc import (
@@ -34,7 +34,6 @@ from galaxy.model import (
     tags,
 )
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.structured_app import StructuredApp
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import (
@@ -58,9 +57,8 @@ class BaseController:
     """
     Base class for Galaxy web application controllers.
     """
-    app: StructuredApp
 
-    def __init__(self, app: StructuredApp) -> None:
+    def __init__(self, app):
         """Initialize an interface for application 'app'"""
         self.app = app
         self.sa_session = app.model.context
@@ -1346,8 +1344,8 @@ class UsesFormDefinitionsMixin:
 class SharableMixin:
     """ Mixin for a controller that manages an item that can be shared. """
 
-    manager = None
-    serializer = None
+    manager: Any = None
+    serializer: Any = None
 
     # -- Implemented methods. --
 
@@ -1413,8 +1411,10 @@ class SharableMixin:
         skipped = False
         class_name = self.manager.model_class.__name__
         item = self.get_object(trans, id, class_name, check_ownership=True, check_accessible=True, deleted=False)
-        if payload and payload.get("action"):
-            action = payload.get("action")
+        actions = []
+        if payload:
+            actions += payload.get("action").split("-")
+        for action in actions:
             if action == "make_accessible_via_link":
                 self._make_item_accessible(trans.sa_session, item)
                 if hasattr(item, "has_possible_members") and item.has_possible_members:
@@ -1515,7 +1515,7 @@ class UsesQuotaMixin:
 
 class UsesTagsMixin(SharableItemSecurityMixin):
 
-    def get_tag_handler(self, trans):
+    def get_tag_handler(self, trans) -> tags.GalaxyTagHandler:
         return trans.app.tag_handler
 
     def _get_user_tags(self, trans, item_class_name, id):

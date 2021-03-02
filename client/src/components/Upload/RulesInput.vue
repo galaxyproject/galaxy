@@ -1,8 +1,8 @@
 <template>
-    <upload-wrapper ref="wrapper" :top-info="topInfo">
-        <span style="width: 25%; display: inline; height: 100%" class="float-left">
+    <upload-wrapper ref="wrapper" :top-info="topInfo | l">
+        <span style="width: 25%; display: inline; height: 100%;" class="float-left">
             <div class="upload-rule-option">
-                <div class="upload-rule-option-title">{{ l("Upload data as") }}</div>
+                <div class="upload-rule-option-title">{{ "Upload data as" | l }}</div>
                 <div class="rule-data-type">
                     <select2 v-model="dataType" container-class="upload-footer-selection">
                         <option value="datasets">Datasets</option>
@@ -11,13 +11,13 @@
                 </div>
             </div>
             <div class="upload-rule-option">
-                <div class="upload-rule-option-title">{{ l("Load tabular data from") }}</div>
+                <div class="upload-rule-option-title">{{ "Load tabular data from" | l }}</div>
                 <div class="rule-select-type">
                     <select2 container-class="upload-footer-selection" v-model="selectionType">
-                        <option value="paste">{{ l("Pasted Table") }}</option>
-                        <option value="dataset">{{ l("History Dataset") }}</option>
-                        <option v-if="ftpUploadSite" value="ftp">{{ l("FTP Directory") }}</option>
-                        <option value="remote_files">{{ l("Remote Files Directory") }}</option>
+                        <option value="paste">{{ "Pasted Table" | l }}</option>
+                        <option value="dataset">{{ "History Dataset" | l }}</option>
+                        <option v-if="ftpUploadSite" value="ftp">{{ "FTP Directory" | l }}</option>
+                        <option value="remote_files">{{ "Remote Files Directory" | l }}</option>
                     </select2>
                 </div>
             </div>
@@ -25,7 +25,7 @@
                 <div class="upload-rule-option-title">History dataset</div>
                 <div>
                     <b-link @click="onSelectDataset" v-if="selectedDatasetName == null">
-                        {{ l("Select") }}
+                        {{ "Select" | l }}
                     </b-link>
                     <span v-else>
                         {{ selectedDatasetName }} <font-awesome-icon icon="edit" @click="onSelectDataset" />
@@ -42,8 +42,8 @@
             ></textarea>
         </span>
         <template v-slot:buttons>
-            <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="app.dismiss()">
-                {{ btnCloseTitle }}
+            <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="$emit('dismiss')">
+                {{ btnCloseTitle | l }}
             </b-button>
             <b-button
                 ref="btnBuild"
@@ -53,7 +53,7 @@
                 :disabled="!sourceContent"
                 :variant="sourceContent ? 'primary' : ''"
             >
-                {{ btnBuildTitle }}
+                {{ btnBuildTitle | l }}
             </b-button>
             <b-button
                 ref="btnReset"
@@ -62,14 +62,13 @@
                 @click="_eventReset"
                 :disabled="!enableReset"
             >
-                {{ btnResetTitle }}
+                {{ btnResetTitle | l }}
             </b-button>
         </template>
     </upload-wrapper>
 </template>
 
 <script>
-import _l from "utils/localization";
 import { getGalaxyInstance } from "app";
 import UploadBoxMixin from "./UploadBoxMixin";
 import UploadUtils from "mvc/upload/upload-utils";
@@ -88,11 +87,10 @@ export default {
     components: { BLink, BButton, FontAwesomeIcon },
     data() {
         return {
-            l: _l,
             datasets: [],
             ftpFiles: [],
             uris: [],
-            topInfo: _l("Tabular source data to extract collection files and metadata from"),
+            topInfo: "Tabular source data to extract collection files and metadata from",
             enableReset: false,
             enableBuild: false,
             dataType: "datasets",
@@ -100,10 +98,14 @@ export default {
             selectedDatasetName: null,
             sourceContent: "",
             selectionType: "paste",
-            btnBuildTitle: _l("Build"),
-            btnResetTitle: _l("Reset"),
-            btnCloseTitle: this.app.callback ? _l("Cancel") : _l("Close"),
+            btnBuildTitle: "Build",
+            btnResetTitle: "Reset",
         };
+    },
+    computed: {
+        btnCloseTitle() {
+            return this.app.callback ? "Cancel" : "Close";
+        },
     },
     created() {
         this.initCollection();
@@ -192,7 +194,7 @@ export default {
             }
             selection.dataType = this.dataType;
             Galaxy.currHistoryPanel.buildCollection("rules", selection, true);
-            this.app.hide();
+            this.$emit("hide");
         },
     },
 };
