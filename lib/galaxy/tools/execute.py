@@ -31,7 +31,7 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
     Execute a tool and return object containing summary (output data, number of
     failures, etc...).
     """
-    if max_num_jobs:
+    if max_num_jobs is not None:
         assert invocation_step is not None
     if rerun_remap_job_id:
         assert invocation_step is None
@@ -93,7 +93,7 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
     execution_slice = None
 
     for i, execution_slice in enumerate(execution_tracker.new_execution_slices()):
-        if max_num_jobs and jobs_executed >= max_num_jobs:
+        if max_num_jobs is not None and jobs_executed >= max_num_jobs:
             has_remaining_jobs = True
             break
         else:
