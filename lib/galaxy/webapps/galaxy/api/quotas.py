@@ -7,27 +7,19 @@ from fastapi import Path
 # TODO: replace with Router after merging #11219
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter as APIRouter
-from paste.httpexceptions import HTTPBadRequest
-from sqlalchemy import (
-    false,
-    true
-)
 
 from galaxy import (
     util,
-    web
+    web,
 )
-from galaxy.exceptions import ActionInputError
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.managers.quotas import QuotaManager, QuotasManager
+from galaxy.managers.quotas import QuotasManager
 from galaxy.quota._schema import (
-    CreateQuotaPayload,
-    UpdateQuotaPayload,
+    CreateQuotaParams,
+    DeleteQuotaPayload,
+    UpdateQuotaParams,
 )
 from galaxy.schema.fields import EncodedDatabaseIdField
-from galaxy.webapps.base.controller import (
-    url_for,
-)
 from . import (
     AdminUserRequired,
     BaseGalaxyAPIController,
@@ -110,7 +102,7 @@ class FastAPITags:
     )
     def create(
         self,
-        payload: CreateQuotaPayload,
+        payload: CreateQuotaParams,
         trans: ProvidesUserContext = DependsOnTrans,
     ):
         """Creates a new quota."""
@@ -123,7 +115,7 @@ class FastAPITags:
     )
     def update(
         self,
-        payload: UpdateQuotaPayload,
+        payload: UpdateQuotaParams,
         id: EncodedDatabaseIdField = QuotaIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
     ):
@@ -137,11 +129,12 @@ class FastAPITags:
     )
     def delete(
         self,
+        payload: DeleteQuotaPayload,
         id: EncodedDatabaseIdField = QuotaIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
     ):
         """Deletes an existing quota."""
-        self.manager.delete(trans, id)
+        self.manager.delete(trans, id, payload)
 
     @_router.post(
         '/api/quotas/deleted/{id}/undelete',
@@ -159,7 +152,7 @@ class FastAPITags:
 
 class QuotaAPIController(BaseGalaxyAPIController):
 
-    quota_manager: QuotaManager = depends(QuotaManager)
+    manager: QuotasManager = depends(QuotasManager)
 
     @web.require_admin
     @web.expose_api
@@ -169,21 +162,8 @@ class QuotaAPIController(BaseGalaxyAPIController):
         GET /api/quotas/deleted
         Displays a collection (list) of quotas.
         """
-        rval = []
         deleted = util.string_as_bool(deleted)
-        query = trans.sa_session.query(trans.app.model.Quota)
-        if deleted:
-            route = 'deleted_quota'
-            query = query.filter(trans.app.model.Quota.deleted == true())
-        else:
-            route = 'quota'
-            query = query.filter(trans.app.model.Quota.deleted == false())
-        for quota in query:
-            item = quota.to_dict(value_mapper={'id': trans.security.encode_id})
-            encoded_id = trans.security.encode_id(quota.id)
-            item['url'] = url_for(route, id=encoded_id)
-            rval.append(item)
-        return rval
+        return self.manager.index(trans, deleted)
 
     @web.require_admin
     @web.expose_api
@@ -193,8 +173,8 @@ class QuotaAPIController(BaseGalaxyAPIController):
         GET /api/quotas/deleted/{encoded_quota_id}
         Displays information about a quota.
         """
-        quota = self.quota_manager.get_quota(trans, id, deleted=util.string_as_bool(deleted))
-        return quota.to_dict(view='element', value_mapper={'id': trans.security.encode_id, 'total_disk_usage': float})
+        deleted = util.string_as_bool(deleted)
+        return self.manager.show(trans, id, deleted)
 
     @web.require_admin
     @web.expose_api
@@ -203,19 +183,7 @@ class QuotaAPIController(BaseGalaxyAPIController):
         POST /api/quotas
         Creates a new quota.
         """
-        try:
-            self.validate_in_users_and_groups(trans, payload)
-        except Exception as e:
-            raise HTTPBadRequest(detail=util.unicodify(e))
-        params = self.quota_manager.get_quota_params(payload)
-        try:
-            quota, message = self.quota_manager.create_quota(params)
-        except ActionInputError as e:
-            raise HTTPBadRequest(detail=util.unicodify(e))
-        item = quota.to_dict(value_mapper={'id': trans.security.encode_id})
-        item['url'] = url_for('quota', id=trans.security.encode_id(quota.id))
-        item['message'] = message
-        return item
+        return self.manager.create(trans, payload)
 
     @web.require_admin
     @web.expose_api
@@ -224,36 +192,7 @@ class QuotaAPIController(BaseGalaxyAPIController):
         PUT /api/quotas/{encoded_quota_id}
         Modifies a quota.
         """
-        try:
-            self.validate_in_users_and_groups(trans, payload)
-        except Exception as e:
-            raise HTTPBadRequest(detail=util.unicodify(e))
-
-        quota = self.quota_manager.get_quota(trans, id, deleted=False)
-
-        # FIXME: Doing it this way makes the update non-atomic if a method fails after an earlier one has succeeded.
-        payload['id'] = id
-        params = self.quota_manager.get_quota_params(payload)
-        methods = []
-        if payload.get('name', None) or payload.get('description', None):
-            methods.append(self.quota_manager.rename_quota)
-        if payload.get('amount', None):
-            methods.append(self.quota_manager.edit_quota)
-        if payload.get('default', None) == 'no':
-            methods.append(self.quota_manager.unset_quota_default)
-        elif payload.get('default', None):
-            methods.append(self.quota_manager.set_quota_default)
-        if payload.get('in_users', None) or payload.get('in_groups', None):
-            methods.append(self.quota_manager.manage_users_and_groups_for_quota)
-
-        messages = []
-        for method in methods:
-            try:
-                message = method(quota, params)
-            except ActionInputError as e:
-                raise HTTPBadRequest(detail=util.unicodify(e))
-            messages.append(message)
-        return '; '.join(messages)
+        return self.manager.update(trans, id, payload)
 
     @web.require_admin
     @web.expose_api
@@ -262,20 +201,9 @@ class QuotaAPIController(BaseGalaxyAPIController):
         DELETE /api/quotas/{encoded_quota_id}
         Deletes a quota
         """
-        quota = self.quota_manager.get_quota(trans, id, deleted=False)  # deleted quotas are not technically members of this collection
-
         # a request body is optional here
-        payload = kwd.get('payload', {})
-        payload['id'] = id
-        params = self.quota_manager.get_quota_params(payload)
-
-        try:
-            message = self.quota_manager.delete_quota(quota, params)
-            if util.string_as_bool(payload.get('purge', False)):
-                message += self.quota_manager.purge_quota(quota, params)
-        except ActionInputError as e:
-            raise HTTPBadRequest(detail=util.unicodify(e))
-        return message
+        payload = DeleteQuotaPayload(**kwd.get('payload', {}))
+        return self.manager.delete(trans, id, payload)
 
     @web.require_admin
     @web.expose_api
@@ -284,8 +212,4 @@ class QuotaAPIController(BaseGalaxyAPIController):
         POST /api/quotas/deleted/{encoded_quota_id}/undelete
         Undeletes a quota
         """
-        quota = self.quota_manager.get_quota(trans, id, deleted=True)
-        try:
-            return self.quota_manager.undelete_quota(quota)
-        except ActionInputError as e:
-            raise HTTPBadRequest(detail=util.unicodify(e))
+        return self.manager.undelete(trans, id)

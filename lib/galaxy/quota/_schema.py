@@ -48,7 +48,7 @@ QuotaNameField = Field(
 )
 
 QuotaDescriptionField = Field(
-    "",
+    ...,
     title="Description",
     description="Detailed text description for this Quota.",
 )
@@ -161,9 +161,9 @@ class CreateQuotaResult(QuotaSummary):
     )
 
 
-class CreateQuotaPayload(BaseModel):
+class CreateQuotaParams(BaseModel):
     name: str = QuotaNameField
-    description: Optional[str] = QuotaDescriptionField
+    description: str = QuotaDescriptionField
     amount: str = Field(
         ...,
         title="Amount",
@@ -191,15 +191,19 @@ class CreateQuotaPayload(BaseModel):
     )
 
 
-class UpdateQuotaPayload(BaseModel):
+class UpdateQuotaParams(BaseModel):
     name: Optional[str] = Field(
         default=None,
         title="Name",
         description="The new name of the quota. This must be unique within a Galaxy instance.",
     )
-    description: Optional[str] = QuotaDescriptionField
+    description: Optional[str] = Field(
+        None,
+        title="Description",
+        description="Detailed text description for this Quota.",
+    )
     amount: Optional[str] = Field(
-        ...,
+        None,
         title="Amount",
         description="Quota size (E.g. ``10000MB``, ``99 gb``, ``0.2T``, ``unlimited``)",
     )
@@ -212,7 +216,7 @@ class UpdateQuotaPayload(BaseModel):
         )
     )
     default: Optional[DefaultQuotaValues] = Field(
-        default=DefaultQuotaValues.NO,
+        default=None,
         title="Default",
         description=(
             "Whether or not this is a default quota. Valid values"
@@ -222,13 +226,21 @@ class UpdateQuotaPayload(BaseModel):
             " passing this parameter is equivalent to passing ``no``."
         ),
     )
-    in_users: List[str] = Field(
-        default=[],
+    in_users: Optional[List[str]] = Field(
+        default=None,
         title="Users",
         description="A list of user IDs or user emails to associate with this quota.",
     )
-    in_groups: List[str] = Field(
-        default=[],
+    in_groups: Optional[List[str]] = Field(
+        default=None,
         title="Groups",
         description="A list of group IDs or names to associate with this quota.",
+    )
+
+
+class DeleteQuotaPayload(BaseModel):
+    purge: bool = Field(
+        False,
+        title="Purge",
+        description="Whether to also purge the Quota after deleting it.",
     )
