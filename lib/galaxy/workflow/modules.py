@@ -1317,9 +1317,9 @@ class ToolModule(WorkflowModule):
                 if old_tool_shed not in tool_id:  # Only display the following warning if the tool comes from a different tool shed
                     old_tool_shed_url = get_tool_shed_url_from_tool_shed_registry(trans.app, old_tool_shed)
                     if not old_tool_shed_url:  # a tool from a different tool_shed has been found, but the original tool shed has been deactivated
-                        old_tool_shed_url = "http://" + old_tool_shed  # let's just assume it's either http, or a http is forwarded to https.
-                    old_url = old_tool_shed_url + f"/view/{module.tool.repository_owner}/{module.tool.repository_name}/"
-                    new_url = module.tool.sharable_url + f'/{module.tool.changeset_revision}/'
+                        old_tool_shed_url = f"http://{old_tool_shed}"  # let's just assume it's either http, or a http is forwarded to https.
+                    old_url = f"{old_tool_shed_url}/view/{module.tool.repository_owner}/{module.tool.repository_name}/"
+                    new_url = f"{module.tool.sharable_url}/{module.tool.changeset_revision}/"
                     new_tool_shed_url = new_url.split("/view")[0]
                     message += f"The tool \'{module.tool.name}\', version {tool_version} by the owner {module.tool.repository_owner} installed from <a href=\"{old_url}\" target=\"_blank\">{old_tool_shed_url}</a> is not available. "
                     message += f"A derivation of this tool installed from <a href=\"{new_url}\" target=\"_blank\">{new_tool_shed_url}</a> will be used instead. "

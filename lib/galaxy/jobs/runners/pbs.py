@@ -140,7 +140,7 @@ class PBSJobRunner(AsynchronousJobRunner):
             assert opts != ['']
             # stripping the - comes later (in parse_destination_params)
             for i, opt in enumerate(opts):
-                opts[i] = '-' + opt
+                opts[i] = f"-{opt}"
         except Exception:
             opts = []
         for opt in opts:
@@ -184,7 +184,7 @@ class PBSJobRunner(AsynchronousJobRunner):
                     rval.append(dict(name=pbs.ATTR_l, value=val, resource=res))
             else:
                 try:
-                    rval.append(dict(name=getattr(pbs, 'ATTR_' + arg), value=value))
+                    rval.append(dict(name=getattr(pbs, f"ATTR_{arg}"), value=value))
                 except AttributeError as e:
                     raise Exception(f"Invalid parameter '{arg}': {e}")
         return rval
@@ -242,8 +242,8 @@ class PBSJobRunner(AsynchronousJobRunner):
 
         # If an application server is set, we're staging
         if self.app.config.pbs_application_server:
-            pbs_ofile = self.app.config.pbs_application_server + ':' + ofile
-            pbs_efile = self.app.config.pbs_application_server + ':' + efile
+            pbs_ofile = f"{self.app.config.pbs_application_server}:{ofile}"
+            pbs_efile = f"{self.app.config.pbs_application_server}:{efile}"
             output_files = [str(o) for o in output_fnames]
             output_files.append(ecfile)
             stagein = self.get_stage_in_out(job_wrapper.get_input_fnames() + output_files, symlink=True)

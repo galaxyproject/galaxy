@@ -21,7 +21,7 @@ def _tag_str_gen(item):
     for tag in item.tags:
         tag_str = tag.user_tname
         if tag.value is not None:
-            tag_str += ":" + tag.user_value
+            tag_str += f":{tag.user_value}"
         yield tag_str
 
 
@@ -111,7 +111,7 @@ class TaggableFilterMixin:
                 class_name = 'HistoryDatasetCollection'
             target_model = getattr(model, f"{class_name}TagAssociation")
             id_column = f"{target_model.table.name.rsplit('_tag_association')[0]}_id"
-            column = target_model.table.c.user_tname + ":" + target_model.table.c.user_value
+            column = f"{target_model.table.c.user_tname}:{target_model.table.c.user_value}"
             if op == 'eq':
                 if ':' not in val:
                     # We require an exact match and the tag to look for has no user_value,

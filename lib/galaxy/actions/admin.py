@@ -152,7 +152,7 @@ class AdminActions:
         if len(names) == 1:
             raise ActionInputError(f"Quota '{names[0]}' is a default, please unset it as a default before deleting it.")
         elif len(names) > 1:
-            raise ActionInputError("Quotas are defaults, please unset them as defaults before deleting them: " + ', '.join(names))
+            raise ActionInputError(f"Quotas are defaults, please unset them as defaults before deleting them: {', '.join(names)}")
         message = "Deleted %d quotas: " % len(quotas)
         for q in quotas:
             q.deleted = True
@@ -171,7 +171,7 @@ class AdminActions:
         if len(names) == 1:
             raise ActionInputError(f"Quota '{names[0]}' has not been deleted, so it cannot be undeleted.")
         elif len(names) > 1:
-            raise ActionInputError("Quotas have not been deleted so they cannot be undeleted: " + ', '.join(names))
+            raise ActionInputError(f"Quotas have not been deleted so they cannot be undeleted: {', '.join(names)}")
         message = "Undeleted %d quotas: " % len(quotas)
         for q in quotas:
             q.deleted = False
@@ -196,7 +196,7 @@ class AdminActions:
         if len(names) == 1:
             raise ActionInputError(f"Quota '{names[0]}' has not been deleted, so it cannot be purged.")
         elif len(names) > 1:
-            raise ActionInputError("Quotas have not been deleted so they cannot be undeleted: " + ', '.join(names))
+            raise ActionInputError(f"Quotas have not been deleted so they cannot be undeleted: {', '.join(names)}")
         message = "Purged %d quotas: " % len(quotas)
         for q in quotas:
             # Delete UserQuotaAssociations

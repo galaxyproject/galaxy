@@ -1134,9 +1134,9 @@ class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator, Import
         ]
 
         for i in range(workflow_depth):
-            link = "cat_" + str(i) + "/out_file1"
+            link = f"cat_{str(i)}/out_file1"
             scale_workflow_steps.append(
-                {"tool_id": "cat", "state": {"input1": self._link(link)}, "label": "cat_" + str(i + 1)}
+                {"tool_id": "cat", "state": {"input1": self._link(link)}, "label": f"cat_{str(i + 1)}"}
             )
 
         workflow_dict = {
@@ -1156,8 +1156,8 @@ class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator, Import
         ]
 
         for i in range(workflow_depth):
-            link1 = "cat_" + str(i) + "#out_file1"
-            link2 = "cat_" + str(i) + "#out_file2"
+            link1 = f"cat_{str(i)}#out_file1"
+            link2 = f"cat_{str(i)}#out_file2"
             scale_workflow_steps.append(
                 {"tool_id": "cat", "state": {"input1": self._link(link1), "input2": self._link(link2)}}
             )
@@ -1196,7 +1196,7 @@ class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator, Import
     @staticmethod
     def _link(link, output_name=None):
         if output_name is not None:
-            link = str(link) + "/" + output_name
+            link = f"{str(link)}/{output_name}"
         return {"$link": link}
 
 
@@ -1762,7 +1762,7 @@ class GiHttpMixin:
         if route.startswith("/api/"):
             route = route[len("/api/"):]
 
-        return self._api_url() + "/" + route
+        return f"{self._api_url()}/{route}"
 
 
 class GiDatasetPopulator(BaseDatasetPopulator, GiHttpMixin):

@@ -620,14 +620,14 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             user.set_random_password(length=12)
             user.external = True
             # Replace invalid characters in the username
-            for char in [x for x in username if x not in string.ascii_lowercase + string.digits + '-' + '.']:
+            for char in [x for x in username if x not in f"{string.ascii_lowercase + string.digits}-."]:
                 username = username.replace(char, '-')
             # Find a unique username - user can change it later
             if self.sa_session.query(self.app.model.User).filter_by(username=username).first():
                 i = 1
-                while self.sa_session.query(self.app.model.User).filter_by(username=(username + '-' + str(i))).first():
+                while self.sa_session.query(self.app.model.User).filter_by(username=f"{username}-{str(i)}").first():
                     i += 1
-                username += '-' + str(i)
+                username += f"-{str(i)}"
             user.username = username
             self.sa_session.add(user)
             self.sa_session.flush()

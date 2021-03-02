@@ -182,11 +182,11 @@ class Velvet(Html):
             dataset.metadata.short2_reads = short2_reads
             dataset.info = re.sub(r'.*velveth \S+', 'hash_length', re.sub(r'\n', ' ', log_msg))
             if paired_end_reads:
-                gen_msg = gen_msg + ' Paired-End Reads'
+                gen_msg = f"{gen_msg} Paired-End Reads"
             if long_reads:
-                gen_msg = gen_msg + ' Long Reads'
+                gen_msg = f"{gen_msg} Long Reads"
             if len(gen_msg) > 0:
-                gen_msg = 'Uses: ' + gen_msg
+                gen_msg = f"Uses: {gen_msg}"
         except Exception:
             log.debug(f"Velveth could not read Log file in {efp}")
         log.debug(f"Velveth log info  {gen_msg}")

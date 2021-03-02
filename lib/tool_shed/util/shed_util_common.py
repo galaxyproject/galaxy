@@ -193,7 +193,7 @@ def get_repository_file_contents(app, file_path, repository_id, is_admin=False):
         return 'Invalid file path'
     # Symlink targets are checked by is_path_browsable
     if os.path.islink(file_path):
-        safe_str = 'link to: ' + basic_util.to_html_string(os.readlink(file_path))
+        safe_str = f"link to: {basic_util.to_html_string(os.readlink(file_path))}"
         return safe_str
     elif checkers.is_gzip(file_path):
         return '<br/>gzip compressed file<br/>'
@@ -335,9 +335,9 @@ def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_al
         if app.config.email_from is not None:
             email_from = app.config.email_from
         elif host.split(':')[0] in ['localhost', '127.0.0.1', '0.0.0.0']:
-            email_from = 'galaxy-no-reply@' + socket.getfqdn()
+            email_from = f"galaxy-no-reply@{socket.getfqdn()}"
         else:
-            email_from = 'galaxy-no-reply@' + host.split(':')[0]
+            email_from = f"galaxy-no-reply@{host.split(':')[0]}"
         ctx = repo[repo.changelog.tip()]
         username = unicodify(ctx.user())
         try:
@@ -454,7 +454,7 @@ def open_repository_files_folder(app, folder_path, repository_id, is_admin=False
         is_link = os.path.islink(full_path)
         path_is_browsable = is_path_browsable(app, full_path, repository_id)
         if is_link and not path_is_browsable:
-            log.warning('Valid folder contains a symlink outside of the repository location. Link found in: ' + str(full_path))
+            log.warning(f"Valid folder contains a symlink outside of the repository location. Link found in: {str(full_path)}")
         if filename:
             if os.path.isdir(full_path) and path_is_browsable:
                 # Append a '/' character so that our jquery dynatree will function properly.

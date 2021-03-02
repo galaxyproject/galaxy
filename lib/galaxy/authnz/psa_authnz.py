@@ -165,7 +165,7 @@ class PSAAuthnz(IdentityProvider):
         on_the_fly_config(trans.sa_session)
         self.config[setting_name('LOGIN_REDIRECT_URL')] = login_redirect_url
         strategy = Strategy(trans.request, trans.session, Storage, self.config)
-        strategy.session_set(BACKENDS_NAME[self.config['provider']] + '_state', state_token)
+        strategy.session_set(f"{BACKENDS_NAME[self.config['provider']]}_state", state_token)
         backend = self._load_backend(strategy, self.config['redirect_uri'])
         redirect_url = do_complete(
             backend,

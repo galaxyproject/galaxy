@@ -513,7 +513,7 @@ def __action(sys):
 def recipe_cellar_path(cellar_path, recipe, version):
     recipe_base = recipe.split("/")[-1]
     recipe_base_path = os.path.join(cellar_path, recipe_base, version)
-    revision_paths = glob.glob(recipe_base_path + "_*")
+    revision_paths = glob.glob(f"{recipe_base_path}_*")
     if revision_paths:
         revisions = map(lambda x: int(x.rsplit("_", 1)[-1]), revision_paths)
         max_revision = max(revisions)
@@ -547,8 +547,8 @@ def ensure_brew_on_path(args):
 def which(file):
     # http://stackoverflow.com/questions/5226958/which-equivalent-function-in-python
     for path in os.environ["PATH"].split(":"):
-        if os.path.exists(path + "/" + file):
-            return path + "/" + file
+        if os.path.exists(f"{path}/{file}"):
+            return f"{path}/{file}"
 
     return None
 

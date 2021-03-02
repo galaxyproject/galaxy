@@ -101,7 +101,7 @@ def do_split(job_wrapper):
                 for file in names:
                     os.symlink(file, os.path.join(dir, os.path.basename(file)))
     tasks = []
-    prepare_files = os.path.join(util.galaxy_directory(), 'extract_dataset_parts.sh') + ' %s'
+    prepare_files = f"{os.path.join(util.galaxy_directory(), 'extract_dataset_parts.sh')} %s"
     for dir in task_dirs:
         task = model.Task(parent_job, dir, prepare_files % dir)
         tasks.append(task)
@@ -167,7 +167,7 @@ def do_merge(job_wrapper, task_wrappers):
                     msg = 'nothing to merge for %s (expected %i files)' \
                           % (output_file_name, len(task_dirs))
                     log.debug(msg)
-                    stderr += msg + "\n"
+                    stderr += f"{msg}\n"
             elif output in pickone_outputs:
                 # just pick one of them
                 if output not in pickone_done:
@@ -189,7 +189,7 @@ def do_merge(job_wrapper, task_wrappers):
         out = tw.get_task().stdout.strip()
         err = tw.get_task().stderr.strip()
         if len(out) > 0:
-            stdout += "\n" + tw.working_directory + ':\n' + out
+            stdout += f"\n{tw.working_directory}:\n{out}"
         if len(err) > 0:
-            stderr += "\n" + tw.working_directory + ':\n' + err
+            stderr += f"\n{tw.working_directory}:\n{err}"
     return (stdout, stderr)

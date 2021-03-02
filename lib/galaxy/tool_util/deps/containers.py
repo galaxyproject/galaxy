@@ -140,13 +140,13 @@ class ContainerFinder:
         repo_key = f"{container_type}_repo_{mode}"
         owner_key = f"{container_type}_owner_{mode}"
         if repo_key in destination_info:
-            repo = destination_info[repo_key] + "/"
+            repo = f"{destination_info[repo_key]}/"
         if owner_key in destination_info:
-            owner = destination_info[owner_key] + "/"
+            owner = f"{destination_info[owner_key]}/"
         cont_id = repo + owner + destination_info[f"{container_type}_image_{mode}"]
         tag_key = f"{container_type}_tag_{mode}"
         if tag_key in destination_info:
-            cont_id += ":" + destination_info[tag_key]
+            cont_id += f":{destination_info[tag_key]}"
         return cont_id
 
     def __default_container_id(self, container_type, destination_info):

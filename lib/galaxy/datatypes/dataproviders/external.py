@@ -172,4 +172,4 @@ class TempfileDataProvider(base.DataProvider):
         parent_gen = super().__iter__()
         with open(self.tmp_file, 'w') as open_file:
             for datum in parent_gen:
-                open_file.write(datum + '\n')
+                open_file.write(f"{datum}\n")

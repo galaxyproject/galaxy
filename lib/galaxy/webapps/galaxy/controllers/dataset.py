@@ -283,7 +283,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                         in_roles[action.action] = [trans.security.encode_id(role.id) for role in roles]
                     for index, action in trans.app.model.Dataset.permitted_actions.items():
                         if action == trans.app.security_agent.permitted_actions.DATASET_ACCESS:
-                            help_text = action.description + '<br/>NOTE: Users must have every role associated with this dataset in order to access it.'
+                            help_text = f"{action.description}<br/>NOTE: Users must have every role associated with this dataset in order to access it."
                         else:
                             help_text = action.description
                         permission_inputs.append({
@@ -1003,10 +1003,10 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 source_contents.sort(key=lambda content: content.hid)
                 for content in source_contents:
                     if content is None:
-                        error_msg = error_msg + "You tried to copy a dataset that does not exist. "
+                        error_msg = f"{error_msg}You tried to copy a dataset that does not exist. "
                         invalid_contents += 1
                     elif content.history != history:
-                        error_msg = error_msg + "You tried to copy a dataset which is not in your current history. "
+                        error_msg = f"{error_msg}You tried to copy a dataset which is not in your current history. "
                         invalid_contents += 1
                     else:
                         for hist in target_histories:
@@ -1066,13 +1066,13 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 data = self.hda_manager.error_if_uploading(data)
 
                 if data is None:
-                    error_msg = error_msg + "You tried to copy a dataset that does not exist or that you do not have access to.  "
+                    error_msg = f"{error_msg}You tried to copy a dataset that does not exist or that you do not have access to.  "
                     invalid_datasets += 1
                 else:
                     for hist in target_histories:
                         dataset_copy = data.copy()
                         if imported:
-                            dataset_copy.name = "imported: " + dataset_copy.name
+                            dataset_copy.name = f"imported: {dataset_copy.name}"
                         hist.add_dataset(dataset_copy)
             trans.sa_session.flush()
             num_datasets_copied = len(dataset_ids) - invalid_datasets

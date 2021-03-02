@@ -184,7 +184,7 @@ class NavigatesGalaxy(HasDriver):
 
     def api_get(self, endpoint, data=None, raw=False):
         data = data or {}
-        full_url = self.build_url("api/" + endpoint, for_selenium=False)
+        full_url = self.build_url(f"api/{endpoint}", for_selenium=False)
         response = requests.get(full_url, data=data, cookies=self.selenium_to_requests_cookies())
         if raw:
             return response
@@ -193,12 +193,12 @@ class NavigatesGalaxy(HasDriver):
 
     def api_post(self, endpoint, data=None):
         data = data or {}
-        full_url = self.build_url("api/" + endpoint, for_selenium=False)
+        full_url = self.build_url(f"api/{endpoint}", for_selenium=False)
         response = requests.post(full_url, data=data, cookies=self.selenium_to_requests_cookies())
         return response.json()
 
     def api_delete(self, endpoint, raw=False):
-        full_url = self.build_url("api/" + endpoint, for_selenium=False)
+        full_url = self.build_url(f"api/{endpoint}", for_selenium=False)
         response = requests.delete(full_url, cookies=self.selenium_to_requests_cookies())
         if raw:
             return response
@@ -302,7 +302,7 @@ class NavigatesGalaxy(HasDriver):
             self.history_item_wait_for(history_item_selector, allowed_force_refreshes)
         except self.TimeoutException as e:
             contents_elements = self.find_elements(self.navigation.history_panel.selectors.contents)
-            div_ids = [("#" + d.get_attribute('id')) for d in contents_elements]
+            div_ids = [f"#{d.get_attribute('id')}" for d in contents_elements]
             template = "Failed waiting on history item %d to become visible, visible datasets include [%s]."
             message = template % (hid, ",".join(div_ids))
             raise self.prepend_timeout_message(e, message)
@@ -419,7 +419,7 @@ class NavigatesGalaxy(HasDriver):
     def _get_random_email(self, username=None, domain=None):
         username = username or 'test'
         domain = domain or 'test.test'
-        return self._get_random_name(prefix=username, suffix="@" + domain)
+        return self._get_random_name(prefix=username, suffix=f"@{domain}")
 
     # Creates a random password of length len by creating an array with all ASCII letters and the numbers 0 to 9,
     # then using the random number generator to pick one elemenent to concatinate it to the end of the password string until
@@ -1121,7 +1121,7 @@ class NavigatesGalaxy(HasDriver):
 
         for i, tag in enumerate(tags):
             if auto_closes or i == 0:
-                tag_area = parent_selector + ".tags-input input[type='text']"
+                tag_area = f"{parent_selector}.tags-input input[type='text']"
                 tag_area = self.wait_for_selector_clickable(tag_area)
                 tag_area.click()
 

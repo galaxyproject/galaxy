@@ -269,7 +269,7 @@ def mull_targets(
             involucro_args.insert(6, '-set')
             involucro_args.insert(7, f"TEST_BINDS={','.join(test_bind)}")
     cmd = involucro_context.build_command(involucro_args)
-    print('Executing: ' + ' '.join(shlex.quote(_) for _ in cmd))
+    print(f"Executing: {' '.join(shlex.quote(_) for _ in cmd)}")
     if dry_run:
         return 0
     ensure_installed(involucro_context, True)

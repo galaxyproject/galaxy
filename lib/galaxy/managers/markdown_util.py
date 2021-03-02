@@ -452,7 +452,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         def walk_elements(collection, element_prefix=""):
             if ":" in collection.collection_type:
                 for element in collection.elements:
-                    walk_elements(element.child_collection, element_prefix + element.element_identifier + ":")
+                    walk_elements(element.child_collection, f"{element_prefix + element.element_identifier}:")
             else:
                 for element in collection.elements:
                     markdown_wrapper[0] += f"**Element:** {element_prefix}{element.element_identifier}\n\n"
@@ -495,7 +495,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
             markdown += "| "
             depth = parameter["depth"]
             if depth > 1:
-                markdown += ">" * (parameter["depth"] - 1) + " "
+                markdown += f"{'>' * (parameter['depth'] - 1)} "
             markdown += parameter["text"]
             markdown += " | "
             value = parameter["value"]
@@ -767,7 +767,7 @@ def _remap_galaxy_markdown_calls(func, markdown):
 
         if matching_line:
             match = GALAXY_MARKDOWN_FUNCTION_CALL_LINE.match(line)
-            return func(match.group(1), matching_line + "\n")
+            return func(match.group(1), f"{matching_line}\n")
         else:
             return (container, True)
 

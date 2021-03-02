@@ -124,8 +124,8 @@ class ApplicationStack:
         for pool_name in self.configured_pools:
             if pool_name == base_pool:
                 tag = job_config.DEFAULT_HANDLER_TAG
-            elif pool_name.startswith(base_pool + '.'):
-                tag = pool_name.replace(base_pool + '.', '', 1)
+            elif pool_name.startswith(f"{base_pool}."):
+                tag = pool_name.replace(f"{base_pool}.", '', 1)
             else:
                 continue
             # Pools are hierarchical (so that you can have e.g. workflow schedulers use the job handlers pool if no
@@ -181,7 +181,7 @@ class ApplicationStack:
         return {}
 
     def has_base_pool(self, pool_name):
-        return self.has_pool(pool_name) or any([pool.startswith(pool_name + '.') for pool in self.configured_pools])
+        return self.has_pool(pool_name) or any([pool.startswith(f"{pool_name}.") for pool in self.configured_pools])
 
     def has_pool(self, pool_name):
         return pool_name in self.configured_pools
@@ -306,11 +306,11 @@ class UWSGIApplicationStack(MessageApplicationStack):
                 val = unicodify(uwsgi.opt.get('shared-socket', [])[int(val.split('=')[1])])
             proto = opt if opt != 'socket' else 'uwsgi'
             if proto == 'uwsgi' and ':' not in val:
-                return 'uwsgi://' + val
+                return f"uwsgi://{val}"
             else:
-                proto = proto + '://'
+                proto = f"{proto}://"
                 host, port = val.rsplit(':', 1)
-                port = ':' + port.split(',', 1)[0]
+                port = f":{port.split(',', 1)[0]}"
             if host in UWSGIApplicationStack.bind_all_addrs:
                 host = UWSGIApplicationStack.localhost_addrs[0]
             return proto + host + port
@@ -421,7 +421,7 @@ class UWSGIApplicationStack(MessageApplicationStack):
         # Count the required number of uWSGI locks
         if job_config.use_messaging:
             for pool_name in self.configured_pools:
-                if (pool_name == base_pool or pool_name.startswith(base_pool + '.')):
+                if (pool_name == base_pool or pool_name.startswith(f"{base_pool}.")):
                     self._lock_farms.add(pool_name)
 
     @property
@@ -510,7 +510,7 @@ class UWSGIApplicationStack(MessageApplicationStack):
             root_pid = uwsgi.masterpid() or os.getpid()
             msg.append('Starting server in PID %d.' % root_pid)
             for s in UWSGIApplicationStack._serving_on():
-                msg.append('serving on ' + s)
+                msg.append(f"serving on {s}")
             if len(msg) == 1:
                 msg.append('serving on unknown URL')
         log.info('\n'.join(msg))

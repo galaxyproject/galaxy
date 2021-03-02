@@ -485,9 +485,9 @@ class PageContentProcessor(HTMLParser):
     def _shorttag_replace(self, match):
         tag = match.group(1)
         if tag in self.elements_no_end_tag:
-            return '<' + tag + ' />'
+            return f"<{tag} />"
         else:
-            return '<' + tag + '></' + tag + '>'
+            return f"<{tag}></{tag}>"
 
     def feed(self, data):
         data = re.compile(r'<!((?!DOCTYPE|--|\[))', re.IGNORECASE).sub(r'&lt;!\1', data)

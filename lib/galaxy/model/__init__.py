@@ -158,7 +158,7 @@ class HasTags:
         for tag in self.tags:
             tag_str = tag.user_tname
             if tag.value is not None:
-                tag_str += ":" + tag.user_value
+                tag_str += f":{tag.user_value}"
             tags_str_list.append(tag_str)
         return tags_str_list
 
@@ -349,7 +349,7 @@ class JobLike:
     def stdout(self):
         stdout = self.tool_stdout or ''
         if self.job_stdout:
-            stdout += "\n" + self.job_stdout
+            stdout += f"\n{self.job_stdout}"
         return stdout
 
     @stdout.setter
@@ -360,7 +360,7 @@ class JobLike:
     def stderr(self):
         stderr = self.tool_stderr or ''
         if self.job_stderr:
-            stderr += "\n" + self.job_stderr
+            stderr += f"\n{self.job_stderr}"
         return stderr
 
     @stderr.setter
@@ -3524,7 +3524,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                     file_size=int(hda.get_size()),
                     create_time=hda.create_time.isoformat(),
                     update_time=hda.update_time.isoformat(),
-                    data_type=hda.datatype.__class__.__module__ + '.' + hda.datatype.__class__.__name__,
+                    data_type=f"{hda.datatype.__class__.__module__}.{hda.datatype.__class__.__name__}",
                     genome_build=hda.dbkey,
                     validated_state=hda.validated_state,
                     validated_state_message=hda.validated_state_message,
@@ -3552,7 +3552,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             # If no value for metadata, look in datatype for metadata.
             elif not hda.metadata.element_is_set(name) and hasattr(hda.datatype, name):
                 val = getattr(hda.datatype, name)
-            rval['metadata_' + name] = val
+            rval[f"metadata_{name}"] = val
         return rval
 
     def unpause_dependent_jobs(self, jobs=None):
@@ -3651,7 +3651,7 @@ class Library(Dictifiable, HasName, RepresentById):
         """
         rval = super().to_dict(view=view, value_mapper=value_mapper)
         if 'root_folder_id' in rval:
-            rval['root_folder_id'] = 'F' + str(rval['root_folder_id'])
+            rval['root_folder_id'] = f"F{str(rval['root_folder_id'])}"
         return rval
 
     def get_active_folders(self, folder, folders=None):
@@ -3831,7 +3831,7 @@ class LibraryDataset(RepresentById):
                     update_time=ldda.update_time.isoformat(),
                     file_size=int(ldda.get_size()),
                     file_ext=ldda.ext,
-                    data_type=ldda.datatype.__class__.__module__ + '.' + ldda.datatype.__class__.__name__,
+                    data_type=f"{ldda.datatype.__class__.__module__}.{ldda.datatype.__class__.__name__}",
                     genome_build=ldda.dbkey,
                     misc_info=ldda.info,
                     misc_blurb=ldda.blurb,
@@ -3846,7 +3846,7 @@ class LibraryDataset(RepresentById):
                 val = val.file_name
             elif isinstance(val, list):
                 val = ', '.join(str(v) for v in val)
-            rval['metadata_' + name] = val
+            rval[f"metadata_{name}"] = val
         return rval
 
 
@@ -3975,7 +3975,7 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, RepresentById):
                     file_name=ldda.file_name,
                     update_time=ldda.update_time.isoformat(),
                     file_ext=ldda.ext,
-                    data_type=ldda.datatype.__class__.__module__ + '.' + ldda.datatype.__class__.__name__,
+                    data_type=f"{ldda.datatype.__class__.__module__}.{ldda.datatype.__class__.__name__}",
                     genome_build=ldda.dbkey,
                     misc_info=ldda.info,
                     misc_blurb=ldda.blurb,
@@ -3994,7 +3994,7 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, RepresentById):
             # If no value for metadata, look in datatype for metadata.
             elif val is None and hasattr(ldda.datatype, name):
                 val = getattr(ldda.datatype, name)
-            rval['metadata_' + name] = val
+            rval[f"metadata_{name}"] = val
         return rval
 
     def update_parent_folder_update_times(self):

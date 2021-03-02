@@ -119,7 +119,7 @@ class CondaSearch():
 
         """
         if run_command is None:
-            raise Exception("Invalid search destination. " + deps_error_message("conda"))
+            raise Exception(f"Invalid search destination. {deps_error_message('conda')}")
         raw_out, err, exit_code = run_command(
             'search', '-c',
             self.channel,

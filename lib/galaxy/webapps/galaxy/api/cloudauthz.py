@@ -91,7 +91,7 @@ class CloudAuthzController(BaseGalaxyAPIController):
             *   status:     HTTP response code
             *   message:    A message complementary to the response code.
         """
-        msg_template = "Rejected user `" + str(trans.user.id) + "`'s request to create cloudauthz config because of {}."
+        msg_template = f"Rejected user `{str(trans.user.id)}`'s request to create cloudauthz config because of {{}}."
         if not isinstance(payload, dict):
             raise ActionInputError('Invalid payload data type. The payload is expected to be a dictionary, but '
                                    'received data of type `{}`.'.format(str(type(payload))))
@@ -172,7 +172,7 @@ class CloudAuthzController(BaseGalaxyAPIController):
         :return The cloudauthz record marked as deleted, serialized as a JSON object.
         """
 
-        msg_template = "Rejected user `" + str(trans.user.id) + "`'s request to delete cloudauthz config because of {}."
+        msg_template = f"Rejected user `{str(trans.user.id)}`'s request to delete cloudauthz config because of {{}}."
         try:
             authz_id = self.decode_id(encoded_authz_id)
         except MalformedId as e:
@@ -236,7 +236,7 @@ class CloudAuthzController(BaseGalaxyAPIController):
 
         """
 
-        msg_template = "Rejected user `" + str(trans.user.id) + "`'s request to delete cloudauthz config because of {}."
+        msg_template = f"Rejected user `{str(trans.user.id)}`'s request to delete cloudauthz config because of {{}}."
         try:
             authz_id = self.decode_id(encoded_authz_id)
         except MalformedId as e:

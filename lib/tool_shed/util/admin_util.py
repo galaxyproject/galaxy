@@ -890,8 +890,8 @@ class Admin:
     def name_autocomplete_data(self, trans, q=None, limit=None, timestamp=None):
         """Return autocomplete data for user emails"""
         ac_data = ""
-        for user in trans.sa_session.query(trans.app.model.User).filter_by(deleted=False).filter(func.lower(trans.app.model.User.email).like(q.lower() + "%")):
-            ac_data = ac_data + user.email + "\n"
+        for user in trans.sa_session.query(trans.app.model.User).filter_by(deleted=False).filter(func.lower(trans.app.model.User.email).like(f"{q.lower()}%")):
+            ac_data = f"{ac_data + user.email}\n"
         return ac_data
 
     @web.expose

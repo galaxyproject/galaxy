@@ -369,7 +369,7 @@ class GalaxyInteractorApi:
                 if force_path_paste:
                     file_path = self.test_data_path(tool_id, file_name)
                     tool_input.update({
-                        "files_%d|url_paste" % i: "file://" + file_path
+                        "files_%d|url_paste" % i: f"file://{file_path}"
                     })
                 else:
                     file_content = self.test_data_download(tool_id, file_name, is_output=False)
@@ -388,7 +388,7 @@ class GalaxyInteractorApi:
             if force_path_paste:
                 file_name = self.test_data_path(tool_id, fname)
                 tool_input.update({
-                    "files_0|url_paste": "file://" + file_name
+                    "files_0|url_paste": f"file://{file_name}"
                 })
             else:
                 file_content = self.test_data_download(tool_id, fname, is_output=False)
@@ -1175,11 +1175,11 @@ def _verify_outputs(testdef, history, jobs, tool_id, data_list, data_collection_
     for job_message in job_messages:
         message_type = job_message.get("type")
         if message_type == "regex" and job_message.get("stream") == "stderr":
-            stderr_prefix += (job_message.get("desc") or '') + "\n"
+            stderr_prefix += f"{job_message.get('desc') or ''}\n"
         elif message_type == "regex" and job_message.get("stream") == "stdout":
-            stdout_prefix += (job_message.get("desc") or '') + "\n"
+            stdout_prefix += f"{job_message.get('desc') or ''}\n"
         elif message_type == "exit_code":
-            stderr_prefix += (job_message.get("desc") or '') + "\n"
+            stderr_prefix += f"{job_message.get('desc') or ''}\n"
         else:
             raise Exception(f"Unknown job message type [{message_type}] in [{job_message}]")
 
@@ -1226,7 +1226,7 @@ def _format_stream(output, stream, format):
     output = output or ''
     if format:
         msg = f"---------------------- >> begin tool {stream} << -----------------------\n"
-        msg += output + "\n"
+        msg += f"{output}\n"
         msg += f"----------------------- >> end tool {stream} << ------------------------\n"
     else:
         msg = output

@@ -800,7 +800,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
 
         # copy vis and alter title
         # TODO: need to handle custom db keys.
-        imported_visualization = visualization.copy(user=user, title="imported: " + visualization.title)
+        imported_visualization = visualization.copy(user=user, title=f"imported: {visualization.title}")
         trans.sa_session.add(imported_visualization)
         trans.sa_session.flush()
         return imported_visualization
@@ -1238,7 +1238,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
         """ Imports a shared workflow """
         # Copy workflow.
         imported_stored = model.StoredWorkflow()
-        imported_stored.name = "imported: " + stored.name
+        imported_stored.name = f"imported: {stored.name}"
         workflow = stored.latest_workflow.copy(user=trans.user)
         workflow.stored_workflow = imported_stored
         imported_stored.latest_workflow = workflow
@@ -1471,7 +1471,7 @@ class UsesTagsMixin(SharableItemSecurityMixin):
 
         # boil the tag tuples down into a sorted list of DISTINCT name:val strings
         tags = all_tags_query.distinct().all()
-        tags = [((name + ':' + val) if val else name) for name, val in tags]
+        tags = [(f"{name}:{val}" if val else name) for name, val in tags]
         return sorted(tags)
 
 
@@ -1552,7 +1552,7 @@ class UsesExtendedMetadataMixin(SharableItemSecurityMixin):
         """
         if isinstance(meta, dict):
             for a in meta:
-                yield from self._scan_json_block(meta[a], prefix + "/" + a)
+                yield from self._scan_json_block(meta[a], f"{prefix}/{a}")
         elif isinstance(meta, list):
             for i, a in enumerate(meta):
                 yield from self._scan_json_block(a, prefix + "[%d]" % (i))

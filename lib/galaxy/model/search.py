@@ -226,7 +226,7 @@ def library_folder_parent_library_id_filter(item, left, operator, right):
 
 
 def library_path_filter(item, left, operator, right):
-    lpath = "/" + "/".join(item.library_path)
+    lpath = f"/{'/'.join(item.library_path)}"
     if operator == '=':
         return lpath == right
     if operator == '!=':

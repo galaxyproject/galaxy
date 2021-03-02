@@ -148,7 +148,7 @@ def _to_cwl_tool_object(tool_path=None, tool_object=None, cwl_tool_object=None, 
         path = tool_directory
         if path is None:
             path = os.getcwd()
-        uri = ref_resolver.file_uri(path) + "/"
+        uri = f"{ref_resolver.file_uri(path)}/"
         sourceline.add_lc_filename(tool_object, uri)
         raw_process_reference = schema_loader.raw_process_reference_for_object(
             tool_object,

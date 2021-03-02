@@ -1023,7 +1023,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
             # ---- for composite files, we use id and name for a directory and, inside that, ...
             if self.hda_manager.is_composite(content):
                 # ...save the 'main' composite file (gen. html)
-                paths_and_files.append((content.file_name, os.path.join(archive_path, content.name + '.html')))
+                paths_and_files.append((content.file_name, os.path.join(archive_path, f"{content.name}.html")))
                 for extra_file in self.hda_manager.extra_files(content):
                     extra_file_basename = os.path.basename(extra_file)
                     archive_extra_file_path = os.path.join(archive_path, extra_file_basename)
@@ -1033,8 +1033,8 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
             # ---- for single files, we add the true extension to id and name and store that single filename
             else:
                 # some dataset names can contain their original file extensions, don't repeat
-                if not archive_path.endswith('.' + content.extension):
-                    archive_path += '.' + content.extension
+                if not archive_path.endswith(f".{content.extension}"):
+                    archive_path += f".{content.extension}"
                 paths_and_files.append((content.file_name, archive_path))
 
         # filter the contents that contain datasets using any filters possible from index above and map the datasets

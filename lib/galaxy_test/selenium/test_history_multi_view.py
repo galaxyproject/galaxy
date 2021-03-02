@@ -129,7 +129,7 @@ class HistoryMultiViewTestCase(SeleniumTestCase):
         histories = self.components.multi_history_view.histories.all()
         assert len(histories) == histories_number
         # search for history with history_id
-        assert should_exist == any(history.get_attribute("id") == "history-column-" + history_id for history in histories)
+        assert should_exist == any(history.get_attribute("id") == f"history-column-{history_id}" for history in histories)
 
     def copy_history(self, history_id):
         self.components.multi_history_view.history_dropdown_btn(history_id=history_id).wait_for_and_click()

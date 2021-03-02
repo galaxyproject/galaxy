@@ -61,11 +61,11 @@ class LibraryLandingTestCase(SeleniumTestCase):
         self.wait_for_overlays_cleared()
 
         namebase = self._get_random_name(prefix="testsort")
-        self.libraries_index_create(namebase + " b")
+        self.libraries_index_create(f"{namebase} b")
         self.wait_for_overlays_cleared()
-        self.libraries_index_create(namebase + " a")
+        self.libraries_index_create(f"{namebase} a")
         self.wait_for_overlays_cleared()
-        self.libraries_index_create(namebase + " c")
+        self.libraries_index_create(f"{namebase} c")
 
         self.screenshot("libraries_index")
 

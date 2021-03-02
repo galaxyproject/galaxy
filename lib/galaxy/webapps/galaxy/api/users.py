@@ -307,7 +307,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                         input['help'] = f"{help} {required}"
                     else:
                         input['help'] = required
-                    field = item + '|' + input['name']
+                    field = f"{item}|{input['name']}"
                     for data_item in user.extra_preferences:
                         if field in data_item:
                             input['value'] = user.extra_preferences[data_item]
@@ -421,7 +421,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                 # Update user email and user's private role name which must match
                 private_role = trans.app.security_agent.get_private_user_role(user)
                 private_role.name = email
-                private_role.description = 'Private role for ' + email
+                private_role.description = f"Private role for {email}"
                 user.email = email
                 trans.sa_session.add(user)
                 trans.sa_session.add(private_role)
@@ -462,7 +462,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         extra_pref_keys = self._get_extra_user_preferences(trans)
         if extra_pref_keys is not None:
             for key in extra_pref_keys:
-                key_prefix = key + '|'
+                key_prefix = f"{key}|"
                 for item in payload:
                     if item.startswith(key_prefix):
                         # Show error message if the required field is empty
@@ -670,7 +670,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             new_filters = []
             for prefixed_name in payload:
                 if payload.get(prefixed_name) == 'true' and prefixed_name.startswith(filter_type):
-                    prefix = filter_type + '|'
+                    prefix = f"{filter_type}|"
                     new_filters.append(prefixed_name[len(prefix):])
             user.preferences[filter_type] = ','.join(new_filters)
         trans.sa_session.add(user)

@@ -114,7 +114,7 @@ def identifier_to_cached_target(identifier, hash_func, namespace=None):
     prefix = ""
     if namespace is not None:
         prefix = f"quay.io/{namespace}/"
-    if image_name.startswith(prefix + "mulled-v1-"):
+    if image_name.startswith(f"{prefix}mulled-v1-"):
         if hash_func == "v2":
             return None
 
@@ -123,7 +123,7 @@ def identifier_to_cached_target(identifier, hash_func, namespace=None):
         if version and version.isdigit():
             build = version
         image = CachedV1MulledImageMultiTarget(hash, build, identifier)
-    elif image_name.startswith(prefix + "mulled-v2-"):
+    elif image_name.startswith(f"{prefix}mulled-v2-"):
         if hash_func == "v1":
             return None
 

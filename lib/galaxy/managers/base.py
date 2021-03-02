@@ -267,9 +267,9 @@ class ModelManager:
         try:
             return query.one()
         except sqlalchemy.orm.exc.NoResultFound:
-            raise exceptions.ObjectNotFound(self.model_class.__name__ + ' not found')
+            raise exceptions.ObjectNotFound(f"{self.model_class.__name__} not found")
         except sqlalchemy.orm.exc.MultipleResultsFound:
-            raise exceptions.InconsistentDatabase('found more than one ' + self.model_class.__name__)
+            raise exceptions.InconsistentDatabase(f"found more than one {self.model_class.__name__}")
 
     def _one_or_none(self, query):
         """
@@ -622,7 +622,7 @@ class ModelSerializer(HasAModelManager):
             return self.serializers[original_key]
         if original_key in self.serializable_keyset:
             return lambda i, k, **c: self.default_serializer(i, original_key, **c)
-        raise KeyError('serializer not found for remap: ' + original_key)
+        raise KeyError(f"serializer not found for remap: {original_key}")
 
     def default_serializer(self, item, key, **context):
         """
@@ -1053,7 +1053,7 @@ class ModelFilterParser(HasAModelManager):
         # correct op_string to usable function key
         fn_name = op_string
         if op_string in self.UNDERSCORED_OPS:
-            fn_name = '__' + op_string + '__'
+            fn_name = f"__{op_string}__"
         elif op_string == 'in':
             fn_name = 'in_'
 
@@ -1084,7 +1084,7 @@ class ModelFilterParser(HasAModelManager):
             return True
         if bool_string in ('False', False):
             return False
-        raise ValueError('invalid boolean: ' + str(bool_string))
+        raise ValueError(f"invalid boolean: {str(bool_string)}")
 
     def parse_id_list(self, id_list_string, sep=','):
         """

@@ -45,8 +45,8 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         runner_param_specs = {
             'drmaa_library_path': dict(map=str, default=os.environ.get('DRMAA_LIBRARY_PATH', None))}
         for retry_exception in RETRY_EXCEPTIONS_LOWER:
-            runner_param_specs[retry_exception + '_state'] = dict(map=str, valid=lambda x: x in (model.Job.states.OK, model.Job.states.ERROR), default=model.Job.states.OK)
-            runner_param_specs[retry_exception + '_retries'] = dict(map=int, valid=lambda x: int(x) >= 0, default=0)
+            runner_param_specs[f"{retry_exception}_state"] = dict(map=str, valid=lambda x: x in (model.Job.states.OK, model.Job.states.ERROR), default=model.Job.states.OK)
+            runner_param_specs[f"{retry_exception}_retries"] = dict(map=int, valid=lambda x: int(x) >= 0, default=0)
 
         if 'runner_param_specs' not in kwargs:
             kwargs['runner_param_specs'] = dict()
@@ -283,11 +283,11 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             state = self.ds.job_status(external_job_id)
             # Reset exception retries
             for retry_exception in RETRY_EXCEPTIONS_LOWER:
-                setattr(ajs, retry_exception + '_retries', 0)
+                setattr(ajs, f"{retry_exception}_retries", 0)
         except (drmaa.InternalException, drmaa.InvalidJobException) as e:
             ecn = type(e).__name__
-            retry_param = ecn.lower() + '_retries'
-            state_param = ecn.lower() + '_state'
+            retry_param = f"{ecn.lower()}_retries"
+            state_param = f"{ecn.lower()}_state"
             retries = getattr(ajs, retry_param, 0)
             log.warning("(%s/%s) unable to check job status because of %s exception for %d consecutive tries: %s", galaxy_id_tag, external_job_id, ecn, retries + 1, e)
             if self.runner_params[retry_param] > 0:
@@ -436,7 +436,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             job_name += f'_{job_wrapper.tool.old_id}'
         if not self.redact_email_in_job_name and external_runjob_script is None:
             job_name += f'_{job_wrapper.user}'
-        job_name = ''.join(x if x in (string.ascii_letters + string.digits + '_') else '_' for x in job_name)
+        job_name = ''.join(x if x in (f"{string.ascii_letters + string.digits}_") else '_' for x in job_name)
         if self.restrict_job_name_length:
             job_name = job_name[:self.restrict_job_name_length]
         return job_name

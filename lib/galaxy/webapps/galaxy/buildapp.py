@@ -683,21 +683,21 @@ def populate_api_routes(webapp, app):
         conditions = conditions or dict(method=['GET'])
         webapp.mapper.connect(
             f'workflow_invocation_{endpoint_name}',
-            '/api/workflows/{workflow_id}/invocations/{invocation_id}' + endpoint_suffix,
+            f"/api/workflows/{{workflow_id}}/invocations/{{invocation_id}}{endpoint_suffix}",
             controller='workflows',
             action=action,
             conditions=conditions,
         )
         webapp.mapper.connect(
             f'workflow_usage_{endpoint_name}',
-            '/api/workflows/{workflow_id}/usage/{invocation_id}' + endpoint_suffix,
+            f"/api/workflows/{{workflow_id}}/usage/{{invocation_id}}{endpoint_suffix}",
             controller='workflows',
             action=action,
             conditions=conditions,
         )
         webapp.mapper.connect(
             f'invocation_{endpoint_name}',
-            '/api/invocations/{invocation_id}' + endpoint_suffix,
+            f"/api/invocations/{{invocation_id}}{endpoint_suffix}",
             controller='workflows',
             action=action,
             conditions=conditions,

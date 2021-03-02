@@ -204,7 +204,7 @@ class TagHandler:
         for tag in tags:
             tag_str = tag.user_tname
             if tag.value is not None:
-                tag_str += ":" + tag.user_value
+                tag_str += f":{tag.user_value}"
             tags_str_list.append(tag_str)
         return ", ".join(tags_str_list)
 
@@ -284,7 +284,7 @@ class TagHandler:
         # Strip unicode control characters
         tag_str = strip_control_characters(tag_str)
         # Split tags based on separators.
-        reg_exp = re.compile('[' + self.tag_separators + ']')
+        reg_exp = re.compile(f"[{self.tag_separators}]")
         raw_tags = reg_exp.split(tag_str)
         return self.parse_tags_list(raw_tags)
 
@@ -344,7 +344,7 @@ class TagHandler:
         # Use regular expression to parse name, value.
         if tag_str.startswith('#'):
             tag_str = f"name:{tag_str[1:]}"
-        reg_exp = re.compile("[" + self.key_value_separators + "]")
+        reg_exp = re.compile(f"[{self.key_value_separators}]")
         name_value_pair = reg_exp.split(tag_str, 1)
         # Add empty slot if tag does not have value.
         if len(name_value_pair) < 2:

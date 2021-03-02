@@ -232,14 +232,14 @@ def _test_id_for_reference(test_reference):
     tool_version = test_reference.tool_version
     test_index = test_reference.test_index
 
-    if tool_version and tool_id.endswith("/" + tool_version):
-        tool_id = tool_id[:-len("/" + tool_version)]
+    if tool_version and tool_id.endswith(f"/{tool_version}"):
+        tool_id = tool_id[:-len(f"/{tool_version}")]
 
     label_base = tool_id
     if tool_version:
-        label_base += "/" + str(tool_version)
+        label_base += f"/{str(tool_version)}"
 
-    test_id = label_base + "-" + str(test_index)
+    test_id = f"{label_base}-{str(test_index)}"
     return test_id
 
 
@@ -258,8 +258,8 @@ def _test_tool(
     test_index = test_reference.test_index
     # If given a tool_id with a version suffix, strip it off so we can treat tool_version
     # correctly at least in client_test_config.
-    if tool_version and tool_id.endswith("/" + tool_version):
-        tool_id = tool_id[:-len("/" + tool_version)]
+    if tool_version and tool_id.endswith(f"/{tool_version}"):
+        tool_id = tool_id[:-len(f"/{tool_version}")]
 
     test_id = _test_id_for_reference(test_reference)
 

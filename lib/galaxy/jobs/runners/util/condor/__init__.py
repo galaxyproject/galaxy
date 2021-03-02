@@ -60,10 +60,10 @@ def build_submit_description(executable, output, error, user_log, query_params):
     submit_description = []
     for key, value in all_query_params.items():
         submit_description.append(f'{key} = {value}')
-    submit_description.append('executable = ' + executable)
-    submit_description.append('output = ' + output)
-    submit_description.append('error = ' + error)
-    submit_description.append('log = ' + user_log)
+    submit_description.append(f"executable = {executable}")
+    submit_description.append(f"output = {output}")
+    submit_description.append(f"error = {error}")
+    submit_description.append(f"log = {user_log}")
     submit_description.append('queue')
     return '\n'.join(submit_description)
 
@@ -109,15 +109,15 @@ def summarize_condor_log(log_file, external_id):
     s1 = s4 = s7 = s5 = s9 = False
     with open(log_file) as log_handle:
         for line in log_handle:
-            if '001 (' + log_job_id + '.' in line:
+            if f"001 ({log_job_id}." in line:
                 s1 = True
-            if '004 (' + log_job_id + '.' in line:
+            if f"004 ({log_job_id}." in line:
                 s4 = True
-            if '007 (' + log_job_id + '.' in line:
+            if f"007 ({log_job_id}." in line:
                 s7 = True
-            if '005 (' + log_job_id + '.' in line:
+            if f"005 ({log_job_id}." in line:
                 s5 = True
-            if '009 (' + log_job_id + '.' in line:
+            if f"009 ({log_job_id}." in line:
                 s9 = True
         file_size = log_handle.tell()
     return s1, s4, s7, s5, s9, file_size

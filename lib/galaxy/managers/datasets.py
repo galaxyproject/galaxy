@@ -489,7 +489,7 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer,
             'genome_build': lambda i, k, **c: i.dbkey,
 
             # derived (not mapped) attributes
-            'data_type': lambda i, k, **c: i.datatype.__class__.__module__ + '.' + i.datatype.__class__.__name__,
+            'data_type': lambda i, k, **c: f"{i.datatype.__class__.__module__}.{i.datatype.__class__.__name__}",
 
             'converted': self.serialize_converted_datasets,
             # TODO: metadata/extra files
@@ -636,7 +636,7 @@ class DatasetAssociationSerializer(_UnflattenedMetadataDatasetAssociationSeriali
         # prefix each key within and return
         prefixed = {}
         for key, val in metadata.items():
-            prefixed_key = 'metadata_' + key
+            prefixed_key = f"metadata_{key}"
             prefixed[prefixed_key] = val
         return prefixed
 

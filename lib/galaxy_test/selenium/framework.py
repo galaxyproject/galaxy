@@ -240,7 +240,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin):
         try:
             self.setup_with_driver()
         except Exception:
-            dump_test_information(self, self.__class__.__name__ + "_setup")
+            dump_test_information(self, f"{self.__class__.__name__}_setup")
             raise
 
     def setup_with_driver(self):
@@ -544,7 +544,7 @@ class SeleniumSessionGetPostMixin:
 
     def _get(self, route, data=None, headers=None, admin=False) -> Response:
         data = data or {}
-        full_url = self.selenium_context.build_url("api/" + route, for_selenium=False)
+        full_url = self.selenium_context.build_url(f"api/{route}", for_selenium=False)
         cookies = None
         if admin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
@@ -554,7 +554,7 @@ class SeleniumSessionGetPostMixin:
         return response
 
     def _post(self, route, data=None, files=None, headers=None, admin=False, json: bool = False) -> Response:
-        full_url = self.selenium_context.build_url("api/" + route, for_selenium=False)
+        full_url = self.selenium_context.build_url(f"api/{route}", for_selenium=False)
         if data is None:
             data = {}
 
@@ -573,7 +573,7 @@ class SeleniumSessionGetPostMixin:
 
     def _delete(self, route, data=None, headers=None, admin=False) -> Response:
         data = data or {}
-        full_url = self.selenium_context.build_url("api/" + route, for_selenium=False)
+        full_url = self.selenium_context.build_url(f"api/{route}", for_selenium=False)
         cookies = None
         if admin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
@@ -584,7 +584,7 @@ class SeleniumSessionGetPostMixin:
 
     def _put(self, route, data=None, headers=None, admin=False) -> Response:
         data = data or {}
-        full_url = self.selenium_context.build_url("api/" + route, for_selenium=False)
+        full_url = self.selenium_context.build_url(f"api/{route}", for_selenium=False)
         cookies = None
         if admin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"

@@ -219,7 +219,7 @@ class ContainerInterface(metaclass=ABCMeta):
                 }
                 log.warning("option '%s' not in %s.option_map, guessing flag '%s' type '%s'",
                             opt, self.__class__.__name__, optdef['flag'], optdef['type'])
-            opts.append(getattr(self, '_stringify_kwopt_' + optdef['type'])(optdef['flag'], val))
+            opts.append(getattr(self, f"_stringify_kwopt_{optdef['type']}")(optdef['flag'], val))
         return ' '.join(opts)
 
     def _stringify_kwopt_boolean(self, flag, val):
@@ -272,7 +272,7 @@ class ContainerInterface(metaclass=ABCMeta):
             return stdout.strip()
         else:
             msg = f"Command '{command}' returned non-zero exit status {p.returncode}"
-            log.error(msg + ': ' + stderr.strip())
+            log.error(f"{msg}: {stderr.strip()}")
             raise ContainerCLIError(
                 msg,
                 stdout=stdout.strip(),

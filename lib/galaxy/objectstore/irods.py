@@ -210,7 +210,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         if irods is None:
             raise Exception(IRODS_IMPORT_MESSAGE)
 
-        self.home = "/" + self.zone + "/home/" + self.username
+        self.home = f"/{self.zone}/home/{self.username}"
 
         if irods is None:
             raise Exception(IRODS_IMPORT_MESSAGE)
@@ -296,8 +296,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         data_object_name = p.stem + p.suffix
         subcollection_name = p.parent
 
-        collection_path = self.home + "/" + str(subcollection_name)
-        data_object_path = collection_path + "/" + str(data_object_name)
+        collection_path = f"{self.home}/{str(subcollection_name)}"
+        data_object_path = f"{collection_path}/{str(data_object_name)}"
 
         try:
             data_obj = self.session.data_objects.get(data_object_path)
@@ -318,8 +318,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         data_object_name = p.stem + p.suffix
         subcollection_name = p.parent
 
-        collection_path = self.home + "/" + str(subcollection_name)
-        data_object_path = collection_path + "/" + str(data_object_name)
+        collection_path = f"{self.home}/{str(subcollection_name)}"
+        data_object_path = f"{collection_path}/{str(data_object_name)}"
 
         try:
             self.session.data_objects.get(data_object_path)
@@ -358,8 +358,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         data_object_name = p.stem + p.suffix
         subcollection_name = p.parent
 
-        collection_path = self.home + "/" + str(subcollection_name)
-        data_object_path = collection_path + "/" + str(data_object_name)
+        collection_path = f"{self.home}/{str(subcollection_name)}"
+        data_object_path = f"{collection_path}/{str(data_object_name)}"
         data_obj = None
 
         try:
@@ -409,8 +409,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             return False
 
         # Check if the data object exists in iRODS
-        collection_path = self.home + "/" + str(subcollection_name)
-        data_object_path = collection_path + "/" + str(data_object_name)
+        collection_path = f"{self.home}/{str(subcollection_name)}"
+        data_object_path = f"{collection_path}/{str(data_object_name)}"
         exists = False
         try:
             exists = self.session.data_objects.exists(data_object_path)
@@ -440,7 +440,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                 log.debug("Pushing cache file '%s' of size %s bytes to collection '%s'", source_file, os.path.getsize(source_file), rel_path)
 
                 # Add the source file to the irods collection
-                self.session.data_objects.put(source_file, collection_path + "/", **options)
+                self.session.data_objects.put(source_file, f"{collection_path}/", **options)
 
                 end_time = datetime.now()
                 log.debug("Pushed cache file '%s' to collection '%s' (%s bytes transfered in %s sec)",
@@ -565,7 +565,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             if entire_dir and extra_dir:
                 shutil.rmtree(self._get_cache_path(rel_path))
 
-                col_path = self.home + "/" + str(rel_path)
+                col_path = f"{self.home}/{str(rel_path)}"
                 col = None
                 try:
                     col = self.session.collections.get(col_path)
@@ -600,8 +600,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                 data_object_name = p.stem + p.suffix
                 subcollection_name = p.parent
 
-                collection_path = self.home + "/" + str(subcollection_name)
-                data_object_path = collection_path + "/" + str(data_object_name)
+                collection_path = f"{self.home}/{str(subcollection_name)}"
+                data_object_path = f"{collection_path}/{str(data_object_name)}"
 
                 try:
                     data_obj = self.session.data_objects.get(data_object_path)
@@ -716,8 +716,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             data_object_name = p.stem + p.suffix
             subcollection_name = p.parent
 
-            collection_path = self.home + "/" + str(subcollection_name)
-            data_object_path = collection_path + "/" + str(data_object_name)
+            collection_path = f"{self.home}/{str(subcollection_name)}"
+            data_object_path = f"{collection_path}/{str(data_object_name)}"
 
             return data_object_path
 

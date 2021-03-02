@@ -114,7 +114,7 @@ class CustosAuthnz(IdentityProvider):
                         log.exception(message)
                         raise exceptions.AuthenticationFailed(message)
                 else:
-                    login_redirect_url = login_redirect_url + 'root/login?confirm=true&custos_token=' + json.dumps(token)
+                    login_redirect_url = f"{login_redirect_url}root/login?confirm=true&custos_token={json.dumps(token)}"
                     return login_redirect_url, None
 
             custos_authnz_token = CustosAuthnzToken(user=user,
@@ -224,7 +224,7 @@ class CustosAuthnz(IdentityProvider):
         else:
             client_secret = self.config['client_secret']
         token_endpoint = self.config['token_endpoint']
-        clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']  # for custos
+        clientIdAndSec = f"{self.config['client_id']}:{self.config['client_secret']}"  # for custos
         return oauth2_session.fetch_token(
             token_endpoint,
             client_secret=client_secret,
@@ -263,7 +263,7 @@ class CustosAuthnz(IdentityProvider):
         self.config['credential_url'] = '/'.join([self.config['url'].rstrip('/'), 'credentials'])
         self._get_custos_credentials()
         # Set custos endpoints
-        clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']
+        clientIdAndSec = f"{self.config['client_id']}:{self.config['client_secret']}"
         eps = requests.get(self.config['well_known_oidc_config_uri'],
                            headers={"Authorization": f"Basic {util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))}"},
                            verify=False, params={'client_id': self.config['client_id']})
@@ -276,7 +276,7 @@ class CustosAuthnz(IdentityProvider):
         self._load_well_known_oidc_config(well_known_oidc_config)
 
     def _get_custos_credentials(self):
-        clientIdAndSec = self.config['client_id'] + ":" + self.config['client_secret']
+        clientIdAndSec = f"{self.config['client_id']}:{self.config['client_secret']}"
         creds = requests.get(self.config['credential_url'],
                             headers={"Authorization": f"Basic {util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))}"},
                             verify=False, params={'client_id': self.config['client_id']})

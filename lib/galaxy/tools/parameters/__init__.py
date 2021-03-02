@@ -162,7 +162,7 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
                 visit_input_values(input.inputs, d, callback, new_name_prefix, new_label_prefix, parent_prefix=new_name_prefix, **payload)
         elif isinstance(input, Conditional):
             values = input_values[input.name] = input_values.get(input.name, {})
-            new_name_prefix = name_prefix + input.name + '|'
+            new_name_prefix = f"{name_prefix + input.name}|"
             case_error = None if get_current_case(input, values) >= 0 else 'The selected case is unavailable/invalid.'
             callback_helper(input.test_param, values, new_name_prefix, label_prefix, parent_prefix=name_prefix, context=context, error=case_error)
             values['__current_case__'] = get_current_case(input, values)
@@ -170,7 +170,7 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
                 visit_input_values(input.cases[values['__current_case__']].inputs, values, callback, new_name_prefix, label_prefix, parent_prefix=name_prefix, **payload)
         elif isinstance(input, Section):
             values = input_values[input.name] = input_values.get(input.name, {})
-            new_name_prefix = name_prefix + input.name + '|'
+            new_name_prefix = f"{name_prefix + input.name}|"
             visit_input_values(input.inputs, values, callback, new_name_prefix, label_prefix, parent_prefix=name_prefix, **payload)
         else:
             callback_helper(input, input_values, name_prefix, label_prefix, parent_prefix=parent_prefix, context=context)
@@ -260,12 +260,12 @@ def params_to_incoming(incoming, inputs, input_values, app, name_prefix=""):
         elif isinstance(input, Conditional):
             values = input_values[input.name]
             current = values['__current_case__']
-            new_name_prefix = name_prefix + input.name + '|'
+            new_name_prefix = f"{name_prefix + input.name}|"
             incoming[new_name_prefix + input.test_param.name] = values[input.test_param.name]
             params_to_incoming(incoming, input.cases[current].inputs, values, app, new_name_prefix)
         elif isinstance(input, Section):
             values = input_values[input.name]
-            new_name_prefix = name_prefix + input.name + '|'
+            new_name_prefix = f"{name_prefix + input.name}|"
             params_to_incoming(incoming, input.inputs, values, app, new_name_prefix)
         else:
             value = input_values.get(input.name)
@@ -419,7 +419,7 @@ def _populate_state_legacy(request_context, inputs, incoming, state, errors, pre
                 if rep_index < input.max:
                     new_state = {'__index__': rep_index}
                     group_state.append(new_state)
-                    _populate_state_legacy(request_context, input.inputs, incoming, new_state, errors, prefix=rep_prefix + '|', context=context, check=check, simple_errors=simple_errors)
+                    _populate_state_legacy(request_context, input.inputs, incoming, new_state, errors, prefix=f"{rep_prefix}|", context=context, check=check, simple_errors=simple_errors)
                 rep_index += 1
         elif input.type == 'conditional':
             if input.value_ref and not input.value_ref_in_group:
@@ -467,11 +467,11 @@ def _get_incoming_value(incoming, key, default):
     Fetch value from incoming dict directly or check special nginx upload
     created variants of this key.
     """
-    if '__' + key + '__is_composite' in incoming:
-        composite_keys = incoming['__' + key + '__keys'].split()
+    if f"__{key}__is_composite" in incoming:
+        composite_keys = incoming[f"__{key}__keys"].split()
         value = dict()
         for composite_key in composite_keys:
-            value[composite_key] = incoming[key + '_' + composite_key]
+            value[composite_key] = incoming[f"{key}_{composite_key}"]
         return value
     else:
         return incoming.get(key, default)

@@ -259,7 +259,7 @@ def reload_job_rules(app, **kwargs):
     for module in job_rule_modules(app):
         rules_module_name = module.__name__
         for name, module in sys.modules.items():
-            if ((name == rules_module_name or name.startswith(rules_module_name + '.'))
+            if ((name == rules_module_name or name.startswith(f"{rules_module_name}."))
                     and ismodule(module)):
                 log.debug("Reloading job rules module: %s", name)
                 importlib.reload(module)

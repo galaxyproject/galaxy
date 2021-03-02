@@ -1179,7 +1179,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                     trans.sa_session.add(h)
                     trans.sa_session.flush()
                     trans.log_event(f'History renamed: id: {str(h.id)}, renamed to: {new_name}')
-                    messages.append('History \'' + cur_name + '\' renamed to \'' + new_name + '\'.')
+                    messages.append(f"History '{cur_name}' renamed to '{new_name}'.")
             message = sanitize_text(' '.join(messages)) if messages else 'History names remain unchanged.'
             return {'message': message, 'status': 'success'}
 

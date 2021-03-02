@@ -676,7 +676,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 all_groups.append((group.name, trans.security.encode_id(group.id)))
             default_options = [('No', 'no')]
             for type_ in trans.app.model.DefaultQuotaAssociation.types:
-                default_options.append(('Yes, ' + type_, type_))
+                default_options.append((f"Yes, {type_}", type_))
             return {'title': 'Create Quota',
                     'inputs': [
                         {
@@ -809,7 +809,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             default_value = quota.default[0].type if quota.default else 'no'
             default_options = [('No', 'no')]
             for typ in trans.app.model.DefaultQuotaAssociation.types.__members__.values():
-                default_options.append(('Yes, ' + typ, typ))
+                default_options.append((f"Yes, {typ}", typ))
             return {
                 'title': 'Set quota default for \'%s\'' % util.sanitize_text(quota.name),
                 'inputs': [{

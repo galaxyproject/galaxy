@@ -51,7 +51,7 @@ class InteractiveEnvironmentRequest:
         self.attr.redact_username_in_logs = trans.app.config.redact_username_in_logs
         self.attr.galaxy_root_dir = os.path.abspath(self.attr.galaxy_config.root)
         self.attr.root = web.url_for("/")
-        self.attr.app_root = self.attr.root + "static/plugins/interactive_environments/" + self.attr.viz_id + "/static/"
+        self.attr.app_root = f"{self.attr.root}static/plugins/interactive_environments/{self.attr.viz_id}/static/"
         self.attr.import_volume = True
 
         plugin_path = os.path.abspath(plugin.path)
@@ -101,7 +101,7 @@ class InteractiveEnvironmentRequest:
         # multiple leading '/' characters, which will cause the client to
         # request resources from http://dynamic_proxy_prefix
         if self.attr.proxy_prefix.startswith('/'):
-            self.attr.proxy_prefix = '/' + self.attr.proxy_prefix.lstrip('/')
+            self.attr.proxy_prefix = f"/{self.attr.proxy_prefix.lstrip('/')}"
 
         assert not self.attr.container_interface \
             or not self.attr.container_interface.publish_port_list_required \
@@ -127,7 +127,7 @@ class InteractiveEnvironmentRequest:
             self.allowed_images = [x['image'] for x in yaml.safe_load(handle)]
 
             if len(self.allowed_images) == 0:
-                raise Exception("No allowed images specified for " + self.attr.viz_id)
+                raise Exception(f"No allowed images specified for {self.attr.viz_id}")
 
             self.default_image = self.allowed_images[0]
 
@@ -146,7 +146,7 @@ class InteractiveEnvironmentRequest:
             'docker_connect_port': None,
         }
         viz_config = configparser.ConfigParser(default_dict)
-        conf_path = os.path.join(self.attr.our_config_dir, self.attr.viz_id + ".ini")
+        conf_path = os.path.join(self.attr.our_config_dir, f"{self.attr.viz_id}.ini")
         if not os.path.exists(conf_path):
             conf_path = f"{conf_path}.sample"
         viz_config.read(conf_path)
@@ -203,9 +203,9 @@ class InteractiveEnvironmentRequest:
         if self.attr.viz_config.has_option("docker", "galaxy_url"):
             conf_file['galaxy_url'] = self.attr.viz_config.get("docker", "galaxy_url")
         elif self.attr.galaxy_config.galaxy_infrastructure_url_set:
-            conf_file['galaxy_url'] = self.attr.galaxy_config.galaxy_infrastructure_url.rstrip('/') + '/'
+            conf_file['galaxy_url'] = f"{self.attr.galaxy_config.galaxy_infrastructure_url.rstrip('/')}/"
         else:
-            conf_file['galaxy_url'] = request.application_url.rstrip('/') + '/'
+            conf_file['galaxy_url'] = f"{request.application_url.rstrip('/')}/"
             # Galaxy paster port is deprecated
             conf_file['galaxy_paster_port'] = conf_file['galaxy_web_port']
 

@@ -764,10 +764,10 @@ class TabularToolDataField(Dictifiable):
         return path
 
     def clean_base_dir(self, path):
-        return re.sub("^" + self.get_base_dir() + r"/*", "", path)
+        return re.sub(f"^{self.get_base_dir()}/*", "", path)
 
     def get_files(self):
-        return glob(self.get_base_path() + "*")
+        return glob(f"{self.get_base_path()}*")
 
     def get_filesize_map(self, rm_base_dir=False):
         out = {}

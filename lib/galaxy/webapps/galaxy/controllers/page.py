@@ -338,8 +338,8 @@ class PageController(BaseUIController, SharableMixin,
             content_hide = True
             if "invocation_id" in kwd:
                 invocation_id = kwd.get("invocation_id")
-                form_title = form_title + " from Invocation Report"
-                slug = "invocation-report-" + invocation_id
+                form_title = f"{form_title} from Invocation Report"
+                slug = f"invocation-report-{invocation_id}"
                 invocation_report = self.workflow_manager.get_invocation_report(trans, invocation_id)
                 title = invocation_report.get("title")
                 content = invocation_report.get("markdown")

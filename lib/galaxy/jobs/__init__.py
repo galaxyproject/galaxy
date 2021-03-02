@@ -785,7 +785,7 @@ class JobConfiguration(ConfiguresHandlers):
                 # Name to load was specified as '<module>'
                 if '.' not in load:
                     # For legacy reasons, try from galaxy.jobs.runners first if there's no '.' in the name
-                    module_name = 'galaxy.jobs.runners.' + load
+                    module_name = f"galaxy.jobs.runners.{load}"
                     try:
                         module = __import__(module_name)
                     except ImportError:
@@ -1521,10 +1521,10 @@ class JobWrapper(HasResourceParameters):
         dataset.info = (dataset.info or '')
         if context['stdout'].strip():
             # Ensure white space between entries
-            dataset.info = dataset.info.rstrip() + "\n" + context['stdout'].strip()
+            dataset.info = f"{dataset.info.rstrip()}\n{context['stdout'].strip()}"
         if context['stderr'].strip():
             # Ensure white space between entries
-            dataset.info = dataset.info.rstrip() + "\n" + context['stderr'].strip()
+            dataset.info = f"{dataset.info.rstrip()}\n{context['stderr'].strip()}"
         dataset.tool_version = self.version_string
         dataset.set_size()
         if 'uuid' in context:
@@ -2204,7 +2204,7 @@ class JobWrapper(HasResourceParameters):
         elif job.history is not None and job.history.user is not None:
             return job.history.user.email
         elif job.galaxy_session is not None:
-            return 'anonymous@' + job.galaxy_session.remote_addr.split()[-1]
+            return f"anonymous@{job.galaxy_session.remote_addr.split()[-1]}"
         else:
             return 'anonymous@unknown'
 

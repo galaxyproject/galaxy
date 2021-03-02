@@ -110,10 +110,10 @@ $INTEGRATED_TOOL_PANEL
         with RenamedTemporaryFile(filename, mode='w') as f:
             f.write(tp_string)
         if tracking_directory:
-            with open(filename + ".stack", "w") as f:
+            with open(f"{filename}.stack", "w") as f:
                 f.write(''.join(traceback.format_stack()))
-            shutil.copy(filename, filename + ".copy")
-            shutil.move(filename + ".copy", destination)
+            shutil.copy(filename, f"{filename}.copy")
+            shutil.move(f"{filename}.copy", destination)
         try:
             os.chmod(destination, RW_R__R__)
         except OSError:

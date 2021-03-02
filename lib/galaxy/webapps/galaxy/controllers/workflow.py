@@ -205,7 +205,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         Render workflow main page (management of existing workflows)
         """
         # Take care of proxy prefix in url as well
-        redirect_url = url_for('/') + 'workflow'
+        redirect_url = f"{url_for('/')}workflow"
         return trans.response.send_redirect(redirect_url)
 
     @web.expose
@@ -539,7 +539,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         # Display the management page
         message = f'Created new workflow with name: {escape(new_stored.name)}'
         trans.set_message(message)
-        return_url = url_for('/') + f'workflow?status=done&message={escape(message)}'
+        return_url = f"{url_for('/')}workflow?status=done&message={escape(message)}"
         trans.response.send_redirect(return_url)
 
     @web.legacy_expose_api
@@ -644,7 +644,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         # Display the management page
         message = f"Workflow deleted: {escape(stored.name)}"
         trans.set_message(message)
-        return trans.response.send_redirect(url_for('/') + f'workflow?status=done&message={escape(message)}')
+        return trans.response.send_redirect(f"{url_for('/')}workflow?status=done&message={escape(message)}")
 
     @web.expose
     @web.require_login("edit workflows")

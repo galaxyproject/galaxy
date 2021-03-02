@@ -168,7 +168,7 @@ class DockerCLIInterface(DockerInterface):
                     kwopt_list.append('{vol}:{bind}{mode}'.format(
                         vol=hostvol,
                         bind=guestopts['bind'],
-                        mode=':' + mode if mode else ''
+                        mode=f":{mode}" if mode else ''
                     ))
         return self._stringify_kwopt_list(flag, kwopt_list)
 
@@ -234,7 +234,7 @@ class DockerAPIClient:
         if isinstance(f, partial):
             f = f.func
         try:
-            return getattr(f, '__qualname__', f.im_class.__name__ + '.' + f.__name__)
+            return getattr(f, '__qualname__', f"{f.im_class.__name__}.{f.__name__}")
         except AttributeError:
             return f.__name__
 
@@ -489,7 +489,7 @@ class DockerAPIInterface(DockerInterface):
         # keyword arguments
         spec_kwopts = {}
         # retrieve the option map for the docker-py object we're creating
-        option_map = getattr(self, option_map_name + '_option_map')
+        option_map = getattr(self, f"{option_map_name}_option_map")
         # set defaults
         for key in filter(lambda k: option_map[k].get('default'), option_map.keys()):
             map_spec = option_map[key]

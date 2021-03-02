@@ -75,7 +75,7 @@ def fix_type_error(exc_info, callable, varargs, kwargs):
 def _short_repr(v):
     v = repr(v)
     if len(v) > 12:
-        v = v[:8] + '...' + v[-4:]
+        v = f"{v[:8]}...{v[-4:]}"
     return v
 
 
@@ -112,7 +112,7 @@ def lookup_object(spec):
 
 
 def import_string(s):
-    return pkg_resources.EntryPoint.parse("x=" + s).load(False)
+    return pkg_resources.EntryPoint.parse(f"x={s}").load(False)
 
 
 def _aslist(obj):
@@ -353,7 +353,7 @@ def _loadconfig(object_type, uri, path, name, relative_to,
         if relative_to.endswith('/'):
             path = relative_to + path
         else:
-            path = relative_to + '/' + path
+            path = f"{relative_to}/{path}"
     if path.startswith('///'):
         path = path[2:]
     path = unquote(path)
@@ -646,7 +646,7 @@ class ConfigLoader(_Loader):
                 found.append(name_prefix)
             name = 'main'
         for section in sections:
-            if section.startswith(name_prefix + ':'):
+            if section.startswith(f"{name_prefix}:"):
                 if section[len(name_prefix) + 1:].strip() == name:
                     found.append(section)
         return found

@@ -213,7 +213,7 @@ def uri_join(*args):
     arg0 = args[0]
     if "://" in arg0:
         scheme, path = arg0.split("://", 1)
-        rval = scheme + "://" + (slash_join(path, *args[1:]) if path else slash_join(*args[1:]))
+        rval = f"{scheme}://{slash_join(path, *args[1:]) if path else slash_join(*args[1:])}"
     else:
         rval = slash_join(*args)
     return rval

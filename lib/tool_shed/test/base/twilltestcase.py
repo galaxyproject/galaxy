@@ -530,7 +530,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
     def deactivate_repository(self, installed_repository, strings_displayed=None, strings_not_displayed=None):
         encoded_id = self.security.encode_id(installed_repository.id)
         api_key = get_admin_api_key()
-        response = requests.delete(self.galaxy_url + "/api/tool_shed_repositories/" + encoded_id, data={'remove_from_disk': False, 'key': api_key})
+        response = requests.delete(f"{self.galaxy_url}/api/tool_shed_repositories/{encoded_id}", data={'remove_from_disk': False, 'key': api_key})
         assert response.status_code != 403, response.content
 
     def delete_files_from_repository(self, repository, filenames=None, strings_displayed=None, strings_not_displayed=None):
@@ -1259,7 +1259,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
     def reset_installed_repository_metadata(self, repository):
         encoded_id = self.security.encode_id(repository.id)
         api_key = get_admin_api_key()
-        response = requests.post(self.galaxy_url + "/api/tool_shed_repositories/reset_metadata_on_selected_installed_repositories", data={'repository_ids': [encoded_id], 'key': api_key})
+        response = requests.post(f"{self.galaxy_url}/api/tool_shed_repositories/reset_metadata_on_selected_installed_repositories", data={'repository_ids': [encoded_id], 'key': api_key})
         assert response.status_code != 403, response.content
 
     def reset_metadata_on_selected_repositories(self, repository_ids):
@@ -1269,7 +1269,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
 
     def reset_metadata_on_selected_installed_repositories(self, repository_ids):
         api_key = get_admin_api_key()
-        response = requests.post(self.galaxy_url + "/api/tool_shed_repositories/reset_metadata_on_selected_installed_repositories", data={'repository_ids': repository_ids, 'key': api_key})
+        response = requests.post(f"{self.galaxy_url}/api/tool_shed_repositories/reset_metadata_on_selected_installed_repositories", data={'repository_ids': repository_ids, 'key': api_key})
         assert response.status_code != 403, response.content
 
     def reset_repository_metadata(self, repository):
@@ -1376,7 +1376,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
     def uninstall_repository(self, installed_repository, strings_displayed=None, strings_not_displayed=None):
         encoded_id = self.security.encode_id(installed_repository.id)
         api_key = get_admin_api_key()
-        response = requests.delete(self.galaxy_url + "/api/tool_shed_repositories/" + encoded_id, data={'remove_from_disk': True, 'key': api_key})
+        response = requests.delete(f"{self.galaxy_url}/api/tool_shed_repositories/{encoded_id}", data={'remove_from_disk': True, 'key': api_key})
         assert response.status_code != 403, response.content
 
     def update_installed_repository(self, installed_repository, strings_displayed=None, strings_not_displayed=None):
@@ -1391,7 +1391,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
 
     def update_tool_shed_status(self):
         api_key = get_admin_api_key()
-        response = requests.get(self.galaxy_url + "/api/tool_shed_repositories/check_for_updates?key=" + api_key)
+        response = requests.get(f"{self.galaxy_url}/api/tool_shed_repositories/check_for_updates?key={api_key}")
         assert response.status_code != 403, response.content
 
     def upload_file(self,

@@ -19,7 +19,7 @@ class DockStoreResolver(ToolLocationResolver):
             tool_id, version = tool_id.split(":", 1)
         else:
             tool_id, version = tool_id, "latest"
-        tmp_path = self._temp_path(uri_like + ".cwl")
+        tmp_path = self._temp_path(f"{uri_like}.cwl")
         cwl_str = _Ga4ghToolClient().get_tool_cwl(tool_id, version=version, as_string=True)
         with open(tmp_path, "wb") as f:
             f.write(cwl_str)

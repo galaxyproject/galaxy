@@ -402,7 +402,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
             # Create imported visualization via copy.
             #   TODO: need to handle custom db keys.
 
-            imported_visualization = visualization.copy(user=trans.user, title="imported: " + visualization.title)
+            imported_visualization = visualization.copy(user=trans.user, title=f"imported: {visualization.title}")
 
             # Persist
             session = trans.sa_session

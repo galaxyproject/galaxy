@@ -14,7 +14,7 @@ assertion_module_names = ['text', 'tabular', 'xml', 'hdf5', 'archive', 'size']
 # <MODULE_NAME> to the list of assertion module names defined above.
 assertion_modules = []
 for assertion_module_name in assertion_module_names:
-    full_assertion_module_name = 'galaxy.tool_util.verify.asserts.' + assertion_module_name
+    full_assertion_module_name = f"galaxy.tool_util.verify.asserts.{assertion_module_name}"
     try:
         # Dynamically import module
         __import__(full_assertion_module_name)
@@ -33,7 +33,7 @@ def verify_assertions(data, assertion_description_list):
 
 def verify_assertion(data, assertion_description):
     tag = assertion_description["tag"]
-    assert_function_name = "assert_" + tag
+    assert_function_name = f"assert_{tag}"
     assert_function = None
     for assertion_module in assertion_modules:
         if hasattr(assertion_module, assert_function_name):

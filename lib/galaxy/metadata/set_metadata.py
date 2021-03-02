@@ -265,10 +265,10 @@ def set_metadata_portable():
                 dataset.info = (dataset.info or '')
                 if context['stdout'].strip():
                     # Ensure white space between entries
-                    dataset.info = dataset.info.rstrip() + "\n" + context['stdout'].strip()
+                    dataset.info = f"{dataset.info.rstrip()}\n{context['stdout'].strip()}"
                 if context['stderr'].strip():
                     # Ensure white space between entries
-                    dataset.info = dataset.info.rstrip() + "\n" + context['stderr'].strip()
+                    dataset.info = f"{dataset.info.rstrip()}\n{context['stderr'].strip()}"
                 dataset.tool_version = version_string
                 dataset.set_size()
                 if 'uuid' in context:

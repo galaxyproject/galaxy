@@ -801,7 +801,7 @@ class DefaultToolAction:
     def _get_default_data_name(self, dataset, tool, on_text=None, trans=None, incoming=None, history=None, params=None, job_params=None, **kwd):
         name = tool.name
         if on_text:
-            name += (" on " + on_text)
+            name += f" on {on_text}"
         return name
 
 

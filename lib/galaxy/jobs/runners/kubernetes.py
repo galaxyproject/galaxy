@@ -127,7 +127,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         # prepare the job
         # We currently don't need to include_metadata or include_work_dir_outputs, as working directory is the same
         # where galaxy will expect results.
-        log.debug("Starting queue_job for job " + job_wrapper.get_id_tag())
+        log.debug(f"Starting queue_job for job {job_wrapper.get_id_tag()}")
         ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory,
                                    job_wrapper=job_wrapper,
                                    job_destination=job_wrapper.job_destination)
@@ -240,7 +240,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         """
         label_val = self.LABEL_REGEX.sub("_", value)
         if not self.LABEL_START.search(label_val):
-            label_val = 'x' + label_val
+            label_val = f"x{label_val}"
         if not self.LABEL_END.search(label_val):
             label_val += 'x'
         return label_val
@@ -521,14 +521,14 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         repo = ""
         owner = ""
         if 'repo' in job_destination.params:
-            repo = job_destination.params['repo'] + "/"
+            repo = f"{job_destination.params['repo']}/"
         if 'owner' in job_destination.params:
-            owner = job_destination.params['owner'] + "/"
+            owner = f"{job_destination.params['owner']}/"
 
         k8s_cont_image = repo + owner + job_destination.params['image']
 
         if 'tag' in job_destination.params:
-            k8s_cont_image += ":" + job_destination.params['tag']
+            k8s_cont_image += f":{job_destination.params['tag']}"
 
         return k8s_cont_image
 
@@ -788,7 +788,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
     def recover(self, job, job_wrapper):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
         job_id = job.get_job_runner_external_id()
-        log.debug("k8s trying to recover job: " + job_id)
+        log.debug(f"k8s trying to recover job: {job_id}")
         if job_id is None:
             self.put(job_wrapper)
             return

@@ -424,7 +424,7 @@ def read_unordered_gtf(iterator, strict=False):
         # transcripts with same ID on different chromosomes; this occurs in some popular
         # datasources, such as RefGenes in UCSC.
         def key_fn(fields):
-            return fields[0] + '_' + get_transcript_id(fields)
+            return f"{fields[0]}_{get_transcript_id(fields)}"
 
     # Aggregate intervals by transcript_id and collect comments.
     feature_intervals = {}

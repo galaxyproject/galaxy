@@ -1431,7 +1431,7 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         install_options = workflow_create_options.install_options
         for k in tools:
             item = tools[k]
-            tool_shed_url = 'https://' + item['tool_shed'] + '/'
+            tool_shed_url = f"https://{item['tool_shed']}/"
             name = item['name']
             owner = item['owner']
             changeset_revision = item['changeset_revision']

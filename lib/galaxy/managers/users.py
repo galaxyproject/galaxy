@@ -426,7 +426,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
 
         # boil the tag tuples down into a sorted list of DISTINCT name:val strings
         tags = all_tags_query.distinct().all()
-        tags = [((name + ':' + val) if val else name) for name, val in tags]
+        tags = [(f"{name}:{val}" if val else name) for name, val in tags]
         return sorted(tags)
 
     def change_password(self, trans, password=None, confirm=None, token=None, id=None, current=None):
@@ -493,7 +493,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         host = self.__get_host(trans)
         custom_message = ''
         if self.app.config.custom_activation_email_message:
-            custom_message = self.app.config.custom_activation_email_message + '\n\n'
+            custom_message = f"{self.app.config.custom_activation_email_message}\n\n"
         body = ("Hello %s,\n\n"
                 "In order to complete the activation process for %s begun on %s at %s, please click "
                 "on the following link to verify your account:\n\n" "%s \n\n"
@@ -518,7 +518,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                     custom_message)
                 )
         to = email
-        frm = self.app.config.email_from or 'galaxy-no-reply@' + host
+        frm = self.app.config.email_from or f"galaxy-no-reply@{host}"
         subject = 'Galaxy Account Activation'
         try:
             util.send_mail(frm, to, subject, body, self.app.config)
@@ -558,7 +558,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                 reset_url = url_for(controller='root', action='login', token=prt.token)
                 body = PASSWORD_RESET_TEMPLATE % (host, prt.expiration_time.strftime(trans.app.config.pretty_datetime_format),
                                                   trans.request.host, reset_url)
-                frm = trans.app.config.email_from or 'galaxy-no-reply@' + host
+                frm = trans.app.config.email_from or f"galaxy-no-reply@{host}"
                 subject = 'Galaxy Password Reset'
                 try:
                     util.send_mail(frm, email, subject, body, self.app.config)

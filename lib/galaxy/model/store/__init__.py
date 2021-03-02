@@ -794,7 +794,7 @@ class BaseDirectoryImportModelStore(ModelImportStore):
     def datasets_properties(self):
         datasets_attrs_file_name = os.path.join(self.archive_dir, ATTRS_FILENAME_DATASETS)
         datasets_attrs = load(open(datasets_attrs_file_name))
-        provenance_file_name = datasets_attrs_file_name + ".provenance"
+        provenance_file_name = f"{datasets_attrs_file_name}.provenance"
 
         if os.path.exists(provenance_file_name):
             provenance_attrs = load(open(provenance_file_name))
@@ -1240,7 +1240,7 @@ class DirectoryModelExportStore(ModelExportStore):
         with open(datasets_attrs_filename, 'w') as datasets_attrs_out:
             datasets_attrs_out.write(to_json(datasets_attrs))
 
-        with open(datasets_attrs_filename + ".provenance", 'w') as provenance_attrs_out:
+        with open(f"{datasets_attrs_filename}.provenance", 'w') as provenance_attrs_out:
             provenance_attrs_out.write(to_json(provenance_attrs))
 
         libraries_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_LIBRARIES)
@@ -1460,7 +1460,7 @@ def get_export_dataset_filename(name, ext, hid):
     Builds a filename for a dataset using its name an extension.
     """
     base = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in name)
-    return base + f"_{hid}.{ext}"
+    return f"{base}_{hid}.{ext}"
 
 
 def imported_store_for_metadata(directory, object_store=None):

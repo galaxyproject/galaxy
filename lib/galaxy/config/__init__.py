@@ -815,7 +815,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             self.amqp_internal_connection = kwargs.get('amqp_internal_connection')
             # TODO Get extra amqp args as necessary for ssl
         elif 'database_connection' in kwargs:
-            self.amqp_internal_connection = "sqlalchemy+" + self.database_connection
+            self.amqp_internal_connection = f"sqlalchemy+{self.database_connection}"
         else:
             self.amqp_internal_connection = f"sqlalchemy+sqlite:///{self._in_data_dir('control.sqlite')}?isolation_level=IMMEDIATE"
         self.pretty_datetime_format = expand_pretty_datetime_format(self.pretty_datetime_format)

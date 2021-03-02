@@ -104,7 +104,7 @@ class GalaxyRBACAgent(RBACAgent):
         roles = []
         if query not in [None, '']:
             query = query.strip().replace('_', '/_').replace('%', '/%').replace('/', '//')
-            search_query = query + '%'
+            search_query = f"{query}%"
         else:
             search_query = None
         # Limit the query only to get the page needed
@@ -718,7 +718,7 @@ class GalaxyRBACAgent(RBACAgent):
 
     def get_sharing_roles(self, user):
         return self.sa_session.query(self.model.Role) \
-                              .filter(and_((self.model.Role.table.c.name).like("Sharing role for: %" + user.email + "%"),
+                              .filter(and_((self.model.Role.table.c.name).like(f"Sharing role for: %{user.email}%"),
                                            self.model.Role.table.c.type == self.model.Role.types.SHARING))
 
     def user_set_default_permissions(self, user, permissions=None, history=False, dataset=False, bypass_manage_permission=False, default_access_private=False):
@@ -911,7 +911,7 @@ class GalaxyRBACAgent(RBACAgent):
                     sharing_role = role
                     break
         if sharing_role is None:
-            sharing_role = self.model.Role(name="Sharing role for: " + ", ".join(u.email for u in users),
+            sharing_role = self.model.Role(name=f"Sharing role for: {', '.join(u.email for u in users)}",
                                            type=self.model.Role.types.SHARING)
             self.sa_session.add(sharing_role)
             self.sa_session.flush()
@@ -1119,7 +1119,7 @@ class GalaxyRBACAgent(RBACAgent):
             # Change for removing the prefix '_in' from the roles select box
             in_roles = [self.sa_session.query(self.model.Role).get(x) for x in listify(kwd[k])]
             if not in_roles:
-                in_roles = [self.sa_session.query(self.model.Role).get(x) for x in listify(kwd.get(k + '_in', []))]
+                in_roles = [self.sa_session.query(self.model.Role).get(x) for x in listify(kwd.get(f"{k}_in", []))]
             if v == self.permitted_actions.DATASET_ACCESS and in_roles:
                 if library:
                     item = self.sa_session.query(self.model.Library).get(item_id)

@@ -876,7 +876,7 @@ class Tool(Dictifiable):
                 executable = self.version_string_cmd.split()[0]
                 abs_executable = os.path.abspath(os.path.join(self.tool_dir, executable))
                 command_line = self.version_string_cmd.replace(executable, abs_executable, 1)
-                self.version_string_cmd = version_cmd_interpreter + " " + command_line
+                self.version_string_cmd = f"{version_cmd_interpreter} {command_line}"
 
         # Parallelism for tasks, read from tool config.
         self.parallelism = tool_source.parse_parallelism()
@@ -1149,7 +1149,7 @@ class Tool(Dictifiable):
                         raise Exception('URL parameters in a non-default tool action can not be used '
                                         'in conjunction with nginx upload.  Please convert them to '
                                         'hidden POST parameters')
-                    self.action = (self.app.config.nginx_upload_path + '?nginx_redir=',
+                    self.action = (f"{self.app.config.nginx_upload_path}?nginx_redir=",
                                    unquote_plus(self.action))
                 self.target = input_elem.get("target", self.target)
                 self.method = input_elem.get("method", self.method)
@@ -2032,7 +2032,7 @@ class Tool(Dictifiable):
                         for data_table_filename in data_table.filenames:
                             # FIXME: from_shed_config seems to always be False.
                             if not data_table.filenames[data_table_filename]['from_shed_config']:
-                                tar_file = data_table.filenames[data_table_filename]['filename'] + '.sample'
+                                tar_file = f"{data_table.filenames[data_table_filename]['filename']}.sample"
                                 sample_file = os.path.join(data_table.filenames[data_table_filename]['tool_data_path'],
                                                            tar_file)
                                 # Use the .sample file, if one exists. If not, skip this data table.
@@ -2550,10 +2550,10 @@ class DataSourceTool(OutputParameterJSONTool):
             wrapped_data = param_dict.get(out_name)
             # allow multiple files to be created
             cur_base_param_name = f'GALAXY|{out_name}|'
-            cur_name = param_dict.get(cur_base_param_name + 'name', name)
-            cur_dbkey = param_dict.get(cur_base_param_name + 'dkey', dbkey)
-            cur_info = param_dict.get(cur_base_param_name + 'info', info)
-            cur_data_type = param_dict.get(cur_base_param_name + 'data_type', data_type)
+            cur_name = param_dict.get(f"{cur_base_param_name}name", name)
+            cur_dbkey = param_dict.get(f"{cur_base_param_name}dkey", dbkey)
+            cur_info = param_dict.get(f"{cur_base_param_name}info", info)
+            cur_data_type = param_dict.get(f"{cur_base_param_name}data_type", data_type)
             if cur_name:
                 data.name = cur_name
             if not data.info and cur_info:

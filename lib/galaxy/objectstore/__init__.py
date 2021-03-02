@@ -288,7 +288,7 @@ class BaseObjectStore(ObjectStore):
             return obj.id
 
     def _invoke(self, delegate, obj=None, **kwargs):
-        return self.__getattribute__("_" + delegate)(obj=obj, **kwargs)
+        return self.__getattribute__(f"_{delegate}")(obj=obj, **kwargs)
 
     def exists(self, obj, **kwargs):
         return self._invoke('exists', obj, **kwargs)

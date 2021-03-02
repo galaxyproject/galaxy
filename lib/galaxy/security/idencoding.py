@@ -121,7 +121,7 @@ class _cipher_cache(collections.defaultdict):
 
     def __missing__(self, key):
         assert len(key) < 15, KIND_TOO_LONG_MESSAGE
-        secret = self.secret_base + "__" + key
+        secret = f"{self.secret_base}__{key}"
         return Blowfish.new(_last_bits(secret), mode=Blowfish.MODE_ECB)
 
 

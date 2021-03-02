@@ -57,7 +57,7 @@ def generate_targets(target_source):
     """Generate all targets from TSV files in specified file or directory."""
     target_source = os.path.abspath(target_source)
     if os.path.isdir(target_source):
-        target_source_files = glob.glob(target_source + "/*.tsv")
+        target_source_files = glob.glob(f"{target_source}/*.tsv")
     else:
         target_source_files = [target_source]
 

@@ -142,7 +142,7 @@ def _fetch_target(upload_config, target):
             name = item.get("name") or 'Composite Dataset'
             dataset_bunch.name = name
             primary_file = sniff.stream_to_file(StringIO(datatype.generate_primary_file(dataset_bunch)), prefix='upload_auto_primary_file', dir=".")
-            extra_files_path = primary_file + "_extra"
+            extra_files_path = f"{primary_file}_extra"
             os.mkdir(extra_files_path)
             rval = {
                 "name": name,
@@ -172,7 +172,7 @@ def _fetch_target(upload_config, target):
                     key,
                     writable_file.is_binary,
                     ".",
-                    os.path.basename(extra_files_path) + "_",
+                    f"{os.path.basename(extra_files_path)}_",
                     composite_item,
                 )
                 composite_item_idx += 1
@@ -262,7 +262,7 @@ def _fetch_target(upload_config, target):
             if extra_files:
                 # TODO: optimize to just copy the whole directory to extra files instead.
                 assert not upload_config.link_data_only, "linking composite dataset files not yet implemented"
-                extra_files_path = path + "_extra"
+                extra_files_path = f"{path}_extra"
                 staged_extra_files = extra_files_path
                 os.mkdir(extra_files_path)
 

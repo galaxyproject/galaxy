@@ -53,7 +53,7 @@ class Heartbeat(threading.Thread):
             pid=self.pid
         )
         fname, ext = os.path.splitext(self.fname)
-        self.fname_nonsleeping = fname + '.nonsleeping' + ext
+        self.fname_nonsleeping = f"{fname}.nonsleeping{ext}"
         wait = self.period
         if self.period <= 0:
             wait = 60

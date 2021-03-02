@@ -153,7 +153,7 @@ class TestRepositoryCitableURLs(ShedTwillTestCase):
         # Since twill does not load the contents of an iframe, we need to check that the iframe has been generated correctly,
         # then directly load the url that the iframe should be loading and check for the expected strings.
         # The iframe should point to /repository/view_repository?id=<encoded repository ID>
-        strings_displayed = ['/repository', 'view_repository', 'id=' + encoded_repository_id]
+        strings_displayed = ['/repository', 'view_repository', f"id={encoded_repository_id}"]
         strings_displayed_in_iframe = ['user1', 'filtering_0420', 'Galaxy filtering tool for test 0420', first_changeset_hash]
         strings_displayed_in_iframe.append('Link to this repository revision:')
         strings_displayed_in_iframe.append(f'{self.url}/view/user1/filtering_0420/{first_changeset_hash}')
@@ -177,7 +177,7 @@ class TestRepositoryCitableURLs(ShedTwillTestCase):
         # Since twill does not load the contents of an iframe, we need to check that the iframe has been generated correctly,
         # then directly load the url that the iframe should be loading and check for the expected strings.
         # The iframe should point to /repository/view_repository?id=<encoded repository ID>&status=error
-        strings_displayed = ['/repository', 'view_repository', 'id=' + encoded_repository_id]
+        strings_displayed = ['/repository', 'view_repository', f"id={encoded_repository_id}"]
         strings_displayed.extend(['The+change+log', 'does+not+include+revision', invalid_changeset_hash, 'status=error'])
         self.load_citable_url(username='user1',
                               repository_name='filtering_0420',

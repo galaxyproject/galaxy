@@ -162,11 +162,11 @@ def __regex_err_msg(match, stream, regex):
     that will contain the string matched on.
     """
     # Get the description for the error level:
-    desc = StdioErrorLevel.desc(regex.error_level) + ": "
+    desc = f"{StdioErrorLevel.desc(regex.error_level)}: "
     mstart = match.start()
     mend = match.end()
     if mend - mstart > 256:
-        match_str = match.string[mstart:mstart + 256] + "..."
+        match_str = f"{match.string[mstart:mstart + 256]}..."
     else:
         match_str = match.string[mstart:mend]
 

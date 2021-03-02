@@ -47,7 +47,7 @@ class EmailAction(DefaultJobAction):
         try:
             frm = app.config.email_from
             history_id_encoded = app.security.encode_id(job.history_id)
-            link = app.config.galaxy_infrastructure_url + "/histories/view?id=" + history_id_encoded
+            link = f"{app.config.galaxy_infrastructure_url}/histories/view?id={history_id_encoded}"
             if frm is None:
                 if action.action_arguments and 'host' in action.action_arguments:
                     host = action.action_arguments['host']
@@ -191,7 +191,7 @@ class RenameDatasetAction(DefaultJobAction):
                         if len(fields) > 1:
                             temp = ""
                             for i in range(1, len(fields) - 1):
-                                temp += "." + fields[i]
+                                temp += f".{fields[i]}"
                             replacement += temp
                     elif operation == "upper":
                         replacement = replacement.upper()
@@ -313,7 +313,7 @@ class ColumnSetAction(DefaultJobAction):
 
     @classmethod
     def get_short_str(cls, pja):
-        return "Set the following metadata values:<br/>" + "<br/>".join('{} : {}'.format(escape(k), escape(v)) for k, v in pja.action_arguments.items())
+        return f"Set the following metadata values:<br/>{'<br/>'.join('{} : {}'.format(escape(k), escape(v)) for k, v in pja.action_arguments.items())}"
 
 
 class SetMetadataAction(DefaultJobAction):

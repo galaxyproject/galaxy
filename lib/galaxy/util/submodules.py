@@ -39,7 +39,7 @@ def __import_submodules_impl(module, recursive=False):
         module = importlib.import_module(module)
     submodules = []
     for _, name, is_pkg in pkgutil.walk_packages(module.__path__):
-        full_name = module.__name__ + '.' + name
+        full_name = f"{module.__name__}.{name}"
         try:
             submodule = importlib.import_module(full_name)
             submodules.append(submodule)

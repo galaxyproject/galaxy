@@ -113,7 +113,7 @@ def pstats_as_html(stats, *sel_list):
             # ncalls
             ncalls = str(nc)
             if nc != cc:
-                ncalls = ncalls + '/' + str(cc)
+                ncalls = f"{ncalls}/{str(cc)}"
             rval.append(f"<td>{markupsafe.escape(ncalls)}</td>")
             # tottime
             rval.append(f"<td>{tt:0.8f}</td>")
@@ -147,7 +147,7 @@ def get_func_list(stats, sel_list):
     # Determine if an ordering was applied
     if stats.fcn_list:
         list = stats.fcn_list[:]
-        order_message = "Ordered by: " + stats.sort_type
+        order_message = f"Ordered by: {stats.sort_type}"
     else:
         list = list(stats.stats.keys())
         order_message = "Random listing order was used"

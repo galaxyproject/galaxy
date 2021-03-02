@@ -186,7 +186,7 @@ class VisualizationsConfigParser:
         entry_point_attrib = dict(entry_point.attrib)
         entry_point_type = entry_point_attrib.pop('entry_point_type', 'mako')
         if entry_point_type not in self.ALLOWED_ENTRY_POINT_TYPES:
-            raise ParsingException('Unknown entry_point type: ' + entry_point_type)
+            raise ParsingException(f"Unknown entry_point type: {entry_point_type}")
         return {
             'type': entry_point_type,
             'file': entry_point.text,

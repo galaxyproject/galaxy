@@ -664,11 +664,11 @@ class SamtoolsDataProvider(line.RegexLineDataProvider):
             validated_flag_list.append('S')
 
         if validated_flag_list:
-            opt_list.append('-' + ''.join(validated_flag_list))
+            opt_list.append(f"-{''.join(validated_flag_list)}")
 
         for flag, arg in options_dict.items():
             if flag in self.FLAGS_W_ARGS:
-                opt_list.extend(['-' + flag, str(arg)])
+                opt_list.extend([f"-{flag}", str(arg)])
 
         return opt_list
 

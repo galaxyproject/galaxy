@@ -134,7 +134,7 @@ class RemoteUser:
         if environ.get(self.remote_user_header, None):
             if not environ[self.remote_user_header].count('@'):
                 if self.maildomain is not None:
-                    environ[self.remote_user_header] += '@' + self.maildomain
+                    environ[self.remote_user_header] += f"@{self.maildomain}"
                 else:
                     title = "Access to Galaxy is denied"
                     message = """

@@ -170,7 +170,7 @@ class CompressedFile:
         elif self.file_type == "zip":
             for name in members.namelist():
                 if not safe_relpath(name):
-                    raise Exception(name + " is blocked (illegal path).")
+                    raise Exception(f"{name} is blocked (illegal path).")
                 yield name
 
     def getmembers_tar(self):

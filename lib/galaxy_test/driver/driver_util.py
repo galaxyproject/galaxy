@@ -397,7 +397,7 @@ def database_conf(db_path, prefix="GALAXY", prefer_template_database=False):
         if do_template:
             database_template_parsed = urlparse(database_connection)
             template_name = database_template_parsed.path[1:]  # drop / from /galaxy
-            actual_db = "gxtest" + ''.join(random.choice(string.ascii_uppercase) for _ in range(10))
+            actual_db = f"gxtest{''.join(random.choice(string.ascii_uppercase) for _ in range(10))}"
             actual_database_parsed = database_template_parsed._replace(path=f"/{actual_db}")
             database_connection = actual_database_parsed.geturl()
             if not database_exists(database_connection):

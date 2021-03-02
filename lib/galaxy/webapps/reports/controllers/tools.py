@@ -49,14 +49,14 @@ class Tools(BaseUIController):
         if len(splited) == 2:
             returned = "%s %dH" % (splited[0], int(splited[1].split(':')[0]))
             if colored:
-                return '<font color="red">' + returned + '</font>'
+                return f"<font color=\"red\">{returned}</font>"
             return returned
         else:
             splited = tuple([float(_) for _ in str(date).split(':')])
             if splited[0]:
                 returned = '%d h. %d min.' % splited[:2]
                 if colored:
-                    return '<font color="orange">' + returned + '</font>'
+                    return f"<font color=\"orange\">{returned}</font>"
                 return returned
             if splited[1]:
                 return "%d min. %d sec." % splited[1:3]
@@ -331,13 +331,13 @@ class Tools(BaseUIController):
                     if words.count(word) > 1:
                         to_replace.append(word)
                 for word in to_replace:
-                    sentence = ("</br>" + word) * 2
+                    sentence = f"</br>{word}" * 2
                     count = 2
-                    while sentence + "</br>" + word in new_key:
-                        sentence += "</br>" + word
+                    while f"{sentence}</br>{word}" in new_key:
+                        sentence += f"</br>{word}"
                         count += 1
                     if sentence in new_key:
-                        new_key = new_key.replace(sentence, '</br>' + word + " [this line in %d times]" % (count))
+                        new_key = new_key.replace(sentence, f"</br>{word}{' [this line in %d times]' % count}")
             data[new_key] = counter[key]
 
         return trans.fill_template("/webapps/reports/tool_error_messages.mako",

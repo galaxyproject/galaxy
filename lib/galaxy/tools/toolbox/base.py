@@ -558,7 +558,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             elem = etree.Element('label')
             elem.attrib['text'] = self.edam[term]['label']
             elem.attrib['id'] = term
-            self._tool_panel['label_' + term] = ToolSectionLabel(elem)
+            self._tool_panel[f"label_{term}"] = ToolSectionLabel(elem)
 
             for (term, tool_id, key, val, val_name) in operations[term].values():
                 section = self._get_section(term, self.edam[term]['label'])
@@ -572,7 +572,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             elem = etree.Element('label')
             elem.attrib['text'] = self.edam[term]['label']
             elem.attrib['id'] = term
-            self._tool_panel['label_' + term] = ToolSectionLabel(elem)
+            self._tool_panel[f"label_{term}"] = ToolSectionLabel(elem)
 
             for (term, tool_id, key, val, val_name) in topics[term].values():
                 section = self._get_section(term, self.edam[term]['label'])
@@ -587,7 +587,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
 
     def _sort_edam_key(self, x):
         if x in ('operation_0004', 'topic_0003'):
-            return '!' + x
+            return f"!{x}"
         else:
             return self.edam[x]['label']
 
@@ -683,8 +683,8 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         if "/repos/" in tool_id:  # test if tool came from a toolshed
             tool_id_without_tool_shed = tool_id.split("/repos/")[1]
             available_tool_sheds = [urlparse(_) for _ in self.app.tool_shed_registry.tool_sheds.values()]
-            available_tool_sheds = [url.geturl().replace(url.scheme + "://", '', 1) for url in available_tool_sheds]
-            tool_ids = [tool_shed + "repos/" + tool_id_without_tool_shed for tool_shed in available_tool_sheds]
+            available_tool_sheds = [url.geturl().replace(f"{url.scheme}://", '', 1) for url in available_tool_sheds]
+            tool_ids = [f"{tool_shed}repos/{tool_id_without_tool_shed}" for tool_shed in available_tool_sheds]
             if tool_id in tool_ids:  # move original tool_id to the top of tool_ids
                 tool_ids.remove(tool_id)
             tool_ids.insert(0, tool_id)
@@ -953,7 +953,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             workflow_id = item.get('id')
             workflow = self._load_workflow(workflow_id)
             self._workflows_by_id[workflow_id] = workflow
-            key = 'workflow_' + workflow_id
+            key = f"workflow_{workflow_id}"
             if load_panel_dict:
                 panel_dict[key] = workflow
             # Always load workflows into the integrated_panel_dict.
@@ -963,7 +963,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
 
     def _load_label_tag_set(self, item, panel_dict, integrated_panel_dict, load_panel_dict, index=None):
         label = ToolSectionLabel(item)
-        key = 'label_' + label.id
+        key = f"label_{label.id}"
         if load_panel_dict:
             panel_dict[key] = label
         integrated_panel_dict.update_or_append(index, key, label)
@@ -1156,7 +1156,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             new_tool.installed_changeset_revision = old_tool.installed_changeset_revision
             new_tool.old_id = old_tool.old_id
             # Replace old_tool with new_tool in self._tool_panel
-            tool_key = 'tool_' + tool_id
+            tool_key = f"tool_{tool_id}"
             for key, val in self._tool_panel.items():
                 if key == tool_key:
                     self._tool_panel[key] = new_tool
@@ -1190,7 +1190,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             if tool_cache:
                 tool_cache.expire_tool(tool_id)
             if remove_from_panel:
-                tool_key = 'tool_' + tool_id
+                tool_key = f"tool_{tool_id}"
                 for key, val in self._tool_panel.items():
                     if key == tool_key:
                         del self._tool_panel[key]

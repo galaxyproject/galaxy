@@ -574,7 +574,7 @@ class JobState:
                 job_name += f'_{self.job_wrapper.tool.old_id}'
             if not self.redact_email_in_job_name and self.job_wrapper.user:
                 job_name += f'_{self.job_wrapper.user}'
-            self.job_name = ''.join(x if x in (string.ascii_letters + string.digits + '_') else '_' for x in job_name)
+            self.job_name = ''.join(x if x in (f"{string.ascii_letters + string.digits}_") else '_' for x in job_name)
 
     @staticmethod
     def default_job_file(files_dir, id_tag):

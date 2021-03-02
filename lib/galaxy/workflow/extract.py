@@ -381,7 +381,7 @@ def __cleanup_param_values(inputs, values):
                 # Cleanup the other deprecated crap associated with datasets
                 # as well. Worse, for nested datasets all the metadata is
                 # being pushed into the root. FIXME: MUST REMOVE SOON
-                key = prefix + key + "_"
+                key = f"{prefix + key}_"
                 for k in root_values.keys():
                     if k not in root_input_keys and k.startswith(key):
                         del root_values[k]

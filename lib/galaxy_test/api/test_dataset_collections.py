@@ -347,12 +347,12 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         hdca, root_contents_url = self._create_collection_contents_pair()
 
         # check limit
-        limited_contents = self._get(root_contents_url + '?limit=1').json()
+        limited_contents = self._get(f"{root_contents_url}?limit=1").json()
         assert len(limited_contents) == 1
         assert limited_contents[0]['element_index'] == 0
 
         # check offset
-        offset_contents = self._get(root_contents_url + '?offset=1').json()
+        offset_contents = self._get(f"{root_contents_url}?offset=1").json()
         assert len(offset_contents) == 1
         assert offset_contents[0]['element_index'] == 1
 

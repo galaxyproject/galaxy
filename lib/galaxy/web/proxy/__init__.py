@@ -59,7 +59,7 @@ class ProxyManager:
     def setup_proxy(self, trans, host=DEFAULT_PROXY_TO_HOST, port=None, proxy_prefix="", route_name="", container_ids=None, container_interface=None):
         if self.manage_dynamic_proxy:
             log.info("Attempting to start dynamic proxy process")
-            log.debug("Cmd: " + ' '.join(self.lazy_process.command_and_args))
+            log.debug(f"Cmd: {' '.join(self.lazy_process.command_and_args)}")
             self.lazy_process.start_process()
 
         if container_ids is None:

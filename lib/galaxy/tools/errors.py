@@ -244,7 +244,7 @@ class EmailErrorReporter(ErrorReporter):
         frm = self.app.config.email_from
         error_msg = validate_email_str(email)
         if not error_msg and self._can_access_dataset(user):
-            to += ', ' + email.strip()
+            to += f", {email.strip()}"
         subject = f"Galaxy tool error report from {email}"
         try:
             subject = "{} ({})".format(

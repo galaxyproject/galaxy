@@ -708,7 +708,7 @@ class CRAM(Binary):
     def set_meta(self, dataset, overwrite=True, **kwd):
         major_version, minor_version = self.get_cram_version(dataset.file_name)
         if major_version != -1:
-            dataset.metadata.cram_version = str(major_version) + "." + str(minor_version)
+            dataset.metadata.cram_version = f"{str(major_version)}.{str(minor_version)}"
 
         if not dataset.metadata.cram_index:
             index_file = dataset.metadata.spec['cram_index'].param.new_file(dataset=dataset)
@@ -788,7 +788,7 @@ class Bcf(BaseBcf):
         try:
             cmd = ['python', '-c', f"import pysam.bcftools; pysam.bcftools.index('{dataset_symlink}')"]
             subprocess.check_call(cmd)
-            shutil.move(dataset_symlink + '.csi', index_file.file_name)
+            shutil.move(f"{dataset_symlink}.csi", index_file.file_name)
         except Exception as e:
             raise Exception(f'Error setting BCF metadata: {util.unicodify(e)}')
         finally:

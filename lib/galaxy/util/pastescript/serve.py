@@ -228,7 +228,7 @@ class Command:
 
     def parse_args(self, args):
         if self.usage:
-            usage = ' ' + self.usage
+            usage = f" {self.usage}"
         else:
             usage = ''
         self.parser.usage = f"%prog [options]{usage}\n{self.summary}"
@@ -567,7 +567,7 @@ class ServeCommand(Command):
         app_name = self.options.app_name
         vars = self.parse_vars(restvars)
         if not self._scheme_re.search(app_spec):
-            app_spec = 'config:' + app_spec
+            app_spec = f"config:{app_spec}"
         server_name = self.options.server_name
         if self.options.server:
             server_spec = 'egg:PasteScript'
@@ -649,7 +649,7 @@ class ServeCommand(Command):
                 if self.verbose > 1:
                     raise
                 if str(e):
-                    msg = ' ' + str(e)
+                    msg = f" {str(e)}"
                 else:
                     msg = ''
                 print(f'Exiting{msg} (-v to see traceback)')

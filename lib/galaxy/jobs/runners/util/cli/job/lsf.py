@@ -66,7 +66,7 @@ class LSF(BaseJobExec):
         return "bjobs -a -o \"id stat\" -noheader"  # check this
 
     def get_single_status(self, job_id):
-        return "bjobs -o stat -noheader " + job_id
+        return f"bjobs -o stat -noheader {job_id}"
 
     def parse_status(self, status, job_ids):
         # Get status for each job, skipping header.
@@ -91,7 +91,7 @@ class LSF(BaseJobExec):
         return self._get_job_state(status)
 
     def get_failure_reason(self, job_id):
-        return "bjobs -l " + job_id
+        return f"bjobs -l {job_id}"
 
     def parse_failure_reason(self, reason, job_id):
         # LSF will produce the following in the job output file:

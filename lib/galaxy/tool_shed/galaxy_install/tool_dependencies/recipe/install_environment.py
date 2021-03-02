@@ -159,10 +159,10 @@ class InstallEnvironment:
         # being installed.
         llog_name = __name__
         if len(job_name) > 0:
-            llog_name += ':' + job_name
+            llog_name += f":{job_name}"
         llog = logging.getLogger(llog_name)
         # Print the command we're about to execute, ``set -x`` style.
-        llog.debug('+ ' + str(command))
+        llog.debug(f"+ {str(command)}")
         # Launch the command as subprocess.  A bufsize of 1 means line buffered.
         process_handle = subprocess.Popen(str(command),
                                           stdout=subprocess.PIPE,

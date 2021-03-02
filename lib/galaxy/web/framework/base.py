@@ -34,11 +34,11 @@ def __resource_with_deleted(self, member_name, collection_name, **kwargs):
     as resource() with the addition of standardized routes for handling
     elements in Galaxy's "deleted but not really deleted" fashion.
     """
-    collection_path = kwargs.get('path_prefix', '') + '/' + collection_name + '/deleted'
-    member_path = collection_path + '/{id}'
-    self.connect('deleted_' + collection_name, collection_path, controller=collection_name, action='index', deleted=True, conditions=dict(method=['GET']))
-    self.connect('deleted_' + member_name, member_path, controller=collection_name, action='show', deleted=True, conditions=dict(method=['GET']))
-    self.connect('undelete_deleted_' + member_name, member_path + '/undelete', controller=collection_name, action='undelete',
+    collection_path = f"{kwargs.get('path_prefix', '')}/{collection_name}/deleted"
+    member_path = f"{collection_path}/{{id}}"
+    self.connect(f"deleted_{collection_name}", collection_path, controller=collection_name, action='index', deleted=True, conditions=dict(method=['GET']))
+    self.connect(f"deleted_{member_name}", member_path, controller=collection_name, action='show', deleted=True, conditions=dict(method=['GET']))
+    self.connect(f"undelete_deleted_{member_name}", f"{member_path}/undelete", controller=collection_name, action='undelete',
                  conditions=dict(method=['POST']))
     self.resource(member_name, collection_name, **kwargs)
 
@@ -146,7 +146,7 @@ class WebApplication:
         controller_name = map_match.pop('controller', None)
         controller = controllers.get(controller_name, None)
         if controller is None:
-            raise webob.exc.HTTPNotFound("No controller for " + path_info)
+            raise webob.exc.HTTPNotFound(f"No controller for {path_info}")
         # Resolve action method on controller
         # This is the easiest way to make the controller/action accessible for
         # url_for invocations.  Specifically, grids.
@@ -155,18 +155,18 @@ class WebApplication:
         if method is None and not use_default:
             # Skip default, we do this, for example, when we want to fail
             # through to another mapper.
-            raise webob.exc.HTTPNotFound("No action for " + path_info)
+            raise webob.exc.HTTPNotFound(f"No action for {path_info}")
         if method is None:
             # no matching method, we try for a default
             method = getattr(controller, 'default', None)
         if method is None:
-            raise webob.exc.HTTPNotFound("No action for " + path_info)
+            raise webob.exc.HTTPNotFound(f"No action for {path_info}")
         # Is the method exposed
         if not getattr(method, 'exposed', False):
-            raise webob.exc.HTTPNotFound("Action not exposed for " + path_info)
+            raise webob.exc.HTTPNotFound(f"Action not exposed for {path_info}")
         # Is the method callable
         if not callable(method):
-            raise webob.exc.HTTPNotFound("Action not callable for " + path_info)
+            raise webob.exc.HTTPNotFound(f"Action not callable for {path_info}")
         return (controller_name, controller, action, method)
 
     def handle_request(self, environ, start_response, body_renderer=None):
@@ -183,7 +183,7 @@ class WebApplication:
             environ['is_api_request'] = False
             controllers = self.controllers
         if map_match is None:
-            raise webob.exc.HTTPNotFound("No route for " + path_info)
+            raise webob.exc.HTTPNotFound(f"No route for {path_info}")
         self.trace(path_info=path_info, map_match=map_match)
         # Setup routes
         rc = routes.request_config()
@@ -395,7 +395,7 @@ class Request(webob.Request):
 
     @lazy_property
     def base(self):
-        return (self.scheme + "://" + self.host)
+        return (f"{self.scheme}://{self.host}")
 
     # @lazy_property
     # def params( self ):
@@ -531,6 +531,6 @@ def walk_controller_modules(package_name):
     for fname in os.listdir(controller_dir):
         if not(fname.startswith("_")) and fname.endswith(".py"):
             name = fname[:-3]
-            module_name = package_name + "." + name
+            module_name = f"{package_name}.{name}"
             module = import_module(module_name)
             yield name, module

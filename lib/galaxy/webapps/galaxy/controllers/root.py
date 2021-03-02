@@ -189,7 +189,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
                     fStat = os.stat(data.file_name)
                     trans.response.headers['Content-Length'] = str(fStat.st_size)
                     if toext[0:1] != ".":
-                        toext = "." + toext
+                        toext = f".{toext}"
                     fname = data.name
                     fname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in fname)[0:150]
                     trans.response.headers["Content-Disposition"] = f'attachment; filename="GalaxyHistoryItem-{data.hid}-[{fname}]{toext}"'
@@ -264,7 +264,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             if import_history.user_id == user.id:
                 return trans.show_error_message("You cannot import your own history.")
             new_history = import_history.copy(target_user=trans.user)
-            new_history.name = "imported: " + new_history.name
+            new_history.name = f"imported: {new_history.name}"
             new_history.user_id = user.id
             galaxy_session = trans.get_galaxy_session()
             try:
@@ -284,7 +284,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
                 to begin.""".format(new_history.name, web.url_for('/')))
         elif not user_history.datasets or confirm:
             new_history = import_history.copy()
-            new_history.name = "imported: " + new_history.name
+            new_history.name = f"imported: {new_history.name}"
             new_history.user_id = None
             galaxy_session = trans.get_galaxy_session()
             try:
@@ -351,7 +351,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             data.set_peek()
             trans.sa_session.flush()
             trans.log_event("Added dataset %d to history %d" % (data.id, trans.history.id))
-            return trans.show_ok_message("Dataset " + str(data.hid) + " added to history " + str(history_id) + ".")
+            return trans.show_ok_message(f"Dataset {str(data.hid)} added to history {str(history_id)}.")
         except Exception as e:
             msg = f"Failed to add dataset to history: {unicodify(e)}"
             log.error(msg)

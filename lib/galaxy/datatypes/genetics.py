@@ -102,7 +102,7 @@ class GenomeGraphs(Tabular):
                     internal_url = "%s" % app.url_for(controller='dataset',
                                                       dataset_id=dataset.id,
                                                       action='display_at',
-                                                      filename='ucsc_' + site_name)
+                                                      filename=f"ucsc_{site_name}")
                     display_url = "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % (base_url, app.url_for(controller='root'), dataset.id, type)
                     display_url = quote_plus(display_url)
                     # was display_url = quote_plus( "%s/display_as?id=%i&display_app=%s" % (base_url, dataset.id, type) )

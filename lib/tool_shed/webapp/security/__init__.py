@@ -124,7 +124,7 @@ class CommunityRBACAgent(RBACAgent):
 
     def create_private_user_role(self, user):
         # Create private role
-        role = self.model.Role(name=user.email, description='Private Role for ' + user.email, type=self.model.Role.types.PRIVATE)
+        role = self.model.Role(name=user.email, description=f"Private Role for {user.email}", type=self.model.Role.types.PRIVATE)
         self.sa_session.add(role)
         self.sa_session.flush()
         # Add user to role

@@ -1177,7 +1177,7 @@ class SelectTagParameter(SelectToolParameter):
         """
         options = []
         for tag in self.get_tag_list(other_values):
-            options.append(('Tags: ' + tag, tag, False))
+            options.append((f"Tags: {tag}", tag, False))
         return options
 
     def get_initial_value(self, trans, other_values):
@@ -1350,7 +1350,7 @@ class ColumnListParameter(SelectToolParameter):
             if isinstance(col, tuple) and len(col) == 2:
                 options.append((col[1], col[0], False))
             else:
-                options.append(('Column: ' + col, col, False))
+                options.append((f"Column: {col}", col, False))
         return options
 
     def get_initial_value(self, trans, other_values):

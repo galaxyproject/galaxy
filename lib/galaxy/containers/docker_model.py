@@ -24,8 +24,8 @@ from galaxy.util import (
 
 CPUS_LABEL = '_galaxy_cpus'
 IMAGE_LABEL = '_galaxy_image'
-CPUS_CONSTRAINT = 'node.labels.' + CPUS_LABEL
-IMAGE_CONSTRAINT = 'node.labels.' + IMAGE_LABEL
+CPUS_CONSTRAINT = f"node.labels.{CPUS_LABEL}"
+IMAGE_CONSTRAINT = f"node.labels.{IMAGE_LABEL}"
 
 log = logging.getLogger(__name__)
 
@@ -676,7 +676,7 @@ class DockerTask:
         service = service or interface.service(id=t.get('ServiceID'))
         node = node or interface.node(id=t.get('NodeID'))
         if service:
-            name = service.name + '.' + str(t['Slot'])
+            name = f"{service.name}.{str(t['Slot'])}"
         else:
             name = t['ID']
         image = t['Spec']['ContainerSpec']['Image'].split('@', 1)[0],  # remove pin

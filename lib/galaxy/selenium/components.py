@@ -49,7 +49,7 @@ class SelectorTemplate(Target):
         else:
             selector = has_selector
 
-        return SelectorTemplate(self.selector + " " + selector, self.selector_type, kwds=self.__kwds, children=self._children)
+        return SelectorTemplate(f"{self.selector} {selector}", self.selector_type, kwds=self.__kwds, children=self._children)
 
     def __call__(self, **kwds):
         new_kwds = self.__kwds.copy()

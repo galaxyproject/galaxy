@@ -43,7 +43,7 @@ class ToolParameterSanitizer:
     True
     """
 
-    VALID_PRESET = {'default': (string.ascii_letters + string.digits + " -=_.()/+*^,:?!"), 'none': ''}
+    VALID_PRESET = {'default': (f"{string.ascii_letters + string.digits} -=_.()/+*^,:?!"), 'none': ''}
     MAPPING_PRESET = {'default': galaxy.util.mapped_chars, 'none': {}}
     DEFAULT_INVALID_CHAR = 'X'
 
@@ -101,7 +101,7 @@ class ToolParameterSanitizer:
             if split_name.startswith('string.'):
                 string_constant = split_name[7:]
                 if string_constant in ('letters', 'lowercase', 'uppercase'):
-                    split_name = 'string.ascii_' + string_constant
+                    split_name = f"string.ascii_{string_constant}"
                 try:
                     value = eval(split_name)
                 except NameError as e:

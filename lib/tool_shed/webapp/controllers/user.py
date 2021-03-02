@@ -178,7 +178,7 @@ class User(BaseUser):
             # subscribe user to email list
             if trans.app.config.smtp_server is None:
                 status = "error"
-                message = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed because mail is not configured for this Galaxy instance. <br>Please contact your local Galaxy administrator."
+                message = f"Now logged in as {user.email}. However, subscribing to the mailing list has failed because mail is not configured for this Galaxy instance. <br>Please contact your local Galaxy administrator."
             else:
                 body = 'Join Mailing list.\n'
                 to = trans.app.config.mailing_join_addr
@@ -189,7 +189,7 @@ class User(BaseUser):
                 except Exception:
                     log.exception('Subscribing to the mailing list has failed.')
                     status = "warning"
-                    message = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed."
+                    message = f"Now logged in as {user.email}. However, subscribing to the mailing list has failed."
         if status != "error":
             if not is_admin:
                 # The handle_user_login() method has a call to the history_set_default_permissions() method
@@ -243,7 +243,7 @@ class User(BaseUser):
                                         token=prt.token, qualified=True)
                     body = PASSWORD_RESET_TEMPLATE % (host, prt.expiration_time.strftime(trans.app.config.pretty_datetime_format),
                                                       reset_url)
-                    frm = trans.app.config.email_from or 'galaxy-no-reply@' + host
+                    frm = trans.app.config.email_from or f"galaxy-no-reply@{host}"
                     subject = 'Galaxy Password Reset'
                     try:
                         util.send_mail(frm, email, subject, body, trans.app.config)
@@ -362,7 +362,7 @@ class User(BaseUser):
                     # The user's private role name must match the user's login ( email )
                     private_role = trans.app.security_agent.get_private_user_role(user)
                     private_role.name = email
-                    private_role.description = 'Private role for ' + email
+                    private_role.description = f"Private role for {email}"
                     # Change the email itself
                     user.email = email
                     trans.sa_session.add_all((user, private_role))

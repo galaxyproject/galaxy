@@ -125,7 +125,7 @@ class OIDC(JSAppLauncher):
                                                                                           trans=trans,
                                                                                           login_redirect_url=url_for('/'))
         except exceptions.AuthenticationFailed as e:
-            return trans.response.send_redirect(trans.request.base + url_for('/') + 'root/login?message=' + (str(e) or "Duplicate Email"))
+            return trans.response.send_redirect(f"{trans.request.base + url_for('/')}root/login?message={str(e) or 'Duplicate Email'}")
 
         if success is False:
             return trans.show_error_message(message)
@@ -160,7 +160,7 @@ class OIDC(JSAppLauncher):
     @web.json
     @web.expose
     def logout(self, trans, provider, **kwargs):
-        post_logout_redirect_url = trans.request.base + url_for('/') + 'root/login?is_logout_redirect=true'
+        post_logout_redirect_url = f"{trans.request.base + url_for('/')}root/login?is_logout_redirect=true"
         success, message, redirect_uri = trans.app.authnz_manager.logout(provider,
                                                                          trans,
                                                                          post_logout_redirect_url=post_logout_redirect_url)

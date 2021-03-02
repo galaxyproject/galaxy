@@ -1132,8 +1132,8 @@ class ConnectivityTable(Tabular):
     edam_format = "format_3309"
     file_ext = "ct"
 
-    header_regexp = re.compile("^[0-9]+" + "(?:\t|[ ]+)" + ".*?" + "(?:ENERGY|energy|dG)" + "[ \t].*?=")
-    structure_regexp = re.compile("^[0-9]+" + "(?:\t|[ ]+)" + "[ACGTURYKMSWBDHVN]+" + "(?:\t|[ ]+)" + "[^\t]+" + "(?:\t|[ ]+)" + "[^\t]+" + "(?:\t|[ ]+)" + "[^\t]+" + "(?:\t|[ ]+)" + "[^\t]+")
+    header_regexp = re.compile(f"^[0-9]+(?:	|[ ]+).*?(?:ENERGY|energy|dG)[ 	].*?=")
+    structure_regexp = re.compile(f"^[0-9]+(?:	|[ ]+)[ACGTURYKMSWBDHVN]+(?:	|[ ]+)[^	]+(?:	|[ ]+)[^	]+(?:	|[ ]+)[^	]+(?:	|[ ]+)[^	]+")
 
     def __init__(self, **kwd):
         super().__init__(**kwd)
@@ -1230,7 +1230,7 @@ class ConnectivityTable(Tabular):
         ck_data_body = re.sub('\n[ \t]+', '\n', ck_data_body)
         ck_data_body = re.sub('[ ]+', '\t', ck_data_body)
 
-        return dumps({'ck_data': util.unicodify(ck_data_header + "\n" + ck_data_body), 'ck_index': ck_index + 1})
+        return dumps({'ck_data': util.unicodify(f"{ck_data_header}\n{ck_data_body}"), 'ck_index': ck_index + 1})
 
 
 @build_sniff_from_prefix

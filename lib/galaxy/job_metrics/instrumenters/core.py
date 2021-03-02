@@ -77,7 +77,7 @@ class CorePlugin(InstrumentPlugin):
 
     def __record_seconds_since_epoch_to_file(self, job_directory, name):
         path = self._instrument_file_path(job_directory, f"epoch_{name}")
-        return 'date +"%s" > ' + path
+        return f"date +\"%s\" > {path}"
 
     def __read_seconds_since_epoch(self, job_directory, name):
         path = self._instrument_file_path(job_directory, f"epoch_{name}")

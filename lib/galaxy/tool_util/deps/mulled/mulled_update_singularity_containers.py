@@ -22,7 +22,7 @@ def docker_to_singularity(container, installation, filepath, no_sudo=False):
     """
     Convert docker to singularity container.
     """
-    cmd = [installation, 'build', '/'.join((filepath, container)), 'docker://quay.io/biocontainers/' + container]
+    cmd = [installation, 'build', '/'.join((filepath, container)), f"docker://quay.io/biocontainers/{container}"]
     try:
         if no_sudo:
             check_output(cmd, stderr=subprocess.STDOUT)
@@ -68,7 +68,7 @@ def singularity_container_test(tests, installation, filepath):
                 if test.get('imports', False):
                     for imp in test['imports']:
                         try:
-                            check_output(exec_command.extend([test['import_lang'], 'import ' + imp]), stderr=subprocess.STDOUT)
+                            check_output(exec_command.extend([test['import_lang'], f"import {imp}"]), stderr=subprocess.STDOUT)
                         except subprocess.CalledProcessError as e:
                             errors.append({'import': imp, 'output': unicodify(e.output)})
                             test_passed = False
@@ -168,7 +168,7 @@ def container_testing(args=None):
             f.write(f"\n\t\t{container['container']}")
             for error in container['errors']:
                 f.write('\n\t\t\tCOMMAND: {}\n\t\t\t\tERROR:{}'.format(error.get(
-                    'command', 'import' + error.get('import', 'nothing found')), error['output']))
+                    'command', f"import{error.get('import', 'nothing found')}"), error['output']))
         f.write('\n\tNO TEST AVAILABLE:')
         for container in test_results['notest']:
             f.write(f'\n\t\t{container}')
