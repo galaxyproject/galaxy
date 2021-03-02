@@ -342,7 +342,7 @@ export default {
         },
         async onRefactor(response) {
             await fromSimple(this, response.workflow);
-            this._loadEditorData(response);
+            this._loadEditorData(response.workflow);
         },
         onAdd(node) {
             this.nodes[node.id] = node;
