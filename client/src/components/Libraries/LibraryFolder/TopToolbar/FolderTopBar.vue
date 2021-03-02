@@ -1,9 +1,9 @@
 <template>
     <div>
         <div class="form-inline d-flex align-items-center mb-2">
-            <a class="mr-1 btn btn-secondary" :href="getHomeUrl" data-toggle="tooltip" title="Go to first page">
+            <b-button class="mr-1 btn btn-secondary" :to="{ path: `/libraries-list` }" data-toggle="tooltip" title="Go to libraries list">
                 <font-awesome-icon icon="home" />
-            </a>
+            </b-button>
             <div>
                 <div class="form-inline">
                     <SearchField @updateSearch="updateSearch($event)"></SearchField>
@@ -126,7 +126,7 @@
         </div>
 
         <b-breadcrumb>
-            <b-breadcrumb-item title="Return to the list of libraries" :href="getHomeUrl">
+            <b-breadcrumb-item title="Return to the list of libraries" :to="{ path: `/libraries-list` }">
                 Libraries
             </b-breadcrumb-item>
             <template v-for="path_item in this.metadata.full_path">
@@ -244,10 +244,6 @@ export default {
             const Galaxy = getGalaxyInstance();
             // logic from legacy code
             return !!(this.contains_file_or_folder && Galaxy.user);
-        },
-
-        getHomeUrl: () => {
-            return `${getAppRoot()}library/list`;
         },
         allDatasets: function () {
             return this.folderContents.filter((element) => element.type === "file");

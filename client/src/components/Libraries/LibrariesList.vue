@@ -57,7 +57,7 @@
                 />
 
                 <div class="deleted-item" v-else-if="row.item.deleted && include_deleted">{{ row.item.name }}</div>
-                <b-link :disabled="true" v-else :to="{ path: `/folders/${row.item.root_folder_id}` }">{{
+                <b-link v-else :to="{ path: `folders/${row.item.root_folder_id}` }">{{
                     row.item.name
                 }}</b-link>
             </template>
