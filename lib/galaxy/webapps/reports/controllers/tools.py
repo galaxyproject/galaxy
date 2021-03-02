@@ -31,9 +31,9 @@ def int_to_octet(size):
         size /= 1000.
         no_unit += 1
     try:
-        return "{:.2f} {}".format(size, units[no_unit])
+        return f"{size:.2f} {units[no_unit]}"
     except IndexError:
-        return "{:.0f} {}".format(size * ((no_unit - len(units) + 1) * 1000.), units[-1])
+        return f"{size * ((no_unit - len(units) + 1) * 1000.0):.0f} {units[-1]}"
 
 
 class Tools(BaseUIController):
@@ -60,7 +60,7 @@ class Tools(BaseUIController):
                 return returned
             if splited[1]:
                 return "%d min. %d sec." % splited[1:3]
-            return "%.1f sec." % splited[2]
+            return f"{splited[2]:.1f} sec."
 
     @web.expose
     def tools_and_job_state(self, trans, **kwd):

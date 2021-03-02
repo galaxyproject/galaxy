@@ -132,7 +132,7 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
             if key in ('file_ext'):
                 datatype = self.app.datatypes_registry.get_datatype_by_extension(val)
                 if datatype is None and val not in ("auto",):
-                    raise RequestParameterInvalidException('This Galaxy does not recognize the datatype of: %s' % (val))
+                    raise RequestParameterInvalidException(f'This Galaxy does not recognize the datatype of: {val}')
                 validated_payload[key] = val
             if key in ('genome_build'):
                 if len(val) < MINIMUM_STRING_LENGTH:

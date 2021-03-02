@@ -104,7 +104,7 @@ class DefaultToolAction:
                         record_permission(action, role_id)
                 else:
                     if not trans.app.security_agent.can_access_dataset(current_user_roles, data.dataset):
-                        raise ItemAccessibilityException("User does not have permission to use a dataset (%s) provided for input." % data.id)
+                        raise ItemAccessibilityException(f"User does not have permission to use a dataset ({data.id}) provided for input.")
                     permissions = trans.app.security_agent.get_permissions(data.dataset)
                     for action, roles in permissions.items():
                         for role in roles:
@@ -127,7 +127,7 @@ class DefaultToolAction:
                                 input_datasets[prefix + conversion_name + str(i + 1)] = new_data
                                 conversions.append((conversion_name, new_data))
                             else:
-                                raise Exception('A path for explicit datatype conversion has not been found: {} --/--> {}'.format(input_datasets[prefix + input.name + str(i + 1)].extension, conversion_extensions))
+                                raise Exception(f'A path for explicit datatype conversion has not been found: {input_datasets[prefix + input.name + str(i + 1)].extension} --/--> {conversion_extensions}')
                         if parent:
                             parent[input.name][i] = input_datasets[prefix + input.name + str(i + 1)]
                             for conversion_name, conversion_data in conversions:
@@ -147,7 +147,7 @@ class DefaultToolAction:
                             input_datasets[prefix + conversion_name] = new_data
                             conversions.append((conversion_name, new_data))
                         else:
-                            raise Exception('A path for explicit datatype conversion has not been found: {} --/--> {}'.format(input_datasets[prefix + input.name].extension, conversion_extensions))
+                            raise Exception(f'A path for explicit datatype conversion has not been found: {input_datasets[prefix + input.name].extension} --/--> {conversion_extensions}')
                     target_dict = parent
                     if not target_dict:
                         target_dict = param_values
@@ -246,7 +246,7 @@ class DefaultToolAction:
         return input_dataset_collections
 
     def _check_access(self, tool, trans):
-        assert tool.allow_user_access(trans.user), "User (%s) is not allowed to access this tool." % (trans.user)
+        assert tool.allow_user_access(trans.user), f"User ({trans.user}) is not allowed to access this tool."
 
     def _collect_inputs(self, tool, trans, incoming, history, current_user_roles, collection_info):
         """ Collect history as well as input datasets and collections. """
@@ -333,7 +333,7 @@ class DefaultToolAction:
 
             identifier = getattr(data, "element_identifier", None)
             if identifier is not None:
-                incoming["%s|__identifier__" % name] = identifier
+                incoming[f"{name}|__identifier__"] = identifier
 
         # Collect chromInfo dataset and add as parameters to incoming
         (chrom_info, db_dataset) = execution_cache.get_chrom_info(tool.id, input_dbkey)
@@ -585,10 +585,10 @@ class DefaultToolAction:
             # to send back to the current Galaxy instance
             GALAXY_URL = incoming.get('GALAXY_URL', None)
             assert GALAXY_URL is not None, "GALAXY_URL parameter missing in tool config."
-            redirect_url += "&GALAXY_URL=%s" % GALAXY_URL
+            redirect_url += f"&GALAXY_URL={GALAXY_URL}"
             # Job should not be queued, so set state to ok
             job.set_state(app.model.Job.states.OK)
-            job.info = "Redirected to: %s" % redirect_url
+            job.info = f"Redirected to: {redirect_url}"
             trans.sa_session.add(job)
             trans.sa_session.flush()
             trans.response.send_redirect(url_for(controller='tool_runner', action='redirect', redirect_url=redirect_url))
@@ -602,7 +602,7 @@ class DefaultToolAction:
 
                 # Dispatch to a job handler. enqueue() is responsible for flushing the job
                 app.job_manager.enqueue(job, tool=tool)
-                trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
+                trans.log_event(f"Added job to the job queue, id: {str(job.id)}", tool_id=job.tool_id)
             return job, out_data, history
 
     def _remap_job_on_rerun(self, trans, galaxy_session, rerun_remap_job_id, current_job, out_data):
@@ -688,7 +688,7 @@ class DefaultToolAction:
         input_names = []
         for data in reversed(list(inp_data.values())):
             if getattr(data, "hid", None):
-                input_names.append('data %s' % data.hid)
+                input_names.append(f'data {data.hid}')
 
         return on_text_for_names(input_names)
 
@@ -839,7 +839,7 @@ class OutputCollections:
                 # sooner.
                 raise Exception("Could not determine collection type to create.")
             if collection_type_source not in input_collections:
-                raise Exception("Could not find collection type source with name [%s]." % collection_type_source)
+                raise Exception(f"Could not find collection type source with name [{collection_type_source}].")
 
             # Using the collection_type_source string we get the DataCollectionToolParameter
             data_param = self.tool.inputs
@@ -949,7 +949,7 @@ def filter_output(tool, output, incoming):
             if not eval(filter.text.strip(), globals(), incoming):
                 return True  # do not create this dataset
         except Exception as e:
-            log.debug('Tool %s output %s: dataset output filter (%s) failed: %s' % (tool.id, output.name, filter.text, e))
+            log.debug(f'Tool {tool.id} output {output.name}: dataset output filter ({filter.text}) failed: {e}')
     return False
 
 

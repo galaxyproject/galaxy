@@ -17,7 +17,7 @@ def lint_output(tool_xml, lint_ctx):
 
     for output in list(outputs[0]):
         if output.tag not in ["data", "collection"]:
-            lint_ctx.warn("Unknown element found in outputs [%s]" % output.tag)
+            lint_ctx.warn(f"Unknown element found in outputs [{output.tag}]")
             continue
         num_outputs += 1
         if "name" not in output.attrib:
@@ -47,7 +47,7 @@ def lint_output(tool_xml, lint_ctx):
                 format_set = True
 
         if not format_set:
-            lint_ctx.warn("Tool {} output {} doesn't define an output format.".format(output.tag, output.attrib.get("name", "with missing name")))
+            lint_ctx.warn(f"Tool {output.tag} output {output.attrib.get('name', 'with missing name')} doesn't define an output format.")
 
     lint_ctx.info("%d outputs found.", num_outputs)
 
@@ -65,7 +65,7 @@ def __check_format(node, lint_ctx, allow_ext=False):
     if fmt is None:
         fmt = node.attrib.get("format")
     if fmt == "input":
-        lint_ctx.warn("Using format='input' on %s, format_source attribute is less ambiguous and should be used instead." % node.tag)
+        lint_ctx.warn(f"Using format='input' on {node.tag}, format_source attribute is less ambiguous and should be used instead.")
     return fmt is not None
 
 

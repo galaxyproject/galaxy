@@ -255,7 +255,7 @@ class DataSourceParser:
 
         if xml_tree.text not in self.ALLOWED_MODEL_CLASSES:
             # log.debug( 'available data_source model_classes: %s' %( str( self.ALLOWED_MODEL_CLASSES ) ) )
-            raise ParsingException('Invalid data_source model_class: %s' % (xml_tree.text))
+            raise ParsingException(f'Invalid data_source model_class: {xml_tree.text}')
 
         # look up the model from the model module returning an empty data_source if not found
         model_class = getattr(galaxy.model, xml_tree.text, None)

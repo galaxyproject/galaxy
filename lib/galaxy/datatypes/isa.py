@@ -179,11 +179,11 @@ class _Isa(data.Data):
                 line = line.strip()
                 if not line:
                     continue
-                out.append('<tr><td>%s</td></tr>' % escape(util.unicodify(line, 'utf-8')))
+                out.append(f"<tr><td>{escape(util.unicodify(line, 'utf-8'))}</td></tr>")
             out.append('</table>')
             out = "".join(out)
         except Exception as exc:
-            out = "Can't create peek: %s" % util.unicodify(exc)
+            out = f"Can't create peek: {util.unicodify(exc)}"
         return out
 
     # Generate primary file {{{2
@@ -198,7 +198,7 @@ class _Isa(data.Data):
             if hasattr(dataset, "extra_files_path"):
                 rval.append('<div>ISA Dataset composed of the following files:<p/><ul>')
                 for cmp_file in os.listdir(dataset.extra_files_path):
-                    rval.append('<li><a href="{}" type="text/plain">{}</a></li>'.format(cmp_file, escape(cmp_file)))
+                    rval.append(f'<li><a href="{cmp_file}" type="text/plain">{escape(cmp_file)}</a></li>')
                 rval.append('</ul></div></html>')
             else:
                 rval.append('<div>ISA Dataset is empty!<p/><ul>')
@@ -269,20 +269,20 @@ class _Isa(data.Data):
 
             # Loop on all studies
             for study in investigation.studies:
-                html += '<h2>Study %s</h2>' % study.identifier
-                html += '<h3>%s</h3>' % study.title
-                html += '<p>%s</p>' % study.description
-                html += '<p>Submitted the %s</p>' % study.submission_date
-                html += '<p>Released on %s</p>' % study.public_release_date
+                html += f'<h2>Study {study.identifier}</h2>'
+                html += f'<h3>{study.title}</h3>'
+                html += f'<p>{study.description}</p>'
+                html += f'<p>Submitted the {study.submission_date}</p>'
+                html += f'<p>Released on {study.public_release_date}</p>'
 
                 html += '<p>Experimental factors used: %s</p>' % ', '.join(x.name for x in study.factors)
 
                 # Loop on all assays of this study
                 for assay in study.assays:
-                    html += '<h3>Assay %s</h3>' % assay.filename
-                    html += '<p>Measurement type: %s</p>' % assay.measurement_type.term  # OntologyAnnotation
-                    html += '<p>Technology type: %s</p>' % assay.technology_type.term    # OntologyAnnotation
-                    html += '<p>Technology platform: %s</p>' % assay.technology_platform
+                    html += f'<h3>Assay {assay.filename}</h3>'
+                    html += f'<p>Measurement type: {assay.measurement_type.term}</p>'  # OntologyAnnotation
+                    html += f'<p>Technology type: {assay.technology_type.term}</p>'    # OntologyAnnotation
+                    html += f'<p>Technology platform: {assay.technology_platform}</p>'
                     if assay.data_files is not None:
                         html += '<p>Data files:</p>'
                         html += '<ul>'

@@ -348,7 +348,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
                 docker_image = self._find_container(job_wrapper).container_id
                 log.debug("GoDocker runner using container %s.", docker_image)
             except Exception:
-                log.error("Unable to find docker_image for job %s, failing." % job_wrapper.job_id)
+                log.error(f"Unable to find docker_image for job {job_wrapper.job_id}, failing.")
                 return False
 
             volumes = []

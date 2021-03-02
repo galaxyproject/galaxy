@@ -46,7 +46,7 @@ def __import_submodules_impl(module, recursive=False):
             if recursive and is_pkg:
                 submodules.update(__import_submodules_impl(submodule, recursive=True))
         except BaseException:
-            message = "%s dynamic module could not be loaded (traceback follows):" % (full_name)
+            message = f"{full_name} dynamic module could not be loaded (traceback follows):"
             log.exception(message)
             continue
     return submodules

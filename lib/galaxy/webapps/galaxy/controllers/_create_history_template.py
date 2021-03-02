@@ -90,7 +90,7 @@ def render_item_job(trans, job, children):
         tool_name = tool.name
         tool_desc = tool.description
     else:
-        tool_name = "Unknown tool with id: %s" % job.tool_id
+        tool_name = f"Unknown tool with id: {job.tool_id}"
         tool_desc = ''
     params_object = None
     try:

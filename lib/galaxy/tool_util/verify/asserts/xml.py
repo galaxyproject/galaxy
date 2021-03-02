@@ -29,7 +29,7 @@ def assert_is_valid_xml(output):
         to_xml(output)
     except Exception as e:
         # TODO: Narrow caught exception to just parsing failure
-        raise AssertionError("Expected valid XML, but could not parse output. %s" % unicodify(e))
+        raise AssertionError(f"Expected valid XML, but could not parse output. {unicodify(e)}")
 
 
 def assert_has_element_with_path(output, path):
@@ -38,7 +38,7 @@ def assert_has_element_with_path(output, path):
     simplified subsets of XPath implemented by lxml.etree;
     http://effbot.org/zone/element-xpath.htm for more information."""
     if xml_find(output, path) is None:
-        errmsg = "Expected to find XML element matching expression %s, not such match was found." % path
+        errmsg = f"Expected to find XML element matching expression {path}, not such match was found."
         raise AssertionError(errmsg)
 
 

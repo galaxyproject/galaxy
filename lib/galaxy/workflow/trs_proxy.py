@@ -83,7 +83,7 @@ class TrsProxy:
         return self._get(trs_api_url)
 
     def get_version_descriptor(self, trs_server, tool_id, version_id, **kwd):
-        trs_api_url = self._get_tool_api_endpoint(trs_server, tool_id, **kwd) + "/versions/" + version_id + "/%s/descriptor" % GA4GH_GALAXY_DESCRIPTOR
+        trs_api_url = self._get_tool_api_endpoint(trs_server, tool_id, **kwd) + "/versions/" + version_id + f"/{GA4GH_GALAXY_DESCRIPTOR}/descriptor"
         return self._get(trs_api_url)["content"]
 
     def _quote(self, tool_id, **kwd):

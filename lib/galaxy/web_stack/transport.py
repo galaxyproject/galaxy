@@ -139,7 +139,7 @@ class UWSGIFarmMessageTransport(ApplicationStackTransport):
                                    % (uwsgi.mule_id(),
                                       ','.join(map(str, range(1, len([x for x in self.stack._configured_mules if x.endswith('galaxy/main.py')]) + 1)))))
             elif len(self.stack._farms) > 1:
-                raise RuntimeError('Mule %s is in multiple farms! This configuration is not supported due to locking issues' % uwsgi.mule_id())
+                raise RuntimeError(f'Mule {uwsgi.mule_id()} is in multiple farms! This configuration is not supported due to locking issues')
             # only mules receive messages so don't bother starting the dispatcher if we're not a mule (although
             # currently it doesn't have any registered handlers and so wouldn't start anyway)
             super().start()

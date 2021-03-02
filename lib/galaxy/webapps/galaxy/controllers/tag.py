@@ -169,7 +169,7 @@ class TagsController(BaseUIController, UsesTagsMixin):
                        limit=limit)
         result_set = trans.sa_session.execute(query)
         # Create and return autocomplete data.
-        ac_data = "#Header|Your Values for '%s'\n" % (tag_name)
+        ac_data = f"#Header|Your Values for '{tag_name}'\n"
         tag_uname = self._get_usernames_for_tag(trans, trans.user, tag, item_class, item_tag_assoc_class)[0]
         for row in result_set:
             ac_data += tag_uname + ":" + row[0] + "|" + row[0] + "\n"

@@ -110,7 +110,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                         auto_create_roles=autoreg["auto_create_roles"],
                         auto_assign_roles_to_groups_only=autoreg["auto_assign_roles_to_groups_only"])
             else:
-                message = "Auto-registration failed, contact your local Galaxy administrator. %s" % message
+                message = f"Auto-registration failed, contact your local Galaxy administrator. {message}"
         else:
             message = "No such user or invalid password."
         return message, user
@@ -134,7 +134,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         if not login or not password:
             return self.message_exception(trans, "Please specify a username and password.")
         user = self.user_manager.get_user_by_identity(login)
-        log.debug("trans.app.config.auth_config_file: %s" % trans.app.config.auth_config_file)
+        log.debug(f"trans.app.config.auth_config_file: {trans.app.config.auth_config_file}")
         if user is None:
             message, user = self.__autoregistration(trans, login, password)
             if message:
@@ -142,12 +142,12 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         elif user.deleted:
             message = "This account has been marked deleted, contact your local Galaxy administrator to restore the account."
             if trans.app.config.error_email_to is not None:
-                message += " Contact: %s." % trans.app.config.error_email_to
+                message += f" Contact: {trans.app.config.error_email_to}."
             return self.message_exception(trans, message, sanitize=False)
         elif user.external:
             message = "This account was created for use with an external authentication method, contact your local Galaxy administrator to activate it."
             if trans.app.config.error_email_to is not None:
-                message += " Contact: %s." % trans.app.config.error_email_to
+                message += f" Contact: {trans.app.config.error_email_to}."
             return self.message_exception(trans, message, sanitize=False)
         elif not trans.app.auth_manager.check_password(user, password):
             return self.message_exception(trans, "Invalid password.")
@@ -172,7 +172,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
             if pw_expires and user.last_password_change < datetime.today() - timedelta(days=pw_expires.days / 10):
                 # If password is about to expire, modify message to state that.
                 expiredate = datetime.today() - user.last_password_change + pw_expires
-                return {"message": "Your password will expire in %s day(s)." % expiredate.days, "status": "warning"}
+                return {"message": f"Your password will expire in {expiredate.days} day(s).", "status": "warning"}
         return {"message": "Success.", "redirect": self.__get_redirect_url(redirect)}
 
     @web.expose
@@ -198,11 +198,11 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
             username = trans.user.username
         is_activation_sent = self.user_manager.send_activation_email(trans, email, username)
         if is_activation_sent:
-            message = 'This account has not been activated yet. The activation link has been sent again. Please check your email address <b>{}</b> including the spam/trash folder. <a target="_top" href="{}">Return to the home page</a>.'.format(escape(email), url_for('/'))
+            message = f"This account has not been activated yet. The activation link has been sent again. Please check your email address <b>{escape(email)}</b> including the spam/trash folder. <a target=\"_top\" href=\"{url_for('/')}\">Return to the home page</a>."
         else:
-            message = 'This account has not been activated yet but we are unable to send the activation link. Please contact your local Galaxy administrator. <a target="_top" href="%s">Return to the home page</a>.' % url_for('/')
+            message = f"This account has not been activated yet but we are unable to send the activation link. Please contact your local Galaxy administrator. <a target=\"_top\" href=\"{url_for('/')}\">Return to the home page</a>."
             if trans.app.config.error_email_to is not None:
-                message += ' Error contact: %s.' % trans.app.config.error_email_to
+                message += f' Error contact: {trans.app.config.error_email_to}.'
         return message, is_activation_sent
 
     def is_outside_grace_period(self, trans, create_time):

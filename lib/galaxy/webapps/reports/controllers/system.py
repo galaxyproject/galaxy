@@ -168,7 +168,7 @@ class System(BaseUIController):
 def nice_size(size, include_bytes=False):
     """Returns a readably formatted string with the size"""
     niced = False
-    nice_string = "%s bytes" % size
+    nice_string = f"{size} bytes"
     try:
         nsize = Decimal(size)
         for x in ['bytes', 'KB', 'MB', 'GB']:
@@ -178,7 +178,7 @@ def nice_size(size, include_bytes=False):
                 break
             nsize /= Decimal("1024.0")
         if not niced:
-            nice_string = "{:3.1f} {}".format(nsize, 'TB')
+            nice_string = f"{nsize:3.1f} TB"
             niced = True
         if include_bytes and x != 'bytes':
             nice_string = f"{nice_string} ({size} bytes)"

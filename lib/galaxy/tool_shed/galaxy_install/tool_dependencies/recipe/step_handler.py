@@ -49,7 +49,7 @@ class Download:
             try:
                 download_to_file(download_url, file_path, chunk_size=basic_util.CHUNK_SIZE)
             except Exception as e:
-                err_msg = 'Error downloading from URL {} : {}'.format(str(download_url), str(e))
+                err_msg = f'Error downloading from URL {str(download_url)} : {str(e)}'
                 raise Exception(err_msg)
 
         if 'sha256sum' in checksums or '#sha256#' in download_url:
@@ -144,7 +144,7 @@ class AssertDirectoryExecutable(RecipeStep):
             full_path = os.path.join(current_dir, action_dict['full_path'])
         if not self.assert_directory_executable(full_path=full_path):
             status = self.app.install_model.ToolDependency.installation_status.ERROR
-            error_message = 'The path %s is not a directory or is not executable by the owner.' % str(full_path)
+            error_message = f'The path {str(full_path)} is not a directory or is not executable by the owner.'
             tool_dependency = tool_dependency_util.set_tool_dependency_attributes(self.app,
                                                                                   tool_dependency,
                                                                                   status=status,
@@ -190,7 +190,7 @@ class AssertDirectoryExists(RecipeStep):
             full_path = os.path.join(current_dir, action_dict['full_path'])
         if not self.assert_directory_exists(full_path=full_path):
             status = self.app.install_model.ToolDependency.installation_status.ERROR
-            error_message = 'The path %s is not a directory or does not exist.' % str(full_path)
+            error_message = f'The path {str(full_path)} is not a directory or does not exist.'
             tool_dependency = tool_dependency_util.set_tool_dependency_attributes(self.app,
                                                                                   tool_dependency,
                                                                                   status=status,
@@ -239,7 +239,7 @@ class AssertFileExecutable(RecipeStep):
             full_path = os.path.join(current_dir, action_dict['full_path'])
         if not self.assert_file_executable(full_path=full_path):
             status = self.app.install_model.ToolDependency.installation_status.ERROR
-            error_message = 'The path %s is not a file or is not executable by the owner.' % str(full_path)
+            error_message = f'The path {str(full_path)} is not a file or is not executable by the owner.'
             tool_dependency = tool_dependency_util.set_tool_dependency_attributes(self.app,
                                                                                   tool_dependency,
                                                                                   status=status,
@@ -285,7 +285,7 @@ class AssertFileExists(RecipeStep):
             full_path = os.path.join(current_dir, action_dict['full_path'])
         if not self.assert_file_exists(full_path=full_path):
             status = self.app.install_model.ToolDependency.installation_status.ERROR
-            error_message = 'The path %s is not a file or does not exist.' % str(full_path)
+            error_message = f'The path {str(full_path)} is not a file or does not exist.'
             tool_dependency = tool_dependency_util.set_tool_dependency_attributes(self.app,
                                                                                   tool_dependency,
                                                                                   status=status,
@@ -315,9 +315,9 @@ class Autoconf(RecipeStep):
         with settings(warn_only=True):
             configure_opts = action_dict.get('configure_opts', '')
             if 'prefix=' in configure_opts:
-                pre_cmd = './configure %s && make && make install' % configure_opts
+                pre_cmd = f'./configure {configure_opts} && make && make install'
             else:
-                pre_cmd = './configure --prefix=$INSTALL_DIR %s && make && make install' % configure_opts
+                pre_cmd = f'./configure --prefix=$INSTALL_DIR {configure_opts} && make && make install'
             cmd = install_environment.build_command(basic_util.evaluate_template(pre_cmd, install_environment))
             install_environment.handle_command(tool_dependency=tool_dependency,
                                                cmd=cmd,
@@ -557,9 +557,9 @@ class DownloadByUrl(Download, RecipeStep):
                 logfile = open(log_file, 'a')
             else:
                 logfile = open(log_file, 'w')
-            logfile.write('Successfully downloaded from url: %s\n' % action_dict['url'])
+            logfile.write(f"Successfully downloaded from url: {action_dict['url']}\n")
             logfile.close()
-        log.debug('Successfully downloaded from url: %s' % action_dict['url'])
+        log.debug(f"Successfully downloaded from url: {action_dict['url']}")
         if initial_download:
             return tool_dependency, filtered_actions, dir
         return tool_dependency, None, None
@@ -676,7 +676,7 @@ class MakeInstall(RecipeStep):
         # make; make install; allow providing make options
         with settings(warn_only=True):
             make_opts = action_dict.get('make_opts', '')
-            cmd = install_environment.build_command('make %s && make install' % make_opts)
+            cmd = install_environment.build_command(f'make {make_opts} && make install')
             install_environment.handle_command(tool_dependency=tool_dependency,
                                                cmd=cmd,
                                                return_output=False,
@@ -854,7 +854,7 @@ class SetEnvironment(RecipeStep):
         cmds = install_environment.environment_commands('set_environment')
         env_var_dicts = action_dict.get('environment_variable', [])
         root_dir_dict = dict(action='set_to',
-                             name='%s_ROOT_DIR' % re.sub(r"[^A-Z0-9_]", "_", tool_dependency.name.upper()),
+                             name=f"{re.sub('[^A-Z0-9_]', '_', tool_dependency.name.upper())}_ROOT_DIR",
                              value=install_environment.install_dir)
         env_var_dicts.append(root_dir_dict)
         for env_var_dict in env_var_dicts:
@@ -944,7 +944,7 @@ class SetEnvironment(RecipeStep):
         if '$ENV[' in env_var_value and ']' in env_var_value:
             # Pull out the name of the environment variable to populate.
             inherited_env_var_name = env_var_value.split('[')[1].split(']')[0]
-            to_replace = '$ENV[%s]' % inherited_env_var_name
+            to_replace = f'$ENV[{inherited_env_var_name}]'
             found = False
             for env_cmd in set_prior_environment_commands:
                 # LD_LIBRARY_PATH=/<my configured tool dependency path>/<some path>; export LD_LIBRARY_PATH
@@ -960,7 +960,7 @@ class SetEnvironment(RecipeStep):
             if not found:
                 # Replace the original $ENV[] with nothing, to avoid any shell misparsings later on.
                 log.debug('Environment variable %s not found, removing from set_environment.', inherited_env_var_name)
-                env_var_value = env_var_value.replace(to_replace, '$%s' % inherited_env_var_name)
+                env_var_value = env_var_value.replace(to_replace, f'${inherited_env_var_name}')
             env_var_dict['value'] = env_var_value
         return env_var_dict
 
@@ -1080,7 +1080,7 @@ class SetupPerlEnvironment(Download, RecipeStep):
                     # If set to a true value then MakeMaker's prompt function will always
                     # return the default without waiting for user input.
                     cmd = '''PERL_MM_USE_DEFAULT=1; export PERL_MM_USE_DEFAULT; '''
-                    cmd += 'HOME=%s; export HOME; ' % work_dir
+                    cmd += f'HOME={work_dir}; export HOME; '
                     cmd += 'export PERL5LIB=$INSTALL_DIR/lib/perl5:$PERL5LIB;'
                     cmd += 'export PATH=$INSTALL_DIR/bin:$PATH;'
                     if perl_package.find('://') != -1:
@@ -1114,7 +1114,7 @@ class SetupPerlEnvironment(Download, RecipeStep):
                     else:
                         # perl package from CPAN without version number.
                         # cpanm should be installed with the parent perl distribution, otherwise this will not work.
-                        cmd += '''cpanm --local-lib=$INSTALL_DIR %s''' % (perl_package)
+                        cmd += f'''cpanm --local-lib=$INSTALL_DIR {perl_package}'''
                         cmd = install_environment.build_command(basic_util.evaluate_template(cmd, install_environment))
                         return_code = install_environment.handle_command(tool_dependency=tool_dependency,
                                                                          cmd=cmd,
@@ -1328,7 +1328,7 @@ class SetupRubyEnvironment(Download, RecipeStep):
                     ruby_package_tup = ruby_package_tup_dict['package']
                     gem, gem_version, gem_parameters = ruby_package_tup
                     if gem_parameters:
-                        gem_parameters = '-- %s' % gem_parameters
+                        gem_parameters = f'-- {gem_parameters}'
                     else:
                         gem_parameters = ''
                     if os.path.isfile(gem):
@@ -1600,7 +1600,7 @@ class SetupVirtualEnv(Download, RecipeStep):
         setup_command = f"{python_cmd} {venv_src_directory}/virtualenv.py --no-site-packages '{venv_directory}'"
         # POSIXLY_CORRECT forces shell commands . and source to have the same
         # and well defined behavior in bash/zsh.
-        activate_command = "POSIXLY_CORRECT=1; . %s" % os.path.join(venv_directory, "bin", "activate")
+        activate_command = f"POSIXLY_CORRECT=1; . {os.path.join(venv_directory, 'bin', 'activate')}"
         if action_dict['use_requirements_file']:
             install_command = "python '%s' install -r '%s' --log '%s'" % \
                 (os.path.join(venv_directory, "bin", "pip"),
@@ -1771,7 +1771,7 @@ class TemplateCommand(RecipeStep):
         with settings(warn_only=True, **env_vars):
             if language == 'cheetah':
                 # We need to import fabric.api.env so that we can access all collected environment variables.
-                cmd = fill_template('#from fabric.api import env\n%s' % action_dict['command'], context=env_vars)
+                cmd = fill_template(f"#from fabric.api import env\n{action_dict['command']}", context=env_vars)
                 # The caller should check the status of the returned tool_dependency since this function
                 # does nothing with return_code.
                 install_environment.handle_command(tool_dependency=tool_dependency,
@@ -1795,6 +1795,6 @@ class TemplateCommand(RecipeStep):
                 action_dict['language'] = language
                 action_dict['command'] = action_elem_text
         else:
-            log.debug("Unsupported template language '%s'. Not proceeding." % str(language))
-            raise Exception("Unsupported template language '%s' in tool dependency definition." % str(language))
+            log.debug(f"Unsupported template language '{str(language)}'. Not proceeding.")
+            raise Exception(f"Unsupported template language '{str(language)}' in tool dependency definition.")
         return action_dict

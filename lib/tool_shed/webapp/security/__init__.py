@@ -22,7 +22,7 @@ class RBACAgent:
     permitted_actions = Bunch()
 
     def associate_components(self, **kwd):
-        raise Exception('No valid method of associating provided components: %s' % kwd)
+        raise Exception(f'No valid method of associating provided components: {kwd}')
 
     def associate_user_role(self, user, role):
         raise Exception('No valid method of associating a user with a role')
@@ -96,7 +96,7 @@ class CommunityRBACAgent(RBACAgent):
                 return self.associate_group_role(kwd['group'], kwd['role'])
         elif 'repository' in kwd:
             return self.associate_repository_category(kwd['repository'], kwd['category'])
-        raise Exception('No valid method of associating provided components: %s' % kwd)
+        raise Exception(f'No valid method of associating provided components: {kwd}')
 
     def associate_group_role(self, group, role):
         assoc = self.model.GroupRoleAssociation(group, role)

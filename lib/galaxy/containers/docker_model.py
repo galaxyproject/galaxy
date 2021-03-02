@@ -85,7 +85,7 @@ class DockerVolume(ContainerVolume):
         Docker volume syntax.
         """
         if not as_str:
-            raise ValueError("Failed to parse Docker volume from %s" % as_str)
+            raise ValueError(f"Failed to parse Docker volume from {as_str}")
         parts = as_str.split(":", 2)
         kwds = dict(host_path=parts[0])
         if len(parts) == 1:
@@ -109,7 +109,7 @@ class DockerVolume(ContainerVolume):
             volume_for_cmd_line = shlex.quote(volume_str)
         else:
             # e.g. $_GALAXY_JOB_TMP_DIR:$_GALAXY_JOB_TMP_DIR:rw so don't single quote.
-            volume_for_cmd_line = '"%s"' % volume_str
+            volume_for_cmd_line = f'"{volume_str}"'
         return volume_for_cmd_line
 
     def to_native(self):
@@ -406,7 +406,7 @@ class DockerServiceConstraint:
             if len(t[0]) < len(constraint[0]):
                 constraint = t
         if constraint[0] == constraint_str:
-            raise Exception('Unable to parse constraint string: %s' % constraint_str)
+            raise Exception(f'Unable to parse constraint string: {constraint_str}')
         return [x.strip() for x in constraint]
 
     @classmethod

@@ -37,15 +37,15 @@ class TestRepositoryAdminRole(ShedTwillTestCase):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
+        assert test_user_1 is not None, f'Problem retrieving user with email {common.test_user_1_email} from the database'
         self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.test_user_2_email, username=common.test_user_2_name)
         test_user_2 = self.test_db_util.get_user(common.test_user_2_email)
-        assert test_user_2 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_2_email
+        assert test_user_2 is not None, f'Problem retrieving user with email {common.test_user_2_email} from the database'
         self.test_db_util.get_private_role(test_user_2)
         self.login(email=common.admin_email, username=common.admin_username)
         admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
+        assert admin_user is not None, f'Problem retrieving user with email {common.admin_email} from the database'
         self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_filtering_repository(self):
@@ -110,9 +110,9 @@ class TestRepositoryAdminRole(ShedTwillTestCase):
         new repository name from Step 4.
         '''
         test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        old_repository_admin_role = self.test_db_util.get_role(test_user_1, 'filtering_0530_%s_admin' % test_user_1.username)
+        old_repository_admin_role = self.test_db_util.get_role(test_user_1, f'filtering_0530_{test_user_1.username}_admin')
         assert old_repository_admin_role is None, 'Admin role filtering_0530_user1_admin incorrectly exists.'
-        new_repository_admin_role = self.test_db_util.get_role(test_user_1, 'renamed_filtering_0530_%s_admin' % test_user_1.username)
+        new_repository_admin_role = self.test_db_util.get_role(test_user_1, f'renamed_filtering_0530_{test_user_1.username}_admin')
         assert new_repository_admin_role is not None, 'Admin role renamed_filtering_0530_user1_admin does not exist.'
 
     def test_0030_verify_access_denied(self):

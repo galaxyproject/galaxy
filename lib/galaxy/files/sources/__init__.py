@@ -83,7 +83,7 @@ class BaseFilesSource(FilesSource):
     def get_uri_root(self):
         prefix = self.get_prefix()
         scheme = self.get_scheme()
-        root = "%s://" % scheme
+        root = f"{scheme}://"
         if prefix:
             root = uri_join(root, prefix)
         return root

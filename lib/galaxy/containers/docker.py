@@ -198,7 +198,7 @@ class DockerCLIInterface(DockerInterface):
         try:
             return self._run_docker(subcommand='inspect', args=container_id)[0]
         except (IndexError, ContainerCLIError) as exc:
-            msg = "Invalid container id: %s" % container_id
+            msg = f"Invalid container id: {container_id}"
             if exc.stdout == '[]' and exc.stderr == f'Error: no such object: {container_id}':
                 log.warning(msg)
                 return []
@@ -210,7 +210,7 @@ class DockerCLIInterface(DockerInterface):
         try:
             return self._run_docker(subcommand='image inspect', args=image)[0]
         except (IndexError, ContainerCLIError) as exc:
-            msg = "%s not pulled, cannot get digest" % image
+            msg = f"{image} not pulled, cannot get digest"
             if exc.stdout == '[]' and exc.stderr == f'Error: no such image: {image}':
                 log.warning(msg, image)
                 return []
@@ -585,10 +585,10 @@ class DockerAPIInterface(DockerInterface):
         try:
             return self._client.inspect_container(container_id)
         except docker.errors.NotFound:
-            raise ContainerNotFound("Invalid container id: %s" % container_id, container_id=container_id)
+            raise ContainerNotFound(f"Invalid container id: {container_id}", container_id=container_id)
 
     def image_inspect(self, image):
         try:
             return self._client.inspect_image(image)
         except docker.errors.NotFound:
-            raise ContainerImageNotFound("%s not pulled, cannot get digest" % image, image=image)
+            raise ContainerImageNotFound(f"{image} not pulled, cannot get digest", image=image)

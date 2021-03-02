@@ -168,7 +168,7 @@ class BaseUIController(BaseController):
             raise       # handled in the caller
         except Exception:
             log.exception("Exception in get_object check for %s %s:", class_name, str(id))
-            raise Exception('Server error retrieving {} id ( {} ).'.format(class_name, str(id)))
+            raise Exception(f'Server error retrieving {class_name} id ( {str(id)} ).')
 
     def message_exception(self, trans, message, sanitize=True):
         trans.response.status = 400
@@ -183,7 +183,7 @@ class BaseAPIController(BaseController):
                                              check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted)
 
         except exceptions.ItemDeletionException as e:
-            raise HTTPBadRequest(detail="Invalid {} id ( {} ) specified: {}".format(class_name, str(id), util.unicodify(e)))
+            raise HTTPBadRequest(detail=f"Invalid {class_name} id ( {str(id)} ) specified: {util.unicodify(e)}")
         except exceptions.MessageException as e:
             raise HTTPBadRequest(detail=e.err_msg)
         except Exception as e:
@@ -215,7 +215,7 @@ class BaseAPIController(BaseController):
             except Exception:
                 invalid.append(item)
         if invalid:
-            msg = "The following value(s) for associated users and/or groups could not be parsed: %s." % ', '.join(invalid)
+            msg = f"The following value(s) for associated users and/or groups could not be parsed: {', '.join(invalid)}."
             msg += "  Valid values are email addresses of users, names of groups, or IDs of both."
             raise Exception(msg)
         payload['in_users'] = list(map(str, new_in_users))
@@ -406,7 +406,7 @@ class ExportsHistoryMixin:
             trans.response.set_content_type('application/x-gzip')
         else:
             trans.response.set_content_type('application/x-tar')
-        disposition = 'attachment; filename="%s"' % jeha.export_name
+        disposition = f'attachment; filename="{jeha.export_name}"'
         trans.response.headers["Content-Disposition"] = disposition
         archive = trans.app.object_store.get_filename(jeha.dataset)
         return open(archive, mode='rb')
@@ -526,7 +526,7 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
         ``library_contents.create`` will branch to this if called with 'from_hda_id'
         in its payload.
         """
-        log.debug('_copy_hda_to_library_folder: %s' % (str((from_hda_id, folder_id, ldda_message))))
+        log.debug(f'_copy_hda_to_library_folder: {str((from_hda_id, folder_id, ldda_message))}')
         # PRECONDITION: folder_id has already been altered to remove the folder prefix ('F')
         # TODO: allow name and other, editable ldda attrs?
         if ldda_message:
@@ -1080,15 +1080,15 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         try:
             dataset_id = trans.security.decode_id(dataset_id)
         except (AttributeError, TypeError):
-            raise HTTPBadRequest("Invalid dataset id: %s." % str(dataset_id))
+            raise HTTPBadRequest(f"Invalid dataset id: {str(dataset_id)}.")
 
         try:
             data = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(int(dataset_id))
         except Exception:
-            raise HTTPBadRequest("Invalid dataset id: %s." % str(dataset_id))
+            raise HTTPBadRequest(f"Invalid dataset id: {str(dataset_id)}.")
 
         if not data:
-            raise HTTPBadRequest("Invalid dataset id: %s." % str(dataset_id))
+            raise HTTPBadRequest(f"Invalid dataset id: {str(dataset_id)}.")
 
         if check_ownership:
             # Verify ownership.
@@ -1096,7 +1096,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             if not user:
                 error("Must be logged in to manage Galaxy items")
             if data.history.user != user:
-                error("%s is not owned by current user" % data.__class__.__name__)
+                error(f"{data.__class__.__name__} is not owned by current user")
 
         if check_accessible:
             current_user_roles = trans.get_current_user_roles()
@@ -1292,15 +1292,15 @@ class UsesFormDefinitionsMixin:
         # Save a form_builder field object
         params = util.Params(kwd)
         if isinstance(field_obj, trans.model.UserAddress):
-            field_obj.desc = util.restore_text(params.get('%s_short_desc' % widget_name, ''))
-            field_obj.name = util.restore_text(params.get('%s_name' % widget_name, ''))
-            field_obj.institution = util.restore_text(params.get('%s_institution' % widget_name, ''))
-            field_obj.address = util.restore_text(params.get('%s_address' % widget_name, ''))
-            field_obj.city = util.restore_text(params.get('%s_city' % widget_name, ''))
-            field_obj.state = util.restore_text(params.get('%s_state' % widget_name, ''))
-            field_obj.postal_code = util.restore_text(params.get('%s_postal_code' % widget_name, ''))
-            field_obj.country = util.restore_text(params.get('%s_country' % widget_name, ''))
-            field_obj.phone = util.restore_text(params.get('%s_phone' % widget_name, ''))
+            field_obj.desc = util.restore_text(params.get(f'{widget_name}_short_desc', ''))
+            field_obj.name = util.restore_text(params.get(f'{widget_name}_name', ''))
+            field_obj.institution = util.restore_text(params.get(f'{widget_name}_institution', ''))
+            field_obj.address = util.restore_text(params.get(f'{widget_name}_address', ''))
+            field_obj.city = util.restore_text(params.get(f'{widget_name}_city', ''))
+            field_obj.state = util.restore_text(params.get(f'{widget_name}_state', ''))
+            field_obj.postal_code = util.restore_text(params.get(f'{widget_name}_postal_code', ''))
+            field_obj.country = util.restore_text(params.get(f'{widget_name}_country', ''))
+            field_obj.phone = util.restore_text(params.get(f'{widget_name}_phone', ''))
             trans.sa_session.add(field_obj)
             trans.sa_session.flush()
 
@@ -1436,7 +1436,7 @@ class UsesTagsMixin(SharableItemSecurityMixin):
     def _get_item_tag_assoc(self, trans, item_class_name, id, tag_name):
         user = trans.user
         tagged_item = self._get_tagged_item(trans, item_class_name, id)
-        log.debug("In get_item_tag_assoc with tagged_item %s" % tagged_item)
+        log.debug(f"In get_item_tag_assoc with tagged_item {tagged_item}")
         return self.get_tag_handler(trans)._get_item_tag_assoc(user, tagged_item, tag_name)
 
     def set_tags_from_list(self, trans, item, new_tags_list, user=None):
@@ -1559,7 +1559,7 @@ class UsesExtendedMetadataMixin(SharableItemSecurityMixin):
         else:
             # BUG: Everything is cast to string, which can lead to false positives
             # for cross type comparisions, ie "True" == True
-            yield prefix, ("%s" % (meta)).encode("utf8", errors='replace')
+            yield prefix, (f"{meta}").encode("utf8", errors='replace')
 
 
 def sort_by_attr(seq, attr):

@@ -633,7 +633,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
                 if is_composite:
                     # need to add all the components from the extra_files_path to the zip
                     if zpathext == '':
-                        zpath = '%s.html' % zpath  # fake the real nature of the html file
+                        zpath = f'{zpath}.html'  # fake the real nature of the html file
                     try:
                         if archive_format == 'zip':
                             archive.write(ldda.dataset.file_name, zpath)  # add the primary of a composite set
@@ -691,7 +691,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
                 trans.response.headers['Content-Length'] = str(fStat.st_size)
                 fname = f"{ldda.name}.{ldda.extension}"
                 fname = ''.join(c in util.FILENAME_VALID_CHARS and c or '_' for c in fname)[0:150]
-                trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % fname
+                trans.response.headers["Content-Disposition"] = f'attachment; filename="{fname}"'
                 try:
                     return open(dataset.file_name, 'rb')
                 except Exception:

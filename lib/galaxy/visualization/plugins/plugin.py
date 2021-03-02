@@ -132,7 +132,7 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
             match = path.split('/config/')[-1]
             return os.path.join('./static', match, 'static')
         else:
-            log.debug('Visualization has no static path: %s.' % path)
+            log.debug(f'Visualization has no static path: {path}.')
 
     def _get_saved_visualization_config(self, visualization, revision=None, **kwargs):
         """
@@ -305,7 +305,7 @@ class ScriptVisualizationPlugin(VisualizationPlugin):
         template.
         """
         render_vars['embedded'] = self._parse_embedded(embedded)
-        render_vars['static_url'] = url_for('/%s/' % self.static_path)
+        render_vars['static_url'] = url_for(f'/{self.static_path}/')
         render_vars.update(vars={})
         render_vars.update({
             "script_attributes": self.config['entry_point']['attr']

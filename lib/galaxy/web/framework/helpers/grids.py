@@ -203,7 +203,7 @@ class CommunityRatingColumn(GridColumn, UsesItemRatings):
 
     def sort(self, trans, query, ascending, column_name=None):
         # Get the columns that connect item's table and item's rating association table.
-        item_rating_assoc_class = getattr(trans.model, '%sRatingAssociation' % self.model_class.__name__)
+        item_rating_assoc_class = getattr(trans.model, f'{self.model_class.__name__}RatingAssociation')
         foreign_key = get_foreign_key(item_rating_assoc_class, self.model_class)
         fk_col = foreign_key.parent
         referent_col = foreign_key.get_referent(self.model_class.table)
@@ -639,10 +639,10 @@ class Grid:
                 if use_default_filter:
                     if self.default_filter:
                         column_filter = self.default_filter.get(column.key)
-                elif "f-" + column.model_class.__name__ + ".%s" % column.key in kwargs:
+                elif "f-" + column.model_class.__name__ + f".{column.key}" in kwargs:
                     # Queries that include table joins cannot guarantee unique column names.  This problem is
                     # handled by setting the column_filter value to <TableName>.<ColumnName>.
-                    column_filter = kwargs.get("f-" + column.model_class.__name__ + ".%s" % column.key)
+                    column_filter = kwargs.get("f-" + column.model_class.__name__ + f".{column.key}")
                 elif "f-" + column.key in kwargs:
                     column_filter = kwargs.get("f-" + column.key)
                 elif column.key in base_filter:

@@ -233,7 +233,7 @@ def _matching_case_for_value(tool, cond, declared_value):
             # No explicit value for this param and cannot determine a
             # default - give up. Previously this would just result in a key
             # error exception.
-            msg = "Failed to find test parameter value specification required for conditional %s" % cond.name
+            msg = f"Failed to find test parameter value specification required for conditional {cond.name}"
             raise Exception(msg)
 
     # Check the tool's defined cases against predicate to determine
@@ -249,7 +249,7 @@ def _matching_case_for_value(tool, cond, declared_value):
 
 def _add_uploaded_dataset(name, value, extra, input_parameter, required_files):
     if value is None:
-        assert input_parameter.optional, '%s is not optional. You must provide a valid filename.' % name
+        assert input_parameter.optional, f'{name} is not optional. You must provide a valid filename.'
         return value
     return require_file(name, value, extra, required_files)
 
@@ -311,7 +311,7 @@ class ParamContext:
             return name
 
     def __str__(self):
-        return "Context[for_state=%s]" % self.for_state()
+        return f"Context[for_state={self.for_state()}]"
 
     def param_names(self):
         for parent_context_param in self.parent_context.param_names():

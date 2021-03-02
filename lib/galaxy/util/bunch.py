@@ -28,7 +28,7 @@ class Bunch:
         return self.__dict__.values()
 
     def __str__(self):
-        return '%s' % self.__dict__
+        return f'{self.__dict__}'
 
     def __bool__(self):
         return bool(self.__dict__)

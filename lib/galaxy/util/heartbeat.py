@@ -80,7 +80,7 @@ class Heartbeat(threading.Thread):
         self.open_logs()
         try:
             # Print separator with timestamp
-            self.file.write("Traceback dump for all threads at %s:\n\n" % time.asctime())
+            self.file.write(f"Traceback dump for all threads at {time.asctime()}:\n\n")
             # Print the thread states
             threads = get_current_thread_object_dict()
             for thread_id, frame in sys._current_frames().items():
@@ -157,7 +157,7 @@ class Heartbeat(threading.Thread):
         return stack_frames[-1]
 
     def print_nonsleeping(self, threads_object_dict):
-        self.file_nonsleeping.write("Non-Sleeping threads at %s:\n\n" % time.asctime())
+        self.file_nonsleeping.write(f"Non-Sleeping threads at {time.asctime()}:\n\n")
         all_threads_are_sleeping = True
         threads = get_current_thread_object_dict()
         for thread_id, frame in sys._current_frames().items():

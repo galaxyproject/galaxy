@@ -83,7 +83,7 @@ class ShellJobRunner(AsynchronousJobRunner):
         try:
             self.write_executable_script(ajs.job_file, script)
         except Exception:
-            log.exception("(%s) failure writing job script" % galaxy_id_tag)
+            log.exception(f"({galaxy_id_tag}) failure writing job script")
             job_wrapper.fail("failure preparing job script", exception=True)
             return
 
@@ -104,7 +104,7 @@ class ShellJobRunner(AsynchronousJobRunner):
         # Strip and split to get job ID.
         external_job_id = stdout.strip().split()[-1]
         if not external_job_id:
-            log.error('(%s) submission did not return a job identifier, failing job' % galaxy_id_tag)
+            log.error(f'({galaxy_id_tag}) submission did not return a job identifier, failing job')
             job_wrapper.fail("failure submitting job")
             return
 

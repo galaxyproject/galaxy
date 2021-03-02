@@ -18,7 +18,7 @@ class Smat(Text):
         try:
             return dataset.peek
         except Exception:
-            return "ESTScan scores matrices (%s)" % (nice_size(dataset.get_size()))
+            return f"ESTScan scores matrices ({nice_size(dataset.get_size())})"
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
@@ -103,7 +103,7 @@ class PlantTribesKsComponents(Tabular):
         try:
             return dataset.peek
         except Exception:
-            return "Significant components in the Ks distribution (%s)" % (nice_size(dataset.get_size()))
+            return f"Significant components in the Ks distribution ({nice_size(dataset.get_size())})"
 
     def set_meta(self, dataset, **kwd):
         """
@@ -133,7 +133,7 @@ class PlantTribesKsComponents(Tabular):
             if (dataset.metadata.number_comp == 1):
                 dataset.blurb = "1 significant component"
             else:
-                dataset.blurb = "%s significant components" % dataset.metadata.number_comp
+                dataset.blurb = f"{dataset.metadata.number_comp} significant components"
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'

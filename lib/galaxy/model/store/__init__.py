@@ -130,7 +130,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             history_properties = self.new_history_properties()
             history_name = history_properties.get('name')
             if history_name:
-                history_name = 'imported from archive: %s' % history_name
+                history_name = f'imported from archive: {history_name}'
             else:
                 history_name = 'unnamed imported history'
 
@@ -312,13 +312,13 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         # Do security check and move/copy dataset data.
                         archive_path = os.path.abspath(os.path.join(self.archive_dir, file_name))
                         if os.path.islink(archive_path):
-                            raise MalformedContents("Invalid dataset path: %s" % archive_path)
+                            raise MalformedContents(f"Invalid dataset path: {archive_path}")
 
                         temp_dataset_file_name = \
                             os.path.realpath(archive_path)
 
                         if not in_directory(temp_dataset_file_name, self.archive_dir):
-                            raise MalformedContents("Invalid dataset path: %s" % temp_dataset_file_name)
+                            raise MalformedContents(f"Invalid dataset path: {temp_dataset_file_name}")
 
                     if not file_name or not os.path.exists(temp_dataset_file_name):
                         dataset_instance.state = dataset_instance.states.DISCARDED
@@ -341,7 +341,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                                 for extra_file in files:
                                     source = os.path.join(root, extra_file)
                                     if not in_directory(source, self.archive_dir):
-                                        raise MalformedContents("Invalid dataset path: %s" % source)
+                                        raise MalformedContents(f"Invalid dataset path: {source}")
                                     self.object_store.update_from_file(
                                         dataset_instance.dataset, extra_dir=extra_dir,
                                         alt_name=extra_file, file_name=source,
@@ -1118,7 +1118,7 @@ class DirectoryModelExportStore(ModelExportStore):
                 file_list = []
 
             if len(file_list):
-                arcname = os.path.join(dir_name, 'extra_files_path_%s' % dataset_hid)
+                arcname = os.path.join(dir_name, f'extra_files_path_{dataset_hid}')
                 add(extra_files_path, os.path.join(export_directory, arcname))
                 as_dict['extra_files_path'] = arcname
             else:

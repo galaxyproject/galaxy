@@ -30,9 +30,9 @@ class DefaultJobAction:
     @classmethod
     def get_short_str(cls, pja):
         if pja.action_arguments:
-            return "{} -> {}".format(pja.action_type, escape(pja.action_arguments))
+            return f"{pja.action_type} -> {escape(pja.action_arguments)}"
         else:
-            return "%s" % pja.action_type
+            return f"{pja.action_type}"
 
 
 class EmailAction(DefaultJobAction):
@@ -53,11 +53,11 @@ class EmailAction(DefaultJobAction):
                     host = action.action_arguments['host']
                 else:
                     host = socket.getfqdn()
-                frm = 'galaxy-no-reply@%s' % host
+                frm = f'galaxy-no-reply@{host}'
             to = job.user.email
-            subject = "Galaxy job completion notification from history '%s'" % (job.history.name)
+            subject = f"Galaxy job completion notification from history '{job.history.name}'"
             outdata = ',\n'.join(ds.dataset.display_name() for ds in job.output_datasets)
-            body = "Your Galaxy job generating dataset(s):\n\n{}\n\nis complete as of {}. Click the link below to access your data: \n{}".format(outdata, datetime.datetime.now().strftime("%I:%M"), link)
+            body = f"Your Galaxy job generating dataset(s):\n\n{outdata}\n\nis complete as of {datetime.datetime.now().strftime('%I:%M')}. Click the link below to access your data: \n{link}"
             send_mail(frm, to, subject, body, app.config)
         except Exception as e:
             log.error("EmailAction PJA Failed, exception: %s", unicodify(e))
@@ -65,7 +65,7 @@ class EmailAction(DefaultJobAction):
     @classmethod
     def get_short_str(cls, pja):
         if pja.action_arguments and 'host' in pja.action_arguments:
-            return "Email the current user from server %s when this job is complete." % escape(pja.action_arguments['host'])
+            return f"Email the current user from server {escape(pja.action_arguments['host'])} when this job is complete."
         else:
             return "Email the current user when this job is complete."
 
@@ -264,7 +264,7 @@ class HideDatasetAction(DefaultJobAction):
 
     @classmethod
     def get_short_str(cls, pja):
-        return "Hide output '%s'." % escape(pja.output_name)
+        return f"Hide output '{escape(pja.output_name)}'."
 
 
 class DeleteDatasetAction(DefaultJobAction):
@@ -440,7 +440,7 @@ class TagDatasetAction(DefaultJobAction):
                                                 cls.direction,
                                                 escape(pja.output_name))
         else:
-            return "%s Tag action used without a tag specified.  No tag will be added." % cls.action
+            return f"{cls.action} Tag action used without a tag specified.  No tag will be added."
 
 
 class RemoveTagDatasetAction(TagDatasetAction):

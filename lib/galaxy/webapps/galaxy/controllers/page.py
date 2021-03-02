@@ -458,14 +458,14 @@ class PageController(BaseUIController, SharableMixin,
                                     .first()
             if not other:
                 mtype = "error"
-                msg = ("User '%s' does not exist" % escape(email))
+                msg = f"User '{escape(email)}' does not exist"
             elif other == trans.get_user():
                 mtype = "error"
                 msg = ("You cannot share a page with yourself")
             elif trans.sa_session.query(model.PageUserShareAssociation) \
                     .filter_by(user=other, page=page).count() > 0:
                 mtype = "error"
-                msg = ("Page already shared with '%s'" % escape(email))
+                msg = f"Page already shared with '{escape(email)}'"
             else:
                 share = model.PageUserShareAssociation()
                 share.page = page
@@ -477,7 +477,7 @@ class PageController(BaseUIController, SharableMixin,
                 page_title = escape(page.title)
                 other_email = escape(other.email)
                 trans.set_message(f"Page '{page_title}' shared with user '{other_email}'")
-                return trans.response.send_redirect(url_for("/pages/sharing?id=%s" % id))
+                return trans.response.send_redirect(url_for(f"/pages/sharing?id={id}"))
         return trans.fill_template("/ind_share_base.mako",
                                    message=msg,
                                    messagetype=mtype,
@@ -574,7 +574,7 @@ class PageController(BaseUIController, SharableMixin,
         # TODO: user should be able to embed any item he has access to. see display_by_username_and_slug for security code.
         page = self.get_page(trans, id)
         if page:
-            return "Embedded Page '%s'" % page.title
+            return f"Embedded Page '{page.title}'"
 
     @web.expose
     @web.json

@@ -403,7 +403,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         source = payload.get('source', None)
         if source not in ('library', 'hda'):
             raise exceptions.RequestParameterInvalidException(
-                "'source' must be either 'library' or 'hda': %s" % (source))
+                f"'source' must be either 'library' or 'hda': {source}")
         content = payload.get('content', None)
         if content is None:
             raise exceptions.RequestParameterMissingException("'content' id of lda or hda is missing")
@@ -431,7 +431,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         ld = self.get_library_dataset(trans, content)
         if type(ld) is not trans.app.model.LibraryDataset:
             raise exceptions.RequestParameterInvalidException(
-                "Library content id ( %s ) is not a dataset" % content)
+                f"Library content id ( {content} ) is not a dataset")
         hda = ld.library_dataset_dataset_association.to_history_dataset_association(history, add_to_history=True)
         return hda
 
@@ -473,7 +473,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
                     user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
                 rval.append(hda_dict)
         else:
-            message = "Invalid 'source' parameter in request %s" % source
+            message = f"Invalid 'source' parameter in request {source}"
             raise exceptions.RequestParameterInvalidException(message)
 
         trans.sa_session.flush()
@@ -548,7 +548,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
                 dataset_instance_attributes=dataset_instance_attributes,
             )
         else:
-            message = "Invalid 'source' parameter in request %s" % source
+            message = f"Invalid 'source' parameter in request {source}"
             raise exceptions.RequestParameterInvalidException(message)
 
         # if the consumer specified keys or view, use the secondary serializer
@@ -818,7 +818,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
                                                      user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
 
     def __handle_unknown_contents_type(self, trans, contents_type):
-        raise exceptions.UnknownContentsType('Unknown contents type: %s' % type)
+        raise exceptions.UnknownContentsType(f'Unknown contents type: {type}')
 
     def __index_v2(self, trans, history_id, **kwd):
         """

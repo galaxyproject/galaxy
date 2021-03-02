@@ -124,7 +124,7 @@ class GitLabPlugin(BaseGitPlugin):
                         self.git_project_cache[gitlab_projecturl] = self.gitlab.projects.get(gitlab_urlencodedpath)
                 except gitlab.GitlabGetError:
                     # Handle scenario where the repository doesn't exist so we can still continue
-                    log.warning("GitLab error reporting - Repository '%s' doesn't exist, using default repository." % gitlab_urlencodedpath)
+                    log.warning(f"GitLab error reporting - Repository '{gitlab_urlencodedpath}' doesn't exist, using default repository.")
                     # Redo some of the previous steps to recover from such an issue but continue issue creation
                     gitlab_projecturl = "/".join((self.git_default_repo_owner, self.git_default_repo_name))
                     gitlab_urlencodedpath = urllib.quote_plus(gitlab_projecturl)
@@ -147,10 +147,10 @@ class GitLabPlugin(BaseGitPlugin):
                 if len(gl_project.commits.list()) > 0:
                     gl_useremail = gl_project.commits.list()[0].attributes['author_email']
                     if not self.redact_user_details_in_bugreport:
-                        log.debug("GitLab error reporting - Last author email: %s" % gl_useremail)
+                        log.debug(f"GitLab error reporting - Last author email: {gl_useremail}")
                     if gl_useremail not in self.git_username_id_cache:
                         gl_emailquery = self.gitlab.users.list(search=gl_useremail)
-                        log.debug("GitLab error reporting - User list: %s" % gl_emailquery)
+                        log.debug(f"GitLab error reporting - User list: {gl_emailquery}")
                         if len(gl_emailquery) > 0:
                             log.debug("GitLab error reporting - Last Committer user ID: %d" %
                                       gl_emailquery[0].get_id())
@@ -166,12 +166,12 @@ class GitLabPlugin(BaseGitPlugin):
                         # Check if issue is closed, otherwise reopen it
                         issue_id = self.issue_cache[issue_cache_key][error_title]
                         issue = gl_project.issues.get(issue_id)
-                        log.info("GitLab error reporting - Issue state is %s" % issue.state)
+                        log.info(f"GitLab error reporting - Issue state is {issue.state}")
                         if issue.state == 'closed':
                             # Reopen issue
                             issue.state_event = 'reopen'
                             issue.save()
-                            log.info("GitLab error reporting - Reopened issue %s" % issue_id)
+                            log.info(f"GitLab error reporting - Reopened issue {issue_id}")
 
                         # Add a comment to an issue...
                         self._append_issue(issue_cache_key, error_title, error_message,

@@ -259,7 +259,7 @@ class ToolSource(metaclass=ABCMeta):
         if source_path:
             as_str = f'{self.__class__.__name__}[{source_path}]'
         else:
-            as_str = '%s[In-memory]' % (self.__class__.__name__)
+            as_str = f'{self.__class__.__name__}[In-memory]'
         return as_str
 
 
@@ -426,7 +426,7 @@ class TestCollectionDef:
 
         def element_from_dict(element_dict):
             if "element_definition" not in element_dict:
-                raise Exception("Invalid element_dict %s" % element_dict)
+                raise Exception(f"Invalid element_dict {element_dict}")
             element_def = element_dict["element_definition"]
             if element_def.get("model_class", None) == "TestCollectionDef":
                 element_def = TestCollectionDef.from_dict(element_def)

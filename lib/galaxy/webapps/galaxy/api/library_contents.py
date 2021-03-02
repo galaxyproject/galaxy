@@ -221,7 +221,7 @@ class LibraryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
             create_type = payload.pop('create_type')
         if create_type not in ('file', 'folder', 'collection'):
             trans.response.status = 400
-            return "Invalid value for 'create_type' parameter ( %s ) specified." % create_type
+            return f"Invalid value for 'create_type' parameter ( {create_type} ) specified."
 
         if 'folder_id' not in payload:
             trans.response.status = 400
@@ -375,7 +375,7 @@ class LibraryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         else:
             # BUG: Everything is cast to string, which can lead to false positives
             # for cross type comparisions, ie "True" == True
-            yield prefix, ("%s" % (meta)).encode("utf8", errors='replace')
+            yield prefix, (f"{meta}").encode("utf8", errors='replace')
 
     @expose_api
     def update(self, trans, id, library_id, payload, **kwd):
@@ -414,7 +414,7 @@ class LibraryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         elif content_id.startswith('F'):
             return 'LibraryFolder', content_id[1:]
         else:
-            raise HTTPBadRequest('Malformed library content id ( %s ) specified, unable to decode.' % str(content_id))
+            raise HTTPBadRequest(f'Malformed library content id ( {str(content_id)} ) specified, unable to decode.')
 
     @expose_api
     def delete(self, trans, library_id, id, **kwd):

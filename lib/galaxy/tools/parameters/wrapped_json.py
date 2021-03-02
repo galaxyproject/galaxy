@@ -114,7 +114,7 @@ def _json_wrap_input(input, value_wrapper, profile, handle_files="skip"):
         else:
             json_value = [_cast_if_not_none(value_wrapper.value, int)]
     else:
-        raise NotImplementedError("input_type [%s] not implemented" % input_type)
+        raise NotImplementedError(f"input_type [{input_type}] not implemented")
 
     return json_value
 

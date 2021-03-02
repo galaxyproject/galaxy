@@ -182,7 +182,7 @@ class OIDC(JSAppLauncher):
         try:
             cilogon_idps = json.loads(url_get('https://cilogon.org/idplist/', params=dict(kwargs)))
         except Exception as e:
-            raise Exception("Invalid server response. %s." % str(e))
+            raise Exception(f"Invalid server response. {str(e)}.")
 
         if (allowed_idps):
             validated_idps = list(filter(lambda idp: idp['EntityID'] in allowed_idps, cilogon_idps))

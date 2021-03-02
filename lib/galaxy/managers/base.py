@@ -64,7 +64,7 @@ def security_check(trans, item, check_ownership=False, check_accessible=False):
         if not trans.user:
             raise exceptions.ItemOwnershipException("Must be logged in to manage Galaxy items", type='error')
         if item.user != trans.user:
-            raise exceptions.ItemOwnershipException("%s is not owned by the current user" % item.__class__.__name__, type='error')
+            raise exceptions.ItemOwnershipException(f"{item.__class__.__name__} is not owned by the current user", type='error')
 
     # Verify accessible:
     #   if it's part of a lib - can they access via security
@@ -72,10 +72,10 @@ def security_check(trans, item, check_ownership=False, check_accessible=False):
     if check_accessible:
         if type(item) in (trans.app.model.LibraryFolder, trans.app.model.LibraryDatasetDatasetAssociation, trans.app.model.LibraryDataset):
             if not trans.app.security_agent.can_access_library_item(trans.get_current_user_roles(), item, trans.user):
-                raise exceptions.ItemAccessibilityException("%s is not accessible to the current user" % item.__class__.__name__, type='error')
+                raise exceptions.ItemAccessibilityException(f"{item.__class__.__name__} is not accessible to the current user", type='error')
         else:
             if (item.user != trans.user) and (not item.importable) and (trans.user not in item.users_shared_with_dot_users):
-                raise exceptions.ItemAccessibilityException("%s is not accessible to the current user" % item.__class__.__name__, type='error')
+                raise exceptions.ItemAccessibilityException(f"{item.__class__.__name__} is not accessible to the current user", type='error')
     return item
 
 
@@ -88,7 +88,7 @@ def get_class(class_name):
         item_class = tool_shed_install.ToolShedRepository
     else:
         if not hasattr(model, class_name):
-            raise exceptions.MessageException("Item class '%s' not available." % class_name)
+            raise exceptions.MessageException(f"Item class '{class_name}' not available.")
         item_class = getattr(model, class_name)
     return item_class
 
@@ -804,7 +804,7 @@ class ModelValidator(HasAModelManager):
         :raises exceptions.RequestParameterInvalidException: if not an instance.
         """
         if not isinstance(val, types):
-            msg = 'must be a type: %s' % (str(types))
+            msg = f'must be a type: {str(types)}'
             raise exceptions.RequestParameterInvalidException(msg, key=key, val=val)
         return val
 

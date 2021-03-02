@@ -51,7 +51,7 @@ class DataManager(BaseUIController):
         data_manager_id = kwd.get('id', None)
         data_manager = trans.app.data_managers.get_manager(data_manager_id)
         if data_manager is None:
-            return {'message': "Invalid Data Manager (%s) was requested" % data_manager_id,
+            return {'message': f"Invalid Data Manager ({data_manager_id}) was requested",
                     'status': "error"}
         jobs = []
         for assoc in trans.sa_session.query(trans.app.model.DataManagerJobAssociation).filter_by(data_manager_id=data_manager_id):
@@ -93,7 +93,7 @@ class DataManager(BaseUIController):
             job = None
             log.error(f"Bad job id ({job_id}) passed to job_info: {e}")
         if not job:
-            return {'message': "Invalid job (%s) was requested" % job_id,
+            return {'message': f"Invalid job ({job_id}) was requested",
                     'status': "error"}
         data_manager_id = job.data_manager_association.data_manager_id
         data_manager = trans.app.data_managers.get_manager(data_manager_id)
@@ -155,7 +155,7 @@ class DataManager(BaseUIController):
                     'status': "error"}
         data_table = trans.app.tool_data_tables.get(data_table_name, None)
         if data_table is None:
-            return {'message': "Invalid data table '%s' was requested." % data_table_name,
+            return {'message': f"Invalid data table '{data_table_name}' was requested.",
                     'status': "error"}
         return {'dataTable': {'name': data_table.name,
                               'columns': data_table.get_column_name_list(),
@@ -211,7 +211,7 @@ class DataManager(BaseUIController):
         if data_table is None:
             return {
                 'data': data,
-                'message': 'Invalid Data table (%s) was requested' % table_name,
+                'message': f'Invalid Data table ({table_name}) was requested',
                 'status': 'error'
             }
 
@@ -238,7 +238,7 @@ class DataManager(BaseUIController):
             controller='data_manager',
             action='tool_data_table_items',
             table_name=table_name,
-            message='The data table "%s" has been reloaded.' % table_name,
+            message=f'The data table "{table_name}" has been reloaded.',
             status='done',
         )
 

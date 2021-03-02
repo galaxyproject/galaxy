@@ -69,7 +69,7 @@ class CustomBuildsTestcase(SharedStateSeleniumTestCase):
                 break
 
         if delete_button is None:
-            raise AssertionError('Failed to find custom build with name [%s]' % build_name)
+            raise AssertionError(f'Failed to find custom build with name [{build_name}]')
 
         delete_button.click()
 

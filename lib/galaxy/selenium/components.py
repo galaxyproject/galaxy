@@ -108,7 +108,7 @@ class Label(Target):
 
     @property
     def description(self):
-        return "Link text [%s]" % self.text
+        return f"Link text [{self.text}]"
 
     @property
     def element_locator(self):
@@ -122,7 +122,7 @@ class Text(Target):
 
     @property
     def description(self):
-        return "Text containing [%s]" % self.text
+        return f"Text containing [{self.text}]"
 
     @property
     def element_locator(self):
@@ -147,7 +147,7 @@ class Component:
         if "_" in self._selectors:
             return self._selectors["_"]
         else:
-            raise Exception("No _ selector for [%s]" % self)
+            raise Exception(f"No _ selector for [{self}]")
 
     @staticmethod
     def from_dict(name, raw_value):
@@ -191,9 +191,9 @@ class Component:
         elif attr in self._text:
             return self._text[attr]
         else:
-            raise AttributeError("Failed to find referenced sub-component/selector/label/text [%s]" % attr)
+            raise AttributeError(f"Failed to find referenced sub-component/selector/label/text [{attr}]")
 
     __getitem__ = __getattr__
 
     def __str__(self):
-        return "Component[%s]" % self._name
+        return f"Component[{self._name}]"

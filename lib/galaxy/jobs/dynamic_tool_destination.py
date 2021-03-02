@@ -1187,9 +1187,9 @@ def bytes_to_str(size, unit="YB"):
         i = 0
 
     try:
-        return_str = "{:.2f} {}".format(size_changer, units[i])
+        return_str = f"{size_changer:.2f} {units[i]}"
     except (ValueError, TypeError):
-        return_str = "%s" % (size_changer)
+        return_str = f"{size_changer}"
 
     return return_str
 
@@ -1632,7 +1632,7 @@ def get_destination_list_from_job_config(job_config_location) -> set:
             possible_job_conf_path = os.path.join(config_location, f)
             if os.path.isfile(possible_job_conf_path):
                 job_config_location = possible_job_conf_path
-                message += "using '%s'. *" % f
+                message += f"using '{f}'. *"
                 break
         else:
             message += ("and no default job configs in 'config/'. "

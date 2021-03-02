@@ -271,7 +271,7 @@ class ToolRecommendations():
                 try:
                     sample[idx] = int(self.model_data_dictionary[tool_name])
                 except Exception:
-                    log.exception("Failed to find tool %s in model" % (tool_name))
+                    log.exception(f"Failed to find tool {tool_name} in model")
                     return prediction_data
             sample = np.reshape(sample, (1, self.max_seq_len))
             # boost the predicted scores using tools' usage

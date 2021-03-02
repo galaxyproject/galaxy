@@ -101,7 +101,7 @@ class GenomeBuilds:
             if user and hasattr(user, 'preferences') and 'dbkeys' in user.preferences:
                 user_keys = loads(user.preferences['dbkeys'])
                 for key, chrom_dict in user_keys.items():
-                    rval.append((key, "{} ({}) [Custom]".format(chrom_dict['name'], key)))
+                    rval.append((key, f"{chrom_dict['name']} ({key}) [Custom]"))
         # Load old builds.txt static keys
         rval.extend(self._static_dbkeys)
         # load dbkeys from dbkey data table
@@ -146,6 +146,6 @@ class GenomeBuilds:
         if not chrom_info:
             # Default to built-in build.
             # Since we are using an unverified dbkey, we will sanitize the dbkey before use
-            chrom_info = os.path.join(self._static_chrom_info_path, "%s.len" % sanitize_lists_to_string(dbkey))
+            chrom_info = os.path.join(self._static_chrom_info_path, f"{sanitize_lists_to_string(dbkey)}.len")
         chrom_info = os.path.abspath(chrom_info)
         return (chrom_info, db_dataset)

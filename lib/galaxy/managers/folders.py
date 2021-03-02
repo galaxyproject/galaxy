@@ -280,7 +280,7 @@ class FolderManager:
         if ((len(encoded_folder_id) % 16 == 1) and encoded_folder_id.startswith('F')):
             cut_id = encoded_folder_id[1:]
         else:
-            raise MalformedId('Malformed folder id ( %s ) specified, unable to decode.' % str(encoded_folder_id))
+            raise MalformedId(f'Malformed folder id ( {str(encoded_folder_id)} ) specified, unable to decode.')
         return cut_id
 
     def decode_folder_id(self, trans, encoded_folder_id):

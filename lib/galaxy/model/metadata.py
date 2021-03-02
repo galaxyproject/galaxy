@@ -140,7 +140,7 @@ class MetadataCollection(Mapping):
         if name in self.parent._metadata:
             del self.parent._metadata[name]
         else:
-            log.info("Attempted to delete invalid key '%s' from MetadataCollection" % name)
+            log.info(f"Attempted to delete invalid key '{name}' from MetadataCollection")
 
     def element_is_set(self, name):
         """
@@ -156,7 +156,7 @@ class MetadataCollection(Mapping):
         try:
             meta_val = self.parent._metadata[name]
         except KeyError:
-            log.debug("no metadata with name %s found" % (name))
+            log.debug(f"no metadata with name {name} found")
             return False
 
         meta_spec = self.parent.metadata.spec[name]
@@ -197,7 +197,7 @@ class MetadataCollection(Mapping):
             elif isinstance(json_dict, dict):
                 JSONified_dict = json_dict
             else:
-                raise ValueError("json_dict must be either a dictionary or a string, got %s." % (type(json_dict)))
+                raise ValueError(f"json_dict must be either a dictionary or a string, got {type(json_dict)}.")
         else:
             raise ValueError("You must provide either a filename or a json_dict")
 

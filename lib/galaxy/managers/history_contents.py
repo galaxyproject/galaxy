@@ -125,8 +125,8 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
         """Return an ORM compatible order_by using the given string"""
         available = ['create_time', 'extension', 'hid', 'history_id', 'name', 'update_time']
         for attribute in available:
-            attribute_dsc = '%s-dsc' % attribute
-            attribute_asc = '%s-asc' % attribute
+            attribute_dsc = f'{attribute}-dsc'
+            attribute_asc = f'{attribute}-asc'
             if order_by_string in (attribute, attribute_dsc):
                 return desc(attribute)
             if order_by_string == attribute_asc:

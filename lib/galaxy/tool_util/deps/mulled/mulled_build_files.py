@@ -84,7 +84,7 @@ def tuple_from_header(header):
     for field in KNOWN_FIELDS:
         if field not in fields:
             fields.append(field)
-    return collections.namedtuple("_Line", "%s" % " ".join(fields))
+    return collections.namedtuple("_Line", f"{' '.join(fields)}")
 
 
 def line_to_targets(line_str, line_tuple):

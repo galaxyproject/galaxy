@@ -17,10 +17,10 @@ from ._framework import ApiTestCase
 class BaseHistories:
 
     def _show(self, history_id):
-        return self._get("histories/%s" % history_id).json()
+        return self._get(f"histories/{history_id}").json()
 
     def _update(self, history_id, data):
-        update_url = self._api_url("histories/%s" % history_id, use_key=True)
+        update_url = self._api_url(f"histories/{history_id}", use_key=True)
         put_response = put(update_url, json=data)
         return put_response
 
@@ -92,7 +92,7 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories, SharingApiTests):
         assert not show_response["deleted"]
 
         # Delete the history
-        self._delete("histories/%s" % history_id)
+        self._delete(f"histories/{history_id}")
 
         # Check can view it - but it is deleted
         show_response = self._show(history_id)
@@ -109,15 +109,15 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories, SharingApiTests):
     def test_purge(self):
         history_id = self._create_history("TestHistoryForPurge")["id"]
         data = {'purge': True}
-        self._delete("histories/%s" % history_id, data=data)
+        self._delete(f"histories/{history_id}", data=data)
         show_response = self._show(history_id)
         assert show_response["deleted"]
         assert show_response["purged"]
 
     def test_undelete(self):
         history_id = self._create_history("TestHistoryForDeleteAndUndelete")["id"]
-        self._delete("histories/%s" % history_id)
-        self._post("histories/deleted/%s/undelete" % history_id)
+        self._delete(f"histories/{history_id}")
+        self._post(f"histories/deleted/{history_id}/undelete")
         show_response = self._show(history_id)
         assert not show_response["deleted"]
 
@@ -185,10 +185,10 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories, SharingApiTests):
     def test_invalid_keys(self):
         invalid_history_id = "1234123412341234"
 
-        assert self._get("histories/%s" % invalid_history_id).status_code == 400
+        assert self._get(f"histories/{invalid_history_id}").status_code == 400
         assert self._update(invalid_history_id, {"name": "new name"}).status_code == 400
-        assert self._delete("histories/%s" % invalid_history_id).status_code == 400
-        assert self._post("histories/deleted/%s/undelete" % invalid_history_id).status_code == 400
+        assert self._delete(f"histories/{invalid_history_id}").status_code == 400
+        assert self._post(f"histories/deleted/{invalid_history_id}/undelete").status_code == 400
 
     def test_create_anonymous_fails(self):
         post_data = dict(name="CannotCreate")
@@ -207,7 +207,7 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories, SharingApiTests):
         post_data = dict(name="TestHistoryForTag")
         history_id = self._post("histories", data=post_data).json()["id"]
         tag_data = dict(value="awesometagvalue")
-        tag_url = "histories/%s/tags/awesometagname" % history_id
+        tag_url = f"histories/{history_id}/tags/awesometagname"
         tag_create_response = self._post(tag_url, data=tag_data)
         self._assert_status_code_is(tag_create_response, 200)
 
@@ -380,7 +380,7 @@ class ImportExportHistoryTestCase(ApiTestCase, BaseHistories):
         return imported_history_id
 
     def _assert_history_length(self, history_id, n):
-        contents_response = self._get("histories/%s/contents" % history_id)
+        contents_response = self._get(f"histories/{history_id}/contents")
         self._assert_status_code_is(contents_response, 200)
         contents = contents_response.json()
         assert len(contents) == n, contents

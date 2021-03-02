@@ -488,7 +488,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                             galaxy_session.user.email)
             elif galaxy_session is not None and galaxy_session.user is not None and galaxy_session.user.deleted:
                 invalidate_existing_session = True
-                log.warning("User '%s' is marked deleted, invalidating session" % galaxy_session.user.email)
+                log.warning(f"User '{galaxy_session.user.email}' is marked deleted, invalidating session")
         # Do we need to invalidate the session for some reason?
         if invalidate_existing_session:
             prev_galaxy_session = galaxy_session

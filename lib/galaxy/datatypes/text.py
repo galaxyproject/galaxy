@@ -105,7 +105,7 @@ class Json(Text):
         try:
             return dataset.peek
         except Exception:
-            return "JSON file (%s)" % (nice_size(dataset.get_size()))
+            return f"JSON file ({nice_size(dataset.get_size())})"
 
 
 class ExpressionJson(Json):
@@ -183,7 +183,7 @@ class Ipynb(Json):
             try:
                 cmd = ['jupyter', 'nbconvert', '--to', 'html', '--template', 'full', dataset.file_name, '--output', ofilename]
                 subprocess.check_call(cmd)
-                ofilename = '%s.html' % ofilename
+                ofilename = f'{ofilename}.html'
             except subprocess.CalledProcessError:
                 ofilename = dataset.file_name
                 log.exception('Command "%s" failed. Could not convert the Jupyter Notebook to HTML, defaulting to plain text.', ' '.join(map(shlex.quote, cmd)))
@@ -617,12 +617,12 @@ class SnpEffDb(Text):
             dataset.metadata.annotation = annotations
             try:
                 with open(dataset.file_name, 'w') as fh:
-                    fh.write("%s\n" % genome_version if genome_version else 'Genome unknown')
-                    fh.write("%s\n" % snpeff_version if snpeff_version else 'SnpEff version unknown')
+                    fh.write(f"{genome_version}\n" if genome_version else 'Genome unknown')
+                    fh.write(f"{snpeff_version}\n" if snpeff_version else 'SnpEff version unknown')
                     if annotations:
-                        fh.write("annotations: %s\n" % ','.join(annotations))
+                        fh.write(f"annotations: {','.join(annotations)}\n")
                     if regulations:
-                        fh.write("regulations: %s\n" % ','.join(regulations))
+                        fh.write(f"regulations: {','.join(regulations)}\n")
             except Exception:
                 pass
 
@@ -663,7 +663,7 @@ class SnpSiftDbNSFP(Text):
         """
         cannot do this until we are setting metadata
         """
-        annotations = "dbNSFP Annotations: %s\n" % ','.join(dataset.metadata.annotation)
+        annotations = f"dbNSFP Annotations: {','.join(dataset.metadata.annotation)}\n"
         with open(dataset.file_name, 'a') as f:
             if dataset.metadata.bgzip:
                 bn = dataset.metadata.bgzip
@@ -695,8 +695,8 @@ class SnpSiftDbNSFP(Text):
 
         def set_peek(self, dataset, is_multi_byte=False):
             if not dataset.dataset.purged:
-                dataset.peek = '{} :  {}'.format(dataset.metadata.reference_name, ','.join(dataset.metadata.annotation))
-                dataset.blurb = '%s' % dataset.metadata.reference_name
+                dataset.peek = f"{dataset.metadata.reference_name} :  {','.join(dataset.metadata.annotation)}"
+                dataset.blurb = f'{dataset.metadata.reference_name}'
             else:
                 dataset.peek = 'file does not exist'
                 dataset.blurb = 'file purged from disc'

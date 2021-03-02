@@ -362,7 +362,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         if not content:
             raise exceptions.ObjectAttributeMissingException("content undefined or empty")
         if content_format not in [None, PageContentFormat.html.value, PageContentFormat.markdown.value]:
-            raise exceptions.RequestParameterInvalidException("content_format [%s], if specified, must be either html or markdown" % content_format)
+            raise exceptions.RequestParameterInvalidException(f"content_format [{content_format}], if specified, must be either html or markdown")
 
         if 'title' in payload:
             title = payload['title']
@@ -396,11 +396,11 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
             except exceptions.MessageException:
                 raise
             except Exception:
-                raise exceptions.RequestParameterInvalidException("problem with embedded HTML content [%s]" % content)
+                raise exceptions.RequestParameterInvalidException(f"problem with embedded HTML content [{content}]")
         elif content_format == PageContentFormat.markdown.value:
             content = ready_galaxy_markdown_for_import(trans, content)
         else:
-            raise exceptions.RequestParameterInvalidException("content_format [%s] must be either html or markdown" % content_format)
+            raise exceptions.RequestParameterInvalidException(f"content_format [{content_format}] must be either html or markdown")
         return content
 
     def rewrite_content_for_export(self, trans, as_dict):
@@ -416,7 +416,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
             as_dict["content"] = content
             as_dict.update(extra_attributes)
         else:
-            raise exceptions.RequestParameterInvalidException("content_format [%s] must be either html or markdown" % content_format)
+            raise exceptions.RequestParameterInvalidException(f"content_format [{content_format}] must be either html or markdown")
         return as_dict
 
 
@@ -562,7 +562,7 @@ class PageContentProcessor(HTMLParser):
 
         # Default behavior: reconstruct the original end tag.
         if tag not in self.elements_no_end_tag:
-            self.pieces.append("</%s>" % tag)
+            self.pieces.append(f"</{tag}>")
 
     def handle_charref(self, ref):
         # called for each character reference, e.g. for '&#160;', ref will be '160'
@@ -574,17 +574,17 @@ class PageContentProcessor(HTMLParser):
             value = int(ref)
 
         if value in _cp1252:
-            self.pieces.append('&#%s;' % hex(ord(_cp1252[value]))[1:])
+            self.pieces.append(f'&#{hex(ord(_cp1252[value]))[1:]};')
         else:
-            self.pieces.append('&#%s;' % ref)
+            self.pieces.append(f'&#{ref};')
 
     def handle_entityref(self, ref):
         # called for each entity reference, e.g. for '&copy;', ref will be 'copy'
         # Reconstruct the original entity reference.
         if ref in name2codepoint or ref == 'apos':
-            self.pieces.append('&%s;' % ref)
+            self.pieces.append(f'&{ref};')
         else:
-            self.pieces.append('&amp;%s' % ref)
+            self.pieces.append(f'&amp;{ref}')
 
     def handle_data(self, text):
         """
@@ -600,19 +600,19 @@ class PageContentProcessor(HTMLParser):
     def handle_comment(self, text):
         # called for each HTML comment, e.g. <!-- insert Javascript code here -->
         # Reconstruct the original comment.
-        self.pieces.append('<!--%s-->' % text)
+        self.pieces.append(f'<!--{text}-->')
 
     def handle_decl(self, text):
         # called for the DOCTYPE, if present, e.g.
         # <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
         #     "http://www.w3.org/TR/html4/loose.dtd">
         # Reconstruct original DOCTYPE
-        self.pieces.append('<!%s>' % text)
+        self.pieces.append(f'<!{text}>')
 
     def handle_pi(self, text):
         # called for each processing instruction, e.g. <?instruction>
         # Reconstruct original processing instruction.
-        self.pieces.append('<?%s>' % text)
+        self.pieces.append(f'<?{text}>')
 
     def output(self):
         '''Return processed HTML as a single string'''

@@ -40,7 +40,7 @@ def verify_assertion(data, assertion_description):
             assert_function = getattr(assertion_module, assert_function_name)
 
     if assert_function is None:
-        errmsg = "Unable to find test function associated with XML tag '%s'. Check your tool file syntax." % tag
+        errmsg = f"Unable to find test function associated with XML tag '{tag}'. Check your tool file syntax."
         raise AssertionError(errmsg)
 
     assert_function_args = getfullargspec(assert_function).args

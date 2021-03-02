@@ -28,7 +28,7 @@ def upgrade(migrate_engine):
         log.exception("Adding provider column to galaxy_user_openid table failed.")
 
     try:
-        cmd = "DELETE FROM galaxy_user_openid WHERE openid='%s'" % (BAD_IDENTIFIER)
+        cmd = f"DELETE FROM galaxy_user_openid WHERE openid='{BAD_IDENTIFIER}'"
         migrate_engine.execute(cmd)
     except Exception:
         log.exception("Deleting bad Identifiers from galaxy_user_openid failed.")

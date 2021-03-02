@@ -91,7 +91,7 @@ class Ab1(Binary):
         try:
             return dataset.peek
         except Exception:
-            return "Binary ab1 sequence file (%s)" % (nice_size(dataset.get_size()))
+            return f"Binary ab1 sequence file ({nice_size(dataset.get_size())})"
 
 
 class Idat(Binary):
@@ -166,7 +166,7 @@ class Cel(Binary):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.blurb = "Cel version: %s" % dataset.metadata.version
+            dataset.blurb = f"Cel version: {dataset.metadata.version}"
             dataset.peek = get_file_peek(dataset.file_name)
         else:
             dataset.peek = 'file does not exist'
@@ -205,7 +205,7 @@ class CompressedArchive(Binary):
         try:
             return dataset.peek
         except Exception:
-            return "Compressed binary file (%s)" % (nice_size(dataset.get_size()))
+            return f"Compressed binary file ({nice_size(dataset.get_size())})"
 
 
 class Meryldb(CompressedArchive):
@@ -283,7 +283,7 @@ class CompressedZipArchive(CompressedArchive):
         try:
             return dataset.peek
         except Exception:
-            return "Compressed zip file (%s)" % (nice_size(dataset.get_size()))
+            return f"Compressed zip file ({nice_size(dataset.get_size())})"
 
     def sniff(self, filename):
         with zipfile.ZipFile(filename) as zf:
@@ -375,14 +375,14 @@ class BamNative(CompressedArchive):
         try:
             return dataset.peek
         except Exception:
-            return "Binary bam alignments file (%s)" % (nice_size(dataset.get_size()))
+            return f"Binary bam alignments file ({nice_size(dataset.get_size())})"
 
     def to_archive(self, dataset, name=""):
         rel_paths = []
         file_paths = []
-        rel_paths.append("{}.{}".format(name or dataset.file_name, dataset.extension))
+        rel_paths.append(f"{name or dataset.file_name}.{dataset.extension}")
         file_paths.append(dataset.file_name)
-        rel_paths.append("{}.{}.bai".format(name or dataset.file_name, dataset.extension))
+        rel_paths.append(f"{name or dataset.file_name}.{dataset.extension}.bai")
         file_paths.append(dataset.metadata.bam_index.file_name)
         return zip(file_paths, rel_paths)
 
@@ -400,12 +400,12 @@ class BamNative(CompressedArchive):
             return
         tmp_dir = tempfile.mkdtemp()
         tmp_sorted_dataset_file_name_prefix = os.path.join(tmp_dir, 'sorted')
-        sorted_file_name = "%s.bam" % tmp_sorted_dataset_file_name_prefix
+        sorted_file_name = f"{tmp_sorted_dataset_file_name_prefix}.bam"
         slots = os.environ.get('GALAXY_SLOTS', 1)
         sort_args = []
         if self.sort_flag:
             sort_args = [self.sort_flag]
-        sort_args.extend(["-@%s" % slots, file_name, '-T', tmp_sorted_dataset_file_name_prefix, '-O', 'BAM', '-o', sorted_file_name])
+        sort_args.extend([f"-@{slots}", file_name, '-T', tmp_sorted_dataset_file_name_prefix, '-O', 'BAM', '-o', sorted_file_name])
         try:
             pysam.sort(*sort_args)
         except Exception:
@@ -447,7 +447,7 @@ class BamNative(CompressedArchive):
                         offset = -1
             except Exception as e:
                 offset = -1
-                ck_data = "Could not display BAM file, error was:\n%s" % e
+                ck_data = f"Could not display BAM file, error was:\n{e}"
         else:
             ck_data = ''
             offset = -1
@@ -786,11 +786,11 @@ class Bcf(BaseBcf):
                                        '__dataset_%d_%s' % (dataset.id, os.path.basename(index_file.file_name)))
         os.symlink(dataset.file_name, dataset_symlink)
         try:
-            cmd = ['python', '-c', "import pysam.bcftools; pysam.bcftools.index('%s')" % (dataset_symlink)]
+            cmd = ['python', '-c', f"import pysam.bcftools; pysam.bcftools.index('{dataset_symlink}')"]
             subprocess.check_call(cmd)
             shutil.move(dataset_symlink + '.csi', index_file.file_name)
         except Exception as e:
-            raise Exception('Error setting BCF metadata: %s' % util.unicodify(e))
+            raise Exception(f'Error setting BCF metadata: {util.unicodify(e)}')
         finally:
             # Remove temp file and symlink
             os.remove(dataset_symlink)
@@ -863,7 +863,7 @@ class H5(Binary):
         try:
             return dataset.peek
         except Exception:
-            return "Binary HDF5 file (%s)" % (nice_size(dataset.get_size()))
+            return f"Binary HDF5 file ({nice_size(dataset.get_size())})"
 
 
 class Loom(H5):
@@ -925,7 +925,7 @@ class Loom(H5):
         try:
             return dataset.peek
         except Exception:
-            return "Binary Loom file (%s)" % (nice_size(dataset.get_size()))
+            return f"Binary Loom file ({nice_size(dataset.get_size())})"
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         super().set_meta(dataset, overwrite=overwrite, **kwd)
@@ -1160,7 +1160,7 @@ class Anndata(H5):
             peekstr += _makelayerstrings("uns", tmp.uns_count, tmp.uns_layers)
 
             dataset.peek = peekstr
-            dataset.blurb = "Anndata file (%s)" % nice_size(dataset.get_size())
+            dataset.blurb = f"Anndata file ({nice_size(dataset.get_size())})"
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -1169,7 +1169,7 @@ class Anndata(H5):
         try:
             return dataset.peek
         except Exception:
-            return "Binary Anndata file (%s)" % (nice_size(dataset.get_size()))
+            return f"Binary Anndata file ({nice_size(dataset.get_size())})"
 
 
 @build_sniff_from_prefix
@@ -1187,7 +1187,7 @@ class GmxBinary(Binary):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = "Binary GROMACS %s file" % (self.file_ext)
+            dataset.peek = f"Binary GROMACS {self.file_ext} file"
             dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = 'file does not exist'
@@ -1197,7 +1197,7 @@ class GmxBinary(Binary):
         try:
             return dataset.peek
         except Exception:
-            return "Binary GROMACS {} trajectory file ({})".format(self.file_ext, nice_size(dataset.get_size()))
+            return f"Binary GROMACS {self.file_ext} trajectory file ({nice_size(dataset.get_size())})"
 
 
 class Trr(GmxBinary):
@@ -1330,7 +1330,7 @@ class Biom2(H5):
             try:
                 with h5py.File(dataset.file_name) as f:
                     for k, v in f.attrs.items():
-                        lines.append('{}:  {}'.format(k, util.unicodify(v)))
+                        lines.append(f'{k}:  {util.unicodify(v)}')
             except Exception as e:
                 log.warning('%s, set_peek Exception: %s', self, util.unicodify(e))
             dataset.peek = '\n'.join(lines)
@@ -1343,7 +1343,7 @@ class Biom2(H5):
         try:
             return dataset.peek
         except Exception:
-            return "Biom2 (HDF5) file (%s)" % (nice_size(dataset.get_size()))
+            return f"Biom2 (HDF5) file ({nice_size(dataset.get_size())})"
 
 
 class Cool(H5):
@@ -1396,7 +1396,7 @@ class Cool(H5):
         try:
             return dataset.peek
         except Exception:
-            return "Cool (HDF5) file (%s)." % (nice_size(dataset.get_size()))
+            return f"Cool (HDF5) file ({nice_size(dataset.get_size())})."
 
 
 class MCool(H5):
@@ -1456,7 +1456,7 @@ class MCool(H5):
         try:
             return dataset.peek
         except Exception:
-            return "MCool (HDF5) file (%s)." % (nice_size(dataset.get_size()))
+            return f"MCool (HDF5) file ({nice_size(dataset.get_size())})."
 
 
 class H5MLM(H5):
@@ -1547,7 +1547,7 @@ class Scf(Binary):
         try:
             return dataset.peek
         except Exception:
-            return "Binary scf sequence file (%s)" % (nice_size(dataset.get_size()))
+            return f"Binary scf sequence file ({nice_size(dataset.get_size())})"
 
 
 @build_sniff_from_prefix
@@ -1574,7 +1574,7 @@ class Sff(Binary):
         try:
             return dataset.peek
         except Exception:
-            return "Binary sff file (%s)" % (nice_size(dataset.get_size()))
+            return f"Binary sff file ({nice_size(dataset.get_size())})"
 
 
 @build_sniff_from_prefix
@@ -1600,7 +1600,7 @@ class BigWig(Binary):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = "Binary UCSC %s file" % self._name
+            dataset.peek = f"Binary UCSC {self._name} file"
             dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = 'file does not exist'
@@ -1610,7 +1610,7 @@ class BigWig(Binary):
         try:
             return dataset.peek
         except Exception:
-            return "Binary UCSC {} file ({})".format(self._name, nice_size(dataset.get_size()))
+            return f"Binary UCSC {self._name} file ({nice_size(dataset.get_size())})"
 
 
 class BigBed(BigWig):
@@ -1648,7 +1648,7 @@ class TwoBit(Binary):
         try:
             return dataset.peek
         except Exception:
-            return "Binary TwoBit format nucleotide file (%s)" % (nice_size(dataset.get_size()))
+            return f"Binary TwoBit format nucleotide file ({nice_size(dataset.get_size())})"
 
 
 @dataproviders.decorators.has_dataproviders
@@ -1675,7 +1675,7 @@ class SQlite(Binary):
             for table, _ in rslt:
                 tables.append(table)
                 try:
-                    col_query = 'SELECT * FROM %s LIMIT 0' % table
+                    col_query = f'SELECT * FROM {table} LIMIT 0'
                     cur = conn.cursor().execute(col_query)
                     cols = [col[0] for col in cur.description]
                     columns[table] = cols
@@ -1683,7 +1683,7 @@ class SQlite(Binary):
                     log.warning('%s, set_meta Exception: %s', self, exc)
             for table in tables:
                 try:
-                    row_query = "SELECT count(*) FROM %s" % table
+                    row_query = f"SELECT count(*) FROM {table}"
                     rowcounts[table] = c.execute(row_query).fetchone()[0]
                 except Exception as exc:
                     log.warning('%s, set_meta Exception: %s', self, exc)
@@ -1727,7 +1727,7 @@ class SQlite(Binary):
             if dataset.metadata.tables:
                 for table in dataset.metadata.tables:
                     try:
-                        lines.append('{} [{}]'.format(table, dataset.metadata.table_row_count[table]))
+                        lines.append(f'{table} [{dataset.metadata.table_row_count[table]}]')
                     except Exception:
                         continue
             dataset.peek = '\n'.join(lines)
@@ -1740,7 +1740,7 @@ class SQlite(Binary):
         try:
             return dataset.peek
         except Exception:
-            return "SQLite Database (%s)" % (nice_size(dataset.get_size()))
+            return f"SQLite Database ({nice_size(dataset.get_size())})"
 
     @dataproviders.decorators.dataprovider_factory('sqlite', dataproviders.dataset.SQliteDataProvider.settings)
     def sqlite_dataprovider(self, dataset, **settings):
@@ -2027,7 +2027,7 @@ class DlibSQlite(SQlite):
             c = conn.cursor()
             tables_query = "SELECT Value FROM metadata WHERE Key = 'version'"
             version = c.execute(tables_query).fetchall()[0]
-            dataset.metadata.dlib_version = '%s' % (version)
+            dataset.metadata.dlib_version = f'{version}'
         except Exception as e:
             log.warning('%s, set_meta Exception: %s', self, e)
 
@@ -2063,7 +2063,7 @@ class ElibSQlite(SQlite):
             c = conn.cursor()
             tables_query = "SELECT Value FROM metadata WHERE Key = 'version'"
             version = c.execute(tables_query).fetchall()[0]
-            dataset.metadata.dlib_version = '%s' % (version)
+            dataset.metadata.dlib_version = f'{version}'
         except Exception as e:
             log.warning('%s, set_meta Exception: %s', self, e)
 
@@ -2119,7 +2119,7 @@ class IdpDB(SQlite):
         try:
             return dataset.peek
         except Exception:
-            return "IDPickerDB SQLite file (%s)" % (nice_size(dataset.get_size()))
+            return f"IDPickerDB SQLite file ({nice_size(dataset.get_size())})"
 
 
 class GAFASQLite(SQlite):
@@ -2246,7 +2246,7 @@ class ExcelXls(Binary):
         try:
             return dataset.peek
         except Exception:
-            return "Microsoft Excel XLS file (%s)" % (data.nice_size(dataset.get_size()))
+            return f"Microsoft Excel XLS file ({data.nice_size(dataset.get_size())})"
 
 
 @build_sniff_from_prefix
@@ -2272,7 +2272,7 @@ class Sra(Binary):
         try:
             return dataset.peek
         except Exception:
-            return 'Binary sra file (%s)' % (nice_size(dataset.get_size()))
+            return f'Binary sra file ({nice_size(dataset.get_size())})'
 
 
 class RData(Binary):
@@ -2494,7 +2494,7 @@ class PostgresqlArchive(CompressedArchive):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = "PostgreSQL Archive (%s)" % (nice_size(dataset.get_size()))
+            dataset.peek = f"PostgreSQL Archive ({nice_size(dataset.get_size())})"
             dataset.blurb = "PostgreSQL version %s" % (dataset.metadata.version or 'unknown')
         else:
             dataset.peek = 'file does not exist'
@@ -2504,7 +2504,7 @@ class PostgresqlArchive(CompressedArchive):
         try:
             return dataset.peek
         except Exception:
-            return "PostgreSQL Archive (%s)" % (nice_size(dataset.get_size()))
+            return f"PostgreSQL Archive ({nice_size(dataset.get_size())})"
 
 
 class Fast5Archive(CompressedArchive):
@@ -2548,7 +2548,7 @@ class Fast5Archive(CompressedArchive):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = "FAST5 Archive (%s)" % (nice_size(dataset.get_size()))
+            dataset.peek = f"FAST5 Archive ({nice_size(dataset.get_size())})"
             dataset.blurb = "%s sequences" % (dataset.metadata.fast5_count or 'unknown')
         else:
             dataset.peek = 'file does not exist'
@@ -2558,7 +2558,7 @@ class Fast5Archive(CompressedArchive):
         try:
             return dataset.peek
         except Exception:
-            return "FAST5 Archive (%s)" % (nice_size(dataset.get_size()))
+            return f"FAST5 Archive ({nice_size(dataset.get_size())})"
 
 
 class Fast5ArchiveGz(Fast5Archive):
@@ -2674,7 +2674,7 @@ class NetCDF(Binary):
         try:
             return dataset.peek
         except Exception:
-            return "Binary netCDF file (%s)" % (nice_size(dataset.get_size()))
+            return f"Binary netCDF file ({nice_size(dataset.get_size())})"
 
     def sniff_prefix(self, sniff_prefix):
         return sniff_prefix.startswith_bytes(b'CDF')
@@ -2729,7 +2729,7 @@ class Dcd(Binary):
         try:
             return dataset.peek
         except Exception:
-            return "Binary CHARMM/NAMD dcd file (%s)" % (nice_size(dataset.get_size()))
+            return f"Binary CHARMM/NAMD dcd file ({nice_size(dataset.get_size())})"
 
 
 class Vel(Binary):
@@ -2780,7 +2780,7 @@ class Vel(Binary):
         try:
             return dataset.peek
         except Exception:
-            return "Binary CHARMM velocity file (%s)" % (nice_size(dataset.get_size()))
+            return f"Binary CHARMM velocity file ({nice_size(dataset.get_size())})"
 
 
 @build_sniff_from_prefix
@@ -2935,7 +2935,7 @@ class BafTar(CompressedArchive):
         try:
             return dataset.peek
         except Exception:
-            return "{} ({})".format(self.get_type(), nice_size(dataset.get_size()))
+            return f"{self.get_type()} ({nice_size(dataset.get_size())})"
 
 
 class YepTar(BafTar):

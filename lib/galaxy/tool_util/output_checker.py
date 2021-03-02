@@ -175,7 +175,7 @@ def __regex_err_msg(match, stream, regex):
     if regex.desc is not None:
         desc += regex.desc
     else:
-        desc += "Matched on %s" % match_str
+        desc += f"Matched on {match_str}"
     return {
         "type": "regex",
         "stream": stream,

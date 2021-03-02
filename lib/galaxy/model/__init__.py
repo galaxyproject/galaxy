@@ -106,7 +106,7 @@ class RepresentById(_HasTable):
 
     def __repr__(self):
         try:
-            r = '<galaxy.model.{}({}) at {}>'.format(self.__class__.__name__, cached_id(self), hex(id(self)))
+            r = f'<galaxy.model.{self.__class__.__name__}({cached_id(self)}) at {hex(id(self))}>'
         except Exception:
             r = object.__repr__(self)
             log.exception("Caught exception attempting to generate repr for: %s", r)
@@ -339,7 +339,7 @@ class JobLike:
         extra = ""
         safe_id = getattr(self, "id", None)
         if safe_id is not None:
-            extra += "id=%s" % safe_id
+            extra += f"id={safe_id}"
         else:
             extra += "unflushed"
 
@@ -413,7 +413,7 @@ class User(Dictifiable, RepresentById):
         """
         message = validate_password_str(cleartext)
         if message:
-            raise Exception("Invalid password: %s" % message)
+            raise Exception(f"Invalid password: {message}")
         if User.use_pbkdf2:
             self.password = galaxy.security.passwords.hash_password(cleartext)
         else:
@@ -885,7 +885,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         Return a tag that can be useful in identifying a Job.
         This returns the Job's get_id
         """
-        return "%s" % self.id
+        return f"{self.id}"
 
     def set_session_id(self, session_id):
         self.session_id = session_id
@@ -1681,7 +1681,7 @@ class JobExportHistoryArchive(RepresentById):
     def export_name(self):
         # Stream archive.
         hname = ready_name_for_url(self.history.name)
-        hname = "Galaxy-History-%s.tar" % (hname)
+        hname = f"Galaxy-History-{hname}.tar"
         if self.compressed:
             hname += ".gz"
         return hname
@@ -1916,7 +1916,7 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
             object_session(self).flush()
         elif not isinstance(dataset, (HistoryDatasetAssociation, HistoryDatasetCollectionAssociation)):
             raise TypeError("You can only add Dataset and HistoryDatasetAssociation instances to a history"
-                            + " ( you tried to add %s )." % str(dataset))
+                            + f" ( you tried to add {str(dataset)} ).")
         is_dataset = is_hda(dataset)
         if parent_id:
             for data in self.datasets:
@@ -2361,7 +2361,7 @@ class LibraryPermissions(RepresentById):
         if isinstance(library_item, Library):
             self.library = library_item
         else:
-            raise Exception("Invalid Library specified: %s" % library_item.__class__.__name__)
+            raise Exception(f"Invalid Library specified: {library_item.__class__.__name__}")
         self.role = role
 
 
@@ -2371,7 +2371,7 @@ class LibraryFolderPermissions(RepresentById):
         if isinstance(library_item, LibraryFolder):
             self.folder = library_item
         else:
-            raise Exception("Invalid LibraryFolder specified: %s" % library_item.__class__.__name__)
+            raise Exception(f"Invalid LibraryFolder specified: {library_item.__class__.__name__}")
         self.role = role
 
 
@@ -2381,7 +2381,7 @@ class LibraryDatasetPermissions(RepresentById):
         if isinstance(library_item, LibraryDataset):
             self.library_dataset = library_item
         else:
-            raise Exception("Invalid LibraryDataset specified: %s" % library_item.__class__.__name__)
+            raise Exception(f"Invalid LibraryDataset specified: {library_item.__class__.__name__}")
         self.role = role
 
 
@@ -2391,7 +2391,7 @@ class LibraryDatasetDatasetAssociationPermissions(RepresentById):
         if isinstance(library_item, LibraryDatasetDatasetAssociation):
             self.library_dataset_dataset_association = library_item
         else:
-            raise Exception("Invalid LibraryDatasetDatasetAssociation specified: %s" % library_item.__class__.__name__)
+            raise Exception(f"Invalid LibraryDatasetDatasetAssociation specified: {library_item.__class__.__name__}")
         self.role = role
 
 
@@ -2500,7 +2500,7 @@ class Dataset(StorableObject, RepresentById, _HasTable):
 
     def get_file_name(self):
         if not self.external_filename:
-            assert self.object_store is not None, "Object Store has not been initialized for dataset %s" % self.id
+            assert self.object_store is not None, f"Object Store has not been initialized for dataset {self.id}"
             if self.object_store.exists(self):
                 return self.object_store.get_filename(self)
             else:
@@ -2550,7 +2550,7 @@ class Dataset(StorableObject, RepresentById, _HasTable):
     def extra_files_path_name_from(self, object_store):
         store_by = self.store_by
         if store_by is not None:
-            return "dataset_%s_files" % getattr(self, store_by)
+            return f"dataset_{getattr(self, store_by)}_files"
         else:
             return None
 
@@ -2726,7 +2726,7 @@ def datatype_for_extension(extension, datatypes_registry=None):
         extension = 'data'
     ret = datatypes_registry.get_datatype_by_extension(extension)
     if ret is None:
-        log.warning("Datatype class not found for extension '%s'" % extension)
+        log.warning(f"Datatype class not found for extension '{extension}'")
         return datatypes_registry.get_datatype_by_extension('data')
     return ret
 
@@ -3011,13 +3011,13 @@ class DatasetInstance:
                     # None means converter is running first time
                     return None
                 elif dep_dataset.state == Job.states.ERROR:
-                    raise ConverterDependencyException("A dependency (%s) was in an error state." % dependency)
+                    raise ConverterDependencyException(f"A dependency ({dependency}) was in an error state.")
                 elif dep_dataset.state != Job.states.OK:
                     # Pending
                     return None
                 deps[dependency] = dep_dataset
         except NoConverterException:
-            raise NoConverterException("A dependency (%s) is missing a converter." % dependency)
+            raise NoConverterException(f"A dependency ({dependency}) is missing a converter.")
         except KeyError:
             pass  # No deps
         new_dataset = next(iter(self.datatype.convert_dataset(trans, self, target_ext, return_output=True, visible=False, deps=deps, target_context=target_context, history=history).values()))
@@ -4073,13 +4073,13 @@ class ImplicitlyConvertedDatasetAssociation(RepresentById):
         elif isinstance(dataset, LibraryDatasetDatasetAssociation):
             self.dataset_ldda = dataset
         else:
-            raise AttributeError('Unknown dataset type provided for dataset: %s' % type(dataset))
+            raise AttributeError(f'Unknown dataset type provided for dataset: {type(dataset)}')
         if isinstance(parent, HistoryDatasetAssociation):
             self.parent_hda = parent
         elif isinstance(parent, LibraryDatasetDatasetAssociation):
             self.parent_ldda = parent
         else:
-            raise AttributeError('Unknown dataset type provided for parent: %s' % type(parent))
+            raise AttributeError(f'Unknown dataset type provided for parent: {type(parent)}')
         self.type = file_type
         self.deleted = deleted
         self.purged = purged
@@ -4097,7 +4097,7 @@ class ImplicitlyConvertedDatasetAssociation(RepresentById):
             try:
                 os.unlink(self.file_name)
             except Exception as e:
-                log.error("Failed to purge associated file ({}) from disk: {}".format(self.file_name, unicodify(e)))
+                log.error(f"Failed to purge associated file ({self.file_name}) from disk: {unicodify(e)}")
 
 
 DEFAULT_COLLECTION_NAME = "Unnamed Collection"
@@ -4714,7 +4714,7 @@ class DatasetCollectionElement(Dictifiable, RepresentById):
         elif isinstance(element, DatasetCollection):
             self.child_collection = element
         elif element != self.UNINITIALIZED_ELEMENT:
-            raise AttributeError('Unknown element type provided: %s' % type(element))
+            raise AttributeError(f'Unknown element type provided: {type(element)}')
 
         self.id = id
         self.collection = collection
@@ -4987,13 +4987,13 @@ class Workflow(Dictifiable, RepresentById):
         for step in self.steps:
             if order_index == step.order_index:
                 return step
-        raise KeyError("Workflow has no step with order_index '%s'" % order_index)
+        raise KeyError(f"Workflow has no step with order_index '{order_index}'")
 
     def step_by_label(self, label):
         for step in self.steps:
             if label == step.label:
                 return step
-        raise KeyError("Workflow has no step with label '%s'" % label)
+        raise KeyError(f"Workflow has no step with label '{label}'")
 
     @property
     def input_steps(self):
@@ -5072,7 +5072,7 @@ class Workflow(Dictifiable, RepresentById):
     def log_str(self):
         extra = ""
         if self.stored_workflow:
-            extra = ",name=%s" % self.stored_workflow.name
+            extra = f",name={self.stored_workflow.name}"
         return "Workflow[id=%d%s]" % (self.id, extra)
 
 
@@ -5537,7 +5537,7 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         # That probably isn't good.
         workflow_output = self.workflow.workflow_output_for(label)
         if workflow_output:
-            raise Exception("Failed to find workflow output named [%s], one was defined but none registered during execution." % label)
+            raise Exception(f"Failed to find workflow output named [{label}], one was defined but none registered during execution.")
         else:
             raise Exception(f"Failed to find workflow output named [{label}], workflow doesn't define output by that name - valid names are {self.workflow.workflow_output_labels}.")
 
@@ -5548,7 +5548,7 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         for input_dataset_collection_assoc in self.input_dataset_collections:
             if input_dataset_collection_assoc.workflow_step.label == label:
                 return input_dataset_collection_assoc.dataset_collection
-        raise Exception("Failed to find input with label %s" % label)
+        raise Exception(f"Failed to find input with label {label}")
 
     @property
     def output_associations(self):
@@ -5716,7 +5716,7 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         extra = ""
         safe_id = getattr(self, "id", None)
         if safe_id is not None:
-            extra += "id=%s" % safe_id
+            extra += f"id={safe_id}"
         else:
             extra += "unflushed"
         return f"{self.__class__.__name__}[{extra}]"
@@ -5905,7 +5905,7 @@ class MetadataFile(StorableObject, RepresentById):
             if store_by == 'id' and self.id is None:
                 self.flush()
             identifier = getattr(self, store_by)
-            alt_name = "metadata_%s.dat" % identifier
+            alt_name = f"metadata_{identifier}.dat"
             if not object_store.exists(self, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name=alt_name):
                 object_store.create(self, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name=alt_name)
             path = object_store.get_filename(self, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name=alt_name)
@@ -6190,7 +6190,7 @@ class UserAuthnzToken(UserMixin, RepresentById):
         model = cls.user_model()
         instance = model(*args, **kwargs)
         if cls.get_users_by_email(instance.email).first():
-            raise Exception("User with this email '%s' already exists." % instance.email)
+            raise Exception(f"User with this email '{instance.email}' already exists.")
         instance.set_random_password()
         cls.sa_session.add(instance)
         cls.sa_session.flush()

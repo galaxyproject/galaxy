@@ -222,7 +222,7 @@ def test_tools(
                     destination = os.path.abspath(results.test_json)
                 log.info(f"Report written to '{destination}'")
                 log.info(results.info_message())
-                log.info("Total tool test time: {}".format(dt.datetime.now() - tool_test_start))
+                log.info(f"Total tool test time: {dt.datetime.now() - tool_test_start}")
             if history_created and not no_history_cleanup:
                 galaxy_interactor.delete_history(test_history)
 

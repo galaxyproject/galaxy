@@ -117,7 +117,7 @@ class CloudAuthzController(BaseGalaxyAPIController):
         description = payload.get("description", "")
 
         if not isinstance(config, dict):
-            log.debug(msg_template.format("invalid config type `{}`, expect `dict`".format(type(config))))
+            log.debug(msg_template.format(f"invalid config type `{type(config)}`, expect `dict`"))
             raise RequestParameterInvalidException('Invalid type for the required `config` variable; expect `dict` '
                                                    'but received `{}`.'.format(type(config)))
         if authn_id:
@@ -149,7 +149,7 @@ class CloudAuthzController(BaseGalaxyAPIController):
                 description=description
             )
             view = self.cloudauthz_serializer.serialize_to_view(new_cloudauthz, trans=trans, **self._parse_serialization_params(kwargs, 'summary'))
-            log.debug('Created a new cloudauthz record for the user id `{}` '.format(str(trans.user.id)))
+            log.debug(f'Created a new cloudauthz record for the user id `{str(trans.user.id)}` ')
             return view
         except Exception as e:
             log.exception(msg_template.format("exception while creating the new cloudauthz record"))
@@ -183,7 +183,7 @@ class CloudAuthzController(BaseGalaxyAPIController):
             cloudauthz = trans.app.authnz_manager.try_get_authz_config(trans.sa_session, trans.user.id, authz_id)
             trans.sa_session.delete(cloudauthz)
             trans.sa_session.flush()
-            log.debug('Deleted a cloudauthz record with id `{}` for the user id `{}` '.format(authz_id, str(trans.user.id)))
+            log.debug(f'Deleted a cloudauthz record with id `{authz_id}` for the user id `{str(trans.user.id)}` ')
             view = self.cloudauthz_serializer.serialize_to_view(cloudauthz, trans=trans, **self._parse_serialization_params(kwargs, 'summary'))
             trans.response.status = '200'
             return view

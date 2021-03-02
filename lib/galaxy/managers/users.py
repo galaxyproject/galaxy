@@ -81,7 +81,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         if not trans.app.config.allow_user_creation and not trans.user_is_admin:
             message = "User registration is disabled.  Please contact your local Galaxy administrator for an account."
             if trans.app.config.error_email_to is not None:
-                message += " Contact: %s" % trans.app.config.error_email_to
+                message += f" Contact: {trans.app.config.error_email_to}"
             return None, message
         if not email or not username or not password or not confirm:
             return None, "Please provide email, username and password."
@@ -170,7 +170,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         for address in user.addresses:
             self.session().delete(address)
         compliance_log = logging.getLogger('COMPLIANCE')
-        compliance_log.info('delete-user-event: %s' % user.username)
+        compliance_log.info(f'delete-user-event: {user.username}')
         # Maybe there is some case in the future where an admin needs
         # to prove that a user was using a server for some reason (e.g.
         # a court case.) So we make this painfully hard to recover (and
@@ -564,10 +564,10 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                     util.send_mail(frm, email, subject, body, self.app.config)
                     trans.sa_session.add(reset_user)
                     trans.sa_session.flush()
-                    trans.log_event('User reset password: %s' % email)
+                    trans.log_event(f'User reset password: {email}')
                 except Exception as e:
                     log.debug(body)
-                    return "Failed to submit email. Please contact the administrator: %s" % util.unicodify(e)
+                    return f"Failed to submit email. Please contact the administrator: {util.unicodify(e)}"
             else:
                 return "Failed to produce password reset token. User not found."
 

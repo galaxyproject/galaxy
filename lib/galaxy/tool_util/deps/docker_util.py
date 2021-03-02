@@ -234,7 +234,7 @@ def parse_port_text(port_text):
         ports = {}
         for line in port_text.strip().split('\n'):
             if " -> " not in line:
-                raise Exception("Cannot parse host and port from line [%s]" % line)
+                raise Exception(f"Cannot parse host and port from line [{line}]")
             tool, host = line.split(" -> ", 1)
             hostname, port = host.rsplit(':', 1)
             if hostname == '::':

@@ -127,13 +127,13 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
             'parent': input_values,
             'value': value,
             'prefixed_name': f'{name_prefix}{input.name}',
-            'prefixed_label': '{}{}'.format(label_prefix, input.label or input.name),
+            'prefixed_label': f'{label_prefix}{input.label or input.name}',
             'prefix': parent_prefix,
             'context': context,
             'error': error
         }
         if input.name not in input_values:
-            args['error'] = 'No value found for \'%s\'.' % args.get('prefixed_label')
+            args['error'] = f"No value found for '{args.get('prefixed_label')}'."
         new_value = callback(**args)
         if no_replacement_value is REPLACE_ON_TRUTHY:
             replace = bool(new_value)
@@ -408,7 +408,7 @@ def _populate_state_legacy(request_context, inputs, incoming, state, errors, pre
         state[input.name] = input.get_initial_value(request_context, context)
         key = prefix + input.name
         group_state = state[input.name]
-        group_prefix = '%s|' % (key)
+        group_prefix = f'{key}|'
         if input.type == 'repeat':
             rep_index = 0
             del group_state[:]

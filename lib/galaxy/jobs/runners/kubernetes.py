@@ -144,7 +144,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             self.write_executable_script(ajs.job_file, script)
         except Exception:
             job_wrapper.fail("failure preparing job script", exception=True)
-            log.exception("(%s) failure writing job script" % job_wrapper.get_id_tag())
+            log.exception(f"({job_wrapper.get_id_tag()}) failure writing job script")
             return
 
         # Construction of the Kubernetes Job object follows: http://kubernetes.io/docs/user-guide/persistent-volumes/
@@ -538,7 +538,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         if isinstance(raw_id, str):
             cleaned_id = re.sub("[^-a-z0-9]", "-", raw_id)
             if cleaned_id.startswith("-") or cleaned_id.endswith("-"):
-                cleaned_id = "x%sx" % cleaned_id
+                cleaned_id = f"x{cleaned_id}x"
             return cleaned_id
         return "job-container"
 

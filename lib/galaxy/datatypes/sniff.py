@@ -710,7 +710,7 @@ def handle_compressed_file(
                 except OSError as e:
                     os.remove(uncompressed.name)
                     compressed_file.close()
-                    raise OSError('Problem uncompressing {} data, please try retrieving the data uncompressed: {}'.format(compressed_type, util.unicodify(e)))
+                    raise OSError(f'Problem uncompressing {compressed_type} data, please try retrieving the data uncompressed: {util.unicodify(e)}')
                 if not chunk:
                     break
                 uncompressed.write(chunk)

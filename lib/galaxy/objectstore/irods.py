@@ -282,7 +282,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             return os.path.join(base, rel_path)
 
         if not dir_only:
-            rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % self._get_object_id(obj))
+            rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
         log.debug("irods_pt _construct_path: %s", ipt_timer)
         return rel_path
 
@@ -515,7 +515,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                 os.makedirs(cache_dir)
 
             if not dir_only:
-                rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % self._get_object_id(obj))
+                rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
                 open(os.path.join(self.staging_path, rel_path), 'w').close()
                 self._push_to_irods(rel_path, from_string='')
         log.debug("irods_pt _create: %s", ipt_timer)

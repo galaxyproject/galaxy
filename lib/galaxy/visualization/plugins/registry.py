@@ -163,7 +163,7 @@ class VisualizationsRegistry:
             return False
         if 'config' not in os.listdir(plugin_path):
             return False
-        expected_config_filename = '%s.xml' % (os.path.split(plugin_path)[1])
+        expected_config_filename = f'{os.path.split(plugin_path)[1]}.xml'
         if not os.path.isfile(os.path.join(plugin_path, 'config', expected_config_filename)):
             return False
         return True
@@ -188,7 +188,7 @@ class VisualizationsRegistry:
                 plugin = self._build_plugin(plugin_name, plugin_path, config)
                 return plugin
         else:
-            raise ObjectNotFound('Visualization XML not found: %s.' % config_file)
+            raise ObjectNotFound(f'Visualization XML not found: {config_file}.')
 
     def _build_plugin(self, plugin_name, plugin_path, config):
         # TODO: as builder not factory

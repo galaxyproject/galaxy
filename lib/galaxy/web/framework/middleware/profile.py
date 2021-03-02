@@ -93,9 +93,9 @@ def pstats_as_html(stats, *sel_list):
     funcs, order_message, select_message = get_func_list(stats, sel_list)
     # Deal with any ordering or selection messages
     if order_message:
-        rval.append("<div>%s</div>" % markupsafe.escape(order_message))
+        rval.append(f"<div>{markupsafe.escape(order_message)}</div>")
     if select_message:
-        rval.append("<div>%s</div>" % markupsafe.escape(select_message))
+        rval.append(f"<div>{markupsafe.escape(select_message)}</div>")
     # Build a table for the functions
     if list:
         rval.append("<table>")
@@ -114,25 +114,25 @@ def pstats_as_html(stats, *sel_list):
             ncalls = str(nc)
             if nc != cc:
                 ncalls = ncalls + '/' + str(cc)
-            rval.append("<td>%s</td>" % markupsafe.escape(ncalls))
+            rval.append(f"<td>{markupsafe.escape(ncalls)}</td>")
             # tottime
-            rval.append("<td>%0.8f</td>" % tt)
+            rval.append(f"<td>{tt:0.8f}</td>")
             # percall
             if nc == 0:
                 percall = ""
             else:
-                percall = "%0.8f" % (tt / nc)
-            rval.append("<td>%s</td>" % markupsafe.escape(percall))
+                percall = f"{tt / nc:0.8f}"
+            rval.append(f"<td>{markupsafe.escape(percall)}</td>")
             # cumtime
-            rval.append("<td>%0.8f</td>" % ct)
+            rval.append(f"<td>{ct:0.8f}</td>")
             # ctpercall
             if cc == 0:
                 ctpercall = ""
             else:
-                ctpercall = "%0.8f" % (ct / cc)
-            rval.append("<td>%s</td>" % markupsafe.escape(ctpercall))
+                ctpercall = f"{ct / cc:0.8f}"
+            rval.append(f"<td>{markupsafe.escape(ctpercall)}</td>")
             # location
-            rval.append("<td>%s</td>" % markupsafe.escape(func_std_string(func)))
+            rval.append(f"<td>{markupsafe.escape(func_std_string(func))}</td>")
             # row complete
             rval.append("</tr>")
         rval.append("</table>")

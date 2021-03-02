@@ -166,7 +166,7 @@ class TagHandler:
             # Create tag; if None, skip the tag (and log error).
             tag = self._get_or_create_tag(lc_name)
             if not tag:
-                log.warning("Failed to create tag with name %s" % lc_name)
+                log.warning(f"Failed to create tag with name {lc_name}")
                 return
             # Create tag association based on item class.
             item_tag_assoc_class = self.get_tag_assoc_class(item.__class__)
@@ -343,7 +343,7 @@ class TagHandler:
         """Get name, value pair from a tag string."""
         # Use regular expression to parse name, value.
         if tag_str.startswith('#'):
-            tag_str = "name:%s" % tag_str[1:]
+            tag_str = f"name:{tag_str[1:]}"
         reg_exp = re.compile("[" + self.key_value_separators + "]")
         name_value_pair = reg_exp.split(tag_str, 1)
         # Add empty slot if tag does not have value.

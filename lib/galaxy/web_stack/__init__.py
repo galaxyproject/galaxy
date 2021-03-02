@@ -157,7 +157,7 @@ class ApplicationStack:
         pass
 
     def log_startup(self):
-        log.info("Galaxy server instance '%s' is running" % self.config.server_name)
+        log.info(f"Galaxy server instance '{self.config.server_name}' is running")
 
     def start(self):
         # TODO: with a stack config the pools could be parsed here
@@ -498,7 +498,7 @@ class UWSGIApplicationStack(MessageApplicationStack):
         return instance_id
 
     def log_startup(self):
-        msg = ["Galaxy server instance '%s' is running" % self.config.server_name]
+        msg = [f"Galaxy server instance '{self.config.server_name}' is running"]
         # Log the next messages when the first worker finishes starting. This
         # may not be the first to finish (so Galaxy could be serving already),
         # but it's a good approximation and gives the correct root_pid below

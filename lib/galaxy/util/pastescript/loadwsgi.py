@@ -66,8 +66,8 @@ def fix_type_error(exc_info, callable, varargs, kwargs):
     if kwargs:
         kwargs = sorted(kwargs.keys())
         args += ', '.join('%s=...' % n for n in kwargs)
-    gotspec = '(%s)' % args
-    msg = '{}; got {}, wanted {}'.format(exc_info[1], gotspec, argspec)
+    gotspec = f'({args})'
+    msg = f'{exc_info[1]}; got {gotspec}, wanted {argspec}'
     exc_info[1].args = (msg,)
     return exc_info
 
@@ -183,7 +183,7 @@ class _App(_ObjectType):
         elif context.protocol == 'paste.app_factory':
             return fix_call(context.object, context.global_conf, **context.local_conf)
         else:
-            assert 0, "Protocol %r unknown" % context.protocol
+            assert 0, f"Protocol {context.protocol!r} unknown"
 
 
 APP = _App()
@@ -206,7 +206,7 @@ class _Filter(_ObjectType):
                                 **context.local_conf)
             return filter_wrapper
         else:
-            assert 0, "Protocol %r unknown" % context.protocol
+            assert 0, f"Protocol {context.protocol!r} unknown"
 
 
 FILTER = _Filter()
@@ -229,7 +229,7 @@ class _Server(_ObjectType):
                                 **context.local_conf)
             return server_wrapper
         else:
-            assert 0, "Protocol %r unknown" % context.protocol
+            assert 0, f"Protocol {context.protocol!r} unknown"
 
 
 SERVER = _Server()
@@ -327,13 +327,12 @@ def loadcontext(object_type, uri, name=None, relative_to=None,
     if name is None:
         name = 'main'
     if ':' not in uri:
-        raise LookupError("URI has no scheme: %r" % uri)
+        raise LookupError(f"URI has no scheme: {uri!r}")
     scheme, path = uri.split(':', 1)
     scheme = scheme.lower()
     if scheme not in _loaders:
         raise LookupError(
-            "URI scheme not known: %r (from %s)"
-            % (scheme, ', '.join(_loaders.keys())))
+            f"URI scheme not known: {scheme!r} (from {', '.join(_loaders.keys())})")
     return _loaders[scheme](
         object_type,
         uri, path, name=name, relative_to=relative_to,
@@ -540,7 +539,7 @@ class ConfigLoader(_Loader):
                 # This will work with 'server' and 'filter', otherwise it
                 # could fail but there is an error message already for
                 # bad protocols
-                context.protocol = 'paste.%s_factory' % section_protocol
+                context.protocol = f'paste.{section_protocol}_factory'
 
         return context
 
@@ -554,11 +553,10 @@ class ConfigLoader(_Loader):
                     break
         if len(possible) > 1:
             raise LookupError(
-                "Multiple protocols given in section %r: %s"
-                % (section, possible))
+                f"Multiple protocols given in section {section!r}: {possible}")
         if not possible:
             raise LookupError(
-                "No loader given in section %r" % section)
+                f"No loader given in section {section!r}")
         found_protocol, found_expr = possible[0]
         del local_conf[found_protocol]
         value = import_string(found_expr)

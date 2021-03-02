@@ -45,7 +45,7 @@ class ContainerVolume(metaclass=ABCMeta):
         self.host_path = host_path
         self.mode = mode
         if mode and not self.mode_is_valid:
-            raise ValueError("Invalid container volume mode: %s" % mode)
+            raise ValueError(f"Invalid container volume mode: {mode}")
 
     @abstractmethod
     def from_str(cls, as_str):
@@ -205,7 +205,7 @@ class ContainerInterface(metaclass=ABCMeta):
         return opttype
 
     def _guess_kwopt_flag(self, opt):
-        return '--%s' % opt.replace('_', '-')
+        return f"--{opt.replace('_', '-')}"
 
     def _stringify_kwopts(self, kwopts):
         opts = []
@@ -225,12 +225,12 @@ class ContainerInterface(metaclass=ABCMeta):
     def _stringify_kwopt_boolean(self, flag, val):
         """
         """
-        return '{flag}={value}'.format(flag=flag, value=str(val).lower())
+        return f'{flag}={str(val).lower()}'
 
     def _stringify_kwopt_string(self, flag, val):
         """
         """
-        return '{flag} {value}'.format(flag=flag, value=shlex.quote(str(val)))
+        return f'{flag} {shlex.quote(str(val))}'
 
     def _stringify_kwopt_list(self, flag, val):
         """
@@ -346,7 +346,7 @@ def build_container_interfaces(containers_config_file, containers_conf=None):
     interfaces = {}
     for k, conf in containers_conf.items():
         container_type = conf.get('type', DEFAULT_CONTAINER_TYPE)
-        assert container_type in interface_classes, "unknown container interface type: %s" % container_type
+        assert container_type in interface_classes, f"unknown container interface type: {container_type}"
         interfaces[k] = interface_classes[container_type](conf, k, containers_config_file)
     return interfaces
 

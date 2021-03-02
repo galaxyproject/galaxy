@@ -355,7 +355,7 @@ def verify(strategy=None, response=None, details=None, **kwargs):
         result = requests.post(
             f"https://iam.googleapis.com/v1/projects/-/serviceAccounts/{endpoint}:getIamPolicy",
             headers={
-                'Authorization': 'Bearer {}'.format(response.get("access_token")),
+                'Authorization': f"Bearer {response.get('access_token')}",
                 'Accept': 'application/json'})
         res = json.loads(result.content)
         if result.status_code == requests.codes.ok:

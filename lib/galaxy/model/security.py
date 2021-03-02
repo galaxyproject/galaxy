@@ -360,7 +360,7 @@ class GalaxyRBACAgent(RBACAgent):
                                      len(new_result)))
                 log.debug("get_actions_for_items: Test end")
             except Exception as e:
-                log.debug("Exception in test code: %s" % e)
+                log.debug(f"Exception in test code: {e}")
 
         return ret_permissions
 
@@ -554,7 +554,7 @@ class GalaxyRBACAgent(RBACAgent):
         elif type(item) == self.model.LibraryDatasetCollectionAssociation:
             return self.can_access_library(roles, item.folder.parent_library)
         else:
-            log.warning('Unknown library item type: %s' % type(item))
+            log.warning(f'Unknown library item type: {type(item)}')
             return False
 
     def can_add_library_item(self, roles, item):
@@ -632,7 +632,7 @@ class GalaxyRBACAgent(RBACAgent):
         if 'action' in kwd:
             if 'dataset' in kwd and 'role' in kwd:
                 return self.associate_action_dataset_role(kwd['action'], kwd['dataset'], kwd['role'])
-        raise Exception('No valid method of associating provided components: %s' % kwd)
+        raise Exception(f'No valid method of associating provided components: {kwd}')
 
     def associate_user_group(self, user, group):
         assoc = self.model.UserGroupAssociation(user, group)
@@ -1144,7 +1144,7 @@ class GalaxyRBACAgent(RBACAgent):
                         msg += "The following roles are not associated with users that have the 'access' permission on this "
                         msg += "item, so they were incorrectly displayed: "
                         for role in illegitimate_roles:
-                            msg += "%s, " % role.name
+                            msg += f"{role.name}, "
                         msg = msg.rstrip(", ")
                         new_in_roles = []
                         for role in in_roles:
@@ -1369,7 +1369,7 @@ class GalaxyRBACAgent(RBACAgent):
         elif 'group' in kwd:
             if 'role' in kwd:
                 return self.sa_session.query(self.model.GroupRoleAssociation).filter_by(role_id=kwd['role'].id, group_id=kwd['group'].id).first()
-        raise Exception('No valid method of associating provided components: %s' % kwd)
+        raise Exception(f'No valid method of associating provided components: {kwd}')
 
     def check_folder_contents(self, user, roles, folder, hidden_folder_ids=''):
         """

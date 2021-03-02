@@ -129,9 +129,9 @@ class ContainerFinder:
     def __overridden_container_id(self, container_type, destination_info):
         if not self.__container_type_enabled(container_type, destination_info):
             return None
-        if "%s_container_id_override" % container_type in destination_info:
-            return destination_info.get("%s_container_id_override" % container_type)
-        if "%s_image_override" % container_type in destination_info:
+        if f"{container_type}_container_id_override" in destination_info:
+            return destination_info.get(f"{container_type}_container_id_override")
+        if f"{container_type}_image_override" in destination_info:
             return self.__build_container_id_from_parts(container_type, destination_info, mode="override")
 
     def __build_container_id_from_parts(self, container_type, destination_info, mode):
@@ -152,13 +152,13 @@ class ContainerFinder:
     def __default_container_id(self, container_type, destination_info):
         if not self.__container_type_enabled(container_type, destination_info):
             return None
-        key = "%s_default_container_id" % container_type
+        key = f"{container_type}_default_container_id"
         # Also allow docker_image...
         if key not in destination_info:
-            key = "%s_image" % container_type
+            key = f"{container_type}_image"
         if key in destination_info:
             return destination_info.get(key)
-        elif "%s_image_default" % container_type in destination_info:
+        elif f"{container_type}_image_default" in destination_info:
             return self.__build_container_id_from_parts(container_type, destination_info, mode="default")
         return None
 
@@ -174,7 +174,7 @@ class ContainerFinder:
         return CONTAINER_CLASSES[container_type](container_id, self.app_info, tool_info, destination_info, job_info, container_description)
 
     def __container_type_enabled(self, container_type, destination_info):
-        return asbool(destination_info.get("%s_enabled" % container_type, False))
+        return asbool(destination_info.get(f"{container_type}_enabled", False))
 
 
 class NullContainerFinder:

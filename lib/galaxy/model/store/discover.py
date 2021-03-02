@@ -237,7 +237,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             create_dataset_timer = ExecutionTimer()
             fields_match = discovered_file.match
             if not fields_match:
-                raise Exception("Problem parsing metadata fields for file %s" % filename)
+                raise Exception(f"Problem parsing metadata fields for file {filename}")
             element_identifiers = fields_match.element_identifiers
             designation = fields_match.designation
             visible = fields_match.visible

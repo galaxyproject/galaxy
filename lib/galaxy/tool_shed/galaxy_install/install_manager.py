@@ -128,7 +128,7 @@ class InstallToolDependencyManager:
             log.exception('Error installing tool dependency %s version %s.', tool_dependency.name, tool_dependency.version)
             # Since there was an installation error, update the tool dependency status to Error. The remove_installation_path option must
             # be left False here.
-            error_message = '{}\n{}'.format(self.format_traceback(), util.unicodify(e))
+            error_message = f'{self.format_traceback()}\n{util.unicodify(e)}'
             tool_dependency = tool_dependency_util.set_tool_dependency_attributes(self.app,
                                                                                   tool_dependency=tool_dependency,
                                                                                   status=self.app.install_model.ToolDependency.installation_status.ERROR,
@@ -152,7 +152,7 @@ class InstallToolDependencyManager:
         # Parse the tool_dependencies.xml config.
         tree, error_message = xml_util.parse_xml(tool_dependencies_config)
         if tree is None:
-            log.debug("The received tool_dependencies.xml file is likely invalid: %s" % str(error_message))
+            log.debug(f"The received tool_dependencies.xml file is likely invalid: {str(error_message)}")
             return installed_packages
         root = tree.getroot()
         elems = []
@@ -483,10 +483,10 @@ class InstallRepositoryManager:
         if not repository_revision_dict or not repo_info_dict:
             invalid_parameter_message = "No information is available for the requested repository revision.\n"
             invalid_parameter_message += "One or more of the following parameter values is likely invalid:\n"
-            invalid_parameter_message += "tool_shed_url: %s\n" % tool_shed_url
-            invalid_parameter_message += "name: %s\n" % name
-            invalid_parameter_message += "owner: %s\n" % owner
-            invalid_parameter_message += "changeset_revision: %s\n" % changeset_revision
+            invalid_parameter_message += f"tool_shed_url: {tool_shed_url}\n"
+            invalid_parameter_message += f"name: {name}\n"
+            invalid_parameter_message += f"owner: {owner}\n"
+            invalid_parameter_message += f"changeset_revision: {changeset_revision}\n"
             raise exceptions.RequestParameterInvalidException(invalid_parameter_message)
         repo_info_dicts = [repo_info_dict]
         return repository_revision_dict, repo_info_dicts

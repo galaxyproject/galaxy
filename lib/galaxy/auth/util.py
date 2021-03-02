@@ -47,7 +47,7 @@ def get_authenticators(auth_config_file, auth_config_file_set):
         type_elem_text = auth_elem.find('type').text
         plugin_class = __plugins_dict.get(type_elem_text)
         if not plugin_class:
-            raise Exception("Authenticator type '{}' not recognized, should be one of {}".format(type_elem_text, ', '.join(__plugins_dict)))
+            raise Exception(f"Authenticator type '{type_elem_text}' not recognized, should be one of {', '.join(__plugins_dict)}")
         plugin = plugin_class()
 
         # check filterelem

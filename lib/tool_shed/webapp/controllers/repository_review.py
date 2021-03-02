@@ -53,7 +53,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
             review.approved = approved_select_field_value
             trans.sa_session.add(review)
             trans.sa_session.flush()
-            message = 'Approved value <b>%s</b> saved for this revision.' % escape(approved_select_field_value)
+            message = f'Approved value <b>{escape(approved_select_field_value)}</b> saved for this revision.'
         repository_id = trans.security.encode_id(review.repository_id)
         changeset_revision = review.changeset_revision
         return trans.response.send_redirect(web.url_for(controller='repository_review',
@@ -123,7 +123,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                 component = trans.app.model.Component(name=name, description=description)
                 trans.sa_session.add(component)
                 trans.sa_session.flush()
-                message = "Component '%s' has been created" % escape(component.name)
+                message = f"Component '{escape(component.name)}' has been created"
                 status = 'done'
                 trans.response.send_redirect(web.url_for(controller='repository_review',
                                                          action='manage_components',
@@ -153,7 +153,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                                                                                       repository_id=repository_id,
                                                                                       changeset_revision=changeset_revision,
                                                                                       user_id=trans.security.encode_id(trans.user.id)):
-                    message = "You have already created a review for revision <b>{}</b> of repository <b>{}</b>.".format(changeset_revision, escape(repository.name))
+                    message = f"You have already created a review for revision <b>{changeset_revision}</b> of repository <b>{escape(repository.name)}</b>."
                     status = "error"
                 else:
                     # See if there are any reviews for previous changeset revisions that the user can copy.
@@ -220,7 +220,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                 component.description = new_description
                 trans.sa_session.add(component)
                 trans.sa_session.flush()
-                message = "The information has been saved for the component named <b>%s</b>" % escape(component.name)
+                message = f"The information has been saved for the component named <b>{escape(component.name)}</b>"
                 status = 'done'
                 return trans.response.send_redirect(web.url_for(controller='repository_review',
                                                                 action='manage_components',
@@ -339,7 +339,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                         component_review_dict['component_review'] = component_review
                         components_dict[component_name] = component_review_dict
             if revision_approved_setting_changed:
-                message += 'Approved value <b>%s</b> saved for this revision.<br/>' % review.approved
+                message += f'Approved value <b>{review.approved}</b> saved for this revision.<br/>'
             if saved_component_names:
                 message += 'Reviews were saved for components: %s' % ', '.join(saved_component_names)
             if not revision_approved_setting_changed and not saved_component_names:
@@ -567,7 +567,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                                                                 **kwd))
         # The user may not be the current user.  The value of the received id is the encoded user id.
         user = suc.get_user(trans.app, kwd['id'])
-        self.repository_reviews_by_user_grid.title = "All repository revision reviews for user '%s'" % user.username
+        self.repository_reviews_by_user_grid.title = f"All repository revision reviews for user '{user.username}'"
         return self.repository_reviews_by_user_grid(trans, **kwd)
 
     @web.expose

@@ -354,7 +354,7 @@ class ToolPanelManager:
                 file_name = strip_path(shed_tool_conf_dict['config_filename'])
                 if shed_tool_conf == file_name:
                     return shed_tool_conf_dict
-        raise RequestParameterInvalidException("Requested shed_tool_conf '%s' is not an active shed_tool_config_file" % shed_tool_conf)
+        raise RequestParameterInvalidException(f"Requested shed_tool_conf '{shed_tool_conf}' is not an active shed_tool_config_file")
 
     def handle_tool_panel_section(self, toolbox, tool_panel_section_id=None, new_tool_panel_section_label=None):
         """Return a ToolSection object retrieved from the current in-memory tool_panel."""

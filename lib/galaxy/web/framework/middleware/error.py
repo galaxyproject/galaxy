@@ -252,8 +252,7 @@ class CatchingIter:
                 exc_info, self.environ)
             if close_response is not None:
                 response += (
-                    '<hr noshade>Error in .close():<br>%s'
-                    % close_response)
+                    f'<hr noshade>Error in .close():<br>{close_response}')
 
             if not self.start_checker.response_started:
                 self.start_checker('500 Internal Server Error',

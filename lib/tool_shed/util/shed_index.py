@@ -157,7 +157,7 @@ def debug_handler(path, exc_info):
     By default the underlying tool parsing logs warnings for each exception.
     This is very chatty hence this metod changes it to debug level.
     """
-    log.debug("Failed to load tool with path %s." % path, exc_info=exc_info)
+    log.debug(f"Failed to load tool with path {path}.", exc_info=exc_info)
 
 
 def load_one_dir(path):

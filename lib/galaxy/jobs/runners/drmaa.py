@@ -109,7 +109,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             log.debug(f"Converted URL '{url}' to destination runner=drmaa, params={params}")
             return JobDestination(runner='drmaa', params=params)
         else:
-            log.debug("Converted URL '%s' to destination runner=drmaa" % url)
+            log.debug(f"Converted URL '{url}' to destination runner=drmaa")
             return JobDestination(runner='drmaa')
 
     def get_native_spec(self, url):
@@ -144,8 +144,8 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             remoteCommand=ajs.job_file,
             jobName=ajs.job_name,
             workingDirectory=job_wrapper.working_directory,
-            outputPath=":%s" % ajs.output_file,
-            errorPath=":%s" % ajs.error_file
+            outputPath=f":{ajs.output_file}",
+            errorPath=f":{ajs.error_file}"
         )
 
         # Avoid a jt.exitCodePath for now - it's only used when finishing.
@@ -161,7 +161,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             self.write_executable_script(ajs.job_file, script)
         except Exception:
             job_wrapper.fail("failure preparing job script", exception=True)
-            log.exception("(%s) failure writing job script" % galaxy_id_tag)
+            log.exception(f"({galaxy_id_tag}) failure writing job script")
             return
 
         # job was deleted while we were preparing it
@@ -195,7 +195,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
                     log.exception('(%s) drmaa.Session.runJob() failed unconditionally', galaxy_id_tag)
                     trynum = 5
             else:
-                log.error("(%s) All attempts to submit job failed" % galaxy_id_tag)
+                log.error(f"({galaxy_id_tag}) All attempts to submit job failed")
                 if not fail_msg:
                     fail_msg = DEFAULT_JOB_PUT_FAILURE_MESSAGE
                 job_wrapper.fail(fail_msg)
@@ -207,16 +207,16 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             pwent = job_wrapper.user_system_pwent
             if pwent is None:
                 if not allow_guests:
-                    fail_msg = "User %s is not mapped to any real user, and not permitted to start jobs." % job_wrapper.user
+                    fail_msg = f"User {job_wrapper.user} is not mapped to any real user, and not permitted to start jobs."
                     job_wrapper.fail(fail_msg)
                     return
                 pwent = job_wrapper.galaxy_system_pwent
-            log.debug('({}) submitting with credentials: {} [uid: {}]'.format(galaxy_id_tag, pwent[0], pwent[2]))
+            log.debug(f'({galaxy_id_tag}) submitting with credentials: {pwent[0]} [uid: {pwent[2]}]')
             filename = self.store_jobtemplate(job_wrapper, jt)
             self.userid = pwent[2]
             external_job_id = self.external_runjob(external_runjob_script, filename, pwent[2])
             if external_job_id is None:
-                job_wrapper.fail("(%s) could not queue job" % galaxy_id_tag)
+                job_wrapper.fail(f"({galaxy_id_tag}) could not queue job")
                 return
         log.info(f"({galaxy_id_tag}) queued as {external_job_id}")
 
@@ -332,7 +332,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             if state is None:
                 continue
             if state != old_state:
-                log.debug("({}/{}) state change: {}".format(galaxy_id_tag, external_job_id, self.drmaa_job_state_strings[state]))
+                log.debug(f"({galaxy_id_tag}/{external_job_id}) state change: {self.drmaa_job_state_strings[state]}")
             if state == drmaa.JobState.RUNNING and not ajs.running:
                 ajs.running = True
                 ajs.job_wrapper.change_state(model.Job.states.RUNNING)
@@ -370,7 +370,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         except drmaa.InvalidJobException:
             log.exception(f"({job.id}/{ext_id}) User killed running job, but it was already dead")
         except commands.CommandLineException as e:
-            log.error("({}/{}) User killed running job, but command execution failed: {}".format(job.id, ext_id, unicodify(e)))
+            log.error(f"({job.id}/{ext_id}) User killed running job, but command execution failed: {unicodify(e)}")
         except Exception:
             log.exception(f"({job.id}/{ext_id}) User killed running job, but error encountered removing from DRM queue")
 
@@ -431,11 +431,11 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         galaxy_id_tag = job_wrapper.get_id_tag()
 
         # define job attributes
-        job_name = 'g%s' % galaxy_id_tag
+        job_name = f'g{galaxy_id_tag}'
         if job_wrapper.tool.old_id:
-            job_name += '_%s' % job_wrapper.tool.old_id
+            job_name += f'_{job_wrapper.tool.old_id}'
         if not self.redact_email_in_job_name and external_runjob_script is None:
-            job_name += '_%s' % job_wrapper.user
+            job_name += f'_{job_wrapper.user}'
         job_name = ''.join(x if x in (string.ascii_letters + string.digits + '_') else '_' for x in job_name)
         if self.restrict_job_name_length:
             job_name = job_name[:self.restrict_job_name_length]

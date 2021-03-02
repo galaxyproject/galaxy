@@ -52,8 +52,8 @@ class HistoryDatasetsSelectionGrid(grids.Grid):
             """ Filter by dbkey through a raw SQL b/c metadata is a BLOB. """
             dbkey_user, dbkey = decode_dbkey(dbkey)
             dbkey = dbkey.replace("'", "\\'")
-            return query.filter(or_(text("metadata like '%%\"dbkey\": [\"%s\"]%%'" % dbkey,
-                                         "metadata like '%%\"dbkey\": \"%s\"%%'" % dbkey)))
+            return query.filter(or_(text(f"metadata like '%\"dbkey\": [\"{dbkey}\"]%'",
+                                         f"metadata like '%\"dbkey\": \"{dbkey}\"%'")))
 
     class HistoryColumn(grids.GridColumn):
         def get_value(self, trans, grid, hda):
@@ -333,9 +333,9 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         visualization = self.get_visualization(trans, id, check_ownership=False)
         user = trans.get_user()
         owner = (visualization.user == user)
-        new_title = "Copy of '%s'" % visualization.title
+        new_title = f"Copy of '{visualization.title}'"
         if not owner:
-            new_title += " shared by %s" % visualization.user.email
+            new_title += f" shared by {visualization.user.email}"
 
         copied_viz = visualization.copy(user=trans.user, title=new_title)
 
@@ -345,7 +345,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         session.flush()
 
         # Display the management page
-        trans.set_message('Created new visualization with name "%s"' % copied_viz.title)
+        trans.set_message(f'Created new visualization with name "{copied_viz.title}"')
         return
 
     @web.expose
@@ -387,17 +387,17 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         # Set referer message.
         referer = trans.request.referer
         if referer:
-            referer_message = "<a href='%s'>return to the previous page</a>" % escape(referer)
+            referer_message = f"<a href='{escape(referer)}'>return to the previous page</a>"
         else:
-            referer_message = "<a href='%s'>go to Galaxy's start page</a>" % web.url_for('/')
+            referer_message = f"<a href='{web.url_for('/')}'>go to Galaxy's start page</a>"
 
         # Do import.
         session = trans.sa_session
         visualization = self.get_visualization(trans, id, check_ownership=False)
         if visualization.importable is False:
-            return trans.show_error_message("The owner of this visualization has disabled imports via this link.<br>You can %s" % referer_message, use_panels=True)
+            return trans.show_error_message(f"The owner of this visualization has disabled imports via this link.<br>You can {referer_message}", use_panels=True)
         elif visualization.deleted:
-            return trans.show_error_message("You can't import this visualization because it has been deleted.<br>You can %s" % referer_message, use_panels=True)
+            return trans.show_error_message(f"You can't import this visualization because it has been deleted.<br>You can {referer_message}", use_panels=True)
         else:
             # Create imported visualization via copy.
             #   TODO: need to handle custom db keys.
@@ -427,14 +427,14 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                                     .first()
             if not other:
                 mtype = "error"
-                msg = ("User '%s' does not exist" % escape(email))
+                msg = f"User '{escape(email)}' does not exist"
             elif other == trans.get_user():
                 mtype = "error"
                 msg = ("You cannot share a visualization with yourself")
             elif trans.sa_session.query(model.VisualizationUserShareAssociation) \
                     .filter_by(user=other, visualization=visualization).count() > 0:
                 mtype = "error"
-                msg = ("Visualization already shared with '%s'" % escape(email))
+                msg = f"Visualization already shared with '{escape(email)}'"
             else:
                 share = model.VisualizationUserShareAssociation()
                 share.visualization = visualization
@@ -446,7 +446,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                 viz_title = escape(visualization.title)
                 other_email = escape(other.email)
                 trans.set_message(f"Visualization '{viz_title}' shared with user '{other_email}'")
-                return trans.response.send_redirect(web.url_for("/visualizations/sharing?id=%s" % id))
+                return trans.response.send_redirect(web.url_for(f"/visualizations/sharing?id={id}"))
         return trans.fill_template("/ind_share_base.mako",
                                    message=msg,
                                    messagetype=mtype,
@@ -938,7 +938,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                 if (i > 500):
                     break
                 fields = line.split()
-                location = name = "{}:{}-{}".format(fields[0], fields[1], fields[2])
+                location = name = f"{fields[0]}:{fields[1]}-{fields[2]}"
                 if len(fields) > 3:
                     name = fields[4]
                 rows.append([location, name])

@@ -191,10 +191,10 @@ class ConfiguresHandlers:
         if rval is not None:
             # If the parent element has a 'default' attribute, use the id or tag in that attribute
             if required and rval not in names:
-                raise Exception("default attribute '%s' does not match a defined id or tag in a child element" % (rval))
-            log.debug("default set to child with id or tag '%s'" % (rval))
+                raise Exception(f"default attribute '{rval}' does not match a defined id or tag in a child element")
+            log.debug(f"default set to child with id or tag '{rval}'")
         elif auto and len(names) == 1:
-            log.info("Setting default to child with id '%s'" % (names[0]))
+            log.info(f"Setting default to child with id '{names[0]}'")
             rval = names[0]
         elif required:
             raise Exception("No default specified, please specify a valid id or tag with the 'default' attribute")
@@ -322,7 +322,7 @@ class ConfiguresHandlers:
         :returns: str -- This process's server name (handler ID).
         """
         assert queue_callback is not None, \
-            "Cannot perform '%s' handler assignment: `queue_callback` is None" % HANDLER_ASSIGNMENT_METHODS.MEM_SELF
+            f"Cannot perform '{HANDLER_ASSIGNMENT_METHODS.MEM_SELF}' handler assignment: `queue_callback` is None"
         if configured:
             log.warning("(%s) Ignoring handler assignment to '%s' because configured handler assignment method"
                         " '' overrides per-tool handler assignment", obj.log_str(),

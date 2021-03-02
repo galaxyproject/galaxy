@@ -205,7 +205,7 @@ def get_repository_file_contents(app, file_path, repository_id, is_admin=False):
         return '<br/>Binary file<br/>'
     else:
         for line in open(file_path):
-            safe_str = '{}{}'.format(safe_str, basic_util.to_html_string(line))
+            safe_str = f'{safe_str}{basic_util.to_html_string(line)}'
             # Stop reading after string is larger than MAX_CONTENT_SIZE.
             if len(safe_str) > MAX_CONTENT_SIZE:
                 large_str = \
@@ -372,7 +372,7 @@ def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_al
         admin_users = app.config.get("admin_users", "").split(",")
         frm = email_from
         if new_repo_alert:
-            subject = "Galaxy tool shed alert for new repository named %s" % str(repository.name)
+            subject = f"Galaxy tool shed alert for new repository named {str(repository.name)}"
             subject = subject[:80]
             email_alerts = []
             for user in sa_session.query(app.model.User) \
@@ -458,8 +458,8 @@ def open_repository_files_folder(app, folder_path, repository_id, is_admin=False
         if filename:
             if os.path.isdir(full_path) and path_is_browsable:
                 # Append a '/' character so that our jquery dynatree will function properly.
-                filename = '%s/' % filename
-                full_path = '%s/' % full_path
+                filename = f'{filename}/'
+                full_path = f'{full_path}/'
                 is_folder = True
             node = {"title": filename,
                     "isFolder": is_folder,
