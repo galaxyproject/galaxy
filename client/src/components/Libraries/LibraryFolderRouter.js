@@ -13,7 +13,7 @@ export default new VueRouter({
     base: `${getAppRoot()}library`,
     routes: [
         {
-            path: "/list-test",
+            path: "/libraries-list",
             name: "LibrariesList",
             component: LibrariesList,
         },

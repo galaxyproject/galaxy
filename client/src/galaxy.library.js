@@ -126,25 +126,6 @@ var GalaxyLibrary = Backbone.View.extend({
 
         this.library_router = new LibraryRouter();
 
-        this.library_router.on("route:libraries", () => {
-            if (Galaxy.libraries.libraryToolbarView) {
-                Galaxy.libraries.libraryToolbarView.$el.unbind("click");
-            }
-            Galaxy.libraries.libraryToolbarView = new mod_librarytoolbar_view.LibraryToolbarView();
-            Galaxy.libraries.libraryListView = new mod_librarylist_view.LibraryListView();
-        });
-
-        this.library_router.on("route:libraries_page", (show_page) => {
-            if (Galaxy.libraries.libraryToolbarView === null) {
-                Galaxy.libraries.libraryToolbarView = new mod_librarytoolbar_view.LibraryToolbarView();
-                Galaxy.libraries.libraryListView = new mod_librarylist_view.LibraryListView({ show_page: show_page });
-            } else {
-                Galaxy.libraries.libraryListView.render({
-                    show_page: show_page,
-                });
-            }
-        });
-
         this.library_router.on("route:dataset_detail", (folder_id, dataset_id) => {
             if (Galaxy.libraries.datasetView) {
                 Galaxy.libraries.datasetView.$el.unbind("click");
