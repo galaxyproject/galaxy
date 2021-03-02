@@ -4,6 +4,10 @@
             <b-button class="mr-1" @click="gotoFirstPage" title="go to first page">
                 <font-awesome-icon icon="home" />
             </b-button>
+            <b-button v-b-toggle.collapse-2 v-if="isAdmin" title="Create new folder" class="mr-1">
+                <font-awesome-icon icon="plus" />
+                Library
+            </b-button>
             <SearchField :typingDelay="0" @updateSearch="searchValue($event)" />
             <b-form-checkbox class="mr-1" @input="toggle_include_deleted($event)">
                 include deleted
@@ -12,6 +16,23 @@
                 exclude restricted
             </b-form-checkbox>
         </div>
+        <b-collapse v-model="isNewLibFormVisible" id="collapse-2">
+            <b-card>
+                <b-form @submit.prevent="newLibrary">
+                    <b-input-group class="mb-2">
+                        <b-form-input v-model="newLibraryForm.name" required placeholder="Name" />
+                        <b-form-input v-model="newLibraryForm.description" required placeholder="Description" />
+                        <b-form-input v-model="newLibraryForm.synopsis" placeholder="Synopsis" />
+                        <template v-slot:append>
+                            <b-button type="submit" title="save">
+                                <font-awesome-icon :icon="['far', 'save']" />
+                                Save
+                            </b-button>
+                        </template>
+                    </b-input-group>
+                </b-form>
+            </b-card>
+        </b-collapse>
         <b-table
             id="libraries_list"
             striped
@@ -188,6 +209,7 @@ export default {
     data() {
         const galaxy = getGalaxyInstance();
         return {
+            isNewLibFormVisible: false,
             currentPage: 1,
             fields: fields,
             perPage: DEFAULT_PER_PAGE,
@@ -199,6 +221,11 @@ export default {
             excluded: [],
             filter: null,
             isAdmin: galaxy.user.isAdmin(),
+            newLibraryForm: {
+                name: "",
+                description: "",
+                synopsis: "",
+            },
         };
     },
     created() {
@@ -290,6 +317,22 @@ export default {
                 },
                 (error) => onError(error),
                 true
+            );
+        },
+        newLibrary() {
+            this.services.createNewLibrary(
+                this.newLibraryForm.name,
+                this.newLibraryForm.description,
+                this.newLibraryForm.synopsis,
+                (newLib) => {
+                    this.librariesList.push(newLib);
+                    this.newLibraryForm.name = "";
+                    this.newLibraryForm.description = "";
+                    this.newLibraryForm.synopsis = "";
+                    this.isNewLibFormVisible = false;
+                    Toast.success("Library created.");
+                },
+                (error) => onError(error)
             );
         },
     },

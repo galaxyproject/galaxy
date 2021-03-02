@@ -48,4 +48,24 @@ export class Services {
             rethrowSimple(e);
         }
     }
+    async createNewLibrary(name, description, synopsis, onSucess, onError) {
+        const url = `http://localhost:8080/api/libraries/`;
+        try {
+            const response = axios
+                .post(url, {
+                    name: name,
+                    description: description,
+                    synopsis: synopsis,
+                })
+                .then((response) => {
+                    onSucess(response.data);
+                })
+                .catch((error) => {
+                    onError(error);
+                });
+            return response.data;
+        } catch (e) {
+            rethrowSimple(e);
+        }
+    }
 }
