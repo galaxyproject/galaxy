@@ -73,7 +73,7 @@ var LibraryView = Backbone.View.extend({
             is_admin = Galaxy.user.isAdmin();
         }
         var template = this.templateLibraryPermissions();
-        this.$el.html(template({ library: this.model, is_admin: is_admin }));
+        this.$el.html(template({ library: this.model, is_admin: is_admin, rootPath: getAppRoot() }));
 
         var self = this;
         $.get(`${getAppRoot()}api/libraries/${self.id}/permissions?scope=current`)
@@ -217,7 +217,7 @@ var LibraryView = Backbone.View.extend({
         return _.template(
             `<div class="library_style_container">
                 <div>
-                    <a href="#">
+                    <a href="<% rootPath %>libraries-list">
                         <button data-toggle="tooltip" data-placement="top"
                             title="Go back to the list of Libraries" class="btn btn-secondary primary-button" type="button">
                             <span class="fa fa-list"></span>&nbsp;Libraries
