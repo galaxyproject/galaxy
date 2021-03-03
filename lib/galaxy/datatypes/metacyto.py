@@ -36,6 +36,7 @@ class mStats(Tabular):
                 return True
             elif file_prefix.truncated and file_prefix.string_io().read() == header_line:
                 return True
+        return False
 
 
 class mClrList(Tabular):
