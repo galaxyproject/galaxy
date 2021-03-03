@@ -1,11 +1,11 @@
-## Why did you make this change?
-(cite Issue # OR provide rationalization of changes if no issue exists)
-
-
-
 ## What did you do? 
 - [describe the proposed changes]
 - 
+
+
+## Why did you make this change?
+(Cite Issue number OR provide rationalization of changes if no issue exists)
+(If fixing a bug, please add any relevant error or traceback)
 
 
 ## How to test the changes? 
