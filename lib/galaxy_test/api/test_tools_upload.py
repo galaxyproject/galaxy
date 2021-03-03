@@ -224,7 +224,7 @@ class ToolsUploadTestCase(ApiTestCase):
         self.assertEqual(tiff_metadata["file_ext"], "tiff")
 
     @skip_without_datatype("ome.tiff")
-    def test_image_upload_auto(self):
+    def test_ometiff_upload_sniff(self):
         tiff_path = TestDataResolver().get_filename("1.ome.tiff")
         with open(tiff_path, "rb") as fh:
             tiff_metadata = self._upload_and_get_details(fh, file_type="auto")
