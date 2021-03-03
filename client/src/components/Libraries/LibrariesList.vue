@@ -119,7 +119,7 @@
                     <b-button
                         v-if="row.item.can_user_manage && !row.item.editMode"
                         size="sm"
-                        class="lib-btn permission_folder_btn"
+                        class="lib-btn permission_library_btn"
                         :title="'Permissions of ' + row.item.name"
                         :href="`${root}library/list#library/${row.item.id}/permissions`"
                     >

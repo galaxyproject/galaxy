@@ -38,7 +38,7 @@ export default {
             if (!this.awaitingSearch) {
                 setTimeout(() => {
                     this.startSearch();
-                }, this.typingDelay); // 1 sec delay
+                }, this.typingDelay);
             }
             this.awaitingSearch = true;
         },

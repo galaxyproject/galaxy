@@ -165,10 +165,6 @@ class LibraryContentsTestCase(SeleniumTestCase, UsesLibraryAssertions):
         self.screenshot("libraries_show_details")
 
     def navigate_to_new_library(self, login=True):
-        print("!!!!!!!!!")
-        print("!!!!!!!!!")
-        print("!!!!!!!!!")
-        print("!!!!!!!!!")
         self.create_new_library(login)
         self.libraries_open_with_name(self.name)
 
