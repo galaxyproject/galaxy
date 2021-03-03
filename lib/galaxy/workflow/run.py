@@ -173,7 +173,12 @@ class WorkflowInvoker:
 
         remaining_steps = self.progress.remaining_steps()
         delayed_steps = False
+        max_jobs_per_iteration_reached = False
         for (step, workflow_invocation_step) in remaining_steps:
+            max_jobs_to_schedule = self.progress.maximum_jobs_to_schedule_or_none
+            if max_jobs_to_schedule is not None and max_jobs_to_schedule <= 0:
+                max_jobs_per_iteration_reached = True
+                break
             step_delayed = False
             step_timer = ExecutionTimer()
             try:
@@ -208,7 +213,7 @@ class WorkflowInvoker:
             if not step_delayed:
                 log.debug(f"Workflow step {step.id} of invocation {workflow_invocation.id} invoked {step_timer}")
 
-        if delayed_steps:
+        if delayed_steps or max_jobs_per_iteration_reached:
             state = model.WorkflowInvocation.states.READY
         else:
             state = model.WorkflowInvocation.states.SCHEDULED
