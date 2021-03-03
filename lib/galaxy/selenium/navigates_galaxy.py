@@ -957,7 +957,7 @@ class NavigatesGalaxy(HasDriver):
         return search_element
 
     def libraries_index_sort_selector(self):
-        return ".sort-libraries-link"
+        return "th[aria-sort]"
 
     def libraries_index_sort_click(self):
         sort_element = self.wait_for_selector_clickable(self.libraries_index_sort_selector())

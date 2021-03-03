@@ -74,14 +74,11 @@ class LibraryLandingTestCase(SeleniumTestCase):
 
         self._assert_num_displayed_libraries_is(3)
         self.screenshot("libraries_index_search")
-
-        self._assert_names_are([namebase + " a", namebase + " b", namebase + " c"])
+        # sort ascending
         self.libraries_index_sort_click()
-
-        # TODO: Usability bug in libraries - should need to resort - it should
-        # sort the entities on the screen.
-        self.libraries_index_search_for(namebase)
-
+        self._assert_names_are([namebase + " a", namebase + " b", namebase + " c"])
+        # sort descending
+        self.libraries_index_sort_click()
         self._assert_names_are([namebase + " c", namebase + " b", namebase + " a"])
 
     def _search_for_only_with_name(self, name):
