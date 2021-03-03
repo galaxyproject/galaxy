@@ -4234,6 +4234,14 @@ The default is ``galaxy.json``.
   </xs:group>
 
   <xs:attributeGroup name="OutputCommon">
+    <xs:attribute name="format" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The short name for the output datatype.
+The valid values for format can be found in
+[/config/datatypes_conf.xml.sample](https://github.com/galaxyproject/galaxy/blob/dev/config/datatypes_conf.xml.sample)
+(e.g. ``format="pdf"`` or ``format="fastqsanger"``).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="format_source" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">This sets the data type of the output dataset(s) to be the same format as that of the specified tool input.</xs:documentation>
@@ -4269,14 +4277,6 @@ pipes or periods (e.g. ``.``).]]></xs:documentation>
 If ``true``, this output will sniffed and its format determined automatically by Galaxy.
 
 ]]></xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="format" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">The short name for the output datatype.
-The valid values for format can be found in
-[/config/datatypes_conf.xml.sample](https://github.com/galaxyproject/galaxy/blob/dev/config/datatypes_conf.xml.sample)
-(e.g. ``format="pdf"`` or ``format="fastqsanger"``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="default_identifier_source" type="xs:string">

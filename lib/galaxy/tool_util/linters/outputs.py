@@ -38,7 +38,7 @@ def lint_output(tool_xml, lint_ctx):
                 lint_ctx.warn("Collection output with undefined 'type' found.")
             if "structured_like" in output.attrib and "inherit_format" in output.attrib:
                 format_set = True
-        if "format_source" in output.attrib:
+        if "format" in output.attrib or "format_source" in output.attrib:
             format_set = True
         for sub in output:
             if __check_pattern(sub):
