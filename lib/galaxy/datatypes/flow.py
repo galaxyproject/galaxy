@@ -40,8 +40,10 @@ class FCS(Binary):
         """
         content = file_prefix.contents_header_bytes[:42].decode()
         version = content[:6]
-        assert version in ["FCS2.0", "FCS3.0", "FCS3.1"]
-        assert content[6:10] == '    '
+        if version not in ["FCS2.0", "FCS3.0", "FCS3.1"]:
+            return False
+        if content[6:10] != '    ':
+            return False
         # we only need to check ioffs 2 to 5
         int(content[10:42].replace(' ', ''))
         return True
