@@ -233,6 +233,7 @@ svgwrite==1.4.1; python_version >= "3.6"
 tempita==0.5.2
 tenacity==7.0.0
 testfixtures==6.17.1
+tifffile==2021.2.26
 toml==0.10.2; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.3.0" and python_version >= "3.6"
 tornado==6.1; python_version >= "3.5"
 tqdm==4.59.0; python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0"
