@@ -20,8 +20,7 @@ class LibraryLandingTestCase(SeleniumTestCase):
         self.components.libraries.create_new_library_btn.wait_for_and_click()
         self.wait_for_selector_visible(".new-row")
         self.screenshot("libraries_new")
-        close_button = self.wait_for_selector_clickable(".cancel_library_btn")
-        close_button.click()
+        self.components.libraries.create_new_library_btn.wait_for_and_click()
         self.wait_for_overlays_cleared()
         assert self._num_displayed_libraries() == num_displayed_libraries
 

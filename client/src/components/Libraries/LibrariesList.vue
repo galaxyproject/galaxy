@@ -19,7 +19,7 @@
         <b-collapse v-model="isNewLibFormVisible" id="collapse-2">
             <b-card>
                 <b-form @submit.prevent="newLibrary">
-                    <b-input-group class="mb-2">
+                    <b-input-group class="mb-2 new-row">
                         <b-form-input v-model="newLibraryForm.name" required placeholder="Name" />
                         <b-form-input v-model="newLibraryForm.description" required placeholder="Description" />
                         <b-form-input v-model="newLibraryForm.synopsis" placeholder="Synopsis" />
@@ -103,7 +103,7 @@
                     <b-button
                         v-if="row.item.can_user_modify"
                         size="sm"
-                        class="lib-btn edit-btn"
+                        class="lib-btn"
                         :title="`Edit ${row.item.name}`"
                         @click="toggleEditMode(row.item)"
                     >
