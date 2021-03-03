@@ -48,6 +48,8 @@ class TagHandlerTestCase(BaseTestCase):
             'tag1:\x00value1',
             'tag1,tag2',
             '...',
+            '.test',
+            'test.a.b',
         ]
         expected_tags = [
             ['tag1'],
@@ -57,6 +59,8 @@ class TagHandlerTestCase(BaseTestCase):
             ['tag1:value1'],
             ['tag1', 'tag2'],
             [],
+            ['test'],
+            ['test.a.b'],
         ]
         for tag_string, expected_tag in zip(tag_strings, expected_tags):
             hda = self._create_vanilla_hda()
