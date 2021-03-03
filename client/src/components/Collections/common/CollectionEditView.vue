@@ -11,15 +11,29 @@
         <b-tabs content-class="mt-3">
             <b-tab>
                 <template v-slot:title> <i class="fa fa-bars"></i>{{ l(" Attributes") }}</template>
-                <b>{{ l("Name: ") }}</b> <i>{{ collectionName }}</i
-                ><br />
-                <b>{{ l("Collection Type: ") }}</b> <i>{{ collectionType }}</i
-                ><br />
+                <b>{{ l("Name: ") }}</b> <i>{{ collectionName }}</i>
+                <br />
+                <b>{{ l("Collection Type: ") }}</b> <i>{{ collectionType }}</i>
+                <br />
                 <b>{{ l("Elements: ") }}</b> <br />
                 <div v-for="element in collectionElements" :key="element">{{ element.element_identifier }} <br /></div>
             </b-tab>
             <b-tab>
                 <template v-slot:title> <i class="fa fa-table"></i>{{ l(" Database/Build") }}</template>
+                <div class="alert alert-secondary" role="alert">
+                    <div class="float-left">
+                        Change database/genome of all elements in collection
+                    </div>
+                    <div class="text-right">
+                        <button
+                            class="save-collection btn btn-primary"
+                            @click="clickedSave"
+                            :disabled="genome.id == databaseKeyFromElements"
+                        >
+                            {{ l("Save") }}
+                        </button>
+                    </div>
+                </div>
                 <b>{{ l("Database/Build: ") }}</b>
                 <multiselect
                     v-model="genome"
@@ -41,10 +55,24 @@
             </b-tab>
             <b-tab>
                 <template v-slot:title> <i class="fa fa-gear"></i>{{ l(" Convert") }}</template>
-                <b>{{ l("Datatype: ") }}</b> <i>{{ datatypesFromElements }}</i>
+                <b>{{ l("Datatype: ") }}</b> <i>{{ datatypeFromElements }}</i>
             </b-tab>
             <b-tab>
                 <template v-slot:title> <i class="fa fa-database"></i>{{ l(" Datatype") }}</template>
+                <div class="alert alert-secondary" role="alert">
+                    <div class="float-left">
+                        Change datatype of all elements in collection
+                    </div>
+                    <div class="text-right">
+                        <button
+                            class="save-collection btn btn-primary"
+                            @click="clickedSave"
+                            :disabled="extension.id == datatypeFromElements"
+                        >
+                            {{ l("Save") }}
+                        </button>
+                    </div>
+                </div>
                 <b>{{ l("Datatype: ") }}</b>
                 <multiselect
                     v-model="extension"
@@ -61,7 +89,7 @@
                             <span class="spinner fa fa-spinner fa-spin fa-1x" />
                         </div>
                     </template> --> </multiselect
-                ><i>{{ datatypesFromElements }}</i>
+                ><i>original input: {{ datatypeFromElements }}</i>
             </b-tab>
             <b-tab>
                 <template v-slot:title> <i class="fa fa-user"></i>{{ l(" Permissions") }}</template>
@@ -107,8 +135,8 @@ export default {
             collection_data: {}, //all data from the response
             extensions: [],
             genomes: [],
-            selectedGenome: "",
-            selectedExtension: "",
+            selectedGenome: {},
+            selectedExtension: {},
             databaseKeyFromElements: null,
             datatypeFromElements: null,
         };
@@ -208,6 +236,9 @@ export default {
                 this.datatypeFromElements = UploadUtils.DEFAULT_EXTENSION.id;
             }
             this.selectedExtension = this.extensions.find((element) => element.id == this.datatypeFromElements);
+        },
+        clickedSave: function () {
+            console.log("clicked save");
         },
     },
 };
