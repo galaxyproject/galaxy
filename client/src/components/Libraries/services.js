@@ -8,7 +8,7 @@ export class Services {
     }
 
     async getLibraries(include_deleted = false) {
-        const url = `http://localhost:8080/api/libraries?deleted=${include_deleted}`;
+        const url = `${this.root}api/libraries?deleted=${include_deleted}`;
         try {
             const response = await axios.get(url);
             return response.data;
@@ -17,7 +17,7 @@ export class Services {
         }
     }
     async saveChanges(lib, onSucess, onError) {
-        const url = `http://localhost:8080/api/libraries/${lib.id}`;
+        const url = `${this.root}api/libraries/${lib.id}`;
         try {
             const response = axios
                 .patch(url, lib)
@@ -33,7 +33,7 @@ export class Services {
         }
     }
     async deleteLibrary(lib, onSucess, onError, isUndelete = false) {
-        const url = `http://localhost:8080/api/libraries/${lib.id}${isUndelete ? "?undelete=true" : ""}`;
+        const url = `${this.root}api/libraries/${lib.id}${isUndelete ? "?undelete=true" : ""}`;
         try {
             const response = axios
                 .delete(url, lib)
@@ -49,7 +49,7 @@ export class Services {
         }
     }
     async createNewLibrary(name, description, synopsis, onSucess, onError) {
-        const url = `http://localhost:8080/api/libraries/`;
+        const url = `${this.root}api/libraries/`;
         try {
             const response = axios
                 .post(url, {
