@@ -4,13 +4,13 @@
 
 
 ## What did you do? 
-- [add implementation details here]
+- [describe the proposed changes]
 - 
 
 
 ## How to test the changes? 
 (select the most appropriate option; if the latter, provide steps for testing below)
-- [ ] I've included a unit or integration test
+- [ ] I've included appropriate automated tests
 - [ ] I've included instructions on how to test my changes
 
 ## Steps for testing:
