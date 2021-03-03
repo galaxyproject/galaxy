@@ -50,7 +50,7 @@
             <template v-slot:cell(name)="row">
                 <textarea
                     v-if="row.item.editMode"
-                    class="form-control"
+                    class="form-control input_library_name"
                     :ref="`name-${row.item.id}`"
                     :value="row.item.name"
                     rows="3"
@@ -103,7 +103,7 @@
                     <b-button
                         v-if="row.item.can_user_modify"
                         size="sm"
-                        class="lib-btn"
+                        class="lib-btn edit_library_btn save_library_btn"
                         :title="`Edit ${row.item.name}`"
                         @click="toggleEditMode(row.item)"
                     >
