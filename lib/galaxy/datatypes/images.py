@@ -4,11 +4,11 @@ Image classes
 import base64
 import json
 import logging
-import tifffile
 import zipfile
 from urllib.parse import quote_plus
 
 import numpy as np
+import tifffile
 
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.metadata import (
@@ -99,8 +99,17 @@ class OMETiff(Tiff):
             with open(offsets_file.file_name, 'w') as f:
                 json.dump(offsets, f)
             dataset.metadata.offsets = offsets_file
-        except:
+        except Exception:
             pass
+
+    def sniff(self, filename):
+        is_tiff = Tiff().sniff(filename)
+        if not is_tiff:
+            return False
+        with tifffile.TiffFile(filename) as tif:
+            if tif.is_ome:
+                return True
+        return False
 
 
 class Hamamatsu(Image):
