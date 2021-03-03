@@ -8,7 +8,7 @@ galaxy-web-stack
 kombu
 Beaker
 pykwalify
-pulsar-galaxy-lib==0.14.0.dev4
+pulsar-galaxy-lib
 gxformat2
 Mako
 sqlitedict
@@ -17,3 +17,4 @@ sortedcontainers
 Markdown
 refgenconf
 Fabric3
+lagom

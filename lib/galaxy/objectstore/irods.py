@@ -94,7 +94,7 @@ def parse_config_xml(config_xml):
                 'port': port,
                 'timeout': timeout,
                 'poolsize': poolsize,
-                'refresh_time' : refresh_time
+                'refresh_time': refresh_time,
             },
             'cache': {
                 'size': cache_size,

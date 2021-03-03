@@ -9,14 +9,10 @@ from typing import (
     Union,
 )
 
-from fastapi import (
-    Depends,
-    Query,
-)
+from fastapi import Query
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter as APIRouter
 
-from galaxy.app import UniverseApplication
 from galaxy.datatypes.registry import Registry
 from galaxy.managers.datatypes import (
     DatatypeConverterList,
@@ -33,33 +29,31 @@ from galaxy.managers.datatypes import (
 )
 from galaxy.util import asbool
 from galaxy.web import expose_api_anonymous_and_sessionless
-from galaxy.webapps.base.controller import BaseAPIController
-from . import get_app
+from . import (
+    BaseGalaxyAPIController,
+    depends,
+)
 
 log = logging.getLogger(__name__)
 
 router = APIRouter(tags=['datatypes'])
 
-ExtensionOnlyQueryParam : Optional[bool] = Query(
+ExtensionOnlyQueryParam: Optional[bool] = Query(
     default=True,
     title="Extension only",
     description="Whether to return only the datatype's extension rather than the datatype's details",
 )
 
-UploadOnlyQueryParam : Optional[bool] = Query(
+UploadOnlyQueryParam: Optional[bool] = Query(
     default=True,
     title="Upload only",
     description="Whether to return only datatypes which can be uploaded",
 )
 
 
-def get_datatypes_registry(app: UniverseApplication = Depends(get_app)) -> Registry:
-    return app.datatypes_registry
-
-
 @cbv(router)
 class FastAPIDatatypes:
-    datatypes_registry: Registry = Depends(get_datatypes_registry)
+    datatypes_registry: Registry = depends(Registry)
 
     @router.get(
         '/api/datatypes',
@@ -138,7 +132,7 @@ class FastAPIDatatypes:
         return self.datatypes_registry.edam_data
 
 
-class DatatypesController(BaseAPIController):
+class DatatypesController(BaseGalaxyAPIController):
 
     @expose_api_anonymous_and_sessionless
     def index(self, trans, **kwd):

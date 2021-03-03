@@ -5,8 +5,8 @@ Provides mapping between extensions and datatypes, mime-types, etc.
 import imp
 import logging
 import os
-from collections import OrderedDict
 from string import Template
+from typing import Dict
 
 import yaml
 
@@ -41,7 +41,7 @@ class Registry:
         self.config = config
         self.datatypes_by_extension = {}
         self.mimetypes_by_extension = {}
-        self.datatype_converters = OrderedDict()
+        self.datatype_converters = {}
         # Converters defined in local datatypes_conf.xml
         self.converters = []
         self.converter_tools = set()
@@ -58,7 +58,7 @@ class Registry:
         # tool shed repositories that contain display applications.
         self.proprietary_display_app_containers = []
         # Map a display application id to a display application
-        self.display_applications = OrderedDict()
+        self.display_applications: Dict[str, DisplayApplication] = {}
         # The following 2 attributes are used in the to_xml_file()
         # method to persist the current state into an xml file.
         self.display_path_attr = None
@@ -638,7 +638,7 @@ class Registry:
                 else:
                     toolbox.register_tool(converter)
                     if source_datatype not in self.datatype_converters:
-                        self.datatype_converters[source_datatype] = OrderedDict()
+                        self.datatype_converters[source_datatype] = {}
                     self.datatype_converters[source_datatype][target_datatype] = converter
                     if not hasattr(toolbox.app, 'tool_cache') or converter.id in toolbox.app.tool_cache._new_tool_ids:
                         self.log.debug("Loaded converter: %s", converter.id)
@@ -756,73 +756,73 @@ class Registry:
         # Default values.
         if not self.datatypes_by_extension:
             self.datatypes_by_extension = {
-                'ab1'           : binary.Ab1(),
-                'axt'           : sequence.Axt(),
-                'bam'           : binary.Bam(),
-                'bed'           : interval.Bed(),
-                'coverage'      : coverage.LastzCoverage(),
-                'customtrack'   : interval.CustomTrack(),
-                'csfasta'       : sequence.csFasta(),
-                'fasta'         : sequence.Fasta(),
-                'eland'         : tabular.Eland(),
-                'fastq'         : sequence.Fastq(),
-                'fastqsanger'   : sequence.FastqSanger(),
-                'gtf'           : interval.Gtf(),
-                'gff'           : interval.Gff(),
-                'gff3'          : interval.Gff3(),
-                'genetrack'     : tracks.GeneTrack(),
-                'h5'            : binary.H5(),
-                'interval'      : interval.Interval(),
-                'laj'           : images.Laj(),
-                'lav'           : sequence.Lav(),
-                'maf'           : sequence.Maf(),
-                'pileup'        : tabular.Pileup(),
-                'qualsolid'     : qualityscore.QualityScoreSOLiD(),
-                'qualsolexa'    : qualityscore.QualityScoreSolexa(),
-                'qual454'       : qualityscore.QualityScore454(),
-                'sam'           : tabular.Sam(),
-                'scf'           : binary.Scf(),
-                'sff'           : binary.Sff(),
-                'tabular'       : tabular.Tabular(),
-                'csv'           : tabular.CSV(),
-                'taxonomy'      : tabular.Taxonomy(),
-                'txt'           : data.Text(),
-                'wig'           : interval.Wiggle(),
-                'xml'           : xml.GenericXml(),
+                'ab1': binary.Ab1(),
+                'axt': sequence.Axt(),
+                'bam': binary.Bam(),
+                'bed': interval.Bed(),
+                'coverage': coverage.LastzCoverage(),
+                'customtrack': interval.CustomTrack(),
+                'csfasta': sequence.csFasta(),
+                'fasta': sequence.Fasta(),
+                'eland': tabular.Eland(),
+                'fastq': sequence.Fastq(),
+                'fastqsanger': sequence.FastqSanger(),
+                'gtf': interval.Gtf(),
+                'gff': interval.Gff(),
+                'gff3': interval.Gff3(),
+                'genetrack': tracks.GeneTrack(),
+                'h5': binary.H5(),
+                'interval': interval.Interval(),
+                'laj': images.Laj(),
+                'lav': sequence.Lav(),
+                'maf': sequence.Maf(),
+                'pileup': tabular.Pileup(),
+                'qualsolid': qualityscore.QualityScoreSOLiD(),
+                'qualsolexa': qualityscore.QualityScoreSolexa(),
+                'qual454': qualityscore.QualityScore454(),
+                'sam': tabular.Sam(),
+                'scf': binary.Scf(),
+                'sff': binary.Sff(),
+                'tabular': tabular.Tabular(),
+                'csv': tabular.CSV(),
+                'taxonomy': tabular.Taxonomy(),
+                'txt': data.Text(),
+                'wig': interval.Wiggle(),
+                'xml': xml.GenericXml(),
             }
             self.mimetypes_by_extension = {
-                'ab1'           : 'application/octet-stream',
-                'axt'           : 'text/plain',
-                'bam'           : 'application/octet-stream',
-                'bed'           : 'text/plain',
-                'customtrack'   : 'text/plain',
-                'csfasta'       : 'text/plain',
-                'eland'         : 'application/octet-stream',
-                'fasta'         : 'text/plain',
-                'fastq'         : 'text/plain',
-                'fastqsanger'   : 'text/plain',
-                'gtf'           : 'text/plain',
-                'gff'           : 'text/plain',
-                'gff3'          : 'text/plain',
-                'h5'            : 'application/octet-stream',
-                'interval'      : 'text/plain',
-                'laj'           : 'text/plain',
-                'lav'           : 'text/plain',
-                'maf'           : 'text/plain',
-                'memexml'       : 'application/xml',
-                'pileup'        : 'text/plain',
-                'qualsolid'     : 'text/plain',
-                'qualsolexa'    : 'text/plain',
-                'qual454'       : 'text/plain',
-                'sam'           : 'text/plain',
-                'scf'           : 'application/octet-stream',
-                'sff'           : 'application/octet-stream',
-                'tabular'       : 'text/plain',
-                'csv'           : 'text/plain',
-                'taxonomy'      : 'text/plain',
-                'txt'           : 'text/plain',
-                'wig'           : 'text/plain',
-                'xml'           : 'application/xml',
+                'ab1': 'application/octet-stream',
+                'axt': 'text/plain',
+                'bam': 'application/octet-stream',
+                'bed': 'text/plain',
+                'customtrack': 'text/plain',
+                'csfasta': 'text/plain',
+                'eland': 'application/octet-stream',
+                'fasta': 'text/plain',
+                'fastq': 'text/plain',
+                'fastqsanger': 'text/plain',
+                'gtf': 'text/plain',
+                'gff': 'text/plain',
+                'gff3': 'text/plain',
+                'h5': 'application/octet-stream',
+                'interval': 'text/plain',
+                'laj': 'text/plain',
+                'lav': 'text/plain',
+                'maf': 'text/plain',
+                'memexml': 'application/xml',
+                'pileup': 'text/plain',
+                'qualsolid': 'text/plain',
+                'qualsolexa': 'text/plain',
+                'qual454': 'text/plain',
+                'sam': 'text/plain',
+                'scf': 'application/octet-stream',
+                'sff': 'application/octet-stream',
+                'tabular': 'text/plain',
+                'csv': 'text/plain',
+                'taxonomy': 'text/plain',
+                'txt': 'text/plain',
+                'wig': 'text/plain',
+                'xml': 'application/xml',
             }
         # super supertype fix for input steps in workflows.
         if 'data' not in self.datatypes_by_extension:
@@ -863,7 +863,7 @@ class Registry:
     def get_converters_by_datatype(self, ext):
         """Returns available converters by source type"""
         if ext not in self._converters_by_datatype:
-            converters = OrderedDict()
+            converters = {}
             source_datatype = type(self.get_datatype_by_extension(ext))
             for ext2, converters_dict in self.datatype_converters.items():
                 converter_datatype = type(self.get_datatype_by_extension(ext2))

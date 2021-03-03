@@ -15,17 +15,17 @@ class TagHandlerTestCase(BaseTestCase):
 
     def set_up_managers(self):
         super().set_up_managers()
-        self.hda_manager = hdas.HDAManager(self.app)
-        self.history_manager = HistoryManager(self.app)
-        self.dataset_manager = DatasetManager(self.app)
-        self.tag_handler = GalaxyTagHandler(self.trans.sa_session)
+        self.app.hda_manager = self.app[hdas.HDAManager]
+        self.app.history_manager = self.app[HistoryManager]
+        self.app.dataset_manager = self.app[DatasetManager]
+        self.tag_handler = self.app[GalaxyTagHandler]
         self.user = self.user_manager.create(**user2_data)
 
     def _create_vanilla_hda(self, user=None):
         owner = user or self.user
-        history1 = self.history_manager.create(name='history1', user=owner)
-        dataset1 = self.dataset_manager.create()
-        return self.hda_manager.create(history=history1, dataset=dataset1)
+        history1 = self.app.history_manager.create(name='history1', user=owner)
+        dataset1 = self.app.dataset_manager.create()
+        return self.app.hda_manager.create(history=history1, dataset=dataset1)
 
     def _check_tag_list(self, tags, expected_tags):
         self.assertEqual(len(tags), len(expected_tags))

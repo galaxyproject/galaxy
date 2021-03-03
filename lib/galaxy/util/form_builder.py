@@ -25,12 +25,12 @@ class BaseField:
 
     def to_dict(self):
         return {
-            'name'      : self.name,
-            'label'     : self.label,
-            'disabled'  : self.disabled,
-            'optional'  : self.optional,
-            'value'     : self.value,
-            'help'      : self.help
+            'name': self.name,
+            'label': self.label,
+            'disabled': self.disabled,
+            'optional': self.optional,
+            'value': self.value,
+            'help': self.help
         }
 
 

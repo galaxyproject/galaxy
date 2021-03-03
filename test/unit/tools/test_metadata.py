@@ -33,10 +33,6 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesApp, tools_support.U
         super().tearDown()
         self.metadata_compute_strategy = None
 
-    def test_simple_output_legacy(self):
-        self.app.config.metadata_strategy = "legacy"
-        self._test_simple_output()
-
     def test_simple_output_directory(self):
         self.app.config.metadata_strategy = "directory"
         self._test_simple_output()
@@ -66,10 +62,6 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesApp, tools_support.U
         assert output_dataset.metadata.data_lines == 2
         assert output_dataset.metadata.sequences == 1
 
-    def test_primary_dataset_output_extension_legacy(self):
-        self.app.config.metadata_strategy = "legacy"
-        self._test_primary_dataset_output_extension()
-
     def test_primary_dataset_output_extension_directory(self):
         self.app.config.metadata_strategy = "directory"
         self._test_primary_dataset_output_extension()
@@ -98,10 +90,6 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesApp, tools_support.U
         self.metadata_compute_strategy.load_metadata(output_dataset, "out_file1", sa_session, working_directory=self.job_working_directory)
         assert output_dataset.metadata.data_lines == 2
         assert output_dataset.metadata.sequences == 1
-
-    def test_primary_dataset_output_metadata_override_legacy(self):
-        self.app.config.metadata_strategy = "legacy"
-        self._test_primary_dataset_output_metadata_override()
 
     def test_primary_dataset_output_metadata_override_directory(self):
         self.app.config.metadata_strategy = "directory"

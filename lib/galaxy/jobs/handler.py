@@ -40,7 +40,16 @@ JOB_WAIT, JOB_ERROR, JOB_INPUT_ERROR, JOB_INPUT_DELETED, JOB_READY, JOB_DELETED,
 DEFAULT_JOB_PUT_FAILURE_MESSAGE = 'Unable to run job due to a misconfiguration of the Galaxy job running system.  Please contact a site administrator.'
 
 
-class JobHandler:
+class JobHandlerI:
+
+    def start(self):
+        pass
+
+    def shutdown(self):
+        pass
+
+
+class JobHandler(JobHandlerI):
     """
     Handle the preparation, running, tracking, and finishing of jobs
     """
@@ -209,13 +218,13 @@ class JobHandlerQueue(Monitors):
         if self.app.config.user_activation_on:
             jobs_at_startup = self.sa_session.query(model.Job).enable_eagerloads(False) \
                 .outerjoin(model.User) \
-                .filter(model.Job.state.in_(in_list) &
-                        (model.Job.handler == self.app.config.server_name) &
-                        or_((model.Job.user_id == null()), (model.User.active == true()))).all()
+                .filter(model.Job.state.in_(in_list)
+                        & (model.Job.handler == self.app.config.server_name)
+                        & or_((model.Job.user_id == null()), (model.User.active == true()))).all()
         else:
             jobs_at_startup = self.sa_session.query(model.Job).enable_eagerloads(False) \
-                .filter(model.Job.state.in_(in_list) &
-                        (model.Job.handler == self.app.config.server_name)).all()
+                .filter(model.Job.state.in_(in_list)
+                        & (model.Job.handler == self.app.config.server_name)).all()
 
         for job in jobs_at_startup:
             if not self.app.toolbox.has_tool(job.tool_id, job.tool_version, exact=True):
@@ -325,22 +334,31 @@ class JobHandlerQueue(Monitors):
                 .join(model.Dataset) \
                 .filter(and_(model.Job.state == model.Job.states.NEW,
                              model.Dataset.state.in_(model.Dataset.non_ready_states))).subquery()
+            rank = func.rank().over(partition_by=model.Job.table.c.user_id,
+                                    order_by=model.Job.table.c.id).label('rank')
+            job_filter_conditions = (
+                (model.Job.state == model.Job.states.NEW),
+                (model.Job.handler == self.app.config.server_name),
+                ~model.Job.table.c.id.in_(hda_not_ready),
+                ~model.Job.table.c.id.in_(ldda_not_ready))
             if self.app.config.user_activation_on:
-                jobs_to_check = self.sa_session.query(model.Job).enable_eagerloads(False) \
-                    .outerjoin(model.User) \
-                    .filter(and_((model.Job.state == model.Job.states.NEW),
-                                 or_((model.Job.user_id == null()), (model.User.active == true())),
-                                 (model.Job.handler == self.app.config.server_name),
-                                 ~model.Job.table.c.id.in_(hda_not_ready),
-                                 ~model.Job.table.c.id.in_(ldda_not_ready))) \
-                    .order_by(model.Job.id).all()
+                job_filter_conditions = job_filter_conditions + (
+                    or_((model.Job.user_id == null()), (model.User.active == true())),)
+            if self.sa_session.bind.name == 'sqlite':
+                query_objects = (model.Job,)
             else:
-                jobs_to_check = self.sa_session.query(model.Job).enable_eagerloads(False) \
-                    .filter(and_((model.Job.state == model.Job.states.NEW),
-                                 (model.Job.handler == self.app.config.server_name),
-                                 ~model.Job.table.c.id.in_(hda_not_ready),
-                                 ~model.Job.table.c.id.in_(ldda_not_ready))) \
-                    .order_by(model.Job.id).all()
+                query_objects = (model.Job, rank)
+            ready_query = self.sa_session.query(*query_objects).enable_eagerloads(False) \
+                .outerjoin(model.User) \
+                .filter(and_(*job_filter_conditions)) \
+                .order_by(model.Job.id)
+            if self.sa_session.bind.name == 'sqlite':
+                jobs_to_check = ready_query.all()
+            else:
+                ranked = ready_query.subquery()
+                jobs_to_check = self.sa_session.query(model.Job) \
+                    .join(ranked, model.Job.id == ranked.c.id) \
+                    .filter(ranked.c.rank <= self.app.job_config.handler_ready_window_size).all()
             # Filter jobs with invalid input states
             jobs_to_check = self.__filter_jobs_with_invalid_input_states(jobs_to_check)
             # Fetch all "resubmit" jobs
@@ -436,9 +454,8 @@ class JobHandlerQueue(Monitors):
         if not self.track_jobs_in_database:
             self.waiting_jobs = new_waiting_jobs
         # Remove cached wrappers for any jobs that are no longer being tracked
-        for id in list(self.job_wrappers.keys()):
-            if id not in new_waiting_jobs:
-                del self.job_wrappers[id]
+        for id in set(self.job_wrappers.keys()) - set(new_waiting_jobs):
+            del self.job_wrappers[id]
         # Flush, if we updated the state
         self.sa_session.flush()
         # Done with the session
@@ -582,14 +599,10 @@ class JobHandlerQueue(Monitors):
         if state == JOB_READY and self.app.quota_agent.is_over_quota(self.app, job, job_destination):
             return JOB_USER_OVER_QUOTA, job_destination
         # Check total walltime limits
-        if (state == JOB_READY and
-                "delta" in self.app.job_config.limits.total_walltime):
+        if (state == JOB_READY and "delta" in self.app.job_config.limits.total_walltime):
             jobs_to_check = self.sa_session.query(model.Job).filter(
                 model.Job.user_id == job.user.id,
-                model.Job.update_time >= datetime.datetime.now() -
-                datetime.timedelta(
-                    self.app.job_config.limits.total_walltime["window"]
-                ),
+                model.Job.update_time >= datetime.datetime.now() - datetime.timedelta(self.app.job_config.limits.total_walltime["window"]),
                 model.Job.state == 'ok'
             ).all()
             time_spent = datetime.timedelta(0)
@@ -919,8 +932,8 @@ class JobHandlerStopQueue(Monitors):
             newly_deleted_jobs = self.sa_session.query(model.Job).enable_eagerloads(False) \
                                      .filter((model.Job.state.in_((model.Job.states.DELETED_NEW,
                                                                    model.Job.states.DELETING,
-                                                                   model.Job.states.STOPPING))) &
-                                             (model.Job.handler == self.app.config.server_name)).all()
+                                                                   model.Job.states.STOPPING)))
+                                             & (model.Job.handler == self.app.config.server_name)).all()
             for job in newly_deleted_jobs:
                 # job.stderr is always a string (job.job_stderr + job.tool_stderr, possibly `''`),
                 # while any `not None` message returned in self.queue.get_nowait() is interpreted
@@ -944,8 +957,8 @@ class JobHandlerStopQueue(Monitors):
                      job.states.DELETING,
                      job.states.DELETED,
                      job.states.STOPPING,
-                     job.states.STOPPED) and
-                    job.finished):
+                     job.states.STOPPED)
+                    and job.finished):
                 # terminated before it got here
                 log.debug('Job %s already finished, not deleting or stopping', job.id)
                 continue

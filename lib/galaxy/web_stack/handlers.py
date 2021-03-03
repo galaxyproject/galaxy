@@ -86,6 +86,9 @@ class ConfiguresHandlers:
             max_grab_str = config_element.attrib.get('max_grab', None)
             if max_grab_str:
                 handling_config_dict["max_grab"] = int(max_grab_str)
+            ready_window_size_str = config_element.attrib.get("ready_window_size", None)
+            if ready_window_size_str:
+                handling_config_dict["ready_window_size"] = int(ready_window_size_str)
 
         return handling_config_dict
 
@@ -425,7 +428,7 @@ class ConfiguresHandlers:
             log.debug("(%s) No handler pool (uWSGI farm) for '%s' found", obj.log_str(), tag)
             raise HandlerAssignmentSkip()
         else:
-            if flush:
+            if flush or not obj.id:
                 _timed_flush_obj(obj)
             message = message_callback()
             self.app.application_stack.send_message(pool, message)

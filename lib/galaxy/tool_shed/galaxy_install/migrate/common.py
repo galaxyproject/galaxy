@@ -66,7 +66,7 @@ class MigrateToolsApplication(galaxy.config.ConfiguresGalaxyMixin):
 
     @property
     def sa_session(self):
-        return self.model.context.current
+        return self.model.session
 
     def shutdown(self):
         self.object_store.shutdown()

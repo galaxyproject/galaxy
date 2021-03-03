@@ -151,12 +151,13 @@ export default FormBase.extend({
         // button for version selection
         var versions_button = new Ui.ButtonMenu({
             icon: "fa-cubes",
+            cls: "btn btn-secondary float-right tool-versions",
             title: options.narrow ? null : "Versions",
             tooltip: "Select another tool version",
         });
 
         if (!options.sustain_version && options.versions && options.versions.length > 1) {
-            for (var i in options.versions) {
+            for (var i in options.versions.reverse()) {
                 var version = options.versions[i];
                 if (version != options.version) {
                     versions_button.addMenu({
@@ -192,6 +193,13 @@ export default FormBase.extend({
                     `${window.location.origin + getAppRoot()}root?tool_id=${options.id}`,
                     "Link was copied to your clipboard"
                 );
+            },
+        });
+        menu_button.addMenu({
+            icon: "fa-files-o",
+            title: _l("Copy Tool ID"),
+            onclick: function () {
+                copy(`${options.id}`, "Tool ID was copied to your clipboard");
             },
         });
 

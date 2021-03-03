@@ -172,9 +172,9 @@ class ConditionalDependencies:
         return self.config["database_connection"].startswith("mysql")
 
     def check_drmaa(self):
-        return ("galaxy.jobs.runners.drmaa:DRMAAJobRunner" in self.job_runners or
-                "galaxy.jobs.runners.slurm:SlurmJobRunner" in self.job_runners or
-                "galaxy.jobs.runners.univa:UnivaJobRunner" in self.job_runners)
+        return ("galaxy.jobs.runners.drmaa:DRMAAJobRunner" in self.job_runners
+                or "galaxy.jobs.runners.slurm:SlurmJobRunner" in self.job_runners
+                or "galaxy.jobs.runners.univa:UnivaJobRunner" in self.job_runners)
 
     def check_galaxycloudrunner(self):
         return ("galaxycloudrunner.rules" in self.job_rule_modules)
@@ -198,8 +198,8 @@ class ConditionalDependencies:
         return self.config.get("statsd_host", None) is not None
 
     def check_python_ldap(self):
-        return ('ldap' in self.authenticators or
-                'activedirectory' in self.authenticators)
+        return ('ldap' in self.authenticators
+                or 'activedirectory' in self.authenticators)
 
     def check_python_pam(self):
         return 'PAM' in self.authenticators
@@ -219,15 +219,23 @@ class ConditionalDependencies:
     def check_fs_webdavfs(self):
         return 'webdav' in self.file_sources
 
+    def check_fs_s3fs(self):
+        # pyfilesystem plugin access to s3
+        return 's3' in self.file_sources
+
+    def check_s3fs(self):
+        # use s3fs directly (skipping pyfilesystem) for direct access to more options
+        return 's3fs' in self.file_sources
+
     def check_watchdog(self):
         install_set = {'auto', 'True', 'true', 'polling'}
-        return (self.config['watch_tools'] in install_set or
-                self.config['watch_tool_data_dir'] in install_set)
+        return (self.config['watch_tools'] in install_set
+                or self.config['watch_tool_data_dir'] in install_set)
 
     def check_docker(self):
-        return (self.config.get("enable_beta_containers_interface", False) and
-                ('docker' in self.container_interface_types or
-                 'docker_swarm' in self.container_interface_types))
+        return (self.config.get("enable_beta_containers_interface", False)
+                and ('docker' in self.container_interface_types
+                     or 'docker_swarm' in self.container_interface_types))
 
     def check_python_gitlab(self):
         return 'gitlab' in self.error_report_modules

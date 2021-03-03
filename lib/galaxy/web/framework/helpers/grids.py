@@ -1,6 +1,5 @@
 import logging
 import math
-from collections import OrderedDict
 from json import dumps, loads
 from typing import Dict, List, Optional
 
@@ -492,7 +491,7 @@ class SharingStatusColumn(GridColumn):
 
     def get_accepted_filters(self):
         """ Returns a list of accepted filters for this column. """
-        accepted_filter_labels_and_vals = OrderedDict()
+        accepted_filter_labels_and_vals = {}
         accepted_filter_labels_and_vals["private"] = "private"
         accepted_filter_labels_and_vals["shared"] = "shared"
         accepted_filter_labels_and_vals["accessible"] = "accessible"
@@ -801,32 +800,32 @@ class Grid:
         # results via a controller method, which is require substantial changes. Hence, for now, return grid
         # as str.
         grid_config = {
-            'title'                         : self.title,
-            'title_id'                      : getattr(self, "title_id", None),
-            'url_base'                      : trans.request.path_url,
-            'async_ops'                     : [],
-            'categorical_filters'           : {},
-            'filters'                       : cur_filter_dict,
-            'sort_key'                      : sort_key,
-            'show_item_checkboxes'          : self.show_item_checkboxes or kwargs.get('show_item_checkboxes', '') in ['True', 'true'],
-            'cur_page_num'                  : page_num,
-            'num_page_links'                : self.num_page_links,
-            'status'                        : status,
-            'message'                       : restore_text(message),
-            'global_actions'                : [],
-            'operations'                    : [],
-            'items'                         : [],
-            'columns'                       : [],
-            'model_class'                   : str(self.model_class),
-            'use_paging'                    : self.use_paging,
-            'legend'                        : self.legend,
-            'current_item_id'               : False,
-            'use_hide_message'              : self.use_hide_message,
-            'default_filter_dict'           : self.default_filter,
-            'advanced_search'               : self.advanced_search,
-            'info_text'                     : self.info_text,
-            'url'                           : url(dict()),
-            'refresh_frames'                : kwargs.get('refresh_frames', [])
+            'title': self.title,
+            'title_id': getattr(self, "title_id", None),
+            'url_base': trans.request.path_url,
+            'async_ops': [],
+            'categorical_filters': {},
+            'filters': cur_filter_dict,
+            'sort_key': sort_key,
+            'show_item_checkboxes': self.show_item_checkboxes or kwargs.get('show_item_checkboxes', '') in ['True', 'true'],
+            'cur_page_num': page_num,
+            'num_page_links': self.num_page_links,
+            'status': status,
+            'message': restore_text(message),
+            'global_actions': [],
+            'operations': [],
+            'items': [],
+            'columns': [],
+            'model_class': str(self.model_class),
+            'use_paging': self.use_paging,
+            'legend': self.legend,
+            'current_item_id': False,
+            'use_hide_message': self.use_hide_message,
+            'default_filter_dict': self.default_filter,
+            'advanced_search': self.advanced_search,
+            'info_text': self.info_text,
+            'url': url(dict()),
+            'refresh_frames': kwargs.get('refresh_frames', [])
         }
         if current_item:
             grid_config['current_item_id'] = current_item.id

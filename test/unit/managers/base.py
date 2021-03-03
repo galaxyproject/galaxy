@@ -46,7 +46,7 @@ class BaseTestCase(unittest.TestCase):
         self.trans.app.config.is_admin_user = mock_is_admin_user
 
     def set_up_managers(self):
-        self.user_manager = UserManager(self.app)
+        self.user_manager = self.app[UserManager]
 
     def set_up_trans(self):
         self.admin_user = self.user_manager.create(email=admin_email, username='admin', password=default_password)

@@ -15,3 +15,10 @@ export { default as CollectionContentProvider } from "./CollectionContentProvide
 // dataset collection is stored as history content. But a collection can nest
 // other collections, and sub-collections are stored as collection-content
 export { default as DscProvider } from "./DscProvider";
+
+// Management for current user's histories. Largely a passthrough of store methods
+export { default as UserHistories } from "./UserHistories";
+
+// list management functionality
+export { default as ExpandedItems } from "./ExpandedItems";
+export { default as SelectedItems } from "./SelectedItems";

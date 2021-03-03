@@ -41,6 +41,7 @@
                 :target="item.target || '_parent'"
                 role="menuitem"
                 @click="open(item, $event)"
+                :disabled="item.disabled === true"
             >
                 {{ item.title }}
             </b-dropdown-item>

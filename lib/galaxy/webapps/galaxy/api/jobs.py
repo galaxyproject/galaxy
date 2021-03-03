@@ -7,7 +7,6 @@ API operations on a jobs.
 import logging
 import typing
 
-from fastapi import Depends
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter as APIRouter
 from sqlalchemy import (
@@ -19,7 +18,6 @@ from galaxy import (
     model,
     util,
 )
-from galaxy.app import UniverseApplication
 from galaxy.managers import hdas
 from galaxy.managers.context import ProvidesHistoryContext, ProvidesUserContext
 from galaxy.managers.jobs import (
@@ -31,6 +29,7 @@ from galaxy.managers.jobs import (
     summarize_job_parameters,
     view_show_job,
 )
+from galaxy.model import Job
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.web import (
     expose_api,
@@ -38,16 +37,15 @@ from galaxy.web import (
     require_admin,
 )
 from galaxy.webapps.base.controller import (
-    BaseAPIController,
     UsesVisualizationMixin
 )
 from galaxy.work.context import (
     WorkRequestContext,
 )
 from . import (
-    get_app,
-    get_job_manager,
-    get_trans,
+    BaseGalaxyAPIController,
+    depends,
+    DependsOnTrans,
 )
 
 log = logging.getLogger(__name__)
@@ -55,22 +53,14 @@ log = logging.getLogger(__name__)
 router = APIRouter(tags=["jobs"])
 
 
-def get_job_search(app: UniverseApplication = Depends(get_app)) -> JobSearch:
-    return JobSearch(app=app)
-
-
-def get_hda_manager(app: UniverseApplication = Depends(get_app)) -> hdas.HDAManager:
-    return app.hda_manager
-
-
 @cbv(router)
 class FastAPIJobs:
-    job_manager: JobManager = Depends(get_job_manager)
-    job_search: JobSearch = Depends(get_job_search)
-    hda_manager: hdas.HDAManager = Depends(get_hda_manager)
+    job_manager: JobManager = depends(JobManager)
+    job_search: JobSearch = depends(JobSearch)
+    hda_manager: hdas.HDAManager = depends(hdas.HDAManager)
 
     @router.get("/api/job/{id}")
-    def show(self, id: EncodedDatabaseIdField, trans: ProvidesUserContext = Depends(get_trans), full: typing.Optional[bool] = False) -> typing.Dict:
+    def show(self, id: EncodedDatabaseIdField, trans: ProvidesUserContext = DependsOnTrans, full: typing.Optional[bool] = False) -> typing.Dict:
         """
         Return dictionary containing description of job data
 
@@ -83,13 +73,10 @@ class FastAPIJobs:
         return view_show_job(trans, job, bool(full))
 
 
-class JobController(BaseAPIController, UsesVisualizationMixin):
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.job_manager = JobManager(app)
-        self.job_search = JobSearch(app)
-        self.hda_manager = hdas.HDAManager(app)
+class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
+    job_manager = depends(JobManager)
+    job_search = depends(JobSearch)
+    hda_manager = depends(hdas.HDAManager)
 
     @expose_api
     def index(self, trans: ProvidesUserContext, **kwd):
@@ -127,9 +114,9 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
         user_details = kwd.get('user_details', False)
 
         if is_admin:
-            query = trans.sa_session.query(trans.app.model.Job)
+            query = trans.sa_session.query(Job)
         else:
-            query = trans.sa_session.query(trans.app.model.Job).filter(trans.app.model.Job.user == trans.user)
+            query = trans.sa_session.query(Job).filter(Job.table.c.user_id == trans.user.id)
 
         def build_and_apply_filters(query, objects, filter_func):
             if objects is not None:
@@ -142,27 +129,27 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
                     query = query.filter(or_(*t))
             return query
 
-        query = build_and_apply_filters(query, state, lambda s: trans.app.model.Job.state == s)
+        query = build_and_apply_filters(query, state, lambda s: Job.table.c.state == s)
 
-        query = build_and_apply_filters(query, kwd.get('tool_id', None), lambda t: trans.app.model.Job.tool_id == t)
-        query = build_and_apply_filters(query, kwd.get('tool_id_like', None), lambda t: trans.app.model.Job.tool_id.like(t))
+        query = build_and_apply_filters(query, kwd.get('tool_id', None), lambda t: Job.tool_id == t)
+        query = build_and_apply_filters(query, kwd.get('tool_id_like', None), lambda t: Job.tool_id.like(t))
 
-        query = build_and_apply_filters(query, kwd.get('date_range_min', None), lambda dmin: trans.app.model.Job.table.c.update_time >= dmin)
-        query = build_and_apply_filters(query, kwd.get('date_range_max', None), lambda dmax: trans.app.model.Job.table.c.update_time <= dmax)
+        query = build_and_apply_filters(query, kwd.get('date_range_min', None), lambda dmin: Job.table.c.update_time >= dmin)
+        query = build_and_apply_filters(query, kwd.get('date_range_max', None), lambda dmax: Job.table.c.update_time <= dmax)
 
         history_id = kwd.get('history_id', None)
         if history_id is not None:
             try:
                 decoded_history_id = self.decode_id(history_id)
-                query = query.filter(trans.app.model.Job.history_id == decoded_history_id)
+                query = query.filter(Job.table.c.history_id == decoded_history_id)
             except Exception:
                 raise exceptions.ObjectAttributeInvalidException()
 
         out = []
         if kwd.get('order_by') == 'create_time':
-            order_by = trans.app.model.Job.create_time.desc()
+            order_by = Job.table.c.create_time.desc()
         else:
-            order_by = trans.app.model.Job.update_time.desc()
+            order_by = Job.table.c.update_time.desc()
         for job in query.order_by(order_by).all():
             job_dict = job.to_dict('collection', system_details=is_admin)
             j = self.encode_all_ids(trans, job_dict, True)

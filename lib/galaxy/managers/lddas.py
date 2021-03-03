@@ -3,6 +3,7 @@ import logging
 from galaxy import model, util
 from galaxy.managers import base as manager_base
 from galaxy.managers.datasets import DatasetAssociationManager
+from galaxy.structured_app import StructuredApp
 
 log = logging.getLogger(__name__)
 
@@ -13,7 +14,7 @@ class LDDAManager(DatasetAssociationManager):
     """
     model_class = model.LibraryDatasetDatasetAssociation
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         """
         Set up and initialize other managers needed by lddas.
         """

@@ -254,7 +254,7 @@ export function fetchMenu(options = {}) {
             menu: [
                 {
                     title: `${_l("Logged in as")} ${Galaxy.user.get("email")}`,
-                    class: "dropdown-item disabled",
+                    disabled: true,
                 },
                 {
                     title: _l("Preferences"),

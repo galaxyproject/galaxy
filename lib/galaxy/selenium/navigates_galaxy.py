@@ -14,8 +14,9 @@ import requests
 import yaml
 
 from . import sizzle
+from .components import Component
 from .data import (
-    NAVIGATION,
+    load_root_component,
 )
 from .has_driver import (
     exception_indicates_not_clickable,
@@ -123,17 +124,22 @@ class NavigatesGalaxy(HasDriver):
     class. For instance, the method for clicking an option in the workflow editor is
     workflow_editor_click_option instead of click_workflow_editor_option.
     """
-
     default_password = DEFAULT_PASSWORD
     wait_types = WAIT_TYPES
+    # set to True to reload each invocation (good for interactive test building)
+    _interactive_components: bool = False
+    _root_component: Component = load_root_component()
 
     def get(self, url=""):
         full_url = self.build_url(url)
         return self.driver.get(full_url)
 
     @property
-    def navigation(self):
-        return NAVIGATION
+    def navigation(self) -> Component:
+        if self._interactive_components:
+            return load_root_component()
+        else:
+            return self._root_component
 
     @property
     def components(self):
@@ -517,14 +523,24 @@ class NavigatesGalaxy(HasDriver):
         center_element = self.driver.find_element_by_css_selector("#center")
         action_chains.move_to_element(center_element).click().perform()
 
-    def perform_upload(self, test_path, ext=None, genome=None, ext_all=None, genome_all=None):
+    def perform_upload(self, test_path, **kwd):
+        self._perform_upload(test_path=test_path, **kwd)
+
+    def perform_upload_of_pasted_content(self, paste_data, **kwd):
+        self._perform_upload(paste_data=paste_data, **kwd)
+
+    def _perform_upload(self, test_path=None, paste_data=None, ext=None, genome=None, ext_all=None, genome_all=None):
         self.home()
         self.upload_start_click()
 
         self.upload_set_footer_extension(ext_all)
         self.upload_set_footer_genome(genome_all)
 
-        self.upload_queue_local_file(test_path)
+        if test_path:
+            self.upload_queue_local_file(test_path)
+        else:
+            assert paste_data is not None
+            self.upload_paste_data(paste_data)
 
         if ext is not None:
             self.wait_for_selector_visible('.upload-extension')
@@ -635,6 +651,13 @@ class NavigatesGalaxy(HasDriver):
         file_upload = self.wait_for_selector('div#%s input[type="file"]' % tab_id)
         file_upload.send_keys(test_path)
 
+    def upload_paste_data(self, pasted_content, tab_id="regular"):
+        tab_locator = f"div#{tab_id}"
+        self.wait_for_and_click_selector(f"{tab_locator} button#btn-new")
+
+        textarea = self.wait_for_selector(f"{tab_locator} .upload-text-content")
+        textarea.send_keys(pasted_content)
+
     def upload_rule_start(self):
         self.upload_start_click()
         self.upload_tab_click("rule-based")
@@ -661,6 +684,7 @@ class NavigatesGalaxy(HasDriver):
         rule_builder = self.components.rule_builder
         name_element = rule_builder.collection_name_input.wait_for_and_click()
         name_element.send_keys(name)
+        self.sleep_for(WAIT_TYPES.UX_RENDER)
 
     def rule_builder_set_extension(self, extension):
         self.select2_set_value(self.navigation.rule_builder.selectors.extension_select, extension)
@@ -865,13 +889,34 @@ class NavigatesGalaxy(HasDriver):
         self.wait_for_and_click_selector("#workflow-save-button")
         self.sleep_for(self.wait_types.DATABASE_OPERATION)
 
+    def navigate_to_histories_page(self):
+        self.home()
+        self.click_masthead_user()
+        self.components.masthead.histories.wait_for_and_click()
+
     def navigate_to_user_preferences(self):
         self.home()
         self.click_masthead_user()
         self.components.masthead.preferences.wait_for_and_click()
 
+    def navigate_to_invocations(self):
+        self.home()
+        self.click_masthead_user()
+        self.components.masthead.invocations.wait_for_and_click()
+
     def admin_open(self):
         self.components.masthead.admin.wait_for_and_click()
+
+    def select_dataset_from_lib_import_modal(self, name):
+        self.components.libraries.folder.select_import_dir_item(name=name).wait_for_and_click()
+        self.components.libraries.folder.import_dir_btn.wait_for_and_click()
+
+    def create_new_library(self, login=True):
+        if login:
+            self.admin_login()
+        self.libraries_open()
+        self.name = self._get_random_name(prefix="testcontents")
+        self.libraries_index_create(self.name)
 
     def libraries_open(self):
         self.home()
@@ -935,18 +980,11 @@ class NavigatesGalaxy(HasDriver):
 
     def libraries_click_dataset_import(self):
         self.wait_for_and_click(self.navigation.libraries.folder.selectors.add_items_button)
-
-    def libraries_dataset_import_from_history(self):
-        self.libraries_click_dataset_import()
-
         self.wait_for_visible(self.navigation.libraries.folder.selectors.add_items_menu)
-        self.wait_for_and_click(self.navigation.libraries.folder.labels.from_history)
 
-    def libraries_dataset_import_from_path(self):
+    def libraries_dataset_import(self, btn):
         self.libraries_click_dataset_import()
-
-        self.wait_for_visible(self.navigation.libraries.folder.selectors.add_items_menu)
-        self.wait_for_and_click(self.navigation.libraries.folder.labels.from_path)
+        self.wait_for_and_click(btn)
 
     def libraries_dataset_import_from_history_select(self, to_select_items):
         self.wait_for_visible(self.navigation.libraries.folder.selectors.import_history_content)
@@ -1032,18 +1070,17 @@ class NavigatesGalaxy(HasDriver):
         workflow_button = workflow_row.find_element_by_css_selector(workflow_selector)
         workflow_button.click()
 
-    def workflow_index_click_option(self, option_title, workflow_index=0):
-        self.workflow_click_option(".workflow-dropdown", workflow_index)
+    def select_dropdown_item(self, option_title):
         menu_element = self.wait_for_selector_visible(".dropdown-menu.show")
         menu_options = menu_element.find_elements_by_css_selector("a.dropdown-item")
-        found_option = False
         for menu_option in menu_options:
             if option_title in menu_option.text:
                 menu_option.click()
-                found_option = True
-                break
+                return True
 
-        if not found_option:
+    def workflow_index_click_option(self, option_title, workflow_index=0):
+        self.workflow_click_option(".workflow-dropdown", workflow_index)
+        if not self.select_dropdown_item(option_title):
             raise AssertionError("Failed to find workflow action option with title [%s]" % option_title)
 
     def workflow_index_click_tag_display(self, workflow_index=0):
@@ -1163,6 +1200,18 @@ class NavigatesGalaxy(HasDriver):
     def histories_click_advanced_search(self):
         search_selector = '#standard-search .advanced-search-toggle'
         self.wait_for_and_click_selector(search_selector)
+
+    @retry_during_transitions
+    def histories_get_history_names(self):
+        self.sleep_for(self.wait_types.UX_RENDER)
+        names = []
+        grid = self.wait_for_selector('#grid-table-body')
+        for row in grid.find_elements_by_tag_name('tr'):
+            td = row.find_elements_by_tag_name('td')
+            name = td[1].text if td[0].text == '' else td[0].text
+            if name != "No items" and not name.startswith("No matching entries found"):
+                names.append(name)
+        return names
 
     def history_panel_add_tags(self, tags):
         tag_icon_selector = self.components.history_panel.tag_icon

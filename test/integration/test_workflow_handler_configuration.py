@@ -115,7 +115,7 @@ class BaseWorkflowHandlerConfigurationTestCase(integration_util.IntegrationTestC
         request["inputs"] = dumps(index_map)
         request["inputs_by"] = 'step_index'
         url = "workflows/%s/invocations" % (workflow_id)
-        for i in range(n):
+        for _ in range(n):
             self._post(url, data=request)
 
     def _get_workflow_invocations(self):

@@ -5,17 +5,23 @@ import os
 import shutil
 import tempfile
 
+from sqlalchemy.orm.scoping import scoped_session
+
 from galaxy import (
+    di,
     model,
     objectstore,
-    quota
+    quota,
 )
 from galaxy.auth import AuthManager
 from galaxy.datatypes import registry
 from galaxy.jobs.manager import NoopManager
 from galaxy.managers.users import UserManager
 from galaxy.model import mapping, tags
+from galaxy.model.base import SharedModelMapping
+from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.security import idencoding
+from galaxy.structured_app import BasicApp, StructuredApp
 from galaxy.tool_util.deps.containers import NullContainerFinder
 from galaxy.util import StructuredExecutionTimer
 from galaxy.util.bunch import Bunch
@@ -56,17 +62,25 @@ def buildMockEnviron(**kwargs):
     return environ
 
 
-class MockApp:
+class MockApp(di.Container):
 
     def __init__(self, config=None, **kwargs):
+        super().__init__()
+        self[BasicApp] = self
+        self[StructuredApp] = self
         self.config = config or MockAppConfig(**kwargs)
         self.security = self.config.security
+        self[idencoding.IdEncodingHelper] = self.security
         self.name = kwargs.get('name', 'galaxy')
         self.object_store = objectstore.build_object_store_from_config(self.config)
         self.model = mapping.init("/tmp", self.config.database_connection, create_tables=True, object_store=self.object_store)
+        self[SharedModelMapping] = self.model
+        self[GalaxyModelMapping] = self.model
+        self[scoped_session] = self.model.context
         self.security_agent = self.model.security_agent
         self.visualizations_registry = MockVisualizationsRegistry()
         self.tag_handler = tags.GalaxyTagHandler(self.model.context)
+        self[tags.GalaxyTagHandler] = self.tag_handler
         self.quota_agent = quota.DatabaseQuotaAgent(self.model)
         self.init_datatypes()
         self.job_config = Bunch(
@@ -81,7 +95,7 @@ class MockApp:
         self.genome_builds = GenomeBuilds(self)
         self.job_manager = NoopManager()
         self.application_stack = ApplicationStack()
-        self.auth_manager = AuthManager(self)
+        self.auth_manager = AuthManager(self.config)
         self.user_manager = UserManager(self)
         self.execution_timer_factory = Bunch(get_timer=StructuredExecutionTimer)
 
@@ -170,6 +184,7 @@ class MockAppConfig(Bunch):
 
         # set by MockDir
         self.root = root
+        self.enable_tool_document_cache = False
         self.tool_cache_data_dir = os.path.join(root, 'tool_cache')
         self.delay_tool_initialization = True
         self.external_chown_script = None
@@ -220,7 +235,7 @@ class MockTrans:
         self.history = history
 
         self.request = Bunch(headers={}, body=None)
-        self.response = Bunch(headers={}, set_content_type=lambda i : None)
+        self.response = Bunch(headers={}, set_content_type=lambda i: None)
 
     def check_csrf_token(self, payload):
         pass

@@ -137,8 +137,8 @@ class VisualizationsConfigParser:
         # render_target: where in the browser to open the rendered visualization
         # defaults to: galaxy_main
         render_target = xml_tree.find('render_target')
-        if((render_target is not None and render_target.text) and
-                (render_target.text in self.VALID_RENDER_TARGETS)):
+        if((render_target is not None and render_target.text)
+                and (render_target.text in self.VALID_RENDER_TARGETS)):
             returned['render_target'] = render_target.text
         else:
             returned['render_target'] = 'galaxy_main'
@@ -172,9 +172,9 @@ class VisualizationsConfigParser:
         if template is not None and template.text:
             log.info('template syntax is deprecated: use entry_point instead')
             return {
-                'type' : 'mako',
-                'file' : template.text,
-                'attr' : {}
+                'type': 'mako',
+                'file': template.text,
+                'attr': {}
             }
 
         # need one of the two: (the deprecated) template or entry_point
@@ -188,9 +188,9 @@ class VisualizationsConfigParser:
         if entry_point_type not in self.ALLOWED_ENTRY_POINT_TYPES:
             raise ParsingException('Unknown entry_point type: ' + entry_point_type)
         return {
-            'type' : entry_point_type,
-            'file' : entry_point.text,
-            'attr' : entry_point_attrib
+            'type': entry_point_type,
+            'file': entry_point.text,
+            'attr': entry_point_attrib
         }
 
 
@@ -295,8 +295,8 @@ class DataSourceParser:
             test_type = test_elem.get('type', 'eq')
             test_result = test_elem.text.strip() if test_elem.text else None
             if not test_type or not test_result:
-                log.warning('Skipping test. Needs both type attribute and text node to be parsed: ' +
-                          f'{test_type}, {test_elem.text}')
+                log.warning('Skipping test. Needs both type attribute and text node to be parsed: '
+                          + f'{test_type}, {test_elem.text}')
                 continue
             test_result = test_result.strip()
 
@@ -322,8 +322,8 @@ class DataSourceParser:
             elif test_type == 'has_dataprovider':
                 # does the object itself have a datatype attr and does that datatype have the given dataprovider
                 def test_fn(o, result):
-                    return (hasattr(getter(o), 'has_dataprovider') and
-                            getter(o).has_dataprovider(result))
+                    return (hasattr(getter(o), 'has_dataprovider')
+                            and getter(o).has_dataprovider(result))
 
             elif test_type == 'has_attribute':
                 # does the object itself have attr in 'result' (no equivalence checking)
@@ -340,10 +340,10 @@ class DataSourceParser:
                     return str(getter(o)) == result
 
             tests.append({
-                'type'          : test_type,
-                'result'        : test_result,
-                'result_type'   : test_result_type,
-                'fn'            : test_fn
+                'type': test_type,
+                'result': test_result,
+                'result_type': test_result_type,
+                'fn': test_fn
             })
 
         return tests

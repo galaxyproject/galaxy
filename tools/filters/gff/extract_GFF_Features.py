@@ -34,7 +34,7 @@ def main():
         stop_err("Column %d has no features to display, select another column." % (column + 1))
 
     fo = open(out_file, 'w')
-    for i, line in enumerate(open(inp_file)):
+    for line in open(inp_file):
         line = line.rstrip('\r\n')
         if line and line.startswith('#'):
             # Keep valid comment lines in the output

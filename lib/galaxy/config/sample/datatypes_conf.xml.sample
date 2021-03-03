@@ -245,7 +245,6 @@
     <datatype extension="interprophet_pepxml" type="galaxy.datatypes.proteomics:PepXml" mimetype="application/xml" subclass="true"/>
     <datatype extension="protxml" type="galaxy.datatypes.proteomics:ProtXML" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="paramxml" type="galaxy.datatypes.proteomics:ParamXml" mimetype="application/xml" subclass="true" display_in_upload="true" />
-    <datatype extension="qcml" type="galaxy.datatypes.xml:GenericXml" mimetype="application/xml" subclass="true" display_in_upload="true" description="Quality control data in XML format (https://code.google.com/p/qcml/)."/>
     <datatype extension="kroenik" type="galaxy.datatypes.proteomics:Kroenik" display_in_upload="true"/>
     <datatype extension="peplist" type="galaxy.datatypes.proteomics:PepList" display_in_upload="true"/>
     <datatype extension="psms" type="galaxy.datatypes.proteomics:PSMS" display_in_upload="true"/>
@@ -285,7 +284,7 @@
     <datatype extension="uniprotxml" type="galaxy.datatypes.proteomics:UniProtXML" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="xquest.xml" type="galaxy.datatypes.proteomics:XquestXML" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="spec.xml" type="galaxy.datatypes.proteomics:XquestSpecXML" mimetype="application/xml" display_in_upload="true"/>
-    <datatype extension="qcml" type="galaxy.datatypes.proteomics:QCML" mimetype="application/xml" display_in_upload="true"/>
+    <datatype extension="qcml" type="galaxy.datatypes.proteomics:QCML" mimetype="application/xml" display_in_upload="true" description="Quality control data in XML format (https://code.google.com/p/qcml/)."/>
     <datatype extension="msp" type="galaxy.datatypes.proteomics:Msp" display_in_upload="true"/>
     <datatype extension="splib_noindex" type="galaxy.datatypes.proteomics:SPLibNoIndex" display_in_upload="true"/>
     <datatype extension="splib" type="galaxy.datatypes.proteomics:SPLib" display_in_upload="true"/>
@@ -331,6 +330,7 @@
       <display file="ucsc/maf_customtrack.xml"/>
     </datatype>
     <datatype extension="mtx" type="galaxy.datatypes.tabular:MatrixMarket" display_in_upload="true"/>
+    <datatype extension="cmap" type="galaxy.datatypes.tabular:CMAP" display_in_upload="true" description="The Bionano Genomics cmap format provides location information for label sites within a genome map or an in silico digestion of a reference or sequence data. A CMAP file contains two sections, header and the map information block" description_url="https://bionanogenomics.com/wp-content/uploads/2017/03/30039-CMAP-File-Format-Specification-Sheet.pdf" />
     <datatype extension="encodepeak" type="galaxy.datatypes.interval:ENCODEPeak" display_in_upload="true">
       <converter file="encodepeak_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
       <converter file="encodepeak_to_bgzip_converter.xml" target_datatype="bgzip"/>
@@ -1012,6 +1012,7 @@
     <sniffer type="galaxy.datatypes.genetics:AllegroLOD"/>
     <sniffer type="galaxy.datatypes.sequence:RNADotPlotMatrix"/>
     <sniffer type="galaxy.datatypes.sequence:DotBracket"/>
+    <sniffer type="galaxy.datatypes.tabular:CMAP"/>
     <sniffer type="galaxy.datatypes.tabular:ConnectivityTable"/>
     <sniffer type="galaxy.datatypes.tabular:CSV"/>
     <sniffer type="galaxy.datatypes.tabular:TSV"/>

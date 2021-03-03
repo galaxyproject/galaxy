@@ -23,6 +23,7 @@ lib/galaxy/web/framework/static/style
 # Database stuff
 database/*.sqlite
 database/beaker_sessions
+database/cache
 database/citations
 database/community_files
 database/compiled_templates
@@ -96,6 +97,7 @@ config/plugins/**/.cache
 static/welcome.html.*
 static/welcome.html
 static/client_build_hash.txt
+lib/galaxy_test/selenium/jupyter/galaxy_selenium_context.yml
 
 # Tool data.
 tool-data/annotation_profiler_options.xml
@@ -163,7 +165,7 @@ doc/build
 doc/schema.md
 doc/source/admin/config_logging_default_yaml.rst
 doc/source/dev/schema.md
-client/styleguide
+client/docs/dist
 
 # webpack stats
 client/webpack-stats.json

@@ -976,9 +976,9 @@ class RepositoriesController(BaseAPIController):
 
         repository = repository_util.get_repository_in_tool_shed(self.app, id)
 
-        if not (trans.user_is_admin or
-                self.app.security_agent.user_can_administer_repository(trans.user, repository) or
-                self.app.security_agent.can_push(self.app, trans.user, repository)):
+        if not (trans.user_is_admin
+                or self.app.security_agent.user_can_administer_repository(trans.user, repository)
+                or self.app.security_agent.can_push(self.app, trans.user, repository)):
             trans.response.status = 400
             return {
                 "err_msg": "You do not have permission to update this repository.",

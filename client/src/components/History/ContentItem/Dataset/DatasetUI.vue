@@ -14,6 +14,7 @@ either through the props, and make updates through the events -->
         @keydown.arrow-right.self.stop="$emit('update:expanded', true)"
         @keydown.space.self.stop.prevent="$emit('update:selected', !selected)"
     >
+        <!-- name, state buttons, menus -->
         <nav
             class="content-top-menu d-flex align-items-center justify-content-between"
             @click.stop="$emit('update:expanded', !expanded)"
@@ -29,16 +30,15 @@ either through the props, and make updates through the events -->
                     state="hidden"
                     title="Unhide"
                     icon="fa fa-eye-slash"
-                    @click.stop="$emit('unhideDataset')"
+                    @click.stop="$emit('unhide')"
                 />
-
                 <StateBtn
                     v-if="dataset.isDeleted && !dataset.purged"
                     class="px-1"
                     state="deleted"
                     title="Undelete"
                     icon="fas fa-trash-restore"
-                    @click.stop="$emit('undeleteDataset')"
+                    @click.stop="$emit('undelete')"
                 />
             </div>
 
@@ -46,25 +46,30 @@ either through the props, and make updates through the events -->
                 <span class="hid">{{ dataset.hid }}</span>
                 <span v-if="collapsed || !dataset.canEditName" class="name">{{ dataset.title }}</span>
             </h5>
-            <!-- <div v-if="collapsed && dataset.tags.length" class="nametags mt-1">
-                <nametag v-for="tag in dataset.tags" :key="tag" :tag="tag" />
-            </div> -->
 
-            <DatasetMenu
-                class="content-item-menu"
-                :dataset="dataset"
-                :expanded="expanded"
-                v-on="$listeners"
-                :show-tags.sync="showTags"
-            />
+            <slot name="menu">
+                <DatasetMenu
+                    class="content-item-menu"
+                    :dataset="dataset"
+                    :expanded="expanded"
+                    v-on="$listeners"
+                    :show-tags.sync="showTags"
+                />
+            </slot>
         </nav>
 
+        <!--- read-only tags with name: prefix -->
+        <div v-if="collapsed && dataset.nameTags.length" class="nametags p-1">
+            <Nametag v-for="tag in dataset.nameTags" :key="tag" :tag="tag" />
+        </div>
+
+        <!-- expanded view with editors -->
         <header v-if="expanded" class="p-2">
             <ClickToEdit
                 v-if="dataset.canEditName"
                 tag-name="h4"
                 :value="dataset.name"
-                @input="$emit('updateDataset', { name: $event })"
+                @input="$emit('update:dataset', { name: $event })"
                 :display-label="dataset.title"
                 :tooltip-title="'Edit dataset name...' | localize"
                 tooltip-placement="left"
@@ -73,12 +78,13 @@ either through the props, and make updates through the events -->
             <Annotation
                 class="mt-1"
                 :value="dataset.annotation"
-                @input="$emit('updateDataset', { annotation: $event })"
+                @input="$emit('update:dataset', { annotation: $event })"
             />
 
-            <transition name="shutterfade">
-                <ContentTags v-if="showTags" class="mt-2" :content="dataset" />
-            </transition>
+            <ContentTags v-if="showTags" class="mt-2" :content="dataset" />
+            <div v-else-if="dataset.nameTags.length" class="nametags mt-2">
+                <Nametag v-for="tag in dataset.nameTags" :key="tag" :tag="tag" />
+            </div>
 
             <div class="details">
                 <DatasetSummary :dataset="dataset" />
@@ -102,20 +108,16 @@ either through the props, and make updates through the events -->
 </template>
 
 <script>
-/* eslint-disable no-undef */
-// STATES is injected, eslint doesn't know that
-
-import { Dataset } from "../../model";
+import { Dataset, STATES } from "../../model";
 import ClickToEdit from "components/ClickToEdit";
 import Annotation from "components/Annotation";
+import { Nametag } from "components/Nametags";
 import { StatusIcon, StateBtn } from "../../StatusIcon";
 import DatasetMenu from "./DatasetMenu";
 import DatasetSummary from "./Summary";
 import ContentTags from "../../ContentTags";
-import { legacyNavigationMixin } from "components/plugins";
-
+import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 export default {
-    inject: ["listState", "STATES"],
     mixins: [legacyNavigationMixin],
     components: {
         ClickToEdit,
@@ -125,12 +127,13 @@ export default {
         DatasetMenu,
         DatasetSummary,
         ContentTags,
+        Nametag,
     },
     props: {
         dataset: { type: Dataset, required: true },
         expanded: { type: Boolean, required: true },
         selected: { type: Boolean, required: false, default: false },
-        showHid: { type: Boolean, required: false, default: true },
+        showSelection: { type: Boolean, required: false, default: false },
     },
     data() {
         return {
@@ -146,12 +149,6 @@ export default {
         },
         ok() {
             return this.dataset.state == "ok";
-        },
-        counter() {
-            return this.showHid ? this.dataset.hid : "";
-        },
-        showSelection() {
-            return this.listState.showSelection;
         },
     },
     methods: {

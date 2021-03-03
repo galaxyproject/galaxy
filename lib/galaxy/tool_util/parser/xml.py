@@ -2,7 +2,6 @@ import json
 import logging
 import re
 import uuid
-from collections import OrderedDict
 from math import isinf
 
 import packaging.version
@@ -290,12 +289,12 @@ class XmlToolSource(ToolSource):
 
     def parse_outputs(self, tool):
         out_elem = self.root.find("outputs")
-        outputs = OrderedDict()
-        output_collections = OrderedDict()
+        outputs = {}
+        output_collections = {}
         if out_elem is None:
             return outputs, output_collections
 
-        data_dict = OrderedDict()
+        data_dict = {}
 
         def _parse(data_elem, **kwds):
             output_def = self._parse_output(data_elem, tool, **kwds)

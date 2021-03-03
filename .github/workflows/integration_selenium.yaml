@@ -5,13 +5,14 @@ env:
   GALAXY_TEST_SELENIUM_REMOTE: '1'
   GALAXY_TEST_SELENIUM_REMOTE_PORT: "4444"
   GALAXY_SKIP_CLIENT_BUILD: '0'
+  GALAXY_TEST_SELENIUM_RETRIES: 1
 jobs:
   test:
     name: Test
     runs-on: ubuntu-18.04
     strategy:
       matrix:
-        python-version: [3.7]
+        python-version: ['3.7']
     services:
       postgres:
         image: postgres:11
@@ -48,3 +49,8 @@ jobs:
         with:
           name: Integration Selenium test results (${{ matrix.python-version }})
           path: 'galaxy root/run_integration_tests.html'
+      - uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: Integration Selenium debug info (${{ matrix.python-version }})
+          path: 'galaxy root/database/test_errors'

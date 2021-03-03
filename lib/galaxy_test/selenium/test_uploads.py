@@ -118,6 +118,7 @@ class UploadsTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         #   https://www.ebi.ac.uk/ena/data/view/PRJDA60709
         self.home()
         self.upload_rule_start()
+        self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("rules_example_1_1_rules_landing")
         self.components.upload.rule_source_content.wait_for_and_send_keys("""study_accession sample_accession    experiment_accession    fastq_ftp
 PRJDA60709  SAMD00016379    DRX000475   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000770/DRR000770.fastq.gz
@@ -126,6 +127,7 @@ PRJDA60709  SAMD00016380    DRX000477   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
 PRJDA60709  SAMD00016378    DRX000478   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000773/DRR000773.fastq.gz
 PRJDA60709  SAMD00016381    DRX000479   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000774/DRR000774.fastq.gz
 PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000775/DRR000775.fastq.gz""")
+        self._wait_for_upload_modal()
         self.screenshot("rules_example_1_2_paste")
         self.upload_rule_build()
         rule_builder = self.components.rule_builder
@@ -160,6 +162,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.upload_rule_set_data_type("Collection")
         self.upload_rule_set_input_type("History Dataset")
         self.upload_rule_set_dataset(1)
+        self._wait_for_upload_modal()
         self.screenshot("rules_example_2_1_inputs")
         self.upload_rule_build()
         rule_builder = self.components.rule_builder
@@ -187,6 +190,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.upload_rule_set_data_type("Collection")
         self.upload_rule_set_input_type("History Dataset")
         self.upload_rule_set_dataset(1)
+        self._wait_for_upload_modal()
         self.screenshot("rules_example_3_1_inputs")
         self.upload_rule_build()
         rule_builder = self.components.rule_builder
@@ -213,9 +217,12 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.screenshot("rules_example_3_14_paired_identifier_set")
 
     @selenium_test
+    @pytest.mark.gtn_screenshot
+    @pytest.mark.local
     def test_rules_example_4_accessions(self):
         # http://www.uniprot.org/uniprot/?query=proteome:UP000052092+AND+proteomecomponent:%22Genome%22
         self._setup_uniprot_example()
+        self._wait_for_upload_modal()
         self.screenshot("rules_example_4_1_inputs")
         self.upload_rule_build()
         rule_builder = self.components.rule_builder
@@ -245,8 +252,11 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         rule_builder.view_source.wait_for_visible()
 
     @selenium_test
+    @pytest.mark.gtn_screenshot
+    @pytest.mark.local
     def test_rules_example_5_matching_collections(self):
         self._setup_uniprot_example()
+        self._wait_for_upload_modal()
         self.screenshot("rules_example_5_1_inputs")
         self.upload_rule_build()
 
@@ -273,6 +283,8 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.screenshot("rules_example_5_9_mapping")
 
     @selenium_test
+    @pytest.mark.gtn_screenshot
+    @pytest.mark.local
     def test_rules_example_6_nested_lists(self):
         self.home()
         self.perform_upload(self.get_filename("rules/PRJNA355367.tsv"))
@@ -281,6 +293,8 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.upload_rule_set_data_type("Collection")
         self.upload_rule_set_input_type("History Dataset")
         self.upload_rule_set_dataset(1)
+
+        self._wait_for_upload_modal()
         self.screenshot("rules_example_6_1_paste")
         self.upload_rule_build()
 
@@ -305,6 +319,10 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
     def _read_rules_test_data_file(self, name):
         with open(self.test_data_resolver.get_filename(os.path.join("rules", name))) as f:
             return f.read()
+
+    def _wait_for_upload_modal(self):
+        self.components.upload.build_btn.wait_for_visible()
+        self.components.upload.build_btn.wait_for_clickable()
 
     def _scroll_to_end_of_table(self):
         rule_builder = self.components.rule_builder

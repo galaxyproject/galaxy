@@ -9,6 +9,7 @@ import socket
 import string
 import time
 from http.cookies import CookieError
+from typing import Any, Dict
 from urllib.parse import urlparse
 
 import mako.lookup
@@ -76,6 +77,7 @@ class WebApplication(base.WebApplication):
         * builds mako template lookups.
         * generates GalaxyWebTransactions.
     """
+    injection_aware: bool = False
 
     def __init__(self, galaxy_app, session_cookie='galaxysession', name=None):
         self.name = name
@@ -151,7 +153,40 @@ class WebApplication(base.WebApplication):
         """ Extension point, allow apps to construct controllers differently,
         really just used to stub out actual controllers for routes testing.
         """
-        return T(app)
+        controller = None
+        if self.injection_aware:
+            controller = app.resolve_or_none(T)
+            if controller is not None:
+                for key, value in T.__dict__.items():
+                    if hasattr(value, "galaxy_type_depends"):
+                        value_type = value.galaxy_type_depends
+                        setattr(controller, key, app[value_type])
+        if controller is None:
+            controller = T(app)
+        return controller
+
+
+def config_allows_origin(origin_raw, config):
+    # boil origin header down to hostname
+    origin = urlparse(origin_raw).hostname
+
+    # singular match
+    def matches_allowed_origin(origin, allowed_origin):
+        if isinstance(allowed_origin, str):
+            return origin == allowed_origin
+        match = allowed_origin.match(origin)
+        return match and match.group() == origin
+
+    # localhost uses no origin header (== null)
+    if not origin:
+        return False
+
+    # check for '*' or compare to list of allowed
+    for allowed_origin in config.allowed_origin_hostnames:
+        if allowed_origin == '*' or matches_allowed_origin(origin, allowed_origin):
+            return True
+
+    return False
 
 
 class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryContext):
@@ -160,11 +195,11 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
     (specifically the user's "cookie" session and history)
     """
 
-    def __init__(self, environ, app, webapp, session_cookie=None):
+    def __init__(self, environ: Dict[str, Any], app, webapp, session_cookie=None) -> None:
         self._app = app
         self.webapp = webapp
-        self.user_manager = UserManager(app)
-        self.session_manager = GalaxySessionManager(app.model)
+        self.user_manager = app[UserManager]
+        self.session_manager = app[GalaxySessionManager]
         base.DefaultWebTransaction.__init__(self, environ)
         self.setup_i18n()
         self.expunge_all()
@@ -303,28 +338,11 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         if not origin_header:
             return
 
-        # singular match
-        def matches_allowed_origin(origin, allowed_origin):
-            if isinstance(allowed_origin, str):
-                return origin == allowed_origin
-            match = allowed_origin.match(origin)
-            return match and match.group() == origin
-
-        # check for '*' or compare to list of allowed
-        def is_allowed_origin(origin):
-            # localhost uses no origin header (== null)
-            if not origin:
-                return False
-            for allowed_origin in self.app.config.allowed_origin_hostnames:
-                if allowed_origin == '*' or matches_allowed_origin(origin, allowed_origin):
-                    return True
-            return False
-
-        # boil origin header down to hostname
-        origin = urlparse(origin_header).hostname
         # check against the list of allowed strings/regexp hostnames, echo original if cleared
-        if is_allowed_origin(origin):
+        if config_allows_origin(origin_header, self.app.config):
             self.set_cors_origin(origin=origin_header)
+        else:
+            self.response.status = 400
 
     def get_user(self):
         """Return the current user if logged in or None."""
@@ -438,10 +456,10 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                     # No user, associate
                     galaxy_session.user = self.get_or_create_remote_user(remote_user_email)
                     galaxy_session_requires_flush = True
-                elif (remote_user_email and
-                      (galaxy_session.user.email != remote_user_email) and
-                      ((not self.app.config.allow_user_impersonation) or
-                       (remote_user_email not in self.app.config.admin_users_list))):
+                elif (remote_user_email
+                      and galaxy_session.user.email != remote_user_email
+                      and (not self.app.config.allow_user_impersonation
+                           or remote_user_email not in self.app.config.admin_users_list)):
                     # Session exists but is not associated with the correct
                     # remote user, and the currently set remote_user is not a
                     # potentially impersonating admin.
@@ -531,9 +549,9 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             if self.request.path.startswith(external_display_path):
                 request_path_split = self.request.path.split('/')
                 try:
-                    if (self.app.datatypes_registry.display_applications.get(request_path_split[-5]) and
-                            request_path_split[-4] in self.app.datatypes_registry.display_applications.get(request_path_split[-5]).links and
-                            request_path_split[-3] != 'None'):
+                    if (self.app.datatypes_registry.display_applications.get(request_path_split[-5])
+                            and request_path_split[-4] in self.app.datatypes_registry.display_applications.get(request_path_split[-5]).links
+                            and request_path_split[-3] != 'None'):
                         return
                 except IndexError:
                     pass
@@ -648,12 +666,12 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             users_last_session = user.galaxy_sessions[0]
         except Exception:
             users_last_session = None
-        if (prev_galaxy_session and
-                prev_galaxy_session.current_history and not
-                prev_galaxy_session.current_history.deleted and
-                prev_galaxy_session.current_history.datasets and
-                (prev_galaxy_session.current_history.user is None or
-                 prev_galaxy_session.current_history.user == user)):
+        if (prev_galaxy_session
+                and prev_galaxy_session.current_history
+                and not prev_galaxy_session.current_history.deleted
+                and prev_galaxy_session.current_history.datasets
+                and (prev_galaxy_session.current_history.user is None
+                     or prev_galaxy_session.current_history.user == user)):
             # If the previous galaxy session had a history, associate it with the new session, but only if it didn't
             # belong to a different user.
             history = prev_galaxy_session.current_history
@@ -666,8 +684,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                 set_permissions = True
         elif self.galaxy_session.current_history:
             history = self.galaxy_session.current_history
-        if (not history and users_last_session and
-                users_last_session.current_history and not
+        if (not history and users_last_session
+                and users_last_session.current_history and not
                 users_last_session.current_history.deleted):
             history = users_last_session.current_history
         elif not history:
@@ -765,7 +783,9 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         self.sa_session.add(self.galaxy_session)
         self.sa_session.flush()
 
-    history = property(get_history, set_history)
+    @property
+    def history(self):
+        return self.get_history()
 
     def get_or_create_default_history(self):
         """

@@ -87,6 +87,11 @@ class MalformedId(MessageException):
     err_code = error_codes_by_name['MALFORMED_ID']
 
 
+class UserInvalidRunAsException(MessageException):
+    status_code = 400
+    err_code = error_codes_by_name['USER_INVALID_RUN_AS']
+
+
 class MalformedContents(MessageException):
     status_code = 400
     err_code = error_codes_by_name['MALFORMED_CONTENTS']
@@ -157,6 +162,11 @@ class InsufficientPermissionsException(MessageException):
     err_code = error_codes_by_name['INSUFFICIENT_PERMISSIONS']
 
 
+class UserCannotRunAsException(MessageException):
+    status_code = 403
+    err_code = error_codes_by_name['USER_CANNOT_RUN_AS']
+
+
 class AdminRequiredException(MessageException):
     status_code = 403
     err_code = error_codes_by_name['ADMIN_REQUIRED']
@@ -219,6 +229,11 @@ class NotImplemented(MessageException):
 class InvalidFileFormatError(MessageException):
     status_code = 500
     err_code = error_codes_by_name['INVALID_FILE_FORMAT']
+
+
+class ReferenceDataError(MessageException):
+    status_code = 500
+    err_code = error_codes_by_name['REFERENCE_DATA_ERROR']
 
 
 # non-web exceptions

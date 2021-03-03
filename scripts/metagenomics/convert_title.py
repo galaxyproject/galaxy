@@ -12,7 +12,7 @@ if __name__ == '__main__':
     invalid_lines = 0
     gi = None
 
-    for i, line in enumerate(sys.stdin):
+    for line in sys.stdin:
         line = line.rstrip('\r\n')
         if line.startswith('>'):
             if len_seq > 0:

@@ -42,7 +42,7 @@ def test_timeout_first_call():
         wait_on(condition, "never met condition", 1, delta=2, sleep_=sleeper.sleep)
     except TimeoutAssertionError as e:
         assert "never met condition" in str(e)
-        assert "after 2 seconds" in str(e)
+        assert "after 2.0 seconds" in str(e)
         exception_called = True
     assert len(sleeper.sleeps) == 1
     assert sleeper.sleeps[0] == 2  # delta of 2

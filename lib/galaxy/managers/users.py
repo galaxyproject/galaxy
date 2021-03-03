@@ -9,6 +9,7 @@ import time
 from datetime import datetime
 
 from markupsafe import escape
+from pydantic import BaseModel, Field
 from sqlalchemy import and_, desc, exc, func, true
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -29,6 +30,7 @@ from galaxy.security.validate_user_input import (
     validate_password,
     validate_publicname
 )
+from galaxy.structured_app import BasicApp, StructuredApp
 from galaxy.util.hash_util import new_secure_hash
 from galaxy.web import url_for
 
@@ -48,6 +50,17 @@ can also copy and paste it into your browser.
 """
 
 
+class UserModel(BaseModel):
+    """User in a transaction context."""
+    id: int = Field(title='ID', description='User ID')
+    username: str = Field(title='Username', description='User username')
+    email: str = Field(title='Email', description='User email')
+    active: bool = Field(title='Active', description='User is active')
+    deleted: bool = Field(title='Deleted', description='User is deleted')
+    last_password_change: datetime = Field(title='Last password change', description='')
+    model_class: str = Field(title='Model class', description='Database model class (User)')
+
+
 class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
     foreign_key_name = 'user'
 
@@ -57,7 +70,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
     # TODO: incorp BaseAPIController.validate_in_users_and_groups
     # TODO: incorp CreatesApiKeysMixin
     # TODO: incorporate UsesFormDefinitionsMixin?
-    def __init__(self, app):
+    def __init__(self, app: BasicApp):
         self.model_class = app.model.User
         super().__init__(app)
 
@@ -213,6 +226,9 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         if self.by_email(email) is not None:
             raise exceptions.Conflict('Email must be unique', email=email)
 
+    def by_id(self, user_id):
+        return self.app.model.session.query(self.model_class).get(user_id)
+
     # ---- filters
     def by_email(self, email, filters=None, **kwargs):
         """
@@ -224,14 +240,6 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             return super().one(filters=filters, **kwargs)
         except exceptions.ObjectNotFound:
             return None
-
-    def by_email_like(self, email_with_wildcards, filters=None, order_by=None, **kwargs):
-        """
-        Find a user searching with SQL wildcards.
-        """
-        filters = self._munge_filters(self.model_class.email.like(email_with_wildcards), filters)
-        order_by = order_by or (model.User.email, )
-        return super().list(filters=filters, order_by=order_by, **kwargs)
 
     def by_api_key(self, api_key, sa_session=None):
         """
@@ -338,7 +346,17 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         Create and return an API key for `user`.
         """
         # TODO: seems like this should return the model
+        # Also TODO: seems unused? drop and see what happens? -John
         return api_keys.ApiKeyManager(self.app).create_api_key(user)
+
+    def user_can_do_run_as(self, user) -> bool:
+        run_as_users = [u for u in self.app.config.get("api_allow_run_as", "").split(",") if u]
+        if not run_as_users:
+            return False
+        user_in_run_as_users = user and user.email in run_as_users
+        # Can do if explicitly in list or master_api_key supplied.
+        can_do_run_as = user_in_run_as_users or user.bootstrap_admin_user
+        return can_do_run_as
 
     # TODO: possibly move to ApiKeyManager
     def valid_api_key(self, user):
@@ -593,7 +611,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
 class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
     model_manager_class = UserManager
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         """
         Convert a User and associated data to a dictionary representation.
         """
@@ -628,18 +646,18 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
         deletable.PurgableSerializerMixin.add_serializers(self)
 
         self.serializers.update({
-            'id'            : self.serialize_id,
-            'create_time'   : self.serialize_date,
-            'update_time'   : self.serialize_date,
-            'is_admin'      : lambda i, k, **c: self.user_manager.is_admin(i),
+            'id': self.serialize_id,
+            'create_time': self.serialize_date,
+            'update_time': self.serialize_date,
+            'is_admin': lambda i, k, **c: self.user_manager.is_admin(i),
 
-            'preferences'   : lambda i, k, **c: self.user_manager.preferences(i),
+            'preferences': lambda i, k, **c: self.user_manager.preferences(i),
 
-            'total_disk_usage' : lambda i, k, **c: float(i.total_disk_usage),
-            'quota_percent' : lambda i, k, **c: self.user_manager.quota(i),
-            'quota'         : lambda i, k, **c: self.user_manager.quota(i, total=True),
+            'total_disk_usage': lambda i, k, **c: float(i.total_disk_usage),
+            'quota_percent': lambda i, k, **c: self.user_manager.quota(i),
+            'quota': lambda i, k, **c: self.user_manager.quota(i, total=True),
 
-            'tags_used'     : lambda i, k, **c: self.user_manager.tags_used(i),
+            'tags_used': lambda i, k, **c: self.user_manager.tags_used(i),
         })
 
 
@@ -653,7 +671,7 @@ class UserDeserializer(base.ModelDeserializer):
     def add_deserializers(self):
         super().add_deserializers()
         self.deserializers.update({
-            'username'  : self.deserialize_username,
+            'username': self.deserialize_username,
         })
 
     def deserialize_username(self, item, key, username, trans=None, **context):
@@ -690,10 +708,10 @@ class CurrentUserSerializer(UserSerializer):
 
         # a very small subset of keys available
         values = {
-            'id'                    : None,
-            'total_disk_usage'      : float(usage),
-            'nice_total_disk_usage' : util.nice_size(usage),
-            'quota_percent'         : percent,
+            'id': None,
+            'total_disk_usage': float(usage),
+            'nice_total_disk_usage': util.nice_size(usage),
+            'quota_percent': percent,
         }
         serialized = {}
         for key in keys:
@@ -712,10 +730,10 @@ class AdminUserFilterParser(base.ModelFilterParser, deletable.PurgableFiltersMix
 
         # PRECONDITION: user making the query has been verified as an admin
         self.orm_filter_parsers.update({
-            'email'         : {'op': ('eq', 'contains', 'like')},
-            'username'      : {'op': ('eq', 'contains', 'like')},
-            'active'        : {'op': ('eq')},
-            'disk_usage'    : {'op': ('le', 'ge')}
+            'email': {'op': ('eq', 'contains', 'like')},
+            'username': {'op': ('eq', 'contains', 'like')},
+            'active': {'op': ('eq')},
+            'disk_usage': {'op': ('le', 'ge')}
         })
 
         self.fn_filter_parsers.update({})

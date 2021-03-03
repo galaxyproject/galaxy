@@ -47,7 +47,7 @@
 
             <transition name="fade">
                 <hgroup v-if="showHelp">
-                    <p>See the online <a href="https://galaxyproject.org/cloud/authnz/">Documentation</a>.</p>
+                    <p>See the online <a href="https://galaxyproject.org/authnz/">Documentation</a>.</p>
                 </hgroup>
             </transition>
 

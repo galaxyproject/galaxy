@@ -1,6 +1,7 @@
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { mount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 import DatasetInformation from "./DatasetInformation";
 import datasetResponse from "./testData/datasetResponse";
 import flushPromises from "flush-promises";
@@ -17,6 +18,8 @@ const mockDatasetProvider = {
         });
     },
 };
+
+const localVue = getLocalVue();
 
 describe("DatasetInformation/DatasetInformation.vue", () => {
     let wrapper;
@@ -42,6 +45,7 @@ describe("DatasetInformation/DatasetInformation.vue", () => {
             stubs: {
                 DatasetProvider: mockDatasetProvider,
             },
+            localVue,
         });
         datasetInfoTable = wrapper.find("#dataset-details");
         await flushPromises();

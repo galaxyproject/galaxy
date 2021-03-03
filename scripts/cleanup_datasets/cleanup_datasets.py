@@ -89,9 +89,9 @@ def main():
     if args.legacy_config:
         config_override = args.legacy_config
 
-    if not (args.purge_folders ^ args.delete_userless_histories ^
-            args.purge_libraries ^ args.purge_histories ^
-            args.purge_datasets ^ args.delete_datasets):
+    if not (args.purge_folders ^ args.delete_userless_histories
+            ^ args.purge_libraries ^ args.purge_histories
+            ^ args.purge_datasets ^ args.delete_datasets):
         parser.print_help()
         sys.exit(0)
 

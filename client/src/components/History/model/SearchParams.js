@@ -1,22 +1,48 @@
 import config from "config";
 import deepEqual from "deep-equal";
+import { isString } from "underscore";
 
 const pairSplitRE = /(\w+=\w+)|(\w+="(\w|\s)+")/g;
 const scrubFieldRE = /[^\w]/g;
 const scrubQuotesRE = /'|"/g;
-const scrubSpaceRE = /\s+/g;
 
-// Fields thata can be used for text searches
+// Fields that can be used for text searches
 const validTextFields = new Set([
     "name",
     "history_content_type",
-    "file_ext",
+    "type",
+    "format",
     "extension",
     "misc_info",
     "state",
     "hid",
+    "database",
+    "annotation",
+    "description",
     "tag",
+    "tags",
 ]);
+
+// alias search field to internal field (requestd name: pouch field name)
+const pouchFieldAlias = {
+    format: "file_ext",
+    database: "genome_build",
+    description: "annotation",
+    tag: "tags",
+    deleted: "isDeleted",
+    type: "history_content_type",
+};
+
+// maps user-field -> server querystring field
+// if maps to null, that filter not available on server
+const serverFieldAlias = {
+    tags: "tag",
+    file_ext: null,
+    genome_build: null,
+};
+
+// Convert actualy boolean into objectively incorrect python value our server accepts
+const dumbBool = (val) => (val ? "True" : "False");
 
 export class SearchParams {
     constructor(props = {}) {
@@ -40,8 +66,9 @@ export class SearchParams {
         return { filterText, showDeleted, showHidden };
     }
 
-    // Filtering, turns field=val into an object we can use to build selectors
-    parseTextFilter() {
+    // Filtering, parses single text input into a map of field->value
+    // in the case of multiples, maps to field -> [value, value]
+    get textCriteria() {
         const raw = this.filterText;
 
         const result = new Map();
@@ -50,17 +77,103 @@ export class SearchParams {
         let matches = raw.match(pairSplitRE);
         if (matches === null && raw.length) matches = [`name=${raw}`];
 
-        return matches.reduce((result, pair) => {
+        const criteria = matches.reduce((result, pair) => {
             const [field, val] = pair.split("=");
-            const cleanField = field.replace(scrubFieldRE, "");
 
-            if (validTextFields.has(cleanField)) {
-                const cleanVal = val.replace(scrubQuotesRE, "").replace(scrubSpaceRE, " ");
-                result.set(cleanField, cleanVal);
+            if (validTextFields.has(field)) {
+                let cleanVal = val.replace(scrubQuotesRE, "");
+                // set an array of criteria if we have multiples of the same field name
+                if (result.has(field)) {
+                    cleanVal = [result.get(field), cleanVal].flat();
+                }
+
+                result.set(field, cleanVal);
             }
 
             return result;
         }, result);
+
+        return criteria;
+    }
+
+    // all criteria, map of field->value, includes our non-standard boolean filters
+    get criteria() {
+        const criteria = new Map(this.textCriteria);
+        criteria.set("visible", !this.showHidden);
+        criteria.set("deleted", this.showDeleted);
+        return criteria;
+    }
+
+    // Generates an array of pouchDB selector objects
+    // { field: { $operator: value }}
+    get pouchFilters() {
+        const filters = Array.from(this.criteria)
+            // generate multiple objects for duplicated field=val entries
+            // these will be AND-ed together in the final pouch selector
+            // map userfield to pouchfield, userfield = what the user typed in the box
+            // pouchfield = the actual field in the cache
+            .map(([userField, val]) => [this.getPouchFieldName(userField), val])
+            .map(([pouchField, val]) => {
+                const vals = Array.isArray(val) ? val : [val];
+                return vals.map((v) => [pouchField, v]);
+            })
+            .flat()
+            .map(([pouchField, val]) => {
+                const comparator = isString(val) ? { $regex: new RegExp(val) } : { $eq: val };
+                return { [pouchField]: comparator };
+            });
+
+        return filters;
+    }
+
+    // render a query string for use in querying content from the contnts/near endoint
+    get historyContentQueryString() {
+        const parts = Array.from(this.criteria).map(([userField, val]) => {
+            const serverField = this.getServerFieldName(userField);
+
+            switch (serverField) {
+                // some client-side filters do not correspond to filters on the server
+                // they can be used to filter local results but will not affect the polling
+                // TODO: consider adding them as available filter options on the api?
+                case null:
+                    return "";
+
+                // This is advertised to work, but is broken on the current api
+                case "annotation":
+                case "description":
+                    return "";
+
+                // non-standard REST bools
+                // deleted serverField was reserved by pouchDB, needed to rename it to "isDeleted"
+                case "deleted":
+                case "visible":
+                    return `${serverField}=${dumbBool(val)}`;
+
+                // no text searching in some fields
+                case "hid":
+                case "state":
+                case "history_content_type":
+                case "type":
+                    return `${serverField}=${val}`;
+
+                // assume text-contains search
+                default:
+                    return `${serverField}-contains=${encodeURIComponent(val)}`;
+            }
+        });
+
+        return parts.filter((o) => o.length).join("&");
+    }
+
+    // maps friendly user field name to internal data field if necessary
+    getPouchFieldName(field) {
+        const cleanName = field.replace(scrubFieldRE, "");
+        return cleanName in pouchFieldAlias ? pouchFieldAlias[cleanName] : cleanName;
+    }
+
+    getServerFieldName(field) {
+        const cleanName = field.replace(scrubFieldRE, "");
+        return cleanName in serverFieldAlias ? serverFieldAlias[cleanName] : cleanName;
     }
 
     // output current state to log
@@ -79,7 +192,7 @@ export class SearchParams {
 
 // Statics
 
-SearchParams.pageSize = config.caching.pageSize;
+SearchParams.pageSize = config?.caching?.pageSize || 50;
 
 SearchParams.equals = function (a, b) {
     return deepEqual(a.export(), b.export());

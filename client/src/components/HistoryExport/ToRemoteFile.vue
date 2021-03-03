@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div class="export-to-remote-file">
         <b-alert v-if="errorMessage" show variant="danger" dismissible @dismissed="errorMessage = null">
             {{ errorMessage }}
             <JobError
@@ -20,14 +20,14 @@
         </div>
         <div v-else>
             <b-form-group
-                id="directory"
+                id="fieldset-directory"
                 label-for="directory"
                 description="Select a 'remote files' directory to export history archive to."
                 class="mt-3"
             >
-                <files-input v-model="directory" mode="directory" :requireWritable="true" />
+                <files-input id="directory" v-model="directory" mode="directory" :requireWritable="true" />
             </b-form-group>
-            <b-form-group id="name" label-for="name" description="Give the exported file a name." class="mt-3">
+            <b-form-group id="fieldset-name" label-for="name" description="Give the exported file a name." class="mt-3">
                 <b-form-input id="name" v-model="name" placeholder="Name" required></b-form-input>
             </b-form-group>
             <b-row align-h="end">

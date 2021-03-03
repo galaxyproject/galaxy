@@ -1,5 +1,6 @@
 import WorkflowInvocationState from "./WorkflowInvocationState";
 import { shallowMount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 import Vuex from "vuex";
 import invocationData from "../Workflow/test/json/invocation.json";
 
@@ -10,6 +11,8 @@ const invocationJobsSummaryById = {
     populated_state: "ok",
 };
 jest.mock("../History/caching");
+
+const localVue = getLocalVue();
 
 describe("WorkflowInvocationState.vue with terminal invocation", () => {
     let wrapper;
@@ -25,6 +28,7 @@ describe("WorkflowInvocationState.vue with terminal invocation", () => {
                 invocation: () => invocationData,
                 getInvocationJobsSummaryById: () => () => invocationJobsSummaryById,
             },
+            localVue,
         });
     });
 
@@ -33,13 +37,13 @@ describe("WorkflowInvocationState.vue with terminal invocation", () => {
     });
 
     it("displays report links", async () => {
-        expect(wrapper.find("#invocation-pdf-link").exists()).toBeTruthy();
-        expect(wrapper.find("#invocation-link").exists()).toBeTruthy();
-        expect(wrapper.find("#bco-json").exists()).toBeTruthy();
+        expect(wrapper.find(".invocation-pdf-link").exists()).toBeTruthy();
+        expect(wrapper.find(".invocation-report-link").exists()).toBeTruthy();
+        expect(wrapper.find(".bco-json").exists()).toBeTruthy();
     });
 
     it("doesn't show cancel invocation button", async () => {
-        expect(wrapper.find("#cancel-workflow-scheduling").exists()).toBeFalsy();
+        expect(wrapper.find(".cancel-workflow-scheduling").exists()).toBeFalsy();
     });
 });
 
@@ -67,6 +71,7 @@ describe("WorkflowInvocationState.vue with no invocation", () => {
                 invocation: () => null,
                 getInvocationJobsSummaryById: () => () => invocationJobsSummaryById,
             },
+            localVue,
         });
     });
 
@@ -75,12 +80,12 @@ describe("WorkflowInvocationState.vue with no invocation", () => {
     });
 
     it("does not display report links", async () => {
-        expect(wrapper.find("#invocation-pdf-link").exists()).toBeFalsy();
-        expect(wrapper.find("#invocation-link").exists()).toBeFalsy();
-        expect(wrapper.find("#bco-json").exists()).toBeFalsy();
+        expect(wrapper.find(".invocation-pdf-link").exists()).toBeFalsy();
+        expect(wrapper.find(".invocation-report-link").exists()).toBeFalsy();
+        expect(wrapper.find(".bco-json").exists()).toBeFalsy();
     });
 
     it("shows cancel invocation button", async () => {
-        expect(wrapper.find("#cancel-workflow-scheduling").exists()).toBeTruthy();
+        expect(wrapper.find(".cancel-workflow-scheduling").exists()).toBeTruthy();
     });
 });

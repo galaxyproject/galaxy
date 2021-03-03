@@ -7,15 +7,16 @@ API operations for for querying and recording user metrics from some client
 import datetime
 import logging
 
+from galaxy.structured_app import StructuredApp
 from galaxy.web import expose_api_anonymous
-from galaxy.webapps.base.controller import BaseAPIController
+from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
 
 
-class MetricsController(BaseAPIController):
+class MetricsController(BaseGalaxyAPIController):
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
         #: set to true to send additional debugging info to the log
         self.debugging = True
@@ -71,10 +72,10 @@ class MetricsController(BaseAPIController):
             label = metric['namespace']
             time = self._deserialize_isoformat_date(metric['time'])
             kwargs = {
-                'level'   : metric['level'],
-                'args'    : metric['args'],
-                'user'    : user_id,
-                'session' : session_id
+                'level': metric['level'],
+                'args': metric['args'],
+                'user': user_id,
+                'session': session_id
             }
             yield (label, time, kwargs)
 

@@ -34,8 +34,8 @@ class HistoryManagerTestCase(BaseTestCase):
 
     def set_up_managers(self):
         super().set_up_managers()
-        self.history_manager = HistoryManager(self.app)
-        self.hda_manager = hdas.HDAManager(self.app)
+        self.history_manager = self.app[HistoryManager]
+        self.hda_manager = self.app[hdas.HDAManager]
 
     def add_hda_to_history(self, history, **kwargs):
         dataset = self.hda_manager.dataset_manager.create()
@@ -399,9 +399,9 @@ class HistorySerializerTestCase(BaseTestCase):
 
     def set_up_managers(self):
         super().set_up_managers()
-        self.history_manager = HistoryManager(self.app)
-        self.hda_manager = hdas.HDAManager(self.app)
-        self.history_serializer = HistorySerializer(self.app)
+        self.history_manager = self.app[HistoryManager]
+        self.hda_manager = self.app[hdas.HDAManager]
+        self.history_serializer = self.app[HistorySerializer]
 
     def test_views(self):
         user2 = self.user_manager.create(**user2_data)
@@ -422,8 +422,8 @@ class HistorySerializerTestCase(BaseTestCase):
         self.log('should have a serializer for all serializable keys')
         for key in self.history_serializer.serializable_keyset:
             instantiated_attribute = getattr(history1, key, None)
-            if not ((key in self.history_serializer.serializers) or
-                    (isinstance(instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS))):
+            if not ((key in self.history_serializer.serializers)
+                    or (isinstance(instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS))):
                 self.fail(f'no serializer for: {key} ({instantiated_attribute})')
         else:
             self.assertTrue(True, 'all serializable keys have a serializer')
@@ -620,8 +620,8 @@ class HistoryDeserializerTestCase(BaseTestCase):
 
     def set_up_managers(self):
         super().set_up_managers()
-        self.history_manager = HistoryManager(self.app)
-        self.history_deserializer = HistoryDeserializer(self.app)
+        self.history_manager = self.app[HistoryManager]
+        self.history_deserializer = self.app[HistoryDeserializer]
 
     def test_ratings(self):
         user2 = self.user_manager.create(**user2_data)
@@ -682,8 +682,8 @@ class HistoryFiltersTestCase(BaseTestCase):
 
     def set_up_managers(self):
         super().set_up_managers()
-        self.history_manager = HistoryManager(self.app)
-        self.filter_parser = HistoryFilters(self.app)
+        self.history_manager = self.app[HistoryManager]
+        self.filter_parser = self.app[HistoryFilters]
 
     # ---- functional and orm filter splitting and resolution
     def test_parse_filters(self):

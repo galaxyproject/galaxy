@@ -179,7 +179,7 @@ class GenomeGraphs(Tabular):
         True
         """
         buf = file_prefix.contents_header
-        rows = [l.split() for l in buf.splitlines()[1:4]]  # break on lines and drop header, small sample
+        rows = [line.split() for line in buf.splitlines()[1:4]]  # break on lines and drop header, small sample
 
         if len(rows) < 1:
             return False

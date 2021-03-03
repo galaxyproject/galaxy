@@ -18,7 +18,6 @@ import os
 import re
 import shutil
 import tempfile
-from collections import OrderedDict
 
 import markdown
 import pkg_resources
@@ -27,7 +26,11 @@ try:
 except Exception:
     weasyprint = None
 
-from galaxy.exceptions import MalformedContents, MalformedId
+from galaxy.exceptions import (
+    MalformedContents,
+    MalformedId,
+    MessageException,
+)
 from galaxy.managers.hdcas import HDCASerializer
 from galaxy.managers.jobs import (
     JobManager,
@@ -45,6 +48,7 @@ ARG_VAL_CAPTURED_REGEX = r'''(?:([\w_\-\|]+)|\"([^\"]+)\"|\'([^\']+)\')'''
 OUTPUT_LABEL_PATTERN = re.compile(r'output=\s*%s\s*' % ARG_VAL_CAPTURED_REGEX)
 INPUT_LABEL_PATTERN = re.compile(r'input=\s*%s\s*' % ARG_VAL_CAPTURED_REGEX)
 STEP_LABEL_PATTERN = re.compile(r'step=\s*%s\s*' % ARG_VAL_CAPTURED_REGEX)
+PATH_LABEL_PATTERN = re.compile(r'path=\s*%s\s*' % ARG_VAL_CAPTURED_REGEX)
 # STEP_OUTPUT_LABEL_PATTERN = re.compile(r'step_output=([\w_\-]+)/([\w_\-]+)')
 UNENCODED_ID_PATTERN = re.compile(r'(workflow_id|history_dataset_id|history_dataset_collection_id|job_id|invocation_id)=([\d]+)')
 ENCODED_ID_PATTERN = re.compile(r'(workflow_id|history_dataset_id|history_dataset_collection_id|job_id|invocation_id)=([a-z0-9]+)')
@@ -383,7 +387,15 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
     def handle_dataset_as_image(self, line, hda):
         dataset = hda.dataset
         name = hda.name or ''
-        with open(dataset.file_name, "rb") as f:
+        path_match = re.search(PATH_LABEL_PATTERN, line)
+
+        if path_match:
+            filepath = path_match.group(2)
+            file = os.path.join(hda.extra_files_path, filepath)
+        else:
+            file = dataset.file_name
+
+        with open(file, "rb") as f:
             base64_image_data = base64.b64encode(f.read()).decode("utf-8")
         rval = (f"![{name}](data:image/png;base64,{base64_image_data})", True)
         return rval
@@ -444,11 +456,11 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
 
     def handle_job_metrics(self, line, job):
         job_metrics = summarize_job_metrics(self.trans, job)
-        metrics_by_plugin = OrderedDict()
+        metrics_by_plugin = {}
         for job_metric in job_metrics:
             plugin = job_metric["plugin"]
             if plugin not in metrics_by_plugin:
-                metrics_by_plugin[plugin] = OrderedDict()
+                metrics_by_plugin[plugin] = {}
             metrics_by_plugin[plugin][job_metric["title"]] = job_metric["value"]
         markdown = ""
         for metric_plugin, metrics_for_plugin in metrics_by_plugin.items():
@@ -518,7 +530,7 @@ class MarkdownFormatHelpers:
 
     @staticmethod
     def literal_via_fence(content):
-        return "\n%s\n" % "\n".join("    %s" % l for l in content.splitlines())
+        return "\n%s\n" % "\n".join(f"    {line}" for line in content.splitlines())
 
     @staticmethod
     def indicate_data_truncated():
@@ -544,7 +556,7 @@ def to_html(basic_markdown):
     return html
 
 
-def to_pdf(trans, basic_markdown, css_paths=None):
+def to_pdf(trans, basic_markdown, css_paths=None) -> bytes:
     css_paths = css_paths or []
     as_html = to_html(basic_markdown)
     directory = tempfile.mkdtemp('gxmarkdown')
@@ -567,7 +579,14 @@ def to_pdf(trans, basic_markdown, css_paths=None):
         shutil.rmtree(directory)
 
 
-def internal_galaxy_markdown_to_pdf(trans, internal_galaxy_markdown, document_type):
+def _check_can_convert_to_pdf_or_raise():
+    """Checks if the HTML to PDF converter is available."""
+    if not weasyprint:
+        raise MessageException("PDF conversion service not available.")
+
+
+def internal_galaxy_markdown_to_pdf(trans, internal_galaxy_markdown, document_type) -> bytes:
+    _check_can_convert_to_pdf_or_raise()
     basic_markdown = to_basic_markdown(trans, internal_galaxy_markdown)
     config = trans.app.config
     document_type_prologue = getattr(config, "markdown_export_prologue_%ss" % document_type, '') or ''

@@ -23,11 +23,11 @@ class HDCATestCase(BaseTestCase, CreatesCollectionsMixin):
 
     def set_up_managers(self):
         super().set_up_managers()
-        self.hdca_manager = hdcas.HDCAManager(self.app)
-        self.hda_manager = hdas.HDAManager(self.app)
-        self.history_manager = HistoryManager(self.app)
-        self.dataset_manager = DatasetManager(self.app)
-        self.collection_manager = collections.DatasetCollectionManager(self.app)
+        self.hdca_manager = self.app[hdcas.HDCAManager]
+        self.hda_manager = self.app[hdas.HDAManager]
+        self.history_manager = self.app[HistoryManager]
+        self.dataset_manager = self.app[DatasetManager]
+        self.collection_manager = self.app[collections.DatasetCollectionManager]
 
     def _create_history(self, user_data=None, **kwargs):
         user_data = user_data or user2_data
@@ -87,8 +87,8 @@ class HDCASerializerTestCase(HDCATestCase):
         self.log('should have a serializer for all serializable keys')
         for key in serializer.serializable_keyset:
             instantiated_attribute = getattr(item, key, None)
-            if not ((key in serializer.serializers) or
-                   (isinstance(instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS))):
+            if not ((key in serializer.serializers)
+                   or (isinstance(instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS))):
                 self.fail(f'no serializer for: {key} ({instantiated_attribute})')
         else:
             self.assertTrue(True, 'all serializable keys have a serializer')
