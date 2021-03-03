@@ -931,8 +931,9 @@ class NavigatesGalaxy(HasDriver):
 
     @retry_during_transitions
     def libraries_index_table_elements(self):
-        container = self.wait_for_selector_visible(".library_container")
-        elements = container.find_elements_by_css_selector("#library_list_body")
+        container = self.components.libraries._.wait_for_visible()
+
+        elements = container.find_elements_by_css_selector("tbody")
         if not elements:
             return []
         else:
@@ -940,19 +941,18 @@ class NavigatesGalaxy(HasDriver):
             element = elements[0]
             return element.find_elements_by_css_selector("tr")  # [style='display: table-row']
 
-    def libraries_index_click_create_new(self):
-        self.wait_for_and_click_selector("#create_new_library_btn")
-
     def libraries_index_create(self, name):
-        self.libraries_index_click_create_new()
-        name_text_box = self.wait_for_selector_visible("textarea[name='input_library_name']")
-        name_text_box.send_keys(name)
+        self.components.libraries.create_new_library_btn.wait_for_and_click()
+        name_input_field = self.components.libraries.new_library_name_input.wait_for_visible()
+        input_field = self.components.libraries.new_library_description_input.wait_for_visible()
 
-        self.wait_for_and_click_selector(".save_library_btn")
+        name_input_field.send_keys(name)
+        input_field.send_keys(self._get_random_name(prefix="description"))
+        self.components.libraries.save_new_library_btn.wait_for_and_click()
 
     def libraries_index_click_search(self):
         self.sleep_for(WAIT_TYPES.UX_RENDER)
-        search_element = self.wait_for_selector_clickable("input.library-search-input")
+        search_element = self.components.libraries.search_field.wait_for_visible()
         search_element.click()
         return search_element
 
@@ -1334,8 +1334,6 @@ class NavigatesGalaxy(HasDriver):
         details_component = item_component.details
         details_displayed = details_component.is_displayed
         item_component.title.wait_for_and_click()
-        # for i in range(88888):
-        #     self.sleep_for(WAIT_TYPES.UX_RENDER)
 
         if kwds.get("wait", False):
             if details_displayed:

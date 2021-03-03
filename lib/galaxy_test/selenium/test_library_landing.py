@@ -17,7 +17,7 @@ class LibraryLandingTestCase(SeleniumTestCase):
     @selenium_test
     def test_create_new_close(self):
         num_displayed_libraries = self._num_displayed_libraries()
-        self.libraries_index_click_create_new()
+        self.components.libraries.create_new_library_btn.wait_for_and_click()
         self.wait_for_selector_visible(".new-row")
         self.screenshot("libraries_new")
         close_button = self.wait_for_selector_clickable(".cancel_library_btn")
