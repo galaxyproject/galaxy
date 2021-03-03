@@ -11,7 +11,10 @@ from urllib.parse import quote_plus
 import numpy as np
 
 from galaxy.datatypes.binary import Binary
-from galaxy.datatypes.metadata import FileParameter, MetadataElement
+from galaxy.datatypes.metadata import (
+    FileParameter,
+    MetadataElement,
+)
 from galaxy.datatypes.text import Html as HtmlFromText
 from galaxy.util import nice_size
 from galaxy.util.image_util import check_image_type

@@ -223,6 +223,13 @@ class ToolsUploadTestCase(ApiTestCase):
             tiff_metadata = self._upload_and_get_details(fh, file_type="auto")
         self.assertEqual(tiff_metadata["file_ext"], "tiff")
 
+    @skip_without_datatype("ome.tiff")
+    def test_image_upload_auto(self):
+        tiff_path = TestDataResolver().get_filename("1.ome.tiff")
+        with open(tiff_path, "rb") as fh:
+            tiff_metadata = self._upload_and_get_details(fh, file_type="auto")
+        self.assertEqual(tiff_metadata["file_ext"], "ome.tiff")
+
     @uses_test_history(require_new=False)
     def test_newlines_stage_fetch(self, history_id):
         job = {
