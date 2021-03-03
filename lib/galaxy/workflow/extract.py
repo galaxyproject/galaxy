@@ -75,6 +75,7 @@ def extract_steps(trans, history=None, job_ids=None, dataset_ids=None, dataset_c
             name = dataset_names[i]
         else:
             name = "Input Dataset"
+        step.label = name
         step.tool_inputs = dict(name=name)
         hid_to_output_pair[hid] = (step, 'output')
         steps.append(step)
@@ -88,6 +89,7 @@ def extract_steps(trans, history=None, job_ids=None, dataset_ids=None, dataset_c
             name = dataset_collection_names[i]
         else:
             name = "Input Dataset Collection"
+        step.label = name
         step.tool_inputs = dict(name=name, collection_type=collection_type)
         hid_to_output_pair[hid] = (step, 'output')
         steps.append(step)
