@@ -4,7 +4,7 @@
             <b-button class="mr-1" @click="gotoFirstPage" title="go to first page">
                 <font-awesome-icon icon="home" />
             </b-button>
-            <b-button v-b-toggle.collapse-2 v-if="isAdmin" title="Create new folder" class="mr-1">
+            <b-button id="create-new-lib" v-b-toggle.collapse-2 v-if="isAdmin" title="Create new folder" class="mr-1">
                 <font-awesome-icon icon="plus" />
                 Library
             </b-button>
@@ -24,7 +24,7 @@
                         <b-form-input v-model="newLibraryForm.description" required placeholder="Description" />
                         <b-form-input v-model="newLibraryForm.synopsis" placeholder="Synopsis" />
                         <template v-slot:append>
-                            <b-button type="submit" title="save">
+                            <b-button id="save_new_library" type="submit" title="save">
                                 <font-awesome-icon :icon="['far', 'save']" />
                                 Save
                             </b-button>
