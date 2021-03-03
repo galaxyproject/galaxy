@@ -308,7 +308,10 @@ export default {
                 clearTimeout(this.annotationTimeout);
             }
             this.annotationTimeout = setTimeout(() => {
-                this.annotation = annotation;
+                if (annotation !== this.annotation) {
+                    this.annotation = annotation;
+                    this.$emit("onChange");
+                }
             }, 100);
         },
         setLabel(label) {
@@ -316,7 +319,10 @@ export default {
                 clearTimeout(this.labelTimeout);
             }
             this.labelTimeout = setTimeout(() => {
-                this.label = label;
+                if (label !== this.label) {
+                    this.label = label;
+                    this.$emit("onChange");
+                }
             }, 100);
         },
         setData(data) {
