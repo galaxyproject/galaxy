@@ -75,6 +75,7 @@ sqlparse = "*"
 starlette = "*"
 starlette-context = {version = "*", python = ">=3.7"}
 svgwrite = "*"
+tifffile = "*"
 uvicorn = "*"
 WebOb = "*"
 Whoosh = "*"
