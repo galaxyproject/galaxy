@@ -48,7 +48,7 @@ import DisplayStructure from "components/DisplayStructured.vue";
 import { CloudAuth } from "components/User/CloudAuth";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
 import Confirmation from "components/login/Confirmation.vue";
-import LibraryFolderRouter from "components/LibraryFolder/LibraryFolderRouter.js";
+import LibraryFolderRouter from "components/LibraryFolder/LibraryFolderRouter";
 import Vue from "vue";
 import store from "store";
 import VueRouterMain from "./VueRouterMain.vue";
