@@ -296,7 +296,7 @@ export default {
                         url: urls[index].trim(),
                         src: "url",
                         dbkey: items[0].get("genome", "?"),
-                        ext: items[0].get("extension", "auto")
+                        ext: items[0].get("extension", "auto"),
                     };
                     data.targets[0].elements.push(element);
                 }
