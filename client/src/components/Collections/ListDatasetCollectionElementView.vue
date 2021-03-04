@@ -1,6 +1,6 @@
 <template>
     <div class="collection-element" @click="$emit('element-is-selected', element)">
-        <click-to-edit v-model="element.name" :title="titleElementName" />
+        <click-to-edit v-model="elementName" :title="titleElementName" />
         <button class="discard-btn btn-sm" :title="titleDiscardButton" @click="clickDiscard">
             {{ l("Discard") }}
         </button>
@@ -11,6 +11,9 @@
 import _l from "utils/localization";
 import ClickToEdit from "./common/ClickToEdit";
 export default {
+    created: function () {
+        this.elementName = this.element.name;
+    },
     props: {
         element: {
             required: true,
@@ -21,6 +24,7 @@ export default {
             titleDiscardButton: _l("Remove this dataset from the list"),
             titleElementName: _l("Click to rename"),
             isSelected: false,
+            elementName: "",
         };
     },
     components: { ClickToEdit },
@@ -35,6 +39,11 @@ export default {
         /** string rep */
         toString() {
             return "ListDatasetCollectionElementView()";
+        },
+    },
+    watch: {
+        elementName() {
+            this.$emit("onRename", this.elementName);
         },
     },
 };

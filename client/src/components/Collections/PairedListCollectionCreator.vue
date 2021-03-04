@@ -407,7 +407,6 @@
                                                 v-for="pair in pairedElements"
                                                 :key="pair.id"
                                                 :pair="pair"
-                                                :name="pair.name"
                                                 :unlink-fn="clickUnpair(pair)"
                                                 @onPairRename="(name) => (pair.name = name)"
                                             />

@@ -44,7 +44,7 @@
                             'rules-container-full': initialElements == null,
                         }"
                     >
-                        <rule-component rule-type="sort" :display-rule-type="displayRuleType" :builder="this">
+                        <rule-component rule-type="sort" :displayRuleType.sync="this.displayRuleType" :builder="this">
                             <column-selector :target.sync="addSortingTarget" :col-headers="activeRuleColHeaders" />
                             <label v-b-tooltip.hover :title="titleNumericSort">
                                 <input type="checkbox" v-model="addSortingNumeric" />
@@ -53,7 +53,7 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_column_basename"
-                            :display-rule-type="displayRuleType"
+                            :displayRuleType.sync="this.displayRuleType"
                             :builder="this"
                         >
                             <column-selector
@@ -63,7 +63,7 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_column_rownum"
-                            :display-rule-type="displayRuleType"
+                            :displayRuleType.sync="this.displayRuleType"
                             :builder="this"
                         >
                             <label>
@@ -73,7 +73,7 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_column_metadata"
-                            :display-rule-type="displayRuleType"
+                            :displayRuleType.sync="this.displayRuleType"
                             :builder="this"
                         >
                             <label>
@@ -86,7 +86,7 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_column_group_tag_value"
-                            :display-rule-type="displayRuleType"
+                            :displayRuleType.sync="this.displayRuleType"
                             :builder="this"
                         >
                             <label>
@@ -100,7 +100,7 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_column_regex"
-                            :display-rule-type="displayRuleType"
+                            ::displayRuleType.sync="this.displayRuleType"
                             :builder="this"
                         >
                             <column-selector :target.sync="addColumnRegexTarget" :col-headers="activeRuleColHeaders" />
@@ -131,7 +131,7 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_column_concatenate"
-                            :display-rule-type="displayRuleType"
+                            :displayRuleType.sync="this.displayRuleType"
                             :builder="this"
                         >
                             <column-selector
@@ -145,7 +145,7 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_column_substr"
-                            :display-rule-type="displayRuleType"
+                            :displayRuleType.sync="this.displayRuleType"
                             :builder="this"
                         >
                             <column-selector :target.sync="addColumnSubstrTarget" :col-headers="activeRuleColHeaders" />
@@ -164,7 +164,7 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_column_value"
-                            :display-rule-type="displayRuleType"
+                            :displayRuleType.sync="this.displayRuleType"
                             :builder="this"
                         >
                             <label>
@@ -172,14 +172,14 @@
                                 <input type="text" v-model="addColumnValue" />
                             </label>
                         </rule-component>
-                        <rule-component rule-type="remove_columns" :display-rule-type="displayRuleType" :builder="this">
+                        <rule-component rule-type="remove_columns" :displayRuleType.sync="this.displayRuleType" :builder="this">
                             <column-selector
                                 :target.sync="removeColumnTargets"
                                 :col-headers="activeRuleColHeaders"
                                 :multiple="true"
                             />
                         </rule-component>
-                        <rule-component rule-type="split_columns" :display-rule-type="displayRuleType" :builder="this">
+                        <rule-component rule-type="split_columns" :displayRuleType.sync="this.displayRuleType" :builder="this">
                             <column-selector
                                 :target.sync="splitColumnsTargets0"
                                 label="Odd Row Column(s)"
@@ -193,7 +193,7 @@
                                 :multiple="true"
                             />
                         </rule-component>
-                        <rule-component rule-type="swap_columns" :display-rule-type="displayRuleType" :builder="this">
+                        <rule-component rule-type="swap_columns" :displayRuleType.sync="this.displayRuleType" :builder="this">
                             <column-selector
                                 :target.sync="swapColumnsTarget0"
                                 label="Swap Column"
@@ -207,7 +207,7 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_filter_regex"
-                            :display-rule-type="displayRuleType"
+                            :displayRuleType.sync="this.displayRuleType"
                             :builder="this"
                         >
                             <column-selector :target.sync="addFilterRegexTarget" :col-headers="activeRuleColHeaders" />
@@ -219,7 +219,7 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_filter_matches"
-                            :display-rule-type="displayRuleType"
+                            :displayRuleType.sync="this.displayRuleType"
                             :builder="this"
                         >
                             <column-selector
@@ -234,7 +234,7 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_filter_compare"
-                            :display-rule-type="displayRuleType"
+                            :displayRuleType.sync="this.displayRuleType"
                             :builder="this"
                         >
                             <column-selector
@@ -254,7 +254,7 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_filter_count"
-                            :display-rule-type="displayRuleType"
+                            :displayRuleType.sync="this.displayRuleType"
                             :builder="this"
                         >
                             <label>
@@ -275,7 +275,7 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_filter_empty"
-                            :display-rule-type="displayRuleType"
+                            :displayRuleType.sync="this.displayRuleType"
                             :builder="this"
                         >
                             <column-selector :target.sync="addFilterEmptyTarget" :col-headers="activeRuleColHeaders" />
