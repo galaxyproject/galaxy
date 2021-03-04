@@ -10,6 +10,7 @@ import UploadFtp from "mvc/upload/upload-ftp";
 import LazyLimited from "mvc/lazy/lazy-limited";
 import { findExtension } from "./utils";
 import { filesDialog } from "utils/data";
+import { getAppRoot } from "onload";
 
 const localize = _l;
 
@@ -334,7 +335,8 @@ export default {
         },
         getRequestUrl: function (items, history_id) {
             var data = this.app.toData(items, history_id);
-            return data.fetchRequest ? "/api/tools/fetch" : this.app.uploadPath;
+            const appRoot = getAppRoot();
+            return data.fetchRequest ? `${appRoot}api/tools/fetch` : this.app.uploadPath;
         },
     },
 };

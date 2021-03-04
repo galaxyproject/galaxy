@@ -274,6 +274,8 @@ export default {
         toFetchData: function (items, history_id) {
             var data = {
                 history_id: history_id,
+                space_to_tab: items[0].get("space_to_tab"),
+                to_posix_lines: items[0].get("to_posix_lines"),
                 targets: [
                     {
                         destination: { type: "hdas" },
@@ -287,16 +289,14 @@ export default {
             // Composite does not use the fetch API, so we can just
             // index into the first element of items
             const urls = items[0].get("url_paste").split("\n");
-            const dbkey = items[0].get("genome", "?");
-            const ext = items[0].get("extension", "auto");
             for (var index in urls) {
                 var url = urls[index].trim();
                 if (url != "") {
                     var element = {
                         url: urls[index].trim(),
                         src: "url",
-                        dbkey: dbkey,
-                        ext: ext,
+                        dbkey: items[0].get("genome", "?"),
+                        ext: items[0].get("extension", "auto")
                     };
                     data.targets[0].elements.push(element);
                 }
