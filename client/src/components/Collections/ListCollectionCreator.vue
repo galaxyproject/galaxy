@@ -184,6 +184,7 @@
                                 :key="element.id"
                                 @element-is-selected="elementSelected"
                                 @element-is-discarded="elementDiscarded"
+                                @onRename="(name) => (element.name = name)"
                                 :class="{ selected: getSelectedDatasetElems.includes(element.id) }"
                                 :element="element"
                             />
