@@ -1193,6 +1193,46 @@ steps:
             invocation_id = self.__invoke_workflow(history_id, workflow_id, inputs)
             self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
 
+    @skip_without_tool('column_param')
+    def test_empty_file_data_column_specified(self):
+        # Regression test for https://github.com/galaxyproject/galaxy/pull/10981
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""class: GalaxyWorkflow
+steps:
+  empty_output:
+    tool_id: empty_output
+    outputs:
+      out_file1:
+        change_datatype: tabular
+  column_param:
+    tool_id: column_param
+    in:
+      input1: empty_output/out_file1
+    state:
+      col: 2
+      col_names: 'B'
+""", history_id=history_id)
+
+    @skip_without_tool('column_param_list')
+    def test_comma_separated_columns(self):
+        # Regression test for https://github.com/galaxyproject/galaxy/pull/10981
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""class: GalaxyWorkflow
+steps:
+  empty_output:
+    tool_id: empty_output
+    outputs:
+      out_file1:
+        change_datatype: tabular
+  column_param_list:
+    tool_id: column_param_list
+    in:
+      input1: empty_output/out_file1
+    state:
+      col: '2,3'
+      col_names: 'B'
+""", history_id=history_id)
+
     @skip_without_tool("mapper")
     @skip_without_tool("pileup")
     def test_workflow_metadata_validation_0(self):
