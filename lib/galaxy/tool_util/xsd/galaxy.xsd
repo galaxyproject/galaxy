@@ -4239,7 +4239,8 @@ The default is ``galaxy.json``.
         <xs:documentation xml:lang="en">The short name for the output datatype.
 The valid values for format can be found in
 [/config/datatypes_conf.xml.sample](https://github.com/galaxyproject/galaxy/blob/dev/config/datatypes_conf.xml.sample)
-(e.g. ``format="pdf"`` or ``format="fastqsanger"``).</xs:documentation>
+(e.g. ``format="pdf"`` or ``format="fastqsanger"``). For collections this is the default format for all included
+elements. Note that the format specified here is ignored for discovered data sets.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="format_source" type="xs:string">
