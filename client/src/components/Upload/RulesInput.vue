@@ -1,6 +1,6 @@
 <template>
     <upload-wrapper ref="wrapper" :top-info="topInfo | l">
-        <span style="width: 25%; display: inline; height: 100%" class="float-left">
+        <span style="width: 25%; display: inline; height: 100%;" class="float-left">
             <div class="upload-rule-option">
                 <div class="upload-rule-option-title">{{ "Upload data as" | l }}</div>
                 <div class="rule-data-type">
@@ -33,10 +33,10 @@
                 </div>
             </div>
         </span>
-        <span style="display: inline; float: right; width: 75%; height: 300px">
+        <span style="display: inline; float: right; width: 75%; height: 300px;">
             <textarea
                 class="upload-rule-source-content form-control"
-                style="height: 100%"
+                style="height: 100%;"
                 v-model="sourceContent"
                 :disabled="selectionType != 'paste'"
             ></textarea>
