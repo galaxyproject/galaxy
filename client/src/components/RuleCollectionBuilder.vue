@@ -541,7 +541,7 @@
                 >{{ l("Reset") }}</b-button
             >
             <b-button
-                v-b-tooltip.hover
+                v-b-tooltip.hover.d50
                 @click="createCollection"
                 :title="titleFinish"
                 class="create-collection rule-btn-okay"
