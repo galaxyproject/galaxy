@@ -540,6 +540,7 @@
                 class="creator-reset-btn rule-btn-reset"
                 >{{ l("Reset") }}</b-button
             >
+            <!--https://github.com/bootstrap-vue/bootstrap-vue/issues/2937#issuecomment-478577527-->
             <b-button
                 v-b-tooltip.hover.d50
                 @click="createCollection"
