@@ -5,7 +5,6 @@ MetaCyto analysis datatypes.
 import logging
 
 from galaxy.datatypes.tabular import Tabular
-from galaxy.util import nice_size
 
 log = logging.getLogger(__name__)
 
