@@ -55,9 +55,11 @@ def check_binary(name, file_path=True):
         temp = BytesIO(name)
         read_start = int(len(name) / 2)
     try:
-        # Read 1024 from the middle of the file,
+        # Read 1024 from the middle of the file if this is not
+        # a gzip or zip compressed file (bzip are indexed),
         # to avoid issues with long txt headers on binary files.
-        temp.seek(read_start)
+        if not is_gzip(file_path) and not is_zip(file_path):
+            temp.seek(read_start)
         return util.is_binary(temp.read(1024))
     finally:
         temp.close()
