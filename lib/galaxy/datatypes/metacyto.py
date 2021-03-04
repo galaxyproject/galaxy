@@ -29,19 +29,5 @@ class mSummary(Tabular):
     """Class describing the summary table output by MetaCyto after FCS preprocessing"""
     file_ext = "metacyto_summary.txt"
 
-    def set_peek(self, dataset, is_multi_byte=False):
-        if not dataset.dataset.purged:
-            dataset.peek = "MetaCyto Preprocessing Summary"
-            dataset.blurb = nice_size(dataset.get_size())
-        else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
-
-    def display_peek(self, dataset):
-        try:
-            return dataset.peek
-        except Exception:
-            return "MetaCyto Preprocessing Summary"
-
     def sniff_prefix(self, file_prefix):
         return file_prefix.startswith('study_id\tantibodies\tfilenames')
