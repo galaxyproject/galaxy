@@ -29,7 +29,7 @@ import { VBTooltip } from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faUpload } from "@fortawesome/free-solid-svg-icons";
-import { openUploadModal } from "./mount";
+import { openGlobalUploadModal } from "./mount";
 library.add(faUpload);
 
 export default {
@@ -48,7 +48,7 @@ export default {
     },
     methods: {
         showUploadDialog(e) {
-            openUploadModal();
+            openGlobalUploadModal();
         },
         setStatus(val) {
             this.status = val;

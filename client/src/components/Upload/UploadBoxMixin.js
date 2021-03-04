@@ -31,6 +31,10 @@ export default {
             type: Boolean,
             default: false,
         },
+        hasCallback: {
+            type: Boolean,
+            default: false,
+        },
     },
     computed: {
         btnFilesTitle() {
@@ -43,6 +47,9 @@ export default {
         remoteFiles() {
             // this needs to be true for the tests to pass
             return !!this.fileSourcesConfigured || !!this.ftpUploadSite;
+        },
+        btnCloseTitle() {
+            return this.hasCallback ? "Cancel" : "Close";
         },
     },
     methods: {
