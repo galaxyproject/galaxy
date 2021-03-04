@@ -14,20 +14,6 @@ class mStats(Tabular):
     """Class describing the table of cluster statistics output from MetaCyto"""
     file_ext = "metacyto_stats.txt"
 
-    def set_peek(self, dataset, is_multi_byte=False):
-        if not dataset.dataset.purged:
-            dataset.peek = "MetaCyto Cluster Stats"
-            dataset.blurb = nice_size(dataset.get_size())
-        else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
-
-    def display_peek(self, dataset):
-        try:
-            return dataset.peek
-        except Exception:
-            return "MetaCyto Cluster Stats"
-
     def sniff_prefix(self, file_prefix):
         """Quick test on file headings"""
         if file_prefix.startswith("fcs_files\tcluster_id\tlabel\tfcs_names"):
