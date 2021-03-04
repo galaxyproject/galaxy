@@ -1,4 +1,3 @@
-<script>
 import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 import VueRouter from "vue-router";
@@ -32,4 +31,3 @@ export default new VueRouter({
         },
     ],
 });
-</script>
