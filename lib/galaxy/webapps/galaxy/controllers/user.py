@@ -214,6 +214,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         return (time_difference > delta or activation_grace_period == 0)
 
     @web.expose
+    @web.json
     def logout(self, trans, logout_all=False, **kwd):
         message = trans.check_csrf_token(kwd)
         if message:
