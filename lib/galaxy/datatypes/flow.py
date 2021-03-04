@@ -47,7 +47,3 @@ class FCS(Binary):
         # we only need to check ioffs 2 to 5
         int(content[10:42].replace(' ', ''))
         return True
-
-    def get_mime(self):
-        """Returns the mime type of the datatype"""
-        return 'application/octet-stream'
