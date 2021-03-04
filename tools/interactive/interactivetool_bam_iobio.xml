@@ -1,6 +1,6 @@
 <tool id="interactive_tool_bam_iobio" tool_type="interactive" name="bam.iobio visualisation" version="0.2">
     <requirements>
-        <container type="docker">anderspitman/bam.iobio.io:latest</container>
+        <container type="docker">quay.io/iobio/bam.iobio.io:0.3.0</container>
     </requirements>
     <entry_points>
         <entry_point name="BAM io.bio visualisation of $baminfile.display_name" requires_domain="True">
@@ -12,27 +12,26 @@
         #import re
         mkdir -p /bam/input_files;
         #set $bam_cleaned_name = re.sub('[^\w\-\.]', '_', str($baminfile.element_identifier))
-        #set $bai_cleaned_name = re.sub('[^\w\-\.]', '_', str($baiinfile.element_identifier))
         ln -sf '$baminfile' '/bam/input_files/${bam_cleaned_name}' &&
-        ln -sf '$baiinfile' '/bam/input_files/${bai_cleaned_name}' &&
-        echo '{ "bam": "http://localhost:9999/${bam_cleaned_name}", "bai":"http://localhost:9999/${bai_cleaned_name}"}' >> /bam/config/config.json &&
+        ln -sf '$baminfile.metadata.bam_index' '/bam/input_files/${bam_cleaned_name}.bai' &&
+        echo '{ "bam": "http://localhost:9999/${bam_cleaned_name}", "bai":"http://localhost:9999/${bam_cleaned_name}.bai"}' >> /bam/config/config.json &&
         cd /bam/input_files &&
-        node /iobio-gru-backend/src/static_server.js 9999 &
-        node /iobio-gru-backend/src/index.js --tools-dir=/iobio-gru-backend/tool_bin --app-dir=/bam;
+        node /iobio-gru-backend/src/static_server.js 9999 > /dev/null 2>&1 &
+        node /iobio-gru-backend/src/index.js --tools-dir=/iobio-gru-backend/tool_bin --app-dir=/bam > /dev/null 2>&1;
     ]]>
     </command>
     <inputs>
         <param name="baminfile" type="data" format="bam" label="BAM file"/>
-        <param name="baiinfile" type="data" format="bai" label="BAI file"/>
     </inputs>
+    <outputs>
+        <data name="outfile" format="txt" />
+    </outputs>
     <tests>
     </tests>
     <help>
         Required inputs:
 
         1. BAM file: binary alignment map file
-
-        2. BAI file: corresponding index file
 
         The `iobio project`_ is developed by the `Marth lab`_ at the `University of Utah Center for Genetic Discovery`_.
 
