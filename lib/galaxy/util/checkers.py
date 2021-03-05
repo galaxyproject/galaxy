@@ -50,10 +50,15 @@ def check_binary(name, file_path=True):
     # Handles files if file_path is True or text if file_path is False
     if file_path:
         temp = open(name, "rb")
-        read_start = int(os.stat(name).st_size / 2)
+        file_size = os.stat(name).st_size
+        read_start = int(file_size / 2)
+        # avoid reading beyond the end of the file
+        read_length = min(1024, int(file_size / 2) - 1)
     else:
         temp = BytesIO(name)
-        read_start = int(len(name) / 2)
+        length = len(name)
+        read_start = int(length / 2)
+        read_length = min(1024, int(length / 2) - 1)
     try:
         # Read 1024 from the middle of the file if this is not
         # a gzip or zip compressed file (bzip are indexed),
@@ -61,7 +66,8 @@ def check_binary(name, file_path=True):
         if file_path and not is_gzip(name) and not is_zip(name) and not is_bz2(name):
             # file_path=False doesn't seem to be used in the codebase
             temp.seek(read_start)
-        return util.is_binary(temp.read(1024))
+            read_length = 1024
+        return util.is_binary(temp.read(read_length))
     finally:
         temp.close()
 
