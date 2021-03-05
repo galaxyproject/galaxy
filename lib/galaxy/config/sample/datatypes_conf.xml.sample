@@ -430,8 +430,8 @@
     <datatype extension="odgi" type="galaxy.datatypes.binary:Binary" subclass="true" description="Genomic variation graphs self index used by odgi." display_in_upload="true"/>
     <datatype extension="vg" type="galaxy.datatypes.binary:Binary" subclass="true" description="Genomic variation graphs." display_in_upload="true"/>
     <datatype extension="xg" type="galaxy.datatypes.binary:Binary" subclass="true" description="Genomic variation graphs with vg index." display_in_upload="true"/>
-    <datatype extension="protobuf2" type="galaxy.datatypes.binary:Binary" subclass="true" description="Protocol Buffers (Protobuf) is data format for serializing structured data."/>
-    <datatype extension="protobuf3" type="galaxy.datatypes.binary:Binary" subclass="true" description="Protocol Buffers (Protobuf) is data format for serializing structured data."/>
+    <datatype extension="protobuf2" type="galaxy.datatypes.binary:Binary" subclass="true" description="Protocol Buffers (Protobuf) is data format for serializing structured data." display_in_upload="true"/>
+    <datatype extension="protobuf3" type="galaxy.datatypes.binary:Binary" subclass="true" description="Protocol Buffers (Protobuf) is data format for serializing structured data." display_in_upload="true"/>
     <datatype extension="tabix" type="galaxy.datatypes.binary:Binary" subclass="true"/>
     <datatype extension="bgzip" type="galaxy.datatypes.binary:Binary" subclass="true"/>
     <datatype extension="vcf_bgzip" type="galaxy.datatypes.tabular:VcfGz" display_in_upload="true">
