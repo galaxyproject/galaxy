@@ -47,11 +47,6 @@ export default {
     components: {
         Select2,
     },
-    data: function () {
-        return {
-            l: _l,
-        };
-    },
     props: {
         target: {
             required: true,
