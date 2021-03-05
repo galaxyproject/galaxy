@@ -23,6 +23,8 @@ log = logging.getLogger(__name__)
 UPLOAD_TOOL_ID = "upload1"
 LOAD_TOOLS_FROM_PATH = True
 DEFAULT_USE_FETCH_API = True
+DEFAULT_FILE_TYPE = "auto"
+DEFAULT_DBKEY = "?"
 
 
 class StagingInterace(metaclass=abc.ABCMeta):
@@ -74,9 +76,12 @@ class StagingInterace(metaclass=abc.ABCMeta):
             fetch_payload = None
             if isinstance(upload_target, FileUploadTarget):
                 file_path = upload_target.path
+                file_type = upload_target.properties.get('filetype', None) or DEFAULT_FILE_TYPE
+                dbkey = upload_target.properties.get('dbkey', None) or DEFAULT_DBKEY
                 fetch_payload = _fetch_payload(
                     history_id,
-                    file_type=upload_target.properties.get('filetype', None) or "auto",
+                    file_type=file_type,
+                    dbkey=dbkey,
                     to_posix_lines=to_posix_lines,
                 )
                 name = _file_path_to_name(file_path)
@@ -141,10 +146,12 @@ class StagingInterace(metaclass=abc.ABCMeta):
 
             if isinstance(upload_target, FileUploadTarget):
                 file_path = upload_target.path
+                file_type = upload_target.properties.get('filetype', None) or DEFAULT_FILE_TYPE
+                dbkey = upload_target.properties.get('dbkey', None) or DEFAULT_DBKEY
                 upload_payload = _upload_payload(
                     history_id,
-                    file_type=upload_target.properties.get('filetype', None) or "auto",
-                    to_posix_lines=to_posix_lines,
+                    file_type=file_type,
+                    to_posix_lines=dbkey,
                 )
                 name = _file_path_to_name(file_path)
                 upload_payload["inputs"]["files_0|auto_decompress"] = False
@@ -269,7 +276,7 @@ def _file_path_to_name(file_path):
     return name
 
 
-def _upload_payload(history_id, tool_id=UPLOAD_TOOL_ID, file_type="auto", dbkey="?", **kwd):
+def _upload_payload(history_id, tool_id=UPLOAD_TOOL_ID, file_type=DEFAULT_FILE_TYPE, dbkey=DEFAULT_DBKEY, **kwd):
     """Adapted from bioblend tools client."""
     payload = {}
     payload["history_id"] = history_id
@@ -289,9 +296,10 @@ def _upload_payload(history_id, tool_id=UPLOAD_TOOL_ID, file_type="auto", dbkey=
     return payload
 
 
-def _fetch_payload(history_id, file_type="auto", dbkey="?", **kwd):
+def _fetch_payload(history_id, file_type=DEFAULT_FILE_TYPE, dbkey=DEFAULT_DBKEY, **kwd):
     element = {
         "ext": file_type,
+        "dbkey": dbkey,
     }
     for arg in ['to_posix_lines', 'space_to_tab']:
         if arg in kwd:
