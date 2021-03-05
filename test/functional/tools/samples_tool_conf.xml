@@ -155,6 +155,7 @@
   <tool file="collection_mixed_param.xml" />
   <tool file="collection_two_paired.xml" />
   <tool file="collection_creates_pair.xml" />
+  <tool file="collection_creates_pair_format.xml" />
   <tool file="collection_creates_pair_from_type.xml" />
   <tool file="collection_creates_pair_from_work_dir.xml" />
   <tool file="collection_creates_list.xml" />
