@@ -27,7 +27,7 @@
                     <div class="text-right">
                         <button
                             class="save-collection btn btn-primary"
-                            @click="clickedSave"
+                            @click="clickedSave('dbkey', genome)"
                             :disabled="genome.id == databaseKeyFromElements"
                         >
                             {{ l("Save") }}
@@ -66,7 +66,7 @@
                     <div class="text-right">
                         <button
                             class="save-collection btn btn-primary"
-                            @click="clickedSave"
+                            @click="clickedSave('file_ext', extension)"
                             :disabled="extension.id == datatypeFromElements"
                         >
                             {{ l("Save") }}
@@ -100,6 +100,7 @@
 </template>
 
 <script>
+import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import axios from "axios";
@@ -237,8 +238,22 @@ export default {
             }
             this.selectedExtension = this.extensions.find((element) => element.id == this.datatypeFromElements);
         },
-        clickedSave: function () {
+        clickedSave: function (attribute, newValue) {
             console.log("clicked save");
+            const url = prependPath("/api/dataset_collections/" + this.collection_id);
+            const data = { attribute: attribute, newValue: newValue };
+            axios
+                .put(url, data)
+                .then((response) => {
+                    waitOnJob(response.data.job_id)
+                        .then((data) => {
+                            this.waitingOnJob = false;
+                            this.jobComplete = true;
+                        })
+                        .catch(this.handleError);
+                })
+                .catch(this.handleError);
+            // hit put /api/dataset_collections/this.collection_id
         },
     },
 };
