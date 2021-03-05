@@ -98,8 +98,8 @@ export default {
             return this.inputRules ? this.inputRules.rules : [];
         },
         columnData: function () {
-            const colHeadersPerRule = [];
-            const hotData = RuleDefs.applyRules([], [], [], this.rules, colHeadersPerRule);
+            const hotData = RuleDefs.applyRules([], [], [], this.rules);
+            const colHeadersPerRule = hotData.colHeadersPerRule;
             return { colHeadersPerRule: colHeadersPerRule, columns: hotData.columns };
         },
         colHeaders: function () {
