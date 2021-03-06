@@ -122,7 +122,7 @@
                             <regular-expression-input :target.sync="addColumnRegexExpression" />
                             <label v-if="addColumnRegexType == 'groups'">
                                 {{ l("Number of Groups") }}
-                                <input type="number" v-model="addColumnRegexGroupCount" min="1" />
+                                <input type="number" v-model.number="addColumnRegexGroupCount" min="1" />
                             </label>
                             <label v-if="addColumnRegexType == 'replacement'">
                                 {{ l("Replacement Expression") }}

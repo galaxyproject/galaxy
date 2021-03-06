@@ -270,7 +270,7 @@ const RULES = {
                 rule.replacement = component.addColumnRegexReplacement;
             }
             if (component.addColumnRegexGroupCount) {
-                rule.group_count = parseInt(component.addColumnRegexGroupCount);
+                rule.group_count = component.addColumnRegexGroupCount;
             }
         },
         apply: (rule, data, sources, columns) => {
