@@ -10,6 +10,7 @@ import typing
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter as APIRouter
 from sqlalchemy import (
+    and_,
     or_,
 )
 
@@ -97,6 +98,17 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         :type   user_details: boolean
         :param  user_details: if true, and requestor is an admin, will return external job id and user email.
 
+        :type   user_id: str
+        :param  user_id: an encoded user id to restrict query to, must be own id if not admin user
+
+        :type   limit: int
+        :param  limit: Maximum number of jobs to return.
+
+        :type   offset: int
+        :param  offset: Return jobs starting from this specified position.
+                        For example, if ``limit`` is set to 100 and ``offset`` to 200,
+                        jobs 200-299 will be returned.
+
         :type   date_range_min: string '2014-01-01'
         :param  date_range_min: limit the listing of jobs to those updated on or after requested date
 
@@ -106,16 +118,33 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         :type   history_id: string
         :param  history_id: limit listing of jobs to those that match the history_id. If none, all are returned.
 
+        :type   workflow_id: string
+        :param  workflow_id: limit listing of jobs to those that match the workflow_id. If none, all are returned.
+
+        :type   invocation_id: string
+        :param  invocation_id: limit listing of jobs to those that match the invocation_id. If none, all are returned.
+
         :rtype:     list
         :returns:   list of dictionaries containing summary job information
         """
         state = kwd.get('state', None)
         is_admin = trans.user_is_admin
         user_details = kwd.get('user_details', False)
+        user_id = kwd.get('user_id', None)
+
+        if user_id:
+            decoded_user_id = self.decode_id(user_id)
+        else:
+            decoded_user_id = None
 
         if is_admin:
-            query = trans.sa_session.query(Job)
+            if decoded_user_id is not None:
+                query = trans.sa_session.query(Job).filter(Job.table.c.user_id == decoded_user_id)
+            else:
+                query = trans.sa_session.query(Job)
         else:
+            if decoded_user_id is not None and decoded_user_id != trans.user.id:
+                raise exceptions.AdminRequiredException("Only admins can index the jobs of others")
             query = trans.sa_session.query(Job).filter(Job.table.c.user_id == trans.user.id)
 
         def build_and_apply_filters(query, objects, filter_func):
@@ -138,19 +167,43 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         query = build_and_apply_filters(query, kwd.get('date_range_max', None), lambda dmax: Job.table.c.update_time <= dmax)
 
         history_id = kwd.get('history_id', None)
-        if history_id is not None:
-            try:
+        workflow_id = kwd.get('workflow_id', None)
+        invocation_id = kwd.get('invocation_id', None)
+        try:
+            if history_id is not None:
                 decoded_history_id = self.decode_id(history_id)
                 query = query.filter(Job.table.c.history_id == decoded_history_id)
-            except Exception:
-                raise exceptions.ObjectAttributeInvalidException()
+            if workflow_id is not None:
+                decoded_workflow_id = self.decode_id(workflow_id)
+                query = query.filter(and_(
+                    Job.table.c.id == model.WorkflowInvocationStep.table.c.job_id,
+                    model.WorkflowInvocationStep.table.c.workflow_invocation_id == model.WorkflowInvocation.table.c.id,
+                    model.WorkflowInvocation.table.c.workflow_id == decoded_workflow_id
+                ))
+            if invocation_id is not None:
+                decoded_invocation_id = self.decode_id(invocation_id)
+                query = query.filter(and_(
+                    Job.table.c.id == model.WorkflowInvocationStep.table.c.job_id,
+                    model.WorkflowInvocationStep.table.c.workflow_invocation_id == decoded_invocation_id
+                ))
+        except Exception:
+            raise exceptions.ObjectAttributeInvalidException()
 
-        out = []
         if kwd.get('order_by') == 'create_time':
             order_by = Job.table.c.create_time.desc()
         else:
             order_by = Job.table.c.update_time.desc()
-        for job in query.order_by(order_by).all():
+        query = query.order_by(order_by)
+
+        offset = kwd.get('offset', None)
+        limit = kwd.get('limit', None)
+        if offset is not None:
+            query = query.offset(offset)
+        if limit is not None:
+            query = query.limit(limit)
+
+        out = []
+        for job in query.all():
             job_dict = job.to_dict('collection', system_details=is_admin)
             j = self.encode_all_ids(trans, job_dict, True)
             if user_details:
