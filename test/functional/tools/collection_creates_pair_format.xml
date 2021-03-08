@@ -1,0 +1,52 @@
+<tool id="collection_creates_pair_format" name="collection_creates_pair" version="0.1.0">
+  <command>
+    sed 'n;d' $input1 > '$paired_output.forward' ;
+    sed 'n;d' $input1 > '$paired_output_default_format.forward' ;
+    sed 'n;d' $input1 > "forward.txt";
+    sed -n 'g;n;p' $input1 > "reverse.txt";
+  </command>
+  <inputs>
+    <param name="input1" type="data" label="Input" help="Input to be split." />
+  </inputs>
+  <outputs>
+    <!-- format is specified separately for the elements, i.e. default format (fasta in this case) is ignored -->
+    <collection name="paired_output" format="fasta" type="paired" label="Split Pair">
+      <data name="forward" format="txt" />
+      <data name="reverse" format_source="input1" from_work_dir="reverse.txt" />
+    </collection>
+    <!-- no format is specified separately for the elements, i.e. default format (fasta in this case) is used -->
+    <collection name="paired_output_default_format" format="fasta" type="paired" label="Split Pair">
+      <data name="forward" />
+      <data name="reverse" from_work_dir="reverse.txt" />
+    </collection>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" ftype="bed" value="simple_lines_interleaved.txt" />
+      <output_collection name="paired_output" type="paired">
+        <element name="forward" ftype="txt">
+          <assert_contents>
+            <has_text_matching expression="^This is a line of text.\nThis is a line of text.\n$" />
+          </assert_contents>
+        </element>
+        <element name="reverse" ftype="bed">
+          <assert_contents>
+            <has_text_matching expression="^This is a different line of text.\nThis is a different line of text.\n$" />
+          </assert_contents>
+        </element>
+      </output_collection>
+      <output_collection name="paired_output_default_format" type="paired">
+        <element name="forward" ftype="fasta">
+          <assert_contents>
+            <has_text_matching expression="^This is a line of text.\nThis is a line of text.\n$" />
+          </assert_contents>
+        </element>
+        <element name="reverse" ftype="fasta">
+          <assert_contents>
+            <has_text_matching expression="^This is a different line of text.\nThis is a different line of text.\n$" />
+          </assert_contents>
+        </element>
+      </output_collection>
+    </test>
+  </tests>
+</tool>
