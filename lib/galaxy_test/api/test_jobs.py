@@ -114,8 +114,8 @@ steps:
       input1: input1
 """
         summary = self.workflow_populator.run_workflow(workflow_simple, history_id=history_id, test_data={"input1": "hello world"},)
-        workflow_id = summary.workflow_id
         invocation_id = summary.invocation_id
+        workflow_id = self._get(f"invocations/{invocation_id}").json()['workflow_id']
         self.workflow_populator.wait_for_invocation(workflow_id, invocation_id)
         jobs1 = self.__jobs_index(data={"workflow_id": workflow_id})
         assert len(jobs1) == 1
