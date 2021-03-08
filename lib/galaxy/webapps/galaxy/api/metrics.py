@@ -88,7 +88,7 @@ class MetricsController(BaseGalaxyAPIController):
         """
         if trans.app.trace_logger:
             for label, time, kwargs in metrics:
-                trans.app.trace_logger.log(label, event_time=int(time), **kwargs)
+                trans.app.trace_logger.log(label, event_time=int(time.timestamp()), **kwargs)
         elif self.debugging:
             for label, time, kwargs in metrics:
                 log.debug('%s %s %s', label, time, kwargs)
