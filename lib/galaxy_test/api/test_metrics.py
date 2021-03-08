@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 from unittest import mock
 
 from ._framework import ApiTestCase
@@ -26,7 +26,7 @@ class MetricsApiTestCase(ApiTestCase):
         metrics = [
             {
                 "namespace": "api-test",
-                "time": datetime.datetime.utcnow().isoformat() + "Z",
+                "time": datetime.utcnow().isoformat() + "Z",
                 "level": "debug",
                 "args": {
                     "arg01": "test"

@@ -4,28 +4,21 @@ API operations for for querying and recording user metrics from some client
 """
 # TODO: facade or adapter to fluentd
 
-import datetime
 import logging
 
-from galaxy.structured_app import StructuredApp
+from galaxy.managers.metrics import MetricsManager
 from galaxy.web import expose_api_anonymous
-from . import BaseGalaxyAPIController
+from . import (
+    BaseGalaxyAPIController,
+    depends,
+)
 
 log = logging.getLogger(__name__)
 
 
 class MetricsController(BaseGalaxyAPIController):
 
-    def __init__(self, app: StructuredApp):
-        super().__init__(app)
-        #: set to true to send additional debugging info to the log
-        self.debugging = True
-
-    def _deserialize_isoformat_date(self, datestring):
-        """
-        Convert ISO formatted date string into python datetime.
-        """
-        return datetime.datetime.strptime(datestring, "%Y-%m-%dT%H:%M:%S.%fZ")
+    manager: MetricsManager = depends(MetricsManager)
 
     @expose_api_anonymous
     def create(self, trans, payload, **kwd):
@@ -48,55 +41,4 @@ class MetricsController(BaseGalaxyAPIController):
         :rtype:     dict
         :returns:   status object
         """
-        user_id = trans.user.id if trans.user else None
-        session_id = trans.galaxy_session.id if trans.galaxy_session else None
-        parsed_gen = self._parse_metrics(payload.get('metrics', None), user_id, session_id)
-        self._send_metrics(trans, parsed_gen)
-        response = self._get_server_pong(trans)
-        return response
-
-    # TODO: move the following to DAO/Manager object
-    def _parse_metrics(self, metrics, user_id=None, session_id=None):
-        """
-        Return a generator yielding the each given metric as a tuple:
-            * label:    the namespace of the metric
-            * time:     datetime of the metric's creation
-            * kwargs:   a dictionary containing:
-                ** level:   the log level of the metric
-                ** user:    the user associated with the metric
-                            (will be None if anonymous user)
-                ** session: the session of the current user
-        """
-        metrics = metrics or []
-        for metric in metrics:
-            label = metric['namespace']
-            time = self._deserialize_isoformat_date(metric['time'])
-            kwargs = {
-                'level': metric['level'],
-                'args': metric['args'],
-                'user': user_id,
-                'session': session_id
-            }
-            yield (label, time, kwargs)
-
-    def _send_metrics(self, trans, metrics):
-        """
-        Send metrics to the app's `trace_logger` if set and
-        send to `log.debug` if this controller if `self.debugging`.
-
-        Precondition: metrics are parsed and in proper format.
-        """
-        if trans.app.trace_logger:
-            for label, time, kwargs in metrics:
-                trans.app.trace_logger.log(label, event_time=int(time.timestamp()), **kwargs)
-        elif self.debugging:
-            for label, time, kwargs in metrics:
-                log.debug('%s %s %s', label, time, kwargs)
-
-    def _get_server_pong(self, trans):
-        """
-        Return some status message or object.
-
-        For future use.
-        """
-        return {}
+        return self.manager.create(trans, payload)
