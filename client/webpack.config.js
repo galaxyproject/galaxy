@@ -231,7 +231,7 @@ module.exports = (env = {}, argv = {}) => {
             // someday, this can be a more limited set -- e.g. `/api`, `/auth`
             proxy: {
                 "/": {
-                    target: process.env.GALAXY_SERVER || "http://localhost:8080",
+                    target: process.env.GALAXY_URL || "http://localhost:8080",
                 },
             },
         },
