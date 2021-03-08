@@ -80,7 +80,7 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
     hda_manager = depends(hdas.HDAManager)
 
     @expose_api
-    def index(self, trans: ProvidesUserContext, **kwd):
+    def index(self, trans: ProvidesUserContext, limit=500, **kwd):
         """
         GET /api/jobs
 
@@ -196,11 +196,9 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         query = query.order_by(order_by)
 
         offset = kwd.get('offset', None)
-        limit = kwd.get('limit', None)
         if offset is not None:
             query = query.offset(offset)
-        if limit is not None:
-            query = query.limit(limit)
+        query = query.limit(limit)
 
         out = []
         for job in query.all():
