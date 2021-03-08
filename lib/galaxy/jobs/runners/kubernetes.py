@@ -17,25 +17,25 @@ from galaxy.jobs.runners import (
 )
 from galaxy.jobs.runners.util.pykube_util import (
     DEFAULT_JOB_API_VERSION,
+    delete_ingress,
+    delete_job,
+    delete_service,
     ensure_pykube,
+    find_ingress_object_by_name,
     find_job_object_by_name,
     find_pod_object_by_name,
-    find_ingress_object_by_name,
     find_service_object_by_name,
     galaxy_instance_id,
-    Job,
-    job_object_dict,
-    Service,
-    service_object_dict,
     Ingress,
     ingress_object_dict,
+    Job,
+    job_object_dict,
     Pod,
     produce_k8s_job_prefix,
     pull_policy,
     pykube_client_from_dict,
-    delete_job,
-    delete_service,
-    delete_ingress,
+    Service,
+    service_object_dict
 )
 from galaxy.util.bytesize import ByteSize
 
@@ -356,21 +356,19 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 "spec": {
                     "rules": [{"host": ep["domain"],
                                "http": {
-                                    "paths": [{
-                                        "backend": {
-                                            "serviceName": "{}-{}".format(self.__produce_k8s_job_prefix(),
-                                                                          self.__force_label_conformity(ajs.job_wrapper.get_id_tag())),
-                                            "servicePort": int(ep["tool_port"])
-                                            # "service": {
-                                            #     "name": "job-{}-{}".format(self.__force_label_conformity(ajs.job_wrapper.get_id_tag()), p),
-                                            #     "port": { "number": int(p)}
-                                            # }
-                                        },
-                                        "path": ep.get("entry_path", '/'),
-                                        "pathType": "Prefix"
-                                    }]
-                               }
-                    } for ep in entry_points]
+                                   "paths": [{
+                                       "backend": {
+                                           "serviceName": "{}-{}".format(self.__produce_k8s_job_prefix(),
+                                                                         self.__force_label_conformity(ajs.job_wrapper.get_id_tag())),
+                                           "servicePort": int(ep["tool_port"])
+                                           # "service": {
+                                           #     "name": "job-{}-{}".format(self.__force_label_conformity(ajs.job_wrapper.get_id_tag()), p),
+                                           #     "port": { "number": int(p)}
+                                           # }
+                                       },
+                                       "path": ep.get("entry_path", '/'),
+                                       "pathType": "Prefix"
+                                   }]}} for ep in entry_points]
                 }
             }
             log.debug(k8s_spec_template)
