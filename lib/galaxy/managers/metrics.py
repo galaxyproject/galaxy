@@ -1,9 +1,56 @@
-import datetime
 import logging
+from datetime import datetime
+from typing import (
+    Any,
+    Generator,
+    List,
+    Optional,
+    Tuple,
+)
+
+from pydantic import (
+    BaseModel,
+    Field,
+)
 
 from galaxy.app import StructuredApp
 
 log = logging.getLogger(__name__)
+
+
+class Metric(BaseModel):
+    namespace: str = Field(
+        ...,  # Required
+        title="Namespace",
+        description="Label indicating the source of the metric.",
+    )
+    time: str = Field(
+        ...,  # Required
+        title="Timestamp",
+        description="The timestamp in ISO format.",
+        example="YYYY-MM-DDTHH:mm:ss.ssssssZ"
+    )
+    level: int = Field(
+        ...,  # Required
+        title="Level",
+        description="An integer representing the metric's log level.",
+    )
+    args: str = Field(
+        ...,  # Required
+        title="Arguments",
+        description="A JSON string containing an array of extra data.",
+    )
+
+
+class CreateMetricsPayload(BaseModel):
+    metrics: List[Metric] = Field(
+        default=[],
+        title='List of metrics to be recorded.',
+    )
+
+
+TimeSeriesTuple = Tuple[str, datetime, Any]
+TimeSeriesTupleGenerator = Generator[TimeSeriesTuple, None, None]
 
 
 class MetricsManager:
@@ -14,7 +61,7 @@ class MetricsManager:
         #: set to true to send additional debugging info to the log
         self.debugging = True
 
-    def create(self, trans, payload):
+    def create(self, trans, payload: CreateMetricsPayload):
         """
         Record any metrics sent and return some status object.
 
@@ -34,18 +81,17 @@ class MetricsManager:
         """
         user_id = trans.user.id if trans.user else None
         session_id = trans.galaxy_session.id if trans.galaxy_session else None
-        parsed_gen = self._parse_metrics(payload.get('metrics', None), user_id, session_id)
+        parsed_gen = self._parse_metrics(payload.metrics, user_id, session_id)
         self._send_metrics(trans, parsed_gen)
         response = self._get_server_pong(trans)
         return response
 
-    def _deserialize_isoformat_date(self, datestring):
-        """
-        Convert ISO formatted date string into python datetime.
-        """
-        return datetime.datetime.strptime(datestring, "%Y-%m-%dT%H:%M:%S.%fZ")
-
-    def _parse_metrics(self, metrics, user_id=None, session_id=None):
+    def _parse_metrics(
+        self,
+        metrics: Optional[List[Metric]] = None,
+        user_id=None,
+        session_id=None
+    ) -> TimeSeriesTupleGenerator:
         """
         Return a generator yielding the each given metric as a tuple:
             * label:    the namespace of the metric
@@ -58,17 +104,17 @@ class MetricsManager:
         """
         metrics = metrics or []
         for metric in metrics:
-            label = metric['namespace']
-            time = self._deserialize_isoformat_date(metric['time'])
+            label = metric.namespace
+            time = self._deserialize_isoformat_date(metric.time)
             kwargs = {
-                'level': metric['level'],
-                'args': metric['args'],
+                'level': metric.level,
+                'args': metric.args,
                 'user': user_id,
                 'session': session_id
             }
             yield (label, time, kwargs)
 
-    def _send_metrics(self, trans, metrics):
+    def _send_metrics(self, trans, metrics: TimeSeriesTupleGenerator) -> None:
         """
         Send metrics to the app's `trace_logger` if set and
         send to `log.debug` if this controller if `self.debugging`.
@@ -80,12 +126,18 @@ class MetricsManager:
                 trans.app.trace_logger.log(label, event_time=int(time.timestamp()), **kwargs)
         elif self.debugging:
             for label, time, kwargs in metrics:
-                log.debug('%s %s %s', label, time, kwargs)
+                log.debug(f'{label} {time} {kwargs}')
 
-    def _get_server_pong(self, trans):
+    def _get_server_pong(self, trans) -> Any:
         """
         Return some status message or object.
 
         For future use.
         """
         return {}
+
+    def _deserialize_isoformat_date(self, datestring: str) -> datetime:
+        """
+        Convert ISO formatted date string into python datetime.
+        """
+        return datetime.strptime(datestring, "%Y-%m-%dT%H:%M:%S.%fZ")

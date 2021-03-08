@@ -6,7 +6,10 @@ API operations for for querying and recording user metrics from some client
 
 import logging
 
-from galaxy.managers.metrics import MetricsManager
+from galaxy.managers.metrics import (
+    CreateMetricsPayload,
+    MetricsManager,
+)
 from galaxy.web import expose_api_anonymous
 from . import (
     BaseGalaxyAPIController,
@@ -41,4 +44,4 @@ class MetricsController(BaseGalaxyAPIController):
         :rtype:     dict
         :returns:   status object
         """
-        return self.manager.create(trans, payload)
+        return self.manager.create(trans, CreateMetricsPayload(**payload))

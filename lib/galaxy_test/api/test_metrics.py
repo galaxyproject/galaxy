@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 from unittest import mock
 
@@ -23,14 +24,21 @@ class MetricsApiTestCase(ApiTestCase):
         assert self.mock_trace_logger.log.call_count == len(metrics)
 
     def _get_test_metrics(self):
+        """
+        Returns a list containing dictionaries of the form:
+            namespace:       label indicating the source of the metric
+            time:            isoformat datetime when the metric was recorded
+            level:           an integer representing the metric's log level
+            args:            a json string containing an array of extra data
+        """
         metrics = [
             {
                 "namespace": "api-test",
                 "time": datetime.utcnow().isoformat() + "Z",
-                "level": "debug",
-                "args": {
+                "level": 1,
+                "args": json.dumps({
                     "arg01": "test"
-                },
+                }),
             }
         ]
         return metrics
