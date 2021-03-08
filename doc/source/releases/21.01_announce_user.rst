@@ -99,6 +99,7 @@ New Datatypes
 ===========================================================
 
 .. datatypes
+
 * initial commit for gfa2
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 10270`_
@@ -130,6 +131,7 @@ Builtin Tool Updates
 ===========================================================
 
 .. tools
+
 * Allow the Apply Rules tool to attach tags to output datasets.
   `Pull Request 10382`_
 * allow empty file uploads
