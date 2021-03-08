@@ -279,7 +279,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         k8s_spec_template["metadata"]["annotations"].update(extra_metadata.get('annotations', {}))
         return k8s_spec_template
 
-
     def __get_k8s_service_spec(self, ajs):
         """The k8s spec template is nothing but a Service spec, except that it is nested and does not have an apiversion
         nor kind."""
@@ -301,9 +300,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 },
                 "spec": {
                     "ports": [{"name": "job-{}-{}".format(self.__force_label_conformity(ajs.job_wrapper.get_id_tag()), p),
-                                "port": int(p),
-                                "protocol": "TCP",
-                                "targetPort": int(p)} for p in guest_ports],
+                               "port": int(p),
+                               "protocol": "TCP",
+                               "targetPort": int(p)} for p in guest_ports],
                     "selector": {
                         "app.kubernetes.io/name": self.__force_label_conformity(ajs.job_wrapper.tool.old_id),
                         "app.kubernetes.io/component": "tool",
@@ -356,8 +355,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 },
                 "spec": {
                     "rules": [{"host": ep["domain"],
-                                "http": {
-                                    "paths":[{
+                               "http": {
+                                    "paths": [{
                                         "backend": {
                                             "serviceName": "{}-{}".format(self.__produce_k8s_job_prefix(),
                                                                           self.__force_label_conformity(ajs.job_wrapper.get_id_tag())),
@@ -370,7 +369,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                                         "path": ep.get("entry_path", '/'),
                                         "pathType": "Prefix"
                                     }]
-                                }
+                               }
                     } for ep in entry_points]
                 }
             }
@@ -409,11 +408,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             # command line execution, separated by ;, which is what Galaxy does
             # to assemble the command.
             "command": [ajs.job_wrapper.shell],
-            "args": ["-c", ajs.job_file], #"source /galaxy/server/.venv/bin/activate && {}".format(ajs.job_file)],
+            "args": ["-c", ajs.job_file],  # "source /galaxy/server/.venv/bin/activate && {}".format(ajs.job_file)],
             "workingDir": ajs.job_wrapper.working_directory,
             "volumeMounts": self.runner_params['k8s_volume_mounts']
         }
-        guest_ports = container.tool_info.guest_ports
         resources = self.__get_resources(ajs.job_wrapper)
         if resources:
             envs = []
@@ -599,7 +597,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 if not job_state.running:
                     job_state.running = True
                     job_state.job_wrapper.change_state(model.Job.states.RUNNING)
-                    guest_ports = job_state.job_wrapper.guest_ports
                     if job_state.job_wrapper.tool.tool_type == "interactive":
                         k8s_job_prefix = self.__produce_k8s_job_prefix()
                         k8s_job_name = "{}-{}".format(k8s_job_prefix, self.__force_label_conformity(job_state.job_wrapper.get_id_tag()))
@@ -766,7 +763,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             # TODO assert whether job parallelism == 0
             # assert not job_to_delete.exists(), "Could not delete job,"+job.job_runner_external_id+" it still exists"
             log.debug(f"({job.id}/{job.job_runner_external_id}) Terminated at user's request")
-
 
         except Exception as e:
             log.exception("({}/{}) User killed running job, but error encountered during termination: {}".format(
