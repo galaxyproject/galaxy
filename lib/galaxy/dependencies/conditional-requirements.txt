@@ -18,6 +18,7 @@ fs.webdavfs  # type: webdav
 fs.dropboxfs  # type: dropbox
 fs-s3fs  # type: s3
 s3fs  # type: s3fs
+fs.anvilfs # type: anvil
 
 # Chronos client
 chronos-python==0.38.0
