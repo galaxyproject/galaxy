@@ -107,14 +107,6 @@ def _get_uwsgi_args(cliargs, kwargs):
     if not __arg_set('virtualenv', uwsgi_kwargs) and ('VIRTUAL_ENV' in os.environ or os.path.exists('.venv')):
         __add_arg(args, 'virtualenv', os.environ.get('VIRTUAL_ENV', '.venv'))
 
-    # Client dev server for HMR
-    hmr_server = os.environ.get('GALAXY_CLIENT_DEV_SERVER', None)
-    if hmr_server:
-        # Something like this, which is the default in the package scripts
-        # route: ^/static/scripts/bundled/ http:127.0.0.1:8081
-        if hmr_server.lower() in ['1', 'true', 'default']:
-            hmr_server = "http:127.0.0.1:8081"
-        __add_arg(args, 'route', f'^/static/dist/ {hmr_server}')
     # We always want to append client/src/assets as static-safe.
     __add_arg(args, 'static-safe', f'{os.getcwd()}/client/src/assets')
 
