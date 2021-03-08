@@ -8,81 +8,92 @@ January 2021 Galaxy Release (v 21.01)
 Highlights
 ===========================================================
 
-* Galaxy Markdown enhancements including integration of visualizations - allow embedding
-  visualizations in Galaxy Markdown (workflow invocation reports and pages) with
-  Markdown editor support and allow exporting workflow reports directly to Galaxy Pages.
-  `Pull Request 10241`_, `Pull Request 10288`_, `Pull Request 10404`_
+Workflows are the absolute ✨star✨ of Galaxy v21.01, they have seen huge improvements.
 
-* History panel rewrite (available in the UI as a beta option).
-  `Pull Request 8441`_, `Pull Request 11071`_, `Pull Request 10971`_
+Workflows: Best Practices, Reports, Invocations
+-----------------------------------------------
 
-* Allow organizing the panel via EDAM ontology annotations.
-  (thanks to `@hexylena <https://github.com/hexylena>`__).
-  `Pull Request 10592`_
+Workflows have seen huge improvements this release! The workflow report editor is easier to use than ever providing you with a list of common report components you might wish to use, interactive dialogs for embedding them in your reports, and a new workflow invocation tracker! You can now embed visualisations directly in your workflow reports making summarising your analyses easier than ever! And once your reports are produced, you can export them directly to pages to share your reports with colleagues.
 
-* Large overhaul over history import and export - including improved user experience, APIs, and allowing importing and exporting
-  to file sources plugins (including FTP).
-  `Pull Request 11054`_, `Pull Request 10993`_
+.. raw:: html
 
-* Various substantial improvements to data library user interface and performance
-  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
-  `Pull Request 10204`_, `Pull Request 11099`_,
-  `Pull Request 10557`_, `Pull Request 10558`_,
-  `Pull Request 10807`_
+   <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/TmZzfaKf1V0" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
-* UI & API for Supporting Best Practice Workflows
-  `Pull Request 10988`_, `Pull Request 11025`_
-* Add author and license metadata and corresponding web microdata annotations for tools
-  and workflows.
-  `Pull Request 10408`_
+If you're building advanced workflows utilising Galaxy's powerful sub-workflows for re-usable workflow components, then you'll be pleased to know you can now automatically update those to the latest version
 
-* Implement edit & upgrade subworkflow buttons in workflow editor.
-  `Pull Request 11032`_
+.. raw:: html
 
-* Allow the "Apply Rules" tool to attach tags to output datasets.
-  `Pull Request 10382`_
+   <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/2gHvmy_tIVc" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
-* Add S3 plugin for remote files browser.
-  `Pull Request 10523`_
+Furthermore when you're making workflows to share with others, a new "Best Practices" checker has been included which helps you discover easy things which make your workflows more shareable.
 
-* Support stopping Interactive Tools without deleting their outputs
-  `Pull Request 10497`_
+.. raw:: html
 
-* Allow InteractiveTools to use path-based proxying when ``requires_domain=False``.
-  `Pull Request 8596`_
+   <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/pfNqAkzvKj8" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
-* Auto-focus upload name in upload dialog.
-  `Pull Request 10487`_
+Remote Files
+------------
 
-* Add update time to workflow version selector in workflow editor.
-  `Pull Request 10492`_
+There was tough competition for top feature to highlight from 21.01 but the **Remote Files** interface is an absolutely fantastic new way to browse your data. Inside Galaxy there is a new, abstract way to reference files locally and on other servers. This let us provide a uniform interface to FTP servers, your Dropbox, public S3 buckets, and more! You'll find this under *Choose Remote Files* in the upload interface.
 
-* Use dataset selector in rules input dialog.
-  `Pull Request 10505`_
+.. figure:: images/21.01-remote.png
+   :alt: Screenshot of the remote files browser in the upload dialog. It lists several popular datasets such as PDB the protein data bank, EBI's FTP server, Genome Ark, and 1000 Genomes among others.
 
-* Make primary extract workflow action button more visible
-  (thanks to `@hexylena <https://github.com/hexylena>`__).
-  `Pull Request 10583`_
+The Galaxy Climate community is providing an excellent test case; much of their data is publicly available on public S3 buckets which were not easy to access, now they're directly available from Galaxy. No more magic "import this url" steps in your documentation, now "just browse the repository for your data".
 
-* Revision of sharing component, adds url copy to clipboard feature
-  `Pull Request 10754`_
+.. figure:: images/21.01-remote-weather.png
+   :alt: Screenshot of the remote files browser in the upload dialog. Here climate datasets are highlighted such as Sentinel, Copernicus, and NOAA's public datasets. At the bottom is the user's FTP directory.
 
-* Persist scroll/url information for GTN webhook
-  (thanks to `@hexylena <https://github.com/hexylena>`__).
-  `Pull Request 11290`_
+But the addition of the Remote Files browser didn't stop there! Serveral other interfaces received updates to use this new framework:
+
+History Import & Export
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Histories can now be exported directly to your FTP folders, Dropbox, or any other configured remote file storage.
 
 
+.. figure:: images/21.01-hist-exp.png
+   :alt: Screenshot of "Export history archive" interface showing the new "to a remote file" option with the user's FTP directory selected and foo.tar.gz entered as an example filename
+
+And history importing saw the same treatment, permitting importing from any of these public data locations making it easier than ever to share histories between Galaxy, and make your analyses more reproducible!
+
+.. figure:: images/21.01-hist-imp.png
+   :alt: Screenshot of "Import history from archive" interface which now includes an option to "Select a remote file" which provides access to the remote file interface.
+
+See more screenshots and more features in `Pull Request 11054`_.
+
+Rule Builder
+^^^^^^^^^^^^
+
+Likewise the Rule-Builder now has access to the remote files interface. Sample sheets with identifiers can easily be found in many FTP servers and other locations, and then loaded directly into the Rule Builder via this new interface. So easy!
+
+Beta History Panel
+------------------
+
+<todo>
+
+User-friendliness Improvements
+------------------------------
+
+This is a new section covering smaller improvements that just make your life esaier.
+
+* Interactive tools can be stopped, without their outputs disappearing, better for reproducibility! `Pull Request 10497`_
+* When uploading files, the 'name' field will be auto-focused, allowing you to get straight to renaming the files, saving you time. `Pull Request 10487`_
+* Workflow versions now expose their update time. Reverting to an old version? Oh, yes, that one from tuesday. `Pull Request 10492`_
+* Sharing components now include a "copy to clipboard" feature for URLs. One click and you're ready to share with the world. `Pull Request 10754`_
+* The GTN-in-Galaxy overlay now keeps track of the page you were looking at if the Galaxy page gets refreshed. Go forth and learn without distraction!. `Pull Request 11290`_
 
 New Visualizations
 ===========================================================
 
 .. visualizations
-* Integrate NORA's image viewer - a medical image viewer and annotation tool.
-  (thanks to `@bgruening <https://github.com/bgruening>`__).
-  `Pull Request 11035`_
-* Add the OpenSeadragon viewer for deep zoom images
-  (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__).
-  `Pull Request 10756`_
+
+NORA, a medical image viewer and annotation tool (thanks to `@bgruening <https://github.com/bgruening>`__, `Pull Request 11035`_)
+
+.. figure:: images/21.01-nora.png
+   :alt: Screenshot of the NORA visualiser showing three views of a scan of a human brain.
+
+OpenSeadragon viewer for deep zoom images (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__, `Pull Request 10756`_)
 
 New Datatypes
 ===========================================================
