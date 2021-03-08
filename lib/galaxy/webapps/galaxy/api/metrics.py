@@ -5,7 +5,13 @@ API operations for for querying and recording user metrics from some client
 # TODO: facade or adapter to fluentd
 
 import logging
+from typing import Any
 
+from fastapi import Body
+from fastapi_utils.cbv import cbv
+from fastapi_utils.inferring_router import InferringRouter as APIRouter
+
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.metrics import (
     CreateMetricsPayload,
     MetricsManager,
@@ -14,9 +20,30 @@ from galaxy.web import expose_api_anonymous
 from . import (
     BaseGalaxyAPIController,
     depends,
+    DependsOnTrans,
 )
 
 log = logging.getLogger(__name__)
+
+
+router = APIRouter(tags=['metrics'])
+
+
+@cbv(router)
+class FastAPIMetrics:
+    manager: MetricsManager = depends(MetricsManager)
+
+    @router.post(
+        '/api/metrics',
+        summary="Records a collection of metrics.",
+    )
+    def create(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        payload: CreateMetricsPayload = Body(...),
+    ) -> Any:
+        """Record any metrics sent and return some status object."""
+        return self.manager.create(trans, payload)
 
 
 class MetricsController(BaseGalaxyAPIController):

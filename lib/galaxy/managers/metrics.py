@@ -18,6 +18,14 @@ from galaxy.app import StructuredApp
 log = logging.getLogger(__name__)
 
 
+def datetime_to_iso8601(utc_datetime: datetime) -> str:
+    """
+    Returns the date as string with ISO8601 format.
+    i.e: 2021-01-23T18:25:43.511Z
+    """
+    return f"{utc_datetime.isoformat()}Z"
+
+
 class Metric(BaseModel):
     namespace: str = Field(
         ...,  # Required
@@ -28,7 +36,7 @@ class Metric(BaseModel):
         ...,  # Required
         title="Timestamp",
         description="The timestamp in ISO format.",
-        example="YYYY-MM-DDTHH:mm:ss.ssssssZ"
+        example=datetime_to_iso8601(datetime.utcnow())
     )
     level: int = Field(
         ...,  # Required
@@ -46,6 +54,14 @@ class CreateMetricsPayload(BaseModel):
     metrics: List[Metric] = Field(
         default=[],
         title='List of metrics to be recorded.',
+        example=[
+            Metric(
+                namespace="test-source",
+                time=datetime_to_iso8601(datetime.utcnow()),
+                level=0,
+                args='{"test":"value"}'
+            )
+        ]
     )
 
 

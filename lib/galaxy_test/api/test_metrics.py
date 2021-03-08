@@ -34,7 +34,7 @@ class MetricsApiTestCase(ApiTestCase):
         metrics = [
             {
                 "namespace": "api-test",
-                "time": datetime.utcnow().isoformat() + "Z",
+                "time": f"{datetime.utcnow().isoformat()}Z",
                 "level": 1,
                 "args": json.dumps({
                     "arg01": "test"
