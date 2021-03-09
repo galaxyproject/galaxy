@@ -2,7 +2,7 @@
     <b-button
         id="tool-panel-upload-button"
         @click="showUploadDialog"
-        v-b-tooltip.hover
+        v-b-tooltip.hover.auto
         :aria-label="title | localize"
         :title="title | localize"
         class="upload-button"
