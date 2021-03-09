@@ -139,8 +139,6 @@ Please mind `http` and `https`.
         <!-- (Optional) Enable logging out of the IDP when user logs out of Galaxy -->
         <!-- <enable_idp_logout>false</enable_idp_logout> -->
         <!-- <icon>https://path/to/icon</icon>  -->
-        <!-- (Optional) Extra scopes you need to request for your implementation -->
-        <!-- <extra_scopes>offline_access,something-else</extra_scopes> -->
     </provider>
 
     <!-- Documentation: https://galaxyproject.org/authnz/config/oidc/idps/elixir-aai  -->
