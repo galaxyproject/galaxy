@@ -20,6 +20,11 @@ export function userLogout(logoutAll = false) {
             }
             // Check if we need to logout of OIDC IDP
             if (galaxy.config.enable_oidc) {
+                const provider = localStorage.getItem("galaxy-provider");
+                if (provider) {
+                    localStorage.removeItem("galaxy-provider");
+                    return axios.get(`${galaxy.root}authnz/logout?provider=${provider}`);
+                }
                 return axios.get(`${galaxy.root}authnz/logout`);
             } else {
                 // Otherwise pass through the initial logout response
