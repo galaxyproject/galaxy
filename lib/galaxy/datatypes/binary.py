@@ -969,7 +969,7 @@ class Anndata(H5):
     # obs_layers: louvain, leidein, isBcell
     # obs_count: number of obs_layers
     # obs_size: number of obs_names
-    MetadataElement(name="obs_names", desc="obs_names", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
+    MetadataElement(name="obs_names", desc="obs_names", default=[], multiple=True, readonly=True, no_value=None)
     MetadataElement(name="obs_layers", desc="obs_layers", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
     MetadataElement(name="obs_count", default=0, desc="obs_count", readonly=True, visible=True, no_value=0)
     MetadataElement(name="obs_size", default=-1, desc="obs_size", readonly=True, visible=True, no_value=0)
