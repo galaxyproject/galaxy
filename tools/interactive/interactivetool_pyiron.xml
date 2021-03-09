@@ -30,6 +30,7 @@
         ## change into the directory where the notebooks are located
         cd ./jupyter/ &&
         cp \${HOME}/examples/* ./ &&
+        export HOME=/home/jovyan/ &&
         export PATH=/home/jovyan/.local/bin:\$PATH &&
 
         #if $mode.mode_select == 'scratch':
@@ -95,4 +96,3 @@
     You can import data into the notebook via a predefined `get()` function and write results back to Galaxy with a `put()` function.
     </help>
 </tool>
-
