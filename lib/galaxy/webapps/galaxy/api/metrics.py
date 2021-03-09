@@ -8,8 +8,6 @@ import logging
 from typing import Any
 
 from fastapi import Body
-from fastapi_utils.cbv import cbv
-from fastapi_utils.inferring_router import InferringRouter as APIRouter
 
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.metrics import (
@@ -21,15 +19,16 @@ from . import (
     BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
+    Router,
 )
 
 log = logging.getLogger(__name__)
 
 
-router = APIRouter(tags=['metrics'])
+router = Router(tags=['metrics'])
 
 
-@cbv(router)
+@router.cbv
 class FastAPIMetrics:
     manager: MetricsManager = depends(MetricsManager)
 
