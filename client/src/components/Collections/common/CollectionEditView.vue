@@ -251,7 +251,7 @@ export default {
         clickedSave: function (attribute, newValue) {
             console.log("clicked save");
             const url = prependPath("/api/dataset_collections/" + this.collection_id);
-            const data = { attribute: attribute, newValue: newValue };
+            const data = { attribute: attribute, newValue: newValue.id };
             axios
                 .put(url, data)
                 .then((response) => {
