@@ -14,7 +14,7 @@ export function userLogout(logoutAll = false) {
     const url = `${galaxy.root}user/logout?session_csrf_token=${session_csrf_token}&logout_all=${logoutAll}`;
     axios
         .get(url)
-        .then(() => {
+        .then((response) => {
             if (galaxy.user) {
                 galaxy.user.clearSessionStorage();
             }
@@ -22,7 +22,8 @@ export function userLogout(logoutAll = false) {
             if (galaxy.config.enable_oidc) {
                 return axios.get(`${galaxy.root}authnz/logout`);
             } else {
-                return {};
+                // Otherwise pass through the initial logout response
+                return response;
             }
         })
         .then((response) => {

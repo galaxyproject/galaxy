@@ -214,6 +214,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         return (time_difference > delta or activation_grace_period == 0)
 
     @web.expose
+    @web.json
     def logout(self, trans, logout_all=False, **kwd):
         message = trans.check_csrf_token(kwd)
         if message:
@@ -227,7 +228,10 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         # Since logging an event requires a session, we'll log prior to ending the session
         trans.log_event("User logged out")
         trans.handle_user_logout(logout_all=logout_all)
-        return {"message": "Success."}
+        success_response = {"message": "Success."}  # This is a little weird as a response.
+        if trans.app.config.use_remote_user and trans.app.config.remote_user_logout_href:
+            success_response["redirect_uri"] = trans.app.config.remote_user_logout_href
+        return success_response
 
     @expose_api_anonymous_and_sessionless
     def create(self, trans, payload=None, **kwd):
