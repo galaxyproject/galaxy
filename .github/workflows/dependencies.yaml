@@ -21,12 +21,8 @@ jobs:
           key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
       - name: Update dependencies
         run: | 
-          python -m pip install --upgrade pip setuptools poetry
-          python -m pip install -r lib/galaxy/dependencies/lint-requirements.txt
-          python -m pip freeze -l > lib/galaxy/dependencies/pinned-lint-requirements.txt
-          poetry update -v --lock
-          poetry export -f requirements.txt --without-hashes --output lib/galaxy/dependencies/pinned-requirements.txt
-          poetry export --dev -f requirements.txt --without-hashes --output lib/galaxy/dependencies/dev-requirements.txt
+          python -m venv .venv
+          make update-dependencies
       - name: Create pull request
         uses: peter-evans/create-pull-request@v3
         with:
