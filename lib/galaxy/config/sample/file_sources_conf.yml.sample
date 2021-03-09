@@ -1,0 +1,14 @@
+- type: dropbox
+  id: dropbox1
+  label: Dropbox files (configure access in user preferences)
+  doc: Your Dropbox files - configure an access token via the user preferences
+  accessToken: ${user.preferences['dropbox|access_token']}
+
+- type: webdav
+  id: owncloud1
+  label: OwnCloud
+  doc: External OwnCloud files (configure access in user preferences)
+  url: ${user.preferences['owncloud|url']}
+  root: ${user.preferences['owncloud|root']}
+  login: ${user.preferences['owncloud|username']}
+  password: ${user.preferences['owncloud|password']}

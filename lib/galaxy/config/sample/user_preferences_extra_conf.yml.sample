@@ -63,3 +63,33 @@ preferences:
                   - [English, en]
                   - [French, fr]
                   - [Japanese, ja]
+
+    # Used in file_sources_conf.yml
+    dropbox:
+      	description: Your Dropbox account
+        inputs:
+            - name: access_token
+              label: Dropbox access token
+              type: password
+              required: False
+
+    # Used in file_sources_conf.yml
+    owncloud:
+      	description: Your External OwnCloud account
+        inputs:
+            - name: url
+              label: Server Domain (e.g. https://myowncloud.org)
+              type: text
+              required: False
+            - name: root
+              label: Server Path (should end with /remote.php/webdav, e.g. /a/sub/path/remote.php/webdav)
+              type: text
+              required: False
+            - name: username
+              label: Username
+              type: text
+              required: False
+            - name: password
+              label: Password
+              type:  password
+              required: False
