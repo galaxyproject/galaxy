@@ -1,6 +1,6 @@
 try:
     from anvilfs.anvilfs import AnVILFS
-except ImportError as e:
+except ImportError:
     AnVILFS = None
 from ._pyfilesystem2 import PyFilesystem2FilesSource
 
