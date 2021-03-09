@@ -30,7 +30,7 @@ def test_run_simple():
         )
         new_env = os.environ.copy()
         if "PYTHONPATH" in new_env:
-            new_env['PYTHONPATH'] = "%s:%s" % (LIB_DIRECTORY, new_env["PYTHONPATH"])
+            new_env['PYTHONPATH'] = "{}:{}".format(LIB_DIRECTORY, new_env["PYTHONPATH"])
         else:
             new_env['PYTHONPATH'] = LIB_DIRECTORY
         new_env['GALAXY_EXPRESSION_INPUTS'] = environment_path

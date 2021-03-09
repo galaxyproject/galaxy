@@ -1,7 +1,7 @@
 import json
 from collections import namedtuple
+from unittest import mock
 
-import mock
 import pytest
 
 from galaxy import model
@@ -372,7 +372,7 @@ def test_subworkflow_map_over_type(test_case):
     trans = MockTrans()
     new_steps = WorkflowContentsManager(app=trans.app)._resolve_collection_type(test_case.steps)
     assert new_steps[1]['outputs'][0].get('collection_type') == test_case.expected_collection_type, \
-        "Expected collection_type '%s' for a '%s' input module, a '%s' input and a '%s' output, got collection_type '%s' instead" % (
+        "Expected collection_type '{}' for a '{}' input module, a '{}' input and a '{}' output, got collection_type '{}' instead".format(
             test_case.expected_collection_type,
             test_case.data_input,
             test_case.step_input_def,

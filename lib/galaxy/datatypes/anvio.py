@@ -6,6 +6,7 @@ import glob
 import logging
 import os
 import sys
+from typing import Optional
 
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.text import Html
@@ -37,11 +38,11 @@ class AnvioComposite(Html):
                 missing_text = ''
                 if not os.path.exists(os.path.join(dataset.extra_files_path, composite_name)):
                     missing_text = ' (missing)'
-                rval.append('<li><a href="{}">{}</a>{}{}</li>'.format(composite_name, composite_name, opt_text, missing_text))
+                rval.append(f'<li><a href="{composite_name}">{composite_name}</a>{opt_text}{missing_text}</li>')
             rval.append("</ul>")
         defined_files = map(lambda x: x[0], defined_files)
         extra_files = []
-        for (dirpath, dirnames, filenames) in os.walk(dataset.extra_files_path, followlinks=True):
+        for dirpath, _dirnames, filenames in os.walk(dataset.extra_files_path, followlinks=True):
             for filename in filenames:
                 rel_path = os.path.relpath(os.path.join(dirpath, filename), dataset.extra_files_path)
                 if rel_path not in defined_files:
@@ -49,7 +50,7 @@ class AnvioComposite(Html):
         if extra_files:
             rval.append("<p/>This composite dataset contains these undefined files:<p/><ul>")
             for rel_path in extra_files:
-                rval.append('<li><a href="{}">{}</a></li>'.format(rel_path, rel_path))
+                rval.append(f'<li><a href="{rel_path}">{rel_path}</a></li>')
             rval.append('</ul>')
         if not (defined_files or extra_files):
             rval.append("<p/>This composite dataset does not contain any files!<p/><ul>")
@@ -79,7 +80,7 @@ class AnvioComposite(Html):
 
 class AnvioDB(AnvioComposite):
     """Class for AnvioDB database files."""
-    _anvio_basename = None
+    _anvio_basename: Optional[str] = None
     MetadataElement(name="anvio_basename", default=_anvio_basename, desc="Basename", readonly=True)
     file_ext = 'anvio_db'
 

@@ -207,7 +207,7 @@ def main(ldfile, snpsfile, required, excluded):
 
 def read_list(filename):
     assert os.path.exists(filename)
-    file = open(filename, "r")
+    file = open(filename)
     list = {}
 
     for line in file:
@@ -253,7 +253,7 @@ if __name__ == "__main__":
         elif o in ("-e", "--excluded"):
             excluded = read_list(a)
         else:
-            assert False, "unhandled option"
+            raise AssertionError("unhandled option")
 
     if len(args) != 2:
         usage()

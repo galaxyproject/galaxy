@@ -7,14 +7,14 @@ try:
 except ImportError:
     # Galaxy libraries and galaxy test driver not available, just assume we're
     # targetting a remote Galaxy.
-    GalaxyTestDriver = None
+    GalaxyTestDriver = None  # type: ignore
 
 
 class ApiTestCase(FunctionalTestCase, UsesApiTestCaseMixin, TestCase):
     galaxy_driver_class = GalaxyTestDriver
 
     def setUp(self):
-        super(ApiTestCase, self).setUp()
+        super().setUp()
         self._setup_interactor()
 
 

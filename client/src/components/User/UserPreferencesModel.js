@@ -33,15 +33,6 @@ export const getUserPreferencesModel = () => {
             submit_icon: "fa-trash",
             shouldRender: config.enable_oidc,
         },
-        communication: {
-            title: _l("Change Communication Settings"),
-            id: "edit-preferences-communication",
-            description: _l("Enable or disable the communication feature to chat with other users."),
-            url: `api/users/${Galaxy.user.id}/communication/inputs`,
-            icon: "fa-comments-o",
-            redirect: "user",
-            shouldRender: !!config.enable_communication_server,
-        },
         permissions: {
             title: _l("Set Dataset Permissions for New Histories"),
             id: "edit-preferences-permissions",

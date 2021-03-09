@@ -128,7 +128,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
             current_tags = self.components.history_panel.tags
             current_tags.wait_for_visible()
             assert [tag.text for tag in
-                    current_tags.all()] == expected_tags, "tags [{}] are not the same as expected [{}]".format(current_tags, expected_tags)
+                    current_tags.all()] == expected_tags, f"tags [{current_tags}] are not the same as expected [{expected_tags}]"
 
         def clear_tags(expected_tags_size):
 

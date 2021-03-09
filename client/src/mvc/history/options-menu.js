@@ -6,6 +6,7 @@ import _l from "utils/localization";
 import PopupMenu from "mvc/ui/popup-menu";
 import historyCopyDialog from "mvc/history/copy-dialog";
 import Webhooks from "mvc/webhooks";
+import { switchToBetaHistoryPanel } from "../../components/History/adapters/betaToggle";
 
 // ============================================================================
 var menu = [
@@ -148,8 +149,25 @@ var menu = [
     },
     {
         html: _l("Export History to File"),
-        href: "history/export_archive?preview=True",
         anon: true,
+        func: function () {
+            const Galaxy = getGalaxyInstance();
+            if (Galaxy && Galaxy.currHistoryPanel && Galaxy.router) {
+                Galaxy.router.push(`/histories/${Galaxy.currHistoryPanel.model.id}/export`);
+            }
+        },
+    },
+    {
+        html: _l("Beta Features"),
+        anon: false,
+        header: true,
+    },
+    {
+        html: _l("Use Beta History Panel"),
+        anon: false,
+        func: function () {
+            switchToBetaHistoryPanel();
+        },
     },
 ];
 
@@ -165,7 +183,7 @@ Webhooks.load({
             if (webhook.activate) {
                 webhooks_menu.push({
                     html: _l(webhook.config.title),
-                    // func: function() {},
+                    func: webhook.config.function && new Function(webhook.config.function),
                     anon: true,
                 });
             }

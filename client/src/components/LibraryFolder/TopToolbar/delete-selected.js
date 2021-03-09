@@ -13,7 +13,7 @@ const chain_call_control = {};
 /**
  * Delete the selected items. Atomic. One by one.
  */
-export function deleteSelectedItems(checkedRows, onRemove, refreshTable) {
+export function deleteSelectedItems(checkedRows, onRemove, refreshTable, refreshTableContent) {
     const Galaxy = getGalaxyInstance();
     var dataset_ids = [];
     var folder_ids = [];
@@ -68,7 +68,7 @@ export function deleteSelectedItems(checkedRows, onRemove, refreshTable) {
 
         chain_call_control.total_number = items_total;
         // call the recursive function to call ajax one after each other (request FIFO queue)
-        chainCallDeletingItems(items_to_delete, onRemove, refreshTable);
+        chainCallDeletingItems(items_to_delete, onRemove, refreshTable, refreshTableContent);
     }
 }
 
@@ -89,12 +89,13 @@ function templateDeletingItemsProgressBar() {
  * Take the array of lddas, create request for each and
  * call them in chain. Update progress bar in between each.
  */
-function chainCallDeletingItems(items_to_delete, onRemove, refreshTable) {
+function chainCallDeletingItems(items_to_delete, onRemove, refreshTable, refreshTableContent) {
     const Galaxy = getGalaxyInstance();
     const deleted_items = new mod_library_model.Folder();
     var item_to_delete = items_to_delete.pop();
     if (typeof item_to_delete === "undefined") {
         if (chain_call_control.failed_number === 0) {
+            refreshTableContent();
             Toast.success("Selected items were deleted.");
         } else if (chain_call_control.failed_number === chain_call_control.total_number) {
             Toast.error(
@@ -116,12 +117,12 @@ function chainCallDeletingItems(items_to_delete, onRemove, refreshTable) {
             // add the deleted item to collection, triggers rendering
             // TODO add to deleted
 
-            chainCallDeletingItems(items_to_delete, onRemove, refreshTable);
+            chainCallDeletingItems(items_to_delete, onRemove, refreshTable, refreshTableContent);
         })
         .fail(() => {
             chain_call_control.failed_number += 1;
             updateProgress();
-            chainCallDeletingItems(items_to_delete, onRemove, refreshTable);
+            chainCallDeletingItems(items_to_delete, onRemove, refreshTable, refreshTableContent);
         });
     refreshTable();
 }

@@ -23,23 +23,25 @@ from galaxy.model import (
     ExtendedMetadataIndex,
     tags
 )
+from galaxy.structured_app import StructuredApp
 from galaxy.web import expose_api
 from galaxy.webapps.base.controller import (
-    BaseAPIController,
     HTTPBadRequest,
     url_for,
     UsesFormDefinitionsMixin,
     UsesLibraryMixin,
     UsesLibraryMixinItems
 )
+from . import BaseGalaxyAPIController
+
 log = logging.getLogger(__name__)
 
 
-class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems, UsesFormDefinitionsMixin, LibraryActions):
+class LibraryContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesLibraryMixinItems, UsesFormDefinitionsMixin, LibraryActions):
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp, hda_manager: managers.hdas.HDAManager):
         super().__init__(app)
-        self.hda_manager = managers.hdas.HDAManager(app)
+        self.hda_manager = hda_manager
 
     @expose_api
     def index(self, trans, library_id, **kwd):
@@ -55,11 +57,13 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         :type   library_id: str
 
         :returns:   list of dictionaries of the form:
+
             * id:   the encoded id of the library item
             * name: the 'library path'
                 or relationship of the library item to the root
             * type: 'file' or 'folder'
             * url:  the url to get detailed information on the library item
+
         :rtype:     list
 
         :raises:  MalformedId, InconsistentDatabase, RequestParameterInvalidException, InternalServerError

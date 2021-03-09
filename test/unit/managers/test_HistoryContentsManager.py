@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 """
 import datetime
@@ -23,12 +22,12 @@ parsed_filter = base.ModelFilterParser.parsed_filter
 class HistoryAsContainerBaseTestCase(BaseTestCase, CreatesCollectionsMixin):
 
     def set_up_managers(self):
-        super(HistoryAsContainerBaseTestCase, self).set_up_managers()
-        self.history_manager = HistoryManager(self.app)
-        self.hda_manager = hdas.HDAManager(self.app)
-        self.collection_manager = collections.DatasetCollectionManager(self.app)
-        self.contents_manager = history_contents.HistoryContentsManager(self.app)
-        self.history_contents_filters = history_contents.HistoryContentsFilters(self.app)
+        super().set_up_managers()
+        self.history_manager = self.app[HistoryManager]
+        self.hda_manager = self.app[hdas.HDAManager]
+        self.collection_manager = self.app[collections.DatasetCollectionManager]
+        self.contents_manager = self.app[history_contents.HistoryContentsManager]
+        self.history_contents_filters = self.app[history_contents.HistoryContentsFilters]
 
     def add_hda_to_history(self, history, **kwargs):
         dataset = self.hda_manager.dataset_manager.create()
@@ -298,20 +297,20 @@ class HistoryAsContainerTestCase(HistoryAsContainerBaseTestCase):
         contents.append(self.add_list_collection_to_history(history, contents[4:6]))
 
         self.log("should be able to use eq and in with hybrid type_id")
-        filters = [parsed_filter("orm", column('type_id') == u'dataset-2')]
+        filters = [parsed_filter("orm", column('type_id') == 'dataset-2')]
         self.assertEqual(self.contents_manager.contents(history, filters=filters), [contents[1]])
-        filters = [parsed_filter("orm", column('type_id').in_([u'dataset-1', u'dataset-3']))]
+        filters = [parsed_filter("orm", column('type_id').in_(['dataset-1', 'dataset-3']))]
         self.assertEqual(self.contents_manager.contents(history, filters=filters), [contents[0], contents[2]])
-        filters = [parsed_filter("orm", column('type_id') == u'dataset_collection-1')]
+        filters = [parsed_filter("orm", column('type_id') == 'dataset_collection-1')]
         self.assertEqual(self.contents_manager.contents(history, filters=filters), [contents[3]])
-        filters = [parsed_filter("orm", column('type_id').in_([u'dataset-2', u'dataset_collection-2']))]
+        filters = [parsed_filter("orm", column('type_id').in_(['dataset-2', 'dataset_collection-2']))]
         self.assertEqual(self.contents_manager.contents(history, filters=filters), [contents[1], contents[6]])
 
 
 class HistoryContentsFilterParserTestCase(HistoryAsContainerBaseTestCase):
 
     def set_up_managers(self):
-        super(HistoryContentsFilterParserTestCase, self).set_up_managers()
+        super().set_up_managers()
         self.filter_parser = history_contents.HistoryContentsFilters(self.app)
 
     def test_date_parser(self):

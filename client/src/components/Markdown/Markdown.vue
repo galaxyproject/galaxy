@@ -51,6 +51,7 @@
                 <JobMetrics v-else-if="obj.name == 'job_metrics'" :args="obj.args" />
                 <JobParameters v-else-if="obj.name == 'job_parameters'" :args="obj.args" />
                 <WorkflowDisplay v-else-if="obj.name == 'workflow_display'" :args="obj.args" :workflows="workflows" />
+                <Visualization v-else-if="obj.name == 'visualization'" :args="obj.args" />
                 <HistoryDatasetCollectionDisplay
                     v-else-if="obj.name == 'history_dataset_collection_display'"
                     :args="obj.args"
@@ -108,9 +109,10 @@ import JobMetrics from "./Elements/JobMetrics";
 import JobParameters from "./Elements/JobParameters";
 import ToolStd from "./Elements/ToolStd";
 import WorkflowDisplay from "./Elements/Workflow/WorkflowDisplay";
+import Visualization from "./Elements/Visualization";
 
 const FUNCTION_VALUE_REGEX = `\\s*(?:[\\w_\\-]+|\\"[^\\"]+\\"|\\'[^\\']+\\')\\s*`;
-const FUNCTION_CALL = `\\s*\\w+\\s*=` + FUNCTION_VALUE_REGEX;
+const FUNCTION_CALL = `\\s*[\\w\\|]+\\s*=` + FUNCTION_VALUE_REGEX;
 const FUNCTION_CALL_LINE = `\\s*(\\w+)\\s*\\(\\s*(?:(${FUNCTION_CALL})(,${FUNCTION_CALL})*)?\\s*\\)\\s*`;
 const FUNCTION_CALL_LINE_TEMPLATE = new RegExp(FUNCTION_CALL_LINE, "m");
 
@@ -134,6 +136,7 @@ export default {
         LoadingSpan,
         ToolStd,
         WorkflowDisplay,
+        Visualization,
         InvocationTime,
         FontAwesomeIcon,
     },

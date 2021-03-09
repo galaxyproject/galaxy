@@ -165,7 +165,7 @@ class CompressedFile:
                 if finfo.issym() or finfo.islnk():
                     link_target = os.path.join(os.path.dirname(finfo.name), finfo.linkname)
                     if not safe_relpath(link_target) or not os.path.normpath(link_target).startswith(common_prefix_dir):
-                        raise Exception("Link '{}' to '{}' is blocked.".format(finfo.name, finfo.linkname))
+                        raise Exception(f"Link '{finfo.name}' to '{finfo.linkname}' is blocked.")
                 yield finfo
         elif self.file_type == "zip":
             for name in members.namelist():

@@ -1,64 +1,71 @@
 <template>
     <div class="container">
         <div class="row justify-content-md-center">
-            <div class="col col-lg-6">
-                <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText" />
-                <b-form id="login" @submit.prevent="submitGalaxyLogin()">
-                    <b-card no-body header="Welcome to Galaxy, please log in">
-                        <b-card-body>
-                            <div>
-                                <!-- standard internal galaxy login -->
-                                <b-form-group label="Public Name or Email Address">
-                                    <b-form-input name="login" type="text" v-model="login" />
-                                </b-form-group>
-                                <b-form-group label="Password">
-                                    <b-form-input name="password" type="password" v-model="password" />
-                                    <b-form-text>
-                                        Forgot password?
-                                        <a @click="reset" href="javascript:void(0)" role="button"
-                                            >Click here to reset your password.</a
-                                        >
-                                    </b-form-text>
-                                </b-form-group>
-                                <b-button name="login" type="submit">Login</b-button>
-                            </div>
-                            <div v-if="enable_oidc">
-                                <!-- OIDC login-->
-                                <external-login :login_page="true" />
-                            </div>
-                        </b-card-body>
-                        <b-card-footer>
-                            Don't have an account?
-                            <span v-if="allowUserCreation">
-                                <a
-                                    id="register-toggle"
-                                    href="javascript:void(0)"
-                                    role="button"
-                                    @click.prevent="toggleLogin"
-                                    >Register here.</a
-                                >
-                            </span>
-                            <span v-else>
-                                Registration for this Galaxy instance is disabled. Please contact an administrator for
-                                assistance.
-                            </span>
-                        </b-card-footer>
-                    </b-card>
-                </b-form>
+            <template v-if="!confirmURL">
+                <div class="col col-lg-6">
+                    <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText" />
+                    <b-form id="login" @submit.prevent="submitGalaxyLogin()">
+                        <b-card no-body header="Welcome to Galaxy, please log in">
+                            <b-card-body>
+                                <div>
+                                    <!-- standard internal galaxy login -->
+                                    <b-form-group label="Public Name or Email Address">
+                                        <b-form-input name="login" type="text" v-model="login" />
+                                    </b-form-group>
+                                    <b-form-group label="Password">
+                                        <b-form-input name="password" type="password" v-model="password" />
+                                        <b-form-text>
+                                            Forgot password?
+                                            <a @click="reset" href="javascript:void(0)" role="button"
+                                                >Click here to reset your password.</a
+                                            >
+                                        </b-form-text>
+                                    </b-form-group>
+                                    <b-button name="login" type="submit">Login</b-button>
+                                </div>
+                                <div v-if="enable_oidc">
+                                    <!-- OIDC login-->
+                                    <external-login :login_page="true" />
+                                </div>
+                            </b-card-body>
+                            <b-card-footer>
+                                Don't have an account?
+                                <span v-if="allowUserCreation">
+                                    <a
+                                        id="register-toggle"
+                                        href="javascript:void(0)"
+                                        role="button"
+                                        @click.prevent="toggleLogin"
+                                        >Register here.</a
+                                    >
+                                </span>
+                                <span v-else>
+                                    Registration for this Galaxy instance is disabled. Please contact an administrator
+                                    for assistance.
+                                </span>
+                            </b-card-footer>
+                        </b-card>
+                    </b-form>
 
-                <b-modal centered id="duplicateEmail" ref="duplicateEmail" title="Duplicate Email" ok-only>
-                    <p>
-                        There already exists a user with this email. To associate this external login, you must first be
-                        logged in as that existing account.
-                    </p>
+                    <b-modal centered id="duplicateEmail" ref="duplicateEmail" title="Duplicate Email" ok-only>
+                        <p>
+                            There already exists a user with this email. To associate this external login, you must
+                            first be logged in as that existing account.
+                        </p>
 
-                    <p>
-                        Reminder: Registration and usage of multiple accounts is tracked and such accounts are subject
-                        to termination and data deletion. Connect existing account now to avoid possible loss of data.
-                    </p>
-                    -->
-                </b-modal>
-            </div>
+                        <p>
+                            Reminder: Registration and usage of multiple accounts is tracked and such accounts are
+                            subject to termination and data deletion. Connect existing account now to avoid possible
+                            loss of data.
+                        </p>
+                        -->
+                    </b-modal>
+                </div>
+            </template>
+
+            <template v-else>
+                <confirmation @setRedirect="setRedirect" />
+            </template>
 
             <div v-if="show_welcome_with_login" class="col">
                 <b-embed type="iframe" :src="welcome_url" aspect="1by1" />
@@ -73,14 +80,15 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
+import Confirmation from "components/login/Confirmation.vue";
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
-        // Multiselect,
         ExternalLogin,
+        Confirmation,
     },
     props: {
         show_welcome_with_login: {
@@ -110,6 +118,10 @@ export default {
         messageShow() {
             return this.messageText != null;
         },
+        confirmURL() {
+            var urlParams = new URLSearchParams(window.location.search);
+            return urlParams.has("confirm") && urlParams.get("confirm") == "true";
+        },
     },
     methods: {
         toggleLogin() {
@@ -118,6 +130,9 @@ export default {
             }
         },
         submitGalaxyLogin(method) {
+            if (localStorage.getItem("redirect_url")) {
+                this.redirect = localStorage.getItem("redirect_url");
+            }
             const rootUrl = getAppRoot();
             axios
                 .post(`${rootUrl}user/login`, this.$data)
@@ -138,6 +153,9 @@ export default {
                     const message = error.response.data && error.response.data.err_msg;
                     this.messageText = message || "Login failed for an unknown reason.";
                 });
+        },
+        setRedirect(url) {
+            localStorage.setItem("redirect_url", url);
         },
         reset(ev) {
             const rootUrl = getAppRoot();

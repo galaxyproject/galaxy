@@ -1,13 +1,71 @@
 """
 Functionality for dealing with dbkeys.
 """
-# dbkeys read from disk using builds.txt
-
+import logging
 import os.path
+import re
 from json import loads
 
-from galaxy.util import read_dbnames
+from galaxy.util import (
+    galaxy_directory,
+    unicodify,
+)
 from galaxy.util.object_wrapper import sanitize_lists_to_string
+
+log = logging.getLogger(__name__)
+
+
+def read_dbnames(filename):
+    """ Read build names from file """
+    db_names = []
+    try:
+        ucsc_builds = {}
+        man_builds = []  # assume these are integers
+        name_to_db_base = {}
+        if filename is None:
+            # Should only be happening with the galaxy.tools.parameters.basic:GenomeBuildParameter docstring unit test
+            filename = os.path.join(galaxy_directory(), 'tool-data', 'shared', 'ucsc', 'builds.txt.sample')
+        for line in open(filename):
+            try:
+                if line[0:1] == "#":
+                    continue
+                fields = line.replace("\r", "").replace("\n", "").split("\t")
+                # Special case of unspecified build is at top of list
+                if fields[0] == "?":
+                    db_names.insert(0, (fields[0], fields[1]))
+                    continue
+                try:  # manual build (i.e. microbes)
+                    int(fields[0])
+                    man_builds.append((fields[1], fields[0]))
+                except Exception:  # UCSC build
+                    db_base = fields[0].rstrip('0123456789')
+                    if db_base not in ucsc_builds:
+                        ucsc_builds[db_base] = []
+                        name_to_db_base[fields[1]] = db_base
+                    # we want to sort within a species numerically by revision number
+                    build_rev = re.compile(r'\d+$')
+                    try:
+                        build_rev = int(build_rev.findall(fields[0])[0])
+                    except Exception:
+                        build_rev = 0
+                    ucsc_builds[db_base].append((build_rev, fields[0], fields[1]))
+            except Exception:
+                continue
+        sort_names = sorted(name_to_db_base.keys())
+        for name in sort_names:
+            db_base = name_to_db_base[name]
+            ucsc_builds[db_base].sort()
+            ucsc_builds[db_base].reverse()
+            ucsc_builds[db_base] = [(build, name) for _, build, name in ucsc_builds[db_base]]
+            db_names = list(db_names + ucsc_builds[db_base])
+        if len(db_names) > 1 and len(man_builds) > 0:
+            db_names.append((GenomeBuilds.default_value, '----- Additional Species Are Below -----'))
+        man_builds.sort()
+        man_builds = [(build, name) for name, build in man_builds]
+        db_names = list(db_names + man_builds)
+    except Exception as e:
+        log.error("ERROR: Unable to read builds file: %s", unicodify(e))
+    return db_names
 
 
 class GenomeBuilds:
@@ -26,7 +84,7 @@ class GenomeBuilds:
 
     def get_genome_build_names(self, trans=None):
         # FIXME: how to deal with key duplicates?
-        rval = []
+        rval = [(self.default_value, self.default_name)]
         # load user custom genome builds
         if trans is not None:
             if trans.history:
@@ -38,7 +96,7 @@ class GenomeBuilds:
                 datasets = trans.sa_session.query(self._app.model.HistoryDatasetAssociation) \
                                 .filter_by(deleted=False, history_id=trans.history.id, extension="len")
                 for dataset in datasets:
-                    rval.append((dataset.dbkey, "{} ({}) [History]".format(dataset.name, dataset.dbkey)))
+                    rval.append((dataset.dbkey, f"{dataset.name} ({dataset.dbkey}) [History]"))
             user = trans.user
             if user and hasattr(user, 'preferences') and 'dbkeys' in user.preferences:
                 user_keys = loads(user.preferences['dbkeys'])

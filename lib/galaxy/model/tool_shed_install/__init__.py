@@ -1,5 +1,7 @@
 import logging
 import os
+from enum import Enum
+from typing import TYPE_CHECKING
 
 from galaxy.util import asbool
 from galaxy.util.bunch import Bunch
@@ -9,26 +11,39 @@ from galaxy.util.tool_shed import common_util
 log = logging.getLogger(__name__)
 
 
-class ToolShedRepository:
+if TYPE_CHECKING:
+    from sqlalchemy.schema import Table
+
+    class _HasTable:
+        table: Table
+else:
+    _HasTable = object
+
+
+class ToolShedRepository(_HasTable):
     dict_collection_visible_keys = ['id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
                                     'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message', 'description']
     dict_element_visible_keys = ['id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
                                  'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message', 'description']
-    installation_status = Bunch(NEW='New',
-                                CLONING='Cloning',
-                                SETTING_TOOL_VERSIONS='Setting tool versions',
-                                INSTALLING_REPOSITORY_DEPENDENCIES='Installing repository dependencies',
-                                INSTALLING_TOOL_DEPENDENCIES='Installing tool dependencies',
-                                LOADING_PROPRIETARY_DATATYPES='Loading proprietary datatypes',
-                                INSTALLED='Installed',
-                                DEACTIVATED='Deactivated',
-                                ERROR='Error',
-                                UNINSTALLED='Uninstalled')
-    states = Bunch(INSTALLING='running',
-                   OK='ok',
-                   WARNING='queued',
-                   ERROR='error',
-                   UNINSTALLED='deleted_new')
+
+    class installation_status(str, Enum):
+        NEW = 'New'
+        CLONING = 'Cloning'
+        SETTING_TOOL_VERSIONS = 'Setting tool versions'
+        INSTALLING_REPOSITORY_DEPENDENCIES = 'Installing repository dependencies'
+        INSTALLING_TOOL_DEPENDENCIES = 'Installing tool dependencies'
+        LOADING_PROPRIETARY_DATATYPES = 'Loading proprietary datatypes'
+        INSTALLED = 'Installed'
+        DEACTIVATED = 'Deactivated'
+        ERROR = 'Error'
+        UNINSTALLED = 'Uninstalled'
+
+    class states(str, Enum):
+        INSTALLING = 'running'
+        OK = 'ok'
+        WARNING = 'queued'
+        ERROR = 'error'
+        UNINSTALLED = 'deleted_new'
 
     def __init__(self, id=None, create_time=None, tool_shed=None, name=None, description=None, owner=None, installed_changeset_revision=None,
                  changeset_revision=None, ctx_rev=None, metadata=None, includes_datatypes=False, tool_shed_status=None, deleted=False,
@@ -469,31 +484,34 @@ class ToolShedRepository:
         return False
 
 
-class RepositoryRepositoryDependencyAssociation:
+class RepositoryRepositoryDependencyAssociation(_HasTable):
 
     def __init__(self, tool_shed_repository_id=None, repository_dependency_id=None):
         self.tool_shed_repository_id = tool_shed_repository_id
         self.repository_dependency_id = repository_dependency_id
 
 
-class RepositoryDependency:
+class RepositoryDependency(_HasTable):
 
     def __init__(self, tool_shed_repository_id=None):
         self.tool_shed_repository_id = tool_shed_repository_id
 
 
-class ToolDependency:
+class ToolDependency(_HasTable):
+    # converting this one to Enum breaks the tool shed tests,
+    # don't know why though -John
     installation_status = Bunch(NEVER_INSTALLED='Never installed',
                                 INSTALLING='Installing',
                                 INSTALLED='Installed',
                                 ERROR='Error',
                                 UNINSTALLED='Uninstalled')
 
-    states = Bunch(INSTALLING='running',
-                   OK='ok',
-                   WARNING='queued',
-                   ERROR='error',
-                   UNINSTALLED='deleted_new')
+    class states(str, Enum):
+        INSTALLING = 'running'
+        OK = 'ok'
+        WARNING = 'queued'
+        ERROR = 'error'
+        UNINSTALLED = 'deleted_new'
 
     def __init__(self, tool_shed_repository_id=None, name=None, version=None, type=None, status=None, error_message=None):
         self.tool_shed_repository_id = tool_shed_repository_id
@@ -550,7 +568,7 @@ class ToolDependency:
         return self.status == self.installation_status.INSTALLED
 
 
-class ToolVersion(Dictifiable):
+class ToolVersion(Dictifiable, _HasTable):
     dict_element_visible_keys = ['id', 'tool_shed_repository']
 
     def __init__(self, id=None, create_time=None, tool_id=None, tool_shed_repository=None):
@@ -569,7 +587,7 @@ class ToolVersion(Dictifiable):
         return rval
 
 
-class ToolVersionAssociation:
+class ToolVersionAssociation(_HasTable):
 
     def __init__(self, id=None, tool_id=None, parent_id=None):
         self.id = id
@@ -577,7 +595,7 @@ class ToolVersionAssociation:
         self.parent_id = parent_id
 
 
-class MigrateTools:
+class MigrateTools(_HasTable):
 
     def __init__(self, repository_id=None, repository_path=None, version=None):
         self.repository_id = repository_id

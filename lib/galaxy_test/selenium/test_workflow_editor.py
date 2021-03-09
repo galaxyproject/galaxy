@@ -2,6 +2,7 @@ import json
 
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_NESTED_SIMPLE,
+    WORKFLOW_OPTIONAL_TRUE_INPUT_COLLECTION,
     WORKFLOW_SIMPLE_CAT_TWICE,
     WORKFLOW_SIMPLE_MAPPING,
     WORKFLOW_WITH_INVALID_STATE,
@@ -27,15 +28,16 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         editor = self.components.workflow_editor
         annotation = "basic_test"
         name = self.workflow_create_new(annotation=annotation)
-        edit_name_element = self.components.workflow_editor.edit_name.wait_for_visible()
-        actual_name = edit_name_element.get_attribute("value")
-        assert name in actual_name, "'{}' unequal name '{}'".format(name, actual_name)
-        edit_annotation_element = self.components.workflow_editor.edit_annotation.wait_for_visible()
-        actual_annotation = edit_annotation_element.get_attribute("value")
-        assert annotation in actual_annotation, "'{}' unequal annotation '{}'".format(annotation, actual_annotation)
+        self.assert_wf_name_is(name)
+        self.assert_wf_annotation_is(annotation)
 
         editor.canvas_body.wait_for_visible()
         editor.tool_menu.wait_for_visible()
+
+        # shouldn't have changes on fresh load
+        save_button = self.components.workflow_editor.save_button
+        save_button.wait_for_visible()
+        assert save_button.has_class("disabled")
 
         self.screenshot("workflow_editor_blank")
 
@@ -54,6 +56,37 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         self.screenshot("workflow_editor_left_and_right_collapsed")
 
     @selenium_test
+    def test_edit_annotation(self):
+        editor = self.components.workflow_editor
+        annotation = "new_annotation_test"
+        name = self.workflow_create_new(annotation=annotation)
+        edit_annotation = self.components.workflow_editor.edit_annotation
+        self.assert_wf_annotation_is(annotation)
+
+        editor.canvas_body.wait_for_visible()
+
+        new_annotation = 'look new annotation'
+        edit_annotation.wait_for_and_send_keys(new_annotation)
+        self.assert_has_changes_and_save()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.workflow_index_open_with_name(name)
+        self.assert_wf_annotation_is(new_annotation)
+
+    @selenium_test
+    def test_edit_name(self):
+        editor = self.components.workflow_editor
+        name = self.workflow_create_new()
+        editor.canvas_body.wait_for_visible()
+        new_name = self._get_random_name()
+        edit_name = self.components.workflow_editor.edit_name
+        edit_name.wait_for_and_send_keys(new_name)
+
+        self.assert_has_changes_and_save()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.workflow_index_open_with_name(new_name)
+        self.assert_wf_name_is(name)
+
+    @selenium_test
     def test_data_input(self):
         editor = self.components.workflow_editor
 
@@ -62,9 +95,6 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         self.screenshot("workflow_editor_data_input_new")
         editor.label_input.wait_for_and_send_keys("input1")
         editor.annotation_input.wait_for_and_send_keys("my cool annotation")
-        self.sleep_for(self.wait_types.UX_RENDER)
-        self.screenshot("workflow_editor_data_input_filled_in PRECLICK")
-        editor.label_input.wait_for_and_click()  # Seems to help force the save of whole annotation.
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_data_input_filled_in")
         self.workflow_editor_click_save()
@@ -75,7 +105,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         label = editor.label_input.wait_for_value()
         assert label == "input1", label
         annotation = editor.annotation_input.wait_for_value()
-        assert annotation == "my cool annotation"
+        assert annotation == "my cool annotation", annotation
         data_input_node.destroy.wait_for_and_click()
         data_input_node.wait_for_absent()
         self.screenshot("workflow_editor_data_input_deleted")
@@ -89,7 +119,6 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         self.screenshot("workflow_editor_data_collection_input_new")
         editor.label_input.wait_for_and_send_keys("input1")
         editor.annotation_input.wait_for_and_send_keys("my cool annotation")
-        editor.label_input.wait_for_and_click()  # Seems to help force the save of whole annotation.
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_data_collection_input_filled_in")
         self.workflow_editor_click_save()
@@ -100,7 +129,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         label = editor.label_input.wait_for_value()
         assert label == "input1", label
         annotation = editor.annotation_input.wait_for_value()
-        assert annotation == "my cool annotation"
+        assert annotation == "my cool annotation", annotation
         data_input_node.destroy.wait_for_and_click()
         data_input_node.wait_for_absent()
         self.sleep_for(self.wait_types.UX_RENDER)
@@ -115,7 +144,6 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         self.screenshot("workflow_editor_parameter_input_new")
         editor.label_input.wait_for_and_send_keys("input1")
         editor.annotation_input.wait_for_and_send_keys("my cool annotation")
-        editor.label_input.wait_for_and_click()  # Seems to help force the save of whole annotation.
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_parameter_input_filled_in")
         self.workflow_editor_click_save()
@@ -126,7 +154,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         label = editor.label_input.wait_for_value()
         assert label == "input1", label
         annotation = editor.annotation_input.wait_for_value()
-        assert annotation == "my cool annotation"
+        assert annotation == "my cool annotation", annotation
         data_input_node.destroy.wait_for_and_click()
         data_input_node.wait_for_absent()
         self.sleep_for(self.wait_types.UX_RENDER)
@@ -146,16 +174,16 @@ steps:
       inttest: input_int
 """)
         self.screenshot("workflow_editor_parameter_connection_simple")
-        self.assert_connected("input_int#output", "simple_constructs#inttest")
+        self.assert_connected("input_int#output", "tool_exec#inttest")
 
         editor = self.components.workflow_editor
 
-        tool_node = editor.node._(label="simple_constructs")
+        tool_node = editor.node._(label="tool_exec")
         tool_input = tool_node.input_terminal(name="inttest")
         tool_input.wait_for_and_click()
 
         editor.connector_destroy_callout.wait_for_and_click()
-        self.assert_not_connected("input_int#output", "simple_constructs#inttest")
+        self.assert_not_connected("input_int#output", "tool_exec#inttest")
         self.screenshot("workflow_editor_parameter_connection_destroyed")
 
         # When connected, cannot turn it into a RuntimeValue..
@@ -171,14 +199,14 @@ steps:
         # Also the connector should disappear
         tool_input.wait_for_absent_or_hidden()
 
-        # Now make it connected again and watch the requestss
+        # Now make it connected again and watch the requests
         connect_icon.wait_for_and_click()
 
         tool_input.wait_for_visible()
         collapse_input.wait_for_absent_or_hidden()
 
-        self.workflow_editor_connect("input_int#output", "simple_constructs#inttest", screenshot_partial="workflow_editor_parameter_connection_dragging")
-        self.assert_connected("input_int#output", "simple_constructs#inttest")
+        self.workflow_editor_connect("input_int#output", "tool_exec#inttest", screenshot_partial="workflow_editor_parameter_connection_dragging")
+        self.assert_connected("input_int#output", "tool_exec#inttest")
 
     @selenium_test
     def test_existing_connections(self):
@@ -299,6 +327,30 @@ steps:
         self.workflow_editor_click_option("Save As")
 
     @selenium_test
+    def test_editor_tool_upgrade(self):
+        workflow_populator = self.workflow_populator
+        workflow_id = workflow_populator.upload_yaml_workflow("""class: GalaxyWorkflow
+inputs: []
+steps:
+  - tool_id: multiple_versions
+    tool_version: 0.1
+    label: multiple_versions
+    state:
+      foo: bar
+        """, exact_tools=True)
+        self.workflow_index_open()
+        self.workflow_index_click_option("Edit")
+        editor = self.components.workflow_editor
+        editor.node._(label="multiple_versions").wait_for_and_click()
+        editor.tool_version_button.wait_for_and_click()
+        assert self.select_dropdown_item('Switch to 0.2'), 'Switch to tool version dropdown item not found'
+        self.screenshot("workflow_editor_version_update")
+        self.assert_has_changes_and_save()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        workflow = self.workflow_populator.download_workflow(workflow_id)
+        assert workflow['steps']['0']['tool_version'] == '0.2'
+
+    @selenium_test
     def test_editor_tool_upgrade_message(self):
         workflow_populator = self.workflow_populator
         workflow_populator.upload_yaml_workflow(WORKFLOW_WITH_OLD_TOOL_VERSION, exact_tools=True)
@@ -306,6 +358,36 @@ steps:
         self.workflow_index_click_option("Edit")
         self.assert_modal_has_text("Using version '0.2' instead of version '0.0.1'")
         self.screenshot("workflow_editor_tool_upgrade")
+
+    @selenium_test
+    def test_editor_embed_workflow(self):
+        workflow_populator = self.workflow_populator
+        child_workflow_name = self._get_random_name()
+        workflow_populator.upload_yaml_workflow(WORKFLOW_OPTIONAL_TRUE_INPUT_COLLECTION, name=child_workflow_name)
+        parent_workflow_id = workflow_populator.upload_yaml_workflow("""class: GalaxyWorkflow
+inputs: []
+steps:
+  - tool_id: multiple_versions
+    tool_version: 0.1
+    label: multiple_versions
+    state:
+      foo: bar
+        """)
+        self.workflow_index_open()
+        self.workflow_index_click_option("Edit")
+        editor = self.components.workflow_editor
+        editor.canvas_body.wait_for_visible()
+        editor.tool_menu.wait_for_visible()
+        editor.tool_menu_section_link(section_name="workflows").wait_for_and_click()
+        editor.workflow_link(workflow_title=child_workflow_name).wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_has_changes_and_save()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        workflow = self.workflow_populator.download_workflow(parent_workflow_id)
+        subworkflow_step = workflow['steps']['1']
+        assert subworkflow_step['name'] == child_workflow_name
+        assert subworkflow_step['type'] == 'subworkflow'
+        assert subworkflow_step['subworkflow']['a_galaxy_workflow'] == 'true'
 
     @selenium_test
     def test_editor_invalid_tool_state(self):
@@ -348,16 +430,9 @@ steps:
         # Assert workflow not initially bookmarked.
         assert_workflow_bookmarked_status(False)
 
-        save_button = self.components.workflows.save_button
-        save_button.wait_for_clickable()
-
-        # element is clickable, but still might be behind the modal
+        self.components.workflow_editor.canvas_body.wait_for_visible()
         self.wait_for_selector_absent_or_hidden(self.modal_body_selector())
-        save_button.wait_for_and_click()
-
-        # wait for saving
-        self.wait_for_selector_absent_or_hidden(self.modal_body_selector())
-        self.driver.find_element_by_id("workflow").click()
+        self.components.masthead.workflow.wait_for_and_click()
 
         # parse workflow table
         table_elements = self.workflow_index_table_elements()
@@ -494,7 +569,27 @@ steps:
         return name
 
     @retry_assertion_during_transitions
+    def assert_has_changes_and_save(self):
+        save_button = self.components.workflow_editor.save_button
+        save_button.wait_for_visible()
+        assert not save_button.has_class("disabled")
+        save_button.wait_for_and_click()
+
+    @retry_assertion_during_transitions
+    def assert_wf_name_is(self, expected_name):
+        edit_name_element = self.components.workflow_editor.edit_name.wait_for_visible()
+        actual_name = edit_name_element.get_attribute("value")
+        assert expected_name in actual_name, f"'{expected_name}' unequal name '{actual_name}'"
+
+    @retry_assertion_during_transitions
+    def assert_wf_annotation_is(self, expected_annotation):
+        edit_annotation = self.components.workflow_editor.edit_annotation
+        edit_annotation_element = edit_annotation.wait_for_visible()
+        actual_annotation = edit_annotation_element.get_attribute("value")
+        assert expected_annotation in actual_annotation, f"'{expected_annotation}' unequal annotation '{actual_annotation}'"
+
+    @retry_assertion_during_transitions
     def assert_modal_has_text(self, expected_text):
-        modal_element = self.wait_for_selector_visible(self.modal_body_selector())
+        modal_element = self.components.workflow_editor.state_modal_body.wait_for_visible()
         text = modal_element.text
-        assert expected_text in text, "Failed to find expected text [{}] in modal text [{}]".format(expected_text, text)
+        assert expected_text in text, f"Failed to find expected text [{expected_text}] in modal text [{text}]"

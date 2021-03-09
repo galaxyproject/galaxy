@@ -4,8 +4,15 @@ from json import loads
 from traceback import format_exc
 
 import paste.httpexceptions
+from pydantic import BaseModel
+from pydantic.error_wrappers import ValidationError
 
-from galaxy.exceptions import error_codes, MessageException
+from galaxy.exceptions import (
+    error_codes,
+    MessageException,
+    RequestParameterInvalidException,
+    RequestParameterMissingException,
+)
 from galaxy.util import (
     parse_non_hex_float,
     unicodify
@@ -86,19 +93,28 @@ def require_admin(func):
     @wraps(func)
     def decorator(self, trans, *args, **kwargs):
         if not trans.user_is_admin:
-            msg = "You must be an administrator to access this feature."
-            user = trans.get_user()
-            if not trans.app.config.admin_users_list:
-                msg = "You must be logged in as an administrator to access this feature, but no administrators are set in the Galaxy configuration."
-            elif not user:
-                msg = "You must be logged in as an administrator to access this feature."
+            msg = require_admin_message(trans.app.config, trans.get_user())
             trans.response.status = 403
-            if trans.response.get_content_type() == 'application/json':
-                return msg
+            content_type = trans.response.get_content_type()
+            # content_type for instance may be... application/json; charset=UTF-8
+            if 'application/json' in content_type:
+                return __api_error_dict(
+                    trans, status_code=403, err_code=error_codes.ADMIN_REQUIRED, err_msg=msg
+                )
             else:
                 return trans.show_error_message(msg)
         return func(self, trans, *args, **kwargs)
     return decorator
+
+
+def require_admin_message(config, user):
+    if not config.admin_users_list:
+        msg = "You must be logged in as an administrator to access this feature, but no administrators are set in the Galaxy configuration."
+    elif not user:
+        msg = "You must be logged in as an administrator to access this feature."
+    else:
+        msg = "You must be an administrator to access this feature."
+    return msg
 
 
 def do_not_cache(func):
@@ -160,7 +176,6 @@ def legacy_expose_api(func, to_json=True, user_required=True):
                 return "Malformed user id ( %s ) specified, unable to decode." % str(kwargs['payload']['run_as'])
             try:
                 user = trans.sa_session.query(trans.app.model.User).get(decoded_user_id)
-                trans.api_inherit_admin = trans.user_is_admin
                 trans.set_user(user)
             except Exception:
                 trans.response.status = 400
@@ -206,6 +221,9 @@ def __extract_payload_from_request(trans, func, kwargs):
         # should ideally be in reverse, with the if clause being a check for application/json and the else clause assuming a standard encoding
         # such as multipart/form-data. Leaving it as is for backward compatibility, just in case.
         payload = loads(unicodify(trans.request.body))
+        run_as = trans.request.headers.get('run-as')
+        if run_as:
+            payload['run_as'] = run_as
     return payload
 
 
@@ -285,13 +303,15 @@ def expose_api(func, to_json=True, user_required=True, user_or_session_required=
                 return __api_error_response(trans, err_code=error_code, err_msg=error_message, status_code=400)
             try:
                 user = trans.sa_session.query(trans.app.model.User).get(decoded_user_id)
-                trans.api_inherit_admin = trans.user_is_admin
                 trans.set_user(user)
             except Exception:
                 error_code = error_codes.USER_INVALID_RUN_AS
                 return __api_error_response(trans, err_code=error_code, status_code=400)
         try:
-            rval = func(self, trans, *args, **kwargs)
+            try:
+                rval = func(self, trans, *args, **kwargs)
+            except ValidationError as e:
+                raise validation_error_to_message_exception(e)
             if to_json:
                 rval = format_return_as_json(rval, jsonp_callback, pretty=trans.debug)
             return rval
@@ -326,13 +346,30 @@ def format_return_as_json(rval, jsonp_callback=None, pretty=False):
     Use `pretty=True` to return pretty printed json.
     """
     dumps_kwargs = dict(indent=4, sort_keys=True) if pretty else {}
-    json = safe_dumps(rval, **dumps_kwargs)
+    if isinstance(rval, BaseModel):
+        json = rval.json(**dumps_kwargs)
+    else:
+        json = safe_dumps(rval, **dumps_kwargs)
     if jsonp_callback:
-        json = "{}({});".format(jsonp_callback, json)
+        json = f"{jsonp_callback}({json});"
     return json
 
 
-def __api_error_message(trans, **kwds):
+def validation_error_to_message_exception(e):
+    invalid_found = False
+    missing_found = False
+    for error in e.errors():
+        if error["type"] == "value_error.missing" or error["type"] == "type_error.none.not_allowed":
+            missing_found = True
+        elif error["type"].startswith("type_error"):
+            invalid_found = True
+    if missing_found and not invalid_found:
+        return RequestParameterMissingException(str(e), validation_errors=loads(e.json()))
+    else:
+        return RequestParameterInvalidException(str(e), validation_errors=loads(e.json()))
+
+
+def api_error_message(trans, **kwds):
     exception = kwds.get("exception", None)
     if exception:
         # If we are passed a MessageException use err_msg.
@@ -358,13 +395,13 @@ def __api_error_message(trans, **kwds):
     # err_msg used a good number of places already. Might as well not change
     # it?
     error_response = dict(err_msg=err_msg, err_code=error_code, **extra_error_info)
-    if trans.debug:  # TODO: Should admins get to see traceback as well?
+    if trans and trans.debug:  # TODO: Should admins get to see traceback as well?
         error_response["traceback"] = traceback_string
     return error_response
 
 
-def __api_error_response(trans, **kwds):
-    error_dict = __api_error_message(trans, **kwds)
+def __api_error_dict(trans, **kwds):
+    error_dict = api_error_message(trans, **kwds)
     exception = kwds.get("exception", None)
     # If we are given an status code directly - use it - otherwise check
     # the exception for a status_code attribute.
@@ -380,6 +417,11 @@ def __api_error_response(trans, **kwds):
         # non-success (i.e. not 200 or 201) has been set, do not override
         # underlying controller.
         response.status = status_code
+    return error_dict
+
+
+def __api_error_response(trans, **kwds):
+    error_dict = __api_error_dict(trans, **kwds)
     return safe_dumps(error_dict)
 
 

@@ -4,6 +4,7 @@ galaxy-util
 galaxy-web-stack
 MarkupSafe
 paste
+pydantic<1.8
 requests
 Routes
 six

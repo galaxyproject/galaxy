@@ -9,7 +9,7 @@ TEST_DEPENDENCIES_DIR = "/opt/galaxy/dependencies"
 TEST_INSTALL_DIR = "%s/test_install_dir" % TEST_DEPENDENCIES_DIR
 
 
-class MockApp(object):
+class MockApp:
 
     def __init__(self):
         pass

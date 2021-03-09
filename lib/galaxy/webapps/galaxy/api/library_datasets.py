@@ -4,8 +4,6 @@ import logging
 import os
 import os.path
 import string
-import tempfile
-import zipfile
 from json import dumps
 
 from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError
@@ -24,6 +22,7 @@ from galaxy.managers import (
     library_datasets,
     roles
 )
+from galaxy.structured_app import StructuredApp
 from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import populate_state
 from galaxy.util.path import (
@@ -32,22 +31,22 @@ from galaxy.util.path import (
     safe_relpath,
     unsafe_walk,
 )
-from galaxy.util.streamball import StreamBall
+from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.web import (
     expose_api,
     expose_api_anonymous,
 )
 from galaxy.webapps.base.controller import (
-    BaseAPIController,
     UsesVisualizationMixin,
 )
+from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
 
 
-class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, LibraryActions):
+class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin, LibraryActions):
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
         self.app = app
         self.folder_manager = folders.FolderManager()
@@ -206,6 +205,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         :param  encoded_dataset_id:      the encoded id of the dataset to update permissions of
         :type   encoded_dataset_id:      an encoded id string
         :param   payload: dictionary structure containing:
+
             :param  action:     (required) describes what action should be performed
                                 available actions: make_private, remove_restrictions, set_permissions
             :type   action:     string
@@ -215,6 +215,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
             :type   manage_ids[]:      string or list
             :param  modify_ids[]:      list of Role.id defining roles that should have modify permission on the library dataset item
             :type   modify_ids[]:      string or list
+
         :type:      dictionary
 
         :returns:   dict of current roles for all available permission types
@@ -351,20 +352,37 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         :param   payload: dictionary structure containing:
             :param  encoded_folder_id:      the encoded id of the folder to import dataset(s) to
             :type   encoded_folder_id:      an encoded id string
-            :param  source:                 source the datasets should be loaded from
-                    Source can be:
-                        user directory - root folder specified in galaxy.ini as "$user_library_import_dir"
-                            example path: path/to/galaxy/$user_library_import_dir/user@example.com/{user can browse everything here}
-                            the folder with the user login has to be created beforehand
-                        (admin)import directory - root folder specified in galaxy ini as "$library_import_dir"
-                            example path: path/to/galaxy/$library_import_dir/{admin can browse everything here}
-                        (admin)any absolute or relative path - option allowed with "allow_library_path_paste" in galaxy.ini
+            :param  source:
+
+                source the datasets should be loaded from. Source can be:
+
+                    - user directory
+
+                        root folder specified in galaxy.ini as "$user_library_import_dir"
+                        example path: path/to/galaxy/$user_library_import_dir/user@example.com/{user can browse everything here}
+                        the folder with the user login has to be created beforehand
+
+                    - (admin)import directory
+
+                        root folder specified in galaxy ini as "$library_import_dir"
+                        example path: path/to/galaxy/$library_import_dir/{admin can browse everything here}
+
+                    - (admin)any absolute or relative path
+
+                        option allowed with "allow_library_path_paste" in galaxy.ini
+
             :type   source:                 str
-            :param  link_data:              flag whether to link the dataset to data or copy it to Galaxy, defaults to copy
-                                            while linking is set to True all symlinks will be resolved _once_
+            :param  link_data:
+
+                flag whether to link the dataset to data or copy it to Galaxy, defaults to copy
+                while linking is set to True all symlinks will be resolved _once_
+
             :type   link_data:              bool
-            :param  preserve_dirs:          flag whether to preserve the directory structure when importing dir
-                                            if False only datasets will be imported
+            :param  preserve_dirs:
+
+                flag whether to preserve the directory structure when importing dir
+                if False only datasets will be imported
+
             :type   preserve_dirs:          bool
             :param  file_type:              file type of the loaded datasets, defaults to 'auto' (autodetect)
             :type   file_type:              str
@@ -372,6 +390,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
             :type   dbkey:                  str
             :param  tag_using_filenames:    flag whether to generate dataset tags from filenames
             :type   tag_using_filenames:    bool
+
         :type   dictionary
 
         :returns:   dict containing information about the created upload job
@@ -418,7 +437,6 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                 raise exceptions.RequestParameterInvalidException('The given path is invalid.')
             path = os.path.join(import_base_dir, path)
         elif source in ['userdir_file', 'userdir_folder']:
-            unsafe = None
             username = trans.user.username if trans.app.config.user_library_import_check_permissions else None
             user_login = trans.user.email
             user_base_dir = trans.app.config.user_library_import_dir
@@ -436,14 +454,13 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                         '%s -> %s and cannot be read by them.', path, os.path.realpath(path))
                 raise exceptions.RequestParameterInvalidException('The given path is invalid.')
             path = os.path.join(full_dir, path)
-            for unsafe in unsafe_walk(path, allowlist=[full_dir] + trans.app.config.user_library_import_symlink_allowlist, username=username):
+            if unsafe_walk(path, allowlist=[full_dir] + trans.app.config.user_library_import_symlink_allowlist, username=username):
                 # the path is a dir and contains files that symlink outside the user dir
                 error = 'User attempted to import a path that resolves to a path outside of their import dir: %s -> %s', \
                         path, os.path.realpath(path)
                 if trans.app.config.user_library_import_check_permissions:
                     error += ' or is not readable for them.'
                 log.error(error)
-            if unsafe:
                 raise exceptions.RequestParameterInvalidException('The given path is invalid.')
             if not os.path.exists(path):
                 raise exceptions.RequestParameterInvalidException('Given path does not exist on the host.')
@@ -584,55 +601,18 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         if not library_datasets:
             raise exceptions.RequestParameterMissingException('Request has to contain a list of dataset ids or folder ids to download.')
 
-        if archive_format in ['zip', 'tgz', 'tbz']:
-            # error = False
+        if archive_format == 'zip':
+            archive = ZipstreamWrapper(
+                archive_name="selected_library_files",
+                upstream_mod_zip=self.app.config.upstream_mod_zip,
+                upstream_gzip=self.app.config.upstream_gzip,
+            )
             killme = string.punctuation + string.whitespace
             trantab = str.maketrans(killme, '_' * len(killme))
-            try:
-                outext = 'zip'
-                if archive_format == 'zip':
-                    # Can't use mkstemp - the file must not exist first
-                    tmpd = tempfile.mkdtemp()
-                    util.umask_fix_perms(tmpd, trans.app.config.umask, 0o777, self.app.config.gid)
-                    tmpf = os.path.join(tmpd, 'library_download.' + archive_format)
-                    if trans.app.config.upstream_gzip:
-                        archive = zipfile.ZipFile(tmpf, 'w', zipfile.ZIP_STORED, True)
-                    else:
-                        archive = zipfile.ZipFile(tmpf, 'w', zipfile.ZIP_DEFLATED, True)
-
-                    def zipfile_add(fpath, arcname):
-                        encoded_arcname = arcname.encode('CP437')
-                        try:
-                            archive.write(fpath, encoded_arcname)
-                        except TypeError:
-                            # Despite documenting the need for CP437 encoded arcname,
-                            # python 3 actually needs this to be a unicode string ...
-                            # https://bugs.python.org/issue24110
-                            archive.write(fpath, arcname)
-                    archive.add = zipfile_add
-
-                elif archive_format == 'tgz':
-                    if trans.app.config.upstream_gzip:
-                        archive = StreamBall('w|')
-                        outext = 'tar'
-                    else:
-                        archive = StreamBall('w|gz')
-                        outext = 'tgz'
-                elif archive_format == 'tbz':
-                    archive = StreamBall('w|bz2')
-                    outext = 'tbz2'
-            except (OSError, zipfile.BadZipfile):
-                log.exception("Unable to create archive for download")
-                raise exceptions.InternalServerError("Unable to create archive for download.")
-            except Exception:
-                log.exception("Unexpected error in create archive for download")
-                raise exceptions.InternalServerError("Unable to create archive for download.")
-            composite_extensions = trans.app.datatypes_registry.get_composite_extensions()
             seen = []
             for ld in library_datasets:
                 ldda = ld.library_dataset_dataset_association
-                ext = ldda.extension
-                is_composite = ext in composite_extensions
+                is_composite = ldda.datatype.composite_type
                 path = ""
                 parent_folder = ldda.library_dataset.folder
                 while parent_folder is not None:
@@ -645,7 +625,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                 path += ldda.name
                 while path in seen:
                     path += '_'
-                path = "{path}.{extension}".format(path=path, extension=ldda.extension)
+                path = f"{path}.{ldda.extension}"
                 seen.append(path)
                 zpath = os.path.split(path)[-1]  # comes as base_name/fname
                 outfname, zpathext = os.path.splitext(zpath)
@@ -656,9 +636,9 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                         zpath = '%s.html' % zpath  # fake the real nature of the html file
                     try:
                         if archive_format == 'zip':
-                            archive.add(ldda.dataset.file_name, zpath)  # add the primary of a composite set
+                            archive.write(ldda.dataset.file_name, zpath)  # add the primary of a composite set
                         else:
-                            archive.add(ldda.dataset.file_name, zpath, check_file=True)  # add the primary of a composite set
+                            archive.write(ldda.dataset.file_name, zpath)  # add the primary of a composite set
                     except OSError:
                         log.exception("Unable to add composite parent %s to temporary library download archive", ldda.dataset.file_name)
                         raise exceptions.InternalServerError("Unable to create archive for download.")
@@ -675,10 +655,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                         if fname > '':
                             fname = fname.translate(trantab)
                         try:
-                            if archive_format == 'zip':
-                                archive.add(fpath, fname)
-                            else:
-                                archive.add(fpath, fname, check_file=True)
+                            archive.write(fpath, fname)
                         except OSError:
                             log.exception("Unable to add %s to temporary library download archive %s", fname, outfname)
                             raise exceptions.InternalServerError("Unable to create archive for download.")
@@ -690,10 +667,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                             raise exceptions.InternalServerError("Unable to add dataset to temporary library download archive . " + util.unicodify(e))
                 else:
                     try:
-                        if archive_format == 'zip':
-                            archive.add(ldda.dataset.file_name, path)
-                        else:
-                            archive.add(ldda.dataset.file_name, path, check_file=True)
+                        archive.write(ldda.dataset.file_name, path)
                     except OSError:
                         log.exception("Unable to write %s to temporary library download archive", ldda.dataset.file_name)
                         raise exceptions.InternalServerError("Unable to create archive for download")
@@ -703,22 +677,8 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                     except Exception as e:
                         log.exception("Unable to add %s to temporary library download archive %s", ldda.dataset.file_name, outfname)
                         raise exceptions.InternalServerError("Unknown error. " + util.unicodify(e))
-            lname = 'selected_dataset'
-            fname = lname.replace(' ', '_') + '_files'
-            if archive_format == 'zip':
-                archive.close()
-                trans.response.set_content_type("application/octet-stream")
-                trans.response.headers["Content-Disposition"] = 'attachment; filename="{}.{}"'.format(fname, outext)
-                archive = util.streamball.ZipBall(tmpf, tmpd)
-                archive.wsgi_status = trans.response.wsgi_status()
-                archive.wsgi_headeritems = trans.response.wsgi_headeritems()
-                return archive.stream
-            else:
-                trans.response.set_content_type("application/x-tar")
-                trans.response.headers["Content-Disposition"] = 'attachment; filename="{}.{}"'.format(fname, outext)
-                archive.wsgi_status = trans.response.wsgi_status()
-                archive.wsgi_headeritems = trans.response.wsgi_headeritems()
-                return archive.stream
+            trans.response.headers.update(archive.get_headers())
+            return archive.response()
         elif archive_format == 'uncompressed':
             if len(library_datasets) != 1:
                 raise exceptions.RequestParameterInvalidException("You can download only one uncompressed file at once.")
@@ -728,8 +688,8 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                 dataset = ldda.dataset
                 fStat = os.stat(dataset.file_name)
                 trans.response.set_content_type(ldda.get_mime())
-                trans.response.headers['Content-Length'] = int(fStat.st_size)
-                fname = "{path}.{extension}".format(path=ldda.name, extension=ldda.extension)
+                trans.response.headers['Content-Length'] = str(fStat.st_size)
+                fname = f"{ldda.name}.{ldda.extension}"
                 fname = ''.join(c in util.FILENAME_VALID_CHARS and c or '_' for c in fname)[0:150]
                 trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % fname
                 try:

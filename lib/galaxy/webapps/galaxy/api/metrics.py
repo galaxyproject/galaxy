@@ -7,15 +7,16 @@ API operations for for querying and recording user metrics from some client
 import datetime
 import logging
 
+from galaxy.structured_app import StructuredApp
 from galaxy.web import expose_api_anonymous
-from galaxy.webapps.base.controller import BaseAPIController
+from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
 
 
-class MetricsController(BaseAPIController):
+class MetricsController(BaseGalaxyAPIController):
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
         #: set to true to send additional debugging info to the log
         self.debugging = True
@@ -29,19 +30,20 @@ class MetricsController(BaseAPIController):
     @expose_api_anonymous
     def create(self, trans, payload, **kwd):
         """
-        create( trans, payload )
-        * POST /api/metrics:
-            record any metrics sent and return some status object
+        POST /api/metrics
+
+        Record any metrics sent and return some status object.
 
         .. note:: Anonymous users can post metrics
 
         :type   payload: dict
         :param  payload: (optional) dictionary structure containing:
-            * metrics:          a list containing dictionaries of the form:
-                ** namespace:       label indicating the source of the metric
-                ** time:            isoformat datetime when the metric was recorded
-                ** level:           an integer representing the metric's log level
-                ** args:            a json string containing an array of extra data
+            * metrics:          a list containing dictionaries of the form
+
+                namespace:       label indicating the source of the metric
+                time:            isoformat datetime when the metric was recorded
+                level:           an integer representing the metric's log level
+                args:            a json string containing an array of extra data
 
         :rtype:     dict
         :returns:   status object
@@ -70,10 +72,10 @@ class MetricsController(BaseAPIController):
             label = metric['namespace']
             time = self._deserialize_isoformat_date(metric['time'])
             kwargs = {
-                'level'   : metric['level'],
-                'args'    : metric['args'],
-                'user'    : user_id,
-                'session' : session_id
+                'level': metric['level'],
+                'args': metric['args'],
+                'user': user_id,
+                'session': session_id
             }
             yield (label, time, kwargs)
 

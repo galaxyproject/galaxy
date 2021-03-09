@@ -32,7 +32,7 @@ class AdminActions:
             raise ActionInputError("Unable to parse the provided amount.")
         elif params.operation not in self.app.model.Quota.valid_operations:
             raise ActionInputError("Enter a valid operation.")
-        elif params.default != 'no' and params.default not in self.app.model.DefaultQuotaAssociation.types.__dict__.values():
+        elif params.default != 'no' and params.default not in self.app.model.DefaultQuotaAssociation.types.__members__.values():
             raise ActionInputError("Enter a valid default type.")
         elif params.default != 'no' and params.operation != '=':
             raise ActionInputError("Operation for a default quota must be '='.")
@@ -76,7 +76,7 @@ class AdminActions:
             quota.description = params.description
             self.sa_session.add(quota)
             self.sa_session.flush()
-            message = "Quota '{}' has been renamed to '{}'.".format(old_name, params.name)
+            message = f"Quota '{old_name}' has been renamed to '{params.name}'."
             return message
 
     def _manage_users_and_groups_for_quota(self, quota, params, decode_id=None):
@@ -117,12 +117,12 @@ class AdminActions:
             return message
 
     def _set_quota_default(self, quota, params):
-        if params.default != 'no' and params.default not in self.app.model.DefaultQuotaAssociation.types.__dict__.values():
+        if params.default != 'no' and params.default not in self.app.model.DefaultQuotaAssociation.types.__members__.values():
             raise ActionInputError('Enter a valid default type.')
         else:
             if params.default != 'no':
                 self.app.quota_agent.set_default_quota(params.default, quota)
-                message = "Quota '{}' is now the default for {} users.".format(quota.name, params.default)
+                message = f"Quota '{quota.name}' is now the default for {params.default} users."
             else:
                 if quota.default:
                     message = "Quota '{}' is no longer the default for {} users.".format(quota.name, quota.default[0].type)

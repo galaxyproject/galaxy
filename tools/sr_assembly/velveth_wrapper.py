@@ -4,16 +4,10 @@ Classes encapsulating decypher tool.
 James E Johnson - University of Minnesota
 """
 import os
-import string
 import subprocess
 import sys
 
 assert sys.version_info[:2] >= (2, 4)
-
-
-def stop_err(msg):
-    sys.stderr.write("%s\n" % msg)
-    sys.exit()
 
 
 def __main__():
@@ -23,15 +17,16 @@ def __main__():
     try:  # for test - needs this done
         os.makedirs(working_dir)
     except Exception as e:
-        stop_err('Error running velveth ' + str(e))
+        sys.exit('Error running velveth ' + str(e))
+
     hash_length = sys.argv[3]
-    inputs = string.join(sys.argv[4:], ' ')
+    inputs = ' '.join(sys.argv[4:])
     cmdline = 'velveth %s %s %s > /dev/null' % (working_dir, hash_length, inputs)
     try:
         proc = subprocess.Popen(args=cmdline, shell=True, stderr=subprocess.PIPE)
         returncode = proc.wait()
         # get stderr, allowing for case where it's very large
-        stderr = ''
+        stderr = b''
         buffsize = 1048576
         try:
             while True:
@@ -43,7 +38,8 @@ def __main__():
         if returncode != 0:
             raise Exception(stderr)
     except Exception as e:
-        stop_err('Error running velveth ' + str(e))
+        sys.exit('Error running velveth ' + str(e))
+
     sequences_path = os.path.join(working_dir, 'Sequences')
     roadmaps_path = os.path.join(working_dir, 'Roadmaps')
     rval = ['<html><head><title>Velvet Galaxy Composite Dataset </title></head><p/>']

@@ -29,7 +29,7 @@ SHED_DATA_TABLES = """<?xml version="1.0"?>
 </tables>"""
 
 
-class UsesShed(object):
+class UsesShed:
 
     @classmethod
     def configure_shed(cls, config):

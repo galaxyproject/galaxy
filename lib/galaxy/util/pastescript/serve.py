@@ -18,6 +18,7 @@
 # All top level imports from each package moved here and organized
 
 import atexit
+import configparser
 import errno
 import grp
 import logging
@@ -33,9 +34,9 @@ import sys
 import textwrap
 import threading
 import time
+from gettext import gettext as _
 from logging.config import fileConfig
-
-from six.moves import configparser
+from typing import Optional
 
 from .loadwsgi import loadapp, loadserver
 
@@ -49,11 +50,6 @@ A subclass of ``optparse.OptionParser`` that allows boolean long
 options (like ``--verbose``) to also take arguments (like
 ``--verbose=true``).  Arguments *must* use ``=``.
 """
-
-try:
-    _ = optparse._
-except AttributeError:
-    from gettext import gettext as _
 
 
 class BoolOptionParser(optparse.OptionParser):
@@ -145,19 +141,19 @@ class Command:
 
     max_args = None
     max_args_error = 'You must provide no more than %(max_args)s arguments'
-    min_args = None
+    min_args: Optional[int] = None
     min_args_error = 'You must provide at least %(min_args)s arguments'
     required_args = None
     # If this command takes a configuration file, set this to 1 or -1
     # Then if invoked through #! the config file will be put into the positional
     # arguments -- at the beginning with 1, at the end with -1
-    takes_config_file = None
+    takes_config_file: Optional[int] = None
 
     # Grouped in help messages by this:
     group_name = ''
 
     required_args = ()
-    description = None
+    description: Optional[str] = None
     usage = ''
     hidden = False
     # This is the default verbosity level; --quiet subtracts,
@@ -260,7 +256,7 @@ class Command:
         else:
             return ' ' * (length - len(s)) + s
 
-    def standard_parser(cls, verbose=True,
+    def _standard_parser(cls, verbose=True,
                         interactive=False,
                         no_interactive=False,
                         simulate=False,
@@ -310,7 +306,7 @@ class Command:
                               help="Overwrite files (warnings will be emitted for non-matching files otherwise)")
         return parser
 
-    standard_parser = classmethod(standard_parser)
+    standard_parser = classmethod(_standard_parser)
 
     def quote_first_command_arg(self, arg):
         """
@@ -400,7 +396,7 @@ class ServeCommand(Command):
     usage = 'CONFIG_FILE [start|stop|restart|status] [var=value]'
     takes_config_file = 1
     summary = "Serve the described application"
-    description = """\
+    description: Optional[str] = """\
     This command serves a web application that uses a paste.deploy
     configuration file for the server and application.
 
@@ -518,8 +514,8 @@ class ServeCommand(Command):
                 cmd = None
                 restvars = self.args[:]
 
-        if (getattr(self.options, 'daemon', False) and
-                getattr(self.options, 'reload', False)):
+        if (getattr(self.options, 'daemon', False)
+                and getattr(self.options, 'reload', False)):
             raise BadCommand('The --daemon and --reload options may not be used together')
 
         jython_monitor = False
@@ -722,7 +718,7 @@ class ServeCommand(Command):
     def record_pid(self, pid_file):
         pid = os.getpid()
         if self.verbose > 1:
-            print('Writing PID {} to {}'.format(pid, pid_file))
+            print(f'Writing PID {pid} to {pid_file}')
         f = open(pid_file, 'w')
         f.write(str(pid))
         f.close()
@@ -769,7 +765,7 @@ class ServeCommand(Command):
             return 1
         pid = live_pidfile(pid_file)
         if not pid:
-            print('PID {} in {} is not running'.format(pid, pid_file))
+            print(f'PID {pid} in {pid_file} is not running')
             return 1
         print('Server running in PID %s' % pid)
         return 0
@@ -959,7 +955,7 @@ def _remove_pid_file(written_pid, filename, verbosity):
         f.write('')
         f.close()
     except OSError as e:
-        print('Stale PID left in file: {} ({:e})'.format(filename, e))
+        print(f'Stale PID left in file: {filename} ({e:e})')
     else:
         print('Stale PID removed')
 
@@ -1029,8 +1025,8 @@ commands = {
 
 
 def run(args=None):
-    if (not args and len(sys.argv) >= 2 and os.environ.get('_') and
-            sys.argv[0] != os.environ['_'] and os.environ['_'] == sys.argv[1]):
+    if (not args and len(sys.argv) >= 2 and os.environ.get('_')
+            and sys.argv[0] != os.environ['_'] and os.environ['_'] == sys.argv[1]):
         # probably it's an exe execution
         args = ['exe', os.environ['_']] + sys.argv[2:]
     if args is None:

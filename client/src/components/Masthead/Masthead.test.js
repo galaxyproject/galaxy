@@ -1,7 +1,14 @@
-import { default as Masthead, __RewireAPI__ as rewire } from "./Masthead.vue";
-import { mount, createLocalVue } from "@vue/test-utils";
+import { default as Masthead } from "./Masthead.vue";
+import { mount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 import Scratchbook from "layout/scratchbook";
-import { getNewAttachNode } from "jest/helpers";
+import { fetchMenu } from "layout/menu";
+import { loadWebhookMenuItems } from "./_webhooks";
+
+jest.mock("app");
+jest.mock("layout/menu");
+jest.mock("./_webhooks");
+jest.mock("../History/caching");
 
 describe("Masthead.vue", () => {
     let wrapper;
@@ -24,11 +31,11 @@ describe("Masthead.vue", () => {
         });
     }
 
-    beforeEach(() => {
-        rewire.__Rewire__("fetchMenu", stubFetchMenu);
-        rewire.__Rewire__("loadWebhookMenuItems", stubLoadWebhooks);
+    fetchMenu.mockImplementation(stubFetchMenu);
+    loadWebhookMenuItems.mockImplementation(stubLoadWebhooks);
 
-        localVue = createLocalVue();
+    beforeEach(() => {
+        localVue = getLocalVue();
         quotaRendered = false;
         quotaEl = null;
 
@@ -80,10 +87,8 @@ describe("Masthead.vue", () => {
             propsData: {
                 mastheadState,
                 activeTab,
-                appRoot: "prefix/",
             },
             localVue,
-            attachTo: getNewAttachNode(),
         });
     });
 
@@ -106,7 +111,7 @@ describe("Masthead.vue", () => {
         expect(wrapper.findAll("li.nav-item").length).toBe(6);
         // Ensure specified link title respected.
         expect(wrapper.find("#analysis a").text()).toBe("Analyze");
-        expect(wrapper.find("#analysis a").attributes("href")).toBe("prefix/root");
+        expect(wrapper.find("#analysis a").attributes("href")).toBe("/root");
     });
 
     it("should render tab items with menus", () => {
@@ -115,7 +120,7 @@ describe("Masthead.vue", () => {
         expect(wrapper.find("#shared").classes("dropdown")).toBe(true);
 
         expect(wrapper.findAll("#shared .dropdown-menu li").length).toBe(1);
-        expect(wrapper.find("#shared .dropdown-menu li a").attributes().href).toBe("prefix/_menu_url");
+        expect(wrapper.find("#shared .dropdown-menu li a").attributes().href).toBe("/_menu_url");
         expect(wrapper.find("#shared .dropdown-menu li a").attributes().target).toBe("_menu_target");
         expect(wrapper.find("#shared .dropdown-menu li a").text()).toBe("_menu_title");
     });

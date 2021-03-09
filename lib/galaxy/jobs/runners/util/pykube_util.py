@@ -2,7 +2,6 @@
 import logging
 import os
 import re
-import uuid
 
 try:
     from pykube.config import KubeConfig
@@ -46,18 +45,9 @@ def pykube_client_from_dict(params):
     return pykube_client
 
 
-def produce_unique_k8s_job_name(app_prefix=None, instance_id=None, job_id=None):
-    if job_id is None:
-        job_id = str(uuid.uuid4())
-
-    job_name = ""
-    if app_prefix:
-        job_name += "%s-" % app_prefix
-
-    if instance_id and len(instance_id) > 0:
-        job_name += "%s-" % instance_id
-
-    return job_name + job_id
+def produce_k8s_job_prefix(app_prefix=None, instance_id=None):
+    job_name_elems = [app_prefix or "", instance_id or ""]
+    return '-'.join(elem for elem in job_name_elems if elem)
 
 
 def pull_policy(params):
@@ -69,23 +59,13 @@ def pull_policy(params):
 
 
 def find_job_object_by_name(pykube_api, job_name, namespace=None):
-    return _find_object_by_name(Job, pykube_api, job_name, namespace=namespace)
+    if not job_name:
+        raise ValueError("job name must not be empty")
+    return Job.objects(pykube_api).filter(field_selector={"metadata.name": job_name}, namespace=namespace)
 
 
-def find_pod_object_by_name(pykube_api, pod_name, namespace=None):
-    return _find_object_by_name(Pod, pykube_api, pod_name, namespace=namespace)
-
-
-def _find_object_by_name(clazz, pykube_api, object_name, namespace=None):
-    filter_kwd = dict(selector="app=%s" % object_name)
-    if namespace is not None:
-        filter_kwd["namespace"] = namespace
-
-    objs = clazz.objects(pykube_api).filter(**filter_kwd)
-    obj = None
-    if len(objs.response['items']) > 0:
-        obj = clazz(pykube_api, objs.response['items'][0])
-    return obj
+def find_pod_object_by_name(pykube_api, job_name, namespace=None):
+    return Pod.objects(pykube_api).filter(selector="job-name=" + job_name, namespace=namespace)
 
 
 def stop_job(job, cleanup="always"):
@@ -106,16 +86,13 @@ def stop_job(job, cleanup="always"):
         job.api.raise_for_status(r)
 
 
-def job_object_dict(params, job_name, spec):
+def job_object_dict(params, job_prefix, spec):
     k8s_job_obj = {
         "apiVersion": params.get('k8s_job_api_version', DEFAULT_JOB_API_VERSION),
         "kind": "Job",
         "metadata": {
-                # metadata.name is the name of the pod resource created, and must be unique
-                # http://kubernetes.io/docs/user-guide/configuring-containers/
-                "name": job_name,
+                "generateName": job_prefix + "-",
                 "namespace": params.get('k8s_namespace', DEFAULT_NAMESPACE),
-                "labels": {"app": job_name}
         },
         "spec": spec,
     }
@@ -152,7 +129,7 @@ __all__ = (
     "Job",
     "job_object_dict",
     "Pod",
-    "produce_unique_k8s_job_name",
+    "produce_k8s_job_prefix",
     "pull_policy",
     "pykube_client_from_dict",
     "stop_job",

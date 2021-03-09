@@ -124,7 +124,7 @@ def generate_message_for_invalid_tools(app, invalid_file_tups, repository, metad
                 correction_msg = exception_msg
             else:
                 correction_msg = exception_msg.replace('<br/>', new_line).replace('<b>', bold_start).replace('</b>', bold_end)
-        message += "{}{}{} - {}{}".format(bold_start, tool_file, bold_end, correction_msg, new_line)
+        message += f"{bold_start}{tool_file}{bold_end} - {correction_msg}{new_line}"
     return message
 
 
@@ -151,7 +151,7 @@ def handle_missing_index_file(app, tool_path, sample_files, repository_tools_tup
     generated select lists that depend on a .loc file.  This method is not called
     from the tool shed, but from Galaxy when a repository is being installed.
     """
-    for index, repository_tools_tup in enumerate(repository_tools_tups):
+    for repository_tools_tup in repository_tools_tups:
         tup_path, guid, repository_tool = repository_tools_tup
         params_with_missing_index_file = repository_tool.params_with_missing_index_file
         for param in params_with_missing_index_file:
@@ -233,7 +233,7 @@ def panel_entry_per_tool(tool_section_dict):
         return False
     if len(tool_section_dict) != 3:
         return True
-    for k, v in tool_section_dict:
+    for k in tool_section_dict.keys():
         if k not in ['id', 'version', 'name']:
             return True
     return False

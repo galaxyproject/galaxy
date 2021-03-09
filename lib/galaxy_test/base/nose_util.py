@@ -7,7 +7,8 @@ trying to reduce that here.
 import nose
 
 
-def run(test_config, plugins=[]):
+def run(test_config, plugins=None):
+    plugins = plugins or []
     loader = nose.loader.TestLoader(config=test_config)
     for plugin in plugins:
         test_config.plugins.addPlugin(plugin)

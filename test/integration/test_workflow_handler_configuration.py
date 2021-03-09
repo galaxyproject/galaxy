@@ -42,6 +42,19 @@ WORKFLOW_HANDLER_JOB_CONFIG_TEMPLATE = string.Template("""
 </job_conf>
 """)
 
+POOL_JOB_CONFIG_TEMPLATE = string.Template("""<job_conf>
+    <plugins>
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="2"/>
+    </plugins>
+    <handlers $assign_with>
+    </handlers>
+    <destinations default="local">
+        <destination id="local" runner="local">
+        </destination>
+    </destinations>
+</job_conf>
+""")
+
 WORKFLOW_SCHEDULERS_CONFIG_TEMPLATE = string.Template("""
 <workflow_schedulers default="core">
   <core id="core" />
@@ -68,13 +81,11 @@ steps:
 
 
 def config_file(template, assign_with=''):
-    fd, path = tempfile.mkstemp(suffix=".xml", prefix="workflow_handler_config_")
-    os.close(fd)
-    with open(path, 'w') as config:
+    with tempfile.NamedTemporaryFile(mode='w', suffix=".xml", prefix="workflow_handler_config_", delete=False) as config:
         if assign_with:
-            assign_with = 'assign_with="{}"'.format(assign_with)
+            assign_with = f'assign_with="{assign_with}"'
         config.write(template.substitute(assign_with=assign_with))
-    return path
+    return config.name
 
 
 class BaseWorkflowHandlerConfigurationTestCase(integration_util.IntegrationTestCase):
@@ -83,7 +94,7 @@ class BaseWorkflowHandlerConfigurationTestCase(integration_util.IntegrationTestC
     assign_with = ""
 
     def setUp(self):
-        super(BaseWorkflowHandlerConfigurationTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
         self.history_id = self.dataset_populator.new_history()
@@ -104,7 +115,7 @@ class BaseWorkflowHandlerConfigurationTestCase(integration_util.IntegrationTestC
         request["inputs"] = dumps(index_map)
         request["inputs_by"] = 'step_index'
         url = "workflows/%s/invocations" % (workflow_id)
-        for i in range(n):
+        for _ in range(n):
             self._post(url, data=request)
 
     def _get_workflow_invocations(self):
@@ -218,6 +229,15 @@ class JobHandlerAsWorkflowHandlerWithDbSkipLocked(BaseWorkflowHandlerConfigurati
 
     def test_default_job_handler_is_workflow_handler(self):
         assert self.is_app_workflow_scheduler
+
+
+class JobHandlerAsWorkflowHandlerWithDbSkipLockedAttachToPool(JobHandlerAsWorkflowHandlerWithDbSkipLocked):
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        config["job_config_file"] = config_file(POOL_JOB_CONFIG_TEMPLATE, assign_with=cls.assign_with)
+        config["server_name"] = "handler0"
+        config["attach_to_pools"] = ["job-handlers"]
 
 
 class DefaultWorkflowHandlerIfJobHandlerOffTestCase(BaseWorkflowHandlerConfigurationTestCase):

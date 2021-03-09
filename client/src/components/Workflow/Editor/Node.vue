@@ -1,5 +1,10 @@
 <template>
-    <div :id="idString" :name="name" :node-label="label" class="workflow-node">
+    <div
+        :id="idString"
+        :name="name"
+        :node-label="label"
+        :class="{ 'workflow-node': true, 'node-on-scroll-to': scrolledTo, 'node-highlight': highlight }"
+    >
         <div class="node-header unselectable clearfix">
             <b-button
                 class="node-destroy py-0 float-right"
@@ -141,6 +146,8 @@ export default {
             label: null,
             config_form: {},
             showLoading: true,
+            highlight: false,
+            scrolledTo: false,
         };
     },
     mounted() {
@@ -225,6 +232,9 @@ export default {
         isEnabled() {
             return getGalaxyInstance().config.enable_tool_recommendations;
         },
+        isInput() {
+            return this.type == "data_input" || this.type == "data_collection_input" || this.type == "parameter_input";
+        },
     },
     methods: {
         onChange() {
@@ -266,6 +276,7 @@ export default {
             Object.values(this.outputTerminals).forEach((t) => {
                 t.destroy();
             });
+            this.activeOutputs.filterOutputs({});
             this.$emit("onRemove", this);
         },
         onRedraw() {
@@ -292,8 +303,31 @@ export default {
                 this.$emit("onActivate", this);
             });
         },
+        setAnnotation(annotation) {
+            if (this.annotationTimeout) {
+                clearTimeout(this.annotationTimeout);
+            }
+            this.annotationTimeout = setTimeout(() => {
+                if (annotation !== this.annotation) {
+                    this.annotation = annotation;
+                    this.$emit("onChange");
+                }
+            }, 100);
+        },
+        setLabel(label) {
+            if (this.labelTimeout) {
+                clearTimeout(this.labelTimeout);
+            }
+            this.labelTimeout = setTimeout(() => {
+                if (label !== this.label) {
+                    this.label = label;
+                    this.$emit("onChange");
+                }
+            }, 100);
+        },
         setData(data) {
             this.config_form = data.config_form;
+            this.content_id = data.config_form?.id || data.content_id;
             this.tool_state = data.tool_state;
             this.errors = data.errors;
             this.annotation = data.annotation;
@@ -332,8 +366,6 @@ export default {
                             x.destroy();
                         }
                     });
-                    // Remove the rendered output terminal
-                    this.outputTerminals[name].$el.remove();
                     // Remove the reference to the output and output terminal
                     delete this.outputTerminals[name];
                     this.outputs.splice(i, 1);
@@ -393,8 +425,13 @@ export default {
                 }
             });
 
+            this.inputs.forEach((input) => {
+                // Update input terminal labels
+                input.label = inputIndex[input.name].label;
+            });
+
             // removes output from list of workflow outputs
-            this.activeOutputs.updateOutputs(outputNames);
+            this.activeOutputs.filterOutputs(outputNames);
 
             // trigger legacy events
             Vue.nextTick(() => {
@@ -405,14 +442,13 @@ export default {
             this.showLoading = false;
             this.$emit("onChange");
         },
-        labelOutput(output, label) {
-            return this.activeOutputs.labelOutput(output, label);
+        labelOutput(outputName, label) {
+            return this.activeOutputs.labelOutput(outputName, label);
         },
-        changeOutputDatatype(output, datatype) {
+        changeOutputDatatype(outputName, datatype) {
             if (datatype === "__empty__") {
                 datatype = null;
             }
-            const outputName = output.name;
             const outputTerminal = this.outputTerminals[outputName];
             if (datatype) {
                 this.postJobActions["ChangeDatatypeAction" + outputName] = {
@@ -425,6 +461,18 @@ export default {
             }
             outputTerminal.destroyInvalidConnections();
             this.$emit("onChange");
+        },
+        onScrollTo() {
+            this.scrolledTo = true;
+            setTimeout(() => {
+                this.scrolledTo = false;
+            }, 2000);
+        },
+        onHighlight() {
+            this.highlight = true;
+        },
+        onUnhighlight() {
+            this.highlight = false;
         },
         makeActive() {
             this.element.classList.add("node-active");

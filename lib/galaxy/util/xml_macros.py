@@ -24,7 +24,11 @@ def load_with_references(path):
     # Expand xml macros
     macro_dict = _macros_of_type(root, 'xml', lambda el: XmlMacroDef(el))
     _expand_macros([root], macro_dict, tokens)
-
+    for el in root.xpath('//macro'):
+        if el.get('type') != 'template':
+            # Only keep template macros
+            el.getparent().remove(el)
+    _expand_tokens_for_el(root, tokens)
     return tree, macro_paths
 
 
@@ -132,11 +136,11 @@ def _expand_macros(elements, macros, tokens):
                 break
             _expand_macro(element, expand_el, macros, tokens)
 
-        _expand_tokens_for_el(element, tokens)
-
 
 def _expand_macro(element, expand_el, macros, tokens):
     macro_name = expand_el.get('macro')
+    assert macro_name is not None, "Attempted to expand macro with no 'macro' attribute defined."
+    assert macro_name in macros, f"No macro named {macro_name} found, known marcos are {', '.join(macros.keys())}."
     macro_def = macros[macro_name]
     expanded_elements = deepcopy(macro_def.elements)
 
@@ -148,23 +152,16 @@ def _expand_macro(element, expand_el, macros, tokens):
     if macro_tokens:
         _expand_tokens(expanded_elements, macro_tokens)
 
-    # HACK for elementtree, newer implementations (etree/lxml) won't
-    # require this parent_map data structure but elementtree does not
-    # track parents or recognize .find('..').
-    # TODO fix this now that we're not using elementtree
-    parent_map = {c: p for p in element.iter() for c in p}
-    _xml_replace(expand_el, expanded_elements, parent_map)
+    _xml_replace(expand_el, expanded_elements)
 
 
 def _expand_yield_statements(macro_def, expand_el):
     yield_els = [yield_el for macro_def_el in macro_def for yield_el in macro_def_el.findall('.//yield')]
 
     expand_el_children = list(expand_el)
-    macro_def_parent_map = \
-        {c: p for macro_def_el in macro_def for p in macro_def_el.iter() for c in p}
 
     for yield_el in yield_els:
-        _xml_replace(yield_el, expand_el_children, macro_def_parent_map)
+        _xml_replace(yield_el, expand_el_children)
 
     # Replace yields at the top level of a macro, seems hacky approach
     replace_yield = True
@@ -256,9 +253,8 @@ def _xml_set_children(element, new_children):
         element.insert(i, new_child)
 
 
-def _xml_replace(query, targets, parent_map):
-    # parent_el = query.find('..') ## Something like this would be better with newer xml library
-    parent_el = parent_map[query]
+def _xml_replace(query, targets):
+    parent_el = query.find('..')
     matching_index = -1
     # for index, el in enumerate(parent_el.iter('.')):  ## Something like this for newer implementation
     for index, el in enumerate(list(parent_el)):
@@ -300,7 +296,7 @@ class XmlMacroDef:
             if token_value is REQUIRED_PARAMETER:
                 message = "Failed to expand macro - missing required parameter [%s]."
                 raise ValueError(message % key)
-            token_name = "{}{}{}".format(wrap_char, key.upper(), wrap_char)
+            token_name = f"{wrap_char}{key.upper()}{wrap_char}"
             tokens[token_name] = token_value
         return tokens
 

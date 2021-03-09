@@ -45,16 +45,16 @@ def parse_search_kwds(search_query):
     return query_kwd
 
 
-class TrsProxy(object):
+class TrsProxy:
 
     def __init__(self, config=None):
         config_file = getattr(config, "trs_servers_config_file", None)
         if config_file and os.path.exists(config_file):
-            with open(config_file, "r") as f:
+            with open(config_file) as f:
                 server_list = yaml.safe_load(f)
         else:
             server_list = DEFAULT_TRS_SERVERS
-        self._server_list = server_list
+        self._server_list = server_list if server_list else []
         self._server_dict = {t["id"]: t for t in self._server_list}
 
     def get_servers(self):

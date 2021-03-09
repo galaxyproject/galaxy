@@ -6,7 +6,6 @@ datasets "(not ok)" and the successfully finished datasets "(ok)".
 Sample call:
 python filter_failed_datasets_from_collection.py <GalaxyUrl> <ApiKey> MySpecialHistory 1234
 """
-from __future__ import print_function
 
 import sys
 

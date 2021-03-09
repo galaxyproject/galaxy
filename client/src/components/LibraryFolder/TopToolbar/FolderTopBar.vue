@@ -1,22 +1,12 @@
 <template>
     <div>
-        <div id="path-bar" />
-
         <div class="form-inline d-flex align-items-center mb-2">
             <a class="mr-1 btn btn-secondary" :href="getHomeUrl" data-toggle="tooltip" title="Go to first page">
                 <font-awesome-icon icon="home" />
             </a>
             <div>
-                <form class="form-inline">
-                    <b-input-group size="sm">
-                        <b-form-input
-                            class="mr-1"
-                            v-on:input="updateSearch($event)"
-                            type="search"
-                            id="filterInput"
-                            placeholder="Search"
-                        />
-                    </b-input-group>
+                <div class="form-inline">
+                    <SearchField @updateSearch="updateSearch($event)"></SearchField>
                     <button
                         v-if="metadata.can_add_library_item"
                         title="Create new folder"
@@ -29,7 +19,6 @@
                     </button>
                     <div v-if="metadata.can_add_library_item">
                         <div
-                            v-if="multiple_add_dataset_options"
                             title="Add datasets to current folder"
                             class="dropdown add-library-items add-library-items-datasets mr-1"
                         >
@@ -41,7 +30,7 @@
                                     from History</a
                                 >
                                 <a
-                                    v-if="user_library_import_dir"
+                                    v-if="user_library_import_dir_available"
                                     class="dropdown-item cursor-pointer"
                                     @click="addDatasets('userdir')"
                                 >
@@ -100,20 +89,10 @@
                         class="dropdown dataset-manipulation mr-1"
                         v-if="dataset_manipulation"
                     >
-                        <button
-                            type="button"
-                            id="download-dropdown-btn"
-                            class="primary-button dropdown-toggle"
-                            data-toggle="dropdown"
-                        >
+                        <button type="button" id="download--btn" class="primary-button" @click="downloadData('zip')">
                             <font-awesome-icon icon="download" />
-                            Download <span class="caret"></span>
+                            Download
                         </button>
-                        <div class="dropdown-menu" role="menu">
-                            <a class="dropdown-item cursor-pointer" @click="downloadData('tgz')">.tar.gz</a>
-                            <a class="dropdown-item cursor-pointer" @click="downloadData('tbz')">.tar.bz</a>
-                            <a class="dropdown-item cursor-pointer" @click="downloadData('zip')">.zip</a>
-                        </div>
                     </div>
                     <button
                         v-if="logged_dataset_manipulation"
@@ -142,9 +121,25 @@
                             include deleted
                         </b-form-checkbox>
                     </div>
-                </form>
+                </div>
             </div>
         </div>
+
+        <b-breadcrumb>
+            <b-breadcrumb-item title="Return to the list of libraries" :href="getHomeUrl">
+                Libraries
+            </b-breadcrumb-item>
+            <template v-for="path_item in this.metadata.full_path">
+                <b-breadcrumb-item
+                    :key="path_item[0]"
+                    :title="isCurrentFolder(path_item[0]) ? `You are in this folder` : `Return to this folder`"
+                    :active="isCurrentFolder(path_item[0])"
+                    @click="changeFolderId(path_item[0])"
+                    href="#"
+                    >{{ path_item[1] }}</b-breadcrumb-item
+                >
+            </template>
+        </b-breadcrumb>
     </div>
 </template>
 <script>
@@ -155,7 +150,6 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { showLocInfo } from "./details-modal";
 import { deleteSelectedItems } from "./delete-selected";
 import { initTopBarIcons } from "components/LibraryFolder/icons";
-import mod_path_bar from "components/LibraryFolder/path-bar";
 import mod_import_dataset from "./import-to-history/import-dataset";
 import mod_import_collection from "./import-to-history/import-collection";
 import mod_add_datasets from "./add-datasets";
@@ -163,6 +157,8 @@ import { Toast } from "ui/toast";
 import download from "./download";
 import mod_utils from "utils/utils";
 import { getAppRoot } from "onload/loadConfig";
+import SearchField from "../SearchField";
+import { Services } from "../services";
 
 initTopBarIcons();
 
@@ -179,7 +175,15 @@ export default {
             type: Boolean,
             required: true,
         },
+        isAllSelectedMode: {
+            type: Boolean,
+            required: true,
+        },
         selected: {
+            type: Array,
+            required: true,
+        },
+        unselected: {
             type: Array,
             required: true,
         },
@@ -193,15 +197,13 @@ export default {
         },
     },
     components: {
+        SearchField,
         FontAwesomeIcon,
     },
     data() {
         return {
-            dataset_manipulation: false,
-            logged_dataset_manipulation: false,
             is_admin: false,
-            multiple_add_dataset_options: false,
-            user_library_import_dir: false,
+            user_library_import_dir_available: false,
             library_import_dir: false,
             allow_library_path_paste: false,
             list_genomes: [],
@@ -221,38 +223,29 @@ export default {
     },
     created() {
         const Galaxy = getGalaxyInstance();
+        this.services = new Services();
         this.is_admin = Galaxy.user.attributes.is_admin;
-        this.user_library_import_dir = Galaxy.config.user_library_import_dir;
+        this.user_library_import_dir_available = Galaxy.config.user_library_import_dir_available;
         this.library_import_dir = Galaxy.config.library_import_dir;
         this.allow_library_path_paste = Galaxy.config.allow_library_path_paste;
-        if (
-            this.user_library_import_dir !== null ||
-            this.allow_library_path_paste !== false ||
-            this.library_import_dir !== null
-        ) {
-            this.multiple_add_dataset_options = true;
-        }
-        const contains_file_or_folder = this.folderContents.find((el) => el.type === "folder" || el.type === "file");
 
-        // logic from legacy code
-        if (contains_file_or_folder) {
-            if (Galaxy.user) {
-                this.dataset_manipulation = true;
-                if (!Galaxy.user.isAnonymous()) {
-                    this.logged_dataset_manipulation = true;
-                }
-            }
-        }
         this.fetchExtAndGenomes();
     },
-    mounted() {
-        new mod_path_bar.PathBar({
-            full_path: this.metadata.full_path,
-            id: this.folder_id,
-            parent_library_id: this.metadata.parent_library_id,
-        });
-    },
     computed: {
+        contains_file_or_folder: function () {
+            return this.folderContents.find((el) => el.type === "folder" || el.type === "file");
+        },
+        logged_dataset_manipulation: function () {
+            const Galaxy = getGalaxyInstance();
+            // logic from legacy code
+            return !!(this.contains_file_or_folder && Galaxy.user && !Galaxy.user.isAnonymous());
+        },
+        dataset_manipulation: function () {
+            const Galaxy = getGalaxyInstance();
+            // logic from legacy code
+            return !!(this.contains_file_or_folder && Galaxy.user);
+        },
+
         getHomeUrl: () => {
             return `${getAppRoot()}library/list`;
         },
@@ -264,12 +257,26 @@ export default {
         updateSearch: function (value) {
             this.$emit("updateSearch", value);
         },
+        changeFolderId: function (value) {
+            this.$emit("changeFolderId", value);
+        },
         deleteSelected: function () {
-            deleteSelectedItems(
-                this.selected,
-                (deletedItem) => this.$emit("deleteFromTable", deletedItem),
-                () => this.$emit("refreshTable")
+            this.getSelected().then((selected) =>
+                deleteSelectedItems(
+                    selected,
+                    (deletedItem) => this.$emit("deleteFromTable", deletedItem),
+                    () => this.$emit("refreshTable"),
+                    () => this.$emit("refreshTableContent")
+                )
             );
+        },
+        async getSelected() {
+            if (this.isAllSelectedMode) {
+                this.$emit("setBusy", true);
+                const selected = await this.services.getFilteredFolderContents(this.folder_id, this.unselected);
+                this.$emit("setBusy", false);
+                return selected;
+            } else return this.selected;
         },
         newFolder() {
             this.folderContents.unshift({
@@ -282,13 +289,14 @@ export default {
             this.$emit("refreshTable");
         },
         downloadData(format) {
-            const { datasets, folders } = this.findCheckedItems();
-            if (this.selected.length === 0) {
-                Toast.info("You must select at least one dataset to download");
-                return;
-            }
+            this.findCheckedItems().then(({ datasets, folders }) => {
+                if (this.selected.length === 0) {
+                    Toast.info("You must select at least one dataset to download");
+                    return;
+                }
 
-            download(format, datasets, folders);
+                download(format, datasets, folders);
+            });
         },
         addDatasets(source) {
             new mod_add_datasets.AddDatasets({
@@ -300,33 +308,38 @@ export default {
             });
         },
         // helper function to make legacy code compatible
-        findCheckedItems: function (idOnly = true) {
+        findCheckedItems: async function (idOnly = true) {
             const datasets = [];
             const folder = [];
-            this.selected.forEach((item) => {
+            const selected = await this.getSelected();
+            selected.forEach((item) => {
                 item.type === "file" ? datasets.push(idOnly ? item.id : item) : idOnly ? item.id : item;
             });
             return { datasets: datasets, folders: folder };
         },
         importToHistoryModal: function (isCollection) {
-            const { datasets, folders } = this.findCheckedItems(!isCollection);
-            const checkedItems = this.selected;
-            checkedItems.dataset_ids = datasets;
-            checkedItems.folder_ids = folders;
-            if (isCollection) {
-                new mod_import_collection.ImportCollectionModal({
-                    selected: checkedItems,
-                    allDatasets: this.allDatasets,
-                });
-            } else {
-                new mod_import_dataset.ImportDatasetModal({
-                    selected: checkedItems,
-                });
-            }
+            this.findCheckedItems(!isCollection).then(({ datasets, folders }) => {
+                const checkedItems = this.selected;
+                checkedItems.dataset_ids = datasets;
+                checkedItems.folder_ids = folders;
+                if (isCollection) {
+                    new mod_import_collection.ImportCollectionModal({
+                        selected: checkedItems,
+                        allDatasets: this.allDatasets,
+                    });
+                } else {
+                    new mod_import_dataset.ImportDatasetModal({
+                        selected: checkedItems,
+                    });
+                }
+            });
+        },
+        isCurrentFolder(id) {
+            return this.folder_id === id;
         },
         /*
             Slightly adopted Bootstrap code
-             */
+        */
         /**
          * Request all extensions and genomes from Galaxy
          * and save them in sorted arrays.

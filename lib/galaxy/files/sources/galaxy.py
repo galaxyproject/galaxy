@@ -18,7 +18,7 @@ class UserFtpFilesSource(PosixFilesSource):
         if "delete_on_realize" not in posix_kwds:
             file_sources_config = kwd.get("file_sources_config")
             posix_kwds["delete_on_realize"] = file_sources_config.ftp_upload_purge
-        super(UserFtpFilesSource, self).__init__(**posix_kwds)
+        super().__init__(**posix_kwds)
 
     def get_prefix(self):
         return None
@@ -38,7 +38,7 @@ class LibraryImportFilesSource(PosixFilesSource):
             doc=doc,
         )
         posix_kwds.update(kwd)
-        super(LibraryImportFilesSource, self).__init__(**posix_kwds)
+        super().__init__(**posix_kwds)
 
     def get_prefix(self):
         return None
@@ -58,7 +58,7 @@ class UserLibraryImportFilesSource(PosixFilesSource):
             doc=doc,
         )
         posix_kwds.update(kwd)
-        super(UserLibraryImportFilesSource, self).__init__(**posix_kwds)
+        super().__init__(**posix_kwds)
 
     def get_prefix(self):
         return None

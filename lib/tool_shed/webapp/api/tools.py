@@ -156,7 +156,7 @@ class ToolsController(BaseAPIController):
                         found_tool = tool
                         break
         if found_tool is None:
-            message = 'Unable to find tool with guid {} in repository {}.'.format(guid, repository.name)
+            message = f'Unable to find tool with guid {guid} in repository {repository.name}.'
             trans.response.status = 404
             return {'status': 'error', 'message': message}
 
@@ -176,13 +176,13 @@ class ToolsController(BaseAPIController):
         tool_dict['inputs'] = {}
         tool.populate_model(trans, tool.inputs, {}, tool_dict['inputs'])
         tool_dict.update({
-            'help'          : tool_help,
-            'citations'     : bool(tool.citations),
-            'requirements'  : [{'name' : r.name, 'version' : r.version} for r in tool.requirements],
-            'state_inputs'  : params_to_strings(tool.inputs, {}, trans.app),
-            'display'       : tool.display_interface,
-            'action'        : web.url_for(tool.action),
-            'method'        : tool.method,
-            'enctype'       : tool.enctype
+            'help': tool_help,
+            'citations': bool(tool.citations),
+            'requirements': [{'name': r.name, 'version': r.version} for r in tool.requirements],
+            'state_inputs': params_to_strings(tool.inputs, {}, trans.app),
+            'display': tool.display_interface,
+            'action': web.url_for(tool.action),
+            'method': tool.method,
+            'enctype': tool.enctype
         })
         return json.dumps(tool_dict)

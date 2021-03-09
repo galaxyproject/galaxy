@@ -1,7 +1,6 @@
 /**
     This class creates input elements. New input parameter types should be added to the types dictionary.
 */
-import $ from "jquery";
 import Backbone from "backbone";
 import { getGalaxyInstance } from "app";
 import Utils from "utils/utils";
@@ -146,7 +145,7 @@ export default Backbone.Model.extend({
             if (Utils.isEmpty(input_def.value)) {
                 input_def.value = null;
             } else {
-                if ($.isArray(input_def.value)) {
+                if (Array.isArray(input_def.value)) {
                     var str_value = "";
                     for (var i in input_def.value) {
                         str_value += String(input_def.value[i]);
@@ -193,12 +192,8 @@ export default Backbone.Model.extend({
 
     /** Boolean field */
     _fieldBoolean: function (input_def) {
-        return new Ui.RadioButton.View({
+        return new Ui.Switch({
             id: `field-${input_def.id}`,
-            data: [
-                { label: "Yes", value: "true" },
-                { label: "No", value: "false" },
-            ],
             onchange: input_def.onchange,
         });
     },

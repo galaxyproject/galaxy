@@ -97,7 +97,7 @@ This message was sent from the Galaxy Tool Shed instance hosted on the server
 
 
 def count_repositories_in_category(app, category_id):
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     return sa_session.query(app.model.RepositoryCategoryAssociation) \
                      .filter(app.model.RepositoryCategoryAssociation.table.c.category_id == app.security.decode_id(category_id)) \
                      .count()
@@ -105,7 +105,7 @@ def count_repositories_in_category(app, category_id):
 
 def get_categories(app):
     """Get all categories from the database."""
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     return sa_session.query(app.model.Category) \
                      .filter(app.model.Category.table.c.deleted == false()) \
                      .order_by(app.model.Category.table.c.name) \
@@ -114,13 +114,13 @@ def get_categories(app):
 
 def get_category(app, id):
     """Get a category from the database."""
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     return sa_session.query(app.model.Category).get(app.security.decode_id(id))
 
 
 def get_category_by_name(app, name):
     """Get a category from the database via name."""
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     try:
         return sa_session.query(app.model.Category).filter_by(name=name).one()
     except sqlalchemy.orm.exc.NoResultFound:
@@ -180,7 +180,7 @@ def get_requirements_from_repository(repository):
 
 def get_repository_categories(app, id):
     """Get categories of a repository on the tool shed side from the database via id"""
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     return sa_session.query(app.model.RepositoryCategoryAssociation) \
         .filter(app.model.RepositoryCategoryAssociation.table.c.repository_id == app.security.decode_id(id))
 
@@ -204,14 +204,14 @@ def get_repository_file_contents(app, file_path, repository_id, is_admin=False):
     elif checkers.check_binary(file_path):
         return '<br/>Binary file<br/>'
     else:
-        for i, line in enumerate(open(file_path)):
+        for line in open(file_path):
             safe_str = '{}{}'.format(safe_str, basic_util.to_html_string(line))
             # Stop reading after string is larger than MAX_CONTENT_SIZE.
             if len(safe_str) > MAX_CONTENT_SIZE:
                 large_str = \
                     '<br/>File contents truncated because file size is larger than maximum viewing size of %s<br/>' % \
                     util.nice_size(MAX_CONTENT_SIZE)
-                safe_str = '{}{}'.format(safe_str, large_str)
+                safe_str = f'{safe_str}{large_str}'
                 break
 
         if len(safe_str) > basic_util.MAX_DISPLAY_SIZE:
@@ -303,6 +303,7 @@ def get_tool_path_by_shed_tool_conf_filename(app, shed_tool_conf):
 def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_alert=False, admin_only=False):
     """
     There are 2 complementary features that enable a tool shed user to receive email notification:
+
     1. Within User Preferences, they can elect to receive email when the first (or first valid)
        change set is produced for a new repository.
     2. When viewing or managing a repository, they can check the box labeled "Receive email alerts"
@@ -310,20 +311,22 @@ def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_al
        is available on a per-repository basis on the repository grid within the tool shed.
 
     There are currently 4 scenarios for sending email notification when a change is made to a repository:
+
     1. An admin user elects to receive email when the first change set is produced for a new repository
        from User Preferences.  The change set does not have to include any valid content.  This allows for
        the capture of inappropriate content being uploaded to new repositories.
     2. A regular user elects to receive email when the first valid change set is produced for a new repository
        from User Preferences.  This differs from 1 above in that the user will not receive email until a
-       change set tha tincludes valid content is produced.
+       change set that includes valid content is produced.
     3. An admin user checks the "Receive email alerts" check box on the manage repository page.  Since the
        user is an admin user, the email will include information about both HTML and image content that was
        included in the change set.
     4. A regular user checks the "Receive email alerts" check box on the manage repository page.  Since the
        user is not an admin user, the email will not include any information about both HTML and image content
        that was included in the change set.
+
     """
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     repo = repository.hg_repo
     sharable_link = repository_util.generate_sharable_link_for_repository_in_tool_shed(repository, changeset_revision=None)
     smtp_server = app.config.smtp_server
@@ -349,7 +352,7 @@ def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_al
             template = email_alert_template
         display_date = hg_util.get_readable_ctx_date(ctx)
         description = unicodify(ctx.description())
-        revision = '{}:{}'.format(ctx.rev(), ctx)
+        revision = f'{ctx.rev()}:{ctx}'
         admin_body = string.Template(template).safe_substitute(host=host,
                                                                sharable_link=sharable_link,
                                                                repository_name=repository.name,
@@ -382,7 +385,7 @@ def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_al
                     email_alerts.append(user.email)
         else:
             subject = "Galaxy tool shed update alert for repository named %s" % str(repository.name)
-            email_alerts = json.loads(repository.email_alerts)
+            email_alerts = repository.email_alerts
         for email in email_alerts:
             to = email.strip()
             # Send it

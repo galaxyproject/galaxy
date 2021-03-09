@@ -19,11 +19,10 @@ from galaxy.managers import (
 from galaxy.managers.collections_util import (
     api_payload_to_create_params,
     dictify_dataset_collection_instance,
-    get_hda_and_element_identifiers
 )
 from galaxy.managers.jobs import fetch_job_states, summarize_jobs_to_dict
 from galaxy.util.json import safe_dumps
-from galaxy.util.streamball import StreamBall
+from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.web import (
     expose_api,
     expose_api_anonymous,
@@ -31,34 +30,32 @@ from galaxy.web import (
     expose_api_raw_anonymous
 )
 from galaxy.webapps.base.controller import (
-    BaseAPIController,
     UsesLibraryMixin,
     UsesLibraryMixinItems,
     UsesTagsMixin
 )
+from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
 
 
-class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems, UsesTagsMixin):
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.hda_manager = hdas.HDAManager(app)
-        self.history_manager = histories.HistoryManager(app)
-        self.history_contents_manager = history_contents.HistoryContentsManager(app)
-        self.folder_manager = folders.FolderManager()
-        self.hda_serializer = hdas.HDASerializer(app)
-        self.hda_deserializer = hdas.HDADeserializer(app)
-        self.hdca_serializer = hdcas.HDCASerializer(app)
-        self.history_contents_filters = history_contents.HistoryContentsFilters(app)
+class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesLibraryMixinItems, UsesTagsMixin):
+    hda_manager: hdas.HDAManager = depends(hdas.HDAManager)
+    history_manager: histories.HistoryManager = depends(histories.HistoryManager)
+    history_contents_manager: history_contents.HistoryContentsManager = depends(history_contents.HistoryContentsManager)
+    folder_manager: folders.FolderManager = depends(folders.FolderManager)
+    hda_serializer: hdas.HDASerializer = depends(hdas.HDASerializer)
+    hda_deserializer: hdas.HDADeserializer = depends(hdas.HDADeserializer)
+    hdca_serializer: hdcas.HDCASerializer = depends(hdcas.HDCASerializer)
+    history_contents_filters: history_contents.HistoryContentsFilters = depends(history_contents.HistoryContentsFilters)
 
     @expose_api_anonymous
     def index(self, trans, history_id, ids=None, v=None, **kwd):
         """
-        index( self, trans, history_id, ids=None, **kwd )
-        * GET /api/histories/{history_id}/contents
-            return a list of HDA data for the history with the given ``id``
+        GET /api/histories/{history_id}/contents
+
+        return a list of HDA data for the history with the given ``id``
+
         .. note:: Anonymous users are allowed to get their current history contents
 
         If Ids is not given, index returns a list of *summary* objects for
@@ -134,9 +131,11 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
     @expose_api_anonymous
     def show(self, trans, id, history_id, **kwd):
         """
-        * GET /api/histories/{history_id}/contents/{id}
-        * GET /api/histories/{history_id}/contents/{type}/{id}
-            return detailed information about an HDA or HDCA within a history
+        GET /api/histories/{history_id}/contents/{id}
+        GET /api/histories/{history_id}/contents/{type}/{id}
+
+        return detailed information about an HDA or HDCA within a history
+
         .. note:: Anonymous users are allowed to get their current history contents
 
         :type   id:         str
@@ -279,8 +278,8 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
     @expose_api_raw_anonymous
     def download_dataset_collection(self, trans, id, history_id=None, **kwd):
         """
-        * GET /api/histories/{history_id}/contents/{id}/download
-        * GET /api/dataset_collection/{id}/download
+        GET /api/histories/{history_id}/contents/dataset_collections/{id}/download
+        GET /api/dataset_collection/{id}/download
 
         Download the content of a HistoryDatasetCollection as a tgz archive
         while maintaining approximate collection structure.
@@ -297,32 +296,17 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             return {'error': util.unicodify(e)}
 
     def __stream_dataset_collection(self, trans, dataset_collection_instance):
-        archive_type_string = 'w|gz'
-        archive_ext = 'tgz'
-        if self.app.config.upstream_gzip:
-            archive_type_string = 'w|'
-            archive_ext = 'tar'
-        archive = StreamBall(mode=archive_type_string)
-        names, hdas = get_hda_and_element_identifiers(dataset_collection_instance)
-        for name, hda in zip(names, hdas):
-            if hda.state != hda.states.OK:
-                continue
-            for file_path, relpath in hda.datatype.to_archive(trans=trans, dataset=hda, name=name):
-                archive.add(file=file_path, relpath=relpath)
-        archive_name = "{}: {}.{}".format(dataset_collection_instance.hid, dataset_collection_instance.name, archive_ext)
-        trans.response.set_content_type("application/x-tar")
-        trans.response.headers["Content-Disposition"] = 'attachment; filename="{}"'.format(archive_name)
-        archive.wsgi_status = trans.response.wsgi_status()
-        archive.wsgi_headeritems = trans.response.wsgi_headeritems()
-        return archive.stream
+        archive = hdcas.stream_dataset_collection(dataset_collection_instance=dataset_collection_instance, upstream_mod_zip=trans.app.config.upstream_mod_zip)
+        trans.response.headers.update(archive.get_headers())
+        return archive.response()
 
     @expose_api_anonymous
     def create(self, trans, history_id, payload, **kwd):
         """
-        create( self, trans, history_id, payload, **kwd )
-        * POST /api/histories/{history_id}/contents/{type}s
-        * POST /api/histories/{history_id}/contents
-            create a new HDA or HDCA
+        POST /api/histories/{history_id}/contents/{type}s
+        POST /api/histories/{history_id}/contents
+
+        create a new HDA or HDCA
 
         :type   history_id: str
         :param  history_id: encoded id string of the new HDA's History
@@ -331,7 +315,8 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
                       'dataset_collection'. This can be passed in via payload
                       or parsed from the route.
         :type   payload:    dict
-        :param  payload:    dictionary structure containing::
+        :param  payload:    dictionary structure containing:
+
             copy from library (for type 'dataset'):
             'source'    = 'library'
             'content'   = [the encoded id from the library dataset]
@@ -347,36 +332,53 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             copy from history dataset collection (for type 'dataset_collection')
             'source'    = 'hdca'
             'content'   = [the encoded id from the HDCA]
-            'copy_elements' = Copy child HDAs into the target history as well,
-                              defaults to False but this is less than ideal and may
-                              be changed in future releases.
+            'copy_elements'
+
+                Copy child HDAs into the target history as well,
+                defaults to False but this is less than ideal and may
+                be changed in future releases.
 
             create new history dataset collection (for type 'dataset_collection')
-            'source'              = 'new_collection' (default 'source' if type is
-                                    'dataset_collection' - no need to specify this)
-            'collection_type'     = For example, "list", "paired", "list:paired".
-            'copy_elements'       = Copy child HDAs when creating new collection,
-                                    defaults to False in the API but is set to True in the UI,
-                                    so that we can modify HDAs with tags when creating collections.
-            'name'                = Name of new dataset collection.
-            'element_identifiers' = Recursive list structure defining collection.
-                                    Each element must have 'src' which can be
-                                    'hda', 'ldda', 'hdca', or 'new_collection',
-                                    as well as a 'name' which is the name of
-                                    element (e.g. "forward" or "reverse" for
-                                    paired datasets, or arbitrary sample names
-                                    for instance for lists). For all src's except
-                                    'new_collection' - a encoded 'id' attribute
-                                    must be included wiht element as well.
-                                    'new_collection' sources must defined a
-                                    'collection_type' and their own list of
-                                    (potentially) nested 'element_identifiers'.
+
+            'source'
+                'new_collection' (default 'source' if type is
+                'dataset_collection' - no need to specify this)
+
+            'collection_type'
+
+                For example, "list", "paired", "list:paired".
+
+            'copy_elements'
+
+                Copy child HDAs when creating new collection,
+                defaults to False in the API but is set to True in the UI,
+                so that we can modify HDAs with tags when creating collections.
+
+            'name'
+
+                Name of new dataset collection.
+
+            'element_identifiers'
+
+                Recursive list structure defining collection.
+                Each element must have 'src' which can be
+                'hda', 'ldda', 'hdca', or 'new_collection',
+                as well as a 'name' which is the name of
+                element (e.g. "forward" or "reverse" for
+                paired datasets, or arbitrary sample names
+                for instance for lists). For all src's except
+                'new_collection' - a encoded 'id' attribute
+                must be included wiht element as well.
+                'new_collection' sources must defined a
+                'collection_type' and their own list of
+                (potentially) nested 'element_identifiers'.
 
         ..note:
             Currently, a user can only copy an HDA from a history that the user owns.
 
         :rtype:     dict
         :returns:   dictionary containing detailed information for the new HDA
+
         """
         # TODO: Flush out create new collection documentation above, need some
         # examples. See also bioblend and API tests for specific examples.
@@ -571,11 +573,12 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         """
         Set permissions of the given library dataset to the given role ids.
 
-        * PUT /api/histories/{history_id}/contents/datasets/{encoded_dataset_id}/permissions
+        PUT /api/histories/{history_id}/contents/datasets/{encoded_dataset_id}/permissions
 
         :param  encoded_dataset_id:      the encoded id of the dataset to update permissions of
         :type   encoded_dataset_id:      an encoded id string
         :param   payload: dictionary structure containing:
+
             :param  action:     (required) describes what action should be performed
                                 available actions: make_private, remove_restrictions, set_permissions
             :type   action:     string
@@ -585,6 +588,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             :type   manage_ids[]:      string or list
             :param  modify_ids[]:      list of Role.id defining roles that should have modify permission on the library dataset item
             :type   modify_ids[]:      string or list
+
         :type:      dictionary
 
         :returns:   dict of current roles for all available permission types
@@ -603,8 +607,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
     @expose_api_anonymous
     def update_batch(self, trans, history_id, payload, **kwd):
         """
-        update( self, trans, history_id, id, payload, **kwd )
-        * PUT /api/histories/{history_id}/contents
+        PUT /api/histories/{history_id}/contents
 
         :type   history_id: str
         :param  history_id: encoded id string of the history containing supplied items
@@ -615,7 +618,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
 
         :rtype:     dict
         :returns:   an error object if an error occurred or a dictionary containing
-            any values that were different from the original and, therefore, updated
+                    any values that were different from the original and, therefore, updated
         """
         items = payload.get("items")
         hda_ids = []
@@ -676,9 +679,9 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
     @expose_api_anonymous
     def validate(self, trans, history_id, history_content_id, payload=None, **kwd):
         """
-        update( self, trans, history_id, id, payload, **kwd )
-        * PUT /api/histories/{history_id}/contents/{id}/validate
-            updates the values for the history content item with the given ``id``
+        PUT /api/histories/{history_id}/contents/{id}/validate
+
+        updates the values for the history content item with the given ``id``
 
         :type   history_id: str
         :param  history_id: encoded id string of the items's History
@@ -743,10 +746,11 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
     @expose_api
     def delete(self, trans, history_id, id, purge=False, recursive=False, **kwd):
         """
-        delete( self, trans, history_id, id, **kwd )
-        * DELETE /api/histories/{history_id}/contents/{id}
-        * DELETE /api/histories/{history_id}/contents/{type}s/{id}
-            delete the history content with the given ``id`` and specified type (defaults to dataset)
+        DELETE /api/histories/{history_id}/contents/{id}
+        DELETE /api/histories/{history_id}/contents/{type}s/{id}
+
+        delete the history content with the given ``id`` and specified type (defaults to dataset)
+
         .. note:: Currently does not stop any active jobs for which this dataset is an output.
 
         :type   id:     str
@@ -783,7 +787,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
                 recursive = util.string_as_bool(kwd['payload'].get('recursive', recursive))
 
             trans.app.dataset_collections_service.delete(trans, "history", id, recursive=recursive, purge=purge)
-            return {'id' : id, "deleted": True}
+            return {'id': id, "deleted": True}
         else:
             return self.__handle_unknown_contents_type(trans, contents_type)
 
@@ -934,9 +938,9 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         return TYPE_ID_SEP.join((split[0], self.app.security.encode_id(split[1])))
 
     @expose_api_raw
-    def archive(self, trans, history_id, filename='', format='tgz', dry_run=True, **kwd):
+    def archive(self, trans, history_id, filename='', format='zip', dry_run=True, **kwd):
         """
-        archive( self, trans, history_id, filename='', format='tgz', dry_run=True, **kwd )
+        archive( self, trans, history_id, filename='', format='zip', dry_run=True, **kwd )
         * GET /api/histories/{history_id}/contents/archive/{id}
         * GET /api/histories/{history_id}/contents/archive/{filename}.{format}
             build and return a compressed archive of the selected history contents
@@ -1035,19 +1039,141 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             return safe_dumps(paths_and_files)
 
         # create the archive, add the dataset files, then stream the archive as a download
-        archive_type_string = 'w|gz'
-        archive_ext = 'tgz'
-        if self.app.config.upstream_gzip:
-            archive_type_string = 'w|'
-            archive_ext = 'tar'
-        archive = StreamBall(archive_type_string)
-
+        archive = ZipstreamWrapper(
+            archive_name=archive_base_name,
+            upstream_mod_zip=self.app.config.upstream_mod_zip,
+            upstream_gzip=self.app.config.upstream_gzip,
+        )
         for file_path, archive_path in paths_and_files:
-            archive.add(file_path, archive_path)
+            archive.write(file_path, archive_path)
 
-        archive_name = '.'.join((archive_base_name, archive_ext))
-        trans.response.set_content_type("application/x-tar")
-        trans.response.headers["Content-Disposition"] = 'attachment; filename="{}"'.format(archive_name)
-        archive.wsgi_status = trans.response.wsgi_status()
-        archive.wsgi_headeritems = trans.response.wsgi_headeritems()
-        return archive.stream
+        trans.response.headers.update(archive.get_headers())
+        return archive.response()
+
+    @expose_api_anonymous
+    def contents_near(self, trans, history_id, hid, limit, **kwd):
+        """
+        This endpoint provides random access to a large history without having
+        to know exactly how many pages are in the final query. Pick a target HID
+        and filters, and the endpoint will get LIMIT counts above and below that
+        target regardless of how many gaps may exist in the HID due to
+        filtering.
+
+        It does 2 queries, one up and one down from the target hid with a
+        result size of limit. Additional counts for total matches of both seeks
+        provided in the http headers.
+
+        I've also abandoned the wierd q/qv syntax.
+
+        * GET /api/histories/{history_id}/contents/near/{hid}/{limit}
+        """
+        history = self.history_manager.get_accessible(self.decode_id(history_id), trans.user, current_history=trans.history)
+        filter_params = self._parse_rest_params(kwd)
+        serialization_params = self._parse_serialization_params(kwd, 'betawebclient')
+        view = serialization_params.pop('view')
+
+        # SEEK UP, contents > hid
+        up_params = filter_params + self._parse_rest_params({'hid-gt': hid})
+        up_order = 'hid-asc'
+        contents_up, up_count = self._seek(history, up_params, up_order, limit, serialization_params)
+
+        # SEEK DOWN, contents <= hid
+        down_params = filter_params + self._parse_rest_params({'hid-le': hid})
+        down_order = 'hid-dsc'
+        contents_down, down_count = self._seek(history, down_params, down_order, limit, serialization_params)
+
+        # min/max hid values
+        min_hid, max_hid = self._get_filtered_extrema(history, filter_params)
+
+        # results
+        up = self._expand_contents(trans, contents_up, serialization_params, view)
+        up.reverse()
+        down = self._expand_contents(trans, contents_down, serialization_params, view)
+        contents = up + down
+
+        # Put stats in http headers
+        trans.response.headers['matches_up'] = len(contents_up)
+        trans.response.headers['matches_down'] = len(contents_down)
+        trans.response.headers['total_matches_up'] = up_count
+        trans.response.headers['total_matches_down'] = down_count
+        trans.response.headers['max_hid'] = max_hid
+        trans.response.headers['min_hid'] = min_hid
+
+        return contents
+
+    # Perform content query and matching count
+    def _seek(self, history, filter_params, order_by_string, limit, serialization_params):
+        filters = self.history_contents_filters.parse_filters(filter_params)
+        order_by = self._parse_order_by(manager=self.history_contents_manager, order_by_string=order_by_string)
+
+        # actual contents
+        contents = self.history_contents_manager.contents(history,
+            filters=filters,
+            limit=limit,
+            offset=0,
+            order_by=order_by,
+            serialization_params=serialization_params)
+
+        # count of same query
+        count_filter_params = [f for f in filter_params if f[0] != 'update_time']
+        count_filters = self.history_contents_filters.parse_filters(count_filter_params)
+        contents_count = self.history_contents_manager.contents_count(history, count_filters)
+
+        return contents, contents_count
+
+    # Adds subquery details to initial contents results, perhaps better realized
+    # as a proc or view.
+    def _expand_contents(self, trans, contents, serialization_params, view):
+        rval = []
+        for content in contents:
+            if isinstance(content, trans.app.model.HistoryDatasetAssociation):
+                dataset = self.hda_serializer.serialize_to_view(content,
+                    user=trans.user, trans=trans, view=view, **serialization_params)
+                rval.append(dataset)
+            elif isinstance(content, trans.app.model.HistoryDatasetCollectionAssociation):
+                collection = self.hdca_serializer.serialize_to_view(content,
+                    user=trans.user, trans=trans, view=view, **serialization_params)
+                rval.append(collection)
+        return rval
+
+    # Parsing query string according to REST standards.
+    def _parse_rest_params(self, qdict):
+        DEFAULT_OP = 'eq'
+        splitchar = '-'
+
+        result = []
+        for key, val in qdict.items():
+            attr = key
+            op = DEFAULT_OP
+            if splitchar in key:
+                attr, op = key.rsplit(splitchar, 1)
+            result.append([attr, op, val])
+
+        return result
+
+    def _get_filtered_extrema(self, history, filter_params):
+        extrema_params = self._parse_serialization_params(dict(keys='hid'), 'summary')
+        extrema_filter_params = [f for f in filter_params if f[0] != 'update_time']
+        extrema_filters = self.history_contents_filters.parse_filters(extrema_filter_params)
+
+        order_by_dsc = self._parse_order_by(manager=self.history_contents_manager, order_by_string='hid-dsc')
+        order_by_asc = self._parse_order_by(manager=self.history_contents_manager, order_by_string='hid-asc')
+
+        max_row_result = self.history_contents_manager.contents(history,
+            limit=1,
+            filters=extrema_filters,
+            order_by=order_by_dsc,
+            serialization_params=extrema_params)
+        max_row = max_row_result.pop() if len(max_row_result) else None
+
+        min_row_result = self.history_contents_manager.contents(history,
+            limit=1,
+            filters=extrema_filters,
+            order_by=order_by_asc,
+            serialization_params=extrema_params)
+        min_row = min_row_result.pop() if len(min_row_result) else None
+
+        max_hid = max_row.hid if max_row else None
+        min_hid = min_row.hid if min_row else None
+
+        return min_hid, max_hid

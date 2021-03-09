@@ -231,7 +231,7 @@ const View = Backbone.View.extend({
         if (this.config[current]) {
             let id_list = this.fields[current].value();
             if (id_list !== null) {
-                id_list = $.isArray(id_list) ? id_list : [id_list];
+                id_list = Array.isArray(id_list) ? id_list : [id_list];
                 if (id_list.length > 0) {
                     const result = this._batch({ values: [] });
                     for (const i in id_list) {
@@ -360,6 +360,7 @@ const View = Backbone.View.extend({
                         multiple: cnf.multiple,
                         library: !!cnf.library,
                         format: null,
+                        allowUpload: true,
                     }
                 );
             },
@@ -508,7 +509,7 @@ const View = Backbone.View.extend({
         const config = this.config[current];
         const field = this.fields[current];
         if (data) {
-            const values = $.isArray(drop_data) ? drop_data : [drop_data];
+            const values = Array.isArray(drop_data) ? drop_data : [drop_data];
             if (values.length > 0) {
                 let data_changed = false;
                 _.each(values, (v) => {

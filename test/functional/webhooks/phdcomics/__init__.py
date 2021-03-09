@@ -1,8 +1,7 @@
 import logging
 import random
 import re
-
-from six.moves.urllib.request import urlopen
+from urllib.request import urlopen
 
 log = logging.getLogger(__name__)
 

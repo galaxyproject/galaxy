@@ -5,7 +5,7 @@ REMOTE_PORT_DESCRIPTION = "Selenium hub remote port to use (if remote driver in 
 GALAXY_URL_DESCRIPTION = "URL of Galaxy instance to target."
 HEADLESS_DESCRIPTION = "Use local selenium headlessly (native in chrome, otherwise this requires pyvirtualdisplay)."
 
-from six.moves.urllib.parse import urljoin
+from urllib.parse import urljoin
 
 from .driver_factory import (
     get_local_driver,

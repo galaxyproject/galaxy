@@ -113,7 +113,7 @@ class TestLocalJobRunner(TestCase, UsesApp, UsesTools):
         assert "job terminated by Galaxy shutdown" in self.job_wrapper.fail_message
 
 
-class MockJobWrapper(object):
+class MockJobWrapper:
 
     def __init__(self, app, test_directory, tool):
         working_directory = os.path.join(test_directory, "workdir")
@@ -161,7 +161,7 @@ class MockJobWrapper(object):
     def wait_for_external_id(self):
         """Test method for waiting until an external id has been registered."""
         external_id = None
-        for i in range(50):
+        for _ in range(50):
             external_id = self.job.job_runner_external_id
             if external_id:
                 break

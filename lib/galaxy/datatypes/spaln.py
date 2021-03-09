@@ -85,10 +85,10 @@ class _SpalnDb(Data):
             "<html><head><title>Files for Composite Dataset %s</title></head><body><p/>Composite %s contains:<p/><ul>"
             % (dataset.name, dataset.name)
         ]
-        for i, fname in enumerate(flist):
+        for fname in flist:
             sfname = os.path.split(fname)[-1]
             f, e = os.path.splitext(fname)
-            rval.append('<li><a href="{}">{}</a></li>'.format(sfname, sfname))
+            rval.append(f'<li><a href="{sfname}">{sfname}</a></li>')
         rval.append("</ul></body></html>")
         with open(dataset.file_name, "w") as f:
             f.write("\n".join(rval))

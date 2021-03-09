@@ -347,7 +347,11 @@
                                     :title="titleViewSource"
                                     @click="viewSource"
                                 ></span>
-                                <saved-rules-selector ref="savedRulesSelector" @update-rules="restoreRules" />
+                                <saved-rules-selector
+                                    ref="savedRulesSelector"
+                                    @update-rules="restoreRules"
+                                    :savedRules="this.savedRules"
+                                />
                             </span>
                             <div v-if="jaggedData" class="rule-warning">
                                 Rows contain differing numbers of columns, there was likely a problem parsing your data.
@@ -381,8 +385,8 @@
                                     manage column definitions.
                                 </div>
                             </ol>
-                            <div class="rules-buttons">
-                                <div class="btn-group dropup">
+                            <div class="rules-buttons btn-group">
+                                <div class="dropup">
                                     <button
                                         type="button"
                                         v-b-tooltip.hover.bottom
@@ -407,7 +411,7 @@
                                         >
                                     </div>
                                 </div>
-                                <div class="btn-group dropup">
+                                <div class="dropup">
                                     <button
                                         type="button"
                                         v-b-tooltip.hover.bottom
@@ -427,7 +431,7 @@
                                         <rule-target-component :builder="this" rule-type="add_filter_count" />
                                     </div>
                                 </div>
-                                <div class="btn-group dropup">
+                                <div class="dropup">
                                     <button
                                         type="button"
                                         v-b-tooltip.hover.bottom
@@ -608,6 +612,7 @@ import RuleModalMiddle from "components/RuleBuilder/RuleModalMiddle";
 import RuleModalFooter from "components/RuleBuilder/RuleModalFooter";
 import StateDiv from "components/RuleBuilder/StateDiv";
 import SavedRulesSelector from "components/RuleBuilder/SavedRulesSelector";
+import SaveRules from "components/RuleBuilder/SaveRules";
 
 Vue.use(BootstrapVue);
 
@@ -696,7 +701,7 @@ export default {
             ),
             titleInvertFilterRegex: _l("Remove rows not matching the specified regular expression at specified column"),
             titleInvertFilterEmpty: _l("Remove rows that have non-empty values at specified column"),
-            titleInvertFilterMatches: _l("Remove rows not matching supplied value"),
+            titleInvertFilterMatches: _l("Remove rows matching supplied value"),
             titleViewSource: _l(
                 "Advanced Option: View and or edit the JSON representation of the rules to apply to this tabular data"
             ),
@@ -1071,6 +1076,7 @@ export default {
             return this.hotData.colHeadersPerRule;
         },
     },
+    mixins: [SaveRules],
     methods: {
         restoreRules(event) {
             const json = JSON.parse(event);
@@ -1275,7 +1281,7 @@ export default {
                 this.state = "error";
                 return;
             }
-            this.$refs.savedRulesSelector.saveSession(JSON.stringify(asJson));
+            this.saveSession(JSON.stringify(asJson));
             this.state = "wait";
             const name = this.collectionName;
             const collectionType = this.collectionType;
@@ -1644,18 +1650,26 @@ export default {
                     }
                 }
             }
-            UploadUtils.getUploadDatatypes(
-                (extensions) => {
+
+            // TODO: provider...
+            UploadUtils.getUploadDatatypes(false, UploadUtils.AUTO_EXTENSION)
+                .then((extensions) => {
                     this.extensions = extensions;
                     this.extension = UploadUtils.DEFAULT_EXTENSION;
-                },
-                false,
-                UploadUtils.AUTO_EXTENSION
-            );
-            UploadUtils.getUploadGenomes((genomes) => {
-                this.genomes = genomes;
-                this.genome = UploadUtils.DEFAULT_GENOME;
-            }, UploadUtils.DEFAULT_GENOME);
+                })
+                .catch((err) => {
+                    console.log("Error in RuleCollectionBuilder, unable to load datatypes", err);
+                });
+
+            // TODO: provider...
+            UploadUtils.getUploadGenomes(UploadUtils.DEFAULT_GENOME)
+                .then((genomes) => {
+                    this.genomes = genomes;
+                    this.genome = UploadUtils.DEFAULT_GENOME;
+                })
+                .catch((err) => {
+                    console.log("Error in RuleCollectionBuilder, unable to load genomes", err);
+                });
         }
     },
     watch: {
@@ -1664,7 +1678,7 @@ export default {
                 this.addColumnRegexGroupCount = 1;
             }
             if (val == "replacement") {
-                this.addColumnRegexReplacement = "\0";
+                this.addColumnRegexReplacement = null;
             }
         },
     },
@@ -1723,7 +1737,7 @@ export default {
     padding: 5px;
 }
 .rules-container-vertical {
-    width: 280px;
+    width: 300px;
     height: 400px;
 }
 .rules-container-horizontal {

@@ -5,8 +5,8 @@ Provides mapping between extensions and datatypes, mime-types, etc.
 import imp
 import logging
 import os
-from collections import OrderedDict
 from string import Template
+from typing import Dict
 
 import yaml
 
@@ -41,7 +41,7 @@ class Registry:
         self.config = config
         self.datatypes_by_extension = {}
         self.mimetypes_by_extension = {}
-        self.datatype_converters = OrderedDict()
+        self.datatype_converters = {}
         # Converters defined in local datatypes_conf.xml
         self.converters = []
         self.converter_tools = set()
@@ -58,7 +58,7 @@ class Registry:
         # tool shed repositories that contain display applications.
         self.proprietary_display_app_containers = []
         # Map a display application id to a display application
-        self.display_applications = OrderedDict()
+        self.display_applications: Dict[str, DisplayApplication] = {}
         # The following 2 attributes are used in the to_xml_file()
         # method to persist the current state into an xml file.
         self.display_path_attr = None
@@ -311,7 +311,7 @@ class Registry:
                                     optional = composite_file.get('optional', False)
                                     mimetype = composite_file.get('mimetype', None)
                                     self.datatypes_by_extension[extension].add_composite_file(name, optional=optional, mimetype=mimetype)
-                                for display_app in elem.findall('display'):
+                                for _display_app in elem.findall('display'):
                                     if proprietary_display_path:
                                         if elem not in self.proprietary_display_app_containers:
                                             self.proprietary_display_app_containers.append(elem)
@@ -330,7 +330,7 @@ class Registry:
                                 self.datatype_info_dicts.append(datatype_info_dict)
 
                                 for auto_compressed_type in auto_compressed_types:
-                                    compressed_extension = "{}.{}".format(extension, auto_compressed_type)
+                                    compressed_extension = f"{extension}.{auto_compressed_type}"
                                     upper_compressed_type = auto_compressed_type[0].upper() + auto_compressed_type[1:]
                                     auto_compressed_type_name = datatype_class_name + upper_compressed_type
                                     attributes = {}
@@ -372,7 +372,7 @@ class Registry:
                                     if not override:
                                         # Do not load the datatype since it conflicts with an existing datatype which we are not supposed
                                         # to override.
-                                        self.log.debug("Ignoring conflicting datatype with extension '{}' from {}.".format(extension, config))
+                                        self.log.debug(f"Ignoring conflicting datatype with extension '{extension}' from {config}.")
             # Load datatype sniffers from the config - we'll do this even if one or more datatypes were not properly processed in the config
             # since sniffers are not tightly coupled with datatypes.
             self.load_datatype_sniffers(root,
@@ -413,7 +413,7 @@ class Registry:
             if not os.path.exists(path):
                 sample_path = "%s.sample" % path
                 if os.path.exists(sample_path):
-                    self.log.debug("Build site file [{}] not found using sample [{}].".format(path, sample_path))
+                    self.log.debug(f"Build site file [{path}] not found using sample [{sample_path}].")
                     path = sample_path
 
             self.build_sites[site_type] = path
@@ -638,7 +638,7 @@ class Registry:
                 else:
                     toolbox.register_tool(converter)
                     if source_datatype not in self.datatype_converters:
-                        self.datatype_converters[source_datatype] = OrderedDict()
+                        self.datatype_converters[source_datatype] = {}
                     self.datatype_converters[source_datatype][target_datatype] = converter
                     if not hasattr(toolbox.app, 'tool_cache') or converter.id in toolbox.app.tool_cache._new_tool_ids:
                         self.log.debug("Loaded converter: %s", converter.id)
@@ -703,13 +703,13 @@ class Registry:
                                     del self.datatypes_by_extension[extension].display_applications[display_app.id]
                             if inherit and (self.datatypes_by_extension[extension], display_app) in self.inherit_display_application_by_class:
                                 self.inherit_display_application_by_class.remove((self.datatypes_by_extension[extension], display_app))
-                            self.log.debug("Deactivated display application '{}' for datatype '{}'.".format(display_app.id, extension))
+                            self.log.debug(f"Deactivated display application '{display_app.id}' for datatype '{extension}'.")
                         else:
                             self.display_applications[display_app.id] = display_app
                             self.datatypes_by_extension[extension].add_display_application(display_app)
                             if inherit and (self.datatypes_by_extension[extension], display_app) not in self.inherit_display_application_by_class:
                                 self.inherit_display_application_by_class.append((self.datatypes_by_extension[extension], display_app))
-                            self.log.debug("Loaded display application '{}' for datatype '{}', inherit={}.".format(display_app.id, extension, inherit))
+                            self.log.debug(f"Loaded display application '{display_app.id}' for datatype '{extension}', inherit={inherit}.")
                 except Exception:
                     if deactivate:
                         self.log.exception("Error deactivating display application (%s)" % config_path)
@@ -720,7 +720,7 @@ class Registry:
             for d_type2, display_app in self.inherit_display_application_by_class:
                 current_app = d_type1.get_display_application(display_app.id, None)
                 if current_app is None and isinstance(d_type1, type(d_type2)):
-                    self.log.debug("Adding inherited display application '{}' to datatype '{}'".format(display_app.id, extension))
+                    self.log.debug(f"Adding inherited display application '{display_app.id}' to datatype '{extension}'")
                     d_type1.add_display_application(display_app)
 
     def reload_display_applications(self, display_application_ids=None):
@@ -756,73 +756,73 @@ class Registry:
         # Default values.
         if not self.datatypes_by_extension:
             self.datatypes_by_extension = {
-                'ab1'           : binary.Ab1(),
-                'axt'           : sequence.Axt(),
-                'bam'           : binary.Bam(),
-                'bed'           : interval.Bed(),
-                'coverage'      : coverage.LastzCoverage(),
-                'customtrack'   : interval.CustomTrack(),
-                'csfasta'       : sequence.csFasta(),
-                'fasta'         : sequence.Fasta(),
-                'eland'         : tabular.Eland(),
-                'fastq'         : sequence.Fastq(),
-                'fastqsanger'   : sequence.FastqSanger(),
-                'gtf'           : interval.Gtf(),
-                'gff'           : interval.Gff(),
-                'gff3'          : interval.Gff3(),
-                'genetrack'     : tracks.GeneTrack(),
-                'h5'            : binary.H5(),
-                'interval'      : interval.Interval(),
-                'laj'           : images.Laj(),
-                'lav'           : sequence.Lav(),
-                'maf'           : sequence.Maf(),
-                'pileup'        : tabular.Pileup(),
-                'qualsolid'     : qualityscore.QualityScoreSOLiD(),
-                'qualsolexa'    : qualityscore.QualityScoreSolexa(),
-                'qual454'       : qualityscore.QualityScore454(),
-                'sam'           : tabular.Sam(),
-                'scf'           : binary.Scf(),
-                'sff'           : binary.Sff(),
-                'tabular'       : tabular.Tabular(),
-                'csv'           : tabular.CSV(),
-                'taxonomy'      : tabular.Taxonomy(),
-                'txt'           : data.Text(),
-                'wig'           : interval.Wiggle(),
-                'xml'           : xml.GenericXml(),
+                'ab1': binary.Ab1(),
+                'axt': sequence.Axt(),
+                'bam': binary.Bam(),
+                'bed': interval.Bed(),
+                'coverage': coverage.LastzCoverage(),
+                'customtrack': interval.CustomTrack(),
+                'csfasta': sequence.csFasta(),
+                'fasta': sequence.Fasta(),
+                'eland': tabular.Eland(),
+                'fastq': sequence.Fastq(),
+                'fastqsanger': sequence.FastqSanger(),
+                'gtf': interval.Gtf(),
+                'gff': interval.Gff(),
+                'gff3': interval.Gff3(),
+                'genetrack': tracks.GeneTrack(),
+                'h5': binary.H5(),
+                'interval': interval.Interval(),
+                'laj': images.Laj(),
+                'lav': sequence.Lav(),
+                'maf': sequence.Maf(),
+                'pileup': tabular.Pileup(),
+                'qualsolid': qualityscore.QualityScoreSOLiD(),
+                'qualsolexa': qualityscore.QualityScoreSolexa(),
+                'qual454': qualityscore.QualityScore454(),
+                'sam': tabular.Sam(),
+                'scf': binary.Scf(),
+                'sff': binary.Sff(),
+                'tabular': tabular.Tabular(),
+                'csv': tabular.CSV(),
+                'taxonomy': tabular.Taxonomy(),
+                'txt': data.Text(),
+                'wig': interval.Wiggle(),
+                'xml': xml.GenericXml(),
             }
             self.mimetypes_by_extension = {
-                'ab1'           : 'application/octet-stream',
-                'axt'           : 'text/plain',
-                'bam'           : 'application/octet-stream',
-                'bed'           : 'text/plain',
-                'customtrack'   : 'text/plain',
-                'csfasta'       : 'text/plain',
-                'eland'         : 'application/octet-stream',
-                'fasta'         : 'text/plain',
-                'fastq'         : 'text/plain',
-                'fastqsanger'   : 'text/plain',
-                'gtf'           : 'text/plain',
-                'gff'           : 'text/plain',
-                'gff3'          : 'text/plain',
-                'h5'            : 'application/octet-stream',
-                'interval'      : 'text/plain',
-                'laj'           : 'text/plain',
-                'lav'           : 'text/plain',
-                'maf'           : 'text/plain',
-                'memexml'       : 'application/xml',
-                'pileup'        : 'text/plain',
-                'qualsolid'     : 'text/plain',
-                'qualsolexa'    : 'text/plain',
-                'qual454'       : 'text/plain',
-                'sam'           : 'text/plain',
-                'scf'           : 'application/octet-stream',
-                'sff'           : 'application/octet-stream',
-                'tabular'       : 'text/plain',
-                'csv'           : 'text/plain',
-                'taxonomy'      : 'text/plain',
-                'txt'           : 'text/plain',
-                'wig'           : 'text/plain',
-                'xml'           : 'application/xml',
+                'ab1': 'application/octet-stream',
+                'axt': 'text/plain',
+                'bam': 'application/octet-stream',
+                'bed': 'text/plain',
+                'customtrack': 'text/plain',
+                'csfasta': 'text/plain',
+                'eland': 'application/octet-stream',
+                'fasta': 'text/plain',
+                'fastq': 'text/plain',
+                'fastqsanger': 'text/plain',
+                'gtf': 'text/plain',
+                'gff': 'text/plain',
+                'gff3': 'text/plain',
+                'h5': 'application/octet-stream',
+                'interval': 'text/plain',
+                'laj': 'text/plain',
+                'lav': 'text/plain',
+                'maf': 'text/plain',
+                'memexml': 'application/xml',
+                'pileup': 'text/plain',
+                'qualsolid': 'text/plain',
+                'qualsolexa': 'text/plain',
+                'qual454': 'text/plain',
+                'sam': 'text/plain',
+                'scf': 'application/octet-stream',
+                'sff': 'application/octet-stream',
+                'tabular': 'text/plain',
+                'csv': 'text/plain',
+                'taxonomy': 'text/plain',
+                'txt': 'text/plain',
+                'wig': 'text/plain',
+                'xml': 'application/xml',
             }
         # super supertype fix for input steps in workflows.
         if 'data' not in self.datatypes_by_extension:
@@ -863,7 +863,7 @@ class Registry:
     def get_converters_by_datatype(self, ext):
         """Returns available converters by source type"""
         if ext not in self._converters_by_datatype:
-            converters = OrderedDict()
+            converters = {}
             source_datatype = type(self.get_datatype_by_extension(ext))
             for ext2, converters_dict in self.datatype_converters.items():
                 converter_datatype = type(self.get_datatype_by_extension(ext2))
@@ -883,7 +883,11 @@ class Registry:
         return None
 
     def find_conversion_destination_for_dataset_by_extensions(self, dataset_or_ext, accepted_formats, converter_safe=True):
-        """Returns ( target_ext, existing converted dataset )"""
+        """
+        returns (direct_match, converted_ext, converted_dataset)
+        - direct match is True iff no the data set already has an accepted format
+        - target_ext becomes None if conversion is not possible (or necesary)
+        """
         if hasattr(dataset_or_ext, "ext"):
             ext = dataset_or_ext.ext
             dataset = dataset_or_ext
@@ -891,10 +895,13 @@ class Registry:
             ext = dataset_or_ext
             dataset = None
 
+        if self.get_datatype_by_extension(ext) is not None and self.get_datatype_by_extension(ext).matches_any(accepted_formats):
+            return True, None, None
+
         for convert_ext in self.get_converters_by_datatype(ext):
             convert_ext_datatype = self.get_datatype_by_extension(convert_ext)
             if convert_ext_datatype is None:
-                self.log.warning("Datatype class not found for extension '{}', which is used as target for conversion from datatype '{}'".format(convert_ext, dataset.ext))
+                self.log.warning(f"Datatype class not found for extension '{convert_ext}', which is used as target for conversion from datatype '{dataset.ext}'")
             elif convert_ext_datatype.matches_any(accepted_formats):
                 converted_dataset = dataset and dataset.get_converted_files_by_type(convert_ext)
                 if converted_dataset:
@@ -903,8 +910,8 @@ class Registry:
                     continue
                 else:
                     ret_data = None
-                return (convert_ext, ret_data)
-        return (None, None)
+                return False, convert_ext, ret_data
+        return False, None, None
 
     def get_composite_extensions(self):
         return [ext for (ext, d_type) in self.datatypes_by_extension.items() if d_type.composite_type is not None]
@@ -919,7 +926,7 @@ class Registry:
                     help_txt = meta_spec.desc
                     if not help_txt or help_txt == meta_name:
                         help_txt = ""
-                    inputs.append('<param type="text" name="{}" label="Set metadata value for &quot;{}&quot;" value="{}" help="{}"/>'.format(meta_name, meta_name, meta_spec.default, help_txt))
+                    inputs.append(f'<param type="text" name="{meta_name}" label="Set metadata value for &quot;{meta_name}&quot;" value="{meta_spec.default}" help="{help_txt}"/>')
             rval[ext] = "\n".join(inputs)
         if 'auto' not in rval and 'txt' in rval:  # need to manually add 'auto' datatype
             rval['auto'] = rval['txt']

@@ -180,6 +180,8 @@ def galactic_job_json(
         kwd = {}
         if "tags" in value:
             kwd["tags"] = value.get("tags")
+        if "dbkey" in value:
+            kwd["dbkey"] = value.get("dbkey")
         if composite_data_raw:
             composite_data = []
             for entry in composite_data_raw:
@@ -338,7 +340,7 @@ class FileLiteralTarget:
         self.path = path
 
     def __str__(self):
-        return "FileLiteralTarget[path={}] with {}".format(self.path, self.properties)
+        return f"FileLiteralTarget[contents={self.contents}] with {self.properties}"
 
 
 class FileUploadTarget:
@@ -350,16 +352,17 @@ class FileUploadTarget:
         self.properties = kwargs
 
     def __str__(self):
-        return "FileUploadTarget[path={}] with {}".format(self.path, self.properties)
+        return f"FileUploadTarget[path={self.path}] with {self.properties}"
 
 
 class ObjectUploadTarget:
 
     def __init__(self, the_object):
         self.object = the_object
+        self.properties = {}
 
     def __str__(self):
-        return "ObjectUploadTarget[object=%s]" % self.object
+        return f"ObjectUploadTarget[object={self.object} with {self.properties}]"
 
 
 class DirectoryUploadTarget:
@@ -393,8 +396,11 @@ def invocation_to_output(invocation, history_id, output_id):
     elif output_id in invocation["output_collections"]:
         collection = invocation["output_collections"][output_id]
         galaxy_output = GalaxyOutput(history_id, "dataset_collection", collection["id"], None)
+    elif output_id in invocation["output_values"]:
+        output_value = invocation["output_values"][output_id]
+        galaxy_output = GalaxyOutput(None, "raw_value", output_value, None)
     else:
-        raise Exception("Failed to find output with label [{}] in [{}]".format(output_id, invocation))
+        raise Exception(f"Failed to find output with label [{output_id}] in [{invocation}]")
 
     return galaxy_output
 
@@ -434,7 +440,9 @@ def output_to_cwl_json(
             with open(dataset_dict["path"]) as f:
                 return json.safe_load(f)
 
-    if output_metadata["history_content_type"] == "dataset":
+    if galaxy_output.history_content_type == "raw_value":
+        return galaxy_output.history_content_id
+    elif output_metadata["history_content_type"] == "dataset":
         ext = output_metadata["file_ext"]
         assert output_metadata["state"] == "ok"
         if ext == "expression.json":

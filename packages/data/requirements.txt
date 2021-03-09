@@ -1,15 +1,17 @@
 galaxy-objectstore
-galaxy-sequence-utils==1.1.3
+galaxy-sequence-utils
 galaxy-util[template]
 bdbag
 bx-python
+contextvars; python_version >= "3.6" and python_version < "3.7"
 h5py
 isa-rwval
 parsley
-numpy<=1.16
+numpy
 pycryptodome
+pydantic
 pysam
-social_auth_core
+social-auth-core[openidconnect]==3.3.0
 SQLAlchemy
 sqlalchemy-migrate
 sqlalchemy-utils

@@ -1,7 +1,6 @@
+import configparser
 import os
 import sys
-
-from six.moves import configparser
 
 import galaxy.config
 from galaxy.tool_shed.galaxy_install import (
@@ -67,7 +66,7 @@ class MigrateToolsApplication(galaxy.config.ConfiguresGalaxyMixin):
 
     @property
     def sa_session(self):
-        return self.model.context.current
+        return self.model.session
 
     def shutdown(self):
         self.object_store.shutdown()

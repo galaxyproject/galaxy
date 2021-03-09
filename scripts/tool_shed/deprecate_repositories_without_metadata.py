@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-from __future__ import print_function
 
+import configparser
 import logging
 import os
 import string
@@ -12,7 +12,6 @@ from optparse import OptionParser
 from time import strftime
 
 import sqlalchemy as sa
-from six.moves import configparser
 from sqlalchemy import and_, distinct, false, not_
 
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib'))
@@ -92,7 +91,7 @@ def send_mail_to_owner(app, owner, email, repositories_deprecated, days=14):
     body += '\n'.join(build_citable_url(url, repository) for repository in repositories_deprecated)
     try:
         galaxy_send_mail(from_address, email, subject, body, app.config)
-        print("# An email has been sent to %s, the owner of %s." % (owner, ', '.join(repository.name for repository in repositories_deprecated)))
+        print("# An email has been sent to {}, the owner of {}.".format(owner, ', '.join(repository.name for repository in repositories_deprecated)))
         return True
     except Exception as e:
         print("# An error occurred attempting to send email: %s" % e)
@@ -130,10 +129,10 @@ def deprecate_repositories(app, cutoff_time, days=14, info_only=False, verbose=F
             .filter(app.model.Repository.table.c.id == repository_id).one()
         owner = repository.user
         if info_only:
-            print('# Repository %s owned by %s would have been deprecated, but info_only was set.' % (repository.name, repository.user.username))
+            print(f'# Repository {repository.name} owned by {repository.user.username} would have been deprecated, but info_only was set.')
         else:
             if verbose:
-                print('# Deprecating repository %s owned by %s.' % (repository.name, owner.username))
+                print(f'# Deprecating repository {repository.name} owned by {owner.username}.')
             if owner.username not in repositories_by_owner:
                 repositories_by_owner[owner.username] = dict(owner=owner, repositories=[])
             repositories_by_owner[owner.username]['repositories'].append(repository)
@@ -152,7 +151,7 @@ def deprecate_repositories(app, cutoff_time, days=14, info_only=False, verbose=F
     print("####################################################################################")
 
 
-class DeprecateRepositoriesApplication(object):
+class DeprecateRepositoriesApplication:
     """Encapsulates the state of a Universe application"""
     def __init__(self, config):
         if config.database_connection is False:

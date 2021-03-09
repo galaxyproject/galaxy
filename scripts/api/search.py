@@ -1,7 +1,6 @@
 """
 Sample script for Galaxy Search API
 """
-from __future__ import print_function
 
 import json
 import sys
@@ -9,7 +8,7 @@ import sys
 import requests
 
 
-class RemoteGalaxy(object):
+class RemoteGalaxy:
 
     def __init__(self, url, api_key):
         self.url = url

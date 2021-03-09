@@ -121,7 +121,7 @@ For PBKDF2 passwords, the following additions to `proftpd.conf` should work:
 # Configuration that handles PBKDF2 encryption
 # Set up mod_sql to authenticate against the Galaxy database
 SQLAuthTypes                    PBKDF2
-SQLPasswordPBKDF2               SHA256 100000 24 
+SQLPasswordPBKDF2               SHA256 100000 24
 SQLPasswordEncoding             base64
  
 # For PBKDF2 authentication

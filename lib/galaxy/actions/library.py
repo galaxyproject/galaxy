@@ -85,7 +85,7 @@ class LibraryActions:
         populate_state(trans, tool.inputs, kwd, state.inputs)
         tool_params = state.inputs
         dataset_upload_inputs = []
-        for input_name, input in tool.inputs.items():
+        for input in tool.inputs.values():
             if input.type == "upload_dataset":
                 dataset_upload_inputs.append(input)
         # Library-specific params
@@ -203,7 +203,7 @@ class LibraryActions:
         if os.path.isfile(path):
             name = os.path.basename(path)
             files_and_folders.append((path, name, None))
-        for basedir, dirs, files in os.walk(line):
+        for basedir, _dirs, files in os.walk(line):
             for file in files:
                 file_path = os.path.abspath(os.path.join(basedir, file))
                 if preserve_dirs:
@@ -214,7 +214,7 @@ class LibraryActions:
         return files_and_folders
 
     def _paths_list(self, params):
-        return [(l.strip(), os.path.abspath(l.strip())) for l in params.get('filesystem_paths', '').splitlines() if l.strip()]
+        return [(line.strip(), os.path.abspath(line.strip())) for line in params.get('filesystem_paths', '').splitlines() if line.strip()]
 
     def _check_path_paste_params(self, params):
         if params.get('filesystem_paths', '') == '':

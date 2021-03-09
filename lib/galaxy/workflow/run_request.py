@@ -6,7 +6,6 @@ from galaxy import (
     exceptions,
     model
 )
-from galaxy.managers import histories
 from galaxy.tools.parameters.meta import expand_workflow_inputs
 from galaxy.workflow.resources import get_resource_mapper_function
 
@@ -89,7 +88,7 @@ def _normalize_inputs(steps, inputs, inputs_by):
         # start to ensure tool state is being preserved and loaded in a type safe way.
         assert isinstance(optional, bool)
         if not inputs_key and default_value is None and not optional:
-            message = "Workflow cannot be run because an expected input step '{}' ({}) is not optional and no input.".format(step.id, step.label)
+            message = f"Workflow cannot be run because an expected input step '{step.id}' ({step.label}) is not optional and no input."
             raise exceptions.MessageException(message)
         if inputs_key:
             normalized_inputs[step.id] = inputs[inputs_key]
@@ -178,7 +177,7 @@ def _flatten_step_params(param_dict, prefix=""):
     new_params = {}
     for key in list(param_dict.keys()):
         if prefix:
-            effective_key = "{}|{}".format(prefix, key)
+            effective_key = f"{prefix}|{key}"
         else:
             effective_key = key
         value = param_dict[key]
@@ -202,7 +201,7 @@ def _get_target_history(trans, workflow, payload, param_keys=None, index=0):
         else:
             history_name = history_param
     if history_id:
-        history_manager = histories.HistoryManager(trans.app)
+        history_manager = trans.app.history_manager
         target_history = history_manager.get_owned(trans.security.decode_id(history_id), trans.user, current_history=trans.history)
     else:
         if history_name:
@@ -482,7 +481,11 @@ def workflow_request_to_run_config(work_request_context, workflow_invocation):
     for input_association in workflow_invocation.input_dataset_collections:
         inputs[input_association.workflow_step_id] = input_association.dataset_collection
     for input_association in workflow_invocation.input_step_parameters:
-        inputs[input_association.workflow_step_id] = input_association.parameter_value
+        parameter_value = input_association.parameter_value
+        inputs[input_association.workflow_step_id] = parameter_value
+        step_label = input_association.workflow_step.label
+        if step_label and step_label not in replacement_dict:
+            replacement_dict[step_label] = str(parameter_value)
     if copy_inputs_to_history is None:
         raise exceptions.InconsistentDatabase("Failed to find copy_inputs_to_history parameter loading workflow_invocation from database.")
     workflow_run_config = WorkflowRunConfig(
@@ -501,5 +504,5 @@ def __decode_id(trans, workflow_id, model_type="workflow"):
     try:
         return trans.security.decode_id(workflow_id)
     except Exception:
-        message = "Malformed {} id ( {} ) specified, unable to decode".format(model_type, workflow_id)
+        message = f"Malformed {model_type} id ( {workflow_id} ) specified, unable to decode"
         raise exceptions.MalformedId(message)

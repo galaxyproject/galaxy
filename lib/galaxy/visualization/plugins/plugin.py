@@ -108,18 +108,18 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
 
     def to_dict(self):
         return {
-            'name'          : self.name,
-            'html'          : self.config.get('name'),
-            'description'   : self.config.get('description'),
-            'logo'          : self.config.get('logo'),
-            'title'         : self.config.get('title'),
-            'target'        : self.config.get('render_target', 'galaxy_main'),
-            'embeddable'    : self.config.get('embeddable', False),
-            'entry_point'   : self.config.get('entry_point'),
-            'settings'      : self.config.get('settings'),
-            'groups'        : self.config.get('groups'),
-            'specs'         : self.config.get('specs'),
-            'href'          : self._get_url()
+            'name': self.name,
+            'html': self.config.get('name'),
+            'description': self.config.get('description'),
+            'logo': self.config.get('logo'),
+            'title': self.config.get('title'),
+            'target': self.config.get('render_target', 'galaxy_main'),
+            'embeddable': self.config.get('embeddable'),
+            'entry_point': self.config.get('entry_point'),
+            'settings': self.config.get('settings'),
+            'groups': self.config.get('groups'),
+            'specs': self.config.get('specs'),
+            'href': self._get_url()
         }
 
     def _get_url(self):
@@ -308,7 +308,7 @@ class ScriptVisualizationPlugin(VisualizationPlugin):
         render_vars['static_url'] = url_for('/%s/' % self.static_path)
         render_vars.update(vars={})
         render_vars.update({
-            "script_attributes" : self.config['entry_point']['attr']
+            "script_attributes": self.config['entry_point']['attr']
         })
         template_filename = os.path.join(self.MAKO_TEMPLATE)
         return trans.fill_template(template_filename, template_lookup=self.template_lookup, **render_vars)

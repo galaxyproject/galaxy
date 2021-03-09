@@ -123,7 +123,7 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
                 continue
             if key in ('name'):
                 if len(val) < MINIMUM_STRING_LENGTH:
-                    raise RequestParameterInvalidException('{} must have at least length of {}'.format(key, MINIMUM_STRING_LENGTH))
+                    raise RequestParameterInvalidException(f'{key} must have at least length of {MINIMUM_STRING_LENGTH}')
                 val = validation.validate_and_sanitize_basestring(key, val)
                 validated_payload[key] = val
             if key in ('misc_info', 'message'):
@@ -136,7 +136,7 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
                 validated_payload[key] = val
             if key in ('genome_build'):
                 if len(val) < MINIMUM_STRING_LENGTH:
-                    raise RequestParameterInvalidException('{} must have at least length of {}'.format(key, MINIMUM_STRING_LENGTH))
+                    raise RequestParameterInvalidException(f'{key} must have at least length of {MINIMUM_STRING_LENGTH}')
                 val = validation.validate_and_sanitize_basestring(key, val)
                 validated_payload[key] = val
             if key in ('tags'):

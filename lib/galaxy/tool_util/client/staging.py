@@ -8,7 +8,6 @@ import json
 import logging
 import os
 
-import six
 import yaml
 
 from galaxy.tool_util.cwl.util import (
@@ -24,10 +23,11 @@ log = logging.getLogger(__name__)
 UPLOAD_TOOL_ID = "upload1"
 LOAD_TOOLS_FROM_PATH = True
 DEFAULT_USE_FETCH_API = True
+DEFAULT_FILE_TYPE = "auto"
+DEFAULT_DBKEY = "?"
 
 
-@six.add_metaclass(abc.ABCMeta)
-class StagingInterace(object):
+class StagingInterace(metaclass=abc.ABCMeta):
     """Client that parses a job input and populates files into the Galaxy API.
 
     Abstract class that must override _post (and optionally other things such
@@ -76,9 +76,12 @@ class StagingInterace(object):
             fetch_payload = None
             if isinstance(upload_target, FileUploadTarget):
                 file_path = upload_target.path
+                file_type = upload_target.properties.get('filetype', None) or DEFAULT_FILE_TYPE
+                dbkey = upload_target.properties.get('dbkey', None) or DEFAULT_DBKEY
                 fetch_payload = _fetch_payload(
                     history_id,
-                    file_type=upload_target.properties.get('filetype', None) or "auto",
+                    file_type=file_type,
+                    dbkey=dbkey,
                     to_posix_lines=to_posix_lines,
                 )
                 name = _file_path_to_name(file_path)
@@ -143,10 +146,12 @@ class StagingInterace(object):
 
             if isinstance(upload_target, FileUploadTarget):
                 file_path = upload_target.path
+                file_type = upload_target.properties.get('filetype', None) or DEFAULT_FILE_TYPE
+                dbkey = upload_target.properties.get('dbkey', None) or DEFAULT_DBKEY
                 upload_payload = _upload_payload(
                     history_id,
-                    file_type=upload_target.properties.get('filetype', None) or "auto",
-                    to_posix_lines=to_posix_lines,
+                    file_type=file_type,
+                    to_posix_lines=dbkey,
                 )
                 name = _file_path_to_name(file_path)
                 upload_payload["inputs"]["files_0|auto_decompress"] = False
@@ -213,9 +218,9 @@ class StagingInterace(object):
 
         if job_path is not None:
             assert job is None
-            with open(job_path, "r") as f:
+            with open(job_path) as f:
                 job = yaml.safe_load(f)
-            job_dir = os.path.dirname(job_path)
+            job_dir = os.path.dirname(os.path.abspath(job_path))
         else:
             assert job is not None
             # Figure out what "." should be here instead.
@@ -271,7 +276,7 @@ def _file_path_to_name(file_path):
     return name
 
 
-def _upload_payload(history_id, tool_id=UPLOAD_TOOL_ID, file_type="auto", dbkey="?", **kwd):
+def _upload_payload(history_id, tool_id=UPLOAD_TOOL_ID, file_type=DEFAULT_FILE_TYPE, dbkey=DEFAULT_DBKEY, **kwd):
     """Adapted from bioblend tools client."""
     payload = {}
     payload["history_id"] = history_id
@@ -291,9 +296,10 @@ def _upload_payload(history_id, tool_id=UPLOAD_TOOL_ID, file_type="auto", dbkey=
     return payload
 
 
-def _fetch_payload(history_id, file_type="auto", dbkey="?", **kwd):
+def _fetch_payload(history_id, file_type=DEFAULT_FILE_TYPE, dbkey=DEFAULT_DBKEY, **kwd):
     element = {
         "ext": file_type,
+        "dbkey": dbkey,
     }
     for arg in ['to_posix_lines', 'space_to_tab']:
         if arg in kwd:

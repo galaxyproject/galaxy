@@ -67,6 +67,11 @@ module.exports = (env = {}, argv = {}) => {
                     loader: "vue-loader",
                 },
                 {
+                    test: /\.mjs$/,
+                    include: /node_modules/,
+                    type: "javascript/auto",
+                },
+                {
                     test: /\.js$/,
                     /*
                      * Babel transpile excludes for:
@@ -178,6 +183,10 @@ module.exports = (env = {}, argv = {}) => {
                     test: /\.(txt|tmpl)$/,
                     loader: "raw-loader",
                 },
+                {
+                    test: /\.worker\.js$/,
+                    use: { loader: "worker-loader" },
+                },
             ],
         },
         node: {
@@ -218,6 +227,13 @@ module.exports = (env = {}, argv = {}) => {
         ],
         devServer: {
             hot: true,
+            // proxy *everything* to the galaxy server
+            // someday, this can be a more limited set -- e.g. `/api`, `/auth`
+            proxy: {
+                "/": {
+                    target: process.env.GALAXY_URL || "http://localhost:8080",
+                },
+            },
         },
     };
 

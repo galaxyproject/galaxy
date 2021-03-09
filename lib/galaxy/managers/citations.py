@@ -5,12 +5,14 @@ import requests
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 
+from galaxy.structured_app import BasicApp
+
 log = logging.getLogger(__name__)
 
 
 class CitationsManager:
 
-    def __init__(self, app):
+    def __init__(self, app: BasicApp) -> None:
         self.app = app
         self.doi_cache = DoiCache(app.config)
 
@@ -67,7 +69,7 @@ def parse_citation(elem, citation_manager):
     try:
         citation = citation_class(elem, citation_manager)
     except Exception as e:
-        raise Exception("Invalid citation of type '{}' with content '{}': {}".format(citation_type, elem.text, e))
+        raise Exception(f"Invalid citation of type '{citation_type}' with content '{elem.text}': {e}")
     return citation
 
 

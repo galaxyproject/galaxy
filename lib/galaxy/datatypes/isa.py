@@ -10,7 +10,6 @@ import os
 import os.path
 import re
 import shutil
-import sys
 import tempfile
 
 # Imports isatab after turning off warnings inside logger settings to avoid pandas warning making uploads fail.
@@ -46,14 +45,6 @@ logger = logging.getLogger(__name__)
 
 # Function for opening correctly a CSV file for csv.reader() for both Python 2 and 3 {{{1
 ################################################################
-
-
-def utf8_text_file_open(path):
-    if sys.version_info[0] < 3:
-        fp = open(path, 'rb')
-    else:
-        fp = open(path, newline='', encoding='utf8')
-    return fp
 
 
 # ISA class {{{1
@@ -274,7 +265,7 @@ class _Isa(data.Data):
                    </body></html>"""
         else:
             html = '<html><body>'
-            html += '<h1>{} {}</h1>'.format(investigation.title, investigation.identifier)
+            html += f'<h1>{investigation.title} {investigation.identifier}</h1>'
 
             # Loop on all studies
             for study in investigation.studies:
@@ -329,8 +320,8 @@ class IsaTab(_Isa):
         # Parse ISA-Tab investigation file
         parser = isatab_meta.InvestigationParser()
         isa_dir = os.path.dirname(filename)
-        fp = utf8_text_file_open(filename)
-        parser.parse(fp)
+        with open(filename, newline='', encoding='utf8') as fp:
+            parser.parse(fp)
         for study in parser.isa.studies:
             s_parser = isatab_meta.LazyStudySampleTableParser(parser.isa)
             s_parser.parse(os.path.join(isa_dir, study.filename))
@@ -360,7 +351,7 @@ class IsaJson(_Isa):
     def _make_investigation_instance(self, filename):
 
         # Parse JSON file
-        fp = utf8_text_file_open(filename)
-        isa = isajson.load(fp)
+        with open(filename, newline='', encoding='utf8') as fp:
+            isa = isajson.load(fp)
 
         return isa

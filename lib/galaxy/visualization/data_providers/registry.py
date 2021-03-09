@@ -32,7 +32,7 @@ class DataProviderRegistry:
                 ENCODEPeak: genome.ENCODEPeakTabixDataProvider,
                 Interval: genome.IntervalTabixDataProvider,
                 ChromatinInteractions: genome.ChromatinInteractionsTabixDataProvider,
-                "default" : genome.TabixDataProvider
+                "default": genome.TabixDataProvider
             },
             "interval_index": genome.IntervalIndexDataProvider,
             "bai": genome.BamDataProvider,

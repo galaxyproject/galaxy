@@ -34,7 +34,7 @@ def get_file_sources():
         file_sources = None
         if os.path.exists("file_sources.json"):
             file_sources_as_dict = None
-            with open("file_sources.json", "r") as f:
+            with open("file_sources.json") as f:
                 file_sources_as_dict = load(f)
             if file_sources_as_dict is not None:
                 file_sources = ConfiguredFileSources.from_dict(file_sources_as_dict)
@@ -61,7 +61,7 @@ def file_err(msg, dataset):
 def safe_dict(d):
     """Recursively clone JSON structure with unicode dictionary keys."""
     if isinstance(d, dict):
-        return dict([(unicodify(k), safe_dict(v)) for k, v in d.items()])
+        return {unicodify(k): safe_dict(v) for k, v in d.items()}
     elif isinstance(d, list):
         return [safe_dict(x) for x in d]
     else:
@@ -108,7 +108,7 @@ def add_file(dataset, registry, output_path):
 
     # Base on the check_upload_content Galaxy config option and on by default, this enables some
     # security related checks on the uploaded content, but can prevent uploads from working in some cases.
-    check_content = dataset.get('check_content' , True)
+    check_content = dataset.get('check_content', True)
 
     # auto_decompress is a request flag that can be swapped off to prevent Galaxy from automatically
     # decompressing archive files before sniffing.
@@ -127,9 +127,6 @@ def add_file(dataset, registry, output_path):
     # See if we have an empty file
     if not os.path.exists(dataset.path):
         raise UploadProblemException('Uploaded temporary file (%s) does not exist.' % dataset.path)
-
-    if check_content and not os.path.getsize(dataset.path) > 0:
-        raise UploadProblemException('The uploaded file (%s) is empty' % dataset.path)
 
     stdout, ext, datatype, is_binary, converted_path = handle_upload(
         registry=registry,

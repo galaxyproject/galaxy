@@ -51,8 +51,8 @@ class TabularData(data.Text):
     def set_meta(self, dataset, **kwd):
         raise NotImplementedError
 
-    def set_peek(self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None):
-        super().set_peek(dataset, line_count=line_count, WIDTH=WIDTH, skipchars=skipchars, line_wrap=False)
+    def set_peek(self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None, line_wrap=False, **kwd):
+        super().set_peek(dataset, line_count=line_count, WIDTH=WIDTH, skipchars=skipchars, line_wrap=line_wrap)
         if dataset.metadata.comment_lines:
             dataset.blurb = "{}, {} comments".format(dataset.blurb, util.commaify(str(dataset.metadata.comment_lines)))
 
@@ -305,7 +305,7 @@ class Tabular(TabularData):
                 if column_type2 == column_type:
                     return False
             # neither column type was found in our ordered list, this cannot happen
-            raise ValueError("Tried to compare unknown column types: {} and {}".format(column_type1, column_type2))
+            raise ValueError(f"Tried to compare unknown column types: {column_type1} and {column_type2}")
 
         def is_int(column_text):
             # Don't allow underscores in numeric literals (PEP 515)
@@ -538,8 +538,8 @@ class Sam(Tabular):
                 comment_lines = 0
                 if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
                     # If the dataset is larger than optional_metadata, just count comment lines.
-                    for l in dataset_fh:
-                        if l.startswith('@'):
+                    for line in dataset_fh:
+                        if line.startswith('@'):
                             comment_lines += 1
                         else:
                             # No more comments, and the file is too big to look at the whole thing. Give up.
@@ -547,7 +547,7 @@ class Sam(Tabular):
                             break
                 else:
                     # Otherwise, read the whole thing and set num data lines.
-                    for i, l in enumerate(dataset_fh):
+                    for i, l in enumerate(dataset_fh):  # noqa: B007
                         if l.startswith('@'):
                             comment_lines += 1
                     dataset.metadata.data_lines = i + 1 - comment_lines
@@ -555,6 +555,7 @@ class Sam(Tabular):
             dataset.metadata.columns = 12
             dataset.metadata.column_types = ['str', 'int', 'str', 'int', 'int', 'str', 'str', 'int', 'int', 'str', 'str', 'str']
 
+    @staticmethod
     def merge(split_files, output_file):
         """
         Multiple SAM files may each have headers. Since the headers should all be the same, remove
@@ -565,8 +566,6 @@ class Sam(Tabular):
         if len(split_files) > 1:
             cmd = ['egrep', '-v', '-h', '^@'] + split_files[1:] + ['>>', output_file]
             subprocess.check_call(cmd, shell=True)
-
-    merge = staticmethod(merge)
 
     # Dataproviders
     # sam does not use '#' to indicate comments/headers - we need to strip out those headers from the std. providers
@@ -745,13 +744,12 @@ class BaseVcf(Tabular):
 
     def set_meta(self, dataset, **kwd):
         super().set_meta(dataset, **kwd)
-        source = open(dataset.file_name)
-
-        # Skip comments.
         line = None
-        for line in source:
-            if not line.startswith('##'):
-                break
+        with compression_utils.get_fileobj(dataset.file_name) as fh:
+            # Skip comments.
+            for line in fh:
+                if not line.startswith('##'):
+                    break
 
         if line and line.startswith('#'):
             # Found header line, get sample names.
@@ -817,7 +815,7 @@ class VcfGz(BaseVcf, binary.Binary):
             return binascii.hexlify(last28) == b'1f8b08040000000000ff0600424302001b0003000000000000000000'
 
     def set_meta(self, dataset, **kwd):
-        super(BaseVcf, self).set_meta(dataset, **kwd)
+        super().set_meta(dataset, **kwd)
         """ Creates the index for the VCF file. """
         # These metadata values are not accessible by users, always overwrite
         index_file = dataset.metadata.tabix_index
@@ -1239,18 +1237,20 @@ class MatrixMarket(TabularData):
     suitable for representing sparse matrices. Only nonzero entries need
     be encoded, and the coordinates of each are given explicitly.
 
-    The tabular file format is defined as follows::
+    The tabular file format is defined as follows:
 
-    %%MatrixMarket matrix coordinate real general <--- header line
-    %                                             <--+
-    % comments                                       |-- 0 or more comment lines
-    %                                             <--+
-        M  N  L                                   <--- rows, columns, entries
-        I1  J1  A(I1, J1)                         <--+
-        I2  J2  A(I2, J2)                            |
-        I3  J3  A(I3, J3)                            |-- L lines
-            . . .                                    |
-        IL JL  A(IL, JL)                          <--+
+    .. code-block::
+
+        %%MatrixMarket matrix coordinate real general <--- header line
+        %                                             <--+
+        % comments                                       |-- 0 or more comment lines
+        %                                             <--+
+            M  N  L                                   <--- rows, columns, entries
+            I1  J1  A(I1, J1)                         <--+
+            I2  J2  A(I2, J2)                            |
+            I3  J3  A(I3, J3)                            |-- L lines
+                . . .                                    |
+            IL JL  A(IL, JL)                          <--+
 
     Indices are 1-based, i.e. A(1,1) is the first element.
 
@@ -1276,25 +1276,107 @@ class MatrixMarket(TabularData):
         if dataset.has_data():
             # If the dataset is larger than optional_metadata, just count comment lines.
             with open(dataset.file_name) as dataset_fh:
+                line = ''
+                data_lines = 0
                 comment_lines = 0
-                if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
-                    # If the dataset is larger than optional_metadata, just count comment lines.
-                    for l in dataset_fh:
-                        if l.startswith('%'):
-                            comment_lines += 1
-                        else:
-                            # No more comments, and the file is too big to look at the whole thing. Give up.
-                            dataset.metadata.data_lines = None
-                            break
-                else:
-                    for i, l in enumerate(dataset_fh):
-                        if l.startswith('%'):
-                            comment_lines += 1
-                    dataset.metadata.data_lines = i + 1 - comment_lines
-                if ' ' in l:
+                # If the dataset is larger than optional_metadata, just count comment lines.
+                count_comments_only = self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize
+                for line in dataset_fh:
+                    if line.startswith('%'):
+                        comment_lines += 1
+                    elif count_comments_only:
+                        data_lines = None
+                        break
+                    else:
+                        data_lines += 1
+                if ' ' in line:
                     dataset.metadata.delimiter = ' '
                 else:
                     dataset.metadata.delimiter = '\t'
             dataset.metadata.comment_lines = comment_lines
+            dataset.metadata.data_lines = data_lines
             dataset.metadata.columns = 3
             dataset.metadata.column_types = ['int', 'int', 'float']
+
+
+@build_sniff_from_prefix
+class CMAP(TabularData):
+    MetadataElement(name="cmap_version", default='0.2', desc="version of cmap", readonly=True, visible=True, optional=False, no_value='0.2')
+    MetadataElement(name="label_channels", default=1, desc="the number of label channels", readonly=True, visible=True, optional=False, no_value=1)
+    MetadataElement(name="nickase_recognition_site_1", default=[], desc="comma separated list of label motif recognition sequences for channel 1", readonly=True, visible=True, optional=False, no_value=[])
+    MetadataElement(name="number_of_consensus_nanomaps", default=0, desc="the total number of consensus genome maps in the CMAP file", readonly=True, visible=True, optional=False, no_value=0)
+    MetadataElement(name="nickase_recognition_site_2", default=[], desc="comma separated list of label motif recognition sequences for channel 2", readonly=True, visible=True, optional=True, no_value=[])
+    MetadataElement(name="channel_1_color", default=[], desc="channel 1 color", readonly=True, visible=True, optional=True, no_value=[])
+    MetadataElement(name="channel_2_color", default=[], desc="channel 2 color", readonly=True, visible=True, optional=True, no_value=[])
+    """
+    # CMAP File Version:    2.0
+    # Label Channels:   1
+    # Nickase Recognition Site 1:   cttaag;green_01
+    # Nickase Recognition Site 2:   cctcagc;red_01
+    # Number of Consensus Maps: 459
+    # Values corresponding to intervals (StdDev, HapDelta) refer to the interval between current site and next site
+    #h  CMapId  ContigLength    NumSites    SiteID  LabelChannel    Position    StdDev  Coverage    Occurrence  ChimQuality SegDupL SegDupR FragileL    FragileR    OutlierFrac ChimNorm    Mask
+    #f  int float   int int int float   float   float   float   float   float   float   float   float   float   float   Hex
+    182 58474736.7  10235   1   1   58820.9 35.4    13.5    13.5    -1.00   -1.00   -1.00   3.63    0.00    0.00    -1.00   0
+    182 58474736.7  10235   1   1   58820.9 35.4    13.5    13.5    -1.00   -1.00   -1.00   3.63    0.00    0.00    -1.00   0
+    182 58474736.7  10235   1   1   58820.9 35.4    13.5    13.5    -1.00   -1.00   -1.00   3.63    0.00    0.00    -1.00   0
+    """
+    file_ext = "cmap"
+
+    def sniff_prefix(self, file_prefix):
+        return file_prefix.startswith('# CMAP File Version:')
+
+    def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=7, **kwd):
+        if dataset.has_data():
+            with open(dataset.file_name) as dataset_fh:
+                comment_lines = 0
+                column_headers = None
+                cleaned_column_types = None
+                number_of_columns = 0
+                for i, line in enumerate(dataset_fh):
+                    line = line.strip('\n')
+                    if line.startswith('#'):
+
+                        if line.startswith('#h'):
+
+                            column_headers = line.split("\t")[1:]
+                        elif line.startswith('#f'):
+                            cleaned_column_types = []
+                            for column_type in line.split('\t')[1:]:
+                                if column_type == 'Hex':
+                                    cleaned_column_types.append('str')
+                                else:
+                                    cleaned_column_types.append(column_type)
+                        comment_lines += 1
+                        fields = line.split('\t')
+                        if len(fields) == 2:
+                            if fields[0] == '# CMAP File Version:':
+                                dataset.metadata.cmap_version = fields[1]
+                            elif fields[0] == '# Label Channels:':
+                                dataset.metadata.label_channels = int(fields[1])
+                            elif fields[0] == '# Nickase Recognition Site 1:':
+                                fields2 = fields[1].split(';')
+                                if len(fields2) == 2:
+                                    dataset.metadata.channel_1_color = fields2[1]
+                                dataset.metadata.nickase_recognition_site_1 = fields2[0].split(',')
+                            elif fields[0] == '# Number of Consensus Maps:':
+                                dataset.metadata.number_of_consensus_nanomaps = int(fields[1])
+                            elif fields[0] == '# Nickase Recognition Site 2:':
+                                fields2 = fields[1].split(';')
+                                if len(fields2) == 2:
+                                    dataset.metadata.channel_2_color = fields2[1]
+                                dataset.metadata.nickase_recognition_site_2 = fields2[0].split(',')
+                    elif self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
+                        # If the dataset is larger than optional_metadata, just count comment lines.
+                        # No more comments, and the file is too big to look at the whole thing. Give up.
+                        dataset.metadata.data_lines = None
+                        break
+                    elif i == comment_lines + 1:
+                        number_of_columns = len(line.split('\t'))
+                if not (self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize):
+                    dataset.metadata.data_lines = i + 1 - comment_lines
+            dataset.metadata.comment_lines = comment_lines
+            dataset.metadata.column_names = column_headers
+            dataset.metadata.column_types = cleaned_column_types
+            dataset.metadata.columns = number_of_columns
+            dataset.metadata.delimiter = '\t'

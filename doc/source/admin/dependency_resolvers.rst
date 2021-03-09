@@ -200,7 +200,7 @@ Conda Dependency Resolver
 
 The ``conda`` directive can be used to configure a conda dependency resolver.
 This resolver can be configured with the following options. For a very detailed
-discussion of Conda dependency resolution, check out the :ref:`Conda FAQ <conda_faq>`.
+discussion of Conda dependency resolution, check out the :doc:`Conda FAQ <conda_faq>`.
 
 prefix
     The conda_prefix used to locate dependencies in (default: ``<tool_dependency_dir>/_conda``).
@@ -236,3 +236,7 @@ copy_dependencies
     linking them when creating per job environments. This should be considered somewhat
     deprecated because Conda will do this as needed for newer versions of Conda - such
     as the version targeted with Galaxy 17.01+.
+
+read_only
+    If ``True``, Galaxy will not attempt to install or uninstall requirement sets into
+    this environment.

@@ -15,9 +15,9 @@ class RepositoryRevisionsController(BaseAPIController):
     """RESTful controller for interactions with tool shed repository revisions."""
 
     def __get_value_mapper(self, trans):
-        value_mapper = {'id' : trans.security.encode_id,
-                        'repository_id' : trans.security.encode_id,
-                        'user_id' : trans.security.encode_id}
+        value_mapper = {'id': trans.security.encode_id,
+                        'repository_id': trans.security.encode_id,
+                        'user_id': trans.security.encode_id}
         return value_mapper
 
     @web.legacy_expose_api_anonymous
@@ -86,7 +86,7 @@ class RepositoryRevisionsController(BaseAPIController):
                 tool_shed, name, owner, changeset_revision = rd_tup[0:4]
                 repository_dependency = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
                 if repository_dependency is None:
-                    log.dbug('Cannot locate repository dependency {} owned by {}.'.format(name, owner))
+                    log.dbug(f'Cannot locate repository dependency {name} owned by {owner}.')
                     continue
                 repository_dependency_id = trans.security.encode_id(repository_dependency.id)
                 repository_dependency_repository_metadata = \

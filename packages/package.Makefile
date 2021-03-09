@@ -91,3 +91,6 @@ push-release:
 	echo "Makefile doesn't manually push release."
 
 release: release-local push-release
+
+mypy:
+	mypy $(SOURCE_DIR) $(TEST_DIR)

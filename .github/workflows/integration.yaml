@@ -6,14 +6,15 @@ env:
 jobs:
   test:
     name: Test
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        python-version: [3.7]
+        python-version: ['3.7']
         subset: ['upload_datatype', 'extended_metadata', 'kubernetes', 'not (upload_datatype or extended_metadata or kubernetes)']
     services:
       postgres:
-        image: postgres:11
+        image: postgres:13
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -25,39 +26,51 @@ jobs:
         ports:
           - 5672:5672
     steps:
-    - name: Prune unused docker image, volumes and containers
-      run: docker system prune -a -f
-    - name: Clean dotnet folder for space
-      if: matrix.subset == 'kubernetes'
-      run: rm -Rf /usr/share/dotnet
-    - name: Setup Minikube
-      if: matrix.subset == 'kubernetes'
-      id: minikube
-      uses: CodingNagger/minikube-setup-action@v1.0.3
-      with:
-        minikube-version: "1.9.0-0_amd64"
-    - name: Launch Minikube
-      if: matrix.subset == 'kubernetes'
-      run: eval ${{ steps.minikube.outputs.launcher }}
-    - name: Check pods
-      if: matrix.subset == 'kubernetes'
-      run: |
-        kubectl get pods
-    - uses: actions/checkout@v2
-      with:
-        path: 'galaxy root'
-    - uses: actions/setup-python@v1
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Cache pip dir
-      uses: actions/cache@v1
-      id: pip-cache
-      with:
-        path: ~/.cache/pip
-        key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
-    - name: Install ffmpeg
-      run: sudo apt-get update && sudo apt-get install ffmpeg -y
-      if: matrix.subset == 'upload_datatype'
-    - name: Run tests
-      run: './run_tests.sh -integration test/integration -- -k "${{ matrix.subset }}"'
-      working-directory: 'galaxy root'
+      - name: Prune unused docker image, volumes and containers
+        run: docker system prune -a -f
+      - name: Clean dotnet folder for space
+        if: matrix.subset == 'kubernetes'
+        run: rm -Rf /usr/share/dotnet
+      - name: Setup Minikube
+        if: matrix.subset == 'kubernetes'
+        id: minikube
+        uses: CodingNagger/minikube-setup-action@v1.0.3
+        with:
+          minikube-version: "1.9.0-0_amd64"
+      - name: Launch Minikube
+        if: matrix.subset == 'kubernetes'
+        run: eval ${{ steps.minikube.outputs.launcher }}
+      - name: Check pods
+        if: matrix.subset == 'kubernetes'
+        run: |
+          kubectl get pods
+      - uses: actions/checkout@v2
+        with:
+          path: 'galaxy root'
+      - uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Cache pip dir
+        uses: actions/cache@v1
+        id: pip-cache
+        with:
+          path: ~/.cache/pip
+          key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get -y install ffmpeg
+        if: matrix.subset == 'upload_datatype'
+      - name: Run tests
+        if: matrix.subset != 'kubernetes'
+        run: './run_tests.sh -integration test/integration -- -k "${{ matrix.subset }}"'
+        working-directory: 'galaxy root'
+      - name: Run tests
+        if: matrix.subset == 'kubernetes'
+        run: |
+          . .ci/minikube-test-setup/start_services.sh
+          ./run_tests.sh -integration test/integration -- -k "${{ matrix.subset }}"
+        working-directory: 'galaxy root'
+      - uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: Integration test results (${{ matrix.python-version }}, ${{ matrix.subset }})
+          path: 'galaxy root/run_integration_tests.html'

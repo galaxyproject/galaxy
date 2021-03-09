@@ -11,14 +11,13 @@ All chromInfo is placed in a path with the convention
 Usage:
 python build_chrom_db.py dbpath/ [builds_file]
 """
-from __future__ import print_function
 
 import fileinput
 import os
 import sys
+from urllib.parse import urlencode
 
 import requests
-from six.moves.urllib.parse import urlencode
 
 import parse_builds  # noqa: I100,I202
 
@@ -78,5 +77,5 @@ if __name__ == "__main__":
                 for chrominfo in getchrominfo("http://genome-test.gi.ucsc.edu/cgi-bin/hgTables?", build):
                     print("\t".join(chrominfo), file=outfile)
         except Exception as e:
-            print("Failed to retrieve %s: %s" % (build, e))
+            print(f"Failed to retrieve {build}: {e}")
             os.remove(outfile_name)

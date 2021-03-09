@@ -546,7 +546,7 @@ class AdminToolshed(AdminGalaxy):
         clause_list = []
         for tsr_id in tsr_ids:
             clause_list.append(trans.install_model.ToolShedRepository.table.c.id == tsr_id)
-        query = trans.install_model.context.current.query(trans.install_model.ToolShedRepository).filter(or_(*clause_list))
+        query = trans.install_model.session.query(trans.install_model.ToolShedRepository).filter(or_(*clause_list))
         return trans.fill_template('admin/tool_shed_repository/monitor_repository_installation.mako',
                                    tool_shed_repositories=tool_shed_repositories,
                                    query=query,
@@ -978,7 +978,7 @@ class AdminToolshed(AdminGalaxy):
         clause_list = []
         for tsr_id in tsr_ids:
             clause_list.append(trans.install_model.ToolShedRepository.table.c.id == tsr_id)
-        query = trans.install_model.context.current.query(trans.install_model.ToolShedRepository) \
+        query = trans.install_model.session.query(trans.install_model.ToolShedRepository) \
                                            .filter(or_(*clause_list))
         return trans.fill_template('admin/tool_shed_repository/monitor_repository_installation.mako',
                                    encoded_kwd=encoded_kwd,
@@ -1202,7 +1202,7 @@ class AdminToolshed(AdminGalaxy):
                 uninstalled, error_message = tool_dependency_util.remove_tool_dependency(trans.app, tool_dependency)
                 if error_message:
                     errors = True
-                    message = '{}  {}'.format(message, error_message)
+                    message = f'{message}  {error_message}'
             if errors:
                 message = "Error attempting to uninstall tool dependencies: %s" % message
                 status = 'error'

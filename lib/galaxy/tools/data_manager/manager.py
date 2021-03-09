@@ -2,10 +2,10 @@ import errno
 import json
 import logging
 import os
-from collections import OrderedDict
-
+from typing import Dict
 
 from galaxy import util
+from galaxy.structured_app import StructuredApp
 from galaxy.tools.data import TabularToolDataTable
 from galaxy.util.template import fill_template
 
@@ -17,10 +17,13 @@ DEFAULT_VALUE_TRANSLATION_TYPE = 'template'
 
 
 class DataManagers:
-    def __init__(self, app, xml_filename=None):
+    data_managers: Dict[str, 'DataManager']
+    managed_data_tables: Dict[str, 'DataManager']
+
+    def __init__(self, app: StructuredApp, xml_filename=None):
         self.app = app
-        self.data_managers = OrderedDict()
-        self.managed_data_tables = OrderedDict()
+        self.data_managers = {}
+        self.managed_data_tables = {}
         self.tool_path = None
         self._reload_count = 0
         self.filename = xml_filename or self.app.config.data_manager_config_file
@@ -43,7 +46,7 @@ class DataManagers:
                 raise
             return  # default config option and it doesn't exist, which is fine
         except Exception as e:
-            log.error('There was an error parsing your Data Manager config file "{}": {}'.format(xml_filename, e))
+            log.error(f'There was an error parsing your Data Manager config file "{xml_filename}": {e}')
             return  # we are not able to load any data managers
         root = tree.getroot()
         if root.tag != 'data_managers':
@@ -123,7 +126,7 @@ class DataManager:
         self.version = self.DEFAULT_VERSION
         self.guid = None
         self.tool = None
-        self.data_tables = OrderedDict()
+        self.data_tables = {}
         self.output_ref_by_data_table = {}
         self.move_by_data_table_column = {}
         self.value_translation_by_data_table_column = {}
@@ -171,7 +174,7 @@ class DataManager:
             data_table_name = data_table_elem.get("name")
             assert data_table_name is not None, "A name is required for a data table entry"
             if data_table_name not in self.data_tables:
-                self.data_tables[data_table_name] = OrderedDict()
+                self.data_tables[data_table_name] = {}
             output_elem = data_table_elem.find('output')
             if output_elem is not None:
                 for column_elem in output_elem.findall('column'):
@@ -254,7 +257,7 @@ class DataManager:
             try:
                 output_dict = json.loads(open(output_dataset.file_name).read())
             except Exception as e:
-                log.warning('Error reading DataManagerTool json for "{}": {}'.format(output_name, e))
+                log.warning(f'Error reading DataManagerTool json for "{output_name}": {e}')
                 continue
             data_manager_dicts[output_name] = output_dict
             for key, value in output_dict.items():
@@ -267,7 +270,7 @@ class DataManager:
         for data_table_name in self.data_tables.keys():
             data_table_values = data_tables_dict.pop(data_table_name, None)
             if not data_table_values:
-                log.warning('No values for data table "{}" were returned by the data manager "{}".'.format(data_table_name, self.id))
+                log.warning(f'No values for data table "{data_table_name}" were returned by the data manager "{self.id}".')
                 continue  # next data table
             data_table_remove_values = None
             if isinstance(data_table_values, dict):
@@ -297,7 +300,7 @@ class DataManager:
                 data_table_remove_values = [data_table_remove_values] if data_table_remove_values else []
             for data_table_row in data_table_values:
                 data_table_value = dict(**data_table_row)  # keep original values here
-                for name, value in data_table_row.items():  # FIXME: need to loop through here based upon order listed in data_manager config
+                for name in data_table_row.keys():  # FIXME: need to loop through here based upon order listed in data_manager config
                     if name in output_ref_values:
                         self.process_move(data_table_name, name, output_ref_values[name].extra_files_path, **data_table_value)
                         data_table_value[name] = self.process_value_translation(data_table_name, name, **data_table_value)
@@ -339,7 +342,7 @@ class DataManager:
             for data_table_name, data_table_values in data_tables_dict.items():
                 # tool returned extra data table entries, but data table was not declared in data manager
                 # do not add these values, but do provide messages
-                log.warning('The data manager "{}" returned an undeclared data table "{}" with new entries "{}". These entries will not be created. Please confirm that an entry for "{}" exists in your "{}" file.'.format(self.id, data_table_name, data_table_values, data_table_name, self.data_managers.filename))
+                log.warning(f'The data manager "{self.id}" returned an undeclared data table "{data_table_name}" with new entries "{data_table_values}". These entries will not be created. Please confirm that an entry for "{data_table_name}" exists in your "{self.data_managers.filename}" file.')
 
     def process_move(self, data_table_name, column_name, source_base_path, relative_symlinks=False, **kwd):
         if data_table_name in self.move_by_data_table_column and column_name in self.move_by_data_table_column[data_table_name]:

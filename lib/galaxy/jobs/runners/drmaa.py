@@ -106,7 +106,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         native_spec = url.split('/')[2]
         if native_spec:
             params = dict(nativeSpecification=native_spec)
-            log.debug("Converted URL '{}' to destination runner=drmaa, params={}".format(url, params))
+            log.debug(f"Converted URL '{url}' to destination runner=drmaa, params={params}")
             return JobDestination(runner='drmaa', params=params)
         else:
             log.debug("Converted URL '%s' to destination runner=drmaa" % url)
@@ -165,8 +165,8 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             return
 
         # job was deleted while we were preparing it
-        if job_wrapper.get_state() == model.Job.states.DELETED:
-            log.debug("(%s) Job deleted by user before it entered the queue" % galaxy_id_tag)
+        if job_wrapper.get_state() in (model.Job.states.DELETED, model.Job.states.STOPPED):
+            log.debug("(%s) Job deleted/stopped by user before it entered the queue", galaxy_id_tag)
             if job_wrapper.cleanup_job in ("always", "onsuccess"):
                 job_wrapper.cleanup()
             return
@@ -218,7 +218,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             if external_job_id is None:
                 job_wrapper.fail("(%s) could not queue job" % galaxy_id_tag)
                 return
-        log.info("({}) queued as {}".format(galaxy_id_tag, external_job_id))
+        log.info(f"({galaxy_id_tag}) queued as {external_job_id}")
 
         # store runner information for tracking if Galaxy restarts
         job_wrapper.set_external_id(external_job_id)
@@ -241,17 +241,18 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         does not determine if a job was terminal, but the implementation
         in the subclasses is supposed to do this.)
         """
-        if drmaa_state == drmaa.JobState.FAILED:
-            if ajs.job_wrapper.get_state() != model.Job.states.DELETED:
+        job_state = ajs.job_wrapper.get_state()
+        if drmaa_state == drmaa.JobState.FAILED and job_state != model.Job.states.STOPPED:
+            if job_state != model.Job.states.DELETED:
                 ajs.stop_job = False
                 ajs.fail_message = "The cluster DRM system terminated this job"
                 self.work_queue.put((self.fail_job, ajs))
-        elif drmaa_state == drmaa.JobState.DONE:
+        elif drmaa_state == drmaa.JobState.DONE or job_state == model.Job.states.STOPPED:
             # External metadata processing for external runjobs
             external_metadata = not asbool(ajs.job_wrapper.job_destination.params.get("embed_metadata_in_job", True))
             if external_metadata:
                 self._handle_metadata_externally(ajs.job_wrapper, resolve_requirements=True)
-            if ajs.job_wrapper.get_state() != model.Job.states.DELETED:
+            if job_state != model.Job.states.DELETED:
                 self.work_queue.put((self.finish_job, ajs))
 
     def check_watched_item(self, ajs, new_watched):
@@ -260,13 +261,17 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         that could happen in this process. to be called from check_watched_items()
         returns the state or None if exceptions occurred
         in the latter case the job is appended to new_watched if a
+
         1 drmaa.InternalException,
         2 drmaa.InvalidJobExceptionnot, or
         3 drmaa.DrmCommunicationException occurred
+
         (which causes the job to be tested again in the next iteration of check_watched_items)
+
         - the job is finished as errored if any other exception occurs
         - the job is finished OK or errored after the maximum number of retries
           depending on the exception
+
         Note that None is returned in all cases where the loop in check_watched_items
         is to be continued
         """
@@ -274,7 +279,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         galaxy_id_tag = ajs.job_wrapper.get_id_tag()
         state = None
         try:
-            assert external_job_id not in (None, 'None'), '({}/{}) Invalid job id'.format(galaxy_id_tag, external_job_id)
+            assert external_job_id not in (None, 'None'), f'({galaxy_id_tag}/{external_job_id}) Invalid job id'
             state = self.ds.job_status(external_job_id)
             # Reset exception retries
             for retry_exception in RETRY_EXCEPTIONS_LOWER:
@@ -306,8 +311,8 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             return None
         except Exception:
             # so we don't kill the monitor thread
-            log.exception("({}/{}) unable to check job status".format(galaxy_id_tag, external_job_id))
-            log.warning("({}/{}) job will now be errored".format(galaxy_id_tag, external_job_id))
+            log.exception(f"({galaxy_id_tag}/{external_job_id}) unable to check job status")
+            log.warning(f"({galaxy_id_tag}/{external_job_id}) job will now be errored")
             ajs.fail_message = "Cluster could not complete job"
             self.work_queue.put((self.fail_job, ajs))
             return None
@@ -361,13 +366,13 @@ class DRMAAJobRunner(AsynchronousJobRunner):
                 cmd = shlex.split(kill_script)
                 cmd.extend([str(ext_id), str(self.userid)])
                 commands.execute(cmd)
-            log.info("({}/{}) Removed from DRM queue at user's request".format(job.id, ext_id))
+            log.info(f"({job.id}/{ext_id}) Removed from DRM queue at user's request")
         except drmaa.InvalidJobException:
-            log.exception("({}/{}) User killed running job, but it was already dead".format(job.id, ext_id))
+            log.exception(f"({job.id}/{ext_id}) User killed running job, but it was already dead")
         except commands.CommandLineException as e:
             log.error("({}/{}) User killed running job, but command execution failed: {}".format(job.id, ext_id, unicodify(e)))
         except Exception:
-            log.exception("({}/{}) User killed running job, but error encountered removing from DRM queue".format(job.id, ext_id))
+            log.exception(f"({job.id}/{ext_id}) User killed running job, but error encountered removing from DRM queue")
 
     def recover(self, job, job_wrapper):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
@@ -380,13 +385,13 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         ajs.command_line = job.get_command_line()
         ajs.job_wrapper = job_wrapper
         ajs.job_destination = job_wrapper.job_destination
-        if job.state == model.Job.states.RUNNING:
-            log.debug("({}/{}) is still in running state, adding to the DRM queue".format(job.id, job.get_job_runner_external_id()))
+        if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
+            log.debug(f"({job.id}/{job.get_job_runner_external_id()}) is still in {job.state} state, adding to the DRM queue")
             ajs.old_state = drmaa.JobState.RUNNING
             ajs.running = True
             self.monitor_queue.put(ajs)
         elif job.get_state() == model.Job.states.QUEUED:
-            log.debug("({}/{}) is still in DRM queued state, adding to the DRM queue".format(job.id, job.get_job_runner_external_id()))
+            log.debug(f"({job.id}/{job.get_job_runner_external_id()}) is still in DRM queued state, adding to the DRM queue")
             ajs.old_state = drmaa.JobState.QUEUED_ACTIVE
             ajs.running = False
             self.monitor_queue.put(ajs)
@@ -395,10 +400,10 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         """ Stores the content of a DRMAA JobTemplate object in a file as a JSON string.
         Path is hard-coded, but it's no worse than other path in this module.
         Uses Galaxy's JobID, so file is expected to be unique."""
-        filename = "{}/{}.jt_json".format(self.app.config.cluster_files_directory, job_wrapper.get_id_tag())
+        filename = f"{self.app.config.cluster_files_directory}/{job_wrapper.get_id_tag()}.jt_json"
         with open(filename, 'w+') as fp:
             json.dump(jt, fp)
-        log.debug('({}) Job script for external submission is: {}'.format(job_wrapper.job_id, filename))
+        log.debug(f'({job_wrapper.job_id}) Job script for external submission is: {filename}')
         return filename
 
     def external_runjob(self, external_runjob_script, jobtemplate_filename, username):

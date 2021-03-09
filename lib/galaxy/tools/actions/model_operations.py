@@ -1,5 +1,4 @@
 import logging
-from collections import OrderedDict
 
 from galaxy.tools.actions import (
     DefaultToolAction,
@@ -22,7 +21,8 @@ class ModelOperationToolAction(DefaultToolAction):
 
         tool.check_inputs_ready(inp_data, inp_dataset_collections)
 
-    def execute(self, tool, trans, incoming={}, set_output_hid=False, overwrite=True, history=None, job_params=None, execution_cache=None, collection_info=None, **kwargs):
+    def execute(self, tool, trans, incoming=None, set_output_hid=False, overwrite=True, history=None, job_params=None, execution_cache=None, collection_info=None, job_callback=None, **kwargs):
+        incoming = incoming or {}
         trans.check_user_activation()
 
         if execution_cache is None:
@@ -37,7 +37,7 @@ class ModelOperationToolAction(DefaultToolAction):
         # wrapped params are used by change_format action and by output.label; only perform this wrapping once, as needed
         wrapped_params = self._wrapped_params(trans, tool, incoming)
 
-        out_data = OrderedDict()
+        out_data = {}
         input_collections = {k: v[0][0] for k, v in inp_dataset_collections.items()}
         output_collections = OutputCollections(
             trans,
@@ -60,18 +60,20 @@ class ModelOperationToolAction(DefaultToolAction):
         self._produce_outputs(trans, tool, out_data, output_collections, incoming=incoming, history=history, tags=preserved_tags)
         self._record_inputs(trans, tool, job, incoming, inp_data, inp_dataset_collections)
         self._record_outputs(job, out_data, output_collections)
+        if job_callback:
+            job_callback(job)
         job.state = job.states.OK
         trans.sa_session.add(job)
-        trans.sa_session.flush()  # ensure job.id are available
 
         # Queue the job for execution
         # trans.app.job_manager.job_queue.put( job.id, tool.id )
         # trans.log_event( "Added database job action to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
         log.info("Calling produce_outputs, tool is %s" % tool)
-        return job, out_data
+        return job, out_data, history
 
     def _produce_outputs(self, trans, tool, out_data, output_collections, incoming, history, tags):
-        tool.produce_outputs(trans, out_data, output_collections, incoming, history=history, tags=tags)
+        tag_handler = trans.app.tag_handler.create_tag_handler_session()
+        tool.produce_outputs(trans, out_data, output_collections, incoming, history=history, tags=tags, tag_handler=tag_handler)
         mapped_over_elements = output_collections.dataset_collection_elements
         if mapped_over_elements:
             for name, value in out_data.items():
@@ -80,4 +82,3 @@ class ModelOperationToolAction(DefaultToolAction):
                     mapped_over_elements[name].hda = value
 
         trans.sa_session.add_all(out_data.values())
-        trans.sa_session.flush()

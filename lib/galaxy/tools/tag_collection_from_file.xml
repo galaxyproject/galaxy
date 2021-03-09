@@ -6,6 +6,9 @@
     <type class="TagFromFileTool" module="galaxy.tools" />
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>
+    <edam_operations>
+        <edam_operation>operation_3096</edam_operation>
+    </edam_operations>
     <inputs>
         <param type="data_collection" name="input" label="Input Collection" help="A tabular file indicating how to tag collection elements."/>
         <param type="data" name="tags" format="tabular" label="Tag collection elements according to this file"/>

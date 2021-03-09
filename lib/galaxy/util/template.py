@@ -32,8 +32,7 @@ def create_compiler_class(module_code):
     class CustomCompilerClass(FixedModuleCodeCompiler):
         pass
 
-    setattr(CustomCompilerClass, 'module_code', module_code)
-
+    CustomCompilerClass.module_code = module_code
     return CustomCompilerClass
 
 
@@ -78,7 +77,7 @@ def fill_template(template_text,
         raise first_exception or e
     t = klass(searchList=[context])
     try:
-        return unicodify(t)
+        return unicodify(t, log_exception=False)
     except NotFound as e:
         if first_exception is None:
             first_exception = e

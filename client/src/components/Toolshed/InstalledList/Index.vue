@@ -33,9 +33,7 @@
                     <template v-slot:cell(name)="row">
                         <b-link href="#" role="button" class="font-weight-bold" @click="row.toggleDetails">
                             <div v-if="!isLatest(row.item)">
-                                <b-badge variant="danger" class="mb-2">
-                                    Newer version available!
-                                </b-badge>
+                                <b-badge variant="danger" class="mb-2"> Newer version available! </b-badge>
                             </div>
                             <div class="name">{{ row.item.name }}</div>
                         </b-link>
@@ -49,9 +47,7 @@
                     No matching entries found for: <span class="font-weight-bold">{{ this.filter }}</span
                     >.
                 </div>
-                <div v-if="showNotAvailable">
-                    No installed repositories found.
-                </div>
+                <div v-if="showNotAvailable">No installed repositories found.</div>
             </div>
         </div>
     </div>
@@ -123,7 +119,7 @@ export default {
         load() {
             this.loading = true;
             this.services
-                .getInstalledRepositories()
+                .getInstalledRepositories({ selectLatest: true })
                 .then((repositories) => {
                     this.repositories = repositories;
                     this.nRepositories = repositories.length;

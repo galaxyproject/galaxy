@@ -1,20 +1,69 @@
-# -*- coding: utf-8 -*-
+import collections
+import os
 import unittest
 import uuid
 
-from six import text_type
+import pytest
 from sqlalchemy import inspect
+from sqlalchemy_utils import create_database
 
 import galaxy.datatypes.registry
 import galaxy.model
 import galaxy.model.mapping as mapping
+from galaxy.model.security import GalaxyRBACAgent
 
 datatypes_registry = galaxy.datatypes.registry.Registry()
 datatypes_registry.load_datatypes()
 galaxy.model.set_datatypes_registry(datatypes_registry)
 
+DB_URI = "sqlite:///:memory:"
+# docker run -e POSTGRES_USER=galaxy -p 5432:5432 -d postgres
+# GALAXY_TEST_UNIT_MAPPING_URI_POSTGRES_BASE='postgresql://galaxy@localhost:5432/' pytest test/unit/data/test_galaxy_mapping.py
+skip_if_not_postgres_base = pytest.mark.skipif(
+    not os.environ.get('GALAXY_TEST_UNIT_MAPPING_URI_POSTGRES_BASE'),
+    reason="GALAXY_TEST_UNIT_MAPPING_URI_POSTGRES_BASE not set"
+)
 
-class MappingTests(unittest.TestCase):
+
+class BaseModelTestCase(unittest.TestCase):
+
+    @classmethod
+    def _db_uri(cls):
+        return DB_URI
+
+    @classmethod
+    def setUpClass(cls):
+        # Start the database and connect the mapping
+        cls.model = mapping.init("/tmp", cls._db_uri(), create_tables=True, object_store=MockObjectStore())
+        assert cls.model.engine is not None
+
+    @classmethod
+    def query(cls, type):
+        return cls.model.session.query(type)
+
+    @classmethod
+    def persist(cls, *args, **kwargs):
+        session = cls.session()
+        flush = kwargs.get('flush', True)
+        for arg in args:
+            session.add(arg)
+            if flush:
+                session.flush()
+        if kwargs.get('expunge', not flush):
+            cls.expunge()
+        return arg  # Return last or only arg.
+
+    @classmethod
+    def session(cls):
+        return cls.model.session
+
+    @classmethod
+    def expunge(cls):
+        cls.model.session.flush()
+        cls.model.session.expunge_all()
+
+
+class MappingTests(BaseModelTestCase):
 
     def test_annotations(self):
         model = self.model
@@ -128,7 +177,7 @@ class MappingTests(unittest.TestCase):
     def test_display_name(self):
 
         def assert_display_name_converts_to_unicode(item, name):
-            assert isinstance(item.get_display_name(), text_type)
+            assert isinstance(item.get_display_name(), str)
             assert item.get_display_name() == name
 
         ldda = self.model.LibraryDatasetDatasetAssociation(name='ldda_name')
@@ -147,12 +196,42 @@ class MappingTests(unittest.TestCase):
         assert_display_name_converts_to_unicode(library_folder, 'library_folder')
 
         history = self.model.History(
-            name=u'Hello₩◎ґʟⅾ'
+            name='Hello₩◎ґʟⅾ'
         )
 
-        assert isinstance(history.name, text_type)
-        assert isinstance(history.get_display_name(), text_type)
-        assert history.get_display_name() == u'Hello₩◎ґʟⅾ'
+        assert isinstance(history.name, str)
+        assert isinstance(history.get_display_name(), str)
+        assert history.get_display_name() == 'Hello₩◎ґʟⅾ'
+
+    def test_hda_to_library_dataset_dataset_association(self):
+        u = self.model.User(email="mary@example.com", password="password")
+        hda = self.model.HistoryDatasetAssociation(name='hda_name')
+        self.persist(hda)
+        trans = collections.namedtuple('trans', 'user')
+        target_folder = self.model.LibraryFolder(name='library_folder')
+        ldda = hda.to_library_dataset_dataset_association(
+            trans=trans(user=u),
+            target_folder=target_folder,
+        )
+        assert target_folder.item_count == 1
+        assert ldda.id
+        assert ldda.library_dataset.id
+        assert ldda.library_dataset_id
+        assert ldda.library_dataset.library_dataset_dataset_association
+        assert ldda.library_dataset.library_dataset_dataset_association_id
+        library_dataset_id = ldda.library_dataset_id
+        replace_dataset = ldda.library_dataset
+        new_ldda = hda.to_library_dataset_dataset_association(
+            trans=trans(user=u),
+            target_folder=target_folder,
+            replace_dataset=replace_dataset
+        )
+        assert new_ldda.id != ldda.id
+        assert new_ldda.library_dataset_id == library_dataset_id
+        assert new_ldda.library_dataset.library_dataset_dataset_association_id == new_ldda.id
+        assert len(new_ldda.library_dataset.expired_datasets) == 1
+        assert new_ldda.library_dataset.expired_datasets[0] == ldda
+        assert target_folder.item_count == 1
 
     def test_tags(self):
         model = self.model
@@ -223,7 +302,7 @@ class MappingTests(unittest.TestCase):
 
         u = model.User(email="mary2@example.com", password="password")
         lf = model.LibraryFolder(name="RootFolder")
-        l = model.Library(name="Library1", root_folder=lf)
+        library = model.Library(name="Library1", root_folder=lf)
         ld1 = model.LibraryDataset()
         ld2 = model.LibraryDataset()
 
@@ -233,7 +312,7 @@ class MappingTests(unittest.TestCase):
         c1 = model.DatasetCollection(collection_type="pair")
         dce1 = model.DatasetCollectionElement(collection=c1, element=ldda1)
         dce2 = model.DatasetCollectionElement(collection=c1, element=ldda2)
-        self.persist(u, l, lf, ld1, ld2, c1, ldda1, ldda2, dce1, dce2)
+        self.persist(u, library, lf, ld1, ld2, c1, ldda1, ldda2, dce1, dce2)
 
         # TODO:
         # loaded_dataset_collection = self.query( model.DatasetCollection ).filter( model.DatasetCollection.name == "LibraryCollectionTest1" ).first()
@@ -299,6 +378,13 @@ class MappingTests(unittest.TestCase):
         assert hist0.name == "History 1"
         assert hist1.name == "History 2b"
         # gvk TODO need to ad test for GalaxySessions, but not yet sure what they should look like.
+
+    def test_metadata_spec(self):
+        metadata = dict(chromCol=1, startCol=2, endCol=3)
+        d = self.model.HistoryDatasetAssociation(extension="interval", metadata=metadata, sa_session=self.model.session)
+        assert d.metadata.chromCol == 1
+        assert d.metadata.anyAttribute is None
+        assert 'items' not in d.metadata
 
     def test_jobs(self):
         model = self.model
@@ -491,6 +577,13 @@ class MappingTests(unittest.TestCase):
 
         workflow = workflow_from_steps([workflow_step_1, workflow_step_2])
         self.persist(workflow)
+        workflow_id = workflow.id
+
+        annotation = model.WorkflowStepAnnotationAssociation()
+        annotation.annotation = "Test Step Annotation"
+        annotation.user = user
+        annotation.workflow_step = workflow_step_1
+        self.persist(annotation)
 
         assert workflow_step_1.id is not None
         h1 = model.History(name="WorkflowHistory1", user=user)
@@ -527,7 +620,7 @@ class MappingTests(unittest.TestCase):
         self.expunge()
 
         loaded_invocation = self.query(model.WorkflowInvocation).get(workflow_invocation.id)
-        assert loaded_invocation.uuid == invocation_uuid, "%s != %s" % (loaded_invocation.uuid, invocation_uuid)
+        assert loaded_invocation.uuid == invocation_uuid, f"{loaded_invocation.uuid} != {invocation_uuid}"
         assert loaded_invocation
         assert loaded_invocation.history.id == history_id
 
@@ -544,42 +637,155 @@ class MappingTests(unittest.TestCase):
 
         assert subworkflow_invocation_assoc.subworkflow_invocation.history.id == history_id
 
+        loaded_workflow = self.query(model.Workflow).get(workflow_id)
+        assert len(loaded_workflow.steps[0].annotations) == 1
+        copied_workflow = loaded_workflow.copy(user=user)
+        annotations = copied_workflow.steps[0].annotations
+        assert len(annotations) == 1
+
+    def test_role_creation(self):
+        security_agent = GalaxyRBACAgent(self.model)
+
+        def check_private_role(private_role, email):
+            assert private_role.type == self.model.Role.types.PRIVATE
+            assert len(private_role.users) == 1
+            assert private_role.name == email
+            assert private_role.description == "Private Role for " + email
+
+        email = "rule_user_1@example.com"
+        u = self.model.User(email=email, password="password")
+        self.persist(u)
+
+        role = security_agent.get_private_user_role(u)
+        assert role is None
+        role = security_agent.create_private_user_role(u)
+        assert role is not None
+        check_private_role(role, email)
+
+        email = "rule_user_2@example.com"
+        u = self.model.User(email=email, password="password")
+        self.persist(u)
+        role = security_agent.get_private_user_role(u)
+        assert role is None
+        role = security_agent.get_private_user_role(u, auto_create=True)
+        assert role is not None
+        check_private_role(role, email)
+
+        # make sure re-running auto_create doesn't break things
+        role = security_agent.get_private_user_role(u, auto_create=True)
+        assert role is not None
+        check_private_role(role, email)
+
+    def test_private_share_role(self):
+        security_agent = GalaxyRBACAgent(self.model)
+
+        u_from, u_to, u_other = self._three_users("private_share_role")
+
+        h = self.model.History(name="History for Annotation", user=u_from)
+        d1 = self.model.HistoryDatasetAssociation(extension="txt", history=h, create_dataset=True, sa_session=self.model.session)
+        self.persist(h, d1)
+
+        security_agent.privately_share_dataset(d1.dataset, [u_to])
+        assert security_agent.can_access_dataset(u_to.all_roles(), d1.dataset)
+        assert not security_agent.can_access_dataset(u_other.all_roles(), d1.dataset)
+
+    def test_make_dataset_public(self):
+        security_agent = GalaxyRBACAgent(self.model)
+        u_from, u_to, u_other = self._three_users("make_dataset_public")
+
+        h = self.model.History(name="History for Annotation", user=u_from)
+        d1 = self.model.HistoryDatasetAssociation(extension="txt", history=h, create_dataset=True, sa_session=self.model.session)
+        self.persist(h, d1)
+
+        security_agent.privately_share_dataset(d1.dataset, [u_to])
+
+        security_agent.make_dataset_public(d1.dataset)
+        assert security_agent.can_access_dataset(u_to.all_roles(), d1.dataset)
+        assert security_agent.can_access_dataset(u_other.all_roles(), d1.dataset)
+
+    def test_set_all_dataset_permissions(self):
+        security_agent = GalaxyRBACAgent(self.model)
+        u_from, _, u_other = self._three_users("set_all_perms")
+
+        h = self.model.History(name="History for Annotation", user=u_from)
+        d1 = self.model.HistoryDatasetAssociation(extension="txt", history=h, create_dataset=True, sa_session=self.model.session)
+        self.persist(h, d1)
+
+        role = security_agent.get_private_user_role(u_from, auto_create=True)
+        access_action = security_agent.permitted_actions.DATASET_ACCESS.action
+        manage_action = security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action
+        permissions = {access_action: [role], manage_action: [role]}
+        assert security_agent.can_access_dataset(u_other.all_roles(), d1.dataset)
+        security_agent.set_all_dataset_permissions(d1.dataset, permissions)
+        assert not security_agent.allow_action(u_other.all_roles(), security_agent.permitted_actions.DATASET_ACCESS, d1.dataset)
+        assert not security_agent.can_access_dataset(u_other.all_roles(), d1.dataset)
+
+    def test_can_manage_privately_shared_dataset(self):
+        security_agent = GalaxyRBACAgent(self.model)
+        u_from, u_to, u_other = self._three_users("can_manage_dataset")
+
+        h = self.model.History(name="History for Prevent Sharing", user=u_from)
+        d1 = self.model.HistoryDatasetAssociation(extension="txt", history=h, create_dataset=True, sa_session=self.model.session)
+        self.persist(h, d1)
+
+        self._make_owned(security_agent, u_from, d1)
+        assert security_agent.can_manage_dataset(u_from.all_roles(), d1.dataset)
+        security_agent.privately_share_dataset(d1.dataset, [u_to])
+        assert not security_agent.can_manage_dataset(u_to.all_roles(), d1.dataset)
+
+    def test_can_manage_private_dataset(self):
+        security_agent = GalaxyRBACAgent(self.model)
+        u_from, _, u_other = self._three_users("can_manage_dataset_ps")
+
+        h = self.model.History(name="History for Prevent Sharing", user=u_from)
+        d1 = self.model.HistoryDatasetAssociation(extension="txt", history=h, create_dataset=True, sa_session=self.model.session)
+        self.persist(h, d1)
+
+        self._make_private(security_agent, u_from, d1)
+        assert security_agent.can_manage_dataset(u_from.all_roles(), d1.dataset)
+        assert not security_agent.can_manage_dataset(u_other.all_roles(), d1.dataset)
+
+    def _three_users(self, suffix):
+        email_from = f"user_{suffix}e1@example.com"
+        email_to = f"user_{suffix}e2@example.com"
+        email_other = f"user_{suffix}e3@example.com"
+
+        u_from = self.model.User(email=email_from, password="password")
+        u_to = self.model.User(email=email_to, password="password")
+        u_other = self.model.User(email=email_other, password="password")
+        self.persist(u_from, u_to, u_other)
+        return u_from, u_to, u_other
+
+    def _make_private(self, security_agent, user, hda):
+        role = security_agent.get_private_user_role(user, auto_create=True)
+        access_action = security_agent.permitted_actions.DATASET_ACCESS.action
+        manage_action = security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action
+        permissions = {access_action: [role], manage_action: [role]}
+        security_agent.set_all_dataset_permissions(hda.dataset, permissions)
+
+    def _make_owned(self, security_agent, user, hda):
+        role = security_agent.get_private_user_role(user, auto_create=True)
+        manage_action = security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action
+        permissions = {manage_action: [role]}
+        security_agent.set_all_dataset_permissions(hda.dataset, permissions)
+
     def new_hda(self, history, **kwds):
         return history.add_dataset(self.model.HistoryDatasetAssociation(create_dataset=True, sa_session=self.model.session, **kwds))
 
-    @classmethod
-    def setUpClass(cls):
-        # Start the database and connect the mapping
-        cls.model = mapping.init("/tmp", "sqlite:///:memory:", create_tables=True, object_store=MockObjectStore())
-        assert cls.model.engine is not None
+
+@skip_if_not_postgres_base
+class PostgresMappingTests(MappingTests):
 
     @classmethod
-    def query(cls, type):
-        return cls.model.session.query(type)
-
-    @classmethod
-    def persist(cls, *args, **kwargs):
-        session = cls.session()
-        flush = kwargs.get('flush', True)
-        for arg in args:
-            session.add(arg)
-            if flush:
-                session.flush()
-        if kwargs.get('expunge', not flush):
-            cls.expunge()
-        return arg  # Return last or only arg.
-
-    @classmethod
-    def session(cls):
-        return cls.model.session
-
-    @classmethod
-    def expunge(cls):
-        cls.model.session.flush()
-        cls.model.session.expunge_all()
+    def _db_uri(cls):
+        base = os.environ.get("GALAXY_TEST_UNIT_MAPPING_URI_POSTGRES_BASE")
+        dbname = "gxtest" + str(uuid.uuid4())
+        postgres_url = base + dbname
+        create_database(postgres_url)
+        return postgres_url
 
 
-class MockObjectStore(object):
+class MockObjectStore:
 
     def __init__(self):
         pass

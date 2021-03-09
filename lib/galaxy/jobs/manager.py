@@ -9,6 +9,7 @@ from sqlalchemy.sql.expression import null
 from galaxy.exceptions import HandlerAssignmentError, ToolExecutionError
 from galaxy.jobs import handler, NoopQueue
 from galaxy.model import Job
+from galaxy.structured_app import StructuredApp
 from galaxy.web_stack.message import JobHandlerMessage
 
 log = logging.getLogger(__name__)
@@ -18,7 +19,9 @@ class JobManager:
     """
     Highest level interface to job management.
     """
-    def __init__(self, app):
+    job_handler: handler.JobHandlerI
+
+    def __init__(self, app: StructuredApp):
         self.app = app
         self.job_lock = False
         if self.app.is_job_handler:
@@ -54,7 +57,7 @@ class JobManager:
 
         Due to the nature of some handler assignment methods which are wholly DB-based, the enqueue method will flush
         the job. Callers who create the job typically should not flush the job before handing it off to ``enqueue()``.
-        If a job handler cannot be assigned, :exception:`ToolExecutionError` is raised.
+        If a job handler cannot be assigned, py:class:`ToolExecutionError` is raised.
 
         :param job:     Job to enqueue.
         :type job:      Instance of :class:`galaxy.model.Job`.
@@ -62,7 +65,7 @@ class JobManager:
         :type tool:     Instance of :class:`galaxy.tools.Tool`.
 
         :raises ToolExecutionError: if a handler was unable to be assigned.
-        returns: str or None -- Handler ID, tag, or pool assigned to the job.
+        :returns: str or None -- Handler ID, tag, or pool assigned to the job.
         """
         tool_id = None
         configured_handler = None
@@ -110,7 +113,7 @@ class NoopManager:
         pass
 
 
-class NoopHandler:
+class NoopHandler(handler.JobHandlerI):
     """
     Implements the JobHandler interface but does nothing
     """

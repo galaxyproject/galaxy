@@ -11,6 +11,7 @@ import sys
 import tempfile
 import weakref
 from collections import OrderedDict
+from collections.abc import Mapping
 from os.path import abspath
 
 from sqlalchemy.orm import object_session
@@ -56,7 +57,7 @@ class Statement:
             statement.target(element, *args, **kwargs)  # statement.target is MetadataElementSpec, element is a Datatype class
 
 
-class MetadataCollection:
+class MetadataCollection(Mapping):
     """
     MetadataCollection is not a collection at all, but rather a proxy
     to the real metadata which is stored as a Dictionary. This class
@@ -87,16 +88,25 @@ class MetadataCollection:
         return self.parent.datatype.metadata_spec
 
     def __iter__(self):
-        return self.parent._metadata.__iter__()
+        yield from self.spec.keys()
 
-    def get(self, key, default=None):
+    def __getitem__(self, key):
         try:
-            return self.__getattr__(key) or default
-        except Exception:
-            return default
+            self.__getattribute__(key)
+        except AttributeError:
+            try:
+                return self.__getattr__(key)
+            except Exception:
+                raise KeyError
+        # `key` is an attribute of this instance, not some metadata: raise
+        # KeyError to prevent e.g. `'items' in dataset.metadata` from returning
+        # True
+        # Not doing this would also break Cheetah's NameMapper._valueForName()
+        # since dataset.metadata['items'] would be None
+        raise KeyError
 
-    def items(self):
-        return iter([(k, self.get(k)) for k in self.spec.keys()])
+    def __len__(self):
+        return len(self.spec)
 
     def __str__(self):
         return dict(self.items()).__str__()
@@ -112,6 +122,8 @@ class MetadataCollection:
             return self.spec[name].wrap(self.spec[name].default, object_session(self.parent))
         if name in self.parent._metadata:
             return self.parent._metadata[name]
+        # Instead of raising an AttributeError for non-existing metadata, we return None
+        return None
 
     def __setattr__(self, name, value):
         if name == "parent":
@@ -129,7 +141,24 @@ class MetadataCollection:
             log.info("Attempted to delete invalid key '%s' from MetadataCollection" % name)
 
     def element_is_set(self, name):
-        return bool(self.parent._metadata.get(name, False))
+        """
+        check if the meta data with the given name is set, i.e.
+
+        - if the such a metadata actually exists and
+        - if its value differs from no_value
+
+        :param name: the name of the metadata element
+        :returns: True if the value differes from the no_value
+                  False if its equal of if no metadata with the name is specified
+        """
+        try:
+            meta_val = self.parent._metadata[name]
+        except KeyError:
+            log.debug("no metadata with name %s found" % (name))
+            return False
+
+        meta_spec = self.parent.metadata.spec[name]
+        return meta_val != meta_spec.no_value
 
     def get_metadata_parameter(self, name, **kwd):
         if name in self.spec:
@@ -156,11 +185,11 @@ class MetadataCollection:
     def from_JSON_dict(self, filename=None, path_rewriter=None, json_dict=None):
         dataset = self.parent
         if filename is not None:
-            log.debug('loading metadata from file for: {} {}'.format(dataset.__class__.__name__, dataset.id))
+            log.debug(f'loading metadata from file for: {dataset.__class__.__name__} {dataset.id}')
             with open(filename) as fh:
                 JSONified_dict = json.load(fh)
         elif json_dict is not None:
-            log.debug('loading metadata from dict for: {} {}'.format(dataset.__class__.__name__, dataset.id))
+            log.debug(f'loading metadata from dict for: {dataset.__class__.__name__} {dataset.id}')
             if isinstance(json_dict, str):
                 JSONified_dict = json.loads(json_dict)
             elif isinstance(json_dict, dict):
@@ -199,7 +228,6 @@ class MetadataCollection:
             dataset.validated_state_message = JSONified_dict['__validated_state_message__']
 
     def to_JSON_dict(self, filename=None):
-        # galaxy.model.customtypes.json_encoder.encode()
         meta_dict = {}
         dataset_meta_dict = self.parent._metadata
         for name, spec in self.spec.items():
@@ -211,10 +239,11 @@ class MetadataCollection:
             meta_dict['__validated_state__'] = dataset_meta_dict['__validated_state__']
         if '__validated_state_message__' in dataset_meta_dict:
             meta_dict['__validated_state_message__'] = dataset_meta_dict['__validated_state_message__']
+        encoded_meta_dict = galaxy.model.custom_types.json_encoder.encode(meta_dict)
         if filename is None:
-            return json.dumps(meta_dict)
+            return encoded_meta_dict
         with open(filename, 'wt+') as fh:
-            json.dump(meta_dict, fh)
+            fh.write(encoded_meta_dict)
 
     def __getstate__(self):
         # cannot pickle a weakref item (self._parent), when
@@ -524,7 +553,10 @@ class FileParameter(MetadataParameter):
             return None
         if isinstance(value, galaxy.model.MetadataFile) or isinstance(value, MetadataTempFile):
             return value
-        return session.query(galaxy.model.MetadataFile).get(value)
+        if isinstance(value, int):
+            return session.query(galaxy.model.MetadataFile).get(value)
+        else:
+            return session.query(galaxy.model.MetadataFile).filter_by(uuid=value).one()
 
     def make_copy(self, value, target_context, source_context):
         value = self.wrap(value, object_session(target_context.parent))
@@ -535,8 +567,11 @@ class FileParameter(MetadataParameter):
             # so this would ultimately get overwritten anyway.
             new_value = galaxy.model.MetadataFile(dataset=target_context.parent, name=self.spec.name)
             object_session(target_context.parent).add(new_value)
-            object_session(target_context.parent).flush()
-            shutil.copy(value.file_name, new_value.file_name)
+            try:
+                shutil.copy(value.file_name, new_value.file_name)
+            except AssertionError:
+                object_session(target_context.parent).flush()
+                shutil.copy(value.file_name, new_value.file_name)
             return self.unwrap(new_value)
         return None
 
@@ -547,6 +582,8 @@ class FileParameter(MetadataParameter):
             # as in extended_metadata mode, so there we just accept MetadataFile.
             # We will only serialize MetadataFile in this mode and not push to the database, so this is OK.
             value = value.id or value
+            if not isinstance(value, int) and object_session(value):
+                value = str(value.uuid)
         return value
 
     def from_external_value(self, value, parent, path_rewriter=None):

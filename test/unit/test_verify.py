@@ -1,5 +1,4 @@
 import collections
-import os
 import tempfile
 
 import pytest
@@ -24,10 +23,9 @@ TestFile = collections.namedtuple('TestFile', 'value path')
 def test_file_list():
     files = []
     for b, ext in [(F1, '.txt'), (F2, '.txt'), (F3, '.pdf'), (F4, '.txt'), (MULTILINE_MATCH, '.txt')]:
-        fd, path = tempfile.mkstemp(suffix=ext)
-        with os.fdopen(fd, 'wb') as out:
+        with tempfile.NamedTemporaryFile(mode='wb', suffix=ext, delete=False) as out:
             out.write(b)
-        files.append(TestFile(b, path))
+        files.append(TestFile(b, out.name))
     return files
 
 

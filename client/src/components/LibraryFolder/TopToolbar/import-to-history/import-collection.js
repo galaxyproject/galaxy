@@ -1,11 +1,16 @@
 import { getGalaxyInstance } from "app";
+import { getAppRoot } from "onload/loadConfig";
 import { Toast } from "ui/toast";
 import mod_library_model from "mvc/library/library-model";
 import _ from "underscore";
 import Backbone from "backbone";
-import LIST_CREATOR from "mvc/collection/list-collection-creator";
-import PAIR_CREATOR from "mvc/collection/pair-collection-creator";
-import PAIRED_CREATOR from "mvc/collection/list-of-pairs-collection-creator";
+import axios from "axios";
+import LIST_CREATOR from "components/Collections/ListCollectionCreator";
+import LIST_CREATOR_MODAL from "components/Collections/ListCollectionCreatorModal";
+import PAIR_CREATOR from "components/Collections/PairCollectionCreator";
+import PAIR_CREATOR_MODAL from "components/Collections/PairCollectionCreatorModal";
+import PAIRED_CREATOR from "components/Collections/PairedListCollectionCreatorModal";
+import RULE_CREATOR_MODAL from "components/Collections/RuleBasedCollectionCreatorModal";
 import HDCA_MODEL from "mvc/history/hdca-model";
 
 var ImportCollectionModal = Backbone.View.extend({
@@ -27,6 +32,9 @@ var ImportCollectionModal = Backbone.View.extend({
     fetchUserHistories: function () {
         this.histories = new mod_library_model.GalaxyHistories();
         return this.histories.fetch();
+    },
+    createNewHistory: function (new_history_name) {
+        return axios.post(`${getAppRoot()}api/histories`, { name: new_history_name });
     },
     showCollectionSelect: function (e) {
         const Galaxy = getGalaxyInstance();
@@ -106,7 +114,7 @@ var ImportCollectionModal = Backbone.View.extend({
         let creationFn;
         this.collectionType = this.modal.$el.find("#library-collection-type-select").val();
         if (this.collectionType === "list") {
-            creator_class = LIST_CREATOR.ListCollectionCreator;
+            creator_class = LIST_CREATOR;
             creationFn = (elements, name, hideSourceItems) => {
                 elements = elements.map((element) => ({
                     id: element.id,
@@ -115,13 +123,13 @@ var ImportCollectionModal = Backbone.View.extend({
                 }));
                 return this.createHDCA(elements, this.collectionType, name, hideSourceItems, history_id);
             };
-            LIST_CREATOR.collectionCreatorModal(
+            LIST_CREATOR_MODAL.collectionCreatorModal(
                 collection_elements,
                 { creationFn: creationFn, title: modal_title, defaultHideSourceItems: true },
                 creator_class
             );
         } else if (this.collectionType === "paired") {
-            creator_class = PAIR_CREATOR.PairCollectionCreator;
+            creator_class = PAIR_CREATOR;
             creationFn = (elements, name, hideSourceItems) => {
                 elements = [
                     { name: "forward", src: "ldda", id: elements[0].id },
@@ -129,7 +137,7 @@ var ImportCollectionModal = Backbone.View.extend({
                 ];
                 return this.createHDCA(elements, this.collectionType, name, hideSourceItems, history_id);
             };
-            LIST_CREATOR.collectionCreatorModal(
+            PAIR_CREATOR_MODAL.collectionCreatorModal(
                 collection_elements,
                 { creationFn: creationFn, title: modal_title, defaultHideSourceItems: true },
                 creator_class
@@ -149,7 +157,7 @@ var ImportCollectionModal = Backbone.View.extend({
             const creationFn = (elements, collectionType, name, hideSourceItems) => {
                 return this.createHDCA(elements, collectionType, name, hideSourceItems, history_id);
             };
-            LIST_CREATOR.ruleBasedCollectionCreatorModal(collection_elements, "library_datasets", "collections", {
+            RULE_CREATOR_MODAL.ruleBasedCollectionCreatorModal(collection_elements, "library_datasets", "collections", {
                 creationFn: creationFn,
                 defaultHideSourceItems: true,
             });
@@ -161,7 +169,8 @@ var ImportCollectionModal = Backbone.View.extend({
             collection_type: collectionType,
             history_id: history_id,
             name: name,
-            hide_source_items: hideSourceItems || false,
+            hide_source_items: hideSourceItems,
+            copy_elements: !hideSourceItems,
             element_identifiers: elementIdentifiers,
         });
         return hdca.save(options);

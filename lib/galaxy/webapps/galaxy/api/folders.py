@@ -8,15 +8,17 @@ from galaxy import (
     util
 )
 from galaxy.managers import folders, roles
+from galaxy.structured_app import StructuredApp
 from galaxy.web import expose_api
-from galaxy.webapps.base.controller import BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems
+from galaxy.webapps.base.controller import UsesLibraryMixin, UsesLibraryMixinItems
+from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
 
 
-class FoldersController(BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems):
+class FoldersController(BaseGalaxyAPIController, UsesLibraryMixin, UsesLibraryMixinItems):
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
         self.folder_manager = folders.FolderManager()
         self.role_manager = roles.RoleManager(app)
@@ -59,10 +61,12 @@ class FoldersController(BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIte
         :param  encoded_parent_folder_id:      (required) the parent folder's id
         :type   encoded_parent_folder_id:      an encoded id string (should be prefixed by 'F')
         :param   payload: dictionary structure containing:
+
             :param  name:                          (required) the name of the new folder
             :type   name:                          str
             :param  description:                   the description of the new folder
             :type   description:                   str
+
         :type       dictionary
         :returns:   information about newly created folder, notably including ID
         :rtype:     dictionary
@@ -140,6 +144,7 @@ class FoldersController(BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIte
         :param  encoded_folder_id:      the encoded id of the folder to set the permissions of
         :type   encoded_folder_id:      an encoded id string
         :param   payload: dictionary structure containing:
+
             :param  action:            (required) describes what action should be performed
             :type   action:            string
             :param  add_ids[]:         list of Role.id defining roles that should have add item permission on the folder
@@ -148,6 +153,7 @@ class FoldersController(BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIte
             :type   manage_ids[]:      string or list
             :param  modify_ids[]:      list of Role.id defining roles that should have modify permission on the folder
             :type   modify_ids[]:      string or list
+
         :type       dictionary
         :returns:   dict of current roles for all available permission types.
         :rtype:     dictionary

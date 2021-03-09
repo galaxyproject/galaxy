@@ -18,12 +18,12 @@ package_boost_repository_description = 'Contains a tool dependency definition th
 package_numpy_repository_description = 'Contains a tool dependency definition that downloads and compiles version 1.7 of the the python numpy package'
 package_rdkit_repository_description = 'Contains a tool dependency definition that downloads and compiles version 2012-12 of the RDKit cheminformatics and machine-learning package.'
 package_lapack_repository_description = 'Linear Algebra PACKage'
-package_atlas_repository_long_description = '{}: {}'.format(package_atlas_repository_name, package_atlas_repository_description)
-package_bzlib_repository_long_description = '{}: {}'.format(package_bzlib_repository_name, package_bzlib_repository_description)
-package_boost_repository_long_description = '{}: {}'.format(package_boost_repository_name, package_boost_repository_description)
-package_numpy_repository_long_description = '{}: {}'.format(package_numpy_repository_name, package_numpy_repository_description)
-package_rdkit_repository_long_description = '{}: {}'.format(package_rdkit_repository_name, package_rdkit_repository_description)
-package_lapack_repository_long_description = '{}: {}'.format(package_lapack_repository_name, package_lapack_repository_description)
+package_atlas_repository_long_description = f'{package_atlas_repository_name}: {package_atlas_repository_description}'
+package_bzlib_repository_long_description = f'{package_bzlib_repository_name}: {package_bzlib_repository_description}'
+package_boost_repository_long_description = f'{package_boost_repository_name}: {package_boost_repository_description}'
+package_numpy_repository_long_description = f'{package_numpy_repository_name}: {package_numpy_repository_description}'
+package_rdkit_repository_long_description = f'{package_rdkit_repository_name}: {package_rdkit_repository_description}'
+package_lapack_repository_long_description = f'{package_lapack_repository_name}: {package_lapack_repository_description}'
 
 '''
 1. Create repository package_lapack_3_4_1420
@@ -315,5 +315,5 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         rdkit_env_file_contents = open(rdkit_env_sh).read()
         if numpy_tool_dependency_path not in rdkit_env_file_contents or boost_tool_dependency_path not in rdkit_env_file_contents:
             message = 'Environment file for package_rdkit_2012_12_1420 does not contain expected path.'
-            message += '\nExpected:\n{}\n{}\nContents:\n{}'.format(numpy_tool_dependency_path, boost_tool_dependency_path, rdkit_env_file_contents)
+            message += f'\nExpected:\n{numpy_tool_dependency_path}\n{boost_tool_dependency_path}\nContents:\n{rdkit_env_file_contents}'
             raise AssertionError(message)
