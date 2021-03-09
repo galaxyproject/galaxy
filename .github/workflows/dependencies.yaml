@@ -30,9 +30,9 @@ jobs:
       - name: Create pull request
         uses: peter-evans/create-pull-request@v3
         with:
-          commit-message: Update dependencies
-          title: Update dependencies
-          body: Run make update-dependencies
+          commit-message: Update Python dependencies
+          title: Update Python dependencies
+          body: using `make update-dependencies`.
           branch: dev_auto_update_dependencies
           delete-branch: true
           labels: area/dependencies
