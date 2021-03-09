@@ -8,8 +8,6 @@ from typing import List
 from fastapi import (
     Body,
 )
-from fastapi_utils.cbv import cbv
-from fastapi_utils.inferring_router import InferringRouter as APIRouter
 from pydantic import (
     BaseModel,
 )
@@ -25,10 +23,10 @@ from galaxy.managers.roles import (
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.webapps.base.controller import url_for
 from . import (
-    AdminUserRequired,
     BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
+    Router,
 )
 
 log = logging.getLogger(__name__)
@@ -36,7 +34,7 @@ log = logging.getLogger(__name__)
 
 # Empty paths (e.g. /api/roles) only work if a prefix is defined right here.
 # https://github.com/tiangolo/fastapi/pull/415/files
-router = APIRouter(tags=["roles"])
+router = Router(tags=["roles"])
 
 
 class RoleListModel(BaseModel):
@@ -53,7 +51,7 @@ def role_to_model(trans, role):
     return RoleModel(**item)
 
 
-@cbv(router)
+@router.cbv
 class FastAPIRoles:
     role_manager: RoleManager = depends(RoleManager)
 
@@ -68,7 +66,7 @@ class FastAPIRoles:
         role = self.role_manager.get(trans, role_id)
         return role_to_model(trans, role)
 
-    @router.post("/api/roles", dependencies=[AdminUserRequired])
+    @router.post("/api/roles", require_admin=True)
     def create(self, trans: ProvidesUserContext = DependsOnTrans, role_definition_model: RoleDefinitionModel = Body(...)) -> RoleModel:
         role = self.role_manager.create_role(trans, role_definition_model)
         return role_to_model(trans, role)
