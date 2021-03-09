@@ -133,7 +133,6 @@ export default {
             showHelper: true,
             extension: this.app.defaultExtension,
             genome: this.app.defaultGenome,
-            callback: this.app.callback,
             listExtensions: [],
             listGenomes: [],
             running: false,
@@ -153,7 +152,6 @@ export default {
             btnStartTitle: _l("Start"),
             btnStopTitle: _l("Pause"),
             btnResetTitle: _l("Reset"),
-            btnCloseTitle: this.app.callback ? _l("Cancel") : _l("Close"),
             btnSelectTitle: _l("Select"),
         };
     },
@@ -234,8 +232,7 @@ export default {
                     src: model.src,
                 };
             });
-            this.callback(asDict);
-            this.$emit("cancel");
+            this.$emit("dismiss", asDict);
         },
         _newUploadModelProps: function (index, file) {
             return {
