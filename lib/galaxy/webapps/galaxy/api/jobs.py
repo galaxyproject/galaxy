@@ -80,7 +80,7 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
     hda_manager = depends(hdas.HDAManager)
 
     @expose_api
-    def index(self, trans: ProvidesUserContext, limit=500, **kwd):
+    def index(self, trans: ProvidesUserContext, limit=500, offset=0, **kwd):
         """
         GET /api/jobs
 
@@ -195,9 +195,7 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
             order_by = Job.table.c.update_time.desc()
         query = query.order_by(order_by)
 
-        offset = kwd.get('offset', None)
-        if offset is not None:
-            query = query.offset(offset)
+        query = query.offset(offset)
         query = query.limit(limit)
 
         out = []
