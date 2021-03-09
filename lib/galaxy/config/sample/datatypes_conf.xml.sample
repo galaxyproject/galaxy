@@ -17,7 +17,7 @@
     <datatype extension="anvio_structure_db" type="galaxy.datatypes.anvio:AnvioStructureDB" display_in_upload="false" />
     <datatype extension="anvio_variability" type="galaxy.datatypes.tabular:TSV" display_in_upload="false" subclass="true" />
     <datatype extension="arff" type="galaxy.datatypes.text:Arff" mimetype="text/plain" display_in_upload="true"/>
-    <datatype extension="paf" type="galaxy.datatypes.text:Paf" mimetype="text/plain" display_in_upload="true"/>
+    <datatype extension="paf" auto_compressed_types="gz" type="galaxy.datatypes.text:Paf" mimetype="text/plain" display_in_upload="true"/>
     <datatype extension="gfa1" type="galaxy.datatypes.text:Gfa1" mimetype="text/plain" display_in_upload="true"/>
     <datatype extension="gfa2" type="galaxy.datatypes.text:Gfa2" mimetype="text/plain" display_in_upload="true"/>
     <datatype extension="asn1" type="galaxy.datatypes.data:GenericAsn1" mimetype="text/plain" display_in_upload="true"/>
@@ -430,8 +430,8 @@
     <datatype extension="odgi" type="galaxy.datatypes.binary:Binary" subclass="true" description="Genomic variation graphs self index used by odgi." display_in_upload="true"/>
     <datatype extension="vg" type="galaxy.datatypes.binary:Binary" subclass="true" description="Genomic variation graphs." display_in_upload="true"/>
     <datatype extension="xg" type="galaxy.datatypes.binary:Binary" subclass="true" description="Genomic variation graphs with vg index." display_in_upload="true"/>
-    <datatype extension="protobuf2" type="galaxy.datatypes.binary:Binary" subclass="true" description="Protocol Buffers (Protobuf) is data format for serializing structured data."/>
-    <datatype extension="protobuf3" type="galaxy.datatypes.binary:Binary" subclass="true" description="Protocol Buffers (Protobuf) is data format for serializing structured data."/>
+    <datatype extension="protobuf2" type="galaxy.datatypes.binary:Binary" subclass="true" description="Protocol Buffers (Protobuf) is data format for serializing structured data." display_in_upload="true"/>
+    <datatype extension="protobuf3" type="galaxy.datatypes.binary:Binary" subclass="true" description="Protocol Buffers (Protobuf) is data format for serializing structured data." display_in_upload="true"/>
     <datatype extension="tabix" type="galaxy.datatypes.binary:Binary" subclass="true"/>
     <datatype extension="bgzip" type="galaxy.datatypes.binary:Binary" subclass="true"/>
     <datatype extension="vcf_bgzip" type="galaxy.datatypes.tabular:VcfGz" display_in_upload="true">

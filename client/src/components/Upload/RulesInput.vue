@@ -102,11 +102,6 @@ export default {
             btnResetTitle: "Reset",
         };
     },
-    computed: {
-        btnCloseTitle() {
-            return this.app.callback ? "Cancel" : "Close";
-        },
-    },
     created() {
         this.initCollection();
         this.initAppProperties();
@@ -194,7 +189,7 @@ export default {
             }
             selection.dataType = this.dataType;
             Galaxy.currHistoryPanel.buildCollection("rules", selection, true);
-            this.$emit("hide");
+            this.$emit("dismiss");
         },
     },
 };
