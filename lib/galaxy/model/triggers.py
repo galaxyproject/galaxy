@@ -12,7 +12,7 @@ def install_timestamp_triggers(engine):
 
 
 def drop_timestamp_triggers(engine):
-    """Remove update_time propagation triggers for historydata tables"""
+    """Remove update_time propagation triggers for history data tables"""
     statements = get_timestamp_drop_sql(engine.name)
     execute_statements(engine, statements)
 
@@ -76,7 +76,7 @@ def get_timestamp_drop_sql(variant):
 def build_pg_timestamp_fn(fn_name, table_name, local_key='id', source_key='id', stamp_column='update_time'):
     """Generates a postgres history update timestamp function"""
 
-    sql = """
+    return f"""
         CREATE OR REPLACE FUNCTION {fn_name}()
             RETURNS trigger
             LANGUAGE 'plpgsql'
@@ -101,21 +101,19 @@ def build_pg_timestamp_fn(fn_name, table_name, local_key='id', source_key='id', 
             END;
         $BODY$;
     """
-    return sql.format(**locals())
 
 
 def build_pg_trigger(table_name, fn_name):
     """assigns a postgres trigger to indicated table, calling user-defined function"""
 
-    trigger_name = "trigger_{table_name}_biudr".format(**locals())
-    tmpl = """
+    trigger_name = f"trigger_{table_name}_biudr"
+    return f"""
         CREATE TRIGGER {trigger_name}
             BEFORE INSERT OR DELETE OR UPDATE
             ON {table_name}
-            FOR EACH ROW
+            FOR EACH STATEMENT
             EXECUTE PROCEDURE {fn_name}();
     """
-    return tmpl.format(**locals())
 
 
 def build_timestamp_trigger(operation, source_table, target_table, source_key='id', target_key='id', when='BEFORE'):
@@ -124,16 +122,14 @@ def build_timestamp_trigger(operation, source_table, target_table, source_key='i
     trigger_name = get_trigger_name(operation, source_table, when)
 
     # three different update clauses depending on update/insert/delete
-    clause = ""
     if operation == "DELETE":
-        clause = "{target_key} = OLD.{source_key}"
+        clause = f"{target_key} = OLD.{source_key}"
     elif operation == "UPDATE":
-        clause = "{target_key} = NEW.{source_key} OR {target_key} = OLD.{source_key}"
+        clause = f"{target_key} = NEW.{source_key} OR {target_key} = OLD.{source_key}"
     else:
-        clause = "{target_key} = NEW.{source_key}"
-    clause = clause.format(**locals())
+        clause = f"{target_key} = NEW.{source_key}"
 
-    tmpl = """
+    return f"""
         CREATE TRIGGER {trigger_name}
             {when} {operation}
             ON {source_table}
@@ -144,18 +140,17 @@ def build_timestamp_trigger(operation, source_table, target_table, source_key='i
                 WHERE {clause};
             END;
     """
-    return tmpl.format(**locals())
 
 
 def build_drop_trigger(operation, source_table, when='BEFORE'):
     """drops a non-postgres trigger by name"""
     trigger_name = get_trigger_name(operation, source_table, when)
-    return "DROP TRIGGER IF EXISTS {trigger_name}".format(**locals())
+    return f"DROP TRIGGER IF EXISTS {trigger_name}"
 
 
 def get_trigger_name(operation, source_table, when='BEFORE'):
     """non-postgres trigger name"""
     op_initial = operation.lower()[0]
     when_initial = when.lower()[0]
-    trigger_name = "trigger_{source_table}_{when_initial}{op_initial}r".format(**locals())
+    trigger_name = f"trigger_{source_table}_{when_initial}{op_initial}r"
     return trigger_name
