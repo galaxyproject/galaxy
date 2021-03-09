@@ -230,6 +230,8 @@ export default {
                 return {
                     id: model.attributes.id, // model.id has datatype prefix
                     src: model.src,
+                    hid: model.attributes.hid,
+                    name: model.attributes.name,
                 };
             });
             this.$emit("dismiss", asDict);
