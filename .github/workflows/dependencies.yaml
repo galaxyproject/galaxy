@@ -32,7 +32,7 @@ jobs:
         with:
           commit-message: Update Python dependencies
           title: Update Python dependencies
-          body: using `make update-dependencies`.
+          body: Run `make update-dependencies`.
           branch: dev_auto_update_dependencies
           delete-branch: true
           labels: area/dependencies
