@@ -964,7 +964,7 @@ class Anndata(H5):
     MetadataElement(name="layers_count", default=0, desc="layers_count", readonly=True, visible=True, no_value=0)
     MetadataElement(name="layers_names", desc="layers_names", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
     MetadataElement(name="row_attrs_count", default=0, desc="row_attrs_count", readonly=True, visible=True, no_value=0)
-    MetadataElement(name="obs_names", desc="obs_names", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
+    MetadataElement(name="obs_names", desc="obs_names", default=[], multiple=True, readonly=True, no_value=None)
     MetadataElement(name="obs_layers", desc="obs_layers", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
     MetadataElement(name="obs_count", default=0, desc="obs_count", readonly=True, visible=True, no_value=0)
     MetadataElement(name="obs_size", default=-1, desc="obs_size", readonly=True, visible=True, no_value=0)
