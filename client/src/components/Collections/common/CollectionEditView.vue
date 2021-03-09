@@ -8,6 +8,11 @@
                 )
             }}
         </b-alert>
+        <div v-if="jobError">
+            <b-alert show variant="danger" dismissible>
+                {{ errorMessage }}
+            </b-alert>
+        </div>
         <b-tabs content-class="mt-3">
             <b-tab>
                 <template v-slot:title> <i class="fa fa-bars"></i>{{ l(" Attributes") }}</template>
@@ -105,9 +110,11 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import axios from "axios";
 import { prependPath } from "utils/redirect";
+import { waitOnJob } from "components/JobStates/wait";
 import UploadUtils from "mvc/upload/upload-utils";
 import _l from "utils/localization";
 import Multiselect from "vue-multiselect";
+import { errorMessageAsString } from "utils/simple-error";
 //import VueObserveVisibility from "vue-observe-visibility";
 
 //Vue.use(VueObserveVisibility);
@@ -140,6 +147,8 @@ export default {
             selectedExtension: {},
             databaseKeyFromElements: null,
             datatypeFromElements: null,
+            errorMessage: null,
+            jobError: null,
         };
     },
     props: {
@@ -215,6 +224,7 @@ export default {
                     dbkeysInCollection.push(element.object.metadata_dbkey);
                 }
             }
+            console.log("dbkeysInCollection", dbkeysInCollection);
             if (dbkeysInCollection.length == 1) {
                 this.databaseKeyFromElements = dbkeysInCollection[0];
             } else {
@@ -245,15 +255,17 @@ export default {
             axios
                 .put(url, data)
                 .then((response) => {
-                    waitOnJob(response.data.job_id)
-                        .then((data) => {
-                            this.waitingOnJob = false;
-                            this.jobComplete = true;
-                        })
-                        .catch(this.handleError);
+                    console.log("successssss");
+                    this.apiCallToGetData();
                 })
                 .catch(this.handleError);
             // hit put /api/dataset_collections/this.collection_id
+        },
+        handleError: function (err) {
+            this.errorMessage = errorMessageAsString(err, "History import failed.");
+            if (err?.data?.stderr) {
+                this.jobError = err.data;
+            }
         },
     },
 };

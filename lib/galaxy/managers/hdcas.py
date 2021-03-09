@@ -40,10 +40,12 @@ def stream_dataset_collection(dataset_collection_instance, upstream_mod_zip=Fals
     return archive
 
 
-def set_collection_attributes(dataset_element, *attributes):
-    log.debug('*******set_collection_attributes******************' + str(attributes))
-    for attribute, value in attributes:
-        setattr(dataset_element, attribute, value)
+def set_collection_attributes(dataset_element, *payload):
+    log.debug('*******set_collection_attributes******************' + str(payload))
+    for attribute, value in payload:
+        log.debug("***********attribute******** =" + str(attribute[1]))
+        log.debug("***********value******** =" + str(value[1]))
+        setattr(dataset_element, attribute[1], value[1])
 
 
 # TODO: to DatasetCollectionInstanceManager
@@ -87,7 +89,7 @@ class HDCAManager(
     def update_attributes(self, content, payload: Dict):
         # pre-requisite checked that attributes are valid
         log.debug('********update_attributes*********' + str(payload))
-        self.map_datasets(content, fn=set_collection_attributes)
+        self.map_datasets(content, fn=lambda item, *args: set_collection_attributes(item, payload.items()))
 
         # TODO: un-stub
 
