@@ -68,7 +68,15 @@ class RemoteFilesAPIController(BaseAPIController):
 
         file_source_path = file_sources.get_file_source_path(uri)
         file_source = file_source_path.file_source
-        index = file_source.list(file_source_path.path, recursive=recursive, user_context=user_context)
+        try:
+            index = file_source.list(file_source_path.path, recursive=recursive, user_context=user_context)
+        except exceptions.MessageException:
+            log.warning(f"Problem listing file source path {file_source_path}", exc_info=True)
+            raise
+        except Exception:
+            message = f"Problem listing file source path {file_source_path}"
+            log.warning(message, exc_info=True)
+            raise exceptions.InternalServerError(message)
         if format == "flat":
             # rip out directories, ensure sorted by path
             index = [i for i in index if i["class"] == "File"]
