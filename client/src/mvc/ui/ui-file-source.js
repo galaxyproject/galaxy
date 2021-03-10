@@ -79,7 +79,7 @@ var View = Backbone.View.extend({
 
     /** Returns current value */
     _getValue: function () {
-        return this._value.url;
+        if (this._value) return this._value.url;
     },
 
     /** Sets current value */
