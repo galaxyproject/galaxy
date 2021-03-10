@@ -349,7 +349,7 @@ def do_release(argv):
     template = template.replace(".. enhancement", "%s\n\n.. enhancement" % enhancement_targets)
     template = template.replace(".. bug", "%s\n\n.. bug" % bug_targets)
     release_info = string.Template(template).safe_substitute(release=release_name)
-    open(release_file, "w").write(release_info)
+    _write_file(release_file, release_info, skip_if_exists=True)
     month = int(release_name.split(".")[1])
     month_name = calendar.month_name[month]
     year = release_name.split(".")[0]
@@ -360,7 +360,7 @@ def do_release(argv):
         release=release_name
     )
     announce_file = _release_file(release_name + "_announce.rst")
-    _write_file(announce_file, announce_info)
+    _write_file(announce_file, announce_info, skip_if_exists=True)
 
     announce_user_info = ANNOUNCE_USER_TEMPLATE.substitute(
         month_name=month_name,
@@ -368,10 +368,16 @@ def do_release(argv):
         release=release_name
     )
     announce_user_file = _release_file(release_name + "_announce_user.rst")
-    _write_file(announce_user_file, announce_user_info)
+    _write_file(announce_user_file, announce_user_info, skip_if_exists=True)
 
     prs_file = _release_file(release_name + "_prs.rst")
-    _write_file(prs_file, PRS_TEMPLATE)
+    seen_prs = set()
+    try:
+        with open(prs_file) as fh:
+            seen_prs = set(re.findall(r'\.\. _Pull Request (\d*): https', fh.read()))
+    except FileNotFoundError:
+        pass
+    _write_file(prs_file, PRS_TEMPLATE, skip_if_exists=True)
 
     next_version_params = _next_version_params(release_name)
     next_version = next_version_params["version"]
@@ -382,7 +388,7 @@ def do_release(argv):
     releases_index = _release_file("index.rst")
     releases_index_contents = _read_file(releases_index)
     releases_index_contents = releases_index_contents.replace(".. announcements\n", ".. announcements\n   " + next_version + "_announce\n")
-    _write_file(releases_index, releases_index_contents)
+    _write_file(releases_index, releases_index_contents, skip_if_exists=True)
 
     for pr in _get_prs(release_name):
         # 2015-06-29 18:32:13 2015-04-22 19:11:53 2015-08-12 21:15:45
@@ -392,7 +398,7 @@ def do_release(argv):
             "head": pr.head,
             "labels": _pr_to_labels(pr),
         }
-        main([argv[0], "--release_file", "%s.rst" % release_name, "--request", as_dict, "pr" + str(pr.number)])
+        main([argv[0], "--release_file", "%s.rst" % release_name, "--request", as_dict, "pr" + str(pr.number)], seen_prs=seen_prs)
 
 
 def check_release(argv):
@@ -490,7 +496,7 @@ def _get_prs(release_name, state="closed"):
         yield pr
 
 
-def main(argv):
+def main(argv, seen_prs=set()):
     newest_release = None
 
     if argv[1] == "--print-next-minor-version":
@@ -578,21 +584,24 @@ def main(argv):
     owner = None
     if ident.startswith("pr"):
         pull_request = ident[len("pr"):]
-        user = req["head"].user
-        owner = user.login
-        if owner in DEVTEAM:
-            owner = None
-        text = ".. _Pull Request {0}: {1}/pull/{0}".format(pull_request, PROJECT_URL)
-        prs_content = extend_target("github_links", text, prs_content)
-        if owner:
-            to_doc += "\n(thanks to `@{} <https://github.com/{}>`__).".format(
-                owner, owner,
-            )
-        to_doc += f"\n`Pull Request {pull_request}`_"
-        labels = None
-        if req and 'labels' in req:
-            labels = req['labels']
-        text_target = _text_target(pull_request, labels=labels)
+        if pull_request in seen_prs:
+            to_doc = None
+        else:
+            user = req["head"].user
+            owner = user.login
+            if owner in DEVTEAM:
+                owner = None
+            text = ".. _Pull Request {0}: {1}/pull/{0}".format(pull_request, PROJECT_URL)
+            prs_content = extend_target("github_links", text, prs_content)
+            if owner:
+                to_doc += "\n(thanks to `@{} <https://github.com/{}>`__).".format(
+                    owner, owner,
+                )
+            to_doc += f"\n`Pull Request {pull_request}`_"
+            labels = None
+            if req and 'labels' in req:
+                labels = req['labels']
+            text_target = _text_target(pull_request, labels=labels)
     elif ident.startswith("issue"):
         issue = ident[len("issue"):]
         text = ".. _Issue {0}: {1}/issues/{0}".format(issue, PROJECT_URL)
@@ -604,20 +613,21 @@ def main(argv):
         prs_content = extend_target("github_links", text, prs_content)
         to_doc += f"{short_rev}_"
 
-    to_doc = wrap(to_doc)
-    if text_target is not None:
-        history = extend_target(text_target, to_doc, history)
-    if req and req['labels']:
-        labels = req['labels']
-        if 'area/datatypes' in labels:
-            user_announce = extend_target("datatypes", to_doc, user_announce)
-        if 'area/visualizations' in labels:
-            user_announce = extend_target("visualizations", to_doc, user_announce)
-        if 'area/tools' in labels:
-            user_announce = extend_target("tools", to_doc, user_announce)
-    _write_file(history_path, history)
-    _write_file(prs_path, prs_content)
-    _write_file(user_announce_path, user_announce)
+    if to_doc is not None:
+        to_doc = wrap(to_doc)
+        if text_target is not None:
+            history = extend_target(text_target, to_doc, history)
+        if req and req['labels']:
+            labels = req['labels']
+            if 'area/datatypes' in labels:
+                user_announce = extend_target("datatypes", to_doc, user_announce)
+            if 'area/visualizations' in labels:
+                user_announce = extend_target("visualizations", to_doc, user_announce)
+            if 'area/tools' in labels:
+                user_announce = extend_target("tools", to_doc, user_announce)
+        _write_file(history_path, history)
+        _write_file(prs_path, prs_content)
+        _write_file(user_announce_path, user_announce)
 
 
 def _read_file(path):
@@ -625,7 +635,9 @@ def _read_file(path):
         return f.read()
 
 
-def _write_file(path, contents):
+def _write_file(path, contents, skip_if_exists=False):
+    if skip_if_exists and os.path.exists(path):
+        return
     with open(path, "w") as f:
         f.write(contents)
 
