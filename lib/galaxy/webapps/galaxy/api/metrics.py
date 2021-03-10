@@ -36,7 +36,7 @@ class FastAPIMetrics:
         '/api/metrics',
         summary="Records a collection of metrics.",
     )
-    def create(
+    async def create(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         payload: CreateMetricsPayload = Body(...),
