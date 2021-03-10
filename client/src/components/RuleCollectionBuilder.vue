@@ -524,31 +524,30 @@
                     </div>
                 </div>
             </template>
+            <b-row class="mx-auto">
+                <b-button
+                    :help="titleCancel"
+                    @click="cancel"
+                    class="creator-cancel-btn rule-btn-cancel"
+                    tabindex="-1"
+                    >{{ l("Cancel") }}</b-button
+                >
 
-            <b-button
-                v-b-tooltip.hover
-                :help="titleCancel"
-                @click="cancel"
-                class="creator-cancel-btn rule-btn-cancel"
-                tabindex="-1"
-                >{{ l("Cancel") }}</b-button
-            >
-            <b-button
-                v-b-tooltip.hover
-                @click="resetRulesAndState"
-                :title="titleReset"
-                class="creator-reset-btn rule-btn-reset"
-                >{{ l("Reset") }}</b-button
-            >
-            <b-button
-                v-b-tooltip.hover
-                @click="createCollection"
-                :title="titleFinish"
-                class="create-collection rule-btn-okay"
-                variant="primary"
-                :disabled="!validInput"
-                >{{ finishButtonTitle }}</b-button
-            >
+                <tooltip-on-hover class="menu-option" :title="titleReset">
+                    <b-button @click="resetRulesAndState" class="creator-reset-btn rule-btn-reset">{{
+                        l("Reset")
+                    }}</b-button>
+                </tooltip-on-hover>
+                <tooltip-on-hover class="menu-option" :disabled="!validInput" :title="titleFinish">
+                    <b-button
+                        @click="createCollection"
+                        class="create-collection rule-btn-okay"
+                        variant="primary"
+                        :disabled="!validInput"
+                        >{{ finishButtonTitle }}</b-button
+                    >
+                </tooltip-on-hover>
+            </b-row>
         </rule-modal-footer>
     </state-div>
     <state-div v-else-if="state == 'wait'">
@@ -613,6 +612,7 @@ import RuleModalFooter from "components/RuleBuilder/RuleModalFooter";
 import StateDiv from "components/RuleBuilder/StateDiv";
 import SavedRulesSelector from "components/RuleBuilder/SavedRulesSelector";
 import SaveRules from "components/RuleBuilder/SaveRules";
+import TooltipOnHover from "components/TooltipOnHover.vue";
 
 Vue.use(BootstrapVue);
 
@@ -1683,6 +1683,7 @@ export default {
         },
     },
     components: {
+        TooltipOnHover,
         HotTable,
         RuleComponent,
         RuleTargetComponent,
@@ -1848,5 +1849,8 @@ export default {
 }
 .fa-history {
     cursor: pointer;
+}
+.menu-option {
+    padding-left: 5px;
 }
 </style>
