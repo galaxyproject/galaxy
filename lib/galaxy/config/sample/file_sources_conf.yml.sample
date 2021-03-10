@@ -12,3 +12,9 @@
   root: ${user.preferences['owncloud|root']}
   login: ${user.preferences['owncloud|username']}
   password: ${user.preferences['owncloud|password']}
+
+- type: posix
+  id: posix1
+  label: Posix
+  doc: Files from local path
+  root: /some/path/
