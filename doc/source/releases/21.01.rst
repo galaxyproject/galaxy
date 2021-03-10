@@ -153,7 +153,7 @@ Enhancements
   `Pull Request 11140`_
 * Bug fix - cannot set dbkeys in workflow tests.
   `Pull Request 11543`_
-*  Replace StreamBall, replace tarballs with zip
+* Replace StreamBall, replace tarballs with zip
   `Pull Request 10919`_
 * Move upload button below Tool panel header, increase size, add label.
   `Pull Request 10499`_
