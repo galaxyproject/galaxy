@@ -5,6 +5,7 @@ on:
 jobs:
   update_dependencies:
     name: Update dependencies
+    if: github.repository_owner == 'galaxyproject'
     runs-on: ubuntu-latest
     strategy:
       matrix:
