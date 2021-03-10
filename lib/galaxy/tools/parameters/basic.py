@@ -1358,9 +1358,12 @@ class ColumnListParameter(SelectToolParameter):
         legal_values = self.get_column_list(trans, other_values)
 
         value = other_values.get(self.name)
-        if value is not None and value not in legal_values and self.is_file_empty(trans, other_values):
-            value = value if isinstance(value, list) else [value]
-            legal_values.extend(value)
+        if value is not None:
+            # There are cases where 'value' is a string of comma separated values. This ensures
+            # that it is converted into a list, with extra whitespace around items removed.
+            value = util.listify(value, do_strip=True)
+            if not set(value).issubset(set(legal_values)) and self.is_file_empty(trans, other_values):
+                legal_values.extend(value)
 
         return set(legal_values)
 
