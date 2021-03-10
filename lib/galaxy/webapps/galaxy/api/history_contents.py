@@ -530,13 +530,23 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesL
             content = payload.get('content', None)
             if content is None:
                 raise exceptions.RequestParameterMissingException("'content' id of target to copy is missing")
-            copy_elements = payload.get('copy_elements', False)
+            dbkey = payload.get("dbkey", None)
+            force_copy_elements = dbkey is not None
+            copy_elements = payload.get('copy_elements', force_copy_elements)
+            if not copy_elements and force_copy_elements:
+                raise exceptions.RequestParameterMissingException("copy_elements passed as 'false' but it is required to change specified attributes")
+            copy_dataset_instance_attributes = None
+            if force_copy_elements:
+                copy_dataset_instance_attributes = {}
+                if dbkey is not None:
+                    copy_dataset_instance_attributes["dbkey"] = dbkey
             dataset_collection_instance = service.copy(
                 trans=trans,
                 parent=history,
                 source="hdca",
                 encoded_source_id=content,
                 copy_elements=copy_elements,
+                copy_dataset_instance_attributes=copy_dataset_instance_attributes,
             )
         else:
             message = "Invalid 'source' parameter in request %s" % source
