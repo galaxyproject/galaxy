@@ -13,7 +13,7 @@ Workflows are the absolute ✨star✨ of Galaxy v21.01, they have seen huge impr
 Workflows: Best Practices, Reports, Invocations
 -----------------------------------------------
 
-Workflows have seen huge improvements this release! The workflow report editor is easier to use than ever providing you with a list of common report components you might wish to use, interactive dialogs for embedding them in your reports, and a new workflow invocation tracker! You can now embed visualisations directly in your workflow reports making summarising your analyses easier than ever! And once your reports are produced, you can export them directly to pages to share your reports with colleagues.
+Workflows have seen huge improvements this release! The workflow report editor is easier to use than ever providing you with a list of common report components you might wish to use, interactive dialogues for embedding them in your reports, and a new workflow invocation tracker! You can now embed visualisations directly in your workflow reports making summarising your analyses easier than ever! And once your reports are produced, you can export them directly to pages to share your reports with colleagues.
 
 .. raw:: html
 
@@ -44,7 +44,7 @@ The Galaxy Climate community is providing an excellent test case; much of their 
 .. figure:: images/21.01-remote-weather.png
    :alt: Screenshot of the remote files browser in the upload dialog. Here climate datasets are highlighted such as Sentinel, Copernicus, and NOAA's public datasets. At the bottom is the user's FTP directory.
 
-But the addition of the Remote Files browser didn't stop there! Serveral other interfaces received updates to use this new framework:
+But the addition of the Remote Files browser didn't stop there! Several other interfaces received updates to use this new framework:
 
 History Import & Export
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -70,16 +70,16 @@ Likewise the Rule-Builder now has access to the remote files interface. Sample s
 Beta History Panel
 ------------------
 
-<todo>
+
 
 User-friendliness Improvements
 ------------------------------
 
-This is a new section covering smaller improvements that just make your life esaier.
+This is a new section covering smaller improvements that just make your life easier and faster.
 
 * Interactive tools can be stopped, without their outputs disappearing, better for reproducibility! `Pull Request 10497`_
 * When uploading files, the 'name' field will be auto-focused, allowing you to get straight to renaming the files, saving you time. `Pull Request 10487`_
-* Workflow versions now expose their update time. Reverting to an old version? Oh, yes, that one from tuesday. `Pull Request 10492`_
+* Workflow versions now expose their update time. Reverting to an old version? Oh, yes, that one from Tuesday! `Pull Request 10492`_
 * Sharing components now include a "copy to clipboard" feature for URLs. One click and you're ready to share with the world. `Pull Request 10754`_
 * The GTN-in-Galaxy overlay now keeps track of the page you were looking at if the Galaxy page gets refreshed. Go forth and learn without distraction!. `Pull Request 11290`_
 
