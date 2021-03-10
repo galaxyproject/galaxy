@@ -68,7 +68,13 @@ Enhancements
 * Add gifti datatype
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 11028`_
-* Add ome.tiff datatype
+* Add cmap datatype
+  (thanks to `@jaidevjoshi83 <https://github.com/jaidevjoshi83>`__).
+  `Pull Request 11471`_
+* Expand image formats for viewing in OpenSeadragon
+  (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__).
+  `Pull Request 11017`_
+* add ome.tiff datatype
   (thanks to `@qiagu <https://github.com/qiagu>`__).
   `Pull Request 10349`_
 * Add datatype converters for various MD filetypes
@@ -101,9 +107,15 @@ Enhancements
   `Pull Request 10908`_, `Pull Request 10879`_,
   `Pull Request 10725`_, `Pull Request 10735`_
   `Pull Request 10767`_
-* Speedup xml replacement when loading tools.
+* Add ffindex and ffdata database file types
+  `Pull Request 11218`_
+* Add compressed paf datatype
+  (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
+  `Pull Request 11567`_
+* Speedup xml replacement
   `Pull Request 10804`_
-* Update askomics interactive tool to 4.1.1
+* Allow build_list tool inputs to be optional
+  `Pull Request 10871`_
   (thanks to `@abretaud <https://github.com/abretaud>`__).
   `Pull Request 10878`_
 * Revise tool inputs to allow nested parameters and allow ``build_for_rerun`` and other
@@ -117,6 +129,9 @@ Enhancements
 * Disable dataset edit button after the dataset has been deleted
   (thanks to `@simonbray <https://github.com/simonbray>`__).
   `Pull Request 10589`_
+* update the cellxgene IT container
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 11546`_
 * Implement expression tool for picking non-null values for CWL-style merging of
   conditional branches in native Galaxy workflows.
   `Pull Request 10712`_
@@ -134,6 +149,10 @@ Enhancements
 * Add FastAPI as backend and start porting backend to an ASGI webapp to
   enable modern programming features such a message queues and web sockets.
   `Pull Request 10823`_, `Pull Request 11074`_
+* Follow-up on best practice workflow linting user interface component
+  `Pull Request 11140`_
+* Bug fix - cannot set dbkeys in workflow tests.
+  `Pull Request 11543`_
 *  Replace StreamBall, replace tarballs with zip
   `Pull Request 10919`_
 * Move upload button below Tool panel header, increase size, add label.
@@ -145,6 +164,8 @@ Enhancements
   `Pull Request 10522`_
 * Add S3 plugin for remote files browser.
   `Pull Request 10523`_
+* Fixed sync between legacy galaxy variable and Vuex current history
+  `Pull Request 11172`_
 * Set undesired execution hosts to avoid in LSF
   (thanks to `@pcm32 <https://github.com/pcm32>`__).
   `Pull Request 10260`_
@@ -188,6 +209,8 @@ Enhancements
   `Pull Request 11067`
 * Allow InteractiveTools to use path-based proxying when ``requires_domain=False``.
   `Pull Request 8596`_
+* Add setting that lets admins enable/disable the tool document cache
+  `Pull Request 11186`_
 * Add warning for non-existing tool versions on tool form
   (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
   `Pull Request 10139`_
@@ -333,6 +356,8 @@ Enhancements
 * Extension lookup with lower case extension
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 10803`_
+* Retry failing selenium test once
+  `Pull Request 10806`_
 * Add GitHub workflow to build docs
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 10811`_
@@ -392,6 +417,9 @@ Enhancements
 * Move framework tests to GitHub workflows + lint test tools
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 11055`_
+* Allow setting filename_pattern by client
+  (thanks to `@brinkmanlab <https://github.com/brinkmanlab>`__).
+  `Pull Request 11058`_
 * Add validation for tool ``data_collection`` parameters
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 11063`_
@@ -402,10 +430,26 @@ Enhancements
   `Pull Request 11083`_
 * Major overhaul and expansion of documentation for writing tests in Galaxy.
   `Pull Request 11088`_, `Pull Request 11102`_, `Pull Request 11104`_
+* Parallelize client and server builds in dockerfile
+  (thanks to `@nuwang <https://github.com/nuwang>`__).
+  `Pull Request 11161`_
+* add more markers for screenshooting
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 11171`_
+* Don't flush for each failed output dataset
+  `Pull Request 11282`_
+* Don't check if item is in list, use set subtraction
+  `Pull Request 11284`_
 * Persist scroll/url information for GTN webhook
   (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 11290`_
-* Improve API test for datatype changing
+* Add tracking code to webhook for GTN stats
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
+  `Pull Request 11387`_
+* Sort tool versions from newest to oldest in tool form
+  (thanks to `@cat-bro <https://github.com/cat-bro>`__).
+  `Pull Request 11490`_
+* Improve API test for changing datatype
   (thanks to `@simonbray <https://github.com/simonbray>`__).
   `Pull Request 10272`_
 * Various datatype code structure improvements
@@ -460,6 +504,8 @@ Enhancements
   `Pull Request 10991`_
 * Remove unused ``tag_outputs`` workflow controller action.
   `Pull Request 11040`_
+* Fix workflow terminals not updating appropriately
+  `Pull Request 11542`_
 
 Fixes
 -------------------------------
@@ -470,6 +516,11 @@ Fixes
 * Fix reference error in MVP client application
   (thanks to `@tmcgowan <https://github.com/tmcgowan>`__).
   `Pull Request 10782`_
+* Nora visualization version bump incorporating a few upstream bugfixes
+  `Pull Request 11475`_
+* Cleanup the supported filestypes for Nora
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 11544`_
 * Fix for GTF sniffer
   (thanks to `@mtekman <https://github.com/mtekman>`__).
   `Pull Request 10588`_
@@ -479,10 +530,30 @@ Fixes
 * Remove mutatable arguments from Pythn function calls
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 10998`_, `Pull Request 11003`_, `Pull Request 11006`_
+* Fix mtx unbound error.
+  `Pull Request 11368`_
+* Fix sniffers of interval datatypes for files starting with many comments
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 11416`_
+* Add display_in_upload for protobuf datatypes.
+  `Pull Request 11555`_
+* Don't display obs_names in select list.
+  `Pull Request 11574`_
 * Disable tool cache if there is a problem.
   `Pull Request 10808`_
 * Put new toolshed tools in existing tool panel sections if the ID matches.
   `Pull Request 10984`_
+* Make hash selection mandatory in hash tool.
+  `Pull Request 11427`_
+* Various Pyiron interactive tool fixes.
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 11545`_
+* Allow using Openrefine without data inputs.
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 11547`_
+* Set $HOME for interactive tools that require a specific directory.
+  (thanks to `@abretaud <https://github.com/abretaud>`__).
+  `Pull Request 11577`_
 * Add checks to workflow toolbox, avoid displaying empty sections.
   `Pull Request 10363`_
 * Filter duplicate workflow output labels when initializing workflow step outputs.
@@ -517,6 +588,15 @@ Fixes
 * Fix Workflow report markdown lost upon renaming the workflow.
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 11317`_
+* Fix TypeError in WorkflowsAPIController.get_versions()
+  (thanks to `@rikeshi <https://github.com/rikeshi>`__).
+  `Pull Request 11373`_
+* Wrap core of workflow monitor thread in try/except.
+  `Pull Request 11434`_
+* Fix random-ish workflow error with maximum_workflow_jobs_per_scheduling_iteration.
+  `Pull Request 11513`_
+* Mark workflow as changed when editing step label or annotation.
+  `Pull Request 11533`_
 * Bump client axios dependency from 0.19.2 to 0.21.1.
   `Pull Request 11053`_
 * Improved exception handling for missing job parameter field.
@@ -527,16 +607,46 @@ Fixes
 * Allow specifying remote Pulsar app configuration external to job destination
   attributes to prevent persisting connection secrets.
   `Pull Request 11254`_, `Pull Request 11256`_, `Pull Request 11261`_
+* Fix history import job done before import complete.
+  `Pull Request 11170`_
+* Allow specifying remote pulsar app config by path.
+  `Pull Request 11191`_
+* Fix jobs finishing after update to 21.01
+  `Pull Request 11330`_
+* Don't log handled exceptions when filling cheetah template.
+  `Pull Request 11355`_
+* Update Pulsar client to 0.14.2
+  `Pull Request 11381`_
+* Always mount a writable $_JOB_TMP_DIR when running tools in containers.
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 11448`_
 * Restore the ability to pull containers from admin menu.
   `Pull Request 10814`_
 * Fix error in admin panel when creating new quota
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 11277`_
+* Fix error on Admin panel when creating or editing Forms
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 11388`_
+* Fix DefaultQuotaAssociation access to Enum values
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 11511`_
+* Add logging if installable tool config file not found
+  `Pull Request 11515`_
+* Fix ToolShed link in Admin->Local Data
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 11548`_
+* Properly log out of oidc on galaxy logout
+  (thanks to `@juleengraham <https://github.com/juleengraham>`__).
+  `Pull Request 10108`_
 * Fix quota meter style.
   `Pull Request 10299`_
 * Fix pytest breakage in package testing.
   `Pull Request 10320`_
-* Add test for ``data_column`` parameter referring to non-tabular data (bed) and fix bug
+* Update documentation for proftpd configuration
+  (thanks to `@FredericBGA <https://github.com/FredericBGA>`__).
+  `Pull Request 10351`_
+* Add test for ``data_column`` parameter referring to non-tabular data (bed) and fix bug.
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 10365`_
 * Fix assigning default value to variables in ``run_test_wrapper.sh``
@@ -583,6 +693,8 @@ Fixes
 * Add ``refresh_time`` to iRODS configuration, so that connections older than refresh_time are re-created.
   (thanks to `@kxk302 <https://github.com/kxk302>`__).
   `Pull Request 10698`_
+* Fix typo in filter_failed_collection help section
+  `Pull Request 10717`_
 * Cleanup announce samples.
   `Pull Request 10762`_
 * Fix admin job configuration example links
@@ -670,14 +782,70 @@ Fixes
   `Pull Request 11243`_
 * Routing fixes for username path components and username validation fixes.
   `Pull Request 11260`_
+* Decrease verbosity of urllib connectionpool logging
+  `Pull Request 11266`_
+* Set correct status code in old history route
+  `Pull Request 11269`_
 * Update Python dependency pulsar-galaxy-lib to 0.14.1.
   `Pull Request 11279`_
-* Fix integration tests on CI to deploy postgresql and rabbitmq in Kubernetes
-  for robustness.
+* Use nested state tracking with sqlalchemy-mutable
+  `Pull Request 11288`_
+* Fix /u/username/* routes.
+  `Pull Request 11289`_
+* Raise correct exceptions in `MetadataCollection`
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 11293`_
+* Unpin pulsar-galaxy-lib in packages
+  `Pull Request 11294`_
   `Pull Request 11314`_
+* Multi-character strings shouldn't be split
+  (thanks to `@selten <https://github.com/selten>`__).
+  `Pull Request 11341`_
 * Fix command line building when using interpreter
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 11343`_
+* Fix job_destination display if job has no destination params yet.
+  `Pull Request 11354`_
+* Only attempt to resolve loc file fallback if path is relative path.
+  `Pull Request 11361`_
+* Fix setCurrentHistoryId in legacy history panel context.
+  `Pull Request 11369`_
+* Fix rule-based screenshots.
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 11389`_
+* Fix CircleCI unit tests.
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 11391`_
+* Fix interactivetools_proxy_host typo.
+  (thanks to `@almahmoud <https://github.com/almahmoud>`__).
+  `Pull Request 11441`_
+* Disable tool document cache by default.
+  `Pull Request 11447`_
+* Fix typo in folder search.
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 11463`_
+* List most common Galaxy file plugins at the top.
+  `Pull Request 11491`_
+* Fix OIDC logout and redirection.
+  `Pull Request 11520`_
+* Fix markdown tag visualizations.
+  `Pull Request 11534`_
+* Fix unhandled error when creating tags with multiple dots.
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 11535`_
+* Allow format attribute in output collections.
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 11536`_
+* Fix remote user logout redirect.
+  `Pull Request 11540`_
+* Fix various Rule Builder issues.
+  `Pull Request 11553`_
+* Fix upload button tooltip blocking tool search field.
+  `Pull Request 11572`_
+* Fix name and hid when selecting uploaded datasets.
+  `Pull Request 11576`_
+* Improve feedback for remote file listing exceptions.
+  `Pull Request 11581`_
 
 .. include:: 21.01_prs.rst
 

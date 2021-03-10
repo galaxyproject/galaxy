@@ -129,6 +129,17 @@ New Datatypes
 * Add minimal `msf` datatype
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 11084`_
+* Add ffindex and ffdata database file types
+  `Pull Request 11218`_
+* Fix sniffers of interval datatypes for files starting with many comments
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 11416`_
+* Add cmap datatype
+  (thanks to `@jaidevjoshi83 <https://github.com/jaidevjoshi83>`__).
+  `Pull Request 11471`_
+* Add compressed paf datatype
+  (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
+  `Pull Request 11567`_
 
 Builtin Tool Updates
 ===========================================================
@@ -137,9 +148,28 @@ Builtin Tool Updates
 
 * Allow the Apply Rules tool to attach tags to output datasets.
   `Pull Request 10382`_
+* Allow build_list inputs to be optional
+  `Pull Request 10871`_
+* Update askomics IT to 4.1.1
+  (thanks to `@abretaud <https://github.com/abretaud>`__).
+  `Pull Request 10878`_
 * Allow empty file uploads
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 11079`_
+* Make hash selection mandatory in hash tool.
+  `Pull Request 11427`_
+* Various pyiron interactive tool fixes.
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 11545`_
+* Update the cellxgene IT container.
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 11546`_
+* Allow using Openrefine without data inputs
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 11547`_
+* Fix $HOME for some gxit requiring a specific one
+  (thanks to `@abretaud <https://github.com/abretaud>`__).
+  `Pull Request 11577`_
 
 Release Notes
 ===========================================================
