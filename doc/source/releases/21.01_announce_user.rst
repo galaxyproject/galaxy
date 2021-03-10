@@ -70,7 +70,10 @@ Likewise the Rule-Builder now has access to the remote files interface. Sample s
 Beta History Panel
 ------------------
 
+The History panel is getting a refresh and a huge performance boost in the latest code. Does this sound exciting to you? Try it out now with the history menu option "Use Beta History Panel". This is not it's final state but we'd love feedback from you, the users, on how you find it. It features both performance and usability improvements. E.g. now you can rename files without going into a separate menu, just double click the dataset title!
 
+.. figure:: images/21.01-beta-hist.png
+   :alt: Beta history screenshot with a history titled "The Beta History", a few datasets and collections, and a textbox shown where the dataset title is being edited directly.
 
 User-friendliness Improvements
 ------------------------------
