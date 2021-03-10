@@ -113,7 +113,7 @@ steps:
     in:
       input1: input1
 """
-        summary = self.workflow_populator.run_workflow(workflow_simple, history_id=history_id, test_data={"input1": "hello world"},)
+        summary = self.workflow_populator.run_workflow(workflow_simple, history_id=history_id, test_data={"input1": "hello world"})
         invocation_id = summary.invocation_id
         workflow_id = self._get(f"invocations/{invocation_id}").json()['workflow_id']
         self.workflow_populator.wait_for_invocation(workflow_id, invocation_id)
@@ -122,6 +122,29 @@ steps:
         jobs2 = self.__jobs_index(data={"invocation_id": invocation_id})
         assert len(jobs2) == 1
         assert jobs1 == jobs2
+
+    @uses_test_history(require_new=True)
+    def test_index_workflow_filter_implicit_jobs(self, history_id):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  input_datasets: collection
+steps:
+  multi_data_optional:
+    tool_id: multi_data_optional
+    in:
+      input1: input_datasets
+""")
+        hdca_id = self.dataset_collection_populator.create_list_of_list_in_history(history_id).json()
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        inputs = {
+            '0': self.dataset_populator.ds_entry(hdca_id),
+        }
+        invocation_id = self.workflow_populator.invoke_workflow(history_id, workflow_id, inputs)
+        self.workflow_populator.wait_for_invocation(workflow_id, invocation_id)
+        jobs1 = self.__jobs_index(data={"workflow_id": workflow_id})
+        jobs2 = self.__jobs_index(data={"invocation_id": invocation_id})
+        assert len(jobs1) > len(jobs2)
 
     @uses_test_history(require_new=True)
     def test_index_limit_and_offset_filter(self, history_id):
