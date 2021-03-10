@@ -22,6 +22,7 @@ from galaxy.jobs.runners.util.pykube_util import (
     find_job_object_by_name,
     find_pod_object_by_name,
     galaxy_instance_id,
+    is_pod_unschedulable,
     Job,
     job_object_dict,
     Pod,
@@ -590,17 +591,12 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         """
         checks the state of the pod to see if it is unschedulable.
         """
-
         pods = find_pod_object_by_name(self._pykube_api, job_state.job_id, self.runner_params['k8s_namespace'])
         if not pods.response['items']:
             return False
 
         pod = Pod(self._pykube_api, pods.response['items'][0])
-        is_unschedulable = bool(len([c for c in pod.obj['status']['conditions'] if c.get("reason") == "Unschedulable"]))
-        if pod.obj['status']['phase'] == "Pending" and is_unschedulable:
-            return True
-
-        return False
+        return is_pod_unschedulable(self._pykube_api, pod, self.runner_params['k8s_namespace'])
 
     def stop_job(self, job_wrapper):
         """Attempts to delete a dispatched job to the k8s cluster"""
