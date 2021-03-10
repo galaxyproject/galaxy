@@ -538,7 +538,7 @@ export default {
             Vue.nextTick(() => {
                 this.canvasManager.drawOverview();
                 this.canvasManager.scrollToNodes();
-                this.hasChanges = has_changes;
+                this.hasChanges = this.requiresReindex = has_changes;
             });
         },
         _loadCurrent(id, version) {
