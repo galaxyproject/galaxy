@@ -7,8 +7,6 @@ API operations on a jobs.
 import logging
 import typing
 
-from fastapi_utils.cbv import cbv
-from fastapi_utils.inferring_router import InferringRouter as APIRouter
 from sqlalchemy import (
     or_,
 )
@@ -46,14 +44,15 @@ from . import (
     BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
+    Router,
 )
 
 log = logging.getLogger(__name__)
 
-router = APIRouter(tags=["jobs"])
+router = Router(tags=["jobs"])
 
 
-@cbv(router)
+@router.cbv
 class FastAPIJobs:
     job_manager: JobManager = depends(JobManager)
     job_search: JobSearch = depends(JobSearch)

@@ -67,9 +67,9 @@ module.exports = (env = {}, argv = {}) => {
                     loader: "vue-loader",
                 },
                 {
-                         test: /\.mjs$/,
-                         include: /node_modules/,
-                         type: 'javascript/auto'
+                    test: /\.mjs$/,
+                    include: /node_modules/,
+                    type: "javascript/auto",
                 },
                 {
                     test: /\.js$/,
@@ -185,7 +185,7 @@ module.exports = (env = {}, argv = {}) => {
                 },
                 {
                     test: /\.worker\.js$/,
-                    use: { loader: 'worker-loader' },
+                    use: { loader: "worker-loader" },
                 },
             ],
         },
@@ -227,6 +227,13 @@ module.exports = (env = {}, argv = {}) => {
         ],
         devServer: {
             hot: true,
+            // proxy *everything* to the galaxy server
+            // someday, this can be a more limited set -- e.g. `/api`, `/auth`
+            proxy: {
+                "/": {
+                    target: process.env.GALAXY_URL || "http://localhost:8080",
+                },
+            },
         },
     };
 

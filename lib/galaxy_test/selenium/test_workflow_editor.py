@@ -2,6 +2,7 @@ import json
 
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_NESTED_SIMPLE,
+    WORKFLOW_OPTIONAL_TRUE_INPUT_COLLECTION,
     WORKFLOW_SIMPLE_CAT_TWICE,
     WORKFLOW_SIMPLE_MAPPING,
     WORKFLOW_WITH_INVALID_STATE,
@@ -357,6 +358,36 @@ steps:
         self.workflow_index_click_option("Edit")
         self.assert_modal_has_text("Using version '0.2' instead of version '0.0.1'")
         self.screenshot("workflow_editor_tool_upgrade")
+
+    @selenium_test
+    def test_editor_embed_workflow(self):
+        workflow_populator = self.workflow_populator
+        child_workflow_name = self._get_random_name()
+        workflow_populator.upload_yaml_workflow(WORKFLOW_OPTIONAL_TRUE_INPUT_COLLECTION, name=child_workflow_name)
+        parent_workflow_id = workflow_populator.upload_yaml_workflow("""class: GalaxyWorkflow
+inputs: []
+steps:
+  - tool_id: multiple_versions
+    tool_version: 0.1
+    label: multiple_versions
+    state:
+      foo: bar
+        """)
+        self.workflow_index_open()
+        self.workflow_index_click_option("Edit")
+        editor = self.components.workflow_editor
+        editor.canvas_body.wait_for_visible()
+        editor.tool_menu.wait_for_visible()
+        editor.tool_menu_section_link(section_name="workflows").wait_for_and_click()
+        editor.workflow_link(workflow_title=child_workflow_name).wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_has_changes_and_save()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        workflow = self.workflow_populator.download_workflow(parent_workflow_id)
+        subworkflow_step = workflow['steps']['1']
+        assert subworkflow_step['name'] == child_workflow_name
+        assert subworkflow_step['type'] == 'subworkflow'
+        assert subworkflow_step['subworkflow']['a_galaxy_workflow'] == 'true'
 
     @selenium_test
     def test_editor_invalid_tool_state(self):

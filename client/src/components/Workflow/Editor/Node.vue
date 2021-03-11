@@ -308,7 +308,10 @@ export default {
                 clearTimeout(this.annotationTimeout);
             }
             this.annotationTimeout = setTimeout(() => {
-                this.annotation = annotation;
+                if (annotation !== this.annotation) {
+                    this.annotation = annotation;
+                    this.$emit("onChange");
+                }
             }, 100);
         },
         setLabel(label) {
@@ -316,12 +319,15 @@ export default {
                 clearTimeout(this.labelTimeout);
             }
             this.labelTimeout = setTimeout(() => {
-                this.label = label;
+                if (label !== this.label) {
+                    this.label = label;
+                    this.$emit("onChange");
+                }
             }, 100);
         },
         setData(data) {
             this.config_form = data.config_form;
-            this.content_id = this.config_form?.id;
+            this.content_id = data.config_form?.id || data.content_id;
             this.tool_state = data.tool_state;
             this.errors = data.errors;
             this.annotation = data.annotation;

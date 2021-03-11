@@ -243,6 +243,7 @@ export default {
             hasChanges: false,
             nodeIndex: 0,
             nodes: {},
+            requiresReindex: false, // track if node has been added or remove and backend may re-index nodes (hasChanges tracks a much more broad set of changes)
             datatypesMapper: null,
             datatypes: [],
             report: {},
@@ -347,6 +348,7 @@ export default {
         },
         onAdd(node) {
             this.nodes[node.id] = node;
+            this.requiresReindex = true;
         },
         onUpdate(node) {
             getModule({
@@ -367,6 +369,7 @@ export default {
             this.canvasManager.drawOverview();
             this.activeNode = null;
             this.hasChanges = true;
+            this.requiresReindex = true;
             showAttributes();
         },
         onEditSubworkflow(contentId) {
@@ -429,10 +432,20 @@ export default {
             node.onUnhighlight();
         },
         onLint() {
-            this._ensureParametersSet();
-            // See notes in Lint.vue about why refresh is needed.
-            this.$refs.lint.refresh();
-            showLint();
+            if (this.requiresReindex) {
+                const r = window.confirm(
+                    "Workflow steps have been added or removed since last save, the workflow needs to be saved before best practices can be analzyed. Save workflow?"
+                );
+                if (r == false) {
+                    return;
+                }
+                this.onSave(true);
+            } else {
+                this._ensureParametersSet();
+                // See notes in Lint.vue about why refresh is needed.
+                this.$refs.lint.refresh();
+                showLint();
+            }
         },
         onUpgrade() {
             this.attemptRefactor([{ action_type: "upgrade_all_steps" }]);

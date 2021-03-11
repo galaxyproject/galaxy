@@ -407,6 +407,9 @@ workflow_editor:
     tool_menu: '.toolMenuContainer'
     tool_menu_section_link: '.tool-menu-section-${section_name} a span'
     tool_menu_item_link: 'a.tool-menu-item-${item_name}'
+    workflow_link:
+      type: xpath
+      selector: '//a[contains(., "${workflow_title}")]'
 
     connect_icon: 'div.ui-form-element[tour_id="${name}"] .ui-form-connected-icon'
     collapse_icon: 'div.ui-form-element[tour_id="${name}"] .ui-form-collapsible-icon'

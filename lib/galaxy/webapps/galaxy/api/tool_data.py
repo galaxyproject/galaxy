@@ -1,15 +1,11 @@
 from typing import Optional
 
 from fastapi import (
-    Depends,
     Path,
 )
 from fastapi.responses import FileResponse
-from fastapi_utils.cbv import cbv
-from fastapi_utils.inferring_router import InferringRouter as APIRouter
 
 from galaxy import web
-from galaxy.app import StructuredApp
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.tool_data import ToolDataManager
 from galaxy.tools.data._schema import (
@@ -22,15 +18,13 @@ from galaxy.web import (
     expose_api,
     expose_api_raw,
 )
-from galaxy.webapps.base.controller import BaseAPIController
 from . import (
-    get_admin_user,
-    get_app,
+    BaseGalaxyAPIController,
+    depends,
+    Router
 )
 
-router = APIRouter(tags=['tool data tables'])
-
-AdminUserRequired = Depends(get_admin_user)
+router = Router(tags=['tool data tables'])
 
 ToolDataTableName = Path(
     ...,  # Mark this field as required
@@ -46,19 +40,15 @@ ToolDataTableFieldName = Path(
 )
 
 
-def get_tool_data_manager(app: StructuredApp = Depends(get_app)) -> ToolDataManager:
-    return ToolDataManager(app)
-
-
-@cbv(router)
+@router.cbv
 class FastAPIToolData:
-    tool_data_manager: ToolDataManager = Depends(get_tool_data_manager)
+    tool_data_manager: ToolDataManager = depends(ToolDataManager)
 
     @router.get(
         '/api/tool_data',
         summary="Lists all available data tables",
         response_description="A list with details on individual data tables.",
-        dependencies=[AdminUserRequired],
+        require_admin=True,
     )
     async def index(self) -> ToolDataEntryList:
         """Get the list of all available data tables."""
@@ -68,7 +58,7 @@ class FastAPIToolData:
         '/api/tool_data/{table_name}',
         summary="Get details of a given data table",
         response_description="A description of the given data table and its content",
-        dependencies=[AdminUserRequired],
+        require_admin=True,
     )
     async def show(self, table_name: str = ToolDataTableName) -> ToolDataDetails:
         """Get details of a given tool data table."""
@@ -78,7 +68,7 @@ class FastAPIToolData:
         '/api/tool_data/{table_name}/reload',
         summary="Reloads a tool data table",
         response_description="A description of the reloaded data table and its content",
-        dependencies=[AdminUserRequired],
+        require_admin=True,
     )
     async def reload(self, table_name: str = ToolDataTableName) -> ToolDataDetails:
         """Reloads a data table and return its details."""
@@ -88,7 +78,7 @@ class FastAPIToolData:
         '/api/tool_data/{table_name}/fields/{field_name}',
         summary="Get information about a particular field in a tool data table",
         response_description="Information about a data table field",
-        dependencies=[AdminUserRequired],
+        require_admin=True,
     )
     async def show_field(
         self,
@@ -103,7 +93,7 @@ class FastAPIToolData:
         summary="Get information about a particular field in a tool data table",
         response_description="Information about a data table field",
         response_class=FileResponse,
-        dependencies=[AdminUserRequired],
+        require_admin=True,
     )
     async def download_field_file(
         self,
@@ -123,7 +113,7 @@ class FastAPIToolData:
         '/api/tool_data/{table_name}',
         summary="Removes an item from a data table",
         response_description="A description of the affected data table and its content",
-        dependencies=[AdminUserRequired],
+        require_admin=True,
     )
     async def delete(
         self,
@@ -134,14 +124,11 @@ class FastAPIToolData:
         return self.tool_data_manager.delete(table_name, payload.values)
 
 
-class ToolData(BaseAPIController):
+class ToolData(BaseGalaxyAPIController):
     """
     RESTful controller for interactions with tool data
     """
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.tool_data_manager = ToolDataManager(app)
+    tool_data_manager: ToolDataManager = depends(ToolDataManager)
 
     @web.require_admin
     @expose_api

@@ -11,8 +11,6 @@ from typing import (
 )
 
 from fastapi import Path
-from fastapi_utils.cbv import cbv
-from fastapi_utils.inferring_router import InferringRouter as APIRouter
 
 from galaxy.managers.configuration import ConfigurationManager
 from galaxy.managers.context import (
@@ -30,11 +28,11 @@ from galaxy.web import (
     require_admin
 )
 from . import (
-    AdminUserRequired,
     BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
     DependsOnUser,
+    Router,
 )
 from .common import (
     parse_serialization_params,
@@ -44,7 +42,7 @@ from .common import (
 
 log = logging.getLogger(__name__)
 
-router = APIRouter(tags=['configuration'])
+router = Router(tags=['configuration'])
 
 
 EncodedIdPathParam: EncodedDatabaseIdField = Path(
@@ -54,7 +52,7 @@ EncodedIdPathParam: EncodedDatabaseIdField = Path(
 )
 
 
-@cbv(router)
+@router.cbv
 class FastAPIConfiguration:
     configuration_manager: ConfigurationManager = depends(ConfigurationManager)
 
@@ -98,7 +96,7 @@ class FastAPIConfiguration:
 
     @router.get(
         '/api/configuration/dynamic_tool_confs',
-        dependencies=[AdminUserRequired],
+        require_admin=True,
         summary="Return dynamic tool configuration files",
         response_description="Dynamic tool configuration files"
     )
@@ -108,7 +106,7 @@ class FastAPIConfiguration:
 
     @router.get(
         '/api/configuration/decode/{encoded_id}',
-        dependencies=[AdminUserRequired],
+        require_admin=True,
         summary="Decode a given id",
         response_description="Decoded id"
     )
@@ -121,7 +119,7 @@ class FastAPIConfiguration:
 
     @router.get(
         '/api/configuration/tool_lineages',
-        dependencies=[AdminUserRequired],
+        require_admin=True,
         summary="Return tool lineages for tools that have them",
         response_description="Tool lineages for tools that have them"
     )
@@ -131,7 +129,7 @@ class FastAPIConfiguration:
 
     @router.put(
         '/api/configuration/toolbox',
-        dependencies=[AdminUserRequired],
+        require_admin=True,
         summary="Reload the Galaxy toolbox (but not individual tools)"
     )
     def reload_toolbox(self):

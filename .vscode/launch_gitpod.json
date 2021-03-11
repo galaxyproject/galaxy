@@ -6,7 +6,7 @@
             "type": "python",
             "request": "launch",
             "module": "uvicorn",
-            "args": ["--app-dir", "lib",  "--factory", "galaxy.webapps.galaxy.fast_factory:factory"],
+            "args": ["--app-dir", "lib", "--factory", "galaxy.webapps.galaxy.fast_factory:factory"],
             "env": {
                 "GALAXY_CONFIG_FILE": "${workspaceFolder}/config/galaxy.yml",
                 "GALAXY_CONDA_AUTO_INIT": "false",
@@ -26,7 +26,21 @@
                 "-k",
                 "job_properties_test_2"
             ]
+        },
+        {
+            "type": "node",
+            "name": "debug selected jest unit test",
+            "request": "launch",
+            "program": "${workspaceFolder}/client/node_modules/jest/bin/jest",
+            "args": [
+                "--runInBand",
+                "--config",
+                "${workspaceFolder}/client/tests/jest/jest.config.js",
+                "${file}"
+            ],
+            "cwd": "${workspaceFolder}/client",
+            "console": "integratedTerminal",
+            "disableOptimisticBPs": true
         }
     ]
 }
-

@@ -14,15 +14,21 @@ export function userLogout(logoutAll = false) {
     const url = `${galaxy.root}user/logout?session_csrf_token=${session_csrf_token}&logout_all=${logoutAll}`;
     axios
         .get(url)
-        .then(() => {
+        .then((response) => {
             if (galaxy.user) {
                 galaxy.user.clearSessionStorage();
             }
             // Check if we need to logout of OIDC IDP
             if (galaxy.config.enable_oidc) {
+                const provider = localStorage.getItem("galaxy-provider");
+                if (provider) {
+                    localStorage.removeItem("galaxy-provider");
+                    return axios.get(`${galaxy.root}authnz/logout?provider=${provider}`);
+                }
                 return axios.get(`${galaxy.root}authnz/logout`);
             } else {
-                return {};
+                // Otherwise pass through the initial logout response
+                return response;
             }
         })
         .then((response) => {
