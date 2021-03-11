@@ -376,12 +376,19 @@ export default {
             this.onNavigate(editUrl);
         },
         onClone(node) {
-            Vue.set(this.steps, this.nodeIndex++, {
-                ...node.step,
+            const newId = this.nodeIndex++;
+            const stepCopy = JSON.parse(JSON.stringify(node.step))
+            Vue.set(this.steps, newId, {
+                ...stepCopy,
+                id: newId,
+                config_form: {
+                    ...stepCopy.config_form,
+                    inputs: stepCopy.config_form.inputs.filter((input) => !!!input.skipOnClone),
+                },
                 uuid: null,
-                annotation: node.annotation,
-                tool_state: node.tool_state,
-                post_job_actions: node.postJobActions,
+                annotation: JSON.parse(JSON.stringify(node.annotation)),
+                tool_state: JSON.parse(JSON.stringify(node.tool_state)),
+                post_job_actions: JSON.parse(JSON.stringify(node.postJobActions)),
             });
         },
         onInsertTool(tool_id, tool_name) {

@@ -138,6 +138,7 @@ function _addLabelAnnotation(self, node) {
     const workflow = self.workflow;
     const inputs = node.config_form.inputs;
     inputs.unshift({
+        skipOnClone: true,
         type: "text",
         name: "__annotation",
         label: "Step Annotation",
@@ -150,6 +151,7 @@ function _addLabelAnnotation(self, node) {
         help: "Add an annotation or notes to this step. Annotations are available when a workflow is viewed.",
     });
     inputs.unshift({
+        skipOnClone: true,
         type: "text",
         name: "__label",
         label: "Label",
@@ -259,11 +261,13 @@ function _makeSection(self, node, output) {
     const activeOutput = node.activeOutputs.get(output.name);
     const inputTitle = output.label || output.name;
     const inputConfig = {
+        skipOnClone: true,
         title: `Configure Output: '${inputTitle}'`,
         type: "section",
         flat: true,
         inputs: [
             {
+                skipOnClone: true,
                 label: "Label",
                 name: `__label__${output.name}`,
                 type: "text",
@@ -285,6 +289,7 @@ function _makeSection(self, node, output) {
                 },
             },
             {
+                skipOnClone: true,
                 action: "RenameDatasetAction",
                 pja_arg: "newname",
                 label: "Rename dataset",
@@ -294,6 +299,7 @@ function _makeSection(self, node, output) {
                 help: renameHelp,
             },
             {
+                skipOnClone: true,
                 action: "ChangeDatatypeAction",
                 pja_arg: "newtype",
                 label: "Change datatype",
@@ -307,6 +313,7 @@ function _makeSection(self, node, output) {
                 },
             },
             {
+                skipOnClone: true,
                 action: "TagDatasetAction",
                 pja_arg: "tags",
                 label: "Add Tags",
@@ -316,6 +323,7 @@ function _makeSection(self, node, output) {
                 help: "This action will set tags for the dataset.",
             },
             {
+                skipOnClone: true,
                 action: "RemoveTagDatasetAction",
                 pja_arg: "tags",
                 label: "Remove Tags",
@@ -325,6 +333,7 @@ function _makeSection(self, node, output) {
                 help: "This action will remove tags for the dataset.",
             },
             {
+                skipOnClone: true,
                 title: _l("Assign columns"),
                 type: "section",
                 flat: true,
@@ -394,6 +403,7 @@ function _addSections(self, node) {
             payload: {
                 host: window.location.host,
             },
+            skipOnClone: true,
         });
         inputs.push({
             name: `pja__${outputFirst.name}__DeleteIntermediatesAction`,
@@ -403,6 +413,7 @@ function _addSections(self, node) {
             ignore: "false",
             help:
                 "Upon completion of this step, delete non-starred outputs from completed workflow steps if they are no longer required as inputs.",
+            skipOnClone: true,
         });
         for (const output of node.outputs) {
             inputs.push(_makeSection(self, node, output));
