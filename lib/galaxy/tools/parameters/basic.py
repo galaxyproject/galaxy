@@ -1272,7 +1272,7 @@ class ColumnListParameter(SelectToolParameter):
     @staticmethod
     def _strip_c(column):
         if isinstance(column, str):
-            if column.startswith('c'):
+            if column.startswith('c') and len(column) > 1 and all(c.isdigit() for c in column[1:]):
                 column = column.strip().lower()[1:]
         return column
 
