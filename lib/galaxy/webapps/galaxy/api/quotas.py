@@ -4,9 +4,6 @@ API operations on Quota objects.
 import logging
 
 from fastapi import Path
-# TODO: replace with Router after merging #11219
-from fastapi_utils.cbv import cbv
-from fastapi_utils.inferring_router import InferringRouter as APIRouter
 
 from galaxy import (
     util,
@@ -25,13 +22,14 @@ from . import (
     BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
+    Router,
 )
 
 log = logging.getLogger(__name__)
 
 
 # TODO: This FastAPI router is disabled.
-_router = APIRouter(tags=['quotas'])
+_router = Router(tags=['quotas'])
 
 
 QuotaIdPathParam: EncodedDatabaseIdField = Path(
@@ -41,7 +39,7 @@ QuotaIdPathParam: EncodedDatabaseIdField = Path(
 )
 
 
-@cbv(_router)
+@_router.cbv
 class FastAPITags:
     manager: QuotasManager = depends(QuotasManager)
 
