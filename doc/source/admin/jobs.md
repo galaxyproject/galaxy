@@ -142,7 +142,9 @@ take the following steps:
 1. In the `galaxy.yml` set the following attributes: 
 
 - `job_config_file: job_conf.yml`
-- `galaxy_infrastructure_url: 'http://host.docker.internal:$UWSGI_PORT'`
+- Appropriately configure `galaxy_infrastructure_url`; for example, 
+set it as the following on macOS: 
+`galaxy_infrastructure_url: 'http://host.docker.internal:$UWSGI_PORT'`
 
 2. In the `job_conf.yml` set the following runners and execution attributes appropriately: 
 
