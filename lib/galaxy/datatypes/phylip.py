@@ -65,6 +65,13 @@ class Phylip(Text):
         for line in f:
             if not line.split():
                 break
+            if len(line) < 11:
+                # Sequence characters immediately follow the sequence ID.
+                # They must start at the 11th character in the line, as the first 10 characters are reserved for the sequence ID
+                return False
+            if any(str.isdigit(c) or not str.isascii(c) for c in line[10:]):
+                # Could tighten up further by requiring IUPAC strings chars
+                return False
             count += 1
             if count > nb_seq:
                 return False
