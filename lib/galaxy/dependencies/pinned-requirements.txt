@@ -83,7 +83,7 @@ markdown==3.3.3; python_version >= "3.6"
 markupsafe==1.1.1; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.4.0")
 mercurial==5.6.1
 mistune==0.8.4; python_version >= "3.6" and python_version < "4"
-msgpack==0.6.2; python_version >= "3.6"
+msgpack==1.0.2; python_version >= "3.6"
 munch==2.5.0; python_version >= "3.6"
 mypy-extensions==0.4.3; python_version >= "3.6" and python_version < "4"
 netaddr==0.8.0; python_version >= "3.6"
