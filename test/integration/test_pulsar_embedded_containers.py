@@ -46,3 +46,10 @@ class EmbeddedSingularityPulsarIntegrationTestCase(BaseEmbeddedPulsarContainerIn
 class EmbeddedDockerPulsarIntegrationTestCase(BaseEmbeddedPulsarContainerIntegrationTestCase, MulledJobTestCases):
     job_config_file = EMBEDDED_PULSAR_JOB_CONFIG_FILE_DOCKER
     container_type = 'docker'
+
+
+instance = integration_util.integration_module_instance(EmbeddedDockerPulsarIntegrationTestCase)
+
+test_tools = integration_util.integration_tool_runner([
+    "tool_directory_docker",
+])
