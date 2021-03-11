@@ -36,3 +36,7 @@ export class History extends dateMixin(ModelBase) {
 History.equals = function (a, b) {
     return JSON.stringify(a) == JSON.stringify(b);
 };
+
+History.create = (...args) => {
+    return Object.freeze(new History(...args));
+};

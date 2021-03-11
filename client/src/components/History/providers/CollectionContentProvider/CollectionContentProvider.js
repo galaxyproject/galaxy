@@ -14,7 +14,7 @@
  */
 
 import { DatasetCollection } from "../../model";
-import { ContentProvider } from "../ContentProvider";
+import ContentProvider from "../ContentProvider";
 import { processCollectionStreams } from "./processCollectionStreams";
 
 export default {

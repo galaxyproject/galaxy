@@ -1,15 +1,11 @@
 import { merge, combineLatest } from "rxjs";
 import { map, pluck, distinctUntilChanged, share, debounceTime } from "rxjs/operators";
 import { tag } from "rxjs-spy/operators/tag";
-import { whenAny } from "utils/observable/whenAny";
-import { activity } from "utils/observable/activity";
-import { shareButDie } from "utils/observable/shareButDie";
-import { chunk } from "../../caching/operators/chunk";
-
+import { whenAny, activity, shareButDie, chunk } from "utils/observable";
 import { DatasetCollection, SearchParams } from "../../model";
 import { watchCollectionCache } from "./watchCollectionCache";
 import { loadCollectionContents } from "./loadCollectionContents";
-import { loadInputsSame } from "../HistoryContentProvider/processHistoryStreams";
+import { loadInputsSame } from "../helpers";
 
 // prettier-ignore
 export function processCollectionStreams(sources, settings) {

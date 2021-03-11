@@ -15,7 +15,7 @@ import { monitorQuery } from "./db/monitorQuery";
 export * from "./db/promises";
 
 export { loadDscContent } from "./loadDscContent";
-export { loadHistoryContents, clearHistoryDateStore } from "./loadHistoryContents";
+export { loadHistoryContents, clearHistoryDateStore, loadHistoryContentsByIndex } from "./loadHistoryContents";
 export { monitorHistoryContent } from "./monitorHistoryContent";
 export { wipeDatabase } from "./db/wipeDatabase";
 

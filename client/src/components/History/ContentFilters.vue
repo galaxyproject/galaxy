@@ -1,27 +1,25 @@
 <template>
-    <b-input-group v-if="params">
+    <b-input-group>
         <DebouncedInput v-model.trim="filterText" v-slot="{ value, input }">
             <b-form-input size="sm" :value="value" @input="input" :placeholder="'Search Filter' | localize" />
         </DebouncedInput>
 
-        <b-input-group-append>
-            <b-button
-                size="sm"
-                :pressed="showDeleted"
-                :variant="showDeleted ? 'info' : 'secondary'"
-                @click="showDeleted = !showDeleted"
-            >
-                {{ "Deleted" | localize }}
-            </b-button>
-            <b-button
-                size="sm"
-                :pressed="showHidden"
-                :variant="showHidden ? 'info' : 'secondary'"
-                @click="showHidden = !showHidden"
-            >
-                {{ "Hidden" | localize }}
-            </b-button>
-        </b-input-group-append>
+        <b-button
+            size="sm"
+            :pressed="showDeleted"
+            :variant="showDeleted ? 'info' : 'secondary'"
+            @click="showDeleted = !showDeleted"
+        >
+            {{ "Deleted" | localize }}
+        </b-button>
+        <b-button
+            size="sm"
+            :pressed="showHidden"
+            :variant="showHidden ? 'info' : 'secondary'"
+            @click="showHidden = !showHidden"
+        >
+            {{ "Hidden" | localize }}
+        </b-button>
     </b-input-group>
 </template>
 
@@ -34,53 +32,53 @@ export default {
         DebouncedInput,
     },
     props: {
-        params: { type: SearchParams, required: true },
+        filters: { type: SearchParams, required: true },
     },
     computed: {
         skip: {
             get() {
-                return this.params.skip;
+                return this.filters.skip;
             },
             set(newSkip) {
-                const newParams = this.params.clone();
+                const newParams = this.filters.clone();
                 newParams.skip = newSkip;
-                this.updateParams(newParams);
+                this.updateFilters(newParams);
             },
         },
         filterText: {
             get() {
-                return this.params.filterText;
+                return this.filters.filterText;
             },
             set(newVal) {
-                const newParams = this.params.clone();
+                const newParams = this.filters.clone();
                 newParams.filterText = newVal;
-                this.updateParams(newParams);
+                this.updateFilters(newParams);
             },
         },
         showDeleted: {
             get() {
-                return this.params.showDeleted;
+                return this.filters.showDeleted;
             },
             set(newFlag) {
-                const newParams = this.params.clone();
+                const newParams = this.filters.clone();
                 newParams.showDeleted = newFlag;
-                this.updateParams(newParams);
+                this.updateFilters(newParams);
             },
         },
         showHidden: {
             get() {
-                return this.params.showHidden;
+                return this.filters.showHidden;
             },
             set(newFlag) {
-                const newParams = this.params.clone();
+                const newParams = this.filters.clone();
                 newParams.showHidden = newFlag;
-                this.updateParams(newParams);
+                this.updateFilters(newParams);
             },
         },
     },
     methods: {
-        updateParams(newParams) {
-            this.$emit("update:params", newParams);
+        updateFilters(newVal) {
+            this.$emit("update:filters", newVal);
         },
     },
 };

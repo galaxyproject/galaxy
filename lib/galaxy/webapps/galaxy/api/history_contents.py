@@ -645,6 +645,66 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesL
             rval.append(self.__collection_dict(trans, dataset_collection_instance, view="summary"))
         return rval
 
+    @expose_api
+    def content_query(self, trans, history_id, **kwd):
+        """
+        GET /api/histories/{history_id}/beta/contents
+        """
+        history = self.history_manager.get_accessible(self.decode_id(history_id), trans.user, current_history=trans.history)
+        
+        # dynamic query filters
+        kwd_filters = kwd.copy()
+        doomed = ['limit', 'offset', 'keys', 'view', 'index_field', 'order']
+        [kwd_filters.pop(key, None) for key in doomed]
+        filter_params = self._parse_rest_params(kwd_filters)
+        filters = self.history_contents_filters.parse_filters(filter_params)
+        
+        # query statistics, count of total matches, first and last hid
+        index_field = kwd.get('index_field', 'hid')
+        count_filter_params = [f for f in filter_params if f[0] != 'update_time']
+        count_filters = self.history_contents_filters.parse_filters(count_filter_params)
+        total_matches = self.history_contents_manager.contents_count(history, count_filters)
+        min_index, max_index = self._get_filtered_extrema(history, filter_params, index_field)
+
+        # Returned content paginated rows, only if limit is set
+        limit, offset = self.parse_limit_offset(kwd)
+        order_by_string = kwd.get('order', 'hid-dsc')
+        result = []
+        if limit > 0:
+            serialization_params = self._parse_serialization_params(kwd, 'betawebclient')
+            view = serialization_params.pop('view')
+            order_by = self._parse_order_by(manager=self.history_contents_manager, order_by_string=order_by_string)
+            contents = self.history_contents_manager.contents(history, filters=filters, limit=limit, offset=offset, order_by=order_by)
+            result = self._expand_contents(trans, contents, serialization_params, view)
+
+        # calculated query stats
+        trans.response.headers['total_matches'] = total_matches
+        trans.response.headers['min_index'] = min_index
+        trans.response.headers['max_index'] = max_index
+        
+        # Pass through a few of the query vars for convenience
+        trans.response.headers['index_field'] = index_field
+        trans.response.headers['limit'] = limit
+        trans.response.headers['offset'] = offset
+        trans.response.headers['order'] = order_by_string
+
+        return result
+
+    @expose_api
+    def content_query_update(self, trans, history_id, payload, **kwd):
+        """
+        PUT /api/histories/{history_id}/beta/contents
+        """
+        history = self.history_manager.get_accessible(self.decode_id(history_id), trans.user, current_history=trans.history)
+        filter_params = self._parse_rest_params(kwd)
+        filters = self.history_contents_filters.parse_filters(filter_params)
+        serialization_params = self._parse_serialization_params(dict(keys='hid,id,name,hda_id,hdca_id'), 'summary')
+        view = serialization_params.pop('view')
+        contents = self.history_contents_manager.contents(history, filters=filters)
+        result = self._expand_contents(trans, contents, serialization_params, view)
+
+        return result
+
     @expose_api_anonymous
     def update(self, trans, history_id, id, payload, **kwd):
         """
@@ -1151,13 +1211,13 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesL
 
         return result
 
-    def _get_filtered_extrema(self, history, filter_params):
-        extrema_params = self._parse_serialization_params(dict(keys='hid'), 'summary')
+    def _get_filtered_extrema(self, history, filter_params, index_field = 'hid'):
+        extrema_params = self._parse_serialization_params(dict(keys=index_field), 'summary')
         extrema_filter_params = [f for f in filter_params if f[0] != 'update_time']
         extrema_filters = self.history_contents_filters.parse_filters(extrema_filter_params)
 
-        order_by_dsc = self._parse_order_by(manager=self.history_contents_manager, order_by_string='hid-dsc')
-        order_by_asc = self._parse_order_by(manager=self.history_contents_manager, order_by_string='hid-asc')
+        order_by_dsc = self._parse_order_by(manager=self.history_contents_manager, order_by_string=index_field+'-dsc')
+        order_by_asc = self._parse_order_by(manager=self.history_contents_manager, order_by_string=index_field+'-asc')
 
         max_row_result = self.history_contents_manager.contents(history,
             limit=1,
@@ -1173,7 +1233,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesL
             serialization_params=extrema_params)
         min_row = min_row_result.pop() if len(min_row_result) else None
 
-        max_hid = max_row.hid if max_row else None
-        min_hid = min_row.hid if min_row else None
+        max_index = getattr(max_row, index_field) if max_row else None
+        min_index = getattr(min_row, index_field) if min_row else None
 
-        return min_hid, max_hid
+        return min_index, max_index

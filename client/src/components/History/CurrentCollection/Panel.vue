@@ -2,19 +2,8 @@
 
 <template>
     <DscProvider :is-root="isRoot" :collection="selectedCollection" v-slot="{ dsc }">
-        <CollectionContentProvider
-            v-if="dsc"
-            :parent="dsc"
-            v-slot="{
-                payload: { contents = [], startKey = null, topRows = 0, bottomRows = 0 },
-                handlers: { setScrollPos },
-            }"
-        >
-            <ExpandedItems
-                :scope-key="selectedCollection.id"
-                :get-item-key="(item) => item.type_id"
-                v-slot="{ isExpanded, setExpanded }"
-            >
+        <CollectionContentProvider v-if="dsc" :parent="dsc" v-slot="{ payload, setScrollPos }">
+            <ExpandedItems :scope="selectedCollection.id" :get-key="(o) => o.type_id" v-slot="expanded">
                 <Layout>
                     <template v-slot:nav>
                         <TopNav :history="history" :selected-collections="selectedCollections" v-on="$listeners" />
@@ -28,19 +17,19 @@
                         <Scroller
                             key-field="element_index"
                             :item-height="36"
-                            :items="contents"
-                            :scroll-to="startKey"
-                            :top-placeholders="topRows"
-                            :bottom-placeholders="bottomRows"
+                            :items="payload.contents"
+                            :scroll-to="payload.startKey"
+                            :top-placeholders="payload.topRows"
+                            :bottom-placeholders="payload.bottomRows"
                             @scroll="setScrollPos"
                         >
                             <template v-slot="{ item, index }">
                                 <CollectionContentItem
                                     :item="item"
                                     :index="index"
-                                    :expanded="isExpanded(item)"
+                                    :expanded="expanded.has(item)"
                                     :writable="writable"
-                                    @update:expanded="setExpanded(item, $event)"
+                                    @update:expanded="expanded.toggle(item, $event)"
                                     @viewCollection="$emit('viewCollection', item)"
                                 />
                             </template>
@@ -57,7 +46,8 @@ import { History } from "../model";
 import { updateContentFields } from "../model/queries";
 import { cacheContent } from "../caching";
 
-import { DscProvider, CollectionContentProvider, ExpandedItems } from "../providers";
+import { default as ExpandedItems } from "components/providers/ToggleList";
+import { DscProvider, CollectionContentProvider } from "../providers";
 import Layout from "../Layout";
 import TopNav from "./TopNav";
 import Details from "./Details";

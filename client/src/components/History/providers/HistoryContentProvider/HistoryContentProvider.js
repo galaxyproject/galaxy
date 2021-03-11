@@ -1,19 +1,16 @@
-import { ContentProvider } from "../ContentProvider";
+import ContentProvider from "../ContentProvider";
 import { processHistoryStreams } from "./processHistoryStreams";
 
 export default {
     mixins: [ContentProvider],
-
     props: {
         disablePoll: { type: Boolean, default: false },
     },
-
     computed: {
         history() {
             return this.parent;
         },
     },
-
     watch: {
         history(newHistory, oldHistory) {
             if (!(newHistory.id == oldHistory.id)) {
@@ -21,7 +18,6 @@ export default {
             }
         },
     },
-
     methods: {
         initStreams() {
             const { disablePoll, debouncePeriod, pageSize, params$, scrollPos$ } = this;

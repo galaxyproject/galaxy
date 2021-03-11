@@ -14,6 +14,7 @@ const {
     monitorDscQuery,
     monitorHistoryContent,
     loadHistoryContents,
+    loadHistoryContentsByIndex,
     loadDscContent,
     pollHistory,
     ...promises
@@ -27,8 +28,10 @@ expose({
     monitorDscQuery: asObservable(monitorDscQuery),
     monitorHistoryContent: asObservable(monitorHistoryContent),
     loadHistoryContents: asObservable(loadHistoryContents),
+    loadHistoryContentsByIndex: asObservable(loadHistoryContentsByIndex),
     loadDscContent: asObservable(loadDscContent),
     pollHistory: asObservable(pollHistory),
 
+    // promise functions
     ...promises,
 });

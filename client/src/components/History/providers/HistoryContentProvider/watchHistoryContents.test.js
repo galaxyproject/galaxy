@@ -32,13 +32,14 @@ describe("watchHistoryContents", () => {
 
     describe("simple loading scenario", () => {
         const hid$ = of(firstDoc.hid);
-        const fakeHistory = { id: firstDoc.history_id };
-        const input$ = of([fakeHistory, new SearchParams()]);
+        const history = { id: firstDoc.history_id };
+        const filters = new SearchParams();
 
         test("should observe pre-inserted content on the initial emission", async () => {
-            const watcher$ = input$.pipe(
+            const watcher$ = hid$.pipe(
                 watchHistoryContents({
-                    hid$,
+                    history,
+                    filters,
                     pageSize: 5,
                 }),
                 take(1),
@@ -62,9 +63,10 @@ describe("watchHistoryContents", () => {
         });
 
         test("should observe subsequently updated data", async () => {
-            const watcher$ = input$.pipe(
+            const watcher$ = hid$.pipe(
                 watchHistoryContents({
-                    hid$,
+                    history,
+                    filters,
                     pageSize: 5,
                 }),
                 // safeguard, sometimes the debouncing merges both results into one
@@ -110,17 +112,20 @@ describe("watchHistoryContents", () => {
 
     describe("should respect filter inputs", () => {
         const hid$ = of(firstDoc.hid);
-        const fakeHistory = { id: firstDoc.history_id };
+        const history = { id: firstDoc.history_id };
+        let filters;
+
+        beforeEach(() => {
+            filters = new SearchParams();
+        });
 
         test("deleted flag", async () => {
-            const filters = new SearchParams();
             filters.showDeleted = true;
 
-            const input$ = of([fakeHistory, filters]);
-
-            const watcher$ = input$.pipe(
+            const watcher$ = hid$.pipe(
                 watchHistoryContents({
-                    hid$,
+                    history,
+                    filters,
                     pageSize: 5,
                 }),
                 take(1),
@@ -142,14 +147,12 @@ describe("watchHistoryContents", () => {
         });
 
         test("hidden flag", async () => {
-            const filters = new SearchParams();
             filters.showHidden = true;
 
-            const input$ = of([fakeHistory, filters]);
-
-            const watcher$ = input$.pipe(
+            const watcher$ = hid$.pipe(
                 watchHistoryContents({
-                    hid$,
+                    history,
+                    filters,
                     pageSize: 5,
                 }),
                 take(1),
@@ -171,15 +174,13 @@ describe("watchHistoryContents", () => {
         });
 
         test("deleted and hidden flag", async () => {
-            const filters = new SearchParams();
             filters.showDeleted = true;
             filters.showHidden = true;
 
-            const input$ = of([fakeHistory, filters]);
-
-            const watcher$ = input$.pipe(
+            const watcher$ = hid$.pipe(
                 watchHistoryContents({
-                    hid$,
+                    history,
+                    filters,
                     pageSize: 5,
                 }),
                 take(1),

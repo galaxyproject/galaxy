@@ -10,7 +10,7 @@ export default {
         keyField: { type: String, required: true },
         scrollDebounce: { type: Number, required: false, default: 250 },
         itemHeight: { required: true, validator: notNegative },
-        items: { type: Array, required: true },
+        items: { type: Array, required: false, default: () => [] },
         topPlaceholders: { type: Number, default: 0 },
         bottomPlaceholders: { type: Number, default: 0 },
         suppressionPeriod: { type: Number, default: 250 },
@@ -46,7 +46,7 @@ export default {
             return {
                 cursor: this.cursor,
                 key: el?.dataset.key,
-                keyIndex: el?.dataset.index,
+                // keyIndex: el?.dataset.index,
             };
         },
     },

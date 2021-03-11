@@ -4,6 +4,7 @@
 
 import Vue from "vue";
 import Vuex from "vuex";
+import frag from "vue-frag";
 import BootstrapVue from "bootstrap-vue";
 import store from "../store";
 import { eventHubPlugin, localizationPlugin, vueRxShortcutPlugin } from "components/plugins";
@@ -23,6 +24,10 @@ Vue.use(localizationPlugin);
 
 // rxjs utilities
 Vue.use(vueRxShortcutPlugin);
+
+// fragment unwrapper, gets around multi-root limitation which causes us to
+// render extraneous nested elements, often breaking things like standard HTML tables
+Vue.directive("frag", frag);
 
 export const mountVueComponent = (ComponentDefinition) => {
     const component = Vue.extend(ComponentDefinition);

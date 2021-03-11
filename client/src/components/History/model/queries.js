@@ -7,6 +7,7 @@
 
 import axios from "axios";
 import moment from "moment";
+import { SearchParams } from "./SearchParams";
 import { prependPath } from "utils/redirect";
 
 // #region setup & utils
@@ -15,7 +16,7 @@ import { prependPath } from "utils/redirect";
  * Prefix axios with configured path prefix and /api
  */
 
-const api = axios.create({
+export const api = axios.create({
     baseURL: prependPath("/api"),
 });
 
@@ -24,7 +25,7 @@ const api = axios.create({
  * @param {*} response
  */
 
-const doResponse = (response) => {
+export const doResponse = (response) => {
     if (response.status != 200) throw new Error(response);
     return response.data;
 };
@@ -306,27 +307,6 @@ export async function purgeContent(history, content) {
     return doResponse(response);
 }
 
-/**
- * Bulk update endpoint (TODO: rewrite)
- *
- * @param {*} history
- * @param {*} type_ids
- * @param {*} fields
- */
-export async function bulkContentUpdate(history, type_ids = [], fields = {}) {
-    const items = type_ids.map((type_id) => {
-        const [history_content_type, id] = type_id.split("-");
-        return { id, type_id, history_content_type };
-    });
-
-    const { id } = history;
-    const url = `/histories/${id}/contents?view=betawebclient`;
-    const payload = Object.assign({}, fields, { items });
-    const response = await api.put(url, payload);
-    console.log("bulkContentUpdate response", response);
-    return doResponse(response);
-}
-
 // #endregion
 
 // #region Collections
@@ -390,3 +370,102 @@ export async function loadToolFromJob(jobId) {
 }
 
 // #endregion
+
+// #region Bulk Content Updates
+
+/**
+ * Returns history content matches from dynamic query
+ *
+ * @param   {History}       history         Containing history
+ * @param   {SearchParams}  rawFilters      SearchParams object representing the query
+ * @param   {integer}       limit           Number of rows returned, send in 0 for counts only
+ * @param   {integer}       offset          Starting row index
+ * @return  {integer}                       Number of matches in the history on the server
+ */
+export async function getContentQueryMatches(history, rawFilters = new SearchParams(), limit = 0, offset = 0) {
+    const { id } = history;
+    const filters = rawFilters instanceof SearchParams ? rawFilters : new SearchParams(rawFilters);
+    const params = { ...filters.historyContentQueryFields, limit, offset };
+    const endpoint = `/histories/${id}/beta/contents`;
+
+    const response = await api.get(endpoint, { params });
+    if (response.status != 200) throw new Error(response);
+
+    const { data: content = [], headers = {} } = response;
+    const { total_matches = 0 } = headers;
+
+    return { totalMatches: parseInt(total_matches), content };
+}
+
+/**
+ * Performs query against server to get a sample list of potential files which will be operated on.
+ *
+ * @param   {History}       history       History Object
+ * @param   {SearchParams}  selection     SearchParams object to turn into a query
+ * @param   {integer}       limit         Max number of rows in result set for sample
+ * @return  {Object}                      Object containing sample results and a totalMatches count
+ */
+export async function getSampleContent(history, filters, limit = 25) {
+    const { id, hid_counter } = history;
+
+    // query normal content api endpoint, might make a nicer one that's more efficient
+    // just for this query.
+    const url = `/histories/${id}/contents/near/${hid_counter}/${limit}`;
+    const params = filters.historyContentQueryFields;
+
+    const response = await api.get(url, { params });
+    if (response.status != 200) throw new Error(response);
+
+    const sample = response.data;
+    const { total_matches_down = 0, total_matches_up = 0 } = response.headers;
+    const totalMatches = parseInt(total_matches_down) + parseInt(total_matches_up);
+
+    return { sample, totalMatches };
+}
+
+/**
+ * Executes operation on dynamic selection of content.
+ *
+ * @param   {History}       history       History Object
+ * @param   {SearchParams}  selection     SearchParams object representing the selection
+ * @param   {string}        operation     name of operation to be performed
+ * @return  {boolean}                     success/failure
+ */
+export async function executeBulkOperation(history, selection, operation) {
+    const { id } = history;
+
+    // post, same QS as a search, but with a data payload containing the operation
+    const url = `/histories/${id}/contents/bulk`;
+    const data = { operation };
+    const params = selection.historyContentQueryFields;
+
+    const response = await api.put(url, data, { params });
+    if (response.status != 200) throw new Error(response);
+
+    console.log("response", response);
+
+    return true;
+}
+
+/**
+ * Bulk update endpoint (TODO: rewrite)
+ *
+ * @param {*} history
+ * @param {*} type_ids
+ * @param {*} fields
+ */
+export async function bulkContentUpdate(history, type_ids = [], fields = {}) {
+    const items = type_ids.map((type_id) => {
+        const [history_content_type, id] = type_id.split("-");
+        return { id, type_id, history_content_type };
+    });
+
+    const { id } = history;
+    const url = `/histories/${id}/contents?view=betawebclient`;
+    const payload = Object.assign({}, fields, { items });
+    const response = await api.put(url, payload);
+    console.log("bulkContentUpdate response", response);
+    return doResponse(response);
+}
+
+// #region

@@ -12,6 +12,7 @@ export const monitorHistoryContent = toOperator("monitorHistoryContent");
  * Loaders
  */
 export const loadHistoryContents = toOperator("loadHistoryContents");
+export const loadHistoryContentsByIndex = toOperator("loadHistoryContentsByIndex");
 export const loadDscContent = toOperator("loadDscContent");
 
 /**

@@ -4,13 +4,12 @@
  * one or more ajax calls against the api and cache ther results.
  */
 import { map, withLatestFrom, pluck } from "rxjs/operators";
-import { throttleDistinct } from "utils/observable/throttleDistinct";
+import { throttleDistinct, chunkParam } from "utils/observable";
 import { nth } from "utils/observable/nth";
 
 import { bulkCacheDscContent } from "./db";
 import { prependPath } from "./workerConfig";
 import { hydrate } from "./operators/hydrate";
-import { chunkParam } from "./operators/chunk";
 import { requestWithUpdateTime } from "./operators/requestWithUpdateTime";
 import { summarizeCacheOperation, dateStore } from "./loadHistoryContents";
 import { SearchParams } from "../model/SearchParams";

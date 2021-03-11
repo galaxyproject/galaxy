@@ -1,23 +1,36 @@
-import { defer, of } from "rxjs";
+import { isObservable, defer, of, throwError } from "rxjs";
 import { repeat, switchMap, switchMapTo, startWith, debounceTime } from "rxjs/operators";
 import { decay } from "utils/observable/decay";
 import { monitorXHR } from "utils/observable/monitorXHR";
-import { loadHistoryContents } from "../../caching";
+import { loadHistoryContentsByIndex } from "../../caching";
 
 // prettier-ignore
-export const loadContents = (cfg = {}) => {
+export const loadContents = (cfg = {}) => src$ => {
     const {
-        windowSize,
+        history,
+        filters,
         initialInterval = 2 * 1000,
         maxInterval = 10 * initialInterval,
         disablePoll = false
     } = cfg;
 
-    return switchMap(([{ id }, params, hid]) => {
+    if (history === undefined) {
+        return throwError(new Error("Missing history in loadContents"));
+    }
+    if (filters === undefined) {
+        return throwError(new Error("Missing filters in loadContents"));
+    }
+    if (!isObservable(src$)) {
+        return throwError(new Error("source stream is not observable"));
+    }
+
+    const { id } = history;
+
+    return switchMap((pagination) => {
 
         // a single history update
-        const singleLoad$ = of([id, params, hid]).pipe(
-            loadHistoryContents({ windowSize })
+        const singleLoad$ = of([id, filters, pagination]).pipe(
+            loadHistoryContentsByIndex()
         );
 
         // start repeating, delay gets longer over time until unsubscribed

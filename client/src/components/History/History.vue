@@ -1,33 +1,10 @@
 <template>
-    <HistoryContentProvider
-        :parent="history"
-        v-slot="{
-            loading,
-            params,
-            payload: { contents = [], startKey = null, topRows = 0, bottomRows = 0, totalMatches = 0 },
-            handlers: { updateParams, manualReload, setScrollPos },
-        }"
-    >
-        <ExpandedItems
-            :scope-key="history.id"
-            :get-item-key="(item) => item.type_id"
-            v-slot="{ isExpanded, setExpanded }"
-        >
-            <SelectedItems
-                :scope-key="history.id"
-                :get-item-key="(item) => item.type_id"
-                v-slot="{
-                    selectedItems,
-                    showSelection,
-                    setShowSelection,
-                    selectItems,
-                    isSelected,
-                    setSelected,
-                    resetSelection,
-                }"
-            >
+    <HistoryContentProvider :parent="history" :params="params" v-slot="{ loading, payload, setScrollPos }">
+        <ExpandedContent :scope="historyId" :get-key="pluckType" v-slot="expanded">
+            <SelectedContent :scope="historyId" :get-key="pluckType" v-slot="selected">
                 <Layout>
                     <template v-slot:nav>
+                        <!-- pass-through slot -->
                         <slot name="nav"></slot>
                     </template>
 
@@ -40,46 +17,51 @@
                     </template>
 
                     <template v-slot:listcontrols>
-                        <ContentOperations
-                            v-if="!history.empty"
+                        <BulkOperations
                             :history="history"
-                            :total-matches="totalMatches"
-                            :loading="loading"
-                            :params="params"
-                            @update:params="updateParams"
-                            :content-selection="selectedItems"
-                            @update:content-selection="selectItems"
-                            :show-selection="showSelection"
-                            @update:show-selection="setShowSelection"
-                            @resetSelection="resetSelection"
-                            @selectAllContent="selectItems(contents)"
-                            @manualReload="manualReload"
-                        />
+                            :filters="params"
+                            :content-selection="selected.items"
+                            :item-mode="useItemSelection"
+                            v-slot="{ operations, execute }"
+                        >
+                            <ContentOperations
+                                v-frag
+                                v-if="!history.empty"
+                                :history="history"
+                                :filters.sync="params"
+                                :query-matches="payload.totalMatches"
+                                :content-selection="selected.items"
+                                :use-item-selection.sync="useItemSelection"
+                                :operations="operations"
+                                @execute="execute"
+                                @collapseAllContent="expanded.reset"
+                                @resetSelection="selected.reset"
+                            />
+                        </BulkOperations>
                     </template>
 
                     <template v-slot:listing>
                         <HistoryEmpty v-if="history.empty" class="m-2" />
-
                         <Scroller
                             v-else
                             :class="{ loadingBackground: loading }"
                             key-field="hid"
                             :item-height="36"
-                            :items="contents"
-                            :scroll-to="startKey"
-                            :top-placeholders="topRows"
-                            :bottom-placeholders="bottomRows"
+                            :items="payload.contents"
+                            :top-placeholders="payload.topRows"
+                            :bottom-placeholders="payload.bottomRows"
+                            :scroll-to="payload.startKey"
                             @scroll="setScrollPos"
                         >
                             <template v-slot="{ item, index }">
                                 <HistoryContentItem
                                     :item="item"
                                     :index="index"
-                                    :show-selection="showSelection"
-                                    :expanded="isExpanded(item)"
-                                    @update:expanded="setExpanded(item, $event)"
-                                    :selected="isSelected(item)"
-                                    @update:selected="setSelected(item, $event)"
+                                    :show-selection="useItemSelection"
+                                    :expanded="expanded.has(item)"
+                                    @update:expanded="expanded.toggle(item, $event)"
+                                    :selected="selected.has(item)"
+                                    @update:selected="selected.toggle(item, $event)"
                                     @viewCollection="$emit('viewCollection', item)"
                                 />
                             </template>
@@ -90,41 +72,53 @@
                         <ToolHelpModal />
                     </template>
                 </Layout>
-            </SelectedItems>
-        </ExpandedItems>
+            </SelectedContent>
+        </ExpandedContent>
     </HistoryContentProvider>
 </template>
 
 <script>
-import { History } from "./model";
-import { HistoryContentProvider, ExpandedItems, SelectedItems } from "./providers";
+import { default as ExpandedContent, default as SelectedContent } from "components/providers/ToggleList";
+import { History, SearchParams } from "./model";
+import { HistoryContentProvider, BulkOperations } from "./providers";
 import Layout from "./Layout";
-import HistoryMessages from "./HistoryMessages";
 import HistoryDetails from "./HistoryDetails";
-import HistoryEmpty from "./HistoryEmpty";
+import HistoryMessages from "./HistoryMessages";
 import ContentOperations from "./ContentOperations";
-import ToolHelpModal from "./ToolHelpModal";
+import HistoryEmpty from "./HistoryEmpty";
 import Scroller from "./Scroller";
 import { HistoryContentItem } from "./ContentItem";
+import ToolHelpModal from "./ToolHelpModal";
 
 export default {
     components: {
         HistoryContentProvider,
+        ExpandedContent,
+        SelectedContent,
         Layout,
-        HistoryMessages,
         HistoryDetails,
-        HistoryEmpty,
+        HistoryMessages,
         ContentOperations,
-        ToolHelpModal,
+        HistoryEmpty,
         Scroller,
         HistoryContentItem,
-        ExpandedItems,
-        SelectedItems,
+        ToolHelpModal,
+        BulkOperations,
     },
     props: {
         history: { type: History, required: true },
     },
+    data() {
+        return {
+            params: new SearchParams(),
+            useItemSelection: false,
+        };
+    },
     computed: {
+        // selects type_id for list management
+        pluckType() {
+            return (o) => o.type_id;
+        },
         historyId() {
             return this.history.id;
         },

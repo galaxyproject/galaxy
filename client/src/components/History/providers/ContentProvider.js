@@ -1,38 +1,14 @@
 import { NEVER, BehaviorSubject } from "rxjs";
-import { SearchParams } from "../model/SearchParams";
+import { SearchParams, ScrollPos } from "../model";
+import { isValidNumber } from "./helpers";
 
-// dumb math util
-export const clamp = (val, [bottom, top]) => Math.max(bottom, Math.min(top, val));
-
-// simple comparators
-export const isDefined = (val) => val !== null && val !== undefined;
-
-// defined, number and finite
-export const isValidNumber = (val) => {
-    return isDefined(val) && !isNaN(val) && isFinite(val);
-};
-
-// validate output variables before rendering
-export const validPayload = ({ topRows, bottomRows, totalMatches }) => {
-    return isValidNumber(topRows) && isValidNumber(bottomRows) && isValidNumber(totalMatches);
-};
-
-// comparator for distinct() style operators inputs are an array of [id, SearchParams]
-export const inputsSame = ([a0, a1], [b0, b1]) => {
-    return a0 == b0 && SearchParams.equals(a1, b1);
-};
-
-export const scrollPosEquals = (a, b) => {
-    return a.cursor === b.cursor && a.key === b.key;
-};
-
-export const ContentProvider = {
+export default {
     props: {
         parent: { type: Object, required: true },
+        params: { type: SearchParams, default: () => new SearchParams() },
         pageSize: { type: Number, default: SearchParams.pageSize },
-        debouncePeriod: { type: Number, default: 100 },
+        debouncePeriod: { type: Number, default: 250 },
         disableWatch: { type: Boolean, default: false },
-        disableLoad: { type: Boolean, default: false },
         debug: { type: Boolean, default: false },
     },
 
@@ -40,12 +16,27 @@ export const ContentProvider = {
         busy() {
             return this.loading || this.scrolling;
         },
+        slotProps() {
+            return {
+                // actual content delivery
+                payload: this.payload,
+
+                // local vars/settings/props passthrough
+                loading: this.loading,
+                scrolling: this.scrolling,
+                busy: this.busy,
+                params: this.params,
+                pageSize: this.pageSize,
+
+                // update methods
+                setScrollPos: this.setScrollPos,
+            };
+        },
     },
 
     data() {
         return {
             payload: {},
-            params: new SearchParams(),
             loading: false,
             scrolling: false,
         };
@@ -60,9 +51,8 @@ export const ContentProvider = {
     },
 
     created() {
-        this.initParams();
-        this.initScrollPos();
-
+        this.params$ = this.watch$("params");
+        this.scrollPos$ = new BehaviorSubject(ScrollPos.create());
         const { payload$, loading$, scrolling$ } = this.initStreams();
 
         this.listenTo(scrolling$, (val) => (this.scrolling = val));
@@ -79,17 +69,8 @@ export const ContentProvider = {
     },
 
     methods: {
-        initParams() {
-            this.params$ = new BehaviorSubject(new SearchParams());
-            this.listenTo(this.params$, (val) => (this.params = val));
-        },
-
-        initScrollPos() {
-            this.scrollPos$ = new BehaviorSubject({ cursor: 0.0, key: null });
-        },
-
         resetScrollPos() {
-            this.scrollPos$.next({ cursor: 0.0, key: null });
+            this.scrollPos$.next(ScrollPos.create());
         },
 
         initStreams() {
@@ -104,7 +85,7 @@ export const ContentProvider = {
          */
         setScrollPos({ cursor = 0.0, key = null } = {}) {
             if (isValidNumber(cursor)) {
-                this.scrollPos$.next({ cursor, key });
+                this.scrollPos$.next(ScrollPos.create({ cursor, key }));
             }
         },
 
@@ -116,44 +97,18 @@ export const ContentProvider = {
         },
 
         /**
-         * Exposed method so child components can update the search parameters.
-         * @param {SearchParams} newParams Fresh search params
-         */
-        updateParams(newParams) {
-            const val = newParams instanceof SearchParams ? newParams.clone() : new SearchParams(newParams);
-            this.params$.next(val);
-        },
-
-        /**
          * Render cache observable results to the payload property. It's best to
          * set everything at once to avoid multiple render passes.
          * @param {object} result Cache observable response
          */
-        setPayload(newPayload = {}) {
+        setPayload(props = {}) {
+            const payloadDefaults = { contents: [], startKey: null, topRows: 0, bottomRows: 0, totalMatches: 0 };
+            const newPayload = Object.assign({}, payloadDefaults, props);
             this.$set(this, "payload", newPayload);
         },
     },
 
     render() {
-        return this.$scopedSlots.default({
-            // actual content delivery
-            payload: this.payload,
-
-            // local vars/settings/props passthrough
-            loading: this.loading,
-            scrolling: this.scrolling,
-            busy: this.busy,
-            params: this.params,
-            pageSize: this.pageSize,
-
-            // update methods
-            handlers: {
-                updateParams: this.updateParams,
-                setScrollPos: this.setScrollPos,
-                manualReload: this.manualReload,
-            },
-        });
+        return this.$scopedSlots.default(this.slotProps);
     },
 };
-
-export default ContentProvider;

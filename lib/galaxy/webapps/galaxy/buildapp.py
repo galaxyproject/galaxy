@@ -256,6 +256,16 @@ def populate_api_routes(webapp, app):
                            controller='history_contents',
                            path_prefix='/api/histories/{history_id}/contents',
                            parent_resources=dict(member_name='history', collection_name='histories'))
+    webapp.mapper.connect("history_contents_query",
+                          "/api/histories/{history_id}/beta/contents",
+                          controller="history_contents",
+                          action="content_query",
+                          conditions=dict(method=["GET"]))
+    webapp.mapper.connect("history_contents_query_update",
+                          "/api/histories/{history_id}/beta/contents",
+                          controller="history_contents",
+                          action="content_query_update",
+                          conditions=dict(method=["PUT"]))
     # Legacy access to HDA details via histories/{history_id}/contents/{hda_id}
     webapp.mapper.resource('content',
                            'contents',

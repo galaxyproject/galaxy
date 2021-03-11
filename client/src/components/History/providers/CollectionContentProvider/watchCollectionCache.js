@@ -1,7 +1,7 @@
 import { combineLatest } from "rxjs";
 import { map, switchMap, scan, distinctUntilChanged, catchError } from "rxjs/operators";
 import { tag } from "rxjs-spy/operators/tag";
-import { chunk } from "../../caching/operators/chunk";
+import { chunk } from "utils/observable";
 import { monitorDscQuery } from "../../caching";
 import { processContentUpdate, newUpdateMap, buildContentResult, getKeyForUpdateMap } from "../aggregation";
 import { SearchParams } from "../../model";

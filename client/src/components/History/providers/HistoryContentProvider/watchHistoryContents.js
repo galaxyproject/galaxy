@@ -1,12 +1,9 @@
 import { of, combineLatest } from "rxjs";
 import { map, switchMap, debounceTime, scan, distinctUntilChanged } from "rxjs/operators";
-import { chunk } from "../../caching/operators/chunk";
+import { chunk } from "utils/observable";
 import { monitorHistoryContent } from "../../caching";
 import { SearchParams } from "../../model/SearchParams";
 import { processContentUpdate, newUpdateMap, buildContentResult, getKeyForUpdateMap } from "../aggregation";
-
-// disable debugging
-const tag = () => (src$) => src$;
 
 /**
  * Monitor history in the region of the cursor for the provided inputs
@@ -15,9 +12,10 @@ const tag = () => (src$) => src$;
  * @param {Object} cfg Config object, see below
  */
 // prettier-ignore
-export const watchHistoryContents = (cfg = {}) => input$ => {
+export const watchHistoryContents = (cfg = {}) => hid$ => {
     const {
-        hid$,
+        history,
+        filters,
 
         // final page size for rendered content
         pageSize = SearchParams.pageSize,
@@ -40,37 +38,28 @@ export const watchHistoryContents = (cfg = {}) => input$ => {
     const aggregator = processContentUpdate({ getKey });
     const summarize = buildContentResult({ pageSize, keyDirection, getKey });
 
-    const contentMap$ = input$.pipe(
-        switchMap(([{id}, params]) => {
-
-            // extremely wide chunking for the monitor since that's local
-            // and assembling a new monitor is expensive. New monitors will be
-            // created each time hid$ emits
-            const monitorInput$ = hid$.pipe(
-                chunk(monitorChunk, true),
-                distinctUntilChanged(),
-                map(hid => [id, params, hid]),
-                tag('watchHistoryContents-monitorInputs'),
-            );
-
-            const monitorOutput$ = monitorInput$.pipe(
-                switchMap(monitorInput => of(monitorInput).pipe(
-                    monitorHistoryContent({
-                        pageSize: monitorPageSize
-                    }),
-                )),
-                scan(aggregator, newUpdateMap()),
-            );
-
-            return monitorOutput$;
-        }),
+    // extremely wide chunking for the monitor since that's local
+    // and assembling a new monitor is expensive. New monitors will be
+    // created each time hid$ emits
+    const monitorInput$ = hid$.pipe(
+        chunk(monitorChunk, true),
+        distinctUntilChanged(),
+        map(hid => [history.id, filters, hid]),
+    );
+    
+    const contentMap$ = monitorInput$.pipe(
+        switchMap(monitorInput => of(monitorInput).pipe(
+            monitorHistoryContent({
+                pageSize: monitorPageSize
+            }),
+        )),
+        scan(aggregator, newUpdateMap()),
     );
 
     // take a slice out of that content map corresponding to the current hid
     const contentWindow$ = combineLatest([contentMap$, hid$]).pipe(
         debounceTime(outputDebounce),
         map(summarize),
-        tag('watchHistoryContents-contentWindow'),
     );
 
     return contentWindow$;

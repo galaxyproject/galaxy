@@ -1,10 +1,10 @@
-import { pipe } from "rxjs";
-import { map, withLatestFrom, pluck, shareReplay } from "rxjs/operators";
-import { throttleDistinct } from "utils/observable/throttleDistinct";
+import { zip } from "rxjs";
+import { map, withLatestFrom, pluck, shareReplay, share } from "rxjs/operators";
+import { throttleDistinct } from "utils/observable";
 import { tag } from "rxjs-spy/operators/tag";
 
 import { hydrate } from "./operators/hydrate";
-import { requestWithUpdateTime, requestWithUpdateTimeNoInitial } from "./operators/requestWithUpdateTime";
+import { requestWithUpdateTime } from "./operators/requestWithUpdateTime";
 import { prependPath } from "./workerConfig";
 import { bulkCacheContent } from "./db";
 import { SearchParams } from "../model/SearchParams";
@@ -30,9 +30,6 @@ export const loadHistoryContents = (cfg = {}) => (rawInputs$) => {
         noInitial = false
     } = cfg;
 
-    // if noInitial, only returns updates
-    const dateAppender = noInitial ? requestWithUpdateTimeNoInitial : requestWithUpdateTime
-
     const inputs$ = rawInputs$.pipe(
         shareReplay(1)
     );
@@ -45,7 +42,7 @@ export const loadHistoryContents = (cfg = {}) => (rawInputs$) => {
         }),
         throttleDistinct({ timeout: onceEvery }),
         map(prependPath),
-        dateAppender({ dateStore }),
+        requestWithUpdateTime({ dateStore, noInitial }),
         shareReplay(1),
     );
 
@@ -103,15 +100,15 @@ export const loadHistoryContents = (cfg = {}) => (rawInputs$) => {
  * summarizes what pouchdb did during the bulk cache and sends back some stats.
  */
 // prettier-ignore
-export const summarizeCacheOperation = () => pipe(
-    map((list) => {
+export const summarizeCacheOperation = () => {
+    return map((list) => {
         const cached = list.filter((result) => result.updated || result.ok);
         return {
             updatedItems: cached.length,
             totalReceived: list.length,
         };
     })
-);
+}
 
 /**
  * Gets min and max values from an array of objects
@@ -133,4 +130,52 @@ export const getPropRange = (list, propName) => {
     };
 
     return list.reduce(narrowRange, everywhere);
+};
+
+// loadHistoryContents, but uses limit/offset instead of HID search
+// prettier-ignore
+export const loadHistoryContentsByIndex = (cfg = {}) => (rawInputs$) => {
+    const { onceEvery = 30 * 1000, noInitial = false } = cfg;
+
+    const inputs$ = rawInputs$.pipe(
+        hydrate([undefined, SearchParams]),
+    );
+
+    const ajaxResponse$ = inputs$.pipe(
+        map(([id, params, pagination]) => {
+            const { offset, limit } = pagination;
+            const baseUrl = `/api/histories/${id}/beta/contents`;
+            return `${baseUrl}?${params.historyContentQueryString}&limit=${limit}&offset=${offset}`;
+        }),
+        throttleDistinct({ timeout: onceEvery }),
+        map(prependPath),
+        requestWithUpdateTime({ dateStore, noInitial }),
+        share(),
+    );
+
+    const cacheSummary$ = ajaxResponse$.pipe(
+        pluck("response"),
+        bulkCacheContent(),
+        summarizeCacheOperation(),
+    );
+
+    return zip(ajaxResponse$, cacheSummary$).pipe(
+        map(([ajaxResponse, summary]) => {
+            const { xhr, response = [] } = ajaxResponse;
+            const { max: maxContentHid, min: minContentHid } = getPropRange(response, "hid");
+            const headerInt = field => parseInt(xhr.getResponseHeader(field));
+
+            return {
+                summary,
+                matches: response.length, // number of actual rows returned if not == limit
+                totalMatches: headerInt("total_matches"), // total matches on the server
+                minHid: headerInt("min_index"), // minimum hid in the selection on the server
+                maxHid: headerInt("max_index"), // maximum hid in the selection on the server
+                minContentHid, // minimum hid in the returned result
+                maxContentHid, // maximum hid in the returned result
+                limit: headerInt("limit"), // server side max rows returned
+                offset: headerInt("offset"), // server side offset to start rows
+            };
+        })
+    );
 };

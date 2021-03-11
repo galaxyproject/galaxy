@@ -49,7 +49,6 @@ describe("CollectionContentProvider", () => {
             parent = await cacheContent(rawRootCollection, true);
             wrapper = await mountProvider(CollectionContentProvider, {
                 parent,
-                disableLoad: true,
             });
         });
 
@@ -71,7 +70,6 @@ describe("CollectionContentProvider", () => {
             expect(wrapper.vm.pageSize).toEqual(SearchParams.pageSize);
 
             // check exposed methods
-            expect(wrapper.vm.updateParams).toBeInstanceOf(Function);
             expect(wrapper.vm.setScrollPos).toBeInstanceOf(Function);
         });
     });
@@ -108,7 +106,6 @@ describe("CollectionContentProvider", () => {
             parent = await cacheContent(rawRootCollection, true);
             wrapper = await mountProvider(CollectionContentProvider, {
                 parent,
-                disableLoad: true,
             });
         });
 

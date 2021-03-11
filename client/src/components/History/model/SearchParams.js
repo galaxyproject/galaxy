@@ -126,43 +126,68 @@ export class SearchParams {
         return filters;
     }
 
-    // render a query string for use in querying content from the contnts/near endoint
+    // Creates an object of query criteria for use with the api
+    get historyContentQueryFields() {
+        return Array.from(this.criteria)
+            .map(([userField, val]) => {
+                let serverField = this.getServerFieldName(userField);
+                let serverVal = val;
+
+                switch (serverField) {
+                    // some client-side filters do not correspond to filters on the server
+                    // they can be used to filter local results but will not affect the polling
+                    // TODO: consider adding them as available filter options on the api?
+                    case null:
+                        return [];
+
+                    // This is advertised to work, but is broken on the current api
+                    case "annotation":
+                    case "description":
+                        return [];
+
+                    // non-standard REST bools
+                    // deleted serverField was reserved by pouchDB, needed to rename it to "isDeleted"
+                    case "deleted":
+                    case "visible":
+                        serverVal = dumbBool(val);
+                        break;
+
+                    // no text searching in some fields
+                    case "hid":
+                    case "state":
+                    case "history_content_type":
+                    case "type":
+                        break;
+
+                    // assume text-contains search
+                    default:
+                        serverField = serverField + "-contains";
+                        serverVal = encodeURIComponent(val);
+                        break;
+                }
+
+                return [serverField, serverVal];
+            })
+            .filter((pair) => pair.length == 2)
+            .reduce((fields, [k, v]) => {
+                fields[k] = v;
+                return fields;
+            }, {});
+    }
+
+    // legacy q/qv syntax for content api
+    // TODO: Delete when we no longer use q/qv
+    get legacyContentQueryString() {
+        return Object.entries(this.historyContentQueryFields)
+            .map(([f, v]) => `q=${f}&qv=${v}`)
+            .join("&");
+    }
+
+    // Standard query string (field=val&field=val...)
     get historyContentQueryString() {
-        const parts = Array.from(this.criteria).map(([userField, val]) => {
-            const serverField = this.getServerFieldName(userField);
-
-            switch (serverField) {
-                // some client-side filters do not correspond to filters on the server
-                // they can be used to filter local results but will not affect the polling
-                // TODO: consider adding them as available filter options on the api?
-                case null:
-                    return "";
-
-                // This is advertised to work, but is broken on the current api
-                case "annotation":
-                case "description":
-                    return "";
-
-                // non-standard REST bools
-                // deleted serverField was reserved by pouchDB, needed to rename it to "isDeleted"
-                case "deleted":
-                case "visible":
-                    return `${serverField}=${dumbBool(val)}`;
-
-                // no text searching in some fields
-                case "hid":
-                case "state":
-                case "history_content_type":
-                case "type":
-                    return `${serverField}=${val}`;
-
-                // assume text-contains search
-                default:
-                    return `${serverField}-contains=${encodeURIComponent(val)}`;
-            }
-        });
-
-        return parts.filter((o) => o.length).join("&");
+        return Object.entries(this.historyContentQueryFields)
+            .map(([f, v]) => `${f}=${v}`)
+            .join("&");
     }
 
     // maps friendly user field name to internal data field if necessary
@@ -195,5 +220,8 @@ export class SearchParams {
 SearchParams.pageSize = config?.caching?.pageSize || 50;
 
 SearchParams.equals = function (a, b) {
-    return deepEqual(a.export(), b.export());
+    if (a !== undefined && b !== undefined) {
+        return deepEqual(a.export(), b.export());
+    }
+    return false;
 };
