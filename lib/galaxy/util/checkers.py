@@ -60,14 +60,17 @@ def check_binary(name, file_path=True):
         read_start = int(length / 2)
         read_length = min(1024, int(length / 2) - 1)
     try:
+        if util.is_binary(temp.read(1024)):
+            return True
+        # Some binary files have text only within the first 1024
         # Read 1024 from the middle of the file if this is not
         # a gzip or zip compressed file (bzip are indexed),
         # to avoid issues with long txt headers on binary files.
         if file_path and not is_gzip(name) and not is_zip(name) and not is_bz2(name):
             # file_path=False doesn't seem to be used in the codebase
             temp.seek(read_start)
-            read_length = 1024
-        return util.is_binary(temp.read(read_length))
+            return util.is_binary(temp.read(read_length))
+        return False
     finally:
         temp.close()
 
