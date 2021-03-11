@@ -272,7 +272,7 @@ export default {
             Object.values(this.outputTerminals).forEach((t) => {
                 t.destroy();
             });
-            this.activeOutputs.filterOutputs({});
+            this.activeOutputs.filterOutputs([]);
             this.$emit("onRemove", this);
         },
         onRedraw() {
