@@ -18,6 +18,7 @@ from typing import (
 
 from pydantic import (
     BaseModel,
+    Extra,
     Field,
 )
 
@@ -117,6 +118,7 @@ class CreatePagePayload(PageSummaryBase):
 
     class Config:
         use_enum_values = True  # When using .dict()
+        extra = Extra.allow  # Allow any other extra fields
 
 
 class PageSummary(PageSummaryBase):
@@ -166,6 +168,19 @@ class PageSummary(PageSummaryBase):
 class PageDetails(PageSummary):
     content_format: PageContentFormat = ContentFormatField
     content: Optional[str] = ContentField
+    generate_version: Optional[str] = Field(
+        None,
+        title="Galaxy Version",
+        description="The version of Galaxy this page was generated with.",
+    )
+    generate_time: Optional[str] = Field(
+        None,
+        title="Generate Date",
+        description="The date this page was generated.",
+    )
+
+    class Config:
+        extra = Extra.allow  # Allow any other extra fields
 
 
 class PageSummaryList(BaseModel):
