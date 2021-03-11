@@ -80,6 +80,7 @@ Whoosh = "*"
 zipstream-new = "*"
 
 [tool.poetry.dev-dependencies]
+fluent-logger = "*"
 httpx = "*"
 gunicorn = "*"
 lxml = "!=4.2.2"
