@@ -58,7 +58,7 @@ class Phylip(Text):
         """
         f = file_prefix.string_io()
         # Get number of sequences and sequence length from first line
-        nb_seq, _ = (int(n) for n in f.readline().split())
+        nb_seq, _seq_length = (int(n) for n in f.readline().split())
         if nb_seq <= 0:
             return False
         # counts number of sequence from first stack
