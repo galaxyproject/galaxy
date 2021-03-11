@@ -71,7 +71,7 @@ class Phylip(Text):
                 # They must start at the 11th character in the line, as the first 10 characters are reserved for the sequence ID
                 return False
             # Fail if sequence is not ascii
-            line[10:].decode('ascii')
+            line[10:].encode('ascii')
             if any(str.isdigit(c) for c in line[10:]):
                 # Could tighten up further by requiring IUPAC strings chars
                 return False
