@@ -397,6 +397,11 @@ export default {
                 tool_state: JSON.parse(JSON.stringify(node.tool_state)),
                 post_job_actions: JSON.parse(JSON.stringify(node.postJobActions)),
             });
+            Vue.nextTick().then(() => {
+                this.canvasManager.drawOverview();
+                node = this.nodes[newId];
+                this.onActivate(node);
+            });
         },
         onInsertTool(tool_id, tool_name) {
             this._insertStep(tool_id, tool_name, "tool");
