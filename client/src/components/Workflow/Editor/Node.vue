@@ -203,7 +203,6 @@ export default {
         this.$emit("onAdd", this);
         if (this.step._complete) {
             this.initData(this.step);
-            this.updateData(this.step);
         } else {
             this.$emit("onUpdate", this);
         }
