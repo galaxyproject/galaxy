@@ -267,7 +267,6 @@ function _makeSection(self, node, output) {
         flat: true,
         inputs: [
             {
-                skipOnClone: true,
                 label: "Label",
                 name: `__label__${output.name}`,
                 type: "text",
@@ -289,7 +288,6 @@ function _makeSection(self, node, output) {
                 },
             },
             {
-                skipOnClone: true,
                 action: "RenameDatasetAction",
                 pja_arg: "newname",
                 label: "Rename dataset",
@@ -299,7 +297,6 @@ function _makeSection(self, node, output) {
                 help: renameHelp,
             },
             {
-                skipOnClone: true,
                 action: "ChangeDatatypeAction",
                 pja_arg: "newtype",
                 label: "Change datatype",
@@ -313,7 +310,6 @@ function _makeSection(self, node, output) {
                 },
             },
             {
-                skipOnClone: true,
                 action: "TagDatasetAction",
                 pja_arg: "tags",
                 label: "Add Tags",
@@ -323,7 +319,6 @@ function _makeSection(self, node, output) {
                 help: "This action will set tags for the dataset.",
             },
             {
-                skipOnClone: true,
                 action: "RemoveTagDatasetAction",
                 pja_arg: "tags",
                 label: "Remove Tags",
@@ -333,7 +328,6 @@ function _makeSection(self, node, output) {
                 help: "This action will remove tags for the dataset.",
             },
             {
-                skipOnClone: true,
                 title: _l("Assign columns"),
                 type: "section",
                 flat: true,
