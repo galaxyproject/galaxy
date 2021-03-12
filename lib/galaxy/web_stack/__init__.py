@@ -4,6 +4,7 @@
 import inspect
 import json
 import logging
+import multiprocessing
 import os
 from typing import Callable, Dict, FrozenSet, List, Optional, Tuple, Type
 from urllib.request import install_opener
@@ -48,7 +49,7 @@ class ApplicationStack:
     prohibited_middleware: FrozenSet[str] = frozenset()
     transport_class = ApplicationStackTransport
     log_filter_class: Type[logging.Filter] = ApplicationStackLogFilter
-    log_format = '%(name)s %(levelname)s %(asctime)s %(message)s'
+    log_format = '%(name)s %(levelname)s %(asctime)s [pN:%(processName)s,p:%(process)d,tN:%(threadName)s] %(message)s'
     # TODO: this belongs in the pool configuration
     server_name_template = '{server_name}'
     default_app_name = 'main'
@@ -69,6 +70,7 @@ class ApplicationStack:
         self.app = app
         self.config = config or (app and app.config)
         self.running = False
+        multiprocessing.current_process().name = getattr(self.config, 'server_name', 'main')
         if app:
             log.debug("%s initialized", self.__class__.__name__)
 
@@ -163,8 +165,9 @@ class ApplicationStack:
         return facts
 
     def set_postfork_server_name(self, app):
-        app.config.server_name = self.server_name_template.format(**self.facts)
-        log.debug('server_name set to: %s', app.config.server_name)
+        new_server_name = self.server_name_template.format(**self.facts)
+        multiprocessing.current_process().name = app.config.server_name = new_server_name
+        log.debug('server_name set to: %s', new_server_name)
 
     def register_message_handler(self, func, name=None):
         pass
@@ -233,7 +236,7 @@ class UWSGIApplicationStack(MessageApplicationStack):
     })
     transport_class = UWSGIFarmMessageTransport
     log_filter_class = UWSGILogFilter
-    log_format = '%(name)s %(levelname)s %(asctime)s [p:%(process)s,w:%(worker_id)s,m:%(mule_id)s] [%(threadName)s] %(message)s'
+    log_format = '%(name)s %(levelname)s %(asctime)s [pN:%(processName)s,p:%(process)d,w:%(worker_id)s,m:%(mule_id)s,tN:%(threadName)s] %(message)s'
     server_name_template = '{server_name}.{pool_name}.{instance_id}'
 
     postfork_functions: List[Tuple[Callable, List, Dict]] = []
