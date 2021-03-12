@@ -127,9 +127,6 @@ export default {
     },
 
     methods: {
-        getParentLink() {
-            return `${this.root}library/folders/${this.folder.parent_id}`;
-        },
         setUserPermissionsPreferences(ids, permission_type) {
             this[permission_type] = ids;
         },

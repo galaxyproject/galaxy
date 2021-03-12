@@ -5,17 +5,22 @@ import LibraryFolderPermissions from "components/Libraries/LibraryFolder/Library
 import LibraryFolder from "components/Libraries/LibraryFolder/LibraryFolder.vue";
 import LibraryFolderDatasetPermissions from "components/Libraries/LibraryFolder/LibraryFolderPermissions/LibraryFolderDatasetPermissions.vue";
 import LibrariesList from "components/Libraries/LibrariesList.vue";
+import LibraryPermissions from "components/Libraries/LibraryPermissions/LibraryPermissions.vue";
 
 Vue.use(VueRouter);
 
 export default new VueRouter({
-    mode: "history",
-    base: `${getAppRoot()}library`,
+    base: `${getAppRoot()}libraries`,
     routes: [
         {
-            path: "/libraries-list",
+            path: "/",
             name: "LibrariesList",
             component: LibrariesList,
+        },
+        {
+            path: "/permissions/:library_id",
+            name: "LibraryPermissions",
+            component: LibraryPermissions,
         },
         {
             path: "/folders/:folder_id",

@@ -217,7 +217,7 @@ var LibraryView = Backbone.View.extend({
         return _.template(
             `<div class="library_style_container">
                 <div>
-                    <a href="<% rootPath %>libraries-list">
+                    <a href="<% rootPath %>libraries">
                         <button data-toggle="tooltip" data-placement="top"
                             title="Go back to the list of Libraries" class="btn btn-secondary primary-button" type="button">
                             <span class="fa fa-list"></span>&nbsp;Libraries

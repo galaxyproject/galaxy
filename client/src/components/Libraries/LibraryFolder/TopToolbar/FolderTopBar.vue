@@ -3,7 +3,7 @@
         <div class="form-inline d-flex align-items-center mb-2">
             <b-button
                 class="mr-1 btn btn-secondary"
-                :to="{ path: `/libraries-list` }"
+                :to="{ path: `/libraries` }"
                 data-toggle="tooltip"
                 title="Go to libraries list"
             >
@@ -131,7 +131,7 @@
         </div>
 
         <b-breadcrumb>
-            <b-breadcrumb-item title="Return to the list of libraries" :to="{ path: `/libraries-list` }">
+            <b-breadcrumb-item title="Return to the list of libraries" :to="{ path: `/` }">
                 Libraries
             </b-breadcrumb-item>
             <template v-for="path_item in this.metadata.full_path">
@@ -139,7 +139,7 @@
                     :key="path_item[0]"
                     :title="isCurrentFolder(path_item[0]) ? `You are in this folder` : `Return to this folder`"
                     :active="isCurrentFolder(path_item[0])"
-                    @click="changeFolderId(path_item[0])"
+                    :to="{ name: `LibraryFolder`, params: { folder_id: `${path_item[0]}` } }"
                     href="#"
                     >{{ path_item[1] }}</b-breadcrumb-item
                 >
