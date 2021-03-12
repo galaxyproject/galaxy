@@ -175,15 +175,17 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
                 query = query.filter(Job.table.c.history_id == decoded_history_id)
             if workflow_id is not None:
                 decoded_workflow_id = self.decode_id(workflow_id)
+                query = query.filter(and_(
+                    model.WorkflowInvocationStep.table.c.workflow_invocation_id == model.WorkflowInvocation.table.c.id,
+                    model.WorkflowInvocation.table.c.workflow_id == model.Workflow.table.c.id,
+                    model.Workflow.table.c.stored_workflow_id == decoded_workflow_id
+                ))
                 query1 = query.filter(Job.table.c.id == model.WorkflowInvocationStep.table.c.job_id)
                 query2 = query.filter(and_(
                     Job.table.c.id == model.ImplicitCollectionJobsJobAssociation.table.c.job_id,
                     model.ImplicitCollectionJobsJobAssociation.table.c.implicit_collection_jobs_id == model.WorkflowInvocationStep.table.c.implicit_collection_jobs_id,
                 ))
-                query = query1.union_all(query2).filter(and_(
-                    model.WorkflowInvocationStep.table.c.workflow_invocation_id == model.WorkflowInvocation.table.c.id,
-                    model.WorkflowInvocation.table.c.workflow_id == decoded_workflow_id
-                ))
+                query = query1.union_all(query2)
             if invocation_id is not None:
                 decoded_invocation_id = self.decode_id(invocation_id)
                 query = query.filter(and_(
