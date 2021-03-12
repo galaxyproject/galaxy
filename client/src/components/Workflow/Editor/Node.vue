@@ -323,7 +323,6 @@ export default {
         },
         setData(data) {
             this.config_form = data.config_form;
-            this.config_form.raw_inputs = [...data.config_form.inputs];
             this.content_id = data.config_form?.id || data.content_id;
             this.tool_state = data.tool_state;
             this.errors = data.errors;
