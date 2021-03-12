@@ -108,7 +108,7 @@ export class ToolForm {
         const inputs = node.config_form.inputs;
         Utils.deepeach(inputs, (input) => {
             if (input.type) {
-                if (["data", "data_collection"].indexOf(input.type) != -1) {
+                if (["data", "data_collection", "hidden"].indexOf(input.type) != -1) {
                     input.type = "hidden";
                     input.info = `Data input '${input.name}' (${Utils.textify(input.extensions)})`;
                     input.value = { __class__: "RuntimeValue" };
