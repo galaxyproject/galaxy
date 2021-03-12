@@ -66,9 +66,9 @@ class QuotaIntegrationTestCase(integration_util.IntegrationTestCase):
         quota_id = quota["id"]
 
         new_quota_name = "updated-quota-name"
-        update_payload = {
+        update_payload = json.dumps({
             'name': new_quota_name,
-        }
+        })
         put_response = self._put(f"quotas/{quota_id}", data=update_payload)
         put_response.raise_for_status()
         assert "has been renamed to" in put_response.text
@@ -156,7 +156,7 @@ class QuotaIntegrationTestCase(integration_util.IntegrationTestCase):
 
     def _create_quota_with_name(self, quota_name: str, is_default: bool = False):
         payload = self._build_quota_payload_with_name(quota_name, is_default)
-        create_response = self._post("quotas", data=payload)
+        create_response = self._post("quotas", data=payload, json=True)
         create_response.raise_for_status()
         return create_response.json()
 
