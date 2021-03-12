@@ -19,6 +19,7 @@
 <script>
 import Terminals from "./modules/terminals";
 import { OutputDragging } from "./modules/dragging";
+import Connector from "./modules/connector";
 
 export default {
     props: {
@@ -68,45 +69,75 @@ export default {
             return cls;
         },
     },
+    watch: {
+        output: function (newOutput) {
+            const oldTerminal = this.terminal;
+            if (oldTerminal instanceof this.terminalClassForOutput(newOutput)) {
+                oldTerminal.update(newOutput);
+                oldTerminal.destroyInvalidConnections();
+            } else {
+                // create new terminal, connect like old terminal, destroy old terminal
+                this.$emit("onRemove", this.output);
+                const newTerminal = this.createTerminal(newOutput);
+                newTerminal.connectors = this.terminal.connectors.map((c) => {
+                    return new Connector(this.getManager(), newTerminal, c.inputHandle);
+                });
+                newTerminal.destroyInvalidConnections();
+                this.terminal = newTerminal;
+                oldTerminal.destroy();
+            }
+        },
+    },
     mounted() {
-        const output = this.output;
-        if (output.collection) {
-            const collection_type = output.collection_type;
-            const collection_type_source = output.collection_type_source;
-            this.terminal = new Terminals.OutputCollectionTerminal({
-                node: this.getNode(),
-                name: output.name,
-                element: this.$refs.terminal,
-                collection_type: collection_type,
-                collection_type_source: collection_type_source,
-                datatypes: output.extensions,
-                optional: output.optional,
-            });
-        } else if (output.parameter) {
-            this.terminal = new Terminals.OutputParameterTerminal({
-                node: this.getNode(),
-                name: output.name,
-                element: this.$refs.terminal,
-                type: output.type,
-                optional: output.optional,
-            });
-        } else {
-            this.terminal = new Terminals.OutputTerminal({
-                node: this.getNode(),
-                name: output.name,
-                element: this.$refs.terminal,
-                datatypes: output.extensions,
-                optional: output.optional,
-            });
-        }
-        this.terminal.on("change", this.onChange.bind(this));
-        new OutputDragging(this.getManager(), {
-            el: this.$refs.terminal,
-            terminal: this.terminal,
-        });
-        this.$emit("onAdd", this.output, this.terminal);
+        this.terminal = this.createTerminal(this.output);
     },
     methods: {
+        terminalClassForOutput(output) {
+            let terminalClass = Terminals.OutputTerminal;
+            if (output.collection) {
+                terminalClass = Terminals.OutputCollectionTerminal;
+            } else if (output.parameter) {
+                terminalClass = Terminals.OutputParameterTerminal;
+            }
+            return terminalClass;
+        },
+        createTerminal(output) {
+            let terminal;
+            const terminalClass = this.terminalClassForOutput(output);
+            const parameters = {
+                node: this.getNode(),
+                name: output.name,
+                element: this.$refs.terminal,
+                optional: output.optional,
+            };
+            if (output.collection) {
+                const collection_type = output.collection_type;
+                const collection_type_source = output.collection_type_source;
+                terminal = new terminalClass({
+                    ...parameters,
+                    collection_type: collection_type,
+                    collection_type_source: collection_type_source,
+                    datatypes: output.extensions,
+                });
+            } else if (output.parameter) {
+                terminal = new terminalClass({
+                    ...parameters,
+                    type: output.type,
+                });
+            } else {
+                terminal = new terminalClass({
+                    ...parameters,
+                    datatypes: output.extensions,
+                });
+            }
+            terminal.on("change", this.onChange.bind(this));
+            new OutputDragging(this.getManager(), {
+                el: this.$refs.terminal,
+                terminal: terminal,
+            });
+            this.$emit("onAdd", this.output, terminal);
+            return terminal;
+        },
         onChange() {
             this.isMultiple = this.terminal.mapOver && this.terminal.mapOver.isCollection;
             this.$emit("onChange");
@@ -114,6 +145,10 @@ export default {
         onToggle() {
             this.$emit("onToggle", this.output.name);
         },
+    },
+    beforeDestroy() {
+        this.$emit("onRemove", this.output);
+        this.terminal.destroy();
     },
 };
 </script>
