@@ -30,7 +30,6 @@ import logging
 import re
 from typing import Callable, Dict, List, Optional, Set, Type
 
-import routes
 import sqlalchemy
 from sqlalchemy.orm.scoping import scoped_session
 
@@ -39,6 +38,7 @@ from galaxy import model
 from galaxy.model import tool_shed_install
 from galaxy.structured_app import BasicApp, MinimalManagerApp
 from galaxy.util import namedtuple
+from galaxy.web import url_for as gx_url_for
 
 log = logging.getLogger(__name__)
 
@@ -538,7 +538,7 @@ class ModelSerializer(HasAModelManager):
         item_dict = MySerializer.serialize( my_item, keys_to_serialize )
     """
     #: 'service' to use for getting urls - use class var to allow overriding when testing
-    url_for = staticmethod(routes.url_for)
+    url_for = staticmethod(gx_url_for)
     default_view: Optional[str]
     views: Dict[str, List[str]]
 
