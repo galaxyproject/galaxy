@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <toolbox tool_path="${tool_conf_dir}" is_shed_conf="false">
   <tool file="upload.xml"/>
+  <tool file="export_remote.xml"/>
   <section id="test" name="Test Section">
     <tool file="multi_data_optional.xml" />
     <tool file="paths_as_file.xml" />

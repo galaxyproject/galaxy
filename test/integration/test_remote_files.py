@@ -135,6 +135,37 @@ class RemoteFilesIntegrationTestCase(ConfiguresRemoteFilesIntegrationTestCase):
             with open(os.path.join(ftp_dir, 'helloworld')) as f:
                 assert 'hello world!\n' == f.read()
 
+    def test_export_remote_tool_default(self):
+        dataset_populator = self.dataset_populator
+        ftp_dir = self.user_ftp_dir
+        _write_file_fixtures(self.root, ftp_dir)
+        with dataset_populator.test_history() as history_id:
+            dataset = dataset_populator.new_dataset(history_id, content="example content", wait=True, name="foo")
+            infile = {
+                "src": "hda",
+                "id": dataset["id"]
+            }
+            inputs = {
+                "d_uri": "gxftp://",
+                "export_type|export_type_selector": "datasets_auto",
+                "export_type|infiles": [infile],
+            }
+            response = dataset_populator.run_tool("export_remote", inputs, history_id)
+            response.raise_for_status()
+            with open(os.path.join(ftp_dir, 'foo.txt')) as f:
+                assert 'example content\n' == f.read()
+
+            inputs = {
+                "d_uri": "gxftp://",
+                "export_type|export_type_selector": "datasets_named",
+                "export_type|datasets_0|infile": infile,
+                "export_type|datasets_0|name": "my_cool_name.txt",
+            }
+            response = dataset_populator.run_tool("export_remote", inputs, history_id)
+            response.raise_for_status()
+            with open(os.path.join(ftp_dir, 'my_cool_name.txt')) as f:
+                assert 'example content\n' == f.read()
+
     def _assert_index_empty(self, index):
         assert len(index) == 0
 

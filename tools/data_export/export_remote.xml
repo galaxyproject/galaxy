@@ -1,0 +1,60 @@
+<tool id="export_remote" name="Export datasets" version="0.1.0">
+    <description>to remote files source</description>
+    <command><![CDATA[
+        python '$__tool_directory__/export_remote.py'
+            --file-sources '$file_sources'
+            --directory-uri '$d_uri'
+            #if $export_type.export_type_selector == "datasets_auto"
+                --infiles
+                #for $filepath in $export_type.infiles:
+                    '$filepath'
+                #end for
+                --names
+                #for $name in $export_type.infiles:
+                    #if $name.ext == 'vcf_bgzip':
+                        #set file_ext = 'vcf.bz'
+                    #else:
+                        #set file_ext = $name.ext
+                    #end if
+                    '${name.element_identifier}.${file_ext}'
+                #end for
+            #else
+                --infiles
+                #for $dataset in $export_type.datasets:
+                    '$dataset.infile'
+                #end for
+                --names
+                #for $dataset in $export_type.datasets:
+                    '$dataset.name'
+                #end for
+            #end if
+            > '$out'
+    ]]></command>
+    <inputs>
+        <conditional name="export_type">
+            <param name="export_type_selector" type="select" label="What would you like to export?">
+                <option value="datasets_auto" selected="True">Datasets using their Galaxy name and extension.</option>
+                <option value="datasets_named">Datasets using specified name.</option>
+                <!-- Allow more options - e.g. HTML, collections preserving their structure... -->
+            </param>
+            <when value="datasets_auto">
+                <param name="infiles" type="data" format="txt,binary" multiple="true" label="Choose your datasets"/>
+            </when>
+            <when value="datasets_named">
+                <repeat name="datasets" title="Dataset">
+                    <param type="data" name="infile" label="Input dataset" />
+                    <param type="text" name="name" label="Name" />
+                </repeat>
+            </when>
+        </conditional>
+        <param type="directory_uri" name="d_uri" label="Directory URI" />
+    </inputs>
+    <outputs>
+        <data name="out" format="txt" label="Export logs"/>
+    </outputs>
+    <configfiles>
+        <file_sources name="file_sources" />
+    </configfiles>
+    <tests>
+    </tests>
+</tool>
