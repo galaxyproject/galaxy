@@ -278,8 +278,9 @@ class QuotasManager:
         rval = quota.to_dict(view='element', value_mapper={'id': trans.security.encode_id, 'total_disk_usage': float})
         return QuotaDetails.parse_obj(rval)
 
-    def create(self, trans: ProvidesUserContext, payload: dict) -> CreateQuotaResult:
+    def create(self, trans: ProvidesUserContext, params: CreateQuotaParams) -> CreateQuotaResult:
         """Creates a new quota."""
+        payload = params.dict()
         self.validate_in_users_and_groups(trans, payload)
         quota, message = self.quota_manager.create_quota(payload)
         item = quota.to_dict(value_mapper={'id': trans.security.encode_id})
@@ -287,8 +288,9 @@ class QuotasManager:
         item['message'] = message
         return CreateQuotaResult.parse_obj(item)
 
-    def update(self, trans: ProvidesUserContext, id: EncodedDatabaseIdField, payload: dict) -> str:
+    def update(self, trans: ProvidesUserContext, id: EncodedDatabaseIdField, params: UpdateQuotaParams) -> str:
         """Modifies a quota."""
+        payload = params.dict()
         self.validate_in_users_and_groups(trans, payload)
         quota = self.quota_manager.get_quota(trans, id, deleted=False)
 
@@ -312,11 +314,11 @@ class QuotasManager:
             messages.append(message)
         return '; '.join(messages)
 
-    def delete(self, trans: ProvidesUserContext, id: EncodedDatabaseIdField, payload: DeleteQuotaPayload) -> str:
+    def delete(self, trans: ProvidesUserContext, id: EncodedDatabaseIdField, payload: Optional[DeleteQuotaPayload] = None) -> str:
         """Marks a quota as deleted."""
         quota = self.quota_manager.get_quota(trans, id, deleted=False)  # deleted quotas are not technically members of this collection
         message = self.quota_manager.delete_quota(quota)
-        if payload.purge:
+        if payload and payload.purge:
             message += self.quota_manager.purge_quota(quota)
         return message
 
