@@ -289,6 +289,15 @@ export default {
                 this.hasChanges = true;
             }
         },
+        steps: function (newSteps, oldSteps) {
+            this.hasChanges = true;
+        },
+        nodes: function (newNodes, oldNodes) {
+            this.hasChanges = true;
+            if (newNodes.length != oldNodes.length) {
+                this.requiresReindex = true;
+            }
+        },
     },
     methods: {
         onActivate(node) {
@@ -347,7 +356,6 @@ export default {
         },
         onAdd(node) {
             this.nodes[node.id] = node;
-            this.requiresReindex = true;
         },
         onUpdate(node) {
             getModule({
@@ -367,8 +375,6 @@ export default {
             Vue.delete(this.steps, node.id);
             this.canvasManager.drawOverview();
             this.activeNode = null;
-            this.hasChanges = true;
-            this.requiresReindex = true;
             showAttributes();
         },
         onEditSubworkflow(contentId) {
