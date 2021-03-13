@@ -73,7 +73,7 @@ var LibraryView = Backbone.View.extend({
             is_admin = Galaxy.user.isAdmin();
         }
         var template = this.templateLibraryPermissions();
-        this.$el.html(template({ library: this.model, is_admin: is_admin }));
+        this.$el.html(template({ library: this.model, is_admin: is_admin, rootPath: getAppRoot() }));
 
         var self = this;
         $.get(`${getAppRoot()}api/libraries/${self.id}/permissions?scope=current`)
@@ -180,36 +180,6 @@ var LibraryView = Backbone.View.extend({
         return select_options;
     },
 
-    makeDatasetPrivate: function () {
-        var self = this;
-        $.post(`${getAppRoot()}api/libraries/datasets/${self.id}/permissions?action=make_private`)
-            .done((fetched_permissions) => {
-                self.model.set({ is_unrestricted: false });
-                self.showPermissions({
-                    fetched_permissions: fetched_permissions,
-                });
-                Toast.success("The dataset is now private to you.");
-            })
-            .fail(() => {
-                Toast.error("An error occurred while attempting to make dataset private.");
-            });
-    },
-
-    removeDatasetRestrictions: function () {
-        var self = this;
-        $.post(`${getAppRoot()}api/libraries/datasets/${self.id}/permissions?action=remove_restrictions`)
-            .done((fetched_permissions) => {
-                self.model.set({ is_unrestricted: true });
-                self.showPermissions({
-                    fetched_permissions: fetched_permissions,
-                });
-                Toast.success("Access to this dataset is now unrestricted.");
-            })
-            .fail(() => {
-                Toast.error("An error occurred while attempting to make dataset unrestricted.");
-            });
-    },
-
     _extractIds: function (roles_list) {
         var ids_list = [];
         for (var i = roles_list.length - 1; i >= 0; i--) {
@@ -247,7 +217,7 @@ var LibraryView = Backbone.View.extend({
         return _.template(
             `<div class="library_style_container">
                 <div>
-                    <a href="#">
+                    <a href="<% rootPath %>libraries-list">
                         <button data-toggle="tooltip" data-placement="top"
                             title="Go back to the list of Libraries" class="btn btn-secondary primary-button" type="button">
                             <span class="fa fa-list"></span>&nbsp;Libraries

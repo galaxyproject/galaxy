@@ -217,11 +217,9 @@
                         <b-button
                             v-if="row.item.can_manage && !row.item.deleted"
                             @click="navigateToPermission(row.item)"
-                            data-toggle="tooltip"
-                            data-placement="top"
                             size="sm"
-                            class="lib-btn permission_folder_btn"
-                            :title="'Permissions of ' + row.item.name"
+                            class="lib-btn permission_lib_btn"
+                            :title="`Permissions of ${row.item.name}`"
                         >
                             <font-awesome-icon icon="users" />
                             Manage
@@ -285,7 +283,8 @@ import linkify from "linkifyjs/html";
 import { fields } from "./table-fields";
 import { Toast } from "ui/toast";
 import FolderTopBar from "./TopToolbar/FolderTopBar";
-import { initFolderTableIcons } from "./icons.js";
+import { initFolderTableIcons } from "components/Libraries/icons";
+import { MAX_DESCRIPTION_LENGTH, DEFAULT_PER_PAGE } from "components/Libraries/library-utils";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 initFolderTableIcons();
@@ -317,8 +316,8 @@ export default {
             unselected: [],
             expandedMessage: [],
             folderContents: [],
-            perPage: 15,
-            maxDescriptionLength: 40,
+            perPage: DEFAULT_PER_PAGE,
+            maxDescriptionLength: MAX_DESCRIPTION_LENGTH,
             filter: null,
             include_deleted: false,
             filterOn: [],
@@ -462,8 +461,8 @@ export default {
         },
         navigateToPermission(element) {
             if (element.type === "file")
-                this.$router.push({ path: `/permissions/${this.folder_id}/dataset/${element.id}` });
-            else if (element.type === "folder") this.$router.push({ path: `/permissions/${element.id}` });
+                this.$router.push({ path: `permissions/${this.folder_id}/dataset/${element.id}` });
+            else if (element.type === "folder") this.$router.push({ path: `permissions/${element.id}` });
         },
         getMessage(element) {
             if (element.type === "file") return element.message;

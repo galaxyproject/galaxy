@@ -48,7 +48,7 @@ import DisplayStructure from "components/DisplayStructured.vue";
 import { CloudAuth } from "components/User/CloudAuth";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
 import Confirmation from "components/login/Confirmation.vue";
-import LibraryFolderRouter from "components/LibraryFolder/LibraryFolderRouter";
+import LibraryFolderRouter from "components/Libraries/LibraryFolderRouter";
 import Vue from "vue";
 import store from "store";
 import VueRouterMain from "./VueRouterMain.vue";
@@ -100,6 +100,7 @@ export const getAnalysisRouter = (Galaxy) => {
             "(/)datasets/error": "show_dataset_error",
             "(/)interactivetool_entry_points(/)list": "show_interactivetool_list",
             "(/)library/folders(/)(:folder_id)": "show_library_folder",
+            "(/)library/libraries-list": "show_library_folder",
             "(/)library/folders/permissions(/)(:folder_id)": "show_library_folder",
             "(/)library/folders/permissions(/)(:folder_id)(/)dataset(/)(:dataset_id)": "show_library_folder",
         },
