@@ -393,6 +393,7 @@ export default {
                     inputs: configFormCopy.inputs.filter((input) => !input.skipOnClone),
                 },
                 uuid: null,
+                label: null,
                 annotation: JSON.parse(JSON.stringify(node.annotation)),
                 tool_state: JSON.parse(JSON.stringify(node.tool_state)),
                 post_job_actions: JSON.parse(JSON.stringify(node.postJobActions)),
