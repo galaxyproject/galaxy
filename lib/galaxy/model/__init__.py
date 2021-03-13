@@ -4110,6 +4110,40 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
 
         return self._dataset_states_and_extensions_summary
 
+    def dataset_dbkeys_and_extensions_summary(self):
+        if not hasattr(self, '_dataset_dbkeys_and_extensions_summary'):
+            db_session = object_session(self)
+
+            dc = alias(DatasetCollection.table)
+            de = alias(DatasetCollectionElement.table)
+            hda = alias(HistoryDatasetAssociation.table)
+            dataset = alias(Dataset.table)
+
+            select_from = dc.outerjoin(de, de.c.dataset_collection_id == dc.c.id)
+
+            depth_collection_type = self.collection_type
+            while ":" in depth_collection_type:
+                child_collection = alias(DatasetCollection.table)
+                child_collection_element = alias(DatasetCollectionElement.table)
+                select_from = select_from.outerjoin(child_collection, child_collection.c.id == de.c.child_collection_id)
+                select_from = select_from.outerjoin(child_collection_element, child_collection_element.c.dataset_collection_id == child_collection.c.id)
+
+                de = child_collection_element
+                depth_collection_type = depth_collection_type.split(":", 1)[1]
+
+            select_from = select_from.outerjoin(hda, hda.c.id == de.c.hda_id).outerjoin(dataset, hda.c.dataset_id == dataset.c.id)
+            select_stmt = select([hda.c.extension, dataset.c.dbkey]).select_from(select_from).where(dc.c.id == self.id).distinct()
+            extensions = set()
+            dbkeys = set()
+            for extension, dbkey in db_session.execute(select_stmt).fetchall():
+                if dbkey is not None:
+                    # query may return (None, None) if not collection elements present
+                    dbkeys.add(dbkey)
+                    extensions.add(extension)
+            self._dataset_dbkeys_and_extensions_summary = (dbkeys, extensions)
+
+        return self._dataset_dbkeys_and_extensions_summary
+
     @property
     def populated_optimized(self):
         if not hasattr(self, '_populated_optimized'):
@@ -4511,16 +4545,25 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
 
     def to_dict(self, view='collection'):
         original_dict_value = super().to_dict(view=view)
-        dict_value = dict(
-            hid=self.hid,
-            history_id=self.history.id,
-            history_content_type=self.history_content_type,
-            visible=self.visible,
-            deleted=self.deleted,
-            job_source_id=self.job_source_id,
-            job_source_type=self.job_source_type,
-            **self._base_to_dict(view=view)
-        )
+        if (view == 'dbkeysandextensions'):
+            (dbkeys, extensions) = self.dataset_dbkeys_and_extensions_summary()
+            dict_value = dict(
+                dbkey=dbkeys.pop() if len(uniqueKeys) == 1 else "?",
+                extension=extensions.pop() if len(uniqueExts) == 1 else "?",
+                **self._base_to_dict(view=view)
+            )
+
+        else:
+            dict_value = dict(
+                hid=self.hid,
+                history_id=self.history.id,
+                history_content_type=self.history_content_type,
+                visible=self.visible,
+                deleted=self.deleted,
+                job_source_id=self.job_source_id,
+                job_source_type=self.job_source_type,
+                **self._base_to_dict(view=view)
+            )
 
         dict_value.update(original_dict_value)
 

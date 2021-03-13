@@ -122,6 +122,7 @@ Vue.use(BootstrapVue);
 export default {
     created() {
         this.apiCallToGetData();
+        this.apiCallToGetAttributes();
         UploadUtils.getUploadDatatypes(true, UploadUtils.AUTO_EXTENSION)
             .then((extensions) => {
                 this.extensions = extensions;
@@ -141,6 +142,7 @@ export default {
     data: function () {
         return {
             collection_data: {}, //all data from the response
+            attributes_data: {},
             extensions: [],
             genomes: [],
             selectedGenome: {},
@@ -215,6 +217,14 @@ export default {
                 });
 
             //TODO error handling
+        },
+        apiCallToGetAttributes: function () {
+            axios
+                .get(prependPath("/api/dataset_collections/" + this.collection_id + "/attributes"))
+                .then((response) => {
+                    this.attributes_data = response.data;
+                    console.log("in apicalltogetattributes; attribues are : ", this.attributes_data);
+                });
         },
         getDatabaseKeyFromElements: function () {
             const dbkeysInCollection = [];

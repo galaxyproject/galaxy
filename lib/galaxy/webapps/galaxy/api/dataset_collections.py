@@ -88,6 +88,22 @@ class DatasetCollectionsController(
         trans.sa_session.flush()
 
     @expose_api
+    def attributes(self, trans: ProvidesHistoryContext, id, instance_type='history'):
+        """
+        GET /api/dataset_collections/{hdca_id}/attributes
+
+        Returns dbkey/extension for collection elements
+        """
+
+        dataset_collection_instance = self.__service.get_dataset_collection_instance(
+            trans,
+            id=id,
+            instance_type=instance_type,
+            check_ownership=True
+        )
+        return dataset_collection_instance.to_dict(view="dbkeysandextensions")
+
+    @expose_api
     def show(self, trans: ProvidesHistoryContext, id, instance_type='history', **kwds):
         """
         GET /api/dataset_collections/{hdca_id}

@@ -551,6 +551,11 @@ def populate_api_routes(webapp, app):
                           action='update',
                           conditions=dict(method=["PUT"]))
 
+    webapp.mapper.connect("/api/dataset_collections/{id}/attributes",
+                          controller='dataset_collections',
+                          action='attributes',
+                          conditions=dict(method=["GET"]))
+    
     webapp.mapper.connect("/api/histories/{history_id}/jobs_summary",
                           action="index_jobs_summary",
                           controller='history_contents',
