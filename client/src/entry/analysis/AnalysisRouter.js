@@ -433,7 +433,7 @@ export const getAnalysisRouter = (Galaxy) => {
         },
 
         mountWelcome: async function() {
-            import(/* webpackIgnore: true */ getAppRoot() + "static/plugins/welcome_page/new_user/static/topics.js").then(module=> {
+            import(/* webpackIgnore: true */ getAppRoot() + "static/plugins" + Galaxy.config.welcome_directory + "topics.js").then(module=> {
                 const propsData = {
                     newUserDict,
                 };
