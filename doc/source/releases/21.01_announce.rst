@@ -19,7 +19,7 @@ Highlights
 
 **Offload Zip Archive Creation to NGINX**
   Galaxy can now utilize the NGINX module `mod_zip <https://www.nginx.com/resources/wiki/modules/zip/>`__ to assemble and compress dataset collection and library dataset archives on the fly.
-  This method is more efficient and can create large archives without affecting the Galaxy server process. The required setup is described in the admin documentation for `proxying Galaxy with NGINX <https://docs.galaxyproject.org/en/release_21/admin/nginx.html#creating-archives-with-mod-zip>`__.
+  This method is more efficient and can create large archives without affecting the Galaxy server process. The required setup is described in the admin documentation for `proxying Galaxy with NGINX <https://docs.galaxyproject.org/en/release_21.01/admin/nginx.html#creating-archives-with-mod-zip>`__.
 
 **Workflow Enhancements and Fixes**
   This release contains many new features, enhancements and bugfixes for creating, running and reporting workflows described in greater details in the `21.01 user release notes <21.01_announce_user.html>`__
