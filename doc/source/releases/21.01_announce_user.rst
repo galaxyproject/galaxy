@@ -84,7 +84,7 @@ This is a new section covering smaller improvements that just make your life eas
 * When uploading files, the 'name' field will be auto-focused, allowing you to get straight to renaming the files, saving you time. `Pull Request 10487`_
 * Workflow versions now expose their update time. Reverting to an old version? Oh, yes, that one from Tuesday! `Pull Request 10492`_
 * Sharing components now include a "copy to clipboard" feature for URLs. One click and you're ready to share with the world. `Pull Request 10754`_
-* The GTN-in-Galaxy overlay now keeps track of the page you were looking at if the Galaxy page gets refreshed. Go forth and learn without distraction!. `Pull Request 11290`_
+* The GTN-in-Galaxy overlay now keeps track of the page you were looking at if the Galaxy page gets refreshed. Go forth and learn without distraction! `Pull Request 11290`_
 
 New Visualizations
 ===========================================================
