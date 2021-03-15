@@ -9,6 +9,7 @@ import LibrariesList from "components/Libraries/LibrariesList.vue";
 Vue.use(VueRouter);
 
 export default new VueRouter({
+    mode: "history",
     base: `${getAppRoot()}libraries`,
     routes: [
         {
