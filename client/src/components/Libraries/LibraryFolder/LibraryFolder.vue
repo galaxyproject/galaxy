@@ -92,7 +92,6 @@
                     <div v-else-if="!row.item.deleted">
                         <b-link
                             v-if="row.item.type === 'folder'"
-                            :key="$route.fullPath"
                             :to="{ name: `LibraryFolder`, params: { folder_id: `${row.item.id}` } }"
                             >{{ row.item.name }}</b-link
                         >
