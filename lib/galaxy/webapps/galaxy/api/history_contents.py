@@ -30,7 +30,6 @@ from galaxy.web import (
     expose_api_raw_anonymous
 )
 from galaxy.webapps.base.controller import (
-    UsesLibraryMixin,
     UsesLibraryMixinItems,
     UsesTagsMixin
 )
@@ -39,7 +38,7 @@ from . import BaseGalaxyAPIController, depends
 log = logging.getLogger(__name__)
 
 
-class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesLibraryMixinItems, UsesTagsMixin):
+class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, UsesTagsMixin):
     hda_manager: hdas.HDAManager = depends(hdas.HDAManager)
     history_manager: histories.HistoryManager = depends(histories.HistoryManager)
     history_contents_manager: history_contents.HistoryContentsManager = depends(history_contents.HistoryContentsManager)

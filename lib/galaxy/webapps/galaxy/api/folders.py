@@ -10,13 +10,13 @@ from galaxy import (
 from galaxy.managers import folders, roles
 from galaxy.structured_app import StructuredApp
 from galaxy.web import expose_api
-from galaxy.webapps.base.controller import UsesLibraryMixin, UsesLibraryMixinItems
+from galaxy.webapps.base.controller import UsesLibraryMixinItems
 from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
 
 
-class FoldersController(BaseGalaxyAPIController, UsesLibraryMixin, UsesLibraryMixinItems):
+class FoldersController(BaseGalaxyAPIController, UsesLibraryMixinItems):
 
     def __init__(self, app: StructuredApp):
         super().__init__(app)

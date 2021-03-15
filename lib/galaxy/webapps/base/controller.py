@@ -449,15 +449,6 @@ class ImportsHistoryMixin:
         return job
 
 
-class UsesLibraryMixin:
-
-    def get_library(self, trans, id, check_ownership=False, check_accessible=True):
-        library = self.get_object(trans, id, 'Library')
-        if check_accessible and not (trans.user_is_admin or trans.app.security_agent.can_access_library(trans.get_current_user_roles(), library)):
-            error("Library is not accessible to the current user")
-        return library
-
-
 class UsesLibraryMixinItems(SharableItemSecurityMixin):
 
     def get_library_folder(self, trans, id, check_ownership=False, check_accessible=True):
