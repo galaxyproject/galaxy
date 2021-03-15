@@ -22,7 +22,7 @@ Highlights
   This method is more efficient and can create large archives without affecting the Galaxy server process. The required setup is described in the admin documentation for `proxying Galaxy with NGINX <https://docs.galaxyproject.org/en/release_21.01/admin/nginx.html#creating-archives-with-mod-zip>`__.
 
 **Workflow Enhancements and Fixes**
-  This release contains many new features, enhancements and bug fixes for creating, running and reporting workflows described in greater details in the `21.01 user release notes <21.01_announce_user.html>`__
+  This release contains many new features, enhancements and bug fixes for creating, running and reporting workflows described in greater detail in the `21.01 user release notes <21.01_announce_user.html>`__
 
 **History Import and Export**
   Histories can now be imported from and exported to the pluggable file source architecture introduced in the 20.09 release of Galaxy.
