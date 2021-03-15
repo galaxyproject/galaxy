@@ -26,7 +26,7 @@ Highlights
 
 **History Import and Export**
   Histories can now be imported from and exported to the pluggable file source architecture introduced in the 20.09 release of Galaxy.
-  This includes the users' FTP folder, S3, dropbox, owncloud etc. In addition the History Export and Import dialogues have been rewritten
+  This includes the users' FTP folder, S3, Dropbox, ownCloud etc. In addition the History Export and Import dialogues have been rewritten
   to provide access to these new options and to provide more feedback during Import and Export process.
 
 Also check out the `21.01 user release notes <21.01_announce_user.html>`__
