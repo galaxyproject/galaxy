@@ -13,13 +13,13 @@ Workflows are the absolute ✨star✨ of Galaxy v21.01, they have seen huge impr
 Workflows: Best Practices, Reports, Invocations
 -----------------------------------------------
 
-Workflows have seen huge improvements this release! The workflow report editor is easier to use than ever providing you with a list of common report components you might wish to use, interactive dialogues for embedding them in your reports, and a new workflow invocation tracker! You can now embed visualizations directly in your workflow reports making summarising your analyses easier than ever! And once your reports are produced, you can export them directly to pages to share your reports with colleagues.
+Workflows have seen huge improvements this release! The workflow report editor is easier than ever to use providing you with a list of common report components, interactive interfaces for embedding them in your reports, and a new workflow invocation tracker. You can now embed visualizations directly in your workflow reports making summarizing your analyses easier than ever.  And, once your reports are produced, you can export them directly to pages to share your reports with colleagues.
 
 .. raw:: html
 
    <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/TmZzfaKf1V0" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
-If you're building advanced workflows utilising Galaxy's powerful sub-workflows for re-usable workflow components, then you'll be pleased to know you can now automatically update those to the latest version
+If you're building advanced workflows utilizing Galaxy's powerful sub-workflows for re-usable workflow components, then you'll be pleased to know you can now automatically update those to the latest version
 
 .. raw:: html
 
