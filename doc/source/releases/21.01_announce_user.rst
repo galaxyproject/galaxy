@@ -19,7 +19,7 @@ Workflows have seen huge improvements this release! The workflow report editor i
 
    <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/TmZzfaKf1V0" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
-If you're building advanced workflows utilizing Galaxy's powerful sub-workflows for re-usable workflow components, then you'll be pleased to know you can now automatically update those to the latest version
+If you're building advanced workflows utilizing Galaxy's powerful sub-workflows for reusable workflow components, then you'll be pleased to know you can now automatically update those to the latest version
 
 .. raw:: html
 
