@@ -99,10 +99,7 @@ export const getAnalysisRouter = (Galaxy) => {
             "(/)datasets/edit": "show_dataset_edit_attributes",
             "(/)datasets/error": "show_dataset_error",
             "(/)interactivetool_entry_points(/)list": "show_interactivetool_list",
-            "(/)libraries": "show_library_folder",
-            "(/)libraries/folders(/)(:folder_id)": "show_library_folder",
-            "(/)libraries/folders/permissions(/)(:folder_id)": "show_library_folder",
-            "(/)libraries/folders/permissions(/)(:folder_id)(/)dataset(/)(:dataset_id)": "show_library_folder",
+            "(/)libraries*path": "show_library_folder",
         },
 
         require_login: ["show_user", "show_user_form", "show_workflows", "show_cloud_auth", "show_external_ids"],
