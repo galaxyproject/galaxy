@@ -2886,6 +2886,41 @@ steps:
             okay_dataset = contents[0]
             assert okay_dataset["state"] == "ok"
 
+    @skip_without_tool("output_filter_with_input_optional")
+    def test_workflow_optional_input_filtering(self):
+        with self.dataset_populator.test_history() as history_id:
+            test_data = """
+input1:
+  type: list
+  elements:
+    - identifier: A
+      content: A
+"""
+            run_object = self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  input1:
+    type: collection
+    collection_type: list
+outputs:
+  wf_output_1:
+    outputSource: output_filter/out_1
+steps:
+  output_filter:
+    tool_id: output_filter_with_input_optional
+    in:
+      input_1: input1
+""", test_data=test_data, history_id=history_id, wait=False)
+            self.wait_for_invocation_and_jobs(history_id, run_object.workflow_id, run_object.invocation_id)
+            contents = self.__history_contents(history_id)
+            assert len(contents) == 4
+            for content in contents:
+                if content["history_content_type"] == "dataset":
+                    assert content["state"] == "ok"
+                else:
+                    print(content)
+                    assert content["populated_state"] == "ok"
+
     @skip_without_tool("cat")
     def test_run_rename_on_mapped_over_collection(self):
         with self.dataset_populator.test_history() as history_id:
