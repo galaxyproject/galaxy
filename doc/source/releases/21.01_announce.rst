@@ -69,10 +69,8 @@ A special thanks to the release testing team for testing many of the new feature
 
 - `Assunta DeSanto <https://github.com/assuntad23>`_
 - `David López <https://github.com/davelopez>`_
-- `Jayadev Joshi <https://github.com/jaidevjoshi83>`_
 - `John Chilton <https://github.com/jmchilton>`_
 - `Keith Suderman <https://github.com/ksuderman>`_
-- `Luke Sargent <https://github.com/luke-c-sargent>`_
 - `Sergey Golitsynskiy <https://github.com/ic4f>`_
 
 Release Notes
