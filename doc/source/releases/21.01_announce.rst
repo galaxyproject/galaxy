@@ -22,7 +22,7 @@ Highlights
   This method is more efficient and can create large archives without affecting the Galaxy server process. The required setup is described in the admin documentation for `proxying Galaxy with NGINX <https://docs.galaxyproject.org/en/release_21.01/admin/nginx.html#creating-archives-with-mod-zip>`__.
 
 **Workflow Enhancements and Fixes**
-  This release contains many new features, enhancements and bugfixes for creating, running and reporting workflows described in greater details in the `21.01 user release notes <21.01_announce_user.html>`__
+  This release contains many new features, enhancements and bug fixes for creating, running and reporting workflows described in greater details in the `21.01 user release notes <21.01_announce_user.html>`__
 
 **History Import and Export**
   Histories can now be imported from and exported to the pluggable file source architecture introduced in the 20.09 release of Galaxy.
@@ -36,7 +36,7 @@ Deprecation Notices
 
 **Deprecation of support for Python 3.5**
   Galaxy requires Python 3.6 or newer. Instruction for updating Python can be found in the `Supported Python versions <https://docs.galaxyproject.org/en/release_21.01/admin/python.html#supported-python-versions>`__ section of the documentation.
-  Note that if you update to Python 3.7.2 or newer you need to set py-call-safterfork to ``false`` in the uwsgi section of galaxy.yml.
+  Note that if you update to Python 3.7.2 or newer you need to set py-call-osafterfork to ``false`` in the uwsgi section of galaxy.yml.
 
 **Removal of IUC conda channel from default configuration**
   The IUC conda channel has been removed from the default configuration. This channel was used for installing dependencies that were old and not available in bioconda or conda-forge. These dependencies are now available in Bioconda. By removing this channel Conda can work more efficiently and ignore outdated dependencies.
