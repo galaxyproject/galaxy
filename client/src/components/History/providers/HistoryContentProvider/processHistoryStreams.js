@@ -1,4 +1,4 @@
-import { merge, partition, Observable, BehaviorSubject, combineLatest } from "rxjs";
+import { merge, partition, Observable, BehaviorSubject } from "rxjs";
 import {
     debounceTime,
     distinctUntilChanged,
@@ -28,7 +28,6 @@ import { watchHistoryContents } from "./watchHistoryContents";
  */
 // prettier-ignore
 export function processHistoryStreams(sources = {}, settings = {}) {
-
     // clean incoming source streams
     const history$ = sources.history$.pipe(
         distinctUntilChanged(propMatch("id"))
@@ -70,87 +69,84 @@ export function processHistoryStreams(sources = {}, settings = {}) {
  * @return  {Observable}        Observable that emits payloads suitable for use in the scroller
  */
 // prettier-ignore
-export const contentPayload = (cfg = {}) => {
+export const contentPayload = (cfg = {}) => src$ => {
     const { 
         history, 
         filters = new SearchParams(),
         pageSize = SearchParams.pageSize, 
-        debouncePeriod = 250,
+        debouncePeriod = 200,
         disablePoll = false
     } = cfg;
 
-    return publish(pos$ => {
-        
-        // total matches for history + filters as best known, gets updated
-        // periodically as polls come back
-        const totalMatches$ = new BehaviorSubject(0);
+    // total matches for history + filters as best known, gets updated
+    // periodically as polls come back
+    const totalMatches$ = new BehaviorSubject(0);
 
-        // Server loads
+    return src$.pipe(
+        debounceTime(debouncePeriod),
+        distinctUntilChanged(ScrollPos.equals),
+        publish(pos$ => {
 
-        const pagination$ = pos$.pipe(
-            withLatestFrom(totalMatches$),
-            map((inputs) => buildPaginationWindow(...inputs, pageSize)),
-            chunkProp('offset', Math.floor(pageSize / 2)),
-            debounceTime(debouncePeriod),
-        );
-        const serverLoad$ = pagination$.pipe(
-            loadContents({ history, filters, disablePoll }),
-            share(),
-        );
-        const cursorToHid$ = serverLoad$.pipe(
-            scan(adjustCursorToHid, createCursorToHid(history)), 
-        );
-        const hidToTopRows$ = serverLoad$.pipe(
-            scan(adjustHidToTopRows, createHidToTopRows(history))
-        );
-        const serverMatches$ = serverLoad$.pipe(
-            pluck('totalMatches')
-        );
+            // Server loads
+            const pagination$ = pos$.pipe(
+                withLatestFrom(totalMatches$),
+                map((inputs) => buildPaginationWindow(...inputs, pageSize)),
+                chunkProp('offset', Math.floor(pageSize / 2)),
+            );
+            const serverLoad$ = pagination$.pipe(
+                loadContents({ history, filters, disablePoll }),
+                share(),
+            );
+            const cursorToHid$ = serverLoad$.pipe(
+                scan(adjustCursorToHid, createCursorToHid(history)), 
+            );
+            const hidToTopRows$ = serverLoad$.pipe(
+                scan(adjustHidToTopRows, createHidToTopRows(history)),
+            );
+            const serverMatches$ = serverLoad$.pipe(
+                pluck('totalMatches')
+            );
 
-        // Determine cache watcher HID input by either reading it right off the scrollPos
-        // or estimating it from the previously returned cursor/hid map, need to wait for
-        // first content load response to start up the totalMatches and the estimation data
+            // Determine cache watcher HID input by either reading it right off the scrollPos
+            // or estimating it from the previously returned cursor/hid map, need to wait for
+            // first content load response to start up the totalMatches and the estimation data
 
-        const hidPos$ = pos$.pipe(
-            distinctUntilChanged(ScrollPos.equals),
-            delayUntil(serverLoad$),
-        );
+            const hidPos$ = pos$.pipe(delayUntil(serverLoad$));
+            const [ needsEstimate$, hasKey$ ] = partition(hidPos$, pos => pos.key == null);
 
-        // split pos into positions that know their HID and those that need an estimate
-        const [ needsEstimate$, hasKey$ ] = partition(hidPos$, pos => pos.key == null);
+            const knownHid$ = hasKey$.pipe(pluck('key'));
 
-        const knownHid$ = hasKey$.pipe(
-            pluck('key'),
-        );
+            const estimatedHid$ = needsEstimate$.pipe(
+                pluck('cursor'),
+                withLatestFrom(cursorToHid$),
+                map(([pos, cursorToHid]) => estimateHid(pos, cursorToHid)),
+            );
 
-        const estimatedHid$ = needsEstimate$.pipe(
-            pluck('cursor'),
-            withLatestFrom(cursorToHid$),
-            map(([pos, cursorToHid]) => estimateHid(pos, cursorToHid)),
-        );
+            const hid$ = merge(knownHid$, estimatedHid$).pipe(
+                map(key => Math.round(key)),
+                distinctUntilChanged(),
+            );
 
-        const hid$ = merge(knownHid$, estimatedHid$).pipe(
-            map(key => Math.round(key)),
-            distinctUntilChanged(),
-        );
+            // Cache Watching
 
-        // Cache Watching
+            const cacheMonitor$ = hid$.pipe(
+                watchHistoryContents({ history, filters, pageSize, debouncePeriod }),
+            );
 
-        const cacheMonitor$ = hid$.pipe(
-            watchHistoryContents({ history, filters, pageSize, debouncePeriod }),
-        );
-        const payload$ = whenAny(cacheMonitor$, totalMatches$, hidToTopRows$).pipe(
-            map(buildPayload(pageSize)),
-        );
+            const payload$ = cacheMonitor$.pipe(
+                withLatestFrom(totalMatches$, hidToTopRows$),
+                map(buildPayload(pageSize)),
+            );
 
-        // piggyback the subscriptions
-        return new Observable((obs) => {
-            const watchSub = payload$.subscribe(obs);
-            // feed back the server-returned total matches into the process
-            watchSub.add(serverMatches$.subscribe(totalMatches$));
-            return watchSub;
+            // piggyback the subscriptions
+            return new Observable((obs) => {
+                const watchSub = payload$.subscribe(obs);
+                // feed back the server-returned total matches into the process
+                watchSub.add(serverMatches$.subscribe(totalMatches$));
+                return watchSub;
+            })
         })
-    })
+    );
 };
 
 /**

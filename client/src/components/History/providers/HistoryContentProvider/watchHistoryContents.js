@@ -44,7 +44,6 @@ export const watchHistoryContents = (cfg = {}) => src$ => {
     const chunkedHid$ = hid$.pipe(
         chunk(monitorChunk, true),
         distinctUntilChanged(),
-        debounceTime(debouncePeriod),
     );
 
     const updates$ = chunkedHid$.pipe(

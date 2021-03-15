@@ -1,6 +1,5 @@
-import { BehaviorSubject, timer } from "rxjs";
-import { map, takeUntil } from "rxjs/operators";
-import { wait } from "jest/helpers";
+import { of, from, BehaviorSubject, timer } from "rxjs";
+import { map, takeUntil, concatMap, delay } from "rxjs/operators";
 import { ObserverSpy } from "@hirez_io/observer-spy";
 
 import { History, SearchParams, ScrollPos } from "../../model";
@@ -62,6 +61,9 @@ afterEach(() => {
 
 //#endregion
 
+// debugging output
+// const payloadHids = (payload) => payload.contents.map((o) => o.hid);
+
 // Create a history and a set of filters then wire up a scrollPos to
 // the contentPayload operator, check the payloads that come out
 
@@ -69,6 +71,7 @@ describe("contentPayload operator", () => {
     let sub;
     const safetyTimeout = 2000;
     const disablePoll = true;
+    const debouncePeriod = 100;
 
     beforeEach(async () => {
         await wipeDatabase();
@@ -91,7 +94,8 @@ describe("contentPayload operator", () => {
             contentPayload({ 
                 history: testHistory, 
                 pageSize,
-                disablePoll
+                disablePoll,
+                debouncePeriod
             }), 
             takeUntil(timer(safetyTimeout))
         ).subscribe(spy);
@@ -165,36 +169,39 @@ describe("contentPayload operator", () => {
         expect(topRows + bottomRows + contents.length).toEqual(totalMatches);
     });
 
+    // prettier-ignore
     test("should emit once for each scroll position input", async () => {
         const spy = new ObserverSpy();
-        const start = new ScrollPos({ cursor: 0.0 });
-        const pos$ = new BehaviorSubject(start);
         const pageSize = 5;
-        const debouncePeriod = 200;
+        const debouncePeriod = 100;
 
-        // prettier-ignore
+        // 2 scroll events
+        const scrollEvents = [
+            ScrollPos.create(),
+            ScrollPos.create({ cursor: 0.7 }),
+        ];
+        const pos$ = from(scrollEvents).pipe(
+            concatMap((evt) => of(evt).pipe(delay(4 * debouncePeriod)))
+        );
+
+        // listen and emit content near those scroll points
         sub = pos$.pipe(
-            contentPayload({ 
-                history: testHistory, 
-                pageSize, 
+            contentPayload({
+                history: testHistory,
+                pageSize,
                 disablePoll,
-                debouncePeriod
-            }), 
+                debouncePeriod,
+            }),
             takeUntil(timer(safetyTimeout)),
         ).subscribe(spy);
-
-        // simulate scroll
-        // await wait(2 * debouncePeriod);
-        pos$.next(new ScrollPos({ cursor: 0.7 }));
 
         // expect 2 outputs
         await spy.onComplete();
         expect(spy.receivedComplete()).toBe(true);
         expect(spy.receivedNext()).toBe(true);
 
-        const results = spy.getValues();
-        expect(results.length).toBe(2);
-        expect(results[0].topRows).toEqual(0);
-        expect(results[1].topRows).toBeGreaterThan(0);
+        expect(spy.getValuesLength()).toBe(2);
+        expect(spy.getFirstValue().topRows).toEqual(0);
+        expect(spy.getLastValue().topRows).toBeGreaterThan(0);
     });
 });
