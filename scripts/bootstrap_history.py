@@ -115,7 +115,7 @@ To update an existing Galaxy repository run:
 
       $$ git fetch origin && git checkout release_${release} && git pull --ff-only origin release_${release}
 
-See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
+See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details on source code locations.
 
 Release Notes
 ===========================================================
