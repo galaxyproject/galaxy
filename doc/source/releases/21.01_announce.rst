@@ -35,7 +35,7 @@ Deprecation Notices
 ===========================================================
 
 **Deprecation of support for Python 3.5**
-  Galaxy requires Python 3.6 or newer. Instruction for updating Python can be found in the `Supported Python versions <https://docs.galaxyproject.org/en/release_21.01/admin/python.html#supported-python-versions>`__ section of the documentation.
+  Galaxy requires Python 3.6 or newer. Instructions for updating Python can be found in the `Supported Python versions <https://docs.galaxyproject.org/en/release_21.01/admin/python.html#supported-python-versions>`__ section of the documentation.
   Note that if you update to Python 3.7.2 or newer you need to set py-call-osafterfork to ``false`` in the uwsgi section of galaxy.yml.
 
 **Removal of IUC conda channel from default configuration**
