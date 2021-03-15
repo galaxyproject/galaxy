@@ -1,17 +1,31 @@
-name: "Maintenance Bot"
+name: Maintenance Bot
 on:
   pull_request_target:
-    types: [opened, reopened]
+    types: [opened, reopened, edited, ready_for_review, unlabeled]
 
 jobs:
   labeler:
     name: Assign labels and milestone
+    if: github.repository_owner == 'galaxyproject'
     runs-on: ubuntu-latest
     env:
       MILESTONE_NUMBER: 19
     steps:
+      - name: Get latest pull request labels
+        id: get_pr_labels
+        uses: actions/github-script@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const response = await github.issues.listLabelsOnIssue({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            console.log(response);
+            return response.data;
       - name: Add area labels
-        if: ${{ ! contains(join(github.event.pull_request.labels.*.name, ', '), 'area/') }}
+        if: ${{ ! contains(join(fromJSON(steps.get_pr_labels.outputs.result).*.name, ', '), 'area/') }}
         uses: actions/labeler@main
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
