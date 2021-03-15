@@ -20,6 +20,14 @@ class FoldersApiTestCase(ApiTestCase):
         folder = self._create_folder("Test Create Folder")
         self._assert_valid_folder(folder)
 
+    def test_create_without_name_raises_400(self):
+        root_folder_id = self.library["root_folder_id"]
+        data = {
+            "description": "Description only",
+        }
+        create_response = self._post(f"folders/{root_folder_id}", data=data, admin=True)
+        self._assert_status_code_is(create_response, 400)
+
     def test_permissions(self):
         folder = self._create_folder("Test Permissions Folder")
         folder_id = folder["id"]
@@ -62,18 +70,14 @@ class FoldersApiTestCase(ApiTestCase):
         folder = self._create_folder("Test Delete Folder")
         folder_id = folder["id"]
 
-        delete_response = self._delete(f"folders/{folder_id}", admin=True)
-        self._assert_status_code_is(delete_response, 200)
-        deleted_folder = delete_response.json()
+        deleted_folder = self._delete_folder(folder_id)
         assert deleted_folder["deleted"] is True
 
     def test_undelete(self):
         folder = self._create_folder("Test Undelete Folder")
         folder_id = folder["id"]
 
-        delete_response = self._delete(f"folders/{folder_id}", admin=True)
-        self._assert_status_code_is(delete_response, 200)
-        deleted_folder = delete_response.json()
+        deleted_folder = self._delete_folder(folder_id)
         assert deleted_folder["deleted"] is True
 
         undelete = True
@@ -81,6 +85,19 @@ class FoldersApiTestCase(ApiTestCase):
         self._assert_status_code_is(undelete_response, 200)
         undeleted_folder = undelete_response.json()
         assert undeleted_folder["deleted"] is False
+
+    def test_update_deleted_raise_403(self):
+        folder = self._create_folder("Test Update Deleted Folder")
+        folder_id = folder["id"]
+
+        deleted_folder = self._delete_folder(folder_id)
+        assert deleted_folder["deleted"] is True
+
+        data = {
+            "name": "test",
+        }
+        patch_response = self._patch(f"folders/{folder_id}", data=data, admin=True)
+        self._assert_status_code_is(patch_response, 403)
 
     def _create_folder(self, name: str):
         root_folder_id = self.library["root_folder_id"]
@@ -92,6 +109,12 @@ class FoldersApiTestCase(ApiTestCase):
         self._assert_status_code_is(create_response, 200)
         folder = create_response.json()
         return folder
+
+    def _delete_folder(self, folder_id):
+        delete_response = self._delete(f"folders/{folder_id}", admin=True)
+        self._assert_status_code_is(delete_response, 200)
+        deleted_folder = delete_response.json()
+        return deleted_folder
 
     def _get_permissions(self, folder_id):
         response = self._get(f"folders/{folder_id}/permissions", admin=True)
