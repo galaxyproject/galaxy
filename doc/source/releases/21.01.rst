@@ -223,6 +223,10 @@ Enhancements
   `Pull Request 10667`_
 * Fix running subworkflows with parameter input steps.
   `Pull Request 10722`_
+* Fix workflow runs with data_column runtime parameter changes
+  `Pull Request 11596`_
+* Various fixes for copying workflow nodes
+  `Pull Request 11602`_
 * Drop API Key listings from admin user list.
   `Pull Request 10745`_
 * Render OpenEBench link in new consolidated tool metadata.
@@ -338,6 +342,9 @@ Enhancements
 * Migrate API tests to GitHub workflow
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 10674`_
+* Fix ``metadata_bcf`` framework test
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 11603`
 * Added dockerfile [biohackathon]
   (thanks to `@nuwang <https://github.com/nuwang>`__).
   `Pull Request 10681`_
