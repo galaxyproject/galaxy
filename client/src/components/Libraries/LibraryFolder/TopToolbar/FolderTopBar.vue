@@ -258,9 +258,6 @@ export default {
         updateSearch: function (value) {
             this.$emit("updateSearch", value);
         },
-        changeFolderId: function (value) {
-            this.$emit("changeFolderId", value);
-        },
         deleteSelected: function () {
             this.getSelected().then((selected) =>
                 deleteSelectedItems(

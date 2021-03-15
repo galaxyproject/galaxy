@@ -8,7 +8,6 @@
                 @fetchFolderContents="fetchFolderContents($event)"
                 @deleteFromTable="deleteFromTable"
                 @setBusy="setBusy($event)"
-                @changeFolderId="initFolder($event)"
                 :folderContents="folderContents"
                 :include_deleted="include_deleted"
                 :folder_id="current_folder_id"
