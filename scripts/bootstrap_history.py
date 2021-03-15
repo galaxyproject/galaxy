@@ -161,6 +161,13 @@ Builtin Tool Updates
 
 .. tools
 
+Release Testing Team
+===========================================================
+
+A special thanks to the release testing team for testing many of the new features and reporting many bugs:
+
+<team members go here>
+
 Release Notes
 ===========================================================
 
