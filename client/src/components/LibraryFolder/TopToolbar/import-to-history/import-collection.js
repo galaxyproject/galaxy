@@ -123,7 +123,7 @@ var ImportCollectionModal = Backbone.View.extend({
                 }));
                 return this.createHDCA(elements, this.collectionType, name, hideSourceItems, history_id);
             };
-            LIST_CREATOR_MODAL.collectionCreatorModal(
+            LIST_CREATOR_MODAL.listCollectionCreatorModal(
                 collection_elements,
                 { creationFn: creationFn, title: modal_title, defaultHideSourceItems: true },
                 creator_class
@@ -137,7 +137,7 @@ var ImportCollectionModal = Backbone.View.extend({
                 ];
                 return this.createHDCA(elements, this.collectionType, name, hideSourceItems, history_id);
             };
-            PAIR_CREATOR_MODAL.collectionCreatorModal(
+            PAIR_CREATOR_MODAL.listCollectionCreatorModal(
                 collection_elements,
                 { creationFn: creationFn, title: modal_title, defaultHideSourceItems: true },
                 creator_class
@@ -148,7 +148,7 @@ var ImportCollectionModal = Backbone.View.extend({
                 name: element.name,
                 src: "ldda",
             }));
-            PAIRED_CREATOR.pairedCollectionCreatorModal(elements, {
+            PAIRED_CREATOR.pairCollectionCreatorModal(elements, {
                 historyId: history_id,
                 title: modal_title,
                 defaultHideSourceItems: true,
