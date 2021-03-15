@@ -1,4 +1,3 @@
-import { pipe } from "rxjs";
 import { map } from "rxjs/operators";
 
 /**
@@ -8,12 +7,12 @@ import { map } from "rxjs/operators";
  * @param {*} ceil
  */
 // prettier-ignore
-export const chunk = (chunkSize, ceil = false) => pipe(
-    map((chunkMe) => {
+export const chunk = (chunkSize, ceil = false) => {
+    return map((chunkMe) => {
         const rawVal = chunkMe / chunkSize;
         return chunkSize * (ceil ? Math.ceil(rawVal) : Math.floor(rawVal));
     })
-);
+};
 
 /**
  * Change one parameter to be an multiple of indicated block size. Used to
@@ -30,8 +29,8 @@ export const chunk = (chunkSize, ceil = false) => pipe(
  * @param {Boolean} ceil Math.ceil or Math.floor chunk value
  */
 // prettier-ignore
-export const chunkParam = (pos, chunkSize, ceil = false) => pipe(
-    map((inputs) => {
+export const chunkParam = (pos, chunkSize, ceil = false) => {
+    return map((inputs) => {
         const chunkMe = inputs[pos];
         const rawVal = 1.0 * chunkMe / chunkSize;
         const chunkedVal = chunkSize * (ceil ? Math.ceil(rawVal) : Math.floor(rawVal));
@@ -39,4 +38,13 @@ export const chunkParam = (pos, chunkSize, ceil = false) => pipe(
         newInputs[pos] = chunkedVal;
         return newInputs;
     })
-);
+}
+
+export const chunkProp = (propName, chunkSize, ceil = false) => {
+    return map((obj) => {
+        const chunkMe = obj[propName];
+        const rawVal = (1.0 * chunkMe) / chunkSize;
+        const chunkedVal = chunkSize * (ceil ? Math.ceil(rawVal) : Math.floor(rawVal));
+        return { ...obj, [propName]: chunkedVal };
+    });
+};

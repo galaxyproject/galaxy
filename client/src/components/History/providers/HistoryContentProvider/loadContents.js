@@ -1,11 +1,11 @@
-import { isObservable, defer, of, throwError } from "rxjs";
+import { defer, of, throwError } from "rxjs";
 import { repeat, switchMap, switchMapTo, startWith, debounceTime } from "rxjs/operators";
 import { decay } from "utils/observable/decay";
 import { monitorXHR } from "utils/observable/monitorXHR";
 import { loadHistoryContentsByIndex } from "../../caching";
 
 // prettier-ignore
-export const loadContents = (cfg = {}) => src$ => {
+export const loadContents = (cfg = {}) => {
     const {
         history,
         filters,
@@ -19,9 +19,6 @@ export const loadContents = (cfg = {}) => src$ => {
     }
     if (filters === undefined) {
         return throwError(new Error("Missing filters in loadContents"));
-    }
-    if (!isObservable(src$)) {
-        return throwError(new Error("source stream is not observable"));
     }
 
     const { id } = history;
@@ -53,5 +50,5 @@ export const loadContents = (cfg = {}) => src$ => {
         );
 
         return disablePoll ? singleLoad$ : poll$;
-    });
+    })
 };

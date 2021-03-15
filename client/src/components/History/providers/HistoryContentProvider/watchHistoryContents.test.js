@@ -1,7 +1,6 @@
 import { of, isObservable, timer } from "rxjs";
 import { take, takeUntil } from "rxjs/operators";
 import { ObserverSpy } from "@hirez_io/observer-spy";
-// import { wait } from "jest/helpers";
 
 import { SearchParams } from "../../model/SearchParams";
 import { buildContentId } from "../../caching/db/observables";
@@ -17,8 +16,14 @@ import historyContent from "../../test/json/historyContent.json";
 jest.mock("app");
 jest.mock("../../caching");
 
-beforeEach(wipeDatabase);
-afterEach(wipeDatabase);
+beforeEach(async () => {
+    await wipeDatabase();
+    await bulkCacheContent(historyContent);
+});
+
+afterEach(async () => {
+    await wipeDatabase();
+});
 
 // We're testing observables and we're assuming they complete,
 // but we add a takeUntil() to each one in the event that something
@@ -27,8 +32,6 @@ const safetyTimeout = 600;
 
 describe("watchHistoryContents", () => {
     const firstDoc = historyContent[0];
-
-    beforeEach(async () => await bulkCacheContent(historyContent));
 
     describe("simple loading scenario", () => {
         const hid$ = of(firstDoc.hid);
@@ -42,7 +45,6 @@ describe("watchHistoryContents", () => {
                     filters,
                     pageSize: 5,
                 }),
-                take(1),
                 takeUntil(timer(safetyTimeout))
             );
 
@@ -55,6 +57,7 @@ describe("watchHistoryContents", () => {
 
             expect(spy.receivedNext()).toBe(true);
             expect(spy.receivedComplete()).toBe(true);
+            expect(spy.getValuesLength()).toBe(1);
 
             const { startKey, contents } = spy.getFirstValue();
             expect(startKey).toEqual(firstDoc.hid); // we know there should be an exactd match
@@ -69,19 +72,17 @@ describe("watchHistoryContents", () => {
                     filters,
                     pageSize: 5,
                 }),
-                // safeguard, sometimes the debouncing merges both results into one
-                // event, sometimes they come in as 2 separate ones, either way
-                // should be done in 2 secs.
-                take(2),
-                takeUntil(timer(1000))
+                takeUntil(timer(safetyTimeout))
             );
 
-            expect(isObservable(watcher$)).toBe(true);
+            // spy on output of observable, wait for it to end
+            const spy = new ObserverSpy();
+            watcher$.subscribe(spy);
 
-            // after the initial event, update one of the items
-
+            // wait for the first event
             const firstWatcherEvent$ = watcher$.pipe(take(1));
 
+            // then update the first doc
             firstWatcherEvent$.subscribe(async () => {
                 const docId = buildContentId(firstDoc);
                 const lookup = await getCachedContent(docId);
@@ -95,15 +96,12 @@ describe("watchHistoryContents", () => {
                 expect(update.id).toEqual(docId);
             });
 
-            // spy on output of observable, wait for it to end
-            const spy = new ObserverSpy();
-            watcher$.subscribe(spy);
-            await spy.onComplete();
-
             // Should see 2 sets of content, the last of which should have the
             // foo field in one of its entries
+            await spy.onComplete();
             expect(spy.receivedNext()).toBe(true);
             expect(spy.receivedComplete()).toBe(true);
+            expect(spy.getValuesLength()).toBe(2);
 
             const { contents: lastContents } = spy.getLastValue();
             expect(lastContents.some((doc) => doc.foo == "abc")).toBe(true);

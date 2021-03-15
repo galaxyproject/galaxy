@@ -63,7 +63,7 @@ export const watchCollectionCache = (cfg = {}) => input$ => {
 
     return contentWindow$.pipe(
         catchError(err => {
-            console.warn("Error in watchHistoryContents", err);
+            console.warn("Error in watchCollectionCache", err);
             throw err;
         })
     );

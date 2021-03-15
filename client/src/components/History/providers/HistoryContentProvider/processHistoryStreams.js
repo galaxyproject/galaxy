@@ -1,18 +1,18 @@
-import { of, merge, BehaviorSubject } from "rxjs";
+import { merge, partition, Observable, BehaviorSubject, combineLatest } from "rxjs";
 import {
     debounceTime,
     distinctUntilChanged,
-    ignoreElements,
     map,
-    pluck,
     share,
     switchMap,
-    tap,
     withLatestFrom,
+    scan,
+    pluck,
+    publish,
 } from "rxjs/operators";
-import { activity, chunk, shareButDie, whenAny } from "utils/observable";
+import { activity, chunkProp, delayUntil, whenAny } from "utils/observable";
 import { propMatch, isLoading, isValidNumber } from "../helpers";
-import { SearchParams, CurveFit } from "../../model";
+import { SearchParams, CurveFit, ScrollPos } from "../../model";
 import { loadContents } from "./loadContents";
 import { watchHistoryContents } from "./watchHistoryContents";
 
@@ -28,7 +28,6 @@ import { watchHistoryContents } from "./watchHistoryContents";
  */
 // prettier-ignore
 export function processHistoryStreams(sources = {}, settings = {}) {
-    const { debouncePeriod = 0 } = settings;
 
     // clean incoming source streams
     const history$ = sources.history$.pipe(
@@ -38,9 +37,7 @@ export function processHistoryStreams(sources = {}, settings = {}) {
         distinctUntilChanged(SearchParams.equals)
     );
     const pos$ = sources.scrollPos$.pipe(
-        debounceTime(debouncePeriod),
         distinctUntilChanged(),
-        share(),
     );
 
     // The actual loader, when history or params change we poll against the api and
@@ -48,7 +45,6 @@ export function processHistoryStreams(sources = {}, settings = {}) {
     const loaderReset$ = whenAny(history$, params$);
     const payload$ = loaderReset$.pipe(
         switchMap(([history, filters]) => pos$.pipe(
-            tap(val => console.log("exterior input", val)),
             contentPayload({ history, filters, ...settings })
         )),
         share()
@@ -58,8 +54,7 @@ export function processHistoryStreams(sources = {}, settings = {}) {
     const scrolling$ = sources.scrollPos$.pipe(activity());
 
     // true when params change, false when we emit first result
-    // const loading$ = payload$.pipe(isLoading(loaderReset$));
-    const loading$ = of(false);
+    const loading$ = payload$.pipe(isLoading(loaderReset$));
 
     return { payload$, scrolling$, loading$ };
 }
@@ -75,75 +70,87 @@ export function processHistoryStreams(sources = {}, settings = {}) {
  * @return  {Observable}        Observable that emits payloads suitable for use in the scroller
  */
 // prettier-ignore
-export const contentPayload = (cfg = {}) => (scrollPos$) => {
+export const contentPayload = (cfg = {}) => {
     const { 
         history, 
         filters = new SearchParams(),
         pageSize = SearchParams.pageSize, 
-        debouncePeriod = 0 
+        debouncePeriod = 250,
+        disablePoll = false
     } = cfg;
 
-    // locals
-    const cursorToHid = createCursorToHid(history);
-    const hidToTopRows = createHidToTopRows(history);
+    return publish(pos$ => {
+        
+        // total matches for history + filters as best known, gets updated
+        // periodically as polls come back
+        const totalMatches$ = new BehaviorSubject(0);
 
-    // total search matches
-    const knownMatches$ = new BehaviorSubject(0);
-    const totalMatches$ = knownMatches$.pipe(distinctUntilChanged());
+        // Server loads
 
-    // share
-    const pos$ = scrollPos$.pipe(
-        tap((pos) => console.log("input pos", pos)),
-    );
+        const pagination$ = pos$.pipe(
+            withLatestFrom(totalMatches$),
+            map((inputs) => buildPaginationWindow(...inputs, pageSize)),
+            chunkProp('offset', Math.floor(pageSize / 2)),
+            debounceTime(debouncePeriod),
+        );
+        const serverLoad$ = pagination$.pipe(
+            loadContents({ history, filters, disablePoll }),
+            share(),
+        );
+        const cursorToHid$ = serverLoad$.pipe(
+            scan(adjustCursorToHid, createCursorToHid(history)), 
+        );
+        const hidToTopRows$ = serverLoad$.pipe(
+            scan(adjustHidToTopRows, createHidToTopRows(history))
+        );
+        const serverMatches$ = serverLoad$.pipe(
+            pluck('totalMatches')
+        );
 
-    // turn pos.cursor into limit/offset for server polling pad it with a wide overlap so we get
-    // some results outside the immediate area of interest
-    const pagination$ = pos$.pipe(
-        pluck("cursor"),
-        chunk(pageSize / 4),
-        withLatestFrom(totalMatches$),
-        map(([ cursor, matches ]) => buildPaginationWindow(cursor, matches, pageSize)),
-        debounceTime(debouncePeriod),
-    );
+        // Determine cache watcher HID input by either reading it right off the scrollPos
+        // or estimating it from the previously returned cursor/hid map, need to wait for
+        // first content load response to start up the totalMatches and the estimation data
 
-    // Run a periodic poll, response will update totalMatches and the curve fits so the client can
-    // figure out how to query using one of the data fields instead of an index, because that index
-    // (the rownumber implicitly used by limit/offset) is useless to the client unless we store each
-    // history contents separately
-    const serverLoad$ = pagination$.pipe(
-        loadContents({ history, filters }),
-        tap((response) => {
-            console.log("cursorToHid", cursorToHid);
-            adjustCursorToHid(response, cursorToHid);
-            console.log("cursorToHid.adjusted", cursorToHid);
+        const hidPos$ = pos$.pipe(
+            distinctUntilChanged(ScrollPos.equals),
+            delayUntil(serverLoad$),
+        );
 
-            adjustHidToTopRows(response, hidToTopRows);
-            knownMatches$.next(response.totalMatches);
-        }),
-        share()
-    );
+        // split pos into positions that know their HID and those that need an estimate
+        const [ needsEstimate$, hasKey$ ] = partition(hidPos$, pos => pos.key == null);
 
-    // create a hid for the cache query, because we can't just query with a limit/offset against the
-    // cache since the cache doesn't necessarily have enough content to calculate an offset
-    const hid$ = pos$.pipe(
-        map((pos) => {
-            const hid = estimateHid(pos, cursorToHid);
-            console.log("estimated hid", pos, hid);
-            return hid;
-        }),
-    );
-    const cacheMonitor$ = hid$.pipe(
-        watchHistoryContents({ history, filters, pageSize, debouncePeriod })
-    );
-    const payload$ = whenAny(cacheMonitor$, totalMatches$).pipe(
-        map(([cacheResult, totalMatches]) => buildPayload(cacheResult, totalMatches, hidToTopRows, pageSize))
-    );
+        const knownHid$ = hasKey$.pipe(
+            pluck('key'),
+        );
 
-    // holds onto loader subscription for lifetime of the payload$ without emitting anything
-    const loaderRunning$ = serverLoad$.pipe(ignoreElements());
-    const result$ = merge(payload$, loaderRunning$);
+        const estimatedHid$ = needsEstimate$.pipe(
+            pluck('cursor'),
+            withLatestFrom(cursorToHid$),
+            map(([pos, cursorToHid]) => estimateHid(pos, cursorToHid)),
+        );
 
-    return result$;
+        const hid$ = merge(knownHid$, estimatedHid$).pipe(
+            map(key => Math.round(key)),
+            distinctUntilChanged(),
+        );
+
+        // Cache Watching
+
+        const cacheMonitor$ = hid$.pipe(
+            watchHistoryContents({ history, filters, pageSize, debouncePeriod }),
+        );
+        const payload$ = whenAny(cacheMonitor$, totalMatches$, hidToTopRows$).pipe(
+            map(buildPayload(pageSize)),
+        );
+
+        // piggyback the subscriptions
+        return new Observable((obs) => {
+            const watchSub = payload$.subscribe(obs);
+            // feed back the server-returned total matches into the process
+            watchSub.add(serverMatches$.subscribe(totalMatches$));
+            return watchSub;
+        })
+    })
 };
 
 /**
@@ -157,7 +164,9 @@ export const contentPayload = (cfg = {}) => (scrollPos$) => {
  *
  * @return  {object}           limit/offset for use in content query
  */
-function buildPaginationWindow(cursor, matches, pageSize, pagePad = 2) {
+function buildPaginationWindow(pos, matches, pageSize, pagePad = 2) {
+    const { cursor } = pos;
+
     // this is where the cursor is pointed
     const target = cursor * matches;
 
@@ -174,52 +183,48 @@ function buildPaginationWindow(cursor, matches, pageSize, pagePad = 2) {
 /**
  * Calculates a HID to use in caching queries from the scroll position
  *
- * @param   {object}    scrollPos    cursor (0-1), key (string) representing position in scroller
+ * @param   {Number}    cursor    cursor (0-1) representing position in scroller
  * @param   {CurveFit}  cursorToHid  data points used to estimate hid value from cursor position
  *
  * @return  {int}                    HID
  */
-function estimateHid(scrollPos, fit) {
-    const { cursor, key } = scrollPos;
-
-    // console.log("estimateHid", scrollPos, fit);
-
+function estimateHid(cursor, fit) {
     // do an estimate/retrieval
     const result = fit.get(cursor, { interpolate: true });
     if (isValidNumber(result)) {
-        // console.log("estimateHid (case 1)", result);
         return result;
     }
 
     // give them the top of the data
     if (fit.hasData) {
-        // console.log("estimateHid (case 2)", scrollPos);
-        console.log("invalid curve fit", result, cursor, key, fit.domain);
+        console.log("invalid curve fit", result, cursor, fit.domain);
         return fit.get(0);
     }
 
     // we're screwed
-    console.log("estimateHid no estimate available", scrollPos);
+    console.log("estimateHid no estimate available");
     return undefined;
 }
 
-function adjustCursorToHid(result, fit) {
-    const { maxHid, minHid, maxContentHid, minContentHid, limit, offset, totalMatches } = result;
+function adjustCursorToHid(fit, result) {
+    const { maxHid, minHid, maxContentHid, minContentHid, offset, totalMatches, matches } = result;
 
     // set 0, 1 for min/max hids
     fit.set(0.0, +maxHid);
     fit.set(1.0, +minHid);
 
     // find cursor for top & bottom of returned content
-    // if (totalMatches > 0) {
-    //     fit.set((1.0 * offset) / totalMatches, maxContentHid);
-    //     fit.set((1.0 * (offset + limit)) / totalMatches, minContentHid);
-    // }
+    if (totalMatches > 0) {
+        const topCursor = ((1.0 * offset) / totalMatches) * 1.0;
+        const bottomCursor = ((1.0 * (offset + matches)) / totalMatches) * 1.0;
+        fit.set(topCursor, maxContentHid);
+        fit.set(bottomCursor, minContentHid);
+    }
 
     return fit;
 }
 
-function adjustHidToTopRows(result, fit) {
+function adjustHidToTopRows(fit, result) {
     const {
         // min and max of returned data
         minContentHid,
@@ -251,7 +256,8 @@ function adjustHidToTopRows(result, fit) {
     return fit;
 }
 
-function buildPayload(cacheResult, totalMatches, hidToTopRows, pageSize) {
+const buildPayload = (pageSize) => (inputs) => {
+    const [cacheResult, totalMatches, hidToTopRows] = inputs;
     const { contents = [], startKey = null } = cacheResult;
 
     let topRows = 0;
@@ -266,7 +272,7 @@ function buildPayload(cacheResult, totalMatches, hidToTopRows, pageSize) {
     }
 
     return { contents, startKey, topRows, bottomRows, totalMatches };
-}
+};
 
 /**
  * estimates offset (top rows) from hid for use in scroll rendering pads the top of the scroller

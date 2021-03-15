@@ -1,10 +1,11 @@
 import { merge, partition, concat } from "rxjs";
-import { map, share, shareReplay, pluck, take, reduce, distinctUntilChanged } from "rxjs/operators";
+import { map, share, pluck, take, reduce, distinctUntilChanged } from "rxjs/operators";
 import { content$, buildContentId } from "./db/observables";
 import { monitorQuery, ACTIONS } from "./db/monitorQuery";
 import { hydrate } from "./operators/hydrate";
 import { SearchParams } from "../model/SearchParams";
 import { deepEqual } from "deep-equal";
+import { shareButDie } from "utils/observable";
 
 /**
  * Search cache upward and downward from the scroll HID, filtering out results
@@ -27,7 +28,7 @@ export const monitorHistoryContent = (cfg = {}) => (src$) => {
 
     const input$ = src$.pipe(
         hydrate([undefined, SearchParams]),
-        shareReplay(1),
+        shareButDie(1),
     );
 
     const up$ = input$.pipe(

@@ -1,5 +1,5 @@
 import { of, combineLatest } from "rxjs";
-import { map, switchMap, debounceTime, scan, distinctUntilChanged } from "rxjs/operators";
+import { map, switchMap, debounceTime, scan, share, distinctUntilChanged } from "rxjs/operators";
 import { chunk } from "utils/observable";
 import { monitorHistoryContent } from "../../caching";
 import { SearchParams } from "../../model/SearchParams";
@@ -12,7 +12,7 @@ import { processContentUpdate, newUpdateMap, buildContentResult, getKeyForUpdate
  * @param {Object} cfg Config object, see below
  */
 // prettier-ignore
-export const watchHistoryContents = (cfg = {}) => hid$ => {
+export const watchHistoryContents = (cfg = {}) => src$ => {
     const {
         history,
         filters,
@@ -22,7 +22,6 @@ export const watchHistoryContents = (cfg = {}) => hid$ => {
 
         // input and output throttling
         debouncePeriod = 250,
-        outputDebounce = debouncePeriod,
 
         // field and key order for the contents
         keyField = "hid",
@@ -37,30 +36,33 @@ export const watchHistoryContents = (cfg = {}) => hid$ => {
     const getKey = getKeyForUpdateMap(keyField);
     const aggregator = processContentUpdate({ getKey });
     const summarize = buildContentResult({ pageSize, keyDirection, getKey });
+    
+    const hid$ = src$.pipe(
+        share(),
+    );
 
-    // extremely wide chunking for the monitor since that's local
-    // and assembling a new monitor is expensive. New monitors will be
-    // created each time hid$ emits
-    const monitorInput$ = hid$.pipe(
+    const chunkedHid$ = hid$.pipe(
         chunk(monitorChunk, true),
         distinctUntilChanged(),
-        map(hid => [history.id, filters, hid]),
+        debounceTime(debouncePeriod),
     );
-    
-    const contentMap$ = monitorInput$.pipe(
-        switchMap(monitorInput => of(monitorInput).pipe(
+
+    const updates$ = chunkedHid$.pipe(
+        switchMap(hid => of([history.id, filters, hid]).pipe(
             monitorHistoryContent({
                 pageSize: monitorPageSize
             }),
         )),
-        scan(aggregator, newUpdateMap()),
     );
 
-    // take a slice out of that content map corresponding to the current hid
-    const contentWindow$ = combineLatest([contentMap$, hid$]).pipe(
-        debounceTime(outputDebounce),
-        map(summarize),
+    const currentMap$ = updates$.pipe(
+        scan(aggregator, newUpdateMap())
     );
 
-    return contentWindow$;
+    const result = combineLatest([currentMap$, hid$]).pipe(
+        debounceTime(debouncePeriod),
+        map(summarize)
+    );
+
+    return result;
 };
