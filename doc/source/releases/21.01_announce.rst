@@ -43,7 +43,7 @@ Deprecation Notices
   If you have specified alternative channels in your Galaxy configuration we recommend removing the iuc channel from the `conda_ensure_channels <https://github.com/galaxyproject/galaxy/blob/283ec1772fcc0e574997dc2c5ad12dc86e3e1d37/lib/galaxy/config/sample/galaxy.yml.sample#L324>`__ variable.
 
 **Removal of the communication server**
-  This feature had not seen greater adoption and was now removed. Most communication has moved to Gitter or other chat services.
+  This feature has not seen greater adoption and has been removed. Most communication has moved to Gitter or other chat services.
 
 Get Galaxy
 ==========
