@@ -13,7 +13,7 @@ Workflows are the absolute ✨star✨ of Galaxy v21.01, they have seen huge impr
 Workflows: Best Practices, Reports, Invocations
 -----------------------------------------------
 
-Workflows have seen huge improvements this release! The workflow report editor is easier to use than ever providing you with a list of common report components you might wish to use, interactive dialogues for embedding them in your reports, and a new workflow invocation tracker! You can now embed visualisations directly in your workflow reports making summarising your analyses easier than ever! And once your reports are produced, you can export them directly to pages to share your reports with colleagues.
+Workflows have seen huge improvements this release! The workflow report editor is easier to use than ever providing you with a list of common report components you might wish to use, interactive dialogues for embedding them in your reports, and a new workflow invocation tracker! You can now embed visualizations directly in your workflow reports making summarising your analyses easier than ever! And once your reports are produced, you can export them directly to pages to share your reports with colleagues.
 
 .. raw:: html
 
@@ -94,7 +94,7 @@ New Visualizations
 NORA, a medical image viewer and annotation tool (thanks to `@bgruening <https://github.com/bgruening>`__, `Pull Request 11035`_)
 
 .. figure:: images/21.01-nora.png
-   :alt: Screenshot of the NORA visualiser showing three views of a scan of a human brain.
+   :alt: Screenshot of the NORA visualizer showing three views of a scan of a human brain.
 
 OpenSeadragon viewer for deep zoom images (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__, `Pull Request 10756`_)
 
