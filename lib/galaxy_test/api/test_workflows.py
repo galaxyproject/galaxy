@@ -2913,9 +2913,13 @@ steps:
 """, test_data=test_data, history_id=history_id, wait=False)
             self.wait_for_invocation_and_jobs(history_id, run_object.workflow_id, run_object.invocation_id)
             contents = self.__history_contents(history_id)
-            assert len(contents) == 1
-            okay_dataset = contents[0]
-            assert okay_dataset["state"] == "ok"
+            assert len(contents) == 4
+            for content in contents:
+                if content["history_content_type"] == "dataset":
+                    assert content["state"] == "ok"
+                else:
+                    print(content)
+                    assert content["populated_state"] == "ok"
 
     @skip_without_tool("cat")
     def test_run_rename_on_mapped_over_collection(self):
