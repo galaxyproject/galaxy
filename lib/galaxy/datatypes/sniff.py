@@ -422,7 +422,10 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> fname = get_test_fname('test.blib')
     >>> guess_ext(fname, sniff_order)
     'blib'
-    >>> fname = get_test_fname('test.phylip')
+    >>> fname = get_test_fname('test_strict_interleaved.phylip')
+    >>> guess_ext(fname, sniff_order)
+    'phylip'
+    >>> fname = get_test_fname('test_relaxed_interleaved.phylip')
     >>> guess_ext(fname, sniff_order)
     'phylip'
     >>> fname = get_test_fname('1.smat')

@@ -51,11 +51,14 @@ export default {
             if (Array.isArray(extensions)) {
                 extensions = extensions.join(", ");
             }
-            const activeLabel = this.output.activeLabel || this.output.label || this.output.name;
+            const activeLabel = this.activeOutput?.activeLabel || this.output.label || this.output.name;
             return `${activeLabel} (${extensions})`;
         },
+        activeOutput() {
+            return this.getNode().activeOutputs.outputsIndex[this.output.name];
+        },
         activeClass() {
-            return this.output.activeOutput && "mark-terminal-active";
+            return this.activeOutput?.activeOutput && "mark-terminal-active";
         },
         showCallout() {
             const node = this.getNode();

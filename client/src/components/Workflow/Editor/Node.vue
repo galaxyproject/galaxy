@@ -203,7 +203,6 @@ export default {
         this.$emit("onAdd", this);
         if (this.step._complete) {
             this.initData(this.step);
-            this.updateData(this.step);
         } else {
             this.$emit("onUpdate", this);
         }
@@ -331,21 +330,19 @@ export default {
             this.postJobActions = data.post_job_actions || {};
             this.label = data.label;
             this.uuid = data.uuid;
+            this.inputs = data.inputs ? data.inputs.slice() : [];
+            this.outputs = data.outputs ? data.outputs.slice() : [];
         },
         initData(data) {
             this.setData(data);
-            this.inputs = data.inputs ? data.inputs.slice() : [];
-            this.outputs = data.outputs ? data.outputs.slice() : [];
             this.activeOutputs.initialize(this.outputs, data.workflow_outputs);
-            this.$emit("onChange");
+            this.showLoading = false;
         },
         updateData(data) {
             this.setData(data);
             // Create array of new output names
-            const outputNames = data.outputs.map((output) => output.name);
+            const outputNames = this.outputs.map((output) => output.name);
             this.activeOutputs.filterOutputs(outputNames);
-            this.inputs = data.inputs;
-            this.outputs = data.outputs;
             // emit change completion event
             this.showLoading = false;
             this.$emit("onChange");
