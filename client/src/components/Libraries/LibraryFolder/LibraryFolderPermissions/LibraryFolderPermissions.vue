@@ -60,7 +60,7 @@ import BootstrapVue from "bootstrap-vue";
 import { Services } from "./services";
 import { Toast } from "ui/toast";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import PermissionsInputField from "./PermissionsInputField.vue";
+import PermissionsInputField from "components/Libraries/LibraryPermissions/PermissionsInputField";
 import PermissionsHeader from "components/Libraries/LibraryPermissions/PermissionsHeader";
 import { extractRoles } from "components/Libraries/library-utils";
 

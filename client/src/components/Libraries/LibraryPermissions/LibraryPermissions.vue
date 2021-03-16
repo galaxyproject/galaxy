@@ -2,6 +2,47 @@
     <div>
         <PermissionsHeader v-if="library" :name="library.name" path="/" />
         <h2 class="text-center">Library permissions</h2>
+        <PermissionsInputField
+            v-if="access_library_role_list"
+            :id="library_id"
+            :permission_type="access_type"
+            :initial_value="access_library_role_list"
+            :apiRootUrl="apiRootUrl"
+            alert="User with <strong>any</strong> of these roles can access this library. If there are no access roles set on the library it is considered <strong>unrestricted</strong>."
+            title="Roles that can access the library"
+            @input="setUserPermissionsPreferences"
+        />
+        <PermissionsInputField
+            v-if="manage_library_role_list"
+            :id="library_id"
+            :permission_type="manage_type"
+            :initial_value="manage_library_role_list"
+            :apiRootUrl="apiRootUrl"
+            alert="User with <strong>any</strong> of these roles can manage permissions on this library (includes giving access)."
+            title="Roles that can manage permissions on this library"
+            @input="setUserPermissionsPreferences"
+        />
+
+        <PermissionsInputField
+            v-if="add_library_item_role_list"
+            :id="library_id"
+            :permission_type="add_type"
+            :initial_value="add_library_item_role_list"
+            :apiRootUrl="apiRootUrl"
+            alert="User with <strong>any</strong> of these roles can add items to this library (folders and datasets)."
+            title="Roles that can add items to this library"
+            @input="setUserPermissionsPreferences"
+        />
+        <PermissionsInputField
+            v-if="modify_library_role_list"
+            :id="library_id"
+            :permission_type="modify_type"
+            :initial_value="modify_library_role_list"
+            :apiRootUrl="apiRootUrl"
+            alert="User with  <strong>any</strong> of these roles can modify this library (name, synopsis, etc.)."
+            title="Roles that can modify this library"
+            @input="setUserPermissionsPreferences"
+        />
     </div>
 </template>
 
@@ -12,10 +53,10 @@ import BootstrapVue from "bootstrap-vue";
 import { Services } from "./services";
 import { Toast } from "ui/toast";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { getGalaxyInstance } from "app";
 import PermissionsHeader from "components/Libraries/LibraryPermissions/PermissionsHeader";
 import { extractRoles } from "components/Libraries/library-utils";
 import { initPermissionsIcons } from "components/Libraries/icons";
+import PermissionsInputField from "components/Libraries/LibraryPermissions/PermissionsInputField";
 
 Vue.use(BootstrapVue);
 initPermissionsIcons();
@@ -29,6 +70,7 @@ export default {
     },
     components: {
         PermissionsHeader,
+        PermissionsInputField,
         FontAwesomeIcon,
     },
     data() {
@@ -36,12 +78,14 @@ export default {
             permissions: undefined,
             library: undefined,
             add_library_item_role_list: undefined,
-            modify_library_role_list: undefined,
             manage_library_role_list: undefined,
+            modify_library_role_list: undefined,
             access_library_role_list: undefined,
+            apiRootUrl: `${getAppRoot()}api/libraries`,
             add_type: "add_library_item_role_list",
-            manage_type: "manage_folder_role_list",
-            modify_type: "modify_folder_role_list",
+            manage_type: "manage_library_role_list",
+            modify_type: "modify_library_role_list",
+            access_type: "access_library_role_list",
         };
     },
     created() {

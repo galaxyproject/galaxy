@@ -123,7 +123,7 @@ import { Services } from "./services";
 import { Toast } from "ui/toast";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
-import PermissionsInputField from "./PermissionsInputField.vue";
+import PermissionsInputField from "components/Libraries/LibraryPermissions/PermissionsInputField";
 import { initPermissionsIcons } from "components/Libraries/icons";
 import LibraryPermissionsWarning from "components/Libraries/LibraryFolder/LibraryFolderPermissions/LibraryPermissionsWarning.vue";
 import { extractRoles } from "components/Libraries/library-utils";
