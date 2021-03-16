@@ -80,10 +80,6 @@ export class Services {
 
     async setPermissions(apiRootUrl, id, new_roles_ids, onSuccess, onError) {
         var formData = new FormData();
-        console.log("!!!!!!!");
-        console.log("!!!!!!!");
-        console.log("!!!!!!!");
-        console.log(new_roles_ids);
         new_roles_ids.forEach((permissionType) => {
             console.log("permissionType");
             console.log("permissionType", permissionType);
