@@ -169,37 +169,34 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         history_id = kwd.get('history_id', None)
         workflow_id = kwd.get('workflow_id', None)
         invocation_id = kwd.get('invocation_id', None)
-        try:
-            if history_id is not None:
-                decoded_history_id = self.decode_id(history_id)
-                query = query.filter(job_alias.history_id == decoded_history_id)
-            if workflow_id or invocation_id:
-                invocation = aliased(model.WorkflowInvocation)
-                invocation_step = aliased(model.WorkflowInvocationStep)
-                if workflow_id is not None:
-                    decoded_workflow_id = self.decode_id(workflow_id)
-                    query = query.filter(
-                        invocation.id == invocation_step.workflow_invocation_id,
-                        invocation.workflow_id == model.Workflow.table.c.id,
-                        model.Workflow.table.c.stored_workflow_id == decoded_workflow_id,
-                    )
-                elif invocation_id is not None:
-                    decoded_invocation_id = self.decode_id(invocation_id)
-                    query = query.filter(
-                        invocation.id == invocation_step.workflow_invocation_id,
-                        invocation_step.workflow_invocation_id == decoded_invocation_id
-                    )
+        if history_id is not None:
+            decoded_history_id = self.decode_id(history_id)
+            query = query.filter(job_alias.history_id == decoded_history_id)
+        if workflow_id or invocation_id:
+            invocation = aliased(model.WorkflowInvocation)
+            invocation_step = aliased(model.WorkflowInvocationStep)
+            if workflow_id is not None:
+                decoded_workflow_id = self.decode_id(workflow_id)
                 query = query.filter(
-                    or_(
-                        job_alias.id == invocation_step.job_id,
-                        and_(
-                            job_alias.id == model.ImplicitCollectionJobsJobAssociation.table.c.job_id,
-                            model.ImplicitCollectionJobsJobAssociation.table.c.implicit_collection_jobs_id == invocation_step.implicit_collection_jobs_id,
-                        )
+                    invocation.id == invocation_step.workflow_invocation_id,
+                    invocation.workflow_id == model.Workflow.table.c.id,
+                    model.Workflow.table.c.stored_workflow_id == decoded_workflow_id,
+                )
+            elif invocation_id is not None:
+                decoded_invocation_id = self.decode_id(invocation_id)
+                query = query.filter(
+                    invocation.id == invocation_step.workflow_invocation_id,
+                    invocation_step.workflow_invocation_id == decoded_invocation_id
+                )
+            query = query.filter(
+                or_(
+                    job_alias.id == invocation_step.job_id,
+                    and_(
+                        job_alias.id == model.ImplicitCollectionJobsJobAssociation.table.c.job_id,
+                        model.ImplicitCollectionJobsJobAssociation.table.c.implicit_collection_jobs_id == invocation_step.implicit_collection_jobs_id,
                     )
                 )
-        except Exception:
-            raise exceptions.ObjectAttributeInvalidException()
+            )
 
         if kwd.get('order_by') == 'create_time':
             order_by = job_alias.create_time.desc()
