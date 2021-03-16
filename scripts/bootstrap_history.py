@@ -507,8 +507,9 @@ def _get_prs(release_name, state="closed"):
         yield pr
 
 
-def main(argv, seen_prs=set()):
+def main(argv, seen_prs=None):
     newest_release = None
+    seen_prs = seen_prs or set()
 
     if argv[1] == "--print-next-minor-version":
         print_next_minor_version()
