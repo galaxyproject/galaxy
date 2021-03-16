@@ -84,6 +84,8 @@ export default {
         // object which is subscribed to above
 
         updateTagSearch(searchTxt) {
+            // TODO: Rework tagService prop mutation
+            // eslint-disable-next-line vue/no-mutating-props
             this.tagService.autocompleteSearchText = searchTxt;
         },
 
