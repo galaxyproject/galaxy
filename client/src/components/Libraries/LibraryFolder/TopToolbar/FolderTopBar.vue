@@ -277,14 +277,8 @@ export default {
             } else return this.selected;
         },
         newFolder() {
-            this.folderContents.unshift({
-                editMode: true,
-                isNewFolder: true,
-                type: "folder",
-                name: "",
-                description: "",
-            });
-            this.$emit("refreshTable");
+
+            this.$emit("newFolder");
         },
         downloadData(format) {
             this.findCheckedItems().then(({ datasets, folders }) => {

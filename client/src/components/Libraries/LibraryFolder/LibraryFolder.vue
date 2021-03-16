@@ -8,6 +8,7 @@
                 @fetchFolderContents="fetchFolderContents($event)"
                 @deleteFromTable="deleteFromTable"
                 @setBusy="setBusy($event)"
+                @newFolder="newFolder"
                 :folderContents="folderContents"
                 :include_deleted="include_deleted"
                 :folder_id="current_folder_id"
@@ -423,6 +424,16 @@ export default {
                 this.isAllSelectedMode = true;
                 this.selectAllRenderedRows();
             }
+        },
+        newFolder() {
+            this.folderContents.unshift({
+                editMode: true,
+                isNewFolder: true,
+                type: "folder",
+                name: "",
+                description: "",
+            });
+            this.refreshTable();
         },
         onRowClick(row, index, event) {
             // check if exists
