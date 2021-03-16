@@ -1233,6 +1233,35 @@ steps:
       col_names: 'B'
 """, history_id=history_id)
 
+    @skip_without_tool('column_param')
+    def test_runtime_data_column_parameter(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""class: GalaxyWorkflow
+inputs:
+    bed_input: data
+steps:
+  cat1:
+    tool_id: cat1
+    in:
+      input1: bed_input
+  column_param_list:
+    tool_id: column_param
+    in:
+      input1: cat1/out_file1
+    state:
+      col: 9
+      col_names: notacolumn
+test_data:
+  step_parameters:
+    '2':
+      'col': 1
+      'col_names': 'c1: chr1'
+  bed_input:
+    value: 1.bed
+    file_type: bed
+    type: File
+""", history_id=history_id)
+
     @skip_without_tool("mapper")
     @skip_without_tool("pileup")
     def test_workflow_metadata_validation_0(self):
