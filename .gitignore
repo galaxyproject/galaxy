@@ -52,6 +52,9 @@ database/tool_recommendation_model.hdf5
 *.log
 *.pid
 
+# But not poetry.lock
+!poetry.lock
+
 # Tool Shed Runtime Files
 tool_shed_webapp.lock
 tool_shed_webapp.log
