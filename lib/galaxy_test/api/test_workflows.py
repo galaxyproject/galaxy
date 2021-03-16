@@ -2725,6 +2725,54 @@ test_data:
         assert element_a_content.strip() == 'A'
         assert element_b_content.strip() == 'B'
 
+    @skip_without_tool('create_input_collection')
+    def test_workflow_optional_input_text_parameter_reevaluation(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  text_input:
+    type: text
+    optional: true
+    default: ''
+steps:
+  create_collection:
+    tool_id: create_input_collection
+  nested_workflow:
+    in:
+      inner_input: create_collection/output
+      inner_text_input: text_input
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        inner_input:
+          type: data_collection_input
+        inner_text_input:
+          type: text
+          optional: true
+          default: ''
+      steps:
+        apply:
+          tool_id: __APPLY_RULES__
+          in:
+            input: inner_input
+          state:
+            rules:
+              rules:
+                - type: add_column_metadata
+                  value: identifier0
+              mapping:
+                - type: list_identifiers
+                  columns: [0]
+      echo:
+        cat1:
+          in:
+            input1: apply/output
+          outputs:
+            out_file1:
+              rename: "#{inner_text_input} suffix"
+        """, history_id=history_id)
+
     @skip_without_tool('cat1')
     def test_workflow_rerun_with_use_cached_job(self):
         workflow = self.workflow_populator.load_workflow(name="test_for_run")
