@@ -3,7 +3,10 @@
         <b-container fluid>
             <div v-if="dataset">
                 <b-breadcrumb>
-                    <b-breadcrumb-item title="Return to the list of libraries" :href="`${root}libraries`">
+                    <b-breadcrumb-item
+                        title="Return to the list of libraries"
+                        :to="{ path: `/` }"
+                    >
                         Libraries
                     </b-breadcrumb-item>
                     <template v-for="path_item in this.dataset.full_path">
@@ -123,7 +126,7 @@ import { getGalaxyInstance } from "app";
 import PermissionsInputField from "./PermissionsInputField.vue";
 import { initPermissionsIcons } from "components/Libraries/icons";
 import LibraryPermissionsWarning from "components/Libraries/LibraryFolder/LibraryFolderPermissions/LibraryPermissionsWarning.vue";
-import { extractRoles } from "./utils";
+import { extractRoles } from "components/Libraries/library-utils";
 
 import "vue-multiselect/dist/vue-multiselect.min.css";
 import VueObserveVisibility from "vue-observe-visibility";
