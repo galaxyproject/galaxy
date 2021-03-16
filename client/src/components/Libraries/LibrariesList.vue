@@ -121,7 +121,7 @@
                         size="sm"
                         class="lib-btn permission_library_btn"
                         :title="'Permissions of ' + row.item.name"
-                        :href="`${root}library/list#library/${row.item.id}/permissions`"
+                        :to="{ path: `/${row.item.id}/permissions` }"
                     >
                         <font-awesome-icon icon="users" />
                         Manage

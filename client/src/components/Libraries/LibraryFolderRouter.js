@@ -19,7 +19,7 @@ export default new VueRouter({
             component: LibrariesList,
         },
         {
-            path: "/permissions/:library_id",
+            path: "/:library_id/permissions",
             name: "LibraryPermissions",
             component: LibraryPermissions,
             props: true,
@@ -31,13 +31,13 @@ export default new VueRouter({
             props: true,
         },
         {
-            path: "/folders/permissions/:folder_id",
+            path: "/folders/:folder_id/permissions",
             name: "LibraryFolder",
             component: LibraryFolderPermissions,
             props: true,
         },
         {
-            path: "/folders/permissions/:folder_id/dataset/:dataset_id",
+            path: "/folders/:folder_id/dataset/:dataset_id/permissions",
             name: "LibraryFolder",
             component: LibraryFolderDatasetPermissions,
             props: true,

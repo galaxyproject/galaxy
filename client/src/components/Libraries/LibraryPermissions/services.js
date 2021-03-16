@@ -81,9 +81,6 @@ export class Services {
     async setPermissions(apiRootUrl, id, new_roles_ids, onSuccess, onError) {
         var formData = new FormData();
         new_roles_ids.forEach((permissionType) => {
-            console.log("permissionType");
-            console.log("permissionType", permissionType);
-
             Object.keys(permissionType).map(function (k) {
                 const ids = permissionType[k].map((a) => a.id);
                 formData.append(k, ids);
