@@ -223,10 +223,12 @@ Enhancements
   `Pull Request 10667`_
 * Fix running subworkflows with parameter input steps.
   `Pull Request 10722`_
-* Fix workflow runs with data_column runtime parameter changes
+* Fix workflow runs with data_column runtime parameter changes.
   `Pull Request 11596`_
-* Various fixes for copying workflow nodes
+* Various fixes for copying workflow nodes.
   `Pull Request 11602`_
+* Fix optional workflow parameter inputs not recovered when setting step outputs.
+  `Pull Request 11626`_
 * Drop API Key listings from admin user list.
   `Pull Request 10745`_
 * Render OpenEBench link in new consolidated tool metadata.
@@ -793,9 +795,12 @@ Fixes
   `Pull Request 11062`_
 * Make YAML tool parser parse ``expect_failure``.
   `Pull Request 11072`_
-* Fix type column in library folder
+* Fix type column in library folder.
   (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
   `Pull Request 11093`_
+* Fix exporting datasets from library as collection.
+  (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
+  `Pull Request 11623`_, `Pull Request 11625`_
 * Fix spurious "Select" button in upload.
   `Pull Request 11096`_
 * Cleanup a variety of sphinx warnings and update lib structure.
