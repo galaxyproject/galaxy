@@ -277,7 +277,6 @@ export default {
             } else return this.selected;
         },
         newFolder() {
-
             this.$emit("newFolder");
         },
         downloadData(format) {
