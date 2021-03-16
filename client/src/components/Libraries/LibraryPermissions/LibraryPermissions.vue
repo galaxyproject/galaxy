@@ -43,6 +43,14 @@
             title="Roles that can modify this library"
             @input="setUserPermissionsPreferences"
         />
+        <button
+            title="Save modifications"
+            class="toolbtn_save_permissions"
+            @click="postPermissions"
+        >
+            <font-awesome-icon :icon="['far', 'save']" />
+            Save
+        </button>
     </div>
 </template>
 
@@ -50,7 +58,7 @@
 import Vue from "vue";
 import { getAppRoot } from "onload/loadConfig";
 import BootstrapVue from "bootstrap-vue";
-import { Services } from "./services";
+import { Services } from "components/Libraries/LibraryPermissions/services";
 import { Toast } from "ui/toast";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import PermissionsHeader from "components/Libraries/LibraryPermissions/PermissionsHeader";
@@ -110,14 +118,15 @@ export default {
         postPermissions() {
             this.services.setPermissions(
                 this.apiRootUrl,
-                this.folder_id,
+                this.library_id,
                 [
                     { "add_ids[]": this.add_library_item_role_list },
-                    { "manage_ids[]": this.manage_folder_role_list },
-                    { "modify_ids[]": this.modify_folder_role_list },
+                    { "manage_ids[]": this.manage_library_role_list },
+                    { "modify_ids[]": this.modify_library_role_list },
+                    { "access_ids[]": this.access_library_role_list },
                 ],
                 (fetched_permissions) => {
-                    Toast.success("Permissions saved.");
+                    Toast.success("Library permissions saved.");
                     this.permissions = fetched_permissions;
                 },
                 (error) => {
