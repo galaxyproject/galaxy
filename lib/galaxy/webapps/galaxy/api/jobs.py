@@ -31,7 +31,6 @@ from galaxy.managers.jobs import (
     summarize_job_parameters,
     view_show_job,
 )
-from galaxy.model import Job
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.web import (
     expose_api,
@@ -174,26 +173,31 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
             if history_id is not None:
                 decoded_history_id = self.decode_id(history_id)
                 query = query.filter(job_alias.history_id == decoded_history_id)
-            if workflow_id is not None:
-                decoded_workflow_id = self.decode_id(workflow_id)
-                query = query.filter(and_(
-                    model.WorkflowInvocationStep.table.c.workflow_invocation_id == model.WorkflowInvocation.table.c.id,
-                    model.WorkflowInvocation.table.c.workflow_id == model.Workflow.table.c.id,
-                    model.Workflow.table.c.stored_workflow_id == decoded_workflow_id,
+            if workflow_id or invocation_id:
+                invocation = aliased(model.WorkflowInvocation)
+                invocation_step = aliased(model.WorkflowInvocationStep)
+                if workflow_id is not None:
+                    decoded_workflow_id = self.decode_id(workflow_id)
+                    query = query.filter(
+                        invocation.id == invocation_step.workflow_invocation_id,
+                        invocation.workflow_id == model.Workflow.table.c.id,
+                        model.Workflow.table.c.stored_workflow_id == decoded_workflow_id,
+                    )
+                elif invocation_id is not None:
+                    decoded_invocation_id = self.decode_id(invocation_id)
+                    query = query.filter(
+                        invocation.id == invocation_step.workflow_invocation_id,
+                        invocation_step.workflow_invocation_id == decoded_invocation_id
+                    )
+                query = query.filter(
                     or_(
-                        job_alias.id == model.WorkflowInvocationStep.table.c.job_id,
+                        job_alias.id == invocation_step.job_id,
                         and_(
                             job_alias.id == model.ImplicitCollectionJobsJobAssociation.table.c.job_id,
-                            model.ImplicitCollectionJobsJobAssociation.table.c.implicit_collection_jobs_id == model.WorkflowInvocationStep.table.c.implicit_collection_jobs_id,
+                            model.ImplicitCollectionJobsJobAssociation.table.c.implicit_collection_jobs_id == invocation_step.implicit_collection_jobs_id,
                         )
                     )
-                ))
-            if invocation_id is not None:
-                decoded_invocation_id = self.decode_id(invocation_id)
-                query = query.filter(and_(
-                    job_alias.id == model.WorkflowInvocationStep.table.c.job_id,
-                    model.WorkflowInvocationStep.table.c.workflow_invocation_id == decoded_invocation_id
-                ))
+                )
         except Exception:
             raise exceptions.ObjectAttributeInvalidException()
 

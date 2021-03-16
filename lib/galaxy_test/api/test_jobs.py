@@ -144,7 +144,13 @@ steps:
         self.workflow_populator.wait_for_invocation(workflow_id, invocation_id)
         jobs1 = self.__jobs_index(data={"workflow_id": workflow_id})
         jobs2 = self.__jobs_index(data={"invocation_id": invocation_id})
-        assert len(jobs1) > len(jobs2)
+        assert len(jobs1) == len(jobs2) == 1
+        second_invocation_id = self.workflow_populator.invoke_workflow(history_id, workflow_id, inputs)
+        self.workflow_populator.wait_for_invocation(workflow_id, second_invocation_id)
+        workflow_jobs = self.__jobs_index(data={"workflow_id": workflow_id})
+        second_invocation_jobs = self.__jobs_index(data={"invocation_id": second_invocation_id})
+        assert len(workflow_jobs) == 2
+        assert len(second_invocation_jobs) == 1
 
     @uses_test_history(require_new=True)
     def test_index_limit_and_offset_filter(self, history_id):
