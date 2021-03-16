@@ -7,10 +7,8 @@ Provides user and current history to modal because it currently has initializati
     <CurrentUser v-slot="{ user }">
         <UserHistories v-if="user" :user="user" v-slot="{ currentHistoryId }">
             <b-modal
-                :id="id"
                 v-model="modalShow"
                 :static="modalStatic"
-                ref="uploadModal"
                 header-class="no-separator"
                 modal-class="ui-modal"
                 dialog-class="upload-dialog"
@@ -28,8 +26,6 @@ Provides user and current history to modal because it currently has initializati
                     :current-history-id="currentHistoryId"
                     v-bind="{ ...$props, ...$attrs }"
                     @dismiss="dismiss"
-                    @hide="hide"
-                    @cancel="cancel"
                 />
             </b-modal>
         </UserHistories>
@@ -55,36 +51,27 @@ export default {
     },
     data() {
         return {
-            id: null,
             modalShow: false,
         };
     },
     methods: {
         show() {
             this.modalShow = true;
-            this.$nextTick(this.tryMountingTabs);
         },
         hide() {
             this.modalShow = false;
         },
-        cancel() {
-            this.hide();
-            this.$nextTick(() => {
-                this.$bvModal.hide(this.id, "cancel");
-            });
-        },
-        dismiss() {
-            // hide or cancel based on whether this is a singleton
-            if (this.callback) {
-                this.cancel();
-            } else {
-                this.hide();
+        dismiss(result) {
+            if (undefined !== result) {
+                this.$root.$emit("uploadResult", result);
             }
+            this.hide();
         },
     },
     mounted() {
-        this.eventHub.$on("upload:open", this.show);
-        this.id = String(this._uid);
+        this.show();
+        // handles subsequent external requests to re-open a re-used modal
+        this.$root.$on("openUpload", this.show);
     },
 };
 </script>

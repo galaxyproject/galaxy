@@ -40,6 +40,7 @@ const tableIcons = [
 
 const manageIcons = [faAngleDoubleLeft, faSave, faFile];
 const topBarIcons = [faHome, faPlus, faInfoCircle, faTrash, faDownload, faBook];
+const librariesIcons = [faGlobe, faPencilAlt, faSave, faTimes, faTrash, faUnlock];
 
 export function initFolderTableIcons() {
     tableIcons.forEach((icon) => {
@@ -49,6 +50,11 @@ export function initFolderTableIcons() {
 
 export function initPermissionsIcons() {
     manageIcons.forEach((icon) => {
+        library.add(icon);
+    });
+}
+export function initLibariesIcons() {
+    librariesIcons.forEach((icon) => {
         library.add(icon);
     });
 }

@@ -3,8 +3,6 @@ from typing import List
 from fastapi import (
     Path
 )
-from fastapi_utils.cbv import cbv
-from fastapi_utils.inferring_router import InferringRouter as APIRouter
 
 from galaxy.managers.licenses import (
     LicenseMetadataModel,
@@ -14,9 +12,10 @@ from galaxy.web import expose_api_anonymous_and_sessionless
 from . import (
     BaseGalaxyAPIController,
     depends,
+    Router,
 )
 
-router = APIRouter(tags=['licenses'])
+router = Router(tags=['licenses'])
 
 LicenseIdPath: str = Path(
     ...,  # Mark this Path parameter as required
@@ -26,7 +25,7 @@ LicenseIdPath: str = Path(
 )
 
 
-@cbv(router)
+@router.cbv
 class FastAPILicenses:
     licenses_manager: LicensesManager = depends(LicensesManager)
 
