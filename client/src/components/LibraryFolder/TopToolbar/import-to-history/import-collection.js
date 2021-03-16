@@ -137,7 +137,7 @@ var ImportCollectionModal = Backbone.View.extend({
                 ];
                 return this.createHDCA(elements, this.collectionType, name, hideSourceItems, history_id);
             };
-            PAIR_CREATOR_MODAL.listCollectionCreatorModal(
+            PAIR_CREATOR_MODAL.pairCollectionCreatorModal(
                 collection_elements,
                 { creationFn: creationFn, title: modal_title, defaultHideSourceItems: true },
                 creator_class
@@ -148,7 +148,7 @@ var ImportCollectionModal = Backbone.View.extend({
                 name: element.name,
                 src: "ldda",
             }));
-            PAIRED_CREATOR.pairCollectionCreatorModal(elements, {
+            PAIRED_CREATOR.pairedListCollectionCreatorModal(elements, {
                 historyId: history_id,
                 title: modal_title,
                 defaultHideSourceItems: true,
