@@ -43,11 +43,7 @@
             title="Roles that can modify this library"
             @input="setUserPermissionsPreferences"
         />
-        <button
-            title="Save modifications"
-            class="toolbtn_save_permissions"
-            @click="postPermissions"
-        >
+        <button title="Save modifications" class="toolbtn_save_permissions" @click="postPermissions">
             <font-awesome-icon :icon="['far', 'save']" />
             Save
         </button>

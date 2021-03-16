@@ -3,10 +3,7 @@
         <b-container fluid>
             <div v-if="dataset">
                 <b-breadcrumb>
-                    <b-breadcrumb-item
-                        title="Return to the list of libraries"
-                        :to="{ path: `/` }"
-                    >
+                    <b-breadcrumb-item title="Return to the list of libraries" :to="{ path: `/` }">
                         Libraries
                     </b-breadcrumb-item>
                     <template v-for="path_item in this.dataset.full_path">
