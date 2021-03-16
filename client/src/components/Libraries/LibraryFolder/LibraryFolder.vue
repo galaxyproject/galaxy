@@ -8,7 +8,6 @@
                 @fetchFolderContents="fetchFolderContents($event)"
                 @deleteFromTable="deleteFromTable"
                 @setBusy="setBusy($event)"
-                @changeFolderId="changeFolderId($event)"
                 :folderContents="folderContents"
                 :include_deleted="include_deleted"
                 :folder_id="current_folder_id"
@@ -91,10 +90,14 @@
                         />
                     </div>
                     <div v-else-if="!row.item.deleted">
-                        <a v-if="row.item.type === 'folder'" href="#" @click="changeFolderId(row.item.id)">{{
+                        <b-link
+                            v-if="row.item.type === 'folder'"
+                            :to="{ name: `LibraryFolder`, params: { folder_id: `${row.item.id}` } }"
+                            >{{ row.item.name }}</b-link
+                        >
+                        <a v-else :href="`${root}library/list#folders/${current_folder_id}/datasets/${row.item.id}`">{{
                             row.item.name
                         }}</a>
-                        <a v-else :href="createContentLink(row.item)">{{ row.item.name }}</a>
                     </div>
                     <!-- Deleted Item-->
                     <div v-else>
@@ -325,15 +328,19 @@ export default {
             isAllSelectedMode: false,
             total_rows: 0,
             deselectedDatasets: [],
+            root: getAppRoot(),
         };
     },
     created() {
-        this.current_folder_id = this.folder_id;
-        this.root = getAppRoot();
         this.services = new Services({ root: this.root });
-        this.fetchFolderContents();
+        this.initFolder(this.folder_id);
     },
     methods: {
+        initFolder(folder_id) {
+            this.current_folder_id = folder_id;
+            this.folderContents = [];
+            this.fetchFolderContents(this.include_deleted);
+        },
         fetchFolderContents(include_deleted = false) {
             this.include_deleted = include_deleted;
             this.setBusy(true);
@@ -367,11 +374,6 @@ export default {
         },
         updateSearchValue(value) {
             this.search_text = value;
-            this.folderContents = [];
-            this.fetchFolderContents(this.include_deleted);
-        },
-        changeFolderId(id) {
-            this.current_folder_id = id;
             this.folderContents = [];
             this.fetchFolderContents(this.include_deleted);
         },
@@ -453,11 +455,6 @@ export default {
         },
         bytesToString(raw_size) {
             return Utils.bytesToString(raw_size);
-        },
-        createContentLink(element) {
-            if (element.type === "file")
-                return `${this.root}library/list#folders/${this.current_folder_id}/datasets/${element.id}`;
-            else if (element.type === "folder") return `${this.root}library/folders/${element.id}`;
         },
         navigateToPermission(element) {
             if (element.type === "file")
@@ -601,6 +598,10 @@ export default {
                 this.fetchFolderContents(this.include_deleted);
             },
         },
+    },
+    beforeRouteUpdate(to, from, next) {
+        this.initFolder(to.params.folder_id);
+        next();
     },
 };
 </script>

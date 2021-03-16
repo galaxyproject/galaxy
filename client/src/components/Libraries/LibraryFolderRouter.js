@@ -10,10 +10,10 @@ Vue.use(VueRouter);
 
 export default new VueRouter({
     mode: "history",
-    base: `${getAppRoot()}library`,
+    base: `${getAppRoot()}libraries`,
     routes: [
         {
-            path: "/libraries-list",
+            path: "/",
             name: "LibrariesList",
             component: LibrariesList,
         },

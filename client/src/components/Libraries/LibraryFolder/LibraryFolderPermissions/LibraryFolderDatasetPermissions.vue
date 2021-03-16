@@ -3,7 +3,7 @@
         <b-container fluid>
             <div v-if="dataset">
                 <b-breadcrumb>
-                    <b-breadcrumb-item title="Return to the list of libraries" :href="`${root}library/list`">
+                    <b-breadcrumb-item title="Return to the list of libraries" :href="`${root}libraries`">
                         Libraries
                     </b-breadcrumb-item>
                     <template v-for="path_item in this.dataset.full_path">
@@ -206,9 +206,6 @@ export default {
                     console.error(error);
                 }
             );
-        },
-        getParentLink() {
-            return `${this.root}library/folders/${this.folder_id}`;
         },
         setUserPermissionsPreferences(ids, permission_type) {
             this[permission_type] = ids;
