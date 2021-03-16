@@ -18,7 +18,6 @@ CREATE_VENV=1
 REPLACE_PIP=$SET_VENV
 COPY_SAMPLE_FILES=1
 SKIP_CLIENT_BUILD=${GALAXY_SKIP_CLIENT_BUILD:-0}
-CLIENT_DEV_SERVER=${GALAXY_CLIENT_DEV_SERVER:-0}
 NODE_VERSION=${GALAXY_NODE_VERSION:-"$(cat client/.node_version)"}
 
 for arg in "$@"; do
@@ -32,11 +31,6 @@ for arg in "$@"; do
     [ "$arg" = "--skip-samples" ] && COPY_SAMPLE_FILES=0
     [ "$arg" = "--skip-client-build" ] && SKIP_CLIENT_BUILD=1
 done
-
-# If a client dev server is being configured, skip the client build.
-if [ $CLIENT_DEV_SERVER -ne 0 ]; then
-    SKIP_CLIENT_BUILD=1
-fi
 
 SAMPLES="
     lib/tool_shed/scripts/bootstrap_tool_shed/user_info.xml.sample

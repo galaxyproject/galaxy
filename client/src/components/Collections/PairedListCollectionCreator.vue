@@ -962,8 +962,8 @@ export default {
             };
         },
         changeFilters: function (filter) {
-            this.forwardFilter = this.commonFilters[filter][0];
-            this.reverseFilter = this.commonFilters[filter][1];
+            this.filters[0] = this.forwardFilter = this.commonFilters[filter][0];
+            this.filters[1] = this.reverseFilter = this.commonFilters[filter][1];
         },
         clickedCreate: function (collectionName) {
             this.checkForDuplicates();

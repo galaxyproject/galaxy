@@ -1,29 +1,37 @@
 import UploadModal from "./UploadModal";
 import { initializeUploadDefaults } from "./config";
 import { mountVueComponent } from "utils/mountVueComponent";
-import { eventHub } from "components/plugins/eventHub";
-
-// Upload dialog instance
-let uploadVm = null;
 
 export function mountUploadModal(options = {}) {
-    const propsData = initializeUploadDefaults(options);
+    const props = initializeUploadDefaults(options);
 
-    if (!uploadVm) {
-        const mounter = mountVueComponent(UploadModal);
-        const container = document.createElement("div");
-        document.body.appendChild(container);
-        uploadVm = mounter(propsData, container);
-    } else {
-        for (const [propName, v] of Object.entries(propsData)) {
-            if (propName in uploadVm.$options.props) {
-                uploadVm[propName] = v;
-            }
-        }
+    // should use events insted of passing in functions
+    const { callback, ...propsData } = props;
+    if (callback) {
+        // internal display characteristic
+        propsData.hasCallback = true;
     }
+
+    const mounter = mountVueComponent(UploadModal);
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const uploadVm = mounter(propsData, container);
+
+    if (callback) {
+        uploadVm.$once("uploadResult", callback);
+    }
+
+    return uploadVm;
 }
 
-export function openUploadModal(options) {
-    mountUploadModal(options);
-    eventHub.$emit("upload:open");
+// Global upload dialog instance
+let uploadVm = null;
+
+export function openGlobalUploadModal(options) {
+    if (!uploadVm) {
+        uploadVm = mountUploadModal(options);
+    }
+    // re-open
+    uploadVm.$emit("openUpload", uploadVm);
+    return uploadVm;
 }

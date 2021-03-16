@@ -1193,6 +1193,46 @@ steps:
             invocation_id = self.__invoke_workflow(history_id, workflow_id, inputs)
             self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
 
+    @skip_without_tool('column_param')
+    def test_empty_file_data_column_specified(self):
+        # Regression test for https://github.com/galaxyproject/galaxy/pull/10981
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""class: GalaxyWorkflow
+steps:
+  empty_output:
+    tool_id: empty_output
+    outputs:
+      out_file1:
+        change_datatype: tabular
+  column_param:
+    tool_id: column_param
+    in:
+      input1: empty_output/out_file1
+    state:
+      col: 2
+      col_names: 'B'
+""", history_id=history_id)
+
+    @skip_without_tool('column_param_list')
+    def test_comma_separated_columns(self):
+        # Regression test for https://github.com/galaxyproject/galaxy/pull/10981
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""class: GalaxyWorkflow
+steps:
+  empty_output:
+    tool_id: empty_output
+    outputs:
+      out_file1:
+        change_datatype: tabular
+  column_param_list:
+    tool_id: column_param_list
+    in:
+      input1: empty_output/out_file1
+    state:
+      col: '2,3'
+      col_names: 'B'
+""", history_id=history_id)
+
     @skip_without_tool("mapper")
     @skip_without_tool("pileup")
     def test_workflow_metadata_validation_0(self):
@@ -2845,6 +2885,41 @@ steps:
             assert len(contents) == 1
             okay_dataset = contents[0]
             assert okay_dataset["state"] == "ok"
+
+    @skip_without_tool("output_filter_with_input_optional")
+    def test_workflow_optional_input_filtering(self):
+        with self.dataset_populator.test_history() as history_id:
+            test_data = """
+input1:
+  type: list
+  elements:
+    - identifier: A
+      content: A
+"""
+            run_object = self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  input1:
+    type: collection
+    collection_type: list
+outputs:
+  wf_output_1:
+    outputSource: output_filter/out_1
+steps:
+  output_filter:
+    tool_id: output_filter_with_input_optional
+    in:
+      input_1: input1
+""", test_data=test_data, history_id=history_id, wait=False)
+            self.wait_for_invocation_and_jobs(history_id, run_object.workflow_id, run_object.invocation_id)
+            contents = self.__history_contents(history_id)
+            assert len(contents) == 4
+            for content in contents:
+                if content["history_content_type"] == "dataset":
+                    assert content["state"] == "ok"
+                else:
+                    print(content)
+                    assert content["populated_state"] == "ok"
 
     @skip_without_tool("cat")
     def test_run_rename_on_mapped_over_collection(self):

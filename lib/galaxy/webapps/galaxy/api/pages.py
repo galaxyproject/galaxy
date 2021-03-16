@@ -10,8 +10,6 @@ from fastapi import (
     Query,
     status,
 )
-from fastapi_utils.cbv import cbv
-from fastapi_utils.inferring_router import InferringRouter as APIRouter
 from starlette.responses import StreamingResponse
 
 from galaxy.managers.context import ProvidesUserContext
@@ -29,11 +27,16 @@ from galaxy.web import (
     expose_api_anonymous_and_sessionless,
     expose_api_raw_anonymous_and_sessionless
 )
-from . import BaseGalaxyAPIController, depends, DependsOnTrans
+from . import (
+    BaseGalaxyAPIController,
+    depends,
+    DependsOnTrans,
+    Router,
+)
 
 log = logging.getLogger(__name__)
 
-router = APIRouter(tags=['pages'])
+router = Router(tags=['pages'])
 
 DeletedQueryParam: bool = Query(
     default=False,
@@ -48,7 +51,7 @@ PageIdPathParam: EncodedDatabaseIdField = Path(
 )
 
 
-@cbv(router)
+@router.cbv
 class FastAPIPages:
     manager: PagesManager = depends(PagesManager)
 

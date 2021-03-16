@@ -61,7 +61,7 @@ pysam = "*"
 python = "^3.6"
 pyuwsgi = "*"
 PyYAML = "*"
-refgenconf = ">=0.7.0"
+refgenconf = ">=0.7.0, <0.10.0"  # https://github.com/galaxyproject/galaxy/issues/11601
 requests = "*"
 Routes = "*"
 social-auth-core = {version = "==3.3.0", extras = ["openidconnect"]}
@@ -80,6 +80,7 @@ Whoosh = "*"
 zipstream-new = "*"
 
 [tool.poetry.dev-dependencies]
+fluent-logger = "*"
 httpx = "*"
 gunicorn = "*"
 lxml = "!=4.2.2"

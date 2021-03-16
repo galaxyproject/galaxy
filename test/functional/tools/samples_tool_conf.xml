@@ -97,6 +97,7 @@
   <tool file="output_filter.xml" />
   <tool file="output_empty_work_dir.xml" />
   <tool file="output_filter_with_input.xml" />
+  <tool file="output_filter_with_input_optional.xml" />
   <tool file="output_filter_exception_1.xml" />
   <tool file="output_collection_filter.xml" />
   <tool file="output_auto_format.xml" />
@@ -114,6 +115,7 @@
   <tool file="param_text_option.xml" />
   <tool file="column_param.xml" />
   <tool file="column_param_configfile.xml" />
+  <tool file="column_param_list.xml" />
   <tool file="column_multi_param.xml" />
   <tool file="hidden_param.xml" />
   <tool file="special_params.xml" />
@@ -155,6 +157,7 @@
   <tool file="collection_mixed_param.xml" />
   <tool file="collection_two_paired.xml" />
   <tool file="collection_creates_pair.xml" />
+  <tool file="collection_creates_pair_format.xml" />
   <tool file="collection_creates_pair_from_type.xml" />
   <tool file="collection_creates_pair_from_work_dir.xml" />
   <tool file="collection_creates_list.xml" />

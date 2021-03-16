@@ -2,7 +2,11 @@
     <div>
         <div>
             <div v-if="folder">
-                <b-button variant="primary" title="back to parent folder" :to="{ path: `/${this.folder.parent_id}` }">
+                <b-button
+                    variant="primary"
+                    title="back to parent folder"
+                    :to="{ path: `/folders/${this.folder.parent_id}` }"
+                >
                     <font-awesome-icon icon="angle-double-left" />
                 </b-button>
                 <div>
@@ -73,10 +77,10 @@ import { Toast } from "ui/toast";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
 import PermissionsInputField from "./PermissionsInputField.vue";
-import LibraryPermissionsWarning from "components/LibraryFolder/LibraryFolderPermissions/LibraryPermissionsWarning.vue";
+import LibraryPermissionsWarning from "components/Libraries/LibraryFolder/LibraryFolderPermissions/LibraryPermissionsWarning.vue";
 import { extractRoles } from "./utils";
 
-import { initPermissionsIcons } from "components/LibraryFolder/icons";
+import { initPermissionsIcons } from "components/Libraries/icons";
 
 Vue.use(BootstrapVue);
 initPermissionsIcons();
@@ -123,9 +127,6 @@ export default {
     },
 
     methods: {
-        getParentLink() {
-            return `${this.root}library/folders/${this.folder.parent_id}`;
-        },
         setUserPermissionsPreferences(ids, permission_type) {
             this[permission_type] = ids;
         },

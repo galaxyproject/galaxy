@@ -14,6 +14,13 @@
 <script>
 export default {
     name: "SearchField",
+    props: {
+        typingDelay: {
+            type: Number,
+            default: 1000,
+            required: false,
+        },
+    },
     data() {
         return {
             search: "",
@@ -31,7 +38,7 @@ export default {
             if (!this.awaitingSearch) {
                 setTimeout(() => {
                     this.startSearch();
-                }, 1000); // 1 sec delay
+                }, this.typingDelay);
             }
             this.awaitingSearch = true;
         },

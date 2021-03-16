@@ -48,43 +48,40 @@ for inspection of live javascript to facilitate debugging, use:
 Important Note: The Galaxy repository does not include client script artifacts,
 and these should not be committed.
 
-## Automatic Rebuilding (Watch Mode)
+## Automatic Rebuilding
 
-When you're actively developing, it is sometimes convenient to have the client
+When you're actively developing, it is convenient to have the client
 automatically rebuild every time you save a file. You can do this using:
 
     make client-watch
 
-This will first stage any dependencies (yarn-installed packages like jquery,
-etc), and then will watch for changes in any of the galaxy client source files.
-When a file is changed, the client will automatically rebuild, after which you
-can usually force refresh your browser to see changes. Note that it is still
-recommended to run `make client` after you are finished actively developing
-using `make client-watch`.
+This will first stage client dependencies, initiate a build, and then will
+watch for changes in any of the galaxy client source files.  When a file is
+changed, the client will automatically rebuild, after which you can refresh
+your browser to see changes.
 
-Note that there's a new, better option described in the next section. This
-method of building will likely be deprecated as HMR is more widely tested.
+For even more rapid development you can use the webpack development server,
+which takes advantage of hot module replacement (HMR). This technique allows
+swapping out of javascript modules while the application is running without
+requiring a full page reload most of the time, at least in the more modern
+parts of the application.
 
-## Even Better Automatic Rebuilding (HMR)
-
-For even more rapid development you can use the webpack development server for
-Hot Module Replacement (HMR). This technique allows swapping out of modules
-while the application is running without requiring a full page reload most of
-the time.
-
-Setting this up is a little more involved, but it is the fastest possible way
-to iterate when developing the client. You'll need to start two separate
-processes here. The first command below starts a special webpack dev server
-after a client build, and the second starts a Galaxy server like usual, but
-with extra mappings that redirect client artifact requests to the mentioned
-webpack dev server.
+The command below starts a special webpack dev server after a client
+build.
 
     make client-dev-server
-    GALAXY_CLIENT_DEV_SERVER=1 sh run.sh
 
-Note that this only works under uWSGI due to the extra internal routing rules
-employed. If you're using the older Paste-based galaxy webserver you'll need to
-swap it over to take advantage of this functionality.
+This will start up an extra client development server running on port 8081.
+Open your browser to http://localhost:8081 (instead of the default 8080 that
+Galaxy would run on), and you should see Galaxy like normal.  Except now, when
+you change client code it'll automatically rebuild *and* reload the relevant
+portion of the application for you.  Note that unlike previous versions of this
+functionality, it is no longer required to use uWSGI for this.  Lastly, if you
+are running Galaxy at a location other than the default, you can specify a
+different proxy target (in this example, port 8000) using the GALAXY_URL
+environment variable:
+
+    GALAXY_URL="http://localhost:8000" make client-dev-server
 
 ## Changing Styles/CSS
 

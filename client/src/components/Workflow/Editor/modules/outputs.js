@@ -104,7 +104,7 @@ export class ActiveOutputs {
     /** Removes all entries which are not in the parsed dictionary of names */
     filterOutputs(names) {
         this.getAll().forEach((wf_output) => {
-            if (!names[wf_output.output_name]) {
+            if (!names.includes(wf_output.output_name)) {
                 this.remove(wf_output.output_name);
             }
         });
