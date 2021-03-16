@@ -72,7 +72,7 @@ SQLAlchemy-Utils = "!=0.36.8"  # https://github.com/kvesteri/sqlalchemy-utils/is
 sqlitedict = "*"
 sqlparse = "*"
 starlette = "*"
-starlette-context = "*"
+starlette-context = ">=0.3.1"  # prevent downgrading by Poetry's dependency resolver
 svgwrite = "*"
 uvicorn = "*"
 WebOb = "*"
