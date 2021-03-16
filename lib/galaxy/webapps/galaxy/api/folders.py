@@ -7,21 +7,19 @@ from galaxy import (
     exceptions,
     util
 )
-from galaxy.managers import folders, roles
-from galaxy.structured_app import StructuredApp
+from galaxy.managers.folders import FoldersManager
 from galaxy.web import expose_api
-from galaxy.webapps.base.controller import UsesLibraryMixinItems
-from . import BaseGalaxyAPIController
+from . import (
+    BaseGalaxyAPIController,
+    depends,
+)
 
 log = logging.getLogger(__name__)
 
 
-class FoldersController(BaseGalaxyAPIController, UsesLibraryMixinItems):
+class FoldersController(BaseGalaxyAPIController):
 
-    def __init__(self, app: StructuredApp):
-        super().__init__(app)
-        self.folder_manager = folders.FolderManager()
-        self.role_manager = roles.RoleManager(app)
+    manager: FoldersManager = depends(FoldersManager)
 
     @expose_api
     def index(self, trans, **kwd):
@@ -46,13 +44,10 @@ class FoldersController(BaseGalaxyAPIController, UsesLibraryMixinItems):
         :returns:   dictionary including details of the folder
         :rtype:     dict
         """
-        folder_id = self.folder_manager.cut_and_decode(trans, id)
-        folder = self.folder_manager.get(trans, folder_id, check_manageable=False, check_accessible=True)
-        return_dict = self.folder_manager.get_folder_dict(trans, folder)
-        return return_dict
+        return self.manager.show(trans, id)
 
     @expose_api
-    def create(self, trans, encoded_parent_folder_id, payload=None, **kwd):
+    def create(self, trans, encoded_parent_folder_id, payload, **kwd):
         """
         POST /api/folders/{encoded_parent_folder_id}
 
@@ -72,16 +67,7 @@ class FoldersController(BaseGalaxyAPIController, UsesLibraryMixinItems):
         :rtype:     dictionary
         :raises: RequestParameterMissingException
         """
-        if payload:
-            kwd.update(payload)
-        name = kwd.get('name', None)
-        if name is None:
-            raise exceptions.RequestParameterMissingException("Missing required parameter 'name'.")
-        description = kwd.get('description', '')
-        decoded_parent_folder_id = self.folder_manager.cut_and_decode(trans, encoded_parent_folder_id)
-        parent_folder = self.folder_manager.get(trans, decoded_parent_folder_id)
-        new_folder = self.folder_manager.create(trans, parent_folder.id, name, description)
-        return self.folder_manager.get_folder_dict(trans, new_folder)
+        return self.manager.create(trans, encoded_parent_folder_id, payload)
 
     @expose_api
     def get_permissions(self, trans, encoded_folder_id, **kwd):
@@ -101,41 +87,14 @@ class FoldersController(BaseGalaxyAPIController, UsesLibraryMixinItems):
 
         :raises: InsufficientPermissionsException
         """
-        current_user_roles = trans.get_current_user_roles()
-        is_admin = trans.user_is_admin
-        decoded_folder_id = self.folder_manager.cut_and_decode(trans, encoded_folder_id)
-        folder = self.folder_manager.get(trans, decoded_folder_id)
-
-        if not (is_admin or trans.app.security_agent.can_manage_library_item(current_user_roles, folder)):
-            raise exceptions.InsufficientPermissionsException('You do not have proper permission to access permissions of this folder.')
-
         scope = kwd.get('scope', None)
-        if scope == 'current' or scope is None:
-            return self.folder_manager.get_current_roles(trans, folder)
-        #  Return roles that are available to select.
-        elif scope == 'available':
-            page = kwd.get('page', None)
-            if page is not None:
-                page = int(page)
-            else:
-                page = 1
-            page_limit = kwd.get('page_limit', None)
-            if page_limit is not None:
-                page_limit = int(page_limit)
-            else:
-                page_limit = 10
-            query = kwd.get('q', None)
-            roles, total_roles = trans.app.security_agent.get_valid_roles(trans, folder, query, page, page_limit)
-            return_roles = []
-            for role in roles:
-                role_id = trans.security.encode_id(role.id)
-                return_roles.append(dict(id=role_id, name=role.name, type=role.type))
-            return dict(roles=return_roles, page=page, page_limit=page_limit, total=total_roles)
-        else:
-            raise exceptions.RequestParameterInvalidException("The value of 'scope' parameter is invalid. Alllowed values: current, available")
+        page = kwd.get('page', None)
+        page_limit = kwd.get('page_limit', None)
+        query = kwd.get('q', None)
+        return self.manager.get_permissions(trans, encoded_folder_id, scope, page, page_limit, query)
 
     @expose_api
-    def set_permissions(self, trans, encoded_folder_id, payload=None, **kwd):
+    def set_permissions(self, trans, encoded_folder_id, payload, **kwd):
         """
         POST /api/folders/{encoded_folder_id}/permissions
 
@@ -159,75 +118,7 @@ class FoldersController(BaseGalaxyAPIController, UsesLibraryMixinItems):
         :rtype:     dictionary
         :raises: RequestParameterInvalidException, InsufficientPermissionsException, RequestParameterMissingException
         """
-        if payload:
-            kwd.update(payload)
-        is_admin = trans.user_is_admin
-        current_user_roles = trans.get_current_user_roles()
-        decoded_folder_id = self.folder_manager.cut_and_decode(trans, encoded_folder_id)
-        folder = self.folder_manager.get(trans, decoded_folder_id)
-        if not (is_admin or trans.app.security_agent.can_manage_library_item(current_user_roles, folder)):
-            raise exceptions.InsufficientPermissionsException('You do not have proper permission to modify permissions of this folder.')
-
-        new_add_roles_ids = util.listify(kwd.get('add_ids[]', None))
-        new_manage_roles_ids = util.listify(kwd.get('manage_ids[]', None))
-        new_modify_roles_ids = util.listify(kwd.get('modify_ids[]', None))
-
-        action = kwd.get('action', None)
-        if action is None:
-            raise exceptions.RequestParameterMissingException('The mandatory parameter "action" is missing.')
-        elif action == 'set_permissions':
-
-            # ADD TO LIBRARY ROLES
-            valid_add_roles = []
-            invalid_add_roles_names = []
-            for role_id in new_add_roles_ids:
-                role = self.role_manager.get(trans, self.__decode_id(trans, role_id, 'role'))
-                #  Check whether role is in the set of allowed roles
-                valid_roles, total_roles = trans.app.security_agent.get_valid_roles(trans, folder)
-                if role in valid_roles:
-                    valid_add_roles.append(role)
-                else:
-                    invalid_add_roles_names.append(role_id)
-            if len(invalid_add_roles_names) > 0:
-                log.warning("The following roles could not be added to the add library item permission: " + str(invalid_add_roles_names))
-
-            # MANAGE FOLDER ROLES
-            valid_manage_roles = []
-            invalid_manage_roles_names = []
-            for role_id in new_manage_roles_ids:
-                role = self.role_manager.get(trans, self.__decode_id(trans, role_id, 'role'))
-                #  Check whether role is in the set of allowed roles
-                valid_roles, total_roles = trans.app.security_agent.get_valid_roles(trans, folder)
-                if role in valid_roles:
-                    valid_manage_roles.append(role)
-                else:
-                    invalid_manage_roles_names.append(role_id)
-            if len(invalid_manage_roles_names) > 0:
-                log.warning("The following roles could not be added to the manage folder permission: " + str(invalid_manage_roles_names))
-
-            # MODIFY FOLDER ROLES
-            valid_modify_roles = []
-            invalid_modify_roles_names = []
-            for role_id in new_modify_roles_ids:
-                role = self.role_manager.get(trans, self.__decode_id(trans, role_id, 'role'))
-                #  Check whether role is in the set of allowed roles
-                valid_roles, total_roles = trans.app.security_agent.get_valid_roles(trans, folder)
-                if role in valid_roles:
-                    valid_modify_roles.append(role)
-                else:
-                    invalid_modify_roles_names.append(role_id)
-            if len(invalid_modify_roles_names) > 0:
-                log.warning("The following roles could not be added to the modify folder permission: " + str(invalid_modify_roles_names))
-
-            permissions = {trans.app.security_agent.permitted_actions.LIBRARY_ADD: valid_add_roles}
-            permissions.update({trans.app.security_agent.permitted_actions.LIBRARY_MANAGE: valid_manage_roles})
-            permissions.update({trans.app.security_agent.permitted_actions.LIBRARY_MODIFY: valid_modify_roles})
-
-            trans.app.security_agent.set_all_library_permissions(trans, folder, permissions)
-        else:
-            raise exceptions.RequestParameterInvalidException('The mandatory parameter "action" has an invalid value.'
-                                                              'Allowed values are: "set_permissions"')
-        return self.folder_manager.get_current_roles(trans, folder)
+        return self.manager.set_permissions(trans, encoded_folder_id, payload)
 
     @expose_api
     def delete(self, trans, encoded_folder_id, **kwd):
@@ -249,14 +140,11 @@ class FoldersController(BaseGalaxyAPIController, UsesLibraryMixinItems):
         :rtype:     dictionary
 
         """
-        folder = self.folder_manager.get(trans, self.folder_manager.cut_and_decode(trans, encoded_folder_id), True)
         undelete = util.string_as_bool(kwd.get('undelete', False))
-        folder = self.folder_manager.delete(trans, folder, undelete)
-        folder_dict = self.folder_manager.get_folder_dict(trans, folder)
-        return folder_dict
+        return self.manager.delete(trans, encoded_folder_id, undelete)
 
     @expose_api
-    def update(self, trans, encoded_folder_id, payload=None, **kwd):
+    def update(self, trans, encoded_folder_id, payload, **kwd):
         """
         PATCH /api/folders/{encoded_folder_id}
 
@@ -278,28 +166,4 @@ class FoldersController(BaseGalaxyAPIController, UsesLibraryMixinItems):
 
         :raises: RequestParameterMissingException
         """
-        decoded_folder_id = self.folder_manager.cut_and_decode(trans, encoded_folder_id)
-        folder = self.folder_manager.get(trans, decoded_folder_id)
-        if payload:
-            kwd.update(payload)
-        name = kwd.get('name', None)
-        if not name:
-            raise exceptions.RequestParameterMissingException("Parameter 'name' of library folder is required. You cannot remove it.")
-        description = kwd.get('description', None)
-        updated_folder = self.folder_manager.update(trans, folder, name, description)
-        folder_dict = self.folder_manager.get_folder_dict(trans, updated_folder)
-        return folder_dict
-
-    def __decode_id(self, trans, encoded_id, object_name=None):
-        """
-        Try to decode the id.
-
-        :param  object_name:      Name of the object the id belongs to. (optional)
-        :type   object_name:      str
-        """
-        try:
-            return trans.security.decode_id(encoded_id)
-        except TypeError:
-            raise exceptions.MalformedId('Malformed %s id specified, unable to decode.' % object_name if object_name is not None else '')
-        except ValueError:
-            raise exceptions.MalformedId('Wrong %s id specified, unable to decode.' % object_name if object_name is not None else '')
+        return self.manager.update(trans, encoded_folder_id, payload)
