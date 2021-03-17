@@ -87,13 +87,9 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
         # open permission manage dialog
         self.components.libraries.permission_library_btn.wait_for_and_click()
 
-
-        self.components.libraries.add_items_permission.wait_for_and_click()
         # search for created user and add him to permission field
-
+        self.components.libraries.add_items_permission.wait_for_and_click()
         self.components.libraries.add_items_permission_input_field.wait_for_and_send_keys(email)
-        # for i in range(999999999999999999999999):
-        #     self.sleep_for(self.wait_types.UX_TRANSITION)
         self.components.libraries.add_items_permission_option.wait_for_and_click()
 
         # assert that the right email has been saved
