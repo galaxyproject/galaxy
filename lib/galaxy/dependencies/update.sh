@@ -32,7 +32,7 @@ done
 shift $(($OPTIND - 1))
 
 if [ -n "$add" ] && [ $# -eq 0 ]; then
-    printf "When adding (-a), you must provide at least one package name.\n" >&2
+    printf "When adding (-a), you must provide at least one package specification.\n" >&2
     usage
     exit 2
 fi
