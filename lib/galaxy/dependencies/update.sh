@@ -40,7 +40,7 @@ fi
 # Create poetry-venv in a tmp directory; install poetry and make shortcut to executable.
 poetry_venv=$(mktemp -d "${TMPDIR:-/tmp}/poetry_venv.XXXXXXXXXX")
 python3 -m venv "${poetry_venv}"
-${poetry_venv}/bin/pip install --upgrade pip poetry
+${poetry_venv}/bin/python -m pip install --upgrade pip poetry
 poetry="${poetry_venv}/bin/poetry"
 
 # Run poetry (this may update pyproject.toml and poetry.lock).
