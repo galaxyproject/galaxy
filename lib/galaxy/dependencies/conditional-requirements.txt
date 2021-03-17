@@ -14,7 +14,7 @@ python-pam
 galaxycloudrunner
 
 # For file sources plugins
-fs.webdavfs==0.4.2  # type: webdav
+fs.webdavfs>=0.4.2  # type: webdav
 fs.dropboxfs  # type: dropbox
 fs-s3fs  # type: s3
 s3fs  # type: s3fs
