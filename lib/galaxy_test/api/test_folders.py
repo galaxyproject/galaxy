@@ -1,8 +1,4 @@
-from galaxy_test.base.populators import (
-    DatasetCollectionPopulator,
-    DatasetPopulator,
-    LibraryPopulator,
-)
+from galaxy_test.base.populators import LibraryPopulator
 from ._framework import ApiTestCase
 
 
@@ -10,10 +6,7 @@ class FoldersApiTestCase(ApiTestCase):
 
     def setUp(self):
         super().setUp()
-        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
-        self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
         self.library_populator = LibraryPopulator(self.galaxy_interactor)
-
         self.library = self.library_populator.new_library("FolderTestsLibrary")
 
     def test_create(self):
