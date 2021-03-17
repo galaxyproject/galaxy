@@ -53,3 +53,4 @@ fi
 # Update pinned requirements.
 $poetry export -f requirements.txt --without-hashes --output "$this_directory/pinned-requirements.txt"
 $poetry export --dev -f requirements.txt --without-hashes --output "$this_directory/dev-requirements.txt"
+rm -rf "${poetry_venv}"
