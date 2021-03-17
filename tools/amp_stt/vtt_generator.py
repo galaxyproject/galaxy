@@ -159,6 +159,7 @@ def writeTime(start_time, end_time):
 	#This function writes a time entry to the vtt output
 	return str(convert(start_time))+" --> "+str(convert(end_time))+"\n"
 	
+# convert seconds to HH:MM:SS
 def convert(seconds): 
     return time.strftime("%H:%M:%S", time.gmtime(seconds)) 
    

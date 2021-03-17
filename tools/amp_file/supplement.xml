@@ -1,0 +1,31 @@
+<tool id="supplement" name="Get Supplement" version="1.0.0">
+  <description>Get supplement file given its name plus type or file path</description>
+  <requirements>
+  </requirements>
+  <command>
+	<![CDATA[
+		rm -f '$supplement_file';
+		ln -s '$supplement_path' '$supplement_file'
+	]]>
+  </command>
+  <inputs>
+    <param name="supplement_name" type="text" label="Supplement Name" help="Name of the supplement"/>
+    <param name="supplement_type" type="select" label="Supplement Type" help="Type of the parent data entity associated with the supplement">   
+	  <option value="C">Collection</option>
+	  <option value="I">Item</option>
+	  <option value="P">Primaryfile</option>
+    </param>
+    <param name="supplement_path" type="text" label="Supplement Path" help="Absolute file path of the supplement (inferred by AMP from name plus type)"/>   
+  </inputs>
+  <outputs>
+    <data name="supplement_file" format="binary" label="Supplement File" help="A soft link pointing to the absolute path of the supplement" />
+  </outputs>
+  <tests>
+  </tests>
+  <help>
+.. class:: infomark
+
+Get the supplement file by generating a soft link to its original file path inferred by AMP based on its name and type.
+
+  </help>
+</tool>

@@ -6,6 +6,8 @@ import json
 import logging
 import sys
 import os
+from datetime import datetime
+
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
 from speech_to_text import SpeechToText
 def main():
@@ -82,7 +84,7 @@ def write_csv(output_file, matching_words):
         
         # Print each row, sorted by text/start
         for word in sorted(matching_words, key = lambda i: (i['text'], i['start'])):
-            csvwriter.writerow([word["text"], word["start"]])
+            csvwriter.writerow([word["text"], convert(word["start"])])
 
 # Simple word cleaning function for comparison
 def clean_word(word):
@@ -117,5 +119,10 @@ def get_words(words_to_flag):
             to_return[flag_word["whole_phrase"]] = flag_word
     return to_return
     
+# convert seconds to HH:MM:SS.fff
+def convert(s): 
+    dt = datetime.utcfromtimestamp(s)
+    return dt.strftime("%H:%M:%S.%f")[:-3] 
+       
 if __name__ == "__main__":
     main()
