@@ -1,4 +1,4 @@
-<tool id="get_supplement" name="Get Supplement File" version="1.0.0">
+<tool id="supplement" name="Supplement File" version="1.0.0">
   <description>Get supplement file given its name plus type or file path</description>
   <requirements>
   </requirements>

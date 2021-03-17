@@ -3,7 +3,7 @@
   <section id="getext" name="Get Data">
     <tool file="data_source/upload.xml" />
     <!--  AMP MGM Extension -->
-    <tool file="amp_file/get_supplement.xml" />
+    <tool file="amp_file/supplement.xml" />
     <!--  END AMP MGM Extension -->
   </section>
 
