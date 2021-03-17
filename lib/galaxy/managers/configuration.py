@@ -38,6 +38,9 @@ class ConfigSerializer(base.ModelSerializer):
             assert hasattr(config, key)
             return getattr(config, key)
 
+        def _config_is_truthy(config, key, **context):
+            return True if config.get(key) else False
+
         self.serializers = {
             # TODO: this is available from user data, remove
             'is_admin_user'                     : lambda *a, **c: False,
@@ -67,7 +70,7 @@ class ConfigSerializer(base.ModelSerializer):
             'allow_user_impersonation'          : _use_config,
             'allow_user_creation'               : _defaults_to(False),  # schema default is True
             'use_remote_user'                   : _defaults_to(None),  # schema default is False; or config.single_user
-            'single_user'                       : lambda config, key, **context: True if config.get(key) else False,
+            'single_user'                       : _config_is_truthy,
             'enable_oidc'                       : _use_config,
             'oidc'                              : _use_config,
             'enable_quotas'                     : _use_config,
