@@ -86,7 +86,7 @@ export const getUserPreferencesModel = () => {
             id: "edit-preferences-sign-out",
             description: _l("Click here to sign out of all sessions."),
             icon: "fa-sign-out",
-            shouldRender: !!Galaxy.session_csrf_token,
+            shouldRender: !!Galaxy.session_csrf_token && !config.single_user,
         },
     };
 };
