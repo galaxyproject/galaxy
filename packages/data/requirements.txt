@@ -15,4 +15,5 @@ social-auth-core[openidconnect]==3.3.0
 SQLAlchemy>=1.3.0,<1.4.0  # https://github.com/kvesteri/sqlalchemy-utils/issues/474
 sqlalchemy-migrate
 sqlalchemy-utils
+tifffile
 WebOb
