@@ -18,7 +18,7 @@
     <param name="supplement_path" type="text" label="Supplement Path" help="Absolute file path of the supplement (inferred by AMP from name plus type)"/>   
   </inputs>
   <outputs>
-    <data name="supplement_file" format="binary" label="Supplement File" help="A soft link pointing to the absolute path of the supplement" />
+    <data name="supplement_file" format="data" label="Supplement File" help="A soft link pointing to the absolute path of the supplement" />
   </outputs>
   <tests>
   </tests>

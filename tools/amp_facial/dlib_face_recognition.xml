@@ -12,7 +12,7 @@
   </command>
   <inputs>
 	<param name="input_video" type="data" format="video" label="Input Video" help="An input video file for facial recognition"/>
-	<param name="training_photos" type="data" format="binary" label="Training Photos" help="A zip file with subdirectories each named after a person containing his/her photos"/>
+	<param name="training_photos" type="data" format="data" label="Training Photos" help="A zip file with subdirectories each named after a person containing his/her photos"/>
 	<param name="reuse_trained" type="boolean" label="Reuse Previous Training Results" value="true" help="A Flag indicating whether or not to reuse previous training results from the same training photos if exist"/>
 	<param name="tolerance" type="float" label="Face Match Tolerance" value="0.6" min="0.0" max="1.0" optional="true" help="Tolerance level when matching faces, a lower value means stricter match"/>
   </inputs>
