@@ -31,7 +31,7 @@
     <tool file="amp_stt/aws_transcribe.xml"/>
     <tool file="amp_stt/kaldi.xml"/>
     <tool file="amp_stt/kaldi_hpc.xml"/>
-    <tool file="amp_stt/vtt_generator.xml"/>
+    <tool file="amp_stt/transcript_to_webvtt.xml"/>
     <tool file="amp_stt/vocabulary_tagging.xml"/>
   </section>
 
@@ -72,6 +72,7 @@
 
   <section id="obsolete_mgms" name="Obsolete MGMs">
     <tool file="amp_segment/remove_silence_music.xml"/>
+    <tool file="amp_stt/vtt_generator.xml"/>
   </section>
 
 <!--  END AMP MGM Sections -->

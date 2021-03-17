@@ -1,4 +1,4 @@
-<tool id="ner_to_csv" name="AMP Named Entity JSON to CSV Converter" version="1.1.0">
+<tool id="ner_to_csv" name="AMP Named Entity to CSV Converter" version="1.1.0">
   <description>Convert NER output to CSV</description>
   <requirements>
 	<requirement type="package" version="3.8">python</requirement>

@@ -15,10 +15,23 @@
 	  <option value="I">Item</option>
 	  <option value="P">Primaryfile</option>
     </param>
+    <param name="supplement_format" type="select" label="Supplement Format" help="File format/extension of the supplement">   
+	  <option value="txt">txt</option>
+	  <option value="csv">csv</option>
+	  <option value="pdf">pdf</option>
+	  <option value="binary">zip</option>
+    </param>
     <param name="supplement_path" type="text" label="Supplement Path" help="Absolute file path of the supplement (inferred by AMP from name plus type)"/>   
   </inputs>
   <outputs>
-    <data name="supplement_file" format="data" label="Supplement File" help="A soft link pointing to the absolute path of the supplement" />
+    <data name="supplement_file" format="data" label="Supplement File" help="A soft link pointing to the absolute path of the supplement">
+      <change_format>
+        <when input="supplement_format" value="txt" format="txt" />
+        <when input="supplement_format" value="csv" format="csv" />
+        <when input="supplement_format" value="pdf" format="pdf" />
+        <when input="supplement_format" value="zip" format="zip" />
+      </change_format>
+    </data>
   </outputs>
   <tests>
   </tests>

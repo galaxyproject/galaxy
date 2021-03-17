@@ -5,7 +5,7 @@
   </command>
   <inputs>
     <param name="amp_transcript" type="data" format="transcript" label="AMP Transcription" help="AMP transcript input with words for tagging"/>
-    <param name="tag_vocabulary" type="data" format="data" label="Tag Vocabulary" help="Vocabulary supplemental file defining a list of word tags"/>
+    <param name="tag_vocabulary" type="data" format="txt" label="Tag Vocabulary" help="Vocabulary supplemental file defining a list of word tags"/>
   </inputs>
   <outputs>
     <data name="tagged_words" format="csv" label="Tagged Words"/>
