@@ -86,14 +86,19 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
         self.libraries_index_search_for(self.name)
         # open permission manage dialog
         self.components.libraries.permission_library_btn.wait_for_and_click()
-        self.components.libraries.add_items_permission_field.wait_for_and_click()
+
+
+        self.components.libraries.add_items_permission.wait_for_and_click()
         # search for created user and add him to permission field
-        self.components.libraries.add_items_permission_field.wait_for_and_send_keys(email)
+
+        self.components.libraries.add_items_permission_input_field.wait_for_and_send_keys(email)
+        # for i in range(999999999999999999999999):
+        #     self.sleep_for(self.wait_types.UX_TRANSITION)
         self.components.libraries.add_items_permission_option.wait_for_and_click()
 
         # assert that the right email has been saved
-        self.components.libraries.add_items_permission_field_text(email=email).wait_for_visible()
-
+        allowed_user_email = self.components.libraries.add_items_permission_field_text.wait_for_text()
+        assert allowed_user_email == email
         self.components.libraries.toolbtn_save_permissions.wait_for_and_click()
         # assert that toast message is appearing
         self.components.libraries.folder.toast_msg.wait_for_visible()

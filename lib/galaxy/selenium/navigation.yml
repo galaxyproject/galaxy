@@ -578,12 +578,11 @@ libraries:
     search_field: '#filterInput'
     new_library_name_input: 'input[placeholder="Name"]'
     new_library_description_input: 'input[placeholder="Description"]'
-    add_items_permission_field: '.add_perm > ul input'
-    add_items_permission_field_text:
-      type: xpath
-      selector: '//ul/*/div[contains(text(), "${email}")]'
+    add_items_permission: '.add_library_item_role_list'
+    add_items_permission_input_field: '.add_library_item_role_list input'
+    add_items_permission_field_text: '.add_library_item_role_list .multiselect__tag span'
 
-    add_items_permission_option: '.select2-result-label[role="option"]'
+    add_items_permission_option: '.add_library_item_role_list ul'
 
   folder:
     selectors:

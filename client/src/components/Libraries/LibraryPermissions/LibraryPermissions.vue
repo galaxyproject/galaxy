@@ -29,6 +29,7 @@
             :permission_type="add_type"
             :initial_value="add_library_item_role_list"
             :apiRootUrl="apiRootUrl"
+            class="add_perm"
             alert="User with <strong>any</strong> of these roles can add items to this library (folders and datasets)."
             title="Roles that can add items to this library"
             @input="setUserPermissionsPreferences"
