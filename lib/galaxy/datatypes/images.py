@@ -100,13 +100,10 @@ class OMETiff(Tiff):
         dataset.metadata.offsets = offsets_file
 
     def sniff(self, filename):
-        try:
-            with tifffile.TiffFile(filename) as tif:
-                if tif.is_ome:
-                    return True
-                return False
-        except tifffile.TiffFileError:
-            return False
+        with tifffile.TiffFile(filename) as tif:
+            if tif.is_ome:
+                return True
+        return False
 
 
 class Hamamatsu(Image):
