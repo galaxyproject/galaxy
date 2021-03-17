@@ -527,10 +527,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
     def _handle_unschedulable_job(self, job, job_state):
         # Handle unschedulable job that exceeded deadline
-        with open(job_state.error_file, 'a') as error_file:
-            error_file.write("UnschedulableDeadlineExceeded")
-            job_state.fail_message = "Job was unschedulable longer than specified deadline"
-            job_state.runner_state = JobState.runner_states.WALLTIME_REACHED
+        job_state.fail_message = "Job was unschedulable longer than specified deadline"
+        job_state.runner_state = JobState.runner_states.WALLTIME_REACHED
         job_state.running = False
         self.mark_as_failed(job_state)
         try:
