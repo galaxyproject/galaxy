@@ -122,7 +122,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
 import PermissionsInputField from "components/Libraries/LibraryPermissions/PermissionsInputField";
 import { initPermissionsIcons } from "components/Libraries/icons";
-import LibraryPermissionsWarning from "components/Libraries/LibraryFolder/LibraryFolderPermissions/LibraryPermissionsWarning.vue";
+import LibraryPermissionsWarning from "components/Libraries/LibraryFolder/LibraryFolderPermissions/LibraryPermissionsWarning";
 import { extractRoles } from "components/Libraries/library-utils";
 
 import "vue-multiselect/dist/vue-multiselect.min.css";
