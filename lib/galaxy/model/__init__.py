@@ -4055,6 +4055,7 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
     """
     dict_collection_visible_keys = ['id', 'collection_type']
     dict_element_visible_keys = ['id', 'collection_type']
+    # dict_dbkeysandextensions_visible_keys = ['dbkeys', 'extensions']
 
     class populated_states(str, Enum):
         NEW = 'new'  # New dataset collection, unpopulated elements
@@ -4110,39 +4111,48 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
 
         return self._dataset_states_and_extensions_summary
 
-    def dataset_dbkeys_and_extensions_summary(self):
-        if not hasattr(self, '_dataset_dbkeys_and_extensions_summary'):
-            db_session = object_session(self)
+    # @property
+    # def dataset_dbkeys_and_extensions_summary(self):
+    #     if not hasattr(self, '_dataset_dbkeys_and_extensions_summary'):
+    #         db_session = object_session(self)
 
-            dc = alias(DatasetCollection.table)
-            de = alias(DatasetCollectionElement.table)
-            hda = alias(HistoryDatasetAssociation.table)
-            dataset = alias(Dataset.table)
+    #         dc = alias(DatasetCollection.table)
+    #         de = alias(DatasetCollectionElement.table)
+    #         hda = alias(HistoryDatasetAssociation.table)
+    #         dataset = alias(Dataset.table)
 
-            select_from = dc.outerjoin(de, de.c.dataset_collection_id == dc.c.id)
+    #         select_from = dc.outerjoin(de, de.c.dataset_collection_id == dc.c.id)
 
-            depth_collection_type = self.collection_type
-            while ":" in depth_collection_type:
-                child_collection = alias(DatasetCollection.table)
-                child_collection_element = alias(DatasetCollectionElement.table)
-                select_from = select_from.outerjoin(child_collection, child_collection.c.id == de.c.child_collection_id)
-                select_from = select_from.outerjoin(child_collection_element, child_collection_element.c.dataset_collection_id == child_collection.c.id)
+    #         depth_collection_type = self.collection_type
+    #         while ":" in depth_collection_type:
+    #             child_collection = alias(DatasetCollection.table)
+    #             child_collection_element = alias(DatasetCollectionElement.table)
+    #             select_from = select_from.outerjoin(child_collection, child_collection.c.id == de.c.child_collection_id)
+    #             select_from = select_from.outerjoin(child_collection_element, child_collection_element.c.dataset_collection_id == child_collection.c.id)
 
-                de = child_collection_element
-                depth_collection_type = depth_collection_type.split(":", 1)[1]
+    #             de = child_collection_element
+    #             depth_collection_type = depth_collection_type.split(":", 1)[1]
 
-            select_from = select_from.outerjoin(hda, hda.c.id == de.c.hda_id).outerjoin(dataset, hda.c.dataset_id == dataset.c.id)
-            select_stmt = select([hda.c.extension, dataset.c.dbkey]).select_from(select_from).where(dc.c.id == self.id).distinct()
-            extensions = set()
-            dbkeys = set()
-            for extension, dbkey in db_session.execute(select_stmt).fetchall():
-                if dbkey is not None:
-                    # query may return (None, None) if not collection elements present
-                    dbkeys.add(dbkey)
-                    extensions.add(extension)
-            self._dataset_dbkeys_and_extensions_summary = (dbkeys, extensions)
+    #         select_from = select_from.outerjoin(hda, hda.c.id == de.c.hda_id).outerjoin(dataset, hda.c.dataset_id == dataset.c.id)
+    #         select_stmt = select([hda.c.extension, dataset.c.dbkey]).select_from(select_from).where(dc.c.id == self.id).distinct()
+    #         extensions = set()
+    #         dbkeys = set()
+    #         for extension, dbkey in db_session.execute(select_stmt).fetchall():
+    #             if dbkey is not None:
+    #                 # query may return (None, None) if not collection elements present
+    #                 dbkeys.add(dbkey)
+    #                 extensions.add(extension)
+    #         self._dataset_dbkeys_and_extensions_summary = (dbkeys, extensions)
 
-        return self._dataset_dbkeys_and_extensions_summary
+    #     return self._dataset_dbkeys_and_extensions_summary
+
+    # @property
+    # def dbkeys():
+    #     return 'dbkeys'
+
+    # @property
+    # def extensions():
+    #     return 'extensions'
 
     @property
     def populated_optimized(self):
@@ -4436,6 +4446,7 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
                                           UsesAnnotations,
                                           RepresentById):
     """ Associates a DatasetCollection with a History. """
+    dict_dbkeysandextensions_visible_keys = ['dbkeys', 'extensions']
     editable_keys = ('name', 'deleted', 'visible')
 
     def __init__(
@@ -4492,6 +4503,49 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
             return None
 
     @property
+    def dataset_dbkeys_and_extensions_summary(self):
+        if not hasattr(self, '_dataset_dbkeys_and_extensions_summary'):
+            db_session = object_session(self)
+
+            dc = alias(DatasetCollection.table)
+            de = alias(DatasetCollectionElement.table)
+            hda = alias(HistoryDatasetAssociation.table)
+            dataset = alias(Dataset.table)
+
+            select_from = dc.outerjoin(de, de.c.dataset_collection_id == dc.c.id)
+        
+            depth_collection_type = self.collection.collection_type
+            while ":" in depth_collection_type:
+                child_collection = alias(DatasetCollection.table)
+                child_collection_element = alias(DatasetCollectionElement.table)
+                select_from = select_from.outerjoin(child_collection, child_collection.c.id == de.c.child_collection_id)
+                select_from = select_from.outerjoin(child_collection_element, child_collection_element.c.dataset_collection_id == child_collection.c.id)
+
+                de = child_collection_element
+                depth_collection_type = depth_collection_type.split(":", 1)[1]
+
+            select_from = select_from.outerjoin(hda, hda.c.id == de.c.hda_id).outerjoin(dataset, hda.c.dataset_id == dataset.c.id)
+            select_stmt = select([hda.c.extension,hda.c._metadata]).select_from(select_from).where(dc.c.id == self.collection.id).distinct()
+            extensions = set()
+            dbkeys = set()
+            for row in db_session.execute(select_stmt).fetchall():
+                if row is not None:
+                    for dbkey in row._metadata.get('dbkey'):
+                        dbkeys.add(dbkey)
+                    extensions.add(row.extension)
+            self._dataset_dbkeys_and_extensions_summary = (dbkeys, extensions)
+
+        return self._dataset_dbkeys_and_extensions_summary
+
+    @property
+    def dbkeys(self):
+        return 'dbkeys'
+
+    @property
+    def extensions(self):
+        return 'extensions'
+
+    @property
     def job_source_id(self):
         return self.implicit_collection_jobs_id or self.job_id
 
@@ -4546,13 +4600,11 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
     def to_dict(self, view='collection'):
         original_dict_value = super().to_dict(view=view)
         if (view == 'dbkeysandextensions'):
-            (dbkeys, extensions) = self.dataset_dbkeys_and_extensions_summary()
+            (dbkeys, extensions) = self.dataset_dbkeys_and_extensions_summary
             dict_value = dict(
-                dbkey=dbkeys.pop() if len(uniqueKeys) == 1 else "?",
-                extension=extensions.pop() if len(uniqueExts) == 1 else "?",
-                **self._base_to_dict(view=view)
+                dbkey=dbkeys.pop() if len(dbkeys) == 1 else "?",
+                extension=extensions.pop() if len(extensions) == 1 else "?"
             )
-
         else:
             dict_value = dict(
                 hid=self.hid,
