@@ -1,0 +1,24 @@
+<tool id="trasncript_to_webvtt" name="AMP Transcript to WebVTT Generator" version="1.0.0">
+  <description>Convert AMP transcript/diarization to WebVTT</description>
+  <requirements>
+	<requirement type="package" version="3.8">python</requirement>
+  </requirements>
+  <command detect_errors="exit_code">
+  	'$__tool_directory__/transcript_to_webvtt.py' '$amp_diarization' '$amp_transcript' '$web_vtt'
+  </command>
+  <inputs>
+    <param name="amp_diarization" type="data" format="segment" optional="true" label="AMP Diarization" help="AMP diarization input with speaker diarization info to be added to VTT"/>
+  	<param name="amp_transcript" type="data" format="transcript" label="AMP Transcript" help="AMP transcript input with speech-to-text info to be added to VTT"/>
+  </inputs>
+  <outputs>
+    <data name="web_vtt" format="vtt" label="WebVTT Generated" />
+  </outputs>
+  <tests>
+  </tests>
+  <help>
+.. class:: infomark
+
+Generates a VTT file from the input AMP transcript JSON file
+
+  </help>
+</tool>
