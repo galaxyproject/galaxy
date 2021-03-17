@@ -272,10 +272,11 @@ export function fetchMenu(options = {}) {
                     url: "custom_builds",
                     target: "__use_router__",
                 },
+                { divider: true },
                 {
                     title: _l("Logout"),
-                    divider: true,
                     onclick: userLogout,
+                    hidden: Galaxy.config.single_user,
                 },
                 {
                     title: _l("Datasets"),
@@ -312,7 +313,7 @@ export function fetchMenu(options = {}) {
             });
         }
         if (Galaxy.config.interactivetools_enable) {
-            userTab.menu[userTab.menu.length - 1].divider = true;
+            userTab.menu.push({ divider: true });
             userTab.menu.push({
                 title: _l("Active InteractiveTools"),
                 url: "interactivetool_entry_points/list",
@@ -321,6 +322,5 @@ export function fetchMenu(options = {}) {
         }
     }
     menu.push(userTab);
-
     return menu;
 }

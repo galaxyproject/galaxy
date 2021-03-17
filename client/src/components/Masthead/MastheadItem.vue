@@ -35,19 +35,18 @@
         @show="open(tab, $event)"
     >
         <template v-for="(item, idx) in tab.menu">
-            <template v-if="item.hidden !== true">
-                <b-dropdown-item
-                    :href="formatUrl(item.url)"
-                    :key="`item-${idx}`"
-                    :target="item.target || '_parent'"
-                    role="menuitem"
-                    @click="open(item, $event)"
-                    :disabled="item.disabled === true"
-                >
-                    {{ item.title }}
-                </b-dropdown-item>
-                <div v-if="item.divider" class="dropdown-divider" :key="`divider-${idx}`" />
-            </template>
+            <div v-if="item.divider" class="dropdown-divider" :key="`divider-${idx}`" />
+            <b-dropdown-item
+                v-else-if="item.hidden !== true"
+                :href="formatUrl(item.url)"
+                :key="`item-${idx}`"
+                :target="item.target || '_parent'"
+                role="menuitem"
+                @click="open(item, $event)"
+                :disabled="item.disabled === true"
+            >
+                {{ item.title }}
+            </b-dropdown-item>
         </template>
     </b-nav-item-dropdown>
 </template>
