@@ -213,7 +213,6 @@ export default {
                     this.collection_data = response.data;
                     this.getDatabaseKeyFromElements();
                     this.getExtensionFromElements();
-                    console.log("collection_data", this.collection_data);
                 });
 
             //TODO error handling
@@ -223,49 +222,25 @@ export default {
                 .get(prependPath("/api/dataset_collections/" + this.collection_id + "/attributes"))
                 .then((response) => {
                     this.attributes_data = response.data;
-                    console.log("in apicalltogetattributes; attribues are : ", this.attributes_data);
                 });
+            //TODO error handling
         },
         getDatabaseKeyFromElements: function () {
-            const dbkeysInCollection = [];
-            for (var index in this.collectionElements) {
-                var element = this.collectionElements[index];
-                if (!dbkeysInCollection.includes(element.object.metadata_dbkey)) {
-                    dbkeysInCollection.push(element.object.metadata_dbkey);
-                }
-            }
-            console.log("dbkeysInCollection", dbkeysInCollection);
-            if (dbkeysInCollection.length == 1) {
-                this.databaseKeyFromElements = dbkeysInCollection[0];
-            } else {
-                this.databaseKeyFromElements = "?";
-            }
+            this.databaseKeyFromElements = this.attributes_data.dbkey;
+
             this.selectedGenome = this.genomes.find((element) => element.id == this.databaseKeyFromElements);
-            console.log(this.selectedGenome, "in getDBfromE");
         },
         getExtensionFromElements: function () {
-            const datatypesInCollection = [];
-            for (var index in this.collectionElements) {
-                var element = this.collectionElements[index];
-                if (!datatypesInCollection.includes(element.object.file_ext)) {
-                    datatypesInCollection.push(element.object.file_ext);
-                }
-            }
-            if (datatypesInCollection.length == 1) {
-                this.datatypeFromElements = datatypesInCollection[0];
-            } else {
-                this.datatypeFromElements = UploadUtils.DEFAULT_EXTENSION.id;
-            }
+            this.datatypeFromElements = this.attributes_data.extension;
+
             this.selectedExtension = this.extensions.find((element) => element.id == this.datatypeFromElements);
         },
         clickedSave: function (attribute, newValue) {
-            console.log("clicked save");
             const url = prependPath("/api/dataset_collections/" + this.collection_id);
             const data = { attribute: attribute, newValue: newValue.id };
             axios
                 .put(url, data)
                 .then((response) => {
-                    console.log("successssss");
                     this.apiCallToGetData();
                 })
                 .catch(this.handleError);

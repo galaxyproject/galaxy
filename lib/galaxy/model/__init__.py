@@ -4537,13 +4537,13 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
 
         return self._dataset_dbkeys_and_extensions_summary
 
-    @property
-    def dbkeys(self):
-        return 'dbkeys'
+    # @property
+    # def dbkeys(self):
+    #     return 'dbkeys'
 
-    @property
-    def extensions(self):
-        return 'extensions'
+    # @property
+    # def extensions(self):
+    #     return 'extensions'
 
     @property
     def job_source_id(self):
@@ -4603,7 +4603,7 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
             (dbkeys, extensions) = self.dataset_dbkeys_and_extensions_summary
             dict_value = dict(
                 dbkey=dbkeys.pop() if len(dbkeys) == 1 else "?",
-                extension=extensions.pop() if len(extensions) == 1 else "?"
+                extension=extensions.pop() if len(extensions) == 1 else "auto"
             )
         else:
             dict_value = dict(
