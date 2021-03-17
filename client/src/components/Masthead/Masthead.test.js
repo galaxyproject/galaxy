@@ -138,9 +138,9 @@ describe("Masthead.vue", () => {
     it("should display scratchbook button", async () => {
         expect(wrapper.find("#enable-scratchbook a span").classes("fa-th")).toBe(true);
         expect(scratchbook.active).toBe(false);
-        // wrapper.find("#enable-scratchbook a").trigger("click");
-        // await localVue.nextTick();
-        // expect(scratchbook.active).to.equals(true);
+        wrapper.find("#enable-scratchbook a").trigger("click");
+        await localVue.nextTick();
+        expect(scratchbook.active).toBe(true);
     });
 
     it("should load webhooks on creation", async () => {
