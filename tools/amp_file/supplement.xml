@@ -1,5 +1,5 @@
-<tool id="supplement" name="Get Supplement" version="1.0.0">
-  <description>Get supplement file given its name plus type or file path</description>
+<tool id="supplement" name="Input Supplement" version="1.0.0">
+  <description>Specify a workflow input as a supplement file by its name plus type or file path </description>
   <requirements>
   </requirements>
   <command>
@@ -25,7 +25,7 @@
   <help>
 .. class:: infomark
 
-Get the supplement file by generating a soft link to its original file path inferred by AMP based on its name and type.
+Provide a workflow input as a supplement file by generating a soft link to its original file path inferred by AMP based on its name and type.
 
   </help>
 </tool>
