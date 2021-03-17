@@ -221,7 +221,10 @@ class FolderContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesLi
         is_admin = trans.user_is_admin
         content_items = []
 
-        current_folders = self.calculate_pagination(folders, offset, limit)
+        offset = 0 if offset is None else int(offset)
+        limit = 0 if limit is None else int(limit)
+
+        current_folders = self._calculate_pagination(folders, offset, limit)
 
         for subfolder in current_folders:
 
@@ -250,16 +253,11 @@ class FolderContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesLi
                 #         subfolder.api_type = 'folder'
                 #         content_items.append( subfolder )
 
-        if limit is not None:
-            limit = int(limit) - len(content_items)
-        if offset is not None:
-            offset = int(offset)
-            if offset - len(folders) > 0:
-                offset = offset - len(folders)
-            else:
-                offset = 0
+        limit -= len(content_items)
+        offset -= len(folders)
+        offset = 0 if offset < 0 else offset
 
-        current_datasets = self.calculate_pagination(datasets, offset, limit)
+        current_datasets = self._calculate_pagination(datasets, offset, limit)
 
         for dataset in current_datasets:
             if dataset.deleted:
@@ -285,20 +283,12 @@ class FolderContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesLi
 
         return content_items
 
-    def calculate_pagination(self, array, offset, limit):
-
-        datasets_size = len(array)
-        if offset is None or limit is None:
-            paginated_array = array
+    def _calculate_pagination(self, items, offset: int, limit: int):
+        if limit > 0:
+            paginated_items = items[offset:offset + limit]
         else:
-            offset = int(offset)
-            limit = int(limit)
-            if datasets_size < offset + limit:
-                paginated_array = array[offset: datasets_size]
-            else:
-                paginated_array = array[offset:offset + limit]
-
-        return paginated_array
+            paginated_items = items[offset:]
+        return paginated_items
 
     def apply_preferences(self, folder, include_deleted, search_text):
 
