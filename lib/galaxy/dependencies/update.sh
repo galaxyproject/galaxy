@@ -15,7 +15,7 @@ fi
 this_directory="$(cd "$(dirname "$0")" > /dev/null && pwd)"
 
 usage() {
-    printf "Usage: %s: [-a] [pkg1] [... pkgN]\n" ${0##*/} >&2
+    printf "Usage: %s: [-a] [pkg_spec...]\n" ${0##*/} >&2
 }
 
 add=
