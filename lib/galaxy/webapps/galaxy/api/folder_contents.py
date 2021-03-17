@@ -315,14 +315,9 @@ class FolderContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesLi
             elif dataset.library_dataset_dataset_association.info:
                 description = dataset.library_dataset_dataset_association.info
             else:
-                description = None
+                description = ''
 
-            if description is None:
-                return False
-            elif search_text in dataset.name or search_text in description:
-                return True
-            else:
-                return False
+            return search_text in dataset.name or search_text in description
 
         datasets = check_deleted(folder.datasets, include_deleted)
         folders = check_deleted(folder.folders, include_deleted)
