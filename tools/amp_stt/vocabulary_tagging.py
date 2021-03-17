@@ -6,7 +6,7 @@ import json
 import logging
 import sys
 import os
-import time
+from datetime import datetime
 
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
 from speech_to_text import SpeechToText
@@ -119,9 +119,10 @@ def get_words(words_to_flag):
             to_return[flag_word["whole_phrase"]] = flag_word
     return to_return
     
-# convert seconds to HH:MM:SS
-def convert(seconds): 
-    return time.strftime("%H:%M:%S.%f", time.gmtime(seconds)) 
+# convert seconds to HH:MM:SS.fff
+def convert(s): 
+    dt = datetime.utcfromtimestamp(s)
+    return dt.strftime("%H:%M:%S.%f")[:-3] 
        
 if __name__ == "__main__":
     main()
