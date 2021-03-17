@@ -82,16 +82,22 @@ class FolderContentsApiTestCase(ApiTestCase):
         folder = self._create_folder_in_library(folder_name)
         folder_id = folder["id"]
 
+        num_subfolders = 5
+        for index in range(num_subfolders):
+            self._create_subfolder_in(folder_id, name=f"Folder_{index}")
+
         num_datasets = 5
         for _ in range(num_datasets):
             self._create_dataset_in_folder(folder_id)
 
+        total_items = num_datasets + num_subfolders
+
         response = self._get(f"folders/{folder_id}/contents")
         self._assert_status_code_is(response, 200)
         original_contents = response.json()["folder_contents"]
-        assert len(original_contents) == num_datasets
+        assert len(original_contents) == total_items
 
-        limit = 3
+        limit = 7
         response = self._get(f"folders/{folder_id}/contents?limit={limit}")
         self._assert_status_code_is(response, 200)
         contents = response.json()["folder_contents"]
@@ -101,15 +107,17 @@ class FolderContentsApiTestCase(ApiTestCase):
         response = self._get(f"folders/{folder_id}/contents?offset={offset}")
         self._assert_status_code_is(response, 200)
         contents = response.json()["folder_contents"]
-        assert len(contents) == num_datasets - offset
+        assert len(contents) == total_items - offset
 
-        limit = 2
-        offset = 2
+        limit = 4
+        offset = 4
         response = self._get(f"folders/{folder_id}/contents?limit={limit}&offset={offset}")
         self._assert_status_code_is(response, 200)
         contents = response.json()["folder_contents"]
         assert len(contents) == limit
-        assert contents == original_contents[offset:offset + limit]
+        expected_query_result = original_contents[offset:offset + limit]
+        for index in range(limit):
+            assert contents[index]["id"] == expected_query_result[index]["id"]
 
     def test_index_search_text(self):
         folder_name = "Test Folder Contents Index search text"
