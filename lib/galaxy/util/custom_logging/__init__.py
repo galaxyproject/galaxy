@@ -1,16 +1,6 @@
 import logging
 import types
 
-
-class TraceLogger:
-
-    def __init__(self, name):
-        self.name = name
-
-    def log(**kwargs):
-        raise TypeError("Abstract Method")
-
-
 # Add custom "TRACE" log level for ludicrous verbosity.
 LOGLV_TRACE = 5
 logging.addLevelName(LOGLV_TRACE, "TRACE")

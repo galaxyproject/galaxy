@@ -290,6 +290,15 @@ export default {
                 this.hasChanges = true;
             }
         },
+        steps: function (newSteps, oldSteps) {
+            this.hasChanges = true;
+        },
+        nodes: function (newNodes, oldNodes) {
+            this.hasChanges = true;
+            if (newNodes.length != oldNodes.length) {
+                this.requiresReindex = true;
+            }
+        },
     },
     methods: {
         onActivate(node) {
@@ -348,7 +357,6 @@ export default {
         },
         onAdd(node) {
             this.nodes[node.id] = node;
-            this.requiresReindex = true;
         },
         onUpdate(node) {
             getModule({
@@ -368,8 +376,6 @@ export default {
             Vue.delete(this.steps, node.id);
             this.canvasManager.drawOverview();
             this.activeNode = null;
-            this.hasChanges = true;
-            this.requiresReindex = true;
             showAttributes();
         },
         onEditSubworkflow(contentId) {
@@ -377,12 +383,26 @@ export default {
             this.onNavigate(editUrl);
         },
         onClone(node) {
-            Vue.set(this.steps, this.nodeIndex++, {
-                ...node.step,
+            const newId = this.nodeIndex++;
+            const stepCopy = JSON.parse(JSON.stringify(node.step));
+            const configFormCopy = JSON.parse(JSON.stringify(node.config_form));
+            Vue.set(this.steps, newId, {
+                ...stepCopy,
+                id: newId,
+                config_form: {
+                    ...configFormCopy,
+                    inputs: configFormCopy.inputs.filter((input) => !input.skipOnClone),
+                },
                 uuid: null,
-                annotation: node.annotation,
-                tool_state: node.tool_state,
-                post_job_actions: node.postJobActions,
+                label: null,
+                annotation: JSON.parse(JSON.stringify(node.annotation)),
+                tool_state: JSON.parse(JSON.stringify(node.tool_state)),
+                post_job_actions: JSON.parse(JSON.stringify(node.postJobActions)),
+            });
+            Vue.nextTick().then(() => {
+                this.canvasManager.drawOverview();
+                node = this.nodes[newId];
+                this.onActivate(node);
             });
         },
         onInsertTool(tool_id, tool_name) {
@@ -542,7 +562,7 @@ export default {
             Vue.nextTick(() => {
                 this.canvasManager.drawOverview();
                 this.canvasManager.scrollToNodes();
-                this.hasChanges = has_changes;
+                this.hasChanges = this.requiresReindex = has_changes;
             });
         },
         _loadCurrent(id, version) {

@@ -123,7 +123,7 @@ export function fetchMenu(options = {}) {
         menu: [
             {
                 title: _l("Data Libraries"),
-                url: "library/list",
+                url: "libraries",
             },
             {
                 title: _l("Histories"),

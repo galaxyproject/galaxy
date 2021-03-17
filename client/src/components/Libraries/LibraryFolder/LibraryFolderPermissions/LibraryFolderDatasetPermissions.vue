@@ -3,13 +3,13 @@
         <b-container fluid>
             <div v-if="dataset">
                 <b-breadcrumb>
-                    <b-breadcrumb-item title="Return to the list of libraries" :href="`${root}library/list`">
+                    <b-breadcrumb-item title="Return to the list of libraries" :href="`${root}libraries`">
                         Libraries
                     </b-breadcrumb-item>
                     <template v-for="path_item in this.dataset.full_path">
                         <b-breadcrumb-item
                             :key="path_item[0]"
-                            :to="{ path: `/${path_item[0]}` }"
+                            :to="{ path: `/folders/${path_item[0]}` }"
                             :active="path_item[0] === dataset_id"
                             href="#"
                             >{{ path_item[1] }}</b-breadcrumb-item
@@ -121,8 +121,8 @@ import { Toast } from "ui/toast";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
 import PermissionsInputField from "./PermissionsInputField.vue";
-import { initPermissionsIcons } from "components/LibraryFolder/icons";
-import LibraryPermissionsWarning from "components/LibraryFolder/LibraryFolderPermissions/LibraryPermissionsWarning.vue";
+import { initPermissionsIcons } from "components/Libraries/icons";
+import LibraryPermissionsWarning from "components/Libraries/LibraryFolder/LibraryFolderPermissions/LibraryPermissionsWarning.vue";
 import { extractRoles } from "./utils";
 
 import "vue-multiselect/dist/vue-multiselect.min.css";
@@ -206,9 +206,6 @@ export default {
                     console.error(error);
                 }
             );
-        },
-        getParentLink() {
-            return `${this.root}library/folders/${this.folder_id}`;
         },
         setUserPermissionsPreferences(ids, permission_type) {
             this[permission_type] = ids;

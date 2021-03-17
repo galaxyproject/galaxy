@@ -413,9 +413,46 @@ workflow_editor:
 
     connect_icon: 'div.ui-form-element[tour_id="${name}"] .ui-form-connected-icon'
     collapse_icon: 'div.ui-form-element[tour_id="${name}"] .ui-form-collapsible-icon'
+    node_title:
+      type: xpath
+      selector: '//span[@class="node-title" and text()="${title}"]'
 
-    label_input: "[tour_id='__label'] input"
-    annotation_input: "[tour_id='__annotation'] textarea"
+    label_input:
+      type: xpath
+      selector: >
+        //div[@tour_id='__label' and not(ancestor::div[contains(@style,'display: none')])]//input
+    annotation_input:
+      type: xpath
+      selector: >
+        //div[@tour_id='__annotation' and not(ancestor::div[contains(@style,'display: none')])]//textarea
+    configure_output:
+      type: xpath
+      selector: >
+        //span[text()="Configure Output: '${output}'" and not(ancestor::div[contains(@style,'display: none')])]
+    label_output:
+      type: xpath
+      selector: >
+        //div[@tour_id='__label__${output}' and not(ancestor::div[contains(@style,'display: none')])]//input
+    rename_output:
+      type: xpath
+      selector: >
+        //div[@data-label='Rename dataset' and not(ancestor::div[contains(@style,'display: none')])]//input
+    change_datatype:
+      type: xpath
+      selector: >
+        //div[@data-label='Change datatype' and not(ancestor::div[contains(@style,'display: none')])]//span[contains(@class, 'select2-chosen')]
+    select_datatype:
+      type: xpath
+      selector: >
+        //div[@class="select2-result-label" and contains(text(), "${datatype}") and not(ancestor::div[contains(@style,'display: none')])]
+    add_tags:
+      type: xpath
+      selector: >
+        //div[@data-label='Add Tags' and not(ancestor::div[contains(@style,'display: none')])]//input
+    remove_tags:
+      type: xpath
+      selector: >
+        //div[@data-label='Remove Tags' and not(ancestor::div[contains(@style,'display: none')])]//input
     tool_version_button: ".tool-versions"
 
     connector_for: "div[output-handle-id='${source_id}'][input-handle-id='${sink_id}']"
@@ -423,6 +460,7 @@ workflow_editor:
     connector_destroy_callout: '.delete-terminal'
     save_button: '.editor-button-save'
     state_modal_body: '.state-upgrade-modal'
+    modal_button_continue: '.modal-footer .btn'
 
 invocations:
   selectors:
@@ -532,9 +570,14 @@ admin:
 libraries:
 
   selectors:
-    _: .library_style_container
+    _: '#libraries_list'
+    create_new_library_btn: '#create-new-lib'
     permission_library_btn: '.permission_library_btn'
     toolbtn_save_permissions: '.toolbtn_save_permissions'
+    save_new_library_btn: '#save_new_library'
+    search_field: '#filterInput'
+    new_library_name_input: 'input[placeholder="Name"]'
+    new_library_description_input: 'input[placeholder="Description"]'
     add_items_permission_field: '.add_perm > ul input'
     add_items_permission_field_text:
       type: xpath
