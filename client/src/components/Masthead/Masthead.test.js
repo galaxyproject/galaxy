@@ -70,7 +70,7 @@ describe("Masthead.vue", () => {
                 hidden: true,
             },
         ];
-        const activeTab = "shared";
+        const initialActiveTab = "shared";
 
         // scratchbook assumes this is a Backbone collection - mock that out.
         tabs.add = (x) => {
@@ -86,7 +86,7 @@ describe("Masthead.vue", () => {
         wrapper = mount(Masthead, {
             propsData: {
                 mastheadState,
-                activeTab,
+                initialActiveTab,
             },
             localVue,
         });

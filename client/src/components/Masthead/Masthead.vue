@@ -48,6 +48,10 @@ export default {
             type: String,
             default: null,
         },
+        initialActiveTab: {
+            type: String,
+            default: null,
+        },
         mastheadState: {
             type: Object,
             default: null,
@@ -112,6 +116,7 @@ export default {
         },
     },
     created() {
+        this.activeTab = this.initialActiveTab;
         this.baseTabs = fetchMenu(this.menuOptions);
         loadWebhookMenuItems(this.extensionTabs);
     },
