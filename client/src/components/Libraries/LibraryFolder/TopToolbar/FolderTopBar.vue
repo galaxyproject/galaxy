@@ -277,16 +277,7 @@ export default {
             } else return this.selected;
         },
         newFolder() {
-            // TODO: Rework new folder logic to not mutate props; should emit folder create event
-            // eslint-disable-next-line vue/no-mutating-props
-            this.folderContents.unshift({
-                editMode: true,
-                isNewFolder: true,
-                type: "folder",
-                name: "",
-                description: "",
-            });
-            this.$emit("refreshTable");
+            this.$emit("newFolder");
         },
         downloadData(format) {
             this.findCheckedItems().then(({ datasets, folders }) => {

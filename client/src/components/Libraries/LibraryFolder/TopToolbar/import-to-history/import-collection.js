@@ -94,11 +94,12 @@ var ImportCollectionModal = Backbone.View.extend({
         const new_history_name = this.modal.$("input[name=history_name]").val();
         if (new_history_name !== "") {
             this.createNewHistory(new_history_name)
-                .done((new_history) => {
+                .then((new_history) => {
                     Toast.success("History created");
                     this.collectionImport(collection_elements, new_history.id, new_history.name);
                 })
-                .fail((xhr, status, error) => {
+                .catch((error) => {
+                    console.error(error);
                     Toast.error("An error occurred.");
                 });
         } else {
@@ -123,7 +124,7 @@ var ImportCollectionModal = Backbone.View.extend({
                 }));
                 return this.createHDCA(elements, this.collectionType, name, hideSourceItems, history_id);
             };
-            LIST_CREATOR_MODAL.collectionCreatorModal(
+            LIST_CREATOR_MODAL.listCollectionCreatorModal(
                 collection_elements,
                 { creationFn: creationFn, title: modal_title, defaultHideSourceItems: true },
                 creator_class
@@ -137,7 +138,7 @@ var ImportCollectionModal = Backbone.View.extend({
                 ];
                 return this.createHDCA(elements, this.collectionType, name, hideSourceItems, history_id);
             };
-            PAIR_CREATOR_MODAL.collectionCreatorModal(
+            PAIR_CREATOR_MODAL.pairCollectionCreatorModal(
                 collection_elements,
                 { creationFn: creationFn, title: modal_title, defaultHideSourceItems: true },
                 creator_class
@@ -148,7 +149,7 @@ var ImportCollectionModal = Backbone.View.extend({
                 name: element.name,
                 src: "ldda",
             }));
-            PAIRED_CREATOR.pairedCollectionCreatorModal(elements, {
+            PAIRED_CREATOR.pairedListCollectionCreatorModal(elements, {
                 historyId: history_id,
                 title: modal_title,
                 defaultHideSourceItems: true,
