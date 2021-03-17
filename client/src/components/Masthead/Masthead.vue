@@ -48,10 +48,6 @@ export default {
             type: String,
             default: null,
         },
-        activeTab: {
-            type: String,
-            default: null,
-        },
         mastheadState: {
             type: Object,
             default: null,
@@ -96,6 +92,7 @@ export default {
     },
     data() {
         return {
+            activeTab: null,
             baseTabs: [],
             extensionTabs: [],
         };
