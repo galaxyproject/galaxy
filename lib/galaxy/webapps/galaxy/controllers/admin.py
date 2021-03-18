@@ -107,7 +107,7 @@ class UserListGrid(grids.Grid):
                        key="username",
                        attach_popup=False,
                        filterable="advanced"),
-        LastLoginColumn("Last Login", format=time_ago, key="update_time"),
+        LastLoginColumn("Last Login", format=time_ago),
         DiskUsageColumn("Disk Usage", key="disk_usage", attach_popup=False),
         StatusColumn("Status", attach_popup=False, key="deleted"),
         TimeCreatedColumn("Created", attach_popup=False, key="create_time"),
@@ -400,7 +400,7 @@ class QuotaListGrid(grids.Grid):
                      attach_popup=False),
         UsersColumn("Users", attach_popup=False),
         GroupsColumn("Groups", attach_popup=False),
-        StatusColumn("Status", attach_popup=False, key="deleted"),
+        StatusColumn("Status", attach_popup=False),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced")
     ]
