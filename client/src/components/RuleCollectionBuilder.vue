@@ -23,10 +23,19 @@
             <b>Be sure to specify at least one column as a list identifier</b> - specify more to created nested list
             structures. Specify a column to serve as "collection name" to group datasets into multiple collections.
         </rule-modal-header>
+        <b-alert class="alert-area" v-if="returnValidityErrorMessages.length != 0" show variant="warning" dismissible>
+            {{ validityErrorHeader }}
+            <ul>
+                <li v-for="error in returnValidityErrorMessages" :key="error">
+                    {{ error }}
+                </li>
+            </ul>
+        </b-alert>
         <rule-modal-middle v-if="ruleView == 'source'">
             <p class="errormessagelarge" v-if="ruleSourceError">{{ ruleSourceError }}</p>
             <textarea class="rule-source" v-model="ruleSource"></textarea>
         </rule-modal-middle>
+
         <rule-modal-middle v-else>
             <!-- column-headers -->
             <div
@@ -762,6 +771,8 @@ export default {
             hideSourceItems: this.defaultHideSourceItems,
             addNameTag: false,
             orientation: orientation,
+            validityErrorHeader: _l("These issues must be resolved to proceed:"),
+            validityErrorMessages: [],
         };
     },
     props: {
@@ -815,6 +826,9 @@ export default {
         },
     },
     computed: {
+        returnValidityErrorMessages: function () {
+            return this.validityErrorMessages;
+        },
         exisistingDatasets() {
             const elementsType = this.elementsType;
             return (
@@ -840,7 +854,9 @@ export default {
             return this.importType == "collections" && this.elementsType != "collection_contents";
         },
         titleFinish() {
-            if (this.elementsType == "datasets" || this.elementsType == "library_datasets") {
+            if (this.validityErrorMessages.length != 0) {
+                return _l("Button is disabled due to validation errors. Please see alerts above.");
+            } else if (this.elementsType == "datasets" || this.elementsType == "library_datasets") {
                 return _l("Create new collection from specified rules and datasets");
             } else if (this.elementsType == "collection_contents") {
                 return _l("Save rules and return to tool form");
@@ -1008,29 +1024,37 @@ export default {
             const requiresName =
                 buildingCollection && this.elementsType != "collection_contents" && !mappingAsDict.collection_name;
 
+            this.validityErrorMessages = [];
             let valid = true;
             if (requiresName) {
                 valid = this.collectionName.length > 0;
+                if (valid == false) {
+                    this.validityErrorMessages.push("Name the collection");
+                }
             }
 
             if (mappingAsDict.ftp_path && mappingAsDict.url) {
                 // Can only specify one of these.
                 valid = false;
+                this.validityErrorMessages.push("Only specify either an FTP Path or a URL.");
             }
 
             const requiresSourceColumn =
                 this.elementsType == "ftp" || this.elementsType == "raw" || this.elementsType == "remote_files";
             if (requiresSourceColumn && !mappingAsDict.ftp_path && !mappingAsDict.url) {
                 valid = false;
+                this.validityErrorMessages.push("Specify a source column (either FTP Path or URL).");
             }
             for (const rule of this.rules) {
                 if (rule.error) {
                     valid = false;
+                    this.validityErrorMessages.push("There is an error with one of your rules.");
                 }
             }
 
             if (buildingCollection && identifierColumns.length == 0) {
                 valid = false;
+                this.validityErrorMessages.push("Specify a column as a list identifier.");
             }
             return valid;
         },
@@ -1852,5 +1876,9 @@ export default {
 }
 .menu-option {
     padding-left: 5px;
+}
+.alert-area .li {
+    list-style: circle;
+    margin-left: 16px;
 }
 </style>
