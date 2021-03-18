@@ -14,13 +14,17 @@ from galaxy.web import (
     expose_api,
     expose_api_anonymous
 )
-from galaxy.webapps.base.controller import UsesLibraryMixin, UsesLibraryMixinItems
+from galaxy.webapps.base.controller import UsesLibraryMixinItems
 from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
 
+TIME_FORMAT = "%Y-%m-%d %I:%M %p"
+FOLDER_TYPE_NAME = "folder"
+FILE_TYPE_NAME = "file"
 
-class FolderContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesLibraryMixinItems):
+
+class FolderContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems):
     """
     Class controls retrieval, creation and updating of folder contents.
     """
@@ -63,13 +67,10 @@ class FolderContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesLi
         :raises: MalformedId, InconsistentDatabase, ObjectNotFound,
              InternalServerError
         """
+        deleted = util.asbool(kwd.get('include_deleted', False))
+
         is_admin = trans.user_is_admin
-        deleted = kwd.get('include_deleted', 'missing')
         current_user_roles = trans.get_current_user_roles()
-        try:
-            deleted = util.asbool(deleted)
-        except ValueError:
-            deleted = False
 
         decoded_folder_id = self.folder_manager.cut_and_decode(trans, folder_id)
         folder = self.folder_manager.get(trans, decoded_folder_id)
@@ -81,46 +82,43 @@ class FolderContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesLi
             if trans.user:
                 log.warning(f"SECURITY: User (id: {trans.user.id}) without proper access rights is trying to load folder with ID of {decoded_folder_id}")
             else:
-                log.warning("SECURITY: Anonymous user is trying to load restricted folder with ID of %s" % (decoded_folder_id))
-            raise exceptions.ObjectNotFound('Folder with the id provided ( %s ) was not found' % str(folder_id))
+                log.warning(f"SECURITY: Anonymous user is trying to load restricted folder with ID of {decoded_folder_id}")
+            raise exceptions.ObjectNotFound(f'Folder with the id provided ( {folder_id} ) was not found')
 
         folder_contents = []
         update_time = ''
         create_time = ''
 
-        folders, datasets = self.apply_preferences(folder, deleted, search_text)
+        folders, datasets = self._apply_preferences(folder, deleted, search_text)
 
         #  Go through every accessible item (folders, datasets) in the folder and include its metadata.
         for content_item in self._load_folder_contents(trans, folders, datasets, offset, limit):
             return_item = {}
             encoded_id = trans.security.encode_id(content_item.id)
-            create_time = content_item.create_time.strftime("%Y-%m-%d %I:%M %p")
+            create_time = content_item.create_time.strftime(TIME_FORMAT)
 
-            if content_item.api_type == 'folder':
-                encoded_id = 'F' + encoded_id
+            if content_item.api_type == FOLDER_TYPE_NAME:
+                encoded_id = f'F{encoded_id}'
                 can_modify = is_admin or (trans.user and trans.app.security_agent.can_modify_library_item(current_user_roles, folder))
                 can_manage = is_admin or (trans.user and trans.app.security_agent.can_manage_library_item(current_user_roles, folder))
-                update_time = content_item.update_time.strftime("%Y-%m-%d %I:%M %p")
+                update_time = content_item.update_time.strftime(TIME_FORMAT)
                 return_item.update(dict(can_modify=can_modify, can_manage=can_manage))
                 if content_item.description:
                     return_item.update(dict(description=content_item.description))
 
-            elif content_item.api_type == 'file':
+            elif content_item.api_type == FILE_TYPE_NAME:
                 #  Is the dataset public or private?
                 #  When both are False the dataset is 'restricted'
                 #  Access rights are checked on the dataset level, not on the ld or ldda level to maintain consistency
                 dataset = content_item.library_dataset_dataset_association.dataset
                 is_unrestricted = trans.app.security_agent.dataset_is_public(dataset)
-                if not is_unrestricted and trans.user and trans.app.security_agent.dataset_is_private_to_user(trans, dataset):
-                    is_private = True
-                else:
-                    is_private = False
+                is_private = not is_unrestricted and trans.user and trans.app.security_agent.dataset_is_private_to_user(trans, dataset)
 
                 # Can user manage the permissions on the dataset?
                 can_manage = is_admin or (trans.user and trans.app.security_agent.can_manage_dataset(current_user_roles, content_item.library_dataset_dataset_association.dataset))
                 raw_size = int(content_item.library_dataset_dataset_association.get_size())
                 nice_size = util.nice_size(raw_size)
-                update_time = content_item.library_dataset_dataset_association.update_time.strftime("%Y-%m-%d %I:%M %p")
+                update_time = content_item.library_dataset_dataset_association.update_time.strftime(TIME_FORMAT)
 
                 library_dataset_dict = content_item.to_dict()
                 encoded_ldda_id = trans.security.encode_id(content_item.library_dataset_dataset_association.id)
@@ -155,13 +153,11 @@ class FolderContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesLi
             folder_contents.append(return_item)
 
         # Return the reversed path so it starts with the library node.
-        full_path = self.build_path(trans, folder)[::-1]
+        full_path = self._build_path(trans, folder)[::-1]
 
-        # Check whether user can add items to the current folder
-        can_add_library_item = is_admin or trans.app.security_agent.can_add_library_item(current_user_roles, folder)
+        user_can_add_library_item = is_admin or trans.app.security_agent.can_add_library_item(current_user_roles, folder)
 
-        # Check whether user can modify the current folder
-        can_modify_folder = is_admin or trans.app.security_agent.can_modify_library_item(current_user_roles, folder)
+        user_can_modify_folder = is_admin or trans.app.security_agent.can_modify_library_item(current_user_roles, folder)
 
         parent_library_id = None
         if folder.parent_library is not None:
@@ -171,15 +167,15 @@ class FolderContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesLi
 
         metadata = dict(full_path=full_path,
                         total_rows=total_rows,
-                        can_add_library_item=can_add_library_item,
-                        can_modify_folder=can_modify_folder,
+                        can_add_library_item=user_can_add_library_item,
+                        can_modify_folder=user_can_modify_folder,
                         folder_name=folder.name,
                         folder_description=folder.description,
                         parent_library_id=parent_library_id)
         folder_container = dict(metadata=metadata, folder_contents=folder_contents)
         return folder_container
 
-    def build_path(self, trans, folder):
+    def _build_path(self, trans, folder):
         """
         Search the path upwards recursively and load the whole route of
         names and ids for breadcrumb building purposes.
@@ -192,13 +188,12 @@ class FolderContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesLi
         """
         path_to_root = []
         # We are almost in root
-        if folder.parent_id is None:
-            path_to_root.append(('F' + trans.security.encode_id(folder.id), folder.name))
-        else:
+        encoded_id = trans.security.encode_id(folder.id)
+        path_to_root.append((f'F{encoded_id}', folder.name))
+        if folder.parent_id is not None:
             # We add the current folder and traverse up one folder.
-            path_to_root.append(('F' + trans.security.encode_id(folder.id), folder.name))
             upper_folder = trans.sa_session.query(trans.app.model.LibraryFolder).get(folder.parent_id)
-            path_to_root.extend(self.build_path(trans, upper_folder))
+            path_to_root.extend(self._build_path(trans, upper_folder))
         return path_to_root
 
     def _load_folder_contents(self, trans, folders, datasets, offset=None, limit=None):
@@ -231,31 +226,23 @@ class FolderContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesLi
             if subfolder.deleted:
                 if is_admin:
                     # Admins can see all deleted folders.
-                    subfolder.api_type = 'folder'
+                    subfolder.api_type = FOLDER_TYPE_NAME
                     content_items.append(subfolder)
                 else:
                     # Users with MODIFY permissions can see deleted folders.
                     can_modify = trans.app.security_agent.can_modify_library_item(current_user_roles, subfolder)
                     if can_modify:
-                        subfolder.api_type = 'folder'
+                        subfolder.api_type = FOLDER_TYPE_NAME
                         content_items.append(subfolder)
             else:
                 # Undeleted folders are non-restricted for now. The contents are not.
                 # TODO decide on restrictions
-                subfolder.api_type = 'folder'
+                subfolder.api_type = FOLDER_TYPE_NAME
                 content_items.append(subfolder)
-                # if is_admin:
-                #     subfolder.api_type = 'folder'
-                #     content_items.append( subfolder )
-                # else:
-                #     can_access, folder_ids = trans.app.security_agent.check_folder_contents( trans.user, current_user_roles, subfolder )
-                #     if can_access:
-                #         subfolder.api_type = 'folder'
-                #         content_items.append( subfolder )
 
         limit -= len(content_items)
         offset -= len(folders)
-        offset = 0 if offset < 0 else offset
+        offset = max(0, offset)
 
         current_datasets = self._calculate_pagination(datasets, offset, limit)
 
@@ -263,22 +250,22 @@ class FolderContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesLi
             if dataset.deleted:
                 if is_admin:
                     # Admins can see all deleted datasets.
-                    dataset.api_type = 'file'
+                    dataset.api_type = FILE_TYPE_NAME
                     content_items.append(dataset)
                 else:
                     # Users with MODIFY permissions on the item can see the deleted item.
                     can_modify = trans.app.security_agent.can_modify_library_item(current_user_roles, dataset)
                     if can_modify:
-                        dataset.api_type = 'file'
+                        dataset.api_type = FILE_TYPE_NAME
                         content_items.append(dataset)
             else:
                 if is_admin:
-                    dataset.api_type = 'file'
+                    dataset.api_type = FILE_TYPE_NAME
                     content_items.append(dataset)
                 else:
                     can_access = trans.app.security_agent.can_access_dataset(current_user_roles, dataset.library_dataset_dataset_association.dataset)
                     if can_access:
-                        dataset.api_type = 'file'
+                        dataset.api_type = FILE_TYPE_NAME
                         content_items.append(dataset)
 
         return content_items
@@ -290,7 +277,7 @@ class FolderContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesLi
             paginated_items = items[offset:]
         return paginated_items
 
-    def apply_preferences(self, folder, include_deleted, search_text):
+    def _apply_preferences(self, folder, include_deleted: bool, search_text: str):
 
         def check_deleted(array, include_deleted):
             if include_deleted:
@@ -350,8 +337,6 @@ class FolderContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesLi
         from_hda_id = payload.pop('from_hda_id', None)
         from_hdca_id = payload.pop('from_hdca_id', None)
         ldda_message = payload.pop('ldda_message', '')
-        if ldda_message:
-            ldda_message = util.sanitize_html.sanitize_html(ldda_message)
         try:
             if from_hda_id:
                 decoded_hda_id = self.decode_id(from_hda_id)
