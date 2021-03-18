@@ -42,8 +42,8 @@ SELECT_DUPLICATED_OPTIONS = """
     <version_command interpreter="python">bwa.py --version</version_command>
     <inputs>
         <param name="select" type="select" optional="true" multiple="true">
-            <option value="a">x</option>
-            <option value="b">x</option>
+            <option value="v">x</option>
+            <option value="v">x</option>
         </param>
     </inputs>
 </tool>
@@ -51,9 +51,9 @@ SELECT_DUPLICATED_OPTIONS = """
 
 TESTS = [
     (NO_SECTIONS_XML, inputs.lint_inputs, lambda x: 'Found no input parameters.' in x.warn_messages),
-    (NO_WHEN_IN_CONDITIONAL_XML, inputs.lint_inputs, lambda x: 'No <when /> block found for select option \'none\' inside conditional \'labels\'' in x.warn_messages),
+    (NO_WHEN_IN_CONDITIONAL_XML, inputs.lint_inputs, lambda x: "Conditional [labels] no <when /> block found for select option 'none'" in x.warn_messages),
     (RADIO_SELECT_INCOMPATIBILITIES, inputs.lint_inputs, lambda x: 'Select [radio_select] display="radio" is incompatible with optional="true"' in x.error_messages and 'Select [radio_select] display="radio" is incompatible with multiple="true"' in x.error_messages),
-    (SELECT_DUPLICATED_OPTIONS, inputs.lint_inputs, lambda x: 'Select [select] has multiple options with the same text content' in x.error_messages),
+    (SELECT_DUPLICATED_OPTIONS, inputs.lint_inputs, lambda x: 'Select [select] has multiple options with the same text content' in x.error_messages and 'Select [select] has multiple options with the same value' in x.error_messages),
 ]
 
 
