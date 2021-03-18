@@ -57,7 +57,7 @@ TESTS = [
 ]
 
 
-@pytest.mark.parametrize('tool_xml,lint_func,assert_func', TESTS, ids=['Lint no sections', 'lint no when', 'radio select incompatibilities', 'select duplictaed options'])
+@pytest.mark.parametrize('tool_xml,lint_func,assert_func', TESTS, ids=['Lint no sections', 'lint no when', 'radio select incompatibilities', 'select duplicated options'])
 def test_tool_xml(tool_xml, lint_func, assert_func):
     lint_ctx = LintContext('all')
     tree = etree.ElementTree(element=etree.fromstring(tool_xml))
