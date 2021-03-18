@@ -114,7 +114,7 @@ class UserListGrid(grids.Grid):
         ActivatedColumn("Activated", attach_popup=False, key="active"),
         GroupsColumn("Groups", attach_popup=False),
         RolesColumn("Roles", attach_popup=False),
-        ExternalColumn("External", attach_popup=False, key="groups"),
+        ExternalColumn("External", attach_popup=False, key="external"),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced"),
         grids.PurgedColumn("Purged", key="purged", visible=False, filterable="advanced")
