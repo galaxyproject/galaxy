@@ -56,6 +56,7 @@ var menu = [
                 Galaxy.router.push(`/histories/permissions?id=${Galaxy.currHistoryPanel.model.id}`);
             }
         },
+        singleUserDisable: true,
     },
     {
         html: _l("Make Private"),
