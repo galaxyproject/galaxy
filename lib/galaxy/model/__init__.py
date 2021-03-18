@@ -3501,7 +3501,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                     continue
                 val = val.file_name
             # If no value for metadata, look in datatype for metadata.
-            elif val is None and hasattr(hda.datatype, name):
+            elif not hda.metadata.element_is_set(name) and hasattr(hda.datatype, name):
                 val = getattr(hda.datatype, name)
             rval['metadata_' + name] = val
         return rval
