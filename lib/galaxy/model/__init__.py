@@ -4996,6 +4996,8 @@ class Workflow(Dictifiable, RepresentById):
         copied_workflow.has_cycles = self.has_cycles
         copied_workflow.has_errors = self.has_errors
         copied_workflow.reports_config = self.reports_config
+        copied_workflow.license = self.license
+        copied_workflow.creator_metadata = self.creator_metadata
 
         # Map old step ids to new steps
         step_mapping = {}
