@@ -361,8 +361,9 @@ class WorkflowContentsManager(UsesAnnotations):
             raise exceptions.RequestParameterInvalidException(f"Invalid workflow format detected [{data}]")
 
         workflow_input_name = data['name']
-        if source:
-            name = f"{workflow_input_name} (imported from {source})"
+        imported_sufix = f"(imported from {source})"
+        if source and imported_sufix not in workflow_input_name:
+            name = f"{workflow_input_name} {imported_sufix}"
         else:
             name = workflow_input_name
         workflow, missing_tool_tups = self._workflow_from_raw_description(
