@@ -50,9 +50,6 @@ class CloudManager(sharable.SharableModelManager):
     # setting this property.
     model_class = model.History
 
-    def __init__(self, app, *args, **kwargs):
-        super().__init__(app, *args, **kwargs)
-
     @staticmethod
     def configure_provider(provider, credentials):
         """

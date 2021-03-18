@@ -3,7 +3,6 @@ import logging
 import os
 import socket
 import tempfile
-from collections import OrderedDict
 from io import StringIO
 from json import dump, dumps
 from urllib.parse import urlparse
@@ -377,7 +376,7 @@ def create_paramfile(trans, uploaded_datasets):
             # TODO: This will have to change when we start bundling inputs.
             # Also, in_place above causes the file to be left behind since the
             # user cannot remove it unless the parent directory is writable.
-            if link_data_only == 'copy_files' and trans.user:
+            if link_data_only == 'copy_files' and trans.user and trans.app.config.external_chown_script:
                 external_chown(uploaded_dataset.path,
                                trans.user.system_user_pwent(trans.app.config.real_system_username),
                                trans.app.config.external_chown_script, description="uploaded file")
@@ -442,7 +441,7 @@ def create_job(trans, params, tool, json_file_path, outputs, folder=None, histor
     # Queue the job for execution
     trans.app.job_manager.enqueue(job, tool=tool)
     trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
-    output = OrderedDict()
+    output = {}
     for i, v in enumerate(outputs):
         if not hasattr(output_object, "collection_type"):
             output['output%i' % i] = v

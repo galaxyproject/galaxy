@@ -12,7 +12,6 @@ import sys
 import tarfile
 import tempfile
 import zipfile
-from collections import OrderedDict
 from json import dumps
 from typing import Optional
 
@@ -320,7 +319,7 @@ class BamNative(CompressedArchive):
             # TODO: Reference names, lengths, read_groups and headers can become very large, truncate when necessary
             dataset.metadata.reference_names = list(bam_file.references)
             dataset.metadata.reference_lengths = list(bam_file.lengths)
-            dataset.metadata.bam_header = OrderedDict((k, v) for k, v in bam_file.header.items())
+            dataset.metadata.bam_header = dict(bam_file.header.items())
             dataset.metadata.read_groups = [read_group['ID'] for read_group in dataset.metadata.bam_header.get('RG', []) if 'ID' in read_group]
             dataset.metadata.sort_order = dataset.metadata.bam_header.get('HD', {}).get('SO', None)
             dataset.metadata.bam_version = dataset.metadata.bam_header.get('HD', {}).get('VN', None)
@@ -970,7 +969,7 @@ class Anndata(H5):
     # obs_layers: louvain, leidein, isBcell
     # obs_count: number of obs_layers
     # obs_size: number of obs_names
-    MetadataElement(name="obs_names", desc="obs_names", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
+    MetadataElement(name="obs_names", desc="obs_names", default=[], multiple=True, readonly=True, no_value=None)
     MetadataElement(name="obs_layers", desc="obs_layers", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
     MetadataElement(name="obs_count", default=0, desc="obs_count", readonly=True, visible=True, no_value=0)
     MetadataElement(name="obs_size", default=-1, desc="obs_size", readonly=True, visible=True, no_value=0)

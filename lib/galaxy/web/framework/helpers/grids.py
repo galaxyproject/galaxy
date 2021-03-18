@@ -1,6 +1,5 @@
 import logging
 import math
-from collections import OrderedDict
 from json import dumps, loads
 from typing import Dict, List, Optional
 
@@ -492,7 +491,7 @@ class SharingStatusColumn(GridColumn):
 
     def get_accepted_filters(self):
         """ Returns a list of accepted filters for this column. """
-        accepted_filter_labels_and_vals = OrderedDict()
+        accepted_filter_labels_and_vals = {}
         accepted_filter_labels_and_vals["private"] = "private"
         accepted_filter_labels_and_vals["shared"] = "shared"
         accepted_filter_labels_and_vals["accessible"] = "accessible"

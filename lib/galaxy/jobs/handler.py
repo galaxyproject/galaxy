@@ -40,7 +40,16 @@ JOB_WAIT, JOB_ERROR, JOB_INPUT_ERROR, JOB_INPUT_DELETED, JOB_READY, JOB_DELETED,
 DEFAULT_JOB_PUT_FAILURE_MESSAGE = 'Unable to run job due to a misconfiguration of the Galaxy job running system.  Please contact a site administrator.'
 
 
-class JobHandler:
+class JobHandlerI:
+
+    def start(self):
+        pass
+
+    def shutdown(self):
+        pass
+
+
+class JobHandler(JobHandlerI):
     """
     Handle the preparation, running, tracking, and finishing of jobs
     """
@@ -116,7 +125,7 @@ class ItemGrabber:
             try:
                 rows = conn.execute(self._grab_query).fetchall()
                 if rows:
-                    log.debug('Grabbed %s(s): %s', self.grab_type, ', '.join(str(row[0]) for row in rows))
+                    log.debug(f"Grabbed {self.grab_type}(s): {', '.join(str(row[0]) for row in rows)}")
                     trans.commit()
                 else:
                     trans.rollback()
@@ -325,22 +334,31 @@ class JobHandlerQueue(Monitors):
                 .join(model.Dataset) \
                 .filter(and_(model.Job.state == model.Job.states.NEW,
                              model.Dataset.state.in_(model.Dataset.non_ready_states))).subquery()
+            rank = func.rank().over(partition_by=model.Job.table.c.user_id,
+                                    order_by=model.Job.table.c.id).label('rank')
+            job_filter_conditions = (
+                (model.Job.state == model.Job.states.NEW),
+                (model.Job.handler == self.app.config.server_name),
+                ~model.Job.table.c.id.in_(hda_not_ready),
+                ~model.Job.table.c.id.in_(ldda_not_ready))
             if self.app.config.user_activation_on:
-                jobs_to_check = self.sa_session.query(model.Job).enable_eagerloads(False) \
-                    .outerjoin(model.User) \
-                    .filter(and_((model.Job.state == model.Job.states.NEW),
-                                 or_((model.Job.user_id == null()), (model.User.active == true())),
-                                 (model.Job.handler == self.app.config.server_name),
-                                 ~model.Job.table.c.id.in_(hda_not_ready),
-                                 ~model.Job.table.c.id.in_(ldda_not_ready))) \
-                    .order_by(model.Job.id).all()
+                job_filter_conditions = job_filter_conditions + (
+                    or_((model.Job.user_id == null()), (model.User.active == true())),)
+            if self.sa_session.bind.name == 'sqlite':
+                query_objects = (model.Job,)
             else:
-                jobs_to_check = self.sa_session.query(model.Job).enable_eagerloads(False) \
-                    .filter(and_((model.Job.state == model.Job.states.NEW),
-                                 (model.Job.handler == self.app.config.server_name),
-                                 ~model.Job.table.c.id.in_(hda_not_ready),
-                                 ~model.Job.table.c.id.in_(ldda_not_ready))) \
-                    .order_by(model.Job.id).all()
+                query_objects = (model.Job, rank)
+            ready_query = self.sa_session.query(*query_objects).enable_eagerloads(False) \
+                .outerjoin(model.User) \
+                .filter(and_(*job_filter_conditions)) \
+                .order_by(model.Job.id)
+            if self.sa_session.bind.name == 'sqlite':
+                jobs_to_check = ready_query.all()
+            else:
+                ranked = ready_query.subquery()
+                jobs_to_check = self.sa_session.query(model.Job) \
+                    .join(ranked, model.Job.id == ranked.c.id) \
+                    .filter(ranked.c.rank <= self.app.job_config.handler_ready_window_size).all()
             # Filter jobs with invalid input states
             jobs_to_check = self.__filter_jobs_with_invalid_input_states(jobs_to_check)
             # Fetch all "resubmit" jobs
@@ -436,9 +454,8 @@ class JobHandlerQueue(Monitors):
         if not self.track_jobs_in_database:
             self.waiting_jobs = new_waiting_jobs
         # Remove cached wrappers for any jobs that are no longer being tracked
-        for id in list(self.job_wrappers.keys()):
-            if id not in new_waiting_jobs:
-                del self.job_wrappers[id]
+        for id in set(self.job_wrappers.keys()) - set(new_waiting_jobs):
+            del self.job_wrappers[id]
         # Flush, if we updated the state
         self.sa_session.flush()
         # Done with the session

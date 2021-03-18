@@ -235,24 +235,22 @@ def is_column_based(fname_or_file_prefix, sep='\t', skip=0):
         return False
 
     try:
-        headers = get_headers(fname_or_file_prefix, sep)
+        headers = get_headers(fname_or_file_prefix, sep, comment_designator='#')[skip:]
     except UnicodeDecodeError:
         return False
     count = 0
     if not headers:
         return False
-    for hdr in headers[skip:]:
-        if hdr and hdr[0] and not hdr[0].startswith('#'):
-            if len(hdr) > 1:
+    for hdr in headers:
+        if hdr and hdr != ['']:
+            if count:
+                if len(hdr) != count:
+                    return False
+            else:
                 count = len(hdr)
-            break
-    if count < 2:
-        return False
-    for hdr in headers[skip:]:
-        if hdr and hdr[0] and not hdr[0].startswith('#'):
-            if len(hdr) != count:
-                return False
-    return True
+                if count < 2:
+                    return False
+    return count >= 2
 
 
 def guess_ext(fname, sniff_order, is_binary=False):
@@ -303,13 +301,13 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> guess_ext(fname, sniff_order)
     'gff3'
     >>> fname = get_test_fname('2.txt')
-    >>> guess_ext(fname, sniff_order)  # 2.txt
+    >>> guess_ext(fname, sniff_order)
     'txt'
     >>> fname = get_test_fname('2.tabular')
     >>> guess_ext(fname, sniff_order)
     'tabular'
     >>> fname = get_test_fname('3.txt')
-    >>> guess_ext(fname, sniff_order)  # 3.txt
+    >>> guess_ext(fname, sniff_order)
     'txt'
     >>> fname = get_test_fname('test_tab1.tabular')
     >>> guess_ext(fname, sniff_order)
@@ -424,7 +422,10 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> fname = get_test_fname('test.blib')
     >>> guess_ext(fname, sniff_order)
     'blib'
-    >>> fname = get_test_fname('test.phylip')
+    >>> fname = get_test_fname('test_strict_interleaved.phylip')
+    >>> guess_ext(fname, sniff_order)
+    'phylip'
+    >>> fname = get_test_fname('test_relaxed_interleaved.phylip')
     >>> guess_ext(fname, sniff_order)
     'phylip'
     >>> fname = get_test_fname('1.smat')
@@ -451,9 +452,18 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> fname = get_test_fname('1.mtx')
     >>> guess_ext(fname, sniff_order)
     'mtx'
+    >>> fname = get_test_fname('mc_preprocess_summ.metacyto_summary.txt')
+    >>> guess_ext(fname, sniff_order)
+    'metacyto_summary.txt'
+    >>> fname = get_test_fname('Accuri_C6_A01_H2O.fcs')
+    >>> guess_ext(fname, sniff_order)
+    'fcs'
     >>> fname = get_test_fname('1imzml')
     >>> guess_ext(fname, sniff_order)  # This test case is ensuring doesn't throw exception, actual value could change if non-utf encoding handling improves.
     'data'
+    >>> fname = get_test_fname('too_many_comments_gff3.tabular')
+    >>> guess_ext(fname, sniff_order)  # It's a VCF but is sniffed as tabular because of the limit on the number of header lines we read
+    'tabular'
     """
     file_prefix = FilePrefix(fname)
     file_ext = run_sniffers_raw(file_prefix, sniff_order, is_binary)

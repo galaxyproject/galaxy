@@ -1,0 +1,29 @@
+name: Unit tests
+on: [push, pull_request]
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.6', '3.9']
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          path: 'galaxy root'
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Cache pip dir
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get -y install ffmpeg
+      - name: Install tox
+        run: pip install tox
+      - name: Run tests
+        run: tox -e unit
+        working-directory: 'galaxy root'

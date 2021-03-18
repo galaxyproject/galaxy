@@ -57,10 +57,10 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import moment from "moment";
 import { Services } from "components/Workflow/services";
-import { LegacyParameters } from "components/Workflow/Editor/modules/utilities";
 import Tags from "components/Common/Tags";
 import LicenseSelector from "components/License/LicenseSelector";
 import CreatorEditor from "components/SchemaOrg/CreatorEditor";
+import { UntypedParameters } from "./modules/parameters";
 
 Vue.use(BootstrapVue);
 
@@ -78,7 +78,7 @@ export default {
         },
         name: {
             type: String,
-            required: true,
+            default: null,
         },
         tags: {
             type: Array,
@@ -103,7 +103,7 @@ export default {
             default: null,
         },
         parameters: {
-            type: LegacyParameters,
+            type: UntypedParameters,
             default: null,
         },
     },

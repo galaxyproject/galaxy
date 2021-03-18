@@ -20,6 +20,7 @@ from galaxy.security.validate_user_input import (
     validate_email,
     validate_publicname
 )
+from galaxy.structured_app import StructuredApp
 from galaxy.web import expose_api_anonymous_and_sessionless
 from galaxy.web import url_for
 from galaxy.webapps.base.controller import (
@@ -27,6 +28,7 @@ from galaxy.webapps.base.controller import (
     CreatesApiKeysMixin,
     UsesFormDefinitionsMixin
 )
+from ..api import depends
 
 log = logging.getLogger(__name__)
 
@@ -36,11 +38,11 @@ def _filtered_registration_params_dict(payload):
 
 
 class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
+    user_manager: users.UserManager = depends(users.UserManager)
     installed_len_files = None
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
-        self.user_manager = users.UserManager(app)
 
     def __handle_role_and_group_auto_creation(self, trans, user, roles, auto_create_roles=False,
                                               auto_create_groups=False, auto_assign_roles_to_groups_only=False):
@@ -214,6 +216,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         return (time_difference > delta or activation_grace_period == 0)
 
     @web.expose
+    @web.json
     def logout(self, trans, logout_all=False, **kwd):
         message = trans.check_csrf_token(kwd)
         if message:
@@ -227,7 +230,10 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         # Since logging an event requires a session, we'll log prior to ending the session
         trans.log_event("User logged out")
         trans.handle_user_logout(logout_all=logout_all)
-        return {"message": "Success."}
+        success_response = {"message": "Success."}  # This is a little weird as a response.
+        if trans.app.config.use_remote_user and trans.app.config.remote_user_logout_href:
+            success_response["redirect_uri"] = trans.app.config.remote_user_logout_href
+        return success_response
 
     @expose_api_anonymous_and_sessionless
     def create(self, trans, payload=None, **kwd):

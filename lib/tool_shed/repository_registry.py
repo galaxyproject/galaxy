@@ -347,7 +347,7 @@ class Registry:
 
     @property
     def sa_session(self):
-        return self.app.model.context.current
+        return self.app.model.session
 
     def unload_certified_level_one_repository_and_suite_tuple(self, repository):
         # The received repository has been determined to be level one certified.

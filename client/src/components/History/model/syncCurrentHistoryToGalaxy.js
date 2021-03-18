@@ -30,7 +30,7 @@ export function syncCurrentHistoryToGalaxy(galaxy$, store, cfg = {}) {
     );
 
     return historyId$.subscribe(
-        (id) => store.commit("betaHistory/setCurrentHistoryId", id),
+        (id) => store.dispatch("betaHistory/setCurrentHistoryId", id),
         (err) => console.warn("syncCurrentHistoryToGalaxy error", err),
         () => console.log("syncCurrentHistoryToGalaxy complete")
     );

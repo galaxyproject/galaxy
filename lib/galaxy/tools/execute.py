@@ -6,10 +6,13 @@ collections from matched collections.
 import collections
 import logging
 
+from boltons.iterutils import remap
+
 from galaxy import model
 from galaxy.model.dataset_collections.structure import get_structure, tool_output_to_structure
 from galaxy.tool_util.parser import ToolOutputCollectionPart
 from galaxy.tools.actions import filter_output, on_text_for_names, ToolExecutionCache
+from galaxy.tools.parameters.basic import is_runtime_value
 
 log = logging.getLogger(__name__)
 
@@ -31,7 +34,7 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
     Execute a tool and return object containing summary (output data, number of
     failures, etc...).
     """
-    if max_num_jobs:
+    if max_num_jobs is not None:
         assert invocation_step is not None
     if rerun_remap_job_id:
         assert invocation_step is None
@@ -93,7 +96,7 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
     execution_slice = None
 
     for i, execution_slice in enumerate(execution_tracker.new_execution_slices()):
-        if max_num_jobs and jobs_executed >= max_num_jobs:
+        if max_num_jobs is not None and jobs_executed >= max_num_jobs:
             has_remaining_jobs = True
             break
         else:
@@ -152,7 +155,7 @@ class ExecutionTracker:
         self.output_datasets = []
         self.output_collections = []
 
-        self.implicit_collections = collections.OrderedDict()
+        self.implicit_collections = {}
 
     @property
     def param_combinations(self):
@@ -286,8 +289,24 @@ class ExecutionTracker:
         implicit_inputs = self.implicit_inputs
 
         implicit_collection_jobs = model.ImplicitCollectionJobs()
+
+        # trying to guess these filters at the collection levell is tricky because
+        # the filter condition could vary from element to element. Just do best we
+        # we can for now.
+        example_params = self.example_params.copy()
+
+        # walk through and optional replace runtime values with None, assume they
+        # would have been replaced by now if they were going to be set.
+        def replace_optional_runtime_values(path, key, value):
+
+            if is_runtime_value(value):
+                return key, None
+            return key, value
+
+        example_params = remap(example_params, visit=replace_optional_runtime_values)
+
         for output_name, output in self.tool.outputs.items():
-            if filter_output(self.tool, output, self.example_params):
+            if filter_output(self.tool, output, example_params):
                 continue
             output_collection_name = self.output_name(trans, history, params, output)
             effective_structure = self._mapped_output_structure(trans, output)

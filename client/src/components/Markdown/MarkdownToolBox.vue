@@ -81,7 +81,7 @@ export default {
                         emitter: "onHistoryId",
                     },
                     {
-                        id: "history_collection_display",
+                        id: "history_dataset_collection_display",
                         name: "Collection",
                         emitter: "onHistoryCollectionId",
                     },

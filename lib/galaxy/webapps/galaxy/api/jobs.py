@@ -7,19 +7,17 @@ API operations on a jobs.
 import logging
 import typing
 
-from fastapi import Depends
-from fastapi_utils.cbv import cbv
-from fastapi_utils.inferring_router import InferringRouter as APIRouter
 from sqlalchemy import (
+    and_,
     or_,
 )
+from sqlalchemy.orm import aliased
 
 from galaxy import (
     exceptions,
     model,
     util,
 )
-from galaxy.app import UniverseApplication
 from galaxy.managers import hdas
 from galaxy.managers.context import ProvidesHistoryContext, ProvidesUserContext
 from galaxy.managers.jobs import (
@@ -31,7 +29,6 @@ from galaxy.managers.jobs import (
     summarize_job_parameters,
     view_show_job,
 )
-from galaxy.model import Job
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.web import (
     expose_api,
@@ -39,39 +36,31 @@ from galaxy.web import (
     require_admin,
 )
 from galaxy.webapps.base.controller import (
-    BaseAPIController,
     UsesVisualizationMixin
 )
 from galaxy.work.context import (
     WorkRequestContext,
 )
 from . import (
-    get_app,
-    get_job_manager,
-    get_trans,
+    BaseGalaxyAPIController,
+    depends,
+    DependsOnTrans,
+    Router,
 )
 
 log = logging.getLogger(__name__)
 
-router = APIRouter(tags=["jobs"])
+router = Router(tags=["jobs"])
 
 
-def get_job_search(app: UniverseApplication = Depends(get_app)) -> JobSearch:
-    return JobSearch(app=app)
-
-
-def get_hda_manager(app: UniverseApplication = Depends(get_app)) -> hdas.HDAManager:
-    return app.hda_manager
-
-
-@cbv(router)
+@router.cbv
 class FastAPIJobs:
-    job_manager: JobManager = Depends(get_job_manager)
-    job_search: JobSearch = Depends(get_job_search)
-    hda_manager: hdas.HDAManager = Depends(get_hda_manager)
+    job_manager: JobManager = depends(JobManager)
+    job_search: JobSearch = depends(JobSearch)
+    hda_manager: hdas.HDAManager = depends(hdas.HDAManager)
 
     @router.get("/api/job/{id}")
-    def show(self, id: EncodedDatabaseIdField, trans: ProvidesUserContext = Depends(get_trans), full: typing.Optional[bool] = False) -> typing.Dict:
+    def show(self, id: EncodedDatabaseIdField, trans: ProvidesUserContext = DependsOnTrans, full: typing.Optional[bool] = False) -> typing.Dict:
         """
         Return dictionary containing description of job data
 
@@ -84,16 +73,13 @@ class FastAPIJobs:
         return view_show_job(trans, job, bool(full))
 
 
-class JobController(BaseAPIController, UsesVisualizationMixin):
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.job_manager = JobManager(app)
-        self.job_search = JobSearch(app)
-        self.hda_manager = hdas.HDAManager(app)
+class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
+    job_manager = depends(JobManager)
+    job_search = depends(JobSearch)
+    hda_manager = depends(hdas.HDAManager)
 
     @expose_api
-    def index(self, trans: ProvidesUserContext, **kwd):
+    def index(self, trans: ProvidesUserContext, limit=500, offset=0, **kwd):
         """
         GET /api/jobs
 
@@ -111,6 +97,17 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
         :type   user_details: boolean
         :param  user_details: if true, and requestor is an admin, will return external job id and user email.
 
+        :type   user_id: str
+        :param  user_id: an encoded user id to restrict query to, must be own id if not admin user
+
+        :type   limit: int
+        :param  limit: Maximum number of jobs to return.
+
+        :type   offset: int
+        :param  offset: Return jobs starting from this specified position.
+                        For example, if ``limit`` is set to 100 and ``offset`` to 200,
+                        jobs 200-299 will be returned.
+
         :type   date_range_min: string '2014-01-01'
         :param  date_range_min: limit the listing of jobs to those updated on or after requested date
 
@@ -120,17 +117,34 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
         :type   history_id: string
         :param  history_id: limit listing of jobs to those that match the history_id. If none, all are returned.
 
+        :type   workflow_id: string
+        :param  workflow_id: limit listing of jobs to those that match the workflow_id. If none, all are returned.
+
+        :type   invocation_id: string
+        :param  invocation_id: limit listing of jobs to those that match the invocation_id. If none, all are returned.
+
         :rtype:     list
         :returns:   list of dictionaries containing summary job information
         """
         state = kwd.get('state', None)
         is_admin = trans.user_is_admin
         user_details = kwd.get('user_details', False)
+        user_id = kwd.get('user_id', None)
 
-        if is_admin:
-            query = trans.sa_session.query(Job)
+        if user_id:
+            decoded_user_id = self.decode_id(user_id)
         else:
-            query = trans.sa_session.query(Job).filter(Job.table.c.user_id == trans.user.id)
+            decoded_user_id = None
+        job_alias = aliased(model.Job)
+        if is_admin:
+            if decoded_user_id is not None:
+                query = trans.sa_session.query(job_alias).filter(job_alias.user_id == decoded_user_id)
+            else:
+                query = trans.sa_session.query(job_alias)
+        else:
+            if decoded_user_id is not None and decoded_user_id != trans.user.id:
+                raise exceptions.AdminRequiredException("Only admins can index the jobs of others")
+            query = trans.sa_session.query(job_alias).filter(job_alias.user_id == trans.user.id)
 
         def build_and_apply_filters(query, objects, filter_func):
             if objects is not None:
@@ -143,28 +157,57 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
                     query = query.filter(or_(*t))
             return query
 
-        query = build_and_apply_filters(query, state, lambda s: Job.table.c.state == s)
+        query = build_and_apply_filters(query, state, lambda s: job_alias.state == s)
 
-        query = build_and_apply_filters(query, kwd.get('tool_id', None), lambda t: Job.tool_id == t)
-        query = build_and_apply_filters(query, kwd.get('tool_id_like', None), lambda t: Job.tool_id.like(t))
+        query = build_and_apply_filters(query, kwd.get('tool_id', None), lambda t: job_alias.tool_id == t)
+        query = build_and_apply_filters(query, kwd.get('tool_id_like', None), lambda t: job_alias.tool_id.like(t))
 
-        query = build_and_apply_filters(query, kwd.get('date_range_min', None), lambda dmin: Job.table.c.update_time >= dmin)
-        query = build_and_apply_filters(query, kwd.get('date_range_max', None), lambda dmax: Job.table.c.update_time <= dmax)
+        query = build_and_apply_filters(query, kwd.get('date_range_min', None), lambda dmin: job_alias.table.c.update_time >= dmin)
+        query = build_and_apply_filters(query, kwd.get('date_range_max', None), lambda dmax: job_alias.table.c.update_time <= dmax)
 
         history_id = kwd.get('history_id', None)
+        workflow_id = kwd.get('workflow_id', None)
+        invocation_id = kwd.get('invocation_id', None)
         if history_id is not None:
-            try:
-                decoded_history_id = self.decode_id(history_id)
-                query = query.filter(Job.table.c.history_id == decoded_history_id)
-            except Exception:
-                raise exceptions.ObjectAttributeInvalidException()
+            decoded_history_id = self.decode_id(history_id)
+            query = query.filter(job_alias.history_id == decoded_history_id)
+        if workflow_id or invocation_id:
+            invocation = aliased(model.WorkflowInvocation)
+            invocation_step = aliased(model.WorkflowInvocationStep)
+            if workflow_id is not None:
+                decoded_workflow_id = self.decode_id(workflow_id)
+                query = query.filter(
+                    invocation.id == invocation_step.workflow_invocation_id,
+                    invocation.workflow_id == model.Workflow.table.c.id,
+                    model.Workflow.table.c.stored_workflow_id == decoded_workflow_id,
+                )
+            elif invocation_id is not None:
+                decoded_invocation_id = self.decode_id(invocation_id)
+                query = query.filter(
+                    invocation.id == invocation_step.workflow_invocation_id,
+                    invocation_step.workflow_invocation_id == decoded_invocation_id
+                )
+            query = query.filter(
+                or_(
+                    job_alias.id == invocation_step.job_id,
+                    and_(
+                        job_alias.id == model.ImplicitCollectionJobsJobAssociation.table.c.job_id,
+                        model.ImplicitCollectionJobsJobAssociation.table.c.implicit_collection_jobs_id == invocation_step.implicit_collection_jobs_id,
+                    )
+                )
+            )
+
+        if kwd.get('order_by') == 'create_time':
+            order_by = job_alias.create_time.desc()
+        else:
+            order_by = job_alias.update_time.desc()
+        query = query.order_by(order_by)
+
+        query = query.offset(offset)
+        query = query.limit(limit)
 
         out = []
-        if kwd.get('order_by') == 'create_time':
-            order_by = Job.table.c.create_time.desc()
-        else:
-            order_by = Job.table.c.update_time.desc()
-        for job in query.order_by(order_by).all():
+        for job in query.all():
             job_dict = job.to_dict('collection', system_details=is_admin)
             j = self.encode_all_ids(trans, job_dict, True)
             if user_details:

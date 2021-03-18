@@ -13,11 +13,16 @@ python-ldap==3.2.0
 python-pam
 galaxycloudrunner
 
-fs.webdavfs
-fs.dropboxfs
+# For file sources plugins
+fs.webdavfs  # type: webdav
+fs.dropboxfs  # type: dropbox
+fs.sshfs  # type: ssh
+fs-s3fs  # type: s3
+s3fs  # type: s3fs
+fs.anvilfs # type: anvil
 
 # Chronos client
-chronos-python==0.38.0
+chronos-python==1.2.1
 
 # Kubernetes job runner
 pykube==0.15.0

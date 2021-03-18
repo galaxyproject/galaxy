@@ -8,15 +8,17 @@ from galaxy import (
     util
 )
 from galaxy.managers import folders, roles
+from galaxy.structured_app import StructuredApp
 from galaxy.web import expose_api
-from galaxy.webapps.base.controller import BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems
+from galaxy.webapps.base.controller import UsesLibraryMixin, UsesLibraryMixinItems
+from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
 
 
-class FoldersController(BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems):
+class FoldersController(BaseGalaxyAPIController, UsesLibraryMixin, UsesLibraryMixinItems):
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
         self.folder_manager = folders.FolderManager()
         self.role_manager = roles.RoleManager(app)

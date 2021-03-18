@@ -15,6 +15,7 @@ import galaxy.model
 from galaxy import util
 from galaxy.tool_util.parser import get_input_source as ensure_input_source
 from galaxy.util import (
+    dbkeys,
     sanitize_param,
     string_as_bool,
     string_as_bool_or_none,
@@ -145,7 +146,6 @@ class ToolParameter(Dictifiable):
         self.name = self.__class__.parse_name(input_source)
         self.type = input_source.get("type")
         self.hidden = input_source.get_bool("hidden", False)
-        self.load_contents = int(input_source.get("load_contents", 0))
         self.refresh_on_change = input_source.get_bool("refresh_on_change", False)
         self.optional = input_source.parse_optional()
         self.is_dynamic = False
@@ -881,7 +881,7 @@ class SelectToolParameter(ToolParameter):
         else:
             return self.static_options
 
-    def get_legal_values(self, trans, other_values):
+    def get_legal_values(self, trans, other_values, value):
         """
         determine the set of values of legal options
         """
@@ -896,7 +896,7 @@ class SelectToolParameter(ToolParameter):
     def from_json(self, value, trans, other_values=None, require_legal_value=True):
         other_values = other_values or {}
         try:
-            legal_values = self.get_legal_values(trans, other_values)
+            legal_values = self.get_legal_values(trans, other_values, value)
         except ImplicitConversionRequired:
             return value
         # if the given value is not found in the set of values of the legal
@@ -1042,7 +1042,7 @@ class GenomeBuildParameter(SelectToolParameter):
 
     >>> # Create a mock transaction with 'hg17' as the current build
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch(app=None, history=Bunch(genome_build='hg17'), db_builds=util.read_dbnames(None))
+    >>> trans = Bunch(app=None, history=Bunch(genome_build='hg17'), db_builds=dbkeys.read_dbnames(None))
     >>> p = GenomeBuildParameter(None, XML('<param name="_name" type="genomebuild" value="hg17" />'))
     >>> print(p.name)
     _name
@@ -1069,7 +1069,7 @@ class GenomeBuildParameter(SelectToolParameter):
         for dbkey, build_name in self._get_dbkey_names(trans=trans):
             yield build_name, dbkey, (dbkey == last_used_build)
 
-    def get_legal_values(self, trans, other_values):
+    def get_legal_values(self, trans, other_values, value):
         return {dbkey for dbkey, _ in self._get_dbkey_names(trans=trans)}
 
     def to_dict(self, trans, other_values=None):
@@ -1096,7 +1096,7 @@ class GenomeBuildParameter(SelectToolParameter):
     def _get_dbkey_names(self, trans=None):
         if not self.tool:
             # Hack for unit tests, since we have no tool
-            return util.read_dbnames(None)
+            return dbkeys.read_dbnames(None)
         return self.tool.app.genome_builds.get_genome_build_names(trans=trans)
 
 
@@ -1182,7 +1182,7 @@ class SelectTagParameter(SelectToolParameter):
             return self.default_value
         return SelectToolParameter.get_initial_value(self, trans, other_values)
 
-    def get_legal_values(self, trans, other_values):
+    def get_legal_values(self, trans, other_values, value):
         if self.data_ref not in other_values and not trans.workflow_building_mode:
             raise ValueError("Value for associated data reference not found (data_ref).")
         return set(self.get_tag_list(other_values))
@@ -1275,7 +1275,7 @@ class ColumnListParameter(SelectToolParameter):
     @staticmethod
     def _strip_c(column):
         if isinstance(column, str):
-            if column.startswith('c'):
+            if column.startswith('c') and len(column) > 1 and all(c.isdigit() for c in column[1:]):
                 column = column.strip().lower()[1:]
         return column
 
@@ -1355,14 +1355,17 @@ class ColumnListParameter(SelectToolParameter):
             return self.default_value
         return super().get_initial_value(trans, other_values)
 
-    def get_legal_values(self, trans, other_values):
+    def get_legal_values(self, trans, other_values, value):
         if self.data_ref not in other_values:
             raise ValueError("Value for associated data reference not found (data_ref).")
         legal_values = self.get_column_list(trans, other_values)
 
-        value = other_values.get(self.name)
-        if value is not None and value not in legal_values and self.is_file_empty(trans, other_values):
-            legal_values.extend(value)
+        if value is not None:
+            # There are cases where 'value' is a string of comma separated values. This ensures
+            # that it is converted into a list, with extra whitespace around items removed.
+            value = util.listify(value, do_strip=True)
+            if not set(value).issubset(set(legal_values)) and self.is_file_empty(trans, other_values):
+                legal_values.extend(value)
 
         return set(legal_values)
 
@@ -1392,7 +1395,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
     Creating a hierarchical select menu, which allows users to 'drill down' a tree-like set of options.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch(app=None, history=Bunch(genome_build='hg17'), db_builds=util.read_dbnames(None))
+    >>> trans = Bunch(app=None, history=Bunch(genome_build='hg17'), db_builds=dbkeys.read_dbnames(None))
     >>> p = DrillDownSelectToolParameter(None, XML(
     ... '''
     ... <param name="_name" type="drill_down" display="checkbox" hierarchy="recurse" multiple="true">
@@ -1502,7 +1505,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
             return options
         return self.options
 
-    def get_legal_values(self, trans, other_values):
+    def get_legal_values(self, trans, other_values, value):
         def recurse_options(legal_values, options):
             for option in options:
                 legal_values.append(option['value'])
@@ -1513,7 +1516,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
 
     def from_json(self, value, trans, other_values=None):
         other_values = other_values or {}
-        legal_values = self.get_legal_values(trans, other_values)
+        legal_values = self.get_legal_values(trans, other_values, value)
         if not legal_values and trans.workflow_building_mode:
             if self.multiple:
                 if value == '':  # No option selected
@@ -1842,6 +1845,7 @@ class DataToolParameter(BaseDataToolParameter):
     def __init__(self, tool, input_source, trans=None):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source, trans)
+        self.load_contents = int(input_source.get("load_contents", 0))
         # Add metadata validator
         if not input_source.get_bool('no_validation', False):
             self.validators.append(validation.MetadataValidator())

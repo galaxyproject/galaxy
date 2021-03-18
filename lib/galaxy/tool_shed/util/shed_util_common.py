@@ -157,7 +157,7 @@ def get_tool_panel_config_tool_path_install_dir(app, repository):
 
 def get_user(app, id):
     """Get a user from the database by id."""
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     return sa_session.query(app.model.User).get(app.security.decode_id(id))
 
 

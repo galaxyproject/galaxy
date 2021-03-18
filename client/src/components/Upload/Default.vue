@@ -34,7 +34,7 @@
             </select2>
         </template>
         <template v-slot:buttons>
-            <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="app.dismiss()">
+            <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="$emit('dismiss')">
                 {{ btnCloseTitle }}
             </b-button>
             <b-button
@@ -133,7 +133,6 @@ export default {
             showHelper: true,
             extension: this.app.defaultExtension,
             genome: this.app.defaultGenome,
-            callback: this.app.callback,
             listExtensions: [],
             listGenomes: [],
             running: false,
@@ -153,7 +152,6 @@ export default {
             btnStartTitle: _l("Start"),
             btnStopTitle: _l("Pause"),
             btnResetTitle: _l("Reset"),
-            btnCloseTitle: this.app.callback ? _l("Cancel") : _l("Close"),
             btnSelectTitle: _l("Select"),
         };
     },
@@ -232,10 +230,11 @@ export default {
                 return {
                     id: model.attributes.id, // model.id has datatype prefix
                     src: model.src,
+                    hid: model.attributes.hid,
+                    name: model.attributes.name,
                 };
             });
-            this.callback(asDict);
-            this.app.cancel();
+            this.$emit("dismiss", asDict);
         },
         _newUploadModelProps: function (index, file) {
             return {

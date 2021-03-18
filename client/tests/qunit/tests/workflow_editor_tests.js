@@ -502,7 +502,6 @@ QUnit.test("update_field_data preserves connectors", function (assert) {
 
 QUnit.test("update_field_data destroys old terminals", function (assert) {
     const node = this.node;
-    const node_changed_spy = sinon.spy(this.node, "onChange");
     const data = {
         inputs: [
             { name: "input1", extensions: ["data"] },
@@ -515,8 +514,9 @@ QUnit.test("update_field_data destroys old terminals", function (assert) {
         const old_input_terminal = node.inputTerminals.willDisappear;
         const destroy_spy = sinon.spy(old_input_terminal, "destroy");
         this.update_field_data_with_new_input();
-        assert.ok(destroy_spy.called);
-        assert.ok(node_changed_spy.called);
+        Vue.nextTick(() => {
+            assert.ok(destroy_spy.called);
+        })
     });
 });
 
@@ -696,7 +696,7 @@ QUnit.test("replacing terminal on data collection input with simple input change
     assert
 ) {
     const node = this.node;
-    node.inputs.push({ name: "TestName", extensions: ["txt"] });
+    node.inputs.push({ name: "TestName", extensions: ["txt"], input_type: "parameter" });
     this.connectAttachedMappedOutput((connector) => {
         const connector_destroy_spy = sinon.spy(connector, "destroy");
         const data = {

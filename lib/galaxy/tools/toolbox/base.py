@@ -4,10 +4,7 @@ import os
 import string
 import time
 import urllib.request
-from collections import (
-    namedtuple,
-    OrderedDict
-)
+from collections import namedtuple
 from errno import ENOENT
 from urllib.parse import urlparse
 
@@ -103,7 +100,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         # In-memory dictionary that defines the layout of the tool panel.
         self._tool_panel = ToolPanelElements()
         self._index = 0
-        self.data_manager_tools = OrderedDict()
+        self.data_manager_tools = {}
         self._lineage_map = LineageMap(app)
         # Sets self._integrated_tool_panel and self._integrated_tool_panel_config_has_contents
         self._init_integrated_tool_panel(app.config)
@@ -322,9 +319,13 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
 
     def get_shed_config_dict_by_filename(self, filename):
         filename = os.path.abspath(filename)
+        dynamic_tool_conf_paths = []
         for shed_config_dict in self._dynamic_tool_confs:
-            if shed_config_dict['config_filename'] == filename:
+            dynamic_tool_conf_path = os.path.abspath(shed_config_dict['config_filename'])
+            dynamic_tool_conf_paths.append(dynamic_tool_conf_path)
+            if dynamic_tool_conf_path == filename:
                 return shed_config_dict
+        log.warning("'{}' not among installable tool config files ({})".format(filename, ', '.join(dynamic_tool_conf_paths)))
         return None
 
     def update_shed_config(self, shed_conf):

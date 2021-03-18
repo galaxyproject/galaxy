@@ -42,8 +42,8 @@
             </select2>
         </template>
         <template v-slot:buttons>
-            <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="app.dismiss()">
-                {{ btnCloseTitle }}
+            <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="$emit('dismiss')">
+                {{ btnCloseTitle | localize }}
             </b-button>
             <b-button
                 ref="btnReset"
@@ -157,7 +157,6 @@ export default {
             btnBuildTitle: _l("Build"),
             btnStopTitle: _l("Pause"),
             btnResetTitle: _l("Reset"),
-            btnCloseTitle: this.app.callback ? _l("Cancel") : _l("Close"),
         };
     },
     created() {
@@ -262,7 +261,7 @@ export default {
             this.counterRunning = 0;
             this._updateStateForCounters();
             this._eventReset();
-            this.app.hide();
+            this.$emit("dismiss");
         },
 
         /** Start upload process */

@@ -83,34 +83,6 @@ jobs:
           key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
           paths:
             - ~/repo
-  py36_docstring:
-    docker:
-      - image: circleci/python:3.6
-    <<: *set_workdir
-    steps:
-      - *restore_repo_cache
-      - *install_tox
-      - run: tox -e py36-lint_docstring_include_list
-  py36_unit:
-    docker:
-      - image: circleci/python:3.6
-    <<: *set_workdir
-    steps:
-      - *restore_repo_cache
-      - *install_tox
-      - *install_ffprobe
-      - run: tox -e py36-unit
-  py36_first_startup:
-    docker:
-      - image: circleci/python:3.6
-    <<: *set_workdir
-    steps:
-      - *restore_repo_cache
-      # Use this job to test the latest migrations
-      - run: wget -q https://github.com/jmchilton/galaxy-downloads/raw/master/db_gx_rev_0141.sqlite
-      - run: mv db_gx_rev_0141.sqlite database/universe.sqlite
-      - *install_tox
-      - run: tox -e py36-first_startup
   validate_test_tools:
     docker:
       - image: circleci/python:3.6
@@ -159,12 +131,6 @@ workflows:
   get_code_and_test:
     jobs:
       - get_code
-      - py36_docstring:
-          <<: *requires_get_code
-      - py36_unit:
-          <<: *requires_get_code
-      - py36_first_startup:
-          <<: *requires_get_code
       - test_galaxy_packages:
           <<: *requires_get_code
       - validate_test_tools:

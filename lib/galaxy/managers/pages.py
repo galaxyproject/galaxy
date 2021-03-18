@@ -11,26 +11,28 @@ from enum import Enum
 from html.entities import name2codepoint
 from html.parser import HTMLParser
 from typing import (
+    Callable,
     List,
     Optional,
 )
 
 from pydantic import (
     BaseModel,
+    Extra,
     Field,
 )
 
 from galaxy import exceptions, model
 from galaxy.managers import base, sharable
-from galaxy.managers.hdas import HDAManager
+from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.markdown_util import (
     internal_galaxy_markdown_to_pdf,
     ready_galaxy_markdown_for_export,
     ready_galaxy_markdown_for_import,
 )
-from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.structured_app import StructuredApp
 from galaxy.util import unicodify
 from galaxy.util.sanitize_html import sanitize_html
 
@@ -116,6 +118,7 @@ class CreatePagePayload(PageSummaryBase):
 
     class Config:
         use_enum_values = True  # When using .dict()
+        extra = Extra.allow  # Allow any other extra fields
 
 
 class PageSummary(PageSummaryBase):
@@ -165,6 +168,19 @@ class PageSummary(PageSummaryBase):
 class PageDetails(PageSummary):
     content_format: PageContentFormat = ContentFormatField
     content: Optional[str] = ContentField
+    generate_version: Optional[str] = Field(
+        None,
+        title="Galaxy Version",
+        description="The version of Galaxy this page was generated with.",
+    )
+    generate_time: Optional[str] = Field(
+        None,
+        title="Generate Date",
+        description="The date this page was generated.",
+    )
+
+    class Config:
+        extra = Extra.allow  # Allow any other extra fields
 
 
 class PageSummaryList(BaseModel):
@@ -179,7 +195,7 @@ class PagesManager:
     Common interface/service logic for interactions with pages.
     """
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         self.manager = PageManager(app)
 
     def index(self, trans, deleted: bool = False) -> PageSummaryList:
@@ -282,11 +298,11 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
     annotation_assoc = model.PageAnnotationAssociation
     rating_assoc = model.PageRatingAssociation
 
-    def __init__(self, app, *args, **kwargs):
+    def __init__(self, app: StructuredApp):
         """
         """
-        super().__init__(app, *args, **kwargs)
-        self.workflow_manager = WorkflowsManager(app)
+        super().__init__(app)
+        self.workflow_manager = app.workflow_manager
 
     def create(self, trans, payload):
         user = trans.get_user()
@@ -379,7 +395,6 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
             content = ready_galaxy_markdown_for_import(trans, content)
         else:
             raise exceptions.RequestParameterInvalidException("content_format [%s] must be either html or markdown" % content_format)
-
         return content
 
     def rewrite_content_for_export(self, trans, as_dict):
@@ -406,7 +421,7 @@ class PageSerializer(sharable.SharableModelSerializer):
     model_manager_class = PageManager
     SINGLE_CHAR_ABBR = 'p'
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
         self.page_manager = PageManager(app)
 
@@ -427,7 +442,7 @@ class PageDeserializer(sharable.SharableModelDeserializer):
     """
     model_manager_class = PageManager
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
         self.page_manager = self.manager
 
@@ -450,7 +465,7 @@ class PageContentProcessor(HTMLParser):
         'source', 'track', 'wbr'
     }
 
-    def __init__(self, trans, render_embed_html_fn):
+    def __init__(self, trans, render_embed_html_fn: Callable):
         HTMLParser.__init__(self)
         self.trans = trans
         self.ignore_content = False
@@ -627,28 +642,28 @@ PAGE_CLASS_MAPPING = {
 }
 
 
-def placeholderRenderForEdit(trans, item_class, item_id):
+def placeholderRenderForEdit(trans: ProvidesHistoryContext, item_class, item_id):
     return placeholderRenderForSave(trans, item_class, item_id, encode=True)
 
 
-def placeholderRenderForSave(trans, item_class, item_id, encode=False):
+def placeholderRenderForSave(trans: ProvidesHistoryContext, item_class, item_id, encode=False):
     encoded_item_id, decoded_item_id = get_page_identifiers(item_id, trans.app)
     item_name = ''
     if item_class == 'History':
-        history = trans.sa_session.query(trans.model.History).get(decoded_item_id)
+        history = trans.sa_session.query(model.History).get(decoded_item_id)
         history = base.security_check(trans, history, False, True)
         item_name = history.name
     elif item_class == 'HistoryDatasetAssociation':
-        hda = trans.sa_session.query(trans.model.HistoryDatasetAssociation).get(decoded_item_id)
-        hda_manager = HDAManager(trans.app)
+        hda = trans.sa_session.query(model.HistoryDatasetAssociation).get(decoded_item_id)
+        hda_manager = trans.app.hda_manager
         hda = hda_manager.get_accessible(decoded_item_id, trans.user)
         item_name = hda.name
     elif item_class == 'StoredWorkflow':
-        wf = trans.sa_session.query(trans.model.StoredWorkflow).get(decoded_item_id)
+        wf = trans.sa_session.query(model.StoredWorkflow).get(decoded_item_id)
         wf = base.security_check(trans, wf, False, True)
         item_name = wf.name
     elif item_class == 'Visualization':
-        visualization = trans.sa_session.query(trans.model.Visualization).get(decoded_item_id)
+        visualization = trans.sa_session.query(model.Visualization).get(decoded_item_id)
         visualization = base.security_check(trans, visualization, False, True)
         item_name = visualization.title
     class_shorthand = PAGE_CLASS_MAPPING[item_class]

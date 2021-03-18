@@ -48,7 +48,7 @@ export default {
             type: String,
             default: null,
         },
-        activeTab: {
+        initialActiveTab: {
             type: String,
             default: null,
         },
@@ -70,6 +70,9 @@ export default {
     methods: {
         addItem(item) {
             this.tabs.push(item);
+        },
+        highlight(activeTab) {
+            this.activeTab = activeTab;
         },
         _tabToJson(el) {
             const defaults = {
@@ -93,6 +96,7 @@ export default {
     },
     data() {
         return {
+            activeTab: null,
             baseTabs: [],
             extensionTabs: [],
         };
@@ -112,6 +116,7 @@ export default {
         },
     },
     created() {
+        this.activeTab = this.initialActiveTab;
         this.baseTabs = fetchMenu(this.menuOptions);
         loadWebhookMenuItems(this.extensionTabs);
     },

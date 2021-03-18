@@ -28,14 +28,16 @@ attribute change to a model object.
 import datetime
 import logging
 import re
-from typing import Type
+from typing import Callable, Dict, List, Optional, Set, Type
 
 import routes
 import sqlalchemy
+from sqlalchemy.orm.scoping import scoped_session
 
 from galaxy import exceptions
 from galaxy import model
 from galaxy.model import tool_shed_install
+from galaxy.structured_app import BasicApp, StructuredApp
 from galaxy.util import namedtuple
 
 log = logging.getLogger(__name__)
@@ -158,11 +160,12 @@ class ModelManager:
     """
     model_class: type = object
     foreign_key_name: str
+    app: BasicApp
 
-    def __init__(self, app):
+    def __init__(self, app: BasicApp):
         self.app = app
 
-    def session(self):
+    def session(self) -> scoped_session:
         return self.app.model.context
 
     def _session_setattr(self, item, attr, val, fn=None, flush=True):
@@ -485,7 +488,7 @@ class HasAModelManager:
     # examples where this doesn't really work are ConfigurationSerializer (no manager)
     # and contents (2 managers)
 
-    def __init__(self, app, manager=None, **kwargs):
+    def __init__(self, app: StructuredApp, manager=None, **kwargs):
         self._manager = manager
 
     @property
@@ -494,7 +497,7 @@ class HasAModelManager:
         # PRECONDITION: assumes self.app is assigned elsewhere
         if not self._manager:
             # TODO: pass this serializer to it
-            self._manager = self.model_manager_class(self.app)
+            self._manager = self.app[self.model_manager_class]
             # this will error for unset model_manager_class'es
         return self._manager
 
@@ -536,8 +539,10 @@ class ModelSerializer(HasAModelManager):
     """
     #: 'service' to use for getting urls - use class var to allow overriding when testing
     url_for = staticmethod(routes.url_for)
+    default_view: Optional[str]
+    views: Dict[str, List[str]]
 
-    def __init__(self, app, **kwargs):
+    def __init__(self, app: StructuredApp, **kwargs):
         """
         Set up serializer map, any additional serializable keys, and views here.
         """
@@ -548,9 +553,9 @@ class ModelSerializer(HasAModelManager):
         #   this allows us to: 'mention' the key without adding the default serializer
         # TODO: we may want to eventually error if a key is requested
         #   that is in neither serializable_keyset or serializers
-        self.serializable_keyset = set()
+        self.serializable_keyset: Set[str] = set()
         # a map of dictionary keys to the functions (often lambdas) that create the values for those keys
-        self.serializers = {}
+        self.serializers: Dict[str, Callable] = {}
         # add subclass serializers defined there
         self.add_serializers()
         # update the keyset by the serializers (removing the responsibility from subclasses)
@@ -708,15 +713,15 @@ class ModelDeserializer(HasAModelManager):
     """
     # TODO:?? a larger question is: which should be first? Deserialize then validate - or - validate then deserialize?
 
-    def __init__(self, app, validator=None, **kwargs):
+    def __init__(self, app: StructuredApp, validator=None, **kwargs):
         """
         Set up deserializers and validator.
         """
         super().__init__(app, **kwargs)
         self.app = app
 
-        self.deserializers = {}
-        self.deserializable_keyset = set()
+        self.deserializers: Dict[str, Callable] = {}
+        self.deserializable_keyset: Set[str] = set()
         self.add_deserializers()
         # a sub object that can validate incoming values
         self.validate = validator or ModelValidator(self.app)
@@ -896,8 +901,10 @@ class ModelFilterParser(HasAModelManager):
 
     model_class: type
     parsed_filter = parsed_filter
+    orm_filter_parsers: Dict[str, Dict]
+    fn_filter_parsers: Dict[str, Dict]
 
-    def __init__(self, app, **kwargs):
+    def __init__(self, app: StructuredApp, **kwargs):
         """
         Set up serializer map, any additional serializable keys, and views here.
         """

@@ -1068,13 +1068,13 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Set this to false to disable the tool document cache. This cache
-    stores expanded xml strings. Disabling the tool cache results in
-    slower startup times. The tool cache is backed by sqlite database,
-    which cannot be stored on certain network disks. The cache
-    location is configurable using the ``tool_cache_data_dir``
+    Whether to enable the tool document cache. This cache stores
+    expanded XML strings. Enabling the tool cache results in slightly
+    faster startup times. The tool cache is backed by a SQLite
+    database, which cannot be stored on certain network disks. The
+    cache location is configurable using the ``tool_cache_data_dir``
     setting, but can be disabled completely here.
-:Default: ``true``
+:Default: ``false``
 :Type: bool
 
 
@@ -3851,13 +3851,13 @@
 ~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Determines how metadata will be set. Valid values are `directory`,
-    `extended` and `legacy`. In extended mode jobs will decide if a
-    tool run failed, the object stores configuration is serialized and
-    made available to the job and is used for writing output datasets
-    to the object store as part of the job and dynamic output
-    discovery (e.g. discovered datasets <discover_datasets>,
-    unpopulated collections, etc) happens as part of the job.
+    Determines how metadata will be set. Valid values are `directory`
+    and `extended`. In extended mode jobs will decide if a tool run
+    failed, the object stores configuration is serialized and made
+    available to the job and is used for writing output datasets to
+    the object store as part of the job and dynamic output discovery
+    (e.g. discovered datasets <discover_datasets>, unpopulated
+    collections, etc) happens as part of the job.
 :Default: ``directory``
 :Type: str
 

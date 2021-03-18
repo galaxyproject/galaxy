@@ -44,7 +44,7 @@ FormDefinition_table = Table('form_definition', metadata,
                              Column("name", TrimmedString(255), nullable=False),
                              Column("desc", TEXT),
                              Column("form_definition_current_id", Integer, ForeignKey("form_definition_current.id", use_alter=True), index=True, nullable=False),
-                             Column("fields", JSONType()))
+                             Column("fields", JSONType))
 
 FormDefinitionCurrent_table = Table('form_definition_current', metadata,
                                     Column("id", Integer, primary_key=True),
@@ -58,7 +58,7 @@ FormValues_table = Table('form_values', metadata,
                          Column("create_time", DateTime, default=now),
                          Column("update_time", DateTime, default=now, onupdate=now),
                          Column("form_definition_id", Integer, ForeignKey("form_definition.id"), index=True),
-                         Column("content", JSONType()))
+                         Column("content", JSONType))
 
 RequestType_table = Table('request_type', metadata,
                           Column("id", Integer, primary_key=True),
