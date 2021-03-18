@@ -460,7 +460,7 @@ class MulledDockerContainerResolver(CliContainerResolver):
                 shell=self.shell,
             )
             if self.can_list_containers:
-                if install and not self.cached_container_description(
+                if (install or self.auto_install) and not self.cached_container_description(
                         targets,
                         namespace=self.namespace,
                         hash_func=self.hash_func,
