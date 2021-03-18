@@ -172,14 +172,22 @@
                                 <input type="text" v-model="addColumnValue" />
                             </label>
                         </rule-component>
-                        <rule-component rule-type="remove_columns" :displayRuleType.sync="displayRuleType" :builder="this">
+                        <rule-component
+                            rule-type="remove_columns"
+                            :displayRuleType.sync="displayRuleType"
+                            :builder="this"
+                        >
                             <column-selector
                                 :target.sync="removeColumnTargets"
                                 :col-headers="activeRuleColHeaders"
                                 :multiple="true"
                             />
                         </rule-component>
-                        <rule-component rule-type="split_columns" :displayRuleType.sync="displayRuleType" :builder="this">
+                        <rule-component
+                            rule-type="split_columns"
+                            :displayRuleType.sync="displayRuleType"
+                            :builder="this"
+                        >
                             <column-selector
                                 :target.sync="splitColumnsTargets0"
                                 label="Odd Row Column(s)"
@@ -193,7 +201,11 @@
                                 :multiple="true"
                             />
                         </rule-component>
-                        <rule-component rule-type="swap_columns" :displayRuleType.sync="displayRuleType" :builder="this">
+                        <rule-component
+                            rule-type="swap_columns"
+                            :displayRuleType.sync="displayRuleType"
+                            :builder="this"
+                        >
                             <column-selector
                                 :target.sync="swapColumnsTarget0"
                                 label="Swap Column"
