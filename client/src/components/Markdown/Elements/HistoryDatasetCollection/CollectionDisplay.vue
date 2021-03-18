@@ -2,6 +2,20 @@
     <div class="w-50 p-2 float-left">
         <b-card body-class="p-0">
             <b-card-header>
+                <span class="float-right">
+                    <b-button
+                        :href="downloadUrl"
+                        variant="link"
+                        size="sm"
+                        role="button"
+                        title="Download Collection"
+                        type="button"
+                        class="py-0 px-1"
+                        v-b-tooltip.hover
+                    >
+                        <span class="fa fa-download" />
+                    </b-button>
+                </span>
                 <span>
                     <span>Dataset Collection:</span>
                     <span class="font-weight-light">{{ collectionName }}</span>
@@ -18,6 +32,7 @@
 </template>
 
 <script>
+import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import CollectionTree from "./CollectionTree";
 import LoadingSpan from "components/LoadingSpan";
@@ -57,6 +72,9 @@ export default {
             const collectionId = this.args.history_dataset_collection_id;
             const collection = this.collections[collectionId];
             return collection.url;
+        },
+        downloadUrl() {
+            return `${getAppRoot()}api/dataset_collections/${this.args.history_dataset_collection_id}/download`;
         },
     },
     methods: {
