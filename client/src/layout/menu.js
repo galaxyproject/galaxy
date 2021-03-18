@@ -73,8 +73,8 @@ export function fetchMenu(options = {}) {
         title: _l("Analyze Data"),
         url: "",
         tooltip: _l("Analysis home view"),
+        icon: "fa-home",
     });
-
     //
     // Workflow tab.
     //
