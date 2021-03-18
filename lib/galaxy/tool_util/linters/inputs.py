@@ -41,7 +41,7 @@ def lint_inputs(tool_xml, lint_ctx):
             if any(['value' not in option.attrib for option in select_options]):
                 lint_ctx.error("Select [%s] has option without value", param_name)
             if len(set([option.text.strip() for option in select_options])) != len(select_options):
-                lint_ctx.error("Select [%s] has duplicated options", param_name)
+                lint_ctx.error(f"Select [{param_name}] has multiple options with the same text content")
 
             if dynamic_options is None and len(select_options) == 0:
                 message = "No options defined for select [%s]" % param_name
