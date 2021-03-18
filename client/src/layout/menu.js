@@ -70,7 +70,6 @@ export function fetchMenu(options = {}) {
     //
     menu.push({
         id: "analysis",
-        title: _l("Analyze Data"),
         url: "",
         tooltip: _l("Analysis home view"),
         icon: "fa-home",
