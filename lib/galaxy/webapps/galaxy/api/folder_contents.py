@@ -430,17 +430,3 @@ class FolderContentsController(BaseGalaxyAPIController):
             InternalServerError
         """
         return self.view.create(trans, encoded_folder_id, payload)
-
-    @expose_api
-    def show(self, trans, id, library_id, **kwd):
-        """
-        GET /api/folders/{encoded_folder_id}/
-        """
-        raise exceptions.NotImplemented('Showing the library folder content is not implemented here.')
-
-    @expose_api
-    def update(self, trans, id, library_id, payload, **kwd):
-        """
-        PUT /api/folders/{encoded_folder_id}/contents
-        """
-        raise exceptions.NotImplemented('Updating the library folder content is not implemented here.')
