@@ -189,9 +189,6 @@ module.exports = (env = {}, argv = {}) => {
                 },
             ],
         },
-        node: {
-            setImmediate: false,
-        },
         resolveLoader: {
             alias: {
                 // since we support both requirejs i18n and non-requirejs and both use a similar syntax,
