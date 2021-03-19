@@ -209,6 +209,8 @@ class ToolParameter(Dictifiable):
     def value_from_basic(self, value, app, ignore_errors=False):
         # Handle Runtime and Unvalidated values
         if is_runtime_value(value):
+            if isinstance(self, HiddenToolParameter):
+                raise ParameterValueError(message_suffix='Runtime Parameter not valid', parameter_name=self.name)
             return runtime_to_object(value)
         elif isinstance(value, dict) and value.get('__class__') == 'UnvalidatedValue':
             return value['value']
