@@ -3,6 +3,7 @@ const webpack = require("webpack");
 const path = require("path");
 const VueLoaderPlugin = require("vue-loader/lib/plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 const DuplicatePackageCheckerPlugin = require("duplicate-package-checker-webpack-plugin");
 
 const scriptsBase = path.join(__dirname, "src");
@@ -58,6 +59,8 @@ module.exports = (env = {}, argv = {}) => {
                     },
                 },
             },
+            minimize: true,
+            minimizer: [`...`, new CssMinimizerPlugin()],
         },
         module: {
             rules: [
@@ -148,9 +151,7 @@ module.exports = (env = {}, argv = {}) => {
                     use: [
                         {
                             loader: MiniCssExtractPlugin.loader,
-                            options: {
-                                hmr: process.env.NODE_ENV === "development",
-                            },
+                            options: {},
                         },
                         {
                             loader: "css-loader",
@@ -211,18 +212,7 @@ module.exports = (env = {}, argv = {}) => {
             new VueLoaderPlugin(),
             new MiniCssExtractPlugin({
                 filename: "[name].css",
-                sourceMap: true,
             }),
-            // https://github.com/webpack-contrib/mini-css-extract-plugin/issues/141
-            // TODO: Replace with CssMinimizeWebpackPlugin
-            // new OptimizeCssAssetsPlugin({
-            //     cssProcessorOptions: {
-            //         map: {
-            //             inline: false,
-            //             annotation: true,
-            //         },
-            //     },
-            // }),
             new DuplicatePackageCheckerPlugin(),
         ],
         devServer: {
