@@ -1877,8 +1877,8 @@ export default {
 .menu-option {
     padding-left: 5px;
 }
-.alert-area .li {
+.alert-area li {
     list-style: circle;
-    margin-left: 16px;
+    margin-left: 32px;
 }
 </style>
