@@ -157,6 +157,7 @@ class Terminal extends EventEmitter {
         }
         if (!this.mapOver.equal(val)) {
             this.mapOver = val;
+            this.node.mapOver = output_val;
             Object.values(this.node.outputTerminals).forEach((outputTerminal) => {
                 outputTerminal.setMapOver(output_val);
             });

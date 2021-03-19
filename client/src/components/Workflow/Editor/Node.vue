@@ -248,6 +248,9 @@ export default {
             delete this.inputTerminals[input.name];
         },
         onAddOutput(output, terminal) {
+            if (this.mapOver) {
+                terminal.setMapOver(this.mapOver);
+            }
             this.outputTerminals[output.name] = terminal;
         },
         onRemoveOutput(output) {
