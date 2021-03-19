@@ -5,29 +5,27 @@ import logging
 
 from galaxy import (
     exceptions,
-    managers,
     util
 )
-from galaxy.managers import folders
+from galaxy.managers.folders import FolderManager
+from galaxy.managers.hdas import HDAManager
 from galaxy.model import tags
 from galaxy.web import (
     expose_api,
     expose_api_anonymous
 )
-from galaxy.webapps.base.controller import BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems
+from galaxy.webapps.base.controller import UsesLibraryMixin, UsesLibraryMixinItems
+from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
 
 
-class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems):
+class FolderContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesLibraryMixinItems):
     """
     Class controls retrieval, creation and updating of folder contents.
     """
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.folder_manager = folders.FolderManager()
-        self.hda_manager = managers.hdas.HDAManager(app)
+    hda_manager: HDAManager = depends(HDAManager)
+    folder_manager: FolderManager = depends(FolderManager)
 
     @expose_api_anonymous
     def index(self, trans, folder_id, limit=None, offset=None, search_text=None, **kwd):
@@ -223,7 +221,10 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
         is_admin = trans.user_is_admin
         content_items = []
 
-        current_folders = self.calculate_pagination(folders, offset, limit)
+        offset = 0 if offset is None else int(offset)
+        limit = 0 if limit is None else int(limit)
+
+        current_folders = self._calculate_pagination(folders, offset, limit)
 
         for subfolder in current_folders:
 
@@ -252,16 +253,11 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
                 #         subfolder.api_type = 'folder'
                 #         content_items.append( subfolder )
 
-        if limit is not None:
-            limit = int(limit) - len(content_items)
-        if offset is not None:
-            offset = int(offset)
-            if offset - len(folders) > 0:
-                offset = offset - len(folders)
-            else:
-                offset = 0
+        limit -= len(content_items)
+        offset -= len(folders)
+        offset = 0 if offset < 0 else offset
 
-        current_datasets = self.calculate_pagination(datasets, offset, limit)
+        current_datasets = self._calculate_pagination(datasets, offset, limit)
 
         for dataset in current_datasets:
             if dataset.deleted:
@@ -287,20 +283,12 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
 
         return content_items
 
-    def calculate_pagination(self, array, offset, limit):
-
-        datasets_size = len(array)
-        if offset is None or limit is None:
-            paginated_array = array
+    def _calculate_pagination(self, items, offset: int, limit: int):
+        if limit > 0:
+            paginated_items = items[offset:offset + limit]
         else:
-            offset = int(offset)
-            limit = int(limit)
-            if datasets_size < offset + limit:
-                paginated_array = array[offset: datasets_size]
-            else:
-                paginated_array = array[offset:offset + limit]
-
-        return paginated_array
+            paginated_items = items[offset:]
+        return paginated_items
 
     def apply_preferences(self, folder, include_deleted, search_text):
 
@@ -317,20 +305,15 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
             elif dataset.library_dataset_dataset_association.info:
                 description = dataset.library_dataset_dataset_association.info
             else:
-                description = None
+                description = ''
 
-            if description is None:
-                return False
-            elif search_text in dataset.name or search_text in description:
-                return True
-            else:
-                return False
+            return search_text in dataset.name or search_text in description
 
         datasets = check_deleted(folder.datasets, include_deleted)
         folders = check_deleted(folder.folders, include_deleted)
 
         if search_text is not None:
-            folders = [item for item in folders if item.description and search_text in item.name or search_text in item.description]
+            folders = [item for item in folders if search_text in item.name or search_text in item.description]
             datasets = list(filter(filter_searched_datasets, datasets))
 
         return folders, datasets

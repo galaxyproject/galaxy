@@ -13,16 +13,13 @@ from galaxy.web import (
     expose_api,
     expose_api_anonymous,
 )
-from galaxy.webapps.base.controller import BaseAPIController
+from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
 
 
-class LibrariesController(BaseAPIController):
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.manager = libraries.LibrariesManager(app)
+class LibrariesController(BaseGalaxyAPIController):
+    manager = depends(libraries.LibrariesManager)
 
     @expose_api_anonymous
     def index(self, trans, **kwd):

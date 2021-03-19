@@ -2,7 +2,7 @@
 Contains functionality needed in every web interface
 """
 import logging
-from typing import Optional
+from typing import Any, Optional
 
 from sqlalchemy import true
 from webob.exc import (
@@ -34,7 +34,6 @@ from galaxy.model import (
     tags,
 )
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.structured_app import StructuredApp
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import (
@@ -58,9 +57,8 @@ class BaseController:
     """
     Base class for Galaxy web application controllers.
     """
-    app: StructuredApp
 
-    def __init__(self, app: StructuredApp) -> None:
+    def __init__(self, app):
         """Initialize an interface for application 'app'"""
         self.app = app
         self.sa_session = app.model.context
@@ -1251,6 +1249,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
         workflow.stored_workflow = imported_stored
         imported_stored.latest_workflow = workflow
         imported_stored.user = trans.user
+        imported_stored.copy_tags_from(stored.user, stored)
         # Save new workflow.
         session = trans.sa_session
         session.add(imported_stored)
@@ -1346,8 +1345,8 @@ class UsesFormDefinitionsMixin:
 class SharableMixin:
     """ Mixin for a controller that manages an item that can be shared. """
 
-    manager = None
-    serializer = None
+    manager: Any = None
+    serializer: Any = None
 
     # -- Implemented methods. --
 

@@ -40,7 +40,16 @@ JOB_WAIT, JOB_ERROR, JOB_INPUT_ERROR, JOB_INPUT_DELETED, JOB_READY, JOB_DELETED,
 DEFAULT_JOB_PUT_FAILURE_MESSAGE = 'Unable to run job due to a misconfiguration of the Galaxy job running system.  Please contact a site administrator.'
 
 
-class JobHandler:
+class JobHandlerI:
+
+    def start(self):
+        pass
+
+    def shutdown(self):
+        pass
+
+
+class JobHandler(JobHandlerI):
     """
     Handle the preparation, running, tracking, and finishing of jobs
     """
@@ -116,7 +125,7 @@ class ItemGrabber:
             try:
                 rows = conn.execute(self._grab_query).fetchall()
                 if rows:
-                    log.debug('Grabbed %s(s): %s', self.grab_type, ', '.join(str(row[0]) for row in rows))
+                    log.debug(f"Grabbed {self.grab_type}(s): {', '.join(str(row[0]) for row in rows)}")
                     trans.commit()
                 else:
                     trans.rollback()

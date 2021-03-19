@@ -32,7 +32,7 @@ export default {
     },
     methods: {
         cancel() {
-            this.builder.displayRuleType = null;
+            this.$emit("update:displayRuleType", null);
         },
         okay() {
             this.builder.handleRuleSave(this.ruleType);

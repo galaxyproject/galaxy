@@ -478,7 +478,7 @@ var LibraryDatasetView = Backbone.View.extend({
                         </button>
                     <% } %>
                     <% if (item.get("can_user_manage")) { %>
-                        <a href="<% rootPath %>/library/folders/permissions/<%- item.get("folder_id") %>/dataset/<%- item.id %>">
+                        <a href="<% rootPath %>/libraries/folders/<%- item.get("folder_id") %>/dataset/<%- item.id %>/permissions">
                             <button data-toggle="tooltip" data-placement="top" title="Manage permissions"
                                 class="btn btn-secondary toolbtn_change_permissions toolbar-item mr-1"
                                 type="button">
@@ -492,7 +492,7 @@ var LibraryDatasetView = Backbone.View.extend({
                 <!-- BREADCRUMBS -->
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item">
-                        <a title="Return to the list of libraries" href="#">Libraries</a>
+                        <a title="Return to the list of libraries" href="<% rootPath %>libraries">Libraries</a>
                     </li>
                     <% _.each(item.get("full_path"), function(path_item) { %>
                         <% if (path_item[0] != item.id) { %>
@@ -679,7 +679,7 @@ var LibraryDatasetView = Backbone.View.extend({
                 <!-- BREADCRUMBS -->
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item">
-                        <a title="Return to the list of libraries" href="#">Libraries</a>
+                        <a title="Return to the list of libraries"  href="<% rootPath %>libraries">Libraries</a>
                     </li>
                     <% _.each(item.get("full_path"), function(path_item) { %>
                         <% if (path_item[0] != item.id) { %>
@@ -812,7 +812,7 @@ var LibraryDatasetView = Backbone.View.extend({
                 <!-- BREADCRUMBS -->
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item">
-                        <a title="Return to the list of libraries" href="#">Libraries</a>
+                        <a title="Return to the list of libraries" href="<% rootPath %>libraries">Libraries</a>
                     </li>
                     <% _.each(item.get("full_path"), function(path_item) { %>
                         <% if (path_item[0] != item.id) { %>

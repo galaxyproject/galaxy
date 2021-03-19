@@ -1,6 +1,6 @@
 <template>
     <div v-infinite-scroll="loadMore" infinite-scroll-disabled="busy">
-        <h2 class="mb-3" style="text-align: center;">
+        <h2 class="mb-3" style="text-align: center">
             <span id="tools-view">Consolidated view of {{ tools.length }} available tools.</span>
         </h2>
         <div v-if="!loading">
@@ -27,10 +27,10 @@
                 ref="iso"
                 :options="isoOptions"
                 :list="buffer"
-                style="margin: 0 auto;"
+                style="margin: 0 auto"
                 @filter="filterOption = arguments[2]"
             >
-                <b-card v-for="(info, index) in buffer" :key="index" ref="cards" class="m-2" style="width: 23rem;">
+                <b-card v-for="(info, index) in buffer" :key="index" ref="cards" class="m-2" style="width: 23rem">
                     <template v-slot:header>
                         <div>
                             <b-link :href="info.url" target="_blank">

@@ -370,6 +370,7 @@ class JobLike:
 class User(Dictifiable, RepresentById):
     use_pbkdf2 = True
     bootstrap_admin_user = False
+    api_keys: 'List[APIKeys]'
     """
     Data for a Galaxy user or admin and relations to their
     histories, credentials, and roles.
@@ -2291,7 +2292,7 @@ class DefaultQuotaAssociation(Quota, Dictifiable, RepresentById):
         REGISTERED = 'registered'
 
     def __init__(self, type, quota):
-        assert type in self.types.__dict__.values(), 'Invalid type'
+        assert type in self.types.__members__.values(), 'Invalid type'
         self.type = type
         self.quota = quota
 
@@ -2655,6 +2656,7 @@ class DatasetSourceHash(RepresentById):
 
 class DatasetHash(RepresentById):
     """ """
+
     def serialize(self, id_encoder, serialization_options):
         # serialize Dataset objects only for jobs that can actually modify these models.
         rval = dict_for(
@@ -3495,7 +3497,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                     continue
                 val = val.file_name
             # If no value for metadata, look in datatype for metadata.
-            elif val is None and hasattr(hda.datatype, name):
+            elif not hda.metadata.element_is_set(name) and hasattr(hda.datatype, name):
                 val = getattr(hda.datatype, name)
             rval['metadata_' + name] = val
         return rval
@@ -4990,6 +4992,8 @@ class Workflow(Dictifiable, RepresentById):
         copied_workflow.has_cycles = self.has_cycles
         copied_workflow.has_errors = self.has_errors
         copied_workflow.reports_config = self.reports_config
+        copied_workflow.license = self.license
+        copied_workflow.creator_metadata = self.creator_metadata
 
         # Map old step ids to new steps
         step_mapping = {}

@@ -1,14 +1,12 @@
 #
 # Galaxy sphinxcontrib-simpleversioning documentation build configuration file
+# This file is appended to conf.py by the Build docs github workflow.
 #
-# This file is written to the end of conf.py by Jenkins
-#
-
 from distutils.version import LooseVersion
 from subprocess import check_output
 
 # This is set in the Jenkins matrix config
-TARGET_GIT_BRANCH = os.environ.get('TARGET_GIT_BRANCH', 'dev')  # noqa: F821
+TARGET_GIT_BRANCH = os.environ.get('TARGET_BRANCH', 'dev')  # noqa: F821
 
 # Version message templates
 OLD_BANNER = """This document is for an old release of Galaxy."""

@@ -274,6 +274,7 @@ class ToolsUploadTestCase(ApiTestCase):
                 "class": "File",
                 "format": "txt",
                 "path": "test-data/simple_line_no_newline.txt",
+                "dbkey": "hg19",
             }
         }
         inputs, datasets = stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False, to_posix_lines=False)
@@ -284,6 +285,11 @@ class ToolsUploadTestCase(ApiTestCase):
         )
         # By default this appends the newline.
         self.assertEqual(content, "This is a line of text.")
+        details = self.dataset_populator.get_history_dataset_details(
+            history_id=history_id,
+            dataset=dataset
+        )
+        assert details["genome_build"] == "hg19"
 
     @uses_test_history(require_new=False)
     def test_upload_multiple_mixed_success(self, history_id):

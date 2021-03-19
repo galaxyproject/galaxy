@@ -3,6 +3,7 @@ import os
 import re
 import sys
 from json import loads
+from typing import Dict
 
 from bx.seq.twobit import TwoBitFile
 
@@ -10,6 +11,7 @@ from galaxy.exceptions import (
     ObjectNotFound,
     ReferenceDataError,
 )
+from galaxy.structured_app import StructuredApp
 from galaxy.util.bunch import Bunch
 
 log = logging.getLogger(__name__)
@@ -195,10 +197,10 @@ class Genomes:
     Provides information about available genome data and methods for manipulating that data.
     """
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         self.app = app
         # Create list of genomes from app.genome_builds
-        self.genomes = {}
+        self.genomes: Dict[str, Genome] = {}
         # Store internal versions of data tables for twobit and __dbkey__
         self._table_versions = {'twobit': None, '__dbkeys__': None}
         self.reload_genomes()

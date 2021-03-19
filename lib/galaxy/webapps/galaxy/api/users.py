@@ -41,25 +41,21 @@ from galaxy.web import (
 )
 from galaxy.web.form_builder import AddressField
 from galaxy.webapps.base.controller import (
-    BaseAPIController,
     BaseUIController,
     UsesFormDefinitionsMixin,
     UsesTagsMixin
 )
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
-
+from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
 
 
-class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, UsesFormDefinitionsMixin):
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.user_manager = users.UserManager(app)
-        self.user_serializer = users.UserSerializer(app)
-        self.user_deserializer = users.UserDeserializer(app)
-        self.api_key_manager = api_keys.ApiKeyManager(app)
+class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController, UsesFormDefinitionsMixin):
+    user_manager: users.UserManager = depends(users.UserManager)
+    user_serializer: users.UserSerializer = depends(users.UserSerializer)
+    user_deserializer: users.UserDeserializer = depends(users.UserDeserializer)
+    api_key_manager: api_keys.ApiKeyManager = depends(api_keys.ApiKeyManager)
 
     @expose_api
     def index(self, trans: ProvidesUserContext, deleted='False', f_email=None, f_name=None, f_any=None, **kwd):

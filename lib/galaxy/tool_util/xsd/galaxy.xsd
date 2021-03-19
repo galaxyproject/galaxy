@@ -3167,6 +3167,7 @@ Name | Description
 ``\${GALAXY_SLOTS:-4}`` | Number of cores/threads allocated by the job runner or resource manager to the tool for the given job (here 4 is the default number of threads to use if running via custom runner that does not configure GALAXY_SLOTS or in an older Galaxy runtime).
 ``\$GALAXY_MEMORY_MB`` | Total amount of memory in megabytes (1024^2 bytes) allocated by the administrator (via the resource manager) to the tool for the given job. If unset, tools should not attempt to limit memory usage.
 ``\$GALAXY_MEMORY_MB_PER_SLOT`` | Amount of memory per slot in megabytes (1024^2 bytes) allocated by the administrator (via the resource manager) to the tool for the given job. If unset, tools should not attempt to limit memory usage.
+``\$_GALAXY_JOB_TMP_DIR`` | Path to an empty directory in the job's working directory that can be used as a temporary directory.
 
 See the [Planemo docs](https://planemo.readthedocs.io/en/latest/writing_advanced.html#cluster-usage)
 on the topic of ``GALAXY_SLOTS`` for more information and examples.
@@ -4233,6 +4234,15 @@ The default is ``galaxy.json``.
   </xs:group>
 
   <xs:attributeGroup name="OutputCommon">
+    <xs:attribute name="format" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The short name for the output datatype.
+The valid values for format can be found in
+[/config/datatypes_conf.xml.sample](https://github.com/galaxyproject/galaxy/blob/dev/config/datatypes_conf.xml.sample)
+(e.g. ``format="pdf"`` or ``format="fastqsanger"``). For collections this is the default format for all included
+elements. Note that the format specified here is ignored for discovered data sets.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="format_source" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">This sets the data type of the output dataset(s) to be the same format as that of the specified tool input.</xs:documentation>
@@ -4268,14 +4278,6 @@ pipes or periods (e.g. ``.``).]]></xs:documentation>
 If ``true``, this output will sniffed and its format determined automatically by Galaxy.
 
 ]]></xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="format" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">The short name for the output datatype.
-The valid values for format can be found in
-[/config/datatypes_conf.xml.sample](https://github.com/galaxyproject/galaxy/blob/dev/config/datatypes_conf.xml.sample)
-(e.g. ``format="pdf"`` or ``format="fastqsanger"``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="default_identifier_source" type="xs:string">

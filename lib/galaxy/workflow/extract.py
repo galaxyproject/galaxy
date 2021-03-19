@@ -2,6 +2,7 @@
 histories.
 """
 import logging
+from typing import Optional
 
 from galaxy import exceptions, model
 from galaxy.tool_util.parser import ToolOutputCollectionPart
@@ -66,6 +67,7 @@ def extract_steps(trans, history=None, job_ids=None, dataset_ids=None, dataset_c
     summary = WorkflowSummary(trans, history)
     jobs = summary.jobs
     steps = []
+    step_labels = set()
     hid_to_output_pair = {}
     # Input dataset steps
     for i, hid in enumerate(dataset_ids):
@@ -75,6 +77,9 @@ def extract_steps(trans, history=None, job_ids=None, dataset_ids=None, dataset_c
             name = dataset_names[i]
         else:
             name = "Input Dataset"
+        if name not in step_labels:
+            step.label = name
+            step_labels.add(name)
         step.tool_inputs = dict(name=name)
         hid_to_output_pair[hid] = (step, 'output')
         steps.append(step)
@@ -88,6 +93,9 @@ def extract_steps(trans, history=None, job_ids=None, dataset_ids=None, dataset_c
             name = dataset_collection_names[i]
         else:
             name = "Input Dataset Collection"
+        if name not in step_labels:
+            step.label = name
+            step_labels.add(name)
         step.tool_inputs = dict(name=name, collection_type=collection_type)
         hid_to_output_pair[hid] = (step, 'output')
         steps.append(step)
@@ -161,7 +169,16 @@ class FakeJob:
 
     def __init__(self, dataset):
         self.is_fake = True
-        self.id = "fake_%s" % dataset.id
+        self.id = f"fake_{dataset.id}"
+        self.name = self._guess_name_from_dataset(dataset)
+
+    def _guess_name_from_dataset(self, dataset) -> Optional[str]:
+        """Tries to guess the name of the fake job from the dataset associations."""
+        if dataset.copied_from_history_dataset_association:
+            return "Import from History"
+        if dataset.copied_from_library_dataset_dataset_association:
+            return "Import from Library"
+        return None
 
 
 class DatasetCollectionCreationJob:

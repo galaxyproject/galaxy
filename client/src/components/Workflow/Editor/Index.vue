@@ -1,14 +1,14 @@
 <template>
     <div id="columns" class="workflow-client">
-        <StateUpgradeModal :stateMessages="stateMessages" />
+        <StateUpgradeModal :state-messages="stateMessages" />
         <StateUpgradeModal
-            :stateMessages="insertedStateMessages"
+            :state-messages="insertedStateMessages"
             title="Subworkflow embedded with changes"
             message="Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save."
         />
         <RefactorConfirmationModal
-            :workflowId="id"
-            :refactorActions="refactorActions"
+            :workflow-id="id"
+            :refactor-actions="refactorActions"
             @onWorkflowError="onWorkflowError"
             @onWorkflowMessage="onWorkflowMessage"
             @onRefactor="onRefactor"
@@ -99,7 +99,7 @@
                         <div class="unified-panel-header" unselectable="on">
                             <div class="unified-panel-header-inner">
                                 <WorkflowOptions
-                                    :hasChanges="hasChanges"
+                                    :has-changes="hasChanges"
                                     @onSave="onSave"
                                     @onSaveAs="onSaveAs"
                                     @onRun="onRun"
@@ -109,6 +109,7 @@
                                     @onEdit="onEdit"
                                     @onAttributes="onAttributes"
                                     @onLint="onLint"
+                                    @onUpgrade="onUpgrade"
                                 />
                             </div>
                         </div>
@@ -118,9 +119,9 @@
                                     :id="id"
                                     :tags="tags"
                                     :parameters="parameters"
-                                    :annotationCurrent.sync="annotation"
+                                    :annotation-current.sync="annotation"
                                     :annotation="annotation"
-                                    :nameCurrent.sync="name"
+                                    :name-current.sync="name"
                                     :name="name"
                                     :version="version"
                                     :versions="versions"
@@ -134,15 +135,17 @@
                                     id="lint-panel"
                                     class="right-content"
                                     ref="lint"
-                                    style="display: none;"
-                                    :legacy-parameters="parameters"
+                                    style="display: none"
+                                    :untyped-parameters="parameters"
                                     :annotation="annotation"
                                     :creator="creator"
                                     :license="license"
                                     :nodes="nodes"
                                     @onAttributes="onAttributes"
-                                    @refactor="attemptRefactor"
-                                    @scrollTo="scrollTo"
+                                    @onHighlight="onHighlight"
+                                    @onUnhighlight="onUnhighlight"
+                                    @onRefactor="onAttemptRefactor"
+                                    @onScrollTo="onScrollTo"
                                 />
                                 <div id="right-content" class="right-content" />
                             </div>
@@ -158,10 +161,10 @@
 import { getDatatypesMapper } from "components/Datatypes";
 import { fromSimple } from "./modules/model";
 import { getModule, getVersions, saveWorkflow, loadWorkflow } from "./modules/services";
+import { getUntypedWorkflowParameters } from "./modules/parameters";
 import {
     getStateUpgradeMessages,
     copyIntoWorkflow,
-    getLegacyWorkflowParameters,
     showAttributes,
     showForm,
     showLint,
@@ -203,7 +206,7 @@ export default {
             type: String,
             required: true,
         },
-        version: {
+        initialVersion: {
             type: Number,
             required: true,
         },
@@ -240,6 +243,7 @@ export default {
             hasChanges: false,
             nodeIndex: 0,
             nodes: {},
+            requiresReindex: false, // track if node has been added or remove and backend may re-index nodes (hasChanges tracks a much more broad set of changes)
             datatypesMapper: null,
             datatypes: [],
             report: {},
@@ -255,6 +259,7 @@ export default {
             messageTitle: null,
             messageBody: null,
             messageIsError: false,
+            version: this.initialVersion,
         };
     },
     created() {
@@ -286,6 +291,15 @@ export default {
                 this.hasChanges = true;
             }
         },
+        steps: function (newSteps, oldSteps) {
+            this.hasChanges = true;
+        },
+        nodes: function (newNodes, oldNodes) {
+            this.hasChanges = true;
+            if (newNodes.length != oldNodes.length) {
+                this.requiresReindex = true;
+            }
+        },
     },
     methods: {
         onActivate(node) {
@@ -300,7 +314,7 @@ export default {
             showForm(this, node, this.datatypes);
             this.canvasManager.drawOverview();
         },
-        attemptRefactor(actions) {
+        onAttemptRefactor(actions) {
             if (this.hasChanges) {
                 const r = window.confirm(
                     "You've made changes to your workflow that need to be saved before attempting the requested action. Save those changes and continue?"
@@ -340,7 +354,7 @@ export default {
         },
         async onRefactor(response) {
             await fromSimple(this, response.workflow);
-            this._loadEditorData(response);
+            this._loadEditorData(response.workflow);
         },
         onAdd(node) {
             this.nodes[node.id] = node;
@@ -363,7 +377,6 @@ export default {
             Vue.delete(this.steps, node.id);
             this.canvasManager.drawOverview();
             this.activeNode = null;
-            this.hasChanges = true;
             showAttributes();
         },
         onEditSubworkflow(contentId) {
@@ -371,12 +384,26 @@ export default {
             this.onNavigate(editUrl);
         },
         onClone(node) {
-            Vue.set(this.steps, this.nodeIndex++, {
-                ...node.step,
+            const newId = this.nodeIndex++;
+            const stepCopy = JSON.parse(JSON.stringify(node.step));
+            const configFormCopy = JSON.parse(JSON.stringify(node.config_form));
+            Vue.set(this.steps, newId, {
+                ...stepCopy,
+                id: newId,
+                config_form: {
+                    ...configFormCopy,
+                    inputs: configFormCopy.inputs.filter((input) => !input.skipOnClone),
+                },
                 uuid: null,
-                annotation: node.annotation,
-                tool_state: node.tool_state,
-                post_job_actions: node.postJobActions,
+                label: null,
+                annotation: JSON.parse(JSON.stringify(node.annotation)),
+                tool_state: JSON.parse(JSON.stringify(node.tool_state)),
+                post_job_actions: JSON.parse(JSON.stringify(node.postJobActions)),
+            });
+            Vue.nextTick().then(() => {
+                this.canvasManager.drawOverview();
+                node = this.nodes[newId];
+                this.onActivate(node);
             });
         },
         onInsertTool(tool_id, tool_name) {
@@ -412,15 +439,37 @@ export default {
             showAttributes();
             this._ensureParametersSet();
         },
-        scrollTo(node) {
+        onScrollTo(nodeId) {
+            const node = this.nodes[nodeId];
             this.canvasManager.scrollToNode(node);
             node.onScrollTo();
         },
+        onHighlight(nodeId) {
+            const node = this.nodes[nodeId];
+            node.onHighlight();
+        },
+        onUnhighlight(nodeId) {
+            const node = this.nodes[nodeId];
+            node.onUnhighlight();
+        },
         onLint() {
-            this._ensureParametersSet();
-            // See notes in Lint.vue about why refresh is needed.
-            this.$refs.lint.refresh();
-            showLint();
+            if (this.requiresReindex) {
+                const r = window.confirm(
+                    "Workflow steps have been added or removed since last save, the workflow needs to be saved before best practices can be analzyed. Save workflow?"
+                );
+                if (r == false) {
+                    return;
+                }
+                this.onSave(true);
+            } else {
+                this._ensureParametersSet();
+                // See notes in Lint.vue about why refresh is needed.
+                this.$refs.lint.refresh();
+                showLint();
+            }
+        },
+        onUpgrade() {
+            this.attemptRefactor([{ action_type: "upgrade_all_steps" }]);
         },
         onEdit() {
             this.isCanvas = true;
@@ -485,7 +534,7 @@ export default {
             }
         },
         _ensureParametersSet() {
-            this.parameters = getLegacyWorkflowParameters(this.nodes);
+            this.parameters = getUntypedWorkflowParameters(this.nodes);
         },
         _insertStep(contentId, name, type) {
             if (!this.isCanvas) {
@@ -514,7 +563,7 @@ export default {
             Vue.nextTick(() => {
                 this.canvasManager.drawOverview();
                 this.canvasManager.scrollToNodes();
-                this.hasChanges = has_changes;
+                this.hasChanges = this.requiresReindex = has_changes;
             });
         },
         _loadCurrent(id, version) {

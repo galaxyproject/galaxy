@@ -40,6 +40,7 @@
                     v-if="hasWorkflowSection"
                     :category="workflowSection"
                     :key="workflowSection.name"
+                    section-name="workflows"
                     operation-icon="fa fa-files-o"
                     operation-title="Insert individual steps."
                     :query-filter="query"

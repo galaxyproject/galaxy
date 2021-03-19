@@ -4,29 +4,27 @@ from typing import (
 )
 
 from fastapi import (
-    Depends,
     Path,
     Query,
 )
 from fastapi.responses import Response
-from fastapi_utils.cbv import cbv
-from fastapi_utils.inferring_router import InferringRouter as APIRouter
 
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.genomes import GenomesManager
-from galaxy.structured_app import StructuredApp
 from galaxy.web import (
     expose_api_anonymous,
     expose_api_raw_anonymous,
 )
 from galaxy.web.framework.helpers import is_true
-from galaxy.webapps.base.controller import BaseAPIController
 from . import (
-    get_app,
-    get_trans,
+    BaseGalaxyAPIController,
+    depends,
+    DependsOnTrans,
+    Router,
 )
 
-router = APIRouter(tags=['genomes'])
+
+router = Router(tags=['genomes'])
 
 IdPathParam: str = Path(
     ...,
@@ -83,19 +81,15 @@ IndexTypeQueryParam: str = Query(
 )
 
 
-def get_genomes_manager(app: StructuredApp = Depends(get_app)) -> GenomesManager:
-    return GenomesManager(app)
-
-
 def get_id(base, format):
     if format:
         return f"{base}.{format}"
     return base
 
 
-@cbv(router)
+@router.cbv
 class FastAPIGenomes:
-    manager: GenomesManager = Depends(get_genomes_manager)
+    manager: GenomesManager = depends(GenomesManager)
 
     @router.get(
         '/api/genomes',
@@ -104,7 +98,7 @@ class FastAPIGenomes:
     )
     def index(
         self,
-        trans: ProvidesUserContext = Depends(get_trans),
+        trans: ProvidesUserContext = DependsOnTrans,
         chrom_info: bool = ChromInfoQueryParam
     ) -> List[List[str]]:
         return self.manager.get_dbkeys(trans.user, chrom_info)
@@ -116,7 +110,7 @@ class FastAPIGenomes:
     )
     def show(
         self,
-        trans: ProvidesUserContext = Depends(get_trans),
+        trans: ProvidesUserContext = DependsOnTrans,
         id: str = IdPathParam,
         reference: bool = ReferenceQueryParam,
         num: int = NumQueryParam,
@@ -150,7 +144,7 @@ class FastAPIGenomes:
     )
     def sequences(
         self,
-        trans: ProvidesUserContext = Depends(get_trans),
+        trans: ProvidesUserContext = DependsOnTrans,
         id: str = IdPathParam,
         reference: bool = ReferenceQueryParam,
         chrom: str = ChromQueryParam,
@@ -163,13 +157,11 @@ class FastAPIGenomes:
         return Response(rval)
 
 
-class GenomesController(BaseAPIController):
+class GenomesController(BaseGalaxyAPIController):
     """
     RESTful controller for interactions with genome data.
     """
-    def __init__(self, app: StructuredApp):
-        super().__init__(app)
-        self.manager = GenomesManager(app)
+    manager: GenomesManager = depends(GenomesManager)
 
     @expose_api_anonymous
     def index(self, trans, **kwd):

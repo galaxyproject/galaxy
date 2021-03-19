@@ -34,27 +34,24 @@ from galaxy.web import (
     expose_api_raw,
 )
 from galaxy.webapps.base.controller import (
-    BaseAPIController,
     ExportsHistoryMixin,
     ImportsHistoryMixin,
     SharableMixin
 )
+from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
 
 
-class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistoryMixin, SharableMixin):
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.citations_manager = citations.CitationsManager(app)
-        self.user_manager = users.UserManager(app)
-        self.workflow_manager = workflows.WorkflowsManager(app)
-        self.manager = histories.HistoryManager(app)
-        self.history_export_view = histories.HistoryExportView(app)
-        self.serializer = histories.HistorySerializer(app)
-        self.deserializer = histories.HistoryDeserializer(app)
-        self.filters = histories.HistoryFilters(app)
+class HistoriesController(BaseGalaxyAPIController, ExportsHistoryMixin, ImportsHistoryMixin, SharableMixin):
+    citations_manager: citations.CitationsManager = depends(citations.CitationsManager)
+    user_manager: users.UserManager = depends(users.UserManager)
+    workflow_manager: workflows.WorkflowsManager = depends(workflows.WorkflowsManager)
+    manager: histories.HistoryManager = depends(histories.HistoryManager)
+    history_export_view: histories.HistoryExportView = depends(histories.HistoryExportView)
+    serializer: histories.HistorySerializer = depends(histories.HistorySerializer)
+    deserializer: histories.HistoryDeserializer = depends(histories.HistoryDeserializer)
+    filters: histories.HistoryFilters = depends(histories.HistoryFilters)
 
     @expose_api_anonymous
     def index(self, trans, deleted='False', **kwd):

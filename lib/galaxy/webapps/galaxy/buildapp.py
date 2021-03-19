@@ -29,7 +29,7 @@ log = logging.getLogger(__name__)
 
 
 class GalaxyWebApplication(galaxy.webapps.base.webapp.WebApplication):
-    pass
+    injection_aware = True
 
 
 def app_factory(*args, **kwargs):
@@ -191,9 +191,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     # webapp.add_client_route('/workflows/invocations/view_bco')
     webapp.add_client_route('/custom_builds')
     webapp.add_client_route('/interactivetool_entry_points/list')
-    webapp.add_client_route('/library/folders/{folder_id}')
-    webapp.add_client_route('/library/folders/permissions/{folder_id}')
-    webapp.add_client_route('/library/folders/permissions/{folder_id}/dataset/{dataset_id}')
+    webapp.add_client_route('/libraries{path:.*?}')
 
     # ==== Done
     # Indicate that all configuration settings have been provided

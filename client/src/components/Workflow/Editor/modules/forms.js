@@ -31,7 +31,7 @@ export class DefaultForm {
                 tooltip: _l("Attempt to upgrade this step to latest version of this subworkflow."),
                 icon: "fa-cubes",
                 onclick: function () {
-                    workflow.attemptRefactor([
+                    workflow.onAttemptRefactor([
                         { action_type: "upgrade_subworkflow", step: { order_index: parseInt(node.id) } },
                     ]);
                 },
@@ -109,7 +109,7 @@ export class ToolForm {
         Utils.deepeach(inputs, (input) => {
             if (input.type) {
                 if (["data", "data_collection"].indexOf(input.type) != -1) {
-                    input.type = "hidden";
+                    input.hiddenInWorkflow = true;
                     input.info = `Data input '${input.name}' (${Utils.textify(input.extensions)})`;
                     input.value = { __class__: "RuntimeValue" };
                 } else if (!input.fixed) {
@@ -138,6 +138,7 @@ function _addLabelAnnotation(self, node) {
     const workflow = self.workflow;
     const inputs = node.config_form.inputs;
     inputs.unshift({
+        skipOnClone: true,
         type: "text",
         name: "__annotation",
         label: "Step Annotation",
@@ -150,6 +151,7 @@ function _addLabelAnnotation(self, node) {
         help: "Add an annotation or notes to this step. Annotations are available when a workflow is viewed.",
     });
     inputs.unshift({
+        skipOnClone: true,
         type: "text",
         name: "__label",
         label: "Label",
@@ -259,6 +261,7 @@ function _makeSection(self, node, output) {
     const activeOutput = node.activeOutputs.get(output.name);
     const inputTitle = output.label || output.name;
     const inputConfig = {
+        skipOnClone: true,
         title: `Configure Output: '${inputTitle}'`,
         type: "section",
         flat: true,
@@ -394,6 +397,7 @@ function _addSections(self, node) {
             payload: {
                 host: window.location.host,
             },
+            skipOnClone: true,
         });
         inputs.push({
             name: `pja__${outputFirst.name}__DeleteIntermediatesAction`,
@@ -403,6 +407,7 @@ function _addSections(self, node) {
             ignore: "false",
             help:
                 "Upon completion of this step, delete non-starred outputs from completed workflow steps if they are no longer required as inputs.",
+            skipOnClone: true,
         });
         for (const output of node.outputs) {
             inputs.push(_makeSection(self, node, output));

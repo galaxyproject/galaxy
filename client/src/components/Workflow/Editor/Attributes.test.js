@@ -1,6 +1,6 @@
 import { mount, createLocalVue } from "@vue/test-utils";
 import Attributes from "./Attributes";
-import { LegacyParameters } from "./modules/utilities";
+import { UntypedParameters } from "./modules/parameters";
 
 jest.mock("app");
 
@@ -10,15 +10,15 @@ const TEST_NAME = "workflow_name";
 describe("Attributes", () => {
     it("test attributes", async () => {
         const localVue = createLocalVue();
-        const legacyParameters = new LegacyParameters();
-        legacyParameters.getParameter("workflow_parameter_0");
-        legacyParameters.getParameter("workflow_parameter_1");
+        const untypedParameters = new UntypedParameters();
+        untypedParameters.getParameter("workflow_parameter_0");
+        untypedParameters.getParameter("workflow_parameter_1");
         const wrapper = mount(Attributes, {
             propsData: {
                 id: "workflow_id",
                 name: TEST_NAME,
                 tags: ["workflow_tag_0", "workflow_tag_1"],
-                parameters: legacyParameters,
+                parameters: untypedParameters,
                 versions: ["workflow_version_0"],
                 annotation: TEST_ANNOTATION,
             },

@@ -219,6 +219,18 @@ class ConditionalDependencies:
     def check_fs_webdavfs(self):
         return 'webdav' in self.file_sources
 
+    def check_fs_s3fs(self):
+        # pyfilesystem plugin access to s3
+        return 's3' in self.file_sources
+
+    def check_fs_anvilfs(self):
+        # pyfilesystem plugin access to terra on anvil
+        return 'anvil' in self.file_sources
+
+    def check_s3fs(self):
+        # use s3fs directly (skipping pyfilesystem) for direct access to more options
+        return 's3fs' in self.file_sources
+
     def check_watchdog(self):
         install_set = {'auto', 'True', 'true', 'polling'}
         return (self.config['watch_tools'] in install_set

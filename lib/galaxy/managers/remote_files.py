@@ -1,5 +1,6 @@
 
 import hashlib
+import logging
 from operator import itemgetter
 from typing import (
     Any,
@@ -27,6 +28,8 @@ from galaxy.util import (
     jstree,
     smart_str,
 )
+
+log = logging.getLogger(__name__)
 
 
 class RemoteFilesManager:
@@ -78,7 +81,15 @@ class RemoteFilesManager:
 
         file_source_path = self._file_sources.get_file_source_path(uri)
         file_source = file_source_path.file_source
-        index = file_source.list(file_source_path.path, recursive=recursive, user_context=user_file_source_context)
+        try:
+            index = file_source.list(file_source_path.path, recursive=recursive, user_context=user_file_source_context)
+        except exceptions.MessageException:
+            log.warning(f"Problem listing file source path {file_source_path}", exc_info=True)
+            raise
+        except Exception:
+            message = f"Problem listing file source path {file_source_path}"
+            log.warning(message, exc_info=True)
+            raise exceptions.InternalServerError(message)
         if format == RemoteFilesFormat.flat:
             # rip out directories, ensure sorted by path
             index = [i for i in index if i["class"] == "File"]

@@ -4,7 +4,7 @@
             {{ errorMessage }}
             <JobError
                 v-if="jobError"
-                style="margin-top: 15px;"
+                style="margin-top: 15px"
                 header="History import job ended in error"
                 :job="jobError"
             />

@@ -38,7 +38,7 @@ jobs:
         with:
           name: API test results
           path: 'galaxy root/run_api_tests.html'
-      - uses: actions/upload-artifact@v2.0.1
+      - uses: actions/upload-artifact@v2
         with:
-          name: 'Performance Metrics'
+          name: Performance Metrics
           path: 'galaxy root/test.html'

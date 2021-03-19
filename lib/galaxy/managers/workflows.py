@@ -26,6 +26,7 @@ from galaxy import (
 )
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.structured_app import StructuredApp
 from galaxy.tools.parameters import (
     params_to_incoming,
     visit_input_values
@@ -68,7 +69,7 @@ class WorkflowsManager:
     the galaxy.workflow module.
     """
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         self.app = app
 
     def get_stored_workflow(self, trans, workflow_id, by_stored_id=True):
@@ -305,7 +306,7 @@ CreatedWorkflow = namedtuple("CreatedWorkflow", ["stored_workflow", "workflow", 
 
 class WorkflowContentsManager(UsesAnnotations):
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         self.app = app
         self._resource_mapper_function = get_resource_mapper_function(app)
 
@@ -360,8 +361,9 @@ class WorkflowContentsManager(UsesAnnotations):
             raise exceptions.RequestParameterInvalidException(f"Invalid workflow format detected [{data}]")
 
         workflow_input_name = data['name']
-        if source:
-            name = f"{workflow_input_name} (imported from {source})"
+        imported_sufix = f"(imported from {source})"
+        if source and imported_sufix not in workflow_input_name:
+            name = f"{workflow_input_name} {imported_sufix}"
         else:
             name = workflow_input_name
         workflow, missing_tool_tups = self._workflow_from_raw_description(
