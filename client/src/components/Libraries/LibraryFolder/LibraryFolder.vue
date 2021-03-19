@@ -9,13 +9,13 @@
                 @deleteFromTable="deleteFromTable"
                 @setBusy="setBusy($event)"
                 @newFolder="newFolder"
-                :folderContents="folderContents"
+                :folder-contents="folderContents"
                 :include_deleted="include_deleted"
                 :folder_id="current_folder_id"
                 :selected="selected"
                 :metadata="folder_metadata"
                 :unselected="unselected"
-                :isAllSelectedMode="isAllSelectedMode"
+                :is-all-selected-mode="isAllSelectedMode"
             />
 
             <b-table

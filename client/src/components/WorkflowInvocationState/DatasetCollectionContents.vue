@@ -1,13 +1,10 @@
 <template>
     <div>
-        <div v-for="contentItem in collectionContents" :index="1" :key="contentItem.id" style="margin-left: 2em;">
+        <div v-for="contentItem in collectionContents" :index="1" :key="contentItem.id" style="margin-left: 2em">
             <DatasetProvider
                 v-if="contentItem.element_type === 'hda'"
                 :id="contentItem.object.id"
-                v-slot="{
-                    item,
-                    loading,
-                }"
+                v-slot="{ item, loading }"
             >
                 <div>
                     <loading-span v-if="loading" message="Loading datasets" />

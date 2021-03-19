@@ -1,7 +1,7 @@
 <template>
     <div class="d-flex" :data-step="workflowStep.id">
-        <div class="ui-portlet-section" style="width: 100%;">
-            <div class="portlet-header portlet-title portlet-operations" v-on:click="toggleStep">
+        <div class="ui-portlet-section" style="width: 100%">
+            <div class="portlet-header portlet-title portlet-operations" @click="toggleStep">
                 <i :class="'portlet-title-icon fa mr-1 ' + stepIcon"></i>
                 <span class="portlet-title-text">
                     <u class="step-title">{{ stepLabel }}</u>
@@ -13,13 +13,14 @@
                     :id="invocationStepId"
                     v-slot="{ item: stepDetails, loading }"
                 >
-                    <div style="min-width: 1;">
+                    <div style="min-width: 1">
                         <loading-span v-if="loading" :message="`Loading invocation step details`"> </loading-span>
                         <div v-else>
                             <details
                                 v-if="Object.values(stepDetails.outputs).length > 0"
                                 class="invocation-step-output-details"
-                                ><summary><b>Output Datasets</b></summary>
+                            >
+                                <summary><b>Output Datasets</b></summary>
                                 <div v-for="(value, name) in stepDetails.outputs" :key="value.id">
                                     <b>{{ name }}</b>
                                     <workflow-invocation-data-contents :data_item="value" />
@@ -28,13 +29,14 @@
                             <details
                                 v-if="Object.values(stepDetails.output_collections).length > 0"
                                 class="invocation-step-output-collection-details"
-                                ><summary><b>Output Dataset Collections</b></summary>
+                            >
+                                <summary><b>Output Dataset Collections</b></summary>
                                 <div v-for="(value, name) in stepDetails.output_collections" :key="value.id">
                                     <b>{{ name }}</b>
                                     <workflow-invocation-data-contents :data_item="value" />
                                 </div>
                             </details>
-                            <div class="portlet-body" style="width: 100%; overflow-x: auto;">
+                            <div class="portlet-body" style="width: 100%; overflow-x: auto">
                                 <details v-if="workflowStepType == 'tool'" class="invocation-step-job-details">
                                     <summary><b>Jobs</b></summary>
                                     <job-step :jobs="stepDetails.jobs" />
@@ -63,7 +65,7 @@
                                     </div>
                                     <workflow-invocation-state
                                         v-else
-                                        :invocationId="stepDetails.subworkflow_invocation_id"
+                                        :invocation-id="stepDetails.subworkflow_invocation_id"
                                     />
                                 </div>
                             </div>
