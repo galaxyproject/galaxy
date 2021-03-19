@@ -73,7 +73,7 @@
                         @click="$emit('clicked-create', collectionName)"
                         :disabled="!validInput"
                     >
-                        {{ l("Create list") }}
+                        {{ l("Create collection") }}
                     </button>
                 </div>
             </div>
