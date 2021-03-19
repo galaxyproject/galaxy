@@ -7,9 +7,11 @@ from galaxy import (
     exceptions,
     util
 )
+from galaxy.managers import base as managers_base
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.model import tags
+from galaxy.structured_app import StructuredApp
 from galaxy.web import (
     expose_api,
     expose_api_anonymous
@@ -24,18 +26,24 @@ FOLDER_TYPE_NAME = "folder"
 FILE_TYPE_NAME = "file"
 
 
-class FolderContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems):
+class FolderContentsAPIView(UsesLibraryMixinItems):
     """
-    Class controls retrieval, creation and updating of folder contents.
+    Interface/service object for interacting with folders contents providing a shared view for API controllers.
     """
-    hda_manager: HDAManager = depends(HDAManager)
-    folder_manager: FolderManager = depends(FolderManager)
 
-    @expose_api_anonymous
-    def index(self, trans, folder_id, limit=None, offset=None, search_text=None, **kwd):
+    def __init__(self, app: StructuredApp, hda_manager: HDAManager, folder_manager: FolderManager):
+        self.app = app
+        self.hda_manager = hda_manager
+        self.folder_manager = folder_manager
+
+    def get_object(self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None):
         """
-        GET /api/folders/{encoded_folder_id}/contents?limit={limit}&offset={offset}
+        Convenience method to get a model object with the specified checks.
+        """
+        return managers_base.get_object(trans, id, class_name, check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted)
 
+    def index(self, trans, folder_id, limit=None, offset=None, search_text=None, include_deleted=False):
+        """
         Displays a collection (list) of a folder's contents
         (files and folders). Encoded folder ID is prepended
         with 'F' if it is a folder as opposed to a data set
@@ -67,8 +75,6 @@ class FolderContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems):
         :raises: MalformedId, InconsistentDatabase, ObjectNotFound,
              InternalServerError
         """
-        deleted = util.asbool(kwd.get('include_deleted', False))
-
         is_admin = trans.user_is_admin
         current_user_roles = trans.get_current_user_roles()
 
@@ -89,7 +95,7 @@ class FolderContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems):
         update_time = ''
         create_time = ''
 
-        folders, datasets = self._apply_preferences(folder, deleted, search_text)
+        folders, datasets = self._apply_preferences(folder, include_deleted, search_text)
 
         #  Go through every accessible item (folders, datasets) in the folder and include its metadata.
         for content_item in self._load_folder_contents(trans, folders, datasets, offset, limit):
@@ -174,6 +180,72 @@ class FolderContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems):
                         parent_library_id=parent_library_id)
         folder_container = dict(metadata=metadata, folder_contents=folder_contents)
         return folder_container
+
+    def create(self, trans, encoded_folder_id, payload, **kwd):
+        """
+        Create a new library file from an HDA.
+
+        :param  encoded_folder_id:      the encoded id of the folder to import dataset(s) to
+        :type   encoded_folder_id:      an encoded id string
+        :param  payload:    dictionary structure containing:
+            :param from_hda_id:         (optional) the id of an accessible HDA to copy into the library
+            :type  from_hda_id:         encoded id
+            :param from_hdca_id:         (optional) the id of an accessible HDCA to copy into the library
+            :type  from_hdca_id:         encoded id
+            :param ldda_message:        (optional) the new message attribute of the LDDA created
+            :type   ldda_message:       str
+            :param extended_metadata:   (optional) dub-dictionary containing any extended metadata to associate with the item
+            :type  extended_metadata:   dict
+        :type   payload:    dict
+
+        :returns:   a dictionary describing the new item if ``from_hda_id`` is supplied or a list of
+                    such dictionaries describing the new items if ``from_hdca_id`` is supplied.
+        :rtype:     object
+
+        :raises:    ObjectAttributeInvalidException,
+            InsufficientPermissionsException, ItemAccessibilityException,
+            InternalServerError
+        """
+        encoded_folder_id_16 = self.__decode_library_content_id(trans, encoded_folder_id)
+        from_hda_id = payload.pop('from_hda_id', None)
+        from_hdca_id = payload.pop('from_hdca_id', None)
+        ldda_message = payload.pop('ldda_message', '')
+        try:
+            if from_hda_id:
+                decoded_hda_id = self._decode_id(from_hda_id)
+                return self._copy_hda_to_library_folder(trans, self.hda_manager, decoded_hda_id, encoded_folder_id_16, ldda_message)
+            if from_hdca_id:
+                decoded_hdca_id = self._decode_id(from_hdca_id)
+                return self._copy_hdca_to_library_folder(trans, self.hda_manager, decoded_hdca_id, encoded_folder_id_16, ldda_message)
+        except Exception as exc:
+            # TODO handle exceptions better within the mixins
+            exc_message = util.unicodify(exc)
+            if 'not accessible to the current user' in exc_message or 'You are not allowed to access this dataset' in exc_message:
+                raise exceptions.ItemAccessibilityException('You do not have access to the requested item')
+            else:
+                log.exception(exc)
+                raise exc
+
+    def _decode_id(self, id):
+        return managers_base.decode_id(self.app, id)
+
+    def __decode_library_content_id(self, trans, encoded_folder_id):
+        """
+        Identify whether the id provided is properly encoded
+        LibraryFolder.
+
+        :param  encoded_folder_id:  encoded id of Galaxy LibraryFolder
+        :type   encoded_folder_id:  encoded string
+
+        :returns:   encoded id of Folder (had 'F' prepended)
+        :type:  string
+
+        :raises:    MalformedId
+        """
+        if ((len(encoded_folder_id) % 16 == 1) and encoded_folder_id.startswith('F')):
+            return encoded_folder_id[1:]
+        else:
+            raise exceptions.MalformedId('Malformed folder id ( %s ) specified, unable to decode.' % str(encoded_folder_id))
 
     def _build_path(self, trans, folder):
         """
@@ -283,6 +355,52 @@ class FolderContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems):
 
         return folders, datasets
 
+
+class FolderContentsController(BaseGalaxyAPIController):
+    """
+    Class controls retrieval, creation and updating of folder contents.
+    """
+    view: FolderContentsAPIView = depends(FolderContentsAPIView)
+
+    @expose_api_anonymous
+    def index(self, trans, folder_id, limit=None, offset=None, search_text=None, **kwd):
+        """
+        GET /api/folders/{encoded_folder_id}/contents?limit={limit}&offset={offset}
+
+        Displays a collection (list) of a folder's contents
+        (files and folders). Encoded folder ID is prepended
+        with 'F' if it is a folder as opposed to a data set
+        which does not have it. Full path is provided in
+        response as a separate object providing data for
+        breadcrumb path building.
+
+        ..example:
+            limit and offset can be combined. Skip the first two and return five:
+                '?limit=3&offset=5'
+
+        :param  folder_id: encoded ID of the folder which
+            contents should be library_dataset_dict
+        :type   folder_id: encoded string
+
+        :param  offset: offset for returned library folder datasets
+        :type   folder_id: encoded string
+
+        :param  limit: limit   for returned library folder datasets
+            contents should be library_dataset_dict
+        :type   folder_id: encoded string
+
+        :param kwd: keyword dictionary with other params
+        :type  kwd: dict
+
+        :returns: dictionary containing all items and metadata
+        :type:    dict
+
+        :raises: MalformedId, InconsistentDatabase, ObjectNotFound,
+             InternalServerError
+        """
+        include_deleted = util.asbool(kwd.get('include_deleted', False))
+        return self.view.index(trans, folder_id, limit, offset, search_text, include_deleted)
+
     @expose_api
     def create(self, trans, encoded_folder_id, payload, **kwd):
         """
@@ -311,43 +429,7 @@ class FolderContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems):
             InsufficientPermissionsException, ItemAccessibilityException,
             InternalServerError
         """
-        encoded_folder_id_16 = self.__decode_library_content_id(trans, encoded_folder_id)
-        from_hda_id = payload.pop('from_hda_id', None)
-        from_hdca_id = payload.pop('from_hdca_id', None)
-        ldda_message = payload.pop('ldda_message', '')
-        try:
-            if from_hda_id:
-                decoded_hda_id = self.decode_id(from_hda_id)
-                return self._copy_hda_to_library_folder(trans, self.hda_manager, decoded_hda_id, encoded_folder_id_16, ldda_message)
-            if from_hdca_id:
-                decoded_hdca_id = self.decode_id(from_hdca_id)
-                return self._copy_hdca_to_library_folder(trans, self.hda_manager, decoded_hdca_id, encoded_folder_id_16, ldda_message)
-        except Exception as exc:
-            # TODO handle exceptions better within the mixins
-            exc_message = util.unicodify(exc)
-            if 'not accessible to the current user' in exc_message or 'You are not allowed to access this dataset' in exc_message:
-                raise exceptions.ItemAccessibilityException('You do not have access to the requested item')
-            else:
-                log.exception(exc)
-                raise exc
-
-    def __decode_library_content_id(self, trans, encoded_folder_id):
-        """
-        Identify whether the id provided is properly encoded
-        LibraryFolder.
-
-        :param  encoded_folder_id:  encoded id of Galaxy LibraryFolder
-        :type   encoded_folder_id:  encoded string
-
-        :returns:   encoded id of Folder (had 'F' prepended)
-        :type:  string
-
-        :raises:    MalformedId
-        """
-        if ((len(encoded_folder_id) % 16 == 1) and encoded_folder_id.startswith('F')):
-            return encoded_folder_id[1:]
-        else:
-            raise exceptions.MalformedId('Malformed folder id ( %s ) specified, unable to decode.' % str(encoded_folder_id))
+        return self.view.create(trans, encoded_folder_id, payload)
 
     @expose_api
     def show(self, trans, id, library_id, **kwd):
