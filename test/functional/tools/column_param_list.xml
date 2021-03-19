@@ -6,8 +6,8 @@ echo "col_names $col_names" >> '$output2'
     ]]></command>
     <inputs>
         <param name="input1" type="data" format="tabular" label="Input 1" />
-        <param name="col" type="data_column" multiple="true" value="1" data_ref="input1" label="Column to Use" />
-        <param name="col_names" type="data_column" data_ref="input1" use_header_names="true" label="Column to Use" />
+        <param name="col" type="data_column" multiple="true" value="1" data_ref="input1" label="Columns to use" />
+        <param name="col_names" type="data_column" multiple="true" data_ref="input1" use_header_names="true" label="Column names to use" />
     </inputs>
     <outputs>
         <data name="output1" format="tabular" />
