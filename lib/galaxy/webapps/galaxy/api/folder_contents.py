@@ -44,30 +44,25 @@ class FolderContentsAPIView(UsesLibraryMixinItems):
 
     def index(self, trans, folder_id, limit=None, offset=None, search_text=None, include_deleted=False):
         """
-        Displays a collection (list) of a folder's contents
-        (files and folders). Encoded folder ID is prepended
-        with 'F' if it is a folder as opposed to a data set
-        which does not have it. Full path is provided in
-        response as a separate object providing data for
-        breadcrumb path building.
+        Displays a collection (list) of a folder's contents (files and folders). Encoded folder ID is prepended
+        with 'F' if it is a folder as opposed to a data set which does not have it. Full path is provided in
+        response as a separate object providing data for breadcrumb path building.
 
         ..example:
             limit and offset can be combined. Skip the first two and return five:
-                '?limit=3&offset=5'
+                '?offset=2&limit=5'
 
-        :param  folder_id: encoded ID of the folder which
-            contents should be library_dataset_dict
+        :param  folder_id: encoded ID of the folder which contents should be library_dataset_dict
         :type   folder_id: encoded string
 
-        :param  offset: offset for returned library folder datasets
-        :type   folder_id: encoded string
+        :param  offset: number of folder contents to skip
+        :type   offset: optional int
 
-        :param  limit: limit   for returned library folder datasets
-            contents should be library_dataset_dict
-        :type   folder_id: encoded string
+        :param  limit: maximum number of folder contents to return
+        :type   limit: optional int
 
-        :param kwd: keyword dictionary with other params
-        :type  kwd: dict
+        :param  include_deleted: whether to include deleted items in the results
+        :type   include_deleted: optional bool (default False)
 
         :returns: dictionary containing all items and metadata
         :type:    dict
@@ -231,8 +226,7 @@ class FolderContentsAPIView(UsesLibraryMixinItems):
 
     def __decode_library_content_id(self, trans, encoded_folder_id):
         """
-        Identify whether the id provided is properly encoded
-        LibraryFolder.
+        Identify whether the id provided is properly encoded LibraryFolder.
 
         :param  encoded_folder_id:  encoded id of Galaxy LibraryFolder
         :type   encoded_folder_id:  encoded string
