@@ -231,6 +231,19 @@ steps:
         self.assert_connected("input1#output", "first_cat#input1")
 
     @selenium_test
+    def test_reconnecting_nodes(self):
+        name = self.open_in_workflow_editor(WORKFLOW_SIMPLE_CAT_TWICE)
+        self.assert_connected("input1#output", "first_cat#input1")
+        self.workflow_editor_destroy_connection("first_cat#input1")
+        self.assert_not_connected("input1#output", "first_cat#input1")
+        self.workflow_editor_connect("input1#output", "first_cat#input1")
+        self.assert_connected("input1#output", "first_cat#input1")
+        self.assert_has_changes_and_save()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.workflow_index_open_with_name(name)
+        self.assert_connected("input1#output", "first_cat#input1")
+
+    @selenium_test
     def test_rendering_output_collection_connections(self):
         self.open_in_workflow_editor(WORKFLOW_WITH_OUTPUT_COLLECTION)
         self.workflow_editor_maximize_center_pane()
@@ -535,6 +548,7 @@ steps:
         self.workflow_index_open()
         self.workflow_index_open_with_name(name)
         self.workflow_editor_click_option("Auto Layout")
+        return name
 
     def workflow_editor_source_sink_terminal_ids(self, source, sink):
         editor = self.components.workflow_editor

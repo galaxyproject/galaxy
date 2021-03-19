@@ -1249,6 +1249,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
         workflow.stored_workflow = imported_stored
         imported_stored.latest_workflow = workflow
         imported_stored.user = trans.user
+        imported_stored.copy_tags_from(stored.user, stored)
         # Save new workflow.
         session = trans.sa_session
         session.add(imported_stored)
