@@ -1024,37 +1024,37 @@ export default {
             const requiresName =
                 buildingCollection && this.elementsType != "collection_contents" && !mappingAsDict.collection_name;
 
-            this.validityErrorMessages = [];
+            this.emptyValidityErrorMessages;
             let valid = true;
             if (requiresName) {
                 valid = this.collectionName.length > 0;
                 if (valid == false) {
-                    this.validityErrorMessages.push("Name the collection");
+                    this.addValidityErrorMessage("Name the collection");
                 }
             }
 
             if (mappingAsDict.ftp_path && mappingAsDict.url) {
                 // Can only specify one of these.
                 valid = false;
-                this.validityErrorMessages.push("Only specify either an FTP Path or a URL.");
+                this.addValidityErrorMessage("Only specify either an FTP Path or a URL.");
             }
 
             const requiresSourceColumn =
                 this.elementsType == "ftp" || this.elementsType == "raw" || this.elementsType == "remote_files";
             if (requiresSourceColumn && !mappingAsDict.ftp_path && !mappingAsDict.url) {
                 valid = false;
-                this.validityErrorMessages.push("Specify a source column (either FTP Path or URL).");
+                this.addValidityErrorMessage("Specify a source column (either FTP Path or URL).");
             }
             for (const rule of this.rules) {
                 if (rule.error) {
                     valid = false;
-                    this.validityErrorMessages.push("There is an error with one of your rules.");
+                    this.addValidityErrorMessage("There is an error with one of your rules.");
                 }
             }
 
             if (buildingCollection && identifierColumns.length == 0) {
                 valid = false;
-                this.validityErrorMessages.push("Specify a column as a list identifier.");
+                this.addValidityErrorMessage("Specify a column as a list identifier.");
             }
             return valid;
         },
@@ -1102,6 +1102,12 @@ export default {
     },
     mixins: [SaveRules],
     methods: {
+        emptyValidityErrorMessages() {
+            this.validityErrorMessages = [];
+        },
+        addValidityErrorMessage(errorMessage) {
+            this.validityErrorMessages.push(errorMessage);
+        },
         restoreRules(event) {
             const json = JSON.parse(event);
             this.rules = json.rules;
