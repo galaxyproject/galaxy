@@ -222,21 +222,9 @@ class FolderContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems):
         current_folders = self._calculate_pagination(folders, offset, limit)
 
         for subfolder in current_folders:
-
-            if subfolder.deleted:
-                if is_admin:
-                    # Admins can see all deleted folders.
-                    subfolder.api_type = FOLDER_TYPE_NAME
-                    content_items.append(subfolder)
-                else:
-                    # Users with MODIFY permissions can see deleted folders.
-                    can_modify = trans.app.security_agent.can_modify_library_item(current_user_roles, subfolder)
-                    if can_modify:
-                        subfolder.api_type = FOLDER_TYPE_NAME
-                        content_items.append(subfolder)
-            else:
-                # Undeleted folders are non-restricted for now. The contents are not.
-                # TODO decide on restrictions
+            if not subfolder.deleted or is_admin or trans.app.security_agent.can_modify_library_item(current_user_roles, subfolder):
+                # Undeleted folders are non-restricted for now.
+                # Admins or users with MODIFY permissions can see deleted folders.
                 subfolder.api_type = FOLDER_TYPE_NAME
                 content_items.append(subfolder)
 
@@ -248,25 +236,15 @@ class FolderContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems):
 
         for dataset in current_datasets:
             if dataset.deleted:
-                if is_admin:
-                    # Admins can see all deleted datasets.
+                if is_admin or trans.app.security_agent.can_modify_library_item(current_user_roles, dataset):
+                    # Admins or users with MODIFY permissions can see deleted folders.
                     dataset.api_type = FILE_TYPE_NAME
                     content_items.append(dataset)
-                else:
-                    # Users with MODIFY permissions on the item can see the deleted item.
-                    can_modify = trans.app.security_agent.can_modify_library_item(current_user_roles, dataset)
-                    if can_modify:
-                        dataset.api_type = FILE_TYPE_NAME
-                        content_items.append(dataset)
             else:
-                if is_admin:
+                if is_admin or trans.app.security_agent.can_access_dataset(current_user_roles, dataset.library_dataset_dataset_association.dataset):
+                    # Admins or users with ACCESS permissions can see datasets.
                     dataset.api_type = FILE_TYPE_NAME
                     content_items.append(dataset)
-                else:
-                    can_access = trans.app.security_agent.can_access_dataset(current_user_roles, dataset.library_dataset_dataset_association.dataset)
-                    if can_access:
-                        dataset.api_type = FILE_TYPE_NAME
-                        content_items.append(dataset)
 
         return content_items
 
