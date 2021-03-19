@@ -170,5 +170,8 @@
     "worker-loader": "^3.0.8",
     "yaml-jest": "^1.0.5",
     "yaml-loader": "^0.6.0"
+  },
+  "peerDependencies": {
+    "postcss": "^8.2.8"
   }
 }
