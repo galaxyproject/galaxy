@@ -13,9 +13,10 @@ const styleBase = path.join(scriptsBase, "style");
 
 module.exports = (env = {}, argv = {}) => {
     // environment name based on -d, -p, webpack flag
-    const targetEnv = argv.mode || "development";
+    const targetEnv = process.env.NODE_ENV == "production" || argv.mode == "production" ? "production" : "development";
 
     const buildconfig = {
+        mode: targetEnv,
         entry: {
             login: ["polyfills", "bundleEntries", "entry/login"],
             analysis: ["polyfills", "bundleEntries", "entry/analysis"],
@@ -224,7 +225,7 @@ module.exports = (env = {}, argv = {}) => {
         },
     };
 
-    if (process.env.GXY_BUILD_SOURCEMAPS || process.env.NODE_ENV == "development") {
+    if (process.env.GXY_BUILD_SOURCEMAPS || buildconfig.mode == "development") {
         buildconfig.devtool = "source-map";
     }
 
