@@ -23,10 +23,10 @@
             <b>Be sure to specify at least one column as a list identifier</b> - specify more to created nested list
             structures. Specify a column to serve as "collection name" to group datasets into multiple collections.
         </rule-modal-header>
-        <b-alert class="alert-area" v-if="returnValidityErrorMessages.length != 0" show variant="warning" dismissible>
+        <b-alert class="alert-area" v-if="validityErrorMessages.length != 0" show variant="warning" dismissible>
             {{ validityErrorHeader }}
             <ul>
-                <li v-for="error in returnValidityErrorMessages" :key="error">
+                <li v-for="error in validityErrorMessages" :key="error">
                     {{ error }}
                 </li>
             </ul>
@@ -772,7 +772,6 @@ export default {
             addNameTag: false,
             orientation: orientation,
             validityErrorHeader: _l("These issues must be resolved to proceed:"),
-            validityErrorMessages: [],
         };
     },
     props: {
@@ -1017,46 +1016,81 @@ export default {
             }
             return collectionType;
         },
-        validInput() {
-            const identifierColumns = this.identifierColumns();
-            const mappingAsDict = this.mappingAsDict;
+        validName() {
+            let valid = true;
             const buildingCollection = this.importType == "collections";
+            const mappingAsDict = this.mappingAsDict;
             const requiresName =
                 buildingCollection && this.elementsType != "collection_contents" && !mappingAsDict.collection_name;
-
-            this.emptyValidityErrorMessages;
-            let valid = true;
             if (requiresName) {
                 valid = this.collectionName.length > 0;
-                if (valid == false) {
-                    this.addValidityErrorMessage("Name the collection");
+            }
+            return valid;
+        },
+        validRules() {
+            let valid = true;
+            for (const rule of this.rules) {
+                if (rule.error) {
+                    valid = false;
                 }
             }
-
+            return valid;
+        },
+        validOnlyOnePath() {
+            let valid = true;
+            const mappingAsDict = this.mappingAsDict;
             if (mappingAsDict.ftp_path && mappingAsDict.url) {
                 // Can only specify one of these.
                 valid = false;
-                this.addValidityErrorMessage("Only specify either an FTP Path or a URL.");
             }
-
+            return valid;
+        },
+        validSourceColumn() {
+            let valid = true;
+            const mappingAsDict = this.mappingAsDict;
             const requiresSourceColumn =
                 this.elementsType == "ftp" || this.elementsType == "raw" || this.elementsType == "remote_files";
             if (requiresSourceColumn && !mappingAsDict.ftp_path && !mappingAsDict.url) {
                 valid = false;
-                this.addValidityErrorMessage("Specify a source column (either FTP Path or URL).");
-            }
-            for (const rule of this.rules) {
-                if (rule.error) {
-                    valid = false;
-                    this.addValidityErrorMessage("There is an error with one of your rules.");
-                }
-            }
-
-            if (buildingCollection && identifierColumns.length == 0) {
-                valid = false;
-                this.addValidityErrorMessage("Specify a column as a list identifier.");
             }
             return valid;
+        },
+        validIdentifierColumns() {
+            let valid = true;
+            const identifierColumns = this.identifierColumns();
+            const buildingCollection = this.importType == "collections";
+            if (buildingCollection && identifierColumns.length == 0) {
+                valid = false;
+            }
+            return valid;
+        },
+        validInput() {
+            return (
+                this.validName &&
+                this.validRules &&
+                this.validOnlyOnePath &&
+                this.validSourceColumn &&
+                this.validIdentifierColumns
+            );
+        },
+        validityErrorMessages() {
+            const messages = [];
+            if (!this.validName) {
+                messages.push("Name the collection.");
+            }
+            if (!this.validRules) {
+                messages.push("There is an error with one of your rules.");
+            }
+            if (!this.validOnlyOnePath) {
+                messages.push("Only specify either an FTP Path or a URL.");
+            }
+            if (!this.validSourceColumn) {
+                messages.push("Specify a source column (either FTP Path or URL).");
+            }
+            if (!this.validIdentifierColumns) {
+                messages.push("Specify a column as a list identifier.");
+            }
+            return messages;
         },
         hotData() {
             let data;
@@ -1102,12 +1136,6 @@ export default {
     },
     mixins: [SaveRules],
     methods: {
-        emptyValidityErrorMessages() {
-            this.validityErrorMessages = [];
-        },
-        addValidityErrorMessage(errorMessage) {
-            this.validityErrorMessages.push(errorMessage);
-        },
         restoreRules(event) {
             const json = JSON.parse(event);
             this.rules = json.rules;
