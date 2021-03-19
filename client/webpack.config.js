@@ -215,14 +215,15 @@ module.exports = (env = {}, argv = {}) => {
                 sourceMap: true,
             }),
             // https://github.com/webpack-contrib/mini-css-extract-plugin/issues/141
-            new OptimizeCssAssetsPlugin({
-                cssProcessorOptions: {
-                    map: {
-                        inline: false,
-                        annotation: true,
-                    },
-                },
-            }),
+            // TODO: Replace with CssMinimizeWebpackPlugin
+            // new OptimizeCssAssetsPlugin({
+            //     cssProcessorOptions: {
+            //         map: {
+            //             inline: false,
+            //             annotation: true,
+            //         },
+            //     },
+            // }),
             new DuplicatePackageCheckerPlugin(),
         ],
         devServer: {

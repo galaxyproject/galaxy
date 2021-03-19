@@ -149,7 +149,6 @@
     "karma-qunit": "^4.1.1",
     "karma-webpack": "^5.0.0",
     "mini-css-extract-plugin": "^1.3.9",
-    "optimize-css-assets-webpack-plugin": "^5.0.4",
     "postcss-loader": "^5.2.0",
     "prettier": "^2.3.0",
     "qunit": "^2.10.0",
