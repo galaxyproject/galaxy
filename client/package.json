@@ -11,7 +11,7 @@
   },
   "license": "AFL-3.0",
   "resolutions": {
-    "**/chokidar": "3.4.0"
+    "**/chokidar": "3.5.1"
   },
   "dependencies": {
     "@babel/polyfill": "^7.10.1",
