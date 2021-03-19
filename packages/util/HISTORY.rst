@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-21.1.0.dev0
+21.1.0 (2021-03-19)
 ---------------------
 
 * First release from the 21.01 branch of Galaxy.
