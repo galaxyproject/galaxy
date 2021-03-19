@@ -1,8 +1,5 @@
 <tool id="interactive_tool_simtext_app" name="simtext_app" tool_type="interactive" version="0.0.2" license="MIT">
     <description>Interactive shiny app to explore SimText output data</description>
-    <macros>
-        <import>macros.xml</import>
-    </macros>
     <requirements>
         <container type="docker">dlalgroup/simtext:2.0</container>
     </requirements>
