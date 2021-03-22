@@ -1,14 +1,12 @@
 """
 Galaxy sql view models
 """
-from sqlalchemy import Integer, MetaData
+from sqlalchemy import Integer
 from sqlalchemy.orm import mapper
 from sqlalchemy.sql import column, text
-from sqlalchemy_utils import create_view
 
 from .utils import View
-
-metadata = MetaData()
+from galaxy.model.view.utils import create_view
 
 AGGREGATE_STATE_QUERY = """
 SELECT
@@ -38,9 +36,11 @@ GROUP BY hdca.id
 
 
 class HistoryDatasetCollectionJobStateSummary(View):
+    name = 'collection_job_state_summary_view'
+    pkey = 'hdca_id'
 
     __view__ = text(AGGREGATE_STATE_QUERY).columns(
-        column('hdca_id', Integer),
+        column(pkey, Integer),
         column('new', Integer),
         column('resubmitted', Integer),
         column('waiting', Integer),
@@ -56,7 +56,8 @@ class HistoryDatasetCollectionJobStateSummary(View):
         column('all_jobs', Integer)
     )
 
-    __table__ = create_view('collection_job_state_summary_view', __view__, metadata)
+    __table__ = create_view(name, __view__, pkey)
 
 
 mapper(HistoryDatasetCollectionJobStateSummary, HistoryDatasetCollectionJobStateSummary.__table__)
+
