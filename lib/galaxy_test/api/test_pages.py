@@ -214,6 +214,13 @@ steps:
         pdf_response = self._get(f"pages/{page_id}.pdf")
         self._assert_status_code_is(pdf_response, 400)
 
+    def test_sharing(self):
+        create_response = self._create_valid_page_with_slug("page-to-share")
+        page_id = create_response["id"]
+        sharing_response = self._get(f"pages/{page_id}/sharing")
+        self._assert_status_code_is(sharing_response, 200)
+        self._assert_has_keys(sharing_response.json(), "title", "importable", "id", "username_and_slug", "published", "users_shared_with")
+
     def _users_index_has_page_with_id(self, id):
         index_response = self._get("pages")
         self._assert_status_code_is(index_response, 200)

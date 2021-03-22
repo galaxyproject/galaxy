@@ -198,6 +198,13 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories):
         tag_create_response = self._post(tag_url, data=tag_data)
         self._assert_status_code_is(tag_create_response, 200)
 
+    def test_sharing(self):
+        create_response = self._create_history("TestHistorySharing")
+        history_id = create_response["id"]
+        sharing_response = self._get(f"histories/{history_id}/sharing")
+        self._assert_status_code_is(sharing_response, 200)
+        self._assert_has_keys(sharing_response.json(), "title", "importable", "id", "username_and_slug", "published", "users_shared_with")
+
     # TODO: (CE) test_create_from_copy
 
 

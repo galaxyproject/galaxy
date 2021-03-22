@@ -46,6 +46,12 @@ class VisualizationsApiTestCase(ApiTestCase):
         response = self._raw_create_viz(config="3 = nime")
         self._assert_status_code_is(response, 400)
 
+    def test_sharing(self):
+        viz_id, _ = self._create_viz()
+        sharing_response = self._get(f"visualizations/{viz_id}/sharing")
+        self._assert_status_code_is(sharing_response, 200)
+        self._assert_has_keys(sharing_response.json(), "title", "importable", "id", "username_and_slug", "published", "users_shared_with")
+
     def test_update_title(self):
         viz_id, viz = self._create_viz()
         update_url = self._api_url("visualizations/%s" % viz_id, use_key=True)
