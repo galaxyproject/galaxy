@@ -9,7 +9,8 @@ import LIST_CREATOR from "components/Collections/ListCollectionCreator";
 import LIST_CREATOR_MODAL from "components/Collections/ListCollectionCreatorModal";
 import PAIR_CREATOR from "components/Collections/PairCollectionCreator";
 import PAIR_CREATOR_MODAL from "components/Collections/PairCollectionCreatorModal";
-import PAIRED_CREATOR from "components/Collections/PairedListCollectionCreatorModal";
+import PAIRED_CREATOR from "components/Collections/PairedListCollectionCreator";
+import PAIRED_CREATOR_MODAL from "components/Collections/PairedListCollectionCreatorModal";
 import RULE_CREATOR_MODAL from "components/Collections/RuleBasedCollectionCreatorModal";
 import HDCA_MODEL from "mvc/history/hdca-model";
 
@@ -144,16 +145,33 @@ var ImportCollectionModal = Backbone.View.extend({
                 creator_class
             );
         } else if (this.collectionType === "list:paired") {
-            const elements = collection_elements.map((element) => ({
-                id: element.id,
-                name: element.name,
-                src: "ldda",
-            }));
-            PAIRED_CREATOR.pairedListCollectionCreatorModal(elements, {
-                historyId: history_id,
-                title: modal_title,
-                defaultHideSourceItems: true,
-            });
+            creator_class = PAIRED_CREATOR;
+            creationFn = (elements, name, hideSourceItems) => {
+                elements = elements.map((pair) => ({
+                    collection_type: "paired",
+                    src: "new_collection",
+                    name: pair.name,
+                    element_identifiers: [
+                        {
+                            name: "forward",
+                            id: pair.forward.id,
+                            src: pair.forward.src || "hda",
+                        },
+                        {
+                            name: "reverse",
+                            id: pair.reverse.id,
+                            src: pair.reverse.src || "hda",
+                        },
+                    ],
+                }));
+                copyElements = !hideSourceItems;
+                return contents.createHDCA(elements, "list:paired", name, hideSourceItems, copyElements);
+            };
+            PAIRED_CREATOR_MODAL.pairedListCollectionCreatorModal(
+                collection_elements,
+                { creationFn: creationFn, title: modal_title, defaultHideSourceItems: true },
+                creator_class
+            );
         } else if (this.collectionType === "rules") {
             const creationFn = (elements, collectionType, name, hideSourceItems) => {
                 return this.createHDCA(elements, collectionType, name, hideSourceItems, history_id);
