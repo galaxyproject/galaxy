@@ -11,9 +11,6 @@ from galaxy_test.base.populators import (
 )
 from ._framework import ApiTestCase
 
-OWNNER_USER = 'owner@user.com'
-ANOTHER_USER = 'another@user.com'
-
 
 class FolderContentsApiTestCase(ApiTestCase):
 
@@ -141,8 +138,6 @@ class FolderContentsApiTestCase(ApiTestCase):
             assert len(contents) == len(matching_names)
 
     def test_index_permissions_include_deleted(self):
-        self._setup_user(ANOTHER_USER)
-        self._setup_user(OWNNER_USER)
 
         folder_name = "Test Folder Contents Index permissions include deteleted"
         folder_id = self._create_folder_in_library(folder_name)
@@ -195,12 +190,12 @@ class FolderContentsApiTestCase(ApiTestCase):
         assert len(contents) == num_total_contents
 
         # Users with access but no modify permission can't see deleted
-        with self._different_user(ANOTHER_USER):
+        with self._different_user():
             different_user_role_id = self.dataset_populator.user_private_role_id()
 
         self._allow_library_access_to_user_role(different_user_role_id)
 
-        with self._different_user(ANOTHER_USER):
+        with self._different_user():
             response = self._get(f"folders/{folder_id}/contents?include_deleted={include_deleted}")
             self._assert_status_code_is(response, 200)
             contents = response.json()["folder_contents"]
