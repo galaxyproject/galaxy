@@ -5,10 +5,10 @@ import uuid
 
 import pytest
 from sqlalchemy import inspect
-from sqlalchemy_utils import create_database
 
 import galaxy.datatypes.registry
 import galaxy.model
+from galaxy.model.database_utils import create_database
 import galaxy.model.mapping as mapping
 from galaxy.model.security import GalaxyRBACAgent
 

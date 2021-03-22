@@ -5,10 +5,8 @@ import sys
 from migrate.versioning import repository, schema
 from sqlalchemy import create_engine, MetaData, Table
 from sqlalchemy.exc import NoSuchTableError
-from sqlalchemy_utils import (
-    create_database,
-    database_exists,
-)
+
+from galaxy.model.database_utils import create_database, database_exists
 
 log = logging.getLogger(__name__)
 
