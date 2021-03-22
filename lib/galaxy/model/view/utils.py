@@ -64,7 +64,7 @@ def create_view(name, selectable, pkey):
             c.type,
             primary_key=(c.name == pkey)
         )
-        for c in selectable.subquery().c
+        for c in selectable.c
     ]
     table = Table(name, metadata, *columns)
 

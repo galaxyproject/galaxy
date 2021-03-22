@@ -1,7 +1,7 @@
 import os
 
 from sqlalchemy.sql.compiler import IdentifierPreparer
-from sqlalchemy.engine import make_url
+from sqlalchemy.engine.url import make_url
 
 from galaxy.model.database_utils import sqlalchemy_engine
 

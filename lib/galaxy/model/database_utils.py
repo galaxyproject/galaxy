@@ -3,7 +3,7 @@ import sqlite3
 from sqlalchemy import create_engine
 from sqlalchemy.sql.expression import text
 from sqlalchemy.sql.compiler import IdentifierPreparer
-from sqlalchemy.engine import make_url
+from sqlalchemy.engine.url import make_url
 
 from contextlib import contextmanager
 
@@ -59,7 +59,7 @@ class PosgresDatabaseManager(DatabaseManager):
 
     def _handle_no_database(self):
         self.database = self.url.database  # use database from db_url
-        self.url = self.url.set(database='postgres')  # use default database to connect
+        self.url.database = 'postgres'
 
     def exists(self):
         with sqlalchemy_engine(self.url) as engine:
