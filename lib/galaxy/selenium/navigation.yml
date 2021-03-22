@@ -360,6 +360,7 @@ tool_form:
     options: '#options [data-toggle="dropdown"]'
     execute: 'button#execute'
     parameter_div: 'div.ui-form-element[tour_id="${parameter}"]'
+    parameter_textarea: 'div.ui-form-element[tour_id="${parameter}"] textarea'
     reference: '.formatted-reference'
     about: '.tool-footer'
 
