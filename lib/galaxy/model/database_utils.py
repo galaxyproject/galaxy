@@ -40,7 +40,7 @@ class DatabaseManager:
 
     @staticmethod
     def make_manager(db_url, database):
-        if db_url.startswith('postgresql'):
+        if db_url.startswith('postgres'):
             return PosgresDatabaseManager(db_url, database)
         elif db_url.startswith('sqlite'):
             return SqliteDatabaseManager(db_url, database)
