@@ -41,7 +41,7 @@ gxformat2 = "*"
 h5py = "!=2.7.0, !=2.7.1"
 isa-rwval = "*"
 kombu = "*"
-lagom = "!=1.2.1"  # maximum recursion depth exceeded (on functional_tests run)
+lagom = "<1.2.1"  # maximum recursion depth exceeded (on functional_tests run)
 Mako = "*"
 Markdown = "*"
 MarkupSafe = "*"
