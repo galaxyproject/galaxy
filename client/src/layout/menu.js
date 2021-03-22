@@ -70,11 +70,10 @@ export function fetchMenu(options = {}) {
     //
     menu.push({
         id: "analysis",
-        title: _l("Analyze Data"),
         url: "",
-        tooltip: _l("Analysis home view"),
+        tooltip: _l("Tools and Current History"),
+        icon: "fa-home",
     });
-
     //
     // Workflow tab.
     //
