@@ -164,8 +164,7 @@ var ImportCollectionModal = Backbone.View.extend({
                         },
                     ],
                 }));
-                copyElements = !hideSourceItems;
-                return contents.createHDCA(elements, "list:paired", name, hideSourceItems, copyElements);
+                return this.createHDCA(elements, "list:paired", name, hideSourceItems, history_id);
             };
             PAIRED_CREATOR_MODAL.pairedListCollectionCreatorModal(
                 collection_elements,
