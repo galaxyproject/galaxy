@@ -30,21 +30,5 @@ echo "col_names $col_names" >> '$output2'
                 </assert_contents>
             </output>
         </test>
-        <!-- test if non tabular data also creates entries by using the default
-            value (which is the 1st column, but empty if filling the options fails) -->
-        <test>
-            <param name="input1" value="1.bed" />
-            <output name="output1">
-                <assert_contents>
-                    <has_line line="chr1" />
-                </assert_contents>
-            </output>
-            <output name="output2">
-                <assert_contents>
-                    <has_line line="col 1" />
-                    <has_line line="col_names 1" />
-                </assert_contents>
-            </output>
-        </test>
     </tests>
 </tool>
