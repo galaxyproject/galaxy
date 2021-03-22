@@ -14,7 +14,8 @@ def build_collection(type, dataset_instances):
 
 
 def set_collection_elements(dataset_collection, type, dataset_instances):
-    element_index = 0
+    dataset_collection.element_count = dataset_collection.element_count or 0
+    element_index = dataset_collection.element_count
     elements = []
     for element in type.generate_elements(dataset_instances):
         element.element_index = element_index
@@ -79,6 +80,7 @@ class CollectionBuilder:
             for identifier, element in elements.items():
                 new_elements[identifier] = element.build()
             elements = new_elements
+        self._current_elements = {}
         return elements
 
     def build(self):
@@ -107,8 +109,11 @@ class BoundCollectionBuilder(CollectionBuilder):
         collection_type_description = COLLECTION_TYPE_DESCRIPTION_FACTORY.for_collection_type(collection_type)
         super().__init__(collection_type_description)
 
-    def populate(self):
+    def populate_partial(self):
         elements = self.build_elements()
         type_plugin = self._collection_type_description.rank_type_plugin()
         set_collection_elements(self.dataset_collection, type_plugin, elements)
+
+    def populate(self):
+        self.populate_partial()
         self.dataset_collection.mark_as_populated()

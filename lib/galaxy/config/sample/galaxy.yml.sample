@@ -1684,6 +1684,13 @@ galaxy:
   # disable any such maximum.
   #maximum_workflow_jobs_per_scheduling_iteration: 1000
 
+  # Maximum number of datasets to create before flushing created
+  # datasets to database. This affects tools that create many output
+  # datasets. Higher values will lead to fewer database flushes and
+  # faster execution, but require more memory. Set to -1 to disable
+  # creating datasets in batches.
+  #flush_per_n_datasets: 1000
+
   # Force serial scheduling of workflows within the context of a
   # particular history
   #history_local_serial_workflow_scheduling: false
