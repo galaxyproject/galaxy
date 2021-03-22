@@ -77,6 +77,7 @@
                 <div v-else>
                     <p>You have not shared this {{ model_class }} with any users.</p>
                 </div>
+                <SelectUsers />
                 <b-button :href="shareUrl" id="share_with_a_user"> <span>Share with a user</span> </b-button>
             </div>
         </div>
@@ -92,6 +93,7 @@ import { faLink, faEdit } from "@fortawesome/free-solid-svg-icons";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import SlugInput from "components/Common/SlugInput";
+import SelectUsers from "components/SelectUsers/SelectUsers";
 import axios from "axios";
 
 Vue.use(BootstrapVue);
@@ -103,6 +105,7 @@ export default {
     components: {
         FontAwesomeIcon,
         SlugInput,
+        SelectUsers,
     },
     props: {
         id: {
