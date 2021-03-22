@@ -1,9 +1,13 @@
 import os
-import pytest
 import tempfile
 import uuid
 
-from galaxy.model.database_utils import database_exists, create_database
+import pytest
+
+from galaxy.model.database_utils import (
+    create_database,
+    database_exists,
+)
 from ..unittest_utils.database_helpers import drop_database
 
 
@@ -82,4 +86,3 @@ def test_sqlite_create_exists_drop_in_memory_database(database_name, sqlite_memo
 def _make_sqlite_url(tmp_dir, database_name):
     path = os.path.join(tmp_dir, database_name)
     return f'sqlite:///{path}?isolation_level=IMMEDIATE'
-

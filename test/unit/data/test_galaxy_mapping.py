@@ -8,8 +8,8 @@ from sqlalchemy import inspect
 
 import galaxy.datatypes.registry
 import galaxy.model
-from galaxy.model.database_utils import create_database
 import galaxy.model.mapping as mapping
+from galaxy.model.database_utils import create_database
 from galaxy.model.security import GalaxyRBACAgent
 
 datatypes_registry = galaxy.datatypes.registry.Registry()

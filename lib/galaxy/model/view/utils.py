@@ -5,12 +5,12 @@ from inspect import getmembers
 
 from sqlalchemy import (
     Column,
+    event,
     MetaData,
     Table,
-    event
 )
-from sqlalchemy.schema import DDLElement
 from sqlalchemy.ext import compiler
+from sqlalchemy.schema import DDLElement
 
 
 class View:
@@ -72,4 +72,3 @@ def create_view(name, selectable, pkey):
     event.listen(metadata, 'before_drop', DropView(name))
 
     return table
-

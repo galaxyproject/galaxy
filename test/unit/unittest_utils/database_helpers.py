@@ -1,7 +1,7 @@
 import os
 
-from sqlalchemy.sql.compiler import IdentifierPreparer
 from sqlalchemy.engine.url import make_url
+from sqlalchemy.sql.compiler import IdentifierPreparer
 
 from galaxy.model.database_utils import sqlalchemy_engine
 
@@ -21,4 +21,3 @@ def drop_database(db_url, database):
     else:
         url = make_url(db_url)
         os.remove(url.database)
-

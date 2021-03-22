@@ -5,8 +5,8 @@ from sqlalchemy import Integer
 from sqlalchemy.orm import mapper
 from sqlalchemy.sql import column, text
 
-from .utils import View
 from galaxy.model.view.utils import create_view
+from .utils import View
 
 AGGREGATE_STATE_QUERY = """
 SELECT
@@ -60,4 +60,3 @@ class HistoryDatasetCollectionJobStateSummary(View):
 
 
 mapper(HistoryDatasetCollectionJobStateSummary, HistoryDatasetCollectionJobStateSummary.__table__)
-

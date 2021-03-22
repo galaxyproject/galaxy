@@ -1,11 +1,10 @@
 import sqlite3
+from contextlib import contextmanager
 
 from sqlalchemy import create_engine
-from sqlalchemy.sql.expression import text
-from sqlalchemy.sql.compiler import IdentifierPreparer
 from sqlalchemy.engine.url import make_url
-
-from contextlib import contextmanager
+from sqlalchemy.sql.compiler import IdentifierPreparer
+from sqlalchemy.sql.expression import text
 
 from galaxy.exceptions import ConfigurationError
 
