@@ -1,28 +1,34 @@
 from galaxy import model
+from galaxy.util.oset import OrderedSet
 from .type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
 
 
-def build_collection(type, dataset_instances):
+def build_collection(type, dataset_instances, collection=None):
     """
     Build DatasetCollection with populated DatasetcollectionElement objects
     corresponding to the supplied dataset instances or throw exception if
     this is not a valid collection of the specified type.
     """
-    dataset_collection = model.DatasetCollection()
+    dataset_collection = collection or model.DatasetCollection()
     set_collection_elements(dataset_collection, type, dataset_instances)
     return dataset_collection
 
 
 def set_collection_elements(dataset_collection, type, dataset_instances):
+    if not hasattr(dataset_collection, 'created_elements'):
+        dataset_collection.created_elements = OrderedSet()
+    new_element_keys = dataset_instances.keys() - dataset_collection.created_elements
+    new_dataset_instances = {k: dataset_instances[k] for k in new_element_keys}
     dataset_collection.element_count = dataset_collection.element_count or 0
     element_index = dataset_collection.element_count
     elements = []
-    for element in type.generate_elements(dataset_instances):
+    for element in type.generate_elements(new_dataset_instances):
         element.element_index = element_index
         element.collection = dataset_collection
         elements.append(element)
 
         element_index += 1
+        dataset_collection.created_elements.add(element.element_identifier)
 
     dataset_collection.element_count = element_index
     return dataset_collection
@@ -34,6 +40,8 @@ class CollectionBuilder:
     def __init__(self, collection_type_description):
         self._collection_type_description = collection_type_description
         self._current_elements = {}
+        # Store collection here so we don't recreate the collection all the time
+        self.collection = None
 
     def replace_elements_in_collection(self, template_collection, replacement_dict):
         self._current_elements = self._replace_elements_in_collection(
@@ -80,14 +88,15 @@ class CollectionBuilder:
             for identifier, element in elements.items():
                 new_elements[identifier] = element.build()
             elements = new_elements
-        self._current_elements = {}
+        else:
+            self._current_elements = {}
         return elements
 
     def build(self):
         type_plugin = self._collection_type_description.rank_type_plugin()
-        collection = build_collection(type_plugin, self.build_elements())
-        collection.collection_type = self._collection_type_description.collection_type
-        return collection
+        self.collection = build_collection(type_plugin, self.build_elements(), self.collection)
+        self.collection.collection_type = self._collection_type_description.collection_type
+        return self.collection
 
     @property
     def _subcollection_type_description(self):
