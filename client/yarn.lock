@@ -7080,10 +7080,10 @@ istanbul-reports@^3.0.2:
     html-escaper "^2.0.0"
     istanbul-lib-report "^3.0.0"
 
-iter-tools@7.0.2:
-  version "7.0.2"
-  resolved "https://registry.yarnpkg.com/iter-tools/-/iter-tools-7.0.2.tgz#3f67b270d80341dc6c464b311c56e279a739672d"
-  integrity sha512-eQOeYO/EocvvxYJO0rcuMNr3sqsOe+LRxDLmAPmKmqIlLoJ90GFxRv/oSJ3yr0FcxOOcrH0ivmKoal/DOmSO+w==
+iter-tools@7.1.0:
+  version "7.1.0"
+  resolved "https://registry.yarnpkg.com/iter-tools/-/iter-tools-7.1.0.tgz#d536794c097675008025f06c69269ef364b251f8"
+  integrity sha512-/sbRKeRHefkDfyQ8PCwnXMqdxMuE2MtrMli+9506P2qdxcnDfBu0LsROdrkzzBTZA2BTb56h5Gg4RPY+rE/V3w==
   dependencies:
     "@babel/runtime" "^7.12.1"
 

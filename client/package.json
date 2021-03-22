@@ -44,7 +44,7 @@
     "in-viewport": "^3.6.0",
     "is-promise": "^4.0.0",
     "isotope-layout": "^3.0.6",
-    "iter-tools": "7.0.2",
+    "iter-tools": "7.1.0",
     "jquery": "2",
     "jquery-migrate": "~1.4",
     "jquery-mousewheel": "^3.1.13",
