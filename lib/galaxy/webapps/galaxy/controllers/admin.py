@@ -109,12 +109,12 @@ class UserListGrid(grids.Grid):
                        filterable="advanced"),
         LastLoginColumn("Last Login", format=time_ago),
         DiskUsageColumn("Disk Usage", key="disk_usage", attach_popup=False),
-        StatusColumn("Status", attach_popup=False),
-        TimeCreatedColumn("Created", attach_popup=False),
-        ActivatedColumn("Activated", attach_popup=False),
+        StatusColumn("Status", attach_popup=False, key="deleted"),
+        TimeCreatedColumn("Created", attach_popup=False, key="create_time"),
+        ActivatedColumn("Activated", attach_popup=False, key="active"),
         GroupsColumn("Groups", attach_popup=False),
         RolesColumn("Roles", attach_popup=False),
-        ExternalColumn("External", attach_popup=False),
+        ExternalColumn("External", attach_popup=False, key="external"),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced"),
         grids.PurgedColumn("Purged", key="purged", visible=False, filterable="advanced")
