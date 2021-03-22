@@ -32,7 +32,7 @@ module.exports = (env = {}, argv = {}) => {
         resolve: {
             extensions: ["*", ".js", ".json", ".vue", ".scss"],
             modules: [scriptsBase, "node_modules", styleBase, testsBase],
-            fallback: { "timers": require.resolve("timers-browserify") },
+            fallback: { timers: require.resolve("timers-browserify") },
             alias: {
                 jquery$: `${libsBase}/jquery.custom.js`,
                 jqueryVendor$: `${libsBase}/jquery/jquery.js`,
@@ -98,7 +98,10 @@ module.exports = (env = {}, argv = {}) => {
                         {
                             loader: "expose-loader",
                             options: {
-                                exposes: ["jQuery", "$"],
+                                exposes: {
+                                    globalName: ["jQuery", "$"],
+                                    moduleLocalName: "jQuery",
+                                },
                             },
                         },
                     ],
@@ -109,7 +112,10 @@ module.exports = (env = {}, argv = {}) => {
                         {
                             loader: "expose-loader",
                             options: {
-                                exposes: ["underscore", "_"],
+                                exposes: {
+                                    globalName: ["underscore", "_"],
+                                    moduleLocalName: "_",
+                                },
                             },
                         },
                     ],
