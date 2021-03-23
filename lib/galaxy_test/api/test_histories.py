@@ -5,6 +5,7 @@ from requests import (
     put
 )
 
+from galaxy_test.api.sharable import SharingApiTests
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
@@ -31,7 +32,13 @@ class BaseHistories:
         return create_response
 
 
-class HistoriesApiTestCase(ApiTestCase, BaseHistories):
+class HistoriesApiTestCase(ApiTestCase, BaseHistories, SharingApiTests):
+
+    api_name = "histories"
+
+    def create(self, name: str) -> str:
+        response_json = self._create_history(name)
+        return response_json["id"]
 
     def test_create_history(self):
         # Create a history.
@@ -197,13 +204,6 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories):
         tag_url = "histories/%s/tags/awesometagname" % history_id
         tag_create_response = self._post(tag_url, data=tag_data)
         self._assert_status_code_is(tag_create_response, 200)
-
-    def test_sharing(self):
-        create_response = self._create_history("TestHistorySharing")
-        history_id = create_response["id"]
-        sharing_response = self._get(f"histories/{history_id}/sharing")
-        self._assert_status_code_is(sharing_response, 200)
-        self._assert_has_keys(sharing_response.json(), "title", "importable", "id", "username_and_slug", "published", "users_shared_with")
 
     # TODO: (CE) test_create_from_copy
 

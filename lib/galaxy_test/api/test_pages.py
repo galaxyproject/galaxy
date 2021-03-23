@@ -1,6 +1,7 @@
 from requests import delete
 
 from galaxy.exceptions import error_codes
+from galaxy_test.api.sharable import SharingApiTests
 from galaxy_test.base.populators import DatasetPopulator, skip_without_tool, WorkflowPopulator
 from ._framework import ApiTestCase
 
@@ -36,7 +37,13 @@ class BasePageApiTestCase(ApiTestCase):
         return request
 
 
-class PageApiTestCase(BasePageApiTestCase):
+class PageApiTestCase(BasePageApiTestCase, SharingApiTests):
+
+    api_name = "pages"
+
+    def create(self, name: str) -> str:
+        response_json = self._create_valid_page_with_slug(name)
+        return response_json["id"]
 
     def test_create(self):
         response_json = self._create_valid_page_with_slug("mypage")
@@ -213,13 +220,6 @@ steps:
         page_id = page_response.json()['id']
         pdf_response = self._get(f"pages/{page_id}.pdf")
         self._assert_status_code_is(pdf_response, 400)
-
-    def test_sharing(self):
-        create_response = self._create_valid_page_with_slug("page-to-share")
-        page_id = create_response["id"]
-        sharing_response = self._get(f"pages/{page_id}/sharing")
-        self._assert_status_code_is(sharing_response, 200)
-        self._assert_has_keys(sharing_response.json(), "title", "importable", "id", "username_and_slug", "published", "users_shared_with")
 
     def _users_index_has_page_with_id(self, id):
         index_response = self._get("pages")
