@@ -607,6 +607,7 @@ libraries:
       import_from_path_textarea: '#import_paths'
       select_all: '#select-all-checkboxes'
       select_one: '.lib-folder-checkbox'
+      select_dataset: 'tr[aria-rowindex="${rowindex}"] .lib-folder-checkbox'
       empty_folder_message: '.empty-folder-message'
       btn_open_parent_folder:
         type: xpath

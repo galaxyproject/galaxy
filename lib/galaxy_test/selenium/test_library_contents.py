@@ -150,9 +150,10 @@ class LibraryContentsTestCase(SeleniumTestCase, UsesLibraryAssertions):
     def test_import_dataset_from_import_dir(self):
         self.navigate_to_new_library()
         self.assert_num_displayed_items_is(0)
-        self.libraries_dataset_import(self.navigation.libraries.folder.labels.from_import_dir)
-        self.select_dataset_from_lib_import_modal("1.axt")
-        self.assert_num_displayed_items_is(1)
+        filenames = ["1.axt", "1.bed", "1.bam"]
+        self.populate_library_folder_from_import_dir(self.name, ["1.axt"])
+        self.assert_num_displayed_items_is(len(filenames))
+
 
     @selenium_test
     def test_show_details(self):
@@ -164,9 +165,6 @@ class LibraryContentsTestCase(SeleniumTestCase, UsesLibraryAssertions):
         self.wait_for_overlays_cleared()
         self.screenshot("libraries_show_details")
 
-    def navigate_to_new_library(self, login=True):
-        self.create_new_library(login)
-        self.libraries_open_with_name(self.name)
 
     @retry_during_transitions
     def _select_history_option(self, select_id, label_text):

@@ -37,7 +37,7 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
         self.libraries_open_with_name(self.name)
         self.assert_num_displayed_items_is(0)
         self.libraries_dataset_import(self.navigation.libraries.folder.labels.from_user_import_dir)
-        self.select_dataset_from_lib_import_modal(random_filename)
+        self.select_dataset_from_lib_import_modal([random_filename])
         self.assert_num_displayed_items_is(1)
         return random_filename, email
 
