@@ -12,12 +12,15 @@ try:
         Service,
         Ingress,
     )
+    from pykube.exceptions import HTTPError
 except ImportError as exc:
     KubeConfig = None
     Ingress = None
+    HTTPClient = None
     Job = None
     Pod = None
     Service = None
+    HTTPError = None
     K8S_IMPORT_MESSAGE = ('The Python pykube package is required to use '
                           'this feature, please install it or correct the '
                           'following error:\nImportError %s' % str(exc))
@@ -213,6 +216,7 @@ __all__ = (
     "find_job_object_by_name",
     "find_pod_object_by_name",
     "galaxy_instance_id",
+    "HTTPError",
     "is_pod_unschedulable",
     "Job",
     "Service",
