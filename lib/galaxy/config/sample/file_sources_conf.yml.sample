@@ -2,7 +2,7 @@
   id: dropbox1
   label: Dropbox files (configure access in user preferences)
   doc: Your Dropbox files - configure an access token via the user preferences
-  accessToken: ${user.preferences['dropbox|access_token']}
+  accessToken: ${user.preferences.get('dropbox|access_token', '') if $user.preferences else ''}
 
 - type: webdav
   id: owncloud1
