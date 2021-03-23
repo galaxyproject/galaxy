@@ -210,3 +210,7 @@ wrapt==1.12.1; python_version >= "3.6"
 yacman==0.8.2
 zipp==3.4.1; python_version < "3.7" and python_version >= "3.6"
 zipstream-new==1.1.8
+
+# anvil specific
+fs.anvilfs==0.2.2
+s3fs
