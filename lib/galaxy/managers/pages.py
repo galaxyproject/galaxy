@@ -199,6 +199,8 @@ class PagesService:
 
     def __init__(self, app: StructuredApp):
         self.manager = PageManager(app)
+        self.serializer = PageSerializer(app)
+        self.sharable_service = sharable.SharableService(self.manager, self.serializer)
 
     def index(self, trans, deleted: bool = False) -> PageSummaryList:
         """Return a list of Pages viewable by the user
@@ -283,6 +285,12 @@ class PagesService:
         internal_galaxy_markdown = page.latest_revision.content
         trans.response.set_content_type("application/pdf")
         return internal_galaxy_markdown_to_pdf(trans, internal_galaxy_markdown, 'page')
+
+    def sharing(self, trans, id: EncodedDatabaseIdField, payload: Optional[sharable.SharingPayload] = None) -> sharable.SharingStatus:
+        """Allows to publish or share with other users the given resource (by id) and returns the current sharing
+        status of the resource.
+        """
+        return self.sharable_service.sharing(trans, id, payload)
 
 
 class PageManager(sharable.SharableModelManager, UsesAnnotations):

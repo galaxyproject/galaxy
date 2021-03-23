@@ -20,6 +20,7 @@ from galaxy.managers.pages import (
     PageSummary,
     PageSummaryList,
 )
+from galaxy.managers.sharable import SharingPayload, SharingStatus
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.web import (
     expose_api,
@@ -132,6 +133,31 @@ class FastAPIPages:
         pdf_bytes = self.pages_service.show_pdf(trans, id)
         return StreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf")
 
+    @router.get(
+        '/api/pages/{id}/sharing',
+        summary="Get sharing the status of the given Page.",
+    )
+    def get_sharing(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = PageIdPathParam,
+    ) -> SharingStatus:
+        """Return the sharing status of the Page."""
+        return self.pages_service.sharing(trans, id)
+
+    @router.post(
+        '/api/pages/{id}/sharing',
+        summary="Set sharing options for the given Page.",
+    )
+    def post_sharing(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = PageIdPathParam,
+        payload: SharingPayload = Body(...),
+    ) -> SharingStatus:
+        """Return the sharing status of the Page after the changes."""
+        return self.pages_service.sharing(trans, id, payload)
+
 
 class PagesController(BaseGalaxyAPIController):
     """
@@ -215,3 +241,12 @@ class PagesController(BaseGalaxyAPIController):
         """
         return self.pages_service.show_pdf(trans, id)
 
+    @expose_api
+    def sharing(self, trans, id, payload=None, **kwd):
+        """
+        * GET /api/pages/{id}/sharing
+            View sharing options for the page with the given id.
+        """
+        if payload:
+            payload = SharingPayload(**payload)
+        return self.pages_service.sharing(trans, id, payload)
