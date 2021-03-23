@@ -461,3 +461,76 @@ class SharableModelFilters(base.ModelFilterParser,
             # chose by user should prob. only be available for admin? (most often we'll only need trans.user)
             # 'user'          : { 'op': ( 'eq' ), 'val': self.parse_id_list },
         })
+
+
+class SharingPayload(BaseModel):
+    action: str = Field(  # TODO: this seems like it should be a list of actions instead of separating them by '-'
+        ...,  # Mark this field as required
+        title="Action",
+        description=(
+            "The name of the sharing action. "
+            "Can be one (or multiple values separated by '-') of the following: "
+            "make_accessible_via_link, make_accessible_and_publish, publish, "
+            "unpublish, disable_link_access, disable_link_access_and_unpublish, unshare_user"
+        ),
+    )
+    user_id: Optional[EncodedDatabaseIdField] = Field(
+        None,
+        title="User ID",
+        description=(
+            "The ID of the user with whom this resource will be shared. "
+            "*Required* when the action is `unshare_user`."
+        ),
+    )
+
+
+class UserEmail(BaseModel):
+    id: EncodedDatabaseIdField = Field(
+        ...,  # Mark this field as required
+        title="User ID",
+        description="The encoded ID of the user.",
+    )
+    email: str = Field(
+        ...,  # Mark this field as required
+        title="Email",
+        description="The email of the user.",
+    )
+
+
+class SharingStatus(BaseModel):
+    id: EncodedDatabaseIdField = Field(
+        ...,  # Mark this field as required
+        title="ID",
+        description="The encoded ID of the resource to be shared.",
+    )
+    title: str = Field(
+        ...,  # Mark this field as required
+        title="Title",
+        description="The title or name of the resource.",
+    )
+    importable: bool = Field(
+        ...,  # Mark this field as required
+        title="Importable",
+        description="Whether this resource can be published using a link.",
+    )
+    published: bool = Field(
+        ...,  # Mark this field as required
+        title="Published",
+        description="Whether this resource is currently published.",
+    )
+    users_shared_with: List[UserEmail] = Field(
+        [],
+        title="Users shared with",
+        description="The list of encoded ids for users the resource has been shared.",
+    )
+    username_and_slug: Optional[str] = Field(
+        None,
+        title="Username and slug",
+        description="The relative URL in the form of /u/{username}/{resource_single_char}/{slug}",
+    )
+    skipped: Optional[bool] = Field(
+        None,
+        title="Skipped",
+        description="Indicates that some of the resources within this object were not published due to an error.",
+    )
+
