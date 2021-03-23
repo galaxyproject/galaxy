@@ -190,9 +190,11 @@ class PageSummaryList(BaseModel):
     )
 
 
-class PagesManager:
-    """
-    Common interface/service logic for interactions with pages.
+class PagesService:
+    """Common interface/service logic for interactions with pages in the context of an API.
+
+    Provides the logic of the actions invoked by API controllers and uses type definitions
+    and pydantic models to declare its parameters and return types.
     """
 
     def __init__(self, app: StructuredApp):
@@ -252,8 +254,7 @@ class PagesManager:
         trans.sa_session.flush()
 
     def show(self, trans, id: EncodedDatabaseIdField) -> PageDetails:
-        """
-            View a page summary and the content of the latest revision
+        """View a page summary and the content of the latest revision
 
         :param  id:    ID of page to be displayed
 
@@ -269,8 +270,6 @@ class PagesManager:
 
     def show_pdf(self, trans, id: EncodedDatabaseIdField):
         """
-        GET /api/pages/{id}.pdf
-
         View a page summary and the content of the latest revision as PDF.
 
         :param  id: ID of page to be displayed
@@ -287,8 +286,7 @@ class PagesManager:
 
 
 class PageManager(sharable.SharableModelManager, UsesAnnotations):
-    """
-    """
+    """Provides operations for managing a Page."""
 
     model_class = model.Page
     foreign_key_name = 'page'
