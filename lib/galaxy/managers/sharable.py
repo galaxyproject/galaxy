@@ -11,8 +11,16 @@ A sharable Galaxy object:
 """
 import logging
 import re
-from typing import Optional, Type
+from typing import (
+    List,
+    Optional,
+    Type,
+)
 
+from pydantic import (
+    BaseModel,
+    Field,
+)
 from sqlalchemy import true
 
 from galaxy import exceptions
@@ -25,7 +33,9 @@ from galaxy.managers import (
     users
 )
 from galaxy.model import UserShareAssociation
+from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.structured_app import StructuredApp
+from galaxy.util import ready_name_for_url
 
 log = logging.getLogger(__name__)
 
@@ -534,3 +544,138 @@ class SharingStatus(BaseModel):
         description="Indicates that some of the resources within this object were not published due to an error.",
     )
 
+
+class SharableService:
+    """ Provides the logic used by the API to share resources with other users."""
+
+    def __init__(self, manager: SharableModelManager, serializer: SharableModelSerializer) -> None:
+        self.manager = manager
+        self.serializer = serializer
+
+    def create_item_slug(self, sa_session, item):
+        """ Create/set item slug. Slug is unique among user's importable items
+            for item's class. Returns true if item's slug was set/changed; false
+            otherwise.
+        """
+        cur_slug = item.slug
+
+        # Setup slug base.
+        if cur_slug is None or cur_slug == "":
+            # Item can have either a name or a title.
+            item_name = ''
+            if hasattr(item, 'name'):
+                item_name = item.name
+            elif hasattr(item, 'title'):
+                item_name = item.title
+            slug_base = ready_name_for_url(item_name.lower())
+        else:
+            slug_base = cur_slug
+
+        # Using slug base, find a slug that is not taken. If slug is taken,
+        # add integer to end.
+        new_slug = slug_base
+        count = 1
+        # Ensure unique across model class and user and don't include this item
+        # in the check in case it has previously been assigned a valid slug.
+        while sa_session.query(item.__class__).filter(item.__class__.user == item.user, item.__class__.slug == new_slug, item.__class__.id != item.id).count() != 0:
+            # Slug taken; choose a new slug based on count. This approach can
+            # handle numerous items with the same name gracefully.
+            new_slug = '%s-%i' % (slug_base, count)
+            count += 1
+
+        # Set slug and return.
+        item.slug = new_slug
+        return item.slug == cur_slug
+
+    def sharing(self, trans, id: EncodedDatabaseIdField, payload: Optional[SharingPayload] = None) -> SharingStatus:
+        """Allows to publish or share with other users the given resource (by id) and returns the current sharing
+        status of the resource.
+
+        :param id: The encoded ID of the resource to share.
+        :type id: EncodedDatabaseIdField
+        :param payload: The options to share this resource, defaults to None
+        :type payload: Optional[sharable.SharingPayload], optional
+        :return: The current sharing status of the resource.
+        :rtype: sharable.SharingStatus
+        """
+        skipped = False
+        class_name = self.manager.model_class.__name__
+        item = base.get_object(trans, id, class_name, check_ownership=True, check_accessible=True, deleted=False)
+        actions = []
+        if payload:
+            actions += payload.action.split("-")
+        for action in actions:
+            if action == "make_accessible_via_link":
+                self._make_item_accessible(trans.sa_session, item)
+                if hasattr(item, "has_possible_members") and item.has_possible_members:
+                    skipped = self._make_members_public(trans, item)
+            elif action == "make_accessible_and_publish":
+                self._make_item_accessible(trans.sa_session, item)
+                if hasattr(item, "has_possible_members") and item.has_possible_members:
+                    skipped = self._make_members_public(trans, item)
+                item.published = True
+            elif action == "publish":
+                if item.importable:
+                    item.published = True
+                    if hasattr(item, "has_possible_members") and item.has_possible_members:
+                        skipped = self._make_members_public(trans, item)
+                else:
+                    raise exceptions.MessageException("%s not importable." % class_name)
+            elif action == "disable_link_access":
+                item.importable = False
+            elif action == "unpublish":
+                item.published = False
+            elif action == "disable_link_access_and_unpublish":
+                item.importable = item.published = False
+            elif action == "unshare_user":
+                if payload is None or payload.user_id is None:
+                    raise exceptions.MessageException(f"Missing required user_id to perform {action}")
+                user = trans.sa_session.query(trans.app.model.User).get(trans.app.security.decode_id(payload.user_id))
+                class_name_lc = class_name.lower()
+                ShareAssociation = getattr(trans.app.model, "%sUserShareAssociation" % class_name)
+                usas = trans.sa_session.query(ShareAssociation).filter_by(**{"user": user, class_name_lc: item}).all()
+                if not usas:
+                    raise exceptions.MessageException("%s was not shared with user." % class_name)
+                for usa in usas:
+                    trans.sa_session.delete(usa)
+            trans.sa_session.add(item)
+            trans.sa_session.flush()
+        if item.importable and not item.slug:
+            self._make_item_accessible(trans.sa_session, item)
+        item_dict = self.serializer.serialize_to_view(item,
+            user=trans.user, trans=trans, default_view="sharing")
+        item_dict["users_shared_with"] = [{"id": self.manager.app.security.encode_id(a.user.id), "email": a.user.email} for a in item.users_shared_with]
+        if skipped:
+            item_dict["skipped"] = True
+        return SharingStatus.parse_obj(item_dict)
+
+    def _is_valid_slug(self, slug):
+        """ Returns true if slug is valid. """
+        return base.is_valid_slug(slug)
+
+    def _make_item_accessible(self, sa_session, item):
+        """ Makes item accessible--viewable and importable--and sets item's slug.
+            Does not flush/commit changes, however. Item must have name, user,
+            importable, and slug attributes. """
+        item.importable = True
+        self.create_item_slug(sa_session, item)
+
+    def _make_members_public(self, trans, item):
+        """ Make the non-purged datasets in history public
+        Performs pemissions check.
+        """
+        # TODO eventually we should handle more classes than just History
+        skipped = False
+        for hda in item.activatable_datasets:
+            dataset = hda.dataset
+            if not trans.app.security_agent.dataset_is_public(dataset):
+                if trans.app.security_agent.can_manage_dataset(trans.user.all_roles(), dataset):
+                    try:
+                        trans.app.security_agent.make_dataset_public(hda.dataset)
+                    except Exception:
+                        log.warning("Unable to make dataset with id: %s public", dataset.id)
+                        skipped = True
+                else:
+                    log.warning("User without permissions tried to make dataset with id: %s public", dataset.id)
+                    skipped = True
+        return skipped
