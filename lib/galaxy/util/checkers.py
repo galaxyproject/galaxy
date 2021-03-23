@@ -50,17 +50,14 @@ def check_binary(name, file_path=True):
     # Handles files if file_path is True or text if file_path is False
     if file_path:
         temp = open(name, "rb")
-        file_size = os.stat(name).st_size
-        read_start = int(file_size / 2)
-        # avoid reading beyond the end of the file
-        read_length = min(1024, int(file_size / 2) - 1)
+        size = os.stat(name).st_size
     else:
         temp = BytesIO(name)
-        length = len(name)
-        read_start = int(length / 2)
-        read_length = min(1024, int(length / 2) - 1)
+        size = len(name)
+    read_start = int(size / 2)
+    read_length = 1024
     try:
-        if util.is_binary(temp.read(1024)):
+        if util.is_binary(temp.read(read_length)):
             return True
         # Some binary files have text only within the first 1024
         # Read 1024 from the middle of the file if this is not
