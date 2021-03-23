@@ -1,4 +1,4 @@
-<tool id="trasncript_to_webvtt" name="AMP Transcript to WebVTT Generator" version="1.0.0">
+<tool id="trasncript_to_webvtt" name="AMP Transcript to WebVTT Converter" version="1.0.0">
   <description>Convert AMP transcript/diarization to WebVTT</description>
   <requirements>
 	<requirement type="package" version="3.8">python</requirement>
