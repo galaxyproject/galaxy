@@ -180,7 +180,18 @@ class BaseJobContext:
 
 class JobContext(ModelPersistenceContext, BaseJobContext):
 
-    def __init__(self, tool, tool_provided_metadata, job, job_working_directory, permission_provider, metadata_source_provider, input_dbkey, object_store, final_job_state):
+    def __init__(
+            self,
+            tool,
+            tool_provided_metadata,
+            job,
+            job_working_directory,
+            permission_provider,
+            metadata_source_provider,
+            input_dbkey,
+            object_store,
+            final_job_state,
+            flush_per_n_datasets=None):
         self.tool = tool
         self.metadata_source_provider = metadata_source_provider
         self.permission_provider = permission_provider
@@ -192,6 +203,7 @@ class JobContext(ModelPersistenceContext, BaseJobContext):
         self.tool_provided_metadata = tool_provided_metadata
         self.object_store = object_store
         self.final_job_state = final_job_state
+        self.flush_per_n_datasets = flush_per_n_datasets
 
     @property
     def work_context(self):
@@ -312,6 +324,7 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
         self.import_store = import_store
         self.input_dbkey = input_dbkey
         self.final_job_state = final_job_state
+        self.flush_per_n_datasets = None
 
     def output_collection_def(self, name):
         tool_as_dict = self.metadata_params["tool"]

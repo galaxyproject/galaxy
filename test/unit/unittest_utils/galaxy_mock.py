@@ -166,6 +166,7 @@ class MockAppConfig(Bunch):
         self.password_expiration_period = 0
 
         self.umask = 0o77
+        self.flush_per_n_datasets = 0
 
         # Compliance related config
         self.redact_email_in_job_name = False
