@@ -83,13 +83,19 @@ class SqliteDatabaseManager(DatabaseManager):
         self.database = self.url.database  # use database from db_url
 
     def exists(self):
-        try:
-            sqlite3.connect(f'file:{self.url.database}?mode=ro', uri=True)
-        except sqlite3.OperationalError:
-            return False
-        else:
-            return True
 
-    def create(self, encoding, template):
-        # Don't use encoding and template for sqlite
+        def can_connect_to_dbfile():
+            try:
+                sqlite3.connect(f'file:{db}?mode=ro', uri=True)
+            except sqlite3.OperationalError:
+                return False
+            else:
+                return True
+
+        db = self.url.database
+        # No database or ':memory:' creates an in-memory database
+        return not db or db == ':memory:' or can_connect_to_dbfile()
+
+    def create(self, *args):
+        # Ignore any args (encoding, template)
         sqlite3.connect(f'file:{self.url.database}', uri=True)

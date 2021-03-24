@@ -1,11 +1,10 @@
 """
-View wrappers, currently using sqlalchemy_views
+View wrappers
 """
 from inspect import getmembers
 
 from sqlalchemy import (
     Column,
-    event,
     MetaData,
     Table,
 )
@@ -14,7 +13,33 @@ from sqlalchemy.schema import DDLElement
 
 
 class View:
-    is_view = True
+    """Base class for Views."""
+
+    @classmethod
+    def _make_table(cls, name, selectable, pkeys):
+        """ Create a view.
+
+        :param name: The name of the view.
+        :param selectable: SQLAlchemy selectable.
+        :param pkeys: set of primary keys for the selectable.
+        """
+        columns = [
+            Column(
+                c.name,
+                c.type,
+                primary_key=(c.name in pkeys)
+            )
+            for c in selectable.c
+        ]
+        # We do not use the metadata object from model.mapping.py that contains all the Table objects
+        # because that would create a circular import (create_view is called from View objects
+        # in model.view; but those View objects are imported into model.mapping.py where the
+        # metadata object we need is defined). Thus, we do not use the after_create/before_drop
+        # hooks to automate creating/dropping views.  Instead, this is taken care of in install_views().
+
+        # The metadata object passed to Table() should be empty: this table is internal to a View
+        # object and is not intended to be created in the database.
+        cls.__table__ = Table(name, MetaData(), *columns)
 
 
 class CreateView(DDLElement):
@@ -23,15 +48,15 @@ class CreateView(DDLElement):
         self.selectable = selectable
 
 
+class DropView(DDLElement):
+    def __init__(self, name):
+        self.name = name
+
+
 @compiler.compiles(CreateView)
 def compile_create_view(element, compiler, **kw):
     compiled_selectable = compiler.sql_compiler.process(element.selectable, literal_binds=True)
     return f'CREATE VIEW {element.name} AS {compiled_selectable}'
-
-
-class DropView(DDLElement):
-    def __init__(self, name):
-        self.name = name
 
 
 @compiler.compiles(DropView)
@@ -53,22 +78,3 @@ def install_views(engine):
         # to change the sql that gest emitted when CreateView is rendered.
         engine.execute(DropView(view.name))
         engine.execute(CreateView(view.name, view.__view__))
-
-
-def create_view(name, selectable, pkey):
-    metadata = MetaData()
-
-    columns = [
-        Column(
-            c.name,
-            c.type,
-            primary_key=(c.name == pkey)
-        )
-        for c in selectable.c
-    ]
-    table = Table(name, metadata, *columns)
-
-    event.listen(metadata, 'after_create', CreateView(name, selectable))
-    event.listen(metadata, 'before_drop', DropView(name))
-
-    return table
