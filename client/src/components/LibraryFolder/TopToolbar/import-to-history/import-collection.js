@@ -34,8 +34,10 @@ var ImportCollectionModal = Backbone.View.extend({
         this.histories = new mod_library_model.GalaxyHistories();
         return this.histories.fetch();
     },
-    createNewHistory: function (new_history_name) {
-        return axios.post(`${getAppRoot()}api/histories`, { name: new_history_name });
+    async createNewHistory(new_history_name) {
+        const { data } = await axios.post(`${getAppRoot()}api/histories`, { name: new_history_name });
+        getGalaxyInstance().currHistoryPanel.switchToHistory(data.id);
+        return data;
     },
     showCollectionSelect: function (e) {
         const Galaxy = getGalaxyInstance();
@@ -155,12 +157,12 @@ var ImportCollectionModal = Backbone.View.extend({
                         {
                             name: "forward",
                             id: pair.forward.id,
-                            src: pair.forward.src || "hda",
+                            src: "ldda",
                         },
                         {
                             name: "reverse",
                             id: pair.reverse.id,
-                            src: pair.reverse.src || "hda",
+                            src: "ldda",
                         },
                     ],
                 }));
