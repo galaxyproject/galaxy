@@ -154,7 +154,7 @@ class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, 
     @expose_api
     def sharing(self, trans, id, payload=None, **kwd):
         """
-        * GET /api/pages/{id}/sharing
+        * GET/POST /api/pages/{id}/sharing
             View/modify sharing options for the page with the given id.
         """
         if payload:

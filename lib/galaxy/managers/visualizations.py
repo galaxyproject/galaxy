@@ -82,9 +82,10 @@ class VisualizationsService:
     and pydantic models to declare its parameters and return types.
     """
 
-    def __init__(self, app: StructuredApp):
-        self.manager = VisualizationManager(app)
-        self.serializer = VisualizationSerializer(app)
+    def __init__(self, app: StructuredApp, manager: VisualizationManager, serializer: VisualizationSerializer):
+        self.app = app
+        self.manager = manager
+        self.serializer = serializer
         self.shareable_service = sharable.ShareableService(self.manager, self.serializer)
 
     # TODO: add the rest of the API actions here and call them directly from the API controller
