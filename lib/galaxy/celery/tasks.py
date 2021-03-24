@@ -1,15 +1,7 @@
-import os
-from galaxy.celery import celery_app
+from galaxy.celery import celery_app, get_galaxy_app
 from galaxy.util.custom_logging import get_logger
 
 log = get_logger(__name__)
-
-
-def get_galaxy_app():
-    import galaxy.app
-    config_file = os.path.abspath(os.environ["GALAXY_CONFIG_FILE"])
-    log.debug(f"config_file is {config_file}")
-    return galaxy.app.UniverseApplication(global_conf={'__file__':config_file})
 
 
 @celery_app.task
