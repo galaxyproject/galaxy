@@ -12,13 +12,13 @@ from sqlalchemy.orm import (
     joinedload,
     undefer
 )
-from galaxy.managers.sharable import SlugBuilder
 
 import galaxy.util
 from galaxy import exceptions
 from galaxy import model
 from galaxy import web
 from galaxy.managers import histories
+from galaxy.managers.sharable import SlugBuilder
 from galaxy.model.item_attrs import (
     UsesAnnotations,
     UsesItemRatings

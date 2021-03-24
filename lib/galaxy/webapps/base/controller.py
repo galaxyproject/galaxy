@@ -649,6 +649,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
     """
     Mixin for controllers that use Visualization objects.
     """
+    slug_builder = SlugBuilder()
 
     def get_visualization(self, trans, id, check_ownership=True, check_accessible=False):
         """
@@ -1213,6 +1214,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
 
 class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
     """ Mixin for controllers that use StoredWorkflow objects. """
+    slug_builder = SlugBuilder()
 
     def get_stored_workflow(self, trans, id, check_ownership=True, check_accessible=False):
         """ Get a StoredWorkflow from the database by id, verifying ownership. """

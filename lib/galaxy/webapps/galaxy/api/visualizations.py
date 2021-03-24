@@ -13,7 +13,7 @@ from galaxy import (
     util,
     web
 )
-from galaxy.managers.sharable import SharingPayload, SlugBuilder
+from galaxy.managers.sharable import SharingPayload
 from galaxy.managers.visualizations import VisualizationsService
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.web import expose_api
@@ -31,7 +31,6 @@ class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, 
     RESTful controller for interactions with visualizations.
     """
     service: VisualizationsService = depends(VisualizationsService)
-    slug_builder: SlugBuilder = depends(SlugBuilder)
 
     @expose_api
     def index(self, trans: GalaxyWebTransaction, **kwargs):
