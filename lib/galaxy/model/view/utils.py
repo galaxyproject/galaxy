@@ -15,8 +15,8 @@ from sqlalchemy.schema import DDLElement
 class View:
     """Base class for Views."""
 
-    @classmethod
-    def _make_table(cls, name, selectable, pkeys):
+    @staticmethod
+    def _make_table(name, selectable, pkeys):
         """ Create a view.
 
         :param name: The name of the view.
@@ -39,7 +39,7 @@ class View:
 
         # The metadata object passed to Table() should be empty: this table is internal to a View
         # object and is not intended to be created in the database.
-        cls.__table__ = Table(name, MetaData(), *columns)
+        return Table(name, MetaData(), *columns)
 
 
 class CreateView(DDLElement):

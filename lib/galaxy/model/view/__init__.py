@@ -54,7 +54,7 @@ class HistoryDatasetCollectionJobStateSummary(View):
         column('all_jobs', Integer)
     )
     pkeys = {'hdca_id'}
-    View._make_table(name, __view__, pkeys)
+    __table__ = View._make_table(name, __view__, pkeys)
 
 
 mapper(HistoryDatasetCollectionJobStateSummary, HistoryDatasetCollectionJobStateSummary.__table__)
