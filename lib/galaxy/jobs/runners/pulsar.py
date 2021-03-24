@@ -378,7 +378,6 @@ class PulsarJobRunner(AsynchronousJobRunner):
                     remote_pulsar_app_config.update(yaml.safe_load(fh))
             job_directory_files = []
             config_files = job_wrapper.extra_filenames
-
             tool_script = os.path.join(job_wrapper.working_directory, "tool_script.sh")
             if os.path.exists(tool_script):
                 log.debug("Registering tool_script for Pulsar transfer [%s]" % tool_script)
@@ -505,7 +504,6 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 remote_command_params=remote_command_params,
                 remote_job_directory=remote_job_directory,
             )
-
         except UnsupportedPulsarException:
             log.exception("failure running job %d, unsupported Pulsar target", job_wrapper.job_id)
             fail_or_resubmit = True
