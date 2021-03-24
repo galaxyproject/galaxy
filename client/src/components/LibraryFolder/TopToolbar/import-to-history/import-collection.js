@@ -36,6 +36,7 @@ var ImportCollectionModal = Backbone.View.extend({
     },
     async createNewHistory(new_history_name) {
         const { data } = await axios.post(`${getAppRoot()}api/histories`, { name: new_history_name });
+        getGalaxyInstance().currHistoryPanel.switchToHistory(data.id);
         return data;
     },
     showCollectionSelect: function (e) {
