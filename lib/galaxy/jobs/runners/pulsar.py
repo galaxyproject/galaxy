@@ -325,7 +325,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         job_destination = job_wrapper.job_destination
         self._populate_parameter_defaults(job_destination)
 
-        command_line, client, remote_job_config, compute_environment, remote_container, externalized_command = self.__prepare_job(job_wrapper, job_destination)
+        command_line, client, remote_job_config, compute_environment, remote_container = self.__prepare_job(job_wrapper, job_destination)
 
         if not command_line:
             return
@@ -378,13 +378,12 @@ class PulsarJobRunner(AsynchronousJobRunner):
                     remote_pulsar_app_config.update(yaml.safe_load(fh))
             job_directory_files = []
             config_files = job_wrapper.extra_filenames
-            if externalized_command:
-                config_files.append(externalized_command)
 
             tool_script = os.path.join(job_wrapper.working_directory, "tool_script.sh")
             if os.path.exists(tool_script):
                 log.debug("Registering tool_script for Pulsar transfer [%s]" % tool_script)
                 job_directory_files.append(tool_script)
+                config_files.append(tool_script)
             # Following is job destination environment variables
             env = client.env
             # extend it with tool defined environment variables
@@ -507,12 +506,6 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 remote_job_directory=remote_job_directory,
             )
 
-            # Detect if the command_line was externalized.
-            # If yes, pulsar needs to be aware of it when looking for paths to rewrite
-            externalized_command = None
-            if container or job_wrapper.commands_in_new_shell:
-                externalized_command = os.path.join(job_wrapper.working_directory, "tool_script.sh")
-
         except UnsupportedPulsarException:
             log.exception("failure running job %d, unsupported Pulsar target", job_wrapper.job_id)
             fail_or_resubmit = True
@@ -529,7 +522,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             job_state = self._job_state(job_wrapper.get_job(), job_wrapper)
             self.work_queue.put((self.fail_job, job_state))
 
-        return command_line, client, remote_job_config, compute_environment, remote_container, externalized_command
+        return command_line, client, remote_job_config, compute_environment, remote_container
 
     def __prepare_input_files_locally(self, job_wrapper):
         """Run task splitting commands locally."""
