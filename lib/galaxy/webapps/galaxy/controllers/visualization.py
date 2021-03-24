@@ -21,6 +21,7 @@ from sqlalchemy.orm import eagerload, undefer
 from galaxy import model, util, web
 from galaxy.datatypes.interval import Bed
 from galaxy.managers.hdas import HDAManager
+from galaxy.managers.sharable import SlugBuilder
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.structured_app import StructuredApp
 from galaxy.util import sanitize_text, unicodify
@@ -235,6 +236,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
     _library_datasets_grid = LibraryDatasetsSelectionGrid()
     _tracks_grid = TracksterSelectionGrid()
     hda_manager: HDAManager = depends(HDAManager)
+    slug_builder: SlugBuilder = depends(SlugBuilder)
 
     def __init__(self, app: StructuredApp):
         super().__init__(app)
@@ -439,7 +441,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                 share.user = other
                 session = trans.sa_session
                 session.add(share)
-                self.create_item_slug(session, visualization)
+                self.slug_builder.create_item_slug(session, visualization)
                 session.flush()
                 viz_title = escape(visualization.title)
                 other_email = escape(other.email)
@@ -500,7 +502,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         """ Returns visualization's name and link. """
         visualization = self.get_visualization(trans, id, check_ownership=False, check_accessible=True)
 
-        if self.create_item_slug(trans.sa_session, visualization):
+        if self.slug_builder.create_item_slug(trans.sa_session, visualization):
             trans.sa_session.flush()
         return_dict = {"name": visualization.title,
                        "link": web.url_for(controller='visualization', action="display_by_username_and_slug", username=visualization.user.username, slug=visualization.slug)}
@@ -548,7 +550,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         v = self.get_visualization(trans, id, check_ownership=True)
         if trans.request.method == 'GET':
             if v.slug is None:
-                self.create_item_slug(trans.sa_session, v)
+                self.slug_builder.create_item_slug(trans.sa_session, v)
             return {
                 'title': 'Edit visualization attributes',
                 'inputs': [{

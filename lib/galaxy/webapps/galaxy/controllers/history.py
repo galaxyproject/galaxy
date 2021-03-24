@@ -12,6 +12,7 @@ from sqlalchemy.orm import (
     joinedload,
     undefer
 )
+from galaxy.managers.sharable import SlugBuilder
 
 import galaxy.util
 from galaxy import exceptions
@@ -240,6 +241,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     history_manager: histories.HistoryManager = depends(histories.HistoryManager)
     history_export_view: histories.HistoryExportView = depends(histories.HistoryExportView)
     history_serializer: histories.HistorySerializer = depends(histories.HistorySerializer)
+    slug_builder: SlugBuilder = depends(SlugBuilder)
 
     def __init__(self, app: StructuredApp):
         super().__init__(app)
@@ -1040,7 +1042,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                     share.history = history
                     share.user = send_to_user
                     trans.sa_session.add(share)
-                    self.create_item_slug(trans.sa_session, history)
+                    self.slug_builder.create_item_slug(trans.sa_session, history)
                     trans.sa_session.flush()
                     if history not in shared_histories:
                         shared_histories.append(history)
@@ -1113,7 +1115,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     def get_name_and_link_async(self, trans, id=None):
         """ Returns history's name and link. """
         history = self.history_manager.get_accessible(self.decode_id(id), trans.user, current_history=trans.history)
-        if self.create_item_slug(trans.sa_session, history):
+        if self.slug_builder.create_item_slug(trans.sa_session, history):
             trans.sa_session.flush()
         return_dict = {
             "name": history.name,

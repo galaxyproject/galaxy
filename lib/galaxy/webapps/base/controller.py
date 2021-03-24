@@ -26,6 +26,7 @@ from galaxy.managers import (
     users,
     workflows
 )
+from galaxy.managers.sharable import SlugBuilder
 from galaxy.model import (
     ExtendedMetadata,
     ExtendedMetadataIndex,
@@ -1139,7 +1140,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         if slug:
             visualization.slug = slug
         else:
-            self.create_item_slug(trans.sa_session, visualization)
+            self.slug_builder.create_item_slug(trans.sa_session, visualization)
         if annotation:
             annotation = sanitize_html(annotation)
             # TODO: if this is to stay in the mixin, UsesAnnotations should be added to the superclasses
@@ -1226,7 +1227,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
 
             # Older workflows may be missing slugs, so set them here.
             if not workflow.slug:
-                self.create_item_slug(trans.sa_session, workflow)
+                self.slug_builder.create_item_slug(trans.sa_session, workflow)
                 trans.sa_session.flush()
 
         return workflow
@@ -1347,6 +1348,7 @@ class SharableMixin:
 
     manager: Any = None
     serializer: Any = None
+    slug_builder = SlugBuilder()
 
     # -- Implemented methods. --
 
@@ -1371,41 +1373,7 @@ class SharableMixin:
             Does not flush/commit changes, however. Item must have name, user,
             importable, and slug attributes. """
         item.importable = True
-        self.create_item_slug(sa_session, item)
-
-    def create_item_slug(self, sa_session, item):
-        """ Create/set item slug. Slug is unique among user's importable items
-            for item's class. Returns true if item's slug was set/changed; false
-            otherwise.
-        """
-        cur_slug = item.slug
-
-        # Setup slug base.
-        if cur_slug is None or cur_slug == "":
-            # Item can have either a name or a title.
-            if hasattr(item, 'name'):
-                item_name = item.name
-            elif hasattr(item, 'title'):
-                item_name = item.title
-            slug_base = util.ready_name_for_url(item_name.lower())
-        else:
-            slug_base = cur_slug
-
-        # Using slug base, find a slug that is not taken. If slug is taken,
-        # add integer to end.
-        new_slug = slug_base
-        count = 1
-        # Ensure unique across model class and user and don't include this item
-        # in the check in case it has previously been assigned a valid slug.
-        while sa_session.query(item.__class__).filter(item.__class__.user == item.user, item.__class__.slug == new_slug, item.__class__.id != item.id).count() != 0:
-            # Slug taken; choose a new slug based on count. This approach can
-            # handle numerous items with the same name gracefully.
-            new_slug = '%s-%i' % (slug_base, count)
-            count += 1
-
-        # Set slug and return.
-        item.slug = new_slug
-        return item.slug == cur_slug
+        self.slug_builder.create_item_slug(sa_session, item)
 
     @web.expose_api
     def sharing(self, trans, id, payload=None, **kwd):

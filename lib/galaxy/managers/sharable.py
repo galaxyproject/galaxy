@@ -545,21 +545,24 @@ class SharingStatus(BaseModel):
     )
 
 
-class ShareableService:
+class SlugBuilder:
+    """Builder for creating slugs out of items."""
 
-    def __init__(self, manager: SharableModelManager, serializer: SharableModelSerializer) -> None:
-        self.manager = manager
-        self.serializer = serializer
+    def create_item_slug(self, sa_session, item) -> bool:
+        """Create/set item slug.
 
-    def create_item_slug(self, sa_session, item):
-        """ Create/set item slug. Slug is unique among user's importable items
-            for item's class. Returns true if item's slug was set/changed; false
-            otherwise.
+        Slug is unique among user's importable items for item's class.
+
+        :param sa_session: Database session context.
+        :param item: The item to create/update its slug.
+        :type item: [type]
+        :return: Returns true if item's slug was set/changed; false otherwise.
+        :rtype: bool
         """
         cur_slug = item.slug
 
         # Setup slug base.
-        if cur_slug is None or cur_slug == "":
+        if cur_slug is None or cur_slug == '':
             # Item can have either a name or a title.
             item_name = ''
             if hasattr(item, 'name'):
@@ -579,12 +582,21 @@ class ShareableService:
         while sa_session.query(item.__class__).filter(item.__class__.user == item.user, item.__class__.slug == new_slug, item.__class__.id != item.id).count() != 0:
             # Slug taken; choose a new slug based on count. This approach can
             # handle numerous items with the same name gracefully.
-            new_slug = '%s-%i' % (slug_base, count)
+            new_slug = f'{slug_base}-{count}'
             count += 1
 
         # Set slug and return.
         item.slug = new_slug
         return item.slug == cur_slug
+
+
+class ShareableService:
+    """ Provides the logic used by the API to share resources with other users."""
+
+    def __init__(self, manager: SharableModelManager, serializer: SharableModelSerializer) -> None:
+        self.manager = manager
+        self.serializer = serializer
+        self.slug_builder = SlugBuilder()
 
     def sharing(self, trans, id: EncodedDatabaseIdField, payload: Optional[SharingPayload] = None) -> SharingStatus:
         """Allows to publish or share with other users the given resource (by id) and returns the current sharing
@@ -657,7 +669,7 @@ class ShareableService:
             Does not flush/commit changes, however. Item must have name, user,
             importable, and slug attributes. """
         item.importable = True
-        self.create_item_slug(sa_session, item)
+        self.slug_builder.create_item_slug(sa_session, item)
 
     def _make_members_public(self, trans, item):
         """ Make the non-purged datasets in history public
