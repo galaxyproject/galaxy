@@ -155,12 +155,12 @@ var ImportCollectionModal = Backbone.View.extend({
                         {
                             name: "forward",
                             id: pair.forward.id,
-                            src: pair.forward.src || "hda",
+                            src: "ldda",
                         },
                         {
                             name: "reverse",
                             id: pair.reverse.id,
-                            src: pair.reverse.src || "hda",
+                            src: "ldda",
                         },
                     ],
                 }));
