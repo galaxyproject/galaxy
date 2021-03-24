@@ -8,6 +8,7 @@ from galaxy.model.database_utils import (
 from .common import (
     drop_database,
     replace_database_in_url,
+    skip_if_not_mysql_uri,
     skip_if_not_postgres_uri,
 )
 
@@ -58,6 +59,15 @@ def test_create_exists_sqlite_database__pass_as_url(database_name):
 
 def test_exists_sqlite_in_memory_database(database_name, sqlite_memory_url):
     assert database_exists(sqlite_memory_url)
+
+
+@skip_if_not_mysql_uri
+def test_create_exists_mysql_database(database_name, mysql_url):
+    assert not database_exists(mysql_url, database_name)
+    create_database(mysql_url, database_name)
+    assert database_exists(mysql_url, database_name)
+    drop_database(mysql_url, database_name)
+    assert not database_exists(mysql_url, database_name)
 
 
 def make_sqlite_url(tmp_dir, database_name):

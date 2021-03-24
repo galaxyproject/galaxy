@@ -15,5 +15,10 @@ def postgres_url():
 
 
 @pytest.fixture
+def mysql_url():
+    return os.environ.get('GALAXY_TEST_CONNECT_MYSQL_URI')
+
+
+@pytest.fixture
 def sqlite_memory_url():
     return 'sqlite:///:memory:'

@@ -44,6 +44,8 @@ class DatabaseManager:
             return PosgresDatabaseManager(db_url, database)
         elif db_url.startswith('sqlite'):
             return SqliteDatabaseManager(db_url, database)
+        elif db_url.startswith('mysql'):
+            return MySQLDatabaseManager(db_url, database)
         else:
             raise ConfigurationError(f'Invalid database URL: {db_url}')
 
@@ -99,3 +101,25 @@ class SqliteDatabaseManager(DatabaseManager):
     def create(self, *args):
         # Ignore any args (encoding, template)
         sqlite3.connect(f'file:{self.url.database}', uri=True)
+
+
+class MySQLDatabaseManager(DatabaseManager):
+
+    def _handle_no_database(self):
+        self.database = self.url.database  # use database from db_url
+
+    def exists(self):
+        with sqlalchemy_engine(self.url) as engine:
+            stmt = text("SELECT schema_name FROM information_schema.schemata WHERE schema_name=:database")
+            stmt = stmt.bindparams(database=self.database)
+            with engine.connect() as conn:
+                return bool(conn.scalar(stmt))
+
+    def create(self, encoding, *arg):
+        # Ignore any args (template)
+        with sqlalchemy_engine(self.url) as engine:
+            preparer = IdentifierPreparer(engine.dialect)
+            database = preparer.quote(self.database)
+            stmt = f"CREATE DATABASE {database} CHARACTER SET = '{encoding}'"
+            with engine.connect().execution_options(isolation_level='AUTOCOMMIT') as conn:
+                conn.execute(stmt)

@@ -3,7 +3,6 @@ from sqlalchemy import (
     Column,
     Integer,
     MetaData,
-    String,
     Table,
 )
 from sqlalchemy.sql import (
@@ -22,6 +21,7 @@ from galaxy.model.view.utils import (
 from .common import (
     drop_database,
     replace_database_in_url,
+    skip_if_not_mysql_uri,
     skip_if_not_postgres_uri,
 )
 
@@ -31,9 +31,9 @@ def view():
     # A View class we would add to galaxy.model.view
     class TestView(View):
         name = 'testview'
-        __view__ = text('select id, first_name from testusers').columns(
+        __view__ = text('SELECT id, foo FROM testfoo').columns(
             column('id', Integer),
-            column('first_name', String)
+            column('foo', Integer)
         )
         pkeys = {'id'}
         View._make_table(name, __view__, pkeys)
@@ -45,37 +45,45 @@ def view():
 def test_postgres_create_view(database_name, postgres_url, view):
     metadata = MetaData()
     make_table(metadata)  # table from which the view will select
-    create_database(postgres_url, database_name)
-
     url = replace_database_in_url(postgres_url, database_name)
-    with sqlalchemy_engine(url) as engine:
-        with engine.connect() as conn:
-            metadata.create_all(conn)  # create table in database
-            conn.execute(CreateView(view.name, view.__view__))  # create view in database
-            query = f"select * from information_schema.tables where table_name = '{view.name}' and table_type = 'VIEW'"
-            result = conn.execute(query)
-            assert result.rowcount == 1  # assert that view exists in database
-
+    query = f"SELECT 1 FROM information_schema.views WHERE table_name = '{view.name}'"
+    create_database(postgres_url, database_name)
+    run_view_test(url, metadata, view, query)
     drop_database(postgres_url, database_name)
 
 
 def test_sqlite_create_view(sqlite_memory_url, view):
     metadata = MetaData()
     make_table(metadata)  # table from which the view will select
+    url = sqlite_memory_url
+    query = f"SELECT 1 FROM sqlite_master WHERE type='view' AND name='{view.name}'"
+    run_view_test(url, metadata, view, query)
 
-    with sqlalchemy_engine(sqlite_memory_url) as engine:
-        with engine.connect() as conn:
-            metadata.create_all(conn)  # create table in database
-            conn.execute(CreateView(view.name, view.__view__))  # create view in database
-            query = f"SELECT name FROM sqlite_master WHERE type='view' AND name='{view.name}'"
-            result = conn.execute(query).fetchall()
-            assert len(result) == 1  # assert that view exists in database
+
+@skip_if_not_mysql_uri
+def test_mysql_create_view(database_name, mysql_url, view):
+    metadata = MetaData()
+    make_table(metadata)  # table from which the view will select
+    url = replace_database_in_url(mysql_url, database_name)
+    query = f"SELECT 1 FROM information_schema.views WHERE table_name = '{view.name}'"
+    create_database(mysql_url, database_name)
+    run_view_test(url, metadata, view, query)
+    drop_database(mysql_url, database_name)
 
 
 def make_table(metadata):
-    users = Table('testusers', metadata,
+    users = Table('testfoo', metadata,
         Column('id', Integer, primary_key=True),
-        Column('first_name', String),
-        Column('last_name', String)
+        Column('foo', Integer),
+        Column('bar', Integer)
     )
     return users
+
+
+def run_view_test(url, metadata, view, query):
+    with sqlalchemy_engine(url) as engine:
+        with engine.connect() as conn:
+            metadata.create_all(conn)  # create table in database
+            conn.execute(CreateView(view.name, view.__view__))  # create view in database
+            result = conn.execute(query).fetchall()
+            assert len(result) == 1  # assert that view exists in database
