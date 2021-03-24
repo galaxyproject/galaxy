@@ -4736,11 +4736,6 @@ class DatasetCollectionElement(Dictifiable, RepresentById):
                 if copy_dataset_instance_attributes is not None:
                     if 'dbkey' in copy_dataset_instance_attributes:
                         new_element_object.dbkey = copy_dataset_instance_attributes['dbkey']
-                    if 'ext' in copy_dataset_instance_attributes:
-                        target_ext = copy_dataset_instance_attributes['ext']
-                        if new_element_object.extension != target_ext:
-                            new_element_object.extension = target_ext
-                            # TODO: recalculate metadata...
                         
                 new_element_object.visible = False
                 if destination is not None and element_object.hidden_beneath_collection_instance:
