@@ -10,9 +10,8 @@ celery_app = Celery('galaxy', broker="redis://localhost", include=['galaxy.celer
 
 
 if __name__ == '__main__':
-    import galaxy.app
-    config_file = os.path.abspath(os.environ["GALAXY_CONFIG_FILE"])
-    galaxy_app = galaxy.app.UniverseApplication(config_file=config_file)
-    galaxy.app.app = galaxy_app
-    celery_app.conf.update(broker=galaxy_app.config.amqp_internal_connection)
+    #import galaxy.app
+    #config_file = os.path.abspath(os.environ["GALAXY_CONFIG_FILE"])
+    #galaxy_app = galaxy.app.UniverseApplication(config_file=config_file)
+    #celery_app.conf.update(broker=galaxy_app.config.amqp_internal_connection)
     celery_app.start()
