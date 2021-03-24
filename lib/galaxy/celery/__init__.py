@@ -24,6 +24,6 @@ def get_galaxy_app():
 
 
 if __name__ == '__main__':
-    galaxy_app = get_galaxy_app()
-    celery_app.conf.update(broker=galaxy_app.config.amqp_internal_connection)
+    #galaxy_app = get_galaxy_app()
+    #celery_app.conf.update(broker=galaxy_app.config.amqp_internal_connection)
     celery_app.start()
