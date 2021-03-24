@@ -224,19 +224,6 @@ def reload_sanitize_allowlist(app):
     app.config.reload_sanitize_allowlist()
 
 
-def recalculate_user_disk_usage(app, **kwargs):
-    user_id = kwargs.get('user_id', None)
-    sa_session = app.model.context
-    if user_id:
-        user = sa_session.query(app.model.User).get(app.security.decode_id(user_id))
-        if user:
-            user.calculate_and_set_disk_usage()
-        else:
-            log.error("Recalculate user disk usage task failed, user %s not found" % user_id)
-    else:
-        log.error("Recalculate user disk usage task received without user_id.")
-
-
 def reload_tool_data_tables(app, **kwargs):
     path = kwargs.get('path')
     table_name = kwargs.get('table_name')
@@ -321,7 +308,6 @@ control_message_to_task = {
     'reload_job_rules': reload_job_rules,
     'admin_job_lock': admin_job_lock,
     'reload_sanitize_allowlist': reload_sanitize_allowlist,
-    'recalculate_user_disk_usage': recalculate_user_disk_usage,
     'rebuild_toolbox_search_index': rebuild_toolbox_search_index,
     'reconfigure_watcher': reconfigure_watcher,
     'reload_tour': reload_tour,

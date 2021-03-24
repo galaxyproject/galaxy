@@ -224,9 +224,8 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         if trans.user:
             # Queue a quota recalculation (async) task -- this takes a
             # while sometimes, so we don't want to block on logout.
-            send_local_control_task(trans.app,
-                                    "recalculate_user_disk_usage",
-                                    kwargs={"user_id": trans.security.encode_id(trans.user.id)})
+            from galaxy.celery.tasks import recalculate_user_disk_usage
+            recalculate_user_disk_usage.delay(user_id= trans.security.encode_id(trans.user.id))
         # Since logging an event requires a session, we'll log prior to ending the session
         trans.log_event("User logged out")
         trans.handle_user_logout(logout_all=logout_all)

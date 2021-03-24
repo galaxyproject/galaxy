@@ -1,12 +1,13 @@
-from galaxy.celery import app
+from galaxy.celery import celery_app
 from galaxy.util.custom_logging import get_logger
 
 log = get_logger(__name__)
 
 
-@app.task
+@celery_app.task
 def recalculate_user_disk_usage(user_id=None):
-    sa_session = app.model.context  # TODO: not remotely correct; this needs the actual model from our webless application context.
+    from galaxy.app import app
+    sa_session = app.model.context
     if user_id:
         user = sa_session.query(app.model.User).get(app.security.decode_id(user_id))
         if user:
