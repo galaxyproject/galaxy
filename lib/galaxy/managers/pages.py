@@ -191,7 +191,7 @@ class PageSummaryList(BaseModel):
 
 
 class PagesService:
-    """Common interface/service logic for interactions with pages in the context of an API.
+    """Common interface/service logic for interactions with pages in the context of the API.
 
     Provides the logic of the actions invoked by API controllers and uses type definitions
     and pydantic models to declare its parameters and return types.
@@ -200,7 +200,7 @@ class PagesService:
     def __init__(self, app: StructuredApp):
         self.manager = PageManager(app)
         self.serializer = PageSerializer(app)
-        self.sharable_service = sharable.SharableService(self.manager, self.serializer)
+        self.shareable_service = sharable.ShareableService(self.manager, self.serializer)
 
     def index(self, trans, deleted: bool = False) -> PageSummaryList:
         """Return a list of Pages viewable by the user
@@ -290,7 +290,7 @@ class PagesService:
         """Allows to publish or share with other users the given resource (by id) and returns the current sharing
         status of the resource.
         """
-        return self.sharable_service.sharing(trans, id, payload)
+        return self.shareable_service.sharing(trans, id, payload)
 
 
 class PageManager(sharable.SharableModelManager, UsesAnnotations):

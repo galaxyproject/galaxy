@@ -545,8 +545,7 @@ class SharingStatus(BaseModel):
     )
 
 
-class SharableService:
-    """ Provides the logic used by the API to share resources with other users."""
+class ShareableService:
 
     def __init__(self, manager: SharableModelManager, serializer: SharableModelSerializer) -> None:
         self.manager = manager
