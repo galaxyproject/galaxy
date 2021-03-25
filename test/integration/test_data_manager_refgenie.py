@@ -4,7 +4,7 @@ import string
 
 from nose.plugins.skip import SkipTest
 
-from galaxy_test.base.populators import DatasetPopulator, skip_if_toolshed_down
+from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 from .uses_shed import CONDA_AUTO_INSTALL_JOB_TIMEOUT, UsesShed
 
