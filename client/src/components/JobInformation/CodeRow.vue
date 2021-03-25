@@ -37,8 +37,6 @@ export default {
     },
     methods: {
         toggleExpanded() {
-            console.log(this.mouseIsDown)
-            console.log(this.mouseMoved)
             this.mouseIsDown = false;
             if (this.codeItem && !this.mouseMoved) {
                 this.expanded = !this.expanded;
