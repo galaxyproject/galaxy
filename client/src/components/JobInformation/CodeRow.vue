@@ -1,7 +1,7 @@
 <template>
     <tr
         @mousedown="mouseIsDown = true"
-        @mousemove="mouseIsDown ? (isDragging = true) : (isDragging = false)"
+        @mousemove="mouseIsDown ? (mouseMoved = true) : (mouseMoved = false)"
         @mouseup="toggleExpanded()"
     >
         <td>
@@ -31,16 +31,16 @@ export default {
     data() {
         return {
             mouseIsDown: false,
-            isDragging: false,
+            mouseMoved: false,
             expanded: false,
         };
     },
     methods: {
         toggleExpanded() {
             console.log(this.mouseIsDown)
-            console.log(this.isDragging)
+            console.log(this.mouseMoved)
             this.mouseIsDown = false;
-            if (this.codeItem && !this.isDragging) {
+            if (this.codeItem && !this.mouseMoved) {
                 this.expanded = !this.expanded;
             }
         },
