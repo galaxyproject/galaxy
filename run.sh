@@ -54,6 +54,14 @@ if [ "$INITIALIZE_TOOL_DEPENDENCIES" -eq 1 ]; then
     python ./scripts/manage_tool_dependencies.py init_if_needed
 fi
 
+# Build the UWSGI module needed for the config
+pushd metrics
+make || (
+    echo "Cannot build the uwsg system_metrics.so file"
+    exit 1
+)
+popd
+
 [ -n "$GALAXY_UWSGI" ] && APP_WEBSERVER='uwsgi'
 find_server "${GALAXY_CONFIG_FILE:-none}" galaxy
 

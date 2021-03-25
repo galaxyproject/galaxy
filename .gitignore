@@ -163,3 +163,5 @@ client/webpack-stats.json
 /.settings
 /.pydevproject
 /.settings
+metrics/system_metrics.so
+metrics/system_metrics
