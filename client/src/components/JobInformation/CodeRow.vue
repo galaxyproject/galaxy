@@ -8,9 +8,15 @@
             {{ codeLabel }}
         </td>
         <td v-if="codeItem">
-            <pre :class="codeClass">{{ codeItem }}</pre>
-            <i :class="iconClass" />
-            <b>Click to {{ action }}</b>
+                <b-row align-v="center">
+                    <b-col>
+                        <pre :class="codeClass">{{ codeItem }}</pre>
+                    </b-col>
+                    <b-col>
+                        <i :class="iconClass" />
+                        <b>Click to {{ action }}</b>
+                    </b-col>
+                </b-row>
         </td>
         <td v-else><i>empty</i></td>
     </tr>
