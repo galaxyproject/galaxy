@@ -1,5 +1,9 @@
 <template>
-    <tr @click="toggleExpanded">
+    <tr
+        @mousedown="mouseIsDown = true"
+        @mousemove="mouseIsDown ? (isDragging = true) : (isDragging = false)"
+        @mouseup="toggleExpanded()"
+    >
         <td>
             {{ codeLabel }}
         </td>
@@ -25,11 +29,18 @@ export default {
         codeItem: String,
     },
     data() {
-        return { expanded: false };
+        return {
+            mouseIsDown: false,
+            isDragging: false,
+            expanded: false,
+        };
     },
     methods: {
         toggleExpanded() {
-            if (this.codeItem) {
+            console.log(this.mouseIsDown)
+            console.log(this.isDragging)
+            this.mouseIsDown = false;
+            if (this.codeItem && !this.isDragging) {
                 this.expanded = !this.expanded;
             }
         },
