@@ -37,14 +37,13 @@ from galaxy.web import (
 from galaxy.webapps.base.controller import (
     ExportsHistoryMixin,
     ImportsHistoryMixin,
-    SharableMixin
 )
 from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
 
 
-class HistoriesController(BaseGalaxyAPIController, ExportsHistoryMixin, ImportsHistoryMixin, SharableMixin):
+class HistoriesController(BaseGalaxyAPIController, ExportsHistoryMixin, ImportsHistoryMixin):
     citations_manager: citations.CitationsManager = depends(citations.CitationsManager)
     user_manager: users.UserManager = depends(users.UserManager)
     workflow_manager: workflows.WorkflowsManager = depends(workflows.WorkflowsManager)
