@@ -128,6 +128,7 @@ export default {
     },
     data() {
         return {
+            uploadUrl: null,
             topInfo: "",
             highlightBox: false,
             showHelper: true,
@@ -164,7 +165,12 @@ export default {
         this.initFtpPopover();
         // file upload
         this.initUploadbox({
-            url: this.app.uploadPath,
+            initUrl: (index) => {
+                if (!this.uploadUrl) {
+                    this.uploadUrl = this.getRequestUrl([this.collection.get(index)], this.history_id);
+                }
+                return this.uploadUrl;
+            },
             multiple: this.multiple,
             announce: (index, file) => {
                 this._eventAnnounce(index, file);
