@@ -31,7 +31,14 @@ RADIO_SELECT_INCOMPATIBILITIES = """
     <description>The BWA Mapper</description>
     <version_command interpreter="python">bwa.py --version</version_command>
     <inputs>
-        <param name="radio_select" type="select" display="radio" optional="true" multiple="true"/>
+        <param name="radio_select" type="select" display="radio" optional="true" multiple="true">
+            <option "1">1</option>
+            <option "2">2</option>
+        </param>
+        <param name="radio_checkboxes" type="select" display="checkboxes" optional="false" multiple="false">
+            <option "1">1</option>
+            <option "2">2</option>
+        </param>
     </inputs>
 </tool>
 """
@@ -51,13 +58,35 @@ SELECT_DUPLICATED_OPTIONS = """
 
 TESTS = [
     (NO_SECTIONS_XML, inputs.lint_inputs, lambda x: 'Found no input parameters.' in x.warn_messages),
-    (NO_WHEN_IN_CONDITIONAL_XML, inputs.lint_inputs, lambda x: "Conditional [labels] no <when /> block found for select option 'none'" in x.warn_messages),
-    (RADIO_SELECT_INCOMPATIBILITIES, inputs.lint_inputs, lambda x: 'Select [radio_select] display="radio" is incompatible with optional="true"' in x.error_messages and 'Select [radio_select] display="radio" is incompatible with multiple="true"' in x.error_messages),
-    (SELECT_DUPLICATED_OPTIONS, inputs.lint_inputs, lambda x: 'Select [select] has multiple options with the same text content' in x.error_messages and 'Select [select] has multiple options with the same value' in x.error_messages),
+    (
+        NO_WHEN_IN_CONDITIONAL_XML, inputs.lint_inputs,
+        lambda x: "Conditional [labels] no <when /> block found for select option 'none'" in x.warn_messages
+    ),
+    (
+        RADIO_SELECT_INCOMPATIBILITIES, inputs.lint_inputs,
+        lambda x:
+            'Select [radio_select] display="radio" is incompatible with optional="true"' in x.error_messages
+            and 'Select [radio_select] display="radio" is incompatible with multiple="true"' in x.error_messages
+            and 'Select [radio_checkboxes] display="checkboxes" is incompatible with optional="false"' in x.error_messages
+            and 'Select [radio_checkboxes] display="checkboxes" is incompatible with multiple="false"' in x.error_messages
+    ),
+    (
+        SELECT_DUPLICATED_OPTIONS, inputs.lint_inputs,
+        lambda x:
+            'Select [select] has multiple options with the same text content' in x.error_messages
+            and 'Select [select] has multiple options with the same value' in x.error_messages
+    ),
+]
+
+TEST_IDS = [
+    'Lint no sections',
+    'lint no when',
+    'radio select incompatibilities',
+    'select duplicated options'
 ]
 
 
-@pytest.mark.parametrize('tool_xml,lint_func,assert_func', TESTS, ids=['Lint no sections', 'lint no when', 'radio select incompatibilities', 'select duplicated options'])
+@pytest.mark.parametrize('tool_xml,lint_func,assert_func', TESTS, ids=TEST_IDS)
 def test_tool_xml(tool_xml, lint_func, assert_func):
     lint_ctx = LintContext('all')
     tree = etree.ElementTree(element=etree.fromstring(tool_xml))
