@@ -120,7 +120,7 @@ export function fetchMenu(options = {}) {
         // hidden though.
         menu.push({
             title: _l("Data Libraries"),
-            url: "library/list",
+            url: "libraries",
             id: "libraries",
         });
     } else {
@@ -132,7 +132,7 @@ export function fetchMenu(options = {}) {
             menu: [
                 {
                     title: _l("Data Libraries"),
-                    url: "library/list",
+                    url: "libraries",
                 },
                 {
                     title: _l("Histories"),
