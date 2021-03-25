@@ -7,7 +7,7 @@ from galaxy import (
     exceptions,
     util
 )
-from galaxy.managers.folders import FoldersManager
+from galaxy.managers.folders import FoldersService
 from galaxy.web import expose_api
 from . import (
     BaseGalaxyAPIController,
@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 
 class FoldersController(BaseGalaxyAPIController):
 
-    manager: FoldersManager = depends(FoldersManager)
+    service: FoldersService = depends(FoldersService)
 
     @expose_api
     def index(self, trans, **kwd):
@@ -44,7 +44,7 @@ class FoldersController(BaseGalaxyAPIController):
         :returns:   dictionary including details of the folder
         :rtype:     dict
         """
-        return self.manager.show(trans, id)
+        return self.service.show(trans, id)
 
     @expose_api
     def create(self, trans, encoded_parent_folder_id, payload, **kwd):
@@ -67,7 +67,7 @@ class FoldersController(BaseGalaxyAPIController):
         :rtype:     dictionary
         :raises: RequestParameterMissingException
         """
-        return self.manager.create(trans, encoded_parent_folder_id, payload)
+        return self.service.create(trans, encoded_parent_folder_id, payload)
 
     @expose_api
     def get_permissions(self, trans, encoded_folder_id, **kwd):
@@ -91,7 +91,7 @@ class FoldersController(BaseGalaxyAPIController):
         page = kwd.get('page', None)
         page_limit = kwd.get('page_limit', None)
         query = kwd.get('q', None)
-        return self.manager.get_permissions(trans, encoded_folder_id, scope, page, page_limit, query)
+        return self.service.get_permissions(trans, encoded_folder_id, scope, page, page_limit, query)
 
     @expose_api
     def set_permissions(self, trans, encoded_folder_id, payload, **kwd):
@@ -118,7 +118,7 @@ class FoldersController(BaseGalaxyAPIController):
         :rtype:     dictionary
         :raises: RequestParameterInvalidException, InsufficientPermissionsException, RequestParameterMissingException
         """
-        return self.manager.set_permissions(trans, encoded_folder_id, payload)
+        return self.service.set_permissions(trans, encoded_folder_id, payload)
 
     @expose_api
     def delete(self, trans, encoded_folder_id, **kwd):
@@ -141,7 +141,7 @@ class FoldersController(BaseGalaxyAPIController):
 
         """
         undelete = util.string_as_bool(kwd.get('undelete', False))
-        return self.manager.delete(trans, encoded_folder_id, undelete)
+        return self.service.delete(trans, encoded_folder_id, undelete)
 
     @expose_api
     def update(self, trans, encoded_folder_id, payload, **kwd):
@@ -166,4 +166,4 @@ class FoldersController(BaseGalaxyAPIController):
 
         :raises: RequestParameterMissingException
         """
-        return self.manager.update(trans, encoded_folder_id, payload)
+        return self.service.update(trans, encoded_folder_id, payload)

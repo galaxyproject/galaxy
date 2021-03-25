@@ -314,8 +314,11 @@ class FolderManager:
         return self.decode_folder_id(trans, self.cut_the_prefix(encoded_folder_id))
 
 
-class FoldersManager:
-    """Interface/service object shared by controllers for interacting with library folders."""
+class FoldersService:
+    """Common interface/service logic for interactions with library folders in the context of the API.
+    Provides the logic of the actions invoked by API controllers and uses type definitions
+    and pydantic models to declare its parameters and return types.
+    """
 
     def __init__(self, app: StructuredApp, folder_manager: FolderManager, role_manager: RoleManager) -> None:
         self._app = app
