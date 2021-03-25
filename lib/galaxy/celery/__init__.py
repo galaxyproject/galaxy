@@ -1,4 +1,5 @@
 import os
+from functools import lru_cache
 
 from celery import Celery
 
@@ -9,6 +10,7 @@ from galaxy.util.properties import load_app_properties
 log = get_logger(__name__)
 
 
+@lru_cache
 def get_galaxy_app():
     import galaxy.app
     if galaxy.app.app:
