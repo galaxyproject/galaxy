@@ -236,20 +236,6 @@ export default {
             duplicateNames: [],
         };
     },
-    props: {
-        /** distance from list edge to begin autoscrolling list */
-        autoscrollDist: {
-            type: Number,
-            required: false,
-            default: 24,
-        },
-        /** Color passed to hoverhighlight */
-        highlightClr: {
-            type: String,
-            required: false,
-            default: "rgba( 64, 255, 255, 1.0 )",
-        },
-    },
     computed: {
         atLeastOneDatasetIsSelected() {
             return this.selectedDatasetElems.length > 0;

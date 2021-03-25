@@ -3362,6 +3362,20 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~
+``flush_per_n_datasets``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Maximum number of datasets to create before flushing created
+    datasets to database. This affects tools that create many output
+    datasets. Higher values will lead to fewer database flushes and
+    faster execution, but require more memory. Set to -1 to disable
+    creating datasets in batches.
+:Default: ``1000``
+:Type: int
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``history_local_serial_workflow_scheduling``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

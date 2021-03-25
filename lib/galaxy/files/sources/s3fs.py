@@ -1,4 +1,5 @@
 import functools
+import logging
 import os
 
 try:
@@ -11,6 +12,8 @@ from ..sources import BaseFilesSource
 DEFAULT_ENFORCE_SYMLINK_SECURITY = True
 DEFAULT_DELETE_ON_REALIZE = False
 
+log = logging.getLogger(__name__)
+
 
 class S3FsFilesSource(BaseFilesSource):
     plugin_type = 's3fs'
@@ -19,8 +22,9 @@ class S3FsFilesSource(BaseFilesSource):
         if s3fs is None:
             raise Exception("Package s3fs unavailable but required for this file source plugin.")
         props = self._parse_common_config_opts(kwd)
-        self._bucket = props.pop("bucket")
-        assert self._bucket
+        self._bucket = props.pop("bucket", '')
+        self._endpoint_url = props.pop('endpoint_url', None)
+        assert self._endpoint_url or self._bucket
         self._props = props
 
     def list(self, path="/", recursive=True, user_context=None):
@@ -52,6 +56,8 @@ class S3FsFilesSource(BaseFilesSource):
         return f"{self._bucket}{path}"
 
     def _open_fs(self, user_context=None):
+        if self._endpoint_url:
+            self._props.update({'client_kwargs': {'endpoint_url': self._endpoint_url}})
         fs = s3fs.S3FileSystem(**self._props)
         return fs
 

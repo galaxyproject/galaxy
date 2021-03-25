@@ -32,41 +32,43 @@
                 </div>
             </div>
         </b-row>
-        <b-row class="ml-3 mb-1">
-            <i class="pref-icon pt-1 fa fa-lg fa-radiation" />
-            <div class="pref-content pr-1">
-                <a href="javascript:void(0)"><b v-b-modal.modal-prevent-closing>Delete Account</b></a>
-                <div class="form-text text-muted">Delete your account on this Galaxy server.</div>
-                <b-modal
-                    id="modal-prevent-closing"
-                    centered
-                    ref="modal"
-                    title="Account Deletion"
-                    title-tag="h2"
-                    @show="resetModal"
-                    @hidden="resetModal"
-                    @ok="handleOk"
-                >
-                    <p>
-                        <b-alert variant="danger" :show="showDeleteError">{{ deleteError }}</b-alert>
-                        <b>
-                            This action cannot be undone. Your account will be permanently deleted, along with the data
-                            contained in it.
-                        </b>
-                    </p>
-                    <b-form ref="form" @submit.prevent="handleSubmit">
-                        <b-form-group
-                            :state="nameState"
-                            label="Enter your user email for this account as confirmation."
-                            label-for="Email"
-                            invalid-feedback="Incorrect email"
-                        >
-                            <b-form-input id="name-input" v-model="name" :state="nameState" required></b-form-input>
-                        </b-form-group>
-                    </b-form>
-                </b-modal>
-            </div>
-        </b-row>
+        <ConfigProvider v-slot="{ config }">
+            <b-row v-if="config && !config.single_user" class="ml-3 mb-1">
+                <i class="pref-icon pt-1 fa fa-lg fa-radiation" />
+                <div class="pref-content pr-1">
+                    <a href="javascript:void(0)"><b v-b-modal.modal-prevent-closing>Delete Account</b></a>
+                    <div class="form-text text-muted">Delete your account on this Galaxy server.</div>
+                    <b-modal
+                        id="modal-prevent-closing"
+                        centered
+                        ref="modal"
+                        title="Account Deletion"
+                        title-tag="h2"
+                        @show="resetModal"
+                        @hidden="resetModal"
+                        @ok="handleOk"
+                    >
+                        <p>
+                            <b-alert variant="danger" :show="showDeleteError">{{ deleteError }}</b-alert>
+                            <b>
+                                This action cannot be undone. Your account will be permanently deleted, along with the
+                                data contained in it.
+                            </b>
+                        </p>
+                        <b-form ref="form" @submit.prevent="handleSubmit">
+                            <b-form-group
+                                :state="nameState"
+                                label="Enter your user email for this account as confirmation."
+                                label-for="Email"
+                                invalid-feedback="Incorrect email"
+                            >
+                                <b-form-input id="name-input" v-model="name" :state="nameState" required></b-form-input>
+                            </b-form-group>
+                        </b-form>
+                    </b-modal>
+                </div>
+            </b-row>
+        </ConfigProvider>
         <p class="mt-2">
             You are using <strong>{{ diskUsage }}</strong> of disk space in this Galaxy instance.
             <span v-html="quotaUsageString"></span>
@@ -86,6 +88,7 @@ import _l from "utils/localization";
 import axios from "axios";
 import QueryStringParsing from "utils/query-string-parsing";
 import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
+import ConfigProvider from "components/providers/ConfigProvider";
 import { userLogoutAll, userLogoutClient } from "layout/menu";
 import "@fortawesome/fontawesome-svg-core";
 
@@ -101,6 +104,9 @@ export default {
             type: Boolean,
             required: true,
         },
+    },
+    components: {
+        ConfigProvider,
     },
     data() {
         return {

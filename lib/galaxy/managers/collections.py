@@ -254,18 +254,6 @@ class DatasetCollectionManager:
         for _, tag in tags.items():
             dataset_collection_instance.tags.append(tag.copy(cls=model.HistoryDatasetCollectionTagAssociation))
 
-    def set_collection_elements(self, dataset_collection, dataset_instances):
-        if dataset_collection.populated:
-            raise Exception("Cannot reset elements of an already populated dataset collection.")
-
-        collection_type = dataset_collection.collection_type
-        collection_type_description = self.collection_type_descriptions.for_collection_type(collection_type)
-        type_plugin = collection_type_description.rank_type_plugin()
-        builder.set_collection_elements(dataset_collection, type_plugin, dataset_instances)
-        dataset_collection.mark_as_populated()
-
-        return dataset_collection
-
     def collection_builder_for(self, dataset_collection):
         return builder.BoundCollectionBuilder(dataset_collection)
 

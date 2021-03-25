@@ -18,3 +18,19 @@
   label: Posix
   doc: Files from local path
   root: /some/path/
+
+- type: s3fs
+  label: My MinIO storage
+  endpoint_url: "https://minio.usegalaxy.eu"
+  id: galaxy-minio-storage
+  doc: Galaxy MinIO S3 storage
+  anon: false
+  secret: "UHAJ6asd6asdhasd"
+  key: "MCJU76agdt98GGFAROIP7"
+
+- type: s3fs
+  label: CMIP6 GCMs downscaled using WRF
+  id: wrf-cmip6-noversioning
+  doc: High-resolution historical and future climate simulations from 1980-2100
+  bucket: wrf-cmip6-noversioning
+  anon: true

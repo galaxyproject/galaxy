@@ -4,8 +4,6 @@ from ..types import BaseDatasetCollectionType
 FORWARD_IDENTIFIER = "forward"
 REVERSE_IDENTIFIER = "reverse"
 
-INVALID_IDENTIFIERS_MESSAGE = f"Paired instance must define '{FORWARD_IDENTIFIER}' and '{REVERSE_IDENTIFIER}' datasets ."
-
 
 class PairedDatasetCollectionType(BaseDatasetCollectionType):
     """
@@ -17,20 +15,20 @@ class PairedDatasetCollectionType(BaseDatasetCollectionType):
         pass
 
     def generate_elements(self, elements):
-        forward_dataset = elements.get(FORWARD_IDENTIFIER, None)
-        reverse_dataset = elements.get(REVERSE_IDENTIFIER, None)
-        if not forward_dataset or not reverse_dataset:
-            self._validation_failed(INVALID_IDENTIFIERS_MESSAGE)
-        left_association = DatasetCollectionElement(
-            element=forward_dataset,
-            element_identifier=FORWARD_IDENTIFIER,
-        )
-        right_association = DatasetCollectionElement(
-            element=reverse_dataset,
-            element_identifier=REVERSE_IDENTIFIER,
-        )
-        yield left_association
-        yield right_association
+        forward_dataset = elements.get(FORWARD_IDENTIFIER)
+        reverse_dataset = elements.get(REVERSE_IDENTIFIER)
+        if forward_dataset:
+            left_association = DatasetCollectionElement(
+                element=forward_dataset,
+                element_identifier=FORWARD_IDENTIFIER,
+            )
+            yield left_association
+        if reverse_dataset:
+            right_association = DatasetCollectionElement(
+                element=reverse_dataset,
+                element_identifier=REVERSE_IDENTIFIER,
+            )
+            yield right_association
 
     def prototype_elements(self):
         left_association = DatasetCollectionElement(
