@@ -32,12 +32,12 @@ RADIO_SELECT_INCOMPATIBILITIES = """
     <version_command interpreter="python">bwa.py --version</version_command>
     <inputs>
         <param name="radio_select" type="select" display="radio" optional="true" multiple="true">
-            <option "1">1</option>
-            <option "2">2</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
         </param>
         <param name="radio_checkboxes" type="select" display="checkboxes" optional="false" multiple="false">
-            <option "1">1</option>
-            <option "2">2</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
         </param>
     </inputs>
 </tool>
