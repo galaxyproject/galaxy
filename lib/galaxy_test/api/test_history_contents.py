@@ -441,7 +441,6 @@ class HistoryContentsApiTestCase(ApiTestCase):
         assert new_forward["history_id"] == self.history_id
 
     def test_hdca_copy_with_new_dbkey(self):
-        # sh run_tests.sh -api lib/galaxy_test/api/test_history_contents.py::HistoryContentsApiTestCase::test_hdca_copy_with_new_dbkey 
         hdca = self.dataset_collection_populator.create_pair_in_history(self.history_id).json()
         hdca_id = hdca["id"]
         print(hdca)
