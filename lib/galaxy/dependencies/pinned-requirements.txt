@@ -15,6 +15,7 @@ bagit==1.8.1; python_version >= "3.6" and python_full_version < "3.0.0" and pyth
 bcrypt==3.2.0; python_version >= "3.6"
 bdbag==1.6.1; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.5.0" and python_version < "4")
 beaker==1.11.0
+billiard==3.6.3.0; python_version >= "3.6"
 bioblend==0.15.0; python_version >= "3.6"
 bleach==3.3.0; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.5.0")
 boltons==20.2.1
@@ -25,12 +26,16 @@ bx-python==0.8.11; python_version >= "3.6"
 cachecontrol==0.11.7; python_version >= "3.6" and python_version < "4"
 cached-property==1.5.2; python_version < "3.8" and python_version >= "3.6"
 cachetools==4.2.1; python_version >= "3.5" and python_version < "4.0" and (python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.6.0")
+celery==5.0.5; python_version >= "3.6"
 certifi==2020.12.5; python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version < "4"
 cffi==1.14.5; implementation_name == "pypy" and python_version >= "3.6" and (python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0")
 chardet==4.0.0; python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version < "4"
 cheetah3==3.2.6.post1; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.4.0")
 circus==0.17.1
-click==7.1.2; python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0"
+click-didyoumean==0.0.3; python_version >= "3.6"
+click-plugins==1.1.1; python_version >= "3.6"
+click-repl==0.1.6; python_version >= "3.6"
+click==7.1.2; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.6"
 cliff==3.7.0; python_version >= "3.6"
 cloudauthz==0.6.0
 cloudbridge==2.1.0
@@ -116,6 +121,7 @@ paste==3.5.0
 pastedeploy==2.1.1
 pbr==5.5.1; python_version >= "3.6"
 prettytable==0.7.2; python_version >= "3.6"
+prompt-toolkit==3.0.3; python_version >= "3.6"
 protobuf==3.15.6; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.6.0" and python_version >= "3.6"
 prov==1.5.1; python_version >= "3.6" and python_version < "4"
 psutil==5.8.0; (python_version >= "2.6" and python_full_version < "3.0.0") or (python_full_version >= "3.4.0")
