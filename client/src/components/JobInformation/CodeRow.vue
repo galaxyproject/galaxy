@@ -8,15 +8,15 @@
             {{ codeLabel }}
         </td>
         <td v-if="codeItem">
-                <b-row align-v="center">
-                    <b-col>
-                        <pre :class="codeClass">{{ codeItem }}</pre>
-                    </b-col>
-                    <b-col>
-                        <i :class="iconClass" />
-                        <b>Click to {{ action }}</b>
-                    </b-col>
-                </b-row>
+            <b-row align-v="center">
+                <b-col cols="9">
+                    <pre :class="codeClass">{{ codeItem }}</pre>
+                </b-col>
+                <b-col class="pointer">
+                    <i :class="iconClass" />
+                    <b>Click to {{ action }}</b>
+                </b-col>
+            </b-row>
         </td>
         <td v-else><i>empty</i></td>
     </tr>
@@ -55,3 +55,9 @@ export default {
     },
 };
 </script>
+
+<style scoped>
+.pointer {
+    cursor: pointer;
+}
+</style>
