@@ -9,7 +9,7 @@
         </td>
         <td v-if="codeItem">
             <b-row align-v="center">
-                <b-col cols="9">
+                <b-col cols="10">
                     <pre :class="codeClass">{{ codeItem }}</pre>
                 </b-col>
                 <b-col class="pointer">
