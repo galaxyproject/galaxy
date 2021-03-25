@@ -8,14 +8,14 @@
                 @fetchFolderContents="fetchFolderContents($event)"
                 @deleteFromTable="deleteFromTable"
                 @setBusy="setBusy($event)"
-                @changeFolderId="changeFolderId($event)"
-                :folderContents="folderContents"
+                @newFolder="newFolder"
+                :folder-contents="folderContents"
                 :include_deleted="include_deleted"
                 :folder_id="current_folder_id"
                 :selected="selected"
                 :metadata="folder_metadata"
                 :unselected="unselected"
-                :isAllSelectedMode="isAllSelectedMode"
+                :is-all-selected-mode="isAllSelectedMode"
             />
 
             <b-table
@@ -91,10 +91,14 @@
                         />
                     </div>
                     <div v-else-if="!row.item.deleted">
-                        <a v-if="row.item.type === 'folder'" href="#" @click="changeFolderId(row.item.id)">{{
+                        <b-link
+                            v-if="row.item.type === 'folder'"
+                            :to="{ name: `LibraryFolder`, params: { folder_id: `${row.item.id}` } }"
+                            >{{ row.item.name }}</b-link
+                        >
+                        <a v-else :href="`${root}library/list#folders/${current_folder_id}/datasets/${row.item.id}`">{{
                             row.item.name
                         }}</a>
-                        <a v-else :href="createContentLink(row.item)">{{ row.item.name }}</a>
                     </div>
                     <!-- Deleted Item-->
                     <div v-else>
@@ -217,11 +221,9 @@
                         <b-button
                             v-if="row.item.can_manage && !row.item.deleted"
                             @click="navigateToPermission(row.item)"
-                            data-toggle="tooltip"
-                            data-placement="top"
                             size="sm"
-                            class="lib-btn permission_folder_btn"
-                            :title="'Permissions of ' + row.item.name"
+                            class="lib-btn permission_lib_btn"
+                            :title="`Permissions of ${row.item.name}`"
                         >
                             <font-awesome-icon icon="users" />
                             Manage
@@ -285,7 +287,8 @@ import linkify from "linkifyjs/html";
 import { fields } from "./table-fields";
 import { Toast } from "ui/toast";
 import FolderTopBar from "./TopToolbar/FolderTopBar";
-import { initFolderTableIcons } from "./icons.js";
+import { initFolderTableIcons } from "components/Libraries/icons";
+import { MAX_DESCRIPTION_LENGTH, DEFAULT_PER_PAGE } from "components/Libraries/library-utils";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 initFolderTableIcons();
@@ -317,8 +320,8 @@ export default {
             unselected: [],
             expandedMessage: [],
             folderContents: [],
-            perPage: 15,
-            maxDescriptionLength: 40,
+            perPage: DEFAULT_PER_PAGE,
+            maxDescriptionLength: MAX_DESCRIPTION_LENGTH,
             filter: null,
             include_deleted: false,
             filterOn: [],
@@ -326,15 +329,19 @@ export default {
             isAllSelectedMode: false,
             total_rows: 0,
             deselectedDatasets: [],
+            root: getAppRoot(),
         };
     },
     created() {
-        this.current_folder_id = this.folder_id;
-        this.root = getAppRoot();
         this.services = new Services({ root: this.root });
-        this.fetchFolderContents();
+        this.initFolder(this.folder_id);
     },
     methods: {
+        initFolder(folder_id) {
+            this.current_folder_id = folder_id;
+            this.folderContents = [];
+            this.fetchFolderContents(this.include_deleted);
+        },
         fetchFolderContents(include_deleted = false) {
             this.include_deleted = include_deleted;
             this.setBusy(true);
@@ -368,11 +375,6 @@ export default {
         },
         updateSearchValue(value) {
             this.search_text = value;
-            this.folderContents = [];
-            this.fetchFolderContents(this.include_deleted);
-        },
-        changeFolderId(id) {
-            this.current_folder_id = id;
             this.folderContents = [];
             this.fetchFolderContents(this.include_deleted);
         },
@@ -423,6 +425,16 @@ export default {
                 this.selectAllRenderedRows();
             }
         },
+        newFolder() {
+            this.folderContents.unshift({
+                editMode: true,
+                isNewFolder: true,
+                type: "folder",
+                name: "",
+                description: "",
+            });
+            this.refreshTable();
+        },
         onRowClick(row, index, event) {
             // check if exists
             const selected_array_index = this.selected.findIndex((item) => item.id === row.id);
@@ -455,15 +467,10 @@ export default {
         bytesToString(raw_size) {
             return Utils.bytesToString(raw_size);
         },
-        createContentLink(element) {
-            if (element.type === "file")
-                return `${this.root}library/list#folders/${this.current_folder_id}/datasets/${element.id}`;
-            else if (element.type === "folder") return `${this.root}library/folders/${element.id}`;
-        },
         navigateToPermission(element) {
             if (element.type === "file")
-                this.$router.push({ path: `/permissions/${this.folder_id}/dataset/${element.id}` });
-            else if (element.type === "folder") this.$router.push({ path: `/permissions/${element.id}` });
+                this.$router.push({ path: `${this.folder_id}/dataset/${element.id}/permissions` });
+            else if (element.type === "folder") this.$router.push({ path: `${element.id}/permissions` });
         },
         getMessage(element) {
             if (element.type === "file") return element.message;
@@ -602,6 +609,10 @@ export default {
                 this.fetchFolderContents(this.include_deleted);
             },
         },
+    },
+    beforeRouteUpdate(to, from, next) {
+        this.initFolder(to.params.folder_id);
+        next();
     },
 };
 </script>

@@ -1,6 +1,6 @@
 <template>
     <div class="list-collection-creator">
-        <div v-if="(state == 'error')">
+        <div v-if="state == 'error'">
             <b-alert show variant="danger">
                 {{ errorText }}
             </b-alert>
@@ -63,10 +63,9 @@
                 </div>
                 <collection-creator
                     :oncancel="oncancel"
-                    :hideSourceItems="hideSourceItems"
+                    :hide-source-items="hideSourceItems"
                     @onUpdateHideSourceItems="onUpdateHideSourceItems"
                     @clicked-create="clickedCreate"
-                    :creationFn="creationFn"
                 >
                     <template v-slot:help-content>
                         <p>
@@ -185,6 +184,7 @@
                                 :key="element.id"
                                 @element-is-selected="elementSelected"
                                 @element-is-discarded="elementDiscarded"
+                                @onRename="(name) => (element.name = name)"
                                 :class="{ selected: getSelectedDatasetElems.includes(element.id) }"
                                 :element="element"
                             />
@@ -301,7 +301,7 @@ export default {
             /** data for list in progress */
             this.workingElements = [];
             // copy initial list, sort, add ids if needed
-            this.workingElements = this.initialElements.slice(0);
+            this.workingElements = JSON.parse(JSON.stringify(this.initialElements.slice(0)));
             this._ensureElementIds();
             this._validateElements();
             this._mangleDuplicateNames();

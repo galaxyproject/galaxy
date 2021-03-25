@@ -8,7 +8,7 @@ jest.mock("app");
 const localVue = getLocalVue();
 
 const nodes = {
-    "1": {
+    1: {
         id: "1",
         title: "node_title",
         label: "",
@@ -42,7 +42,7 @@ const nodes = {
             },
         },
     },
-    "2": {
+    2: {
         id: "2",
         title: "",
         label: "",

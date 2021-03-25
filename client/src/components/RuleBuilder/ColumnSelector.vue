@@ -30,7 +30,8 @@
                 </span>
                 <span class="rule-column-selector-target-select" v-else>
                     <select2 @input="handleAdd" placeholder="Select a column">
-                        <option /><!-- empty option selection for placeholder -->
+                        <option />
+                        <!-- empty option selection for placeholder -->
                         <option v-for="(col, index) in remainingHeaders" :value="index" :key="col">{{ col }}</option>
                     </select2>
                 </span>
@@ -117,10 +118,14 @@ export default {
             }
         },
         handleAdd(value) {
+            // TODO: Rework add/remove here to not mutate props.
+            // eslint-disable-next-line vue/no-mutating-props
             this.target.push(parseInt(value));
             this.$emit("update:orderedEdit", false);
         },
         handleRemove(index) {
+            // TODO: See above.
+            // eslint-disable-next-line vue/no-mutating-props
             this.target.splice(index, 1);
         },
         moveUp(value) {

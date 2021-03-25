@@ -26,6 +26,7 @@
 
         ## change into the directory where the notebooks are located
         cd ./jupyter/ &&
+        export HOME=/home/jovyan/ &&
         export PATH=/home/jovyan/.local/bin:\$PATH &&
 
         #if $mode.mode_select == 'scratch':

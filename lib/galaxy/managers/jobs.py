@@ -394,6 +394,8 @@ class JobSearch:
 def view_show_job(trans, job, full: bool) -> typing.Dict:
     is_admin = trans.user_is_admin
     job_dict = trans.app.security.encode_all_ids(job.to_dict('element', system_details=is_admin), True)
+    if trans.app.config.expose_dataset_path and 'command_line' not in job_dict:
+        job_dict['command_line'] = job.command_line
     if full:
         job_dict.update(dict(
             tool_stdout=job.tool_stdout,

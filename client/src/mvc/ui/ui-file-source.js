@@ -45,7 +45,9 @@ var View = Backbone.View.extend({
     render: function () {
         const value = this._value;
         if (value) {
-            if (value.url !== this.$text.text()) {
+            if (typeof value == "string") {
+                this.$text.text(value);
+            } else if (value.url !== this.$text.text()) {
                 this.$text.text(value.url);
             }
         } else {
@@ -79,18 +81,27 @@ var View = Backbone.View.extend({
 
     /** Returns current value */
     _getValue: function () {
-        return this._value.url;
+        return this._value?.url;
     },
 
     /** Sets current value */
     _setValue: function (new_value) {
         if (new_value) {
             if (typeof new_value == "string") {
-                new_value = JSON.parse(new_value);
+                let parsed_value;
+                // if new_value is not a JSON, set it as String
+                try {
+                    parsed_value = JSON.parse(new_value);
+                } catch (e) {
+                    parsed_value = new_value;
+                } finally {
+                    new_value = parsed_value;
+                }
             }
             this._value = new_value;
             this.model.trigger("error", null);
             this.model.trigger("change");
+            this.trigger("change");
         }
     },
 });

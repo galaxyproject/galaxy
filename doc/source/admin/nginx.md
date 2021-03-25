@@ -112,8 +112,8 @@ http {
     }
 
     server {
-        listen 443 default_server;
-        listen [::]:443 default_server;
+        listen 443 ssl default_server;
+        listen [::]:443 ssl default_server;
         server_name _;
 
         # use a variable for convenience

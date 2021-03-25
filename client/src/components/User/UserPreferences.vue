@@ -36,9 +36,7 @@
             <i class="pref-icon pt-1 fa fa-lg fa-radiation" />
             <div class="pref-content pr-1">
                 <a href="javascript:void(0)"><b v-b-modal.modal-prevent-closing>Delete Account</b></a>
-                <div class="form-text text-muted">
-                    Delete your account on this Galaxy server.
-                </div>
+                <div class="form-text text-muted">Delete your account on this Galaxy server.</div>
                 <b-modal
                     id="modal-prevent-closing"
                     centered

@@ -1440,6 +1440,21 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         self.assertEqual(len(implicit_collections), 3)
         self._check_implicit_collection_populated(create)
 
+    @skip_without_tool("output_filter_with_input_optional")
+    @uses_test_history(require_new=False)
+    def test_map_over_with_output_filter_on_optional_input(self, history_id):
+        hdca_id = self.dataset_collection_populator.create_list_in_history(history_id, contents=["myinputs"]).json()["id"]
+        inputs = {
+            "input_1": {'batch': True, 'values': [{'src': 'hdca', 'id': hdca_id}]},
+        }
+        create = self._run('output_filter_with_input_optional', history_id, inputs).json()
+        jobs = create['jobs']
+        implicit_collections = create['implicit_collections']
+        self.assertEqual(len(jobs), 1)
+        self.dataset_populator.wait_for_job(jobs[0]["id"], assert_ok=True)
+        self.assertEqual(len(implicit_collections), 1)
+        self._check_implicit_collection_populated(create)
+
     @skip_without_tool("output_filter_with_input")
     @uses_test_history(require_new=False)
     def test_map_over_with_output_filter_one_filtered(self, history_id):

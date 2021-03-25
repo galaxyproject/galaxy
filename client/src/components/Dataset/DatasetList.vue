@@ -23,9 +23,7 @@
                 No matching entries found for: <span class="font-weight-bold">{{ this.query }}</span
                 >.
             </div>
-            <div v-if="showNotAvailable">
-                No datasets found.
-            </div>
+            <div v-if="showNotAvailable">No datasets found.</div>
         </div>
     </div>
 </template>

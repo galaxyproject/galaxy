@@ -1,6 +1,6 @@
 <template>
     <div>
-        <ul style="padding-inline-start: 25px;">
+        <ul style="padding-inline-start: 25px">
             <li v-for="(elVal, pvIndex) in parameter_value" :key="pvIndex">
                 <span v-if="elVal.src == 'hda'">
                     <a :href="appRoot() + 'datasets/' + elVal.id + '/show_params'">

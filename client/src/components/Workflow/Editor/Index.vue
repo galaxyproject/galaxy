@@ -1,14 +1,14 @@
 <template>
     <div id="columns" class="workflow-client">
-        <StateUpgradeModal :stateMessages="stateMessages" />
+        <StateUpgradeModal :state-messages="stateMessages" />
         <StateUpgradeModal
-            :stateMessages="insertedStateMessages"
+            :state-messages="insertedStateMessages"
             title="Subworkflow embedded with changes"
             message="Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save."
         />
         <RefactorConfirmationModal
-            :workflowId="id"
-            :refactorActions="refactorActions"
+            :workflow-id="id"
+            :refactor-actions="refactorActions"
             @onWorkflowError="onWorkflowError"
             @onWorkflowMessage="onWorkflowMessage"
             @onRefactor="onRefactor"
@@ -99,7 +99,7 @@
                         <div class="unified-panel-header" unselectable="on">
                             <div class="unified-panel-header-inner">
                                 <WorkflowOptions
-                                    :hasChanges="hasChanges"
+                                    :has-changes="hasChanges"
                                     @onSave="onSave"
                                     @onSaveAs="onSaveAs"
                                     @onRun="onRun"
@@ -119,9 +119,9 @@
                                     :id="id"
                                     :tags="tags"
                                     :parameters="parameters"
-                                    :annotationCurrent.sync="annotation"
+                                    :annotation-current.sync="annotation"
                                     :annotation="annotation"
-                                    :nameCurrent.sync="name"
+                                    :name-current.sync="name"
                                     :name="name"
                                     :version="version"
                                     :versions="versions"
@@ -135,7 +135,7 @@
                                     id="lint-panel"
                                     class="right-content"
                                     ref="lint"
-                                    style="display: none;"
+                                    style="display: none"
                                     :untyped-parameters="parameters"
                                     :annotation="annotation"
                                     :creator="creator"
@@ -206,7 +206,7 @@ export default {
             type: String,
             required: true,
         },
-        version: {
+        initialVersion: {
             type: Number,
             required: true,
         },
@@ -259,6 +259,7 @@ export default {
             messageTitle: null,
             messageBody: null,
             messageIsError: false,
+            version: this.initialVersion,
         };
     },
     created() {
@@ -288,6 +289,15 @@ export default {
         name: function (newName, oldName) {
             if (newName != oldName) {
                 this.hasChanges = true;
+            }
+        },
+        steps: function (newSteps, oldSteps) {
+            this.hasChanges = true;
+        },
+        nodes: function (newNodes, oldNodes) {
+            this.hasChanges = true;
+            if (newNodes.length != oldNodes.length) {
+                this.requiresReindex = true;
             }
         },
     },
@@ -348,7 +358,6 @@ export default {
         },
         onAdd(node) {
             this.nodes[node.id] = node;
-            this.requiresReindex = true;
         },
         onUpdate(node) {
             getModule({
@@ -368,8 +377,6 @@ export default {
             Vue.delete(this.steps, node.id);
             this.canvasManager.drawOverview();
             this.activeNode = null;
-            this.hasChanges = true;
-            this.requiresReindex = true;
             showAttributes();
         },
         onEditSubworkflow(contentId) {
@@ -377,12 +384,26 @@ export default {
             this.onNavigate(editUrl);
         },
         onClone(node) {
-            Vue.set(this.steps, this.nodeIndex++, {
-                ...node.step,
+            const newId = this.nodeIndex++;
+            const stepCopy = JSON.parse(JSON.stringify(node.step));
+            const configFormCopy = JSON.parse(JSON.stringify(node.config_form));
+            Vue.set(this.steps, newId, {
+                ...stepCopy,
+                id: newId,
+                config_form: {
+                    ...configFormCopy,
+                    inputs: configFormCopy.inputs.filter((input) => !input.skipOnClone),
+                },
                 uuid: null,
-                annotation: node.annotation,
-                tool_state: node.tool_state,
-                post_job_actions: node.postJobActions,
+                label: null,
+                annotation: JSON.parse(JSON.stringify(node.annotation)),
+                tool_state: JSON.parse(JSON.stringify(node.tool_state)),
+                post_job_actions: JSON.parse(JSON.stringify(node.postJobActions)),
+            });
+            Vue.nextTick().then(() => {
+                this.canvasManager.drawOverview();
+                node = this.nodes[newId];
+                this.onActivate(node);
             });
         },
         onInsertTool(tool_id, tool_name) {
@@ -542,7 +563,7 @@ export default {
             Vue.nextTick(() => {
                 this.canvasManager.drawOverview();
                 this.canvasManager.scrollToNodes();
-                this.hasChanges = has_changes;
+                this.hasChanges = this.requiresReindex = has_changes;
             });
         },
         _loadCurrent(id, version) {

@@ -15,6 +15,7 @@ from galaxy_test.base.populators import (
     uses_test_history,
     wait_on,
     wait_on_state,
+    WorkflowPopulator
 )
 from ._framework import ApiTestCase
 
@@ -23,6 +24,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
 
     def setUp(self):
         super().setUp()
+        self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
 
@@ -38,7 +40,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         self.__history_with_new_dataset(history_id)
         jobs = self.__jobs_index(admin=False)
         job = jobs[0]
-        self._assert_not_has_keys(job, "command_line", "external_id")
+        self._assert_not_has_keys(job, "external_id")
 
         jobs = self.__jobs_index(admin=True)
         job = jobs[0]
@@ -96,6 +98,88 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
             assert len(jobs) == 0
 
     @uses_test_history(require_new=True)
+    def test_index_workflow_and_invocation_filter(self, history_id):
+        workflow_simple = """
+class: GalaxyWorkflow
+name: Simple Workflow
+inputs:
+  input1: data
+outputs:
+  wf_output_1:
+    outputSource: first_cat/out_file1
+steps:
+  first_cat:
+    tool_id: cat1
+    in:
+      input1: input1
+"""
+        summary = self.workflow_populator.run_workflow(workflow_simple, history_id=history_id, test_data={"input1": "hello world"})
+        invocation_id = summary.invocation_id
+        workflow_id = self._get(f"invocations/{invocation_id}").json()['workflow_id']
+        self.workflow_populator.wait_for_invocation(workflow_id, invocation_id)
+        jobs1 = self.__jobs_index(data={"workflow_id": workflow_id})
+        assert len(jobs1) == 1
+        jobs2 = self.__jobs_index(data={"invocation_id": invocation_id})
+        assert len(jobs2) == 1
+        assert jobs1 == jobs2
+
+    @uses_test_history(require_new=True)
+    def test_index_workflow_filter_implicit_jobs(self, history_id):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  input_datasets: collection
+steps:
+  multi_data_optional:
+    tool_id: multi_data_optional
+    in:
+      input1: input_datasets
+""")
+        hdca_id = self.dataset_collection_populator.create_list_of_list_in_history(history_id).json()
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        inputs = {
+            '0': self.dataset_populator.ds_entry(hdca_id),
+        }
+        invocation_id = self.workflow_populator.invoke_workflow(history_id, workflow_id, inputs)
+        self.workflow_populator.wait_for_invocation(workflow_id, invocation_id)
+        jobs1 = self.__jobs_index(data={"workflow_id": workflow_id})
+        jobs2 = self.__jobs_index(data={"invocation_id": invocation_id})
+        assert len(jobs1) == len(jobs2) == 1
+        second_invocation_id = self.workflow_populator.invoke_workflow(history_id, workflow_id, inputs)
+        self.workflow_populator.wait_for_invocation(workflow_id, second_invocation_id)
+        workflow_jobs = self.__jobs_index(data={"workflow_id": workflow_id})
+        second_invocation_jobs = self.__jobs_index(data={"invocation_id": second_invocation_id})
+        assert len(workflow_jobs) == 2
+        assert len(second_invocation_jobs) == 1
+
+    @uses_test_history(require_new=True)
+    def test_index_limit_and_offset_filter(self, history_id):
+        self.__history_with_new_dataset(history_id)
+        jobs = self.__jobs_index(data={"history_id": history_id})
+        assert len(jobs) > 0
+        length = len(jobs)
+        jobs = self.__jobs_index(data={"history_id": history_id, "offset": 1})
+        assert len(jobs) == length - 1
+        jobs = self.__jobs_index(data={"history_id": history_id, "limit": 0})
+        assert len(jobs) == 0
+
+    @uses_test_history(require_new=True)
+    def test_index_user_filter(self, history_id):
+        test_user_email = "user_for_jobs_index_test@bx.psu.edu"
+        user = self._setup_user(test_user_email)
+        with self._different_user(email=test_user_email):
+            # User should be able to jobs for their own ID.
+            jobs = self.__jobs_index(data={"user_id": user["id"]})
+            assert jobs == []
+        # Admin should be able to see jobs of another user.
+        jobs = self.__jobs_index(data={"user_id": user["id"]}, admin=True)
+        assert jobs == []
+        # Normal user should not be able to see jobs of another user.
+        jobs_response = self._get("jobs", data={"user_id": user["id"]})
+        self._assert_status_code_is(jobs_response, 403)
+        assert jobs_response.json() == {"err_msg": "Only admins can index the jobs of others", "err_code": 403006}
+
+    @uses_test_history(require_new=True)
     def test_index_multiple_states_filter(self, history_id):
         # Initial number of ok jobs
         original_count = len(self.__uploads_with_state("ok", "new"))
@@ -142,7 +226,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         assert not job_lock_response.json()["active"]
 
         show_jobs_response = self._get("jobs/%s" % job_id, admin=False)
-        self._assert_not_has_keys(show_jobs_response.json(), "command_line", "external_id")
+        self._assert_not_has_keys(show_jobs_response.json(), "external_id")
 
         # TODO: Re-activate test case when API accepts privacy settings
         # with self._different_user():

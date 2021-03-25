@@ -881,7 +881,7 @@ class SelectToolParameter(ToolParameter):
         else:
             return self.static_options
 
-    def get_legal_values(self, trans, other_values):
+    def get_legal_values(self, trans, other_values, value):
         """
         determine the set of values of legal options
         """
@@ -896,7 +896,7 @@ class SelectToolParameter(ToolParameter):
     def from_json(self, value, trans, other_values=None, require_legal_value=True):
         other_values = other_values or {}
         try:
-            legal_values = self.get_legal_values(trans, other_values)
+            legal_values = self.get_legal_values(trans, other_values, value)
         except ImplicitConversionRequired:
             return value
         # if the given value is not found in the set of values of the legal
@@ -1069,7 +1069,7 @@ class GenomeBuildParameter(SelectToolParameter):
         for dbkey, build_name in self._get_dbkey_names(trans=trans):
             yield build_name, dbkey, (dbkey == last_used_build)
 
-    def get_legal_values(self, trans, other_values):
+    def get_legal_values(self, trans, other_values, value):
         return {dbkey for dbkey, _ in self._get_dbkey_names(trans=trans)}
 
     def to_dict(self, trans, other_values=None):
@@ -1182,7 +1182,7 @@ class SelectTagParameter(SelectToolParameter):
             return self.default_value
         return SelectToolParameter.get_initial_value(self, trans, other_values)
 
-    def get_legal_values(self, trans, other_values):
+    def get_legal_values(self, trans, other_values, value):
         if self.data_ref not in other_values and not trans.workflow_building_mode:
             raise ValueError("Value for associated data reference not found (data_ref).")
         return set(self.get_tag_list(other_values))
@@ -1275,7 +1275,7 @@ class ColumnListParameter(SelectToolParameter):
     @staticmethod
     def _strip_c(column):
         if isinstance(column, str):
-            if column.startswith('c'):
+            if column.startswith('c') and len(column) > 1 and all(c.isdigit() for c in column[1:]):
                 column = column.strip().lower()[1:]
         return column
 
@@ -1355,12 +1355,11 @@ class ColumnListParameter(SelectToolParameter):
             return self.default_value
         return super().get_initial_value(trans, other_values)
 
-    def get_legal_values(self, trans, other_values):
+    def get_legal_values(self, trans, other_values, value):
         if self.data_ref not in other_values:
             raise ValueError("Value for associated data reference not found (data_ref).")
         legal_values = self.get_column_list(trans, other_values)
 
-        value = other_values.get(self.name)
         if value is not None:
             # There are cases where 'value' is a string of comma separated values. This ensures
             # that it is converted into a list, with extra whitespace around items removed.
@@ -1506,7 +1505,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
             return options
         return self.options
 
-    def get_legal_values(self, trans, other_values):
+    def get_legal_values(self, trans, other_values, value):
         def recurse_options(legal_values, options):
             for option in options:
                 legal_values.append(option['value'])
@@ -1517,7 +1516,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
 
     def from_json(self, value, trans, other_values=None):
         other_values = other_values or {}
-        legal_values = self.get_legal_values(trans, other_values)
+        legal_values = self.get_legal_values(trans, other_values, value)
         if not legal_values and trans.workflow_building_mode:
             if self.multiple:
                 if value == '':  # No option selected
