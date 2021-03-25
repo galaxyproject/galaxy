@@ -7,22 +7,15 @@
         <td>
             {{ codeLabel }}
         </td>
-        <td v-if="expanded">
-            <pre class="code">{{ codeItem }}</pre>
-        </td>
-        <td v-else-if="codeItem">
-            <pre class="code preview">{{ codeItem }}</pre>
-            <b>(Click to expand)</b>
+        <td v-if="codeItem">
+            <pre @click.stop :class="codeClass">{{ codeItem }}</pre>
+            <i :class="iconClass" />
+            <b>Click to {{ action }}</b>
         </td>
         <td v-else><i>empty</i></td>
     </tr>
 </template>
 <script>
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-
-Vue.use(BootstrapVue);
-
 export default {
     props: {
         codeLabel: String,
@@ -34,6 +27,17 @@ export default {
             mouseMoved: false,
             expanded: false,
         };
+    },
+    computed: {
+        action() {
+            return this.expanded ? "collapse" : "expand";
+        },
+        codeClass() {
+            return this.expanded ? "code" : "code preview";
+        },
+        iconClass() {
+            return this.expanded ? "fa fa-minus" : "fa fa-plus";
+        },
     },
     methods: {
         toggleExpanded() {
