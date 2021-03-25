@@ -8,7 +8,7 @@
             {{ codeLabel }}
         </td>
         <td v-if="codeItem">
-            <pre @click.stop :class="codeClass">{{ codeItem }}</pre>
+            <pre :class="codeClass">{{ codeItem }}</pre>
             <i :class="iconClass" />
             <b>Click to {{ action }}</b>
         </td>
