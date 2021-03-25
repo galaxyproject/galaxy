@@ -1,8 +1,10 @@
 import os
+
 from celery import Celery
-from galaxy.util.properties import load_app_properties
+
 from galaxy.config import Configuration
 from galaxy.util.custom_logging import get_logger
+from galaxy.util.properties import load_app_properties
 
 log = get_logger(__name__)
 
@@ -11,22 +13,22 @@ def get_galaxy_app():
     import galaxy.app
     if galaxy.app.app:
         return galaxy.app.app
-    galaxy_app = galaxy.app.UniverseApplication(**get_galaxy_config())
+    galaxy_app = galaxy.app.MinimalGalaxyApplication(**get_galaxy_config())
     return galaxy_app
 
 
 def get_galaxy_config():
-    config_file = os.path.abspath(os.environ["GALAXY_CONFIG_FILE"])
+    config_file = os.path.abspath(os.environ.get("GALAXY_CONFIG_FILE"))
     return load_app_properties(
         config_file=config_file,
         config_section='galaxy',
     )
+
+
 broker = Configuration(**get_galaxy_config()).amqp_internal_connection
-# This is a complete hack for now, todo: configure celery dynamically with the same galaxy internal amqp stuff.
 celery_app = Celery('galaxy', broker=broker, include=['galaxy.celery.tasks'])
 log.warning(f"BROKER IS {broker}")
 
 
 if __name__ == '__main__':
-    #celery_app.conf.update(broker=galaxy_app.config.amqp_internal_connection)
     celery_app.start()
