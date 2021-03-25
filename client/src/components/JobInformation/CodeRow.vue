@@ -15,7 +15,7 @@
                     <pre :class="codeClass">{{ codeItem }}</pre>
                 </b-col>
                 <b-col class="nopadding pointer">
-                    <i :class="iconClass" />
+                    <font-awesome-icon :icon="iconClass" />
                 </b-col>
             </b-row>
         </td>
@@ -23,7 +23,15 @@
     </tr>
 </template>
 <script>
+import { faCompressAlt, faExpandAlt} from "@fortawesome/free-solid-svg-icons";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+
+library.add(faCompressAlt, faExpandAlt);
 export default {
+    components:{
+        FontAwesomeIcon
+    },
     props: {
         codeLabel: String,
         codeItem: String,
@@ -43,7 +51,7 @@ export default {
             return this.expanded ? "code" : "code preview";
         },
         iconClass() {
-            return this.expanded ? "fa fa-minus" : "fa fa-plus";
+            return this.expanded ? ['fas', 'compress-alt'] : ['fas', 'expand-alt'];
         },
     },
     methods: {
