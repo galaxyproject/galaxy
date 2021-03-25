@@ -9,12 +9,11 @@
         </td>
         <td v-if="codeItem">
             <b-row align-v="center">
-                <b-col cols="10">
+                <b-col cols="11">
                     <pre :class="codeClass">{{ codeItem }}</pre>
                 </b-col>
-                <b-col class="pointer">
+                <b-col class="nopadding pointer">
                     <i :class="iconClass" />
-                    <b>Click to {{ action }}</b>
                 </b-col>
             </b-row>
         </td>
@@ -59,5 +58,9 @@ export default {
 <style scoped>
 .pointer {
     cursor: pointer;
+}
+.nopadding {
+    padding: 0;
+    margin: 0;
 }
 </style>
