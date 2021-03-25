@@ -162,8 +162,8 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         query = build_and_apply_filters(query, kwd.get('tool_id', None), lambda t: job_alias.tool_id == t)
         query = build_and_apply_filters(query, kwd.get('tool_id_like', None), lambda t: job_alias.tool_id.like(t))
 
-        query = build_and_apply_filters(query, kwd.get('date_range_min', None), lambda dmin: job_alias.table.c.update_time >= dmin)
-        query = build_and_apply_filters(query, kwd.get('date_range_max', None), lambda dmax: job_alias.table.c.update_time <= dmax)
+        query = build_and_apply_filters(query, kwd.get('date_range_min', None), lambda dmin: job_alias.update_time >= dmin)
+        query = build_and_apply_filters(query, kwd.get('date_range_max', None), lambda dmax: job_alias.update_time <= dmax)
 
         history_id = kwd.get('history_id', None)
         workflow_id = kwd.get('workflow_id', None)
