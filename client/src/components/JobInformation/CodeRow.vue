@@ -23,14 +23,14 @@
     </tr>
 </template>
 <script>
-import { faCompressAlt, faExpandAlt} from "@fortawesome/free-solid-svg-icons";
+import { faCompressAlt, faExpandAlt } from "@fortawesome/free-solid-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 library.add(faCompressAlt, faExpandAlt);
 export default {
-    components:{
-        FontAwesomeIcon
+    components: {
+        FontAwesomeIcon,
     },
     props: {
         codeLabel: String,
@@ -51,7 +51,7 @@ export default {
             return this.expanded ? "code" : "code preview";
         },
         iconClass() {
-            return this.expanded ? ['fas', 'compress-alt'] : ['fas', 'expand-alt'];
+            return this.expanded ? ["fas", "compress-alt"] : ["fas", "expand-alt"];
         },
     },
     methods: {
