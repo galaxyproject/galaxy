@@ -2888,7 +2888,7 @@ is still the column index. Used only when the ``type`` attribute value is
         <xs:attribute name="display" type="DisplayType">
           <xs:annotation>
             <xs:documentation xml:lang="en">Render a select list as a set of
-checkboxes (``checkboxes``; note this is incompatible with ``multipe="false"``
+checkboxes (``checkboxes``; note this is incompatible with ``multiple="false"``
 and ``optional="false"``) or radio buttons (``radio``; note this is
 incompatible with ``multiple="true"`` and ``optional="true"``). Defaults to a
 drop-down menu select list. Used only when the ``type`` attribute value is

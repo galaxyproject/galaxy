@@ -44,7 +44,7 @@ def lint_inputs(tool_xml, lint_ctx):
             if dynamic_options is None and len(select_options) == 0:
                 lint_ctx.warn(f"No options defined for select [{param_name}]")
 
-            if param_attrib.get("display") == "checkbockes":
+            if param_attrib.get("display") == "checkboxes":
                 if not string_as_bool(param_attrib.get("multiple", "false")):
                     lint_ctx.error(f'Select [{param_name}] display="checkboxes" is incompatible with multiple="false"')
                 if not string_as_bool(param_attrib.get("optional", "false")):
