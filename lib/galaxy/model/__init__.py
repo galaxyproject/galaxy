@@ -398,7 +398,7 @@ class User(Dictifiable, RepresentById):
         extra_user_preferences = self.preferences.get('extra_user_preferences')
         if extra_user_preferences:
             try:
-                data = json.loads(extra_user_preferences)
+                data.update(json.loads(extra_user_preferences))
             except Exception:
                 pass
         return data
@@ -3501,7 +3501,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                     continue
                 val = val.file_name
             # If no value for metadata, look in datatype for metadata.
-            elif val is None and hasattr(hda.datatype, name):
+            elif not hda.metadata.element_is_set(name) and hasattr(hda.datatype, name):
                 val = getattr(hda.datatype, name)
             rval['metadata_' + name] = val
         return rval
@@ -4996,6 +4996,8 @@ class Workflow(Dictifiable, RepresentById):
         copied_workflow.has_cycles = self.has_cycles
         copied_workflow.has_errors = self.has_errors
         copied_workflow.reports_config = self.reports_config
+        copied_workflow.license = self.license
+        copied_workflow.creator_metadata = self.creator_metadata
 
         # Map old step ids to new steps
         step_mapping = {}

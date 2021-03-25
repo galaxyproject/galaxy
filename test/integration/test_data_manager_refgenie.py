@@ -1,9 +1,10 @@
+import os
 import random
 import string
 
 from nose.plugins.skip import SkipTest
 
-from galaxy_test.base.populators import DatasetPopulator, skip_if_toolshed_down
+from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 from .uses_shed import CONDA_AUTO_INSTALL_JOB_TIMEOUT, UsesShed
 
@@ -32,6 +33,17 @@ DATA_MANAGER_MANUAL_INPUT = {
     "data_tables_0|columns_3|data_table_column_name": "path",
     "data_tables_0|columns_3|data_table_column_value": "dm6.fa",
 }
+DATA_MANAGER_MANUAL_INPUT_DBKEY = {
+    "data_tables_0|data_table_name": "__dbkeys__",
+    "data_tables_0|columns_0|data_table_column_name": "value",
+    "data_tables_0|columns_0|data_table_column_value": "dm7",
+    "data_tables_0|columns_1|data_table_column_name": "name",
+    "data_tables_0|columns_1|data_table_column_value": "dm7",
+    "data_tables_0|columns_2|data_table_column_name": "len_path",
+    "data_tables_0|columns_2|data_table_column_value": "dm7.len",
+}
+SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
+REFGENIE_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "refgenie.yml")
 
 
 class DataManagerIntegrationTestCase(integration_util.IntegrationTestCase, UsesShed):
@@ -56,30 +68,11 @@ class DataManagerIntegrationTestCase(integration_util.IntegrationTestCase, UsesS
         config["watch_tool_data_dir"] = True
         cls.username = cls.get_secure_ascii_digits()
         config["admin_users"] = "%s@galaxy.org" % cls.username
+        config["refgenie_config_file"] = REFGENIE_CONFIG_FILE
 
-    @skip_if_toolshed_down
-    def test_data_manager_installation_table_reload(self):
+    def test_data_manager_manual_refgenie(self):
         """
-        Test that we can install data managers, create a new dbkey, and use that dbkey in a downstream data manager.
-        """
-        self.install_repository("devteam", "data_manager_fetch_genome_dbkeys_all_fasta", "14eb0fc65c62")
-        self.install_repository("devteam", "data_manager_sam_fasta_index_builder", "cc4ef4d38cf9")
-        with self._different_user(email="%s@galaxy.org" % self.username):
-            with self.dataset_populator.test_history() as history_id:
-                run_response = self.dataset_populator.run_tool(tool_id=FETCH_TOOL_ID,
-                                                               inputs=FETCH_GENOME_DBKEYS_ALL_FASTA_INPUT,
-                                                               history_id=history_id,
-                                                               assert_ok=False)
-                self.dataset_populator.wait_for_tool_run(history_id=history_id, run_response=run_response, timeout=CONDA_AUTO_INSTALL_JOB_TIMEOUT)
-                run_response = self.dataset_populator.run_tool(tool_id=SAM_FASTA_ID,
-                                                               inputs=SAM_FASTA_INPUT,
-                                                               history_id=history_id,
-                                                               assert_ok=False)
-                self.dataset_populator.wait_for_tool_run(history_id=history_id, run_response=run_response, timeout=CONDA_AUTO_INSTALL_JOB_TIMEOUT)
-
-    def test_data_manager_manual(self):
-        """
-        Test that data_manager_manual works, which uses a significant amount of Galaxy-internal code
+        Test that data_manager_manual works with refgenie enabled, which uses a significant amount of Galaxy-internal code
         """
         self.install_repository('iuc', 'data_manager_manual', '1ed87dee9e68')
         with self._different_user(email="%s@galaxy.org" % self.username):
@@ -93,47 +86,28 @@ class DataManagerIntegrationTestCase(integration_util.IntegrationTestCase, UsesS
         entries = self._app.tool_data_tables.get("all_fasta").get_entries('dbkey', 'dm6', 'dbkey')
         assert 'dm6' in entries
 
-        table_content = {line[0]: line for line in self._app.tool_data_tables.get("all_fasta").to_dict(view="element")['fields']}
-
-        self._app.tool_data_tables.get("all_fasta").remove_entry(table_content['dm6'])
+        self._app.tool_data_tables.get("all_fasta").remove_entry(self._app.tool_data_tables.get("all_fasta").to_dict(view="element")['fields'][0])
         entries = self._app.tool_data_tables.get("all_fasta").get_entries('dbkey', 'dm6', 'dbkey')
         assert entries is None
 
-    def test_data_manager_manual_multiple(self):
+    def test_data_manager_manual_refgenie_dbkeys(self):
         """
-        Test adding/removing on the same data table with multiple data managers
+        Test that data_manager_manual works with refgenie enabled, with a table defined first by refgenie
         """
-        self.install_repository("devteam", "data_manager_fetch_genome_dbkeys_all_fasta", "14eb0fc65c62")
         self.install_repository('iuc', 'data_manager_manual', '1ed87dee9e68')
         with self._different_user(email="%s@galaxy.org" % self.username):
             with self.dataset_populator.test_history() as history_id:
-                run_response = self.dataset_populator.run_tool(tool_id=FETCH_TOOL_ID,
-                                                               inputs=FETCH_GENOME_DBKEYS_ALL_FASTA_INPUT,
-                                                               history_id=history_id,
-                                                               assert_ok=False)
-                self.dataset_populator.wait_for_tool_run(history_id=history_id, run_response=run_response, timeout=CONDA_AUTO_INSTALL_JOB_TIMEOUT)
                 run_response = self.dataset_populator.run_tool(tool_id=DATA_MANAGER_MANUAL_ID,
-                                                               inputs=DATA_MANAGER_MANUAL_INPUT,
+                                                               inputs=DATA_MANAGER_MANUAL_INPUT_DBKEY,
                                                                history_id=history_id,
                                                                assert_ok=False)
                 self.dataset_populator.wait_for_tool_run(history_id=history_id, run_response=run_response, timeout=CONDA_AUTO_INSTALL_JOB_TIMEOUT)
 
-        entries = self._app.tool_data_tables.get("all_fasta").get_entries('dbkey', 'NC_001617.1', 'dbkey')
-        assert 'NC_001617.1' in entries
+        entries = self._app.tool_data_tables.get("__dbkeys__").get_entries('name', 'dm7', 'name')
+        assert 'dm7' in entries
 
-        entries = self._app.tool_data_tables.get("all_fasta").get_entries('dbkey', 'dm6', 'dbkey')
-        assert 'dm6' in entries
-
-        table_content = {line[0]: line for line in self._app.tool_data_tables.get("all_fasta").to_dict(view="element")['fields']}
-
-        self._app.tool_data_tables.get("all_fasta").remove_entry(table_content['dm6'])
-
-        entries = self._app.tool_data_tables.get("all_fasta").get_entries('dbkey', 'dm6', 'dbkey')
-        assert entries is None
-
-        self._app.tool_data_tables.get("all_fasta").remove_entry(table_content['NC_001617.1'])
-
-        entries = self._app.tool_data_tables.get("all_fasta").get_entries('dbkey', 'NC_001617.1', 'dbkey')
+        self._app.tool_data_tables.get("__dbkeys__").remove_entry(self._app.tool_data_tables.get("__dbkeys__").to_dict(view="element")['fields'][0])
+        entries = self._app.tool_data_tables.get("all_fasta").get_entries('name', 'dm7', 'name')
         assert entries is None
 
     @classmethod

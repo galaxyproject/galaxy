@@ -9,7 +9,14 @@ from boltons.iterutils import remap
 from galaxy.util import unicodify
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.json import safe_loads
-from .basic import DataCollectionToolParameter, DataToolParameter, is_runtime_value, runtime_to_json, SelectToolParameter
+from .basic import (
+    DataCollectionToolParameter,
+    DataToolParameter,
+    is_runtime_value,
+    ParameterValueError,
+    runtime_to_json,
+    SelectToolParameter,
+)
 from .grouping import Conditional, Repeat, Section, UploadDataset
 
 REPLACE_ON_TRUTHY = object()
@@ -221,7 +228,10 @@ def params_from_strings(params, param_values, app, ignore_errors=False):
     for key, value in param_values.items():
         value = safe_loads(value)
         if key in params:
-            value = params[key].value_from_basic(value, app, ignore_errors)
+            try:
+                value = params[key].value_from_basic(value, app, ignore_errors)
+            except ParameterValueError:
+                continue
         rval[key] = value
     return rval
 

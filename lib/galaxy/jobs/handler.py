@@ -116,7 +116,7 @@ class ItemGrabber:
             try:
                 rows = conn.execute(self._grab_query).fetchall()
                 if rows:
-                    log.debug('Grabbed %s(s): %s', self.grab_type, ', '.join(str(row[0]) for row in rows))
+                    log.debug(f"Grabbed {self.grab_type}(s): {', '.join(str(row[0]) for row in rows)}")
                     trans.commit()
                 else:
                     trans.rollback()

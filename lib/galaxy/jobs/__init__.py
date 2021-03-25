@@ -1334,7 +1334,10 @@ class JobWrapper(HasResourceParameters):
             ActionBox.execute(self.app, self.sa_session, pja, job)
         # If the job was deleted, call tool specific fail actions (used for e.g. external metadata) and clean up
         if self.tool:
-            self.tool.job_failed(self, message, exception)
+            try:
+                self.tool.job_failed(self, message, exception)
+            except Exception:
+                log.exception(f"Error occured while calling tool specific fail actions for job {job.id}")
         cleanup_job = self.cleanup_job
         delete_files = cleanup_job == 'always' or (cleanup_job == 'onsuccess' and job.state == job.states.DELETED)
         self.cleanup(delete_files=delete_files)

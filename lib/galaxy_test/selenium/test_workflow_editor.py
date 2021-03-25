@@ -1,5 +1,7 @@
 import json
 
+from selenium.webdriver.common.keys import Keys
+
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_NESTED_SIMPLE,
     WORKFLOW_OPTIONAL_TRUE_INPUT_COLLECTION,
@@ -136,6 +138,34 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         self.screenshot("workflow_editor_data_collection_input_deleted")
 
     @selenium_test
+    def test_data_column_input_editing(self):
+        self.open_in_workflow_editor("""
+class: GalaxyWorkflow
+steps:
+  column_param_list:
+    tool_id: column_param_list
+    state:
+      col: ["1","2","3"]
+      col_names: ["a", "b", "c"]
+      """)
+        editor = self.components.workflow_editor
+        node = editor.node._(label="column_param_list")
+        node.title.wait_for_and_click()
+        columns = self.components.tool_form.parameter_textarea(parameter='col')
+        textarea_columns = columns.wait_for_visible()
+        assert textarea_columns.get_attribute('value') == '1\n2\n3\n'
+        column_names = self.components.tool_form.parameter_textarea(parameter='col_names')
+        textarea_column_names = column_names.wait_for_visible()
+        assert textarea_column_names.get_attribute('value') == 'a\nb\nc\n'
+        self.set_text_element(columns, '4\n5\n6\n')
+        self.assert_has_changes_and_save()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.driver.refresh()
+        node.title.wait_for_and_click()
+        textarea_columns = columns.wait_for_visible()
+        assert textarea_columns.get_attribute('value') == '4\n5\n6\n'
+
+    @selenium_test
     def test_integer_input(self):
         editor = self.components.workflow_editor
 
@@ -226,6 +256,19 @@ steps:
         self.screenshot("workflow_editor_connection_destroyed")
 
         self.workflow_editor_connect("input1#output", "first_cat#input1", screenshot_partial="workflow_editor_connection_dragging")
+        self.assert_connected("input1#output", "first_cat#input1")
+
+    @selenium_test
+    def test_reconnecting_nodes(self):
+        name = self.open_in_workflow_editor(WORKFLOW_SIMPLE_CAT_TWICE)
+        self.assert_connected("input1#output", "first_cat#input1")
+        self.workflow_editor_destroy_connection("first_cat#input1")
+        self.assert_not_connected("input1#output", "first_cat#input1")
+        self.workflow_editor_connect("input1#output", "first_cat#input1")
+        self.assert_connected("input1#output", "first_cat#input1")
+        self.assert_has_changes_and_save()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.workflow_index_open_with_name(name)
         self.assert_connected("input1#output", "first_cat#input1")
 
     @selenium_test
@@ -358,6 +401,55 @@ steps:
         self.workflow_index_click_option("Edit")
         self.assert_modal_has_text("Using version '0.2' instead of version '0.0.1'")
         self.screenshot("workflow_editor_tool_upgrade")
+        self.components.workflow_editor.modal_button_continue.wait_for_and_click()
+        self.assert_has_changes_and_save()
+
+    @staticmethod
+    def set_text_element(element, value):
+        # Try both, no harm here
+        element.wait_for_and_send_keys(Keys.CONTROL, 'a')
+        element.wait_for_and_send_keys(Keys.COMMAND, 'a')
+        element.wait_for_and_send_keys(Keys.BACKSPACE)
+        element.wait_for_and_send_keys(value)
+
+    @selenium_test
+    def test_editor_duplicate_node(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
+        self.workflow_index_open()
+        self.workflow_index_click_option("Edit")
+        editor = self.components.workflow_editor
+        cat_node = editor.node._(label="first_cat")
+        cat_node.wait_for_and_click()
+        self.set_text_element(editor.label_input, 'source label')
+        # Select node using new label, ensures labels are synced between side panel and node
+        cat_node = editor.node._(label="source label")
+        self.assert_has_changes_and_save()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        editor.annotation_input.wait_for_and_send_keys("source annotation")
+        self.assert_has_changes_and_save()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        editor.configure_output(output='out_file1').wait_for_and_click()
+        output_label = editor.label_output(output='out_file1')
+        self.set_text_element(output_label, 'workflow output label')
+        self.set_text_element(editor.rename_output, 'renamed_output')
+        editor.change_datatype.wait_for_and_click()
+        editor.select_datatype(datatype='bam').wait_for_and_click()
+        self.set_text_element(editor.add_tags, '#crazynewtag')
+        self.set_text_element(editor.remove_tags, '#oldboringtag')
+        cat_node.clone.wait_for_and_click()
+        editor.label_input.wait_for_and_send_keys('cloned label')
+        output_label = editor.label_output(output='out_file1')
+        self.set_text_element(output_label, 'cloned output label')
+        self.assert_has_changes_and_save()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        edited_workflow = self.workflow_populator.download_workflow(workflow_id)
+        source_step = next(iter(step for step in edited_workflow['steps'].values() if step['label'] == 'source label'))
+        cloned_step = next(iter(step for step in edited_workflow['steps'].values() if step['label'] == 'cloned label'))
+        assert source_step['annotation'] == cloned_step['annotation'] == "source annotation"
+        assert source_step['workflow_outputs'][0]['label'] == 'workflow output label'
+        assert cloned_step['workflow_outputs'][0]['label'] == 'cloned output label'
+        assert len(source_step['post_job_actions']) == len(cloned_step['post_job_actions']) == 4
+        assert source_step['post_job_actions'] == cloned_step['post_job_actions']
 
     @selenium_test
     def test_editor_embed_workflow(self):
@@ -484,6 +576,7 @@ steps:
         self.workflow_index_open()
         self.workflow_index_open_with_name(name)
         self.workflow_editor_click_option("Auto Layout")
+        return name
 
     def workflow_editor_source_sink_terminal_ids(self, source, sink):
         editor = self.components.workflow_editor
