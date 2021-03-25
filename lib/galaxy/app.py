@@ -98,7 +98,7 @@ class HaltableContainer(Container):
 class MinimalGalaxyApplication(BasicApp, config.ConfiguresGalaxyMixin, HaltableContainer):
     """Encapsulates the state of a minimal Galaxy application"""
 
-    def __init__(self, fsmon=False, **kwargs) -> None:
+    def __init__(self, fsmon=False, configure_logging=True, **kwargs) -> None:
         super().__init__()
         self.haltables = [
             ("object store", self._shutdown_object_store),
@@ -117,7 +117,8 @@ class MinimalGalaxyApplication(BasicApp, config.ConfiguresGalaxyMixin, HaltableC
         # Read config file and check for errors
         self.config: Any = self._register_singleton(config.Configuration, config.Configuration(**kwargs))
         self.config.check()
-        config.configure_logging(self.config)
+        if configure_logging:
+            config.configure_logging(self.config)
         self._configure_object_store(fsmon=True)
         config_file = kwargs.get('global_conf', {}).get('__file__', None)
         if config_file:
@@ -130,6 +131,13 @@ class MinimalGalaxyApplication(BasicApp, config.ConfiguresGalaxyMixin, HaltableC
         self._register_singleton(SharedModelMapping, self.model)
         self._register_singleton(GalaxyModelMapping, self.model)
         self._register_singleton(scoped_session, self.model.context)
+
+    def configure_fluent_log(self):
+        if self.config.fluent_log:
+            from galaxy.util.custom_logging.fluent_log import FluentTraceLogger
+            self.trace_logger = FluentTraceLogger('galaxy', self.config.fluent_host, self.config.fluent_port)
+        else:
+            self.trace_logger = None
 
     def _shutdown_object_store(self):
         self.object_store.shutdown()
@@ -365,13 +373,6 @@ class UniverseApplication(StructuredApp, MinimalGalaxyApplication):
 
     def _shutdown_application_stack(self):
         self.application_stack.shutdown()
-
-    def configure_fluent_log(self):
-        if self.config.fluent_log:
-            from galaxy.util.custom_logging.fluent_log import FluentTraceLogger
-            self.trace_logger = FluentTraceLogger('galaxy', self.config.fluent_host, self.config.fluent_port)
-        else:
-            self.trace_logger = None
 
     @property
     def is_job_handler(self) -> bool:

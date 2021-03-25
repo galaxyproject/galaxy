@@ -13,7 +13,7 @@ def get_galaxy_app():
     import galaxy.app
     if galaxy.app.app:
         return galaxy.app.app
-    galaxy_app = galaxy.app.MinimalGalaxyApplication(**get_galaxy_config())
+    galaxy_app = galaxy.app.MinimalGalaxyApplication(configure_logging=False, **get_galaxy_config())
     return galaxy_app
 
 
