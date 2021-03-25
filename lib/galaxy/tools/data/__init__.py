@@ -894,10 +894,10 @@ class RefgenieToolDataTable(TabularToolDataTable):
 
     def _remove_entry(self, values):
 
-        log.warning("Deletion from refgenie-backed '%s' data table is not supported, only deleting from .loc files", self.name)
+        log.warning("Deletion from refgenie-backed '%s' data table is not supported, will only try to delete from .loc files", self.name)
 
         # Update every non-refgenie files
-        super._remove_entry(values)
+        super()._remove_entry(values)
 
 
 def expand_here_template(content, here=None):
