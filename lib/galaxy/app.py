@@ -2,7 +2,7 @@ import logging
 import signal
 import sys
 import time
-from typing import Any
+from typing import Any, Callable, List, Tuple
 
 from sqlalchemy.orm.scoping import (
     scoped_session,
@@ -76,13 +76,35 @@ log = logging.getLogger(__name__)
 app = None
 
 
-class UniverseApplication(StructuredApp, config.ConfiguresGalaxyMixin, Container):
-    """Encapsulates the state of a Universe application"""
+class HaltableContainer(Container):
+    haltables: List[Tuple[str, Callable]]
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self) -> None:
         super().__init__()
+        self.haltables = []
+
+    def shutdown(self):
+        exception = None
+        for what, haltable in self.haltables:
+            try:
+                haltable()
+            except Exception as e:
+                log.exception(f"Failed to shutdown {what} cleanly")
+                exception = exception or e
+        if exception is not None:
+            raise exception
+
+
+class MinimalGalaxyApplication(BasicApp, config.ConfiguresGalaxyMixin, HaltableContainer):
+    """Encapsulates the state of a minimal Galaxy application"""
+
+    def __init__(self, fsmon=False, **kwargs) -> None:
+        super().__init__()
+        self.haltables = [
+            ("object store", self._shutdown_object_store),
+            ("database connection", self._shutdown_model),
+        ]
         self._register_singleton(BasicApp, self)
-        self._register_singleton(StructuredApp, self)
         if not log.handlers:
             # Paste didn't handle it, so we need a temporary basic log
             # configured.  The handler added here gets dumped and replaced with
@@ -91,12 +113,50 @@ class UniverseApplication(StructuredApp, config.ConfiguresGalaxyMixin, Container
         log.debug("python path is: %s", ", ".join(sys.path))
         self.name = 'galaxy'
         self.is_webapp = False
-        startup_timer = ExecutionTimer()
         self.new_installation = False
         # Read config file and check for errors
         self.config: Any = self._register_singleton(config.Configuration, config.Configuration(**kwargs))
         self.config.check()
         config.configure_logging(self.config)
+        self._configure_object_store(fsmon=True)
+        config_file = kwargs.get('global_conf', {}).get('__file__', None)
+        if config_file:
+            log.debug('Using "galaxy.ini" config file: %s', config_file)
+        check_migrate_tools = self.config.check_migrate_tools
+        self._configure_models(check_migrate_databases=self.config.check_migrate_databases, check_migrate_tools=check_migrate_tools, config_file=config_file)
+        # Security helper
+        self._configure_security()
+        self._register_singleton(IdEncodingHelper, self.security)
+        self._register_singleton(SharedModelMapping, self.model)
+        self._register_singleton(GalaxyModelMapping, self.model)
+        self._register_singleton(scoped_session, self.model.context)
+
+    def _shutdown_object_store(self):
+        self.object_store.shutdown()
+
+    def _shutdown_model(self):
+        self.model.engine.dispose()
+
+
+class UniverseApplication(StructuredApp, MinimalGalaxyApplication):
+    """Encapsulates the state of a Universe application"""
+
+    def __init__(self, **kwargs) -> None:
+        startup_timer = ExecutionTimer()
+        super().__init__(fsmon=True, **kwargs)
+        self.haltables = [
+            ("queue worker", self._shutdown_queue_worker),
+            ("file watcher", self._shutdown_watcher),
+            ("database heartbeat", self._shutdown_database_heartbeat),
+            ("workflow scheduler", self._shutdown_scheduling_manager),
+            ("object store", self._shutdown_object_store),
+            ("job manager", self._shutdown_job_manager),
+            ("application heartbeat", self._shutdown_heartbeat),
+            ("repository manager", self._shutdown_repo_manager),
+            ("database connection", self._shutdown_model),
+            ("application stack", self._shutdown_application_stack),
+        ]
+        self._register_singleton(StructuredApp, self)
         self.execution_timer_factory = self._register_singleton(ExecutionTimerFactory, ExecutionTimerFactory(self.config))
         self.configure_fluent_log()
         # A lot of postfork initialization depends on the server name, ensure it is set immediately after forking before other postfork functions
@@ -109,20 +169,8 @@ class UniverseApplication(StructuredApp, config.ConfiguresGalaxyMixin, Container
         self.queue_worker = self._register_singleton(GalaxyQueueWorker, GalaxyQueueWorker(self))
 
         self._configure_tool_shed_registry()
-        self._configure_object_store(fsmon=True)
         # Setup the database engine and ORM
-        config_file = kwargs.get('global_conf', {}).get('__file__', None)
-        if config_file:
-            log.debug('Using "galaxy.ini" config file: %s', config_file)
-        check_migrate_tools = self.config.check_migrate_tools
-        self._configure_models(check_migrate_databases=self.config.check_migrate_databases, check_migrate_tools=check_migrate_tools, config_file=config_file)
 
-        # Security helper
-        self._configure_security()
-        self._register_singleton(IdEncodingHelper, self.security)
-        self._register_singleton(SharedModelMapping, self.model)
-        self._register_singleton(GalaxyModelMapping, self.model)
-        self._register_singleton(scoped_session, self.model.context)
         # Tag handler
         self.tag_handler = self._register_singleton(GalaxyTagHandler)
         self.user_manager = self._register_singleton(UserManager)
@@ -293,67 +341,30 @@ class UniverseApplication(StructuredApp, config.ConfiguresGalaxyMixin, Container
         self.server_starttime = int(time.time())  # used for cachebusting
         log.info("Galaxy app startup finished %s" % startup_timer)
 
-    def shutdown(self):
-        log.debug('Shutting down')
-        exception = None
-        try:
-            self.queue_worker.shutdown()
-        except Exception as e:
-            exception = exception or e
-            log.exception("Failed to shutdown control worker cleanly")
-        try:
-            self.watchers.shutdown()
-        except Exception as e:
-            exception = exception or e
-            log.exception("Failed to shutdown configuration watchers cleanly")
-        try:
-            self.database_heartbeat.shutdown()
-        except Exception as e:
-            exception = exception or e
-            log.exception("Failed to shutdown database heartbeat cleanly")
-        try:
-            self.workflow_scheduling_manager.shutdown()
-        except Exception as e:
-            exception = exception or e
-            log.exception("Failed to shutdown workflow scheduling manager cleanly")
-        try:
-            self.job_manager.shutdown()
-        except Exception as e:
-            exception = exception or e
-            log.exception("Failed to shutdown job manager cleanly")
-        try:
-            self.object_store.shutdown()
-        except Exception as e:
-            exception = exception or e
-            log.exception("Failed to shutdown object store cleanly")
-        try:
-            if self.heartbeat:
-                self.heartbeat.shutdown()
-        except Exception as e:
-            exception = exception or e
-            log.exception("Failed to shutdown heartbeat cleanly")
-        try:
-            self.update_repository_manager.shutdown()
-        except Exception as e:
-            exception = exception or e
-            log.exception("Failed to shutdown update repository manager cleanly")
+    def _shutdown_queue_worker(self):
+        self.queue_worker.shutdown()
 
-        try:
-            self.model.engine.dispose()
-        except Exception as e:
-            exception = exception or e
-            log.exception("Failed to shutdown SA database engine cleanly")
+    def _shutdown_watcher(self):
+        self.watchers.shutdown()
 
-        try:
-            self.application_stack.shutdown()
-        except Exception as e:
-            exception = exception or e
-            log.exception("Failed to shutdown application stack interface cleanly")
+    def _shutdown_database_heartbeat(self):
+        self.database_heartbeat.shutdown()
 
-        if exception:
-            raise exception
-        else:
-            log.debug('Finished shutting down')
+    def _shutdown_scheduling_manager(self):
+        self.workflow_scheduling_manager.shutdown()
+
+    def _shutdown_job_manager(self):
+        self.job_manager.shutdown()
+
+    def _shutdown_heartbeat(self):
+        if self.heartbeat:
+            self.heartbeat.shutdown()
+
+    def _shutdown_repo_manager(self):
+        self.update_repository_manager.shutdown()
+
+    def _shutdown_application_stack(self):
+        self.application_stack.shutdown()
 
     def configure_fluent_log(self):
         if self.config.fluent_log:
