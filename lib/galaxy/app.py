@@ -76,7 +76,9 @@ log = logging.getLogger(__name__)
 app = None
 
 
-class InitializedApplication(StructuredApp, config.ConfiguresGalaxyMixin, Container):
+class UniverseApplication(StructuredApp, config.ConfiguresGalaxyMixin, Container):
+    """Encapsulates the state of a Universe application"""
+
     def __init__(self, **kwargs) -> None:
         super().__init__()
         self._register_singleton(BasicApp, self)
@@ -89,6 +91,7 @@ class InitializedApplication(StructuredApp, config.ConfiguresGalaxyMixin, Contai
         log.debug("python path is: %s", ", ".join(sys.path))
         self.name = 'galaxy'
         self.is_webapp = False
+        startup_timer = ExecutionTimer()
         self.new_installation = False
         # Read config file and check for errors
         self.config: Any = self._register_singleton(config.Configuration, config.Configuration(**kwargs))
@@ -100,7 +103,13 @@ class InitializedApplication(StructuredApp, config.ConfiguresGalaxyMixin, Contai
         self.application_stack = self._register_singleton(ApplicationStack, application_stack_instance(app=self))
         self.application_stack.register_postfork_function(self.application_stack.set_postfork_server_name, self)
         self.config.reload_sanitize_allowlist(explicit='sanitize_allowlist_file' in kwargs)
-        self._configure_object_store(fsmon=False)
+        self.amqp_internal_connection_obj = galaxy.queues.connection_from_config(self.config)
+        # queue_worker *can* be initialized with a queue, but here we don't
+        # want to and we'll allow postfork to bind and start it.
+        self.queue_worker = self._register_singleton(GalaxyQueueWorker, GalaxyQueueWorker(self))
+
+        self._configure_tool_shed_registry()
+        self._configure_object_store(fsmon=True)
         # Setup the database engine and ORM
         config_file = kwargs.get('global_conf', {}).get('__file__', None)
         if config_file:
@@ -134,27 +143,6 @@ class InitializedApplication(StructuredApp, config.ConfiguresGalaxyMixin, Contai
 
         # ConfiguredFileSources
         self.file_sources = self._register_singleton(ConfiguredFileSources, ConfiguredFileSources.from_app_config(self.config))
-        # Load security policy.
-        self.security_agent = self.model.security_agent
-        self.host_security_agent = galaxy.model.security.HostAgent(
-            model=self.security_agent.model,
-            permitted_actions=self.security_agent.permitted_actions)
-        # Load quota management.
-        self.quota_agent = self._register_singleton(QuotaAgent, get_quota_agent(self.config, self.model))
-
-class UniverseApplication(InitializedApplication):
-    """Encapsulates the state of a Universe application"""
-
-    def __init__(self, **kwargs) -> None:
-        startup_timer = ExecutionTimer()
-        super().__init__(**kwargs)
-        self.amqp_internal_connection_obj = galaxy.queues.connection_from_config(self.config)
-        # queue_worker *can* be initialized with a queue, but here we don't
-        # want to and we'll allow postfork to bind and start it.
-        self.queue_worker = self._register_singleton(GalaxyQueueWorker, GalaxyQueueWorker(self))
-
-        self._configure_tool_shed_registry()
-        self._configure_object_store(fsmon=True)
 
         # Tool Data Tables
         self._configure_tool_data_tables(from_shed_config=False)
@@ -215,7 +203,13 @@ class UniverseApplication(InitializedApplication):
         self[ToursRegistry] = tour_registry  # type: ignore
         # Webhooks registry
         self.webhooks_registry = self._register_singleton(WebhooksRegistry, WebhooksRegistry(self.config.webhooks_dir))
-
+        # Load security policy.
+        self.security_agent = self.model.security_agent
+        self.host_security_agent = galaxy.model.security.HostAgent(
+            model=self.security_agent.model,
+            permitted_actions=self.security_agent.permitted_actions)
+        # Load quota management.
+        self.quota_agent = self._register_singleton(QuotaAgent, get_quota_agent(self.config, self.model))
         # Heartbeat for thread profiling
         self.heartbeat = None
         self.auth_manager = self._register_singleton(auth.AuthManager, auth.AuthManager(self.config))
