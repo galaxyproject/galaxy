@@ -11,25 +11,25 @@ class LibraryToCollectionsTestCase(SeleniumTestCase, UsesLibraryAssertions):
 
     @selenium_test
     def test_library_collection_export(self):
-        self.test_collection_export()
+        self.collection_export()
 
     @selenium_test
     def test_library_collection_export_new_history(self):
-        self.test_collection_export(is_new_history=True)
+        self.collection_export(is_new_history=True)
 
     @selenium_test
-    def test_pair_export(self):
-        self.prepare_library_for_data_export()
-        self.components.libraries.folder.export_to_history_options.wait_for_and_click()
-        self.components.libraries.folder.export_to_history_paired_option(collection_option="paired").wait_for_and_click()
-        self.screenshot("libraries_to_pared_collection_landing")
-        self.components.libraries.folder.import_datasets_ok_button.wait_for_and_click()
-        self.build_collection_and_assert()
+    def test_library_pair_export(self):
+        self.collection_export(collection_export="paired")
 
-    def prepare_library_for_data_export(self):
+
+    @selenium_test
+    def test_library_pair_export_new_history(self):
+        self.collection_export(is_new_history=True, collection_export="paired")
+
+    def prepare_library_for_data_export(self, files_to_import=["1.bam", "1.bed"]):
         self.navigate_to_new_library()
         self.assert_num_displayed_items_is(0)
-        self.populate_library_folder_from_import_dir(self.name, ["1.bam", "1.bed"])
+        self.populate_library_folder_from_import_dir(self.name, files_to_import)
 
         self.components.libraries.folder.select_dataset(rowindex=1).wait_for_and_click()
         self.components.libraries.folder.select_dataset(rowindex=2).wait_for_and_click()
@@ -43,11 +43,15 @@ class LibraryToCollectionsTestCase(SeleniumTestCase, UsesLibraryAssertions):
         self.home()
         self.history_panel_wait_for_hid_ok(3)
 
-    def test_collection_export(self, is_new_history=False):
+    def collection_export(self, is_new_history=False, collection_option=None):
         self.prepare_library_for_data_export()
+        self.components.libraries.folder.export_to_history_options.wait_for_and_click()
         if is_new_history:
             random_name = self._get_random_name()
             self.components.libraries.folder.export_to_history_new_history.wait_for_and_send_keys(random_name)
+        if collection_option is not None:
+            self.components.libraries.folder.export_to_history_paired_option(
+                collection_option=collection_option).wait_for_and_click()
         self.screenshot(f'libraries_to_collection_landing_is_new_history={is_new_history}')
         self.components.libraries.folder.import_datasets_ok_button.wait_for_and_click()
         self.build_collection_and_assert()
