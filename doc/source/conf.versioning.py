@@ -27,6 +27,7 @@ simpleversioning_path_template = '/en/{version}/{pagename}'
 simpleversioning_stable_version = 'master'
 simpleversioning_current_version = TARGET_GIT_BRANCH
 simpleversioning_versions = [
+    {'id': 'latest', 'name': 'dev'},
     {'id': 'master', 'name': 'stable'},
     # Additional versions added below
 ]
@@ -57,10 +58,6 @@ for _tag in reversed(tags):
             simpleversioning_versions.append(
                 {'id': 'release_%s' % _ver, 'name': _ver}
             )
-
-simpleversioning_versions.append(
-    {'id': 'latest', 'name': 'dev'},
-)
 
 if TARGET_GIT_BRANCH.startswith('release_'):
     # The current stable release will go here but fail the next conditional, avoiding either banner.
