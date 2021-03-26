@@ -154,7 +154,6 @@ class LibraryContentsTestCase(SeleniumTestCase, UsesLibraryAssertions):
         self.populate_library_folder_from_import_dir(self.name, ["1.axt"])
         self.assert_num_displayed_items_is(len(filenames))
 
-
     @selenium_test
     def test_show_details(self):
         self.navigate_to_new_library()
@@ -164,7 +163,6 @@ class LibraryContentsTestCase(SeleniumTestCase, UsesLibraryAssertions):
         self.wait_for_selector_clickable(".ui-modal #button-0").click()
         self.wait_for_overlays_cleared()
         self.screenshot("libraries_show_details")
-
 
     @retry_during_transitions
     def _select_history_option(self, select_id, label_text):
