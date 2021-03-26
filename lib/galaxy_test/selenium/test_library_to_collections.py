@@ -19,12 +19,11 @@ class LibraryToCollectionsTestCase(SeleniumTestCase, UsesLibraryAssertions):
 
     @selenium_test
     def test_library_pair_export(self):
-        self.collection_export(collection_export="paired")
-
+        self.collection_export(collection_option="paired")
 
     @selenium_test
     def test_library_pair_export_new_history(self):
-        self.collection_export(is_new_history=True, collection_export="paired")
+        self.collection_export(is_new_history=True, collection_option="paired")
 
     def prepare_library_for_data_export(self, files_to_import=["1.bam", "1.bed"]):
         self.navigate_to_new_library()
