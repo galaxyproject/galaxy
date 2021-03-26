@@ -4722,6 +4722,7 @@ class DatasetCollectionElement(Dictifiable, RepresentById):
             return [element_object]
 
     def copy_to_collection(self, collection, destination=None, element_destination=None, dataset_instance_attributes=None, flush=True):
+        dataset_instance_attributes = dataset_instance_attributes or {}
         element_object = self.element_object
         if element_destination:
             if self.is_collection:
@@ -4733,9 +4734,8 @@ class DatasetCollectionElement(Dictifiable, RepresentById):
                 )
             else:
                 new_element_object = element_object.copy(flush=flush, copy_tags=element_object.tags)
-                if dataset_instance_attributes is not None:
-                    for attribute, value in dataset_instance_attributes.items():
-                        setattr(new_element_object, attribute, value)
+                for attribute, value in dataset_instance_attributes.items():
+                    setattr(new_element_object, attribute, value)
 
                 new_element_object.visible = False
                 if destination is not None and element_object.hidden_beneath_collection_instance:
