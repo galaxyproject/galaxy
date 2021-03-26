@@ -71,5 +71,10 @@ if TARGET_GIT_BRANCH.startswith('release_'):
         else:
             simpleversioning_banner_message = OLD_BANNER + BANNER_APPEND
 elif TARGET_GIT_BRANCH != 'master':
+    if TARGET_GIT_BRANCH != 'dev':
+        # Feature branch
+        simpleversioning_versions.append(
+            {'id': TARGET_GIT_BRANCH, 'name': TARGET_GIT_BRANCH}
+        )
     simpleversioning_show_banner = True
     simpleversioning_banner_message = DEV_BANNER + BANNER_APPEND
