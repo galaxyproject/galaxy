@@ -356,7 +356,7 @@ const View = Backbone.View.extend({
                 continue;
             }
             if (!input_def.optional && input_value == null && input_def.type != "hidden") {
-                this.form.highlight(input_id);
+                this.form.highlight(input_id, "This input requires a value.");
                 return false;
             }
             if (input_field.validate) {
