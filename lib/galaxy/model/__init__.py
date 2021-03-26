@@ -4733,8 +4733,9 @@ class DatasetCollectionElement(Dictifiable, RepresentById):
                 )
             else:
                 new_element_object = element_object.copy(flush=flush, copy_tags=element_object.tags)
-                for attribute, value in dataset_instance_attributes.items():
-                    setattr(new_element_object, attribute, value)
+                if dataset_instance_attributes is not None:
+                    for attribute, value in dataset_instance_attributes.items():
+                        setattr(new_element_object, attribute, value)
 
                 new_element_object.visible = False
                 if destination is not None and element_object.hidden_beneath_collection_instance:
