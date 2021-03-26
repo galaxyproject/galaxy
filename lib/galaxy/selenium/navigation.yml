@@ -604,6 +604,7 @@ libraries:
       export_to_history_options: '#library-collection-type-select'
       export_to_history_paired_option: 'option[value="${collection_option}"]'
       export_to_history_collection_name: '.collection-name'
+      export_to_history_new_history: 'input[name=history_name]'
       import_progress_bar: '.progress-bar-import'
       import_history_content: '.library_selected_history_content'
       import_history_contents_items: '.library_selected_history_content tbody > tr'

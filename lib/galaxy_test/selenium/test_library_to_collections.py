@@ -10,11 +10,12 @@ class LibraryToCollectionsTestCase(SeleniumTestCase, UsesLibraryAssertions):
     requires_admin = True
 
     @selenium_test
-    def test_collection_export(self):
-        self.prepare_library_for_data_export()
-        self.screenshot("libraries_to_collection_landing")
-        self.components.libraries.folder.import_datasets_ok_button.wait_for_and_click()
-        self.build_collection_and_assert()
+    def test_library_collection_export(self):
+        self.test_collection_export()
+
+    @selenium_test
+    def test_library_collection_export_new_history(self):
+        self.test_collection_export(is_new_history=True)
 
     @selenium_test
     def test_pair_export(self):
@@ -42,4 +43,13 @@ class LibraryToCollectionsTestCase(SeleniumTestCase, UsesLibraryAssertions):
         self.home()
         self.history_panel_wait_for_hid_ok(3)
 
-
+    def test_collection_export(self, is_new_history=False):
+        self.prepare_library_for_data_export()
+        if is_new_history:
+            random_name = self._get_random_name()
+            self.components.libraries.folder.export_to_history_new_history.wait_for_and_send_keys(random_name)
+        self.screenshot(f'libraries_to_collection_landing_is_new_history={is_new_history}')
+        self.components.libraries.folder.import_datasets_ok_button.wait_for_and_click()
+        self.build_collection_and_assert()
+        if is_new_history:
+            assert self.history_panel_name_element().text == random_name
