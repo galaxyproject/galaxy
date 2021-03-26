@@ -1,0 +1,21 @@
+<tool name="NCBI Datasets" id="ncbi_datasets_source" tool_type="data_source" version="1.0" profile="21.01">
+    <description>server</description>
+    <edam_operations>
+        <edam_operation>operation_0224</edam_operation>
+    </edam_operations>
+    <command><![CDATA[
+datasets download genome taxon '$taxon' --refseq --dehydrated --filename '$output'
+    ]]></command>
+    <inputs action="https://www.ncbi.nlm.nih.gov/datasets/" check_values="false" method="get">
+        <display>go to SRA server $GALAXY_URL</display>
+        <param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=ncbi_datasets_source" />
+        <param name="taxon" type="text"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="zip"/>
+    </outputs>
+    <options sanitize="true"/>
+    <citations>
+        <citation type="doi">10.1093/database/bar011</citation>
+    </citations>
+</tool>
