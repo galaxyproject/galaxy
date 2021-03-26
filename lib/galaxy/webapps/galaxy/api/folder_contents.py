@@ -2,6 +2,16 @@
 API operations on the contents of a library folder.
 """
 import logging
+from typing import (
+    List,
+    Tuple,
+    Union,
+)
+
+from pydantic import (
+    BaseModel,
+    Field,
+)
 
 from galaxy import (
     exceptions,
@@ -10,7 +20,12 @@ from galaxy import (
 from galaxy.managers import base as managers_base
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.hdas import HDAManager
-from galaxy.model import tags
+from galaxy.managers.hdcas import HDCAManager
+from galaxy.model import (
+    Dataset,
+    tags,
+)
+from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.structured_app import StructuredApp
 from galaxy.web import (
     expose_api,
@@ -24,6 +39,173 @@ log = logging.getLogger(__name__)
 TIME_FORMAT = "%Y-%m-%d %I:%M %p"
 FOLDER_TYPE_NAME = "folder"
 FILE_TYPE_NAME = "file"
+
+
+class LibraryItemBase(BaseModel):
+    """Represents a generic item inside a library."""
+    id: EncodedDatabaseIdField = Field(
+        ...,
+        title="ID",
+        description="Encoded ID of the library item.",
+    )
+    name: str = Field(
+        ...,
+        title="Name",
+        description="The name of the folder.",
+    )
+    deleted: bool = Field(
+        ...,
+        title="Deleted",
+        description="Whether this library item has been marked as deleted.",
+    )
+    can_manage: bool = Field(
+        ...,
+        title="User can manage",
+        description="Whether the current user can manage permissions of this library item.",
+    )
+    create_time: str = Field(
+        ...,
+        title="Create time",
+        description="The timestamp when this item was created.",
+    )
+    update_time: str = Field(
+        ...,
+        title="Update time",
+        description="The timestamp when this item was last updated.",
+    )
+
+
+class FolderItem(LibraryItemBase):
+    """Represents a library folder."""
+
+    type: str = Field(
+        FOLDER_TYPE_NAME,
+        title="Type",
+        description="The type of this item.",
+        const=True,
+    )
+    can_modify: bool = Field(
+        ...,
+        title="User can modify",
+        description="Whether the current user can modify this library item.",
+    )
+
+
+class FileItem(LibraryItemBase):
+    """Represents a dataset file inside a library folder."""
+
+    type: str = Field(
+        FILE_TYPE_NAME,
+        title="Type",
+        description="The type of this item.",
+        const=True,
+    )
+    file_ext: str = Field(
+        ...,
+        title="File extension",
+        description="The extension of this file.",
+        example="tabular",
+    )
+    state: Dataset.states = Field(
+        ...,
+        title="State",
+        description="The state of the dataset.",
+        example=Dataset.states.OK
+    )
+    file_size: str = Field(
+        ...,
+        title="Size",
+        description="The human-readable size of this file.",
+        example="1.1 KB",
+    )
+    raw_size: int = Field(
+        ...,
+        title="Raw size",
+        description="The size of this file in bytes.",
+    )
+    ldda_id: EncodedDatabaseIdField = Field(
+        ...,
+        title="Library Dataset Association ID",
+        description="Encoded ID of the corresponding LDDA.",
+    )
+    is_private: bool = Field(
+        ...,
+        title="Private",
+        description="Whether this library item is private.",
+    )
+    is_unrestricted: bool = Field(
+        ...,
+        title="Unrestricted",
+        description="Whether this library item is unrestricted or publicly available.",
+    )
+    date_uploaded: str = Field(
+        ...,
+        title="Uploaded date",
+        description="The timestamp when this item was uploaded.",
+    )
+    tags: str = Field(
+        ...,
+        title="Tags",
+        description="The tags associated with this library item.",
+    )
+
+
+class FolderContents(BaseModel):
+    __root__: List[Union[FolderItem, FileItem]] = Field(
+        default=[],
+        title='List with the contents of a library folder.',
+    )
+
+
+class FolderMetadata(BaseModel):
+    folder_name: str = Field(
+        ...,
+        title="Folder name",
+        description="The name of the library folder.",
+    )
+    folder_description: str = Field(
+        ...,
+        title="Folder description",
+        description="The detailed description of the library folder.",
+    )
+    parent_library_id: EncodedDatabaseIdField = Field(
+        ...,
+        title="Parent library ID",
+        description="Encoded ID of the library that contains the folder.",
+    )
+    full_path: List[Tuple[EncodedDatabaseIdField, str]] = Field(  # TODO: this could/should be a BaseModel too... PathBreadcrum?
+        ...,
+        title="Full path",
+        description="The list of folders as tuples with (folder_id, folder_name) that compound the path to this folder.",
+    )
+    total_rows: int = Field(
+        ...,
+        title="Total rows",
+        description="Total number of items contained in the folder, including sub-folders.",
+    )
+    can_modify_folder: bool = Field(
+        ...,
+        title="User can modify",
+        description="Whether the current user can modify the properties of the folder.",
+    )
+    can_add_library_item: bool = Field(
+        ...,
+        title="User can add library item",
+        description="Whether the current user can add more sub-folders or datasets to the folder.",
+    )
+
+
+class FolderContainer(BaseModel):
+    metadata: FolderMetadata = Field(
+        ...,
+        title="Metadata",
+        description="General information about the folder and its contents.",
+    )
+    folder_contents: FolderContents = Field(
+        ...,
+        title="Folder contents",
+        description="List with all the items contained in the folder.",
+    )
 
 
 # TODO: refactor and remove UsesLibraryMixinItems then move this class to lib/galaxy/managers/folder_contents.py
@@ -45,7 +227,7 @@ class FolderContentsService(UsesLibraryMixinItems):
         """
         return managers_base.get_object(trans, id, class_name, check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted)
 
-    def index(self, trans, folder_id, limit=None, offset=None, search_text=None, include_deleted=False):
+    def index(self, trans, folder_id, limit=None, offset=None, search_text=None, include_deleted=False) -> FolderContainer:
         """
         Displays a collection (list) of a folder's contents (files and folders). Encoded folder ID is prepended
         with 'F' if it is a folder as opposed to a data set which does not have it. Full path is provided in
@@ -177,7 +359,7 @@ class FolderContentsService(UsesLibraryMixinItems):
                         folder_description=folder.description,
                         parent_library_id=parent_library_id)
         folder_container = dict(metadata=metadata, folder_contents=folder_contents)
-        return folder_container
+        return FolderContainer.parse_obj(folder_container)
 
     def create(self, trans, encoded_folder_id, payload, **kwd):
         """
