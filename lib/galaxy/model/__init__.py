@@ -4286,7 +4286,7 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
         error_message = f"Dataset collection has no {get_by_attribute} with key {key}."
         raise KeyError(error_message)
 
-    def copy(self, destination=None, element_destination=None, copy_dataset_instance_attributes=None, flush=True):
+    def copy(self, destination=None, element_destination=None, dataset_instance_attributes=None, flush=True):
         new_collection = DatasetCollection(
             collection_type=self.collection_type,
             element_count=self.element_count
@@ -4296,7 +4296,7 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
                 new_collection,
                 destination=destination,
                 element_destination=element_destination,
-                copy_dataset_instance_attributes=copy_dataset_instance_attributes,
+                dataset_instance_attributes=dataset_instance_attributes,
                 flush=flush
             )
         object_session(self).add(new_collection)
@@ -4538,7 +4538,7 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
                 break
         return matching_collection
 
-    def copy(self, element_destination=None, copy_dataset_instance_attributes=None):
+    def copy(self, element_destination=None, dataset_instance_attributes=None):
         """
         Create a copy of this history dataset collection association. Copy
         underlying collection.
@@ -4559,7 +4559,7 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
         collection_copy = self.collection.copy(
             destination=hdca,
             element_destination=element_destination,
-            copy_dataset_instance_attributes=copy_dataset_instance_attributes,
+            dataset_instance_attributes=dataset_instance_attributes,
             flush=False,
         )
         hdca.collection = collection_copy
@@ -4721,21 +4721,20 @@ class DatasetCollectionElement(Dictifiable, RepresentById):
         else:
             return [element_object]
 
-    def copy_to_collection(self, collection, destination=None, element_destination=None, copy_dataset_instance_attributes=None, flush=True):
+    def copy_to_collection(self, collection, destination=None, element_destination=None, dataset_instance_attributes=None, flush=True):
         element_object = self.element_object
         if element_destination:
             if self.is_collection:
                 element_object = element_object.copy(
                     destination=destination,
                     element_destination=element_destination,
-                    copy_dataset_instance_attributes=copy_dataset_instance_attributes,
+                    dataset_instance_attributes=dataset_instance_attributes,
                     flush=flush
                 )
             else:
                 new_element_object = element_object.copy(flush=flush, copy_tags=element_object.tags)
-                if copy_dataset_instance_attributes is not None:
-                    if 'dbkey' in copy_dataset_instance_attributes:
-                        new_element_object.dbkey = copy_dataset_instance_attributes['dbkey']
+                for attribute, value in dataset_instance_attributes.items():
+                    setattr(new_element_object, attribute, value)
 
                 new_element_object.visible = False
                 if destination is not None and element_object.hidden_beneath_collection_instance:

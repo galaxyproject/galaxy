@@ -443,22 +443,12 @@ class HistoryContentsApiTestCase(ApiTestCase):
     def test_hdca_copy_with_new_dbkey(self):
         hdca = self.dataset_collection_populator.create_pair_in_history(self.history_id).json()
         hdca_id = hdca["id"]
-        print(hdca)
         assert hdca["elements"][0]["object"]["metadata_dbkey"] == "?"
         assert hdca["elements"][0]["object"]["genome_build"] == "?"
-        second_history_id = self.dataset_populator.new_history()
-        create_data = dict(
-            source='hdca',
-            content=hdca_id,
-            dbkey='hg19',
-        )
-        assert len(self._get("histories/%s/contents/dataset_collections" % second_history_id).json()) == 0
-        create_response = self._post("histories/%s/contents/dataset_collections" % second_history_id, create_data)
-        self.__check_create_collection_response(create_response)
-        contents = self._get("histories/%s/contents/dataset_collections" % second_history_id).json()
-        assert len(contents) == 1
-        new_forward, _ = self.__get_paired_response_elements(contents[0])
-        print(new_forward)
+        create_data = {'source': 'hdca', 'content': hdca_id, 'dbkey': 'hg19'}
+        create_response = self._post(f"histories/{self.history_id}/contents/dataset_collections", create_data)
+        collection = self.__check_create_collection_response(create_response)
+        new_forward = collection['elements'][0]['object']
         assert new_forward["metadata_dbkey"] == "hg19"
         assert new_forward["genome_build"] == "hg19"
 
