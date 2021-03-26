@@ -3314,6 +3314,8 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
 
     def copy_tags_to(self, copy_tags=None):
         if copy_tags is not None:
+            if isinstance(copy_tags, dict):
+                copy_tags = copy_tags.values()
             for tag in copy_tags:
                 copied_tag = tag.copy(cls=HistoryDatasetAssociationTagAssociation)
                 self.tags.append(copied_tag)
