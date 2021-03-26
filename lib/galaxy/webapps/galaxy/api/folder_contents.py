@@ -26,9 +26,12 @@ FOLDER_TYPE_NAME = "folder"
 FILE_TYPE_NAME = "file"
 
 
-class FolderContentsAPIView(UsesLibraryMixinItems):
-    """
-    Interface/service object for interacting with folders contents providing a shared view for API controllers.
+# TODO: refactor and remove UsesLibraryMixinItems then move this class to lib/galaxy/managers/folder_contents.py
+class FolderContentsService(UsesLibraryMixinItems):
+    """Common interface/service logic for interactions with library folder contents in the context of the API.
+
+    Provides the logic of the actions invoked by API controllers and uses type definitions
+    and pydantic models to declare its parameters and return types.
     """
 
     def __init__(self, app: StructuredApp, hda_manager: HDAManager, folder_manager: FolderManager):
@@ -354,7 +357,7 @@ class FolderContentsController(BaseGalaxyAPIController):
     """
     Class controls retrieval, creation and updating of folder contents.
     """
-    view: FolderContentsAPIView = depends(FolderContentsAPIView)
+    service: FolderContentsService = depends(FolderContentsService)
 
     @expose_api_anonymous
     def index(self, trans, folder_id, limit=None, offset=None, search_text=None, **kwd):
@@ -393,7 +396,7 @@ class FolderContentsController(BaseGalaxyAPIController):
              InternalServerError
         """
         include_deleted = util.asbool(kwd.get('include_deleted', False))
-        return self.view.index(trans, folder_id, limit, offset, search_text, include_deleted)
+        return self.service.index(trans, folder_id, limit, offset, search_text, include_deleted)
 
     @expose_api
     def create(self, trans, encoded_folder_id, payload, **kwd):
@@ -423,4 +426,4 @@ class FolderContentsController(BaseGalaxyAPIController):
             InsufficientPermissionsException, ItemAccessibilityException,
             InternalServerError
         """
-        return self.view.create(trans, encoded_folder_id, payload)
+        return self.service.create(trans, encoded_folder_id, payload)
