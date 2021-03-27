@@ -26,6 +26,7 @@ from galaxy.managers import (
     users,
     workflows
 )
+from galaxy.managers.sharable import SlugBuilder
 from galaxy.model import (
     ExtendedMetadata,
     ExtendedMetadataIndex,
@@ -648,6 +649,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
     """
     Mixin for controllers that use Visualization objects.
     """
+    slug_builder = SlugBuilder()
 
     def get_visualization(self, trans, id, check_ownership=True, check_accessible=False):
         """
@@ -1139,7 +1141,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         if slug:
             visualization.slug = slug
         else:
-            self.create_item_slug(trans.sa_session, visualization)
+            self.slug_builder.create_item_slug(trans.sa_session, visualization)
         if annotation:
             annotation = sanitize_html(annotation)
             # TODO: if this is to stay in the mixin, UsesAnnotations should be added to the superclasses
@@ -1212,6 +1214,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
 
 class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
     """ Mixin for controllers that use StoredWorkflow objects. """
+    slug_builder = SlugBuilder()
 
     def get_stored_workflow(self, trans, id, check_ownership=True, check_accessible=False):
         """ Get a StoredWorkflow from the database by id, verifying ownership. """
@@ -1226,7 +1229,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
 
             # Older workflows may be missing slugs, so set them here.
             if not workflow.slug:
-                self.create_item_slug(trans.sa_session, workflow)
+                self.slug_builder.create_item_slug(trans.sa_session, workflow)
                 trans.sa_session.flush()
 
         return workflow
@@ -1347,6 +1350,7 @@ class SharableMixin:
 
     manager: Any = None
     serializer: Any = None
+    slug_builder = SlugBuilder()
 
     # -- Implemented methods. --
 
@@ -1371,112 +1375,7 @@ class SharableMixin:
             Does not flush/commit changes, however. Item must have name, user,
             importable, and slug attributes. """
         item.importable = True
-        self.create_item_slug(sa_session, item)
-
-    def create_item_slug(self, sa_session, item):
-        """ Create/set item slug. Slug is unique among user's importable items
-            for item's class. Returns true if item's slug was set/changed; false
-            otherwise.
-        """
-        cur_slug = item.slug
-
-        # Setup slug base.
-        if cur_slug is None or cur_slug == "":
-            # Item can have either a name or a title.
-            if hasattr(item, 'name'):
-                item_name = item.name
-            elif hasattr(item, 'title'):
-                item_name = item.title
-            slug_base = util.ready_name_for_url(item_name.lower())
-        else:
-            slug_base = cur_slug
-
-        # Using slug base, find a slug that is not taken. If slug is taken,
-        # add integer to end.
-        new_slug = slug_base
-        count = 1
-        # Ensure unique across model class and user and don't include this item
-        # in the check in case it has previously been assigned a valid slug.
-        while sa_session.query(item.__class__).filter(item.__class__.user == item.user, item.__class__.slug == new_slug, item.__class__.id != item.id).count() != 0:
-            # Slug taken; choose a new slug based on count. This approach can
-            # handle numerous items with the same name gracefully.
-            new_slug = '%s-%i' % (slug_base, count)
-            count += 1
-
-        # Set slug and return.
-        item.slug = new_slug
-        return item.slug == cur_slug
-
-    @web.legacy_expose_api
-    def sharing(self, trans, id, payload=None, **kwd):
-        skipped = False
-        class_name = self.manager.model_class.__name__
-        item = self.get_object(trans, id, class_name, check_ownership=True, check_accessible=True, deleted=False)
-        actions = []
-        if payload:
-            actions += payload.get("action").split("-")
-        for action in actions:
-            if action == "make_accessible_via_link":
-                self._make_item_accessible(trans.sa_session, item)
-                if hasattr(item, "has_possible_members") and item.has_possible_members:
-                    skipped = self._make_members_public(trans, item)
-            elif action == "make_accessible_and_publish":
-                self._make_item_accessible(trans.sa_session, item)
-                if hasattr(item, "has_possible_members") and item.has_possible_members:
-                    skipped = self._make_members_public(trans, item)
-                item.published = True
-            elif action == "publish":
-                if item.importable:
-                    item.published = True
-                    if hasattr(item, "has_possible_members") and item.has_possible_members:
-                        skipped = self._make_members_public(trans, item)
-                else:
-                    raise exceptions.MessageException("%s not importable." % class_name)
-            elif action == "disable_link_access":
-                item.importable = False
-            elif action == "unpublish":
-                item.published = False
-            elif action == "disable_link_access_and_unpublish":
-                item.importable = item.published = False
-            elif action == "unshare_user":
-                user = trans.sa_session.query(trans.app.model.User).get(self.decode_id(payload.get("user_id")))
-                class_name_lc = class_name.lower()
-                ShareAssociation = getattr(trans.app.model, "%sUserShareAssociation" % class_name)
-                usas = trans.sa_session.query(ShareAssociation).filter_by(**{"user": user, class_name_lc: item}).all()
-                if not usas:
-                    raise exceptions.MessageException("%s was not shared with user." % class_name)
-                for usa in usas:
-                    trans.sa_session.delete(usa)
-            trans.sa_session.add(item)
-            trans.sa_session.flush()
-        if item.importable and not item.slug:
-            self._make_item_accessible(trans.sa_session, item)
-        item_dict = self.serializer.serialize_to_view(item,
-            user=trans.user, trans=trans, default_view="sharing")
-        item_dict["users_shared_with"] = [{"id": self.app.security.encode_id(a.user.id), "email": a.user.email} for a in item.users_shared_with]
-        if skipped:
-            item_dict["skipped"] = True
-        return item_dict
-
-    def _make_members_public(self, trans, item):
-        """ Make the non-purged datasets in history public
-        Performs pemissions check.
-        """
-        # TODO eventually we should handle more classes than just History
-        skipped = False
-        for hda in item.activatable_datasets:
-            dataset = hda.dataset
-            if not trans.app.security_agent.dataset_is_public(dataset):
-                if trans.app.security_agent.can_manage_dataset(trans.user.all_roles(), dataset):
-                    try:
-                        trans.app.security_agent.make_dataset_public(hda.dataset)
-                    except Exception:
-                        log.warning("Unable to make dataset with id: %s public", dataset.id)
-                        skipped = True
-                else:
-                    log.warning("User without permissions tried to make dataset with id: %s public", dataset.id)
-                    skipped = True
-        return skipped
+        self.slug_builder.create_item_slug(sa_session, item)
 
     # -- Abstract methods. --
 

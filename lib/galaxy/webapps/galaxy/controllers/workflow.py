@@ -14,6 +14,7 @@ from galaxy import (
     util,
     web
 )
+from galaxy.managers.sharable import SlugBuilder
 from galaxy.managers.workflows import (
     MissingToolsException,
     WorkflowUpdateOptions,
@@ -181,6 +182,7 @@ class SingleTagContentsParser(HTMLParser):
 class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, UsesItemRatings):
     stored_list_grid = StoredWorkflowListGrid()
     published_list_grid = StoredWorkflowAllPublishedGrid()
+    slug_builder = SlugBuilder()
 
     @web.expose
     @web.require_login("use Galaxy workflows")
@@ -564,7 +566,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             stored_workflow = model.StoredWorkflow()
             stored_workflow.name = workflow_name
             stored_workflow.user = user
-            self.create_item_slug(trans.sa_session, stored_workflow)
+            self.slug_builder.create_item_slug(trans.sa_session, stored_workflow)
             # And the first (empty) workflow revision
             workflow = model.Workflow()
             workflow.name = workflow_name
@@ -591,7 +593,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             stored_workflow = model.StoredWorkflow()
             stored_workflow.name = workflow_name
             stored_workflow.user = user
-            self.create_item_slug(trans.sa_session, stored_workflow)
+            self.slug_builder.create_item_slug(trans.sa_session, stored_workflow)
             workflow = model.Workflow()
             workflow.name = workflow_name
             workflow.stored_workflow = stored_workflow

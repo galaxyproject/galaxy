@@ -190,13 +190,17 @@ class PageSummaryList(BaseModel):
     )
 
 
-class PagesManager:
-    """
-    Common interface/service logic for interactions with pages.
+class PagesService:
+    """Common interface/service logic for interactions with pages in the context of the API.
+
+    Provides the logic of the actions invoked by API controllers and uses type definitions
+    and pydantic models to declare its parameters and return types.
     """
 
     def __init__(self, app: StructuredApp):
         self.manager = PageManager(app)
+        self.serializer = PageSerializer(app)
+        self.shareable_service = sharable.ShareableService(self.manager, self.serializer)
 
     def index(self, trans, deleted: bool = False) -> PageSummaryList:
         """Return a list of Pages viewable by the user
@@ -252,8 +256,7 @@ class PagesManager:
         trans.sa_session.flush()
 
     def show(self, trans, id: EncodedDatabaseIdField) -> PageDetails:
-        """
-            View a page summary and the content of the latest revision
+        """View a page summary and the content of the latest revision
 
         :param  id:    ID of page to be displayed
 
@@ -269,8 +272,6 @@ class PagesManager:
 
     def show_pdf(self, trans, id: EncodedDatabaseIdField):
         """
-        GET /api/pages/{id}.pdf
-
         View a page summary and the content of the latest revision as PDF.
 
         :param  id: ID of page to be displayed
@@ -285,10 +286,15 @@ class PagesManager:
         trans.response.set_content_type("application/pdf")
         return internal_galaxy_markdown_to_pdf(trans, internal_galaxy_markdown, 'page')
 
+    def sharing(self, trans, id: EncodedDatabaseIdField, payload: Optional[sharable.SharingPayload] = None) -> sharable.SharingStatus:
+        """Allows to publish or share with other users the given resource (by id) and returns the current sharing
+        status of the resource.
+        """
+        return self.shareable_service.sharing(trans, id, payload)
+
 
 class PageManager(sharable.SharableModelManager, UsesAnnotations):
-    """
-    """
+    """Provides operations for managing a Page."""
 
     model_class = model.Page
     foreign_key_name = 'page'
