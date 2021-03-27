@@ -16,10 +16,11 @@ def get_galaxy_app():
     if galaxy.app.app:
         return galaxy.app.app
     kwargs = get_app_properties()
-    kwargs['check_migrate_tools'] = False
-    kwargs['check_migrate_databases'] = False
-    galaxy_app = galaxy.app.MinimalGalaxyApplication(configure_logging=False, **kwargs)
-    return galaxy_app
+    if kwargs:
+        kwargs['check_migrate_tools'] = False
+        kwargs['check_migrate_databases'] = False
+        galaxy_app = galaxy.app.MinimalGalaxyApplication(configure_logging=False, **kwargs)
+        return galaxy_app
 
 
 @lru_cache(maxsize=1)

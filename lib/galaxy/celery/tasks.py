@@ -11,13 +11,15 @@ from . import get_galaxy_app
 log = get_logger(__name__)
 
 
-def get_galaxy_context():
+def galaxy_task(func):
     app = get_galaxy_app()
-    return app
+    if app:
+        return magic_bind_to_container(app)(func)
+    return func
 
 
 @celery_app.task
-@magic_bind_to_container(get_galaxy_context())
+@galaxy_task
 def recalculate_user_disk_usage(session: scoped_session, user_id=None):
     if user_id:
         user = session.query(User).get(user_id)
