@@ -33,7 +33,7 @@ class LibraryToCollectionsTestCase(SeleniumTestCase, UsesLibraryAssertions):
     def test_export_pairs_list_new_history(self):
         self.list_of_pairs_export(is_new_history=True)
 
-    def prepare_library_for_data_export(self, files_to_import=["1.bam", "1.bed"], history_name=None):
+    def prepare_library_for_data_export(self, files_to_import, history_name=None):
         self.navigate_to_new_library()
         self.assert_num_displayed_items_is(0)
         self.populate_library_folder_from_import_dir(self.name, files_to_import)
