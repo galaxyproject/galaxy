@@ -47,14 +47,14 @@ def pretty_stack():
 def build_engine(url, engine_options, database_query_profiling_proxy=False, trace_logger=None, slow_query_log_threshold=0, thread_local_log=None, log_query_counts=False):
     if database_query_profiling_proxy or slow_query_log_threshold or thread_local_log or log_query_counts:
 
-        @event.listens_for(Engine, "before_execute")
-        def before_execute(conn, clauseelement, multiparams, params):
+        @event.listens_for(Engine, "before_cursor_execute")
+        def before_cursor_execute(conn, cursor, statement, parameters, context, executemany):
             conn.info.setdefault('query_start_time', []).append(time.time())
 
     if slow_query_log_threshold or thread_local_log or log_query_counts:
+
         @event.listens_for(Engine, "after_cursor_execute")
-        def after_cursor_execute(conn, cursor, statement,
-                                 parameters, context, executemany):
+        def after_cursor_execute(conn, cursor, statement, parameters, context, executemany):
             total = time.time() - conn.info['query_start_time'].pop(-1)
             fragment = 'Slow query: '
             if total > slow_query_log_threshold:
