@@ -52,7 +52,7 @@ class LibraryToCollectionsTestCase(SeleniumTestCase, UsesLibraryAssertions):
         self.history_panel_wait_for_hid_ok(3)
 
     def collection_export(self, is_new_history=False, collection_option=None):
-        self.prepare_library_for_data_export(is_new_history)
+        self.prepare_library_for_data_export(["1.bam", "1.bed"], is_new_history)
         self.components.libraries.folder.export_to_history_options.wait_for_and_click()
 
         if collection_option is not None:
