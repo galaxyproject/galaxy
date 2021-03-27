@@ -33,7 +33,7 @@ class LibraryToCollectionsTestCase(SeleniumTestCase, UsesLibraryAssertions):
     def test_export_pairs_list_new_history(self):
         self.list_of_pairs_export(is_new_history=True)
 
-    def prepare_library_for_data_export(self, files_to_import=["1.bam", "1.bed"], is_new_history=False):
+    def prepare_library_for_data_export(self, files_to_import=["1.bam", "1.bed"], history_name=None):
         self.navigate_to_new_library()
         self.assert_num_displayed_items_is(0)
         self.populate_library_folder_from_import_dir(self.name, files_to_import)
@@ -41,7 +41,7 @@ class LibraryToCollectionsTestCase(SeleniumTestCase, UsesLibraryAssertions):
             self.components.libraries.folder.select_dataset(rowindex=i + 1).wait_for_and_click()
         self.components.libraries.folder.add_to_history.wait_for_and_click()
         self.components.libraries.folder.add_to_history_collection.wait_for_and_click()
-        if is_new_history:
+        if history_name is not None:
             random_name = self._get_random_name()
             self.components.libraries.folder.export_to_history_new_history.wait_for_and_send_keys(random_name)
 
@@ -52,7 +52,10 @@ class LibraryToCollectionsTestCase(SeleniumTestCase, UsesLibraryAssertions):
         self.history_panel_wait_for_hid_ok(3)
 
     def collection_export(self, is_new_history=False, collection_option=None):
-        self.prepare_library_for_data_export(["1.bam", "1.bed"], is_new_history)
+        random_name = None
+        if is_new_history:
+            random_name = self._get_random_name()
+        self.prepare_library_for_data_export(["1.bam", "1.bed"], random_name)
         self.components.libraries.folder.export_to_history_options.wait_for_and_click()
 
         if collection_option is not None:
