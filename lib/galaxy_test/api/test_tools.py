@@ -402,11 +402,21 @@ class ToolsTestCase(ApiTestCase, TestsTools):
 
     def test_unzip_nested(self):
         with self.dataset_populator.test_history() as history_id:
-            hdca_list_id = self.__build_nested_list(history_id)
+            response = self.dataset_collection_populator.upload_collection(history_id, "list:paired", elements=[
+                {
+                    "name": "test0",
+                    "elements": [
+                        {"src": "pasted", "paste_content": "123\n", "name": "forward", "ext": "txt", "tags": ["#foo"]},
+                        {"src": "pasted", "paste_content": "456\n", "name": "reverse", "ext": "txt", "tags": ["#bar"]},
+                    ]
+                }
+            ])
+            self._assert_status_code_is(response, 200)
+            hdca_id = response.json()["outputs"][0]["id"]
             inputs = {
                 "input": {
                     'batch': True,
-                    'values': [{'src': 'hdca', 'map_over_type': 'paired', 'id': hdca_list_id}],
+                    'values': [{'src': 'hdca', 'map_over_type': 'paired', 'id': hdca_id}],
                 }
             }
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
