@@ -222,9 +222,12 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         if message:
             return self.message_exception(trans, message)
         if trans.user:
-            # Queue a quota recalculation (async) task -- this takes a
-            # while sometimes, so we don't want to block on logout.
-            recalculate_user_disk_usage.delay(user_id=trans.user.id)
+            if trans.app.config.enable_celery_tasks:
+                # Queue a quota recalculation (async) task -- this takes a
+                # while sometimes, so we don't want to block on logout.
+                recalculate_user_disk_usage.delay(user_id=trans.user.id)
+            else:
+                trans.user.calculate_and_set_disk_usage()
         # Since logging an event requires a session, we'll log prior to ending the session
         trans.log_event("User logged out")
         trans.handle_user_logout(logout_all=logout_all)
