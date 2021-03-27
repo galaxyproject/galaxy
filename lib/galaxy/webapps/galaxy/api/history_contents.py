@@ -533,7 +533,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesL
             dbkey = payload.get("dbkey")
             copy_required = dbkey is not None
             copy_elements = payload.get('copy_elements', copy_required)
-            if not copy_required and not copy_elements:
+            if copy_required and not copy_elements:
                 raise exceptions.RequestParameterMissingException("copy_elements passed as 'false' but it is required to change specified attributes")
             dataset_instance_attributes = {}
             if dbkey is not None:
