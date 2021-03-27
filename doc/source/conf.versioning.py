@@ -2,6 +2,7 @@
 # Galaxy sphinxcontrib-simpleversioning documentation build configuration file
 # This file is appended to conf.py by the Build docs github workflow.
 #
+import re
 from distutils.version import LooseVersion
 from subprocess import check_output
 
@@ -27,18 +28,13 @@ simpleversioning_path_template = '/en/{version}/{pagename}'
 simpleversioning_stable_version = 'master'
 simpleversioning_current_version = TARGET_GIT_BRANCH
 simpleversioning_versions = [
+    {'id': 'latest', 'name': 'dev'},
     {'id': 'master', 'name': 'stable'},
     # Additional versions added below
 ]
 
 # Used for determining the latest stable release so the banner can be added to older releases.
 _stable = None
-
-_target_ver = None
-_pre_release = False
-if TARGET_GIT_BRANCH.startswith('release_'):
-    _target_ver = TARGET_GIT_BRANCH[len('release_'):]
-
 # Use tags to determine versions - a stable version will have a branch before it's released, but not a tag.
 tags = check_output(('git', 'tag')).decode().splitlines()
 for _tag in reversed(tags):
@@ -47,29 +43,32 @@ for _tag in reversed(tags):
         _ver = _tag[1:]
         if not _stable:
             _stable = _ver
-            if _target_ver and LooseVersion(_target_ver) > LooseVersion(_ver):
-                # Pre-release
-                simpleversioning_versions.append(
-                    {'id': TARGET_GIT_BRANCH, 'name': _target_ver}
-                )
-                _pre_release = True
         if LooseVersion(_ver) >= MIN_DOC_VERSION:
             simpleversioning_versions.append(
                 {'id': 'release_%s' % _ver, 'name': _ver}
             )
 
-simpleversioning_versions.append(
-    {'id': 'latest', 'name': 'dev'},
-)
-
-if TARGET_GIT_BRANCH.startswith('release_'):
-    # The current stable release will go here but fail the next conditional, avoiding either banner.
-    if TARGET_GIT_BRANCH != 'release_%s' % _stable:
-        simpleversioning_show_banner = True
-        if _pre_release:
-            simpleversioning_banner_message = PRE_BANNER + BANNER_APPEND
-        else:
-            simpleversioning_banner_message = OLD_BANNER + BANNER_APPEND
+if re.fullmatch(r'release_\d{2}\.\d{2}', TARGET_GIT_BRANCH):
+    if _stable:
+        # The current stable release will go here but fail the next conditional, avoiding either banner.
+        if TARGET_GIT_BRANCH != 'release_%s' % _stable:
+            simpleversioning_show_banner = True
+            _target_ver = TARGET_GIT_BRANCH[len('release_'):]
+            if LooseVersion(_target_ver) > LooseVersion(_stable):
+                # Pre-release
+                # Insert it between master and _stable
+                simpleversioning_versions.insert(
+                    2,
+                    {'id': TARGET_GIT_BRANCH, 'name': _target_ver}
+                )
+                simpleversioning_banner_message = PRE_BANNER + BANNER_APPEND
+            else:
+                simpleversioning_banner_message = OLD_BANNER + BANNER_APPEND
 elif TARGET_GIT_BRANCH != 'master':
+    if TARGET_GIT_BRANCH != 'dev':
+        # Feature branch
+        simpleversioning_versions.append(
+            {'id': TARGET_GIT_BRANCH, 'name': TARGET_GIT_BRANCH}
+        )
     simpleversioning_show_banner = True
     simpleversioning_banner_message = DEV_BANNER + BANNER_APPEND
