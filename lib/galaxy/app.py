@@ -347,8 +347,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         # Delay toolbox index until after startup
         self.application_stack.register_postfork_function(lambda: send_local_control_task(self, 'rebuild_toolbox_search_index'))
 
-        self.model.engine.dispose()
-
         # Inject url_for for components to more easily optionally depend
         # on url_for.
         self.url_for = url_for
