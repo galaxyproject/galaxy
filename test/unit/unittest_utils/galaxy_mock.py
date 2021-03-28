@@ -139,6 +139,7 @@ class MockAppConfig(Bunch):
         self.security = idencoding.IdEncodingHelper(id_secret='6e46ed6483a833c100e68cc3f1d0dd76')
         self.database_connection = kwargs.get('database_connection', "sqlite:///:memory:")
         self.use_remote_user = kwargs.get('use_remote_user', False)
+        self.enable_celery_tasks = False
         self.data_dir = os.path.join(root, 'database')
         self.file_path = os.path.join(self.data_dir, 'files')
         self.jobs_directory = os.path.join(self.data_dir, 'jobs_directory')

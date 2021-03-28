@@ -4,6 +4,7 @@ from sqlalchemy.orm.scoping import (
 )
 
 from galaxy.celery import celery_app
+from galaxy.managers.hdas import HDAManager
 from galaxy.model import User
 from galaxy.util.custom_logging import get_logger
 from . import get_galaxy_app
@@ -30,3 +31,10 @@ def recalculate_user_disk_usage(session: scoped_session, user_id=None):
             log.error("Recalculate user disk usage task failed, user %s not found" % user_id)
     else:
         log.error("Recalculate user disk usage task received without user_id.")
+
+
+@celery_app.task
+@galaxy_task
+def purge_hda(hda_manager: HDAManager, hda_id):
+    hda = hda_manager.by_id(hda_id)
+    hda_manager._purge(hda)

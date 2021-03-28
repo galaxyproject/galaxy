@@ -13,6 +13,7 @@ from galaxy import (
     exceptions,
     model
 )
+from galaxy.celery import celery_app
 from galaxy.managers import (
     annotatable,
     datasets,
@@ -135,6 +136,12 @@ class HDAManager(datasets.DatasetAssociationManager,
 
     # .... deletion and purging
     def purge(self, hda, flush=True):
+        if self.app.config.enable_celery_tasks:
+            celery_app.send_task('galaxy.celery.tasks.purge_hda').delay(hda_id=hda.id)
+        else:
+            self._purge(hda, flush=flush)
+
+    def _purge(self, hda, flush=True):
         """
         Purge this HDA and the dataset underlying it.
         """
@@ -146,7 +153,6 @@ class HDAManager(datasets.DatasetAssociationManager,
         # decrease the user's space used
         if quota_amount_reduction:
             user.adjust_total_disk_usage(-quota_amount_reduction)
-        return hda
 
     # .... states
     def error_if_uploading(self, hda):
