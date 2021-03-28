@@ -70,7 +70,7 @@ from galaxy.web_stack import application_stack_instance, ApplicationStack
 from galaxy.webhooks import WebhooksRegistry
 from galaxy.workflow.trs_proxy import TrsProxy
 from .di import Container
-from .structured_app import BasicApp, StructuredApp
+from .structured_app import BasicApp, MininmalManagerApp, StructuredApp
 
 log = logging.getLogger(__name__)
 app = None
@@ -146,7 +146,50 @@ class MinimalGalaxyApplication(BasicApp, config.ConfiguresGalaxyMixin, HaltableC
         self.model.engine.dispose()
 
 
-class UniverseApplication(StructuredApp, MinimalGalaxyApplication):
+class GalaxyManagerApplication(MininmalManagerApp, MinimalGalaxyApplication):
+    """Extends the MinimalGalaxyApplication with most managers that are not tied to a web or job handling context."""
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._register_singleton(MininmalManagerApp, self)
+        self.execution_timer_factory = self._register_singleton(ExecutionTimerFactory, ExecutionTimerFactory(self.config))
+        self.configure_fluent_log()
+
+        # Tag handler
+        self.tag_handler = self._register_singleton(GalaxyTagHandler)
+        self.user_manager = self._register_singleton(UserManager)
+        self._register_singleton(GalaxySessionManager)
+        self.hda_manager = self._register_singleton(HDAManager)
+        self.history_manager = self._register_singleton(HistoryManager)
+        self.job_search = self._register_singleton(JobSearch)
+        self.dataset_collections_service = self._register_singleton(DatasetCollectionManager)
+        self.workflow_manager = self._register_singleton(WorkflowsManager)
+        self.workflow_contents_manager = self._register_singleton(WorkflowContentsManager)
+        self.library_folder_manager = self._register_singleton(FolderManager)
+        self.library_manager = self._register_singleton(LibraryManager)
+        self.role_manager = self._register_singleton(RoleManager)
+
+        # ConfiguredFileSources
+        self.file_sources = self._register_singleton(ConfiguredFileSources, ConfiguredFileSources.from_app_config(self.config))
+
+        # We need the datatype registry for running certain tasks that modify HDAs, and to build the registry we need
+        # to setup the installed repositories ... this is not ideal
+        self._configure_tool_config_files()
+        self.installed_repository_manager = self._register_singleton(InstalledRepositoryManager, InstalledRepositoryManager(self))
+        self._configure_datatypes_registry(self.installed_repository_manager)
+        self._register_singleton(Registry, self.datatypes_registry)
+        galaxy.model.set_datatypes_registry(self.datatypes_registry)
+
+        self.sentry_client = None
+        if self.config.sentry_dsn:
+
+            def postfork_sentry_client():
+                import raven
+                self.sentry_client = raven.Client(self.config.sentry_dsn, transport=raven.transport.HTTPTransport)
+
+            self.application_stack.register_postfork_function(postfork_sentry_client)
+
+
+class UniverseApplication(StructuredApp, GalaxyManagerApplication):
     """Encapsulates the state of a Universe application"""
 
     def __init__(self, **kwargs) -> None:
@@ -165,8 +208,6 @@ class UniverseApplication(StructuredApp, MinimalGalaxyApplication):
             ("application stack", self._shutdown_application_stack),
         ]
         self._register_singleton(StructuredApp, self)
-        self.execution_timer_factory = self._register_singleton(ExecutionTimerFactory, ExecutionTimerFactory(self.config))
-        self.configure_fluent_log()
         # A lot of postfork initialization depends on the server name, ensure it is set immediately after forking before other postfork functions
         self.application_stack = self._register_singleton(ApplicationStack, application_stack_instance(app=self))
         self.application_stack.register_postfork_function(self.application_stack.set_postfork_server_name, self)
@@ -177,28 +218,11 @@ class UniverseApplication(StructuredApp, MinimalGalaxyApplication):
         self.queue_worker = self._register_singleton(GalaxyQueueWorker, GalaxyQueueWorker(self))
 
         self._configure_tool_shed_registry()
-        # Setup the database engine and ORM
 
-        # Tag handler
-        self.tag_handler = self._register_singleton(GalaxyTagHandler)
-        self.user_manager = self._register_singleton(UserManager)
-        self._register_singleton(GalaxySessionManager)
-        self.hda_manager = self._register_singleton(HDAManager)
-        self.history_manager = self._register_singleton(HistoryManager)
-        self.job_search = self._register_singleton(JobSearch)
-        self.dataset_collections_service = self._register_singleton(DatasetCollectionManager)
-        self.workflow_manager = self._register_singleton(WorkflowsManager)
-        self.workflow_contents_manager = self._register_singleton(WorkflowContentsManager)
         self.dependency_resolvers_view = self._register_singleton(DependencyResolversView, DependencyResolversView(self))
         self.test_data_resolver = self._register_singleton(TestDataResolver, TestDataResolver(file_dirs=self.config.tool_test_data_directories))
-        self.library_folder_manager = self._register_singleton(FolderManager)
-        self.library_manager = self._register_singleton(LibraryManager)
-        self.role_manager = self._register_singleton(RoleManager)
         self.dynamic_tool_manager = self._register_singleton(DynamicToolManager)
         self.api_keys_manager = self._register_singleton(ApiKeyManager)
-
-        # ConfiguredFileSources
-        self.file_sources = self._register_singleton(ConfiguredFileSources, ConfiguredFileSources.from_app_config(self.config))
 
         # Tool Data Tables
         self._configure_tool_data_tables(from_shed_config=False)
@@ -225,14 +249,7 @@ class UniverseApplication(StructuredApp, MinimalGalaxyApplication):
         self.tool_shed_repository_cache = self._register_singleton(ToolShedRepositoryCache)
         # Watch various config files for immediate reload
         self.watchers = self._register_singleton(ConfigWatchers)
-        self._configure_tool_config_files()
-        self.installed_repository_manager = self._register_singleton(InstalledRepositoryManager, InstalledRepositoryManager(self))
-        self._configure_datatypes_registry(self.installed_repository_manager)
-        self._register_singleton(Registry, self.datatypes_registry)
-        galaxy.model.set_datatypes_registry(self.datatypes_registry)
-
         self._configure_toolbox()
-
         # Load Data Manager
         self.data_managers = self._register_singleton(DataManagers)
         # Load the update repository manager.
@@ -287,16 +304,6 @@ class UniverseApplication(StructuredApp, MinimalGalaxyApplication):
             self.authnz_manager = managers.AuthnzManager(self,
                                                          self.config.oidc_config_file,
                                                          self.config.oidc_backends_config_file)
-
-        self.sentry_client = None
-        if self.config.sentry_dsn:
-
-            def postfork_sentry_client():
-                import raven
-                self.sentry_client = raven.Client(self.config.sentry_dsn, transport=raven.transport.HTTPTransport)
-
-            self.application_stack.register_postfork_function(postfork_sentry_client)
-
         # Start the job manager
         from galaxy.jobs import manager
         self.job_manager = self._register_singleton(manager.JobManager)

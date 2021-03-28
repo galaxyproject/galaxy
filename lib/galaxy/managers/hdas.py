@@ -21,7 +21,7 @@ from galaxy.managers import (
     taggable,
     users,
 )
-from galaxy.structured_app import StructuredApp
+from galaxy.structured_app import MininmalManagerApp
 
 log = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ class HDAManager(datasets.DatasetAssociationManager,
     # TODO: move what makes sense into DatasetManager
     # TODO: which of these are common with LDDAs and can be pushed down into DatasetAssociationManager?
 
-    def __init__(self, app: StructuredApp, user_manager: users.UserManager):
+    def __init__(self, app: MininmalManagerApp, user_manager: users.UserManager):
         """
         Set up and initialize other managers needed by hdas.
         """
@@ -137,7 +137,7 @@ class HDAManager(datasets.DatasetAssociationManager,
     # .... deletion and purging
     def purge(self, hda, flush=True):
         if self.app.config.enable_celery_tasks:
-            celery_app.send_task('galaxy.celery.tasks.purge_hda').delay(hda_id=hda.id)
+            celery_app.send_task('galaxy.celery.tasks.purge_hda', kwargs={'hda_id': hda.id})
         else:
             self._purge(hda, flush=flush)
 
@@ -254,7 +254,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
         annotatable.AnnotatableSerializerMixin):
     model_manager_class = HDAManager
 
-    def __init__(self, app: StructuredApp):
+    def __init__(self, app: MininmalManagerApp):
         super().__init__(app)
         self.hda_manager = self.manager
 
@@ -513,7 +513,7 @@ class HDADeserializer(datasets.DatasetAssociationDeserializer,
     """
     model_manager_class = HDAManager
 
-    def __init__(self, app: StructuredApp):
+    def __init__(self, app: MininmalManagerApp):
         super().__init__(app)
         self.hda_manager = self.manager
 

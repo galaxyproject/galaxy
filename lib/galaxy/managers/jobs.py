@@ -9,6 +9,7 @@ from pydantic import (
 )
 from sqlalchemy import and_, false, func, or_
 from sqlalchemy.orm import aliased
+from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.sql import select
 
 from galaxy import model
@@ -21,6 +22,7 @@ from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
+from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import StructuredApp
 from galaxy.util import (
     defaultdict,
@@ -96,17 +98,17 @@ class JobSearch:
     """Search for jobs using tool inputs or other jobs"""
     def __init__(
         self,
-        app: StructuredApp,
+        sa_session: scoped_session,
         hda_manager: HDAManager,
         dataset_collection_manager: DatasetCollectionManager,
-        ldda_manager: LDDAManager
+        ldda_manager: LDDAManager,
+        id_encoding_helper: IdEncodingHelper,
     ):
-        self.app = app
-        self.sa_session = app.model.context
+        self.sa_session = sa_session
         self.hda_manager = hda_manager
         self.dataset_collection_manager = dataset_collection_manager
         self.ldda_manager = ldda_manager
-        self.decode_id = self.app.security.decode_id
+        self.decode_id = id_encoding_helper.decode_id
 
     def by_tool_input(self, trans, tool_id, tool_version, param=None, param_dump=None, job_state='ok'):
         """Search for jobs producing same results using the 'inputs' part of a tool POST."""

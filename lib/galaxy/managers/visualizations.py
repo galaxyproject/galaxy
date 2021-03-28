@@ -10,7 +10,7 @@ from typing import Optional
 from galaxy import model
 from galaxy.managers import sharable
 from galaxy.schema.fields import EncodedDatabaseIdField
-from galaxy.structured_app import StructuredApp
+from galaxy.structured_app import MininmalManagerApp
 
 log = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ class VisualizationSerializer(sharable.SharableModelSerializer):
     model_manager_class = VisualizationManager
     SINGLE_CHAR_ABBR = 'v'
 
-    def __init__(self, app: StructuredApp):
+    def __init__(self, app: MininmalManagerApp):
         super().__init__(app)
         self.visualization_manager = self.manager
 
@@ -82,7 +82,7 @@ class VisualizationsService:
     and pydantic models to declare its parameters and return types.
     """
 
-    def __init__(self, app: StructuredApp, manager: VisualizationManager, serializer: VisualizationSerializer):
+    def __init__(self, app: MininmalManagerApp, manager: VisualizationManager, serializer: VisualizationSerializer):
         self.app = app
         self.manager = manager
         self.serializer = serializer

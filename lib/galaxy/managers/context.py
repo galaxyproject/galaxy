@@ -50,7 +50,7 @@ from galaxy.model import (
 )
 from galaxy.model.base import ModelMapping
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.structured_app import StructuredApp
+from galaxy.structured_app import MininmalManagerApp
 from galaxy.util import bunch
 
 
@@ -62,7 +62,7 @@ class ProvidesAppContext:
     """
 
     @abc.abstractproperty
-    def app(self) -> StructuredApp:
+    def app(self) -> MininmalManagerApp:
         """Provide access to the Galaxy ``app`` object.
         """
 

@@ -15,7 +15,7 @@ from typing import (
     List,
 )
 
-from galaxy.app import StructuredApp
+from galaxy.app import MininmalManagerApp
 from galaxy.managers import base
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.fields import EncodedDatabaseIdField
@@ -30,7 +30,7 @@ VERSION_JSON_FILE = 'version.json'
 class ConfigurationManager:
     """Interface/service object for interacting with configuration and related data."""
 
-    def __init__(self, app: StructuredApp):
+    def __init__(self, app: MininmalManagerApp):
         self._app = app
 
     def get_configuration(

@@ -57,7 +57,7 @@ from galaxy.jobs.runners import BaseJobRunner, JobState
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model import store
 from galaxy.objectstore import ObjectStorePopulator
-from galaxy.structured_app import StructuredApp
+from galaxy.structured_app import MininmalManagerApp
 from galaxy.tool_util.deps import requirements
 from galaxy.tool_util.output_checker import (
     check_output,
@@ -301,7 +301,7 @@ class JobConfiguration(ConfiguresHandlers):
         <when value="yes"/>
     </conditional>"""
 
-    def __init__(self, app: StructuredApp):
+    def __init__(self, app: MininmalManagerApp):
         """Parse the job configuration XML.
         """
         self.app = app
