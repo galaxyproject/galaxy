@@ -30,7 +30,7 @@ from galaxy.security.validate_user_input import (
     validate_password,
     validate_publicname
 )
-from galaxy.structured_app import BasicApp, MininmalManagerApp
+from galaxy.structured_app import BasicApp, MinimalManagerApp
 from galaxy.util.hash_util import new_secure_hash
 from galaxy.web import url_for
 
@@ -611,7 +611,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
 class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
     model_manager_class = UserManager
 
-    def __init__(self, app: MininmalManagerApp):
+    def __init__(self, app: MinimalManagerApp):
         """
         Convert a User and associated data to a dictionary representation.
         """

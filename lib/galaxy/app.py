@@ -70,7 +70,7 @@ from galaxy.web_stack import application_stack_instance, ApplicationStack
 from galaxy.webhooks import WebhooksRegistry
 from galaxy.workflow.trs_proxy import TrsProxy
 from .di import Container
-from .structured_app import BasicApp, MininmalManagerApp, StructuredApp
+from .structured_app import BasicApp, MinimalManagerApp, StructuredApp
 
 log = logging.getLogger(__name__)
 app = None
@@ -146,11 +146,11 @@ class MinimalGalaxyApplication(BasicApp, config.ConfiguresGalaxyMixin, HaltableC
         self.model.engine.dispose()
 
 
-class GalaxyManagerApplication(MininmalManagerApp, MinimalGalaxyApplication):
+class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
     """Extends the MinimalGalaxyApplication with most managers that are not tied to a web or job handling context."""
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._register_singleton(MininmalManagerApp, self)
+        self._register_singleton(MinimalManagerApp, self)
         self.execution_timer_factory = self._register_singleton(ExecutionTimerFactory, ExecutionTimerFactory(self.config))
         self.configure_fluent_log()
 

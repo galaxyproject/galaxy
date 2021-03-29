@@ -16,7 +16,7 @@ from sqlalchemy.orm import (
 from sqlitedict import SqliteDict
 
 from galaxy.model.tool_shed_install import ToolShedRepository
-from galaxy.structured_app import MininmalManagerApp
+from galaxy.structured_app import MinimalManagerApp
 from galaxy.tools.toolbox.base import ToolConfRepository
 from galaxy.util import unicodify
 from galaxy.util.hash_util import md5_hash_file
@@ -286,7 +286,7 @@ class ToolShedRepositoryCache:
     repositories: List[ToolShedRepository]
     repos_by_tuple: Dict[Tuple[str, str, str], List[ToolConfRepository]]
 
-    def __init__(self, app: MininmalManagerApp):
+    def __init__(self, app: MinimalManagerApp):
         self.app = app
         # Contains ToolConfRepository objects created from shed_tool_conf.xml entries
         self.local_repositories = []

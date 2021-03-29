@@ -12,7 +12,7 @@ from typing import (
 from pydantic.tools import parse_obj_as
 
 from galaxy import exceptions
-from galaxy.app import MininmalManagerApp
+from galaxy.app import MinimalManagerApp
 from galaxy.files import (
     ConfiguredFileSources,
     ProvidesUserFileSourcesUserContext,
@@ -37,7 +37,7 @@ class RemoteFilesManager:
     Interface/service object for interacting with remote files.
     """
 
-    def __init__(self, app: MininmalManagerApp):
+    def __init__(self, app: MinimalManagerApp):
         self._app = app
 
     def index(

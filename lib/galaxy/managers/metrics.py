@@ -13,7 +13,7 @@ from pydantic import (
     Field,
 )
 
-from galaxy.app import MininmalManagerApp
+from galaxy.app import MinimalManagerApp
 
 log = logging.getLogger(__name__)
 
@@ -72,7 +72,7 @@ TimeSeriesTupleGenerator = Generator[TimeSeriesTuple, None, None]
 class MetricsManager:
     """Interface/service object shared by controllers for interacting with metrics."""
 
-    def __init__(self, app: MininmalManagerApp) -> None:
+    def __init__(self, app: MinimalManagerApp) -> None:
         self._app = app
         #: set to true to send additional debugging info to the log
         self.debugging = True

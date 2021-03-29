@@ -21,7 +21,7 @@ from galaxy.model import mapping, tags
 from galaxy.model.base import SharedModelMapping
 from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.security import idencoding
-from galaxy.structured_app import BasicApp, MininmalManagerApp, StructuredApp
+from galaxy.structured_app import BasicApp, MinimalManagerApp, StructuredApp
 from galaxy.tool_util.deps.containers import NullContainerFinder
 from galaxy.util import StructuredExecutionTimer
 from galaxy.util.bunch import Bunch
@@ -67,7 +67,7 @@ class MockApp(di.Container):
     def __init__(self, config=None, **kwargs):
         super().__init__()
         self[BasicApp] = self
-        self[MininmalManagerApp] = self
+        self[MinimalManagerApp] = self
         self[StructuredApp] = self
         self.config = config or MockAppConfig(**kwargs)
         self.security = self.config.security

@@ -5,7 +5,7 @@ import os
 from typing import Dict
 
 from galaxy import util
-from galaxy.structured_app import MininmalManagerApp
+from galaxy.structured_app import MinimalManagerApp
 from galaxy.tools.data import TabularToolDataTable
 from galaxy.util.template import fill_template
 
@@ -20,7 +20,7 @@ class DataManagers:
     data_managers: Dict[str, 'DataManager']
     managed_data_tables: Dict[str, 'DataManager']
 
-    def __init__(self, app: MininmalManagerApp, xml_filename=None):
+    def __init__(self, app: MinimalManagerApp, xml_filename=None):
         self.app = app
         self.data_managers = {}
         self.managed_data_tables = {}

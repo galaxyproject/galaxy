@@ -9,7 +9,7 @@ from sqlalchemy.sql.expression import null
 from galaxy.exceptions import HandlerAssignmentError, ToolExecutionError
 from galaxy.jobs import handler, NoopQueue
 from galaxy.model import Job
-from galaxy.structured_app import MininmalManagerApp
+from galaxy.structured_app import MinimalManagerApp
 from galaxy.web_stack.message import JobHandlerMessage
 
 log = logging.getLogger(__name__)
@@ -21,7 +21,7 @@ class JobManager:
     """
     job_handler: handler.JobHandlerI
 
-    def __init__(self, app: MininmalManagerApp):
+    def __init__(self, app: MinimalManagerApp):
         self.app = app
         self.job_lock = False
         if self.app.is_job_handler:

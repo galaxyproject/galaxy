@@ -18,7 +18,7 @@ from galaxy.managers import (
     secured,
     users
 )
-from galaxy.structured_app import MininmalManagerApp
+from galaxy.structured_app import MinimalManagerApp
 from galaxy.util.checkers import check_binary
 
 log = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ class DatasetManager(base.ModelManager, secured.AccessibleManagerMixin, deletabl
 
     # TODO:?? get + error_if_uploading is common pattern, should upload check be worked into access/owed?
 
-    def __init__(self, app: MininmalManagerApp):
+    def __init__(self, app: MinimalManagerApp):
         super().__init__(app)
         self.permissions = DatasetRBACPermissions(app)
         # needed for admin test
@@ -143,7 +143,7 @@ class DatasetRBACPermissions:
 class DatasetSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
     model_manager_class = DatasetManager
 
-    def __init__(self, app: MininmalManagerApp, user_manager: users.UserManager):
+    def __init__(self, app: MinimalManagerApp, user_manager: users.UserManager):
         super().__init__(app)
         self.dataset_manager = self.manager
         # needed for admin test

@@ -77,7 +77,7 @@ class MinimalManagerApp(MinimalApp):
         pass
 
 
-class StructuredApp(MininmalManagerApp):
+class StructuredApp(MinimalManagerApp):
     """Interface defining typed description of the Galaxy UniverseApplication.
 
     Ideally nothing that depends on StructuredApp should require

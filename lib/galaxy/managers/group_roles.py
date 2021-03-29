@@ -7,7 +7,7 @@ from typing import (
 )
 
 from galaxy import model
-from galaxy.app import MininmalManagerApp
+from galaxy.app import MinimalManagerApp
 from galaxy.exceptions import (
     ObjectNotFound,
 )
@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 class GroupRolesManager:
     """Interface/service object shared by controllers for interacting with group roles."""
 
-    def __init__(self, app: MininmalManagerApp) -> None:
+    def __init__(self, app: MinimalManagerApp) -> None:
         self._app = app
 
     def index(self, trans: ProvidesAppContext, group_id: EncodedDatabaseIdField) -> List[Dict[str, Any]]:
