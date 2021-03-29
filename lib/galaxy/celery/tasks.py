@@ -5,6 +5,7 @@ from sqlalchemy.orm.scoping import (
 
 from galaxy.celery import celery_app
 from galaxy.managers.hdas import HDAManager
+from galaxy.managers.lddas import LDDAManager
 from galaxy.model import User
 from galaxy.util.custom_logging import get_logger
 from . import get_galaxy_app
@@ -19,7 +20,7 @@ def galaxy_task(func):
     return func
 
 
-@celery_app.task
+@celery_app.task(ignore_result=True)
 @galaxy_task
 def recalculate_user_disk_usage(session: scoped_session, user_id=None):
     if user_id:
@@ -33,8 +34,18 @@ def recalculate_user_disk_usage(session: scoped_session, user_id=None):
         log.error("Recalculate user disk usage task received without user_id.")
 
 
-@celery_app.task
+@celery_app.task(ignore_result=True)
 @galaxy_task
 def purge_hda(hda_manager: HDAManager, hda_id):
     hda = hda_manager.by_id(hda_id)
     hda_manager._purge(hda)
+
+
+@celery_app.task
+@galaxy_task
+def set_metadata(hda_manager: HDAManager, ldda_manager: LDDAManager, dataset_id, model_class='HistoryDatasetAssociation'):
+    if model_class == 'HistoryDatasetAssociation':
+        dataset = hda_manager.by_id(dataset_id)
+    elif model_class == 'LibraryDatasetDatasetAssociation':
+        dataset = ldda_manager.by_id(dataset_id)
+    dataset.datatype.set_meta(dataset)
