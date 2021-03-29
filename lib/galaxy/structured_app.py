@@ -51,7 +51,7 @@ class MinimalApp(BasicApp):
     host_security_agent: HostAgent
 
 
-class MininmalManagerApp(MinimalApp):
+class MinimalManagerApp(MinimalApp):
     is_webapp: bool  # is_webapp will be set to true when building WSGI app
     new_installation: bool
     tag_handler: GalaxyTagHandler
