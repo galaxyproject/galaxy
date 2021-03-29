@@ -2914,7 +2914,7 @@ class Pretext(Binary):
     """
 
     def sniff_prefix(self, sniff_prefix):
-        # The first 4 bytes of any pretext file is 'pstm', and the rest of the 
+        # The first 4 bytes of any pretext file is 'pstm', and the rest of the
         # file contains binary data.
         return sniff_prefix.startswith_bytes(b'pstm')
 
