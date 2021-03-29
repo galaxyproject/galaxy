@@ -13,7 +13,6 @@ from galaxy import (
     exceptions,
     model
 )
-from galaxy.celery.tasks import purge_hda
 from galaxy.managers import (
     annotatable,
     datasets,
@@ -137,6 +136,7 @@ class HDAManager(datasets.DatasetAssociationManager,
     # .... deletion and purging
     def purge(self, hda, flush=True):
         if self.app.config.enable_celery_tasks:
+            from galaxy.celery.tasks import purge_hda
             purge_hda.delay(hda_id=hda.id)
         else:
             self._purge(hda, flush=flush)
