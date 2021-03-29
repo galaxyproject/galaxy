@@ -287,7 +287,7 @@ class DatasetCollectionManager:
         changed = self._set_from_dict(trans, dataset_collection_instance, payload)
         return changed
 
-    def copy(self, trans, parent, source, encoded_source_id, copy_elements=False):
+    def copy(self, trans, parent, source, encoded_source_id, copy_elements=False, dataset_instance_attributes=None):
         """
         PRECONDITION: security checks on ability to add to parent occurred
         during load.
@@ -296,7 +296,9 @@ class DatasetCollectionManager:
         source_hdca = self.__get_history_collection_instance(trans, encoded_source_id)
         copy_kwds = {}
         if copy_elements:
-            copy_kwds["element_destination"] = parent
+            copy_kwds["element_destination"] = parent  # e.g. a history
+        if dataset_instance_attributes is not None:
+            copy_kwds["dataset_instance_attributes"] = dataset_instance_attributes
         new_hdca = source_hdca.copy(**copy_kwds)
         new_hdca.copy_tags_from(target_user=trans.get_user(), source=source_hdca)
         if not copy_elements:
