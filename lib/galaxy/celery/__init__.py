@@ -37,6 +37,7 @@ def get_app_properties():
 def get_config():
     kwargs = get_app_properties()
     if kwargs:
+        kwargs['override_tempdir'] = False
         return Configuration(**kwargs)
 
 
