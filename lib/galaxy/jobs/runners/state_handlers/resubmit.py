@@ -187,7 +187,7 @@ class _ExpressionContext:
             self._lazy_context = {
                 "walltime_reached": runner_state == JobState.runner_states.WALLTIME_REACHED,
                 "memory_limit_reached": runner_state == JobState.runner_states.MEMORY_LIMIT_REACHED,
-                "unknown_error": JobState.runner_states.UNKNOWN_ERROR,
+                "unknown_error": runner_state == JobState.runner_states.UNKNOWN_ERROR,
                 "tool_detected_failure": runner_state == JobState.runner_states.TOOL_DETECT_ERROR,
                 "any_failure": True,
                 "any_potential_job_failure": True,  # Add a hook here - later on allow tools to describe things that are definitely input problems.
