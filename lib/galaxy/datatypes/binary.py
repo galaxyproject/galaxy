@@ -2911,6 +2911,7 @@ class Pretext(Binary):
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('sample.pretext')
     >>> Pretext().sniff(fname)
+    True
     """
 
     def sniff_prefix(self, sniff_prefix):
