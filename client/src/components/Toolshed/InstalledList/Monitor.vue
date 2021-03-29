@@ -24,9 +24,7 @@
                 </template>
             </b-table>
         </b-card>
-        <b-alert v-if="showEmpty" variant="info" show>
-            Currently there are no installing repositories.
-        </b-alert>
+        <b-alert v-if="showEmpty" variant="info" show> Currently there are no installing repositories. </b-alert>
     </div>
 </template>
 <script>

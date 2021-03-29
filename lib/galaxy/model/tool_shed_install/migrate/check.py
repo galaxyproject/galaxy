@@ -12,11 +12,8 @@ from sqlalchemy import (
     Table
 )
 from sqlalchemy.exc import NoSuchTableError
-from sqlalchemy_utils import (
-    create_database,
-    database_exists,
-)
 
+from galaxy.model.database_utils import create_database, database_exists
 from galaxy.model.tool_shed_install import mapping
 
 

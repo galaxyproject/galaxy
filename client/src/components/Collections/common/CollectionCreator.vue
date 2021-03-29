@@ -1,7 +1,7 @@
 <template>
     <div class="collection-creator">
         <div class="header flex-row no-flex">
-            <div class="main-help well clear" v-bind:class="{ expanded: isExpanded }">
+            <div class="main-help well clear" :class="{ expanded: isExpanded }">
                 <a
                     class="more-help"
                     href="javascript:void(0);"
@@ -73,7 +73,7 @@
                         @click="$emit('clicked-create', collectionName)"
                         :disabled="!validInput"
                     >
-                        {{ l("Create list") }}
+                        {{ l("Create collection") }}
                     </button>
                 </div>
             </div>
@@ -89,10 +89,6 @@ export default {
             type: Function,
             required: true,
         },
-        creationFn: {
-            type: Function,
-            required: true,
-        },
         renderExtensionsToggle: {
             type: Boolean,
             default: false,
@@ -100,6 +96,11 @@ export default {
         hideSourceItems: {
             type: Boolean,
             required: true,
+        },
+        suggestedName: {
+            type: String,
+            required: false,
+            default: "",
         },
     },
     computed: {
@@ -115,7 +116,7 @@ export default {
             placeholderEnterName: _l("Enter a name for your new collection"),
             dropdownText: _l("Create a <i>single</> pair"),
             isExpanded: false,
-            collectionName: "",
+            collectionName: this.suggestedName,
             removeFileExtensionsText: "Remove file extensions?",
             localHideSourceItems: this.hideSourceItems,
         };

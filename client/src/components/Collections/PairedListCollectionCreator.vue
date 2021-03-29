@@ -1,6 +1,6 @@
 <template>
     <div class="paired-list-collection-creator">
-        <div v-if="(state == 'error')">
+        <div v-if="state == 'error'">
             <b-alert show variant="danger">
                 {{ errorText }}
             </b-alert>
@@ -89,7 +89,7 @@
                         {{ allInvalidElementsPartTwo }}
                     </b-alert>
                 </div>
-                <div v-if="(state == 'duplicates')">
+                <div v-if="state == 'duplicates'">
                     <b-alert show variant="danger">
                         {{ l("Collections cannot have duplicated names. The following list names are duplicated: ") }}
                         <ul>
@@ -100,12 +100,11 @@
                 </div>
                 <collection-creator
                     :oncancel="oncancel"
-                    :hideSourceItems="hideSourceItems"
+                    :hide-source-items="hideSourceItems"
                     @onUpdateHideSourceItems="onUpdateHideSourceItems"
                     @clicked-create="clickedCreate"
                     @remove-extensions-toggle="removeExtensionsToggle"
-                    :renderExtensionsToggle="true"
-                    :creationFn="creationFn"
+                    :render-extensions-toggle="true"
                 >
                     <template v-slot:help-content>
                         <p>
@@ -335,7 +334,7 @@
                                 </div>
                             </div>
                         </div>
-                        <splitpanes horizontal style="height: 400px;">
+                        <splitpanes horizontal style="height: 400px">
                             <pane>
                                 <div v-if="noUnpairedElementsDisplayed">
                                     <b-alert show variant="warning">
@@ -408,8 +407,7 @@
                                                 v-for="pair in pairedElements"
                                                 :key="pair.id"
                                                 :pair="pair"
-                                                :name="pair.name"
-                                                :unlinkFn="clickUnpair(pair)"
+                                                :unlink-fn="clickUnpair(pair)"
                                                 @onPairRename="(name) => (pair.name = name)"
                                             />
                                         </draggable>
@@ -569,7 +567,7 @@ export default {
             this.selectedDatasetElems = [];
             this.initialFiltersSet();
             // copy initial list, sort, add ids if needed
-            this.workingElements = this.initialElements.slice(0);
+            this.workingElements = JSON.parse(JSON.stringify(this.initialElements.slice(0)));
             this._ensureElementIds();
             this._validateElements();
             this._sortInitialList();
@@ -720,38 +718,6 @@ export default {
                 }
             }
             return lcs || `${fwdName} & ${revName}`;
-        },
-        /** return the concat'd longest common prefix and suffix from two strings */
-        _naiveStartingAndEndingLCS: function (s1, s2) {
-            var fwdLCS = "";
-            var revLCS = "";
-            var i = 0;
-            var j = 0;
-            while (i < s1.length && i < s2.length) {
-                if (s1[i] !== s2[i]) {
-                    break;
-                }
-                fwdLCS += s1[i];
-                i += 1;
-            }
-            if (i === s1.length) {
-                return s1;
-            }
-            if (i === s2.length) {
-                return s2;
-            }
-
-            i = s1.length - 1;
-            j = s2.length - 1;
-            while (i >= 0 && j >= 0) {
-                if (s1[i] !== s2[j]) {
-                    break;
-                }
-                revLCS = [s1[i], revLCS].join("");
-                i -= 1;
-                j -= 1;
-            }
-            return fwdLCS + revLCS;
         },
         clickAutopair: function () {
             // Unselect any selected elements
@@ -969,7 +935,6 @@ export default {
         },
         clickedCreate: function (collectionName) {
             this.checkForDuplicates();
-            console.log(this.state, " = state");
             if (this.state == "build") {
                 this.$emit("clicked-create", this.workingElements, this.collectionName, this.hideSourceItems);
                 return this.creationFn(this.pairedElements, collectionName, this.hideSourceItems)
@@ -983,7 +948,6 @@ export default {
             var existingPairNames = {};
             this.duplicatePairNames = [];
             var valid = true;
-            console.log("in check for dupes");
             this.pairedElements.forEach((pair) => {
                 if (Object.prototype.hasOwnProperty.call(existingPairNames, pair.name)) {
                     valid = false;
@@ -992,7 +956,6 @@ export default {
                 }
                 existingPairNames[pair.name] = true;
             });
-            console.log("valid = false, right? :", valid);
             this.state = valid ? "build" : "duplicates";
         },
         stripExtension(name) {

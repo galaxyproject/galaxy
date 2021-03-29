@@ -41,7 +41,8 @@
                 </nav>
             </hgroup>
         </header>
-
+        <!-- TODO: Restructure credential handling so we're not mutating the prop -->
+        <!-- eslint-disable vue/no-mutating-props-->
         <credential-form
             v-if="expanded"
             class="border-top"
@@ -50,6 +51,7 @@
             @save="$emit('save', credential)"
             @delete="$emit('delete', credential)"
         />
+        <!-- eslint-enable vue/no-mutating-props-->
     </b-list-group-item>
 </template>
 

@@ -29,6 +29,7 @@ from galaxy.config.schema import AppSchema
 from galaxy.containers import parse_containers_config
 from galaxy.exceptions import ConfigurationError
 from galaxy.model import mapping
+from galaxy.model.database_utils import database_exists
 from galaxy.model.tool_shed_install.migrate.check import create_or_verify_database as tsi_create_or_verify_database
 from galaxy.util import (
     ExecutionTimer,
@@ -1270,7 +1271,6 @@ class ConfiguresGalaxyMixin:
             signal.signal(sig, handler)
 
     def _wait_for_database(self, url):
-        from sqlalchemy_utils import database_exists
         attempts = self.config.database_wait_attempts
         pause = self.config.database_wait_sleep
         for i in range(1, attempts):

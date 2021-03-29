@@ -77,9 +77,7 @@
                     No matching entries found for: <span class="font-weight-bold">{{ this.filter }}</span
                     >.
                 </div>
-                <div v-if="showNotAvailable">
-                    No workflows found. You may create or import new workflows.
-                </div>
+                <div v-if="showNotAvailable">No workflows found. You may create or import new workflows.</div>
             </div>
         </div>
     </div>

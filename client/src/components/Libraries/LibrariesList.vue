@@ -9,9 +9,7 @@
                 Library
             </b-button>
             <SearchField :typingDelay="0" @updateSearch="searchValue($event)" />
-            <b-form-checkbox class="mr-1" @input="toggle_include_deleted($event)">
-                include deleted
-            </b-form-checkbox>
+            <b-form-checkbox class="mr-1" @input="toggle_include_deleted($event)"> include deleted </b-form-checkbox>
             <b-form-checkbox class="mr-1" @input="toggle_exclude_restricted($event)">
                 exclude restricted
             </b-form-checkbox>
@@ -121,7 +119,7 @@
                         size="sm"
                         class="lib-btn permission_library_btn"
                         :title="'Permissions of ' + row.item.name"
-                        :href="`${root}library/list#library/${row.item.id}/permissions`"
+                        :to="{ path: `/${row.item.id}/permissions` }"
                     >
                         <font-awesome-icon icon="users" />
                         Manage

@@ -40,7 +40,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         self.__history_with_new_dataset(history_id)
         jobs = self.__jobs_index(admin=False)
         job = jobs[0]
-        self._assert_not_has_keys(job, "command_line", "external_id")
+        self._assert_not_has_keys(job, "external_id")
 
         jobs = self.__jobs_index(admin=True)
         job = jobs[0]
@@ -71,7 +71,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
     @uses_test_history(require_new=True)
     def test_index_date_filter(self, history_id):
         self.__history_with_new_dataset(history_id)
-        two_weeks_ago = (datetime.datetime.utcnow() - datetime.timedelta(7)).isoformat()
+        two_weeks_ago = (datetime.datetime.utcnow() - datetime.timedelta(14)).isoformat()
         last_week = (datetime.datetime.utcnow() - datetime.timedelta(7)).isoformat()
         next_week = (datetime.datetime.utcnow() + datetime.timedelta(7)).isoformat()
         today = datetime.datetime.utcnow().isoformat()
@@ -226,7 +226,7 @@ steps:
         assert not job_lock_response.json()["active"]
 
         show_jobs_response = self._get("jobs/%s" % job_id, admin=False)
-        self._assert_not_has_keys(show_jobs_response.json(), "command_line", "external_id")
+        self._assert_not_has_keys(show_jobs_response.json(), "external_id")
 
         # TODO: Re-activate test case when API accepts privacy settings
         # with self._different_user():

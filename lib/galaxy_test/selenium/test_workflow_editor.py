@@ -138,6 +138,34 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         self.screenshot("workflow_editor_data_collection_input_deleted")
 
     @selenium_test
+    def test_data_column_input_editing(self):
+        self.open_in_workflow_editor("""
+class: GalaxyWorkflow
+steps:
+  column_param_list:
+    tool_id: column_param_list
+    state:
+      col: ["1","2","3"]
+      col_names: ["a", "b", "c"]
+      """)
+        editor = self.components.workflow_editor
+        node = editor.node._(label="column_param_list")
+        node.title.wait_for_and_click()
+        columns = self.components.tool_form.parameter_textarea(parameter='col')
+        textarea_columns = columns.wait_for_visible()
+        assert textarea_columns.get_attribute('value') == '1\n2\n3\n'
+        column_names = self.components.tool_form.parameter_textarea(parameter='col_names')
+        textarea_column_names = column_names.wait_for_visible()
+        assert textarea_column_names.get_attribute('value') == 'a\nb\nc\n'
+        self.set_text_element(columns, '4\n5\n6\n')
+        self.assert_has_changes_and_save()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.driver.refresh()
+        node.title.wait_for_and_click()
+        textarea_columns = columns.wait_for_visible()
+        assert textarea_columns.get_attribute('value') == '4\n5\n6\n'
+
+    @selenium_test
     def test_integer_input(self):
         editor = self.components.workflow_editor
 
@@ -228,6 +256,19 @@ steps:
         self.screenshot("workflow_editor_connection_destroyed")
 
         self.workflow_editor_connect("input1#output", "first_cat#input1", screenshot_partial="workflow_editor_connection_dragging")
+        self.assert_connected("input1#output", "first_cat#input1")
+
+    @selenium_test
+    def test_reconnecting_nodes(self):
+        name = self.open_in_workflow_editor(WORKFLOW_SIMPLE_CAT_TWICE)
+        self.assert_connected("input1#output", "first_cat#input1")
+        self.workflow_editor_destroy_connection("first_cat#input1")
+        self.assert_not_connected("input1#output", "first_cat#input1")
+        self.workflow_editor_connect("input1#output", "first_cat#input1")
+        self.assert_connected("input1#output", "first_cat#input1")
+        self.assert_has_changes_and_save()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.workflow_index_open_with_name(name)
         self.assert_connected("input1#output", "first_cat#input1")
 
     @selenium_test
@@ -535,6 +576,7 @@ steps:
         self.workflow_index_open()
         self.workflow_index_open_with_name(name)
         self.workflow_editor_click_option("Auto Layout")
+        return name
 
     def workflow_editor_source_sink_terminal_ids(self, source, sink):
         editor = self.components.workflow_editor

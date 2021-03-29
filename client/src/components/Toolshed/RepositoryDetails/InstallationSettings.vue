@@ -41,9 +41,7 @@
                     <b-form-checkbox v-model="installRepositoryDependencies">
                         Install repository dependencies
                     </b-form-checkbox>
-                    <b-form-checkbox v-model="installToolDependencies">
-                        Install tool dependencies
-                    </b-form-checkbox>
+                    <b-form-checkbox v-model="installToolDependencies"> Install tool dependencies </b-form-checkbox>
                 </b-form-group>
             </b-card>
         </b-collapse>

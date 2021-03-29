@@ -141,7 +141,7 @@ export default {
             });
             $.uploadpost({
                 url: this.app.uploadPath,
-                data: this.app.toData(this.collection.filter()),
+                data: this.app.toFileUploadData(this.collection.filter()),
                 success: (message) => {
                     this._eventSuccess(message);
                 },

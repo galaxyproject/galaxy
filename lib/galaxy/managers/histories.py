@@ -5,6 +5,7 @@ Histories are containers for datasets or dataset collections
 created (or copied) by users over the course of an analysis.
 """
 import logging
+from typing import Optional
 
 from sqlalchemy import (
     asc,
@@ -21,6 +22,7 @@ from galaxy.managers import (
     history_contents,
     sharable
 )
+from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.structured_app import StructuredApp
 
 log = logging.getLogger(__name__)
@@ -471,3 +473,25 @@ class HistoryFilters(sharable.SharableModelFilters, deletable.PurgableFiltersMix
             'create_time': {'op': ('le', 'ge', 'gt', 'lt'), 'val': self.parse_date},
             'update_time': {'op': ('le', 'ge', 'gt', 'lt'), 'val': self.parse_date},
         })
+
+
+class HistoriesService:
+    """Common interface/service logic for interactions with histories in the context of the API.
+
+    Provides the logic of the actions invoked by API controllers and uses type definitions
+    and pydantic models to declare its parameters and return types.
+    """
+
+    def __init__(self, app: StructuredApp, manager: HistoryManager, serializer: HistorySerializer):
+        self.app = app
+        self.manager = manager
+        self.serializer = serializer
+        self.shareable_service = sharable.ShareableService(self.manager, self.serializer)
+
+    # TODO: add the rest of the API actions here and call them directly from the API controller
+
+    def sharing(self, trans, id: EncodedDatabaseIdField, payload: Optional[sharable.SharingPayload] = None) -> sharable.SharingStatus:
+        """Allows to publish or share with other users the given resource (by id) and returns the current sharing
+        status of the resource.
+        """
+        return self.shareable_service.sharing(trans, id, payload)

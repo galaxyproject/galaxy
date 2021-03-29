@@ -13,9 +13,7 @@
         </template>
         <template v-slot:actions>
             <div>
-                <b-button @click="deleteSelected">
-                    Delete Selected Environments
-                </b-button>
+                <b-button @click="deleteSelected"> Delete Selected Environments </b-button>
             </div>
         </template>
     </dependency-index-wrapper>

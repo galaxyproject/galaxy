@@ -23,6 +23,7 @@ from galaxy.managers.pages import (
     PageContentProcessor,
     PageManager,
 )
+from galaxy.managers.sharable import SlugBuilder
 from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.structured_app import StructuredApp
@@ -276,6 +277,7 @@ class PageController(BaseUIController, SharableMixin,
     history_serializer: HistorySerializer = depends(HistorySerializer)
     hda_manager: HDAManager = depends(HDAManager)
     workflow_manager: WorkflowsManager = depends(WorkflowsManager)
+    slug_builder: SlugBuilder = depends(SlugBuilder)
 
     def __init__(self, app: StructuredApp):
         super().__init__(app)
@@ -394,7 +396,7 @@ class PageController(BaseUIController, SharableMixin,
         p = trans.sa_session.query(model.Page).get(decoded_id)
         if trans.request.method == 'GET':
             if p.slug is None:
-                self.create_item_slug(trans.sa_session, p)
+                self.slug_builder.create_item_slug(trans.sa_session, p)
             return {
                 'title': 'Edit page attributes',
                 'inputs': [{
@@ -470,7 +472,7 @@ class PageController(BaseUIController, SharableMixin,
                 share.user = other
                 session = trans.sa_session
                 session.add(share)
-                self.create_item_slug(session, page)
+                self.slug_builder.create_item_slug(session, page)
                 session.flush()
                 page_title = escape(page.title)
                 other_email = escape(other.email)
@@ -581,7 +583,7 @@ class PageController(BaseUIController, SharableMixin,
         """ Returns page's name and link. """
         page = self.get_page(trans, id)
 
-        if self.create_item_slug(trans.sa_session, page):
+        if self.slug_builder.create_item_slug(trans.sa_session, page):
             trans.sa_session.flush()
         return_dict = {"name": page.title, "link": url_for(controller='page',
                                                            action="display_by_username_and_slug",

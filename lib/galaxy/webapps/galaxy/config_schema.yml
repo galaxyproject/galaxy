@@ -2465,6 +2465,16 @@ mapping:
           are expunged from the SQL alchemy session between workflow invocation scheduling iterations.
           Set to -1 to disable any such maximum.
 
+      flush_per_n_datasets:
+        type: int
+        default: 1000
+        required: false
+        desc: |
+          Maximum number of datasets to create before flushing created datasets to database.
+          This affects tools that create many output datasets.
+          Higher values will lead to fewer database flushes and faster execution, but require
+          more memory. Set to -1 to disable creating datasets in batches.
+
       history_local_serial_workflow_scheduling:
         type: bool
         default: false
