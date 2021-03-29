@@ -1541,7 +1541,7 @@ class ImplicitCollectionJobs(RepresentById):
 class ImplicitCollectionJobsJobAssociation(RepresentById):
 
     def __init__(self):
-        pass
+        self.implicit_collection_jobs_id = None
 
 
 class PostJobAction(RepresentById):
@@ -4905,6 +4905,7 @@ class Workflow(Dictifiable, RepresentById):
         self.has_cycles = None
         self.has_errors = None
         self.steps = []
+        self.stored_workflow_id = None
         if uuid is None:
             self.uuid = uuid4()
         else:
