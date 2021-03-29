@@ -1014,6 +1014,11 @@ galaxy:
   # <config_dir>.
   #trs_servers_config_file: trs_servers_conf.yml
 
+  # Server-wide default selection of the 'beta' history during the
+  # transition period, after which this option will disappear.  Users
+  # will remain able to swap back and forth per their preference.
+  #beta_history_default_on: false
+
   # Location of the configuration file containing extra user
   # preferences.
   # The value of this option will be resolved with respect to

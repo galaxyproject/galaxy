@@ -1879,6 +1879,18 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``beta_history_default_on``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Server-wide default selection of the 'beta' history during the
+    transition period, after which this option will disappear.  Users
+    will remain able to swap back and forth per their preference.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``user_preferences_extra_conf_path``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
