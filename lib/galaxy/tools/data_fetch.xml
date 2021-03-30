@@ -1,7 +1,6 @@
 <tool id="__DATA_FETCH__"
       name="Data Fetch"
       version="0.1.0"
-      workflow_compatible="false"
       profile="18.01">
   <action module="galaxy.tools.actions.upload" class="FetchUploadToolAction"/>
     <edam_operations>
