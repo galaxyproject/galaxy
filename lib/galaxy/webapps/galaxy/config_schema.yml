@@ -3183,6 +3183,15 @@ mapping:
           will automatically create and use a separate sqlite database located in your
           <galaxy>/database folder (indicated in the commented out line below).
 
+      enable_celery_tasks:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Offload long-running tasks to a Celery task queue.
+          Activate this only if you have setup a Celery worker for Galaxy.
+          For details, see https://docs.galaxyproject.org/en/master/admin/production.html
+
       use_pbkdf2:
         type: bool
         default: true

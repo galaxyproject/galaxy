@@ -37,7 +37,7 @@ from sqlalchemy.orm.scoping import scoped_session
 from galaxy import exceptions
 from galaxy import model
 from galaxy.model import tool_shed_install
-from galaxy.structured_app import BasicApp, StructuredApp
+from galaxy.structured_app import BasicApp, MinimalManagerApp
 from galaxy.util import namedtuple
 
 log = logging.getLogger(__name__)
@@ -488,7 +488,7 @@ class HasAModelManager:
     # examples where this doesn't really work are ConfigurationSerializer (no manager)
     # and contents (2 managers)
 
-    def __init__(self, app: StructuredApp, manager=None, **kwargs):
+    def __init__(self, app: MinimalManagerApp, manager=None, **kwargs):
         self._manager = manager
 
     @property
@@ -542,7 +542,7 @@ class ModelSerializer(HasAModelManager):
     default_view: Optional[str]
     views: Dict[str, List[str]]
 
-    def __init__(self, app: StructuredApp, **kwargs):
+    def __init__(self, app: MinimalManagerApp, **kwargs):
         """
         Set up serializer map, any additional serializable keys, and views here.
         """
@@ -713,7 +713,7 @@ class ModelDeserializer(HasAModelManager):
     """
     # TODO:?? a larger question is: which should be first? Deserialize then validate - or - validate then deserialize?
 
-    def __init__(self, app: StructuredApp, validator=None, **kwargs):
+    def __init__(self, app: MinimalManagerApp, validator=None, **kwargs):
         """
         Set up deserializers and validator.
         """
@@ -904,7 +904,7 @@ class ModelFilterParser(HasAModelManager):
     orm_filter_parsers: Dict[str, Dict]
     fn_filter_parsers: Dict[str, Dict]
 
-    def __init__(self, app: StructuredApp, **kwargs):
+    def __init__(self, app: MinimalManagerApp, **kwargs):
         """
         Set up serializer map, any additional serializable keys, and views here.
         """

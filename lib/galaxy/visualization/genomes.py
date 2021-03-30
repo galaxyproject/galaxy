@@ -11,7 +11,7 @@ from galaxy.exceptions import (
     ObjectNotFound,
     ReferenceDataError,
 )
-from galaxy.structured_app import StructuredApp
+from galaxy.structured_app import MinimalManagerApp
 from galaxy.util.bunch import Bunch
 
 log = logging.getLogger(__name__)
@@ -197,7 +197,7 @@ class Genomes:
     Provides information about available genome data and methods for manipulating that data.
     """
 
-    def __init__(self, app: StructuredApp):
+    def __init__(self, app: MinimalManagerApp):
         self.app = app
         # Create list of genomes from app.genome_builds
         self.genomes: Dict[str, Genome] = {}

@@ -21,7 +21,7 @@ from galaxy.model import mapping, tags
 from galaxy.model.base import SharedModelMapping
 from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.security import idencoding
-from galaxy.structured_app import BasicApp, StructuredApp
+from galaxy.structured_app import BasicApp, MinimalManagerApp, StructuredApp
 from galaxy.tool_util.deps.containers import NullContainerFinder
 from galaxy.util import StructuredExecutionTimer
 from galaxy.util.bunch import Bunch
@@ -67,6 +67,7 @@ class MockApp(di.Container):
     def __init__(self, config=None, **kwargs):
         super().__init__()
         self[BasicApp] = self
+        self[MinimalManagerApp] = self
         self[StructuredApp] = self
         self.config = config or MockAppConfig(**kwargs)
         self.security = self.config.security
@@ -139,6 +140,7 @@ class MockAppConfig(Bunch):
         self.security = idencoding.IdEncodingHelper(id_secret='6e46ed6483a833c100e68cc3f1d0dd76')
         self.database_connection = kwargs.get('database_connection', "sqlite:///:memory:")
         self.use_remote_user = kwargs.get('use_remote_user', False)
+        self.enable_celery_tasks = False
         self.data_dir = os.path.join(root, 'database')
         self.file_path = os.path.join(self.data_dir, 'files')
         self.jobs_directory = os.path.join(self.data_dir, 'jobs_directory')

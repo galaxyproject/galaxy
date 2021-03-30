@@ -3,6 +3,7 @@ import logging
 import os
 import threading
 import time
+from multiprocessing.util import register_after_fork
 
 from sqlalchemy import (
     create_engine,
@@ -87,4 +88,5 @@ def build_engine(url, engine_options, database_query_profiling_proxy=False, trac
 
     # Create the database engine
     engine = create_engine(url, **engine_options)
+    register_after_fork(engine, lambda e: e.dispose())
     return engine
