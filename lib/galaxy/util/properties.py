@@ -87,6 +87,7 @@ def load_app_properties(
     # update from env
     override_prefix = "%sOVERRIDE_" % config_prefix
     for key in os.environ:
+        config_key = None
         if key.startswith(override_prefix):
             config_key = key[len(override_prefix):].lower()
             properties[config_key] = os.environ[key]
@@ -94,6 +95,12 @@ def load_app_properties(
             config_key = key[len(config_prefix):].lower()
             if config_key not in properties:
                 properties[config_key] = os.environ[key]
+        try:
+            # Attempt to parse value as yaml to allow passing complex options via env
+            if config_key:
+                properties[config_key] = yaml.safe_load(properties[config_key])
+        except yaml.YAMLError:
+            pass
 
     return properties
 
