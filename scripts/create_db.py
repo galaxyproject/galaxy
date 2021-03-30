@@ -33,7 +33,7 @@ log = logging.getLogger(__name__)
 def invoke_create():
     config = get_config(sys.argv)
     if config['database'] == 'galaxy':
-        create_db(config['db_url'], config['config_file'])
+        create_db(config['db_url'], config['config_file'], map_install_models=not config['install_database_connection'])
     elif config['database'] == 'tool_shed':
         create_tool_shed_db(config['db_url'])
     elif config['database'] == 'install':
