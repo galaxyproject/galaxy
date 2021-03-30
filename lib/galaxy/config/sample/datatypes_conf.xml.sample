@@ -267,7 +267,7 @@
     <datatype extension="mztab2" type="galaxy.datatypes.proteomics:MzTab2" display_in_upload="true"/>
     <datatype extension="mzml" type="galaxy.datatypes.proteomics:MzML" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="nmrml" type="galaxy.datatypes.proteomics:NmrML" mimetype="application/xml" display_in_upload="true" description="nmrML is an open mark-up language for NMR data." description_url="http://nmrml.org/schema/"/>
-    <datatype extension="meryldb" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true" description="MerylDB is a tar.gz archive containing 64 binaries + 64 indexes."/>
+    <datatype extension="meryldb" type="galaxy.datatypes.binary:Meryldb" subclass="true" display_in_upload="true" description="MerylDB is a tar.gz archive containing 64 binaries + 64 indexes." />
     <datatype extension="mgf" type="galaxy.datatypes.proteomics:Mgf" display_in_upload="true"/>
     <datatype extension="wiff" type="galaxy.datatypes.proteomics:Wiff" display_in_upload="true"/>
     <datatype extension="mzxml" type="galaxy.datatypes.proteomics:MzXML" mimetype="application/xml" display_in_upload="true"/>
@@ -907,6 +907,7 @@
     <sniffer type="galaxy.datatypes.binary:Fast5ArchiveGz"/>
     <sniffer type="galaxy.datatypes.binary:Fast5ArchiveBz2"/>
     <sniffer type="galaxy.datatypes.binary:Fast5Archive"/>
+    <sniffer type="galaxy.datatypes.binary:Meryldb" />
     <sniffer type="galaxy.datatypes.binary:PostgresqlArchive"/>
     <sniffer type="galaxy.datatypes.binary:ICM"/>
     <sniffer type="galaxy.datatypes.binary:Idat"/>
