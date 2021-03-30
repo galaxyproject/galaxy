@@ -1,0 +1,48 @@
+<tool id="collection_creates_pair_from_type_discover" name="collection_creates_pair_from_type" version="0.1.0">
+  <command>
+    sed 'n;d' $input1 > A.fastq;
+    sed -n 'g;n;p' $input1 > B.fastq;
+  </command>
+  <inputs>
+    <param name="input1" type="data" label="Input" help="Input to be split." />
+  </inputs>
+  <outputs>
+    <!-- test that format from format_source is used -->
+    <collection name="paired_output" type="list" label="Split Pair" format_source="input1">
+      <discover_datasets pattern="__designation__" visible="false" />
+    </collection>
+    <!-- test that default format from format_source is overwritten by discovered ext -->
+    <collection name="paired_output_discoveredext" type="list" label="Split Pair" format_source="input1">
+      <discover_datasets pattern="__name_and_ext__" visible="false" />
+    </collection>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="simple_lines_interleaved.txt" ftype="txt" />
+      <output_collection name="paired_output" type="list">
+        <element name="A.fastq" ftype="txt">
+          <assert_contents>
+            <has_text_matching expression="^This is a line of text.\nThis is a line of text.\n$" />
+          </assert_contents>
+        </element>
+        <element name="B.fastq" ftype="txt">
+          <assert_contents>
+            <has_text_matching expression="^This is a different line of text.\nThis is a different line of text.\n$" />
+          </assert_contents>
+        </element>
+      </output_collection>
+      <output_collection name="paired_output_discoveredext" type="list">
+        <element name="A" ftype="fastq">
+          <assert_contents>
+            <has_text_matching expression="^This is a line of text.\nThis is a line of text.\n$" />
+          </assert_contents>
+        </element>
+        <element name="B" ftype="fastq">
+          <assert_contents>
+            <has_text_matching expression="^This is a different line of text.\nThis is a different line of text.\n$" />
+          </assert_contents>
+        </element>
+      </output_collection>
+    </test>
+  </tests>
+</tool>

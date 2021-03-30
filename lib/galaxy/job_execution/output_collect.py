@@ -110,9 +110,11 @@ def collect_dynamic_outputs(
     job_context,
     output_collections,
 ):
+    log.error("collect_dynamic_outputs")
     # unmapped outputs do not correspond to explicit outputs of the tool, they were inferred entirely
     # from the tool provided metadata (e.g. galaxy.json).
     for unnamed_output_dict in job_context.tool_provided_metadata.get_unnamed_outputs():
+        log.error(f"collect_dynamic_outputs unnamed_output_dict {unnamed_output_dict}")
         assert "destination" in unnamed_output_dict
         assert "elements" in unnamed_output_dict
         destination = unnamed_output_dict["destination"]
@@ -153,7 +155,10 @@ def collect_dynamic_outputs(
             persist_hdas(elements, job_context, final_job_state=job_context.final_job_state)
 
     for name, has_collection in output_collections.items():
+        log.error(f"collect_dynamic_outputs name {name}")
+        log.error(f"collect_dynamic_outputs has_collection {has_collection}")
         output_collection_def = job_context.output_collection_def(name)
+        log.error(f"collect_dynamic_outputs output_collection_def {output_collection_def}")
         if not output_collection_def:
             continue
 
@@ -183,6 +188,7 @@ def collect_dynamic_outputs(
                 filenames,
                 name=output_collection_def.name,
                 metadata_source_name=output_collection_def.metadata_source,
+                format_source_name=output_collection_def.format_source,
                 final_job_state=job_context.final_job_state,
                 change_datatype_actions=job_context.change_datatype_actions,
             )
