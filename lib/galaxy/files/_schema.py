@@ -1,5 +1,8 @@
 from enum import Enum
-from typing import List
+from typing import (
+    List,
+    Optional,
+)
 
 from pydantic import (
     BaseModel,
@@ -61,6 +64,16 @@ class FilesSourcePlugin(BaseModel):
         title="Writeable",
         description="Whether this files source plugin allows write access.",
         example=False,
+    )
+    requires_roles: Optional[str] = Field(
+        None,
+        title="Requires roles",
+        description="Only users with the roles specified here can access this files source.",
+    )
+    requires_groups: Optional[str] = Field(
+        None,
+        title="Requires groups",
+        description="Only users belonging to the groups specified here can access this files source.",
     )
 
     class Config:
