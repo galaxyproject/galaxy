@@ -50,6 +50,6 @@ class EmbeddedDockerPulsarIntegrationTestCase(BaseEmbeddedPulsarContainerIntegra
 
 instance = integration_util.integration_module_instance(EmbeddedDockerPulsarIntegrationTestCase)
 
-test_tools = integration_util.integration_tool_runner([
-    "tool_directory_docker",
-])
+#test_tools = integration_util.integration_tool_runner([
+    #"tool_directory_docker",
+#])
