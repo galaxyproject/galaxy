@@ -85,15 +85,29 @@ def load_app_properties(
         properties.update(kwds)
 
     # update from env
-    override_prefix = "%sOVERRIDE_" % config_prefix
-    for key in os.environ:
-        if key.startswith(override_prefix):
-            config_key = key[len(override_prefix):].lower()
-            properties[config_key] = os.environ[key]
-        elif key.startswith(config_prefix):
-            config_key = key[len(config_prefix):].lower()
-            if config_key not in properties:
-                properties[config_key] = os.environ[key]
+    override_prefix = "override_"
+    yaml_prefix = "yaml_"
+    for key, val in os.environ.items():
+        override = False
+        if key.startswith(config_prefix):
+            # munch config_prefix
+            key = key[len(config_prefix):].lower()
+            if key.startswith(override_prefix):
+                # munch override_prefix
+                key = key[len(override_prefix):]
+                override = True
+
+            if key.startswith(yaml_prefix):
+                # munch yaml_prefix
+                key = key[len(yaml_prefix):]
+                try:
+                    # Attempt to parse value as yaml to allow passing complex options via env
+                    val = yaml.safe_load(val)
+                except yaml.YAMLError:
+                    pass
+
+            if override or key not in properties:
+                properties[key] = val
 
     return properties
 
