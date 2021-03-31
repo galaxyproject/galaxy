@@ -975,6 +975,13 @@ def determine_output_format(output, parameter_context, input_datasets, input_dat
     # the type should match the input
     ext = output.format
     if ext == "input":
+        if input_datasets and random_input_ext in {'data', 'auto'}:
+            # Probably dealing with an implicitly converted dataset
+            try:
+                first_input_dataset = next(iter(input_datasets.values()))
+                random_input_ext = get_ext_or_implicit_ext(first_input_dataset)
+            except Exception:
+                pass
         ext = random_input_ext
     format_source = output.format_source
     if format_source is not None and format_source in input_datasets:
