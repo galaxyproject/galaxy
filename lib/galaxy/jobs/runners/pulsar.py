@@ -382,6 +382,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             if os.path.exists(tool_script):
                 log.debug("Registering tool_script for Pulsar transfer [%s]" % tool_script)
                 job_directory_files.append(tool_script)
+                config_files.append(tool_script)
             # Following is job destination environment variables
             env = client.env
             # extend it with tool defined environment variables
