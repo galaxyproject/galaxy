@@ -69,13 +69,15 @@ class BaseFilesSource(FilesSource):
         uri_root = self.get_uri_root()
         return uri_join(uri_root, path)
 
-    def _parse_common_config_opts(self, kwd):
+    def _parse_common_config_opts(self, kwd: dict):
         self._file_sources_config = kwd.pop("file_sources_config")
         self.id = kwd.pop("id")
         self.label = kwd.pop("label", None) or self.id
         self.doc = kwd.pop("doc", None)
         self.scheme = kwd.pop("scheme", DEFAULT_SCHEME)
         self.writable = kwd.pop("writable", DEFAULT_WRITABLE)
+        self.requires_roles = kwd.pop("requires_roles", None)
+        self.requires_groups = kwd.pop("requires_groups", None)
         # If coming from to_dict, strip API helper values
         kwd.pop("uri_root", None)
         kwd.pop("type", None)
@@ -89,6 +91,8 @@ class BaseFilesSource(FilesSource):
             "label": self.label,
             "doc": self.doc,
             "writable": self.writable,
+            "requires_roles": self.requires_roles,
+            "requires_groups": self.requires_groups,
         }
         if for_serialization:
             rval.update(self._serialization_props(user_context=user_context))
