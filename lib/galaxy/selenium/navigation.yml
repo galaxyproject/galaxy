@@ -229,6 +229,13 @@ edit_dataset_attributes:
         type: xpath
         selector: '//li[normalize-space() = "${dbkey_text}"]'
 
+edit_collection_attributes:
+  selectors:
+    collection_menu: '.collection-menu'
+    collection_edit_view: '.collection-edit-view'
+    database_build_dropdown: '[data-label="Database/Build"]'
+    save_btn: '.save-collection-edit'
+
 
 
 tool_panel:

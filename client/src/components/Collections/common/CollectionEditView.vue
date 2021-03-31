@@ -31,7 +31,7 @@
                     </div>
                     <div class="text-right">
                         <button
-                            class="save-collection btn btn-primary"
+                            class="save-collection-edit btn btn-primary"
                             @click="clickedSave('dbkey', genome)"
                             :disabled="genome.id == databaseKeyFromElements"
                         >
@@ -70,7 +70,7 @@
                     </div>
                     <div class="text-right">
                         <button
-                            class="save-collection btn btn-primary"
+                            class="save-collection-edit btn btn-primary"
                             @click="clickedSave('file_ext', extension)"
                             :disabled="extension.id == datatypeFromElements"
                         >

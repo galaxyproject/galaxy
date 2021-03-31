@@ -1,8 +1,15 @@
 <template>
-    <PriorityMenu :starting-height="27">
-        <PriorityMenuItem>
-            <b-dropdown no-caret right variant="link" size="sm" boundary="window" toggle-class="p-1">
-                <template v-slot:button-content>
+    <div class="collection-menu">
+        <PriorityMenu :starting-height="27">
+            <PriorityMenuItem
+                v-if="notIn(STATES.DISCARDED)"
+                key="edit-collection"
+                :title="deleteButtonTitle"
+                @click.stop="$emit('delete')"
+                icon="fas fa-trash"
+            >
+                <!-- <b-dropdown no-caret right variant="link" size="sm" boundary="window" toggle-class="p-1"> -->
+                <!-- <template v-slot:button-content>
                     <i class="fas fa-trash" />
                     <span class="sr-only">Delete Collection</span>
                 </template>
@@ -12,18 +19,20 @@
                 </b-dropdown-item>
                 <b-dropdown-item @click.stop="$emit('delete', { recursive: true, purge: true })">
                     Purge Contained Datasets
-                </b-dropdown-item>
-            </b-dropdown>
-        </PriorityMenuItem>
-        <PriorityMenuItem
-            v-if="notIn(STATES.DISCARDED)"
-            key="edit-collection"
-            :title="editButtonTitle"
-            :disabled="collection.deleted || isIn(STATES.UPLOAD, STATES.NEW)"
-            @click.stop="backboneRoute('collection/edit/' + collection.hdca_id)"
-            icon="fa fa-pencil"
-        />
-    </PriorityMenu>
+                </b-dropdown-item> -->
+                <!-- </b-dropdown> -->
+            </PriorityMenuItem>
+            <PriorityMenuItem
+                v-if="notIn(STATES.DISCARDED)"
+                key="edit-collection"
+                class="collection-edit-view"
+                :title="editButtonTitle"
+                :disabled="collection.deleted || isIn(STATES.UPLOAD, STATES.NEW)"
+                @click.stop="backboneRoute('collection/edit/' + collection.hdca_id)"
+                icon="fa fa-pencil"
+            />
+        </PriorityMenu>
+    </div>
 </template>
 
 <script>
@@ -53,6 +62,9 @@ export default {
                 return "This collection is not yet editable";
             }
             return "Edit attributes";
+        },
+        deleteButtonTitle() {
+            return "Delete Collection Only";
         },
     },
     methods: {
