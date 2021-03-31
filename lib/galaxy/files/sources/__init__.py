@@ -2,6 +2,7 @@ import abc
 import os
 import time
 
+from galaxy.exceptions import ItemAccessibilityException
 from galaxy.util.template import fill_template
 
 DEFAULT_SCHEME = "gxfiles"
@@ -23,6 +24,10 @@ class FilesSource(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def get_writable(self):
         """Return a boolean indicating if this target is writable."""
+
+    @abc.abstractmethod
+    def user_has_access(self, user_context) -> bool:
+        """Return a boolean indicating if the user can access the FileSource."""
 
     # TODO: off-by-default
     @abc.abstractmethod
@@ -56,6 +61,13 @@ class BaseFilesSource(FilesSource):
 
     def get_writable(self):
         return self.writable
+
+    def user_has_access(self, user_context) -> bool:
+        return user_context is None or (
+            user_context.is_admin
+            or self._user_has_required_roles(user_context)
+            or self._user_has_required_groups(user_context)
+        )
 
     def get_uri_root(self):
         prefix = self.get_prefix()
@@ -113,14 +125,36 @@ class BaseFilesSource(FilesSource):
         Used in to_dict method if for_serialization is True.
         """
 
+    def list(self, path="/", recursive=False, user_context=None):
+        self._check_user_access(user_context)
+        return self._list(path, recursive, user_context)
+
+    @abc.abstractmethod
+    def _list(self, path="/", recursive=False, user_context=None):
+        pass
+
     def write_from(self, target_path, native_path, user_context=None):
         if not self.get_writable():
             raise Exception("Cannot write to a non-writable file source.")
+        self._check_user_access(user_context)
         self._write_from(target_path, native_path, user_context=user_context)
 
     @abc.abstractmethod
     def _write_from(self, target_path, native_path, user_context=None):
         pass
+
+    def realize_to(self, source_path, native_path, user_context=None):
+        self._check_user_access(user_context)
+        self._realize_to(source_path, native_path, user_context)
+
+    @abc.abstractmethod
+    def _realize_to(self, source_path, native_path, user_context=None):
+        pass
+
+    def _check_user_access(self, user_context):
+        """Raises an exception if the given user doesn't have the rights to access this file source."""
+        if user_context is not None and not self.user_has_access(user_context):
+            raise ItemAccessibilityException(f"User {user_context.username} has no access to file source.")
 
     def _evaluate_prop(self, prop_val, user_context):
         rval = prop_val
@@ -133,6 +167,20 @@ class BaseFilesSource(FilesSource):
             rval = fill_template(prop_val, context=template_context, futurized=True)
 
         return rval
+
+    def _user_has_required_roles(self, user_context) -> bool:
+        if self.requires_roles:
+            role_set = set([self.requires_roles])
+            rval = user_context.role_names.intersection(role_set)
+            return bool(rval)
+        return True
+
+    def _user_has_required_groups(self, user_context) -> bool:
+        if self.requires_groups:
+            group_set = set([self.requires_groups])
+            rval = user_context.group_names.intersection(group_set)
+            return bool(rval)
+        return True
 
 
 def uri_join(*args):

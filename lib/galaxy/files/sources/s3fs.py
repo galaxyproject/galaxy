@@ -27,7 +27,7 @@ class S3FsFilesSource(BaseFilesSource):
         assert self._endpoint_url or self._bucket
         self._props = props
 
-    def list(self, path="/", recursive=True, user_context=None):
+    def _list(self, path="/", recursive=True, user_context=None):
         fs = self._open_fs(user_context=user_context)
         if recursive:
             res = []
@@ -43,7 +43,7 @@ class S3FsFilesSource(BaseFilesSource):
             to_dict = functools.partial(self._resource_info_to_dict, path)
             return list(map(to_dict, res))
 
-    def realize_to(self, source_path, native_path, user_context=None):
+    def _realize_to(self, source_path, native_path, user_context=None):
         bucket_path = self._bucket_path(source_path)
         self._open_fs(user_context=user_context).download(bucket_path, native_path)
 

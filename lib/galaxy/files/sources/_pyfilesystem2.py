@@ -22,7 +22,7 @@ class PyFilesystem2FilesSource(BaseFilesSource):
     def _open_fs(self, user_context=None):
         """Subclasses must instantiate a PyFilesystem2 handle for this file system."""
 
-    def list(self, path="/", recursive=False, user_context=None):
+    def _list(self, path="/", recursive=False, user_context=None):
         """Return dictionary of 'Directory's and 'File's."""
 
         with self._open_fs(user_context=user_context) as h:
@@ -38,7 +38,7 @@ class PyFilesystem2FilesSource(BaseFilesSource):
                 to_dict = functools.partial(self._resource_info_to_dict, path)
                 return list(map(to_dict, res))
 
-    def realize_to(self, source_path, native_path, user_context=None):
+    def _realize_to(self, source_path, native_path, user_context=None):
         with open(native_path, 'wb') as write_file:
             self._open_fs(user_context=user_context).download(source_path, write_file)
 
