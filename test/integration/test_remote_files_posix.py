@@ -8,10 +8,12 @@ import shutil
 from tempfile import mkdtemp
 
 from galaxy_test.base import api_asserts
+from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
-REQUIRED_ROLES = "user@bx.psu.edu"
-REQUIRED_GROUPS = "fs_test_group"
+REQUIRED_ROLE = "user@bx.psu.edu"
+REQUIRED_GROUP = "fs_test_group"
+USER_WITHOUT_ROLE_EMAIL = "user_without_role@bx.psu.edu"
 
 
 def get_posix_file_source_config(root_dir: str, roles: str, groups: str) -> str:
@@ -29,7 +31,7 @@ def get_posix_file_source_config(root_dir: str, roles: str, groups: str) -> str:
 
 
 def create_file_source_config_file_on(temp_dir, root_dir):
-    file_contents = get_posix_file_source_config(root_dir, REQUIRED_ROLES, REQUIRED_GROUPS)
+    file_contents = get_posix_file_source_config(root_dir, REQUIRED_ROLE, REQUIRED_GROUP)
     file_path = os.path.join(temp_dir, "file_sources_conf_posix.yml")
     with open(file_path, "w") as f:
         f.write(file_contents)
@@ -54,6 +56,7 @@ class PosixFileSourceIntegrationTestCase(integration_util.IntegrationTestCase):
 
     def setUp(self):
         super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self._write_file_fixtures()
 
     def test_plugin_config(self):
@@ -64,44 +67,61 @@ class PosixFileSourceIntegrationTestCase(integration_util.IntegrationTestCase):
         assert plugins[0]["type"] == "posix"
         assert plugins[0]["uri_root"] == "gxfiles://posix_test"
         assert plugins[0]["writable"] is True
-        assert plugins[0]["requires_roles"] == REQUIRED_ROLES
-        assert plugins[0]["requires_groups"] == REQUIRED_GROUPS
+        assert plugins[0]["requires_roles"] == REQUIRED_ROLE
+        assert plugins[0]["requires_groups"] == REQUIRED_GROUP
 
-    def test_admin_access(self):
+    def test_allow_admin_access(self):
         data = {"target": "gxfiles://posix_test"}
         list_response = self.galaxy_interactor.get("remote_files", data, admin=True)
-        api_asserts.assert_status_code_is_ok(list_response)
-        remote_files = list_response.json()
-        print(remote_files)
-        assert len(remote_files) == 2
-        assert remote_files[0]["name"] == "a"
-        assert remote_files[1]["name"] == "subdir1"
+        self._assert_list_response_matches_fixtures(list_response)
 
     def test_user_require_role(self):
         data = {"target": "gxfiles://posix_test"}
 
         list_response = self.galaxy_interactor.get("remote_files", data)
-        api_asserts.assert_status_code_is_ok(list_response)
-        remote_files = list_response.json()
-        assert len(remote_files) > 0
+        self._assert_list_response_matches_fixtures(list_response)
 
-        with self._different_user():
+        with self._different_user(email=USER_WITHOUT_ROLE_EMAIL):
             list_response = self.galaxy_interactor.get("remote_files", data)
-            api_asserts.assert_status_code_is(list_response, 403)
-
-            list_response = self.galaxy_interactor.get("remote_files", data, admin=True)
-            api_asserts.assert_status_code_is_ok(list_response)
-            remote_files = list_response.json()
-            assert len(remote_files) > 0
+            self._assert_access_forbidden_response(list_response)
 
     def test_user_require_group(self):
         data = {"target": "gxfiles://posix_test"}
-        list_response = self.galaxy_interactor.get("remote_files", data)
-        api_asserts.assert_status_code_is(list_response, 403)
+        group_id = self._create_group(REQUIRED_GROUP)
 
         with self._different_user():
             list_response = self.galaxy_interactor.get("remote_files", data)
-            api_asserts.assert_status_code_is(list_response, 403)
+            self._assert_access_forbidden_response(list_response)
+            user_id = self.dataset_populator.user_id()
+
+            self._add_user_to_group(group_id, user_id)
+
+            list_response = self.galaxy_interactor.get("remote_files", data)
+            self._assert_list_response_matches_fixtures(list_response)
+
+    def _create_group(self, group_name: str):
+        payload = {
+            "name": group_name,
+            "user_ids": [],
+        }
+        response = self._post("groups", payload, admin=True, json=True)
+        self._assert_status_code_is(response, 200)
+        group = response.json()[0]  # POST /api/groups returns a list
+        return group["id"]
+
+    def _add_user_to_group(self, group_id, user_id):
+        update_response = self._put(f"groups/{group_id}/users/{user_id}", admin=True)
+        self._assert_status_code_is_ok(update_response)
+
+    def _assert_list_response_matches_fixtures(self, list_response):
+        api_asserts.assert_status_code_is_ok(list_response)
+        remote_files = list_response.json()
+        assert len(remote_files) == 2
+        assert remote_files[0]["name"] == "a"
+        assert remote_files[1]["name"] == "subdir1"
+
+    def _assert_access_forbidden_response(self, response):
+        api_asserts.assert_status_code_is(response, 403)
 
     def _write_file_fixtures(self):
         root = PosixFileSourceIntegrationTestCase.root_dir
