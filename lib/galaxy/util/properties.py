@@ -11,7 +11,7 @@ from itertools import product, starmap
 
 import yaml
 
-from galaxy.exceptions import InvalidFileFormatError
+from galaxy.exceptions import InvalidFileFormatError, ConfigurationError
 from galaxy.util.path import extensions, has_ext, joinext
 
 
@@ -91,22 +91,22 @@ def load_app_properties(
         override = False
         if key.startswith(config_prefix):
             # munch config_prefix
-            key = key[len(config_prefix):].lower()
-            if key.startswith(override_prefix):
+            config_key = key[len(config_prefix):].lower()
+            if config_key.startswith(override_prefix):
                 # munch override_prefix
-                key = key[len(override_prefix):]
+                config_key = config_key[len(override_prefix):]
                 override = True
 
-            if key.startswith(yaml_prefix):
+            if config_key.startswith(yaml_prefix):
                 # munch yaml_prefix
-                key = key[len(yaml_prefix):]
+                config_key = config_key[len(yaml_prefix):]
                 try:
                     # Attempt to parse value as yaml to allow passing complex options via env
                     val = yaml.safe_load(val)
-                except yaml.YAMLError:
-                    pass
+                except yaml.YAMLError as e:
+                    raise ConfigurationError(f"Failed to parse {key} as YAML: {e}")
 
-            if override or key not in properties:
+            if override or config_key not in properties:
                 properties[key] = val
 
     return properties
