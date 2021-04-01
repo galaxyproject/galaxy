@@ -1770,6 +1770,7 @@ simple_mapping(model.HistoryDatasetAssociation,
 )
 
 simple_mapping(model.Dataset,
+    job=relation(model.Job, primaryjoin=(model.Dataset.table.c.job_id == model.Job.table.c.id)),
     history_associations=relation(model.HistoryDatasetAssociation,
         primaryjoin=(model.Dataset.table.c.id == model.HistoryDatasetAssociation.table.c.dataset_id)),
     active_history_associations=relation(model.HistoryDatasetAssociation,
