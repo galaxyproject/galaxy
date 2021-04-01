@@ -1,7 +1,10 @@
 import os
 import tempfile
 
+import pytest
+
 from galaxy.datatypes import sniff
+from galaxy.exceptions import ItemAccessibilityException
 from galaxy.files import (
     ConfiguredFileSources,
     ConfiguredFileSourcesConfig,
@@ -252,6 +255,91 @@ def test_user_import_dir_implicit_config():
 
     user_context = user_context_fixture()
     assert_realizes_as(file_sources, "gxuserimport://a", "a\n", user_context=user_context)
+
+
+def test_posix_user_access_requires_role():
+    allowed_role_name = "role1"
+    plugin_extra_config = {
+        "requires_roles": allowed_role_name,
+    }
+    file_sources = _configured_file_sources(writable=True, plugin_extra_config=plugin_extra_config)
+
+    user_context = user_context_fixture()
+    _assert_user_access_prohibited(file_sources, user_context)
+
+    user_context = user_context_fixture(role_names=set([allowed_role_name]))
+    _assert_user_access_granted(file_sources, user_context)
+
+
+def test_posix_user_access_requires_group():
+    allowed_group_name = "group1"
+    plugin_extra_config = {
+        "requires_groups": allowed_group_name,
+    }
+    file_sources = _configured_file_sources(writable=True, plugin_extra_config=plugin_extra_config)
+
+    user_context = user_context_fixture()
+    _assert_user_access_prohibited(file_sources, user_context)
+
+    user_context = user_context_fixture(group_names=set([allowed_group_name]))
+    _assert_user_access_granted(file_sources, user_context)
+
+
+def test_posix_admin_user_has_access():
+    plugin_extra_config = {
+        "requires_roles": "role1",
+        "requires_groups": "group1",
+    }
+    file_sources = _configured_file_sources(writable=True, plugin_extra_config=plugin_extra_config)
+
+    user_context = user_context_fixture()
+    _assert_user_access_prohibited(file_sources, user_context)
+
+    user_context = user_context_fixture(is_admin=True)
+    _assert_user_access_granted(file_sources, user_context)
+
+
+def test_posix_user_access_requires_role_and_group():
+    allowed_group_name = "group1"
+    allowed_role_name = "role1"
+    plugin_extra_config = {
+        "requires_roles": allowed_role_name,
+        "requires_groups": allowed_group_name,
+    }
+    file_sources = _configured_file_sources(writable=True, plugin_extra_config=plugin_extra_config)
+
+    user_context = user_context_fixture(group_names=set([allowed_group_name]))
+    _assert_user_access_prohibited(file_sources, user_context)
+
+    user_context = user_context_fixture(role_names=set([allowed_role_name]))
+    _assert_user_access_prohibited(file_sources, user_context)
+
+    user_context = user_context_fixture(role_names=set([allowed_role_name]), group_names=set([allowed_group_name]))
+    _assert_user_access_granted(file_sources, user_context)
+
+
+def _assert_user_access_prohibited(file_sources, user_context):
+    with pytest.raises(ItemAccessibilityException):
+        list_root(file_sources, "gxfiles://test1", recursive=False, user_context=user_context)
+
+    with pytest.raises(ItemAccessibilityException):
+        write_from(file_sources, "gxfiles://test1/b", "my test content", user_context=user_context)
+
+    with pytest.raises(ItemAccessibilityException):
+        assert_realizes_as(file_sources, "gxfiles://test1/a", "a\n", user_context=user_context)
+
+
+def _assert_user_access_granted(file_sources, user_context):
+    res = list_root(file_sources, "gxfiles://test1", recursive=False, user_context=user_context)
+    assert res
+
+    write_from(file_sources, "gxfiles://test1/b", "my test content", user_context=user_context)
+
+    res = list_root(file_sources, "gxfiles://test1", recursive=False, user_context=user_context)
+    b = find(res, name="b")
+    assert b is not None, b
+
+    assert_realizes_as(file_sources, "gxfiles://test1/a", "a\n", user_context=user_context)
 
 
 def _configured_file_sources(include_allowlist=False, plugin_extra_config=None, per_user=False, writable=None):
