@@ -11,7 +11,7 @@ from itertools import product, starmap
 
 import yaml
 
-from galaxy.exceptions import InvalidFileFormatError
+from galaxy.exceptions import InvalidFileFormatError, ConfigurationError
 from galaxy.util.path import extensions, has_ext, joinext
 
 
@@ -99,8 +99,8 @@ def load_app_properties(
             # Attempt to parse value as yaml to allow passing complex options via env
             if config_key:
                 properties[config_key] = yaml.safe_load(properties[config_key])
-        except yaml.YAMLError:
-            pass
+        except yaml.YAMLError as e:
+            raise ConfigurationError(f"Failed to parse {key} as YAML: {e}")
 
     return properties
 
