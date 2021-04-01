@@ -693,27 +693,22 @@ export default {
         /** try to find a good pair name for the given fwd and rev datasets */
         _guessNameForPair: function (fwd, rev, removeExtensions) {
             removeExtensions = removeExtensions ? removeExtensions : this.removeExtensions;
-            var fwdName = fwd.name;
-            var revName = rev.name;
-
-            var lcs = this._naiveStartingAndEndingLCS(
-                fwdName.replace(new RegExp(this.filters[0]), ""),
-                revName.replace(new RegExp(this.filters[1]), "")
-            );
-
+            let fwdName = fwd.name;
+            let revName = rev.name;
+            const fwdNameFilter = fwdName.replace(new RegExp(this.forwardFilter), "");
+            const revNameFilter = revName.replace(new RegExp(this.reverseFilter), "");
+            let lcs = this._naiveStartingAndEndingLCS(fwdNameFilter, revNameFilter);
             /** remove url prefix if files were uploaded by url */
-            var lastSlashIndex = lcs.lastIndexOf("/");
+            const lastSlashIndex = lcs.lastIndexOf("/");
             if (lastSlashIndex > 0) {
-                var urlprefix = lcs.slice(0, lastSlashIndex + 1);
+                const urlprefix = lcs.slice(0, lastSlashIndex + 1);
                 lcs = lcs.replace(urlprefix, "");
-                fwdName = fwdName.replace(extension, "");
-                revName = revName.replace(extension, "");
             }
 
             if (removeExtensions) {
-                var lastDotIndex = lcs.lastIndexOf(".");
+                const lastDotIndex = lcs.lastIndexOf(".");
                 if (lastDotIndex > 0) {
-                    var extension = lcs.slice(lastDotIndex, lcs.length);
+                    const extension = lcs.slice(lastDotIndex, lcs.length);
                     lcs = lcs.replace(extension, "");
                     fwdName = fwdName.replace(extension, "");
                     revName = revName.replace(extension, "");
