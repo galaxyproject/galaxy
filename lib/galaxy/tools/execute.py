@@ -74,7 +74,8 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
             execution_tracker.record_success(execution_slice, job, result)
             # associate dataset instances with the job that creates them
             if result:
-                datasets = [pair[1] for pair in result if type(pair[1]) == model.HistoryDatasetAssociation]
+                instance_types = (model.HistoryDatasetAssociation, model.LibraryDatasetDatasetAssociation)
+                datasets = [pair[1] for pair in result if type(pair[1]) in instance_types]
                 if datasets:
                     job_datasets[job] = datasets
         else:
