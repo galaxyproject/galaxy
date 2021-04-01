@@ -210,7 +210,7 @@ class Meryldb(CompressedArchive):
         Try to guess if the file is a Cel file.
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('affy_v_agcc.cel')
-        >>> Merydb().sniff(fname)
+        >>> Meryldb().sniff(fname)
         False
         >>> fname = get_test_fname('read-db.meryldb')
         >>> Meryldb().sniff(fname)
