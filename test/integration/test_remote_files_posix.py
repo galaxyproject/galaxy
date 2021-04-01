@@ -106,8 +106,14 @@ class PosixFileSourceIntegrationTestCase(integration_util.IntegrationTestCase):
         api_asserts.assert_status_code_is_ok(list_response)
         remote_files = list_response.json()
         assert len(remote_files) == 2
-        assert remote_files[0]["name"] == "a"
-        assert remote_files[1]["name"] == "subdir1"
+        if remote_files[0]["class"] == "Directory":
+            dir = remote_files[0]
+            file = remote_files[1]
+        else:
+            dir = remote_files[1]
+            file = remote_files[0]
+        assert file["name"] == "a"
+        assert dir["name"] == "subdir1"
 
     def _assert_access_forbidden_response(self, response):
         api_asserts.assert_status_code_is(response, 403)
