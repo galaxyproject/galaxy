@@ -3090,16 +3090,7 @@ class DatasetInstance:
 
     @property
     def creating_job(self):
-        creating_job_associations = None
-        if self.creating_job_associations:
-            creating_job_associations = self.creating_job_associations
-        else:
-            inherit_chain = self.source_dataset_chain
-            if inherit_chain:
-                creating_job_associations = inherit_chain[-1][0].creating_job_associations
-        if creating_job_associations:
-            return creating_job_associations[0].job
-        return None
+        return self.dataset.job
 
     def get_display_applications(self, trans):
         return self.datatype.get_display_applications_by_dataset(self, trans)
