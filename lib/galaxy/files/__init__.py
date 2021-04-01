@@ -245,16 +245,19 @@ class ProvidesUserFileSourcesUserContext:
 
     @property
     def role_names(self):
+        """The set of role names of this user."""
         user = self.trans.user
         return user and set([ura.role.name for ura in user.roles])
 
     @property
     def group_names(self):
+        """The set of group names to which this user belongs."""
         user = self.trans.user
         return user and set([ugr.group.name for ugr in user.groups])
 
     @property
     def is_admin(self):
+        """Whether this user is an administrator."""
         return self.trans.user_is_admin
 
 

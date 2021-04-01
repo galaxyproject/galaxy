@@ -63,10 +63,13 @@ class BaseFilesSource(FilesSource):
         return self.writable
 
     def user_has_access(self, user_context) -> bool:
-        return user_context is None or (
-            user_context.is_admin
-            or self._user_has_required_roles(user_context)
-            or self._user_has_required_groups(user_context)
+        return (
+            user_context is None
+            or user_context.is_admin
+            or (
+                self._user_has_required_roles(user_context)
+                and self._user_has_required_groups(user_context)
+            )
         )
 
     def get_uri_root(self):

@@ -13,7 +13,6 @@ from galaxy_test.driver import integration_util
 
 REQUIRED_ROLE = "user@bx.psu.edu"
 REQUIRED_GROUP = "fs_test_group"
-USER_WITHOUT_ROLE_EMAIL = "user_without_role@bx.psu.edu"
 
 
 def get_posix_file_source_config(root_dir: str, roles: str, groups: str) -> str:
@@ -75,29 +74,19 @@ class PosixFileSourceIntegrationTestCase(integration_util.IntegrationTestCase):
         list_response = self.galaxy_interactor.get("remote_files", data, admin=True)
         self._assert_list_response_matches_fixtures(list_response)
 
-    def test_user_require_role(self):
-        data = {"target": "gxfiles://posix_test"}
-
-        list_response = self.galaxy_interactor.get("remote_files", data)
-        self._assert_list_response_matches_fixtures(list_response)
-
-        with self._different_user(email=USER_WITHOUT_ROLE_EMAIL):
-            list_response = self.galaxy_interactor.get("remote_files", data)
-            self._assert_access_forbidden_response(list_response)
-
-    def test_user_require_group(self):
+    def test_user_access(self):
         data = {"target": "gxfiles://posix_test"}
         group_id = self._create_group(REQUIRED_GROUP)
 
-        with self._different_user():
-            list_response = self.galaxy_interactor.get("remote_files", data)
-            self._assert_access_forbidden_response(list_response)
-            user_id = self.dataset_populator.user_id()
+        # User has role but not group
+        list_response = self.galaxy_interactor.get("remote_files", data)
+        self._assert_access_forbidden_response(list_response)
 
-            self._add_user_to_group(group_id, user_id)
-
-            list_response = self.galaxy_interactor.get("remote_files", data)
-            self._assert_list_response_matches_fixtures(list_response)
+        # User has role and group
+        user_id = self.dataset_populator.user_id()
+        self._add_user_to_group(group_id, user_id)
+        list_response = self.galaxy_interactor.get("remote_files", data)
+        self._assert_list_response_matches_fixtures(list_response)
 
     def _create_group(self, group_name: str):
         payload = {
