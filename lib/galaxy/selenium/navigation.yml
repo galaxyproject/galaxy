@@ -236,7 +236,10 @@ edit_dataset_attributes:
 
 edit_collection_attributes:
   selectors:
-    database_build_dropdown: '[data-label="Database/Build"]'
+    database_genome_tab: 
+      type: xpath
+      selector: '//a[contains(text(), "Database/Build")]'
+    database_value: '//span[contains(text(), "${dbkey}")]'
     save_btn: '.save-collection-edit'
 
 

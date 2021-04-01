@@ -13,6 +13,8 @@ class CollectionEditTestCase(SeleniumTestCase):
         self.create_simple_list_collection()
         self.switch_to_beta_history()
         self.open_collection_edit_view()
+        self.navigate_to_database_tab()
+        self.check_current_value()
 
     def create_simple_list_collection(self):
         self.perform_upload(self.get_filename("1.fasta"))
@@ -35,7 +37,12 @@ class CollectionEditTestCase(SeleniumTestCase):
         self.components.history_panel.collection_menu_button.wait_for_and_click()
         self.components.history_panel.collection_menu_edit_attributes.wait_for_and_click()
        
-    # def navigate_to_database_tab(self):
+    def navigate_to_database_tab(self):
+        self.components.edit_collection_attributes.database_genome_tab.wait_for_and_click()
+
+    def check_current_value(self):
+        self.components.edit_collection_attributes.database_value(dbkey="Additional Species Are Below").wait_for_and_click()
+
         # assert dbkey is hg 17 (?)
 
         # open edit collection view
