@@ -239,7 +239,9 @@ edit_collection_attributes:
     database_genome_tab: 
       type: xpath
       selector: '//a[contains(text(), "Database/Build")]'
-    database_value: '//span[contains(text(), "${dbkey}")]'
+    database_value: 
+      type: xpath
+      selector: '//span[contains(text(), "${dbkey}")]'
     save_btn: '.save-collection-edit'
 
 
