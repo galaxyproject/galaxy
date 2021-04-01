@@ -120,7 +120,7 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
     if job_datasets:
         for job, datasets in job_datasets.items():
             for dataset_instance in datasets:
-                dataset_instance.dataset.job_id = job.id
+                dataset_instance.dataset.job = job
 
     tool_id = tool.id
     for job in execution_tracker.successful_jobs:
