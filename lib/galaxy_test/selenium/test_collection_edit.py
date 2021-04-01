@@ -12,12 +12,7 @@ class CollectionEditTestCase(SeleniumTestCase):
     def test_change_dbkey_simple_list(self):
         self.create_simple_list_collection()
         self.switch_to_beta_history()
-        self.open_edit_view_and_navigate_to_database_tab()
-
-
-        
-
-        
+        self.open_collection_edit_view()
 
     def create_simple_list_collection(self):
         self.perform_upload(self.get_filename("1.fasta"))
@@ -36,14 +31,15 @@ class CollectionEditTestCase(SeleniumTestCase):
         self.click_history_options()
         self.components.history_panel.options_use_beta_history.wait_for_and_click()
 
-    def open_edit_view_and_navigate_to_database_tab(self):
-        self.edit_collection_attributes.collection_menu.wait_for_and_click()
-        self.edit_collection_attributes.collection_edit_view.wait_for_and_click()
-        self.edit_collection_attributes.database_build_dropdown.wait_for_and_click() #expected fail here
+    def open_collection_edit_view(self):
+        self.components.history_panel.collection_menu_button.wait_for_and_click()
+        self.components.history_panel.collection_menu_edit_attributes.wait_for_and_click()
+       
+    # def navigate_to_database_tab(self):
         # assert dbkey is hg 17 (?)
 
         # open edit collection view
         # navigate to dbkey 
         # change dbkey 
         # click submit
-        # assert dbkey changed to whatever it was set to.
+        # assert dbkey changed to whatever it was set to

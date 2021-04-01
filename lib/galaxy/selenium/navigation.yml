@@ -196,6 +196,11 @@ history_panel:
       selector: '//a[text()="Use Beta History Panel"]'
     new_history_button: '#history-new-button'
     multi_view_button: '#history-view-multi-button'
+    
+    collection_menu_button: '.collection-menu'
+    collection_menu_edit_attributes: 
+      type: xpath
+      selector: '//a[@title="Edit attributes"]'
 
     pagination_pages: '.list-pagination .pages'
     pagination_pages_options: '.list-pagination .pages option'
@@ -231,8 +236,6 @@ edit_dataset_attributes:
 
 edit_collection_attributes:
   selectors:
-    collection_menu: '.collection-menu'
-    collection_edit_view: '.collection-edit-view'
     database_build_dropdown: '[data-label="Database/Build"]'
     save_btn: '.save-collection-edit'
 
