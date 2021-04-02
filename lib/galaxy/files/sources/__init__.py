@@ -1,8 +1,13 @@
 import abc
 import os
 import time
+from typing import Set
 
 from galaxy.exceptions import ItemAccessibilityException
+from galaxy.util.bool_expressions import (
+    BooleanExpressionEvaluator,
+    TokenContainedEvaluator,
+)
 from galaxy.util.template import fill_template
 
 DEFAULT_SCHEME = "gxfiles"
@@ -173,17 +178,18 @@ class BaseFilesSource(FilesSource):
 
     def _user_has_required_roles(self, user_context) -> bool:
         if self.requires_roles:
-            role_set = set([self.requires_roles])
-            rval = user_context.role_names.intersection(role_set)
-            return bool(rval)
+            return self._evaluate_security_rules(self.requires_roles, user_context.role_names)
         return True
 
     def _user_has_required_groups(self, user_context) -> bool:
         if self.requires_groups:
-            group_set = set([self.requires_groups])
-            rval = user_context.group_names.intersection(group_set)
-            return bool(rval)
+            return self._evaluate_security_rules(self.requires_groups, user_context.group_names)
         return True
+
+    def _evaluate_security_rules(self, rule_expression: str, user_credentials: Set[str]) -> bool:
+        token_evaluator = TokenContainedEvaluator(user_credentials)
+        evaluator = BooleanExpressionEvaluator(token_evaluator)
+        return evaluator.evaluate_expression(rule_expression)
 
 
 def uri_join(*args):
