@@ -10,7 +10,7 @@ bash run.sh --daemon && \
         sleep 1
         i=$((i + 1))
     done
-kill -9 "$(cat galaxy.pid)"
+bash run.sh --skip-wheels --stop-daemon
 echo "exit code:$EXIT_CODE, showing startup log:"
 cat galaxy.log
 exit $EXIT_CODE

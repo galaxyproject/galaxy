@@ -23,7 +23,6 @@ then
     . "$GALAXY_LOCAL_ENV_FILE"
 fi
 
-GALAXY_ROOT_DIR="$(pwd)"
 GALAXY_PID=${GALAXY_PID:-galaxy.pid}
 GALAXY_LOG=${GALAXY_LOG:-galaxy.log}
 PID_FILE=$GALAXY_PID
@@ -54,6 +53,6 @@ fi
 [ -n "$GALAXY_UWSGI" ] && APP_WEBSERVER='uwsgi'
 find_server "${GALAXY_CONFIG_FILE:-none}" galaxy
 
-echo "Executing: $run_server $server_args"
+echo "Executing: run_server $server_args"
 # args are properly quoted so use eval
-eval $run_server $server_args
+eval GALAXY_ROOT_DIR="." $run_server $server_args
