@@ -318,6 +318,44 @@ def test_posix_user_access_requires_role_and_group():
     _assert_user_access_granted(file_sources, user_context)
 
 
+def test_posix_user_access_using_boolean_rules():
+    plugin_extra_config = {
+        "requires_roles": "role1 and (role2 or role3)",
+        "requires_groups": "group1 and group2 and not group3",
+    }
+    file_sources = _configured_file_sources(writable=True, plugin_extra_config=plugin_extra_config)
+
+    user_context = user_context_fixture(
+        role_names=set([]),
+        group_names=set([])
+    )
+    _assert_user_access_prohibited(file_sources, user_context)
+
+    user_context = user_context_fixture(
+        role_names=set(["role1"]),
+        group_names=set(["group1", "group2"])
+    )
+    _assert_user_access_prohibited(file_sources, user_context)
+
+    user_context = user_context_fixture(
+        role_names=set(["role1", "role3"]),
+        group_names=set(["group1", "group2", "group3"])
+    )
+    _assert_user_access_prohibited(file_sources, user_context)
+
+    user_context = user_context_fixture(
+        role_names=set(["role1", "role2"]),
+        group_names=set(["group3", "group5"])
+    )
+    _assert_user_access_prohibited(file_sources, user_context)
+
+    user_context = user_context_fixture(
+        role_names=set(["role1", "role3"]),
+        group_names=set(["group1", "group2"])
+    )
+    _assert_user_access_granted(file_sources, user_context)
+
+
 def _assert_user_access_prohibited(file_sources, user_context):
     with pytest.raises(ItemAccessibilityException):
         list_root(file_sources, "gxfiles://test1", recursive=False, user_context=user_context)
