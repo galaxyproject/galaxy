@@ -32,6 +32,7 @@ TEST_DIR = 'tests'
 PACKAGES = [
     'galaxy',
     'galaxy.actions',
+    'galaxy.config',
     'galaxy.files',
     'galaxy.files.sources',
     'galaxy.forms',
