@@ -93,6 +93,8 @@ PACKAGES = [
     'galaxy.webhooks',
     'galaxy.work',
     'galaxy.workflow',
+    'galaxy.workflow.refactor',
+    'galaxy.workflow.reports',
     'galaxy.workflow.resources',
     'galaxy.workflow.schedulers',
 ]
