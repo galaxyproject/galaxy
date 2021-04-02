@@ -88,14 +88,9 @@ def load_app_properties(
     override_prefix = "override_"
     yaml_prefix = "yaml_"
     for key, val in os.environ.items():
-        override = False
         if key.startswith(config_prefix):
             # munch config_prefix
             config_key = key[len(config_prefix):].lower()
-            if config_key.startswith(override_prefix):
-                # munch override_prefix
-                config_key = config_key[len(override_prefix):]
-                override = True
 
             if config_key.startswith(yaml_prefix):
                 # munch yaml_prefix
@@ -106,8 +101,13 @@ def load_app_properties(
                 except yaml.YAMLError as e:
                     raise ConfigurationError(f"Failed to parse {key} as YAML: {e}")
 
-            if override or config_key not in properties:
-                properties[key] = val
+            if config_key.startswith(override_prefix):
+                # munch override_prefix
+                config_key = config_key[len(override_prefix):]
+                properties[config_key] = val
+
+            elif config_key not in properties:
+                properties[config_key] = val
 
     return properties
 
