@@ -2781,7 +2781,7 @@ mapper(model.Job, model.Job.table, properties=dict(
     output_datasets=relation(model.JobToOutputDatasetAssociation, lazy=True),
     output_dataset_collection_instances=relation(model.JobToOutputDatasetCollectionAssociation, lazy=True),
     output_dataset_collections=relation(model.JobToImplicitOutputDatasetCollectionAssociation, lazy=True),
-    post_job_actions=relation(model.PostJobActionAssociation, lazy=False),
+    post_job_actions=relation(model.PostJobActionAssociation),
     input_library_datasets=relation(model.JobToInputLibraryDatasetAssociation),
     output_library_datasets=relation(model.JobToOutputLibraryDatasetAssociation, lazy=True),
     external_output_metadata=relation(model.JobExternalOutputMetadata, lazy=True),
