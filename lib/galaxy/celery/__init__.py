@@ -4,6 +4,7 @@ from functools import lru_cache
 from celery import Celery
 
 from galaxy.config import Configuration
+from galaxy.main_config import find_config
 from galaxy.util.custom_logging import get_logger
 from galaxy.util.properties import load_app_properties
 
@@ -26,6 +27,10 @@ def get_galaxy_app():
 @lru_cache(maxsize=1)
 def get_app_properties():
     config_file = os.environ.get("GALAXY_CONFIG_FILE")
+    if not config_file:
+        galaxy_root_dir = os.environ.get('GALAXY_ROOT_DIR')
+        if galaxy_root_dir:
+            config_file = find_config(config_file, galaxy_root_dir)
     if config_file:
         return load_app_properties(
             config_file=os.path.abspath(config_file),
