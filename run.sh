@@ -23,6 +23,7 @@ then
     . "$GALAXY_LOCAL_ENV_FILE"
 fi
 
+GALAXY_ROOT_DIR="$(pwd)"
 GALAXY_PID=${GALAXY_PID:-galaxy.pid}
 GALAXY_LOG=${GALAXY_LOG:-galaxy.log}
 PID_FILE=$GALAXY_PID
