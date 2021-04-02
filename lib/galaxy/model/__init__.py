@@ -2697,10 +2697,11 @@ class DatasetInstance:
         INVALID = 'invalid'
         OK = 'ok'
 
-    def __init__(self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, tool_version=None, extension=None,
-                 dbkey=None, metadata=None, history=None, dataset=None, deleted=False, designation=None,
-                 parent_id=None, validated_state='unknown', validated_state_message=None, visible=True, create_dataset=False, sa_session=None,
-                 extended_metadata=None, flush=True):
+    def __init__(self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, tool_version=None,
+                 extension=None, dbkey=None, metadata=None, history=None, dataset=None, deleted=False,
+                 designation=None, parent_id=None, validated_state='unknown', validated_state_message=None,
+                 visible=True, create_dataset=False, sa_session=None, extended_metadata=None, flush=True,
+                 creating_job_id=None):
         self.name = name or "Unnamed dataset"
         self.id = id
         self.info = info
@@ -2723,6 +2724,7 @@ class DatasetInstance:
         if not dataset and create_dataset:
             # Had to pass the sqlalchemy session in order to create a new dataset
             dataset = Dataset(state=Dataset.states.NEW)
+            dataset.job_id = creating_job_id
             if flush:
                 sa_session.add(dataset)
                 sa_session.flush()
@@ -3088,6 +3090,7 @@ class DatasetInstance:
 
     @property
     def creating_job(self):
+        # TODO this should work with `return self.dataset.job` (revise failing unit tests)
         creating_job_associations = None
         if self.creating_job_associations:
             creating_job_associations = self.creating_job_associations
