@@ -17,7 +17,7 @@
 
 ## License
 - [x] I agree to license these contributions under [Galaxy's current license](https://github.com/galaxyproject/galaxy/blob/dev/LICENSE.txt).
-- [x] I agree to allow the Galaxy committers to license these and all past contributions to the core galaxy codebase under the [MIT license](https://opensource.org/licenses/MIT). If this condition is an issue, uncheck and just let us know why with an e-mail to galaxy-committers@lists.galaxyproject.org.
+- [x] I agree to allow the Galaxy committers to license these and all my past contributions to the core galaxy codebase under the [MIT license](https://opensource.org/licenses/MIT). If this condition is an issue, uncheck and just let us know why with an e-mail to galaxy-committers@lists.galaxyproject.org.
 
 ## For UI Components
 - [ ] I've included a screenshot of the changes
