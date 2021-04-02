@@ -6,7 +6,7 @@ i=0
 echo "Testing for correct startup:"
 bash run.sh --daemon && \
     while [ "$i" -le $TRIES ]; do
-        curl "$URL" && EXIT_CODE=0 && break
+        curl --max-time 1 "$URL" && EXIT_CODE=0 && break
         sleep 1
         i=$((i + 1))
     done
