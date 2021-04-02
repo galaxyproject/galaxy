@@ -42,6 +42,7 @@ PACKAGES = [
     'galaxy.model.orm',
     'galaxy.model.store',
     'galaxy.model.tool_shed_install',
+    'galaxy.model.view',
     'galaxy.quota',
     'galaxy.security',
 ]
