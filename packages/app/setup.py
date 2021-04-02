@@ -49,6 +49,8 @@ PACKAGES = [
     'galaxy.jobs.runners.util.job_script',
     'galaxy.jobs.splitters',
     'galaxy.managers',
+    # galaxy.model.migrate is in galaxy-data, perhaps the versions should be as well?
+    'galaxy.model.migrate.versions',
     'galaxy.model.tool_shed_install',
     'galaxy.model.tool_shed_install.migrate',
     'galaxy.model.tool_shed_install.migrate.versions',
