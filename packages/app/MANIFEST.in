@@ -1,3 +1,4 @@
 include *.rst *.txt LICENSE
 include galaxy/jobs/runners/util/job_script/*.sh
 include galaxy/model/tool_shed_install/migrate/migrate.cfg
+include galaxy/*.yml
