@@ -85,27 +85,31 @@ def load_app_properties(
         properties.update(kwds)
 
     # update from env
-    override_prefix = "override_"
-    yaml_prefix = "yaml_"
+    override_prefix = "OVERRIDE_"
+    yaml_prefix = "YAML_"
+
+    config_override_prefix = config_prefix + override_prefix
+    config_yaml_prefix = config_prefix + yaml_prefix
+    config_yaml_override_prefix = config_yaml_prefix + override_prefix
     for key, val in os.environ.items():
         if key.startswith(config_prefix):
-            # munch config_prefix
             config_key = key[len(config_prefix):].lower()
-
-            if config_key.startswith(yaml_prefix):
-                # munch yaml_prefix
-                config_key = config_key[len(yaml_prefix):]
+            if key.startswith(config_override_prefix):
+                properties[key[len(config_override_prefix)].lower()] = val
+            elif key.startswith(config_yaml_prefix):
+                config_key = key[len(config_yaml_prefix):].lower()
+                if config_key not in properties:
+                    try:
+                        # Attempt to parse value as yaml to allow passing complex options via env
+                        properties[config_key] = yaml.safe_load(val)
+                    except yaml.YAMLError as e:
+                        raise ConfigurationError(f"Failed to parse {key} as YAML: {e}")
+            elif key.startswith(config_yaml_override_prefix):
                 try:
                     # Attempt to parse value as yaml to allow passing complex options via env
-                    val = yaml.safe_load(val)
+                    properties[key[len(config_yaml_override_prefix):].lower()] = yaml.safe_load(val)
                 except yaml.YAMLError as e:
                     raise ConfigurationError(f"Failed to parse {key} as YAML: {e}")
-
-            if config_key.startswith(override_prefix):
-                # munch override_prefix
-                config_key = config_key[len(override_prefix):]
-                properties[config_key] = val
-
             elif config_key not in properties:
                 properties[config_key] = val
 
