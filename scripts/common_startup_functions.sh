@@ -41,8 +41,9 @@ parse_common_args() {
                 shift
                 ;;
             --daemon|start)
-                circusd_args="$circusd_args --daemon"
+                circusd_args="$circusd_args --daemon --log-output $GALAXY_LOG"
                 gunicorn_args="$gunicorn_args --daemon"
+                GALAXY_DAEMON_LOG="$GALAXY_LOG"
                 add_pid_arg=1
                 add_log_arg=1
                 # --daemonize2 waits until after the application has loaded
@@ -173,6 +174,7 @@ find_server() {
         server_args="$circusctl_args"
     else
         run_server="circusd"
+        export GALAXY_DAEMON_LOG=$GALAXY_DAEMON_LOG
         server_args="$CIRCUS_CONFIG_FILE $circusd_args"
     fi
 }
