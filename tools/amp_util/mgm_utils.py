@@ -78,7 +78,7 @@ def cleanup_err_file(file):
 # Serialize the given object and write it to the given output_file
 def write_json_file(object, output_file):
     with open(output_file, 'w') as file:
-        json.dump(object, file, default = lambda x: x.__dict__)
+        json.dump(object, file, indent = 4, default = lambda x: x.__dict__)
         
 # Get the configuration file
 def get_config(root_dir):

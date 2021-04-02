@@ -17,7 +17,7 @@ class Segmentation:
 		# Format the label for comparison purposes
 		tmp_label = SegmentationSegment.formatLabel(label)
 
-		# Get the last segment if we have at least on in the list
+		# Get the last segment if we have at least one in the list
 		last_segment = None
 		if len(self.segments) >= 1:
 			last_segment = self.segments[-1]
