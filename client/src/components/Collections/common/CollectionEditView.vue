@@ -26,9 +26,7 @@
             <b-tab>
                 <template v-slot:title> <i class="fa fa-table"></i>{{ l(" Database/Build") }}</template>
                 <div class="alert alert-secondary" role="alert">
-                    <div class="float-left">
-                        Change database/genome of all elements in collection
-                    </div>
+                    <div class="float-left">Change database/genome of all elements in collection</div>
                     <div class="text-right">
                         <button
                             class="save-collection-edit btn btn-primary"
@@ -56,7 +54,6 @@
                         </div>
                     </template> -->
                 </multiselect>
-                <i>original input: {{ databaseKeyFromElements }}</i>
             </b-tab>
             <b-tab>
                 <template v-slot:title> <i class="fa fa-gear"></i>{{ l(" Convert") }}</template>
@@ -65,9 +62,7 @@
             <b-tab>
                 <template v-slot:title> <i class="fa fa-database"></i>{{ l(" Datatype") }}</template>
                 <div class="alert alert-secondary" role="alert">
-                    <div class="float-left">
-                        Change datatype of all elements in collection
-                    </div>
+                    <div class="float-left">Change datatype of all elements in collection</div>
                     <div class="text-right">
                         <button
                             class="save-collection-edit btn btn-primary"
@@ -213,6 +208,7 @@ export default {
                     this.collection_data = response.data;
                     this.getDatabaseKeyFromElements();
                     this.getExtensionFromElements();
+                    console.log(this.collection_data);
                 });
 
             //TODO error handling
@@ -222,6 +218,8 @@ export default {
                 .get(prependPath("/api/dataset_collections/" + this.collection_id + "/attributes"))
                 .then((response) => {
                     this.attributes_data = response.data;
+                    this.getDatabaseKeyFromElements();
+                    this.getExtensionFromElements();
                 });
             //TODO error handling
         },
@@ -237,14 +235,19 @@ export default {
         },
         clickedSave: function (attribute, newValue) {
             const url = prependPath("/api/dataset_collections/" + this.collection_id);
-            const data = { attribute: attribute, newValue: newValue.id };
+            let data = {};
+            if (attribute == "dbkey") {
+                data = { dbkey: newValue.id };
+            } else if (attribute == "file_ext") {
+                data = { file_ext: newValue.id };
+            }
+
             axios
                 .put(url, data)
                 .then((response) => {
                     this.apiCallToGetData();
                 })
                 .catch(this.handleError);
-            // hit put /api/dataset_collections/this.collection_id
         },
         handleError: function (err) {
             this.errorMessage = errorMessageAsString(err, "History import failed.");

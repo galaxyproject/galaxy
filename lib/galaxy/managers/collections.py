@@ -299,6 +299,7 @@ class DatasetCollectionManager:
             copy_kwds["element_destination"] = parent  # e.g. a history
         if dataset_instance_attributes is not None:
             copy_kwds["dataset_instance_attributes"] = dataset_instance_attributes
+            log.debug("************************************" + str(dataset_instance_attributes))
         new_hdca = source_hdca.copy(**copy_kwds)
         new_hdca.copy_tags_from(target_user=trans.get_user(), source=source_hdca)
         if not copy_elements:

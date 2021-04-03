@@ -12,6 +12,7 @@ from galaxy.managers.collections_util import (
 )
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.hdcas import HDCAManager
+from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.web import expose_api
 from galaxy.webapps.base.controller import UsesLibraryMixinItems
@@ -26,6 +27,7 @@ class DatasetCollectionsController(
 ):
     history_manager: HistoryManager = depends(HistoryManager)
     hdca_manager: HDCAManager = depends(HDCAManager)
+    collection_manager: DatasetCollectionManager = depends(DatasetCollectionManager)
 
     @expose_api
     def index(self, trans, **kwd):
@@ -66,25 +68,38 @@ class DatasetCollectionsController(
         return dictify_dataset_collection_instance(dataset_collection_instance,
                                                    security=trans.security, parent=create_params["parent"])
 
+    # @expose_api
+    # def update(self, trans: ProvidesHistoryContext, payload: dict, id, instance_type='history'):
+    #     """
+    #     Iterate over all datasets of a collection and update all attributes listed in attributes.
+    #     e.g attributes = {'dbkey': 'dm3', 'file_ext' = 'txt'}
+
+    #     * PUT /api/dataset_collections/{hdca_id}:
+    #         create a new dataset collection instance. 
+    #     """
+
+    #     dataset_collection_instance = self.__service.get_dataset_collection_instance(
+    #         trans,
+    #         id=id,
+    #         instance_type=instance_type,
+    #         check_ownership=True
+    #     )
+    #     # TODO: make sure attributes are valid
+    #     self.hdca_manager.update_attributes(dataset_collection_instance, payload)
+    #     trans.sa_session.flush()
+
     @expose_api
-    def update(self, trans: ProvidesHistoryContext, payload: dict, id, instance_type='history'):
+    def update(self, trans: ProvidesHistoryContext, payload: dict, id):
         """
-        Iterate over all datasets of a collection and update all attributes listed in attributes.
+        Iterate over all datasets of a collection and copy datasets with new attributes to a new collection.
         e.g attributes = {'dbkey': 'dm3', 'file_ext' = 'txt'}
 
         * PUT /api/dataset_collections/{hdca_id}:
             create a new dataset collection instance. 
         """
 
-        dataset_collection_instance = self.__service.get_dataset_collection_instance(
-            trans,
-            id=id,
-            instance_type=instance_type,
-            check_ownership=True
-        )
         # TODO: make sure attributes are valid
-        log.debug(str(payload) + '************update in dataset_collections***************')
-        self.hdca_manager.update_attributes(dataset_collection_instance, payload)
+        self.collection_manager.copy(trans, trans.history, "hdca", id, copy_elements=True, dataset_instance_attributes=payload)
         trans.sa_session.flush()
 
     @expose_api

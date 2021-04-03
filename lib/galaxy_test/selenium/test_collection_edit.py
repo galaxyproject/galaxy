@@ -19,7 +19,7 @@ class CollectionEditTestCase(SeleniumTestCase):
         self.check_current_dbkey_value(dbkeyValue)
         dbkeyNew="hg17"
         self.change_dbkey_value_and_click_submit(dbkeyValue,dbkeyNew)
-        # self.history_panel.history_panel_wait_for_hid_ok(3)
+        self.history_panel_wait_for_hid_ok(4)
         self.open_collection_edit_view()
         self.navigate_to_database_tab()
         self.check_current_dbkey_value(dbkeyNew)
@@ -56,3 +56,4 @@ class CollectionEditTestCase(SeleniumTestCase):
         self.driver.find_element_by_css_selector("input.multiselect__input").send_keys(dbkeyNew)
         self.driver.find_element_by_css_selector("input.multiselect__input").send_keys(Keys.ENTER)
         self.components.edit_collection_attributes.save_btn.wait_for_and_click()
+        
