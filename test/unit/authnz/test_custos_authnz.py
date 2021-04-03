@@ -334,10 +334,13 @@ class CustosAuthnzTestCase(unittest.TestCase):
         self.test_nonce_hash = self.test_nonce_hash + "Z"
 
         # self.custos_authnz._fetch_token = fetch_token
-        with self.assertRaises(Exception):
-            self.custos_authnz.callback(state_token="xxx",
-                                      authz_code=self.test_code, trans=self.trans,
-                                      login_redirect_url="http://localhost:8000/")
+        with self.assertRaisesRegex(Exception, "^Nonce mismatch!$"):
+            self.custos_authnz.callback(
+                state_token="xxx",
+                authz_code=self.test_code,
+                trans=self.trans,
+                login_redirect_url="http://localhost:8000/"
+            )
         self.assertTrue(self._fetch_token_called)
         self.assertFalse(self._get_userinfo_called)
 

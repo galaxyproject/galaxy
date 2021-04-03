@@ -393,7 +393,7 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
         assert '@' not in command
 
     def test_recursive_token(self):
-        with self.assertRaises(Exception):
+        with self.assertRaisesRegex(Exception, "^Token '@NESTED_TOKEN@' cannot contain itself$"):
             self._get_tool_source(source_contents=TOOL_WITH_RECURSIVE_TOKEN)
 
     def test_creator(self):
