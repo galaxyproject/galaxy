@@ -303,10 +303,7 @@ class ToolShedRepositoryCache:
         try:
             session = self.app.install_model._SessionLocal()
             self.repositories = session.query(ToolShedRepository).options(
-                defer(ToolShedRepository.metadata),
-                joinedload('tool_dependencies').subqueryload('tool_shed_repository').options(
-                    defer(ToolShedRepository.metadata)
-                ),
+                defer(ToolShedRepository.metadata), joinedload('tool_dependencies')
             ).all()
             repos_by_tuple = defaultdict(list)
             for repository in self.repositories + self.local_repositories:
