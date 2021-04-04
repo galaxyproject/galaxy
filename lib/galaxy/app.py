@@ -153,6 +153,12 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self._register_singleton(MinimalManagerApp, self)
         self.execution_timer_factory = self._register_singleton(ExecutionTimerFactory, ExecutionTimerFactory(self.config))
         self.configure_fluent_log()
+        self.application_stack = self._register_singleton(ApplicationStack, application_stack_instance(app=self))
+        # Initialize job metrics manager, needs to be in place before
+        # config so per-destination modifications can be made.
+        self.job_metrics = self._register_singleton(JobMetrics, JobMetrics(self.config.job_metrics_config_file, app=self))
+        # Initialize the job management configuration
+        self.job_config = self._register_singleton(jobs.JobConfiguration)
 
         # Tag handler
         self.tag_handler = self._register_singleton(GalaxyTagHandler)
@@ -167,6 +173,8 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self.library_folder_manager = self._register_singleton(FolderManager)
         self.library_manager = self._register_singleton(LibraryManager)
         self.role_manager = self._register_singleton(RoleManager)
+        from galaxy.jobs.manager import JobManager
+        self.job_manager = self._register_singleton(JobManager)
 
         # ConfiguredFileSources
         self.file_sources = self._register_singleton(ConfiguredFileSources, ConfiguredFileSources.from_app_config(self.config))
@@ -209,7 +217,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         ]
         self._register_singleton(StructuredApp, self)
         # A lot of postfork initialization depends on the server name, ensure it is set immediately after forking before other postfork functions
-        self.application_stack = self._register_singleton(ApplicationStack, application_stack_instance(app=self))
         self.application_stack.register_postfork_function(self.application_stack.set_postfork_server_name, self)
         self.config.reload_sanitize_allowlist(explicit='sanitize_allowlist_file' in kwargs)
         self.amqp_internal_connection_obj = galaxy.queues.connection_from_config(self.config)
@@ -234,15 +241,8 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         # Data providers registry.
         self.data_provider_registry = self._register_singleton(DataProviderRegistry)
 
-        # Initialize job metrics manager, needs to be in place before
-        # config so per-destination modifications can be made.
-        self.job_metrics = self._register_singleton(JobMetrics, JobMetrics(self.config.job_metrics_config_file, app=self))
-
         # Initialize error report plugins.
         self.error_reports = self._register_singleton(ErrorReports, ErrorReports(self.config.error_report_file, app=self))
-
-        # Initialize the job management configuration
-        self.job_config = self._register_singleton(jobs.JobConfiguration)
 
         # Setup a Tool Cache
         self.tool_cache = self._register_singleton(ToolCache)
@@ -305,8 +305,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
                                                          self.config.oidc_config_file,
                                                          self.config.oidc_backends_config_file)
         # Start the job manager
-        from galaxy.jobs import manager
-        self.job_manager = self._register_singleton(manager.JobManager)
         self.application_stack.register_postfork_function(self.job_manager.start)
         self.proxy_manager = ProxyManager(self.config)
 
