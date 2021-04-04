@@ -3,7 +3,10 @@ import os
 import time
 from typing import Set
 
-from galaxy.exceptions import ItemAccessibilityException
+from galaxy.exceptions import (
+    ConfigurationError,
+    ItemAccessibilityException,
+)
 from galaxy.util.bool_expressions import (
     BooleanExpressionEvaluator,
     TokenContainedEvaluator,
@@ -98,6 +101,7 @@ class BaseFilesSource(FilesSource):
         self.writable = kwd.pop("writable", DEFAULT_WRITABLE)
         self.requires_roles = kwd.pop("requires_roles", None)
         self.requires_groups = kwd.pop("requires_groups", None)
+        self._validate_security_rules()
         # If coming from to_dict, strip API helper values
         kwd.pop("uri_root", None)
         kwd.pop("type", None)
@@ -190,6 +194,18 @@ class BaseFilesSource(FilesSource):
         token_evaluator = TokenContainedEvaluator(user_credentials)
         evaluator = BooleanExpressionEvaluator(token_evaluator)
         return evaluator.evaluate_expression(rule_expression)
+
+    def _validate_security_rules(self) -> None:
+        """Checks if the security rules defined in the plugin configuration are valid boolean expressions or raises
+        a ConfigurationError exception otherwise."""
+
+        def _get_error_msg_for(rule_name: str) -> str:
+            return f"Invalid boolean expression for '{rule_name}' in {self.label} file source plugin configuration."
+
+        if self.requires_roles and not BooleanExpressionEvaluator.is_valid_expression(self.requires_roles):
+            raise ConfigurationError(_get_error_msg_for("requires_roles"))
+        if self.requires_groups and not BooleanExpressionEvaluator.is_valid_expression(self.requires_groups):
+            raise ConfigurationError(_get_error_msg_for("requires_groups"))
 
 
 def uri_join(*args):

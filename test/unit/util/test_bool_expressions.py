@@ -14,6 +14,27 @@ TOKEN_FORMAT = DEFAULT_TOKEN_FORMAT
 # of the *valid tokens* (those that match the TOKEN_FORMAT) will be evaluated to False.
 TOKENS_THAT_ARE_TRUE = {"T1", "token_2"}
 
+VALID_EXPRESSIONS_TESTS = [
+    ("T1", True),
+    ("token_2", True),
+    ("T3", False),
+    ("valid_token", False),
+    ("not T3", True),
+    ("NOT token_2", False),
+    ("T1 and not T3", True),
+    ("NOT T1 AND token_2", False),
+    ("not T3 or (T3 AND token_2)", True),
+    ("T1 and (T3 OR token_2)", True),
+    ("(T3 OR T1) and not (T3 OR valid_token)", True),
+]
+
+INVALID_EXPRESSIONS_TESTS = [
+    "",
+    "23 45",
+    "'some quoted str' and not T1",
+    "invalid expression",
+]
+
 
 @pytest.fixture(scope='module')
 def contained_evaluator() -> BooleanExpressionEvaluator:
@@ -26,30 +47,25 @@ def contained_evaluator() -> BooleanExpressionEvaluator:
     return evaluator
 
 
-@pytest.mark.parametrize('expr, expected', [
-    ("T1", True),
-    ("token_2", True),
-    ("T3", False),
-    ("valid_token", False),
-    ("not T3", True),
-    ("NOT token_2", False),
-    ("T1 and not T3", True),
-    ("NOT T1 AND token_2", False),
-    ("not T3 or (T3 AND token_2)", True),
-    ("T1 and (T3 OR token_2)", True),
-    ("(T3 OR T1) and not (T3 OR valid_token)", True),
-])
+@pytest.mark.parametrize('expr, expected', VALID_EXPRESSIONS_TESTS)
 def test_expression_evaluates_as_expected(expr: str, expected: bool, contained_evaluator: BooleanExpressionEvaluator):
     actual = contained_evaluator.evaluate_expression(expr)
     assert actual == expected
 
 
-@pytest.mark.parametrize('expr', [
-    "",
-    "23 45",
-    "'some quoted str' and not T1",
-    "invalid expression",
-])
+@pytest.mark.parametrize('expr', INVALID_EXPRESSIONS_TESTS)
 def test_invalid_expression_raises_exception(expr: str, contained_evaluator: BooleanExpressionEvaluator):
     with pytest.raises(Exception):
         contained_evaluator.evaluate_expression(expr)
+
+
+@pytest.mark.parametrize('expr, _', VALID_EXPRESSIONS_TESTS)
+def test_is_valid_expression_return_true_when_valid(expr: str, _: bool):
+    result = BooleanExpressionEvaluator.is_valid_expression(expr)
+    assert result is True
+
+
+@pytest.mark.parametrize('expr', INVALID_EXPRESSIONS_TESTS)
+def test_is_valid_expression_return_false_when_invalid(expr: str):
+    result = BooleanExpressionEvaluator.is_valid_expression(expr)
+    assert result is False

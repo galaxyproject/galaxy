@@ -150,6 +150,17 @@ class BooleanExpressionEvaluator:
             log.error(f'BooleanExpressionEvaluator unable to evaluate expression => {expr}', exc_info=e)
             raise e
 
+    @classmethod
+    def is_valid_expression(cls, expr: str) -> bool:
+        """Tries to evaluate the given boolean expression and returns True if it is valid or
+        False if it has syntax or gramatical errors."""
+        try:
+            evaluator = BooleanExpressionEvaluator(ValidationOnlyTokenEvaluator())
+            evaluator.evaluate_expression(expr)
+            return True
+        except ParseException:
+            return False
+
 
 class TokenContainedEvaluator(TokenEvaluator):
     """Implements the TokenEvaluator interface to determine if a token is contained
@@ -165,3 +176,12 @@ class TokenContainedEvaluator(TokenEvaluator):
 
     def evaluate(self, token: str) -> bool:
         return token in self.tokens
+
+
+class ValidationOnlyTokenEvaluator(TokenEvaluator):
+    """Simple TokenEvaluator that always evaluates to True for valid tokens.
+
+    This is only useful for validation purposes, do NOT use it for real expression evaluations."""
+
+    def evaluate(self, token: str) -> bool:
+        return True
