@@ -15,6 +15,4 @@ pysam
 social-auth-core[openidconnect]==3.3.0
 SQLAlchemy>=1.4.5
 sqlalchemy-migrate
-sqlalchemy-utils
-tifffile<=2020.9.3  # Last version compatible with python 3.6
 WebOb
