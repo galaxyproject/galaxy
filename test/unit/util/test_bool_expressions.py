@@ -33,6 +33,11 @@ INVALID_EXPRESSIONS_TESTS = [
     "23 45",
     "'some quoted str' and not T1",
     "invalid expression",
+    "T1 and and T2",
+    "T1 not and T3",
+    "(T1 and T3",
+    "T1 or T3)",
+    "T1 and or T2",
 ]
 
 
