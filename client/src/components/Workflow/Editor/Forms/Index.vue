@@ -2,11 +2,17 @@
     <div v-if="node">
         ToolForm Content
         {{ node.id }}
+        <FormDefault />
     </div>
 </template>
 
 <script>
+import FormDefault from "./FormDefault";
+
 export default {
+    components: {
+        FormDefault,
+    },
     props: {
         datatypes: {
             type: Array,
@@ -16,14 +22,19 @@ export default {
             type: Function,
             required: true,
         },
-        node: {
-            type: Object,
-            required: false,
+        getNode: {
+            type: Function,
+            required: true,
         },
     },
     data() {
         return {
         };
+    },
+    computed: {
+        node() {
+            return this.getNode();
+        },
     },
     methods: {
     },

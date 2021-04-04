@@ -150,7 +150,7 @@
                                 <div id="right-content" class="right-content" />
                                 <WorkflowForm
                                     :get-manager="getManager"
-                                    :node="activeNode"
+                                    :get-node="getNode"
                                     :datatypes="datatypes"
                                 />
                             </div>
@@ -599,6 +599,9 @@ export default {
         },
         getCanvasManager() {
             return this.canvasManager;
+        },
+        getNode() {
+            return this.activeNode;
         },
         onInsertedStateMessages(insertedStateMessages) {
             this.insertedStateMessages = insertedStateMessages;
