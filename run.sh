@@ -55,6 +55,7 @@ if [ "$INITIALIZE_TOOL_DEPENDENCIES" -eq 1 ]; then
 fi
 
 # Build the UWSGI module needed for the config
+mkdir logs
 pushd metrics
 make || (
     echo "Cannot build the uwsg system_metrics.so file"

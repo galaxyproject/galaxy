@@ -97,17 +97,17 @@ uwsgi:
   enable-threads: true
 
   # enable API performance logging  
-  #enable-metrics: true
-  #dlopen: metrics/system_metrics.so
-  #metric: name=system_load,collector=func,arg1=load_average,freq=3
-  #metric: name=system_swap,collector=func,arg1=swap,freq=3
-  #metric: name=system_ram,collector=func,arg1=memory,freq=3
-  #metric: name=cpu_user,collector=func,arg1=cpu_user,freq=3
-  #metric: name=cpu_system,collector=func,arg1=cpu_system,freq=3
-  #metric: name=cpu_iowait,collector=func,arg1=cpu_iowait,freq=3
-  #metric: name=cpu_idle,collector=func,arg1=cpu_idle,freq=3
-  #req-logger: file:logs/requests.log
-  #logformat: 0%(time)|%(wid)|%(core)|%(secs)|%(metric.system_load)|%(metric.system_ram)|%(metric.system_swap)|%(metric.cpu_user)|%(metric.cpu_system)|%(metric.cpu_idle)|%(metric.cpu_iowait)|%(addr)|%(var.X-FORWARDED-FOR)|%(method)|%(uri)
+  enable-metrics: true
+  dlopen: metrics/system_metrics.so
+  metric: name=system_load,collector=func,arg1=load_average,freq=3
+  metric: name=system_swap,collector=func,arg1=swap,freq=3
+  metric: name=system_ram,collector=func,arg1=memory,freq=3
+  metric: name=cpu_user,collector=func,arg1=cpu_user,freq=3
+  metric: name=cpu_system,collector=func,arg1=cpu_system,freq=3
+  metric: name=cpu_iowait,collector=func,arg1=cpu_iowait,freq=3
+  metric: name=cpu_idle,collector=func,arg1=cpu_idle,freq=3
+  req-logger: file:logs/requests.log
+  logformat: 0%(time)|%(wid)|%(core)|%(secs)|%(metric.system_load)|%(metric.system_ram)|%(metric.system_swap)|%(metric.cpu_user)|%(metric.cpu_system)|%(metric.cpu_idle)|%(metric.cpu_iowait)|%(addr)|%(var.X-FORWARDED-FOR)|%(method)|%(uri)
 
 galaxy:
 
