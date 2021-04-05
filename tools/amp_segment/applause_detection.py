@@ -16,7 +16,7 @@ def main():
     print("Input audio: " + input_audio)
     
     # use a tmp directory accessible to the singularity for input/output
-    with tempfile.TemporaryDirectory() as tmpdir:
+    with tempfile.TemporaryDirectory(dir = "/tmp") as tmpdir:
         # copy the input audio file to the tmp directory
         filename = os.path.basename(input_audio)
         shutil.copy(input_audio, f"{tmpdir}/{filename}")
