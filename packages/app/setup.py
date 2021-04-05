@@ -80,7 +80,6 @@ PACKAGES = [
     'galaxy.tool_shed.metadata',
     'galaxy.tool_shed.tools',
     'galaxy.tours',
-    'galaxy.util.tool_shed',
     'galaxy.visualization',
     'galaxy.visualization.data_providers',
     'galaxy.visualization.data_providers.phyloviz',
