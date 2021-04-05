@@ -168,7 +168,7 @@ class BaseAppConfiguration:
                     if value.startswith(prefix):
                         value = f'{new_dialect}{value[offset:]}'
                         kwargs[key] = value
-                        log.warning('Postgresql database URLs of the form "postgres://" have been '
+                        log.warning('PostgreSQL database URLs of the form "postgres://" have been '
                             'deprecated. Please use "postgresql://".')
 
     def is_set(self, key):
