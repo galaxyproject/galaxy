@@ -31,6 +31,7 @@ TEST_DIR = 'tests'
 PACKAGES = [
     'galaxy',
     'galaxy.datatypes',
+    'galaxy.datatypes.converters',
     'galaxy.datatypes.dataproviders',
     'galaxy.datatypes.display_applications',
     'galaxy.datatypes.util',

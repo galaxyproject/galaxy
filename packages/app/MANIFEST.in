@@ -1,6 +1,4 @@
 include *.rst *.txt LICENSE
 include galaxy/*.yml
 include galaxy/config/sample/*.sample
-include galaxy/datatypes/set_metadata_tool.xml
-include galaxy/datatypes/converters/*.xml
 include galaxy/jobs/runners/util/job_script/*.sh
