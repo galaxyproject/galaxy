@@ -11,7 +11,7 @@ import tempfile
 APPLAUSE_DETECTION = "/srv/amp/applause-detection/applause-detection.sif"
 
 def main():
-    (input_audio, amp_segments, min_segment_duration) = sys.argv[1:4]
+    (input_audio, min_segment_duration, amp_segments) = sys.argv[1:4]
     print("Current directory: " + os.getcwd())
     print("Input audio: " + input_audio)
     
