@@ -4,7 +4,7 @@
 		<requirement type="package" version="3.8">python</requirement>
     </requirements>
   <command detect_errors="exit_code">
-    '$__tool_directory__/remove_silence_music_speech.py' '$original_audio' '$amp_segments' 'speech' '$music_audio' '$amp_kept_segments'
+    '$__tool_directory__/remove_silence_music_speech.py' '$original_audio' '$amp_segments' 'speech' '$music_audio' '$kept_segments'
   </command>
   <inputs>
     <!-- should be wave data type -->
