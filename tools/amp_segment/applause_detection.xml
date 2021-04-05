@@ -17,7 +17,7 @@
   <inputs>
     <!-- should be wave data type -->
     <param name="input_audio" type="data" format="wav" label="Input Audio" help="Input audio file in wav format"/>
-	<param name="min_segment_duration" type="float" label="Minimum Segment Duration" value="1000" min="0.0" help="Minimum segment duration in miliseconds"/>
+	<param name="min_segment_duration" type="integer" label="Minimum Segment Duration" value="1000" min="0" help="Minimum segment duration in miliseconds"/>
   </inputs>
   <outputs>
     <data name="amp_segments" format="segment" label="AMP Segments of Noise/Non-noise"/>
