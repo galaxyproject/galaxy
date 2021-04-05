@@ -20,13 +20,13 @@ def main():
         # copy the input audio file to the tmp directory
         filename = os.path.basename(input_audio)
         shutil.copy(input_audio, f"{tmpdir}/{filename}")
-        print("Temporary directory " + tmpdir + " after input file copied:" + os.listdir(tmpdir))
+        print("Temporary directory " + tmpdir + " after input file copied: " + str(os.listdir(tmpdir)))
         
         # run singularity
         subprocess.run([APPLAUSE_DETECTION, tmpdir, min_segment_duration], check=True)
 
         # copy the corresponding temporary output file to the output AMP segments JSON
-        print("Temporary directory " + tmpdir + " after output file generated:" + os.listdir(tmpdir))       
+        print("Temporary directory " + tmpdir + " after output file generated: " + str(os.listdir(tmpdir)))   
         shutil.copy(f"{tmpdir}/{filename}.json", amp_segments)
         print("Output AMP Segment: " + amp_segments)
     exit(0)
