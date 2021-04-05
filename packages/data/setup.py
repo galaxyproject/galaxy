@@ -53,6 +53,7 @@ PACKAGE_DATA = {
     # Be sure to update MANIFEST.in for source dist.
     'galaxy': [
         'datatypes/test/*',
+        'config/datatypes_conf.xml.sample'
     ],
 }
 PACKAGE_DIR = {
