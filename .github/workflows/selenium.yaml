@@ -15,7 +15,7 @@ jobs:
         chunk: [0, 1, 2]
     services:
       postgres:
-        image: postgres:11
+        image: postgres:13
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
