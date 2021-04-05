@@ -125,7 +125,7 @@ class BaseAppConfiguration:
     listify_options: Set[str] = set()  # values for these options are processed as lists of values
 
     def __init__(self, **kwargs):
-        self._process_renamed_options(kwargs)
+        self._preprocess_kwargs(kwargs)
         self._kwargs = kwargs  # Save these as a record of explicitly set options
         self.config_dict = kwargs
         self.root = find_root(kwargs)
@@ -138,6 +138,10 @@ class BaseAppConfiguration:
         self._resolve_paths()  # Overwrite attribute values with resolved paths
         self._postprocess_paths_to_resolve()  # Any steps that need to happen after paths are resolved
 
+    def _preprocess_kwargs(self, kwargs):
+        self._process_renamed_options(kwargs)
+        self._fix_postgresql_dburl(kwargs)
+
     def _process_renamed_options(self, kwargs):
         """Update kwargs to set any unset renamed options to values of old-named options, if set.
 
@@ -147,6 +151,25 @@ class BaseAppConfiguration:
             for old, new in self.renamed_options.items():
                 if old in kwargs and new not in kwargs:
                     kwargs[new] = kwargs[old]
+
+    def _fix_postgresql_dburl(self, kwargs):
+        """
+        Fix deprecated database URLs (postgres... >> postgresql...)
+        https://docs.sqlalchemy.org/en/14/changelog/changelog_14.html#change-3687655465c25a39b968b4f5f6e9170b
+        """
+        old_dialect, new_dialect = 'postgres', 'postgresql'
+        old_prefixes = (f'{old_dialect}:', f'{old_dialect}+')  # check for postgres://foo and postgres+driver//foo
+        offset = len(old_dialect)
+        keys = ('database_connection', 'install_database_connection')
+        for key in keys:
+            if key in kwargs:
+                value = kwargs[key]
+                for prefix in old_prefixes:
+                    if value.startswith(prefix):
+                        value = f'{new_dialect}{value[offset:]}'
+                        kwargs[key] = value
+                        log.warning('Postgresql database URLs of the form "postgres://" have been '
+                            'deprecated. Please use "postgresql://".')
 
     def is_set(self, key):
         """Check if a configuration option has been explicitly set."""
