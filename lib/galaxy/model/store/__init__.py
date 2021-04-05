@@ -772,7 +772,8 @@ class ObjectImportTracker:
 
 
 def get_import_model_store_for_directory(archive_dir, **kwd):
-    assert os.path.isdir(archive_dir)
+    if not os.path.isdir(archive_dir):
+        raise Exception(f"Could not find import model store for directory [{archive_dir}] (full path [{os.path.abspath(archive_dir)}])")
     if os.path.exists(os.path.join(archive_dir, ATTRS_FILENAME_EXPORT)):
         return DirectoryImportModelStoreLatest(archive_dir, **kwd)
     else:
