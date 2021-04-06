@@ -554,7 +554,11 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self._process_config(kwargs)
 
     def _load_schema(self):
-        return AppSchema(GALAXY_CONFIG_SCHEMA_PATH, GALAXY_APP_NAME)
+        # Schemas are symlinked to the root of the galaxy-app package
+        config_schema_path = os.path.join(os.path.dirname(__file__), os.pardir, 'config_schema.yml')
+        if os.path.exists(GALAXY_CONFIG_SCHEMA_PATH):
+            config_schema_path = GALAXY_CONFIG_SCHEMA_PATH
+        return AppSchema(config_schema_path, GALAXY_APP_NAME)
 
     def _override_tempdir(self, kwargs):
         if string_as_bool(kwargs.get("override_tempdir", "True")):
