@@ -59,10 +59,11 @@ preferences:
               required: False
               options:
                   - [Navigator default, auto]
-                  - [Chinese, zh]
+                  - [中文, zh]
                   - [English, en]
-                  - [French, fr]
-                  - [Japanese, ja]
+                  - [Español, es]
+                  - [Français, fr]
+                  - [日本語, ja]
 
     # Used in file_sources_conf.yml
     dropbox:
