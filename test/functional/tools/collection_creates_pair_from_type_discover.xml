@@ -5,6 +5,14 @@
   </command>
   <inputs>
     <param name="input1" type="data" label="Input" help="Input to be split." />
+    <conditional name="conditional_name">
+      <param name="cond_selector" type="select" label="Select">
+        <option value="blah" selected="true">Blah</option>
+      </param>
+      <when value="blah">
+        <param name="input_collection" type="data_collection" collection_type="list" label="input_collection"/>
+      </when>
+    </conditional>
   </inputs>
   <outputs>
     <!-- test that format from format_source is used -->
@@ -15,10 +23,19 @@
     <collection name="paired_output_discoveredext" type="list" label="Split Pair" format_source="input1">
       <discover_datasets pattern="__name_and_ext__" visible="false" />
     </collection>
-  </outputs>
+    <!-- test that format from format_source works for refered collections -->
+    <collection name="paired_output_fromcollection" type="list" label="Split Pair" format_source="input_collection">
+      <discover_datasets pattern="__designation__" visible="false" />
+    </collection>  </outputs>
   <tests>
     <test>
       <param name="input1" value="simple_lines_interleaved.txt" ftype="txt" />
+      <param name="input_collection">
+        <collection type="list">
+          <element name="1" value="simple_lines_interleaved.txt" ftype="txt" />
+          <element name="2" value="simple_lines_interleaved.txt" ftype="txt" />
+        </collection>
+      </param>
       <output_collection name="paired_output" type="list">
         <element name="A.fastq" ftype="txt">
           <assert_contents>
@@ -38,6 +55,18 @@
           </assert_contents>
         </element>
         <element name="B" ftype="fastq">
+          <assert_contents>
+            <has_text_matching expression="^This is a different line of text.\nThis is a different line of text.\n$" />
+          </assert_contents>
+        </element>
+      </output_collection>
+      <output_collection name="paired_output_fromcollection" type="list">
+        <element name="A.fastq" ftype="txt">
+          <assert_contents>
+            <has_text_matching expression="^This is a line of text.\nThis is a line of text.\n$" />
+          </assert_contents>
+        </element>
+        <element name="B.fastq" ftype="txt">
           <assert_contents>
             <has_text_matching expression="^This is a different line of text.\nThis is a different line of text.\n$" />
           </assert_contents>

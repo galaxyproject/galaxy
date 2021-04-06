@@ -1934,6 +1934,7 @@ class MinimalJobWrapper(HasResourceParameters):
 
         output_dataset_associations = job.output_datasets + job.output_library_datasets
         inp_data, out_data, out_collections = job.io_dicts()
+        log.error(f"inp_data {inp_data}")
 
         if not extended_metadata:
             # importing metadata will discover outputs if extended metadata

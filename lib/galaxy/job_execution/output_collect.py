@@ -103,8 +103,46 @@ class MetadataSourceProvider(AbstractMetadataSourceProvider):
         self._inp_data = inp_data
 
     def get_metadata_source(self, input_name):
+        log.error(f"MetadataSourceProvider.get_metadata_source self._inp_data {self._inp_data}")
+        log.error(f"MetadataSourceProvider.get_metadata_source input_name {input_name}")
         return self._inp_data[input_name]
 
+
+def evaluate_source(source, output_collection_def, metadata_source_provider):
+    log.error(f"evaluate_format_source output_collection_def {output_collection_def}")
+    log.error(f"evaluate_format_source metadata_source_provider {metadata_source_provider}")
+    
+    ext = None
+    source_name = getattr(output_collection_def, source)
+    if source_name is None:
+        return None
+    source = metadata_source_provider.get_metadata_source(source_name)
+    return source.ext    
+
+    # if format_source is not None and format_source in input_datasets:
+    #     try:
+    #         input_dataset = input_datasets[output.format_source]
+    #         input_extension = input_dataset.ext
+    #         ext = input_extension
+    #     except Exception:
+    #         pass
+    # elif format_source is not None:
+    #     if re.match(r"^[^\[\]]*\[[^\[\]]*\]$", format_source):
+    #         collection_name, element_index = format_source[0:-1].split("[")
+    #         # Treat as json to interpret "forward" vs 0 with type
+    #         # Make it feel more like Python, single quote better in XML also.
+    #         element_index = element_index.replace("'", '"')
+    #         element_index = json.loads(element_index)
+
+    #         if collection_name in input_dataset_collections:
+    #             try:
+    #                 input_collection = input_dataset_collections[collection_name][0][0]
+    #                 input_dataset = input_collection.collection[element_index].element_object
+    #                 input_extension = input_dataset.ext
+    #                 ext = input_extension
+    #             except Exception as e:
+    #                 log.debug("Exception while trying to determine format_source: %s", e)
+    # return None
 
 def collect_dynamic_outputs(
     job_context,
@@ -165,6 +203,9 @@ def collect_dynamic_outputs(
         if not output_collection_def.dynamic_structure:
             continue
 
+        default_ext = evaluate_source("format_source", output_collection_def, job_context.metadata_source_provider)
+        log.error(f"collect_dynamic_outputs default_ext {default_ext}")
+
         # Could be HDCA for normal jobs or a DC for mapping
         # jobs.
         if hasattr(has_collection, "collection"):
@@ -188,7 +229,7 @@ def collect_dynamic_outputs(
                 filenames,
                 name=output_collection_def.name,
                 metadata_source_name=output_collection_def.metadata_source,
-                format_source_name=output_collection_def.format_source,
+                default_format=default_ext,
                 final_job_state=job_context.final_job_state,
                 change_datatype_actions=job_context.change_datatype_actions,
             )

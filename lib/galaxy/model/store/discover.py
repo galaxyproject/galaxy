@@ -77,7 +77,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         filename=None,
         extra_files=None,
         metadata_source_name=None,
-        format_source_name=None,
+        default_format=None,
         info=None,
         library_folder=None,
         link_data=False,
@@ -94,7 +94,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         storage_callbacks=None,
         purged=False,
     ):
-        log.error(f"create_dataset format_source_name {format_source_name}")
+        log.error(f"create_dataset default_format {default_format}")
         tag_list = tag_list or []
         sources = sources or []
         hashes = hashes or []
@@ -180,10 +180,8 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             primary_data.name = name
 
         log.error(f"create_dataset primary_data.ext {primary_data.ext}")
-        if format_source_name and not primary_data.ext:
-            metadata_source = self.metadata_source_provider.get_metadata_source(format_source_name)
-            log.error(f"create_dataset metadata_source {metadata_source}")
-            primary_data.change_datatype(metadata_source.ext)
+        if default_format and not primary_data.ext:
+            primary_data.change_datatype(default_format)
 
         # Copy metadata from one of the inputs if requested.
         if metadata_source_name:
@@ -295,7 +293,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         root_collection_builder,
         discovered_files,
         name=None,
-        metadata_source_name=None,
+        default_format=None,
         format_source_name=None, 
         final_job_state="ok",
         change_datatype_actions=None,
@@ -309,7 +307,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         log.error(f"populate_collection_elements root_collection_builder {root_collection_builder}")
         log.error(f"populate_collection_elements discovered_files {discovered_files}")
         log.error(f"populate_collection_elements name {name}")
-        log.error(f"populate_collection_elements format_source_name {format_source_name}")
+        log.error(f"populate_collection_elements default_format {default_format}")
         log.error(f"populate_collection_elements metadata_source_name {metadata_source_name}")
 
         if name is None:
@@ -323,7 +321,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                     name=name,
                     root_collection_builder=root_collection_builder,
                     metadata_source_name=metadata_source_name,
-                    format_source_name=format_source_name,
+                    default_format=default_format,
                     final_job_state=final_job_state,
                     change_datatype_actions=change_datatype_actions,
                 )
@@ -338,13 +336,13 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                 name=name,
                 root_collection_builder=root_collection_builder,
                 metadata_source_name=metadata_source_name,
-                format_source_name=format_source_name,
+                default_format=default_format,
                 final_job_state=final_job_state,
                 change_datatype_actions=change_datatype_actions,
             )
 
     def _populate_elements(
-        self, chunk, name, root_collection_builder, metadata_source_name, format_source_name, final_job_state, change_datatype_actions
+        self, chunk, name, root_collection_builder, metadata_source_name, default_format, final_job_state, change_datatype_actions
     ):
         element_datasets: Dict[str, List[Any]] = {
             "element_identifiers": [],
@@ -388,7 +386,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                 dbkey=dbkey,
                 name=dataset_name,
                 metadata_source_name=metadata_source_name,
-                format_source_name=format_source_name,
+                default_format=default_format,
                 link_data=link_data,
                 sources=sources,
                 hashes=hashes,
