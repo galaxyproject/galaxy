@@ -11,6 +11,7 @@ from galaxy.job_metrics import JobMetrics
 from galaxy.jobs import JobConfiguration
 from galaxy.util import bunch
 from galaxy.web_stack import ApplicationStack, UWSGIApplicationStack
+from galaxy.web_stack.handlers import HANDLER_ASSIGNMENT_METHODS
 
 # File would be slightly more readable if contents were embedded directly, but
 # there are advantages to testing the documentation/examples.
@@ -66,6 +67,7 @@ class BaseJobConfXmlParserTestCase(unittest.TestCase):
     @property
     def job_config(self):
         if not self._job_configuration:
+            JobConfiguration.get_preferred_handler_assignment_method = lambda x: HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED
             base_handler_pools = self._job_configuration_base_pools or JobConfiguration.DEFAULT_BASE_HANDLER_POOLS
             mock_uwsgi = mock.Mock()
             mock_uwsgi.mule_id = lambda: 1
@@ -146,26 +148,26 @@ class SimpleJobConfXmlParserTestCase(BaseJobConfXmlParserTestCase):
         assert "handler1" in self.job_config.handlers["handlers"]
 
     def test_implict_db_self_handler_assign(self):
-        assert self.job_config.handler_assignment_methods == ['db-self']
+        assert self.job_config.handler_assignment_methods == ['db-skip-locked']
         assert self.job_config.default_handler_id is None
         assert self.job_config.handlers == {}
 
     def test_implicit_db_assign_handler_assign_with_explicit_handlers(self):
         self._with_handlers_config(handlers=[{'id': 'handler0'}, {'id': 'handler1'}])
-        assert self.job_config.handler_assignment_methods == ['db-preassign']
+        assert self.job_config.handler_assignment_methods == ['db-skip-locked']
         assert self.job_config.default_handler_id is None
         assert sorted(self.job_config.handlers['_default_']) == ['handler0', 'handler1']
 
     def test_implict_uwsgi_mule_message_handler_assign(self):
         self._with_uwsgi_application_stack(mule='lib/galaxy/main.py', farm='job-handlers:1')
-        assert self.job_config.handler_assignment_methods == ['uwsgi-mule-message']
+        assert self.job_config.handler_assignment_methods == ['uwsgi-mule-message', 'db-skip-locked']
         assert self.job_config.default_handler_id is None
         assert self.job_config.handlers['_default_'] == ['main.job-handlers.1']
 
     def test_implict_uwsgi_mule_message_handler_assign_with_explicit_handlers(self):
         self._with_handlers_config(handlers=[{'id': 'handler0'}, {'id': 'handler1'}])
         self._with_uwsgi_application_stack(mule='lib/galaxy/main.py', farm='job-handlers:1')
-        assert self.job_config.handler_assignment_methods == ['uwsgi-mule-message', 'db-preassign'], self.job_config.handler_assignment_methods
+        assert self.job_config.handler_assignment_methods == ['uwsgi-mule-message', 'db-skip-locked'], self.job_config.handler_assignment_methods
         assert self.job_config.default_handler_id is None
         assert sorted(self.job_config.handlers['_default_']) == ['handler0', 'handler1', 'main.job-handlers.1']
 
