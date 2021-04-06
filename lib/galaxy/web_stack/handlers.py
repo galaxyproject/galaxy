@@ -11,8 +11,10 @@ from enum import Enum
 from typing import Set, Tuple
 
 from sqlalchemy.orm import object_session
+from sqlalchemy.orm.scoping import scoped_session
 
 from galaxy.exceptions import HandlerAssignmentError
+from galaxy.model import Job
 from galaxy.util import (
     ExecutionTimer,
     listify
@@ -52,6 +54,33 @@ class ConfiguresHandlers:
                 self.handlers[tag].append(handler_id)
             else:
                 self.handlers[tag] = [handler_id]
+
+    @staticmethod
+    def supports_returning(session: scoped_session):
+        job_table = Job.table
+        stmt = job_table.update().where(job_table.c.id == -1).returning(job_table.c.id)
+        try:
+            session.execute(stmt)
+            return True
+        except Exception:
+            return False
+
+    @staticmethod
+    def supports_skip_locked(session: scoped_session):
+        job_table = Job.table
+        stmt = job_table.select().where(job_table.c.id == -1).with_for_update(skip_locked=True)
+        try:
+            session.execute(stmt)
+            return True
+        except Exception:
+            return False
+
+    def get_preferred_handler_assignment_method(self):
+        if not self.supports_returning(self.app.model.session):
+            return None
+        if self.supports_skip_locked(self.app.model.session):
+            return HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED
+        return HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION
 
     @staticmethod
     def xml_to_dict(config, config_element):
@@ -147,11 +176,12 @@ class ConfiguresHandlers:
                 self.handler_assignment_methods = [HANDLER_ASSIGNMENT_METHODS.MEM_SELF]
             elif not self.handlers:
                 # No handlers defined, default is for processes to handle the jobs they create
-                self.handler_assignment_methods = [HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED]
+                # Ideally this is DB_SKIP_LOCKED or TRANSACTION_ISOLATION, falls back to DB_SELF
+                self.handler_assignment_methods = [self.get_preferred_handler_assignment_method() or HANDLER_ASSIGNMENT_METHODS.DB_SELF]
             else:
-                # Handlers are defined, default is the value if the default attribute, or any untagged handler if
+                # Handlers are defined, default is the value of the default attribute, or any untagged handler if
                 # default attribute is unset
-                self.handler_assignment_methods = [HANDLER_ASSIGNMENT_METHODS.DB_PREASSIGN]
+                self.handler_assignment_methods = [self.get_preferred_handler_assignment_method() or HANDLER_ASSIGNMENT_METHODS.DB_PREASSIGN]
             # If the stack has handler pools it can override these defaults
             self.app.application_stack.init_job_handling(self)
             log.info("%s: No job handler assignment method is set, defaulting to '%s', set the `assign_with` attribute"
@@ -256,9 +286,9 @@ class ConfiguresHandlers:
         for collection in self.handlers.values():
             if self.app.config.server_name in collection:
                 return True
-        if not self.handlers:
-            # Assume that if no handlers are set up this is an all-in-one setup ...
-            # Probably breaks some assumptions with a pool setup ??
+        if (not self.handler_assignment_methods_configured
+                and HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION in self.handler_assignment_methods
+                or HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED in self.handler_assignment_methods):
             return True
         return False
 

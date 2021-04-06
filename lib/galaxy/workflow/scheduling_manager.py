@@ -186,6 +186,7 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
 
         if use_default_scheduler:
             self.__init_default_scheduler()
+            self._set_default_handler_assignment_methods()
         else:
             plugins_element = parse_xml(config_file).getroot()
             self.__init_schedulers_for_element(plugins_element)
