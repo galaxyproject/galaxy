@@ -1,5 +1,6 @@
 <tool id="collection_creates_pair_from_type_discover" name="collection_creates_pair_from_type" version="0.1.0">
   <command>
+    echo '$input_collection1';
     sed 'n;d' $input1 > A.fastq;
     sed -n 'g;n;p' $input1 > B.fastq;
   </command>
@@ -10,7 +11,7 @@
         <option value="blah" selected="true">Blah</option>
       </param>
       <when value="blah">
-        <param name="input_collection" type="data_collection" collection_type="list" label="input_collection"/>
+        <param name="input_collection" type="data_collection" collection_type="list:list" label="input_collection"/>
       </when>
     </conditional>
   </inputs>
@@ -31,10 +32,18 @@
     <test>
       <param name="input1" value="simple_lines_interleaved.txt" ftype="txt" />
       <param name="input_collection">
-        <collection type="list">
-          <element name="1" value="simple_lines_interleaved.txt" ftype="txt" />
-          <element name="2" value="simple_lines_interleaved.txt" ftype="txt" />
+        <collection type="list:list">
+          <element name="i1">
+            <collection type="list">
+              <element name="1" value="simple_line.txt" />
+              <element name="2" value="simple_line_alternative.txt" />
+            </collection>
+          </element>
         </collection>
+        <!-- <collection type="list">
+          <element name="1" value="simple_lines_interleaved.txt" ftype="txt" />
+          <element name="2" value="simple_line.txt" ftype="txt" />
+        </collection> -->
       </param>
       <output_collection name="paired_output" type="list">
         <element name="A.fastq" ftype="txt">

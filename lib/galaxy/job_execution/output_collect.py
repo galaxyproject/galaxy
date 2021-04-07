@@ -110,14 +110,14 @@ class MetadataSourceProvider(AbstractMetadataSourceProvider):
 
 def evaluate_source(source, output_collection_def, metadata_source_provider):
     log.error(f"evaluate_format_source output_collection_def {output_collection_def}")
-    log.error(f"evaluate_format_source metadata_source_provider {metadata_source_provider}")
-    
+    log.error(f"evaluate_format_source metadata_source_provider {metadata_source_provider}") 
+
     ext = None
     source_name = getattr(output_collection_def, source)
     if source_name is None:
         return None
     source = metadata_source_provider.get_metadata_source(source_name)
-    return source.ext    
+    return source.ext
 
     # if format_source is not None and format_source in input_datasets:
     #     try:
@@ -143,6 +143,7 @@ def evaluate_source(source, output_collection_def, metadata_source_provider):
     #             except Exception as e:
     #                 log.debug("Exception while trying to determine format_source: %s", e)
     # return None
+
 
 def collect_dynamic_outputs(
     job_context,
