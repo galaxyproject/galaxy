@@ -587,9 +587,10 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.database_encoding = kwargs.get('database_encoding')  # Create new databases with this encoding
 
         # Database data tables connection
-        if not self.data_table_connection:  # Provide default if not supplied by user
+        if not self.data_table_database_connection:  # Provide default if not supplied by user
             db_path = self._in_data_dir('data_tables.sqlite')
-            self.data_table_connection = 'sqlite:///%s?isolation_level=IMMEDIATE' % db_path
+            self.data_table_database_connection = 'sqlite:///%s?isolation_level=IMMEDIATE' % db_path
+            self.data_table_database_engine_options = get_database_engine_options(kwargs, model_prefix="data_tables_")
 
         self.thread_local_log = None
         if self.enable_per_request_sql_debugging:
@@ -1205,7 +1206,7 @@ class ConfiguresGalaxyMixin:
         # Initialize tool data tables using the config defined by self.config.tool_data_table_config_path.
         self.tool_data_tables = ToolDataTableManager(tool_data_path=self.config.tool_data_path,
                                                      config_filename=self.config.tool_data_table_config_path,
-                                                     other_config_dict=self.config, app=self)
+                                                     other_config_dict=self.config, dt_model=self.data_tables_model)
         # Load additional entries defined by self.config.shed_tool_data_table_config into tool data tables.
         try:
             self.tool_data_tables.load_from_config_file(config_filename=self.config.shed_tool_data_table_config,
@@ -1300,7 +1301,7 @@ class ConfiguresGalaxyMixin:
                                                       install_database_options)
 
         # Database data tables
-        data_tables_db_url = self.config.data_table_connection
+        data_tables_db_url = self.config.data_table_database_connection
         if check_migrate_databases:
             # Initialize data table database / check for appropriate schema version.
             from galaxy.model.data_tables.migrate.check import create_or_verify_database

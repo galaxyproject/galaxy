@@ -11,4 +11,7 @@
     <columns>value, dbkey, name, path</columns>
     <file path="${__HERE__}/fasta_indexes.loc" />
   </table>
+  <table name="testdatabase" comment_char="#" type="database">
+    <columns>value, key</columns>
+  </table>
 </tables>

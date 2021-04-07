@@ -3289,7 +3289,7 @@ mapping:
         desc: |
           Path to dynamic tool destinations configuration file.
 
-      data_table_connection:
+      data_table_database_connection:
         type: str
         required: false
         desc: |

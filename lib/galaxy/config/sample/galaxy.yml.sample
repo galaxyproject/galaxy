@@ -1348,6 +1348,10 @@ galaxy:
   # prefix with a tag path set to the page url
   #statsd_influxdb: false
 
+  # Mock out statsd client calls - only used by testing infrastructure
+  # really. Do not set this in production environments.
+  #statsd_mock_calls: false
+
   # Add an option to the library upload form which allows administrators
   # to upload a directory of files.
   #library_import_dir: null
@@ -2237,5 +2241,5 @@ galaxy:
   # connection string to specify an external database instead.
   # Sample default
   # 'sqlite:///<data_dir>/data_tables.sqlite?isolation_level=IMMEDIATE'
-  #data_table_connection: null
+  #data_table_database_connection: null
 

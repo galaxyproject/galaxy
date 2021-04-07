@@ -2664,6 +2664,17 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~
+``statsd_mock_calls``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Mock out statsd client calls - only used by testing infrastructure
+    really. Do not set this in production environments.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~
 ``library_import_dir``
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -4517,9 +4528,9 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~
-``data_table_connection``
-~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``data_table_database_connection``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
     The database connection for data table entries within a database.

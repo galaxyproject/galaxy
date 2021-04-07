@@ -71,7 +71,7 @@ class ToolDataPathFiles:
 class ToolDataTableManager:
     """Manages a collection of tool data tables"""
 
-    def __init__(self, tool_data_path, config_filename=None, tool_data_table_config_path_set=None, other_config_dict=None, app=None):
+    def __init__(self, tool_data_path, config_filename=None, tool_data_table_config_path_set=None, other_config_dict=None, dt_model=None):
         self.tool_data_path = tool_data_path
         # This stores all defined data table entries from both the tool_data_table_conf.xml file and the shed_tool_data_table_conf.xml file
         # at server startup. If tool shed repositories are installed that contain a valid file named tool_data_table_conf.xml.sample, entries
@@ -79,7 +79,7 @@ class ToolDataTableManager:
         self.data_tables = {}
         self.tool_data_path_files = ToolDataPathFiles(self.tool_data_path)
         self.other_config_dict = other_config_dict or {}
-        self.app = app
+        self.dt_model = dt_model
         for single_config_filename in util.listify(config_filename):
             if not single_config_filename:
                 continue
@@ -123,7 +123,7 @@ class ToolDataTableManager:
             tree = util.parse_xml(filename)
             root = tree.getroot()
             for table_elem in root.findall('table'):
-                table = ToolDataTable.from_elem(table_elem, tool_data_path, from_shed_config, filename=filename, tool_data_path_files=self.tool_data_path_files, other_config_dict=self.other_config_dict, app=self.app)
+                table = ToolDataTable.from_elem(table_elem, tool_data_path, from_shed_config, filename=filename, tool_data_path_files=self.tool_data_path_files, other_config_dict=self.other_config_dict, dt_model=self.dt_model)
                 table_elems.append(table_elem)
                 if table.name not in self.data_tables:
                     self.data_tables[table.name] = table
@@ -246,10 +246,10 @@ class ToolDataTable:
     type_key: str
 
     @classmethod
-    def from_elem(cls, table_elem, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=None, app=None):
+    def from_elem(cls, table_elem, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=None, dt_model=None):
         table_type = table_elem.get('type', 'tabular')
         assert table_type in tool_data_table_types, "Unknown data table type '%s'" % table_type
-        return tool_data_table_types[table_type](table_elem, tool_data_path, from_shed_config=from_shed_config, filename=filename, tool_data_path_files=tool_data_path_files, other_config_dict=other_config_dict, app=app)
+        return tool_data_table_types[table_type](table_elem, tool_data_path, from_shed_config=from_shed_config, filename=filename, tool_data_path_files=tool_data_path_files, other_config_dict=other_config_dict, dt_model=dt_model)
 
     def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None, other_config_dict=None):
         self.name = config_element.get('name')
@@ -332,7 +332,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
 
     type_key = 'tabular'
 
-    def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None, other_config_dict=None, app=None):
+    def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None, other_config_dict=None, dt_model=None):
         super().__init__(config_element, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=other_config_dict)
         self.config_element = config_element
         self.data = []
@@ -817,7 +817,7 @@ class RefgenieToolDataTable(TabularToolDataTable):
 
     type_key = 'refgenie'
 
-    def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None, other_config_dict=None, app=None):
+    def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None, other_config_dict=None, dt_model=None):
         super().__init__(config_element, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=other_config_dict)
         self.config_element = config_element
         self.data = []
@@ -920,14 +920,14 @@ class DatabaseToolDataTable(ToolDataTable, Dictifiable):
     sa_session = None
     datatable_id = None
 
-    def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None, other_config_dict=None, app=None):
+    def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None, other_config_dict=None, dt_model=None):
         super().__init__(config_element, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=other_config_dict)
         self.config_element = config_element
         self.data = []
-        if app is not None and app.name != "tool_shed":
-            self.configure_and_load(config_element, tool_data_path, from_shed_config, app=app)
+        if dt_model is not None:
+            self.configure_and_load(config_element, tool_data_path, from_shed_config, dt_model=dt_model)
 
-    def configure_and_load(self, config_element, tool_data_path, from_shed_config=False, url_timeout=10, app=None):
+    def configure_and_load(self, config_element, tool_data_path, from_shed_config=False, url_timeout=10, dt_model=None):
         """
         Configure and load the data table, set up the entries in the database on initial load
         """
@@ -947,8 +947,8 @@ class DatabaseToolDataTable(ToolDataTable, Dictifiable):
         # Capture potential errors
         errors = []
 
-        if app is not None:
-            self.sa_session = app.data_tables_model.context
+        if dt_model is not None:
+            self.sa_session = dt_model.context
             if not self.data_table_exist_in_database():
                 # In case we don't have a datatable yet, create a new one in the database and add the columns to it
                 dt = data_tables_model.DataTable(name=self.datatable_name)
