@@ -5,7 +5,14 @@
             <tbody>
                 <tr v-if="job && job.tool_id">
                     <td>Galaxy Tool ID:</td>
-                    <td id="galaxy-tool-id">{{ job.tool_id }}</td>
+                    <td id="galaxy-tool-id">
+                        {{ job.tool_id }}
+                        <copy-to-clipboard
+                            message="Tool ID was copied to your clipboard"
+                            :text="job.tool_id"
+                            title="Copy Tool ID"
+                        />
+                    </td>
                 </tr>
                 <tr v-if="job && job.tool_version">
                     <td>Galaxy Tool Version:</td>
@@ -23,9 +30,9 @@
                         <UtcDate :date="job.update_time" mode="pretty" />
                     </td>
                 </tr>
-                <code-row id="command-line" v-if="job" :codeLabel="'Command Line'" :codeItem="job.command_line" />
-                <code-row id="stdout" v-if="job" :codeLabel="'Tool Standard Output'" :codeItem="job.tool_stdout" />
-                <code-row id="stderr" v-if="job" :codeLabel="'Tool Standard Error'" :codeItem="job.tool_stderr" />
+                <code-row id="command-line" v-if="job" :code-label="'Command Line'" :code-item="job.command_line" />
+                <code-row id="stdout" v-if="job" :code-label="'Tool Standard Output'" :code-item="job.tool_stdout" />
+                <code-row id="stderr" v-if="job" :code-label="'Tool Standard Error'" :code-item="job.tool_stderr" />
                 <tr v-if="job">
                     <td>Tool Exit Code:</td>
                     <td id="exist-code">{{ job.exit_code }}</td>
@@ -33,7 +40,7 @@
                 <tr id="job-messages" v-if="job && job.job_messages && job.job_messages.length > 0">
                     <td>Job Messages</td>
                     <td>
-                        <ul style="padding-left: 15px; margin-bottom: 0px;">
+                        <ul style="padding-left: 15px; margin-bottom: 0px">
                             <li v-for="message in job.job_messages" :key="message">{{ message }}</li>
                         </ul>
                     </td>
@@ -59,12 +66,14 @@ import { getAppRoot } from "onload/loadConfig";
 import DecodedId from "../DecodedId.vue";
 import CodeRow from "./CodeRow.vue";
 import UtcDate from "components/UtcDate";
+import CopyToClipboard from "components/CopyToClipboard";
 
 export default {
     components: {
         CodeRow,
         DecodedId,
         UtcDate,
+        CopyToClipboard,
     },
     props: {
         job_id: {

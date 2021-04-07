@@ -10,7 +10,6 @@ from markupsafe import escape
 
 from galaxy import (
     datatypes,
-    managers,
     model,
     util,
     web
@@ -18,7 +17,10 @@ from galaxy import (
 from galaxy.datatypes import sniff
 from galaxy.datatypes.display_applications.util import decode_dataset_user, encode_dataset_user
 from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.managers.hdas import HDADeserializer, HDAManager
+from galaxy.managers.histories import HistoryManager
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
+from galaxy.structured_app import StructuredApp
 from galaxy.util import (
     inflector,
     sanitize_text,
@@ -29,6 +31,7 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import form_builder
 from galaxy.web.framework.helpers import iff
 from galaxy.webapps.base.controller import BaseUIController, ERROR, SUCCESS, url_for, UsesExtendedMetadataMixin
+from ..api import depends
 
 log = logging.getLogger(__name__)
 
@@ -42,12 +45,12 @@ except ImportError:
 
 
 class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesExtendedMetadataMixin):
+    history_manager: HistoryManager = depends(HistoryManager)
+    hda_manager: HDAManager = depends(HDAManager)
+    hda_deserializer: HDADeserializer = depends(HDADeserializer)
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
-        self.history_manager = managers.histories.HistoryManager(app)
-        self.hda_manager = managers.hdas.HDAManager(app)
-        self.hda_deserializer = managers.hdas.HDADeserializer(app)
 
     def _get_job_for_dataset(self, trans, dataset_id):
         '''

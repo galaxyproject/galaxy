@@ -1,4 +1,4 @@
-name: OSX
+name: macOS startup
 on: [push, pull_request]
 jobs:
 

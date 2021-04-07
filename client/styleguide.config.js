@@ -1,58 +1,57 @@
 const path = require("path");
-const glob = require("glob");
-const fs = require("fs");
-const merge = require("webpack-merge");
-const baseConfig = require("./webpack.config.js");
+const { getDocSections } = require("./docs/sections");
+const buildWebpack = require("./webpack.config.js");
 
-const webpackConfig = baseConfig();
+function getWebpack() {
+    const cfg = buildWebpack();
 
-const fileLoaderTest = /\.(png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot)(\?.*$|$)/;
+    // looks like our src plays with the webpack publicPath dynamically,
+    // presumably to allow for dyamic loads, but this is a problem when
+    // you're not outputting code to a non-standard location.
+    // allowing this to happen breaks the styleguide.
+    cfg.module.rules.push({
+        test: /onload\/publicPath/,
+        use: { loader: "ignore-loader" },
+    });
 
-const fileLoaderConfigRule = { rules: [{ test: fileLoaderTest, use: ["file-loader"] }] };
+    return cfg;
+}
 
-webpackConfig.module = merge.smart(webpackConfig.module, fileLoaderConfigRule);
-webpackConfig.output.publicPath = "";
+// TODO: Fix broken module imports before attempting to view in styleguidef
+const problemChildren = ["**/HistoryView.vue", "**/admin/DataManager/*", "**/LibraryFolder/*"];
+if (problemChildren.length) {
+    console.warn("Not rendering styleguide for the following components:", problemChildren);
+}
 
-webpackConfig.resolve.modules.push(path.join(__dirname, "src/style/scss"));
+function getSections() {
+    // Style sections
+    const docRootPath = path.join(__dirname, "docs/src");
+    const { rootNode: docRoot } = getDocSections(docRootPath, { docSelector: "*.md" });
+    const [design, styles] = docRoot.sections;
+    delete docRoot.components;
 
-const galaxyStyleDocs = [];
-glob.sync("./docs/galaxy-*.md").forEach((file) => {
-    const name = file.match(/galaxy-(\w+).md/)[1];
-    galaxyStyleDocs.push({ name: name, content: file });
-});
+    // recursive component tree docs
+    const cmpPath = path.join(__dirname, "src/components");
+    const { rootNode: componentDocs } = getDocSections(cmpPath, { ignore: problemChildren });
 
-const sections = [
-    {
-        name: "Galaxy styles",
-        sections: galaxyStyleDocs,
-    },
-    {
-        name: "Basic Bootstrap Styles",
-        content: "./docs/bootstrap.md",
-    },
-    {
-        name: "Components",
-        // Components that are directories will get their own section
-        sections: glob
-            .sync("./src/components/*")
-            .map((file) => {
-                if (fs.lstatSync(file).isDirectory()) {
-                    return {
-                        name: path.basename(file),
-                        components: file + "/**/*.vue",
-                    };
-                }
-            })
-            .filter((v) => v),
-        // ...while top level components are handled here.
-        components: "./src/components/*.vue",
-    },
-];
+    return [design, styles, componentDocs];
+}
 
 module.exports = {
-    webpackConfig,
+    webpackConfig: getWebpack(),
+    title: "Galaxy Client Resources",
+    sections: getSections(),
+    getExampleFilename(componentPath) {
+        return componentPath.replace(/\.(vue|js)?$/, ".md");
+    },
+    require: [
+        "./src/style/scss/base.scss",
+        "./src/polyfills.js",
+        // "./src/bundleEntries.js"
+    ],
+    tocMode: "collapse",
+    renderRootJsx: "./docs/root",
+    styleguideDir: "./docs/dist",
     pagePerSection: true,
-    sections,
-    require: ["./src/style/scss/base.scss", "./src/polyfills.js", "./src/bundleEntries.js"],
-    vuex: "./src/store/index.js",
+    ignore: problemChildren,
 };

@@ -12,7 +12,7 @@ import ActiveInvocations from "components/admin/ActiveInvocations.vue";
 import Landing from "components/admin/Dependencies/Landing.vue";
 import AdminHome from "components/admin/Home.vue";
 import DataManagerView from "components/admin/DataManager/DataManagerView.vue";
-import DataManagerRouter from "components/admin/DataManager/DataManagerRouter.vue";
+import DataManagerRouter from "components/admin/DataManager/DataManagerRouter";
 import Register from "components/login/Register.vue";
 import ErrorStack from "components/admin/ErrorStack.vue";
 import DisplayApplications from "components/admin/DisplayApplications.vue";

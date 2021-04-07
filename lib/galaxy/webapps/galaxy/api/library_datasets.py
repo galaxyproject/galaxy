@@ -22,6 +22,7 @@ from galaxy.managers import (
     library_datasets,
     roles
 )
+from galaxy.structured_app import StructuredApp
 from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import populate_state
 from galaxy.util.path import (
@@ -36,16 +37,16 @@ from galaxy.web import (
     expose_api_anonymous,
 )
 from galaxy.webapps.base.controller import (
-    BaseAPIController,
     UsesVisualizationMixin,
 )
+from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
 
 
-class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, LibraryActions):
+class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin, LibraryActions):
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
         self.app = app
         self.folder_manager = folders.FolderManager()

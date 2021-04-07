@@ -8,20 +8,21 @@ from galaxy.exceptions import (
     MessageException,
     RequestParameterInvalidException
 )
-from galaxy.managers import (
-    hdas,
-    histories,
-    lddas,
-)
 from galaxy.managers.collections_util import validate_input_element_identifiers
-from galaxy.model import tags
 from galaxy.model.dataset_collections import builder
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.dataset_collections.registry import DATASET_COLLECTION_TYPES_REGISTRY
 from galaxy.model.dataset_collections.type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
+from galaxy.model.mapping import GalaxyModelMapping
+from galaxy.model.tags import GalaxyTagHandler
+from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import (
     validation
 )
+from .hdas import HDAManager
+from .histories import HistoryManager
+from .lddas import LDDAManager
+
 
 log = logging.getLogger(__name__)
 
@@ -36,16 +37,24 @@ class DatasetCollectionManager:
     """
     ELEMENTS_UNINITIALIZED = object()
 
-    def __init__(self, app):
+    def __init__(
+        self,
+        model: GalaxyModelMapping,
+        security: IdEncodingHelper,
+        hda_manager: HDAManager,
+        history_manager: HistoryManager,
+        tag_handler: GalaxyTagHandler,
+        ldda_manager: LDDAManager,
+    ):
         self.type_registry = DATASET_COLLECTION_TYPES_REGISTRY
         self.collection_type_descriptions = COLLECTION_TYPE_DESCRIPTION_FACTORY
-        self.model = app.model
-        self.security = app.security
+        self.model = model
+        self.security = security
 
-        self.hda_manager = hdas.HDAManager(app)
-        self.history_manager = histories.HistoryManager(app)
-        self.tag_handler = tags.GalaxyTagHandler(app.model.context)
-        self.ldda_manager = lddas.LDDAManager(app)
+        self.hda_manager = hda_manager
+        self.history_manager = history_manager
+        self.tag_handler = tag_handler
+        self.ldda_manager = ldda_manager
 
     def precreate_dataset_collection_instance(self, trans, parent, name, structure, implicit_inputs=None, implicit_output_name=None, tags=None, completed_collection=None):
         # TODO: prebuild all required HIDs and send them in so no need to flush in between.
@@ -136,7 +145,7 @@ class DatasetCollectionManager:
 
     def _create_instance_for_collection(self, trans, parent, name, dataset_collection, implicit_output_name=None, implicit_inputs=None, tags=None, set_hid=True, flush=True):
         if isinstance(parent, model.History):
-            dataset_collection_instance = self.model.HistoryDatasetCollectionAssociation(
+            dataset_collection_instance = model.HistoryDatasetCollectionAssociation(
                 collection=dataset_collection,
                 name=name,
             )
@@ -153,7 +162,7 @@ class DatasetCollectionManager:
                 parent.add_dataset_collection(dataset_collection_instance)
 
         elif isinstance(parent, model.LibraryFolder):
-            dataset_collection_instance = self.model.LibraryDatasetCollectionAssociation(
+            dataset_collection_instance = model.LibraryDatasetCollectionAssociation(
                 collection=dataset_collection,
                 folder=parent,
                 name=name,
@@ -245,18 +254,6 @@ class DatasetCollectionManager:
         for _, tag in tags.items():
             dataset_collection_instance.tags.append(tag.copy(cls=model.HistoryDatasetCollectionTagAssociation))
 
-    def set_collection_elements(self, dataset_collection, dataset_instances):
-        if dataset_collection.populated:
-            raise Exception("Cannot reset elements of an already populated dataset collection.")
-
-        collection_type = dataset_collection.collection_type
-        collection_type_description = self.collection_type_descriptions.for_collection_type(collection_type)
-        type_plugin = collection_type_description.rank_type_plugin()
-        builder.set_collection_elements(dataset_collection, type_plugin, dataset_instances)
-        dataset_collection.mark_as_populated()
-
-        return dataset_collection
-
     def collection_builder_for(self, dataset_collection):
         return builder.BoundCollectionBuilder(dataset_collection)
 
@@ -290,7 +287,7 @@ class DatasetCollectionManager:
         changed = self._set_from_dict(trans, dataset_collection_instance, payload)
         return changed
 
-    def copy(self, trans, parent, source, encoded_source_id, copy_elements=False):
+    def copy(self, trans, parent, source, encoded_source_id, copy_elements=False, dataset_instance_attributes=None):
         """
         PRECONDITION: security checks on ability to add to parent occurred
         during load.
@@ -299,7 +296,9 @@ class DatasetCollectionManager:
         source_hdca = self.__get_history_collection_instance(trans, encoded_source_id)
         copy_kwds = {}
         if copy_elements:
-            copy_kwds["element_destination"] = parent
+            copy_kwds["element_destination"] = parent  # e.g. a history
+        if dataset_instance_attributes is not None:
+            copy_kwds["dataset_instance_attributes"] = dataset_instance_attributes
         new_hdca = source_hdca.copy(**copy_kwds)
         new_hdca.copy_tags_from(target_user=trans.get_user(), source=source_hdca)
         if not copy_elements:

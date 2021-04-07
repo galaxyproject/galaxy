@@ -30,27 +30,23 @@ from galaxy.web import (
     expose_api_raw_anonymous
 )
 from galaxy.webapps.base.controller import (
-    BaseAPIController,
-    UsesLibraryMixin,
     UsesLibraryMixinItems,
     UsesTagsMixin
 )
+from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
 
 
-class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems, UsesTagsMixin):
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.hda_manager = hdas.HDAManager(app)
-        self.history_manager = histories.HistoryManager(app)
-        self.history_contents_manager = history_contents.HistoryContentsManager(app)
-        self.folder_manager = folders.FolderManager()
-        self.hda_serializer = hdas.HDASerializer(app)
-        self.hda_deserializer = hdas.HDADeserializer(app)
-        self.hdca_serializer = hdcas.HDCASerializer(app)
-        self.history_contents_filters = history_contents.HistoryContentsFilters(app)
+class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, UsesTagsMixin):
+    hda_manager: hdas.HDAManager = depends(hdas.HDAManager)
+    history_manager: histories.HistoryManager = depends(histories.HistoryManager)
+    history_contents_manager: history_contents.HistoryContentsManager = depends(history_contents.HistoryContentsManager)
+    folder_manager: folders.FolderManager = depends(folders.FolderManager)
+    hda_serializer: hdas.HDASerializer = depends(hdas.HDASerializer)
+    hda_deserializer: hdas.HDADeserializer = depends(hdas.HDADeserializer)
+    hdca_serializer: hdcas.HDCASerializer = depends(hdcas.HDCASerializer)
+    history_contents_filters: history_contents.HistoryContentsFilters = depends(history_contents.HistoryContentsFilters)
 
     @expose_api_anonymous
     def index(self, trans, history_id, ids=None, v=None, **kwd):
@@ -281,7 +277,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
     @expose_api_raw_anonymous
     def download_dataset_collection(self, trans, id, history_id=None, **kwd):
         """
-        GET /api/histories/{history_id}/contents/{id}/download
+        GET /api/histories/{history_id}/contents/dataset_collections/{id}/download
         GET /api/dataset_collection/{id}/download
 
         Download the content of a HistoryDatasetCollection as a tgz archive
@@ -533,13 +529,21 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             content = payload.get('content', None)
             if content is None:
                 raise exceptions.RequestParameterMissingException("'content' id of target to copy is missing")
-            copy_elements = payload.get('copy_elements', False)
+            dbkey = payload.get("dbkey")
+            copy_required = dbkey is not None
+            copy_elements = payload.get('copy_elements', copy_required)
+            if copy_required and not copy_elements:
+                raise exceptions.RequestParameterMissingException("copy_elements passed as 'false' but it is required to change specified attributes")
+            dataset_instance_attributes = {}
+            if dbkey is not None:
+                dataset_instance_attributes["dbkey"] = dbkey
             dataset_collection_instance = service.copy(
                 trans=trans,
                 parent=history,
                 source="hdca",
                 encoded_source_id=content,
                 copy_elements=copy_elements,
+                dataset_instance_attributes=dataset_instance_attributes,
             )
         else:
             message = "Invalid 'source' parameter in request %s" % source

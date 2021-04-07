@@ -32,19 +32,19 @@ def changeset_revision_reviewed_by_user(user, repository, changeset_revision):
 
 def get_component(app, id):
     """Get a component from the database."""
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     return sa_session.query(app.model.Component).get(app.security.decode_id(id))
 
 
 def get_component_review(app, id):
     """Get a component_review from the database"""
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     return sa_session.query(app.model.ComponentReview).get(app.security.decode_id(id))
 
 
 def get_component_by_name(app, name):
     """Get a component from the database via a name."""
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     return sa_session.query(app.model.Component) \
                      .filter(app.model.Component.table.c.name == name) \
                      .first()
@@ -52,7 +52,7 @@ def get_component_by_name(app, name):
 
 def get_component_review_by_repository_review_id_component_id(app, repository_review_id, component_id):
     """Get a component_review from the database via repository_review_id and component_id."""
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     return sa_session.query(app.model.ComponentReview) \
                      .filter(and_(app.model.ComponentReview.table.c.repository_review_id == app.security.decode_id(repository_review_id),
                                   app.model.ComponentReview.table.c.component_id == app.security.decode_id(component_id))) \
@@ -60,7 +60,7 @@ def get_component_review_by_repository_review_id_component_id(app, repository_re
 
 
 def get_components(app):
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     return sa_session.query(app.model.Component) \
                      .order_by(app.model.Component.name) \
                      .all()
@@ -90,7 +90,7 @@ def get_previous_repository_reviews(app, repository, changeset_revision):
 
 def get_review(app, id):
     """Get a repository_review from the database via id."""
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     return sa_session.query(app.model.RepositoryReview).get(app.security.decode_id(id))
 
 
@@ -99,7 +99,7 @@ def get_review_by_repository_id_changeset_revision_user_id(app, repository_id, c
     Get a repository_review from the database via repository id, changeset_revision
     and user_id.
     """
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     return sa_session.query(app.model.RepositoryReview) \
                      .filter(and_(app.model.RepositoryReview.repository_id == app.security.decode_id(repository_id),
                                   app.model.RepositoryReview.changeset_revision == changeset_revision,
@@ -109,7 +109,7 @@ def get_review_by_repository_id_changeset_revision_user_id(app, repository_id, c
 
 def get_reviews_by_repository_id_changeset_revision(app, repository_id, changeset_revision):
     """Get all repository_reviews from the database via repository id and changeset_revision."""
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     return sa_session.query(app.model.RepositoryReview) \
                      .filter(and_(app.model.RepositoryReview.repository_id == app.security.decode_id(repository_id),
                                   app.model.RepositoryReview.changeset_revision == changeset_revision)) \

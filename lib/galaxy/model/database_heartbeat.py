@@ -25,7 +25,7 @@ class DatabaseHeartbeat:
 
     @property
     def sa_session(self):
-        return self.application_stack.app.model.context
+        return self.application_stack.app.model.session
 
     @property
     def server_name(self):

@@ -1068,13 +1068,13 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Set this to false to disable the tool document cache. This cache
-    stores expanded xml strings. Disabling the tool cache results in
-    slower startup times. The tool cache is backed by sqlite database,
-    which cannot be stored on certain network disks. The cache
-    location is configurable using the ``tool_cache_data_dir``
+    Whether to enable the tool document cache. This cache stores
+    expanded XML strings. Enabling the tool cache results in slightly
+    faster startup times. The tool cache is backed by a SQLite
+    database, which cannot be stored on certain network disks. The
+    cache location is configurable using the ``tool_cache_data_dir``
     setting, but can be disabled completely here.
-:Default: ``true``
+:Default: ``false``
 :Type: bool
 
 
@@ -3362,6 +3362,20 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~
+``flush_per_n_datasets``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Maximum number of datasets to create before flushing created
+    datasets to database. This affects tools that create many output
+    datasets. Higher values will lead to fewer database flushes and
+    faster execution, but require more memory. Set to -1 to disable
+    creating datasets in batches.
+:Default: ``1000``
+:Type: int
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``history_local_serial_workflow_scheduling``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -4344,6 +4358,18 @@
     the commented out line below).
 :Default: ``sqlalchemy+sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~
+``enable_celery_tasks``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Offload long-running tasks to a Celery task queue. Activate this
+    only if you have setup a Celery worker for Galaxy. For details,
+    see https://docs.galaxyproject.org/en/master/admin/production.html
+:Default: ``false``
+:Type: bool
 
 
 ~~~~~~~~~~~~~~

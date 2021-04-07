@@ -42,6 +42,9 @@ class CustosAuthnz(IdentityProvider):
         elif provider == 'keycloak':
             self._load_config_for_keycloak()
 
+    def _decode_token_no_signature(self, token):
+        return jwt.decode(token, audience=self.config['client_id'], options={"verify_signature": False})
+
     def authenticate(self, trans, idphint=None):
         base_authorize_url = self.config['authorization_endpoint']
         scopes = ['openid', 'email', 'profile']
@@ -77,7 +80,7 @@ class CustosAuthnz(IdentityProvider):
         # Get nonce from token['id_token'] and validate. 'nonce' in the
         # id_token is a hash of the nonce stored in the NONCE_COOKIE_NAME
         # cookie.
-        id_token_decoded = jwt.decode(id_token, options={"verify_signature": False})
+        id_token_decoded = self._decode_token_no_signature(id_token)
         nonce_hash = id_token_decoded['nonce']
         self._validate_nonce(trans, nonce_hash)
 
@@ -144,7 +147,7 @@ class CustosAuthnz(IdentityProvider):
         # Get nonce from token['id_token'] and validate. 'nonce' in the
         # id_token is a hash of the nonce stored in the NONCE_COOKIE_NAME
         # cookie.
-        userinfo = jwt.decode(id_token, options={"verify_signature": False})
+        userinfo = self._decode_token_no_signature(id_token)
 
         # Get userinfo and create Galaxy user record
         email = userinfo['email']
@@ -180,7 +183,7 @@ class CustosAuthnz(IdentityProvider):
                 raise Exception("User is not associated with provider {}".format(self.config["provider"]))
             if len(provider_tokens) > 1:
                 for idx, token in enumerate(provider_tokens):
-                    id_token_decoded = jwt.decode(token.id_token, options={"verify_signature": False})
+                    id_token_decoded = self._decode_token_no_signature(token.id_token)
                     if (id_token_decoded['email'] == email):
                         index = idx
             trans.sa_session.delete(provider_tokens[index])

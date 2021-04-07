@@ -35,7 +35,7 @@
         </template>
         <template v-slot:buttons>
             <b-button ref="btnClose" class="ui-button-default" @click="$emit('dismiss')">
-                {{ btnCloseTitle }}
+                {{ btnCloseTitle | localize }}
             </b-button>
             <b-button
                 ref="btnStart"
@@ -74,7 +74,6 @@ export default {
             showHelper: true,
             btnResetTitle: _l("Reset"),
             btnStartTitle: _l("Start"),
-            btnCloseTitle: this.app.callback ? _l("Cancel") : _l("Close"),
             readyStart: false,
         };
     },
@@ -142,7 +141,7 @@ export default {
             });
             $.uploadpost({
                 url: this.app.uploadPath,
-                data: this.app.toData(this.collection.filter()),
+                data: this.app.toFileUploadData(this.collection.filter()),
                 success: (message) => {
                     this._eventSuccess(message);
                 },

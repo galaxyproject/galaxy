@@ -1,6 +1,7 @@
 from requests import delete
 
 from galaxy.exceptions import error_codes
+from galaxy_test.api.sharable import SharingApiTests
 from galaxy_test.base.populators import DatasetPopulator, skip_without_tool, WorkflowPopulator
 from ._framework import ApiTestCase
 
@@ -16,8 +17,7 @@ class BasePageApiTestCase(ApiTestCase):
     def _create_valid_page_as(self, other_email, slug):
         run_as_user = self._setup_user(other_email)
         page_request = self._test_page_payload(slug=slug)
-        page_request["run_as"] = run_as_user["id"]
-        page_response = self._post("pages", page_request, admin=True, json=True)
+        page_response = self._post("pages", page_request, headers={'run-as': run_as_user["id"]}, admin=True, json=True)
         self._assert_status_code_is(page_response, 200)
         return page_response.json()
 
@@ -37,7 +37,13 @@ class BasePageApiTestCase(ApiTestCase):
         return request
 
 
-class PageApiTestCase(BasePageApiTestCase):
+class PageApiTestCase(BasePageApiTestCase, SharingApiTests):
+
+    api_name = "pages"
+
+    def create(self, name: str) -> str:
+        response_json = self._create_valid_page_with_slug(name)
+        return response_json["id"]
 
     def test_create(self):
         response_json = self._create_valid_page_with_slug("mypage")
@@ -138,7 +144,7 @@ steps:
     def test_delete(self):
         response_json = self._create_valid_page_with_slug("testdelete")
         delete_response = delete(self._api_url("pages/%s" % response_json['id'], use_key=True))
-        self._assert_status_code_is(delete_response, 200)
+        self._assert_status_code_is(delete_response, 204)
 
     def test_400_on_delete_invalid_page_id(self):
         delete_response = delete(self._api_url("pages/%s" % self._random_key(), use_key=True))

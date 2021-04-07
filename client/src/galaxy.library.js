@@ -6,14 +6,9 @@
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
-// import mod_utils from "utils/utils";
 import mod_baseMVC from "mvc/base-mvc";
-// import mod_library_model from "mvc/library/library-model";
-import mod_librarylist_view from "mvc/library/library-librarylist-view";
-import mod_librarytoolbar_view from "mvc/library/library-librarytoolbar-view";
 import mod_library_dataset_view from "mvc/library/library-dataset-view";
 import mod_library_library_view from "mvc/library/library-library-view";
-import mod_library_folder_view from "mvc/library/library-folder-view";
 // ============================================================================
 /**
  * The Data Libraries router. Takes care about triggering routes
@@ -127,25 +122,6 @@ var GalaxyLibrary = Backbone.View.extend({
 
         this.library_router = new LibraryRouter();
 
-        this.library_router.on("route:libraries", () => {
-            if (Galaxy.libraries.libraryToolbarView) {
-                Galaxy.libraries.libraryToolbarView.$el.unbind("click");
-            }
-            Galaxy.libraries.libraryToolbarView = new mod_librarytoolbar_view.LibraryToolbarView();
-            Galaxy.libraries.libraryListView = new mod_librarylist_view.LibraryListView();
-        });
-
-        this.library_router.on("route:libraries_page", (show_page) => {
-            if (Galaxy.libraries.libraryToolbarView === null) {
-                Galaxy.libraries.libraryToolbarView = new mod_librarytoolbar_view.LibraryToolbarView();
-                Galaxy.libraries.libraryListView = new mod_librarylist_view.LibraryListView({ show_page: show_page });
-            } else {
-                Galaxy.libraries.libraryListView.render({
-                    show_page: show_page,
-                });
-            }
-        });
-
         this.library_router.on("route:dataset_detail", (folder_id, dataset_id) => {
             if (Galaxy.libraries.datasetView) {
                 Galaxy.libraries.datasetView.$el.unbind("click");
@@ -184,16 +160,6 @@ var GalaxyLibrary = Backbone.View.extend({
             }
             Galaxy.libraries.libraryView = new mod_library_library_view.LibraryView({
                 id: library_id,
-                show_permissions: true,
-            });
-        });
-
-        this.library_router.on("route:folder_permissions", (folder_id) => {
-            if (Galaxy.libraries.folderView) {
-                Galaxy.libraries.folderView.$el.unbind("click");
-            }
-            Galaxy.libraries.folderView = new mod_library_folder_view.FolderView({
-                id: folder_id,
                 show_permissions: true,
             });
         });

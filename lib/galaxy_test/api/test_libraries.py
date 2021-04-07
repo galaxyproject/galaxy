@@ -284,7 +284,7 @@ class LibrariesApiTestCase(ApiTestCase):
         assert dataset_update_time == container_update_time, container_fetch_response
 
     def test_update_dataset_in_folder(self):
-        ld = self._create_dataset_in_folder_in_library("ForUpdateDataset")
+        ld = self._create_dataset_in_folder_in_library("ForUpdateDataset", wait=True)
         data = {'name': 'updated_name', 'file_ext': 'fastq', 'misc_info': 'updated_info', 'genome_build': 'updated_genome_build'}
         create_response = self._patch("libraries/datasets/%s" % ld.json()["id"], data=data)
         self._assert_status_code_is(create_response, 200)
@@ -425,13 +425,13 @@ class LibrariesApiTestCase(ApiTestCase):
         )
         return self._post("folders/%s" % containing_folder_id, data=create_data)
 
-    def _create_dataset_in_folder_in_library(self, library_name):
+    def _create_dataset_in_folder_in_library(self, library_name, wait=False):
         library = self.library_populator.new_private_library(library_name)
         folder_response = self._create_folder(library)
         self._assert_status_code_is(folder_response, 200)
         folder_id = folder_response.json()[0]['id']
         history_id = self.dataset_populator.new_history()
-        hda_id = self.dataset_populator.new_dataset(history_id, content="1 2 3")['id']
+        hda_id = self.dataset_populator.new_dataset(history_id, content="1 2 3", wait=wait)['id']
         payload = {'from_hda_id': hda_id, 'create_type': 'file', 'folder_id': folder_id}
         ld = self._post("libraries/%s/contents" % folder_id, payload)
         return ld

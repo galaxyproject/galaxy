@@ -20,6 +20,7 @@ from galaxy import (
 from galaxy.managers import (
     citations,
     histories,
+    sharable,
     users,
     workflows,
 )
@@ -34,27 +35,25 @@ from galaxy.web import (
     expose_api_raw,
 )
 from galaxy.webapps.base.controller import (
-    BaseAPIController,
     ExportsHistoryMixin,
     ImportsHistoryMixin,
-    SharableMixin
 )
+from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
 
 
-class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistoryMixin, SharableMixin):
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.citations_manager = citations.CitationsManager(app)
-        self.user_manager = users.UserManager(app)
-        self.workflow_manager = workflows.WorkflowsManager(app)
-        self.manager = histories.HistoryManager(app)
-        self.history_export_view = histories.HistoryExportView(app)
-        self.serializer = histories.HistorySerializer(app)
-        self.deserializer = histories.HistoryDeserializer(app)
-        self.filters = histories.HistoryFilters(app)
+class HistoriesController(BaseGalaxyAPIController, ExportsHistoryMixin, ImportsHistoryMixin):
+    citations_manager: citations.CitationsManager = depends(citations.CitationsManager)
+    user_manager: users.UserManager = depends(users.UserManager)
+    workflow_manager: workflows.WorkflowsManager = depends(workflows.WorkflowsManager)
+    manager: histories.HistoryManager = depends(histories.HistoryManager)
+    history_export_view: histories.HistoryExportView = depends(histories.HistoryExportView)
+    serializer: histories.HistorySerializer = depends(histories.HistorySerializer)
+    deserializer: histories.HistoryDeserializer = depends(histories.HistoryDeserializer)
+    filters: histories.HistoryFilters = depends(histories.HistoryFilters)
+    # TODO move all managers above and the actions logic to the HistoriesService
+    service: histories.HistoriesService = depends(histories.HistoriesService)
 
     @expose_api_anonymous
     def index(self, trans, deleted='False', **kwd):
@@ -580,3 +579,13 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
             'installed_builds': [{'label': ins, 'value': ins} for ins in installed_builds],
             'fasta_hdas': [{'label': f'{hda.hid}: {hda.name}', 'value': trans.security.encode_id(hda.id)} for hda in fasta_hdas],
         }
+
+    @expose_api
+    def sharing(self, trans, id, payload=None, **kwd):
+        """
+        * GET/POST /api/pages/{id}/sharing
+            View/modify sharing options for the page with the given id.
+        """
+        if payload:
+            payload = sharable.SharingPayload(**payload)
+        return self.service.sharing(trans, id, payload)

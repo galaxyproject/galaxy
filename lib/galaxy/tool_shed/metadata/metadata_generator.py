@@ -100,7 +100,7 @@ class MetadataGenerator:
         self.updating_installed_repository = updating_installed_repository
         self.persist = persist
         self.invalid_file_tups = []
-        self.sa_session = app.model.context.current
+        self.sa_session = app.model.session
         self.NOT_TOOL_CONFIGS = [suc.DATATYPES_CONFIG_FILENAME,
                                  REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
                                  TOOL_DEPENDENCY_DEFINITION_FILENAME,

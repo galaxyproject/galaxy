@@ -43,6 +43,7 @@
   <tool file="inputs_as_json.xml" />
   <tool file="inputs_as_json_profile.xml" />
   <tool file="inputs_as_json_with_paths.xml" />
+  <tool file="filter_multiple_splitter.xml" />
   <tool file="filter_static_regexp.xml" />
   <tool file="select_from_dataset.xml" />
   <tool file="dbkey_filter_input.xml" />
@@ -97,6 +98,7 @@
   <tool file="output_filter.xml" />
   <tool file="output_empty_work_dir.xml" />
   <tool file="output_filter_with_input.xml" />
+  <tool file="output_filter_with_input_optional.xml" />
   <tool file="output_filter_exception_1.xml" />
   <tool file="output_collection_filter.xml" />
   <tool file="output_auto_format.xml" />
@@ -114,6 +116,7 @@
   <tool file="param_text_option.xml" />
   <tool file="column_param.xml" />
   <tool file="column_param_configfile.xml" />
+  <tool file="column_param_list.xml" />
   <tool file="column_multi_param.xml" />
   <tool file="hidden_param.xml" />
   <tool file="special_params.xml" />
@@ -131,6 +134,7 @@
   <tool file="empty_output.xml" />
   <tool file="validation_empty_dataset.xml" />
   <tool file="implicit_conversion.xml" />
+  <tool file="implicit_conversion_format_input.xml" />
   <tool file="implicit_collection_conversion.xml" />
   <tool file="implicit_nested_list_conversion.xml" />
   <tool file="explicit_conversion.xml" />
@@ -146,6 +150,7 @@
   <tool file="fail_identifier.xml" />
   <tool file="fail_writing_work_dir_file.xml" />
   <tool file="tool_directory.xml" />
+  <tool file="tool_directory_docker.xml" />
   <tool file="output_action_change_format.xml" />
   <tool file="output_action_change_format_paired.xml" />
   <tool file="collection_paired_test.xml" />
@@ -155,6 +160,7 @@
   <tool file="collection_mixed_param.xml" />
   <tool file="collection_two_paired.xml" />
   <tool file="collection_creates_pair.xml" />
+  <tool file="collection_creates_pair_format.xml" />
   <tool file="collection_creates_pair_from_type.xml" />
   <tool file="collection_creates_pair_from_work_dir.xml" />
   <tool file="collection_creates_list.xml" />

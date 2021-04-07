@@ -47,7 +47,7 @@
 
             <transition name="fade">
                 <hgroup v-if="showHelp">
-                    <p>See the online <a href="https://galaxyproject.org/cloud/authnz/">Documentation</a>.</p>
+                    <p>See the online <a href="https://galaxyproject.org/authnz/">Documentation</a>.</p>
                 </hgroup>
             </transition>
 
@@ -60,9 +60,7 @@
             </transition>
 
             <b-button-group class="mb-4">
-                <button name="createNewKey" @click="onCreate">
-                    Create New Authorization Key
-                </button>
+                <button name="createNewKey" @click="onCreate">Create New Authorization Key</button>
             </b-button-group>
         </header>
 

@@ -24,7 +24,7 @@
                 <Citation
                     class="formatted-reference"
                     :citation="citation"
-                    :outputFormat="outputFormat"
+                    :output-format="outputFormat"
                     v-for="(citation, index) in citations"
                     :key="index"
                 />
@@ -44,7 +44,7 @@
                     <Citation
                         class="formatted-reference"
                         :citation="citation"
-                        :outputFormat="outputFormat"
+                        :output-format="outputFormat"
                         v-for="(citation, index) in citations"
                         :key="index"
                     />

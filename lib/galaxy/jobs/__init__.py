@@ -18,6 +18,7 @@ from abc import (
     abstractmethod,
 )
 from json import loads
+from typing import Any, Dict, List
 
 import packaging.version
 import yaml
@@ -56,6 +57,7 @@ from galaxy.jobs.runners import BaseJobRunner, JobState
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model import store
 from galaxy.objectstore import ObjectStorePopulator
+from galaxy.structured_app import MinimalManagerApp
 from galaxy.tool_util.deps import requirements
 from galaxy.tool_util.output_checker import (
     check_output,
@@ -277,9 +279,18 @@ class JobConfiguration(ConfiguresHandlers):
 
     These features are configured in the job configuration, by default, ``job_conf.xml``
     """
+    runner_plugins: List[dict]
+    handlers: dict
+    handler_runner_plugins: Dict[str, str]
+    tools: Dict[str, list]
+    resource_groups: Dict[str, list]
+    destinations: Dict[str, tuple]
+    resource_parameters: Dict[str, Any]
     DEFAULT_BASE_HANDLER_POOLS = ('job-handlers',)
 
     DEFAULT_NWORKERS = 4
+
+    DEFAULT_HANDLER_READY_WINDOW_SIZE = 100
 
     JOB_RESOURCE_CONDITIONAL_XML = """<conditional name="__job_resource">
         <param name="__job_resource__select" type="select" label="Job Resource Parameters">
@@ -290,7 +301,7 @@ class JobConfiguration(ConfiguresHandlers):
         <when value="yes"/>
     </conditional>"""
 
-    def __init__(self, app):
+    def __init__(self, app: MinimalManagerApp):
         """Parse the job configuration XML.
         """
         self.app = app
@@ -302,8 +313,8 @@ class JobConfiguration(ConfiguresHandlers):
         self.handler_assignment_methods = None
         self.handler_assignment_methods_configured = False
         self.handler_max_grab = None
+        self.handler_ready_window_size = None
         self.destinations = {}
-        self.destination_tags = {}
         self.default_destination_id = None
         self.tools = {}
         self.resource_groups = {}
@@ -392,6 +403,8 @@ class JobConfiguration(ConfiguresHandlers):
         log.info("Job handler assignment methods set to: %s", ', '.join(self.handler_assignment_methods))
         for tag, handlers in [(t, h) for t, h in self.handlers.items() if isinstance(h, list)]:
             log.info("Tag [%s] handlers: %s", tag, ', '.join(handlers))
+        self.handler_ready_window_size = int(handling_config_dict.get(
+            'ready_window_size', JobConfiguration.DEFAULT_HANDLER_READY_WINDOW_SIZE))
 
         # Parse environments
         job_metrics = self.app.job_metrics
@@ -546,6 +559,7 @@ class JobConfiguration(ConfiguresHandlers):
             self._set_default_handler_assignment_methods()
         else:
             self.app.application_stack.init_job_handling(self)
+        self.handler_ready_window_size = JobConfiguration.DEFAULT_HANDLER_READY_WINDOW_SIZE
         # Set the destination
         self.default_destination_id = 'local'
         self.destinations['local'] = [JobDestination(id='local', runner='local')]
@@ -1334,7 +1348,10 @@ class JobWrapper(HasResourceParameters):
             ActionBox.execute(self.app, self.sa_session, pja, job)
         # If the job was deleted, call tool specific fail actions (used for e.g. external metadata) and clean up
         if self.tool:
-            self.tool.job_failed(self, message, exception)
+            try:
+                self.tool.job_failed(self, message, exception)
+            except Exception:
+                log.exception(f"Error occured while calling tool specific fail actions for job {job.id}")
         cleanup_job = self.cleanup_job
         delete_files = cleanup_job == 'always' or (cleanup_job == 'onsuccess' and job.state == job.states.DELETED)
         self.cleanup(delete_files=delete_files)
@@ -2585,6 +2602,10 @@ class SharedComputeEnvironment(SimpleComputeEnvironment):
 
     def working_directory(self):
         return self.job_wrapper.working_directory
+
+    def env_config_directory(self):
+        """Working directory (possibly as environment variable evaluation)."""
+        return "$_GALAXY_JOB_DIR"
 
     def new_file_path(self):
         return os.path.abspath(self.app.config.new_file_path)

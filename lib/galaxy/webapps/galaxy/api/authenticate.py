@@ -25,13 +25,13 @@ from galaxy.util import (
     unicodify
 )
 from galaxy.web import expose_api_anonymous_and_sessionless
-from galaxy.webapps.base.controller import BaseAPIController
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
+from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
 
 
-class AuthenticationController(BaseAPIController):
+class AuthenticationController(BaseGalaxyAPIController):
 
     @expose_api_anonymous_and_sessionless
     def options(self, trans: GalaxyWebTransaction, **kwd):

@@ -776,12 +776,12 @@ mapping:
 
       enable_tool_document_cache:
         type: bool
-        default: true
+        default: false
         required: false
         desc: |
-          Set this to false to disable the tool document cache. This cache stores
-          expanded xml strings. Disabling the tool cache results in slower startup
-          times. The tool cache is backed by sqlite database, which cannot
+          Whether to enable the tool document cache. This cache stores
+          expanded XML strings. Enabling the tool cache results in slightly faster startup
+          times. The tool cache is backed by a SQLite database, which cannot
           be stored on certain network disks. The cache location is configurable
           using the ``tool_cache_data_dir`` setting, but can be disabled completely here.
 
@@ -1930,6 +1930,14 @@ mapping:
           Instead of sending prefix + dot-separated-path, Galaxy will send
           prefix with a tag path set to the page url
 
+      statsd_mock_calls:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Mock out statsd client calls - only used by testing infrastructure really.
+          Do not set this in production environments.
+
       library_import_dir:
         type: str
         required: false
@@ -2456,6 +2464,16 @@ mapping:
           scheduling workflows at the expense of increased total DB traffic because model objects
           are expunged from the SQL alchemy session between workflow invocation scheduling iterations.
           Set to -1 to disable any such maximum.
+
+      flush_per_n_datasets:
+        type: int
+        default: 1000
+        required: false
+        desc: |
+          Maximum number of datasets to create before flushing created datasets to database.
+          This affects tools that create many output datasets.
+          Higher values will lead to fewer database flushes and faster execution, but require
+          more memory. Set to -1 to disable creating datasets in batches.
 
       history_local_serial_workflow_scheduling:
         type: bool
@@ -3164,6 +3182,15 @@ mapping:
           specified database_connection above.  If that's not specified either, Galaxy
           will automatically create and use a separate sqlite database located in your
           <galaxy>/database folder (indicated in the commented out line below).
+
+      enable_celery_tasks:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Offload long-running tasks to a Celery task queue.
+          Activate this only if you have setup a Celery worker for Galaxy.
+          For details, see https://docs.galaxyproject.org/en/master/admin/production.html
 
       use_pbkdf2:
         type: bool

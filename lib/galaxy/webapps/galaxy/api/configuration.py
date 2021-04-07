@@ -10,16 +10,10 @@ from typing import (
     Optional
 )
 
-from fastapi import (
-    Depends,
-    Path,
-)
-from fastapi_utils.cbv import cbv
-from fastapi_utils.inferring_router import InferringRouter as APIRouter
+from fastapi import Path
 
 from galaxy.managers.configuration import ConfigurationManager
 from galaxy.managers.context import (
-    ProvidesAppContext,
     ProvidesUserContext,
 )
 from galaxy.managers.users import (
@@ -28,18 +22,17 @@ from galaxy.managers.users import (
 )
 from galaxy.model import User
 from galaxy.schema.fields import EncodedDatabaseIdField
-from galaxy.structured_app import StructuredApp
 from galaxy.web import (
     expose_api,
     expose_api_anonymous_and_sessionless,
     require_admin
 )
-from galaxy.webapps.base.controller import BaseAPIController
 from . import (
-    get_admin_user,
-    get_app,
-    get_trans,
-    get_user,
+    BaseGalaxyAPIController,
+    depends,
+    DependsOnTrans,
+    DependsOnUser,
+    Router,
 )
 from .common import (
     parse_serialization_params,
@@ -49,9 +42,8 @@ from .common import (
 
 log = logging.getLogger(__name__)
 
-router = APIRouter(tags=['configuration'])
+router = Router(tags=['configuration'])
 
-AdminUserRequired = Depends(get_admin_user)
 
 EncodedIdPathParam: EncodedDatabaseIdField = Path(
     ...,
@@ -60,20 +52,16 @@ EncodedIdPathParam: EncodedDatabaseIdField = Path(
 )
 
 
-def get_configuration_manager(app: StructuredApp = Depends(get_app)) -> ConfigurationManager:
-    return ConfigurationManager(app)
-
-
-@cbv(router)
+@router.cbv
 class FastAPIConfiguration:
-    configuration_manager: ConfigurationManager = Depends(get_configuration_manager)
+    configuration_manager: ConfigurationManager = depends(ConfigurationManager)
 
     @router.get(
         '/api/whoami',
         summary="Return information about the current authenticated user",
         response_description="Information about the current authenticated user"
     )
-    def whoami(self, user: User = Depends(get_user)) -> Optional[UserModel]:
+    def whoami(self, user: User = DependsOnUser) -> Optional[UserModel]:
         """Return information about the current authenticated user."""
         return _user_to_model(user)
 
@@ -84,7 +72,7 @@ class FastAPIConfiguration:
     )
     def index(
         self,
-        trans: ProvidesUserContext = Depends(get_trans),
+        trans: ProvidesUserContext = DependsOnTrans,
         view: Optional[str] = SerializationViewQueryParam,
         keys: Optional[str] = SerializationKeysQueryParam,
     ) -> Dict[str, Any]:
@@ -108,7 +96,7 @@ class FastAPIConfiguration:
 
     @router.get(
         '/api/configuration/dynamic_tool_confs',
-        dependencies=[AdminUserRequired],
+        require_admin=True,
         summary="Return dynamic tool configuration files",
         response_description="Dynamic tool configuration files"
     )
@@ -118,13 +106,12 @@ class FastAPIConfiguration:
 
     @router.get(
         '/api/configuration/decode/{encoded_id}',
-        dependencies=[AdminUserRequired],
+        require_admin=True,
         summary="Decode a given id",
         response_description="Decoded id"
     )
     def decode_id(
         self,
-        trans: ProvidesAppContext = Depends(get_trans),
         encoded_id: EncodedDatabaseIdField = EncodedIdPathParam
     ) -> Dict[str, int]:
         """Decode a given id."""
@@ -132,7 +119,7 @@ class FastAPIConfiguration:
 
     @router.get(
         '/api/configuration/tool_lineages',
-        dependencies=[AdminUserRequired],
+        require_admin=True,
         summary="Return tool lineages for tools that have them",
         response_description="Tool lineages for tools that have them"
     )
@@ -142,7 +129,7 @@ class FastAPIConfiguration:
 
     @router.put(
         '/api/configuration/toolbox',
-        dependencies=[AdminUserRequired],
+        require_admin=True,
         summary="Reload the Galaxy toolbox (but not individual tools)"
     )
     def reload_toolbox(self):
@@ -150,14 +137,12 @@ class FastAPIConfiguration:
         self.configuration_manager.reload_toolbox()
 
 
-class ConfigurationController(BaseAPIController):
-
-    def __init__(self, app: StructuredApp):
-        super().__init__(app)
-        self.configuration_manager = ConfigurationManager(app)
+class ConfigurationController(BaseGalaxyAPIController):
+    configuration_manager: ConfigurationManager = depends(ConfigurationManager)
+    user_manager: UserManager = depends(UserManager)
 
     @expose_api
-    def whoami(self, trans, **kwd):
+    def whoami(self, trans: ProvidesUserContext, **kwd):
         """
         GET /api/whoami
         Return information about the current authenticated user.
@@ -165,7 +150,7 @@ class ConfigurationController(BaseAPIController):
         :returns: dictionary with user information
         :rtype:   dict
         """
-        user = UserManager(self.app).current_user(trans)
+        user = self.user_manager.current_user(trans)
         return _user_to_model(user)
 
     @expose_api_anonymous_and_sessionless

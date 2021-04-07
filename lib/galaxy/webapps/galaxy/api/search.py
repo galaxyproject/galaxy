@@ -8,15 +8,13 @@ from galaxy.exceptions import ItemAccessibilityException
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model.search import GalaxySearchEngine
 from galaxy.util import unicodify
-from galaxy.webapps.base.controller import (
-    BaseAPIController,
-    SharableItemSecurityMixin
-)
+from galaxy.webapps.base.controller import SharableItemSecurityMixin
+from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
 
 
-class SearchController(BaseAPIController, SharableItemSecurityMixin):
+class SearchController(BaseGalaxyAPIController, SharableItemSecurityMixin):
 
     @web.legacy_expose_api
     def create(self, trans: ProvidesUserContext, payload: dict, **kwd):

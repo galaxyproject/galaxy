@@ -93,6 +93,7 @@ import BootstrapVue from "bootstrap-vue";
 import store from "store";
 import { getGalaxyInstance } from "app";
 import MarkdownIt from "markdown-it";
+import markdownItRegexp from "markdown-it-regexp";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEdit } from "@fortawesome/free-solid-svg-icons";
@@ -116,7 +117,12 @@ const FUNCTION_CALL = `\\s*[\\w\\|]+\\s*=` + FUNCTION_VALUE_REGEX;
 const FUNCTION_CALL_LINE = `\\s*(\\w+)\\s*\\(\\s*(?:(${FUNCTION_CALL})(,${FUNCTION_CALL})*)?\\s*\\)\\s*`;
 const FUNCTION_CALL_LINE_TEMPLATE = new RegExp(FUNCTION_CALL_LINE, "m");
 
+const mdNewline = markdownItRegexp(/<br>/, () => {
+    return "<div style='clear:both;'/><br>";
+});
+
 const md = MarkdownIt();
+md.use(mdNewline);
 
 Vue.use(BootstrapVue);
 

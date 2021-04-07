@@ -23,11 +23,11 @@ class HistoryAsContainerBaseTestCase(BaseTestCase, CreatesCollectionsMixin):
 
     def set_up_managers(self):
         super().set_up_managers()
-        self.history_manager = HistoryManager(self.app)
-        self.hda_manager = hdas.HDAManager(self.app)
-        self.collection_manager = collections.DatasetCollectionManager(self.app)
-        self.contents_manager = history_contents.HistoryContentsManager(self.app)
-        self.history_contents_filters = history_contents.HistoryContentsFilters(self.app)
+        self.history_manager = self.app[HistoryManager]
+        self.hda_manager = self.app[hdas.HDAManager]
+        self.collection_manager = self.app[collections.DatasetCollectionManager]
+        self.contents_manager = self.app[history_contents.HistoryContentsManager]
+        self.history_contents_filters = self.app[history_contents.HistoryContentsFilters]
 
     def add_hda_to_history(self, history, **kwargs):
         dataset = self.hda_manager.dataset_manager.create()

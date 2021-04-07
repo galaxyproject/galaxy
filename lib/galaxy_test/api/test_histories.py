@@ -5,6 +5,7 @@ from requests import (
     put
 )
 
+from galaxy_test.api.sharable import SharingApiTests
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
@@ -31,7 +32,13 @@ class BaseHistories:
         return create_response
 
 
-class HistoriesApiTestCase(ApiTestCase, BaseHistories):
+class HistoriesApiTestCase(ApiTestCase, BaseHistories, SharingApiTests):
+
+    api_name = "histories"
+
+    def create(self, name: str) -> str:
+        response_json = self._create_history(name)
+        return response_json["id"]
 
     def test_create_history(self):
         # Create a history.

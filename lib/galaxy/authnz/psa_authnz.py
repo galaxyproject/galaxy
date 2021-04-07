@@ -127,6 +127,7 @@ class PSAAuthnz(IdentityProvider):
         self.config['KEY'] = oidc_backend_config.get('client_id')
         self.config['SECRET'] = oidc_backend_config.get('client_secret')
         self.config['redirect_uri'] = oidc_backend_config.get('redirect_uri')
+        self.config['EXTRA_SCOPES'] = oidc_backend_config.get('extra_scopes')
         if oidc_backend_config.get('prompt') is not None:
             self.config[setting_name('AUTH_EXTRA_ARGUMENTS')]['prompt'] = oidc_backend_config.get('prompt')
         if oidc_backend_config.get('api_url') is not None:
@@ -154,6 +155,10 @@ class PSAAuthnz(IdentityProvider):
                 "SOCIAL_AUTH_SECONDARY_AUTH_PROVIDER" in self.config and \
                 "SOCIAL_AUTH_SECONDARY_AUTH_ENDPOINT" in self.config:
             backend.DEFAULT_SCOPE.append("https://www.googleapis.com/auth/cloud-platform")
+
+        if self.config['EXTRA_SCOPES'] is not None:
+            backend.DEFAULT_SCOPE.extend(self.config['EXTRA_SCOPES'])
+
         return do_auth(backend)
 
     def callback(self, state_token, authz_code, trans, login_redirect_url):

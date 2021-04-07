@@ -18,8 +18,9 @@ from galaxy.managers import (
     datasets,
     secured,
     taggable,
-    users
+    users,
 )
+from galaxy.structured_app import MinimalManagerApp
 
 log = logging.getLogger(__name__)
 
@@ -40,12 +41,12 @@ class HDAManager(datasets.DatasetAssociationManager,
     # TODO: move what makes sense into DatasetManager
     # TODO: which of these are common with LDDAs and can be pushed down into DatasetAssociationManager?
 
-    def __init__(self, app):
+    def __init__(self, app: MinimalManagerApp, user_manager: users.UserManager):
         """
         Set up and initialize other managers needed by hdas.
         """
         super().__init__(app)
-        self.user_manager = users.UserManager(app)
+        self.user_manager = user_manager
 
     def get_owned_ids(self, object_ids, history=None):
         """Get owned IDs.
@@ -134,6 +135,13 @@ class HDAManager(datasets.DatasetAssociationManager,
 
     # .... deletion and purging
     def purge(self, hda, flush=True):
+        if self.app.config.enable_celery_tasks:
+            from galaxy.celery.tasks import purge_hda
+            purge_hda.delay(hda_id=hda.id)
+        else:
+            self._purge(hda, flush=flush)
+
+    def _purge(self, hda, flush=True):
         """
         Purge this HDA and the dataset underlying it.
         """
@@ -145,7 +153,6 @@ class HDAManager(datasets.DatasetAssociationManager,
         # decrease the user's space used
         if quota_amount_reduction:
             user.adjust_total_disk_usage(-quota_amount_reduction)
-        return hda
 
     # .... states
     def error_if_uploading(self, hda):
@@ -247,7 +254,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
         annotatable.AnnotatableSerializerMixin):
     model_manager_class = HDAManager
 
-    def __init__(self, app):
+    def __init__(self, app: MinimalManagerApp):
         super().__init__(app)
         self.hda_manager = self.manager
 
@@ -506,7 +513,7 @@ class HDADeserializer(datasets.DatasetAssociationDeserializer,
     """
     model_manager_class = HDAManager
 
-    def __init__(self, app):
+    def __init__(self, app: MinimalManagerApp):
         super().__init__(app)
         self.hda_manager = self.manager
 

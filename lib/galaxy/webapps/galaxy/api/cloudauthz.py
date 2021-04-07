@@ -18,21 +18,22 @@ from galaxy.exceptions import (
     RequestParameterMissingException
 )
 from galaxy.managers import cloudauthzs
+from galaxy.structured_app import StructuredApp
 from galaxy.util import unicodify
 from galaxy.web import (
     expose_api
 )
-from galaxy.webapps.base.controller import BaseAPIController
+from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
 
 
-class CloudAuthzController(BaseAPIController):
+class CloudAuthzController(BaseGalaxyAPIController):
     """
     RESTfull controller for defining cloud authorizations.
     """
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
         self.cloudauthz_manager = cloudauthzs.CloudAuthzManager(app)
         self.cloudauthz_serializer = cloudauthzs.CloudAuthzsSerializer(app)
@@ -74,12 +75,12 @@ class CloudAuthzController(BaseAPIController):
 
             *   config:         a dictionary containing all the configuration required to request temporary credentials
                                 from the provider. See the following page for details:
-                                https://galaxyproject.org/cloud/authnz/
+                                https://galaxyproject.org/authnz/
 
             *   authn_id:       the (encoded) ID of a third-party authentication of a user. To have this ID, user must
                                 have logged-in to this Galaxy server using third-party identity (e.g., Google), or has
                                 associated his/her Galaxy account with a third-party OIDC-based identity. See this page:
-                                https://galaxyproject.org/admin/authentication/
+                                https://galaxyproject.org/authnz/config/
 
             *   description:    [Optional] a brief description for this configuration.
 
@@ -219,7 +220,7 @@ class CloudAuthzController(BaseAPIController):
                                                         To have this ID, user must have logged-in to this Galaxy server
                                                         using third-party identity (e.g., Google), or has associated
                                                         their Galaxy account with a third-party OIDC-based identity.
-                                                        See this page: https://galaxyproject.org/admin/authentication/
+                                                        See this page: https://galaxyproject.org/authnz/config/
 
                                                         Note: A user can associate a cloudauthz record with their own
                                                         authentications only. If the given authentication with authn_id
@@ -229,7 +230,7 @@ class CloudAuthzController(BaseAPIController):
                                         *   config:     a dictionary containing all the configuration required to
                                                         request temporary credentials from the provider.
                                                         See the following page for details:
-                                                        https://galaxyproject.org/cloud/authnz/
+                                                        https://galaxyproject.org/authnz/
 
                                         *   deleted:    a boolean type marking the specified cloudauthz as (un)deleted.
 

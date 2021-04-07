@@ -18,9 +18,12 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import eagerload, undefer
 
-from galaxy import managers, model, util, web
+from galaxy import model, util, web
 from galaxy.datatypes.interval import Bed
+from galaxy.managers.hdas import HDAManager
+from galaxy.managers.sharable import SlugBuilder
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
+from galaxy.structured_app import StructuredApp
 from galaxy.util import sanitize_text, unicodify
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.visualization.data_providers.genome import RawBedDataProvider
@@ -34,6 +37,7 @@ from galaxy.webapps.base.controller import (
     SharableMixin,
     UsesVisualizationMixin
 )
+from ..api import depends
 
 log = logging.getLogger(__name__)
 
@@ -231,10 +235,11 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
     _history_datasets_grid = HistoryDatasetsSelectionGrid()
     _library_datasets_grid = LibraryDatasetsSelectionGrid()
     _tracks_grid = TracksterSelectionGrid()
+    hda_manager: HDAManager = depends(HDAManager)
+    slug_builder: SlugBuilder = depends(SlugBuilder)
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
-        self.hda_manager = managers.hdas.HDAManager(app)
 
     #
     # -- Functions for listing visualizations. --
@@ -436,7 +441,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                 share.user = other
                 session = trans.sa_session
                 session.add(share)
-                self.create_item_slug(session, visualization)
+                self.slug_builder.create_item_slug(session, visualization)
                 session.flush()
                 viz_title = escape(visualization.title)
                 other_email = escape(other.email)
@@ -497,7 +502,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         """ Returns visualization's name and link. """
         visualization = self.get_visualization(trans, id, check_ownership=False, check_accessible=True)
 
-        if self.create_item_slug(trans.sa_session, visualization):
+        if self.slug_builder.create_item_slug(trans.sa_session, visualization):
             trans.sa_session.flush()
         return_dict = {"name": visualization.title,
                        "link": web.url_for(controller='visualization', action="display_by_username_and_slug", username=visualization.user.username, slug=visualization.slug)}
@@ -541,10 +546,11 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         id = kwd.get('id')
         if not id:
             return self.message_exception(trans, 'No visualization id received for editing.')
+        trans_user = trans.get_user()
         v = self.get_visualization(trans, id, check_ownership=True)
         if trans.request.method == 'GET':
             if v.slug is None:
-                self.create_item_slug(trans.sa_session, v)
+                self.slug_builder.create_item_slug(trans.sa_session, v)
             return {
                 'title': 'Edit visualization attributes',
                 'inputs': [{
@@ -562,7 +568,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                     'type': 'select',
                     'optional': True,
                     'value': v.dbkey,
-                    'options': trans.app.genomes.get_dbkeys(trans, chrom_info=True),
+                    'options': trans.app.genomes.get_dbkeys(trans_user, chrom_info=True),
                     'help': 'Parameter to associate your visualization with a database key.'
                 }, {
                     'name': 'annotation',
@@ -590,7 +596,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                 v.dbkey = v_dbkey
                 if v_annotation:
                     v_annotation = sanitize_html(v_annotation)
-                    self.add_item_annotation(trans.sa_session, trans.get_user(), v, v_annotation)
+                    self.add_item_annotation(trans.sa_session, trans_user, v, v_annotation)
                 trans.sa_session.add(v)
                 trans.sa_session.flush()
             return {'message': 'Attributes of \'%s\' successfully saved.' % v.title, 'status': 'success'}

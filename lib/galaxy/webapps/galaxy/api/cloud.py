@@ -10,21 +10,22 @@ from galaxy.managers import (
     cloud,
     datasets
 )
+from galaxy.structured_app import StructuredApp
 from galaxy.web import expose_api
-from galaxy.webapps.base.controller import BaseAPIController
+from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
 
 
-class CloudController(BaseAPIController):
+class CloudController(BaseGalaxyAPIController):
     """
     RESTfull controller for interaction with Amazon S3.
     """
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp, cloud_manager: cloud.CloudManager, datasets_serializer: datasets.DatasetSerializer):
         super().__init__(app)
-        self.cloud_manager = cloud.CloudManager(app)
-        self.datasets_serializer = datasets.DatasetSerializer(app)
+        self.cloud_manager = cloud_manager
+        self.datasets_serializer = datasets_serializer
 
     @expose_api
     def index(self, trans, **kwargs):

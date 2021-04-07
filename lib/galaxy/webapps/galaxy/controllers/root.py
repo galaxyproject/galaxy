@@ -13,10 +13,11 @@ from webob.exc import (
 )
 
 from galaxy import (
-    managers,
     web
 )
+from galaxy.managers.histories import HistoryManager, HistorySerializer
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.structured_app import StructuredApp
 from galaxy.util import (
     FILENAME_VALID_CHARS,
     listify,
@@ -24,6 +25,7 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.webapps.base import controller
+from ..api import depends
 
 log = logging.getLogger(__name__)
 
@@ -33,11 +35,11 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
     """
     Controller class that maps to the url root of Galaxy (i.e. '/').
     """
+    history_manager: HistoryManager = depends(HistoryManager)
+    history_serializer: HistorySerializer = depends(HistorySerializer)
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
-        self.history_manager = managers.histories.HistoryManager(app)
-        self.history_serializer = managers.histories.HistorySerializer(app)
 
     @web.expose
     def default(self, trans, target1=None, target2=None, **kwd):

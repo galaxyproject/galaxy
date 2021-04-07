@@ -2,9 +2,11 @@ import errno
 import json
 import logging
 import os
-
+from typing import Dict
 
 from galaxy import util
+from galaxy.structured_app import MinimalManagerApp
+from galaxy.tools.data import TabularToolDataTable
 from galaxy.tools.data import DatabaseToolDataTable, TabularToolDataTable
 from galaxy.util.template import fill_template
 
@@ -16,7 +18,10 @@ DEFAULT_VALUE_TRANSLATION_TYPE = 'template'
 
 
 class DataManagers:
-    def __init__(self, app, xml_filename=None):
+    data_managers: Dict[str, 'DataManager']
+    managed_data_tables: Dict[str, 'DataManager']
+
+    def __init__(self, app: MinimalManagerApp, xml_filename=None):
         self.app = app
         self.data_managers = {}
         self.managed_data_tables = {}

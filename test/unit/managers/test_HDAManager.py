@@ -19,9 +19,9 @@ class HDATestCase(BaseTestCase):
 
     def set_up_managers(self):
         super().set_up_managers()
-        self.hda_manager = hdas.HDAManager(self.app)
-        self.history_manager = HistoryManager(self.app)
-        self.dataset_manager = DatasetManager(self.app)
+        self.hda_manager = self.app[hdas.HDAManager]
+        self.history_manager = self.app[HistoryManager]
+        self.dataset_manager = self.app[DatasetManager]
 
     def _create_vanilla_hda(self, user_data=None):
         user_data = user_data or user2_data
@@ -175,7 +175,7 @@ class HDAManagerTestCase(HDATestCase):
 
         self.log("should purge an hda if config does allow")
         self.assertFalse(item1.purged)
-        self.assertEqual(self.hda_manager.purge(item1), item1)
+        self.hda_manager.purge(item1)
         self.assertTrue(item1.deleted)
         self.assertTrue(item1.purged)
 

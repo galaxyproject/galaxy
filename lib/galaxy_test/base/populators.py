@@ -212,19 +212,19 @@ def _raise_skip_if(check, *args):
 class BasePopulator(metaclass=ABCMeta):
 
     @abstractmethod
-    def _post(self, route, data=None, files=None, admin=False, json: bool = False) -> Response:
+    def _post(self, route, data=None, files=None, headers=None, admin=False, json: bool = False) -> Response:
         """POST data to target Galaxy instance on specified route."""
 
     @abstractmethod
-    def _put(self, route, data=None, admin=False) -> Response:
+    def _put(self, route, data=None, headers=None, admin=False) -> Response:
         """PUT data to target Galaxy instance on specified route."""
 
     @abstractmethod
-    def _get(self, route, data=None, admin=False) -> Response:
+    def _get(self, route, data=None, headers=None, admin=False) -> Response:
         """GET data from target Galaxy instance on specified route."""
 
     @abstractmethod
-    def _delete(self, route, data=None, admin=False) -> Response:
+    def _delete(self, route, data=None, headers=None, admin=False) -> Response:
         """DELETE against target Galaxy instance on specified route."""
 
 
@@ -784,23 +784,23 @@ class GalaxyInteractorHttpMixin:
     def _api_key(self):
         return self.galaxy_interactor.api_key
 
-    def _post(self, route, data=None, files=None, admin=False, json: bool = False) -> Response:
-        return self.galaxy_interactor.post(route, data, files=files, admin=admin, json=json)
+    def _post(self, route, data=None, files=None, headers=None, admin=False, json: bool = False) -> Response:
+        return self.galaxy_interactor.post(route, data, files=files, admin=admin, headers=headers, json=json)
 
-    def _put(self, route, data=None, admin=False):
-        return self.galaxy_interactor.put(route, data, admin=admin)
+    def _put(self, route, data=None, headers=None, admin=False):
+        return self.galaxy_interactor.put(route, data, headers=headers, admin=admin)
 
-    def _get(self, route, data=None, admin=False):
+    def _get(self, route, data=None, headers=None, admin=False):
         if data is None:
             data = {}
 
-        return self.galaxy_interactor.get(route, data=data, admin=admin)
+        return self.galaxy_interactor.get(route, data=data, headers=headers, admin=admin)
 
-    def _delete(self, route, data=None, admin=False):
+    def _delete(self, route, data=None, headers=None, admin=False):
         if data is None:
             data = {}
 
-        return self.galaxy_interactor.delete(route, data=data, admin=admin)
+        return self.galaxy_interactor.delete(route, data=data, headers=headers, admin=admin)
 
 
 class DatasetPopulator(GalaxyInteractorHttpMixin, BaseDatasetPopulator):
@@ -1001,7 +1001,13 @@ class BaseWorkflowPopulator(BasePopulator):
         if client_convert is None:
             client_convert = not round_trip_format_conversion
 
-        workflow_id = workflow_populator.upload_yaml_workflow(has_workflow, source_type=source_type, client_convert=client_convert, round_trip_format_conversion=round_trip_format_conversion, raw_yaml=raw_yaml)
+        workflow_id = workflow_populator.upload_yaml_workflow(
+            has_workflow,
+            source_type=source_type,
+            client_convert=client_convert,
+            round_trip_format_conversion=round_trip_format_conversion,
+            raw_yaml=raw_yaml
+        )
 
         if test_data is None:
             if jobs_descriptions is None:
@@ -1015,6 +1021,8 @@ class BaseWorkflowPopulator(BasePopulator):
 
         parameters = test_data.pop('step_parameters', {})
         replacement_parameters = test_data.pop("replacement_parameters", {})
+        if history_id is None:
+            history_id = self.dataset_populator.new_history()
         inputs, label_map, has_uploads = load_data_dict(history_id, test_data, self.dataset_populator, self.dataset_collection_populator)
         workflow_request = dict(
             history="hist_id=%s" % history_id,
@@ -1097,6 +1105,94 @@ class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator, Import
         }
         upload_response = self._post("dynamic_tools", data=data, admin=True)
         return upload_response
+
+    def scaling_workflow_yaml(self, **kwd):
+        workflow_dict = self._scale_workflow_dict(**kwd)
+        has_workflow = yaml.dump(workflow_dict)
+        return has_workflow
+
+    def _scale_workflow_dict(self, workflow_type="simple", **kwd):
+        if workflow_type == "two_outputs":
+            return self._scale_workflow_dict_two_outputs(**kwd)
+        elif workflow_type == "wave_simple":
+            return self._scale_workflow_dict_wave(**kwd)
+        else:
+            return self._scale_workflow_dict_simple(**kwd)
+
+    def _scale_workflow_dict_simple(self, **kwd):
+        collection_size = kwd.get("collection_size", 2)
+        workflow_depth = kwd.get("workflow_depth", 3)
+
+        scale_workflow_steps = [
+            {"tool_id": "create_input_collection", "state": {"collection_size": collection_size}, "label": "wf_input"},
+            {"tool_id": "cat", "state": {"input1": self._link("wf_input", "output")}, "label": "cat_0"}
+        ]
+
+        for i in range(workflow_depth):
+            link = "cat_" + str(i) + "/out_file1"
+            scale_workflow_steps.append(
+                {"tool_id": "cat", "state": {"input1": self._link(link)}, "label": "cat_" + str(i + 1)}
+            )
+
+        workflow_dict = {
+            "class": "GalaxyWorkflow",
+            "inputs": {},
+            "steps": scale_workflow_steps,
+        }
+        return workflow_dict
+
+    def _scale_workflow_dict_two_outputs(self, **kwd):
+        collection_size = kwd.get("collection_size", 10)
+        workflow_depth = kwd.get("workflow_depth", 10)
+
+        scale_workflow_steps = [
+            {"tool_id": "create_input_collection", "state": {"collection_size": collection_size}, "label": "wf_input"},
+            {"tool_id": "cat", "state": {"input1": self._link("wf_input"), "input2": self._link("wf_input")}, "label": "cat_0"}
+        ]
+
+        for i in range(workflow_depth):
+            link1 = "cat_" + str(i) + "#out_file1"
+            link2 = "cat_" + str(i) + "#out_file2"
+            scale_workflow_steps.append(
+                {"tool_id": "cat", "state": {"input1": self._link(link1), "input2": self._link(link2)}}
+            )
+        workflow_dict = {
+            "class": "GalaxyWorkflow",
+            "inputs": {},
+            "steps": scale_workflow_steps,
+        }
+        return workflow_dict
+
+    def _scale_workflow_dict_wave(self, **kwd):
+        collection_size = kwd.get("collection_size", 10)
+        workflow_depth = kwd.get("workflow_depth", 10)
+
+        scale_workflow_steps = [
+            {"tool_id": "create_input_collection", "state": {"collection_size": collection_size}, "label": "wf_input"},
+            {"tool_id": "cat_list", "state": {"input1": self._link("wf_input", "output")}, "label": "step_1"},
+        ]
+
+        for i in range(workflow_depth):
+            step = i + 2
+            if step % 2 == 1:
+                step_dict = {"tool_id": "cat_list", "state": {"input1": self._link("step_%s" % (step - 1), "output")}}
+            else:
+                step_dict = {"tool_id": "split", "state": {"input1": self._link("step_%s" % (step - 1), "out_file1")}}
+            step_dict["label"] = "step_%s" % (step,)
+            scale_workflow_steps.append(step_dict)
+
+        workflow_dict = {
+            "class": "GalaxyWorkflow",
+            "inputs": {},
+            "steps": scale_workflow_steps,
+        }
+        return workflow_dict
+
+    @staticmethod
+    def _link(link, output_name=None):
+        if output_name is not None:
+            link = str(link) + "/" + output_name
+        return {"$link": link}
 
 
 class LibraryPopulator:
@@ -1636,26 +1732,26 @@ class GiHttpMixin:
             data = {}
         return self._gi.make_get_request(self._url(route), data=data)
 
-    def _post(self, route, data=None, files=None, admin=False, json: bool = False) -> Response:
+    def _post(self, route, data=None, files=None, headers=None, admin=False, json: bool = False) -> Response:
         if data is None:
             data = {}
         data = data.copy()
         data['key'] = self._gi.key
-        return requests.post(self._url(route), data=data)
+        return requests.post(self._url(route), data=data, headers=headers)
 
-    def _put(self, route, data=None, admin=False):
+    def _put(self, route, data=None, headers=None, admin=False):
         if data is None:
             data = {}
         data = data.copy()
         data['key'] = self._gi.key
-        return requests.put(self._url(route), data=data)
+        return requests.put(self._url(route), data=data, headers=headers)
 
-    def _delete(self, route, data=None):
+    def _delete(self, route, data=None, headers=None):
         if data is None:
             data = {}
         data = data.copy()
         data['key'] = self._gi.key
-        return requests.delete(self._url(route), data=data)
+        return requests.delete(self._url(route), data=data, headers=headers)
 
     def _url(self, route):
         if route.startswith("/api/"):

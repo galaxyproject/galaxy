@@ -189,12 +189,18 @@ def set_metadata_portable():
 
         # Load outputs.
         export_store = store.DirectoryModelExportStore('metadata/outputs_populated', serialize_dataset_objects=True, for_edit=True, strip_metadata_files=False)
-    import_model_store = store.imported_store_for_metadata('metadata/outputs_new', object_store=object_store)
+    try:
+        import_model_store = store.imported_store_for_metadata('metadata/outputs_new', object_store=object_store)
+    except AssertionError:
+        # Remove in 21.09, this should only happen for jobs that started on <= 20.09 and finish now
+        import_model_store = None
 
     for output_name, output_dict in outputs.items():
         dataset_instance_id = output_dict["id"]
         klass = getattr(galaxy.model, output_dict.get('model_class', 'HistoryDatasetAssociation'))
-        dataset = import_model_store.sa_session.query(klass).find(dataset_instance_id)
+        dataset = None
+        if import_model_store:
+            dataset = import_model_store.sa_session.query(klass).find(dataset_instance_id)
         if dataset is None:
             # legacy check for jobs that started before 21.01, remove on 21.05
             filename_in = os.path.join("metadata/metadata_in_%s" % output_name)

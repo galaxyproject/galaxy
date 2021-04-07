@@ -5,6 +5,7 @@ Histories are containers for datasets or dataset collections
 created (or copied) by users over the course of an analysis.
 """
 import logging
+from typing import Optional
 
 from sqlalchemy import (
     asc,
@@ -21,6 +22,8 @@ from galaxy.managers import (
     history_contents,
     sharable
 )
+from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.structured_app import MinimalManagerApp
 
 log = logging.getLogger(__name__)
 
@@ -37,11 +40,11 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
 
     # TODO: incorporate imp/exp (or alias to)
 
-    def __init__(self, app, *args, **kwargs):
-        super().__init__(app, *args, **kwargs)
-        self.hda_manager = hdas.HDAManager(app)
-        self.contents_manager = history_contents.HistoryContentsManager(app)
-        self.contents_filters = history_contents.HistoryContentsFilters(app)
+    def __init__(self, app: MinimalManagerApp, hda_manager: hdas.HDAManager, contents_manager: history_contents.HistoryContentsManager, contents_filters: history_contents.HistoryContentsFilters):
+        super().__init__(app)
+        self.hda_manager = hda_manager
+        self.contents_manager = contents_manager
+        self.contents_filters = contents_filters
 
     def copy(self, history, user, **kwargs):
         """
@@ -171,7 +174,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
 
 class HistoryExportView:
 
-    def __init__(self, app):
+    def __init__(self, app: MinimalManagerApp):
         self.app = app
 
     def get_exports(self, trans, history_id):
@@ -223,13 +226,13 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
     model_manager_class = HistoryManager
     SINGLE_CHAR_ABBR = 'h'
 
-    def __init__(self, app, **kwargs):
-        super().__init__(app, **kwargs)
+    def __init__(self, app: MinimalManagerApp, hda_manager: hdas.HDAManager, hda_serializer: hdas.HDASerializer, history_contents_serializer: history_contents.HistoryContentsSerializer):
+        super().__init__(app)
 
         self.history_manager = self.manager
-        self.hda_manager = hdas.HDAManager(app)
-        self.hda_serializer = hdas.HDASerializer(app)
-        self.history_contents_serializer = history_contents.HistoryContentsSerializer(app)
+        self.hda_manager = hda_manager
+        self.hda_serializer = hda_serializer
+        self.history_contents_serializer = history_contents_serializer
 
         self.default_view = 'summary'
         self.add_view('summary', [
@@ -442,7 +445,7 @@ class HistoryDeserializer(sharable.SharableModelDeserializer, deletable.Purgable
     """
     model_manager_class = HistoryManager
 
-    def __init__(self, app):
+    def __init__(self, app: MinimalManagerApp):
         super().__init__(app)
         self.history_manager = self.manager
 
@@ -470,3 +473,25 @@ class HistoryFilters(sharable.SharableModelFilters, deletable.PurgableFiltersMix
             'create_time': {'op': ('le', 'ge', 'gt', 'lt'), 'val': self.parse_date},
             'update_time': {'op': ('le', 'ge', 'gt', 'lt'), 'val': self.parse_date},
         })
+
+
+class HistoriesService:
+    """Common interface/service logic for interactions with histories in the context of the API.
+
+    Provides the logic of the actions invoked by API controllers and uses type definitions
+    and pydantic models to declare its parameters and return types.
+    """
+
+    def __init__(self, app: MinimalManagerApp, manager: HistoryManager, serializer: HistorySerializer):
+        self.app = app
+        self.manager = manager
+        self.serializer = serializer
+        self.shareable_service = sharable.ShareableService(self.manager, self.serializer)
+
+    # TODO: add the rest of the API actions here and call them directly from the API controller
+
+    def sharing(self, trans, id: EncodedDatabaseIdField, payload: Optional[sharable.SharingPayload] = None) -> sharable.SharingStatus:
+        """Allows to publish or share with other users the given resource (by id) and returns the current sharing
+        status of the resource.
+        """
+        return self.shareable_service.sharing(trans, id, payload)

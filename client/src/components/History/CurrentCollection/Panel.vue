@@ -25,7 +25,7 @@
                     </template>
 
                     <template v-slot:listing>
-                        <VirtualScroller
+                        <Scroller
                             key-field="element_index"
                             :item-height="36"
                             :items="contents"
@@ -44,7 +44,7 @@
                                     @viewCollection="$emit('viewCollection', item)"
                                 />
                             </template>
-                        </VirtualScroller>
+                        </Scroller>
                     </template>
                 </Layout>
             </ExpandedItems>
@@ -61,7 +61,7 @@ import { DscProvider, CollectionContentProvider, ExpandedItems } from "../provid
 import Layout from "../Layout";
 import TopNav from "./TopNav";
 import Details from "./Details";
-import VirtualScroller from "../../VirtualScroller";
+import Scroller from "../Scroller";
 import { CollectionContentItem } from "../ContentItem";
 
 export default {
@@ -71,7 +71,7 @@ export default {
         Layout,
         TopNav,
         Details,
-        VirtualScroller,
+        Scroller,
         CollectionContentItem,
         ExpandedItems,
     },

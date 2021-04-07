@@ -15,13 +15,15 @@ from sqlalchemy.orm import (
 
 import galaxy.util
 from galaxy import exceptions
-from galaxy import managers
 from galaxy import model
 from galaxy import web
+from galaxy.managers import histories
+from galaxy.managers.sharable import SlugBuilder
 from galaxy.model.item_attrs import (
     UsesAnnotations,
     UsesItemRatings
 )
+from galaxy.structured_app import StructuredApp
 from galaxy.util import (
     listify,
     Params,
@@ -47,6 +49,7 @@ from galaxy.webapps.base.controller import (
     WARNING,
 )
 from ._create_history_template import render_item
+from ..api import depends
 
 
 log = logging.getLogger(__name__)
@@ -235,12 +238,13 @@ class HistoryAllPublishedGrid(grids.Grid):
 
 class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesItemRatings,
                         ExportsHistoryMixin, ImportsHistoryMixin):
+    history_manager: histories.HistoryManager = depends(histories.HistoryManager)
+    history_export_view: histories.HistoryExportView = depends(histories.HistoryExportView)
+    history_serializer: histories.HistorySerializer = depends(histories.HistorySerializer)
+    slug_builder: SlugBuilder = depends(SlugBuilder)
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
-        self.history_manager = managers.histories.HistoryManager(app)
-        self.history_export_view = managers.histories.HistoryExportView(app)
-        self.history_serializer = managers.histories.HistorySerializer(self.app)
 
     @web.expose
     def index(self, trans):
@@ -1038,7 +1042,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                     share.history = history
                     share.user = send_to_user
                     trans.sa_session.add(share)
-                    self.create_item_slug(trans.sa_session, history)
+                    self.slug_builder.create_item_slug(trans.sa_session, history)
                     trans.sa_session.flush()
                     if history not in shared_histories:
                         shared_histories.append(history)
@@ -1111,7 +1115,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     def get_name_and_link_async(self, trans, id=None):
         """ Returns history's name and link. """
         history = self.history_manager.get_accessible(self.decode_id(id), trans.user, current_history=trans.history)
-        if self.create_item_slug(trans.sa_session, history):
+        if self.slug_builder.create_item_slug(trans.sa_session, history):
             trans.sa_session.flush()
         return_dict = {
             "name": history.name,

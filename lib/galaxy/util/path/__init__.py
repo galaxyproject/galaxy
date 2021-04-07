@@ -32,6 +32,7 @@ from os.path import (
     relpath,
     sep as separator,
 )
+from pathlib import Path
 try:
     from pwd import getpwuid
 except ImportError:
@@ -352,6 +353,9 @@ def external_chown(path, pwent, external_chown_script, description="file"):
     try:
         if not external_chown_script:
             raise ValueError('external_chown_script is not defined')
+        if Path(path).owner() == pwent[0]:
+            return True
+
         cmd = shlex.split(external_chown_script)
         cmd.extend([path, pwent[0], str(pwent[3])])
         log.debug('Changing ownership of {} with: {}'.format(path, ' '.join(map(shlex.quote, cmd))))

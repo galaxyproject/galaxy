@@ -12,10 +12,9 @@ log = logging.getLogger(__name__)
 
 class AuthManager:
 
-    def __init__(self, app):
-        self.__app = app
-        self.redact_username_in_logs = app.config.redact_username_in_logs
-        self.authenticators = get_authenticators(app.config.auth_config_file, app.config.is_set('auth_config_file'))
+    def __init__(self, config):
+        self.redact_username_in_logs = config.redact_username_in_logs
+        self.authenticators = get_authenticators(config.auth_config_file, config.is_set('auth_config_file'))
 
     def check_registration_allowed(self, email, username, password):
         """Checks if the provided email/username is allowed to register."""

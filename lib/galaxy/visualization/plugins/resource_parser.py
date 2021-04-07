@@ -44,8 +44,8 @@ class ResourceParser:
 
     def _init_managers(self, app):
         return bunch.Bunch(
-            visualization=visualization_manager.VisualizationManager(app),
-            hda=hda_manager.HDAManager(app)
+            visualization=app[visualization_manager.VisualizationManager],
+            hda=app[hda_manager.HDAManager],
         )
 
     def parse_parameter_dictionary(self, trans, param_config_dict, query_params, param_modifiers=None):

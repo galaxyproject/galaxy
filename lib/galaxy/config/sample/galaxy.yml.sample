@@ -624,13 +624,13 @@ galaxy:
   # generated commands run in sh.
   #default_job_shell: /bin/bash
 
-  # Set this to false to disable the tool document cache. This cache
-  # stores expanded xml strings. Disabling the tool cache results in
-  # slower startup times. The tool cache is backed by sqlite database,
+  # Whether to enable the tool document cache. This cache stores
+  # expanded XML strings. Enabling the tool cache results in slightly
+  # faster startup times. The tool cache is backed by a SQLite database,
   # which cannot be stored on certain network disks. The cache location
   # is configurable using the ``tool_cache_data_dir`` setting, but can
   # be disabled completely here.
-  #enable_tool_document_cache: true
+  #enable_tool_document_cache: false
 
   # Tool related caching. Fully expanded tools and metadata will be
   # stored at this path. Per tool_conf cache locations can be configured
@@ -1684,6 +1684,13 @@ galaxy:
   # disable any such maximum.
   #maximum_workflow_jobs_per_scheduling_iteration: 1000
 
+  # Maximum number of datasets to create before flushing created
+  # datasets to database. This affects tools that create many output
+  # datasets. Higher values will lead to fewer database flushes and
+  # faster execution, but require more memory. Set to -1 to disable
+  # creating datasets in batches.
+  #flush_per_n_datasets: 1000
+
   # Force serial scheduling of workflows within the context of a
   # particular history
   #history_local_serial_workflow_scheduling: false
@@ -2151,6 +2158,11 @@ galaxy:
   # database located in your <galaxy>/database folder (indicated in the
   # commented out line below).
   #amqp_internal_connection: sqlalchemy+sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE
+
+  # Offload long-running tasks to a Celery task queue. Activate this
+  # only if you have setup a Celery worker for Galaxy. For details, see
+  # https://docs.galaxyproject.org/en/master/admin/production.html
+  #enable_celery_tasks: false
 
   # Allow disabling pbkdf2 hashing of passwords for legacy situations.
   # This should normally be left enabled unless there is a specific

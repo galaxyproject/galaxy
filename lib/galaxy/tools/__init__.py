@@ -27,7 +27,6 @@ from galaxy import (
 )
 from galaxy.exceptions import ToolInputsNotReadyException
 from galaxy.job_execution import output_collect
-from galaxy.managers.jobs import JobSearch
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.tool_shed.util.repository_util import get_installed_repository
 from galaxy.tool_shed.util.shed_util_common import set_image_paths
@@ -553,7 +552,7 @@ class Tool(Dictifiable):
         # The job search is only relevant in a galaxy context, and breaks
         # loading tools into the toolshed for validation.
         if self.app.name == 'galaxy':
-            self.job_search = JobSearch(app=self.app)
+            self.job_search = self.app.job_search
 
     def __getattr__(self, name):
         lazy_attributes = {
@@ -1361,7 +1360,7 @@ class Tool(Dictifiable):
     def populate_resource_parameters(self, tool_source):
         root = getattr(tool_source, 'root', None)
         if root is not None and hasattr(self.app, 'job_config') and hasattr(self.app.job_config, 'get_tool_resource_xml'):
-            resource_xml = self.app.job_config.get_tool_resource_xml(root.get('id'), self.tool_type)
+            resource_xml = self.app.job_config.get_tool_resource_xml(root.get('id', '').lower(), self.tool_type)
             if resource_xml is not None:
                 inputs = root.find('inputs')
                 if inputs is None:
@@ -1937,6 +1936,7 @@ class Tool(Dictifiable):
             input_dbkey,
             object_store=tool.app.object_store,
             final_job_state=final_job_state,
+            flush_per_n_datasets=tool.app.config.flush_per_n_datasets,
         )
         collected = output_collect.collect_primary_datasets(
             job_context,

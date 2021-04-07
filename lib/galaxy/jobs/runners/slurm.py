@@ -153,6 +153,7 @@ class SlurmJobRunner(DRMAAJobRunner):
                     self.work_queue.put((self.fail_job, ajs))
                     return
             if drmaa_state == self.drmaa_job_states.DONE:
+                ajs.job_wrapper.reclaim_ownership()
                 with open(ajs.error_file) as rfh:
                     _remove_spurious_top_lines(rfh, ajs)
                 with open(ajs.error_file, 'r+') as f:

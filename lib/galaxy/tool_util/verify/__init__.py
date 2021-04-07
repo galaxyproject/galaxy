@@ -388,4 +388,4 @@ def files_contains(file1, file2, attributes=None):
         if contains not in history_data:
             line_diff_count += 1
         if line_diff_count > lines_diff:
-            raise AssertionError("Failed to find '%s' in history data. (lines_diff=%i):\n" % (contains, lines_diff))
+            raise AssertionError("Failed to find '%s' in history data. (lines_diff=%i)" % (contains, lines_diff))

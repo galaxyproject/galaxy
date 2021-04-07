@@ -11,6 +11,7 @@ from pydantic import (
 
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import ItemTagAssociation
+from galaxy.model.tags import GalaxyTagHandlerSession
 from galaxy.schema.fields import EncodedDatabaseIdField
 
 taggable_item_names = {item: item for item in ItemTagAssociation.associated_item_names}
@@ -45,7 +46,7 @@ class TagsManager:
 
     def update(self, trans: ProvidesUserContext, payload: ItemTagsPayload) -> None:
         """Apply a new set of tags to an item; previous tags are deleted."""
-        tag_handler = trans.app.tag_handler
+        tag_handler = GalaxyTagHandlerSession(trans.sa_session)
         new_tags: Optional[str] = None
         if payload.item_tags and len(payload.item_tags) > 0:
             new_tags = ",".join(payload.item_tags)
@@ -59,8 +60,9 @@ class TagsManager:
         """
         Get an item based on type and id.
         """
-        tag_handler = trans.app.tag_handler
+        tag_handler = GalaxyTagHandlerSession(trans.sa_session)
         id = trans.security.decode_id(payload.item_id)
-        item_class = tag_handler.item_tag_assoc_info[payload.item_class].item_class
+        item_class_name = str(payload.item_class)
+        item_class = tag_handler.item_tag_assoc_info[item_class_name].item_class
         item = trans.sa_session.query(item_class).filter(item_class.id == id).first()
         return item

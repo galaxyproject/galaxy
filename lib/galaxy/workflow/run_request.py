@@ -6,7 +6,6 @@ from galaxy import (
     exceptions,
     model
 )
-from galaxy.managers import histories
 from galaxy.tools.parameters.meta import expand_workflow_inputs
 from galaxy.workflow.resources import get_resource_mapper_function
 
@@ -202,7 +201,7 @@ def _get_target_history(trans, workflow, payload, param_keys=None, index=0):
         else:
             history_name = history_param
     if history_id:
-        history_manager = histories.HistoryManager(trans.app)
+        history_manager = trans.app.history_manager
         target_history = history_manager.get_owned(trans.security.decode_id(history_id), trans.user, current_history=trans.history)
     else:
         if history_name:

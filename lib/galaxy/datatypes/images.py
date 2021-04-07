@@ -4,8 +4,10 @@ Image classes
 import base64
 import logging
 import zipfile
+from io import StringIO
 from urllib.parse import quote_plus
 
+import mrcfile
 import numpy as np
 
 from galaxy.datatypes.binary import Binary
@@ -282,6 +284,35 @@ class Trk(Binary):
         if header['header_size'] == 1000 and b'TRACK' in header['magic'] and \
            header['version'] == 2 and len(header['dim']) == 3:
             return True
+        return False
+
+
+class Mrc2014(Binary):
+    """
+    MRC/CCP4 2014 file format (.mrc).
+    https://www.ccpem.ac.uk/mrc_format/mrc2014.php
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('1.mrc')
+    >>> Mrc2014().sniff(fname)
+    True
+    >>> fname = get_test_fname('2.txt')
+    >>> Mrc2014().sniff(fname)
+    False
+    """
+    file_ext = 'mrc'
+
+    def sniff(self, filename):
+        # Handle the wierdness of mrcfile:
+        # https://github.com/ccpem/mrcfile/blob/master/mrcfile/validator.py#L88
+        try:
+            # An exception is thrown
+            # if the file is not an
+            # mrc2014 file.
+            if mrcfile.validate(filename, print_file=StringIO()):
+                return True
+        except Exception:
+            return False
         return False
 
 

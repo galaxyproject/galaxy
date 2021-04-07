@@ -6,6 +6,7 @@ import imp
 import logging
 import os
 from string import Template
+from typing import Dict
 
 import yaml
 
@@ -57,7 +58,7 @@ class Registry:
         # tool shed repositories that contain display applications.
         self.proprietary_display_app_containers = []
         # Map a display application id to a display application
-        self.display_applications = {}
+        self.display_applications: Dict[str, DisplayApplication] = {}
         # The following 2 attributes are used in the to_xml_file()
         # method to persist the current state into an xml file.
         self.display_path_attr = None

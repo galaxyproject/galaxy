@@ -3,6 +3,7 @@ OAuth 2.0 and OpenID Connect Authentication and Authorization Controller.
 """
 
 
+import datetime
 import json
 import logging
 
@@ -16,7 +17,7 @@ from galaxy.webapps.base.controller import JSAppLauncher
 
 log = logging.getLogger(__name__)
 
-PROVIDER_COOKIE_NAME = 'oidc-provider'
+PROVIDER_COOKIE_NAME = 'galaxy-oidc-provider'
 
 
 class OIDC(JSAppLauncher):
@@ -42,8 +43,23 @@ class OIDC(JSAppLauncher):
             rtv.append({'id': trans.app.security.encode_id(authnz.id), 'provider': authnz.provider, 'email': authnz.uid})
         # Add cilogon and custos identities
         for token in trans.user.custos_auth:
-            userinfo = jwt.decode(token.id_token, options={"verify_signature": False})
-            rtv.append({'id': trans.app.security.encode_id(token.id), 'provider': token.provider, 'email': userinfo['email']})
+            # for purely displaying the info to user, we bypass verification of
+            # signature, audience, and expiration as that's potentially useful
+            # information to share with the end user
+            try:
+                userinfo = jwt.decode(token.id_token, options={'verify_signature': False, 'verify_aud': False, 'verify_exp': False})
+                rtv.append({
+                    'id': trans.app.security.encode_id(token.id),
+                    'provider': token.provider,
+                    'email': userinfo['email'],
+                    'expiration': str(datetime.datetime.utcfromtimestamp(userinfo['exp']))
+                })
+            except Exception:
+                rtv.append({
+                    'id': trans.app.security.encode_id(token.id),
+                    'provider': token.provider,
+                    'error': "Unable to decode token"
+                })
         return rtv
 
     @web.json
@@ -142,6 +158,7 @@ class OIDC(JSAppLauncher):
         return trans.response.send_redirect(redirect_url)
 
     @web.json
+    @web.expose
     def logout(self, trans, provider, **kwargs):
         post_logout_redirect_url = trans.request.base + url_for('/') + 'root/login?is_logout_redirect=true'
         success, message, redirect_uri = trans.app.authnz_manager.logout(provider,
@@ -153,8 +170,8 @@ class OIDC(JSAppLauncher):
             return {'message': message}
 
     @web.expose
-    def get_logout_url(self, trans, **kwargs):
-        idp_provider = trans.get_cookie(name=PROVIDER_COOKIE_NAME)
+    def get_logout_url(self, trans, provider=None, **kwargs):
+        idp_provider = provider if provider else trans.get_cookie(name=PROVIDER_COOKIE_NAME)
         if idp_provider:
             return trans.response.send_redirect(url_for(controller='authnz', action='logout', provider=idp_provider))
 

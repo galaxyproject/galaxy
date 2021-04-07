@@ -1,11 +1,12 @@
-name: "Maintenance Bot"
+name: Maintenance Bot
 on:
   pull_request_target:
-    types: [opened, reopened]
+    types: [opened, reopened, edited, ready_for_review, unlabeled]
 
 jobs:
   labeler:
     name: Assign labels and milestone
+    if: github.repository_owner == 'galaxyproject'
     runs-on: ubuntu-latest
     env:
       MILESTONE_NUMBER: 19

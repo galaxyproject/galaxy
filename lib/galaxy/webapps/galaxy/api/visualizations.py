@@ -13,31 +13,24 @@ from galaxy import (
     util,
     web
 )
-from galaxy.managers.visualizations import (
-    VisualizationManager,
-    VisualizationSerializer
-)
+from galaxy.managers.sharable import SharingPayload
+from galaxy.managers.visualizations import VisualizationsService
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.web import expose_api
 from galaxy.webapps.base.controller import (
-    BaseAPIController,
-    SharableMixin,
     UsesVisualizationMixin
 )
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
+from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
 
 
-class VisualizationsController(BaseAPIController, UsesVisualizationMixin, SharableMixin, UsesAnnotations):
+class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, UsesAnnotations):
     """
     RESTful controller for interactions with visualizations.
     """
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.manager = VisualizationManager(app)
-        self.serializer = VisualizationSerializer(app)
+    service: VisualizationsService = depends(VisualizationsService)
 
     @expose_api
     def index(self, trans: GalaxyWebTransaction, **kwargs):
@@ -157,6 +150,16 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
         trans.sa_session.flush()
 
         return rval
+
+    @expose_api
+    def sharing(self, trans, id, payload=None, **kwd):
+        """
+        * GET/POST /api/pages/{id}/sharing
+            View/modify sharing options for the page with the given id.
+        """
+        if payload:
+            payload = SharingPayload(**payload)
+        return self.service.sharing(trans, id, payload)
 
     def _validate_and_parse_payload(self, payload):
         """

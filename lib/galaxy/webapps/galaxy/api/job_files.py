@@ -14,12 +14,12 @@ from galaxy.web import (
     expose_api_anonymous_and_sessionless,
     expose_api_raw_anonymous_and_sessionless,
 )
-from galaxy.webapps.base.controller import BaseAPIController
+from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
 
 
-class JobFilesAPIController(BaseAPIController):
+class JobFilesAPIController(BaseGalaxyAPIController):
     """ This job files controller allows remote job running mechanisms to
     read and modify the current state of files for queued and running jobs.
     It is certainly not meant to represent part of Galaxy's stable, user

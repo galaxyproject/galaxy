@@ -75,13 +75,9 @@ class UserManagerTestCase(BaseTestCase):
 
     def test_email_queries(self):
         user2 = self.user_manager.create(**user2_data)
-        user3 = self.user_manager.create(**user3_data)
 
         self.log("should be able to query by email")
         self.assertEqual(self.user_manager.by_email(user2_data['email']), user2)
-
-        # note: sorted by email alpha
-        self.assertEqual(self.user_manager.by_email_like('%@%'), [self.admin_user, user2, user3])
 
     def test_admin(self):
         user2 = self.user_manager.create(**user2_data)
@@ -107,21 +103,6 @@ class UserManagerTestCase(BaseTestCase):
         self.log("should be able to tell if a user is the current (trans) user")
         self.assertEqual(self.user_manager.current_user(self.trans), self.admin_user)
         self.assertNotEqual(self.user_manager.current_user(self.trans), user2)
-
-    def test_api_keys(self):
-        user2 = self.user_manager.create(**user2_data)
-
-        self.log("should return None if no APIKey has been created")
-        self.assertEqual(self.user_manager.valid_api_key(user2), None)
-
-        self.log("should be able to generate and retrieve valid api key")
-        user2_api_key = self.user_manager.create_api_key(user2)
-        self.assertIsInstance(user2_api_key, str)
-        self.assertEqual(self.user_manager.valid_api_key(user2).key, user2_api_key)
-
-        self.log("should return the most recent (i.e. most valid) api key")
-        user2_api_key_2 = self.user_manager.create_api_key(user2)
-        self.assertEqual(self.user_manager.valid_api_key(user2).key, user2_api_key_2)
 
     def test_change_password(self):
         self.log("should be able to change password")
@@ -289,7 +270,7 @@ class CurrentUserSerializerTestCase(BaseTestCase):
 
     def set_up_managers(self):
         super().set_up_managers()
-        self.history_manager = histories.HistoryManager(self.app)
+        self.history_manager = self.app[histories.HistoryManager]
         self.user_serializer = users.CurrentUserSerializer(self.app)
 
     def test_anonymous(self):

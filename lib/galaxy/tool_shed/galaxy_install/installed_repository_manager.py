@@ -110,8 +110,8 @@ class InstalledRepositoryManager:
                                           data_manager_relative_install_dir,
                                           repository,
                                           repository_tools_tups)
-        self.install_model.context.current.add(repository)
-        self.install_model.context.current.flush()
+        self.install_model.session.add(repository)
+        self.install_model.session.flush()
         if repository.includes_datatypes:
             if tool_path:
                 repository_install_dir = os.path.abspath(os.path.join(tool_path, relative_install_dir))
@@ -663,13 +663,13 @@ class InstalledRepositoryManager:
             repository.error_message = None
         else:
             repository.status = self.app.install_model.ToolShedRepository.installation_status.DEACTIVATED
-        self.app.install_model.context.current.add(repository)
-        self.app.install_model.context.current.flush()
+        self.app.install_model.session.add(repository)
+        self.app.install_model.session.flush()
         return errors
 
     def purge_repository(self, repository):
         """Purge a repository with status New (a white ghost) from the database."""
-        sa_session = self.app.model.context.current
+        sa_session = self.app.model.session
         status = 'ok'
         message = ''
         purged_tool_versions = 0

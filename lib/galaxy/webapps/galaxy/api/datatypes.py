@@ -9,14 +9,8 @@ from typing import (
     Union,
 )
 
-from fastapi import (
-    Depends,
-    Query,
-)
-from fastapi_utils.cbv import cbv
-from fastapi_utils.inferring_router import InferringRouter as APIRouter
+from fastapi import Query
 
-from galaxy.app import UniverseApplication
 from galaxy.datatypes.registry import Registry
 from galaxy.managers.datatypes import (
     DatatypeConverterList,
@@ -33,12 +27,15 @@ from galaxy.managers.datatypes import (
 )
 from galaxy.util import asbool
 from galaxy.web import expose_api_anonymous_and_sessionless
-from galaxy.webapps.base.controller import BaseAPIController
-from . import get_app
+from . import (
+    BaseGalaxyAPIController,
+    depends,
+    Router,
+)
 
 log = logging.getLogger(__name__)
 
-router = APIRouter(tags=['datatypes'])
+router = Router(tags=['datatypes'])
 
 ExtensionOnlyQueryParam: Optional[bool] = Query(
     default=True,
@@ -53,13 +50,9 @@ UploadOnlyQueryParam: Optional[bool] = Query(
 )
 
 
-def get_datatypes_registry(app: UniverseApplication = Depends(get_app)) -> Registry:
-    return app.datatypes_registry
-
-
-@cbv(router)
+@router.cbv
 class FastAPIDatatypes:
-    datatypes_registry: Registry = Depends(get_datatypes_registry)
+    datatypes_registry: Registry = depends(Registry)
 
     @router.get(
         '/api/datatypes',
@@ -138,7 +131,8 @@ class FastAPIDatatypes:
         return self.datatypes_registry.edam_data
 
 
-class DatatypesController(BaseAPIController):
+class DatatypesController(BaseGalaxyAPIController):
+    datatypes_registry: Registry = depends(Registry)
 
     @expose_api_anonymous_and_sessionless
     def index(self, trans, **kwd):
@@ -148,7 +142,7 @@ class DatatypesController(BaseAPIController):
         """
         extension_only = asbool(kwd.get('extension_only', True))
         upload_only = asbool(kwd.get('upload_only', True))
-        return view_index(self._datatypes_registry, extension_only, upload_only)
+        return view_index(self.datatypes_registry, extension_only, upload_only)
 
     @expose_api_anonymous_and_sessionless
     def mapping(self, trans, **kwd):
@@ -156,7 +150,7 @@ class DatatypesController(BaseAPIController):
         GET /api/datatypes/mapping
         Return a dictionary of class to class mappings.
         '''
-        return view_mapping(self._datatypes_registry)
+        return view_mapping(self.datatypes_registry)
 
     @expose_api_anonymous_and_sessionless
     def types_and_mapping(self, trans, **kwd):
@@ -169,7 +163,7 @@ class DatatypesController(BaseAPIController):
         """
         extension_only = asbool(kwd.get('extension_only', True))
         upload_only = asbool(kwd.get('upload_only', True))
-        return view_types_and_mapping(self._datatypes_registry, extension_only, upload_only)
+        return view_types_and_mapping(self.datatypes_registry, extension_only, upload_only)
 
     @expose_api_anonymous_and_sessionless
     def sniffers(self, trans, **kwd):
@@ -177,20 +171,16 @@ class DatatypesController(BaseAPIController):
         GET /api/datatypes/sniffers
         Return a list of sniffers.
         '''
-        return view_sniffers(self._datatypes_registry)
+        return view_sniffers(self.datatypes_registry)
 
     @expose_api_anonymous_and_sessionless
     def converters(self, trans, **kwd):
-        return view_converters(self._datatypes_registry)
+        return view_converters(self.datatypes_registry)
 
     @expose_api_anonymous_and_sessionless
     def edam_formats(self, trans, **kwds):
-        return view_edam_formats(self._datatypes_registry)
+        return view_edam_formats(self.datatypes_registry)
 
     @expose_api_anonymous_and_sessionless
     def edam_data(self, trans, **kwds):
-        return view_edam_data(self._datatypes_registry)
-
-    @property
-    def _datatypes_registry(self):
-        return self.app.datatypes_registry
+        return view_edam_data(self.datatypes_registry)

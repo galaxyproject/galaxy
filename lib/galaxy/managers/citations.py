@@ -5,12 +5,14 @@ import requests
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 
+from galaxy.structured_app import BasicApp
+
 log = logging.getLogger(__name__)
 
 
 class CitationsManager:
 
-    def __init__(self, app):
+    def __init__(self, app: BasicApp) -> None:
         self.app = app
         self.doi_cache = DoiCache(app.config)
 

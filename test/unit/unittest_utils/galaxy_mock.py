@@ -5,17 +5,23 @@ import os
 import shutil
 import tempfile
 
+from sqlalchemy.orm.scoping import scoped_session
+
 from galaxy import (
+    di,
     model,
     objectstore,
-    quota
+    quota,
 )
 from galaxy.auth import AuthManager
 from galaxy.datatypes import registry
 from galaxy.jobs.manager import NoopManager
 from galaxy.managers.users import UserManager
 from galaxy.model import mapping, tags
+from galaxy.model.base import SharedModelMapping
+from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.security import idencoding
+from galaxy.structured_app import BasicApp, MinimalManagerApp, StructuredApp
 from galaxy.tool_util.deps.containers import NullContainerFinder
 from galaxy.util import StructuredExecutionTimer
 from galaxy.util.bunch import Bunch
@@ -56,17 +62,26 @@ def buildMockEnviron(**kwargs):
     return environ
 
 
-class MockApp:
+class MockApp(di.Container):
 
     def __init__(self, config=None, **kwargs):
+        super().__init__()
+        self[BasicApp] = self
+        self[MinimalManagerApp] = self
+        self[StructuredApp] = self
         self.config = config or MockAppConfig(**kwargs)
         self.security = self.config.security
+        self[idencoding.IdEncodingHelper] = self.security
         self.name = kwargs.get('name', 'galaxy')
         self.object_store = objectstore.build_object_store_from_config(self.config)
         self.model = mapping.init("/tmp", self.config.database_connection, create_tables=True, object_store=self.object_store)
+        self[SharedModelMapping] = self.model
+        self[GalaxyModelMapping] = self.model
+        self[scoped_session] = self.model.context
         self.security_agent = self.model.security_agent
         self.visualizations_registry = MockVisualizationsRegistry()
         self.tag_handler = tags.GalaxyTagHandler(self.model.context)
+        self[tags.GalaxyTagHandler] = self.tag_handler
         self.quota_agent = quota.DatabaseQuotaAgent(self.model)
         self.init_datatypes()
         self.job_config = Bunch(
@@ -81,7 +96,7 @@ class MockApp:
         self.genome_builds = GenomeBuilds(self)
         self.job_manager = NoopManager()
         self.application_stack = ApplicationStack()
-        self.auth_manager = AuthManager(self)
+        self.auth_manager = AuthManager(self.config)
         self.user_manager = UserManager(self)
         self.execution_timer_factory = Bunch(get_timer=StructuredExecutionTimer)
 
@@ -125,6 +140,7 @@ class MockAppConfig(Bunch):
         self.security = idencoding.IdEncodingHelper(id_secret='6e46ed6483a833c100e68cc3f1d0dd76')
         self.database_connection = kwargs.get('database_connection', "sqlite:///:memory:")
         self.use_remote_user = kwargs.get('use_remote_user', False)
+        self.enable_celery_tasks = False
         self.data_dir = os.path.join(root, 'database')
         self.file_path = os.path.join(self.data_dir, 'files')
         self.jobs_directory = os.path.join(self.data_dir, 'jobs_directory')
@@ -152,6 +168,7 @@ class MockAppConfig(Bunch):
         self.password_expiration_period = 0
 
         self.umask = 0o77
+        self.flush_per_n_datasets = 0
 
         # Compliance related config
         self.redact_email_in_job_name = False

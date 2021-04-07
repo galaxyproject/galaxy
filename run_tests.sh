@@ -271,6 +271,7 @@ report_file="run_functional_tests.html"
 coverage_arg=""
 xunit_report_file=""
 structured_data_report_file=""
+structured_data_html=0
 SKIP_CLIENT_BUILD=${GALAXY_SKIP_CLIENT_BUILD:-1}
 if [ "$SKIP_CLIENT_BUILD" = "1" ];
 then
@@ -443,9 +444,28 @@ do
               exit 1
           fi
           ;;
+      --structured_data_html)
+          structured_data_html=1
+          shift
+          ;;
       --verbose_errors)
           GALAXY_TEST_VERBOSE_ERRORS=True
           export GALAXY_TEST_VERBOSE_ERRORS
+          shift
+          ;;
+      --ci_test_metrics)
+          GALAXY_CONFIG_OVERRIDE_STATSD_PREFIX="galaxy"
+          export GALAXY_CONFIG_OVERRIDE_STATSD_PREFIX
+          GALAXY_CONFIG_OVERRIDE_STATSD_HOST="localhost"
+          export GALAXY_CONFIG_OVERRIDE_STATSD_HOST
+          GALAXY_CONFIG_OVERRIDE_STATSD_INFLUXDB="true"
+          export GALAXY_CONFIG_OVERRIDE_STATSD_INFLUXDB
+          GALAXY_CONFIG_OVERRIDE_DATABASE_LOG_QUERY_COUNTS="true"
+          export GALAXY_CONFIG_OVERRIDE_DATABASE_LOG_QUERY_COUNTS
+          GALAXY_CONFIG_OVERRIDE_ENABLE_PER_REQUEST_SQL_DEBUGGING="true"
+          export GALAXY_CONFIG_OVERRIDE_ENABLE_PER_REQUEST_SQL_DEBUGGING
+          GALAXY_CONFIG_OVERRIDE_STATSD_MOCK_CALLS="true"
+          export GALAXY_CONFIG_OVERRIDE_STATSD_MOCK_CALLS
           shift
           ;;
       -c|--coverage)
@@ -590,7 +610,11 @@ else
     xunit_args=""
 fi
 if [ -n "$structured_data_report_file" ]; then
-    structured_data_args="--with-structureddata --structured-data-file $structured_data_report_file"
+    if [ "$test_script" = 'pytest' ]; then
+        structured_data_args="--json-report --json-report-file $structured_data_report_file"
+    else
+        structured_data_args="--with-structureddata --structured-data-file $structured_data_report_file"
+    fi
 else
     structured_data_args=""
 fi
@@ -604,11 +628,14 @@ if [ "$test_script" = 'pytest' ]; then
     else
         marker_args=()
     fi
-    args=(-v --html "$report_file" --self-contained-html $coverage_arg $xunit_args $extra_args "${marker_args[@]}" "$@")
+    args=(-v $structured_data_args --html "$report_file" --self-contained-html $coverage_arg $xunit_args $extra_args "${marker_args[@]}" "$@")
     "$test_script" "${args[@]}"
 else
     python "$test_script" $coverage_arg -v --with-nosehtml --html-report-file $report_file $xunit_args $structured_data_args $extra_args "$@"
 fi
 exit_status=$?
 echo "Testing complete. HTML report is in \"$report_file\"." 1>&2
+if [ "$structured_data_html" = '1' ]; then
+   python scripts/tests_markdown.py --output_path "${structured_data_report_file%.json}.html" "$structured_data_report_file"
+fi
 exit ${exit_status}

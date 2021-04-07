@@ -670,36 +670,36 @@ class GalaxyInteractorApi:
 
         return fetcher
 
-    def api_key_header(self, key, admin, anon):
-        header = {}
+    def api_key_header(self, key, admin, anon, headers):
+        header = headers or {}
         if not anon:
             if not key:
                 key = self.api_key if not admin else self.master_api_key
             header['x-api-key'] = key
         return header
 
-    def _post(self, path, data=None, files=None, key=None, admin=False, anon=False, json=False):
+    def _post(self, path, data=None, files=None, key=None, headers=None, admin=False, anon=False, json=False):
         # If json=True, use post payload using request's json parameter instead of the data
         # parameter (i.e. assume the contents is a jsonified blob instead of form parameters
         # with individual parameters jsonified if needed).
-        headers = self.api_key_header(key=key, admin=admin, anon=anon)
+        headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         url = f"{self.api_url}/{path}"
         return galaxy_requests_post(url, data=data, files=files, as_json=json, headers=headers)
 
-    def _delete(self, path, data=None, key=None, admin=False, anon=False):
-        headers = self.api_key_header(key=key, admin=admin, anon=anon)
+    def _delete(self, path, data=None, key=None, headers=None, admin=False, anon=False):
+        headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         return requests.delete(f"{self.api_url}/{path}", params=data, headers=headers)
 
-    def _patch(self, path, data=None, key=None, admin=False, anon=False):
-        headers = self.api_key_header(key=key, admin=admin, anon=anon)
+    def _patch(self, path, data=None, key=None, headers=None, admin=False, anon=False):
+        headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         return requests.patch(f"{self.api_url}/{path}", data=data, headers=headers)
 
-    def _put(self, path, data=None, key=None, admin=False, anon=False):
-        headers = self.api_key_header(key=key, admin=admin, anon=anon)
+    def _put(self, path, data=None, key=None, headers=None, admin=False, anon=False):
+        headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         return requests.put(f"{self.api_url}/{path}", data=data, headers=headers)
 
-    def _get(self, path, data=None, key=None, admin=False, anon=False):
-        headers = self.api_key_header(key=key, admin=admin, anon=anon)
+    def _get(self, path, data=None, key=None, headers=None, admin=False, anon=False):
+        headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         if path.startswith("/api"):
             path = path[len("/api"):]
         url = f"{self.api_url}/{path}"
@@ -780,7 +780,7 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
     if expected_collection_type:
         collection_type = data_collection["collection_type"]
         if expected_collection_type != collection_type:
-            template = "Expected output collection [%s] to be of type [%s], was of type [%s]."
+            template = "Output collection '%s': expected to be of type [%s], was of type [%s]."
             message = template % (name, expected_collection_type, collection_type)
             raise AssertionError(message)
 
@@ -788,7 +788,7 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
     if expected_element_count:
         actual_element_count = len(data_collection["elements"])
         if expected_element_count != actual_element_count:
-            template = "Expected output collection [%s] to have %s elements, but it had %s."
+            template = "Output collection '%s': expected to have %s elements, but it had %s."
             message = template % (name, expected_element_count, actual_element_count)
             raise AssertionError(message)
 
@@ -813,7 +813,7 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
 
             element = get_element(element_objects, element_identifier)
             if not element:
-                template = "Failed to find identifier '%s' in the tool generated collection elements %s"
+                template = "Output collection '%s': failed to find identifier '%s' in the tool generated elements %s"
                 message = template % (element_identifier, eo_ids)
                 raise AssertionError(message)
 
@@ -835,8 +835,8 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
                         break
                     i += 1
                 if element is None:
-                    template = "Collection identifier '%s' found out of order, expected order of %s for the tool generated collection elements %s"
-                    message = template % (element_identifier, expected_sort_order, eo_ids)
+                    template = "Output collection '%s': identifier '%s' found out of order, expected order of %s for the tool generated collection elements %s"
+                    message = template % (name, element_identifier, expected_sort_order, eo_ids)
                     raise AssertionError(message)
 
     verify_elements(data_collection["elements"], output_collection_def.element_tests)

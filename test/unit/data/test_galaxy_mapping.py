@@ -5,11 +5,11 @@ import uuid
 
 import pytest
 from sqlalchemy import inspect
-from sqlalchemy_utils import create_database
 
 import galaxy.datatypes.registry
 import galaxy.model
 import galaxy.model.mapping as mapping
+from galaxy.model.database_utils import create_database
 from galaxy.model.security import GalaxyRBACAgent
 
 datatypes_registry = galaxy.datatypes.registry.Registry()
@@ -378,6 +378,22 @@ class MappingTests(BaseModelTestCase):
         assert hist0.name == "History 1"
         assert hist1.name == "History 2b"
         # gvk TODO need to ad test for GalaxySessions, but not yet sure what they should look like.
+
+    def test_metadata_spec(self):
+        metadata = dict(chromCol=1, startCol=2, endCol=3)
+        d = self.model.HistoryDatasetAssociation(extension="interval", metadata=metadata, sa_session=self.model.session)
+        assert d.metadata.chromCol == 1
+        assert d.metadata.anyAttribute is None
+        assert 'items' not in d.metadata
+
+    def test_dataset_job_relationship(self):
+        model = self.model
+        dataset = model.Dataset()
+        job = model.Job()
+        dataset.job = job
+        self.persist(job, dataset)
+        loaded_dataset = model.session.query(model.Dataset).filter(model.Dataset.id == dataset.id).one()
+        assert loaded_dataset.job_id == job.id
 
     def test_jobs(self):
         model = self.model

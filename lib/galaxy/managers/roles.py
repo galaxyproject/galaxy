@@ -53,9 +53,6 @@ class RoleManager(base.ModelManager):
     user_assoc = model.UserRoleAssociation
     group_assoc = model.GroupRoleAssociation
 
-    def __init__(self, app):
-        super().__init__(app)
-
     def get(self, trans: ProvidesUserContext, decoded_role_id):
         """
         Method loads the role from the DB based on the given role id.
