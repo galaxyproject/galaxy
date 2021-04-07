@@ -23,6 +23,7 @@ from galaxy.managers.hdas import HDAManager
 from galaxy.managers.hdcas import HDCAManager
 from galaxy.model import (
     Dataset,
+    LibraryFolder,
     tags,
 )
 from galaxy.schema.fields import EncodedDatabaseIdField
@@ -39,6 +40,7 @@ log = logging.getLogger(__name__)
 TIME_FORMAT = "%Y-%m-%d %I:%M %p"
 FOLDER_TYPE_NAME = "folder"
 FILE_TYPE_NAME = "file"
+COLLECTION_TYPE_NAME = "collection"
 
 
 class LibraryItemBase(BaseModel):
@@ -150,8 +152,28 @@ class FileItem(LibraryItemBase):
     )
 
 
+class CollectionItem(LibraryItemBase):
+    """Represents a dataset collection inside a library folder."""
+    type: str = Field(
+        COLLECTION_TYPE_NAME,
+        title="Type",
+        description="The type of this item.",
+        const=True,
+    )
+    element_count: int = Field(
+        ...,
+        title="Element count",
+        description="The number of elements in the collection.",
+    )
+    collection_type: str = Field(  # TODO enum?
+        ...,
+        title="Collection type",
+        description="The type of the collection (list or paired).",
+    )
+
+
 class FolderContents(BaseModel):
-    __root__: List[Union[FolderItem, FileItem]] = Field(
+    __root__: List[Union[CollectionItem, FolderItem, FileItem]] = Field(
         default=[],
         title='List with the contents of a library folder.',
     )
@@ -276,10 +298,10 @@ class FolderContentsService(UsesLibraryMixinItems):
         update_time = ''
         create_time = ''
 
-        folders, datasets = self._apply_preferences(folder, include_deleted, search_text)
+        folders, datasets, collections = self._apply_preferences(folder, include_deleted, search_text)
 
-        #  Go through every accessible item (folders, datasets) in the folder and include its metadata.
-        for content_item in self._load_folder_contents(trans, folders, datasets, offset, limit):
+        #  Go through every accessible item (folders, datasets, collections) in the folder and include its metadata.
+        for content_item in self._load_folder_contents(trans, folders, datasets, collections, offset, limit):
             return_item = {}
             encoded_id = trans.security.encode_id(content_item.id)
             create_time = content_item.create_time.strftime(TIME_FORMAT)
@@ -292,6 +314,17 @@ class FolderContentsService(UsesLibraryMixinItems):
                 return_item.update(dict(can_modify=can_modify, can_manage=can_manage))
                 if content_item.description:
                     return_item.update(dict(description=content_item.description))
+
+            elif content_item.api_type == COLLECTION_TYPE_NAME:
+                can_manage = is_admin  # TODO or (trans.user and trans.app.security_agent.can_manage_library_item(current_user_roles, content_item.library_dataset_collection_association.collection))
+                update_time = content_item.update_time.strftime(TIME_FORMAT)
+                library_collection_dict = content_item.to_dict()
+                return_item.update(dict(
+                    can_manage=can_manage,
+                    update_time=update_time,
+                    collection_type=library_collection_dict["collection_type"],
+                    element_count=library_collection_dict["element_count"],
+                ))
 
             elif content_item.api_type == FILE_TYPE_NAME:
                 #  Is the dataset public or private?
@@ -397,7 +430,7 @@ class FolderContentsService(UsesLibraryMixinItems):
                 return self._copy_hda_to_library_folder(trans, self.hda_manager, decoded_hda_id, encoded_folder_id_16, ldda_message)
             if from_hdca_id:
                 decoded_hdca_id = self._decode_id(from_hdca_id)
-                return self._copy_hdca_to_library_folder(trans, self.hda_manager, decoded_hdca_id, encoded_folder_id_16, ldda_message)
+                return self._copy_hdca_to_library_folder_single(trans, self.hdca_manager, decoded_hdca_id, encoded_folder_id_16)
         except Exception as exc:
             # TODO handle exceptions better within the mixins
             exc_message = util.unicodify(exc)
@@ -448,7 +481,7 @@ class FolderContentsService(UsesLibraryMixinItems):
             path_to_root.extend(self._build_path(trans, upper_folder))
         return path_to_root
 
-    def _load_folder_contents(self, trans, folders, datasets, offset=None, limit=None):
+    def _load_folder_contents(self, trans, folders, datasets, collections, offset=None, limit=None):
         """
         Loads all contents of the folder (folders and data sets) but only
         in the first level. Include deleted if the flag is set and if the
@@ -469,7 +502,7 @@ class FolderContentsService(UsesLibraryMixinItems):
         content_items = []
 
         offset = 0 if offset is None else int(offset)
-        limit = 0 if limit is None else int(limit)
+        original_limit = limit = 0 if limit is None else int(limit)
 
         current_folders = self._calculate_pagination(folders, offset, limit)
 
@@ -480,9 +513,30 @@ class FolderContentsService(UsesLibraryMixinItems):
                 subfolder.api_type = FOLDER_TYPE_NAME
                 content_items.append(subfolder)
 
-        limit -= len(content_items)
-        offset -= len(folders)
+        num_folders = len(content_items)
+        limit -= num_folders
+        offset -= len(folders) - num_folders
         offset = max(0, offset)
+
+        if limit <= 0 and original_limit > 0:
+            return content_items
+
+        current_collections = self._calculate_pagination(collections, offset, limit)
+
+        for collection in current_collections:
+            if not collection.deleted or is_admin or trans.app.security_agent.can_modify_library_item(current_user_roles, collection):
+                # Admins or users with MODIFY permissions can see deleted folders.
+                collection.api_type = COLLECTION_TYPE_NAME
+                content_items.append(collection)
+            # TODO: check user access to collections?
+
+        num_collections = len(content_items) - num_folders
+        limit -= num_collections
+        offset -= len(collections) - num_collections
+        offset = max(0, offset)
+
+        if limit <= 0 and original_limit > 0:
+            return content_items
 
         current_datasets = self._calculate_pagination(datasets, offset, limit)
 
@@ -507,7 +561,7 @@ class FolderContentsService(UsesLibraryMixinItems):
             paginated_items = items[offset:]
         return paginated_items
 
-    def _apply_preferences(self, folder, include_deleted: bool, search_text: str):
+    def _apply_preferences(self, folder: LibraryFolder, include_deleted: bool, search_text: str):
 
         def check_deleted(array, include_deleted):
             if include_deleted:
@@ -528,12 +582,14 @@ class FolderContentsService(UsesLibraryMixinItems):
 
         datasets = check_deleted(folder.datasets, include_deleted)
         folders = check_deleted(folder.folders, include_deleted)
+        collections = check_deleted(folder.collections, include_deleted)
 
         if search_text is not None:
             folders = [item for item in folders if search_text in item.name or search_text in item.description]
             datasets = list(filter(filter_searched_datasets, datasets))
+            collections = [item for item in collections if search_text in item.name]
 
-        return folders, datasets
+        return folders, datasets, collections
 
 
 class FolderContentsController(BaseGalaxyAPIController):
