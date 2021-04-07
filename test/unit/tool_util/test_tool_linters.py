@@ -67,8 +67,8 @@ TESTS = [
         lambda x:
             'Select [radio_select] display="radio" is incompatible with optional="true"' in x.error_messages
             and 'Select [radio_select] display="radio" is incompatible with multiple="true"' in x.error_messages
-            and 'Select [radio_checkboxes] display="checkboxes" is incompatible with optional="false"' in x.error_messages
-            and 'Select [radio_checkboxes] display="checkboxes" is incompatible with multiple="false"' in x.error_messages
+            and 'Select [radio_checkboxes] `display="checkboxes"` is incompatible with `optional="false"`, remove the `display` attribute' in x.error_messages
+            and 'Select [radio_checkboxes] `display="checkboxes"` is incompatible with `multiple="false"`, remove the `display` attribute' in x.error_messages
     ),
     (
         SELECT_DUPLICATED_OPTIONS, inputs.lint_inputs,
