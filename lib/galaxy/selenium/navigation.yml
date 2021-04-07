@@ -194,6 +194,9 @@ history_panel:
     options_use_beta_history:
       type: xpath
       selector: '//a[text()="Use Beta History Panel"]'
+    options_use_legacy_history:
+      type: xpath
+      selector: '//button[contains(span, "Return to legacy history panel")]'
     new_history_button: '#history-new-button'
     multi_view_button: '#history-view-multi-button'
     
