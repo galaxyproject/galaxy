@@ -941,6 +941,13 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             self.galaxy_infrastructure_url = string.Template(self.galaxy_infrastructure_url).safe_substitute({
                 'HOST_IP': socket.gethostbyname(socket.gethostname())
             })
+        if "GALAXY_WEB_PORT" in self.galaxy_infrastructure_url:
+            port = os.environ.get('GALAXY_WEB_PORT')
+            if not port:
+                raise Exception('$GALAXY_WEB_PORT set in galaxy_infrastructure_url, but environment variable not set')
+            self.galaxy_infrastructure_url = string.Template(self.galaxy_infrastructure_url).safe_substitute({
+                'GALAXY_WEB_PORT': port
+            })
         if "UWSGI_PORT" in self.galaxy_infrastructure_url:
             import uwsgi
             http = unicodify(uwsgi.opt['http'])
