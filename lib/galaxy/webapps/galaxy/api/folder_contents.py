@@ -216,9 +216,10 @@ class FolderContentsService(UsesLibraryMixinItems):
     and pydantic models to declare its parameters and return types.
     """
 
-    def __init__(self, app: StructuredApp, hda_manager: HDAManager, folder_manager: FolderManager):
+    def __init__(self, app: StructuredApp, hda_manager: HDAManager, hdca_manager: HDCAManager, folder_manager: FolderManager):
         self.app = app
         self.hda_manager = hda_manager
+        self.hdca_manager = hdca_manager
         self.folder_manager = folder_manager
 
     def get_object(self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None):

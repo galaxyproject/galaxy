@@ -13,7 +13,8 @@ from galaxy.managers import (
     deletable,
     hdas,
     secured,
-    taggable
+    taggable,
+    users,
 )
 from galaxy.managers.collections_util import get_hda_and_element_identifiers
 from galaxy.structured_app import MinimalManagerApp
@@ -56,6 +57,13 @@ class HDCAManager(
     tag_assoc = model.HistoryDatasetCollectionTagAssociation
     annotation_assoc = model.HistoryDatasetCollectionAssociationAnnotationAssociation
 
+    def __init__(self, app: MinimalManagerApp, user_manager: users.UserManager):
+        """
+        Set up and initialize other managers needed by hdcas.
+        """
+        super().__init__(app)
+        self.user_manager = user_manager
+
     def map_datasets(self, content, fn, *parents):
         """
         Iterate over the datasets of a given collection, recursing into collections, and
@@ -76,6 +84,26 @@ class HDCAManager(
                 processed = fn(element.dataset_instance, *next_parents)
                 returned.append(processed)
         return returned
+
+    def is_owner(
+        self,
+        hdca: model.HistoryDatasetCollectionAssociation,
+        user,
+        current_history=None,
+        **kwargs,
+    ):
+        """
+        Use history to see if current user owns HDCA.
+        """
+        history = hdca.history
+        if self.user_manager.is_admin(user, trans=kwargs.get("trans", None)):
+            return True
+        # allow anonymous user to access current history
+        if self.user_manager.is_anonymous(user):
+            if current_history and history == current_history:
+                return True
+            return False
+        return history.user == user
 
     # TODO: un-stub
 
@@ -214,10 +242,11 @@ class HDCASerializer(
     """
     Serializer for HistoryDatasetCollectionAssociations.
     """
+    model_manager_class = HDCAManager
 
     def __init__(self, app: MinimalManagerApp):
         super().__init__(app)
-        self.hdca_manager = HDCAManager(app)
+        self.hdca_manager = self.manager
 
         self.default_view = 'summary'
         self.add_view('summary', [
