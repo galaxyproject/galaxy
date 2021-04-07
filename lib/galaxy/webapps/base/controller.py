@@ -31,6 +31,7 @@ from galaxy.model import (
     ExtendedMetadata,
     ExtendedMetadataIndex,
     HistoryDatasetAssociation,
+    HistoryDatasetCollectionAssociation,
     LibraryDatasetDatasetAssociation,
     tags,
 )
@@ -518,6 +519,30 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
                                                  ldda_message=ldda_message,
                                                  element_identifier=element_identifier) for (element_identifier, hda_id) in hdas]
 
+    def _copy_hdca_to_library_folder_single(self, trans, hdca_manager, from_hdca_id, folder_id):
+        """
+        Copies hdca ``from_hcda_id`` to library folder ``folder_id``.
+        """
+        # PRECONDITION: folder_id has already been altered to remove the folder prefix ('F')
+
+        hdca = hdca_manager.get_owned(from_hdca_id, trans.user, current_history=trans.history)
+        folder = self.get_library_folder(trans, folder_id, check_accessible=True)
+
+        if folder.parent_library.deleted:
+            raise exceptions.ObjectAttributeInvalidException('You cannot add datasets into deleted library. Undelete it first.')
+        if not self.can_current_user_add_to_library_item(trans, folder):
+            raise exceptions.InsufficientPermissionsException('You do not have proper permissions to add a dataset to this folder,')
+
+        ldca = self.copy_hdca_to_library_folder(trans, hdca, folder)
+        # TODO? ldca.visible = True
+        # TODO ldca.update_parent_folder_update_times()
+        trans.sa_session.flush()
+        ldda_dict = ldca.to_dict()
+        rval = trans.security.encode_dict_ids(ldda_dict)
+        # update_time = ldca.update_time.strftime("%Y-%m-%d %I:%M %p")
+        # rval['update_time'] = update_time
+        return rval
+
     def _copy_hda_to_library_folder(self, trans, hda_manager, from_hda_id, folder_id, ldda_message='', element_identifier=None):
         """
         Copies hda ``from_hda_id`` to library folder ``folder_id``, optionally
@@ -557,7 +582,7 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
         rval['update_time'] = update_time
         return rval
 
-    def copy_hda_to_library_folder(self, trans, hda, library_folder, roles=None, ldda_message='', element_identifier=None):
+    def copy_hda_to_library_folder(self, trans, hda: HistoryDatasetAssociation, library_folder, roles=None, ldda_message='', element_identifier=None):
         # PRECONDITION: permissions for this action on hda and library_folder have been checked
         roles = roles or []
 
@@ -574,6 +599,13 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
         #   then they get reset in _apply_library_folder_permissions_to_ldda
         #   then finally, re-applies hda -> ldda for missing actions in _apply_hda_permissions_to_ldda??
         return ldda
+
+    def copy_hdca_to_library_folder(self, trans, hdca: HistoryDatasetCollectionAssociation, library_folder):
+        # PRECONDITION: permissions for this action on hda and library_folder have been checked
+        ldca = hdca.to_library_dataset_collection_association(trans, target_folder=library_folder)
+        # self._apply_library_folder_permissions_to_ldca(trans, library_folder, ldca)
+        # self._apply_hdca_permissions_to_ldca(trans, hdca, ldca)
+        return ldca
 
     def _apply_library_folder_permissions_to_ldda(self, trans, library_folder, ldda):
         """
