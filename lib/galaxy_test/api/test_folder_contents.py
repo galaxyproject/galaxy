@@ -34,26 +34,27 @@ class FolderContentsApiTestCase(ApiTestCase):
         ldda = self._create_content_in_folder_with_payload(self.root_folder_id, data)
         self._assert_has_keys(ldda, "name", "id")
 
-    def test_create_hdca_with_ldda_message(self):
+    def test_create_hdca(self):
         contents = ["dataset01", "dataset02"]
-        hdca_id = self._create_hdca_with_contents(contents)
-        ldda_message = "Test message"
+        hdca_id = self._create_hdca_with_contents(name="Test Dataset Collection", contents=contents)
         data = {
             "from_hdca_id": hdca_id,
-            "ldda_message": ldda_message,
         }
-        lddas = self._create_content_in_folder_with_payload(self.root_folder_id, data)
-        assert len(contents) == len(lddas)
+        ldca = self._create_content_in_folder_with_payload(self.root_folder_id, data)
+        self._assert_has_keys(ldca, "name", "id", "element_count")
+        assert ldca["element_count"] == len(contents)
 
     def test_index(self):
         folder_id = self._create_folder_in_library("Test Folder Contents Index")
 
+        self._create_subfolder_in(folder_id)
         self._create_dataset_in_folder(folder_id)
+        self._create_dataset_collection_in_folder(folder_id)
 
         response = self._get(f"folders/{folder_id}/contents")
         self._assert_status_code_is(response, 200)
         contents = response.json()["folder_contents"]
-        assert len(contents) == 1
+        assert len(contents) == 3
 
     def test_index_include_deleted(self):
         folder_name = "Test Folder Contents Index include deleted"
@@ -82,16 +83,26 @@ class FolderContentsApiTestCase(ApiTestCase):
         for index in range(num_subfolders):
             self._create_subfolder_in(folder_id, name=f"Folder_{index}")
 
+        num_collections = 2
+        for _ in range(num_collections):
+            self._create_dataset_collection_in_folder(folder_id)
+
         num_datasets = 5
         for _ in range(num_datasets):
             self._create_dataset_in_folder(folder_id)
 
-        total_items = num_datasets + num_subfolders
+        total_items = num_datasets + num_subfolders + num_collections
 
         response = self._get(f"folders/{folder_id}/contents")
         self._assert_status_code_is(response, 200)
         original_contents = response.json()["folder_contents"]
         assert len(original_contents) == total_items
+
+        limit = 2
+        response = self._get(f"folders/{folder_id}/contents?limit={limit}")
+        self._assert_status_code_is(response, 200)
+        contents = response.json()["folder_contents"]
+        assert len(contents) == limit
 
         limit = 7
         response = self._get(f"folders/{folder_id}/contents?limit={limit}")
@@ -205,9 +216,9 @@ class FolderContentsApiTestCase(ApiTestCase):
         root_folder_id = self.library["root_folder_id"]
         return self._create_subfolder_in(root_folder_id, name)
 
-    def _create_subfolder_in(self, folder_id: str, name: str) -> str:
+    def _create_subfolder_in(self, folder_id: str, name: Optional[str] = None) -> str:
         data = {
-            "name": name,
+            "name": name or "Test Folder",
             "description": f"The description of {name}",
         }
         create_response = self._post(f"folders/{folder_id}", data=data)
@@ -223,6 +234,15 @@ class FolderContentsApiTestCase(ApiTestCase):
         ldda = self._create_content_in_folder_with_payload(folder_id, data)
         return ldda["id"]
 
+    def _create_dataset_collection_in_folder(self, folder_id: str, name: Optional[str] = None, num_items: int = 3) -> str:
+        contents = [f"dataset{index}" for index in range(num_items)]
+        hdca_id = self._create_hdca_with_contents(name or "Test Dataset Collection", contents)
+        data = {
+            "from_hdca_id": hdca_id,
+        }
+        ldca = self._create_content_in_folder_with_payload(folder_id, data)
+        return ldca["id"]
+
     def _create_content_in_folder_with_payload(self, folder_id: str, payload) -> Any:
         create_response = self._post(f"folders/{folder_id}/contents", data=payload)
         self._assert_status_code_is(create_response, 200)
@@ -233,8 +253,8 @@ class FolderContentsApiTestCase(ApiTestCase):
         hda_id = hda["id"]
         return hda_id
 
-    def _create_hdca_with_contents(self, contents: List[str]) -> str:
-        hdca = self.dataset_collection_populator.create_list_in_history(self.history_id, contents=contents, direct_upload=True).json()["outputs"][0]
+    def _create_hdca_with_contents(self, name: str, contents: List[str]) -> str:
+        hdca = self.dataset_collection_populator.create_list_in_history(self.history_id, name=name, contents=contents, direct_upload=True).json()["outputs"][0]
         hdca_id = hdca["id"]
         return hdca_id
 
