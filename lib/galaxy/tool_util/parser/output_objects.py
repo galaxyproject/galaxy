@@ -26,16 +26,17 @@ class ToolOutput(ToolOutputBase):
     (format, metadata_source, parent)
     """
 
-    dict_collection_visible_keys = ['name', 'format', 'label', 'hidden', 'output_type', 'format_source',
+    dict_collection_visible_keys = ['name', 'format', 'label', 'hidden', 'output_type', 'format_source', 'format_from',
                                     'default_identifier_source', 'metadata_source', 'parent', 'count', 'from_work_dir']
 
-    def __init__(self, name, format=None, format_source=None, metadata_source=None,
+    def __init__(self, name, format=None, format_source=None, format_from=None, metadata_source=None,
                  parent=None, label=None, filters=None, actions=None, hidden=False,
                  implicit=False, from_expression=None):
         super().__init__(name, label=label, filters=filters, hidden=hidden, from_expression=from_expression)
         self.output_type = "data"
         self.format = format
         self.format_source = format_source
+        self.format_from = format_from
         self.metadata_source = metadata_source
         self.parent = parent
         self.actions = actions
@@ -80,6 +81,7 @@ class ToolOutput(ToolOutputBase):
         output.format = output_dict.get("format", "data")
         output.change_format = []
         output.format_source = output_dict.get("format_source", None)
+        output.format_from = output_dict.get("format_from", None)
         output.default_identifier_source = output_dict.get("default_identifier_source", None)
         output.metadata_source = output_dict.get("metadata_source", "")
         output.parent = output_dict.get("parent", None)

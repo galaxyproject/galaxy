@@ -435,6 +435,7 @@ class DefaultToolAction:
             # or an actual object to copy.
             metadata_source = output.metadata_source
             if metadata_source:
+
                 if isinstance(metadata_source, str):
                     metadata_source = inp_data.get(metadata_source)
 
@@ -984,6 +985,10 @@ def determine_output_format(output, parameter_context, input_datasets, input_dat
                 pass
         ext = random_input_ext
     format_source = output.format_source
+    format_from = output.format_from
+    if format_from is not None:
+        ext = str(parameter_context.get(format_from))
+        # raise Exception(f"ext is {ext} from {parameter_context}")
     if format_source is not None and format_source in input_datasets:
         try:
             input_dataset = input_datasets[output.format_source]
