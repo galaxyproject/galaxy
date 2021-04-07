@@ -16,6 +16,45 @@
 The outer-most tag set of tool XML files. Attributes on this tag apply to the
 tool as a whole.
 
+### Tool profile
+
+List of behavior changes associated with profile versions:
+
+#### 16.04
+
+- Disable implicit extra file collection. All dynamic extra file collection requires a `discover_datasets` tag.
+- Disable `format="input"` and require explicit metadata targets (`metadata_source`, `format_source`).
+- Disable `interpreter` use `$__tool_directory__`.
+- Disable `$param_file` use `configfile`.
+- Disable default tool version of 1.0.0.
+- Use non zero exit code as default stdio error condition (before non-empty stderr).
+
+#### 18.01
+
+- Use a separate home directory for each job.
+- Introduce `provided_metadata_style` with default `"default"` before `"legacy"`.
+
+#### 18.09 
+
+- References to other inputs need to be fully qualified by using `|`.
+- Do not allow provided but illegal default values.
+- Do not use Galaxy python environment for `manage_data` tools.
+
+#### 19.05
+
+- Change default Python version from 2.7 to 3.5
+
+#### 20.05
+
+- json config files: 
+   - unselected optional `select` and `data_column` parameters get `None` instead of `"None"`
+   - multiple `select` and `data_column` parameters are lists (before comma separated string)
+
+#### 20.09
+
+- Exit immediately if a command exits with a non-zero status (`set -e`).
+- Assume sort order for collection elements.
+
 ### Examples
 
 A normal tool:
@@ -181,44 +220,9 @@ set this to have values such as ``data_source`` or ``manage_data``.</xs:document
           <xs:documentation xml:lang="en">This string specifies the minimum Galaxy
 version that should be required to run this tool. Certain legacy behaviors such
 as using standard error content to detect errors instead of exit code are disabled
-automatically if profile is set to any version newer than ``16.01``, such as
-``16.04``.
-
-16.04
-
-- Disable implicit extra file collection. All dynamic extra file collection requires a `discover_datasets` tag.
-- Disable `format="input"` and require explicit metadata targets (`metadata_source`, `format_source`).
-- Disable `interpreter` use `$__tool_directory__`.
-- Disable `$param_file` use `configfile`
-- Disable default tool version of 1.0.0.
-- Use non zero exit code as default stdio error condition (before non-empty stderr).
-
-18.01
-
-- Use a separate home directory for each job.
-- Introduce `provided_metadata_style` with default `"default"` before `"legacy"`.
-
-18.09 
-
-- References to other inputs need to be fully qualified by using `|`.
-- Do not allow provided but illegal default values.
-- Do not use Galaxy python environment for `manage_data` tools.
-
-19.05
-
-- Change default Python version from 2.7 to 3.5
-
-20.05
-
-- json config files: 
-   - unselected optional `select` and `data_column` parameters get `None` instead of `"None"`
-   - multiple `select` and `data_column` parameters are lists (before comma separated string)
-
-20.09
-
-- Exit immediately if a command exits with a non-zero status (`set -e`)
-- Assume sort order for collection elements
-  </xs:documentation>
+automatically if profile is set to any version newer than ``16.01``. See above
+for the list of behavior changes associated with profile versions.
+          </xs:documentation>
         </xs:annotation>
       </xs:attribute>
       <xs:attribute name="license" type="xs:string">
