@@ -42,7 +42,7 @@ const HistoryPanel = Backbone.View.extend({
             this.buttonNew = new Ui.ButtonLink({
                 id: "history-new-button",
                 title: _l("Create new history"),
-                cls: "panel-header-button",
+                cls: "panel-header-button history-new-button",
                 icon: "fa fa-plus",
                 onclick: function () {
                     Galaxy.currHistoryPanel.createNewHistory();

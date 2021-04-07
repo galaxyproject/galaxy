@@ -165,36 +165,42 @@ history_panel:
       list_items: '.dataset-collection-panel .list-items .list-item'
 
   selectors:
+    beta: 'section.history'
     _: '#current-history-panel'
     search: '#current-history-panel input.search-query'
     refresh_button: '#history-refresh-button'
     name: '.title .name'
+    name_beta: '.history-title span:last-child'
     name_edit_input: '.name input'
+    name_edit_input_beta: '.history-title input'
     contents: '#current-history-panel .list-items div.history-content'
 
     empty_message: '.empty-message'
     size: '.history-size'
     tag_icon: '.actions .history-tag-btn'
-    tag_area: '.controls .tags-display'
-    tag_area_input: '.controls .tags-display .tags-input input'
+    tag_area: '.history-details .tags-display'
+    tag_area_input: '.history-details .tags-display .tags-input input'
     tag_close_btn: '.tags-display .ti-icon-close'
     tags: 'li.ti-tag.ti-valid .tag-name'
     annotation_icon: '.actions .history-annotate-btn'
-    annotation_area: '.controls .annotation-display'
-    annotation_editable_text: '.controls .annotation-display .annotation.editable-text'
-    annotation_edit: '.controls .annotation-display .annotation textarea'
-    annotation_done: '.controls .annotation-display .annotation button'
+    annotation_area: '.history-details .history-annotation'
+    annotation_editable_text: '.history-details .history-annotation .annotation.editable-text'
+    annotation_editable_text_beta: '.history-details .history-annotation.clickToEdit'
+    annotation_edit: '.history-details .history-annotation .annotation textarea'
+    annotation_edit_beta: '.history-details .history-annotation textarea'
+    annotation_done: '.history-details .history-annotation .annotation button'
 
     options_button: '#history-options-button'
     options_button_icon: '#history-options-button span.fa-cog'
+    options_button_icon_beta: 'section.history-details .priority-menu-expand'
     options_menu: '#history-options-button-menu'
     options_show_history_structure:
       type: xpath
-      selector: '//a[text()="Show Structure"]'
+      selector: '//a[contains(text(), "Show Structure")]'
     options_show_export_history_to_file:
       type: xpath
       selector: '//a[text()="Export History to File"]'
-    new_history_button: '#history-new-button'
+    new_history_button: '.history-new-button'
     multi_view_button: '#history-view-multi-button'
 
     pagination_pages: '.list-pagination .pages'
@@ -205,7 +211,7 @@ history_panel:
 
 
   text:
-    tooltip_name: 'Click to rename history'
+    tooltip_name: 'Rename history...'
     new_name: 'Unnamed history'
     new_size: '(empty)'
 

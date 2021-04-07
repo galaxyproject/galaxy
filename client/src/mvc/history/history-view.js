@@ -520,14 +520,14 @@ var HistoryView = _super.extend(
 HistoryView.prototype.templates = (() => {
     var mainTemplate = () =>
         `<div>
-            <div class="controls"></div>
+            <div class="controls history-details"></div>
             <ul class="list-items"></ul>
             <div class="empty-message infomessagesmall"></div>',
         </div>`;
 
     var controlsTemplate = BASE_MVC.wrapTemplate(
         [
-            '<div class="controls">',
+            '<div class="controls history-details">',
             '<div class="title">',
             '<div class="name"><%- history.name %></div>',
             "</div>",
@@ -561,7 +561,7 @@ HistoryView.prototype.templates = (() => {
 
             // add tags and annotations
             '<div class="tags-display"></div>',
-            '<div class="annotation-display"></div>',
+            '<div class="annotation-display history-annotation"></div>',
 
             '<div class="search">',
             '<div class="search-input"></div>',

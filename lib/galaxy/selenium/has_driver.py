@@ -50,6 +50,9 @@ class HasDriver:
     def assert_absent(self, selector_template):
         assert len(self.find_elements(selector_template)) == 0
 
+    def element_absent(self, selector_template):
+        return len(self.find_elements(selector_template)) == 0
+
     def wait_for_xpath(self, xpath, **kwds):
         element = self._wait_on(
             ec.presence_of_element_located((By.XPATH, xpath)),

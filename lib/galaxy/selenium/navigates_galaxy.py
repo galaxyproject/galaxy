@@ -162,7 +162,8 @@ class NavigatesGalaxy(HasDriver):
     def home(self):
         self.get()
         self.wait_for_visible(self.navigation.masthead.selector)
-        self.wait_for_visible(self.navigation.history_panel.selector)
+        if not self.is_beta_history():
+            self.wait_for_visible(self.navigation.history_panel.selector)
 
     def trs_search(self):
         self.driver.get(self.build_url('workflows/trs_search'))
@@ -225,7 +226,11 @@ class NavigatesGalaxy(HasDriver):
         }
 
     def history_panel_name_element(self):
-        return self.wait_for_present(self.navigation.history_panel.selectors.name)
+        if self.is_beta_history():
+            component = self.components.history_panel.name_beta
+        else:
+            component = self.components.history_panel.name
+        return component.wait_for_present()
 
     @retry_during_transitions
     def history_panel_name(self):
@@ -1197,7 +1202,11 @@ class NavigatesGalaxy(HasDriver):
 
     @retry_during_transitions
     def click_history_options(self):
-        self.components.history_panel.options_button_icon.wait_for_and_click()
+        if self.is_beta_history():
+            component = self.components.history_panel.options_button_icon_beta
+        else:
+            component = self.components.history_panel.options_button_icon
+        component.wait_for_and_click()
 
     def click_history_option(self, option_label_or_component):
         # Open menu
@@ -1213,6 +1222,14 @@ class NavigatesGalaxy(HasDriver):
         else:
             option_component = option_label_or_component
             option_component.wait_for_and_click()
+
+    def use_beta_history(self):
+        if not self.is_beta_history():
+            self.click_history_option(self.components.history_panel.options_use_beta_history)
+            self.components.history_panel.beta.wait_for_present()
+
+    def is_beta_history(self):
+        return not self.components.history_panel.beta.is_absent
 
     def history_click_create_new(self):
         self.components.history_panel.new_history_button.wait_for_and_click()
@@ -1238,14 +1255,14 @@ class NavigatesGalaxy(HasDriver):
         return names
 
     def history_panel_add_tags(self, tags):
-        tag_icon_selector = self.components.history_panel.tag_icon
-        tag_area_selector = self.components.history_panel.tag_area
-        tag_area_input_selector = self.components.history_panel.tag_area_input
+        tag_icon = self.components.history_panel.tag_icon
+        tag_area = self.components.history_panel.tag_area
+        tag_area_input = self.components.history_panel.tag_area_input
 
-        if not tag_area_selector.is_displayed:
-            tag_icon_selector.wait_for_and_click()
+        if tag_area.is_absent or not tag_area.is_displayed:
+            tag_icon.wait_for_and_click()
 
-        tag_area = tag_area_input_selector.wait_for_and_click()
+        tag_area = tag_area_input.wait_for_and_click()
 
         for tag in tags:
             tag_area.send_keys(tag)
@@ -1254,12 +1271,22 @@ class NavigatesGalaxy(HasDriver):
 
     def history_panel_rename(self, new_name):
         editable_text_input_element = self.history_panel_click_to_rename()
+        if self.is_beta_history():
+            editable_text_input_element.clear()
         editable_text_input_element.send_keys(new_name)
         self.send_enter(editable_text_input_element)
 
     def history_panel_click_to_rename(self):
-        self.wait_for_and_click(self.navigation.history_panel.selectors.name)
-        return self.wait_for_visible(self.navigation.history_panel.selectors.name_edit_input)
+        history_panel = self.components.history_panel
+        if self.is_beta_history():
+            name = history_panel.name_beta
+            edit = history_panel.name_edit_input_beta
+        else:
+            name = history_panel.name
+            edit = history_panel.name_edit_input
+
+        name.wait_for_and_click()
+        return edit.wait_for_visible()
 
     def history_panel_refresh_click(self):
         self.wait_for_and_click(self.navigation.history_panel.selectors.refresh_button)
@@ -1561,24 +1588,33 @@ class NavigatesGalaxy(HasDriver):
 
     def set_history_annotation(self, annotation, clear_text=False):
         self.ensure_history_annotation_area_displayed()
+        history_panel = self.components.history_panel
 
-        self.wait_for_and_click(self.navigation.history_panel.selectors.annotation_editable_text)
+        if self.is_beta_history():
+            editable = history_panel.annotation_editable_text_beta
+            edit = history_panel.annotation_edit_beta
+        else:
+            editable = history_panel.annotation_editable_text
+            edit = history_panel.annotation_edit
 
-        annon_area_editable = self.wait_for_and_click(self.navigation.history_panel.selectors.annotation_edit)
-        anno_done_button = self.wait_for_clickable(self.navigation.history_panel.selectors.annotation_done)
-
+        editable.wait_for_and_click()
+        edit_el = edit.wait_for_and_click()
         if clear_text:
-            annon_area_editable.clear()
+            edit_el.clear()
+        edit_el.send_keys(annotation)
 
-        annon_area_editable.send_keys(annotation)
-        anno_done_button.click()
+        if self.is_beta_history():
+            # no button, just click away
+            self.click_center()
+        else:
+            history_panel.annotation_done.wait_for_and_click()
 
     def ensure_history_annotation_area_displayed(self):
-        annotation_area_selector = self.navigation.history_panel.selectors.annotation_area
-        annotation_icon_selector = self.navigation.history_panel.selectors.annotation_icon
+        annotation_area = self.components.history_panel.annotation_area
+        annotation_icon = self.components.history_panel.annotation_icon
 
-        if not self.is_displayed(annotation_area_selector):
-            self.wait_for_and_click(annotation_icon_selector)
+        if annotation_area.is_absent or not annotation_area.is_displayed:
+            annotation_icon.wait_for_and_click()
 
     def select2_set_value(self, container_selector_or_elem, value, with_click=True, clear_value=False):
         # There are two hacky was to select things from the select2 widget -
