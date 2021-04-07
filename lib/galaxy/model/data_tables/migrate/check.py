@@ -13,8 +13,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.exc import NoSuchTableError
 
-from galaxy.model.database_utils import create_database, database_exists
 from galaxy.model.data_tables import mapping
+from galaxy.model.database_utils import create_database, database_exists
 
 
 log = logging.getLogger(__name__)
