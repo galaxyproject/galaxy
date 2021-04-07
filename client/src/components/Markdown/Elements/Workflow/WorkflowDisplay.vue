@@ -15,6 +15,17 @@
                     >
                         <span class="fa fa-download" />
                     </b-button>
+                    <b-button
+                        :href="importUrl"
+                        role="button"
+                        variant="link"
+                        title="Import Workflow"
+                        type="button"
+                        class="py-0 px-1"
+                        v-b-tooltip.hover
+                    >
+                        <span class="fa fa-file-import" />
+                    </b-button>
                 </span>
                 <span>
                     <span>Workflow:</span>
@@ -77,6 +88,9 @@ export default {
         },
         downloadUrl() {
             return `${getAppRoot()}api/workflows/${this.args.workflow_id}/download?format=json-download`;
+        },
+        importUrl() {
+            return `${getAppRoot()}workflow/imp?id=${this.args.workflow_id}`;
         },
         itemUrl() {
             return `${getAppRoot()}api/workflows/${this.args.workflow_id}/download?style=preview`;

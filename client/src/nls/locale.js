@@ -458,4 +458,5 @@ define({
     ja: true,
     fr: true,
     zh: true,
+    es: true,
 });

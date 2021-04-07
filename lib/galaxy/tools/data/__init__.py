@@ -893,7 +893,11 @@ class RefgenieToolDataTable(TabularToolDataTable):
         return rval
 
     def _remove_entry(self, values):
-        raise NotImplementedError("Not supported")
+
+        log.warning("Deletion from refgenie-backed '%s' data table is not supported, will only try to delete from .loc files", self.name)
+
+        # Update every non-refgenie files
+        super()._remove_entry(values)
 
 
 def expand_here_template(content, here=None):

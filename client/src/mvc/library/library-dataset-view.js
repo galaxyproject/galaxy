@@ -478,7 +478,7 @@ var LibraryDatasetView = Backbone.View.extend({
                         </button>
                     <% } %>
                     <% if (item.get("can_user_manage")) { %>
-                        <a href="<% rootPath %>/libraries/folders/permissions/<%- item.get("folder_id") %>/dataset/<%- item.id %>">
+                        <a href="<% rootPath %>/libraries/folders/<%- item.get("folder_id") %>/dataset/<%- item.id %>/permissions">
                             <button data-toggle="tooltip" data-placement="top" title="Manage permissions"
                                 class="btn btn-secondary toolbtn_change_permissions toolbar-item mr-1"
                                 type="button">

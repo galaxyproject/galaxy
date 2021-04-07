@@ -175,7 +175,7 @@ class HDAManagerTestCase(HDATestCase):
 
         self.log("should purge an hda if config does allow")
         self.assertFalse(item1.purged)
-        self.assertEqual(self.hda_manager.purge(item1), item1)
+        self.hda_manager.purge(item1)
         self.assertTrue(item1.deleted)
         self.assertTrue(item1.purged)
 

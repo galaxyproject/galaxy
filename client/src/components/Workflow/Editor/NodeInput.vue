@@ -107,7 +107,6 @@ export default {
             this.$emit("onChange");
         },
         onRemove() {
-            this.$emit("onRemove", this.input);
             this.terminal.destroy();
         },
         mouseOver(e) {
@@ -120,6 +119,7 @@ export default {
         },
     },
     beforeDestroy() {
+        this.$emit("onRemove", this.input);
         this.onRemove();
     },
 };

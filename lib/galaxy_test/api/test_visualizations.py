@@ -5,6 +5,7 @@ from requests import (
     put
 )
 
+from galaxy_test.api.sharable import SharingApiTests
 from galaxy_test.base.api_asserts import assert_has_keys
 from ._framework import ApiTestCase
 
@@ -19,7 +20,13 @@ REVISION_KEYS = [
 ]
 
 
-class VisualizationsApiTestCase(ApiTestCase):
+class VisualizationsApiTestCase(ApiTestCase, SharingApiTests):
+
+    api_name = "visualizations"
+
+    def create(self, _: str) -> str:
+        viz_id, _ = self._create_viz()
+        return viz_id
 
     def test_index_and_show(self):
         self._create_viz()  # to ensure on exists to index
@@ -45,6 +52,12 @@ class VisualizationsApiTestCase(ApiTestCase):
     def test_create_fails_with_invalid_config(self):
         response = self._raw_create_viz(config="3 = nime")
         self._assert_status_code_is(response, 400)
+
+    def test_sharing(self):
+        viz_id, _ = self._create_viz()
+        sharing_response = self._get(f"visualizations/{viz_id}/sharing")
+        self._assert_status_code_is(sharing_response, 200)
+        self._assert_has_keys(sharing_response.json(), "title", "importable", "id", "username_and_slug", "published", "users_shared_with")
 
     def test_update_title(self):
         viz_id, viz = self._create_viz()

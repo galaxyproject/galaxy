@@ -201,6 +201,34 @@ class CompressedArchive(Binary):
             return "Compressed binary file (%s)" % (nice_size(dataset.get_size()))
 
 
+class Meryldb(CompressedArchive):
+    """MerylDB is a tar.gz archive, with 128 files. 64 data files and 64 index files."""
+    file_ext = "meryldb"
+
+    def sniff(self, filename):
+        """
+        Try to guess if the file is a Cel file.
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('affy_v_agcc.cel')
+        >>> Meryldb().sniff(fname)
+        False
+        >>> fname = get_test_fname('read-db.meryldb')
+        >>> Meryldb().sniff(fname)
+        True
+        """
+        try:
+            if filename and tarfile.is_tarfile(filename):
+                with tarfile.open(filename, 'r') as temptar:
+                    _tar_content = temptar.getnames()
+                    # 64 data files ad 64 indices + 2 folders
+                    if len(_tar_content) == 130:
+                        if len([_ for _ in _tar_content if _.endswith('.merylIndex')]) == 64:
+                            return True
+        except Exception as e:
+            log.warning('%s, sniff Exception: %s', self, e)
+        return False
+
+
 class DynamicCompressedArchive(CompressedArchive):
 
     def matches_any(self, target_datatypes):
@@ -2901,6 +2929,37 @@ class WiffTar(BafTar):
 
     def get_type(self):
         return "Sciex WIFF/SCAN archive"
+
+
+@build_sniff_from_prefix
+class Pretext(Binary):
+    """
+    PretextMap contact map file
+    Try to guess if the file is a Pretext file.
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('sample.pretext')
+    >>> Pretext().sniff(fname)
+    True
+    """
+
+    def sniff_prefix(self, sniff_prefix):
+        # The first 4 bytes of any pretext file is 'pstm', and the rest of the
+        # file contains binary data.
+        return sniff_prefix.startswith_bytes(b'pstm')
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary pretext file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "Binary pretext file (%s)" % (nice_size(dataset.get_size()))
 
 
 if __name__ == '__main__':

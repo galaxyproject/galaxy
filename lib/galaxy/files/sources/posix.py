@@ -30,7 +30,7 @@ class PosixFilesSource(BaseFilesSource):
         self.enforce_symlink_security = props.get("enforce_symlink_security", DEFAULT_ENFORCE_SYMLINK_SECURITY)
         self.delete_on_realize = props.get("delete_on_realize", DEFAULT_DELETE_ON_REALIZE)
 
-    def list(self, path="/", recursive=True, user_context=None):
+    def _list(self, path="/", recursive=True, user_context=None):
         dir_path = self._to_native_path(path, user_context=user_context)
         if not self._safe_directory(dir_path):
             raise exceptions.ObjectNotFound('The specified directory does not exist [%s].' % dir_path)
@@ -47,7 +47,7 @@ class PosixFilesSource(BaseFilesSource):
             to_dict = functools.partial(self._resource_info_to_dict, path, user_context=user_context)
             return list(map(to_dict, res))
 
-    def realize_to(self, source_path, native_path, user_context=None):
+    def _realize_to(self, source_path, native_path, user_context=None):
         effective_root = self._effective_root(user_context)
         source_native_path = self._to_native_path(source_path, user_context=user_context)
         if self.enforce_symlink_security:

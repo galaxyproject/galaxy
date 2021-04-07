@@ -401,7 +401,7 @@ class User(Dictifiable, RepresentById):
         extra_user_preferences = self.preferences.get('extra_user_preferences')
         if extra_user_preferences:
             try:
-                data = json.loads(extra_user_preferences)
+                data.update(json.loads(extra_user_preferences))
             except Exception:
                 pass
         return data
@@ -755,8 +755,11 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         self.state_history = []
         self.imported = False
         self.handler = None
+        self.create_time = None
         self.exit_code = None
+        self.history_id = None
         self.job_messages = None
+        self.update_time = None
         self._init_metrics()
         self.state_history.append(JobStateHistory(self))
 
@@ -1538,7 +1541,7 @@ class ImplicitCollectionJobs(RepresentById):
 class ImplicitCollectionJobsJobAssociation(RepresentById):
 
     def __init__(self):
-        pass
+        self.implicit_collection_jobs_id = None
 
 
 class PostJobAction(RepresentById):
@@ -2694,10 +2697,11 @@ class DatasetInstance:
         INVALID = 'invalid'
         OK = 'ok'
 
-    def __init__(self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, tool_version=None, extension=None,
-                 dbkey=None, metadata=None, history=None, dataset=None, deleted=False, designation=None,
-                 parent_id=None, validated_state='unknown', validated_state_message=None, visible=True, create_dataset=False, sa_session=None,
-                 extended_metadata=None, flush=True):
+    def __init__(self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, tool_version=None,
+                 extension=None, dbkey=None, metadata=None, history=None, dataset=None, deleted=False,
+                 designation=None, parent_id=None, validated_state='unknown', validated_state_message=None,
+                 visible=True, create_dataset=False, sa_session=None, extended_metadata=None, flush=True,
+                 creating_job_id=None):
         self.name = name or "Unnamed dataset"
         self.id = id
         self.info = info
@@ -2720,6 +2724,7 @@ class DatasetInstance:
         if not dataset and create_dataset:
             # Had to pass the sqlalchemy session in order to create a new dataset
             dataset = Dataset(state=Dataset.states.NEW)
+            dataset.job_id = creating_job_id
             if flush:
                 sa_session.add(dataset)
                 sa_session.flush()
@@ -3085,6 +3090,7 @@ class DatasetInstance:
 
     @property
     def creating_job(self):
+        # TODO this should work with `return self.dataset.job` (revise failing unit tests)
         creating_job_associations = None
         if self.creating_job_associations:
             creating_job_associations = self.creating_job_associations
@@ -3310,6 +3316,8 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
 
     def copy_tags_to(self, copy_tags=None):
         if copy_tags is not None:
+            if isinstance(copy_tags, dict):
+                copy_tags = copy_tags.values()
             for tag in copy_tags:
                 copied_tag = tag.copy(cls=HistoryDatasetAssociationTagAssociation)
                 self.tags.append(copied_tag)
@@ -3497,7 +3505,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                     continue
                 val = val.file_name
             # If no value for metadata, look in datatype for metadata.
-            elif val is None and hasattr(hda.datatype, name):
+            elif not hda.metadata.element_is_set(name) and hasattr(hda.datatype, name):
                 val = getattr(hda.datatype, name)
             rval['metadata_' + name] = val
         return rval
@@ -4286,7 +4294,7 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
         error_message = f"Dataset collection has no {get_by_attribute} with key {key}."
         raise KeyError(error_message)
 
-    def copy(self, destination=None, element_destination=None, flush=True):
+    def copy(self, destination=None, element_destination=None, dataset_instance_attributes=None, flush=True):
         new_collection = DatasetCollection(
             collection_type=self.collection_type,
             element_count=self.element_count
@@ -4296,6 +4304,7 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
                 new_collection,
                 destination=destination,
                 element_destination=element_destination,
+                dataset_instance_attributes=dataset_instance_attributes,
                 flush=flush
             )
         object_session(self).add(new_collection)
@@ -4537,7 +4546,7 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
                 break
         return matching_collection
 
-    def copy(self, element_destination=None):
+    def copy(self, element_destination=None, dataset_instance_attributes=None):
         """
         Create a copy of this history dataset collection association. Copy
         underlying collection.
@@ -4558,6 +4567,7 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
         collection_copy = self.collection.copy(
             destination=hdca,
             element_destination=element_destination,
+            dataset_instance_attributes=dataset_instance_attributes,
             flush=False,
         )
         hdca.collection = collection_copy
@@ -4719,17 +4729,22 @@ class DatasetCollectionElement(Dictifiable, RepresentById):
         else:
             return [element_object]
 
-    def copy_to_collection(self, collection, destination=None, element_destination=None, flush=True):
+    def copy_to_collection(self, collection, destination=None, element_destination=None, dataset_instance_attributes=None, flush=True):
+        dataset_instance_attributes = dataset_instance_attributes or {}
         element_object = self.element_object
         if element_destination:
             if self.is_collection:
                 element_object = element_object.copy(
                     destination=destination,
                     element_destination=element_destination,
+                    dataset_instance_attributes=dataset_instance_attributes,
                     flush=flush
                 )
             else:
                 new_element_object = element_object.copy(flush=flush, copy_tags=element_object.tags)
+                for attribute, value in dataset_instance_attributes.items():
+                    setattr(new_element_object, attribute, value)
+
                 new_element_object.visible = False
                 if destination is not None and element_object.hidden_beneath_collection_instance:
                     new_element_object.hidden_beneath_collection_instance = destination
@@ -4895,6 +4910,7 @@ class Workflow(Dictifiable, RepresentById):
         self.has_cycles = None
         self.has_errors = None
         self.steps = []
+        self.stored_workflow_id = None
         if uuid is None:
             self.uuid = uuid4()
         else:
@@ -4992,6 +5008,8 @@ class Workflow(Dictifiable, RepresentById):
         copied_workflow.has_cycles = self.has_cycles
         copied_workflow.has_errors = self.has_errors
         copied_workflow.reports_config = self.reports_config
+        copied_workflow.license = self.license
+        copied_workflow.creator_metadata = self.creator_metadata
 
         # Map old step ids to new steps
         step_mapping = {}
@@ -5321,6 +5339,7 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         self.subworkflow_invocations = []
         self.step_states = []
         self.steps = []
+        self.workflow_id = None
 
     def create_subworkflow_invocation_for_step(self, step):
         assert step.type == "subworkflow"
@@ -5672,6 +5691,11 @@ class WorkflowInvocationStep(Dictifiable, RepresentById):
         SCHEDULED = 'scheduled'  # Workflow invocation step has been scheduled.
         # CANCELLED = 'cancelled',  TODO: implement and expose
         # FAILED = 'failed',  TODO: implement and expose
+
+    def __init__(self):
+        self.implicit_collection_jobs_id = None
+        self.job_id = None
+        self.workflow_invocation_id = None
 
     @property
     def is_new(self):

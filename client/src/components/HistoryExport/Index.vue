@@ -61,7 +61,6 @@ export default {
         async initialize() {
             const fileSources = await new Services().getFileSources();
             this.hasWritableFileSources = fileSources.some((fs) => fs.writable);
-            // console.log(fileSources);
             this.initializing = false;
         },
     },

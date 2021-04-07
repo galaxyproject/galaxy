@@ -43,6 +43,7 @@
   <tool file="inputs_as_json.xml" />
   <tool file="inputs_as_json_profile.xml" />
   <tool file="inputs_as_json_with_paths.xml" />
+  <tool file="filter_multiple_splitter.xml" />
   <tool file="filter_static_regexp.xml" />
   <tool file="select_from_dataset.xml" />
   <tool file="dbkey_filter_input.xml" />
@@ -133,6 +134,7 @@
   <tool file="empty_output.xml" />
   <tool file="validation_empty_dataset.xml" />
   <tool file="implicit_conversion.xml" />
+  <tool file="implicit_conversion_format_input.xml" />
   <tool file="implicit_collection_conversion.xml" />
   <tool file="implicit_nested_list_conversion.xml" />
   <tool file="explicit_conversion.xml" />
@@ -148,6 +150,7 @@
   <tool file="fail_identifier.xml" />
   <tool file="fail_writing_work_dir_file.xml" />
   <tool file="tool_directory.xml" />
+  <tool file="tool_directory_docker.xml" />
   <tool file="output_action_change_format.xml" />
   <tool file="output_action_change_format_paired.xml" />
   <tool file="collection_paired_test.xml" />

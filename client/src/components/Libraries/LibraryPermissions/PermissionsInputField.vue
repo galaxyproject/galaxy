@@ -40,7 +40,7 @@ import Vue from "vue";
 
 import VueObserveVisibility from "vue-observe-visibility";
 import Multiselect from "vue-multiselect";
-import { Services } from "./services";
+import { Services } from "components/Libraries/LibraryPermissions/services";
 import "vue-multiselect/dist/vue-multiselect.min.css";
 
 Vue.use(VueObserveVisibility);

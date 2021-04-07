@@ -6,6 +6,7 @@ bx-python
 contextvars; python_version >= "3.6" and python_version < "3.7"
 h5py
 isa-rwval
+mrcfile
 parsley
 numpy
 pycryptodome

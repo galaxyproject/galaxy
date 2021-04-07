@@ -37,12 +37,8 @@
                 >
             </template>
             <template v-slot:cell(job_info)="row">
-                <label v-if="row.item.active">
-                    running
-                </label>
-                <label v-else>
-                    stopped
-                </label>
+                <label v-if="row.item.active"> running </label>
+                <label v-else> stopped </label>
             </template>
             <template v-slot:cell(created_time)="row">
                 <UtcDate :date="row.item.created_time" mode="elapsed" />

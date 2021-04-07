@@ -271,6 +271,7 @@ model.HistoryDatasetAssociationHistory.table = Table(
 model.Dataset.table = Table(
     "dataset", metadata,
     Column("id", Integer, primary_key=True),
+    Column('job_id', Integer, ForeignKey('job.id'), index=True, nullable=True),
     Column("create_time", DateTime, default=now),
     Column("update_time", DateTime, index=True, default=now, onupdate=now),
     Column("state", TrimmedString(64), index=True),
@@ -1769,6 +1770,7 @@ simple_mapping(model.HistoryDatasetAssociation,
 )
 
 simple_mapping(model.Dataset,
+    job=relation(model.Job, primaryjoin=(model.Dataset.table.c.job_id == model.Job.table.c.id)),
     history_associations=relation(model.HistoryDatasetAssociation,
         primaryjoin=(model.Dataset.table.c.id == model.HistoryDatasetAssociation.table.c.dataset_id)),
     active_history_associations=relation(model.HistoryDatasetAssociation,

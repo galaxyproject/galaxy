@@ -9,13 +9,13 @@
                 @deleteFromTable="deleteFromTable"
                 @setBusy="setBusy($event)"
                 @newFolder="newFolder"
-                :folderContents="folderContents"
+                :folder-contents="folderContents"
                 :include_deleted="include_deleted"
                 :folder_id="current_folder_id"
                 :selected="selected"
                 :metadata="folder_metadata"
                 :unselected="unselected"
-                :isAllSelectedMode="isAllSelectedMode"
+                :is-all-selected-mode="isAllSelectedMode"
             />
 
             <b-table
@@ -469,8 +469,8 @@ export default {
         },
         navigateToPermission(element) {
             if (element.type === "file")
-                this.$router.push({ path: `permissions/${this.folder_id}/dataset/${element.id}` });
-            else if (element.type === "folder") this.$router.push({ path: `permissions/${element.id}` });
+                this.$router.push({ path: `${this.folder_id}/dataset/${element.id}/permissions` });
+            else if (element.type === "folder") this.$router.push({ path: `${element.id}/permissions` });
         },
         getMessage(element) {
             if (element.type === "file") return element.message;

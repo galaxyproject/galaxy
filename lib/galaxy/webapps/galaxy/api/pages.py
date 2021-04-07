@@ -16,11 +16,11 @@ from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.pages import (
     CreatePagePayload,
     PageDetails,
-    PageSerializer,
-    PagesManager,
+    PagesService,
     PageSummary,
     PageSummaryList,
 )
+from galaxy.managers.sharable import SharingPayload, SharingStatus
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.web import (
     expose_api,
@@ -53,7 +53,7 @@ PageIdPathParam: EncodedDatabaseIdField = Path(
 
 @router.cbv
 class FastAPIPages:
-    manager: PagesManager = depends(PagesManager)
+    service: PagesService = depends(PagesService)
 
     @router.get(
         '/api/pages',
@@ -66,7 +66,7 @@ class FastAPIPages:
         deleted: bool = DeletedQueryParam,
     ) -> PageSummaryList:
         """Get a list with summary information of all Pages available to the user."""
-        return self.manager.index(trans, deleted)
+        return self.service.index(trans, deleted)
 
     @router.post(
         '/api/pages',
@@ -79,7 +79,7 @@ class FastAPIPages:
         payload: CreatePagePayload = Body(...),
     ) -> PageSummary:
         """Get a list with details of all Pages available to the user."""
-        return self.manager.create(trans, payload)
+        return self.service.create(trans, payload)
 
     @router.delete(
         '/api/pages/{id}',
@@ -92,7 +92,7 @@ class FastAPIPages:
         id: EncodedDatabaseIdField = PageIdPathParam,
     ):
         """Marks the Page with the given ID as deleted."""
-        self.manager.delete(trans, id)
+        self.service.delete(trans, id)
 
     @router.get(
         '/api/pages/{id}',
@@ -105,7 +105,7 @@ class FastAPIPages:
         id: EncodedDatabaseIdField = PageIdPathParam,
     ) -> PageDetails:
         """Return summary information about a specific Page and the content of the last revision."""
-        return self.manager.show(trans, id)
+        return self.service.show(trans, id)
 
     @router.get(
         '/api/pages/{id}.pdf',
@@ -130,16 +130,40 @@ class FastAPIPages:
 
         This feature may not be available in this Galaxy.
         """
-        pdf_bytes = self.manager.show_pdf(trans, id)
+        pdf_bytes = self.service.show_pdf(trans, id)
         return StreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf")
+
+    @router.get(
+        '/api/pages/{id}/sharing',
+        summary="Get sharing the status of the given Page.",
+    )
+    def get_sharing(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = PageIdPathParam,
+    ) -> SharingStatus:
+        """Return the sharing status of the Page."""
+        return self.service.sharing(trans, id)
+
+    @router.post(
+        '/api/pages/{id}/sharing',
+        summary="Set sharing options for the given Page.",
+    )
+    def post_sharing(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = PageIdPathParam,
+        payload: SharingPayload = Body(...),
+    ) -> SharingStatus:
+        """Return the sharing status of the Page after the changes."""
+        return self.service.sharing(trans, id, payload)
 
 
 class PagesController(BaseGalaxyAPIController):
     """
     RESTful controller for interactions with pages.
     """
-    manager: PagesManager = depends(PagesManager)
-    serializer: PageSerializer = depends(PageSerializer)
+    service: PagesService = depends(PagesService)
 
     @expose_api_anonymous_and_sessionless
     def index(self, trans, deleted=False, **kwd):
@@ -153,7 +177,7 @@ class PagesController(BaseGalaxyAPIController):
         :rtype:     list
         :returns:   dictionaries containing summary or detailed Page information
         """
-        return self.manager.index(trans, deleted)
+        return self.service.index(trans, deleted)
 
     @expose_api
     def create(self, trans, payload, **kwd):
@@ -172,7 +196,7 @@ class PagesController(BaseGalaxyAPIController):
         :rtype:     dict
         :returns:   Dictionary return of the Page.to_dict call
         """
-        return self.manager.create(trans, CreatePagePayload(**payload))
+        return self.service.create(trans, CreatePagePayload(**payload))
 
     @expose_api
     def delete(self, trans, id, **kwd):
@@ -186,7 +210,7 @@ class PagesController(BaseGalaxyAPIController):
         :rtype:     dict
         :returns:   Dictionary with 'success' or 'error' element to indicate the result of the request
         """
-        self.manager.delete(trans, id)
+        self.service.delete(trans, id)
         trans.response.status = 204
 
     @expose_api_anonymous_and_sessionless
@@ -201,7 +225,7 @@ class PagesController(BaseGalaxyAPIController):
         :rtype:     dict
         :returns:   Dictionary return of the Page.to_dict call with the 'content' field populated by the most recent revision
         """
-        return self.manager.show(trans, id)
+        return self.service.show(trans, id)
 
     @expose_api_raw_anonymous_and_sessionless
     def show_pdf(self, trans, id, **kwd):
@@ -215,4 +239,14 @@ class PagesController(BaseGalaxyAPIController):
         :rtype: dict
         :returns: Dictionary return of the Page.to_dict call with the 'content' field populated by the most recent revision
         """
-        return self.manager.show_pdf(trans, id)
+        return self.service.show_pdf(trans, id)
+
+    @expose_api
+    def sharing(self, trans, id, payload=None, **kwd):
+        """
+        * GET/POST /api/pages/{id}/sharing
+            View/modify sharing options for the page with the given id.
+        """
+        if payload:
+            payload = SharingPayload(**payload)
+        return self.service.sharing(trans, id, payload)

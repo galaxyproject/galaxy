@@ -20,6 +20,7 @@ from galaxy import (
 from galaxy.managers import (
     citations,
     histories,
+    sharable,
     users,
     workflows,
 )
@@ -36,14 +37,13 @@ from galaxy.web import (
 from galaxy.webapps.base.controller import (
     ExportsHistoryMixin,
     ImportsHistoryMixin,
-    SharableMixin
 )
 from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
 
 
-class HistoriesController(BaseGalaxyAPIController, ExportsHistoryMixin, ImportsHistoryMixin, SharableMixin):
+class HistoriesController(BaseGalaxyAPIController, ExportsHistoryMixin, ImportsHistoryMixin):
     citations_manager: citations.CitationsManager = depends(citations.CitationsManager)
     user_manager: users.UserManager = depends(users.UserManager)
     workflow_manager: workflows.WorkflowsManager = depends(workflows.WorkflowsManager)
@@ -52,6 +52,8 @@ class HistoriesController(BaseGalaxyAPIController, ExportsHistoryMixin, ImportsH
     serializer: histories.HistorySerializer = depends(histories.HistorySerializer)
     deserializer: histories.HistoryDeserializer = depends(histories.HistoryDeserializer)
     filters: histories.HistoryFilters = depends(histories.HistoryFilters)
+    # TODO move all managers above and the actions logic to the HistoriesService
+    service: histories.HistoriesService = depends(histories.HistoriesService)
 
     @expose_api_anonymous
     def index(self, trans, deleted='False', **kwd):
@@ -577,3 +579,13 @@ class HistoriesController(BaseGalaxyAPIController, ExportsHistoryMixin, ImportsH
             'installed_builds': [{'label': ins, 'value': ins} for ins in installed_builds],
             'fasta_hdas': [{'label': f'{hda.hid}: {hda.name}', 'value': trans.security.encode_id(hda.id)} for hda in fasta_hdas],
         }
+
+    @expose_api
+    def sharing(self, trans, id, payload=None, **kwd):
+        """
+        * GET/POST /api/pages/{id}/sharing
+            View/modify sharing options for the page with the given id.
+        """
+        if payload:
+            payload = sharable.SharingPayload(**payload)
+        return self.service.sharing(trans, id, payload)

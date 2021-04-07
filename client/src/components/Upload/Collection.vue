@@ -129,6 +129,7 @@ export default {
     components: { BButton },
     data() {
         return {
+            uploadUrl: null,
             topInfo: "",
             showHelper: true,
             extension: this.app.defaultExtension,
@@ -168,7 +169,12 @@ export default {
         this.initFtpPopover();
         // file upload
         this.initUploadbox({
-            url: this.app.uploadPath,
+            initUrl: (index) => {
+                if (!this.uploadUrl) {
+                    this.uploadUrl = this.getRequestUrl([this.collection.get(index)], this.history_id);
+                }
+                return this.uploadUrl;
+            },
             announce: (index, file) => {
                 this._eventAnnounce(index, file);
             },

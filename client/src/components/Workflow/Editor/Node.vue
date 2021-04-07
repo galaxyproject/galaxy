@@ -243,15 +243,22 @@ export default {
         },
         onAddInput(input, terminal) {
             this.inputTerminals[input.name] = terminal;
+            this.onRedraw();
         },
         onRemoveInput(input) {
             delete this.inputTerminals[input.name];
+            this.onRedraw();
         },
         onAddOutput(output, terminal) {
+            if (this.mapOver) {
+                terminal.setMapOver(this.mapOver);
+            }
             this.outputTerminals[output.name] = terminal;
+            this.onRedraw();
         },
         onRemoveOutput(output) {
             delete this.outputTerminals[output.name];
+            this.onRedraw();
         },
         onToggleOutput(name) {
             this.activeOutputs.toggle(name);

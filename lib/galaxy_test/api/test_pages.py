@@ -1,6 +1,7 @@
 from requests import delete
 
 from galaxy.exceptions import error_codes
+from galaxy_test.api.sharable import SharingApiTests
 from galaxy_test.base.populators import DatasetPopulator, skip_without_tool, WorkflowPopulator
 from ._framework import ApiTestCase
 
@@ -36,7 +37,13 @@ class BasePageApiTestCase(ApiTestCase):
         return request
 
 
-class PageApiTestCase(BasePageApiTestCase):
+class PageApiTestCase(BasePageApiTestCase, SharingApiTests):
+
+    api_name = "pages"
+
+    def create(self, name: str) -> str:
+        response_json = self._create_valid_page_with_slug(name)
+        return response_json["id"]
 
     def test_create(self):
         response_json = self._create_valid_page_with_slug("mypage")

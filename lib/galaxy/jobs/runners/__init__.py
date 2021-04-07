@@ -141,7 +141,9 @@ class BaseJobRunner:
                     job_state = JobState(job_wrapper=arg, job_destination={})
                 else:
                     job_state = arg
-                self.work_queue.put((self.fail_job, job_state))
+                if method != self.fail_job:
+                    # Prevent fail_job cycle in the work_queue
+                    self.work_queue.put((self.fail_job, job_state))
 
     # Causes a runner's `queue_job` method to be called from a worker thread
     def put(self, job_wrapper):

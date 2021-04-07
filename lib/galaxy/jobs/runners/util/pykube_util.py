@@ -68,6 +68,14 @@ def find_pod_object_by_name(pykube_api, job_name, namespace=None):
     return Pod.objects(pykube_api).filter(selector="job-name=" + job_name, namespace=namespace)
 
 
+def is_pod_unschedulable(pykube_api, pod, namespace=None):
+    is_unschedulable = bool(len([c for c in pod.obj['status']['conditions'] if c.get("reason") == "Unschedulable"]))
+    if pod.obj['status']['phase'] == "Pending" and is_unschedulable:
+        return True
+
+    return False
+
+
 def stop_job(job, cleanup="always"):
     job_failed = (job.obj['status']['failed'] > 0
                   if 'failed' in job.obj['status'] else False)
@@ -126,6 +134,7 @@ __all__ = (
     "find_job_object_by_name",
     "find_pod_object_by_name",
     "galaxy_instance_id",
+    "is_pod_unschedulable",
     "Job",
     "job_object_dict",
     "Pod",

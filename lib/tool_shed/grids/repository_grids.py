@@ -1,3 +1,4 @@
+import json
 import logging
 
 from markupsafe import escape as escape_html
@@ -180,7 +181,7 @@ class RepositoryGrid(grids.Grid):
     class EmailAlertsColumn(grids.TextColumn):
 
         def get_value(self, trans, grid, repository):
-            if trans.user and trans.user.email in repository.email_alerts:
+            if trans.user and repository.email_alerts and trans.user.email in json.loads(repository.email_alerts):
                 return 'yes'
             return ''
 

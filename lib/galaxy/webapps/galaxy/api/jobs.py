@@ -8,10 +8,8 @@ import logging
 import typing
 
 from sqlalchemy import (
-    and_,
     or_,
 )
-from sqlalchemy.orm import aliased
 
 from galaxy import (
     exceptions,
@@ -135,16 +133,15 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
             decoded_user_id = self.decode_id(user_id)
         else:
             decoded_user_id = None
-        job_alias = aliased(model.Job)
         if is_admin:
             if decoded_user_id is not None:
-                query = trans.sa_session.query(job_alias).filter(job_alias.user_id == decoded_user_id)
+                query = trans.sa_session.query(model.Job).filter(model.Job.user_id == decoded_user_id)
             else:
-                query = trans.sa_session.query(job_alias)
+                query = trans.sa_session.query(model.Job)
         else:
             if decoded_user_id is not None and decoded_user_id != trans.user.id:
                 raise exceptions.AdminRequiredException("Only admins can index the jobs of others")
-            query = trans.sa_session.query(job_alias).filter(job_alias.user_id == trans.user.id)
+            query = trans.sa_session.query(model.Job).filter(model.Job.user_id == trans.user.id)
 
         def build_and_apply_filters(query, objects, filter_func):
             if objects is not None:
@@ -157,50 +154,42 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
                     query = query.filter(or_(*t))
             return query
 
-        query = build_and_apply_filters(query, state, lambda s: job_alias.state == s)
+        query = build_and_apply_filters(query, state, lambda s: model.Job.state == s)
 
-        query = build_and_apply_filters(query, kwd.get('tool_id', None), lambda t: job_alias.tool_id == t)
-        query = build_and_apply_filters(query, kwd.get('tool_id_like', None), lambda t: job_alias.tool_id.like(t))
+        query = build_and_apply_filters(query, kwd.get('tool_id', None), lambda t: model.Job.tool_id == t)
+        query = build_and_apply_filters(query, kwd.get('tool_id_like', None), lambda t: model.Job.tool_id.like(t))
 
-        query = build_and_apply_filters(query, kwd.get('date_range_min', None), lambda dmin: job_alias.table.c.update_time >= dmin)
-        query = build_and_apply_filters(query, kwd.get('date_range_max', None), lambda dmax: job_alias.table.c.update_time <= dmax)
+        query = build_and_apply_filters(query, kwd.get('date_range_min', None), lambda dmin: model.Job.update_time >= dmin)
+        query = build_and_apply_filters(query, kwd.get('date_range_max', None), lambda dmax: model.Job.update_time <= dmax)
 
         history_id = kwd.get('history_id', None)
         workflow_id = kwd.get('workflow_id', None)
         invocation_id = kwd.get('invocation_id', None)
         if history_id is not None:
             decoded_history_id = self.decode_id(history_id)
-            query = query.filter(job_alias.history_id == decoded_history_id)
+            query = query.filter(model.Job.history_id == decoded_history_id)
         if workflow_id or invocation_id:
-            invocation = aliased(model.WorkflowInvocation)
-            invocation_step = aliased(model.WorkflowInvocationStep)
             if workflow_id is not None:
                 decoded_workflow_id = self.decode_id(workflow_id)
-                query = query.filter(
-                    invocation.id == invocation_step.workflow_invocation_id,
-                    invocation.workflow_id == model.Workflow.table.c.id,
-                    model.Workflow.table.c.stored_workflow_id == decoded_workflow_id,
-                )
+                wfi_step = trans.sa_session.query(model.WorkflowInvocationStep).join(model.WorkflowInvocation).join(model.Workflow).filter(
+                    model.Workflow.stored_workflow_id == decoded_workflow_id,
+                ).subquery()
             elif invocation_id is not None:
                 decoded_invocation_id = self.decode_id(invocation_id)
-                query = query.filter(
-                    invocation.id == invocation_step.workflow_invocation_id,
-                    invocation_step.workflow_invocation_id == decoded_invocation_id
-                )
-            query = query.filter(
-                or_(
-                    job_alias.id == invocation_step.job_id,
-                    and_(
-                        job_alias.id == model.ImplicitCollectionJobsJobAssociation.table.c.job_id,
-                        model.ImplicitCollectionJobsJobAssociation.table.c.implicit_collection_jobs_id == invocation_step.implicit_collection_jobs_id,
-                    )
-                )
+                wfi_step = trans.sa_session.query(model.WorkflowInvocationStep).filter(
+                    model.WorkflowInvocationStep.workflow_invocation_id == decoded_invocation_id
+                ).subquery()
+            query1 = query.join(wfi_step)
+            query2 = query.join(model.ImplicitCollectionJobsJobAssociation).join(
+                wfi_step,
+                model.ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id == wfi_step.c.implicit_collection_jobs_id
             )
+            query = query1.union(query2)
 
         if kwd.get('order_by') == 'create_time':
-            order_by = job_alias.create_time.desc()
+            order_by = model.Job.create_time.desc()
         else:
-            order_by = job_alias.update_time.desc()
+            order_by = model.Job.update_time.desc()
         query = query.order_by(order_by)
 
         query = query.offset(offset)

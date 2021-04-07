@@ -2,7 +2,7 @@
     <div v-if="editLicense">
         <loading-span v-if="licensesLoading" message="Loading licenses..." />
         <b-form-select v-else v-model="license" :options="licenseOptions"></b-form-select>
-        <License v-if="currentLicenseInfo" :licenseId="license" :inputLicenseInfo="currentLicenseInfo">
+        <License v-if="currentLicenseInfo" :license-id="license" :input-license-info="currentLicenseInfo">
             <template v-slot:buttons>
                 <font-awesome-icon v-b-tooltip.hover title="Save License" icon="save" @click="onSave" />
                 <font-awesome-icon v-b-tooltip.hover title="Cancel Edit" icon="times" @click="disableEdit" />
@@ -14,7 +14,7 @@
         </div>
     </div>
     <div v-else-if="license">
-        <License :licenseId="license">
+        <License :license-id="license">
             <template v-slot:buttons>
                 <font-awesome-icon v-b-tooltip.hover title="Edit License" icon="edit" @click="editLicense = true" />
             </template>

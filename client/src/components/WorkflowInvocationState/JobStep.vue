@@ -2,18 +2,12 @@
     <b-card v-if="jobs">
         <b-table small caption-top :items="jobsProvider" :fields="fields" primary-key="id" @row-clicked="toggleDetails">
             <template v-slot:row-details="row">
-                <job-provider
-                    :id="row.item.id"
-                    v-slot="{
-                        item,
-                        loading,
-                    }"
-                >
+                <job-provider :id="row.item.id" v-slot="{ item, loading }">
                     <div v-if="loading"><b-spinner label="Loading Job..."></b-spinner></div>
                     <div v-else>
                         <job-information :job_id="item.id" v-if="item" />
                         <p></p>
-                        <job-parameters v-if="item" :jobId="item.id" :includeTitle="false" />
+                        <job-parameters v-if="item" :job-id="item.id" :include-title="false" />
                     </div>
                 </job-provider>
             </template>

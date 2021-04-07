@@ -7,6 +7,26 @@ export class Services {
         this.root = options.root || getAppRoot();
     }
 
+    async getLibraryPermissions(id) {
+        const url = `${this.root}api/libraries/${id}/permissions?scope=current`;
+        try {
+            const response = await axios.get(url);
+            return response.data;
+        } catch (e) {
+            rethrowSimple(e);
+        }
+    }
+
+    async getLibrary(id) {
+        const url = `${this.root}api/libraries/${id}`;
+        try {
+            const response = await axios.get(url);
+            return response.data;
+        } catch (e) {
+            rethrowSimple(e);
+        }
+    }
+
     async getFolderPermissions(id) {
         const url = `${this.root}api/folders/${id}/permissions?scope=current`;
         try {
@@ -16,6 +36,7 @@ export class Services {
             rethrowSimple(e);
         }
     }
+
     async getDatasetPermissions(id) {
         const url = `${this.root}api/libraries/datasets/${id}/permissions?scope=current`;
         try {
@@ -25,6 +46,7 @@ export class Services {
             rethrowSimple(e);
         }
     }
+
     async getDataset(id) {
         const url = `${this.root}api/libraries/datasets/${id}`;
         try {
@@ -34,6 +56,7 @@ export class Services {
             rethrowSimple(e);
         }
     }
+
     async getFolder(id) {
         const url = `${this.root}api/folders/${id}`;
         try {
@@ -43,6 +66,7 @@ export class Services {
             rethrowSimple(e);
         }
     }
+
     async getSelectOptions(apiRootUrl, id, is_library_access, page, page_limit, searchQuery) {
         searchQuery = searchQuery ? `&q=${searchQuery}` : "";
         const url = `${apiRootUrl}/${id}/permissions?scope=available&is_library_access=${is_library_access}&page_limit=${page_limit}&page=${page}${searchQuery}`;
@@ -76,6 +100,7 @@ export class Services {
                 onError(response);
             });
     }
+
     async toggleDatasetPrivacy(id, isMakePrivate, onSuccess, onError) {
         await axios
             .post(

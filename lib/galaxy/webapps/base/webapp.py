@@ -16,7 +16,6 @@ import mako.lookup
 import mako.runtime
 from babel import Locale
 from babel.support import Translations
-from Cheetah.Template import Template
 from sqlalchemy import and_, true
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -939,12 +938,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         # call get_user so we can invalidate sessions from external users,
         # if external auth has been disabled.
         self.get_user()
-        if filename.endswith(".mako"):
-            return self.fill_template_mako(filename, **kwargs)
-        else:
-            template = Template(file=os.path.join(self.app.config.template_path, filename),
-                                searchList=[kwargs, self.template_context, dict(caller=self, t=self, h=helpers, util=util, request=self.request, response=self.response, app=self.app)])
-            return str(template)
+        assert filename.endswith(".mako")
+        return self.fill_template_mako(filename, **kwargs)
 
     def fill_template_mako(self, filename, template_lookup=None, **kwargs):
         template_lookup = template_lookup or self.webapp.mako_template_lookup
@@ -972,14 +967,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             template.render_context(context)
             return []
         return render
-
-    def fill_template_string(self, template_string, context=None, **kwargs):
-        """
-        Fill in a template, putting any keyword arguments on the context.
-        """
-        template = Template(source=template_string,
-                            searchList=[context or kwargs, dict(caller=self)])
-        return str(template)
 
 
 def default_url_path(path):

@@ -472,6 +472,23 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
         update_response = self._update_workflow(workflow['id'], workflow).json()
         assert update_response['tags'] == []
 
+    def test_update_name(self):
+        original_name = "test update name"
+        workflow_object = self.workflow_populator.load_workflow(name=original_name)
+        workflow_object["license"] = "AAL"
+        upload_response = self.__test_upload(workflow=workflow_object, name=original_name)
+        workflow = upload_response.json()
+        workflow_id = workflow['id']
+        assert workflow['name'] == original_name
+        workflow_dict = self.workflow_populator.download_workflow(workflow_id)
+        assert workflow_dict["license"] == "AAL"
+
+        data = {"name": "my cool new name"}
+        update_response = self._update_workflow(workflow['id'], data).json()
+        assert update_response['name'] == "my cool new name"
+        workflow_dict = self.workflow_populator.download_workflow(workflow_id)
+        assert workflow_dict["license"] == "AAL"
+
     def test_refactor(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow

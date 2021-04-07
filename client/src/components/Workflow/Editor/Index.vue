@@ -1,14 +1,14 @@
 <template>
     <div id="columns" class="workflow-client">
-        <StateUpgradeModal :stateMessages="stateMessages" />
+        <StateUpgradeModal :state-messages="stateMessages" />
         <StateUpgradeModal
-            :stateMessages="insertedStateMessages"
+            :state-messages="insertedStateMessages"
             title="Subworkflow embedded with changes"
             message="Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save."
         />
         <RefactorConfirmationModal
-            :workflowId="id"
-            :refactorActions="refactorActions"
+            :workflow-id="id"
+            :refactor-actions="refactorActions"
             @onWorkflowError="onWorkflowError"
             @onWorkflowMessage="onWorkflowMessage"
             @onRefactor="onRefactor"
@@ -99,7 +99,7 @@
                         <div class="unified-panel-header" unselectable="on">
                             <div class="unified-panel-header-inner">
                                 <WorkflowOptions
-                                    :hasChanges="hasChanges"
+                                    :has-changes="hasChanges"
                                     @onSave="onSave"
                                     @onSaveAs="onSaveAs"
                                     @onRun="onRun"
@@ -119,9 +119,9 @@
                                     :id="id"
                                     :tags="tags"
                                     :parameters="parameters"
-                                    :annotationCurrent.sync="annotation"
+                                    :annotation-current.sync="annotation"
                                     :annotation="annotation"
-                                    :nameCurrent.sync="name"
+                                    :name-current.sync="name"
                                     :name="name"
                                     :version="version"
                                     :versions="versions"
@@ -135,7 +135,7 @@
                                     id="lint-panel"
                                     class="right-content"
                                     ref="lint"
-                                    style="display: none;"
+                                    style="display: none"
                                     :untyped-parameters="parameters"
                                     :annotation="annotation"
                                     :creator="creator"
@@ -206,7 +206,7 @@ export default {
             type: String,
             required: true,
         },
-        version: {
+        initialVersion: {
             type: Number,
             required: true,
         },
@@ -259,6 +259,7 @@ export default {
             messageTitle: null,
             messageBody: null,
             messageIsError: false,
+            version: this.initialVersion,
         };
     },
     created() {

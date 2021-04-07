@@ -6,9 +6,7 @@
                 Best Practices Review
             </div>
             <div v-if="showRefactor">
-                <a href="#" @click="onRefactor">
-                    Try to automatically fix issues.
-                </a>
+                <a href="#" @click="onRefactor"> Try to automatically fix issues. </a>
             </div>
         </template>
         <b-card-body>
