@@ -100,12 +100,10 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import axios from "axios";
 import { prependPath } from "utils/redirect";
-import { waitOnJob } from "components/JobStates/wait";
 import UploadUtils from "mvc/upload/upload-utils";
 import _l from "utils/localization";
 import Multiselect from "vue-multiselect";
