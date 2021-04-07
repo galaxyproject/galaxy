@@ -3,7 +3,7 @@
 ## note access to input1 is supposed to work
 ## - qualified ($outer_cond.input1)
 ## - and unqualified ($input1)
-## both are tested here but the later should be avoided
+## both are tested here but the latter should be avoided
 #if str($outer_cond.multi_input) == 'true':
     #for $input in $outer_cond.input1#
         echo '$input.element_identifier' >> 'output1';
