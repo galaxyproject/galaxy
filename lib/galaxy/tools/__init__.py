@@ -1313,7 +1313,7 @@ class Tool(Dictifiable):
     def populate_resource_parameters(self, tool_source):
         root = getattr(tool_source, 'root', None)
         if root is not None and hasattr(self.app, 'job_config') and hasattr(self.app.job_config, 'get_tool_resource_xml'):
-            resource_xml = self.app.job_config.get_tool_resource_xml(root.get('id'), self.tool_type)
+            resource_xml = self.app.job_config.get_tool_resource_xml(root.get('id', '').lower(), self.tool_type)
             if resource_xml is not None:
                 inputs = root.find('inputs')
                 if inputs is None:
