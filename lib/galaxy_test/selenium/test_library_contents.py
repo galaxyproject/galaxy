@@ -151,7 +151,7 @@ class LibraryContentsTestCase(SeleniumTestCase, UsesLibraryAssertions):
         self.navigate_to_new_library()
         self.assert_num_displayed_items_is(0)
         filenames = ["1.axt", "1.bed", "1.bam"]
-        self.populate_library_folder_from_import_dir(self.name, ["1.axt"])
+        self.populate_library_folder_from_import_dir(self.name, filenames)
         self.assert_num_displayed_items_is(len(filenames))
 
     @selenium_test
