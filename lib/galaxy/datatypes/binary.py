@@ -201,6 +201,34 @@ class CompressedArchive(Binary):
             return "Compressed binary file (%s)" % (nice_size(dataset.get_size()))
 
 
+class Meryldb(CompressedArchive):
+    """MerylDB is a tar.gz archive, with 128 files. 64 data files and 64 index files."""
+    file_ext = "meryldb"
+
+    def sniff(self, filename):
+        """
+        Try to guess if the file is a Cel file.
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('affy_v_agcc.cel')
+        >>> Meryldb().sniff(fname)
+        False
+        >>> fname = get_test_fname('read-db.meryldb')
+        >>> Meryldb().sniff(fname)
+        True
+        """
+        try:
+            if filename and tarfile.is_tarfile(filename):
+                with tarfile.open(filename, 'r') as temptar:
+                    _tar_content = temptar.getnames()
+                    # 64 data files ad 64 indices + 2 folders
+                    if len(_tar_content) == 130:
+                        if len([_ for _ in _tar_content if _.endswith('.merylIndex')]) == 64:
+                            return True
+        except Exception as e:
+            log.warning('%s, sniff Exception: %s', self, e)
+        return False
+
+
 class DynamicCompressedArchive(CompressedArchive):
 
     def matches_any(self, target_datatypes):
