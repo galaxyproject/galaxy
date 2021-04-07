@@ -6,7 +6,6 @@ from typing import Dict
 
 from galaxy import util
 from galaxy.structured_app import MinimalManagerApp
-from galaxy.tools.data import TabularToolDataTable
 from galaxy.tools.data import DatabaseToolDataTable, TabularToolDataTable
 from galaxy.util.template import fill_template
 
