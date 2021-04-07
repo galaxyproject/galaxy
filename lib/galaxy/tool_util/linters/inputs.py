@@ -46,9 +46,9 @@ def lint_inputs(tool_xml, lint_ctx):
 
             if param_attrib.get("display") == "checkboxes":
                 if not string_as_bool(param_attrib.get("multiple", "false")):
-                    lint_ctx.error(f'Select [{param_name}] display="checkboxes" is incompatible with multiple="false"')
+                    lint_ctx.error(f'Select [{param_name}] `display="checkboxes"` is incompatible with `multiple="false"`, remove the `display` attribute')
                 if not string_as_bool(param_attrib.get("optional", "false")):
-                    lint_ctx.error(f'Select [{param_name}] display="checkboxes" is incompatible with optional="false"')
+                    lint_ctx.error(f'Select [{param_name}] `display="checkboxes"` is incompatible with `optional="false"`, remove the `display` attribute')
             if param_attrib.get("display") == "radio":
                 if string_as_bool(param_attrib.get("multiple", "false")):
                     lint_ctx.error(f'Select [{param_name}] display="radio" is incompatible with multiple="true"')
