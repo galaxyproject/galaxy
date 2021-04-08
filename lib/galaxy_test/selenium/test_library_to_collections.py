@@ -15,7 +15,6 @@ class LibraryToCollectionsTestCase(SeleniumTestCase, UsesLibraryAssertions):
 
     @selenium_test
     def test_library_collection_export(self):
-        self.history_panel_create_new()
         self.collection_export()
 
     @selenium_test
@@ -24,7 +23,6 @@ class LibraryToCollectionsTestCase(SeleniumTestCase, UsesLibraryAssertions):
 
     @selenium_test
     def test_library_pair_export(self):
-        self.history_panel_create_new()
         self.collection_export(collection_option="paired")
 
     @selenium_test
@@ -33,11 +31,13 @@ class LibraryToCollectionsTestCase(SeleniumTestCase, UsesLibraryAssertions):
 
     @selenium_test
     def test_export_pairs_list(self):
-        self.history_panel_create_new()
         self.list_of_pairs_export()
 
     def prepare_library_for_data_export(self, files_to_import, history_name=None):
-        self.navigate_to_new_library()
+        self.create_new_library()
+        self.home()
+        self.history_panel_create_new()
+        self.libraries_open_with_name(self.name)
         self.assert_num_displayed_items_is(0)
         self.populate_library_folder_from_import_dir(self.name, files_to_import)
         for i in range(len(files_to_import)):
@@ -55,6 +55,7 @@ class LibraryToCollectionsTestCase(SeleniumTestCase, UsesLibraryAssertions):
 
     def collection_export(self, is_new_history=False, collection_option=None):
         random_name = self._get_random_name()
+
         self.prepare_library_for_data_export(["1.bam", "1.bed"], random_name if is_new_history else None)
         self.components.libraries.folder.export_to_history_options.wait_for_and_click()
 
