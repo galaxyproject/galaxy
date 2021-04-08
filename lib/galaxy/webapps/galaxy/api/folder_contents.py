@@ -4,6 +4,7 @@ API operations on the contents of a library folder.
 import logging
 from typing import (
     List,
+    Optional,
     Tuple,
     Union,
 )
@@ -230,6 +231,27 @@ class FolderContainer(BaseModel):
     )
 
 
+class CreateLibraryItemPayload(BaseModel):
+    from_hda_id: Optional[EncodedDatabaseIdField] = Field(
+        None,
+        title="HDA Encoded ID",
+        description="The encoded identifier of the History Dataset Association instance to add to the library.",
+    )
+    ldda_message: Optional[str] = Field(
+        None,
+        title="LDDA Message",
+        description=(
+            "The new message attribute of the Library Dataset Dataset Association created. "
+            "Only applies when specifying `from_hda_id`."
+        ),
+    )
+    from_hdca_id: Optional[EncodedDatabaseIdField] = Field(
+        None,
+        title="HDCA Encoded ID",
+        description="The encoded identifier of the History Dataset Collection Association instance to add to the library.",
+    )
+
+
 # TODO: refactor and remove UsesLibraryMixinItems then move this class to lib/galaxy/managers/folder_contents.py
 class FolderContentsService(UsesLibraryMixinItems):
     """Common interface/service logic for interactions with library folder contents in the context of the API.
@@ -250,7 +272,7 @@ class FolderContentsService(UsesLibraryMixinItems):
         """
         return managers_base.get_object(trans, id, class_name, check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted)
 
-    def index(self, trans, folder_id, limit=None, offset=None, search_text=None, include_deleted=False) -> FolderContainer:
+    def index(self, trans, folder_id: EncodedDatabaseIdField, limit=None, offset=None, search_text=None, include_deleted=False) -> FolderContainer:
         """
         Displays a collection (list) of a folder's contents (files and folders). Encoded folder ID is prepended
         with 'F' if it is a folder as opposed to a data set which does not have it. Full path is provided in
@@ -395,9 +417,9 @@ class FolderContentsService(UsesLibraryMixinItems):
         folder_container = dict(metadata=metadata, folder_contents=folder_contents)
         return FolderContainer.parse_obj(folder_container)
 
-    def create(self, trans, encoded_folder_id, payload, **kwd):
+    def create(self, trans, encoded_folder_id: EncodedDatabaseIdField, payload: CreateLibraryItemPayload):
         """
-        Create a new library file from an HDA.
+        Create a new library file from an HDA or HDCA.
 
         :param  encoded_folder_id:      the encoded id of the folder to import dataset(s) to
         :type   encoded_folder_id:      an encoded id string
@@ -408,8 +430,6 @@ class FolderContentsService(UsesLibraryMixinItems):
             :type  from_hdca_id:         encoded id
             :param ldda_message:        (optional) the new message attribute of the LDDA created
             :type   ldda_message:       str
-            :param extended_metadata:   (optional) dub-dictionary containing any extended metadata to associate with the item
-            :type  extended_metadata:   dict
         :type   payload:    dict
 
         :returns:   a dictionary describing the new item if ``from_hda_id`` is supplied or a list of
@@ -421,9 +441,9 @@ class FolderContentsService(UsesLibraryMixinItems):
             InternalServerError
         """
         encoded_folder_id_16 = self.__decode_library_content_id(trans, encoded_folder_id)
-        from_hda_id = payload.pop('from_hda_id', None)
-        from_hdca_id = payload.pop('from_hdca_id', None)
-        ldda_message = payload.pop('ldda_message', '')
+        from_hda_id = payload.from_hda_id
+        from_hdca_id = payload.from_hdca_id
+        ldda_message = payload.ldda_message
         try:
             if from_hda_id:
                 decoded_hda_id = self._decode_id(from_hda_id)
@@ -665,4 +685,5 @@ class FolderContentsController(BaseGalaxyAPIController):
             InsufficientPermissionsException, ItemAccessibilityException,
             InternalServerError
         """
-        return self.service.create(trans, encoded_folder_id, payload)
+        create_payload = CreateLibraryItemPayload(**payload)
+        return self.service.create(trans, encoded_folder_id, create_payload)
