@@ -15,6 +15,7 @@ class LibraryToCollectionsTestCase(SeleniumTestCase, UsesLibraryAssertions):
 
     @selenium_test
     def test_library_collection_export(self):
+        self.history_panel_create_new()
         self.collection_export()
 
     @selenium_test
@@ -23,6 +24,7 @@ class LibraryToCollectionsTestCase(SeleniumTestCase, UsesLibraryAssertions):
 
     @selenium_test
     def test_library_pair_export(self):
+        self.history_panel_create_new()
         self.collection_export(collection_option="paired")
 
     @selenium_test
@@ -31,6 +33,7 @@ class LibraryToCollectionsTestCase(SeleniumTestCase, UsesLibraryAssertions):
 
     @selenium_test
     def test_export_pairs_list(self):
+        self.history_panel_create_new()
         self.list_of_pairs_export()
 
     def prepare_library_for_data_export(self, files_to_import, history_name=None):
