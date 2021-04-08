@@ -2961,6 +2961,46 @@ class Pretext(Binary):
         except Exception:
             return "Binary pretext file (%s)" % (nice_size(dataset.get_size()))
 
+class JP2(Binary):
+    """
+    JPEG 2000 binary image format
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.jp2')
+    >>> JP2().sniff(fname)
+    True
+    >>> fname = get_test_fname('interval.interval')
+    >>> JP2().sniff(fname)
+    False
+    """
+    file_ext = "jp2"
+
+    def __init__(self, **kwd):
+        super().__init__(**kwd)
+        self._magic = binascii.unhexlify("0000000C6A5020200D0A870A")
+
+    def sniff(self, filename):
+        # The first 12 bytes of any jp2 file are 0000000C6A5020200D0A870A
+        try:
+            header = open(filename, 'rb').read(12)
+            if header == self._magic:
+                return True
+            return False
+        except Exception:
+            return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary JPEG 2000 file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "Binary JPEG 2000 file (%s)" % (nice_size(dataset.get_size()))
 
 if __name__ == '__main__':
     import doctest
