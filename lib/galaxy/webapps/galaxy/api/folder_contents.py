@@ -250,6 +250,13 @@ class CreateLibraryItemPayload(BaseModel):
         title="HDCA Encoded ID",
         description="The encoded identifier of the History Dataset Collection Association instance to add to the library.",
     )
+    collection_as_single_item: Optional[bool] = Field(
+        None,
+        title="Collection as single item",
+        description=(
+            "This will create the collection as a single item in the library instead of unpacking all the datasets."
+        ),
+    )
 
 
 # TODO: refactor and remove UsesLibraryMixinItems then move this class to lib/galaxy/managers/folder_contents.py
@@ -450,7 +457,9 @@ class FolderContentsService(UsesLibraryMixinItems):
                 return self._copy_hda_to_library_folder(trans, self.hda_manager, decoded_hda_id, encoded_folder_id_16, ldda_message)
             if from_hdca_id:
                 decoded_hdca_id = self._decode_id(from_hdca_id)
-                return self._copy_hdca_to_library_folder_single(trans, self.hdca_manager, decoded_hdca_id, encoded_folder_id_16)
+                if payload.collection_as_single_item:
+                    return self._copy_hdca_to_library_folder_single(trans, self.hdca_manager, decoded_hdca_id, encoded_folder_id_16)
+                return self._copy_hdca_to_library_folder(trans, self.hda_manager, decoded_hdca_id, encoded_folder_id_16, ldda_message)
         except Exception as exc:
             # TODO handle exceptions better within the mixins
             exc_message = util.unicodify(exc)

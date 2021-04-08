@@ -37,8 +37,20 @@ class FolderContentsApiTestCase(ApiTestCase):
     def test_create_hdca(self):
         contents = ["dataset01", "dataset02"]
         hdca_id = self._create_hdca_with_contents(name="Test Dataset Collection", contents=contents)
+        ldda_message = "Test message"
         data = {
             "from_hdca_id": hdca_id,
+            "ldda_message": ldda_message,
+        }
+        lddas = self._create_content_in_folder_with_payload(self.root_folder_id, data)
+        assert len(contents) == len(lddas)
+
+    def test_create_hdca_single_item(self):
+        contents = ["dataset01", "dataset02"]
+        hdca_id = self._create_hdca_with_contents(name="Test Dataset Collection Single", contents=contents)
+        data = {
+            "from_hdca_id": hdca_id,
+            "collection_as_single_item": True
         }
         ldca = self._create_content_in_folder_with_payload(self.root_folder_id, data)
         self._assert_has_keys(ldca, "name", "id", "element_count")
@@ -49,7 +61,7 @@ class FolderContentsApiTestCase(ApiTestCase):
 
         self._create_subfolder_in(folder_id)
         self._create_dataset_in_folder(folder_id)
-        self._create_dataset_collection_in_folder(folder_id)
+        self._create_dataset_collection_in_folder(folder_id, single_item=True)
 
         response = self._get(f"folders/{folder_id}/contents")
         self._assert_status_code_is(response, 200)
@@ -85,7 +97,7 @@ class FolderContentsApiTestCase(ApiTestCase):
 
         num_collections = 2
         for _ in range(num_collections):
-            self._create_dataset_collection_in_folder(folder_id)
+            self._create_dataset_collection_in_folder(folder_id, single_item=True)
 
         num_datasets = 5
         for _ in range(num_datasets):
@@ -234,11 +246,12 @@ class FolderContentsApiTestCase(ApiTestCase):
         ldda = self._create_content_in_folder_with_payload(folder_id, data)
         return ldda["id"]
 
-    def _create_dataset_collection_in_folder(self, folder_id: str, name: Optional[str] = None, num_items: int = 3) -> str:
+    def _create_dataset_collection_in_folder(self, folder_id: str, name: Optional[str] = None, num_items: int = 3, single_item: bool = False) -> str:
         contents = [f"dataset{index}" for index in range(num_items)]
         hdca_id = self._create_hdca_with_contents(name or "Test Dataset Collection", contents)
         data = {
             "from_hdca_id": hdca_id,
+            "collection_as_single_item": single_item
         }
         ldca = self._create_content_in_folder_with_payload(folder_id, data)
         return ldca["id"]
