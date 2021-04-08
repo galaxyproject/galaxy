@@ -795,7 +795,7 @@ class Registry:
                 'ab1': 'application/octet-stream',
                 'axt': 'text/plain',
                 'bam': 'application/octet-stream',
-                'jp2' : 'application/octet-stream',
+                'jp2': 'application/octet-stream',
                 'bed': 'text/plain',
                 'customtrack': 'text/plain',
                 'csfasta': 'text/plain',

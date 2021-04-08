@@ -2961,6 +2961,7 @@ class Pretext(Binary):
         except Exception:
             return "Binary pretext file (%s)" % (nice_size(dataset.get_size()))
 
+
 class JP2(Binary):
     """
     JPEG 2000 binary image format
@@ -3001,6 +3002,7 @@ class JP2(Binary):
             return dataset.peek
         except Exception:
             return "Binary JPEG 2000 file (%s)" % (nice_size(dataset.get_size()))
+
 
 if __name__ == '__main__':
     import doctest
