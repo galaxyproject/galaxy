@@ -2097,14 +2097,22 @@ mapper(model.LibraryFolder, model.LibraryFolder.table, properties=dict(
         # Cant use eager loading on a self referential relationship."""
         lazy=True,
         viewonly=True),
-    datasets=relation(model.LibraryDataset,
-        primaryjoin=(model.LibraryDataset.table.c.folder_id == model.LibraryFolder.table.c.id),
-        order_by=asc(model.LibraryDataset.table.c._name),
-        lazy=True,
-        viewonly=True),
     collections=relation(model.LibraryDatasetCollection,
         primaryjoin=(model.LibraryDatasetCollection.table.c.folder_id == model.LibraryFolder.table.c.id),
         order_by=asc(model.LibraryDatasetCollection.table.c._name),
+        lazy=True,
+        viewonly=True),
+    active_collections=relation(model.LibraryDatasetCollection,
+        primaryjoin=(
+            (model.LibraryDatasetCollection.table.c.folder_id == model.LibraryFolder.table.c.id)
+            & (not_(model.LibraryDatasetCollection.table.c.deleted))
+        ),
+        order_by=asc(model.LibraryDatasetCollection.table.c._name),
+        lazy=True,
+        viewonly=True),
+    datasets=relation(model.LibraryDataset,
+        primaryjoin=(model.LibraryDataset.table.c.folder_id == model.LibraryFolder.table.c.id),
+        order_by=asc(model.LibraryDataset.table.c._name),
         lazy=True,
         viewonly=True),
     active_datasets=relation(model.LibraryDataset,
