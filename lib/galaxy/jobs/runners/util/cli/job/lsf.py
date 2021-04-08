@@ -3,7 +3,7 @@
 from logging import getLogger
 from os import path
 
-from galaxy.jobs import JobState
+from ... import runner_states
 from ..job import BaseJobExec, job_states
 
 log = getLogger(__name__)
@@ -99,7 +99,7 @@ class LSF(BaseJobExec):
         # Exited with exit code 143.
         for line in reason.splitlines():
             if "TERM_MEMLIMIT" in line:
-                return JobState.runner_states.MEMORY_LIMIT_REACHED
+                return runner_states.MEMORY_LIMIT_REACHED
         return None
 
     def _get_job_state(self, state):
