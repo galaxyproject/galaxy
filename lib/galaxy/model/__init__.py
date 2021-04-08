@@ -4474,7 +4474,7 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
             dataset = alias(Dataset.table)
 
             select_from = dc.outerjoin(de, de.c.dataset_collection_id == dc.c.id)
-        
+
             depth_collection_type = self.collection.collection_type
             while ":" in depth_collection_type:
                 child_collection = alias(DatasetCollection.table)
@@ -4486,7 +4486,7 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
                 depth_collection_type = depth_collection_type.split(":", 1)[1]
 
             select_from = select_from.outerjoin(hda, hda.c.id == de.c.hda_id).outerjoin(dataset, hda.c.dataset_id == dataset.c.id)
-            select_stmt = select([hda.c.extension,hda.c._metadata]).select_from(select_from).where(dc.c.id == self.collection.id).distinct()
+            select_stmt = select([hda.c.extension, hda.c._metadata]).select_from(select_from).where(dc.c.id == self.collection.id).distinct()
             extensions = set()
             dbkeys = set()
             for row in db_session.execute(select_stmt).fetchall():

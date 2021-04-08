@@ -12,7 +12,6 @@ from galaxy.managers.collections_util import (
 )
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.hdcas import HDCAManager
-from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.web import expose_api
 from galaxy.webapps.base.controller import UsesLibraryMixinItems
@@ -75,7 +74,7 @@ class DatasetCollectionsController(
     #     e.g attributes = {'dbkey': 'dm3', 'file_ext' = 'txt'}
 
     #     * PUT /api/dataset_collections/{hdca_id}:
-    #         create a new dataset collection instance. 
+    #         create a new dataset collection instance.
     #     """
 
     #     dataset_collection_instance = self.__service.get_dataset_collection_instance(
@@ -95,7 +94,7 @@ class DatasetCollectionsController(
         e.g attributes = {'dbkey': 'dm3', 'file_ext' = 'txt'}
 
         * PUT /api/dataset_collections/{hdca_id}:
-            create a new dataset collection instance. 
+            create a new dataset collection instance.
         """
 
         # TODO: make sure attributes are valid

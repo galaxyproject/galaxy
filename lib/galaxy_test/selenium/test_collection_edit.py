@@ -1,8 +1,9 @@
+from selenium.webdriver.common.keys import Keys
+
 from .framework import (
     selenium_test,
     SeleniumTestCase
 )
-from selenium.webdriver.common.keys import Keys
 
 
 class CollectionEditTestCase(SeleniumTestCase):
@@ -15,10 +16,10 @@ class CollectionEditTestCase(SeleniumTestCase):
         self.switch_to_beta_history()
         self.open_collection_edit_view()
         self.navigate_to_database_tab()
-        dbkeyValue="Additional"
+        dbkeyValue = "Additional"
         self.check_current_dbkey_value(dbkeyValue)
-        dbkeyNew="hg17"
-        self.change_dbkey_value_and_click_submit(dbkeyValue,dbkeyNew)
+        dbkeyNew = "hg17"
+        self.change_dbkey_value_and_click_submit(dbkeyValue, dbkeyNew)
         self.components.history_panel.options_use_legacy_history.wait_for_and_click()
         self.history_panel_wait_for_hid_ok(4)
         self.switch_to_beta_history()
@@ -46,16 +47,15 @@ class CollectionEditTestCase(SeleniumTestCase):
     def open_collection_edit_view(self):
         self.components.history_panel.collection_menu_button.wait_for_and_click()
         self.components.history_panel.collection_menu_edit_attributes.wait_for_and_click()
-       
+
     def navigate_to_database_tab(self):
         self.components.edit_collection_attributes.database_genome_tab.wait_for_and_click()
 
-    def check_current_dbkey_value(self,dbkeyValue):
+    def check_current_dbkey_value(self, dbkeyValue):
         self.components.edit_collection_attributes.database_value(dbkey=dbkeyValue).wait_for_visible()
 
-    def change_dbkey_value_and_click_submit(self,dbkeyValue,dbkeyNew):
+    def change_dbkey_value_and_click_submit(self, dbkeyValue, dbkeyNew):
         self.components.edit_collection_attributes.database_value(dbkey=dbkeyValue).wait_for_and_click()
         self.driver.find_element_by_css_selector("input.multiselect__input").send_keys(dbkeyNew)
         self.driver.find_element_by_css_selector("input.multiselect__input").send_keys(Keys.ENTER)
         self.components.edit_collection_attributes.save_btn.wait_for_and_click()
-        
