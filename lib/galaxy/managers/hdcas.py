@@ -85,13 +85,7 @@ class HDCAManager(
                 returned.append(processed)
         return returned
 
-    def is_owner(
-        self,
-        hdca: model.HistoryDatasetCollectionAssociation,
-        user,
-        current_history=None,
-        **kwargs,
-    ):
+    def is_owner(self, hdca, user, current_history=None, **kwargs):
         """
         Use history to see if current user owns HDCA.
         """
