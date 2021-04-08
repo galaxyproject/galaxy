@@ -1061,6 +1061,34 @@ mapping:
           You can enter tracking code here to track visitor's behavior
           through your Google Analytics account.  Example: UA-XXXXXXXX-Y
 
+      plausible_server:
+        type: str
+        required: false
+        desc: |
+          Please enter the URL for the Plausible server (including https) so this can be used for tracking
+          with Plausible (https://plausible.io/).
+
+      plausible_domain:
+        type: str
+        required: false
+        desc: |
+          Please enter the URL for the Galaxy server so this can be used for tracking
+          with Plausible (https://plausible.io/).
+
+      matomo_server:
+        type: str
+        required: false
+        desc: |
+          Please enter the URL for the Matomo server (including https) so this can be used for tracking
+          with Matomo (https://matomo.org/).
+
+      matomo_site_id:
+        type: str
+        required: false
+        desc: |
+          Please enter the site ID for the Matomo server so this can be used for tracking
+          with Matomo (https://matomo.org/).
+
       display_servers:
         type: str
         default: hgw1.cse.ucsc.edu,hgw2.cse.ucsc.edu,hgw3.cse.ucsc.edu,hgw4.cse.ucsc.edu,hgw5.cse.ucsc.edu,hgw6.cse.ucsc.edu,hgw7.cse.ucsc.edu,hgw8.cse.ucsc.edu,lowepub.cse.ucsc.edu
