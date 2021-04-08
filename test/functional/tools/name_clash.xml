@@ -1,0 +1,37 @@
+<tool id="name_clash" name="name_clash" version="0.1.0">
+  <command><![CDATA[
+    cat '$input1' > '$output' &&
+    cat '$another_input1' > '$another_output'
+    ## this should fail, because there are no such inputs
+    ## but I do not undestand why in the above the output
+    ## is simple_line.txt and not the tabular / bed files
+    ## &&
+    cat '$input2' > /dev/null &&
+    cat '$another_input2' > /dev/null
+  ]]></command>
+  <inputs>
+    <param name="input1" type="data" label="Input" help="Input to be split." />
+    <param name="input" type="data_collection"/>
+    <param name="another_input1" type="data" label="Input" help="Input to be split." />
+    <param name="another_input" type="data" multiple="true"/>
+  </inputs>
+  <outputs>
+    <data name="output" format_source="input1"/>
+    <data name="another_output" format_source="another_input1"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="simple_line.txt" ftype="txt" />
+      <param name="input">
+        <collection type="list">
+          <element name="1" value="2.tabular" ftype="tabular" />
+          <element name="2" value="1.tabular" ftype="tabular" />
+        </collection>
+      </param>
+      <output name="output" value="simple_line.txt" ftype="tabular"/> <!-- this should be txt -->
+      <param name="another_input1" value="simple_line_alternative.txt" ftype="txt" />
+      <param name="another_input" value="2.bed,1.bed" ftype="bed" /> <!-- this should be txt -->
+      <output name="another_output" value="simple_line_alternative.txt" ftype="bed"/>
+    </test>
+  </tests>
+</tool>

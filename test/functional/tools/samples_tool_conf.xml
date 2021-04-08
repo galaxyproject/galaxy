@@ -193,6 +193,7 @@
   <tool file="cheetah_problem_syntax_error.xml" />
   <tool file="python_environment_problem.xml" />
   <tool file="config_vars.xml" />
+  <tool file="name_clash.xml" />
 
   <tool file="multiple_versions_v01.xml" />
   <tool file="multiple_versions_v02.xml" />
