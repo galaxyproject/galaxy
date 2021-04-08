@@ -836,6 +836,7 @@ class Registry:
             self.sniff_order = [
                 binary.Bam(),
                 binary.Sff(),
+                binary.JP2(),
                 binary.H5(),
                 xml.GenericXml(),
                 sequence.Maf(),
