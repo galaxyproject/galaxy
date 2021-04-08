@@ -76,6 +76,7 @@ sqlparse = "*"
 starlette = "*"
 starlette-context = {version = "*", python = ">=3.7"}
 svgwrite = "*"
+tifffile = "<=2020.9.3"  # Last version compatible with python 3.6
 uvicorn = "*"
 WebOb = "*"
 Whoosh = "*"

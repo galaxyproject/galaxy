@@ -188,6 +188,7 @@ stevedore==3.3.0; python_version >= "3.6"
 svgwrite==1.4.1; python_version >= "3.6"
 tempita==0.5.2
 tenacity==7.0.0
+tifffile==2020.9.3
 tornado==6.1; python_version >= "3.5"
 tqdm==4.59.0; python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0"
 typing-extensions==3.7.4.3; python_version >= "3.6" and python_version < "3.8"
