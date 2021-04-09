@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <datatypes>
   <registration converters_path="lib/galaxy/datatypes/converters" display_path="display_applications">
+    <datatype extension="jp2" type="galaxy.datatypes.binary:JP2" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="ab1" type="galaxy.datatypes.binary:Ab1" mimetype="application/octet-stream" display_in_upload="true" description="A binary sequence file in 'ab1' format with a '.ab1' file extension.  You must manually select this 'File Format' when uploading the file." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Ab1"/>
     <datatype extension="afg" type="galaxy.datatypes.assembly:Amos" display_in_upload="false"/>
     <datatype extension="anvio_cog_profile" type="galaxy.datatypes.anvio:AnvioComposite" display_in_upload="false" subclass="true" />
@@ -886,6 +887,7 @@
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:VtkBinary"/>
     <sniffer type="galaxy.datatypes.interval:ScIdx"/>
     <sniffer type="galaxy.datatypes.tabular:Vcf"/>
+    <sniffer type="galaxy.datatypes.binary:JP2"/>
     <sniffer type="galaxy.datatypes.binary:TwoBit"/>
     <sniffer type="galaxy.datatypes.binary:GeminiSQLite"/>
     <sniffer type="galaxy.datatypes.binary:SQmass"/>
