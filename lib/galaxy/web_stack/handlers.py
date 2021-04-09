@@ -291,7 +291,7 @@ class ConfiguresHandlers:
         for collection in self.handlers.values():
             if self.app.config.server_name in collection:
                 return True
-        if (not self.handler_assignment_methods_configured
+        if not self.handlers and (not self.handler_assignment_methods_configured
                 and HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION in self.handler_assignment_methods
                 or HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED in self.handler_assignment_methods):
             return True
