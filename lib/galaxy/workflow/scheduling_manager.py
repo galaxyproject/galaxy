@@ -186,15 +186,16 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
 
         if use_default_scheduler:
             self.__init_default_scheduler()
-            self._set_default_handler_assignment_methods()
         else:
             plugins_element = parse_xml(config_file).getroot()
             self.__init_schedulers_for_element(plugins_element)
 
-        if not self.__handlers_configured and self.__stack_has_pool:
+        if self.__stack_has_pool:
             # Stack has a pool for us so override inherited config and use the pool
             self.__init_handlers()
             self.__handlers_configured = True
+        elif use_default_scheduler:
+            self._set_default_handler_assignment_methods()
 
     def __init_default_scheduler(self):
         self.default_scheduler_id = DEFAULT_SCHEDULER_ID

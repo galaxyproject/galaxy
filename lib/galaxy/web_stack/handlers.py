@@ -78,9 +78,12 @@ class ConfiguresHandlers:
     def get_preferred_handler_assignment_method(self):
         if not self.supports_returning(self.app.model.session):
             log.debug("Database does not support RETURNING statement, cannot use DB-SKIP-LOCKED or DB-TRANSACTION-ISOLATION handler assignment")
+            self.UNSUPPORTED_HANDLER_ASSIGNMENT_METHODS.add(HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED)
+            self.UNSUPPORTED_HANDLER_ASSIGNMENT_METHODS.add(HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION)
             return None
         if self.supports_skip_locked(self.app.model.session):
             log.debug("Database does not support WITH FOR UPDATE statement, cannot use DB-SKIP-LOCKED handler assignment")
+            self.UNSUPPORTED_HANDLER_ASSIGNMENT_METHODS.add(HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED)
             return HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED
         return HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION
 
