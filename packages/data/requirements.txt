@@ -13,7 +13,7 @@ pycryptodome
 pydantic
 pysam
 social-auth-core[openidconnect]==3.3.0
-SQLAlchemy>=1.4.5
+SQLAlchemy
 sqlalchemy-migrate
 tifffile<=2021.2.26 # Last release compatible with python 3.6
 WebOb
