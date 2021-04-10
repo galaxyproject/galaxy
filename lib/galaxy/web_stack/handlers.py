@@ -82,9 +82,9 @@ class ConfiguresHandlers:
             self.UNSUPPORTED_HANDLER_ASSIGNMENT_METHODS.add(HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION)
             return None
         if self.supports_skip_locked(self.app.model.session):
-            log.debug("Database does not support WITH FOR UPDATE statement, cannot use DB-SKIP-LOCKED handler assignment")
             self.UNSUPPORTED_HANDLER_ASSIGNMENT_METHODS.add(HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED)
             return HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED
+        log.debug("Database does not support WITH FOR UPDATE statement, cannot use DB-SKIP-LOCKED handler assignment")
         return HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION
 
     @staticmethod
