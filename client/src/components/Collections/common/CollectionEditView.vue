@@ -20,9 +20,7 @@
                 <div v-for="element in collectionElements" :key="element">{{ element.element_identifier }} <br /></div>
             </b-tab>
             <b-tab>
-                <template v-slot:title>
-                    <font-awesome-icon icon="table" /> &nbsp; {{ l("Database/Build") }}</template
-                >
+                <template v-slot:title> <font-awesome-icon icon="table" /> &nbsp; {{ l("Database/Build") }}</template>
                 <database-edit-tab :databaseKeyFromElements="databaseKeyFromElements" :genomes="genomes" />
             </b-tab>
             <b-tab>
