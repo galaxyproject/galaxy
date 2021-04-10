@@ -1,12 +1,8 @@
 <template>
     <div>
         <h4>{{ l("Edit Collection Attributes") }}</h4>
-        <b-alert show variant="warning" dismissible>
-            {{
-                l(
-                    "Collections are immutable. This means there will be some things you cannot change without creating a new collection. "
-                )
-            }}
+        <b-alert show variant="info" dismissible>
+            {{ l("This will create a new collection in your History. Your quota usage will not increase. ") }}
         </b-alert>
         <div v-if="jobError">
             <b-alert show variant="danger" dismissible>
@@ -15,7 +11,7 @@
         </div>
         <b-tabs content-class="mt-3">
             <b-tab>
-                <template v-slot:title> <i class="fa fa-bars"></i>{{ l(" Attributes") }}</template>
+                <template v-slot:title> <font-awesome-icon icon="bars" /> &nbsp; {{ l("Attributes") }}</template>
                 <b>{{ l("Name: ") }}</b> <i>{{ collectionName }}</i>
                 <br />
                 <b>{{ l("Collection Type: ") }}</b> <i>{{ collectionType }}</i>
@@ -24,43 +20,17 @@
                 <div v-for="element in collectionElements" :key="element">{{ element.element_identifier }} <br /></div>
             </b-tab>
             <b-tab>
-                <template v-slot:title> <i class="fa fa-table"></i>{{ l(" Database/Build") }}</template>
-                <div class="alert alert-secondary" role="alert">
-                    <div class="float-left">Change database/genome of all elements in collection</div>
-                    <div class="text-right">
-                        <button
-                            class="save-collection-edit btn btn-primary"
-                            @click="clickedSave('dbkey', genome)"
-                            :disabled="genome.id == databaseKeyFromElements"
-                        >
-                            {{ l("Save") }}
-                        </button>
-                    </div>
-                </div>
-                <b>{{ l("Database/Build: ") }}</b>
-                <multiselect
-                    v-model="genome"
-                    deselect-label="Can't remove this value"
-                    track-by="id"
-                    label="text"
-                    :options="genomes"
-                    :searchable="true"
-                    :allow-empty="false"
+                <template v-slot:title>
+                    <font-awesome-icon icon="table" /> &nbsp; {{ l("Database/Build") }}</template
                 >
-                    {{ genome.text }}
-                    <!-- <template slot="afterList">
-                        <div v-observe-visibility="reachedEndOfList" v-if="hasMorePages">
-                            <span class="spinner fa fa-spinner fa-spin fa-1x" />
-                        </div>
-                    </template> -->
-                </multiselect>
+                <database-edit-tab :databaseKeyFromElements="databaseKeyFromElements" :genomes="genomes" />
             </b-tab>
             <b-tab>
-                <template v-slot:title> <i class="fa fa-gear"></i>{{ l(" Convert") }}</template>
+                <template v-slot:title> <font-awesome-icon icon="cog" /> &nbsp; {{ l("Convert") }}</template>
                 <b>{{ l("Datatype: ") }}</b> <i>{{ datatypeFromElements }}</i>
             </b-tab>
             <b-tab>
-                <template v-slot:title> <i class="fa fa-database"></i>{{ l(" Datatype") }}</template>
+                <template v-slot:title> <font-awesome-icon icon="database" /> &nbsp; {{ l("Datatype") }}</template>
                 <div class="alert alert-secondary" role="alert">
                     <div class="float-left">Change datatype of all elements in collection</div>
                     <div class="text-right">
@@ -92,7 +62,7 @@
                 ><i>original input: {{ datatypeFromElements }}</i>
             </b-tab>
             <b-tab>
-                <template v-slot:title> <i class="fa fa-user"></i>{{ l(" Permissions") }}</template>
+                <template v-slot:title> <font-awesome-icon icon="user" /> &nbsp;{{ l("Permissions") }}</template>
                 <p>WIP Permissions</p>
             </b-tab>
         </b-tabs>
@@ -108,9 +78,24 @@ import UploadUtils from "mvc/upload/upload-utils";
 import _l from "utils/localization";
 import Multiselect from "vue-multiselect";
 import { errorMessageAsString } from "utils/simple-error";
+import DatabaseEditTab from "./DatabaseEditTab";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faDatabase } from "@fortawesome/free-solid-svg-icons";
+import { faTable } from "@fortawesome/free-solid-svg-icons";
+import { faBars } from "@fortawesome/free-solid-svg-icons";
+import { faUser } from "@fortawesome/free-solid-svg-icons";
+import { faCog } from "@fortawesome/free-solid-svg-icons";
+
 //import VueObserveVisibility from "vue-observe-visibility";
 
 //Vue.use(VueObserveVisibility);
+library.add(faDatabase);
+library.add(faTable);
+library.add(faBars);
+library.add(faCog);
+library.add(faUser);
+
 Vue.use(BootstrapVue);
 export default {
     created() {
@@ -131,14 +116,13 @@ export default {
                 console.log("Error in CollectionEditor, unable to load genomes", err);
             });
     },
-    components: { Multiselect },
+    components: { Multiselect, DatabaseEditTab, FontAwesomeIcon },
     data: function () {
         return {
             collection_data: {}, //all data from the response
             attributes_data: {},
             extensions: [],
             genomes: [],
-            selectedGenome: {},
             selectedExtension: {},
             databaseKeyFromElements: null,
             datatypeFromElements: null,
@@ -177,14 +161,6 @@ export default {
                 return this.collection_data.element_count;
             },
         },
-        genome: {
-            get() {
-                return this.selectedGenome;
-            },
-            set(element) {
-                this.selectedGenome = element;
-            },
-        },
         extension: {
             get() {
                 return this.selectedExtension;
@@ -206,7 +182,6 @@ export default {
                     this.collection_data = response.data;
                     this.getDatabaseKeyFromElements();
                     this.getExtensionFromElements();
-                    console.log(this.collection_data);
                 });
 
             //TODO error handling
@@ -223,21 +198,19 @@ export default {
         },
         getDatabaseKeyFromElements: function () {
             this.databaseKeyFromElements = this.attributes_data.dbkey;
-
-            this.selectedGenome = this.genomes.find((element) => element.id == this.databaseKeyFromElements);
+            // this.selectedGenome = this.genomes.find((element) => element.id == this.databaseKeyFromElements);
         },
         getExtensionFromElements: function () {
             this.datatypeFromElements = this.attributes_data.extension;
-
             this.selectedExtension = this.extensions.find((element) => element.id == this.datatypeFromElements);
         },
         clickedSave: function (attribute, newValue) {
             const url = prependPath("/api/dataset_collections/" + this.collection_id);
-            let data = {};
+            const data = {};
             if (attribute == "dbkey") {
-                data = { dbkey: newValue.id };
+                data.add({ dbkey: newValue.id });
             } else if (attribute == "file_ext") {
-                data = { file_ext: newValue.id };
+                data.add({ file_ext: newValue.id });
             }
 
             axios
