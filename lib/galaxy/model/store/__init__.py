@@ -1011,7 +1011,7 @@ class ModelExportStore(metaclass=abc.ABCMeta):
 
 class DirectoryModelExportStore(ModelExportStore):
 
-    def __init__(self, export_directory, app=None, for_edit=False, serialize_dataset_objects=None, export_files=None, strip_metadata_files=True):
+    def __init__(self, export_directory, app=None, for_edit=False, serialize_dataset_objects=None, export_files=None, strip_metadata_files=True, serialize_jobs=True):
         """
         :param export_directory: path to export directory. Will be created if it does not exist.
         :param app: Galaxy App or app-like object. Must be provided if `for_edit` and/or `serialize_dataset_objects` are True
@@ -1019,6 +1019,7 @@ class DirectoryModelExportStore(ModelExportStore):
         :param serialize_dataset_objects: If True will encode IDs using the host secret. Defaults `for_edit`.
         :param export_files: How files should be exported, can be 'symlink', 'copy' or None, in which case files
                              will not be serialized.
+        :param serialize_jobs: Include job data in model export. Not needed for set_metadata script.
         """
         if not os.path.exists(export_directory):
             os.makedirs(export_directory)
@@ -1031,6 +1032,7 @@ class DirectoryModelExportStore(ModelExportStore):
             sessionless = True
             security = IdEncodingHelper(id_secret="randomdoesntmatter")
 
+        self.serialize_jobs = serialize_jobs
         self.sessionless = sessionless
         self.security = security
 
@@ -1257,7 +1259,7 @@ class DirectoryModelExportStore(ModelExportStore):
                 output_dataset_mapping[name].append(self.exported_key(dataset))
             jobs_attrs.append({"id": job_id, 'output_dataset_mapping': output_dataset_mapping})
 
-        if not self.serialization_options.for_edit:
+        if self.serialize_jobs:
 
             #
             # Write jobs attributes file.
@@ -1301,6 +1303,8 @@ class DirectoryModelExportStore(ModelExportStore):
 
             # Get jobs' attributes.
             for job in jobs_dict.values():
+                if self.serialization_options.for_edit:
+                    continue
                 job_attrs = job.serialize(self.security, self.serialization_options)
 
                 # -- Get input, output datasets. --
