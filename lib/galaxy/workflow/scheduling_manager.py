@@ -190,7 +190,7 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
             plugins_element = parse_xml(config_file).getroot()
             self.__init_schedulers_for_element(plugins_element)
 
-        if self.__stack_has_pool:
+        if not self.__handlers_configured and self.__stack_has_pool:
             # Stack has a pool for us so override inherited config and use the pool
             self.__init_handlers()
             self.__handlers_configured = True
