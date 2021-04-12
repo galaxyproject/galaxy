@@ -177,7 +177,7 @@ import {
 } from "./modules/utilities";
 import WorkflowCanvas from "./modules/canvas";
 import WorkflowOptions from "./Options";
-import WorkflowForm from "components/Workflow/Editor/Forms/Index";
+import WorkflowForm from "./Forms/FormDefault";
 import MarkdownEditor from "components/Markdown/MarkdownEditor";
 import ToolBoxWorkflow from "components/Panels/ToolBoxWorkflow";
 import SidePanel from "components/Panels/SidePanel";

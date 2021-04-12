@@ -12,19 +12,27 @@ export default {
             required: true,
         },
     },
+    watch: {
+        inputs() {
+            this.onRender();
+        },
+    },
     mounted() {
-        this.$nextTick(() => {
-            const el = this.$refs["inputs"];
-            this.form = new Form({
-                el,
-                inputs: this.inputs,
-            }).on("change", this.onChange);
-            this.onChange();
-        });
+        this.onRender();
     },
     methods: {
         onChange() {
             this.$emit("onChange", this.form.data.create());
+        },
+        onRender() {
+            this.$nextTick(() => {
+                const el = this.$refs["inputs"];
+                this.form = new Form({
+                    el,
+                    inputs: this.inputs,
+                }).on("change", this.onChange);
+                this.onChange();
+            });
         },
     },
 };
