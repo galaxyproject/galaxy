@@ -1627,6 +1627,18 @@ def url_get(base_url, auth=None, pathspec=None, params=None, max_retries=5, back
     return response.text
 
 
+def is_url(uri):
+    """
+    check if uri is (most likely) an url
+
+    >>> is_url('https://zenodo.org/record/4104428/files/UCSC-hg38-chr22-Coding-Exons.bed')
+    True
+    >>> is_url('/some/path')
+    False
+    """
+    return uri.find('://') != -1
+
+
 def download_to_file(url, dest_file_path, timeout=30, chunk_size=2 ** 20):
     """Download a URL to a file in chunks."""
     with requests.get(url, timeout=timeout, stream=True) as r, open(dest_file_path, 'wb') as f:
