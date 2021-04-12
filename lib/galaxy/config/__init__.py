@@ -891,6 +891,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             }
 
         log_destination = kwargs.get("log_destination")
+        galaxy_daemon_log_destination = os.environ.get('GALAXY_DAEMON_LOG')
         if log_destination == "stdout":
             LOGGING_CONFIG_DEFAULT['handlers']['console'] = {
                 'class': 'logging.StreamHandler',
@@ -904,9 +905,18 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                 'class': 'logging.FileHandler',
                 'formatter': 'stack',
                 'level': 'DEBUG',
-                'filename': kwargs['log_destination'],
+                'filename': log_destination,
                 'filters': ['stack']
             }
+        if galaxy_daemon_log_destination:
+            LOGGING_CONFIG_DEFAULT['handlers']['files'] = {
+                'class': 'logging.FileHandler',
+                'formatter': 'stack',
+                'level': 'DEBUG',
+                'filename': galaxy_daemon_log_destination,
+                'filters': ['stack']
+            }
+            LOGGING_CONFIG_DEFAULT['root']['handlers'].append('files')
 
     def _configure_dataset_storage(self):
         # The default for `file_path` has changed in 20.05; we may need to fall back to the old default

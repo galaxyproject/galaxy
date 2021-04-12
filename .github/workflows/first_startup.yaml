@@ -9,6 +9,10 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ['3.6', '3.9']
+        webserver: ['uwsgi']
+        include:
+          - python-version: '3.9'
+            webserver: 'dev'
     defaults:
       run:
         shell: bash -l {0}
@@ -34,3 +38,5 @@ jobs:
     - name: run tests
       run: tox -e first_startup
       working-directory: 'galaxy root'
+      env:
+        APP_WEBSERVER: ${{ matrix.webserver }}
