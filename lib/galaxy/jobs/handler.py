@@ -84,6 +84,7 @@ class ItemGrabber:
         self.handler_tags = handler_tags
         self._grab_conn_opts = {'autocommit': False}
         self._grab_query = None
+        self._supports_returning = self.app.application_stack.supports_returning()
 
     def setup_query(self):
         subq = select([self.grab_this.id]) \
@@ -96,9 +97,10 @@ class ItemGrabber:
         if self.handler_assignment_method == HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED:
             subq = subq.with_for_update(skip_locked=True)
         self._grab_query = self.grab_this.table.update() \
-            .returning(self.grab_this.table.c.id) \
             .where(self.grab_this.table.c.id.in_(subq)) \
             .values(handler=self.app.config.server_name)
+        if self._supports_returning:
+            self._grab_query = self._grab_query.returning(self.grab_this.table.c.id)
         if self.handler_assignment_method == HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION:
             self._grab_conn_opts['isolation_level'] = 'SERIALIZABLE'
         log.info(
@@ -132,12 +134,16 @@ class ItemGrabber:
         conn = self.sa_session.connection(execution_options=self._grab_conn_opts)
         with conn.begin() as trans:
             try:
-                rows = conn.execute(self._grab_query).fetchall()
-                if rows:
-                    log.debug(f"Grabbed {self.grab_type}(s): {', '.join(str(row[0]) for row in rows)}")
-                    trans.commit()
+                proxy = conn.execute(self._grab_query)
+                if self._supports_returning:
+                    rows = proxy.fetchall()
+                    if rows:
+                        log.debug(f"Grabbed {self.grab_type}(s): {', '.join(str(row[0]) for row in rows)}")
+                        trans.commit()
+                    else:
+                        trans.rollback()
                 else:
-                    trans.rollback()
+                    trans.commit()
             except OperationalError as e:
                 # If this is a serialization failure on PostgreSQL, then e.orig is a psycopg2 TransactionRollbackError
                 # and should have attribute `code`. Other engines should just report the message and move on.

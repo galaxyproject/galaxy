@@ -70,9 +70,33 @@ class ApplicationStack:
         self.app = app
         self.config = config or (app and app.config)
         self.running = False
+        self._supports_returning = None
+        self._supports_skip_locked = None
         multiprocessing.current_process().name = getattr(self.config, 'server_name', 'main')
         if app:
             log.debug("%s initialized", self.__class__.__name__)
+
+    def supports_returning(self):
+        if self._supports_returning is None:
+            job_table = self.app.model.Job.table
+            stmt = job_table.update().where(job_table.c.id == -1).returning(job_table.c.id)
+            try:
+                self.app.model.session.execute(stmt)
+                self._supports_returning = True
+            except Exception:
+                self._supports_returning = False
+        return self._supports_returning
+
+    def supports_skip_locked(self):
+        if self._supports_skip_locked is None:
+            job_table = self.app.model.Job.table
+            stmt = job_table.select().where(job_table.c.id == -1).with_for_update(skip_locked=True)
+            try:
+                self.app.model.session.execute(stmt)
+                self._supports_skip_locked = True
+            except Exception:
+                self._supports_skip_locked = False
+        return self._supports_skip_locked
 
     def _set_default_job_handler_assignment_methods(self, job_config, base_pool):
         """Override in subclasses to set default job handler assignment methods if not explicitly configured by the administrator.

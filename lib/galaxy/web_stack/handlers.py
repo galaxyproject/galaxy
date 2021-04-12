@@ -11,10 +11,8 @@ from enum import Enum
 from typing import Set, Tuple
 
 from sqlalchemy.orm import object_session
-from sqlalchemy.orm.scoping import scoped_session
 
 from galaxy.exceptions import HandlerAssignmentError
-from galaxy.model import Job
 from galaxy.util import (
     ExecutionTimer,
     listify
@@ -55,36 +53,11 @@ class ConfiguresHandlers:
             else:
                 self.handlers[tag] = [handler_id]
 
-    @staticmethod
-    def supports_returning(session: scoped_session):
-        job_table = Job.table
-        stmt = job_table.update().where(job_table.c.id == -1).returning(job_table.c.id)
-        try:
-            session.execute(stmt)
-            return True
-        except Exception:
-            return False
-
-    @staticmethod
-    def supports_skip_locked(session: scoped_session):
-        job_table = Job.table
-        stmt = job_table.select().where(job_table.c.id == -1).with_for_update(skip_locked=True)
-        try:
-            session.execute(stmt)
-            return True
-        except Exception:
-            return False
-
     def get_preferred_handler_assignment_method(self):
-        if not self.supports_returning(self.app.model.session):
-            log.debug("Database does not support RETURNING statement, cannot use DB-SKIP-LOCKED or DB-TRANSACTION-ISOLATION handler assignment")
-            self.UNSUPPORTED_HANDLER_ASSIGNMENT_METHODS.add(HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED)
-            self.UNSUPPORTED_HANDLER_ASSIGNMENT_METHODS.add(HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION)
-            return None
-        if self.supports_skip_locked(self.app.model.session):
-            self.UNSUPPORTED_HANDLER_ASSIGNMENT_METHODS.add(HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED)
+        if self.app.application_stack.supports_skip_locked():
             return HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED
         log.debug("Database does not support WITH FOR UPDATE statement, cannot use DB-SKIP-LOCKED handler assignment")
+        self.UNSUPPORTED_HANDLER_ASSIGNMENT_METHODS.add(HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED)
         return HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION
 
     @staticmethod
