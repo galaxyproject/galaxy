@@ -61,13 +61,13 @@ class BaseJobConfXmlParserTestCase(unittest.TestCase):
     @property
     def application_stack(self):
         if not self._application_stack:
+            ApplicationStack.get_preferred_handler_assignment_method = lambda x: HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED
             self._application_stack = ApplicationStack()
         return self._application_stack
 
     @property
     def job_config(self):
         if not self._job_configuration:
-            JobConfiguration.get_preferred_handler_assignment_method = lambda x: HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED
             base_handler_pools = self._job_configuration_base_pools or JobConfiguration.DEFAULT_BASE_HANDLER_POOLS
             mock_uwsgi = mock.Mock()
             mock_uwsgi.mule_id = lambda: 1

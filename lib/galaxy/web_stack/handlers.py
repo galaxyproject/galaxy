@@ -53,13 +53,6 @@ class ConfiguresHandlers:
             else:
                 self.handlers[tag] = [handler_id]
 
-    def get_preferred_handler_assignment_method(self):
-        if self.app.application_stack.supports_skip_locked():
-            return HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED
-        log.debug("Database does not support WITH FOR UPDATE statement, cannot use DB-SKIP-LOCKED handler assignment")
-        self.UNSUPPORTED_HANDLER_ASSIGNMENT_METHODS.add(HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED)
-        return HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION
-
     @staticmethod
     def xml_to_dict(config, config_element):
         handling_config_dict = {}
@@ -153,7 +146,7 @@ class ConfiguresHandlers:
                             HANDLER_ASSIGNMENT_METHODS.MEM_SELF)
                 self.handler_assignment_methods = [HANDLER_ASSIGNMENT_METHODS.MEM_SELF]
             else:
-                self.handler_assignment_methods = [self.get_preferred_handler_assignment_method()]
+                self.handler_assignment_methods = [self.app.application_stack.get_preferred_handler_assignment_method()]
             # If the stack has handler pools it can override these defaults
             self.app.application_stack.init_job_handling(self)
             log.info("%s: No job handler assignment method is set, defaulting to '%s', set the `assign_with` attribute"
