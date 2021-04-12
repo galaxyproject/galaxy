@@ -1475,7 +1475,7 @@ class H5_Model(H5):
                 params_file = dataset.metadata.spec[spec_key].param.new_file(dataset=dataset)
             with h5py.File(dataset.file_name, "r") as handle:
                 params = handle["-model_hyperparameters-"][()]
-            params = json.loads(params.decode('utf-8'))
+            params = json.loads(params.decode("utf-8"))
             with open(params_file.file_name, "w") as f:
                 f.write("\tParameter\tValue\n")
                 for p in params:
@@ -1492,7 +1492,7 @@ class H5_Model(H5):
             with h5py.File(filename, "r") as handle:
                 if not all(name in handle.keys() for name in keys):
                     return False
-                url = util.unicodify(handle.attrs.get("-URL-"))
+                url = handle.attrs.get("-URL-").decode("utf-8")
             if url == URL:
                 return True
         return False
@@ -1500,7 +1500,7 @@ class H5_Model(H5):
     def get_config(self, filename):
         try:
             with h5py.File(filename, "r") as handle:
-                config = util.unicodify(handle["-model_config-"][()])
+                config = handle["-model_config-"][()].decode("utf-8")
             return config
         except Exception as e:
             log.warning('%s, get model configuration Except: %s', self, e)
