@@ -30,7 +30,6 @@ from . import (
     BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
-    DependsOnUser,
     Router,
 )
 from .common import (
@@ -60,9 +59,9 @@ class FastAPIConfiguration:
         summary="Return information about the current authenticated user",
         response_description="Information about the current authenticated user"
     )
-    def whoami(self, user: User = DependsOnUser) -> Optional[UserModel]:
+    def whoami(self, trans: ProvidesUserContext = DependsOnTrans) -> Optional[UserModel]:
         """Return information about the current authenticated user."""
-        return _user_to_model(user)
+        return _user_to_model(trans.user, trans.security)
 
     @router.get(
         '/api/configuration',
@@ -150,7 +149,7 @@ class ConfigurationController(BaseGalaxyAPIController):
         :rtype:   dict
         """
         user = self.user_manager.current_user(trans)
-        return _user_to_model(user)
+        return _user_to_model(user, trans.security)
 
     @expose_api_anonymous_and_sessionless
     def index(self, trans, **kwd):
@@ -206,8 +205,8 @@ class ConfigurationController(BaseGalaxyAPIController):
         return _index(self.configuration_manager, trans, view, keys)
 
 
-def _user_to_model(user):
-    return UserModel(**user.to_dict()) if user else None
+def _user_to_model(user, security):
+    return UserModel(**user.to_dict(view='element', value_mapper={'id': security.encode_id})) if user else None
 
 
 def _index(manager, trans, view, keys):
