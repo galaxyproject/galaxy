@@ -18,10 +18,9 @@ from galaxy.managers.context import (
 )
 from galaxy.managers.users import (
     UserManager,
-    UserModel
 )
-from galaxy.model import User
 from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.schema import UserModel
 from galaxy.web import (
     expose_api,
     expose_api_anonymous_and_sessionless,
