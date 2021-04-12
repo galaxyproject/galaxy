@@ -152,14 +152,8 @@ class ConfiguresHandlers:
                             " handler assignment method in the job handler configuration",
                             HANDLER_ASSIGNMENT_METHODS.MEM_SELF)
                 self.handler_assignment_methods = [HANDLER_ASSIGNMENT_METHODS.MEM_SELF]
-            elif not self.handlers:
-                # No handlers defined, default is for processes to handle the jobs they create
-                # Ideally this is DB_SKIP_LOCKED or TRANSACTION_ISOLATION, falls back to DB_SELF
-                self.handler_assignment_methods = [self.get_preferred_handler_assignment_method() or HANDLER_ASSIGNMENT_METHODS.DB_SELF]
             else:
-                # Handlers are defined, default is the value of the default attribute, or any untagged handler if
-                # default attribute is unset
-                self.handler_assignment_methods = [self.get_preferred_handler_assignment_method() or HANDLER_ASSIGNMENT_METHODS.DB_PREASSIGN]
+                self.handler_assignment_methods = [self.get_preferred_handler_assignment_method()]
             # If the stack has handler pools it can override these defaults
             self.app.application_stack.init_job_handling(self)
             log.info("%s: No job handler assignment method is set, defaulting to '%s', set the `assign_with` attribute"
