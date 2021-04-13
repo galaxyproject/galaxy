@@ -50,7 +50,7 @@
 <script>
 import ToolSection from "./Common/ToolSection";
 import ToolSearch from "./Common/ToolSearch";
-import { UploadButton } from "components/Upload";
+import { UploadButton, openGlobalUploadModal } from "components/Upload";
 import FavoritesButton from "./Buttons/FavoritesButton";
 import { filterToolSections, filterTools } from "./utilities";
 import { getGalaxyInstance } from "app";
@@ -145,7 +145,7 @@ export default {
         onOpen(tool, evt) {
             if (tool.id === "upload1") {
                 evt.preventDefault();
-                this.eventHub.$emit("upload:open");
+                openGlobalUploadModal();
             } else if (tool.form_style === "regular") {
                 evt.preventDefault();
                 const Galaxy = getGalaxyInstance();
