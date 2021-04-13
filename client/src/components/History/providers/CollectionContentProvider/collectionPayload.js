@@ -57,6 +57,7 @@ export const collectionPayload = (cfg = {}) => pos$ => {
             const bottomRows = Math.max(0, totalMatches - contents.length - topRows);
             return { ...result, topRows, bottomRows, totalMatches };
         }),
+        tap(() => loading$.next(false)),
     );
 
     // create observable that looks at the cache but piggybacks the loader subscription
