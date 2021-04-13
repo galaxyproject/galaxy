@@ -38,10 +38,15 @@ export const commonProps = {
         type: Boolean,
         default: true,
     },
-    callback: {
+    hasCallback: {
         // Return uploads when done if supplied.
-        type: Function,
-        default: null,
+        type: Boolean,
+        default: false,
+    },
+    selectable: {
+        type: Boolean,
+        required: false,
+        default: false,
     },
     auto: {
         type: Object,

@@ -29,7 +29,6 @@ from galaxy.webapps.base.controller import (
     HTTPBadRequest,
     url_for,
     UsesFormDefinitionsMixin,
-    UsesLibraryMixin,
     UsesLibraryMixinItems
 )
 from . import BaseGalaxyAPIController
@@ -37,7 +36,7 @@ from . import BaseGalaxyAPIController
 log = logging.getLogger(__name__)
 
 
-class LibraryContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesLibraryMixinItems, UsesFormDefinitionsMixin, LibraryActions):
+class LibraryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, UsesFormDefinitionsMixin, LibraryActions):
 
     def __init__(self, app: StructuredApp, hda_manager: managers.hdas.HDAManager):
         super().__init__(app)

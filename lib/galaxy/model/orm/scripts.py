@@ -136,8 +136,9 @@ def get_config(argv, use_argparse=True, cwd=None):
         db_url = properties["%sdatabase_connection" % config_prefix]
     else:
         db_url = "sqlite:///%s?isolation_level=IMMEDIATE" % os.path.join(get_data_dir(properties), default_sqlite_file)
+    install_database_connection = properties.get('install_database_connection')
 
-    return dict(db_url=db_url, repo=repo, config_file=config_file, database=database)
+    return dict(db_url=db_url, repo=repo, config_file=config_file, database=database, install_database_connection=install_database_connection)
 
 
 def manage_db():

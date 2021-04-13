@@ -43,7 +43,7 @@
         </template>
         <template v-slot:buttons>
             <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="$emit('dismiss')">
-                {{ btnCloseTitle }}
+                {{ btnCloseTitle | localize }}
             </b-button>
             <b-button
                 ref="btnReset"
@@ -129,6 +129,7 @@ export default {
     components: { BButton },
     data() {
         return {
+            uploadUrl: null,
             topInfo: "",
             showHelper: true,
             extension: this.app.defaultExtension,
@@ -157,7 +158,6 @@ export default {
             btnBuildTitle: _l("Build"),
             btnStopTitle: _l("Pause"),
             btnResetTitle: _l("Reset"),
-            btnCloseTitle: this.app.callback ? _l("Cancel") : _l("Close"),
         };
     },
     created() {
@@ -169,7 +169,12 @@ export default {
         this.initFtpPopover();
         // file upload
         this.initUploadbox({
-            url: this.app.uploadPath,
+            initUrl: (index) => {
+                if (!this.uploadUrl) {
+                    this.uploadUrl = this.getRequestUrl([this.collection.get(index)], this.history_id);
+                }
+                return this.uploadUrl;
+            },
             announce: (index, file) => {
                 this._eventAnnounce(index, file);
             },
@@ -262,7 +267,7 @@ export default {
             this.counterRunning = 0;
             this._updateStateForCounters();
             this._eventReset();
-            this.$emit("hide");
+            this.$emit("dismiss");
         },
 
         /** Start upload process */

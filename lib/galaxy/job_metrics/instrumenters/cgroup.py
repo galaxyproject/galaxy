@@ -25,7 +25,7 @@ CONVERSION = {
     "memory.oom_control.under_oom": lambda x: "Yes" if x == 1 else "No",
     "cpuacct.usage": lambda x: formatting.seconds_to_str(x / 10**9)  # convert nanoseconds
 }
-CPU_USAGE_TEMPLATE = """
+CPU_USAGE_TEMPLATE = r"""
 if [ -e "/proc/$$/cgroup" -a -d "{cgroup_mount}" ]; then
     cgroup_path=$(cat "/proc/$$/cgroup" | awk -F':' '($2=="cpuacct,cpu") || ($2=="cpu,cpuacct") {{print $3}}');
     for f in {cgroup_mount}/{{cpu\,cpuacct,cpuacct\,cpu}}$cgroup_path/{{cpu,cpuacct}}.*; do
@@ -34,7 +34,7 @@ if [ -e "/proc/$$/cgroup" -a -d "{cgroup_mount}" ]; then
         fi;
     done;
 fi
-""".replace("\n", " ").strip()  # noqa: W605
+""".replace("\n", " ").strip()
 MEMORY_USAGE_TEMPLATE = """
 if [ -e "/proc/$$/cgroup" -a -d "{cgroup_mount}" ]; then
     cgroup_path=$(cat "/proc/$$/cgroup" | awk -F':' '$2=="memory"{{print $3}}');

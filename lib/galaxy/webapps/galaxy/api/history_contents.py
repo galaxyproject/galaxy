@@ -30,7 +30,6 @@ from galaxy.web import (
     expose_api_raw_anonymous
 )
 from galaxy.webapps.base.controller import (
-    UsesLibraryMixin,
     UsesLibraryMixinItems,
     UsesTagsMixin
 )
@@ -39,7 +38,7 @@ from . import BaseGalaxyAPIController, depends
 log = logging.getLogger(__name__)
 
 
-class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesLibraryMixinItems, UsesTagsMixin):
+class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, UsesTagsMixin):
     hda_manager: hdas.HDAManager = depends(hdas.HDAManager)
     history_manager: histories.HistoryManager = depends(histories.HistoryManager)
     history_contents_manager: history_contents.HistoryContentsManager = depends(history_contents.HistoryContentsManager)
@@ -530,13 +529,21 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesL
             content = payload.get('content', None)
             if content is None:
                 raise exceptions.RequestParameterMissingException("'content' id of target to copy is missing")
-            copy_elements = payload.get('copy_elements', False)
+            dbkey = payload.get("dbkey")
+            copy_required = dbkey is not None
+            copy_elements = payload.get('copy_elements', copy_required)
+            if copy_required and not copy_elements:
+                raise exceptions.RequestParameterMissingException("copy_elements passed as 'false' but it is required to change specified attributes")
+            dataset_instance_attributes = {}
+            if dbkey is not None:
+                dataset_instance_attributes["dbkey"] = dbkey
             dataset_collection_instance = service.copy(
                 trans=trans,
                 parent=history,
                 source="hdca",
                 encoded_source_id=content,
                 copy_elements=copy_elements,
+                dataset_instance_attributes=dataset_instance_attributes,
             )
         else:
             message = "Invalid 'source' parameter in request %s" % source

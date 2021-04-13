@@ -1,7 +1,7 @@
 name: Integration Selenium
 on: [push, pull_request]
 env:
-  GALAXY_TEST_DBURI: 'postgres://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
+  GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
   GALAXY_TEST_SELENIUM_REMOTE: '1'
   GALAXY_TEST_SELENIUM_REMOTE_PORT: "4444"
   GALAXY_SKIP_CLIENT_BUILD: '0'
@@ -15,7 +15,7 @@ jobs:
         python-version: ['3.7']
     services:
       postgres:
-        image: postgres:11
+        image: postgres:13
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres

@@ -305,7 +305,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
 
     def _update_job_state_for_status(self, job_state, pulsar_status, full_status=None):
         log.debug('(%s) Received status update: %s %s', job_state.job_id, type(pulsar_status), pulsar_status)
-        if pulsar_status == "complete" or job_state.job_wrapper.get_state() == model.Job.states.STOPPED:
+        if pulsar_status in ["complete", "cancelled"] or job_state.job_wrapper.get_state() == model.Job.states.STOPPED:
             self.mark_as_finished(job_state)
             return None
         if pulsar_status in ["failed", "lost"]:
@@ -382,6 +382,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             if os.path.exists(tool_script):
                 log.debug("Registering tool_script for Pulsar transfer [%s]" % tool_script)
                 job_directory_files.append(tool_script)
+                config_files.append(tool_script)
             # Following is job destination environment variables
             env = client.env
             # extend it with tool defined environment variables
@@ -735,6 +736,8 @@ class PulsarJobRunner(AsynchronousJobRunner):
     def shutdown(self):
         super().shutdown()
         self.client_manager.shutdown()
+        if self.pulsar_app:
+            self.pulsar_app.shutdown()
 
     def _job_state(self, job, job_wrapper):
         job_state = AsynchronousJobState()
@@ -750,11 +753,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
     def __client_outputs(self, client, job_wrapper):
         work_dir_outputs = self.get_work_dir_outputs(job_wrapper)
         output_files = self.get_output_files(job_wrapper)
-        if self.app.config.metadata_strategy == "legacy":
-            # Drop this branch in 19.09.
-            metadata_directory = job_wrapper.working_directory
-        else:
-            metadata_directory = os.path.join(job_wrapper.working_directory, "metadata")
+        metadata_directory = os.path.join(job_wrapper.working_directory, "metadata")
         client_outputs = ClientOutputs(
             working_directory=job_wrapper.tool_working_directory,
             metadata_directory=metadata_directory,

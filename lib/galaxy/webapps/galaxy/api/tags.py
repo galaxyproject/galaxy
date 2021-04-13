@@ -7,9 +7,6 @@ from fastapi import (
     Body,
     status,
 )
-# TODO: replace with Router after merging #11219
-from fastapi_utils.cbv import cbv
-from fastapi_utils.inferring_router import InferringRouter as APIRouter
 
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.tags import (
@@ -21,14 +18,15 @@ from . import (
     BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
+    Router,
 )
 
 log = logging.getLogger(__name__)
 
-router = APIRouter(tags=['tags'])
+router = Router(tags=['tags'])
 
 
-@cbv(router)
+@router.cbv
 class FastAPITags:
     manager: TagsManager = depends(TagsManager)
 

@@ -173,6 +173,7 @@ export default {
             axios
                 .post(`${rootUrl}authnz/${idp}/login/?idphint=${this.selected.EntityID}`)
                 .then((response) => {
+                    localStorage.setItem("galaxy-provider", idp);
                     if (response.data.redirect_uri) {
                         window.location = response.data.redirect_uri;
                     }

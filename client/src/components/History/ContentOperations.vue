@@ -8,7 +8,7 @@
                 </a>
             </h6>
 
-            <PriorityMenu style="max-width: 50%;" :starting-height="27">
+            <PriorityMenu style="max-width: 50%" :starting-height="27">
                 <PriorityMenuItem
                     key="filter"
                     title="Filter History Content"

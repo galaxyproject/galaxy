@@ -39,7 +39,7 @@ describe("Index", () => {
         wrapper = shallowMount(Index, {
             propsData: {
                 id: "workflow_id",
-                version: 1,
+                initialVersion: 1,
                 tags: ["moo", "cow"],
                 moduleSections: [],
                 dataManagers: [],

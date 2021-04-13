@@ -8,6 +8,7 @@ import re
 import shlex
 import shutil
 import signal
+import socket
 import string
 import subprocess
 import sys
@@ -22,14 +23,11 @@ import nose.loader
 import nose.plugins.manager
 import yaml
 from paste import httpserver
-from sqlalchemy_utils import (
-    create_database,
-    database_exists,
-)
 
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
 from galaxy.config import LOGGING_CONFIG_DEFAULT
 from galaxy.model import mapping
+from galaxy.model.database_utils import create_database, database_exists
 from galaxy.model.tool_shed_install import mapping as toolshed_mapping
 from galaxy.tool_util.verify.interactor import GalaxyInteractorApi, verify_tool
 from galaxy.util import asbool, download_to_file, galaxy_directory
@@ -515,16 +513,29 @@ def wait_for_http_server(host, port, sleep_amount=0.1, sleep_tries=150):
         raise Exception(message)
 
 
+def attempt_port(port):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        sock.bind(('', port))
+        sock.close()
+        return port
+    except OSError:
+        return None
+
+
 def attempt_ports(port):
     if port is not None:
-        yield port
+        return port
 
         raise Exception("An existing process seems bound to specified test server port [%s]" % port)
     else:
         random.seed()
         for _ in range(0, 9):
-            port = str(random.randint(8000, 10000))
-            yield port
+            port = attempt_port(random.randint(8000, 10000))
+            if port:
+                port = str(port)
+                os.environ['GALAXY_WEB_PORT'] = port
+                return port
 
         raise Exception("Unable to open a port between {} and {} to start Galaxy server".format(8000, 10000))
 
@@ -535,39 +546,24 @@ def serve_webapp(webapp, port=None, host=None):
     Return the port the webapp is running on.
     """
     server = None
-    for port in attempt_ports(port):
-        try:
-            server = httpserver.serve(webapp, host=host, port=port, start_loop=False)
-            break
-        except OSError as e:
-            if e.errno == 98:
-                continue
-            raise
-
+    port = attempt_ports(port)
+    server = httpserver.serve(webapp, host=host, port=port, start_loop=False)
     t = threading.Thread(target=server.serve_forever)
     t.start()
 
     return server, port
 
 
-def uvicorn_serve(app, port=None, host=None):
+def uvicorn_serve(app, port, host=None):
     """Serve the webapp on a recommend port or a free one.
 
     Return the port the webapp is running on.
     """
     import asyncio
-    server = None
-    for port in attempt_ports(port):
-        try:
-            from uvicorn.server import Server
-            from uvicorn.config import Config
-            config = Config(app, host=host, port=int(port))
-            server = Server(config=config)
-            break
-        except OSError as e:
-            if e.errno == 98:
-                continue
-            raise
+    from uvicorn.server import Server
+    from uvicorn.config import Config
+    config = Config(app, host=host, port=int(port))
+    server = Server(config=config)
 
     def run_in_loop(loop):
         asyncio.set_event_loop(loop)
@@ -685,6 +681,8 @@ def explicitly_configured_host_and_port(prefix, config_object):
     # for new tests.
     if port is None:
         os.environ["GALAXY_TEST_PORT_RANDOM"] = "1"
+    else:
+        os.environ['GALAXY_WEB_PORT'] = port
 
     return host, port
 
@@ -836,23 +834,25 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
             p, name, host, port
         )
 
-    for port in attempt_ports(port):
-        server_wrapper = attempt_port_bind(port)
-        try:
-            set_and_wait_for_http_target(prefix, host, port, sleep_tries=50)
-            log.info(f"Test-managed uwsgi web server for {name} started at {host}:{port}")
-            return server_wrapper
-        except Exception:
-            server_wrapper.stop()
+    port = attempt_ports(port)
+    server_wrapper = attempt_port_bind(port)
+    try:
+        set_and_wait_for_http_target(prefix, host, port, sleep_tries=50)
+        log.info(f"Test-managed uwsgi web server for {name} started at {host}:{port}")
+        return server_wrapper
+    except Exception:
+        server_wrapper.stop()
 
 
-def launch_uvicorn(gx_app, webapp_factory, kwargs, prefix=DEFAULT_CONFIG_PREFIX, config_object=None):
+def launch_uvicorn(webapp_factory, prefix=DEFAULT_CONFIG_PREFIX, galaxy_config=None, config_object=None):
     name = prefix.lower()
 
     host, port = explicitly_configured_host_and_port(prefix, config_object)
+    port = attempt_ports(port)
+    gx_app = build_galaxy_app(galaxy_config)
 
     gx_webapp = webapp_factory(
-        kwargs['global_conf'],
+        galaxy_config['global_conf'],
         app=gx_app,
         use_translogger=False,
         static_enabled=True,
@@ -1068,13 +1068,12 @@ class GalaxyTestDriver(TestDriver):
                     config_object=config_object,
                 )
             elif self.else_use_uvicorn:
-                self.app = build_galaxy_app(galaxy_config)
                 server_wrapper = launch_uvicorn(
-                    self.app,
                     lambda *args, **kwd: buildapp.app_factory(*args, wsgi_preflight=False, **kwd),
-                    galaxy_config,
+                    galaxy_config=galaxy_config,
                     config_object=config_object,
                 )
+                self.app = server_wrapper.app
             else:
                 # ---- Build Application --------------------------------------------------
                 self.app = build_galaxy_app(galaxy_config)

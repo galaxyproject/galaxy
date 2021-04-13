@@ -61,7 +61,7 @@
         <workflow-invocation-details
             v-if="invocation"
             :invocation="invocation"
-            :invocationAndJobTerminal="invocationAndJobTerminal"
+            :invocation-and-job-terminal="invocationAndJobTerminal"
         />
     </div>
 </template>

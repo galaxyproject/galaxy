@@ -201,6 +201,34 @@ class CompressedArchive(Binary):
             return "Compressed binary file (%s)" % (nice_size(dataset.get_size()))
 
 
+class Meryldb(CompressedArchive):
+    """MerylDB is a tar.gz archive, with 128 files. 64 data files and 64 index files."""
+    file_ext = "meryldb"
+
+    def sniff(self, filename):
+        """
+        Try to guess if the file is a Cel file.
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('affy_v_agcc.cel')
+        >>> Meryldb().sniff(fname)
+        False
+        >>> fname = get_test_fname('read-db.meryldb')
+        >>> Meryldb().sniff(fname)
+        True
+        """
+        try:
+            if filename and tarfile.is_tarfile(filename):
+                with tarfile.open(filename, 'r') as temptar:
+                    _tar_content = temptar.getnames()
+                    # 64 data files ad 64 indices + 2 folders
+                    if len(_tar_content) == 130:
+                        if len([_ for _ in _tar_content if _.endswith('.merylIndex')]) == 64:
+                            return True
+        except Exception as e:
+            log.warning('%s, sniff Exception: %s', self, e)
+        return False
+
+
 class DynamicCompressedArchive(CompressedArchive):
 
     def matches_any(self, target_datatypes):
@@ -969,7 +997,7 @@ class Anndata(H5):
     # obs_layers: louvain, leidein, isBcell
     # obs_count: number of obs_layers
     # obs_size: number of obs_names
-    MetadataElement(name="obs_names", desc="obs_names", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
+    MetadataElement(name="obs_names", desc="obs_names", default=[], multiple=True, readonly=True, no_value=None)
     MetadataElement(name="obs_layers", desc="obs_layers", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
     MetadataElement(name="obs_count", default=0, desc="obs_count", readonly=True, visible=True, no_value=0)
     MetadataElement(name="obs_size", default=-1, desc="obs_size", readonly=True, visible=True, no_value=0)
@@ -2901,6 +2929,79 @@ class WiffTar(BafTar):
 
     def get_type(self):
         return "Sciex WIFF/SCAN archive"
+
+
+@build_sniff_from_prefix
+class Pretext(Binary):
+    """
+    PretextMap contact map file
+    Try to guess if the file is a Pretext file.
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('sample.pretext')
+    >>> Pretext().sniff(fname)
+    True
+    """
+
+    def sniff_prefix(self, sniff_prefix):
+        # The first 4 bytes of any pretext file is 'pstm', and the rest of the
+        # file contains binary data.
+        return sniff_prefix.startswith_bytes(b'pstm')
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary pretext file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "Binary pretext file (%s)" % (nice_size(dataset.get_size()))
+
+
+class JP2(Binary):
+    """
+    JPEG 2000 binary image format
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.jp2')
+    >>> JP2().sniff(fname)
+    True
+    >>> fname = get_test_fname('interval.interval')
+    >>> JP2().sniff(fname)
+    False
+    """
+    file_ext = "jp2"
+
+    def __init__(self, **kwd):
+        super().__init__(**kwd)
+        self._magic = binascii.unhexlify("0000000C6A5020200D0A870A")
+
+    def sniff(self, filename):
+        # The first 12 bytes of any jp2 file are 0000000C6A5020200D0A870A
+        try:
+            header = open(filename, 'rb').read(12)
+            if header == self._magic:
+                return True
+            return False
+        except Exception:
+            return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary JPEG 2000 file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "Binary JPEG 2000 file (%s)" % (nice_size(dataset.get_size()))
 
 
 if __name__ == '__main__':

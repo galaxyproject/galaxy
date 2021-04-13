@@ -34,7 +34,7 @@
         <PriorityMenuItem
             v-if="expanded"
             key="edit-tags"
-            title="Edit History Tags"
+            title="Edit Dataset Tags"
             :pressed="showTags"
             @click.stop="$emit('update:showTags', !showTags)"
             icon="fas fa-tags"

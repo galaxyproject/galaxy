@@ -17,7 +17,7 @@ from galaxy.webapps.base.controller import JSAppLauncher
 
 log = logging.getLogger(__name__)
 
-PROVIDER_COOKIE_NAME = 'oidc-provider'
+PROVIDER_COOKIE_NAME = 'galaxy-oidc-provider'
 
 
 class OIDC(JSAppLauncher):
@@ -158,6 +158,7 @@ class OIDC(JSAppLauncher):
         return trans.response.send_redirect(redirect_url)
 
     @web.json
+    @web.expose
     def logout(self, trans, provider, **kwargs):
         post_logout_redirect_url = trans.request.base + url_for('/') + 'root/login?is_logout_redirect=true'
         success, message, redirect_uri = trans.app.authnz_manager.logout(provider,
@@ -169,8 +170,8 @@ class OIDC(JSAppLauncher):
             return {'message': message}
 
     @web.expose
-    def get_logout_url(self, trans, **kwargs):
-        idp_provider = trans.get_cookie(name=PROVIDER_COOKIE_NAME)
+    def get_logout_url(self, trans, provider=None, **kwargs):
+        idp_provider = provider if provider else trans.get_cookie(name=PROVIDER_COOKIE_NAME)
         if idp_provider:
             return trans.response.send_redirect(url_for(controller='authnz', action='logout', provider=idp_provider))
 

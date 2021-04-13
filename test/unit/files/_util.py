@@ -47,7 +47,7 @@ def list_dir(file_sources, uri, recursive, user_context=None):
     return res
 
 
-def user_context_fixture(user_ftp_dir=None):
+def user_context_fixture(user_ftp_dir=None, role_names=None, group_names=None, is_admin=False):
     user_context = DictFileSourcesUserContext(
         username=TEST_USERNAME,
         email=TEST_EMAIL,
@@ -55,7 +55,10 @@ def user_context_fixture(user_ftp_dir=None):
         preferences={
             'webdav|password': 'secret1234',
             'dropbox|access_token': os.environ.get('GALAXY_TEST_DROPBOX_ACCESS_TOKEN'),
-        }
+        },
+        role_names=role_names or set(),
+        group_names=group_names or set(),
+        is_admin=is_admin,
     )
     return user_context
 

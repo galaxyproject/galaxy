@@ -472,6 +472,23 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
         update_response = self._update_workflow(workflow['id'], workflow).json()
         assert update_response['tags'] == []
 
+    def test_update_name(self):
+        original_name = "test update name"
+        workflow_object = self.workflow_populator.load_workflow(name=original_name)
+        workflow_object["license"] = "AAL"
+        upload_response = self.__test_upload(workflow=workflow_object, name=original_name)
+        workflow = upload_response.json()
+        workflow_id = workflow['id']
+        assert workflow['name'] == original_name
+        workflow_dict = self.workflow_populator.download_workflow(workflow_id)
+        assert workflow_dict["license"] == "AAL"
+
+        data = {"name": "my cool new name"}
+        update_response = self._update_workflow(workflow['id'], data).json()
+        assert update_response['name'] == "my cool new name"
+        workflow_dict = self.workflow_populator.download_workflow(workflow_id)
+        assert workflow_dict["license"] == "AAL"
+
     def test_refactor(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
@@ -1192,6 +1209,75 @@ steps:
             }
             invocation_id = self.__invoke_workflow(history_id, workflow_id, inputs)
             self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
+
+    @skip_without_tool('column_param')
+    def test_empty_file_data_column_specified(self):
+        # Regression test for https://github.com/galaxyproject/galaxy/pull/10981
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""class: GalaxyWorkflow
+steps:
+  empty_output:
+    tool_id: empty_output
+    outputs:
+      out_file1:
+        change_datatype: tabular
+  column_param:
+    tool_id: column_param
+    in:
+      input1: empty_output/out_file1
+    state:
+      col: 2
+      col_names: 'B'
+""", history_id=history_id)
+
+    @skip_without_tool('column_param_list')
+    def test_comma_separated_columns(self):
+        # Regression test for https://github.com/galaxyproject/galaxy/pull/10981
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""class: GalaxyWorkflow
+steps:
+  empty_output:
+    tool_id: empty_output
+    outputs:
+      out_file1:
+        change_datatype: tabular
+  column_param_list:
+    tool_id: column_param_list
+    in:
+      input1: empty_output/out_file1
+    state:
+      col: '2,3'
+      col_names: 'B'
+""", history_id=history_id)
+
+    @skip_without_tool('column_param')
+    def test_runtime_data_column_parameter(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""class: GalaxyWorkflow
+inputs:
+    bed_input: data
+steps:
+  cat1:
+    tool_id: cat1
+    in:
+      input1: bed_input
+  column_param_list:
+    tool_id: column_param
+    in:
+      input1: cat1/out_file1
+    state:
+      col: 9
+      col_names: notacolumn
+test_data:
+  step_parameters:
+    '2':
+      'col': 1
+      'col_names': 'c1: chr1'
+  bed_input:
+    value: 1.bed
+    file_type: bed
+    type: File
+""", history_id=history_id)
 
     @skip_without_tool("mapper")
     @skip_without_tool("pileup")
@@ -2656,6 +2742,54 @@ test_data:
         assert element_a_content.strip() == 'A'
         assert element_b_content.strip() == 'B'
 
+    @skip_without_tool('create_input_collection')
+    def test_workflow_optional_input_text_parameter_reevaluation(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  text_input:
+    type: text
+    optional: true
+    default: ''
+steps:
+  create_collection:
+    tool_id: create_input_collection
+  nested_workflow:
+    in:
+      inner_input: create_collection/output
+      inner_text_input: text_input
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        inner_input:
+          type: data_collection_input
+        inner_text_input:
+          type: text
+          optional: true
+          default: ''
+      steps:
+        apply:
+          tool_id: __APPLY_RULES__
+          in:
+            input: inner_input
+          state:
+            rules:
+              rules:
+                - type: add_column_metadata
+                  value: identifier0
+              mapping:
+                - type: list_identifiers
+                  columns: [0]
+      echo:
+        cat1:
+          in:
+            input1: apply/output
+          outputs:
+            out_file1:
+              rename: "#{inner_text_input} suffix"
+        """, history_id=history_id)
+
     @skip_without_tool('cat1')
     def test_workflow_rerun_with_use_cached_job(self):
         workflow = self.workflow_populator.load_workflow(name="test_for_run")
@@ -2845,6 +2979,41 @@ steps:
             assert len(contents) == 1
             okay_dataset = contents[0]
             assert okay_dataset["state"] == "ok"
+
+    @skip_without_tool("output_filter_with_input_optional")
+    def test_workflow_optional_input_filtering(self):
+        with self.dataset_populator.test_history() as history_id:
+            test_data = """
+input1:
+  type: list
+  elements:
+    - identifier: A
+      content: A
+"""
+            run_object = self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  input1:
+    type: collection
+    collection_type: list
+outputs:
+  wf_output_1:
+    outputSource: output_filter/out_1
+steps:
+  output_filter:
+    tool_id: output_filter_with_input_optional
+    in:
+      input_1: input1
+""", test_data=test_data, history_id=history_id, wait=False)
+            self.wait_for_invocation_and_jobs(history_id, run_object.workflow_id, run_object.invocation_id)
+            contents = self.__history_contents(history_id)
+            assert len(contents) == 4
+            for content in contents:
+                if content["history_content_type"] == "dataset":
+                    assert content["state"] == "ok"
+                else:
+                    print(content)
+                    assert content["populated_state"] == "ok"
 
     @skip_without_tool("cat")
     def test_run_rename_on_mapped_over_collection(self):

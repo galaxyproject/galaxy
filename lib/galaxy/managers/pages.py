@@ -18,6 +18,7 @@ from typing import (
 
 from pydantic import (
     BaseModel,
+    Extra,
     Field,
 )
 
@@ -31,7 +32,7 @@ from galaxy.managers.markdown_util import (
 )
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.schema.fields import EncodedDatabaseIdField
-from galaxy.structured_app import StructuredApp
+from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import unicodify
 from galaxy.util.sanitize_html import sanitize_html
 
@@ -117,6 +118,7 @@ class CreatePagePayload(PageSummaryBase):
 
     class Config:
         use_enum_values = True  # When using .dict()
+        extra = Extra.allow  # Allow any other extra fields
 
 
 class PageSummary(PageSummaryBase):
@@ -166,6 +168,19 @@ class PageSummary(PageSummaryBase):
 class PageDetails(PageSummary):
     content_format: PageContentFormat = ContentFormatField
     content: Optional[str] = ContentField
+    generate_version: Optional[str] = Field(
+        None,
+        title="Galaxy Version",
+        description="The version of Galaxy this page was generated with.",
+    )
+    generate_time: Optional[str] = Field(
+        None,
+        title="Generate Date",
+        description="The date this page was generated.",
+    )
+
+    class Config:
+        extra = Extra.allow  # Allow any other extra fields
 
 
 class PageSummaryList(BaseModel):
@@ -175,13 +190,17 @@ class PageSummaryList(BaseModel):
     )
 
 
-class PagesManager:
-    """
-    Common interface/service logic for interactions with pages.
+class PagesService:
+    """Common interface/service logic for interactions with pages in the context of the API.
+
+    Provides the logic of the actions invoked by API controllers and uses type definitions
+    and pydantic models to declare its parameters and return types.
     """
 
-    def __init__(self, app: StructuredApp):
+    def __init__(self, app: MinimalManagerApp):
         self.manager = PageManager(app)
+        self.serializer = PageSerializer(app)
+        self.shareable_service = sharable.ShareableService(self.manager, self.serializer)
 
     def index(self, trans, deleted: bool = False) -> PageSummaryList:
         """Return a list of Pages viewable by the user
@@ -237,8 +256,7 @@ class PagesManager:
         trans.sa_session.flush()
 
     def show(self, trans, id: EncodedDatabaseIdField) -> PageDetails:
-        """
-            View a page summary and the content of the latest revision
+        """View a page summary and the content of the latest revision
 
         :param  id:    ID of page to be displayed
 
@@ -254,8 +272,6 @@ class PagesManager:
 
     def show_pdf(self, trans, id: EncodedDatabaseIdField):
         """
-        GET /api/pages/{id}.pdf
-
         View a page summary and the content of the latest revision as PDF.
 
         :param  id: ID of page to be displayed
@@ -270,10 +286,15 @@ class PagesManager:
         trans.response.set_content_type("application/pdf")
         return internal_galaxy_markdown_to_pdf(trans, internal_galaxy_markdown, 'page')
 
+    def sharing(self, trans, id: EncodedDatabaseIdField, payload: Optional[sharable.SharingPayload] = None) -> sharable.SharingStatus:
+        """Allows to publish or share with other users the given resource (by id) and returns the current sharing
+        status of the resource.
+        """
+        return self.shareable_service.sharing(trans, id, payload)
+
 
 class PageManager(sharable.SharableModelManager, UsesAnnotations):
-    """
-    """
+    """Provides operations for managing a Page."""
 
     model_class = model.Page
     foreign_key_name = 'page'
@@ -283,7 +304,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
     annotation_assoc = model.PageAnnotationAssociation
     rating_assoc = model.PageRatingAssociation
 
-    def __init__(self, app: StructuredApp):
+    def __init__(self, app: MinimalManagerApp):
         """
         """
         super().__init__(app)
@@ -406,7 +427,7 @@ class PageSerializer(sharable.SharableModelSerializer):
     model_manager_class = PageManager
     SINGLE_CHAR_ABBR = 'p'
 
-    def __init__(self, app: StructuredApp):
+    def __init__(self, app: MinimalManagerApp):
         super().__init__(app)
         self.page_manager = PageManager(app)
 
@@ -427,7 +448,7 @@ class PageDeserializer(sharable.SharableModelDeserializer):
     """
     model_manager_class = PageManager
 
-    def __init__(self, app: StructuredApp):
+    def __init__(self, app: MinimalManagerApp):
         super().__init__(app)
         self.page_manager = self.manager
 

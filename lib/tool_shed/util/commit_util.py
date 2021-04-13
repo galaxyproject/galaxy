@@ -1,5 +1,6 @@
 import bz2
 import gzip
+import json
 import logging
 import os
 import shutil
@@ -71,7 +72,8 @@ def check_file_contents_for_email_alerts(app):
     admin_users = app.config.get("admin_users", "").split(",")
     for repository in sa_session.query(app.model.Repository) \
                                 .filter(app.model.Repository.table.c.email_alerts != null()):
-        for user_email in repository.email_alerts:
+        email_alerts = json.loads(repository.email_alerts)
+        for user_email in email_alerts:
             if user_email in admin_users:
                 return True
     return False

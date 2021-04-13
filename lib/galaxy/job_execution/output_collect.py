@@ -177,10 +177,24 @@ class BaseJobContext:
             filenames[discovered_file.path] = discovered_file
         return filenames
 
+    def get_job_id(self):
+        return None  # overwritten in subclasses
+
 
 class JobContext(ModelPersistenceContext, BaseJobContext):
 
-    def __init__(self, tool, tool_provided_metadata, job, job_working_directory, permission_provider, metadata_source_provider, input_dbkey, object_store, final_job_state):
+    def __init__(
+            self,
+            tool,
+            tool_provided_metadata,
+            job,
+            job_working_directory,
+            permission_provider,
+            metadata_source_provider,
+            input_dbkey,
+            object_store,
+            final_job_state,
+            flush_per_n_datasets=None):
         self.tool = tool
         self.metadata_source_provider = metadata_source_provider
         self.permission_provider = permission_provider
@@ -192,6 +206,7 @@ class JobContext(ModelPersistenceContext, BaseJobContext):
         self.tool_provided_metadata = tool_provided_metadata
         self.object_store = object_store
         self.final_job_state = final_job_state
+        self.flush_per_n_datasets = flush_per_n_datasets
 
     @property
     def work_context(self):
@@ -299,6 +314,9 @@ class JobContext(ModelPersistenceContext, BaseJobContext):
     def job_id(self):
         return self.job.id
 
+    def get_job_id(self):
+        return self.job.id
+
 
 class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
 
@@ -312,6 +330,7 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
         self.import_store = import_store
         self.input_dbkey = input_dbkey
         self.final_job_state = final_job_state
+        self.flush_per_n_datasets = None
 
     def output_collection_def(self, name):
         tool_as_dict = self.metadata_params["tool"]
@@ -355,8 +374,10 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
             self.export_store.collection_datasets[collection_dataset.id] = True
 
     def add_output_dataset_association(self, name, dataset_instance):
-        job_id = self.metadata_params["job_id_tag"]
-        self.export_store.add_job_output_dataset_associations(job_id, name, dataset_instance)
+        self.export_store.add_job_output_dataset_associations(self.get_job_id(), name, dataset_instance)
+
+    def get_job_id(self):
+        return self.metadata_params["job_id_tag"]
 
 
 def collect_primary_datasets(job_context, output, input_ext):
@@ -419,6 +440,7 @@ def collect_primary_datasets(job_context, output, input_ext):
                 info=info,
                 init_from=outdata,
                 dataset_attributes=new_primary_datasets_attributes,
+                creating_job_id=job_context.get_job_id() if job_context else None
             )
             # Associate new dataset with job
             job_context.add_output_dataset_association(f'__new_primary_file_{name}|{designation}__', primary_data)
@@ -478,10 +500,11 @@ def walk_over_extra_files(target_dir, extra_file_collector, job_working_director
     if os.path.isdir(directory):
         for filename in os.listdir(directory):
             path = os.path.join(directory, filename)
-            if os.path.isdir(path) and extra_file_collector.recurse:
-                # The current directory is already validated, so use that as the next job_working_directory when recursing
-                for match in walk_over_extra_files(filename, extra_file_collector, directory, matchable):
-                    yield match
+            if os.path.isdir(path):
+                if extra_file_collector.recurse:
+                    # The current directory is already validated, so use that as the next job_working_directory when recursing
+                    for match in walk_over_extra_files(filename, extra_file_collector, directory, matchable):
+                        yield match
             else:
                 match = extra_file_collector.match(matchable, filename, path=path)
                 if match:

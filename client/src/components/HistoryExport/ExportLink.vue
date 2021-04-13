@@ -8,7 +8,7 @@
             title="Copy export URL to your clipboard"
             class="copy-export-link"
             icon="link"
-            style="cursor: pointer;"
+            style="cursor: pointer"
             @click="copyUrl"
         />
         <i

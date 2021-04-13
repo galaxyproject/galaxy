@@ -7,7 +7,7 @@ from typing import (
 from sqlalchemy import false
 
 from galaxy import model
-from galaxy.app import StructuredApp
+from galaxy.app import MinimalManagerApp
 from galaxy.exceptions import (
     Conflict,
     ObjectAttributeMissingException,
@@ -22,7 +22,7 @@ from galaxy.web import url_for
 class GroupsManager:
     """Interface/service object shared by controllers for interacting with groups."""
 
-    def __init__(self, app: StructuredApp) -> None:
+    def __init__(self, app: MinimalManagerApp) -> None:
         self._app = app
 
     def index(self, trans: ProvidesAppContext):

@@ -44,7 +44,7 @@ export default Backbone.Model.extend({
     /** Returns an input field for a given field type */
     create: function (input_def) {
         const Galaxy = getGalaxyInstance();
-        var fieldClass = this.types[input_def.type];
+        var fieldClass = this.types[input_def.hiddenInWorkflow ? "hidden" : input_def.type];
         var field = typeof this[fieldClass] === "function" ? this[fieldClass].call(this, input_def) : null;
         if (!field) {
             field = input_def.options ? this._fieldSelect(input_def) : this._fieldText(input_def);
@@ -140,7 +140,10 @@ export default Backbone.Model.extend({
     /** Text input field */
     _fieldText: function (input_def) {
         // field replaces e.g. a select field
-        if (input_def.model_class === "SelectTagParameter" || (input_def.options && input_def.data)) {
+        if (
+            ["SelectTagParameter", "ColumnListParameter"].includes(input_def.model_class) ||
+            (input_def.options && input_def.data)
+        ) {
             input_def.area = input_def.multiple;
             if (Utils.isEmpty(input_def.value)) {
                 input_def.value = null;

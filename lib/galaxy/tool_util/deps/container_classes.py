@@ -218,6 +218,12 @@ class HasDockerLikeVolumes:
                     defaults += ",$job_directory/configs:rw"
             if self.job_info.tmp_directory is not None:
                 defaults += ",$tmp_directory:rw"
+                # If a tool definitely has a temp directory available set it to /tmp in container for compat.
+                # with CWL. This is part of that spec and should make it easier to share containers between CWL
+                # and Galaxy.
+                defaults += ",$tmp_directory:/tmp:rw"
+            else:
+                defaults += ",$_GALAXY_JOB_TMP_DIR:rw"
             if self.job_info.home_directory is not None:
                 defaults += ",$home_directory:rw"
             if self.app_info.outputs_to_working_directory:
@@ -294,11 +300,6 @@ class DockerContainer(Container, HasDockerLikeVolumes):
         preprocessed_volumes_list = preprocess_volumes(volumes_raw, self.container_type)
         # TODO: Remove redundant volumes...
         volumes = [DockerVolume.from_str(v) for v in preprocessed_volumes_list]
-        # If a tool definitely has a temp directory available set it to /tmp in container for compat.
-        # with CWL. This is part of that spec and should make it easier to share containers between CWL
-        # and Galaxy.
-        if self.job_info.tmp_directory is not None:
-            volumes.append(DockerVolume.from_str("%s:/tmp:rw" % self.job_info.tmp_directory))
         volumes_from = self.destination_info.get("docker_volumes_from", docker_util.DEFAULT_VOLUMES_FROM)
 
         docker_host_props = self.docker_host_props

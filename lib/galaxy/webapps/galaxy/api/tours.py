@@ -3,9 +3,6 @@ API Controller providing Galaxy Tours
 """
 import logging
 
-from fastapi_utils.cbv import cbv
-from fastapi_utils.inferring_router import InferringRouter as APIRouter
-
 from galaxy.tours import (
     TourDetails,
     TourList,
@@ -17,18 +14,18 @@ from galaxy.web import (
     require_admin
 )
 from . import (
-    AdminUserRequired,
     BaseGalaxyAPIController,
     depends,
+    Router,
 )
 
 log = logging.getLogger(__name__)
 
 
-router = APIRouter(tags=['tours'])
+router = Router(tags=['tours'])
 
 
-@cbv(router)
+@router.cbv
 class FastAPITours:
     # ugh - mypy https://github.com/python/mypy/issues/5374
     registry: ToursRegistry = depends(ToursRegistry)  # type: ignore
@@ -43,7 +40,7 @@ class FastAPITours:
         """Return a tour definition."""
         return self.registry.tour_contents(tour_id)
 
-    @router.post('/api/tours/{tour_id}', dependencies=[AdminUserRequired])
+    @router.post('/api/tours/{tour_id}', require_admin=True)
     def update_tour(self, tour_id: str) -> TourDetails:
         """Return a tour definition."""
         return self.registry.load_tour(tour_id)
