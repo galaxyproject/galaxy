@@ -20,6 +20,7 @@ import { toolStore } from "./toolStore";
 import { datasetPathDestinationStore } from "./datasetPathDestinationStore";
 import { datasetExtFilesStore } from "./datasetExtFilesStore";
 import { jobStore } from "./jobStore";
+import { collectionStore } from "./collectionStore";
 
 // beta features
 import { historyStore as betaHistoryStore } from "components/History/model/historyStore";
@@ -49,6 +50,7 @@ export function createStore() {
             workflows: workflowStore,
             informationStore: jobStore,
             tools: toolStore,
+            collectionStore: collectionStore,
         },
     };
 
