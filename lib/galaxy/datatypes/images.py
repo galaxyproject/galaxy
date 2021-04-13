@@ -528,6 +528,47 @@ class Gifti(GenericXml):
         return False
 
 
+class Star(data.Text):
+    """Base format class for Relion STAR (Self-defining
+    Text Archiving and Retrieval) image files.
+    https://relion.readthedocs.io/en/latest/Reference/Conventions.html"""
+    file_ext = "star"
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        """Set the peek and blurb text"""
+        if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.blurb = 'Relion STAR data'
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def sniff(self, filename):
+        """Each file must have one or more data blocks.
+        The start of a data block is defined by the keyword
+        "data_" followed by an optional string for
+        identification (e.g., "data_images").  All text
+        before the first "data_" keyword are comments
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('1.star')
+        >>> Star().sniff(fname)
+        True
+        >>> fname = get_test_fname('interval.interval')
+        >>> Star().sniff(fname)
+        False
+        """
+        with open(filename) as fh:
+            for i, line in enumerate(fh):
+                if line.startswith("data_"):
+                    return True
+                if i == 1000:
+                    # Assume less than 1000 lines
+                    # before the first data_ block.
+                    return False
+        return False
+
+
 class Html(HtmlFromText):
     """Deprecated class. This class should not be used anymore, but the galaxy.datatypes.text:Html one.
     This is for backwards compatibilities only."""
