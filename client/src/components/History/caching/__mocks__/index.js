@@ -1,19 +1,10 @@
-export {
-    // observables
-    monitorContentQuery,
-    monitorDscQuery,
-    monitorHistoryContent,
-    loadHistoryContents,
-    loadDscContent,
-    pollHistory,
-    // promises
-    cacheContent,
-    getCachedContent,
-    bulkCacheContent,
-    uncacheContent,
-    cacheCollectionContent,
-    getCachedCollectionContent,
-    bulkCacheDscContent,
-    // utility & debugging
-    wipeDatabase,
-} from "../CacheApi";
+// For testing, bypass the worker convrsions
+// and wrap each function in a jest mock wrapper
+
+const cacheapi = require("../CacheApi");
+
+const mockedModule = Object.entries(cacheapi).reduce((mod, [fnName, orig]) => {
+    return { ...mod, [fnName]: jest.fn(orig) };
+}, {});
+
+module.exports = mockedModule;

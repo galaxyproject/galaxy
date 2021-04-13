@@ -7,12 +7,14 @@ import { toPromise, toOperator } from "./workerClient";
 export const monitorContentQuery = toOperator("monitorContentQuery");
 export const monitorDscQuery = toOperator("monitorDscQuery");
 export const monitorHistoryContent = toOperator("monitorHistoryContent");
+export const monitorCollectionContent = toOperator("monitorCollectionContent");
 
 /**
  * Loaders
  */
 export const loadHistoryContents = toOperator("loadHistoryContents");
 export const loadDscContent = toOperator("loadDscContent");
+export const collectionContentAjaxLoad = toOperator("collectionContentAjaxLoad");
 
 /**
  * Cache promise functions

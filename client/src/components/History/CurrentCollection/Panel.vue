@@ -1,15 +1,8 @@
 <!-- When a dataset collection is being viewed, this panel shows the contents of that collection -->
 
 <template>
-    <DscProvider :is-root="isRoot" :collection="selectedCollection" v-slot="{ dsc }">
-        <CollectionContentProvider
-            v-if="dsc"
-            :parent="dsc"
-            v-slot="{
-                payload: { contents = [], startKey = null, topRows = 0, bottomRows = 0 },
-                handlers: { setScrollPos },
-            }"
-        >
+    <DscProvider :is-root="isRoot" :debounce-period="500" :collection="selectedCollection" v-slot="{ dsc }">
+        <CollectionContentProvider v-if="dsc" :parent="dsc" v-slot="{ loading, payload, setScrollPos }">
             <ExpandedItems
                 :scope-key="selectedCollection.id"
                 :get-item-key="(item) => item.type_id"
@@ -25,13 +18,11 @@
                     </template>
 
                     <template v-slot:listing>
+                        <!-- <pre>{{ payload }}</pre> -->
                         <Scroller
                             key-field="element_index"
-                            :item-height="36"
-                            :items="contents"
-                            :scroll-to="startKey"
-                            :top-placeholders="topRows"
-                            :bottom-placeholders="bottomRows"
+                            :class="{ loadingBackground: loading }"
+                            v-bind="payload"
                             @scroll="setScrollPos"
                         >
                             <template v-slot="{ item, index }">
