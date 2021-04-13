@@ -736,6 +736,8 @@ class PulsarJobRunner(AsynchronousJobRunner):
     def shutdown(self):
         super().shutdown()
         self.client_manager.shutdown()
+        if self.pulsar_app:
+            self.pulsar_app.shutdown()
 
     def _job_state(self, job, job_wrapper):
         job_state = AsynchronousJobState()
