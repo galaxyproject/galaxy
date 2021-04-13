@@ -1630,9 +1630,9 @@ def url_get(base_url, auth=None, pathspec=None, params=None, max_retries=5, back
 def is_url(uri, allow_list=None):
     """
     check if uri is (most likely) an url, more precisely the function checks
-    if the uri contains a protocol from the allow list (defaults to "http://",
+    if the uri starts with a protocol from the allow list (defaults to "http://",
     "https://", "ftp://")
-    >>> is_url(' https://zenodo.org/record/4104428/files/UCSC-hg38-chr22-Coding-Exons.bed')
+    >>> is_url('https://zenodo.org/record/4104428/files/UCSC-hg38-chr22-Coding-Exons.bed')
     True
     >>> is_url('file:///some/path')
     False
@@ -1641,7 +1641,7 @@ def is_url(uri, allow_list=None):
     """
     if allow_list is None:
         allow_list = ["http://", "https://", "ftp://"]
-    return any([uri.find(_) != -1 for _ in allow_list])
+    return any([uri.startswith(_) for _ in allow_list])
 
 
 def download_to_file(url, dest_file_path, timeout=30, chunk_size=2 ** 20):
