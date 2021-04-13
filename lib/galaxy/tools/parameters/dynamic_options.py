@@ -563,6 +563,7 @@ class DynamicOptions:
                     else:
                         self.missing_index_file = data_file
             elif dataset_file is not None:
+                self.meta_file_key = elem.get('meta_file_key', None)
                 self.dataset_ref_name = dataset_file
                 self.has_dataset_dependencies = True
                 self.converter_safe = False
@@ -669,7 +670,9 @@ class DynamicOptions:
 
             options = []
             for dataset in datasets:
-                if not hasattr(dataset, 'file_name'):
+                if self.meta_file_key:
+                    dataset = getattr(dataset.metadata, self.meta_file_key, None)
+                if not dataset or not hasattr(dataset, 'file_name'):
                     continue
                 # Ensure parsing dynamic options does not consume more than a megabyte worth memory.
                 path = dataset.file_name

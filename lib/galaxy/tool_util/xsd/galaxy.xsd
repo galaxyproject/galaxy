@@ -3519,6 +3519,11 @@ used to generate dynamic options.
         <xs:documentation xml:lang="en">Documentation for startswith</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="meta_file_key" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for meta_file_key</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
   <xs:group name="OptionsElement">
     <xs:choice>
