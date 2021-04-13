@@ -162,13 +162,26 @@ def set_metadata_portable():
 
             with open(os.path.join(outputs_directory, "tool_stderr"), "rb") as f:
                 tool_stderr = f.read()
+        elif os.path.exists(os.path.join(tool_job_working_directory, "stdout")):
+            with open(os.path.join(tool_job_working_directory, "stdout"), "rb") as f:
+                tool_stdout = f.read()
+
+            with open(os.path.join(tool_job_working_directory, "stderr"), "rb") as f:
+                tool_stderr = f.read()
         elif os.path.exists(os.path.join(outputs_directory, "stdout")):
-            # Puslar style working directory.
+            # Puslar style output directory? Was this ever used - did this ever work?
             with open(os.path.join(outputs_directory, "stdout"), "rb") as f:
                 tool_stdout = f.read()
 
             with open(os.path.join(outputs_directory, "stderr"), "rb") as f:
                 tool_stderr = f.read()
+        else:
+            wdc = os.listdir(tool_job_working_directory)
+            odc = os.listdir(outputs_directory)
+            error_desc = "Failed to find tool_stdout or tool_stderr for this job, cannot collect metadata"
+            error_extra = f"Working dir contents [{wdc}], output directory contents [{odc}]"
+            log.warn(f"{error_desc}. {error_extra}")
+            raise Exception(error_desc)
 
         job_id_tag = metadata_params["job_id_tag"]
 
