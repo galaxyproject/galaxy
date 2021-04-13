@@ -1475,11 +1475,11 @@ class H5_Model(H5):
                 params_file = dataset.metadata.spec[spec_key].param.new_file(dataset=dataset)
             with h5py.File(dataset.file_name, "r") as handle:
                 params = handle["-model_hyperparameters-"][()]
-            params = json.loads(params.decode("utf-8"))
+            params = json.loads(util.unicodify(params))
             with open(params_file.file_name, "w") as f:
                 f.write("\tParameter\tValue\n")
                 for p in params:
-                    f.write("\t".json(p) + "\n")
+                    f.write("\t".join(p) + "\n")
             dataset.metadata.params_file = params_file
         except Exception as e:
             log.warning('%s, set_meta Exception: %s', self, e)
@@ -1492,15 +1492,24 @@ class H5_Model(H5):
             with h5py.File(filename, "r") as handle:
                 if not all(name in handle.keys() for name in keys):
                     return False
-                url = handle.attrs.get("-URL-").decode("utf-8")
+                url = util.unicodify(handle.attrs.get("-URL-"))
             if url == URL:
                 return True
         return False
 
-    def get_config(self, filename):
+    def get_repr(self, filename):
         try:
             with h5py.File(filename, "r") as handle:
-                config = handle["-model_config-"][()].decode("utf-8")
+                repr_ = util.unicodify(handle.attrs.get("-repr-"))
+            return repr_
+        except Exception as e:
+            log.warning('%s, get_repr Except: %s', self, e)
+            return ""
+
+    def get_config_string(self, filename):
+        try:
+            with h5py.File(filename, "r") as handle:
+                config = util.unicodify(handle["-model_config-"][()])
             return config
         except Exception as e:
             log.warning('%s, get model configuration Except: %s', self, e)
@@ -1508,10 +1517,7 @@ class H5_Model(H5):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            config = self.get_config(dataset.file_name)
-            if len(config) > 100:
-                config = config[:100]
-            dataset.peek = config
+            dataset.peek = self.get_repr(dataset.file_name)
             dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = 'file does not exist'

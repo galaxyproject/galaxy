@@ -907,8 +907,8 @@
     <sniffer type="galaxy.datatypes.binary:GAFASQLite"/>
     <sniffer type="galaxy.datatypes.binary:NcbiTaxonomySQlite"/>
     <sniffer type="galaxy.datatypes.binary:SQlite"/>
-    <sniffer type="galaxy.datatypes.binary:Cool"/>
     <sniffer type="galaxy.datatypes.binary:H5_Model"/>
+    <sniffer type="galaxy.datatypes.binary:Cool"/>
     <sniffer type="galaxy.datatypes.binary:MCool"/>
     <sniffer type="galaxy.datatypes.binary:Loom"/>
     <sniffer type="galaxy.datatypes.binary:Anndata"/>
