@@ -2,16 +2,19 @@
     <div v-if="node">
         ToolForm Content
         {{ node.id }}
+        <FormElement id="_label" title="Label" />
         <Form :inputs=inputs />
     </div>
 </template>
 
 <script>
 import Form from "components/Form/Form";
+import FormElement from "components/Form/FormElement";
 
 export default {
     components: {
         Form,
+        FormElement,
     },
     props: {
         datatypes: {
