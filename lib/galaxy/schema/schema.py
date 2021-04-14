@@ -140,7 +140,7 @@ class UserModel(BaseModel):
     active: bool = Field(title='Active', description='User is active')
     deleted: bool = Field(title='Deleted', description='User is deleted')
     last_password_change: datetime = Field(title='Last password change', description='')
-    model_class = ModelClassField(USER_MODEL_CLASS_NAME)
+    model_class: str = ModelClassField(USER_MODEL_CLASS_NAME)
 
 
 class JobSourceType(str, Enum):
@@ -178,7 +178,7 @@ class MetadataFile(BaseModel):
         title="File Type",
         description="TODO",
     )
-    download_url = DownloadUrlField
+    download_url: AnyUrl = DownloadUrlField
 
 
 class DatasetPermissions(BaseModel):
@@ -236,7 +236,7 @@ class Visualization(BaseModel):  # TODO annotate this model
 
 class HistoryItemBase(BaseModel):
     """Basic information provided by items contained in a History."""
-    id = EncodedEntityIdField
+    id: EncodedDatabaseIdField = EncodedEntityIdField
     name: str = Field(
         ...,
         title="Name",
@@ -282,8 +282,8 @@ class HistoryItemCommon(HistoryItemBase):
         title="Type",
         description="The type of this item.",
     )
-    create_time = CreateTimeField
-    update_time = UpdateTimeField
+    create_time: datetime = CreateTimeField
+    update_time: datetime = UpdateTimeField
     url: AnyUrl = UrlField
     tags: TagCollection
 
@@ -295,7 +295,7 @@ class HDASummary(HistoryItemCommon):
         title="Dataset ID",
         description="The encoded ID of the dataset associated with this item.",
     )
-    state = DatasetStateField
+    state: Dataset.states = DatasetStateField
     extension: str = Field(
         ...,
         title="Extension",
@@ -311,13 +311,13 @@ class HDASummary(HistoryItemCommon):
 
 class HDAInaccessible(HistoryItemBase):
     """History Dataset Association information when the user can not access it."""
-    accessible = AccessibleField
-    state = DatasetStateField
+    accessible: bool = AccessibleField
+    state: Dataset.states = DatasetStateField
 
 
 class HDADetailed(HDASummary):
     """History Dataset Association detailed information."""
-    model_class = ModelClassField(HDA_MODEL_CLASS_NAME)
+    model_class: str = ModelClassField(HDA_MODEL_CLASS_NAME)
     hda_ldda: str = Field(
         "hda",
         const=True,
@@ -325,7 +325,7 @@ class HDADetailed(HDASummary):
         description="Whether this dataset belongs to a history (HDA) or a library (LDDA).",
         deprecated=False  # TODO Should this field be deprecated in favor of model_class?
     )
-    accessible = AccessibleField
+    accessible: bool = AccessibleField
     genome_build: str = Field(
         "?",
         title="Genome Build",
@@ -428,8 +428,8 @@ class HDADetailed(HDASummary):
         title="Validated State Message",
         description="The message with details about the datatype validation result for this dataset.",
     )
-    annotation = AnnotationField
-    download_url = DownloadUrlField
+    annotation: Optional[str] = AnnotationField
+    download_url: AnyUrl = DownloadUrlField
     type: str = Field(
         "file",
         const=True,
@@ -477,26 +477,20 @@ class HDABeta(HDADetailed):  # TODO: change HDABeta name to a more appropriate o
 
 class DCSummary(BaseModel):
     """Dataset Collection summary information."""
-    model_class = ModelClassField(DC_MODEL_CLASS_NAME)
-    id = EncodedEntityIdField
-    create_time = CreateTimeField
-    update_time = UpdateTimeField
-    collection_type = CollectionTypeField
-    populated_state = PopulatedStateField
-    populated_state_message = PopulatedStateMessageField
-    element_count = ElementCountField
-
-
-class DCDetailed(DCSummary):
-    """Dataset Collection detailed information."""
-    populated = PopulatedField
-    elements = ElementsField
+    model_class: str = ModelClassField(DC_MODEL_CLASS_NAME)
+    id: EncodedDatabaseIdField = EncodedEntityIdField
+    create_time: datetime = CreateTimeField
+    update_time: datetime = UpdateTimeField
+    collection_type: str = CollectionTypeField
+    populated_state: DatasetCollection.populated_states = PopulatedStateField
+    populated_state_message: Optional[str] = PopulatedStateMessageField
+    element_count: Optional[int] = ElementCountField
 
 
 class DCESummary(BaseModel):
     """Dataset Collection Element summary information."""
-    id = EncodedEntityIdField
-    model_class = ModelClassField(DCE_MODEL_CLASS_NAME)
+    id: EncodedDatabaseIdField = EncodedEntityIdField
+    model_class: str = ModelClassField(DCE_MODEL_CLASS_NAME)
     element_index: int = Field(
         ...,
         title="Element Index",
@@ -519,19 +513,25 @@ class DCESummary(BaseModel):
     )
 
 
+class DCDetailed(DCSummary):
+    """Dataset Collection detailed information."""
+    populated: bool = PopulatedField
+    elements: List[DCESummary] = ElementsField
+
+
 class HDCASummary(HistoryItemCommon):
     """History Dataset Collection Association summary information."""
-    model_class = ModelClassField(HDCA_MODEL_CLASS_NAME)  # TODO: inconsistency? HDASummary does not have model_class only the detailed view has it...
+    model_class: str = ModelClassField(HDCA_MODEL_CLASS_NAME)  # TODO: inconsistency? HDASummary does not have model_class only the detailed view has it...
     type: str = Field(
         "collection",
         const=True,
         title="Type",
         description="This is always `collection` for dataset collections.",
     )
-    collection_type = CollectionTypeField
-    populated_state = PopulatedStateField
-    populated_state_message = PopulatedStateMessageField
-    element_count = ElementCountField
+    collection_type: str = CollectionTypeField
+    populated_state: DatasetCollection.populated_states = PopulatedStateField
+    populated_state_message: Optional[str] = PopulatedStateMessageField
+    element_count: Optional[int] = ElementCountField
     job_source_id: Optional[EncodedDatabaseIdField] = Field(
         None,
         title="Job Source ID",
@@ -551,8 +551,8 @@ class HDCASummary(HistoryItemCommon):
 
 class HDCADetailed(HDCASummary):
     """History Dataset Collection Association detailed information."""
-    populated = PopulatedField
-    elements = ElementsField
+    populated: bool = PopulatedField
+    elements: List[DCESummary] = ElementsField
 
 
 class HDCJobStateSummary(BaseModel):
