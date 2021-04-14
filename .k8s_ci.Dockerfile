@@ -137,7 +137,7 @@ RUN set -xe; \
         libpython3.6 \
         python3-virtualenv \
         vim-tiny \
-        nano \
+        nano-tiny \
         curl \
     && locale-gen $LANG && update-locale LANG=$LANG \
     && apt-get autoremove -y && apt-get clean \
