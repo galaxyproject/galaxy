@@ -1,5 +1,6 @@
 <template>
-    <input class="ui-input" :value="currentValue" @onChange="onChange" />
+    <textarea v-if="area" class="ui-input" v-model="currentValue" @change="onChange" />
+    <input v-else class="ui-input" v-model="currentValue" @change="onChange" />
 </template>
 <script>
 export default {
@@ -12,13 +13,24 @@ export default {
             type: String,
             default: "",
         },
+        area: {
+            type: Boolean,
+            default: false,
+        },
+    },
+    watch: {
+        value(newValue) {
+            this.currentValue = newValue;
+        },
     },
     data() {
-        return { currentValue: value };
+        return {
+            currentValue: this.value,
+        };
     },
     methods: {
-        onChange(value) {
-            this.$emit("onChange", value);
+        onChange() {
+            this.$emit("onChange", this.currentValue);
         },
     },
 };

@@ -1,12 +1,20 @@
 <template>
     <div v-if="node">
-        ToolForm Content
-        {{ node.id }}
-        <FormElement id="__label" title="Label" help="Add a step label." />
+        <FormElement
+            id="__label"
+            :value="node.label"
+            title="Label"
+            help="Add a step label."
+            @onChange="onLabel"
+            :error="errorLabel"
+        />
         <FormElement
             id="__annotation"
+            :value="node.annotation"
             title="Step Annotation"
+            :area="true"
             help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
+            @onChange="onAnnotation"
         />
         <Form :inputs="inputs" />
     </div>
@@ -36,7 +44,9 @@ export default {
         },
     },
     data() {
-        return {};
+        return {
+            errorLabel: null,
+        };
     },
     computed: {
         node() {
@@ -45,7 +55,30 @@ export default {
         inputs() {
             return this.getNode().config_form.inputs;
         },
+        workflow() {
+            return this.getManager();
+        },
     },
-    methods: {},
+    methods: {
+        onAnnotation(newAnnotation) {
+            this.node.setAnnotation(newAnnotation);
+        },
+        onLabel(newLabel) {
+            this.node.setLabel(newLabel);
+            let duplicate = false;
+            for (const i in this.workflow.nodes) {
+                const n = this.workflow.nodes[i];
+                if (n.label && n.label == newLabel && n.id != this.node.id) {
+                    duplicate = true;
+                    break;
+                }
+            }
+            if (duplicate) {
+                this.errorLabel = "Duplicate label. Please fix this before saving the workflow.";
+            } else {
+                this.errorLabel = "";
+            }
+        },
+    },
 };
 </script>
