@@ -235,12 +235,12 @@ class Visualization(BaseModel):  # TODO annotate this model
 
 
 class HistoryItemBase(BaseModel):
-    """Common basic information provided by items contained in a History."""
+    """Basic information provided by items contained in a History."""
     id = EncodedEntityIdField
     name: str = Field(
         ...,
         title="Name",
-        description="The name of the dataset.",
+        description="The name of the item.",
     )
     history_id: EncodedDatabaseIdField = Field(
         ...,
@@ -269,8 +269,8 @@ class HistoryItemBase(BaseModel):
     )
 
 
-class HistoryItemSummary(HistoryItemBase):
-    """Common summary information provided by items contained in a History."""
+class HistoryItemCommon(HistoryItemBase):
+    """Common information provided by items contained in a History."""
     type_id: str = Field(
         ...,
         title="Type - ID",
@@ -288,7 +288,7 @@ class HistoryItemSummary(HistoryItemBase):
     tags: TagCollection
 
 
-class HDASummary(HistoryItemSummary):
+class HDASummary(HistoryItemCommon):
     """History Dataset Association summary information."""
     dataset_id: EncodedDatabaseIdField = Field(
         ...,
@@ -310,7 +310,7 @@ class HDASummary(HistoryItemSummary):
 
 
 class HDAInaccessible(HistoryItemBase):
-    """History Dataset Association information when is inaccessible to the user."""
+    """History Dataset Association information when the user can not access it."""
     accessible = AccessibleField
     state = DatasetStateField
 
@@ -469,6 +469,12 @@ class HDAExtended(HDADetailed):
     )
 
 
+class HDABeta(HDADetailed):  # TODO: change HDABeta name to a more appropriate one.
+    """History Dataset Association information used in the new Beta History."""
+    # Equivalent to `betawebclient` serialization view for HDAs
+    pass
+
+
 class DCSummary(BaseModel):
     """Dataset Collection summary information."""
     model_class = ModelClassField(DC_MODEL_CLASS_NAME)
@@ -513,7 +519,7 @@ class DCESummary(BaseModel):
     )
 
 
-class HDCASummary(HistoryItemSummary):
+class HDCASummary(HistoryItemCommon):
     """History Dataset Collection Association summary information."""
     model_class = ModelClassField(HDCA_MODEL_CLASS_NAME)  # TODO: inconsistency? HDASummary does not have model_class only the detailed view has it...
     type: str = Field(
@@ -547,3 +553,89 @@ class HDCADetailed(HDCASummary):
     """History Dataset Collection Association detailed information."""
     populated = PopulatedField
     elements = ElementsField
+
+
+class HDCJobStateSummary(BaseModel):
+    """Overview of the job states working inside a dataset collection."""
+    all_jobs: int = Field(
+        0,
+        title="All jobs",
+        description="Total number of jobs in the associated with a dataset collection.",
+    )
+    new: int = Field(
+        0,
+        title="New jobs",
+        description="Number of jobs in the `new` state.",
+    )
+    waiting: int = Field(
+        0,
+        title="Waiting jobs",
+        description="Number of jobs in the `waiting` state.",
+    )
+    running: int = Field(
+        0,
+        title="Running jobs",
+        description="Number of jobs in the `running` state.",
+    )
+    error: int = Field(
+        0,
+        title="Jobs with errors",
+        description="Number of jobs in the `error` state.",
+    )
+    paused: int = Field(
+        0,
+        title="Paused jobs",
+        description="Number of jobs in the `paused` state.",
+    )
+    deleted_new: int = Field(
+        0,
+        title="Deleted new jobs",
+        description="Number of jobs in the `deleted_new` state.",
+    )
+    resubmitted: int = Field(
+        0,
+        title="Resubmitted jobs",
+        description="Number of jobs in the `resubmitted` state.",
+    )
+    queued: int = Field(
+        0,
+        title="Queued jobs",
+        description="Number of jobs in the `queued` state.",
+    )
+    ok: int = Field(
+        0,
+        title="OK jobs",
+        description="Number of jobs in the `ok` state.",
+    )
+    failed: int = Field(
+        0,
+        title="Failed jobs",
+        description="Number of jobs in the `failed` state.",
+    )
+    deleted: int = Field(
+        0,
+        title="Deleted jobs",
+        description="Number of jobs in the `deleted` state.",
+    )
+    upload: int = Field(
+        0,
+        title="Upload jobs",
+        description="Number of jobs in the `upload` state.",
+    )
+
+
+class HDCABeta(HDCADetailed):  # TODO: change HDCABeta name to a more appropriate one.
+    """History Dataset Collection Association information used in the new Beta History."""
+    # Equivalent to `betawebclient` serialization view for HDCAs
+    collection_id: EncodedDatabaseIdField = Field(
+        # TODO: inconsistency? the equivalent counterpart for HDAs, `dataset_id`, is declared in `HDASummary` scope
+        # while in HDCAs it is only serialized in the new `betawebclient` view?
+        ...,
+        title="Collection ID",
+        description="The encoded ID of the dataset collection associated with this HDCA.",
+    )
+    job_state_summary: Optional[HDCJobStateSummary] = Field(
+        None,
+        title="Job State Summary",
+        description="Overview of the job states working inside the dataset collection.",
+    )
