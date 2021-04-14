@@ -528,6 +528,7 @@ class Gifti(GenericXml):
         return False
 
 
+@build_sniff_from_prefix
 class Star(data.Text):
     """Base format class for Relion STAR (Self-defining
     Text Archiving and Retrieval) image files.
@@ -543,7 +544,7 @@ class Star(data.Text):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """Each file must have one or more data blocks.
         The start of a data block is defined by the keyword
         "data_" followed by an optional string for
@@ -558,14 +559,30 @@ class Star(data.Text):
         >>> Star().sniff(fname)
         False
         """
-        with open(filename) as fh:
-            for i, line in enumerate(fh):
-                if line.startswith("data_"):
+        in_data_block = False
+        fh = file_prefix.string_io()
+        while True:
+            # All lines before the first
+            # data_ block must be comments.
+            line = fh.readline()
+            if not line:
+                # End of file_prefix.
+                return False
+            line = line.strip()
+            if len(line) == 0:
+                continue
+            if line.startswith("data_"):
+                in_data_block = True
+                continue
+            if in_data_block:
+                # Lines within data blocks must
+                # be blank, start with loop_, or
+                # start with _.
+                if len(line) == 0:
+                    continue
+                if line.startswith("loop_") or line.startswith("_"):
                     return True
-                if i == 1000:
-                    # Assume less than 1000 lines
-                    # before the first data_ block.
-                    return False
+                return False
         return False
 
 
