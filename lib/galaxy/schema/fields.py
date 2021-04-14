@@ -1,12 +1,8 @@
 import re
-from typing import (
-    Optional,
-)
 
 from pydantic import (
     Field,
 )
-from pydantic.networks import AnyUrl
 
 ENCODED_DATABASE_ID_PATTERN = re.compile('f?[0-9a-f]+')
 ENCODED_ID_LENGTH_MULTIPLE = 16
@@ -66,32 +62,3 @@ def ModelClassField(class_name: str) -> str:
         description="The name of the database model class.",
         const=True,  # Make this field constant
     )
-
-
-# Generic and common Field annotations that can be reused across models
-
-
-UrlField: AnyUrl = Field(
-    ...,
-    title="URL",
-    description="The relative URL to access this item.",
-    deprecated=False  # TODO Should this field be deprecated in FastAPI?
-)
-
-DownloadUrlField: AnyUrl = Field(
-    ...,
-    title="Download URL",
-    description="The URL to download this item from the server.",
-)
-
-AnnotationField: Optional[str] = Field(
-    ...,
-    title="Annotation",
-    description="An annotation to provide details or to help understand the purpose and usage of this item.",
-)
-
-AccessibleField: bool = Field(
-    ...,
-    title="Accessible",
-    description="Whether this item is accessible to the current user due to permissions.",
-)

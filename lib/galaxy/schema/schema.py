@@ -22,12 +22,8 @@ from galaxy.model import (
     DatasetInstance,
 )
 from galaxy.schema.fields import (
-    AccessibleField,
-    AnnotationField,
-    DownloadUrlField,
     EncodedDatabaseIdField,
     ModelClassField,
-    UrlField,
 )
 
 USER_MODEL_CLASS_NAME = "User"
@@ -35,6 +31,34 @@ HDA_MODEL_CLASS_NAME = "HistoryDatasetAssociation"
 DC_MODEL_CLASS_NAME = "DatasetCollection"
 DCE_MODEL_CLASS_NAME = "DatasetCollectionElement"
 HDCA_MODEL_CLASS_NAME = "HistoryDatasetCollectionAssociation"
+
+
+# Generic and common Field annotations that can be reused across models
+
+UrlField: AnyUrl = Field(
+    ...,
+    title="URL",
+    description="The relative URL to access this item.",
+    deprecated=False  # TODO Should this field be deprecated in FastAPI?
+)
+
+DownloadUrlField: AnyUrl = Field(
+    ...,
+    title="Download URL",
+    description="The URL to download this item from the server.",
+)
+
+AnnotationField: Optional[str] = Field(
+    ...,
+    title="Annotation",
+    description="An annotation to provide details or to help understand the purpose and usage of this item.",
+)
+
+AccessibleField: bool = Field(
+    ...,
+    title="Accessible",
+    description="Whether this item is accessible to the current user due to permissions.",
+)
 
 EncodedEntityIdField: EncodedDatabaseIdField = Field(
     ...,
