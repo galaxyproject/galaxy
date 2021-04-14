@@ -3430,6 +3430,20 @@ and demonstrates generating options from a dataset directly.
 </param>
 ```
 
+The ``meta_file_key`` can be used together with ``from_dataset``. In such cases,
+options are generated using the dataset's medadata file that the ``meta_file_key``
+implies, instead of the dataset itself.
+
+```xml
+<param name="input" type="data" format="maf" label="MAF File"/>
+<param name="species" type="select" optional="False" label="Select species for the input dataset" multiple="True">
+    <options from_dataset="input" meta_file_key="species_chromosomes">
+        <column name="name" index="0"/>
+        <column name="value" index="0"/>
+    </options>
+</param>
+```
+
 Filters can be used to generate options from dataset directly also as the
 example below demonstrates (many more examples are present in the
 [filter](#tool-inputs-param-options-filter) documentation).
