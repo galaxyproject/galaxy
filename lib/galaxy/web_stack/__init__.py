@@ -105,7 +105,6 @@ class ApplicationStack:
                 self._preferred_handler_assignment_method = HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED
             else:
                 log.debug("Database does not support WITH FOR UPDATE statement, cannot use DB-SKIP-LOCKED handler assignment")
-                self.UNSUPPORTED_HANDLER_ASSIGNMENT_METHODS.add(HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED)
                 self._preferred_handler_assignment_method = HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION
         return self._preferred_handler_assignment_method
 
