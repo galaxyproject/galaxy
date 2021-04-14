@@ -1,0 +1,28 @@
+<tool id="options_from_metadata_file" name="Test for options from dataset metadata file" version="1.0.0" profile="21.01">
+  <command><![CDATA[
+#assert $input.metadata.species_chromosomes
+echo '${species}' > '${output}'
+  ]]></command>
+  <inputs>
+    <param name="input" type="data" format="maf" label="MAF File"/>
+    <param name="species" type="select" optional="False" label="Select species for the input dataset" multiple="True">
+        <options from_dataset="input" meta_file_key="species_chromosomes" >
+            <column name="name" index="0"/>
+            <column name="value" index="0"/>
+        </options>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="txt" name="output" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input" value="3.maf" ftype="maf" />
+      <param name="species" value="hg17,canFam1" />
+      <output name="output" ftype="txt">
+        <assert_contents>
+          <has_line line="hg17,canFam1" />
+        </assert_contents>
+      </output>
+    </test>
+  </tests></tool>
