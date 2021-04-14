@@ -2,6 +2,8 @@ from functools import wraps
 
 
 def rebind_container_to_task(app):
+    import galaxy.app
+    galaxy.app.app = app
     from galaxy.celery import tasks
 
     def magic_bind_dynamic(func):
