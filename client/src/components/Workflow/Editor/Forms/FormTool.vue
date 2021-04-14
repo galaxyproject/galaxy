@@ -28,15 +28,13 @@ export default {
         },
     },
     data() {
-        return {
-        };
+        return {};
     },
     computed: {
         node() {
             return this.getNode();
         },
     },
-    methods: {
-    },
+    methods: {},
 };
 </script>

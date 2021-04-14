@@ -3,11 +3,11 @@
         <div class="ui-form-title">{{ title }}</div>
         <div class="ui-form-field">
             <FormInput :id="id" :value="value" @onChange="onChange" />
+            <span class="ui-form-info form-text text-muted mt-2">{{ help }}</span>
         </div>
     </div>
 </template>
 <script>
-
 import FormInput from "./FormInput";
 
 export default {
@@ -21,9 +21,13 @@ export default {
         },
         value: {
             type: String,
-            default: ""
+            default: "",
         },
         title: {
+            type: String,
+            default: "",
+        },
+        help: {
             type: String,
             default: "",
         },
@@ -33,8 +37,8 @@ export default {
     },
     methods: {
         onChange(value) {
-            this.$emit("onChange", value)
-        }
+            this.$emit("onChange", value);
+        },
     },
 };
 </script>

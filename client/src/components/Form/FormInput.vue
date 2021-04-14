@@ -2,7 +2,6 @@
     <input class="ui-input" :value="currentValue" @onChange="onChange" />
 </template>
 <script>
-
 export default {
     props: {
         id: {
@@ -11,16 +10,16 @@ export default {
         },
         value: {
             type: String,
-            default: ""
-        }
+            default: "",
+        },
     },
     data() {
         return { currentValue: value };
     },
     methods: {
         onChange(value) {
-            this.$emit("onChange", value)
-        }
+            this.$emit("onChange", value);
+        },
     },
 };
 </script>

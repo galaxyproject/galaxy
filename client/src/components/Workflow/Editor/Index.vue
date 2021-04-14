@@ -148,11 +148,7 @@
                                     @onScrollTo="onScrollTo"
                                 />
                                 <div id="right-content" class="right-content" />
-                                <WorkflowForm
-                                    :get-manager="getManager"
-                                    :get-node="getNode"
-                                    :datatypes="datatypes"
-                                />
+                                <WorkflowForm :get-manager="getManager" :get-node="getNode" :datatypes="datatypes" />
                             </div>
                         </div>
                     </div>

@@ -2,8 +2,13 @@
     <div v-if="node">
         ToolForm Content
         {{ node.id }}
-        <FormElement id="_label" title="Label" />
-        <Form :inputs=inputs />
+        <FormElement id="__label" title="Label" help="Add a step label." />
+        <FormElement
+            id="__annotation"
+            title="Step Annotation"
+            help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
+        />
+        <Form :inputs="inputs" />
     </div>
 </template>
 
@@ -31,8 +36,7 @@ export default {
         },
     },
     data() {
-        return {
-        };
+        return {};
     },
     computed: {
         node() {
@@ -42,7 +46,6 @@ export default {
             return this.getNode().config_form.inputs;
         },
     },
-    methods: {
-    },
+    methods: {},
 };
 </script>
