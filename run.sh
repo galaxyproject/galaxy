@@ -58,8 +58,8 @@ fi
 mkdir logs
 pushd metrics
 make || (
-    echo "Cannot build the uwsg system_metrics.so file"
-    exit 1
+    echo "NOTICE: Cannot build the uwsg system_metrics.so file"
+    echo "        API metrics will not be collected"
 )
 popd
 
