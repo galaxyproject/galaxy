@@ -25,4 +25,5 @@ echo '${species}' > '${output}'
         </assert_contents>
       </output>
     </test>
-  </tests></tool>
+  </tests>
+</tool>
