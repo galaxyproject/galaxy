@@ -66,7 +66,7 @@ export const aggregateCacheUpdates = (monitor, cfg = {}) => (src$) => {
     // Monitor generation function is passed in via config so we can use it against different types of queries
     const cacheUpdates$ = monitorInputKey$.pipe(
         switchMap(monitor),
-        show(debug, (change) => console.log("monitor output", change)),
+        // show(debug, (change) => console.log("monitor output", change)),
     );
 
     // groups updates by skiplist key and debounces those

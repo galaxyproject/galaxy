@@ -27,13 +27,16 @@ export function processContentStreams(payloadOperator, sources = {}, settings = 
 
     // clean incoming source streams
     const parent$ = sources.parent$.pipe(
-        distinctUntilChanged(propMatch("id"))
+        distinctUntilChanged(propMatch("id")),
+        show(debug, (parent) => console.log('processContentStreams: parent changed', parent)),
     );
     const params$ = sources.params$.pipe(
         distinctUntilChanged(SearchParams.equals),
+        show(debug, (params) => console.log('processContentStreams: params changed', params)),
     );
     const pos$ = sources.scrollPos$.pipe(
         debounceTime(debouncePeriod),
+        show(debug, (pos) => console.log('processContentStreams: pos changed', pos)),
         distinctUntilChanged(ScrollPos.equals),
     );
     const scrolling$ = sources.scrollPos$.pipe(
@@ -48,7 +51,8 @@ export function processContentStreams(payloadOperator, sources = {}, settings = 
     const payload$ = loaderReset$.pipe(
         switchMap(([parent, filters]) => pos$.pipe(
             show(debug, pos => {
-                console.clear();
+                // console.clear();
+                console.log("----------------------------------------------")
                 console.log("processContentStreams: pos", JSON.stringify(pos));
             }),
             payloadOperator({ parent, filters, loading$, ...settings }),

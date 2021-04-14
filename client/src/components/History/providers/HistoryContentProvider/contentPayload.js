@@ -66,7 +66,7 @@ export const contentPayload = (cfg = {}) => {
             share(),
         );
         
-        //#endregion
+        // #endregion
 
         // #region server loading
 

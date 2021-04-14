@@ -14,7 +14,6 @@ export const monitorCollectionContent = toOperator("monitorCollectionContent");
  */
 export const loadHistoryContents = toOperator("loadHistoryContents");
 export const loadDscContent = toOperator("loadDscContent");
-export const collectionContentAjaxLoad = toOperator("collectionContentAjaxLoad");
 
 /**
  * Cache promise functions

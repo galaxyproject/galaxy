@@ -111,12 +111,7 @@ import ContentOperations from "./ContentOperations";
 import ToolHelpModal from "./ToolHelpModal";
 import Scroller from "./Scroller";
 import { HistoryContentItem } from "./ContentItem";
-
-const reportPayload = (p) => {
-    const { contents = [], ...theRest } = p;
-    const hids = contents.map((o) => o.hid);
-    return { hids, ...theRest };
-};
+import { reportPayload } from "./providers/ContentProvider/helpers";
 
 export default {
     filters: {

@@ -1,70 +1,74 @@
-import { of, Observable, BehaviorSubject } from "rxjs";
-import { tap, map, pluck, switchMap, share, debounceTime } from "rxjs/operators";
-import { chunkProp, show } from "utils/observable";
+import { of, Observable, BehaviorSubject, partition, merge } from "rxjs";
+import { tap, map, pluck, switchMap, publish, distinctUntilChanged, share } from "rxjs/operators";
+import { chunk } from "utils/observable";
 import { SearchParams } from "../../model/SearchParams";
-import { buildPaginationWindow } from "../ContentProvider";
 import { loadDscContent } from "../../caching";
 import { watchCollection } from "./watchCollection";
-// import { reportPayload } from "../../test/providerTestHelpers";
 
 // prettier-ignore
-export const collectionPayload = (cfg = {}) => pos$ => {
+export const collectionPayload = (cfg = {}) => {
     const {
         parent: dsc,
         filters = new SearchParams(),
-        totalMatches = dsc.totalElements,
         pageSize = SearchParams.pageSize,
-        debouncePeriod = 250,
         debug = false,
         loading$ = new BehaviorSubject(),
     } = cfg;
 
-    const { contents_url } = dsc;
+    const { totalElements: totalMatches, contents_url } = dsc;
 
-    const cursor$ = pos$.pipe(
-        pluck('cursor'),
-        show(debug, cursor => console.log("collectionPayload input cursor", cursor)),
-        share()
-    );
+    return publish((pos$) => {
 
-    // Server loads
+        // split scroll position into objects where we exactly know which key to focus on, and those
+        // where we have to figure out where to start
+        const [ noKey$, hasKey$ ] = partition(pos$, (pos) => pos.key === null);
 
-    const pagination$ =  cursor$.pipe(
-        map((cursor) => buildPaginationWindow(cursor, totalMatches, pageSize)),
-        chunkProp('offset', pageSize / 2),
-        show(debug, pagination => console.log("collectionPayload pagination", pagination)),
-    );
+        // if we don't know the exact elementIndex we need to calculate it from the cursor (portion
+        // of the total scroller height) and the total matches which we should have from the dsc props
+        const calculatedIndex$ = noKey$.pipe(
+            pluck('cursor'),
+            map((cursor) => Math.round(cursor * totalMatches)),
+        );
+        const knownIndex$ = hasKey$.pipe(pluck('key'));
+        const elementIndex$ = merge(knownIndex$, calculatedIndex$).pipe(share());
 
-    const serverLoad$ = pagination$.pipe(
-        tap(() => loading$.next(true)),
-        switchMap(pagination => of([contents_url, filters, pagination]).pipe(
-            loadDscContent(),
-        )),
-        show(debug, val => console.log("collectionPayload loadDscContent response", val)),
-    );
+        // chunk the input to the server request so we don't request for every single mouse move
+        const chunked$ = elementIndex$.pipe(
+            chunk(pageSize, false),
+            distinctUntilChanged(),
+        );
 
-    // Cache Watcher
-    // convert cursor to key: element_index, this is a lot easier than on
-    // history because we don't filter (yet) and the index is numeric starting
-    // at the top, so all we have to do is scale it
-    const payload$ = cursor$.pipe(
-        map((cursor) => cursor * totalMatches),
-        watchCollection({ dsc, filters, ...cfg}),
-        debounceTime(debouncePeriod),
-        map((result) => {
-            const { contents } = result;
-            const topRows = contents.length ? contents[0].element_index : 0;
-            const bottomRows = Math.max(0, totalMatches - contents.length - topRows);
-            return { ...result, topRows, bottomRows, totalMatches };
-        }),
-        tap(() => loading$.next(false)),
-    );
+        // overlap one page before and one page after, 3 total pages queried
+        const pagination$ = chunked$.pipe(
+            map(targetRow => {
+                const offset = Math.max(0, targetRow - pageSize);
+                const limit = 3 * pageSize;
+                return { offset, limit, targetRow };
+            }),
+        );
 
-    // create observable that looks at the cache but piggybacks the loader subscription
-    // piggyback the subscriptions
-    return new Observable((obs) => {
-        const watchSub = payload$.subscribe(obs);
-        watchSub.add(serverLoad$.subscribe());
-        return watchSub;
+        const serverLoad$ = pagination$.pipe(
+            tap(() => loading$.next(true)),
+            switchMap(pagination => of([contents_url, filters, pagination]).pipe(
+                loadDscContent({ debug }),
+            )),
+        );
+
+        const payload$ = elementIndex$.pipe(
+            watchCollection({ dsc, filters, ...cfg}),
+            map((result) => {
+                const { contents } = result;
+                const topRows = contents.length ? contents[0].element_index : 0;
+                const bottomRows = Math.max(0, totalMatches - contents.length - topRows);
+                return { ...result, topRows, bottomRows, totalMatches };
+            }),
+            tap(() => loading$.next(false)),
+        );
+
+        return new Observable((obs) => {
+            const watchSub = payload$.subscribe(obs);
+            watchSub.add(serverLoad$.subscribe());
+            return watchSub;
+        });
     })
 };

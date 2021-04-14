@@ -20,7 +20,7 @@ export const watchCollection = (cfg = {}) => elementIndex$ => {
 
     // builds a monitor observable based on a element_index
     const monitor = (idx) => of([dsc.contents_url, filters, idx]).pipe(
-        monitorCollectionContent({ pageSize, debug, keyField }),
+        monitorCollectionContent({ pageSize, debug: false, keyField }),
     );
     
     // handles the plumbing for observing the query (monitor) and collecting the output into an

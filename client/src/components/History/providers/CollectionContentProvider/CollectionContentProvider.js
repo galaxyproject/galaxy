@@ -17,6 +17,7 @@ export default {
     watch: {
         dsc(newDsc, oldDsc) {
             if (!(newDsc.id == oldDsc.id)) {
+                console.log("resetting scroll pos");
                 this.resetScrollPos();
             }
         },

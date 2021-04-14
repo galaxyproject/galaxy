@@ -2,7 +2,7 @@
 
 <template>
     <DscProvider :is-root="isRoot" :debounce-period="500" :collection="selectedCollection" v-slot="{ dsc }">
-        <CollectionContentProvider v-if="dsc" :parent="dsc" v-slot="{ loading, payload, setScrollPos }">
+        <CollectionContentProvider v-if="dsc" :parent="dsc" :debug="true" v-slot="{ loading, payload, setScrollPos }">
             <ExpandedItems
                 :scope-key="selectedCollection.id"
                 :get-item-key="(item) => item.type_id"
@@ -18,7 +18,17 @@
                     </template>
 
                     <template v-slot:listing>
-                        <!-- <pre>{{ payload }}</pre> -->
+                        <!-- <div>
+                            <input
+                                type="range"
+                                min="0.0"
+                                max="1.0"
+                                step="0.1"
+                                :value="scrollPos.cursor"
+                                @input="setScrollPos({ cursor: 1.0 * $event.srcElement.value })"
+                            />
+                            <pre>{{ payload | reportPayload("element_index") }}</pre>
+                        </div> -->
                         <Scroller
                             key-field="element_index"
                             :class="{ loadingBackground: loading }"
@@ -55,7 +65,12 @@ import Details from "./Details";
 import Scroller from "../Scroller";
 import { CollectionContentItem } from "../ContentItem";
 
+import { reportPayload } from "../providers/ContentProvider/helpers";
+
 export default {
+    filters: {
+        reportPayload,
+    },
     components: {
         DscProvider,
         CollectionContentProvider,

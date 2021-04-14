@@ -15,4 +15,4 @@ export { aggregateCacheUpdates } from "./aggregateCacheUpdates";
 export { processContentStreams } from "./processContentStreams";
 
 // utils
-export { isValidNumber, buildPaginationWindow, paginationEqual } from "./helpers";
+export { isValidNumber, paginationEqual } from "./helpers";
