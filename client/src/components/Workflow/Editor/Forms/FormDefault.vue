@@ -44,13 +44,15 @@
                     help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
                     @onChange="onAnnotation"
                 />
-                <Form :inputs="inputs" />
+                <Form :inputs="inputs" @onChange="onChange" />
             </template>
         </FormCard>
     </div>
 </template>
 
 <script>
+import axios from "axios";
+import { getAppRoot } from "onload/loadConfig";
 import Form from "components/Form/Form";
 import FormCard from "components/Form/FormCard";
 import FormElement from "components/Form/FormElement";
@@ -121,6 +123,19 @@ export default {
             this.workflow.onAttemptRefactor([
                 { action_type: "upgrade_subworkflow", step: { order_index: parseInt(this.node.id) } },
             ]);
+        },
+        onChange(values) {
+            axios
+                .post(`${getAppRoot()}api/workflows/build_module`, {
+                    id: this.node.id,
+                    type: this.node.type,
+                    content_id: this.node.content_id,
+                    inputs: values,
+                })
+                .then((response) => {
+                    const data = response.data;
+                    this.node.updateData(data);
+                });
         },
     },
 };
