@@ -1177,6 +1177,21 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
 
         return rval
 
+    def update_hdca_update_time_for_job(self, update_time, sa_session):
+        subq = sa_session.query(HistoryDatasetCollectionAssociation.id) \
+            .join(ImplicitCollectionJobs) \
+            .join(ImplicitCollectionJobsJobAssociation) \
+            .filter(ImplicitCollectionJobsJobAssociation.job_id == self.id) \
+            .with_for_update(skip_locked=True).subquery()
+        implicit_statement = HistoryDatasetCollectionAssociation.table.update() \
+            .where(HistoryDatasetCollectionAssociation.table.c.id.in_(subq)) \
+            .values(update_time=update_time)
+        explicit_statement = HistoryDatasetCollectionAssociation.table.update() \
+            .where(HistoryDatasetCollectionAssociation.table.c.job_id == self.id) \
+            .values(update_time=update_time)
+        sa_session.execute(implicit_statement)
+        sa_session.execute(explicit_statement)
+
     def set_final_state(self, final_state):
         self.set_state(final_state)
         # TODO: migrate to where-in subqueries?
@@ -1186,9 +1201,12 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             WHERE job_id = :job_id;
         '''
         sa_session = object_session(self)
+        update_time = galaxy.model.orm.now.now()
+        log.debug(f'Final state update time: {update_time}')
+        self.update_hdca_update_time_for_job(update_time=update_time, sa_session=sa_session)
         params = {
             'job_id': self.id,
-            'update_time': galaxy.model.orm.now.now()
+            'update_time': update_time
         }
         sa_session.execute(statement, params)
 
@@ -1256,11 +1274,13 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             );
         ''']
         sa_session = object_session(self)
+        update_time = galaxy.model.orm.now.now()
+        self.update_hdca_update_time_for_job(update_time=update_time, sa_session=sa_session)
         params = {
             'job_id': self.id,
             'state': self.state,
             'info': self.info,
-            'update_time': galaxy.model.orm.now.now()
+            'update_time': update_time
         }
         for statement in statements:
             sa_session.execute(statement, params)
