@@ -5,7 +5,7 @@ echo '${species}' > '${output}'
   ]]></command>
   <inputs>
     <param name="input" type="data" format="maf" label="MAF File"/>
-    <param name="species" type="select" optional="False" label="Select species for the input dataset" multiple="True">
+    <param name="species" type="select" optional="false" label="Select species for the input dataset" multiple="true">
         <options from_dataset="input" meta_file_key="species_chromosomes" >
             <column name="name" index="0"/>
             <column name="value" index="0"/>
