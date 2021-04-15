@@ -4,28 +4,26 @@ import { content$, dscContent$, buildContentId, buildCollectionId } from "./db/o
 import { monitorQuery } from "./db/monitorQuery";
 import { SearchParams } from "../model/SearchParams";
 import { deepEqual } from "deep-equal";
-import { hydrate, shareButDie, show } from "utils/observable";
+import { hydrate, shareButDie } from "utils/observable";
 import { SEEK } from "./enums";
 
 // history contents monitor
 export const monitorHistoryContent = (cfg = {}) => {
-    const { aggregationKeyField = "hid", ...moreCfg } = cfg;
     return twoWayMonitor({
-        ...moreCfg,
+        ...cfg,
         db$: content$,
         buildRequest: buildContentPouchRequest,
-        aggregationKeyField,
+        aggregationKeyField: "hid",
     });
 };
 
 // collection contents monitor
 export const monitorCollectionContent = (cfg = {}) => {
-    const { aggregationKeyField = "element_index", ...moreCfg } = cfg;
     return twoWayMonitor({
-        ...moreCfg,
+        ...cfg,
         db$: dscContent$,
         buildRequest: buildCollectionPouchRequest,
-        aggregationKeyField,
+        aggregationKeyField: "element_index",
     });
 };
 
@@ -47,7 +45,6 @@ export const twoWayMonitor = (cfg = {}) => (src$) => {
     } = cfg;
 
     const input$ = src$.pipe(
-        show(debug, ([id, filters, hid]) => console.log("twoWayMonitor inputs", id, hid)),
         hydrate([undefined, SearchParams]), 
         shareButDie(1)
     );
@@ -56,18 +53,14 @@ export const twoWayMonitor = (cfg = {}) => (src$) => {
     const up$ = input$.pipe(
         map(buildRequest({ seek: SEEK.ASC, pageSize })),
         distinctUntilChanged(deepEqual),
-        show(debug, (req) => console.log("twoWayMonitor request (up)", req.selector)),
         monitorQuery({ db$, inputDebounce, debug, label: "up" }),
-        show(debug, ({ doc, match }) => console.log("twoWayMonitor response (up)", doc[aggregationKeyField], match)),
     );
 
     // current page + next page = 2 pages down
     const down$ = input$.pipe(
         map(buildRequest({ seek: SEEK.DESC, pageSize })),
         distinctUntilChanged(deepEqual),
-        show(debug, (req) => console.log("twoWayMonitor request (down)", req.selector)),
         monitorQuery({ db$, inputDebounce, debug, label: "down" }),
-        show(debug, ({ doc, match }) => console.log("twoWayMonitor response (down)", doc[aggregationKeyField], match)),
     );
 
     const change$ = merge(up$, down$).pipe(
@@ -78,10 +71,6 @@ export const twoWayMonitor = (cfg = {}) => (src$) => {
             const { match, doc, ...more} = response;
             const key = doc[aggregationKeyField];
             return match ? { key, match, doc, ...more } : { key, match, ...more };
-        }),
-        show(debug, update => {
-            const { key, match } = update;
-            console.log("monitorHistoryContent change", key, match);
         }),
     );
 
@@ -103,7 +92,7 @@ export const buildContentPouchRequest = (cfg = {}) => (inputs) => {
     const targetId = buildContentId({ history_id, hid });
 
     // SEEK.ASC means the top seek, HID > target
-    const comparator = seek == SEEK.ASC ? "$gt" : "$lte";
+    const comparator = seek == SEEK.ASC ? "$gte" : "$lte";
 
     // one page above the target, then 2 after to get the current page and some buffer
     const pages = seek == SEEK.ASC ? 1 : 2;
@@ -143,7 +132,7 @@ export const buildCollectionPouchRequest = (cfg = {}) => (inputs) => {
     const targetId = buildCollectionId({ parent_url, element_index });
 
     // SEEK.ASC means above the target means element_index < target
-    const comparator = seek == SEEK.ASC ? "$lt" : "$gte";
+    const comparator = seek == SEEK.ASC ? "$lte" : "$gte";
 
     // 3 pages total, 1 before, the current one, 1 after;
     const pages = seek == SEEK.ASC ? 1 : 2;

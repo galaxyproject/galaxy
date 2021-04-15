@@ -87,7 +87,7 @@ export const ContentProvider = {
 
         initStreams() {
             console.warn("Override initStreams in ContentProvider");
-            return { cache$: NEVER, loader$: NEVER, loading$: NEVER, scrolling$: NEVER };
+            return { payload$: NEVER, loading$: NEVER, scrolling$: NEVER };
         },
 
         /**

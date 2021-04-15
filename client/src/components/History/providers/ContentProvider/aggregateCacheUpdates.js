@@ -1,7 +1,7 @@
 // Generalized bi-directional watch and aggregator.
 // Looks at cache from starting index, then looks up and down
 
-import { timer, throwError, from } from "rxjs";
+import { throwError, from, EMPTY } from "rxjs";
 import {
     map,
     debounceTime,
@@ -11,6 +11,8 @@ import {
     mergeMap,
     switchMap,
     withLatestFrom,
+    timeoutWith,
+    ignoreElements,
 } from "rxjs/operators";
 import { chunk, show, debounceBurst, shareButDie } from "utils/observable";
 import { SearchParams } from "../../model/SearchParams";
@@ -66,15 +68,22 @@ export const aggregateCacheUpdates = (monitor, cfg = {}) => (src$) => {
     // Monitor generation function is passed in via config so we can use it against different types of queries
     const cacheUpdates$ = monitorInputKey$.pipe(
         switchMap(monitor),
-        // show(debug, (change) => console.log("monitor output", change)),
+        show(debug, (change) => console.log("monitor output", change)),
     );
 
     // groups updates by skiplist key and debounces those
     // streams individually so we're not pointlessly updating
     // when we're just going to change it again shortly
-    const groupTimeout = () => timer(updateGroupLifetime);
     const groupedUpdates$ = cacheUpdates$.pipe(
-        groupBy(update => update.key, undefined, groupTimeout),
+        groupBy(
+            update => update.key, 
+            update => update, 
+            updateByKey$ => updateByKey$.pipe(
+                timeoutWith(updateGroupLifetime, EMPTY), 
+                ignoreElements()
+            )
+        ),
+        // eliminates rapid double updates to same item
         mergeMap(updateByKey$ => updateByKey$.pipe(
             debounceTime(0.25 * debouncePeriod),
         )),

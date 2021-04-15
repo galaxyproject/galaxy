@@ -51,8 +51,7 @@ export function processContentStreams(payloadOperator, sources = {}, settings = 
     const payload$ = loaderReset$.pipe(
         switchMap(([parent, filters]) => pos$.pipe(
             show(debug, pos => {
-                // console.clear();
-                console.log("----------------------------------------------")
+                console.clear();
                 console.log("processContentStreams: pos", JSON.stringify(pos));
             }),
             payloadOperator({ parent, filters, loading$, ...settings }),

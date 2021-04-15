@@ -2,7 +2,7 @@
 
 <template>
     <DscProvider :is-root="isRoot" :debounce-period="500" :collection="selectedCollection" v-slot="{ dsc }">
-        <CollectionContentProvider v-if="dsc" :parent="dsc" :debug="true" v-slot="{ loading, payload, setScrollPos }">
+        <CollectionContentProvider v-if="dsc" :parent="dsc" :debug="false" v-slot="{ loading, payload, setScrollPos }">
             <ExpandedItems
                 :scope-key="selectedCollection.id"
                 :get-item-key="(item) => item.type_id"
