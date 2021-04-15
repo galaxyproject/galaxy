@@ -8,7 +8,7 @@ SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 EMBEDDED_PULSAR_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "embedded_pulsar_metadata_job_conf.yml")
 
 
-class EmbeddedMetadataPulsarIntegrationInstance(integration_util.IntegrationInstance):
+class EmbeddedAndExtendedMetadataPulsarIntegrationInstance(integration_util.IntegrationInstance):
     """Describe a Galaxy test instance with embedded pulsar configured."""
 
     framework_tool_and_types = True
@@ -21,7 +21,7 @@ class EmbeddedMetadataPulsarIntegrationInstance(integration_util.IntegrationInst
         config['retry_metadata_internally'] = False
 
 
-instance = integration_util.integration_module_instance(EmbeddedMetadataPulsarIntegrationInstance)
+instance = integration_util.integration_module_instance(EmbeddedAndExtendedMetadataPulsarIntegrationInstance)
 
 test_tools = integration_util.integration_tool_runner(
     [
