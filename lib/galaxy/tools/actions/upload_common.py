@@ -170,12 +170,21 @@ def handle_library_params(trans, params, folder_id, replace_dataset=None):
     return library_bunch
 
 
+def __uploaded_dataset_metadata(uploaded_dataset):
+    metadata = {}
+    if uploaded_dataset.type == 'url':
+        metadata['source_url'] = uploaded_dataset.path
+    return metadata or None
+
+
 def __new_history_upload(trans, uploaded_dataset, history=None, state=None):
     if not history:
         history = trans.history
+    metadata = __uploaded_dataset_metadata(uploaded_dataset)
     hda = trans.app.model.HistoryDatasetAssociation(name=uploaded_dataset.name,
                                                     extension=uploaded_dataset.file_type,
                                                     dbkey=uploaded_dataset.dbkey,
+                                                    metadata=metadata,
                                                     history=history,
                                                     create_dataset=True,
                                                     sa_session=trans.sa_session)
@@ -220,9 +229,11 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_h
         trans.sa_session.add(ld)
         trans.sa_session.flush()
         trans.app.security_agent.copy_library_permissions(trans, folder, ld)
+    metadata = __uploaded_dataset_metadata(uploaded_dataset)
     ldda = trans.app.model.LibraryDatasetDatasetAssociation(name=uploaded_dataset.name,
                                                             extension=uploaded_dataset.file_type,
                                                             dbkey=uploaded_dataset.dbkey,
+                                                            metadata=metadata,
                                                             library_dataset=ld,
                                                             user=trans.user,
                                                             create_dataset=True,
