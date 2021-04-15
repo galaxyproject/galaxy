@@ -5,18 +5,18 @@
             <span v-localize>This history is empty.</span>
         </h4>
         <p>
-            <a href="#" @click.prevent="openUploader" v-localize>You can load your own data</a> or
+            <a href="#" @click.prevent="openGlobalUploadModal" v-localize>You can load your own data</a> or
             <a href="#" @click.prevent="clickDataLink" v-localize>get data from an external source</a>.
         </p>
     </b-alert>
 </template>
 
 <script>
+import { openGlobalUploadModal } from "components/Upload";
+
 export default {
     methods: {
-        openUploader() {
-            this.eventHub.$emit("upload:open");
-        },
+        openGlobalUploadModal,
         clickDataLink() {
             this.eventHub.$emit("openToolSection", "getext");
         },
