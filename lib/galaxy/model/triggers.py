@@ -71,7 +71,9 @@ def get_timestamp_install_sql(variant):
 
 
 def get_timestamp_drop_sql(variant):
-    """generate a list of statements to drop the timestammp update triggers"""
+    """
+    Generate a list of statements to drop the timestamp update triggers
+    """
 
     sql = []
 
@@ -79,8 +81,9 @@ def get_timestamp_drop_sql(variant):
         sql.append("DROP FUNCTION IF EXISTS update_history_update_time() CASCADE;")
     else:
         for operation in ['INSERT', 'UPDATE', 'DELETE']:
-            sql.append(build_drop_trigger(operation, 'history_dataset_association'))
-            sql.append(build_drop_trigger(operation, 'history_dataset_collection_association'))
+            for when in ['BEFORE', 'AFTER']:
+                sql.append(build_drop_trigger(operation, 'history_dataset_association', when))
+                sql.append(build_drop_trigger(operation, 'history_dataset_collection_association', when))
 
     return sql
 
