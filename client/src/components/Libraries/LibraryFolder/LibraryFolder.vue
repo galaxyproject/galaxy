@@ -295,6 +295,18 @@ initFolderTableIcons();
 
 Vue.use(BootstrapVue);
 
+function initialFolderState() {
+    return {
+        selected: [],
+        unselected: [],
+        expandedMessage: [],
+        folderContents: [],
+        include_deleted: false,
+        search_text: "",
+        isAllSelectedMode: false,
+        currentPage: 1,
+    };
+}
 export default {
     props: {
         folder_id: {
@@ -309,27 +321,19 @@ export default {
     },
     data() {
         return {
-            current_folder_id: null,
-            error: null,
-            isBusy: false,
-            folder_metadata: {},
-            currentPage: 1,
-            fields: fields,
-            selectMode: "multi",
-            selected: [],
-            unselected: [],
-            expandedMessage: [],
-            folderContents: [],
-            perPage: DEFAULT_PER_PAGE,
-            maxDescriptionLength: MAX_DESCRIPTION_LENGTH,
-            filter: null,
-            include_deleted: false,
-            filterOn: [],
-            search_text: "",
-            isAllSelectedMode: false,
-            total_rows: 0,
-            deselectedDatasets: [],
-            root: getAppRoot(),
+            ...initialFolderState(),
+            ...{
+                current_folder_id: null,
+                error: null,
+                isBusy: false,
+                folder_metadata: {},
+                fields: fields,
+                selectMode: "multi",
+                perPage: DEFAULT_PER_PAGE,
+                maxDescriptionLength: MAX_DESCRIPTION_LENGTH,
+                total_rows: 0,
+                root: getAppRoot(),
+            },
         };
     },
     created() {
@@ -339,8 +343,12 @@ export default {
     methods: {
         initFolder(folder_id) {
             this.current_folder_id = folder_id;
-            this.folderContents = [];
+            this.resetData();
             this.fetchFolderContents(this.include_deleted);
+        },
+        resetData() {
+            const data = initialFolderState();
+            Object.keys(data).forEach((k) => (this[k] = data[k]));
         },
         fetchFolderContents(include_deleted = false) {
             this.include_deleted = include_deleted;
