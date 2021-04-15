@@ -3430,9 +3430,10 @@ and demonstrates generating options from a dataset directly.
 </param>
 ```
 
-The ``meta_file_key`` can be used together with ``from_dataset``. In such cases,
-options are generated using the dataset's medadata file that the ``meta_file_key``
-implies, instead of the dataset itself.
+Starting from Galaxy v21.01, ``meta_file_key`` can be used together with
+``from_dataset``. In such cases, options are generated using the dataset's
+medadata file that the ``meta_file_key`` implies, instead of the dataset
+itself.
 
 ```xml
 <param name="input" type="data" format="maf" label="MAF File"/>
@@ -3441,6 +3442,14 @@ implies, instead of the dataset itself.
         <column name="name" index="0"/>
         <column name="value" index="0"/>
     </options>
+</param>
+<param name="input_2" type="data_collection" collection_type="list" format="maf" label="MAF Collection" multiple="true" />
+<param name="species_2" type="select" optional="false" label="Select species for the input dataset" multiple="true">
+    <options from_dataset="input_2" meta_file_key="species_chromosomes" >
+        <column name="name" index="0"/>
+        <column name="value" index="0"/>
+        <filter type="unique_value" name="unique_param" column="0"/>
+  </options>
 </param>
 ```
 
