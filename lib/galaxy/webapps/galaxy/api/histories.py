@@ -334,6 +334,8 @@ class HistoriesController(BaseGalaxyAPIController, ExportsHistoryMixin, ImportsH
         :rtype:     dict
         :returns:   element view of new history
         """
+        if not trans.galaxy_session:
+            raise exceptions.MessageException("Only users with a session can create histories.")
         hist_name = None
         if payload.get('name', None):
             hist_name = restore_text(payload['name'])
