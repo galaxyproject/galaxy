@@ -37,6 +37,7 @@ from sqlalchemy import (
     true,
     type_coerce,
     types)
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext import hybrid
 from sqlalchemy.orm import (
     aliased,
@@ -1177,22 +1178,36 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
 
         return rval
 
-    def update_hdca_update_time_for_job(self, update_time, sa_session):
+    def update_hdca_update_time_for_job(self, update_time, sa_session, supports_skip_locked):
         subq = sa_session.query(HistoryDatasetCollectionAssociation.id) \
             .join(ImplicitCollectionJobs) \
             .join(ImplicitCollectionJobsJobAssociation) \
-            .filter(ImplicitCollectionJobsJobAssociation.job_id == self.id) \
-            .with_for_update(skip_locked=True).subquery()
+            .filter(ImplicitCollectionJobsJobAssociation.job_id == self.id)
+        if supports_skip_locked:
+            subq = subq.with_for_update(skip_locked=True).subquery()
         implicit_statement = HistoryDatasetCollectionAssociation.table.update() \
             .where(HistoryDatasetCollectionAssociation.table.c.id.in_(subq)) \
             .values(update_time=update_time)
         explicit_statement = HistoryDatasetCollectionAssociation.table.update() \
             .where(HistoryDatasetCollectionAssociation.table.c.job_id == self.id) \
             .values(update_time=update_time)
-        sa_session.execute(implicit_statement)
         sa_session.execute(explicit_statement)
+        if supports_skip_locked:
+            sa_session.execute(implicit_statement)
+        else:
+            conn = sa_session.connection(execution_options={'isolation_level': 'SERIALIZABLE'})
+            with conn.begin() as trans:
+                try:
+                    conn.execute(implicit_statement)
+                    trans.commit()
+                except OperationalError as e:
+                    # If this is a serialization failure on PostgreSQL, then e.orig is a psycopg2 TransactionRollbackError
+                    # and should have attribute `code`. Other engines should just report the message and move on.
+                    if int(getattr(e.orig, 'pgcode', -1)) != 40001:
+                        log.debug(f"Updating implicit collection uptime_time for job {self.id} failed (this is expected for large collections and not a problem): {unicodify(e)}")
+                    trans.rollback()
 
-    def set_final_state(self, final_state):
+    def set_final_state(self, final_state, supports_skip_locked):
         self.set_state(final_state)
         # TODO: migrate to where-in subqueries?
         statement = '''
@@ -1202,8 +1217,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         '''
         sa_session = object_session(self)
         update_time = galaxy.model.orm.now.now()
-        log.debug(f'Final state update time: {update_time}')
-        self.update_hdca_update_time_for_job(update_time=update_time, sa_session=sa_session)
+        self.update_hdca_update_time_for_job(update_time=update_time, sa_session=sa_session, supports_skip_locked=supports_skip_locked)
         params = {
             'job_id': self.id,
             'update_time': update_time
@@ -1230,7 +1244,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         for dataset_assoc in self.output_datasets:
             return dataset_assoc.dataset.tool_version
 
-    def update_output_states(self):
+    def update_output_states(self, supports_skip_locked):
         # TODO: migrate to where-in subqueries?
         statements = ['''
             UPDATE dataset
@@ -1275,7 +1289,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         ''']
         sa_session = object_session(self)
         update_time = galaxy.model.orm.now.now()
-        self.update_hdca_update_time_for_job(update_time=update_time, sa_session=sa_session)
+        self.update_hdca_update_time_for_job(update_time=update_time, sa_session=sa_session, supports_skip_locked=supports_skip_locked)
         params = {
             'job_id': self.id,
             'state': self.state,
