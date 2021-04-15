@@ -1,32 +1,64 @@
 <template>
     <div v-if="node">
-        <FormElement
-            id="__label"
-            :value="node.label"
-            title="Label"
-            help="Add a step label."
-            @onChange="onLabel"
-            :error="errorLabel"
-        />
-        <FormElement
-            id="__annotation"
-            :value="node.annotation"
-            title="Step Annotation"
-            :area="true"
-            help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
-            @onChange="onAnnotation"
-        />
-        <Form :inputs="inputs" />
+        <FormCard :title="node.name">
+            <template v-slot:operations>
+                <b-button
+                    v-if="isSubworkflow"
+                    role="button"
+                    title="Edit this Subworkflow. You will need to upgrade this Workflow Step afterwards."
+                    variant="link"
+                    size="sm"
+                    class="float-right py-0 px-1"
+                    v-b-tooltip.hover
+                    @click="onEditSubworkflow"
+                >
+                    <span class="fa fa-pencil-alt" />
+                </b-button>
+                <b-button
+                    v-if="isSubworkflow"
+                    role="button"
+                    title="Upgrade this Workflow Step to latest Subworkflow version."
+                    variant="link"
+                    size="sm"
+                    class="float-right py-0 px-1"
+                    v-b-tooltip.hover
+                    @click="onUpgradeSubworkflow"
+                >
+                    <span class="fa fa-sync" />
+                </b-button>
+            </template>
+            <template v-slot:body>
+                <FormElement
+                    id="__label"
+                    :value="node.label"
+                    title="Label"
+                    help="Add a step label."
+                    @onChange="onLabel"
+                    :error="errorLabel"
+                />
+                <FormElement
+                    id="__annotation"
+                    :value="node.annotation"
+                    title="Step Annotation"
+                    :area="true"
+                    help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
+                    @onChange="onAnnotation"
+                />
+                <Form :inputs="inputs" />
+            </template>
+        </FormCard>
     </div>
 </template>
 
 <script>
 import Form from "components/Form/Form";
+import FormCard from "components/Form/FormCard";
 import FormElement from "components/Form/FormElement";
 
 export default {
     components: {
         Form,
+        FormCard,
         FormElement,
     },
     props: {
@@ -58,6 +90,9 @@ export default {
         workflow() {
             return this.getManager();
         },
+        isSubworkflow() {
+            return this.node.type == "subworkflow";
+        },
     },
     methods: {
         onAnnotation(newAnnotation) {
@@ -78,6 +113,14 @@ export default {
             } else {
                 this.errorLabel = "";
             }
+        },
+        onEditSubworkflow() {
+            this.workflow.onEditSubworkflow(this.node.content_id);
+        },
+        onUpgradeSubworkflow() {
+            this.workflow.onAttemptRefactor([
+                { action_type: "upgrade_subworkflow", step: { order_index: parseInt(this.node.id) } },
+            ]);
         },
     },
 };
