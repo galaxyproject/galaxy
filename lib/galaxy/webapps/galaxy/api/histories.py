@@ -334,6 +334,8 @@ class HistoriesController(BaseGalaxyAPIController, ExportsHistoryMixin, ImportsH
         :rtype:     dict
         :returns:   element view of new history
         """
+        if trans.user.bootstrap_admin_user:
+            raise exceptions.RealUserRequiredException("Only real users can create histories.")
         hist_name = None
         if payload.get('name', None):
             hist_name = restore_text(payload['name'])
