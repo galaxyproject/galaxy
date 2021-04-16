@@ -89,7 +89,8 @@
                 <slot name="body" />
             </div>
         </div>
-        <div>
+        <div class="m-1">
+            <ToolHelp :content="options.help" />
             <ToolFooter
                 :id="options.id"
                 :hasCitations="options.citations"
@@ -108,11 +109,13 @@ import { getAppRoot } from "onload/loadConfig";
 import ariaAlert from "utils/ariaAlert";
 import { copy } from "utils/clipboard";
 import ToolFooter from "components/Tool/ToolFooter";
+import ToolHelp from "components/Tool/ToolHelp";
 import Webhooks from "mvc/webhooks";
 
 export default {
     components: {
         ToolFooter,
+        ToolHelp,
     },
     props: {
         id: {
