@@ -35,6 +35,7 @@ import Form from "components/Form/Form";
 import FormCardTool from "components/Form/FormCardTool";
 import FormElement from "components/Form/FormElement";
 import { checkLabels } from "components/Workflow/Editor/modules/utilities";
+import Utils from "utils/utils";
 
 export default {
     components: {
@@ -72,7 +73,30 @@ export default {
             return this.node.id;
         },
         inputs() {
-            return this.node.config_form.inputs;
+            const inputs = this.node.config_form.inputs;
+            Utils.deepeach(inputs, (input) => {
+                if (input.type) {
+                    if (["data", "data_collection"].indexOf(input.type) != -1) {
+                        input.hiddenInWorkflow = true;
+                        input.info = `Data input '${input.name}' (${Utils.textify(input.extensions)})`;
+                        input.value = { __class__: "RuntimeValue" };
+                    } else if (!input.fixed) {
+                        input.connectable = true;
+                        input.collapsible_value = {
+                            __class__: "RuntimeValue",
+                        };
+                        input.is_workflow =
+                            (input.options && input.options.length === 0) || ["integer", "float"].indexOf(input.type) != -1;
+                    }
+                }
+            });
+            Utils.deepeach(inputs, (input) => {
+                if (input.type === "conditional") {
+                    input.connectable = false;
+                    input.test_param.collapsible_value = undefined;
+                }
+            });
+            return inputs;
         },
     },
     methods: {
