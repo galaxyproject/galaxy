@@ -57,17 +57,6 @@
 
                     <template v-slot:listing>
                         <HistoryEmpty v-if="history.empty" class="m-2" />
-                        <!-- <div v-else>
-                            <input
-                                type="range"
-                                min="0.0"
-                                max="1.0"
-                                step="0.1"
-                                :value="scrollPos.cursor"
-                                @input="setScrollPos({ cursor: 1.0 * $event.srcElement.value })"
-                            />
-                            <pre>{{ payload | reportPayload }}</pre>
-                        </div> -->
                         <Scroller
                             v-else
                             :class="{ loadingBackground: loading }"
