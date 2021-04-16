@@ -80,8 +80,11 @@ class IdEncodingHelper:
         return rval
 
     def decode_id(self, obj_id, kind=None):
-        id_cipher = self.__id_cipher(kind)
-        return int(unicodify(id_cipher.decrypt(codecs.decode(obj_id, 'hex'))).lstrip("!"))
+        try:
+            id_cipher = self.__id_cipher(kind)
+            return int(unicodify(id_cipher.decrypt(codecs.decode(obj_id, 'hex'))).lstrip("!"))
+        except (ValueError, TypeError):
+            raise galaxy.exceptions.MalformedId(f"Malformed id ( {obj_id} ) specified, unable to decode")
 
     def encode_guid(self, session_key):
         # Session keys are strings
