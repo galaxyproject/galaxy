@@ -99,26 +99,47 @@ class PermissionProvider(AbstractPermissionProvider):
 
 
 class MetadataSourceProvider(AbstractMetadataSourceProvider):
-    def __init__(self, inp_data):
-        self._inp_data = inp_data
+
+    def __init__(self, inp_data, inp_collections):
+        if inp_data:
+            self._inp_data = inp_data
+        else:
+            self._inp_data = []
+        if inp_collections:
+            self._inp_collections = inp_collections
+        else:
+            self._inp_collections = []
 
     def get_metadata_source(self, input_name):
         log.error(f"MetadataSourceProvider.get_metadata_source self._inp_data {self._inp_data}")
+        log.error(f"MetadataSourceProvider.get_metadata_source self._inp_collections {self._inp_collections}")
         log.error(f"MetadataSourceProvider.get_metadata_source input_name {input_name}")
-        return self._inp_data[input_name]
+        if input_name in self._inp_data:
+            return self._inp_data[input_name]
+        elif input_name in self._inp_collections:
+            # TODO maybe skip this test for performance
+            extensions = set()
+            for element in self._inp_collections[input_name].dataset_instances:
+                extensions.add(element.extension)
+            if len(extensions) != 1:
+                log.error("cannot determine metadata source for {input_name}: collection contains datasets with different data types")
+                raise KeyError
+            return self._inp_collections[input_name].dataset_instances[0]
+        else:
+            raise KeyError
 
 
 def evaluate_source(source, output_collection_def, metadata_source_provider):
     log.error(f"evaluate_format_source output_collection_def {output_collection_def}")
-    log.error(f"evaluate_format_source metadata_source_provider {metadata_source_provider}") 
+    log.error(f"evaluate_format_source metadata_source_provider {metadata_source_provider}")
 
-    ext = None
     source_name = getattr(output_collection_def, source)
     if source_name is None:
         return None
     source = metadata_source_provider.get_metadata_source(source_name)
     return source.ext
 
+    # ext = None
     # if format_source is not None and format_source in input_datasets:
     #     try:
     #         input_dataset = input_datasets[output.format_source]
