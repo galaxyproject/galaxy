@@ -41,8 +41,7 @@ ENV LANG=en_US.UTF-8
 
 # Install build dependencies + ansible
 RUN set -xe; \
-    echo "force-unsafe-io" > /etc/dpkg/dpkg.cfg.d/02apt-speedup \
-    && echo "Acquire::http {No-Cache=True;};" > /etc/apt/apt.conf.d/no-cache \
+    echo "Acquire::http {No-Cache=True;};" > /etc/apt/apt.conf.d/no-cache \
     && apt-get -qq update && apt-get install -y --no-install-recommends \
         locales locales-all \
         git \
@@ -123,10 +122,8 @@ ARG GALAXY_USER
 ENV LC_ALL=en_US.UTF-8
 ENV LANG=en_US.UTF-8
 
-# Install python-virtualenv
 RUN set -xe; \
-    echo "force-unsafe-io" > /etc/dpkg/dpkg.cfg.d/02apt-speedup \
-    && echo "Acquire::http {No-Cache=True;};" > /etc/apt/apt.conf.d/no-cache \
+    echo "Acquire::http {No-Cache=True;};" > /etc/apt/apt.conf.d/no-cache \
     && apt-get -qq update && apt-get install -y --no-install-recommends \
         locales \
         vim-tiny \
