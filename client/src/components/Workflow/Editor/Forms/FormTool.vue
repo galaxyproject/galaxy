@@ -124,20 +124,25 @@ export default {
             ]);
         },
         onChange(values) {
+            const options = this.node.config_form;
             axios
                 .post(`${getAppRoot()}api/workflows/build_module`, {
-                    id: this.node.id,
-                    type: this.node.type,
-                    content_id: this.node.content_id,
-                    inputs: values,
+                    tool_id: options.id,
+                    tool_version: options.version,
+                    type: "tool",
+                    inputs: Object.assign({}, values),
                 })
-                .then((response) => {
-                    const data = response.data;
+                .then(({ data }) => {
                     this.node.config_form = data.config_form;
                     this.node.tool_state = data.tool_state;
                     this.node.inputs = data.inputs ? data.inputs.slice() : [];
                     this.node.outputs = data.outputs ? data.outputs.slice() : [];
-                });
+                    //self.form.model.set(this.node.config_form);
+                    //self.form.update(this.node.config_form);
+                    //self.form.errors(this.node.config_form);
+                    //self._customize(this.node);
+                    //process.resolve();
+                })
         },
     },
 };
