@@ -3509,37 +3509,37 @@ used to generate dynamic options.
     </xs:sequence>
     <xs:attribute name="from_dataset" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for from_dataset</xs:documentation>
+        <xs:documentation xml:lang="en">Determine options from the data set given in the referred input parameter. If 'meta_file_key' is given the options are determined from the data in the metadata file of the input.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="from_file" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for from_file</xs:documentation>
+        <xs:documentation xml:lang="en">Deprecated.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="from_data_table" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for from_data_table</xs:documentation>
+        <xs:documentation xml:lang="en">Determine options from a data table. </xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="from_parameter" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for from_parameter</xs:documentation>
+        <xs:documentation xml:lang="en">Deprecated.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="options_filter_attribute" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for options_filter_attribute</xs:documentation>
+        <xs:documentation xml:lang="en">Deprecated.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="transform_lines" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for transform_lines</xs:documentation>
+        <xs:documentation xml:lang="en">Deprecated.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="startswith" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for startswith</xs:documentation>
+        <xs:documentation xml:lang="en">Ignore lines starting with the given character.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="meta_file_key" type="xs:string">
