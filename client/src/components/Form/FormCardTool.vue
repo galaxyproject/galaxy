@@ -2,7 +2,50 @@
     <div class="ui-portlet-section">
         <div class="portlet-header">
             <div class="portlet-operations">
-                <slot name="operations" />
+                <b-dropdown
+                    no-caret
+                    right
+                    role="button"
+                    title="Options"
+                    variant="link"
+                    aria-label="View all Options"
+                    class="float-right py-0 px-1"
+                    button-class="p-0"
+                    size="sm"
+                    v-b-tooltip.hover
+                >
+                    <template v-slot:button-content>
+                        <span class="fa fa-caret-down" />
+                    </template>
+                    <b-dropdown-item @click="onCopyLink"> <span class="fa fa-chain" /> Copy Link </b-dropdown-item>
+                    <b-dropdown-item @click="onCopyId"> <span class="fa fa-files-o" /> Copy Tool ID </b-dropdown-item>
+                    <b-dropdown-item v-if="showDownload" @click="onDownload">
+                        <span class="fa fa-download" /> Download
+                    </b-dropdown-item>
+                    <b-dropdown-item v-if="showLink" @click="onLink">
+                        <span class="fa fa-external-link" /> See in Tool Shed
+                    </b-dropdown-item>
+                </b-dropdown>
+                <b-dropdown
+                    v-if="showVersions"
+                    no-caret
+                    right
+                    role="button"
+                    title="Versions"
+                    variant="link"
+                    aria-label="Select Versions"
+                    class="float-right py-0 px-1"
+                    button-class="p-0"
+                    size="sm"
+                    v-b-tooltip.hover
+                >
+                    <template v-slot:button-content>
+                        <span class="fa fa-cubes" />
+                    </template>
+                    <b-dropdown-item v-for="v of reversedVersions" :key="v" @click="$emit('changeVersion', v)">
+                        <span class="fa fa-cube" /> Switch to {{ v }}
+                    </b-dropdown-item>
+                </b-dropdown>
                 <b-button
                     v-if="showAddFavorite"
                     role="button"
@@ -27,26 +70,6 @@
                 >
                     <span class="fa fa-star" />
                 </b-button>
-                <b-dropdown
-                    v-if="showVersions"
-                    no-caret
-                    right
-                    role="button"
-                    title="Versions"
-                    variant="link"
-                    aria-label="Select Versions"
-                    class="float-right py-0 px-1"
-                    button-class="p-0"
-                    size="sm"
-                    v-b-tooltip.hover
-                >
-                    <template v-slot:button-content class="p-0">
-                        <span class="fa fa-cubes" />
-                    </template>
-                    <b-dropdown-item v-for="v of reversedVersions" :key="v" @click="$emit('changeVersion', v)">
-                        <span class="fa fa-cube" /> Switch to {{ v }}
-                    </b-dropdown-item>
-                </b-dropdown>
             </div>
             <div class="portlet-title">
                 <i class="portlet-title-icon fa mr-1 fa-wrench" style="display: inline"></i>
@@ -62,10 +85,11 @@
     </div>
 </template>
 <script>
+import axios from "axios";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
 import ariaAlert from "utils/ariaAlert";
-import axios from "axios";
+import { copy } from "utils/clipboard";
 
 export default {
     props: {
@@ -93,6 +117,10 @@ export default {
             type: Boolean,
             default: false,
         },
+        sharableUrl: {
+            type: String,
+            required: false,
+        },
     },
     data() {
         return {
@@ -108,6 +136,13 @@ export default {
         },
         reversedVersions() {
             return this.versions.reverse();
+        },
+        showDownload() {
+            const user = this.getUser();
+            return user && user.get("is_admin");
+        },
+        showLink() {
+            return this.sharableUrl;
         },
     },
     methods: {
@@ -137,6 +172,21 @@ export default {
                     this.isFavorite = this.getFavorite();
                     ariaAlert("removed from favorites");
                 });
+        },
+        onCopyLink() {
+            copy(
+                `${window.location.origin + getAppRoot()}root?tool_id=${this.id}`,
+                "Link was copied to your clipboard"
+            );
+        },
+        onCopyId() {
+            copy(`${options.id}`, "Tool ID was copied to your clipboard");
+        },
+        onDownload() {
+            window.location.href = `${getAppRoot()}api/tools/${this.id}/download`;
+        },
+        onLink() {
+            window.open(this.sharableUrl);
         },
     },
 };

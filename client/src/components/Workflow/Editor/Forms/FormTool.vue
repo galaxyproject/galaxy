@@ -5,6 +5,7 @@
         :description="node.config_form.description"
         :version="node.config_form.version"
         :versions="node.config_form.versions"
+        :sharable-url="node.config_form.sharable_url"
     >
         <template v-slot:body>
             <FormElement
