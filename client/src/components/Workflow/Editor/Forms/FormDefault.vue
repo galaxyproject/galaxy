@@ -44,7 +44,7 @@
                     help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
                     @onChange="onAnnotation"
                 />
-                <Form :inputs="inputs" @onChange="onChange" />
+                <Form :id="id" :inputs="inputs" @onChange="onChange" />
             </template>
         </FormCard>
     </div>
@@ -86,11 +86,14 @@ export default {
         node() {
             return this.getNode();
         },
-        inputs() {
-            return this.getNode().config_form.inputs;
-        },
         workflow() {
             return this.getManager();
+        },
+        id() {
+            return this.node.id;
+        },
+        inputs() {
+            return this.node.config_form.inputs;
         },
         isSubworkflow() {
             return this.node.type == "subworkflow";
@@ -134,7 +137,10 @@ export default {
                 })
                 .then((response) => {
                     const data = response.data;
-                    this.node.updateData(data);
+                    this.node.config_form = data.config_form;
+                    this.node.tool_state = data.tool_state;
+                    this.node.inputs = data.inputs ? data.inputs.slice() : [];
+                    this.node.outputs = data.outputs ? data.outputs.slice() : [];
                 });
         },
     },

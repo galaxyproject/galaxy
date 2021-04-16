@@ -7,13 +7,17 @@ import Form from "mvc/form/form-view";
 
 export default {
     props: {
+        id: {
+            type: String,
+            required: true,
+        },
         inputs: {
             type: Array,
             required: true,
         },
     },
     watch: {
-        inputs() {
+        id() {
             this.onRender();
         },
     },
