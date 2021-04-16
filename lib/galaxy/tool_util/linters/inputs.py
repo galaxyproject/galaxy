@@ -54,6 +54,9 @@ def lint_inputs(tool_xml, lint_ctx):
                     lint_ctx.error(f'Select [{param_name}] display="radio" is incompatible with multiple="true"')
                 if string_as_bool(param_attrib.get("optional", "false")):
                     lint_ctx.error(f'Select [{param_name}] display="radio" is incompatible with optional="true"')
+
+            if dynamic_options is not None and 'meta_file_key' in dynamic_options.attrib and 'from_dataset' not in dynamic_options.attrib:
+                lint_ctx.warn(f"Attribute `meta_file_key` only works together with `from_datasets` therefore it's ignonred in Select [{param_name}]")
         # TODO: Validate type, much more...
 
     conditional_selects = tool_xml.findall("./inputs//conditional")

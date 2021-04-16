@@ -3544,7 +3544,7 @@ used to generate dynamic options.
     </xs:attribute>
     <xs:attribute name="meta_file_key" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for meta_file_key</xs:documentation>
+        <xs:documentation xml:lang="en">Works with from_dataset only. See [docs](#from-dataset)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
