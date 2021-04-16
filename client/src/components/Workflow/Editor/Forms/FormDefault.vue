@@ -1,5 +1,5 @@
 <template>
-    <FormCard :title="node.name">
+    <FormCard :title="node.name" :icon="nodeIcon">
         <template v-slot:operations>
             <b-button
                 v-if="isSubworkflow"
@@ -55,6 +55,7 @@ import Form from "components/Form/Form";
 import FormCard from "components/Form/FormCard";
 import FormElement from "components/Form/FormElement";
 import { checkLabels } from "components/Workflow/Editor/modules/utilities";
+import WorkflowIcons from "components/Workflow/icons";
 
 export default {
     components: {
@@ -84,6 +85,9 @@ export default {
     computed: {
         node() {
             return this.getNode();
+        },
+        nodeIcon() {
+            return WorkflowIcons[this.node.type];
         },
         workflow() {
             return this.getManager();

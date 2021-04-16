@@ -15,6 +15,18 @@ export default {
             type: Array,
             required: true,
         },
+        textEnable: {
+            type: String,
+            default: null,
+        },
+        textDisable: {
+            type: String,
+            default: null,
+        },
+        initialErrors: {
+            type: Boolean,
+            default: false,
+        },
     },
     watch: {
         id() {
@@ -34,6 +46,9 @@ export default {
                 this.form = new Form({
                     el,
                     inputs: this.inputs,
+                    initial_errors: this.initialErrors,
+                    text_enable: this.textEnable,
+                    text_disable: this.textDisable,
                 }).on("change", this.onChange);
                 this.onChange();
             });

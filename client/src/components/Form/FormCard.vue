@@ -5,7 +5,7 @@
                 <slot name="operations" />
             </div>
             <div class="portlet-title">
-                <i class="portlet-title-icon fa mr-1 fa-wrench" style="display: inline"></i>
+                <i :class="['portlet-title-icon fa mr-1', icon]" style="display: inline"></i>
                 <span class="portlet-title-text">
                     <b itemprop="name">{{ title }}</b> <span itemprop="description">{{ description }}</span>
                     {{ version }}
@@ -31,6 +31,10 @@ export default {
         version: {
             type: String,
             required: false,
+        },
+        icon: {
+            type: String,
+            default: "fa-wrench",
         },
     },
 };

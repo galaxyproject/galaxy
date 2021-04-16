@@ -23,7 +23,14 @@
                 help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
                 @onChange="onAnnotation"
             />
-            <Form :id="id" :inputs="inputs" @onChange="onChange" />
+            <Form
+                :id="id"
+                :inputs="inputs"
+                :initialErrors="true"
+                textEnable="Set in Advance"
+                textDisable="Set at Runtime"
+                @onChange="onChange"
+            />
         </template>
     </FormCardTool>
 </template>
@@ -86,7 +93,8 @@ export default {
                             __class__: "RuntimeValue",
                         };
                         input.is_workflow =
-                            (input.options && input.options.length === 0) || ["integer", "float"].indexOf(input.type) != -1;
+                            (input.options && input.options.length === 0) ||
+                            ["integer", "float"].indexOf(input.type) != -1;
                     }
                 }
             });
