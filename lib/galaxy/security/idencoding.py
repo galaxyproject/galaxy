@@ -1,6 +1,7 @@
 import codecs
 import collections
 import logging
+from typing import Optional
 
 from Crypto.Cipher import Blowfish
 from Crypto.Random import get_random_bytes
@@ -79,12 +80,14 @@ class IdEncodingHelper:
                     rval[k] = [self.encode_all_ids(el, True) for el in v]
         return rval
 
-    def decode_id(self, obj_id, kind=None):
+    def decode_id(self, obj_id, kind=None, object_name: Optional[str] = None):
         try:
             id_cipher = self.__id_cipher(kind)
             return int(unicodify(id_cipher.decrypt(codecs.decode(obj_id, 'hex'))).lstrip("!"))
-        except (ValueError, TypeError):
-            raise galaxy.exceptions.MalformedId(f"Malformed id ( {obj_id} ) specified, unable to decode")
+        except TypeError:
+            raise galaxy.exceptions.MalformedId(f"Malformed {object_name if object_name is not None else ''} id ( {obj_id} ) specified, unable to decode.")
+        except ValueError:
+            raise galaxy.exceptions.MalformedId(f"Wrong {object_name if object_name is not None else ''} id ( {obj_id} ) specified, unable to decode.")
 
     def encode_guid(self, session_key):
         # Session keys are strings
