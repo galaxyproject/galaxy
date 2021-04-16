@@ -54,6 +54,7 @@ import { getAppRoot } from "onload/loadConfig";
 import Form from "components/Form/Form";
 import FormCard from "components/Form/FormCard";
 import FormElement from "components/Form/FormElement";
+import { checkLabels } from "components/Workflow/Editor/modules/utilities";
 
 export default {
     components: {
@@ -103,19 +104,7 @@ export default {
         },
         onLabel(newLabel) {
             this.node.setLabel(newLabel);
-            let duplicate = false;
-            for (const i in this.workflow.nodes) {
-                const n = this.workflow.nodes[i];
-                if (n.label && n.label == newLabel && n.id != this.node.id) {
-                    duplicate = true;
-                    break;
-                }
-            }
-            if (duplicate) {
-                this.errorLabel = "Duplicate label. Please fix this before saving the workflow.";
-            } else {
-                this.errorLabel = "";
-            }
+            this.errorLabel = checkLabels(this.node.id, newLabel, this.workflow.nodes);
         },
         onEditSubworkflow() {
             this.workflow.onEditSubworkflow(this.node.content_id);
