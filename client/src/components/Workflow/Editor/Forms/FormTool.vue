@@ -4,6 +4,7 @@
         :id="node.config_form.id"
         :description="node.config_form.description"
         :version="node.config_form.version"
+        :versions="node.config_form.versions"
     >
         <template v-slot:body>
             <FormElement

@@ -27,12 +27,32 @@
                 >
                     <span class="fa fa-star" />
                 </b-button>
+                <b-dropdown
+                    v-if="showVersions"
+                    no-caret
+                    right
+                    role="button"
+                    title="Versions"
+                    variant="link"
+                    aria-label="Select Versions"
+                    class="float-right py-0 px-1"
+                    button-class="p-0"
+                    size="sm"
+                    v-b-tooltip.hover
+                >
+                    <template v-slot:button-content class="p-0">
+                        <span class="fa fa-cubes" />
+                    </template>
+                    <b-dropdown-item v-for="v of reversedVersions" :key="v" @click="$emit('changeVersion', v)">
+                        <span class="fa fa-cube" /> Switch to {{ v }}
+                    </b-dropdown-item>
+                </b-dropdown>
             </div>
             <div class="portlet-title">
                 <i class="portlet-title-icon fa mr-1 fa-wrench" style="display: inline"></i>
                 <span class="portlet-title-text">
-                    <b itemprop="name">{{ title }}</b> <span itemprop="description">{{ description }}</span>
-                    (Galaxy Verson {{ version }})
+                    <b itemprop="name">{{ title }}</b> <span itemprop="description">{{ description }}</span> (Galaxy
+                    Verson {{ version }})
                 </span>
             </div>
         </div>
@@ -61,9 +81,17 @@ export default {
             type: String,
             required: false,
         },
+        versions: {
+            type: Array,
+            required: true,
+        },
         id: {
             type: String,
             required: true,
+        },
+        sustainVersion: {
+            type: Boolean,
+            default: false,
         },
     },
     data() {
@@ -74,6 +102,12 @@ export default {
     computed: {
         showAddFavorite() {
             return !this.getUser().isAnonymous() && !this.isFavorite;
+        },
+        showVersions() {
+            return !this.sustainVersion && this.versions && this.versions.length > 1;
+        },
+        reversedVersions() {
+            return this.versions.reverse();
         },
     },
     methods: {
