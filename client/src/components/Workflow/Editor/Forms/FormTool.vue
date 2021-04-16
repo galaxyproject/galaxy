@@ -1,5 +1,5 @@
 <template>
-    <FormCardTool :title="node.name">
+    <FormCardTool :title="node.name" :id="node.config_form.id">
         <template v-slot:operations>
             <b-button
                 v-if="isSubworkflow"

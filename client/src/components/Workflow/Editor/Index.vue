@@ -115,20 +115,18 @@
                         </div>
                         <div class="unified-panel-body workflow-right">
                             <div class="m-1">
-                                <div v-if="hasActiveNode">
-                                    <FormTool
-                                        v-if="hasActiveNodeTool"
-                                        :get-manager="getManager"
-                                        :get-node="getNode"
-                                        :datatypes="datatypes"
-                                    />
-                                    <FormDefault
-                                        v-else
-                                        :get-manager="getManager"
-                                        :get-node="getNode"
-                                        :datatypes="datatypes"
-                                    />
-                                </div>
+                                <FormTool
+                                    v-if="hasActiveNodeTool"
+                                    :get-manager="getManager"
+                                    :get-node="getNode"
+                                    :datatypes="datatypes"
+                                />
+                                <FormDefault
+                                    v-else-if="hasActiveNodeDefault"
+                                    :get-manager="getManager"
+                                    :get-node="getNode"
+                                    :datatypes="datatypes"
+                                />
                                 <WorkflowAttributes
                                     v-else-if="showAttributes"
                                     :id="id"
@@ -147,7 +145,7 @@
                                     @onCreator="onCreator"
                                 />
                                 <WorkflowLint
-                                    v-else
+                                    v-else-if="showLint"
                                     :untyped-parameters="parameters"
                                     :annotation="annotation"
                                     :creator="creator"
@@ -277,11 +275,11 @@ export default {
         showLint() {
             return this.showInPanel == "lint";
         },
-        hasActiveNode() {
-            return !!this.activeNode;
+        hasActiveNodeDefault() {
+            return this.activeNode && this.activeNode.type != "tool";
         },
         hasActiveNodeTool() {
-            return !!this.activeNode && this.activeNode.type == "tool";
+            return this.activeNode && this.activeNode.type == "tool";
         },
     },
     created() {
