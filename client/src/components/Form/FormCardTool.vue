@@ -1,89 +1,103 @@
 <template>
-    <div class="ui-portlet-section">
-        <div class="portlet-header">
-            <div class="portlet-operations">
-                <b-dropdown
-                    no-caret
-                    right
-                    role="button"
-                    title="Options"
-                    variant="link"
-                    aria-label="View all Options"
-                    class="float-right py-0 px-1"
-                    button-class="p-0"
-                    size="sm"
-                    v-b-tooltip.hover
-                >
-                    <template v-slot:button-content>
-                        <span class="fa fa-caret-down" />
-                    </template>
-                    <b-dropdown-item @click="onCopyLink"> <span class="fa fa-chain" /> Copy Link </b-dropdown-item>
-                    <b-dropdown-item @click="onCopyId"> <span class="fa fa-files-o" /> Copy Tool ID </b-dropdown-item>
-                    <b-dropdown-item v-if="showDownload" @click="onDownload">
-                        <span class="fa fa-download" /> Download
-                    </b-dropdown-item>
-                    <b-dropdown-item v-if="showLink" @click="onLink">
-                        <span class="fa fa-external-link" /> See in Tool Shed
-                    </b-dropdown-item>
-                    <b-dropdown-item v-for="w of webhookDetails" :key="w.title" @click="w.onclick">
-                        <span :class="w.icon" /> {{ w.title }}
-                    </b-dropdown-item>
-                </b-dropdown>
-                <b-dropdown
-                    v-if="showVersions"
-                    no-caret
-                    right
-                    role="button"
-                    title="Versions"
-                    variant="link"
-                    aria-label="Select Versions"
-                    class="float-right py-0 px-1"
-                    button-class="p-0"
-                    size="sm"
-                    v-b-tooltip.hover
-                >
-                    <template v-slot:button-content>
-                        <span class="fa fa-cubes" />
-                    </template>
-                    <b-dropdown-item v-for="v of reversedVersions" :key="v" @click="$emit('changeVersion', v)">
-                        <span class="fa fa-cube" /> Switch to {{ v }}
-                    </b-dropdown-item>
-                </b-dropdown>
-                <b-button
-                    v-if="showAddFavorite"
-                    role="button"
-                    title="Add to Favorites"
-                    variant="link"
-                    size="sm"
-                    class="float-right py-0 px-1"
-                    v-b-tooltip.hover
-                    @click="onAddFavorite"
-                >
-                    <span class="fa fa-star-o" />
-                </b-button>
-                <b-button
-                    v-else
-                    role="button"
-                    title="Remove from Favorites"
-                    variant="link"
-                    size="sm"
-                    class="float-right py-0 px-1"
-                    v-b-tooltip.hover
-                    @click="onRemoveFavorite"
-                >
-                    <span class="fa fa-star" />
-                </b-button>
+    <div>
+        <div class="ui-portlet-section">
+            <div class="portlet-header">
+                <div class="portlet-operations">
+                    <b-dropdown
+                        no-caret
+                        right
+                        role="button"
+                        title="Options"
+                        variant="link"
+                        aria-label="View all Options"
+                        class="float-right py-0 px-1"
+                        button-class="p-0"
+                        size="sm"
+                        v-b-tooltip.hover
+                    >
+                        <template v-slot:button-content>
+                            <span class="fa fa-caret-down" />
+                        </template>
+                        <b-dropdown-item @click="onCopyLink"> <span class="fa fa-chain" /> Copy Link </b-dropdown-item>
+                        <b-dropdown-item @click="onCopyId">
+                            <span class="fa fa-files-o" /> Copy Tool ID
+                        </b-dropdown-item>
+                        <b-dropdown-item v-if="showDownload" @click="onDownload">
+                            <span class="fa fa-download" /> Download
+                        </b-dropdown-item>
+                        <b-dropdown-item v-if="showLink" @click="onLink">
+                            <span class="fa fa-external-link" /> See in Tool Shed
+                        </b-dropdown-item>
+                        <b-dropdown-item v-for="w of webhookDetails" :key="w.title" @click="w.onclick">
+                            <span :class="w.icon" /> {{ w.title }}
+                        </b-dropdown-item>
+                    </b-dropdown>
+                    <b-dropdown
+                        v-if="showVersions"
+                        no-caret
+                        right
+                        role="button"
+                        title="Versions"
+                        variant="link"
+                        aria-label="Select Versions"
+                        class="float-right py-0 px-1"
+                        button-class="p-0"
+                        size="sm"
+                        v-b-tooltip.hover
+                    >
+                        <template v-slot:button-content>
+                            <span class="fa fa-cubes" />
+                        </template>
+                        <b-dropdown-item v-for="v of reversedVersions" :key="v" @click="$emit('changeVersion', v)">
+                            <span class="fa fa-cube" /> Switch to {{ v }}
+                        </b-dropdown-item>
+                    </b-dropdown>
+                    <b-button
+                        v-if="showAddFavorite"
+                        role="button"
+                        title="Add to Favorites"
+                        variant="link"
+                        size="sm"
+                        class="float-right py-0 px-1"
+                        v-b-tooltip.hover
+                        @click="onAddFavorite"
+                    >
+                        <span class="fa fa-star-o" />
+                    </b-button>
+                    <b-button
+                        v-else
+                        role="button"
+                        title="Remove from Favorites"
+                        variant="link"
+                        size="sm"
+                        class="float-right py-0 px-1"
+                        v-b-tooltip.hover
+                        @click="onRemoveFavorite"
+                    >
+                        <span class="fa fa-star" />
+                    </b-button>
+                </div>
+                <div class="portlet-title">
+                    <i class="portlet-title-icon fa mr-1 fa-wrench" style="display: inline"></i>
+                    <span class="portlet-title-text">
+                        <b itemprop="name">{{ title }}</b> <span itemprop="description">{{ description }}</span> (Galaxy
+                        Verson {{ version }})
+                    </span>
+                </div>
             </div>
-            <div class="portlet-title">
-                <i class="portlet-title-icon fa mr-1 fa-wrench" style="display: inline"></i>
-                <span class="portlet-title-text">
-                    <b itemprop="name">{{ title }}</b> <span itemprop="description">{{ description }}</span> (Galaxy
-                    Verson {{ version }})
-                </span>
+            <div class="portlet-content">
+                <slot name="body" />
             </div>
         </div>
-        <div class="portlet-content">
-            <slot name="body" />
+        <div>
+            <ToolFooter
+                :id="options.id"
+                :hasCitations="options.citations"
+                :xrefs="options.xrefs"
+                :license="options.license"
+                :creators="options.creator"
+                :requirements="options.requirements"
+            />
         </div>
     </div>
 </template>
@@ -93,10 +107,22 @@ import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
 import ariaAlert from "utils/ariaAlert";
 import { copy } from "utils/clipboard";
+import ToolFooter from "components/Tool/ToolFooter";
 import Webhooks from "mvc/webhooks";
 
 export default {
+    components: {
+        ToolFooter,
+    },
     props: {
+        id: {
+            type: String,
+            required: true,
+        },
+        version: {
+            type: String,
+            required: false,
+        },
         title: {
             type: String,
             required: true,
@@ -105,25 +131,13 @@ export default {
             type: String,
             required: false,
         },
-        version: {
-            type: String,
-            required: false,
-        },
-        versions: {
-            type: Array,
-            required: true,
-        },
-        id: {
-            type: String,
-            required: true,
-        },
         sustainVersion: {
             type: Boolean,
             default: false,
         },
-        sharableUrl: {
-            type: String,
-            required: false,
+        options: {
+            type: Object,
+            required: true,
         },
     },
     data() {
@@ -133,6 +147,9 @@ export default {
         };
     },
     computed: {
+        versions() {
+            return this.options.versions;
+        },
         showAddFavorite() {
             return !this.getUser().isAnonymous() && !this.isFavorite;
         },
@@ -147,7 +164,7 @@ export default {
             return user && user.get("is_admin");
         },
         showLink() {
-            return this.sharableUrl;
+            return this.options.sharable_url;
         },
     },
     created() {
@@ -212,7 +229,7 @@ export default {
             window.location.href = `${getAppRoot()}api/tools/${this.id}/download`;
         },
         onLink() {
-            window.open(this.sharableUrl);
+            window.open(this.options.sharable_url);
         },
     },
 };

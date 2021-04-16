@@ -1,11 +1,10 @@
 <template>
     <FormCardTool
-        :title="node.name"
         :id="node.config_form.id"
-        :description="node.config_form.description"
         :version="node.config_form.version"
-        :versions="node.config_form.versions"
-        :sharable-url="node.config_form.sharable_url"
+        :title="node.config_form.name"
+        :description="node.config_form.description"
+        :options="node.config_form"
     >
         <template v-slot:body>
             <FormElement
