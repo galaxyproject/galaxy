@@ -21,7 +21,7 @@ ARG SERVER_DIR=$ROOT_DIR/server
 
 # For much faster build time override this with image0 (Dockerfile.0 build):
 #   docker build --build-arg BASE=<image0 name>...
-ARG STAGE1_BASE=ubuntu:20.04
+ARG STAGE1_BASE=python:3.7-slim
 ARG FINAL_STAGE_BASE=$STAGE1_BASE
 # NOTE: the value of GALAXY_USER must be also hardcoded in COPY in final stage
 ARG GALAXY_USER=galaxy
@@ -45,17 +45,12 @@ RUN set -xe; \
     && echo "Acquire::http {No-Cache=True;};" > /etc/apt/apt.conf.d/no-cache \
     && apt-get -qq update && apt-get install -y --no-install-recommends \
         locales locales-all \
-        apt-transport-https \
         git \
         make \
-        libpython3.6 \
-        python3-dev \
-        python3-virtualenv \
-        software-properties-common \
-        ssh \
+        libc-dev \
+        bzip2 \
         gcc \
-    && apt-get -qq update && apt-get install -y --no-install-recommends \
-        ansible \
+    && pip install --no-cache virtualenv 'ansible>=2.9,<2.10' \
     && apt-get autoremove -y && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/*
 
@@ -76,7 +71,7 @@ COPY . $SERVER_DIR/
 FROM stage1 AS server_build
 ARG SERVER_DIR
 
-RUN ansible-playbook -i localhost, playbook.yml -v -e galaxy_build_client=False
+RUN ansible-playbook -i localhost, playbook.yml -v -e galaxy_build_client=False -e galaxy_virtualenv_command=virtualenv
 
 RUN cat /galaxy/server/lib/galaxy/dependencies/conditional-requirements.txt | grep psycopg2-binary | xargs /galaxy/server/.venv/bin/pip install
 
@@ -101,7 +96,7 @@ RUN find . -name "node_modules" -type d -prune -exec rm -rf '{}' +
 FROM stage1 AS client_build
 ARG SERVER_DIR
 
-RUN ansible-playbook -i localhost, playbook.yml -v --tags "galaxy_build_client"
+RUN ansible-playbook -i localhost, playbook.yml -v --tags "galaxy_build_client" -e galaxy_virtualenv_command=virtualenv
 
 WORKDIR $SERVER_DIR
 RUN rm -rf \
@@ -134,11 +129,10 @@ RUN set -xe; \
     && echo "Acquire::http {No-Cache=True;};" > /etc/apt/apt.conf.d/no-cache \
     && apt-get -qq update && apt-get install -y --no-install-recommends \
         locales \
-        libpython3.6 \
-        python3-virtualenv \
         vim-tiny \
         nano-tiny \
         curl \
+    && echo 'en_US.UTF-8 UTF-8' > /etc/locale.gen \
     && locale-gen $LANG && update-locale LANG=$LANG \
     && apt-get autoremove -y && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/*
