@@ -1,53 +1,51 @@
 <template>
-    <div v-if="node">
-        <FormCard :title="node.name">
-            <template v-slot:operations>
-                <b-button
-                    v-if="isSubworkflow"
-                    role="button"
-                    title="Edit this Subworkflow. You will need to upgrade this Workflow Step afterwards."
-                    variant="link"
-                    size="sm"
-                    class="float-right py-0 px-1"
-                    v-b-tooltip.hover
-                    @click="onEditSubworkflow"
-                >
-                    <span class="fa fa-pencil-alt" />
-                </b-button>
-                <b-button
-                    v-if="isSubworkflow"
-                    role="button"
-                    title="Upgrade this Workflow Step to latest Subworkflow version."
-                    variant="link"
-                    size="sm"
-                    class="float-right py-0 px-1"
-                    v-b-tooltip.hover
-                    @click="onUpgradeSubworkflow"
-                >
-                    <span class="fa fa-sync" />
-                </b-button>
-            </template>
-            <template v-slot:body>
-                <FormElement
-                    id="__label"
-                    :value="node.label"
-                    title="Label"
-                    help="Add a step label."
-                    @onChange="onLabel"
-                    :error="errorLabel"
-                />
-                <FormElement
-                    id="__annotation"
-                    :value="node.annotation"
-                    title="Step Annotation"
-                    :area="true"
-                    help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
-                    @onChange="onAnnotation"
-                />
-                <Form :id="id" :inputs="inputs" @onChange="onChange" />
-            </template>
-        </FormCard>
-    </div>
+    <FormCard :title="node.name">
+        <template v-slot:operations>
+            <b-button
+                v-if="isSubworkflow"
+                role="button"
+                title="Edit this Subworkflow. You will need to upgrade this Workflow Step afterwards."
+                variant="link"
+                size="sm"
+                class="float-right py-0 px-1"
+                v-b-tooltip.hover
+                @click="onEditSubworkflow"
+            >
+                <span class="fa fa-pencil-alt" />
+            </b-button>
+            <b-button
+                v-if="isSubworkflow"
+                role="button"
+                title="Upgrade this Workflow Step to latest Subworkflow version."
+                variant="link"
+                size="sm"
+                class="float-right py-0 px-1"
+                v-b-tooltip.hover
+                @click="onUpgradeSubworkflow"
+            >
+                <span class="fa fa-sync" />
+            </b-button>
+        </template>
+        <template v-slot:body>
+            <FormElement
+                id="__label"
+                :value="node.label"
+                title="Label"
+                help="Add a step label."
+                @onChange="onLabel"
+                :error="errorLabel"
+            />
+            <FormElement
+                id="__annotation"
+                :value="node.annotation"
+                title="Step Annotation"
+                :area="true"
+                help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
+                @onChange="onAnnotation"
+            />
+            <Form :id="id" :inputs="inputs" @onChange="onChange" />
+        </template>
+    </FormCard>
 </template>
 
 <script>

@@ -116,7 +116,18 @@
                         <div class="unified-panel-body workflow-right">
                             <div class="m-1">
                                 <div v-if="hasActiveNode">
-                                    <FormDefault :get-manager="getManager" :get-node="getNode" :datatypes="datatypes" />
+                                    <FormTool
+                                        v-if="hasActiveNodeTool"
+                                        :get-manager="getManager"
+                                        :get-node="getNode"
+                                        :datatypes="datatypes"
+                                    />
+                                    <FormDefault
+                                        v-else
+                                        :get-manager="getManager"
+                                        :get-node="getNode"
+                                        :datatypes="datatypes"
+                                    />
                                 </div>
                                 <WorkflowAttributes
                                     v-else-if="showAttributes"
@@ -166,6 +177,7 @@ import { getStateUpgradeMessages, copyIntoWorkflow, saveAs } from "./modules/uti
 import WorkflowCanvas from "./modules/canvas";
 import WorkflowOptions from "./Options";
 import FormDefault from "./Forms/FormDefault";
+import FormTool from "./Forms/FormTool";
 import MarkdownEditor from "components/Markdown/MarkdownEditor";
 import ToolBoxWorkflow from "components/Panels/ToolBoxWorkflow";
 import SidePanel from "components/Panels/SidePanel";
@@ -188,6 +200,7 @@ export default {
         StateUpgradeModal,
         ToolBoxWorkflow,
         FormDefault,
+        FormTool,
         WorkflowOptions,
         WorkflowAttributes,
         ZoomControl,
@@ -266,6 +279,9 @@ export default {
         },
         hasActiveNode() {
             return !!this.activeNode;
+        },
+        hasActiveNodeTool() {
+            return !!this.activeNode && this.activeNode.type == "tool";
         },
     },
     created() {

@@ -3,61 +3,8 @@ import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import Utils from "utils/utils";
-import Form from "mvc/form/form-view";
 import ToolFormBase from "mvc/tool/tool-form-base";
 import WorkflowIcons from "components/Workflow/icons";
-import Ui from "mvc/ui/ui-misc";
-
-/** Default form wrapper for non-tool modules in the workflow editor. */
-export class DefaultForm {
-    constructor(options) {
-        const self = this;
-        const node = options.node;
-        const workflow = options.workflow;
-        this.workflow = workflow;
-        _addLabelAnnotation(this, node);
-        const operations = {};
-        if (node.type == "subworkflow") {
-            operations.edit_subworkflow = new Ui.Button({
-                tooltip: _l(
-                    "Edit targeted subworkflow at its newest version. You'll need to return here and upgrade this workflow step after."
-                ),
-                icon: "fa-pencil-alt",
-                onclick: function () {
-                    workflow.onEditSubworkflow(node.content_id);
-                },
-            });
-            operations.upgrade_subworkflow = new Ui.Button({
-                tooltip: _l("Attempt to upgrade this step to latest version of this subworkflow."),
-                icon: "fa-cubes",
-                onclick: function () {
-                    workflow.onAttemptRefactor([
-                        { action_type: "upgrade_subworkflow", step: { order_index: parseInt(node.id) } },
-                    ]);
-                },
-            });
-        }
-        this.form = new Form({
-            ...node.config_form,
-            icon: WorkflowIcons[node.type],
-            operations: operations,
-            cls: "ui-portlet-section",
-            onchange() {
-                axios
-                    .post(`${getAppRoot()}api/workflows/build_module`, {
-                        id: node.id,
-                        type: node.type,
-                        content_id: node.content_id,
-                        inputs: self.form.data.create(),
-                    })
-                    .then((response) => {
-                        const data = response.data;
-                        node.updateData(data);
-                    });
-            },
-        });
-    }
-}
 
 /** Tool form wrapper for the workflow editor. */
 export class ToolForm {
