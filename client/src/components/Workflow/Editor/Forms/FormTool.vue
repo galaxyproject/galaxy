@@ -1,31 +1,10 @@
 <template>
-    <FormCardTool :title="node.name" :id="node.config_form.id">
-        <template v-slot:operations>
-            <b-button
-                v-if="isSubworkflow"
-                role="button"
-                title="Edit this Subworkflow. You will need to upgrade this Workflow Step afterwards."
-                variant="link"
-                size="sm"
-                class="float-right py-0 px-1"
-                v-b-tooltip.hover
-                @click="onEditSubworkflow"
-            >
-                <span class="fa fa-pencil-alt" />
-            </b-button>
-            <b-button
-                v-if="isSubworkflow"
-                role="button"
-                title="Upgrade this Workflow Step to latest Subworkflow version."
-                variant="link"
-                size="sm"
-                class="float-right py-0 px-1"
-                v-b-tooltip.hover
-                @click="onUpgradeSubworkflow"
-            >
-                <span class="fa fa-sync" />
-            </b-button>
-        </template>
+    <FormCardTool
+        :title="node.name"
+        :id="node.config_form.id"
+        :description="node.config_form.description"
+        :version="node.config_form.version"
+    >
         <template v-slot:body>
             <FormElement
                 id="__label"
@@ -92,9 +71,6 @@ export default {
         },
         inputs() {
             return this.node.config_form.inputs;
-        },
-        isSubworkflow() {
-            return this.node.type == "subworkflow";
         },
     },
     methods: {
