@@ -528,6 +528,64 @@ class Gifti(GenericXml):
         return False
 
 
+@build_sniff_from_prefix
+class Star(data.Text):
+    """Base format class for Relion STAR (Self-defining
+    Text Archiving and Retrieval) image files.
+    https://relion.readthedocs.io/en/latest/Reference/Conventions.html"""
+    file_ext = "star"
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        """Set the peek and blurb text"""
+        if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.blurb = 'Relion STAR data'
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def sniff_prefix(self, file_prefix):
+        """Each file must have one or more data blocks.
+        The start of a data block is defined by the keyword
+        "data_" followed by an optional string for
+        identification (e.g., "data_images").  All text
+        before the first "data_" keyword are comments
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('1.star')
+        >>> Star().sniff(fname)
+        True
+        >>> fname = get_test_fname('interval.interval')
+        >>> Star().sniff(fname)
+        False
+        """
+        in_data_block = False
+        fh = file_prefix.string_io()
+        while True:
+            # All lines before the first
+            # data_ block must be comments.
+            line = fh.readline()
+            if not line:
+                # End of file_prefix.
+                return False
+            line = line.strip()
+            if len(line) == 0:
+                continue
+            if line.startswith("data_"):
+                in_data_block = True
+                continue
+            if in_data_block:
+                # Lines within data blocks must
+                # be blank, start with loop_, or
+                # start with _.
+                if len(line) == 0:
+                    continue
+                if line.startswith("loop_") or line.startswith("_"):
+                    return True
+                return False
+        return False
+
+
 class Html(HtmlFromText):
     """Deprecated class. This class should not be used anymore, but the galaxy.datatypes.text:Html one.
     This is for backwards compatibilities only."""
