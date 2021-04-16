@@ -18,17 +18,6 @@
                     </template>
 
                     <template v-slot:listing>
-                        <!-- <div>
-                            <input
-                                type="range"
-                                min="0.0"
-                                max="1.0"
-                                step="0.1"
-                                :value="scrollPos.cursor"
-                                @input="setScrollPos({ cursor: 1.0 * $event.srcElement.value })"
-                            />
-                            <pre>{{ payload | reportPayload("element_index") }}</pre>
-                        </div> -->
                         <Scroller
                             key-field="element_index"
                             :class="{ loadingBackground: loading }"
