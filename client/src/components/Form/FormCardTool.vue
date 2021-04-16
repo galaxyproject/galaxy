@@ -25,6 +25,9 @@
                     <b-dropdown-item v-if="showLink" @click="onLink">
                         <span class="fa fa-external-link" /> See in Tool Shed
                     </b-dropdown-item>
+                    <b-dropdown-item v-for="w of webhookDetails" :key="w.title" @click="w.onclick">
+                        <span :class="w.icon" /> {{ w.title }}
+                    </b-dropdown-item>
                 </b-dropdown>
                 <b-dropdown
                     v-if="showVersions"
@@ -90,6 +93,7 @@ import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
 import ariaAlert from "utils/ariaAlert";
 import { copy } from "utils/clipboard";
+import Webhooks from "mvc/webhooks";
 
 export default {
     props: {
@@ -125,6 +129,7 @@ export default {
     data() {
         return {
             isFavorite: this.getFavorite(),
+            webhookDetails: [],
         };
     },
     computed: {
@@ -144,6 +149,27 @@ export default {
         showLink() {
             return this.sharableUrl;
         },
+    },
+    created() {
+        // add tool menu webhooks
+        Webhooks.load({
+            type: "tool-menu",
+            callback: function (webhooks) {
+                webhooks.each((model) => {
+                    const webhook = model.toJSON();
+                    if (webhook.activate && webhook.config.function) {
+                        this.webhookDetails.push({
+                            icon: `fa ${webhook.config.icon}`,
+                            title: webhook.config.title,
+                            onclick: function () {
+                                const func = new Function("options", webhook.config.function);
+                                func(options);
+                            },
+                        });
+                    }
+                });
+            },
+        });
     },
     methods: {
         getUser() {
