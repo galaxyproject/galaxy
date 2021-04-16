@@ -29,20 +29,60 @@ def lint_inputs(tool_xml, lint_ctx):
             if "format" not in param_attrib:
                 lint_ctx.warn(f"Param input [{param_name}] with no format specified - 'data' format will be assumed.")
         elif param_type == "select":
+            # get dynamic/statically defined options 
             dynamic_options = param.get("dynamic_options", None)
-            if dynamic_options is None:
-                dynamic_options = param.find("options")
-
+            options = param.findall("./options")
             select_options = param.findall('./option')
-            if any(['value' not in option.attrib for option in select_options]):
-                lint_ctx.error(f"Select [{param_name}] has option without value")
-            if len(set([option.text.strip() for option in select_options])) != len(select_options):
-                lint_ctx.error(f"Select [{param_name}] has multiple options with the same text content")
-            if len(set([option.attrib.get("value") for option in select_options])) != len(select_options):
-                lint_ctx.error(f"Select [{param_name}] has multiple options with the same value")
 
-            if dynamic_options is None and len(select_options) == 0:
-                lint_ctx.warn(f"No options defined for select [{param_name}]")
+            if dynamic_options is not None:
+                lint_ctx.warn(f"Select parameter [{param_name}] uses deprecated 'dynamic_options' attribute.")
+
+            # check if any option is defined
+            if dynamic_options is None and len(options) + len(select_options) == 0:
+                lint_ctx.warn(f"Select parameter [{param_name}] defines no options")
+
+            if (dynamic_options is None) + (len(options) > 0) + (len(select_options) > 0) != 1:
+                lint_ctx.error(f"Select parameter [{param_name}] options can only be defined by either 'option' tags, a 'option' tag or the attribute 'dynamic_options'.")
+
+            # lint dynamic options
+            if len(options) == 1:
+                from_file = options[0].get("from_file", None)
+                from_parameter = options[0].get("from_parameter", None)
+                from_dataset = options[0].get("from_dataset", None)
+                from_data_table = options[0].get("from_data_table", None)
+                if from_file is None and from_parameter is None and from_dataset is None and from_data_table is None:
+                    lint_ctx.error(f"Select parameter [{param_name}] options tag defines no dynamic options. Use 'from_dataset' or 'from_data_table'.")
+                
+                if from_file is not None:
+                    lint_ctx.warn(f"Select parameter [{param_name}] options uses deprecated 'from file' attribute.")
+                if from_parameter is not None:
+                    lint_ctx.warn(f"Select parameter [{param_name}] options uses deprecated 'from_parameter' attribute.")
+    
+                if from_dataset is not None and from_data_table is not None:
+                    lint_ctx.error(f"Select parameter [{param_name}] options uses 'from_dataset' and 'from_data_table' attribute.")
+                
+                if options[0].get("meta_file_key", None) is not None and from_dataset is not None:
+                    lint_ctx.error(f"Select parameter [{param_name}] 'meta_file_key' is only compatible with 'from_dataset'.")
+
+                if options[0].get("options_filter_attribute", None) is not None:
+                    lint_ctx.warn(f"Select parameter [{param_name}] options uses deprecated 'options_filter_attribute' attribute.")
+
+                if options[0].get("transform_lines", None) is not None:
+                    lint_ctx.warn(f"Select parameter [{param_name}] options uses deprecated 'transform_lines' attribute.")
+
+            elif len(options) > 1:
+                lint_ctx.error(f"Select parameter [{param_name}] contains multiple options tags")
+
+            # lint statically defined options
+            if any(['value' not in option.attrib for option in select_options]):
+                lint_ctx.error(f"Select parameter [{param_name}] has option without value")
+            if len(set([option.text.strip() for option in select_options])) != len(select_options):
+                lint_ctx.error(f"Select parameter [{param_name}] has multiple options with the same text content")
+            if len(set([option.attrib.get("value") for option in select_options])) != len(select_options):
+                lint_ctx.error(f"Select parameter [{param_name}] has multiple options with the same value")
+
+
+            
 
             if param_attrib.get("display") == "checkboxes":
                 if not string_as_bool(param_attrib.get("multiple", "false")):
