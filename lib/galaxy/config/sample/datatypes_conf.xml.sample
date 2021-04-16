@@ -317,6 +317,7 @@
     <datatype extension="tck" type="galaxy.datatypes.images:Tck" mimetype="application/octet-stream" display_in_upload="true" />
     <datatype extension="trk" type="galaxy.datatypes.images:Trk" mimetype="application/octet-stream" display_in_upload="true" />
     <datatype extension="mrc" type="galaxy.datatypes.images:Mrc2014" mimetype="application/octet-stream" display_in_upload="true" />
+    <datatype extension="star" type="galaxy.datatypes.images:Star" display_in_upload="true" />
     <datatype extension="peff" type="galaxy.datatypes.proteomics:PEFF" display_in_upload="true" />
     <!-- End Proteomics Datatypes -->
     <!-- FlowCytometry -->
@@ -1079,6 +1080,7 @@
     <sniffer type="galaxy.datatypes.images:Trk" />
     <sniffer type="galaxy.datatypes.images:Nifti1" />
     <sniffer type="galaxy.datatypes.images:Nifti2" />
+    <sniffer type="galaxy.datatypes.images:Star" />
     <sniffer type="galaxy.datatypes.media:Wav"/>
     <sniffer type="galaxy.datatypes.media:Mkv"/>
     <sniffer type="galaxy.datatypes.media:Mp3"/>
