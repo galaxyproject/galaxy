@@ -295,11 +295,7 @@ class FolderManager:
 
         :raises: MalformedId
         """
-        try:
-            decoded_id = trans.security.decode_id(encoded_folder_id)
-        except ValueError:
-            raise MalformedId("Malformed folder id ( %s ) specified, unable to decode" % (str(encoded_folder_id)))
-        return decoded_id
+        return trans.security.decode_id(encoded_folder_id)
 
     def cut_and_decode(self, trans, encoded_folder_id):
         """
@@ -563,9 +559,4 @@ class FoldersService:
         :param  object_name:      Name of the object the id belongs to. (optional)
         :type   object_name:      str
         """
-        try:
-            return trans.security.decode_id(encoded_id)
-        except TypeError:
-            raise MalformedId('Malformed %s id specified, unable to decode.' % object_name if object_name is not None else '')
-        except ValueError:
-            raise MalformedId('Wrong %s id specified, unable to decode.' % object_name if object_name is not None else '')
+        return trans.security.decode_id(encoded_id)

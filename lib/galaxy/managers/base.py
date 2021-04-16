@@ -94,13 +94,9 @@ def get_class(class_name):
 
 
 def decode_id(app, id):
-    try:
-        # note: use str - occasionally a fully numeric id will be placed in post body and parsed as int via JSON
-        #   resulting in error for valid id
-        return app.security.decode_id(str(id))
-    except (ValueError, TypeError):
-        msg = "Malformed id ( %s ) specified, unable to decode" % (str(id))
-        raise exceptions.MalformedId(msg, id=str(id))
+    # note: use str - occasionally a fully numeric id will be placed in post body and parsed as int via JSON
+    #   resulting in error for valid id
+    return app.security.decode_id(str(id))
 
 
 def get_object(trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None):

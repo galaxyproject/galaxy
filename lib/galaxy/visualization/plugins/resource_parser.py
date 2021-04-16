@@ -222,10 +222,4 @@ class ResourceParser:
         return parsed_param
 
     def _decode_id(self, id):
-        try:
-            return self.app().security.decode_id(str(id))
-        except (ValueError, TypeError):
-            raise galaxy.exceptions.MalformedId(
-                "Malformed id ( %s ) specified, unable to decode" % (str(id)),
-                id=str(id)
-            )
+        return self.app().security.decode_id(str(id))

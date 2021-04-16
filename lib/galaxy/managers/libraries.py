@@ -645,9 +645,4 @@ class LibrariesManager:
         :param  object_name:      Name of the object the id belongs to. (optional)
         :type   object_name:      str
         """
-        try:
-            return trans.security.decode_id(encoded_id)
-        except TypeError:
-            raise exceptions.MalformedId(f"Malformed {object_name if object_name is not None else ''} id specified, unable to decode.")
-        except ValueError:
-            raise exceptions.MalformedId(f"Wrong {object_name if object_name is not None else ''} id specified, unable to decode.")
+        return trans.security.decode_id(encoded_id, object_name=object_name)
