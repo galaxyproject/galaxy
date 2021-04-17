@@ -102,7 +102,7 @@ class CloudAuthzsDeserializer(base.ModelDeserializer):
         :return:        decoded authentication ID.
         """
 
-        decoded_authn_id = self.app.security.decode_id(val)
+        decoded_authn_id = self.app.security.decode_id(val, object_name='authz')
 
         trans = context.get("trans")
         if trans is None:

@@ -551,7 +551,7 @@ class LibrariesManager:
             valid_access_roles = []
             invalid_access_roles_names = []
             for role_id in new_access_roles_ids:
-                role = self.role_manager.get(trans, trans.security.decode_id(role_id, 'role'))
+                role = self.role_manager.get(trans, trans.security.decode_id(role_id, object_name='role'))
                 valid_roles, total_roles = trans.app.security_agent.get_valid_roles(trans, library, is_library_access=True)
                 if role in valid_roles:
                     valid_access_roles.append(role)
@@ -564,7 +564,7 @@ class LibrariesManager:
             valid_add_roles = []
             invalid_add_roles_names = []
             for role_id in new_add_roles_ids:
-                role = self.role_manager.get(trans, trans.security.decode_id(role_id, 'role'))
+                role = self.role_manager.get(trans, trans.security.decode_id(role_id, object_name='role'))
                 valid_roles, total_roles = trans.app.security_agent.get_valid_roles(trans, library)
                 if role in valid_roles:
                     valid_add_roles.append(role)
@@ -577,7 +577,7 @@ class LibrariesManager:
             valid_manage_roles = []
             invalid_manage_roles_names = []
             for role_id in new_manage_roles_ids:
-                role = self.role_manager.get(trans, trans.security.decode_id(role_id, 'role'))
+                role = self.role_manager.get(trans, trans.security.decode_id(role_id, object_name='role'))
                 valid_roles, total_roles = trans.app.security_agent.get_valid_roles(trans, library)
                 if role in valid_roles:
                     valid_manage_roles.append(role)
@@ -590,7 +590,7 @@ class LibrariesManager:
             valid_modify_roles = []
             invalid_modify_roles_names = []
             for role_id in new_modify_roles_ids:
-                role = self.role_manager.get(trans, trans.security.decode_id(role_id, 'role'))
+                role = self.role_manager.get(trans, trans.security.decode_id(role_id, object_name='role'))
                 valid_roles, total_roles = trans.app.security_agent.get_valid_roles(trans, library)
                 if role in valid_roles:
                     valid_modify_roles.append(role)
