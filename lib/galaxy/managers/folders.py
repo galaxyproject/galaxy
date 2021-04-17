@@ -450,7 +450,7 @@ class FoldersService:
             valid_add_roles = []
             invalid_add_roles_names = []
             for role_id in new_add_roles_ids:
-                role = self.role_manager.get(trans, self.__decode_id(trans, role_id, 'role'))
+                role = self.role_manager.get(trans, trans.security.decode_id(role_id, object_name='role'))
                 #  Check whether role is in the set of allowed roles
                 valid_roles, total_roles = trans.app.security_agent.get_valid_roles(trans, folder)
                 if role in valid_roles:
@@ -464,7 +464,7 @@ class FoldersService:
             valid_manage_roles = []
             invalid_manage_roles_names = []
             for role_id in new_manage_roles_ids:
-                role = self.role_manager.get(trans, self.__decode_id(trans, role_id, 'role'))
+                role = self.role_manager.get(trans, trans.security.decode_id(role_id, object_name='role'))
                 #  Check whether role is in the set of allowed roles
                 valid_roles, total_roles = trans.app.security_agent.get_valid_roles(trans, folder)
                 if role in valid_roles:
@@ -478,7 +478,7 @@ class FoldersService:
             valid_modify_roles = []
             invalid_modify_roles_names = []
             for role_id in new_modify_roles_ids:
-                role = self.role_manager.get(trans, self.__decode_id(trans, role_id, 'role'))
+                role = self.role_manager.get(trans, trans.security.decode_id(role_id, object_name='role'))
                 #  Check whether role is in the set of allowed roles
                 valid_roles, total_roles = trans.app.security_agent.get_valid_roles(trans, folder)
                 if role in valid_roles:
@@ -551,12 +551,3 @@ class FoldersService:
         updated_folder = self.folder_manager.update(trans, folder, name, description)
         folder_dict = self.folder_manager.get_folder_dict(trans, updated_folder)
         return folder_dict
-
-    def __decode_id(self, trans, encoded_id, object_name=None):
-        """
-        Try to decode the id.
-
-        :param  object_name:      Name of the object the id belongs to. (optional)
-        :type   object_name:      str
-        """
-        return trans.security.decode_id(encoded_id)
