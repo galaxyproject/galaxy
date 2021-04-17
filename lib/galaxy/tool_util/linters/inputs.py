@@ -37,12 +37,9 @@ def lint_inputs(tool_xml, lint_ctx):
             if dynamic_options is not None:
                 lint_ctx.warn(f"Select parameter [{param_name}] uses deprecated 'dynamic_options' attribute.")
 
-            # check if any option is defined
-            if dynamic_options is None and len(options) + len(select_options) == 0:
-                lint_ctx.warn(f"Select parameter [{param_name}] defines no options")
-
-            if (dynamic_options is None) + (len(options) > 0) + (len(select_options) > 0) != 1:
-                lint_ctx.error(f"Select parameter [{param_name}] options can only be defined by either 'option' tags, a 'option' tag or the attribute 'dynamic_options'.")
+            # check if options are defined by exactly one possibility
+            if (dynamic_options is not None) + (len(options) > 0) + (len(select_options) > 0) != 1:
+                lint_ctx.error(f"Select parameter [{param_name}] options have to be defined by either 'option' tags, a 'option' tag or the attribute 'dynamic_options'.")
 
             # lint dynamic options
             if len(options) == 1:
@@ -54,7 +51,7 @@ def lint_inputs(tool_xml, lint_ctx):
                     lint_ctx.error(f"Select parameter [{param_name}] options tag defines no dynamic options. Use 'from_dataset' or 'from_data_table'.")
 
                 if from_file is not None:
-                    lint_ctx.warn(f"Select parameter [{param_name}] options uses deprecated 'from file' attribute.")
+                    lint_ctx.warn(f"Select parameter [{param_name}] options uses deprecated 'from_file' attribute.")
                 if from_parameter is not None:
                     lint_ctx.warn(f"Select parameter [{param_name}] options uses deprecated 'from_parameter' attribute.")
 
@@ -69,6 +66,9 @@ def lint_inputs(tool_xml, lint_ctx):
 
                 if options[0].get("transform_lines", None) is not None:
                     lint_ctx.warn(f"Select parameter [{param_name}] options uses deprecated 'transform_lines' attribute.")
+            
+                if options[0].get("meta_file_key", None) is not None and 'from_dataset' is None:
+                    lint_ctx.warn(f"Attribute `meta_file_key` only works together with `from_datasets` therefore it's ignonred in Select [{param_name}]")
 
             elif len(options) > 1:
                 lint_ctx.error(f"Select parameter [{param_name}] contains multiple options tags")
@@ -92,8 +92,6 @@ def lint_inputs(tool_xml, lint_ctx):
                 if string_as_bool(param_attrib.get("optional", "false")):
                     lint_ctx.error(f'Select [{param_name}] display="radio" is incompatible with optional="true"')
 
-            if dynamic_options is not None and 'meta_file_key' in dynamic_options.attrib and 'from_dataset' not in dynamic_options.attrib:
-                lint_ctx.warn(f"Attribute `meta_file_key` only works together with `from_datasets` therefore it's ignonred in Select [{param_name}]")
         # TODO: Validate type, much more...
 
     conditional_selects = tool_xml.findall("./inputs//conditional")
