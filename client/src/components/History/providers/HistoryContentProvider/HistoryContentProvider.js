@@ -1,5 +1,5 @@
-import { ContentProvider } from "../ContentProvider";
-import { processHistoryStreams } from "./processHistoryStreams";
+import { ContentProvider, processContentStreams } from "../ContentProvider";
+import { contentPayload } from "./contentPayload";
 
 export default {
     mixins: [ContentProvider],
@@ -24,11 +24,11 @@ export default {
 
     methods: {
         initStreams() {
-            const { disablePoll, debouncePeriod, pageSize, params$, scrollPos$ } = this;
-            const history$ = this.watch$("history");
-            const sources = { params$, history$, scrollPos$ };
-            const settings = { disablePoll, debouncePeriod, pageSize };
-            return processHistoryStreams(sources, settings);
+            const { disablePoll, debouncePeriod, pageSize, params$, scrollPos$, debug } = this;
+            const parent$ = this.watch$("history");
+            const sources = { params$, parent$, scrollPos$ };
+            const settings = { disablePoll, debouncePeriod, pageSize, debug };
+            return processContentStreams(contentPayload, sources, settings);
         },
     },
 };
