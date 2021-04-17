@@ -126,12 +126,12 @@ export default {
                     content_id: this.node.content_id,
                     inputs: values,
                 })
-                .then((response) => {
-                    const data = response.data;
+                .then(({ data }) => {
                     this.node.config_form = data.config_form;
                     this.node.tool_state = data.tool_state;
                     this.node.inputs = data.inputs ? data.inputs.slice() : [];
                     this.node.outputs = data.outputs ? data.outputs.slice() : [];
+                    console.log(data);
                 });
         },
     },

@@ -26,13 +26,13 @@ export default Backbone.View.extend({
     },
 
     /** Update available options */
-    update: function (new_model) {
+    update: function (new_model, triggerChange=true) {
         var self = this;
         this.data.matchModel(new_model, (node, input_id) => {
             var field = self.field_list[input_id];
             if (field.update) {
                 field.update(node);
-                field.trigger("change");
+                triggerChange && field.trigger("change");
                 const Galaxy = getGalaxyInstance();
                 Galaxy.emit.debug("form-view::update()", `Updating input: ${input_id}`);
             }

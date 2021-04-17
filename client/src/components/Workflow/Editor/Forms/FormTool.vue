@@ -30,6 +30,7 @@
                 textEnable="Set in Advance"
                 textDisable="Set at Runtime"
                 @onChange="onChange"
+                ref="form"
             />
         </template>
     </FormCardTool>
@@ -137,11 +138,10 @@ export default {
                     this.node.tool_state = data.tool_state;
                     this.node.inputs = data.inputs ? data.inputs.slice() : [];
                     this.node.outputs = data.outputs ? data.outputs.slice() : [];
-                    //self.form.model.set(this.node.config_form);
-                    //self.form.update(this.node.config_form);
-                    //self.form.errors(this.node.config_form);
-                    //self._customize(this.node);
-                    //process.resolve();
+                    const form = this.$refs["form"];
+                    console.log(form);
+                    form.parseUpdate(data.config_form);
+                    form.parseErrors(data.config_form);
                 })
         },
     },

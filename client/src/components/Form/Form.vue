@@ -1,5 +1,5 @@
 <template>
-    <div ref="inputs" />
+    <div ref="form" />
 </template>
 
 <script>
@@ -42,7 +42,7 @@ export default {
         },
         onRender() {
             this.$nextTick(() => {
-                const el = this.$refs["inputs"];
+                const el = this.$refs["form"];
                 this.form = new Form({
                     el,
                     inputs: this.inputs,
@@ -51,6 +51,16 @@ export default {
                     text_disable: this.textDisable,
                 }).on("change", this.onChange);
                 this.onChange();
+            });
+        },
+        parseUpdate(data) {
+            this.$nextTick(() => {
+                this.form.update(data, false);
+            });
+        },
+        parseErrors(data) {
+            this.$nextTick(() => {
+                this.form.errors(data);
             });
         },
     },
