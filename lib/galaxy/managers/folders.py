@@ -295,7 +295,7 @@ class FolderManager:
 
         :raises: MalformedId
         """
-        return trans.security.decode_id(encoded_folder_id)
+        return trans.security.decode_id(encoded_folder_id, object_name="folder")
 
     def cut_and_decode(self, trans, encoded_folder_id):
         """
