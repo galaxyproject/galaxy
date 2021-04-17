@@ -197,11 +197,11 @@ class ResourceParser:
         # db models
         elif param_type == 'visualization':
             # ?: is this even used anymore/anywhere?
-            decoded_visualization_id = self._decode_id(query_param)
+            decoded_visualization_id = trans.security.decode_id(query_param, object_name=param_type)
             parsed_param = self.managers.visualization.get_accessible(decoded_visualization_id, trans.user)
 
         elif param_type == 'dataset':
-            decoded_dataset_id = self._decode_id(query_param)
+            decoded_dataset_id = trans.security.decode_id(query_param, object_name=param_type)
             parsed_param = self.managers.hda.get_accessible(decoded_dataset_id, trans.user)
 
         elif param_type == 'hda_or_ldda':
@@ -209,7 +209,7 @@ class ResourceParser:
             # needs info from another param...
             hda_ldda = param_modifiers.get('hda_ldda')
             if hda_ldda == 'hda':
-                decoded_dataset_id = self._decode_id(encoded_dataset_id)
+                decoded_dataset_id = trans.security.decode_id(query_param, object_name="dataset")
                 parsed_param = self.managers.hda.get_accessible(decoded_dataset_id, trans.user)
             else:
                 parsed_param = self.managers.ldda.get(trans, encoded_dataset_id)
@@ -220,6 +220,3 @@ class ResourceParser:
             parsed_param = galaxy.util.sanitize_html.sanitize_html(dbkey)
 
         return parsed_param
-
-    def _decode_id(self, id):
-        return self.app().security.decode_id(str(id))
