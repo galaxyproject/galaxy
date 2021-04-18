@@ -1,5 +1,5 @@
 <template>
-    <Form :id="id" :inputs="inputs" ref="form" @onChange="onChange"/>
+    <Form :id="id" :inputs="inputs" ref="form" @onChange="onChange" />
 </template>
 
 <script>
@@ -61,6 +61,6 @@ export default {
         onChange(values) {
             this.$emit("onChange", values);
         },
-    }
+    },
 };
 </script>

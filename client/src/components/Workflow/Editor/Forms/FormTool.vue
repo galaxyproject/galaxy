@@ -135,7 +135,6 @@ export default {
         },
         onChangeSection(values) {
             this.sectionValues = values;
-            console.log(this.sectionValues);
             this.postChanges();
         },
         postChanges() {
@@ -145,7 +144,7 @@ export default {
                     tool_id: options.id,
                     tool_version: options.version,
                     type: "tool",
-                    inputs: Object.assign({}, this.mainValues),
+                    inputs: Object.assign({}, this.mainValues, this.sectionValues),
                 })
                 .then(({ data }) => {
                     this.node.config_form = data.config_form;
