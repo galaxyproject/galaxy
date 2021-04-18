@@ -44,6 +44,7 @@ def main():
         print(" -o Output file")
         print(" -pattern RegEx pattern")
         print(" -v true or false (Invert match)")
+        print(" --keep_header true or false (keep header)")
         return 0
 
     outputfile = opts.get("-o")
@@ -66,6 +67,10 @@ def main():
         print("RegEx pattern not specified.")
         return -4
 
+    keep_header = opts.get("--keep_header")
+    if keep_header is None:
+        print("keep header not specified.")
+        return -5
     # All inputs have been specified at this point, now validate.
 
     # replace if input has been escaped, remove sq
@@ -121,7 +126,9 @@ def main():
     open(pattern_file_name, 'w').write(pattern)
 
     # generate grep command
-    commandline = "grep %s %s -f %s %s > %s" % (versionflag, invertflag, pattern_file_name, inputfile, outputfile)
+    if keep_header == "true":
+        commandline = "head -n 1 %s > %s" % (inputfile, outputfile)
+    commandline += "grep %s %s -f %s %s >> %s" % (versionflag, invertflag, pattern_file_name, inputfile, outputfile)
 
     # run grep
     errorcode = subprocess.call(commandline, shell=True)
