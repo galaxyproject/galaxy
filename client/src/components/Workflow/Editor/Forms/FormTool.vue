@@ -32,7 +32,7 @@
                 @onChange="onChange"
                 ref="form"
             />
-            <FormSection :getNode="getNode" :datatypes="datatypes" />
+            <FormSection :id="id" :getNode="getNode" :datatypes="datatypes" @onChange="onChangeSection" />
         </template>
     </FormCardTool>
 </template>
@@ -71,6 +71,8 @@ export default {
     data() {
         return {
             errorLabel: null,
+            mainValues: {},
+            sectionValues: {},
         };
     },
     computed: {
@@ -128,13 +130,22 @@ export default {
             ]);
         },
         onChange(values) {
+            this.mainValues = values;
+            this.postChanges();
+        },
+        onChangeSection(values) {
+            this.sectionValues = values;
+            console.log(this.sectionValues);
+            this.postChanges();
+        },
+        postChanges() {
             const options = this.node.config_form;
             axios
                 .post(`${getAppRoot()}api/workflows/build_module`, {
                     tool_id: options.id,
                     tool_version: options.version,
                     type: "tool",
-                    inputs: Object.assign({}, values),
+                    inputs: Object.assign({}, this.mainValues),
                 })
                 .then(({ data }) => {
                     this.node.config_form = data.config_form;

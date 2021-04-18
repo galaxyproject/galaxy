@@ -32,11 +32,6 @@ export default {
         id() {
             this.onRender();
         },
-        inputs() {
-            if (!this.id) {
-                this.onRender();
-            }
-        },
     },
     mounted() {
         this.onRender();

@@ -1,5 +1,5 @@
 <template>
-    <Form :inputs="inputs" ref="form"/>
+    <Form :id="id" :inputs="inputs" ref="form" @onChange="onChange"/>
 </template>
 
 <script>
@@ -11,6 +11,10 @@ export default {
         Form,
     },
     props: {
+        id: {
+            type: String,
+            required: true,
+        },
         getNode: {
             type: Function,
             required: true,
@@ -53,5 +57,10 @@ export default {
             );
         },
     },
+    methods: {
+        onChange(values) {
+            this.$emit("onChange", values);
+        },
+    }
 };
 </script>
