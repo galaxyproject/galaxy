@@ -26,7 +26,7 @@ export default Backbone.View.extend({
     },
 
     /** Update available options */
-    update: function (new_model, triggerChange=true) {
+    update: function (new_model, triggerChange = true) {
         var self = this;
         this.data.matchModel(new_model, (node, input_id) => {
             var field = self.field_list[input_id];

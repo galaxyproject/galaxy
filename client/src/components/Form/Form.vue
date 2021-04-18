@@ -9,7 +9,7 @@ export default {
     props: {
         id: {
             type: String,
-            required: true,
+            default: null,
         },
         inputs: {
             type: Array,

@@ -32,6 +32,7 @@
                 @onChange="onChange"
                 ref="form"
             />
+            <FormSection :getNode="getNode" :datatypes="datatypes" />
         </template>
     </FormCardTool>
 </template>
@@ -41,6 +42,7 @@ import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 import Form from "components/Form/Form";
 import FormCardTool from "components/Form/FormCardTool";
+import FormSection from "./FormSection";
 import FormElement from "components/Form/FormElement";
 import { checkLabels } from "components/Workflow/Editor/modules/utilities";
 import Utils from "utils/utils";
@@ -50,6 +52,7 @@ export default {
         Form,
         FormCardTool,
         FormElement,
+        FormSection,
     },
     props: {
         datatypes: {
@@ -142,7 +145,7 @@ export default {
                     console.log(form);
                     form.parseUpdate(data.config_form);
                     form.parseErrors(data.config_form);
-                })
+                });
         },
     },
 };
