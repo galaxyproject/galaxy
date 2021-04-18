@@ -33,11 +33,11 @@ echo '${species_2}' >> '${output}'
           <element name="e2" value="3.maf" />
         </collection>
       </param>
-      <param name="species_2" value="panTro1,rn3" />
+      <param name="species_2" value="panTro1,rn3,echTel1" />
       <output name="output" ftype="txt">
         <assert_contents>
           <has_line line="hg17,canFam1" />
-          <has_line line="panTro1,rn3" />
+          <has_line line="panTro1,rn3,echTel1" />
         </assert_contents>
       </output>
     </test>
