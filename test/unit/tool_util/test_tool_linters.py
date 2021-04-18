@@ -136,7 +136,7 @@ TESTS = [
         SELECT_OPTION_DEFINITIONS, inputs.lint_inputs,
         lambda x:
             "Select parameter [select_noopt] options have to be defined by either 'option' tags, a 'option' tag or the attribute 'dynamic_options'." in x.error_messages
-            and "Select parameter [select_noopts] options tag defines no dynamic options. Use 'from_dataset' or 'from_data_table'." in x.error_messages
+            and "Select parameter [select_noopts] options tag defines no options. Use 'from_dataset', 'from_data_table', or a filter that adds values." in x.error_messages
             and "Select parameter [select_fd_op] options have to be defined by either 'option' tags, a 'option' tag or the attribute 'dynamic_options'." in x.error_messages
             and "Select parameter [select_fd_op] contains multiple options tags" in x.error_messages
             and "Select parameter [select_fd_fdt] options uses 'from_dataset' and 'from_data_table' attribute." in x.error_messages

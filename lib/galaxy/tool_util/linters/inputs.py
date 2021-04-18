@@ -1,8 +1,8 @@
 """This module contains a linting functions for tool inputs."""
 from galaxy.util import string_as_bool
+from galaxy.tools.parameters.dynamic_options import filter_types
 from ._util import is_datasource, is_valid_cheetah_placeholder
 from ..parser.util import _parse_name
-
 
 def lint_inputs(tool_xml, lint_ctx):
     """Lint parameters in a tool's inputs block."""
@@ -32,6 +32,7 @@ def lint_inputs(tool_xml, lint_ctx):
             # get dynamic/statically defined options
             dynamic_options = param.get("dynamic_options", None)
             options = param.findall("./options")
+            filters = param.findall("./options/filter")
             select_options = param.findall('./option')
 
             if dynamic_options is not None:
@@ -43,12 +44,30 @@ def lint_inputs(tool_xml, lint_ctx):
 
             # lint dynamic options
             if len(options) == 1:
+                filters = options[0].findall("./filter")
+                # lint filters
+                filter_adds_options = False
+                for f in filters:
+                    ftype = f.get("type", None)
+                    if ftype is None:
+                        lint_ctx.error(f"Select parameter [{param_name}] contains filter without type.")
+                        continue
+                    if ftype not in filter_types:
+                        lint_ctx.error(f"Select parameter [{param_name}] contains filter with unknown type '{ftype}'.")
+                        continue
+                    if ftype in ['add_value', 'data_meta']:
+                        filter_adds_options = True
+                    # TODO more linting of filters
+
+
                 from_file = options[0].get("from_file", None)
                 from_parameter = options[0].get("from_parameter", None)
                 from_dataset = options[0].get("from_dataset", None)
                 from_data_table = options[0].get("from_data_table", None)
-                if from_file is None and from_parameter is None and from_dataset is None and from_data_table is None:
-                    lint_ctx.error(f"Select parameter [{param_name}] options tag defines no dynamic options. Use 'from_dataset' or 'from_data_table'.")
+                if (from_file is None and from_parameter is None
+                        and from_dataset is None and from_data_table is None
+                        and not filter_adds_options):
+                    lint_ctx.error(f"Select parameter [{param_name}] options tag defines no options. Use 'from_dataset', 'from_data_table', or a filter that adds values.")
 
                 if from_file is not None:
                     lint_ctx.warn(f"Select parameter [{param_name}] options uses deprecated 'from_file' attribute.")
@@ -66,7 +85,7 @@ def lint_inputs(tool_xml, lint_ctx):
 
                 if options[0].get("transform_lines", None) is not None:
                     lint_ctx.warn(f"Select parameter [{param_name}] options uses deprecated 'transform_lines' attribute.")
-            
+
                 if options[0].get("meta_file_key", None) is not None and 'from_dataset' is None:
                     lint_ctx.warn(f"Attribute `meta_file_key` only works together with `from_datasets` therefore it's ignonred in Select [{param_name}]")
 
