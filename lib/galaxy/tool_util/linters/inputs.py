@@ -4,6 +4,7 @@ from galaxy.tools.parameters.dynamic_options import filter_types
 from ._util import is_datasource, is_valid_cheetah_placeholder
 from ..parser.util import _parse_name
 
+
 def lint_inputs(tool_xml, lint_ctx):
     """Lint parameters in a tool's inputs block."""
     datasource = is_datasource(tool_xml)
@@ -59,7 +60,6 @@ def lint_inputs(tool_xml, lint_ctx):
                         filter_adds_options = True
                     # TODO more linting of filters
 
-
                 from_file = options[0].get("from_file", None)
                 from_parameter = options[0].get("from_parameter", None)
                 from_dataset = options[0].get("from_dataset", None)
@@ -86,8 +86,8 @@ def lint_inputs(tool_xml, lint_ctx):
                 if options[0].get("transform_lines", None) is not None:
                     lint_ctx.warn(f"Select parameter [{param_name}] options uses deprecated 'transform_lines' attribute.")
 
-                if options[0].get("meta_file_key", None) is not None and 'from_dataset' is None:
-                    lint_ctx.warn(f"Attribute `meta_file_key` only works together with `from_datasets` therefore it's ignonred in Select [{param_name}]")
+                if options[0].get("meta_file_key", None) is not None and from_dataset is None:
+                    lint_ctx.warn(f"Select parameter [{param_name}] `meta_file_key` only works with `from_datasets`")
 
             elif len(options) > 1:
                 lint_ctx.error(f"Select parameter [{param_name}] contains multiple options tags")
