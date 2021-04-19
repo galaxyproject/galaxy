@@ -5,6 +5,7 @@
         :title="node.config_form.name"
         :description="node.config_form.description"
         :options="node.config_form"
+        @onChangeVersion="onChangeVersion"
     >
         <template v-slot:body>
             <FormElement
@@ -83,7 +84,7 @@ export default {
             return this.getManager();
         },
         id() {
-            return this.node.id;
+            return `${this.node.id}${this.node.version}`;
         },
         inputs() {
             const inputs = this.node.config_form.inputs;
@@ -135,8 +136,10 @@ export default {
         },
         onChangeSection(values) {
             this.sectionValues = values;
+            console.log(this.sectionValues);
             this.postChanges();
         },
+        onChangeVersion() {},
         postChanges() {
             const options = this.node.config_form;
             axios
@@ -151,6 +154,7 @@ export default {
                     this.node.tool_state = data.tool_state;
                     this.node.inputs = data.inputs ? data.inputs.slice() : [];
                     this.node.outputs = data.outputs ? data.outputs.slice() : [];
+                    this.node.postJobActions = data.post_job_actions || {};
                     const form = this.$refs["form"];
                     console.log(form);
                     form.parseUpdate(data.config_form);

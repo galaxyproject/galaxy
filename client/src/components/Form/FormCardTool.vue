@@ -48,7 +48,7 @@
                         <template v-slot:button-content>
                             <span class="fa fa-cubes" />
                         </template>
-                        <b-dropdown-item v-for="v of reversedVersions" :key="v" @click="$emit('changeVersion', v)">
+                        <b-dropdown-item v-for="v of reversedVersions" :key="v" @click="$emit('onChangeVersion', v)">
                             <span class="fa fa-cube" /> Switch to {{ v }}
                         </b-dropdown-item>
                     </b-dropdown>
