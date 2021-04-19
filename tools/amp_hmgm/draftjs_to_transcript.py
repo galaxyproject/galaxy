@@ -119,74 +119,15 @@ def main():
                 i += 1
                 j += 1
             print("i: " + str(i) + " j:" + str(j))
-                
-#         #Standardizing AWS Transcribe file
-#         elif "jobName" in data.keys() and "results" in data.keys():
-#             transcripts = data["results"]["transcripts"]
-#             for t in transcripts:
-#                 results.transcript = results.transcript + t["transcript"]
-#             
-#             # Parse items (words)
-#             items = data["results"]["items"]
-#     	
-#             # For each item, get the necessary parts and store as a word
-#             for i in items:
-#                 alternatives = i["alternatives"]
-#                 # Choose an alternative
-#                 max_confidence = 0.00
-#                 text = ""
-#     
-#                 # Each word is stored as an "alternative".  Get the one with the maximum confidence
-#                 for a in alternatives:
-#                     if float(a["confidence"]) >= max_confidence:
-#                         max_confidence = float(a["confidence"])
-#                         text = a["content"]
-#     
-#                 end_time = -1
-#                 start_time = -1
-#     
-#                 # Two types (punctionation, pronunciation).  Only keep times for pronunciation
-#                 if i["type"] == "pronunciation":
-#                     end_time = float(i["end_time"])
-#                     start_time = float(i["start_time"])
-#     
-#                     # If this is the greatest end time, store it as duration
-#                     if end_time > duration:
-#                         duration = end_time
-#                 # Add the word to the results
-#                 results.addWord(i["type"], start_time, end_time, text, "confidence", max_confidence)
-#     
-#         #Standardizing Kaldi file
-#         elif "words" in data.keys():
-#             start_time = 0
-#             confidence = 0
-#             for word in data["words"]:
-#                 start_time = word["time"]
-#                 end_time = start_time + float(str(word["duration"]))
-#                 transcript += word["word"]+' '
-#                 text = word["word"]
-#                 
-#                 #if float(str(word["duration"])) > duration:
-#                 duration += float(str(word["duration"]))
-#                 if text[-1] in [',','.','!','?'] and len(text) > 1:
-#                     punctuation = text[-1]
-#                     text = text[0:-1]
-#                     results.addWord('pronunciation', start_time, end_time, text, "confidence",confidence)
-#                     results.addWord('punctuation', None, None, punctuation, "confidence",confidence)
-#                 elif text in [',','.','!','?']:
-#                     results.addWord('punctuation', None, None, text, "confidence",confidence)
-#                 else:
-#                     results.addWord('pronunciation', start_time, end_time, text, "confidence",confidence)
-#             results.transcript = transcript
             
         # Create the media object
         media = SpeechToTextMedia(duration, original_transcript)
     
         # Create the final object
-        outputFile = SpeechToText(media, results)
+        stt = SpeechToText(media, results)
     
         # Write the output
-        write_output_json(outputFile, to_transcript)
+        mgm_utils.write_json_file(stt, to_transcript)
         print("Successfully converted from DraftJs " + from_draftjs + " to Transcript " + to_transcript)
         # as the last command in HMGM, implicitly exit 0 here to let the whole job complete in success
     except Exception as e:
@@ -195,12 +136,6 @@ def main():
         traceback.print_exc()
         sys.stdout.flush()
         exit(-1)            
-
-
-# Serialize schema obj and write it to output file
-def write_output_json(input_json, json_file):
-	with open(json_file, 'w') as outfile:
-		json.dump(input_json, outfile, default=lambda x: x.__dict__)
 
 
 if __name__ == "__main__":

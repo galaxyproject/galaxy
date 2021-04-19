@@ -46,7 +46,7 @@ def main():
         adjust_word(word, offset_adj)
         
     # Write the resulting json
-    write_output_json(stt, output_json)
+    mgm_utils.write_json_file(stt, output_json)
 
 def adjust_word(word, offset_adj):
     print(f"WORD: {word.start} : {word.end}")
@@ -58,13 +58,7 @@ def adjust_word(word, offset_adj):
             word.end = word.end + adj.adjustment
             return
     print("No adjustment found")
-
     
-# Serialize schema obj and write it to output file
-def write_output_json(transcribe_schema, json_file):
-    # Serialize the stt object
-    with open(json_file, 'w') as outfile:
-        json.dump(transcribe_schema, outfile, default=lambda x: x.__dict__)
     
 if __name__ == "__main__":
     main()

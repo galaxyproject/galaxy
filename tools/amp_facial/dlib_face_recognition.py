@@ -148,35 +148,7 @@ def recognize_faces(input_video, known_names, known_faces, tolerance):
     cv2_video.release()
     cv2.destroyAllWindows()
     print (f"Completed face recognition on video {input_video}, total number of frames with recognized faces: {len(fr_result.frames)}")
-    return fr_result
-        
-                        
-# # Convert number of frames to formatted time.
-# def frame_to_time(frames, fps):
-#     h =  int(frames/(3600*fps))
-#     m = int(frames/(60*fps) % 60)
-#     s = int(frames/fps % 60)
-#     return ("%02d:%02d:%02d" % ( h, m, s))
-# 
-# 
-# # Convert formatted time to number of frames.
-# def time_to_frame(time, fps):
-#     h,m,s = time.split(":")
-#     seconds = (int(h)*3600) + (int(m)*60) + int(s)
-#     return seconds*fps
-# 
-# 
-# # Convert formatted time to number of seconds.
-# def time_to_second(time):
-#     h,m,s = time.split(":")
-#     return (int(h)*3600) + (int(m)*60) + int(s)
-# 
-# # Convert number of seconds to formatted time.
-# def second_to_time(seconds):
-#     h = seconds/3600
-#     m = (seconds/60) % 60
-#     s = seconds % 60
-#     return ("%02d:%02d:%02d" % ( h, m, s))    
+    return fr_result                        
     
 
 if __name__ == "__main__":

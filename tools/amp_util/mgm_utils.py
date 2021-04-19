@@ -75,7 +75,7 @@ def cleanup_err_file(file):
         print("Error file for " + file + " has been cleaned up")
         
         
-# Serialize the given object and write it to the given output_file
+# Serialize the given object and write it to the given JSON output_file
 def write_json_file(object, output_file):
     with open(output_file, 'w') as file:
         json.dump(object, file, indent = 4, default = lambda x: x.__dict__)

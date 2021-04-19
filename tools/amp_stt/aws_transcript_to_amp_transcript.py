@@ -78,7 +78,7 @@ def main():
 	outputFile = SpeechToText(media, amp_results)
 
 	# Write the output
-	write_output_json(outputFile, output_stt_json_file)
+	mgm_utils.write_json_file(outputFile, output_stt_json_file)
 
 	# Start segmentation schema with diarization data
 	# Create a segmentation object to serialize
@@ -98,13 +98,8 @@ def main():
 			seg_schema.addDiarizationSegment(float(segment["start_time"]), float(segment["end_time"]), segment["speaker_label"])
 		
 	# Write the output
-	write_output_json(seg_schema, output_seg_json_file)
+	mgm_utils.write_json_file(seg_schema, output_seg_json_file)
 
-# Serialize schema obj and write it to output file
-def write_output_json(input_json, json_file):
-	# Serialize the segmentation object
-	with open(json_file, 'w') as outfile:
-		json.dump(input_json, outfile, default=lambda x: x.__dict__)
 
 if __name__ == "__main__":
 	main()

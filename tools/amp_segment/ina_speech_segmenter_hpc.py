@@ -8,11 +8,14 @@ import json
 import logging
 import sys
 import os
+
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
 import hpc_submit
 import mgm_utils
+
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
 from segmentation import Segmentation, SegmentationMedia
+
 
 def main():
     """
@@ -62,7 +65,7 @@ def main():
 
     print("Writing output json")
     # Serialize the json and write it to destination file
-    write_output_json(seg_schema, args.amp_segments)
+    mgm_utils.write_json_file(seg_schema, args.amp_segments)
 
     print("Job output:")
     print(job)
@@ -74,7 +77,7 @@ def main():
             "end_time": job['job']["end"],
             "elapsed_time": (datetime.strptime(job['job']["end"], '%Y-%m-%d %H:%M:%S.%f') - datetime.strptime(job['job']["start"], '%Y-%m-%d %H:%M:%S.%f')).total_seconds()  
         }
-        write_output_json(ts_output, args.hpc_timestamps)
+        mgm_utils.write_json_file(ts_output, args.hpc_timestamps)
 
     exit(0)
 
@@ -95,11 +98,6 @@ def convert_to_segmentation_schema(filename, segmentation):
         seg_schema.addSegment(segment[0], segment[0], float(segment[1]), float(segment[2]))
     return seg_schema
 
-# Serialize schema obj and write it to output file
-def write_output_json(data, json_file):
-    # Serialize the segmentation object
-    with open(json_file, 'w') as outfile:
-        json.dump(data, outfile, default=lambda x: x.__dict__)
 
 if __name__ == "__main__":
     main()

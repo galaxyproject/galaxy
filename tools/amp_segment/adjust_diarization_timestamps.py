@@ -8,6 +8,11 @@ sys.path.insert(0, os.path.abspath('../../../../../tools/amp_schema'))
 from segmentation import Segmentation, SegmentationMedia, SegmentationSegment
 from adjustment import Adjustment
 
+sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
+from mgm_logger import MgmLogger
+import mgm_utils
+
+
 def main():
 
     (segmentation_json, adj_json, output_json) = sys.argv[1:4]
@@ -48,7 +53,7 @@ def main():
         adjust_segment(segment, offset_adj)
         
     # Write the resulting json
-    write_output_json(seg, output_json)
+    mgm_utils.write_json_file(seg, output_json)
 
 def adjust_segment(segment, offset_adj):
     print(f"Segment: {segment.start} : {segment.end}")
@@ -74,12 +79,6 @@ def adjust_segment(segment, offset_adj):
     else:
         print("No adjustment found")
 
-    
-# Serialize schema obj and write it to output file
-def write_output_json(segmentation_schema, json_file):
-    # Serialize the segmentation object
-    with open(json_file, 'w') as outfile:
-        json.dump(segmentation_schema, outfile, default=lambda x: x.__dict__)
     
 if __name__ == "__main__":
     main()
