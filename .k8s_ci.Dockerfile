@@ -131,6 +131,7 @@ RUN set -xe; \
         curl \
         procps \
         less \
+        bzip2 \
     && update-alternatives --install /usr/bin/nano nano /bin/nano-tiny 0 \
     && update-alternatives --install /usr/bin/vim vim /usr/bin/vim.tiny 0 \
     && echo "$LANG UTF-8" > /etc/locale.gen \
