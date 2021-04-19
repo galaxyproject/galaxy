@@ -47,6 +47,17 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         self._assert_has_keys(job, "command_line", "external_id")
 
     @uses_test_history(require_new=True)
+    def test_admin_job_list(self, history_id):
+        self.__history_with_new_dataset(history_id)
+        jobs_response = self._get("jobs?view=admin_job_list", admin=False)
+        assert jobs_response.status_code == 403
+        assert jobs_response.json()['err_msg'] == 'Only admins can use the admin_job_list view'
+
+        jobs = self._get("jobs?view=admin_job_list", admin=True).json()
+        job = jobs[0]
+        self._assert_has_keys(job, "command_line", "external_id", 'handler')
+
+    @uses_test_history(require_new=True)
     def test_index_state_filter(self, history_id):
         # Initial number of ok jobs
         original_count = len(self.__uploads_with_state("ok"))

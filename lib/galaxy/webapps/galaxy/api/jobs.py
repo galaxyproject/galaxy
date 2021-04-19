@@ -121,6 +121,9 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         :type   invocation_id: string
         :param  invocation_id: limit listing of jobs to those that match the invocation_id. If none, all are returned.
 
+        :type   view: string
+        :param  view: Determines columns to return. Defaults to 'collection'.
+
         :rtype:     list
         :returns:   list of dictionaries containing summary job information
         """
@@ -128,6 +131,11 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         is_admin = trans.user_is_admin
         user_details = kwd.get('user_details', False)
         user_id = kwd.get('user_id', None)
+        view = kwd.get('view', 'collection')
+        if view not in ('collection', 'admin_job_list'):
+            raise exceptions.RequestParameterInvalidException(f"view parameter '{view} is invalid")
+        if view == 'admin_job_list' and not is_admin:
+            raise exceptions.AdminRequiredException("Only admins can use the admin_job_list view")
 
         if user_id:
             decoded_user_id = self.decode_id(user_id)
@@ -197,8 +205,10 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         out = []
         for job in query.all():
-            job_dict = job.to_dict('collection', system_details=is_admin)
+            job_dict = job.to_dict(view, system_details=is_admin)
             j = self.encode_all_ids(trans, job_dict, True)
+            if view == 'admin_job_list':
+                j['decoded_job_id'] = job.id
             if user_details:
                 j['user_email'] = job.user.email
             out.append(j)
