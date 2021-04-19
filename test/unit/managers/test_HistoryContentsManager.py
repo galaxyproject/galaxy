@@ -241,15 +241,15 @@ class HistoryAsContainerTestCase(HistoryAsContainerBaseTestCase):
         contents.append(self.add_list_collection_to_history(history, contents[4:6]))
 
         self.log("should allow filtering by update_time")
-        # in the case of collections we have to change the collection.collection (ugh) to change the update_time
-        contents[3].collection.populated_state = 'big ball of mud'
+        # change the update_time by updating the name
+        contents[3].name = 'big ball of mud'
         self.app.model.context.flush()
-        update_time = contents[3].collection.update_time
+        update_time = contents[3].update_time
 
         def get_update_time(item):
             update_time = getattr(item, 'update_time', None)
             if not update_time:
-                update_time = item.collection.update_time
+                update_time = item.update_time
             return update_time
 
         results = self.contents_manager.contents(history, filters=[parsed_filter("orm", column('update_time') >= update_time)])
