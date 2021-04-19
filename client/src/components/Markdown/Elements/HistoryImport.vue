@@ -1,15 +1,15 @@
 <template>
     <div>
-        <b-link @click="onClick" class="mr-2">Click to import History: {{ name }}.</b-link>
-        <span v-if="imported" class="text-success">
+        <b-link @click="onClick">Click to Import History: {{ name }}.</b-link>
+        <div v-if="imported" class="text-success">
             <font-awesome-icon icon="check" class="mr-1" />
             <span>Successfully Imported History!</span>
-        </span>
-        <span v-if="!!error" class="text-danger">
+        </div>
+        <div v-if="!!error" class="text-danger">
             <font-awesome-icon icon="exclamation-triangle" class="mr-1" />
             <span>Failed to Import History!</span>
             <span>{{ error }}</span>
-        </span>
+        </div>
     </div>
 </template>
 
