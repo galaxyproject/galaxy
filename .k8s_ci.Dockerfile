@@ -125,8 +125,9 @@ ENV LANG=en_US.UTF-8
 # Install procps (contains kill, ps etc.), less, curl, vim-tiny and nano-tiny
 # for convenience and debugging purposes. Nano and vim commands are aliased
 # to their tiny variants using the debian alternatives system.
-# Bzip2 is installed for backwards compatibility with older versions of this
-# image which was based on Ubuntu and contained these utilities.
+# Bzip2 and virtualenv are installed for backwards compatibility with older
+# versions of this image which was based on Ubuntu and contained these
+# utilities.
 RUN set -xe; \
     echo "Acquire::http {No-Cache=True;};" > /etc/apt/apt.conf.d/no-cache \
     && apt-get -qq update && apt-get install -y --no-install-recommends \
@@ -139,6 +140,7 @@ RUN set -xe; \
         bzip2 \
     && update-alternatives --install /usr/bin/nano nano /bin/nano-tiny 0 \
     && update-alternatives --install /usr/bin/vim vim /usr/bin/vim.tiny 0 \
+    && python -B -m pip install --no-cache virtualenv \
     && echo "$LANG UTF-8" > /etc/locale.gen \
     && locale-gen $LANG && update-locale LANG=$LANG \
     && apt-get autoremove -y && apt-get clean \
