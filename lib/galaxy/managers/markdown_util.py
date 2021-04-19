@@ -676,6 +676,8 @@ history_dataset_collection_display(input={})
             # TODO: this really should be workflow id not stored workflow id but the API
             # it consumes wants the stored id.
             return ("workflow_display(workflow_id=%s)\n" % invocation.workflow.stored_workflow.id, False)
+        if container == "history_link":
+            return ("history_link(history_id=%s)\n" % invocation.history.id, False)
         if container == "invocation_date":
             return ("invocation_date(invocation_id=%s)\n" % invocation.id, False)
         ref_object_type = None
