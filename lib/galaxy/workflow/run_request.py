@@ -498,11 +498,3 @@ def workflow_request_to_run_config(work_request_context, workflow_invocation):
         resource_params=resource_params,
     )
     return workflow_run_config
-
-
-def __decode_id(trans, workflow_id, model_type="workflow"):
-    try:
-        return trans.security.decode_id(workflow_id)
-    except Exception:
-        message = f"Malformed {model_type} id ( {workflow_id} ) specified, unable to decode"
-        raise exceptions.MalformedId(message)

@@ -28,7 +28,6 @@ except Exception:
 
 from galaxy.exceptions import (
     MalformedContents,
-    MalformedId,
     MessageException,
 )
 from galaxy.managers.hdcas import HDCASerializer
@@ -69,10 +68,7 @@ def ready_galaxy_markdown_for_import(trans, external_galaxy_markdown):
         object_id = None
         if id_match:
             object_id = id_match.group(2)
-            try:
-                decoded_id = trans.security.decode_id(object_id)
-            except Exception:
-                raise MalformedId("Invalid encoded ID %s" % object_id)
+            decoded_id = trans.security.decode_id(object_id)
             line = line.replace(id_match.group(), "%s=%d" % (id_match.group(1), decoded_id))
         return (line, False)
 

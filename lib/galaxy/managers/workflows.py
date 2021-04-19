@@ -539,7 +539,6 @@ class WorkflowContentsManager(UsesAnnotations):
         option describes the workflow in a context more tied to the current Galaxy instance and includes
         fields like 'url' and 'url' and actual unencoded step ids instead of 'order_index'.
         """
-
         def to_format_2(wf_dict, **kwds):
             return from_galaxy_native(wf_dict, None, **kwds)
 
@@ -1485,6 +1484,16 @@ class WorkflowContentsManager(UsesAnnotations):
             workflow=self.workflow_to_dict(trans, refactored_workflow.stored_workflow, style=refactor_request.style),
             dry_run=refactor_request.dry_run,
         )
+
+    def get_all_tool_ids(self, workflow):
+        tool_ids = set()
+        for step in workflow.steps:
+            if step.type == 'tool':
+                if step.tool_id:
+                    tool_ids.add(step.tool_id)
+            elif step.type == 'subworkflow':
+                tool_ids.update(self.get_all_tool_ids(step.subworkflow))
+        return tool_ids
 
 
 class RefactorRequest(RefactorActions):

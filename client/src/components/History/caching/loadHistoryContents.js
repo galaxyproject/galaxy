@@ -1,10 +1,7 @@
-import { pipe } from "rxjs";
-import { map, withLatestFrom, pluck, shareReplay } from "rxjs/operators";
-import { throttleDistinct } from "utils/observable/throttleDistinct";
-import { tag } from "rxjs-spy/operators/tag";
-
-import { hydrate } from "./operators/hydrate";
-import { requestWithUpdateTime, requestWithUpdateTimeNoInitial } from "./operators/requestWithUpdateTime";
+import { zip } from "rxjs";
+import { map, pluck, share } from "rxjs/operators";
+import { hydrate } from "utils/observable";
+import { requestWithUpdateTime } from "./operators/requestWithUpdateTime";
 import { prependPath } from "./workerConfig";
 import { bulkCacheContent } from "./db";
 import { SearchParams } from "../model/SearchParams";
@@ -19,79 +16,63 @@ export const clearHistoryDateStore = async () => {
 };
 
 /**
- * Turn [historyId, params, hid] into content requests. Cache results and send
+ * Turn [historyId, params, pagination] into content requests. Cache results and send
  * back statistics about what was returned for this query.
  */
 // prettier-ignore
 export const loadHistoryContents = (cfg = {}) => (rawInputs$) => {
-    const {
-        onceEvery = 30 * 1000,
-        windowSize = SearchParams.pageSize,
-        noInitial = false
+    const { 
+        noInitial = false,
+        windowSize = SearchParams.pageSize
     } = cfg;
 
-    // if noInitial, only returns updates
-    const dateAppender = noInitial ? requestWithUpdateTimeNoInitial : requestWithUpdateTime
-
     const inputs$ = rawInputs$.pipe(
-        shareReplay(1)
+        hydrate([undefined, SearchParams]),
     );
 
     const ajaxResponse$ = inputs$.pipe(
-        hydrate([undefined, SearchParams]),
         map(([id, params, hid]) => {
             const baseUrl = `/api/histories/${id}/contents/near/${hid}/${windowSize}`;
             return `${baseUrl}?${params.historyContentQueryString}`;
         }),
-        throttleDistinct({ timeout: onceEvery }),
         map(prependPath),
-        dateAppender({ dateStore }),
-        shareReplay(1),
+        requestWithUpdateTime({ dateStore, noInitial }),
+        share(),
     );
 
     const cacheSummary$ = ajaxResponse$.pipe(
         pluck("response"),
         bulkCacheContent(),
         summarizeCacheOperation(),
-        tag("loadHistoryContents-cacheSummary"),
     );
 
-    return cacheSummary$.pipe(
-        withLatestFrom(ajaxResponse$, inputs$),
-        map(([summary, ajaxResponse, inputs]) => {
-
-            // actual list
+    return zip(ajaxResponse$, cacheSummary$).pipe(
+        map(([ajaxResponse, summary]) => {
             const { xhr, response = [] } = ajaxResponse;
             const { max: maxContentHid, min: minContentHid } = getPropRange(response, "hid");
+            const headerInt = field => parseInt(xhr.getResponseHeader(field));
 
             // header counts
-            const matchesUp = +xhr.getResponseHeader("matches_up");
-            const matchesDown = +xhr.getResponseHeader("matches_down");
-            const totalMatchesUp = +xhr.getResponseHeader("total_matches_up");
-            const totalMatchesDown = +xhr.getResponseHeader("total_matches_down");
-            const minHid = +xhr.getResponseHeader("min_hid");
-            const maxHid = +xhr.getResponseHeader("max_hid");
+            const matchesUp = headerInt("matches_up");
+            const matchesDown = headerInt("matches_down");
+            const totalMatchesUp = headerInt("total_matches_up");
+            const totalMatchesDown = headerInt("total_matches_down");
+            const minHid = headerInt("min_hid");
+            const maxHid = headerInt("max_hid");
 
             return {
-                // original inputs
-                inputs,
-
-                // cache summary
                 summary,
-
-                // derived from the returned content list
-                minContentHid,
-                maxContentHid,
-
-                // ajax result stats
+                matches: matchesUp + matchesDown,
+                totalMatches: totalMatchesUp + totalMatchesDown,
                 minHid,
                 maxHid,
+                minContentHid, // minimum hid in the returned result
+                maxContentHid, // maximum hid in the returned result
+
                 matchesUp,
                 matchesDown,
-                matches: matchesUp + matchesDown,
                 totalMatchesUp,
                 totalMatchesDown,
-                totalMatches: totalMatchesUp + totalMatchesDown
             };
         })
     );
@@ -103,15 +84,15 @@ export const loadHistoryContents = (cfg = {}) => (rawInputs$) => {
  * summarizes what pouchdb did during the bulk cache and sends back some stats.
  */
 // prettier-ignore
-export const summarizeCacheOperation = () => pipe(
-    map((list) => {
+export const summarizeCacheOperation = () => {
+    return map((list) => {
         const cached = list.filter((result) => result.updated || result.ok);
         return {
             updatedItems: cached.length,
             totalReceived: list.length,
         };
     })
-);
+}
 
 /**
  * Gets min and max values from an array of objects

@@ -1,5 +1,5 @@
 <template>
-    <CurrentUser v-slot="{ user }">
+    <CurrentUser class="d-flex flex-column" v-slot="{ user }">
         <UserHistories v-if="user" :user="user" v-slot="{ currentHistory, histories, handlers }">
             <HistoryPanel v-if="currentHistory" :history="currentHistory" v-on="handlers">
                 <template v-slot:nav>
