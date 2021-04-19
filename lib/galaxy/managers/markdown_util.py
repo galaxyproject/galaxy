@@ -36,7 +36,6 @@ from galaxy.managers.jobs import (
     summarize_job_metrics,
     summarize_job_parameters,
 )
-from galaxy.managers.histories import HistoryManager
 from galaxy.model.item_attrs import get_item_annotation_str
 from galaxy.model.orm.now import now
 from galaxy.util.sanitize_html import sanitize_html
