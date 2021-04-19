@@ -372,6 +372,9 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> fname = get_test_fname('5e5z.pdb')
     >>> guess_ext(fname, sniff_order)
     'pdb'
+    >>> fname = get_test_fname('Si.cell')
+    >>> guess_ext(fname, sniff_order)
+    'cell'
     >>> fname = get_test_fname('mothur_datatypetest_true.mothur.otu')
     >>> guess_ext(fname, sniff_order)
     'mothur.otu'
