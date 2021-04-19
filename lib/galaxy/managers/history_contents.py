@@ -364,12 +364,9 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
             # TODO: should be purgable? fix
             purged=literal(False),
             extension=literal(None),
-            # these are attached instead to the inner collection joined below
-            create_time=model.DatasetCollection.create_time,
-            update_time=model.DatasetCollection.update_time
         )
         subquery = self._session().query(*columns)
-        # for the HDCA's we need to join the DatasetCollection since it has update/create times
+        # for the HDCA's we need to join the DatasetCollection since it has the populated_state
         subquery = subquery.join(model.DatasetCollection,
             model.DatasetCollection.id == component_class.collection_id)
         if history_id:
