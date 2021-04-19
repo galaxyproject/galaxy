@@ -5,9 +5,10 @@
             <font-awesome-icon icon="check" class="mr-1" />
             <span>Successfully Imported History!</span>
         </span>
-        <span v-if="failed" class="text-danger">
+        <span v-if="!!error" class="text-danger">
             <font-awesome-icon icon="exclamation-triangle" class="mr-1" />
             <span>Failed to Import History!</span>
+            <span>{{ error }}</span>
         </span>
     </div>
 </template>
@@ -18,6 +19,7 @@ import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { errorMessageAsString } from "utils/simple-error";
 
 Vue.use(BootstrapVue);
 
@@ -38,7 +40,7 @@ export default {
     data() {
         return {
             imported: false,
-            failed: false,
+            error: false,
         };
     },
     computed: {
@@ -50,11 +52,11 @@ export default {
         onClick() {
             axios
                 .post(`${getAppRoot()}api/histories`, { history_id: this.args.history_id })
-                .then(({ data }) => {
+                .then(() => {
                     this.imported = true;
                 })
                 .catch((e) => {
-                    this.failed = true;
+                    this.error = errorMessageAsString(e);
                 });
         },
     },
