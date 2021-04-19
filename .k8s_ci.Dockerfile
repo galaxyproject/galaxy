@@ -122,6 +122,11 @@ ARG GALAXY_USER
 ENV LC_ALL=en_US.UTF-8
 ENV LANG=en_US.UTF-8
 
+# Install procps (contains kill, ps etc.), less, curl, vim-tiny and nano-tiny
+# for convenience and debugging purposes. Nano and vim commands are aliased
+# to their tiny variants using the debian alternatives system.
+# Bzip2 is installed for backwards compatibility with older versions of this
+# image which was based on Ubuntu and contained these utilities.
 RUN set -xe; \
     echo "Acquire::http {No-Cache=True;};" > /etc/apt/apt.conf.d/no-cache \
     && apt-get -qq update && apt-get install -y --no-install-recommends \
