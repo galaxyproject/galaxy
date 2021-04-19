@@ -129,6 +129,9 @@ RUN set -xe; \
         vim-tiny \
         nano-tiny \
         curl \
+        procps \
+        less \
+
     && echo "$LANG UTF-8" > /etc/locale.gen \
     && locale-gen $LANG && update-locale LANG=$LANG \
     && apt-get autoremove -y && apt-get clean \
