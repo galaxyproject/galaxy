@@ -20,7 +20,7 @@
 	<param name="min_segment_duration" type="integer" label="Minimum Segment Duration" value="1000" min="0" help="Minimum segment duration in miliseconds"/>
   </inputs>
   <outputs>
-    <data name="amp_segments" format="segment" label="AMP Segments of Noise/Non-noise"/>
+    <data name="amp_applause_segments" format="segment" label="AMP Applause Detection Segments"/>
   </outputs>
   <tests>
   </tests>
