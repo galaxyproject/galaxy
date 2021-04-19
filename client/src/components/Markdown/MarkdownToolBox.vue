@@ -69,6 +69,7 @@ export default {
             selectedType: null,
             selectedLabels: null,
             selectedShow: false,
+            selectedPayload: null,
             visualizationIndex: {},
             error: null,
             historySection: {
@@ -78,7 +79,7 @@ export default {
                     {
                         id: "history_dataset_display",
                         name: "Dataset",
-                        emitter: "onHistoryId",
+                        emitter: "onHistoryDatasetId",
                     },
                     {
                         id: "history_dataset_collection_display",
@@ -88,41 +89,46 @@ export default {
                     {
                         id: "history_dataset_as_image",
                         name: "Image",
-                        emitter: "onHistoryId",
+                        emitter: "onHistoryDatasetId",
                     },
                     {
                         id: "history_dataset_index",
                         name: "Dataset Index",
-                        emitter: "onHistoryId",
+                        emitter: "onHistoryDatasetId",
                     },
                     {
                         id: "history_dataset_embedded",
                         name: "Embedded Dataset",
-                        emitter: "onHistoryId",
+                        emitter: "onHistoryDatasetId",
                     },
                     {
                         id: "history_dataset_type",
                         name: "Dataset Type",
-                        emitter: "onHistoryId",
+                        emitter: "onHistoryDatasetId",
                     },
                     {
                         id: "history_dataset_link",
                         name: "Link to Dataset",
-                        emitter: "onHistoryId",
+                        emitter: "onHistoryDatasetId",
                     },
                     {
                         id: "history_dataset_name",
                         name: "Name of Dataset",
-                        emitter: "onHistoryId",
+                        emitter: "onHistoryDatasetId",
                     },
                     {
                         id: "history_dataset_peek",
                         name: "Peek into Dataset",
-                        emitter: "onHistoryId",
+                        emitter: "onHistoryDatasetId",
                     },
                     {
                         id: "history_dataset_info",
                         name: "Dataset Details",
+                        emitter: "onHistoryDatasetId",
+                    },
+                    {
+                        id: "history_import",
+                        name: "Link to Import",
                         emitter: "onHistoryId",
                     },
                 ],
@@ -264,6 +270,9 @@ export default {
         },
         onClick(item) {
             switch (item.emitter) {
+                case "onHistoryDatasetId":
+                    this.onHistoryDatasetId(item.id);
+                    break;
                 case "onHistoryId":
                     this.onHistoryId(item.id);
                     break;
@@ -304,6 +313,11 @@ export default {
             this.selectedShow = true;
         },
         onHistoryId(argumentName) {
+            this.selectedArgumentName = argumentName;
+            this.selectedType = "history_id";
+            this.selectedShow = true;
+        },
+        onHistoryDatasetId(argumentName) {
             this.selectedArgumentName = argumentName;
             this.selectedType = "history_dataset_id";
             this.selectedLabels = this.getOutputs();

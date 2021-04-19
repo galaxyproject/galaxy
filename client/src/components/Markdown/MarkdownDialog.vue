@@ -54,6 +54,14 @@
             @onOk="onWorkflow"
             @onCancel="onCancel"
         />
+        <BasicSelectionDialog
+            v-else-if="historyShow"
+            :get-data="getHistories"
+            title="History"
+            label-key="name"
+            @onOk="onHistory"
+            @onCancel="onCancel"
+        />
     </span>
 </template>
 
@@ -120,9 +128,11 @@ export default {
             jobsUrl: `${getAppRoot()}api/jobs`,
             workflowsUrl: `${getAppRoot()}api/workflows`,
             invocationsUrl: `${getAppRoot()}api/invocations`,
+            historiesUrl: `${getAppRoot()}api/histories?view=detailed&q=published&qv=True`,
             selectedShow: false,
             visualizationShow: false,
             workflowShow: false,
+            historyShow: false,
             jobShow: false,
             invocationShow: false,
             dataShow: false,
@@ -148,6 +158,9 @@ export default {
         getWorkflows() {
             return axios.get(this.workflowsUrl);
         },
+        getHistories() {
+            return axios.get(this.historiesUrl);
+        },
         onData(response) {
             this.dataShow = false;
             this.$emit("onInsert", `${this.argumentName}(history_dataset_id=${response})`);
@@ -164,6 +177,10 @@ export default {
             this.invocationShow = false;
             this.$emit("onInsert", `${this.argumentName}(invocation_id=${response.id})`);
         },
+        onHistory(response) {
+            this.historyShow = false;
+            this.$emit("onInsert", `history_import(history_id=${response.id})`);
+        },
         onWorkflow(response) {
             this.workflowShow = false;
             this.$emit("onInsert", `workflow_display(workflow_id=${response.id})`);
@@ -175,6 +192,8 @@ export default {
         onCreate() {
             if (this.argumentType == "workflow_id") {
                 this.workflowShow = true;
+            } else if (this.argumentType == "history_id") {
+                this.historyShow = true;
             } else if (this.argumentType == "history_dataset_id") {
                 if (this.useLabels) {
                     this.selectedShow = true;

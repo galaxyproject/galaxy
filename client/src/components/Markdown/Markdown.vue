@@ -44,6 +44,7 @@
                 <div v-else-if="obj.name == 'generate_time'" class="galaxy-time">
                     <pre><code>{{ getTime }}</code></pre>
                 </div>
+                <HistoryImport v-else-if="obj.name == 'history_import'" :args="obj.args" />
                 <HistoryDatasetAsImage v-else-if="obj.name == 'history_dataset_as_image'" :args="obj.args" />
                 <HistoryDatasetLink v-else-if="obj.name == 'history_dataset_link'" :args="obj.args" />
                 <HistoryDatasetIndex v-else-if="obj.name == 'history_dataset_index'" :args="obj.args" />
@@ -105,6 +106,7 @@ import HistoryDatasetLink from "./Elements/HistoryDatasetLink";
 import HistoryDatasetIndex from "./Elements/HistoryDatasetIndex";
 import HistoryDatasetCollectionDisplay from "./Elements/HistoryDatasetCollection/CollectionDisplay";
 import HistoryDatasetDetails from "./Elements/HistoryDatasetDetails";
+import HistoryImport from "./Elements/HistoryImport";
 import InvocationTime from "./Elements/InvocationTime";
 import JobMetrics from "./Elements/JobMetrics";
 import JobParameters from "./Elements/JobParameters";
@@ -137,6 +139,7 @@ export default {
         HistoryDatasetDisplay,
         HistoryDatasetIndex,
         HistoryDatasetLink,
+        HistoryImport,
         JobMetrics,
         JobParameters,
         LoadingSpan,

@@ -36,6 +36,7 @@ from galaxy.managers.jobs import (
     summarize_job_metrics,
     summarize_job_parameters,
 )
+from galaxy.managers.histories import HistoryManager
 from galaxy.model.item_attrs import get_item_annotation_str
 from galaxy.model.orm.now import now
 from galaxy.util.sanitize_html import sanitize_html
@@ -49,8 +50,8 @@ INPUT_LABEL_PATTERN = re.compile(r'input=\s*%s\s*' % ARG_VAL_CAPTURED_REGEX)
 STEP_LABEL_PATTERN = re.compile(r'step=\s*%s\s*' % ARG_VAL_CAPTURED_REGEX)
 PATH_LABEL_PATTERN = re.compile(r'path=\s*%s\s*' % ARG_VAL_CAPTURED_REGEX)
 # STEP_OUTPUT_LABEL_PATTERN = re.compile(r'step_output=([\w_\-]+)/([\w_\-]+)')
-UNENCODED_ID_PATTERN = re.compile(r'(workflow_id|history_dataset_id|history_dataset_collection_id|job_id|invocation_id)=([\d]+)')
-ENCODED_ID_PATTERN = re.compile(r'(workflow_id|history_dataset_id|history_dataset_collection_id|job_id|invocation_id)=([a-z0-9]+)')
+UNENCODED_ID_PATTERN = re.compile(r'(history_id|workflow_id|history_dataset_id|history_dataset_collection_id|job_id|invocation_id)=([\d]+)')
+ENCODED_ID_PATTERN = re.compile(r'(history_id|workflow_id|history_dataset_id|history_dataset_collection_id|job_id|invocation_id)=([a-z0-9]+)')
 INVOCATION_SECTION_MARKDOWN_CONTAINER_LINE_PATTERN = re.compile(
     r"```\s*galaxy\s*"
 )
@@ -80,6 +81,7 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
 
     def walk(self, trans, internal_galaxy_markdown):
         hda_manager = trans.app.hda_manager
+        history_manager = trans.app.history_manager
         workflow_manager = trans.app.workflow_manager
         job_manager = JobManager(trans.app)
         collection_manager = trans.app.dataset_collections_service
@@ -96,7 +98,11 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
                 object_id = int(id_match.group(2))
                 encoded_id = trans.security.encode_id(object_id)
                 line = line.replace(id_match.group(), "{}={}".format(id_match.group(1), encoded_id))
-            if container == "history_dataset_display":
+            if container == "history_import":
+                _check_object(object_id, line)
+                history = history_manager.get_accessible(object_id, trans.user)
+                rval = self.handle_history_import(line, history)
+            elif container == "history_dataset_display":
                 _check_object(object_id, line)
                 hda = hda_manager.get_accessible(object_id, trans.user)
                 rval = self.handle_dataset_display(line, hda)
@@ -175,6 +181,10 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
 
         export_markdown = _remap_galaxy_markdown_calls(_remap_container, internal_galaxy_markdown)
         return export_markdown
+
+    @abc.abstractmethod
+    def handle_history_import(self, line, history):
+        pass
 
     @abc.abstractmethod
     def handle_dataset_display(self, line, hda):
@@ -292,6 +302,9 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
     # from the encoded ID. Don't implement a default on the base class though because
     # it is good to force both Client and PDF/HTML export to deal with each new directive
     # explicitly.
+    def handle_history_import(self, line, history):
+        pass
+
     def handle_dataset_as_image(self, line, hda):
         pass
 
