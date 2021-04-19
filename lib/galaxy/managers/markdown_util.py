@@ -298,13 +298,13 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
     def handle_tool_stderr(self, line, job):
         self.ensure_rendering_data_for("jobs", job)["tool_stderr"] = job.tool_stderr or "*No Standard Error Available*"
 
+    def handle_history_import(self, line, history):
+        self.ensure_rendering_data_for("histories", history)["name"] = history.name
+
     # Following three cases - the client side widgets have everything they need
     # from the encoded ID. Don't implement a default on the base class though because
     # it is good to force both Client and PDF/HTML export to deal with each new directive
     # explicitly.
-    def handle_history_import(self, line, history):
-        pass
-
     def handle_dataset_as_image(self, line, hda):
         pass
 
