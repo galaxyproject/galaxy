@@ -97,10 +97,10 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
                 object_id = int(id_match.group(2))
                 encoded_id = trans.security.encode_id(object_id)
                 line = line.replace(id_match.group(), "{}={}".format(id_match.group(1), encoded_id))
-            if container == "history_import":
+            if container == "history_link":
                 _check_object(object_id, line)
                 history = history_manager.get_accessible(object_id, trans.user)
-                rval = self.handle_history_import(line, history)
+                rval = self.handle_history_link(line, history)
             elif container == "history_dataset_display":
                 _check_object(object_id, line)
                 hda = hda_manager.get_accessible(object_id, trans.user)
@@ -182,7 +182,7 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
         return export_markdown
 
     @abc.abstractmethod
-    def handle_history_import(self, line, history):
+    def handle_history_link(self, line, history):
         pass
 
     @abc.abstractmethod
@@ -297,7 +297,7 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
     def handle_tool_stderr(self, line, job):
         self.ensure_rendering_data_for("jobs", job)["tool_stderr"] = job.tool_stderr or "*No Standard Error Available*"
 
-    def handle_history_import(self, line, history):
+    def handle_history_link(self, line, history):
         self.ensure_rendering_data_for("histories", history)["name"] = history.name
 
     # Following three cases - the client side widgets have everything they need

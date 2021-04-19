@@ -127,7 +127,7 @@ export default {
                         emitter: "onHistoryDatasetId",
                     },
                     {
-                        id: "history_import",
+                        id: "history_link",
                         name: "Link to Import",
                         emitter: "onHistoryId",
                     },

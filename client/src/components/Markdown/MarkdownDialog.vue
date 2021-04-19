@@ -179,7 +179,7 @@ export default {
         },
         onHistory(response) {
             this.historyShow = false;
-            this.$emit("onInsert", `history_import(history_id=${response.id})`);
+            this.$emit("onInsert", `history_link(history_id=${response.id})`);
         },
         onWorkflow(response) {
             this.workflowShow = false;
