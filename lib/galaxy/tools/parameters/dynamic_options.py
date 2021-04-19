@@ -11,6 +11,7 @@ from io import StringIO
 from galaxy.model import (
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
+    MetadataFile,
     User
 )
 from galaxy.tools.wrappers import (
@@ -669,10 +670,14 @@ class DynamicOptions:
                 return []
 
             options = []
+            meta_file_key = self.meta_file_key
             for dataset in datasets:
-                if self.meta_file_key:
-                    dataset = getattr(dataset.metadata, self.meta_file_key, None)
-                if not dataset or not hasattr(dataset, 'file_name'):
+                if meta_file_key:
+                    dataset = getattr(dataset.metadata, meta_file_key, None)
+                    if not isinstance(dataset, MetadataFile):
+                        log.warning(f"The object inferred from the meta_file_key {meta_file_key} didn't exist or was not a valid file type metadata !")
+                        continue
+                if not hasattr(dataset, 'file_name'):
                     continue
                 # Ensure parsing dynamic options does not consume more than a megabyte worth memory.
                 path = dataset.file_name
