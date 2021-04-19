@@ -675,7 +675,7 @@ class DynamicOptions:
                 if meta_file_key:
                     dataset = getattr(dataset.metadata, meta_file_key, None)
                     if not isinstance(dataset, MetadataFile):
-                        log.warning(f"The meta_file_key `{meta_file_key}`` was invalid or the referred object was not a valid file type metadata!")
+                        log.warning(f"The meta_file_key `{meta_file_key}` was invalid or the referred object was not a valid file type metadata!")
                         continue
                     if getattr(dataset, 'purged', False) or getattr(dataset, 'deleted', False):
                         log.warning(f"The metadata file inferred from key `{meta_file_key}` was deleted!")
