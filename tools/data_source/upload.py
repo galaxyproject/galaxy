@@ -198,9 +198,10 @@ def add_composite_file(dataset, registry, output_path, files_path):
 
     def to_path(path_or_url):
         isa_url = is_url(path_or_url)
-        if isa_url:
+        file_sources = get_file_sources()
+        if isa_url or file_sources and file_sources.looks_like_uri(path_or_url):
             try:
-                temp_name = sniff.stream_url_to_file(path_or_url, file_sources=get_file_sources())
+                temp_name = sniff.stream_url_to_file(path_or_url, file_sources=file_sources)
             except Exception as e:
                 raise UploadProblemException('Unable to fetch %s\n%s' % (path_or_url, unicodify(e)))
 

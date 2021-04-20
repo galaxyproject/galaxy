@@ -56,6 +56,9 @@ def stream_url_to_file(path, file_sources=None):
         file_source_path.file_source.realize_to(file_source_path.path, temp_name)
         return temp_name
     else:
+        if 'file://' in path:
+            # This shouldn't happen, but seems like a reasonable safeguard to prevent exposing system secrets
+            raise Exception(f"stream_url_to_file received file:// URL '{path}', this is not allowed")
         page = urllib.request.urlopen(path)  # page will be .close()ed in stream_to_file
         temp_name = stream_to_file(page, prefix=prefix, source_encoding=util.get_charset_from_http_headers(page.headers))
         return temp_name
