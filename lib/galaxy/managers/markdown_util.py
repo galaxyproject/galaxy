@@ -408,6 +408,13 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         rval = (f"![{name}](data:image/png;base64,{base64_image_data})", True)
         return rval
 
+    def handle_history_link(self, line, history):
+        if history:
+            content = self.markdown_formatting_helpers.literal_via_fence(history.name)
+        else:
+            content = "*No History available*"
+        return (content, True)
+
     def handle_dataset_peek(self, line, hda):
         if hda.peek:
             content = self.markdown_formatting_helpers.literal_via_fence(hda.peek)
