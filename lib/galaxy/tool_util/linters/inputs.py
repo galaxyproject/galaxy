@@ -87,7 +87,7 @@ def lint_inputs(tool_xml, lint_ctx):
                     lint_ctx.warn(f"Select parameter [{param_name}] options uses deprecated 'transform_lines' attribute.")
 
             elif len(options) > 1:
-                lint_ctx.error(f"Select parameter [{param_name}] contains multiple options tags")
+                lint_ctx.error(f"Select parameter [{param_name}] contains multiple options elements")
 
             # lint statically defined options
             if any(['value' not in option.attrib for option in select_options]):
