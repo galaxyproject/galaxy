@@ -23,10 +23,3 @@ export const fetchInvocationStepById = () => {
         mergeMap((url) => ajax.getJSON(url))
     );
 };
-
-export const fetchDatasetCollectionAttributesById = () => {
-    return pipe(
-        map((id) => prependPath(`/api/dataset_collections/${id}/attributes`)),
-        mergeMap((url) => ajax.getJSON(url))
-    );
-};
