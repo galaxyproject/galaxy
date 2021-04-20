@@ -3509,7 +3509,7 @@ used to generate dynamic options.
     </xs:sequence>
     <xs:attribute name="from_dataset" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Determine options from the data set given in the referred input parameter. If 'meta_file_key' is given the options are determined from the data in the metadata file of the input.</xs:documentation>
+        <xs:documentation xml:lang="en">Determine options from the dataset given in the referred input parameter. If 'meta_file_key' is given, the options are determined from the data in the metadata file of the input.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="from_file" type="xs:string">
