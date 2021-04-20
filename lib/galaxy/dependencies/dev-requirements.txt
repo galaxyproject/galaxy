@@ -224,7 +224,7 @@ sphinxcontrib-jsmath==1.0.1; python_version >= "3.5"
 sphinxcontrib-qthelp==1.0.3; python_version >= "3.5"
 sphinxcontrib-serializinghtml==1.1.4; python_version >= "3.5"
 sqlalchemy-migrate==0.13.0
-sqlalchemy==1.4.7
+sqlalchemy==1.4.9
 sqlitedict==1.7.0
 sqlparse==0.4.1; python_version >= "3.5"
 starlette-context==0.3.2; python_version >= "3.7"
