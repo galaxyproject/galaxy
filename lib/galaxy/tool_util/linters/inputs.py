@@ -77,7 +77,7 @@ def lint_inputs(tool_xml, lint_ctx):
                 if from_dataset is not None and from_data_table is not None:
                     lint_ctx.error(f"Select parameter [{param_name}] options uses 'from_dataset' and 'from_data_table' attribute.")
 
-                if options[0].get("meta_file_key", None) is not None and from_dataset is not None:
+                if options[0].get("meta_file_key", None) is not None and from_dataset is None:
                     lint_ctx.error(f"Select parameter [{param_name}] 'meta_file_key' is only compatible with 'from_dataset'.")
 
                 if options[0].get("options_filter_attribute", None) is not None:
@@ -85,9 +85,6 @@ def lint_inputs(tool_xml, lint_ctx):
 
                 if options[0].get("transform_lines", None) is not None:
                     lint_ctx.warn(f"Select parameter [{param_name}] options uses deprecated 'transform_lines' attribute.")
-
-                if options[0].get("meta_file_key", None) is not None and from_dataset is None:
-                    lint_ctx.warn(f"Select parameter [{param_name}] `meta_file_key` only works with `from_datasets`")
 
             elif len(options) > 1:
                 lint_ctx.error(f"Select parameter [{param_name}] contains multiple options tags")
