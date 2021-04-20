@@ -23,10 +23,17 @@ export const requestWithUpdateTime = (config = {}) => {
         bufferSeconds = 0,
         dateFieldName = "update_time",
         requestTime = moment.utc(),
+        // indicates we don't want initial results
+        noInitial = false
     } = config;
 
     // mark and flag this update-time, append to next request with same base
     return pipe(
+        tap((url) => {
+            if (noInitial && !dateStore.has(url)) {
+                dateStore.set(url, moment.utc());
+            }
+        }),
         mergeMap((baseUrl) => of(baseUrl).pipe(
             appendUpdateTime({ dateStore, bufferSeconds, dateFieldName }),
             mergeMap(ajax),
@@ -34,22 +41,6 @@ export const requestWithUpdateTime = (config = {}) => {
         ))
     );
 };
-
-// prettier-ignore
-// Like request withUpdateTime but omits initial results
-export const requestWithUpdateTimeNoInitial = (config = {}) => {
-    const {
-        dateStore = requestDateStore,
-    } = config;
-    return pipe(
-        tap((url) => {
-            if (!dateStore.has(url)) {
-                dateStore.set(url,  moment.utc());
-            }
-        }),
-        requestWithUpdateTime(config)
-    );
-}
 
 /**
  * Takes a base URL appends an update_time-gt restriction based on the lst
@@ -60,7 +51,7 @@ export const requestWithUpdateTimeNoInitial = (config = {}) => {
 const appendUpdateTime = (cfg = {}) => {
     const {
         dateStore = requestDateStore,
-        dateFieldName = "update_time"
+        dateFieldName = "update_time",
     } = cfg;
 
     return pipe(

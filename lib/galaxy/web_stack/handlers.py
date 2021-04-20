@@ -145,13 +145,8 @@ class ConfiguresHandlers:
                             " handler assignment method in the job handler configuration",
                             HANDLER_ASSIGNMENT_METHODS.MEM_SELF)
                 self.handler_assignment_methods = [HANDLER_ASSIGNMENT_METHODS.MEM_SELF]
-            elif not self.handlers:
-                # No handlers defined, default is for processes to handle the jobs they create
-                self.handler_assignment_methods = [HANDLER_ASSIGNMENT_METHODS.DB_SELF]
             else:
-                # Handlers are defined, default is the value if the default attribute, or any untagged handler if
-                # default attribute is unset
-                self.handler_assignment_methods = [HANDLER_ASSIGNMENT_METHODS.DB_PREASSIGN]
+                self.handler_assignment_methods = [self.app.application_stack.get_preferred_handler_assignment_method()]
             # If the stack has handler pools it can override these defaults
             self.app.application_stack.init_job_handling(self)
             log.info("%s: No job handler assignment method is set, defaulting to '%s', set the `assign_with` attribute"
@@ -256,6 +251,10 @@ class ConfiguresHandlers:
         for collection in self.handlers.values():
             if self.app.config.server_name in collection:
                 return True
+        if not self.handlers and not self.handler_assignment_methods_configured \
+                and (HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION in self.handler_assignment_methods
+                or HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED in self.handler_assignment_methods):
+            return True
         return False
 
     def _set_is_handler(self, value):
@@ -284,7 +283,7 @@ class ConfiguresHandlers:
     def self_handler_tags(self):
         """Get an iterable of the current process's configured handler tags.
         """
-        return filter(lambda k: self.app.config.server_name in self.handlers[k], self.handler_tags)
+        return [k for k in self.handler_tags if self.app.config.server_name in self.handlers[k]] or [self.DEFAULT_HANDLER_TAG]
 
     # If these get to be any more complex we should probably modularize them, or at least move to a separate class
 

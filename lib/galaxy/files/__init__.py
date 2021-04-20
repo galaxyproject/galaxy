@@ -243,6 +243,23 @@ class ProvidesUserFileSourcesUserContext:
         user = self.trans.user
         return user and user.extra_preferences or defaultdict(lambda: None)
 
+    @property
+    def role_names(self):
+        """The set of role names of this user."""
+        user = self.trans.user
+        return user and set([ura.role.name for ura in user.roles])
+
+    @property
+    def group_names(self):
+        """The set of group names to which this user belongs."""
+        user = self.trans.user
+        return user and set([ugr.group.name for ugr in user.groups])
+
+    @property
+    def is_admin(self):
+        """Whether this user is an administrator."""
+        return self.trans.user_is_admin
+
 
 class DictFileSourcesUserContext:
 
@@ -264,3 +281,15 @@ class DictFileSourcesUserContext:
     @property
     def preferences(self):
         return self._kwd.get("preferences")
+
+    @property
+    def role_names(self):
+        return self._kwd.get("role_names")
+
+    @property
+    def group_names(self):
+        return self._kwd.get("group_names")
+
+    @property
+    def is_admin(self):
+        return self._kwd.get("is_admin")

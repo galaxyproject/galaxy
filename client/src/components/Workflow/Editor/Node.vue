@@ -250,6 +250,9 @@ export default {
             this.onRedraw();
         },
         onAddOutput(output, terminal) {
+            if (this.mapOver) {
+                terminal.setMapOver(this.mapOver);
+            }
             this.outputTerminals[output.name] = terminal;
             this.onRedraw();
         },

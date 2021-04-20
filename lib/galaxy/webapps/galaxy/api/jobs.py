@@ -8,7 +8,6 @@ import logging
 import typing
 
 from sqlalchemy import (
-    and_,
     or_,
 )
 
@@ -172,26 +171,20 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         if workflow_id or invocation_id:
             if workflow_id is not None:
                 decoded_workflow_id = self.decode_id(workflow_id)
-                query = query.filter(
-                    model.WorkflowInvocation.id == model.WorkflowInvocationStep.workflow_invocation_id,
-                    model.WorkflowInvocation.workflow_id == model.Workflow.table.c.id,
-                    model.Workflow.table.c.stored_workflow_id == decoded_workflow_id,
-                )
+                wfi_step = trans.sa_session.query(model.WorkflowInvocationStep).join(model.WorkflowInvocation).join(model.Workflow).filter(
+                    model.Workflow.stored_workflow_id == decoded_workflow_id,
+                ).subquery()
             elif invocation_id is not None:
                 decoded_invocation_id = self.decode_id(invocation_id)
-                query = query.filter(
-                    model.WorkflowInvocation.id == model.WorkflowInvocationStep.workflow_invocation_id,
+                wfi_step = trans.sa_session.query(model.WorkflowInvocationStep).filter(
                     model.WorkflowInvocationStep.workflow_invocation_id == decoded_invocation_id
-                )
-            query = query.filter(
-                or_(
-                    model.Job.id == model.WorkflowInvocationStep.job_id,
-                    and_(
-                        model.Job.id == model.ImplicitCollectionJobsJobAssociation.table.c.job_id,
-                        model.ImplicitCollectionJobsJobAssociation.table.c.implicit_collection_jobs_id == model.WorkflowInvocationStep.implicit_collection_jobs_id,
-                    )
-                )
+                ).subquery()
+            query1 = query.join(wfi_step)
+            query2 = query.join(model.ImplicitCollectionJobsJobAssociation).join(
+                wfi_step,
+                model.ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id == wfi_step.c.implicit_collection_jobs_id
             )
+            query = query1.union(query2)
 
         if kwd.get('order_by') == 'create_time':
             order_by = model.Job.create_time.desc()

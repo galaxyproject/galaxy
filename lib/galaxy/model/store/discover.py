@@ -37,7 +37,6 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
     This class implement the create_dataset method that takes care of populating metadata
     required for datasets and other potential model objects.
     """
-
     def create_dataset(
         self,
         ext,
@@ -59,6 +58,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         hashes=None,
         created_from_basename=None,
         final_job_state='ok',
+        creating_job_id=None,
     ):
         tag_list = tag_list or []
         sources = sources or []
@@ -90,9 +90,10 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                                                                       dbkey=dbkey,
                                                                       create_dataset=True,
                                                                       flush=False,
-                                                                      sa_session=sa_session)
-
+                                                                      sa_session=sa_session,
+                                                                      creating_job_id=creating_job_id)
                 self.persist_object(primary_data)
+
                 if init_from:
                     self.permission_provider.copy_dataset_permissions(init_from, primary_data)
                     primary_data.state = init_from.state

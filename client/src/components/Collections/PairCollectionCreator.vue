@@ -82,7 +82,6 @@
                     @onUpdateHideSourceItems="onUpdateHideSourceItems"
                     @clicked-create="clickedCreate"
                     @remove-extensions-toggle="removeExtensionsToggle"
-                    :renderExtensionsToggle="true"
                     :suggestedName="initialSuggestedName"
                 >
                     <template v-slot:help-content>

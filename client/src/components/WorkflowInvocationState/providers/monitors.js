@@ -1,9 +1,8 @@
 import { of, race, pipe, concat, iif } from "rxjs";
-import { filter, mergeMap, switchMap, delay, share, repeat, take, takeWhile } from "rxjs/operators";
-import { cacheContent, monitorContentQuery } from "components/History/caching";
-import { singleUpdateResult } from "components/History/caching/db/monitorQuery";
+import { filter, map, mergeMap, switchMap, delay, share, repeat, take, takeWhile } from "rxjs/operators";
+import { cacheContent, monitorContentQuery, loadHistoryContents } from "components/History/caching";
 import { fetchDatasetById, fetchDatasetCollectionById, fetchInvocationStepById, fetchDatasetCollectionAttributesById } from "./fetch";
-import { loadHistoryContents } from "components/History/caching";
+
 
 // prettier-ignore
 export const datasetMonitor = (cfg = {}) => {
@@ -57,18 +56,21 @@ const buildPouchRequest = (id, contentType) => {
 const createMonitor = (id, contentType, fetcher, spinUpDelay = 250) => {
     // build the pouchdb/mongo request, which is a selector
     // and limits, offsets, etc
+    const request = buildPouchRequest(id, contentType);
 
     // retrieve changes from cache
-    const changes$ = of(buildPouchRequest(id, contentType)).pipe(
+    const changes$ = of(request).pipe(
         monitorContentQuery(),
-        singleUpdateResult(),
+        // singleUpdateResult(),
+        filter(change => change.match && change.doc),
+        map(change => change.doc),
         share()
     );
 
     // cache results that reflect non-deleted existing data in the cache
     const existing$ = changes$.pipe(
         filter(Boolean),
-        );
+    );
 
     // load and cache dataset from server then switch over to the monitor
     const fetchItem$ = of(id).pipe(

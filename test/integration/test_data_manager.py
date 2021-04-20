@@ -79,14 +79,62 @@ class DataManagerIntegrationTestCase(integration_util.IntegrationTestCase, UsesS
 
     def test_data_manager_manual(self):
         """
-        Test that data_manager_manual works, which uses a signigicant amount of Galaxy-internal code
+        Test that data_manager_manual works, which uses a significant amount of Galaxy-internal code
         """
         self.install_repository('iuc', 'data_manager_manual', '1ed87dee9e68')
         with self._different_user(email="%s@galaxy.org" % self.username):
             with self.dataset_populator.test_history() as history_id:
-                self.dataset_populator.run_tool(tool_id=DATA_MANAGER_MANUAL_ID,
-                                                inputs=DATA_MANAGER_MANUAL_INPUT,
-                                                history_id=history_id)
+                run_response = self.dataset_populator.run_tool(tool_id=DATA_MANAGER_MANUAL_ID,
+                                                               inputs=DATA_MANAGER_MANUAL_INPUT,
+                                                               history_id=history_id,
+                                                               assert_ok=False)
+                self.dataset_populator.wait_for_tool_run(history_id=history_id, run_response=run_response, timeout=CONDA_AUTO_INSTALL_JOB_TIMEOUT)
+
+        entries = self._app.tool_data_tables.get("all_fasta").get_entries('dbkey', 'dm6', 'dbkey')
+        assert 'dm6' in entries
+
+        table_content = {line[0]: line for line in self._app.tool_data_tables.get("all_fasta").to_dict(view="element")['fields']}
+
+        self._app.tool_data_tables.get("all_fasta").remove_entry(table_content['dm6'])
+        entries = self._app.tool_data_tables.get("all_fasta").get_entries('dbkey', 'dm6', 'dbkey')
+        assert entries is None
+
+    def test_data_manager_manual_multiple(self):
+        """
+        Test adding/removing on the same data table with multiple data managers
+        """
+        self.install_repository("devteam", "data_manager_fetch_genome_dbkeys_all_fasta", "14eb0fc65c62")
+        self.install_repository('iuc', 'data_manager_manual', '1ed87dee9e68')
+        with self._different_user(email="%s@galaxy.org" % self.username):
+            with self.dataset_populator.test_history() as history_id:
+                run_response = self.dataset_populator.run_tool(tool_id=FETCH_TOOL_ID,
+                                                               inputs=FETCH_GENOME_DBKEYS_ALL_FASTA_INPUT,
+                                                               history_id=history_id,
+                                                               assert_ok=False)
+                self.dataset_populator.wait_for_tool_run(history_id=history_id, run_response=run_response, timeout=CONDA_AUTO_INSTALL_JOB_TIMEOUT)
+                run_response = self.dataset_populator.run_tool(tool_id=DATA_MANAGER_MANUAL_ID,
+                                                               inputs=DATA_MANAGER_MANUAL_INPUT,
+                                                               history_id=history_id,
+                                                               assert_ok=False)
+                self.dataset_populator.wait_for_tool_run(history_id=history_id, run_response=run_response, timeout=CONDA_AUTO_INSTALL_JOB_TIMEOUT)
+
+        entries = self._app.tool_data_tables.get("all_fasta").get_entries('dbkey', 'NC_001617.1', 'dbkey')
+        assert 'NC_001617.1' in entries
+
+        entries = self._app.tool_data_tables.get("all_fasta").get_entries('dbkey', 'dm6', 'dbkey')
+        assert 'dm6' in entries
+
+        table_content = {line[0]: line for line in self._app.tool_data_tables.get("all_fasta").to_dict(view="element")['fields']}
+
+        self._app.tool_data_tables.get("all_fasta").remove_entry(table_content['dm6'])
+
+        entries = self._app.tool_data_tables.get("all_fasta").get_entries('dbkey', 'dm6', 'dbkey')
+        assert entries is None
+
+        self._app.tool_data_tables.get("all_fasta").remove_entry(table_content['NC_001617.1'])
+
+        entries = self._app.tool_data_tables.get("all_fasta").get_entries('dbkey', 'NC_001617.1', 'dbkey')
+        assert entries is None
 
     @classmethod
     def get_secure_ascii_digits(cls, n=12):

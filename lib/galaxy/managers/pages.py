@@ -32,7 +32,7 @@ from galaxy.managers.markdown_util import (
 )
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.schema.fields import EncodedDatabaseIdField
-from galaxy.structured_app import StructuredApp
+from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import unicodify
 from galaxy.util.sanitize_html import sanitize_html
 
@@ -197,7 +197,7 @@ class PagesService:
     and pydantic models to declare its parameters and return types.
     """
 
-    def __init__(self, app: StructuredApp):
+    def __init__(self, app: MinimalManagerApp):
         self.manager = PageManager(app)
         self.serializer = PageSerializer(app)
         self.shareable_service = sharable.ShareableService(self.manager, self.serializer)
@@ -304,7 +304,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
     annotation_assoc = model.PageAnnotationAssociation
     rating_assoc = model.PageRatingAssociation
 
-    def __init__(self, app: StructuredApp):
+    def __init__(self, app: MinimalManagerApp):
         """
         """
         super().__init__(app)
@@ -427,7 +427,7 @@ class PageSerializer(sharable.SharableModelSerializer):
     model_manager_class = PageManager
     SINGLE_CHAR_ABBR = 'p'
 
-    def __init__(self, app: StructuredApp):
+    def __init__(self, app: MinimalManagerApp):
         super().__init__(app)
         self.page_manager = PageManager(app)
 
@@ -448,7 +448,7 @@ class PageDeserializer(sharable.SharableModelDeserializer):
     """
     model_manager_class = PageManager
 
-    def __init__(self, app: StructuredApp):
+    def __init__(self, app: MinimalManagerApp):
         super().__init__(app)
         self.page_manager = self.manager
 

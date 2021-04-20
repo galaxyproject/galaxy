@@ -759,6 +759,7 @@ class Registry:
                 'ab1': binary.Ab1(),
                 'axt': sequence.Axt(),
                 'bam': binary.Bam(),
+                'jp2': binary.JP2(),
                 'bed': interval.Bed(),
                 'coverage': coverage.LastzCoverage(),
                 'customtrack': interval.CustomTrack(),
@@ -794,6 +795,7 @@ class Registry:
                 'ab1': 'application/octet-stream',
                 'axt': 'text/plain',
                 'bam': 'application/octet-stream',
+                'jp2': 'application/octet-stream',
                 'bed': 'text/plain',
                 'customtrack': 'text/plain',
                 'csfasta': 'text/plain',
@@ -834,6 +836,7 @@ class Registry:
             self.sniff_order = [
                 binary.Bam(),
                 binary.Sff(),
+                binary.JP2(),
                 binary.H5(),
                 xml.GenericXml(),
                 sequence.Maf(),

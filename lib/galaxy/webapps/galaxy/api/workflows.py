@@ -190,15 +190,10 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
             workflows = []
             workflows_by_toolshed = dict()
             for value in rval:
-                tool_ids = []
-                workflow_details = self.workflow_contents_manager.workflow_to_dict(trans, self.__get_stored_workflow(trans, value['id']), style='instance')
-                if 'steps' in workflow_details:
-                    for step in workflow_details['steps']:
-                        tool_id = workflow_details['steps'][step].get('tool_id')
-                        if tool_id and tool_id not in tool_ids and self.app.toolbox.is_missing_shed_tool(tool_id):
-                            tool_ids.append(tool_id)
-                if len(tool_ids) > 0:
-                    value['missing_tools'] = tool_ids
+                tool_ids = self.workflow_contents_manager.get_all_tool_ids(self.__get_stored_workflow(trans, value['id']).latest_workflow)
+                missing_tool_ids = [tool_id for tool_id in tool_ids if self.app.toolbox.is_missing_shed_tool(tool_id)]
+                if len(missing_tool_ids) > 0:
+                    value['missing_tools'] = missing_tool_ids
                     workflows_missing_tools.append(value)
             for workflow in workflows_missing_tools:
                 for tool_id in workflow['missing_tools']:
@@ -828,6 +823,8 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
 
         .. note:: This method takes the same arguments as
             :func:`galaxy.webapps.galaxy.api.workflows.WorkflowsAPIController.create` above.
+
+        :raises: exceptions.MessageException, exceptions.RequestParameterInvalidException
         """
         # Get workflow + accessibility check.
         stored_workflow = self.__get_stored_accessible_workflow(trans, workflow_id)
@@ -836,6 +833,10 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         is_batch = payload.get('batch')
         if not is_batch and len(run_configs) != 1:
             raise exceptions.RequestParameterInvalidException("Must specify 'batch' to use batch parameters.")
+
+        tool_ids = self.workflow_contents_manager.get_all_tool_ids(workflow)
+        if not all([self.app.toolbox.has_tool(tool_id) for tool_id in tool_ids]):
+            raise exceptions.MessageException("Workflow was not invoked; some required tools are not installed.")
 
         invocations = []
         for run_config in run_configs:

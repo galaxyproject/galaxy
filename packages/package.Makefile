@@ -9,7 +9,7 @@ SOURCE_DIR?=galaxy
 BUILD_SCRIPTS_DIR=scripts
 DEV_RELEASE?=0
 VERSION?=$(shell DEV_RELEASE=$(DEV_RELEASE) python $(BUILD_SCRIPTS_DIR)/print_version_for_release.py $(SOURCE_DIR) $(DEV_RELEASE))
-PROJECT_NAME?="galaxy-$(shell basename $(CURDIR))"
+PROJECT_NAME?=galaxy-$(shell basename $(CURDIR))
 PROJECT_NAME:=$(subst _,-,$(PROJECT_NAME))
 BRANCH?=$(shell git rev-parse --abbrev-ref HEAD)
 TEST_DIR?=tests

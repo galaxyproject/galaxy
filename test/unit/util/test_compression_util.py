@@ -39,7 +39,7 @@ class CompressionUtilTestCase(unittest.TestCase):
             if expected_to_be_safe:
                 CompressedFile(path).extract(temp_dir)
             else:
-                with self.assertRaises(Exception):
+                with self.assertRaisesRegex(Exception, "is blocked"):
                     CompressedFile(path).extract(temp_dir)
         finally:
             shutil.rmtree(temp_dir, ignore_errors=True)

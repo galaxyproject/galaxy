@@ -36,11 +36,12 @@ TargetQueryParam: str = Query(
 )
 
 FormatQueryParam: Optional[RemoteFilesFormat] = Query(
-    default=RemoteFilesFormat.flat,
+    default=RemoteFilesFormat.uri,
     title="Response format",
     description=(
         "The requested format of returned data. Either `flat` to simply list all the files"
-        " or `jstree` to get a tree representation of the files."
+        ", `jstree` to get a tree representation of the files, or the default `uri` to list "
+        "files and directories by their URI."
     ),
 )
 

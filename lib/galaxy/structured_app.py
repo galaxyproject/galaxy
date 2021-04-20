@@ -41,7 +41,43 @@ class BasicApp(Container):
     datatypes_registry: Registry
 
 
-class StructuredApp(BasicApp):
+class MinimalApp(BasicApp):
+    is_webapp: bool  # is_webapp will be set to true when building WSGI app
+    new_installation: bool
+    tag_handler: GalaxyTagHandler
+    model: GalaxyModelMapping
+    install_model: ModelMapping
+    security_agent: GalaxyRBACAgent
+    host_security_agent: HostAgent
+
+
+class MinimalManagerApp(MinimalApp):
+    is_webapp: bool  # is_webapp will be set to true when building WSGI app
+    new_installation: bool
+    tag_handler: GalaxyTagHandler
+    file_sources: ConfiguredFileSources
+    genome_builds: GenomeBuilds
+    model: GalaxyModelMapping
+    install_model: ModelMapping
+    security_agent: GalaxyRBACAgent
+    host_security_agent: HostAgent
+    dataset_collections_service: Any  # 'galaxy.managers.collections.DatasetCollectionManager'
+    history_manager: Any  # 'galaxy.managers.histories.HistoryManager'
+    hda_manager: Any  # 'galaxy.managers.hdas.HDAManager'
+    workflow_manager: Any  # 'galaxy.managers.workflows.WorkflowsManager'
+    workflow_contents_manager: Any  # 'galaxy.managers.workflows.WorkflowContentsManager'
+    library_folder_manager: Any  # 'galaxy.managers.folders.FolderManager'
+    library_manager: Any  # 'galaxy.managers.libraries.LibraryManager'
+    role_manager: Any  # 'galaxy.managers.roles.RoleManager'
+    installed_repository_manager: Any  # 'galaxy.tool_shed.galaxy_install.installed_repository_manager.InstalledRepositoryManager'
+    user_manager: Any
+
+    @property
+    def is_job_handler(self) -> bool:
+        pass
+
+
+class StructuredApp(MinimalManagerApp):
     """Interface defining typed description of the Galaxy UniverseApplication.
 
     Ideally nothing that depends on StructuredApp should require
@@ -92,7 +128,3 @@ class StructuredApp(BasicApp):
     job_manager: Any  # galaxy.jobs.manager.JobManager
     user_manager: Any
     api_keys_manager: Any
-
-    @property
-    def is_job_handler(self) -> bool:
-        pass

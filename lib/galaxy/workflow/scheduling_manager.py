@@ -194,6 +194,8 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
             # Stack has a pool for us so override inherited config and use the pool
             self.__init_handlers()
             self.__handlers_configured = True
+        elif use_default_scheduler:
+            self._set_default_handler_assignment_methods()
 
     def __init_default_scheduler(self):
         self.default_scheduler_id = DEFAULT_SCHEDULER_ID

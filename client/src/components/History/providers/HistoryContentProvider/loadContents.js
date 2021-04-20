@@ -1,22 +1,37 @@
-import { defer, of } from "rxjs";
-import { repeat, switchMap, switchMapTo, startWith, debounceTime } from "rxjs/operators";
-import { decay } from "utils/observable/decay";
+import { concat, defer, of, throwError } from "rxjs";
+import { delay, repeat, switchMap, switchMapTo, debounceTime, startWith } from "rxjs/operators";
+import { decay } from "utils/observable";
 import { monitorXHR } from "utils/observable/monitorXHR";
 import { loadHistoryContents } from "../../caching";
+import { SearchParams } from "../../model";
 
 // prettier-ignore
 export const loadContents = (cfg = {}) => {
     const {
-        windowSize,
+        history,
+        filters,
         initialInterval = 2 * 1000,
         maxInterval = 10 * initialInterval,
-        disablePoll = false
+        disablePoll = false,
+        // debug = false,
+        // time between initial load and polling start
+        startingDelay = 5000,
+        windowSize = 2 * SearchParams.pageSize,
     } = cfg;
 
-    return switchMap(([{ id }, params, hid]) => {
+    if (history === undefined) {
+        return throwError(new Error("Missing history in loadContents"));
+    }
+    if (filters === undefined) {
+        return throwError(new Error("Missing filters in loadContents"));
+    }
+
+    const { id } = history;
+
+    return switchMap((hid) => {
 
         // a single history update
-        const singleLoad$ = of([id, params, hid]).pipe(
+        const singleLoad$ = of([id, filters, hid]).pipe(
             loadHistoryContents({ windowSize })
         );
 
@@ -39,6 +54,13 @@ export const loadContents = (cfg = {}) => {
             switchMapTo(freshPoll$)
         );
 
-        return disablePoll ? singleLoad$ : poll$;
-    });
+        // if we're polling, add a little delay between initial load and polling
+        // avoids pointless polling if the user is rapidly changing the view
+        const polling$ = of(true).pipe(
+            delay(startingDelay),
+            switchMapTo(poll$)
+        );
+
+        return disablePoll ? singleLoad$ : concat(singleLoad$, polling$);
+    })
 };

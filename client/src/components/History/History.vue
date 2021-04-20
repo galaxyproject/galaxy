@@ -1,12 +1,11 @@
 <template>
     <HistoryContentProvider
         :parent="history"
-        v-slot="{
-            loading,
-            params,
-            payload: { contents = [], startKey = null, topRows = 0, bottomRows = 0, totalMatches = 0 },
-            handlers: { updateParams, manualReload, setScrollPos },
-        }"
+        :params="params"
+        :disable-poll="false"
+        :debug="false"
+        :debounce-period="500"
+        v-slot="{ loading, payload, manualReload, setScrollPos }"
     >
         <ExpandedItems
             :scope-key="history.id"
@@ -43,32 +42,27 @@
                         <ContentOperations
                             v-if="!history.empty"
                             :history="history"
-                            :total-matches="totalMatches"
+                            :total-matches="payload.totalMatches"
                             :loading="loading"
-                            :params="params"
-                            @update:params="updateParams"
+                            :params.sync="params"
                             :content-selection="selectedItems"
                             @update:content-selection="selectItems"
                             :show-selection="showSelection"
                             @update:show-selection="setShowSelection"
                             @resetSelection="resetSelection"
-                            @selectAllContent="selectItems(contents)"
+                            @selectAllContent="selectItems(payload.contents)"
                             @manualReload="manualReload"
                         />
                     </template>
 
                     <template v-slot:listing>
                         <HistoryEmpty v-if="history.empty" class="m-2" />
-
                         <Scroller
                             v-else
                             :class="{ loadingBackground: loading }"
                             key-field="hid"
-                            :item-height="36"
-                            :items="contents"
-                            :scroll-to="startKey"
-                            :top-placeholders="topRows"
-                            :bottom-placeholders="bottomRows"
+                            v-bind="payload"
+                            :debug="false"
                             @scroll="setScrollPos"
                         >
                             <template v-slot="{ item, index }">
@@ -96,7 +90,7 @@
 </template>
 
 <script>
-import { History } from "./model";
+import { History, SearchParams } from "./model";
 import { HistoryContentProvider, ExpandedItems, SelectedItems } from "./providers";
 import Layout from "./Layout";
 import HistoryMessages from "./HistoryMessages";
@@ -106,8 +100,12 @@ import ContentOperations from "./ContentOperations";
 import ToolHelpModal from "./ToolHelpModal";
 import Scroller from "./Scroller";
 import { HistoryContentItem } from "./ContentItem";
+import { reportPayload } from "./providers/ContentProvider/helpers";
 
 export default {
+    filters: {
+        reportPayload,
+    },
     components: {
         HistoryContentProvider,
         Layout,
@@ -123,6 +121,12 @@ export default {
     },
     props: {
         history: { type: History, required: true },
+    },
+    data() {
+        return {
+            params: new SearchParams(),
+            useItemSelection: false,
+        };
     },
     computed: {
         historyId() {

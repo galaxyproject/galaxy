@@ -907,8 +907,9 @@ class NavigatesGalaxy(HasDriver):
     def admin_open(self):
         self.components.masthead.admin.wait_for_and_click()
 
-    def select_dataset_from_lib_import_modal(self, name):
-        self.components.libraries.folder.select_import_dir_item(name=name).wait_for_and_click()
+    def select_dataset_from_lib_import_modal(self, filenames):
+        for name in filenames:
+            self.components.libraries.folder.select_import_dir_item(name=name).wait_for_and_click()
         self.components.libraries.folder.import_dir_btn.wait_for_and_click()
 
     def create_new_library(self, login=True):
@@ -1009,6 +1010,15 @@ class NavigatesGalaxy(HasDriver):
     def libraries_table_elements(self):
         tbody_element = self.wait_for_selector_visible("#folder_list_body > tbody")
         return tbody_element.find_elements_by_css_selector("tr:not(.b-table-empty-row)")
+
+    def populate_library_folder_from_import_dir(self, library_name, filenames):
+        self.libraries_open_with_name(library_name)
+        self.libraries_dataset_import(self.navigation.libraries.folder.labels.from_import_dir)
+        self.select_dataset_from_lib_import_modal(filenames)
+
+    def navigate_to_new_library(self, login=True):
+        self.create_new_library(login)
+        self.libraries_open_with_name(self.name)
 
     def wait_for_overlays_cleared(self):
         """Wait for modals and Toast notifications to disappear."""

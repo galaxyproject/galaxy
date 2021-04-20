@@ -29,7 +29,6 @@ from galaxy.webapps.base.controller import (
     HTTPBadRequest,
     url_for,
     UsesFormDefinitionsMixin,
-    UsesLibraryMixin,
     UsesLibraryMixinItems
 )
 from . import BaseGalaxyAPIController
@@ -37,7 +36,7 @@ from . import BaseGalaxyAPIController
 log = logging.getLogger(__name__)
 
 
-class LibraryContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesLibraryMixinItems, UsesFormDefinitionsMixin, LibraryActions):
+class LibraryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, UsesFormDefinitionsMixin, LibraryActions):
 
     def __init__(self, app: StructuredApp, hda_manager: managers.hdas.HDAManager):
         super().__init__(app)
@@ -93,10 +92,8 @@ class LibraryContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesL
                     ld.api_type = 'file'
                     rval.append(ld)
             return rval
-        try:
-            decoded_library_id = self.decode_id(library_id)
-        except Exception:
-            raise exceptions.MalformedId('Malformed library id ( %s ) specified, unable to decode.' % library_id)
+
+        decoded_library_id = self.decode_id(library_id)
         try:
             library = trans.sa_session.query(trans.app.model.Library).filter(trans.app.model.Library.table.c.id == decoded_library_id).one()
         except MultipleResultsFound:

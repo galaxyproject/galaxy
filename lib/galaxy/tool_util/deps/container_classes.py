@@ -200,6 +200,7 @@ class HasDockerLikeVolumes:
         add_var("library_import_dir", self.app_info.library_import_dir)
         add_var('tool_data_path', self.app_info.tool_data_path)
         add_var('shed_tool_data_path', self.app_info.shed_tool_data_path)
+
         if self.job_info.job_directory and self.job_info.job_directory_type == "pulsar":
             # We have a Pulsar job directory, so everything needed (excluding index
             # files) should be available in job_directory...
@@ -217,6 +218,12 @@ class HasDockerLikeVolumes:
                     defaults += ",$job_directory/configs:rw"
             if self.job_info.tmp_directory is not None:
                 defaults += ",$tmp_directory:rw"
+                # If a tool definitely has a temp directory available set it to /tmp in container for compat.
+                # with CWL. This is part of that spec and should make it easier to share containers between CWL
+                # and Galaxy.
+                defaults += ",$tmp_directory:/tmp:rw"
+            else:
+                defaults += ",$_GALAXY_JOB_TMP_DIR:rw"
             if self.job_info.home_directory is not None:
                 defaults += ",$home_directory:rw"
             if self.app_info.outputs_to_working_directory:
@@ -247,6 +254,7 @@ class HasDockerLikeVolumes:
             if end_index < 0:
                 end_index = len(volumes_str)
             volumes_str = volumes_str[0:tool_directory_index] + volumes_str[end_index:len(volumes_str)]
+
         return volumes_str
 
 
@@ -292,14 +300,8 @@ class DockerContainer(Container, HasDockerLikeVolumes):
         preprocessed_volumes_list = preprocess_volumes(volumes_raw, self.container_type)
         # TODO: Remove redundant volumes...
         volumes = [DockerVolume.from_str(v) for v in preprocessed_volumes_list]
-        # If a tool definitely has a temp directory available set it to /tmp in container for compat.
-        # with CWL. This is part of that spec and should make it easier to share containers between CWL
-        # and Galaxy.
-        if self.job_info.tmp_directory is not None:
-            volumes.append(DockerVolume.from_str("%s:/tmp:rw" % self.job_info.tmp_directory))
-        else:
-            volumes.append(DockerVolume.from_str("$_GALAXY_JOB_TMP_DIR:$_GALAXY_JOB_TMP_DIR:rw"))
         volumes_from = self.destination_info.get("docker_volumes_from", docker_util.DEFAULT_VOLUMES_FROM)
+
         docker_host_props = self.docker_host_props
 
         cached_image_file = self.__get_cached_image_file()

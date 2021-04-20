@@ -7,7 +7,6 @@ import logging
 from galaxy import model
 from galaxy.exceptions import (
     InternalServerError,
-    MalformedId
 )
 from galaxy.managers import base
 from galaxy.managers import sharable
@@ -103,11 +102,7 @@ class CloudAuthzsDeserializer(base.ModelDeserializer):
         :return:        decoded authentication ID.
         """
 
-        try:
-            decoded_authn_id = self.app.security.decode_id(val)
-        except Exception:
-            log.debug("cannot decode authz_id `" + str(val) + "`")
-            raise MalformedId(f"Invalid `authz_id` {val}!")
+        decoded_authn_id = self.app.security.decode_id(val, object_name='authz')
 
         trans = context.get("trans")
         if trans is None:
