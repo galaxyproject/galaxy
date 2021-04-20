@@ -1,27 +1,55 @@
-import os
+"""Module containing factory class for building uvicorn app for the Galaxy Tool Shed.
 
-from galaxy.util.properties import find_config_file
-from galaxy.web_stack import get_app_kwds
+Information on uvicorn, its various settings, and how to invoke it can
+be found at https://www.uvicorn.org/.
+
+The Galaxy Tool Shed can be launched with uvicorn using the following invocation:
+
+::
+
+    uvicorn --app-dir lib --factory tool_shed.webapp.fast_factory:factory
+
+Use the environment variable ``TOOL_SHED_CONFIG_FILE`` to specify a Tool Shed
+configuration file.
+
+::
+
+    TOOL_SHED_CONFIG_FILE=config/tool_shed.yml uvicorn --app-dir lib --factory tool_shed.webapp.fast_factory:factory
+
+.. note::
+
+    Information on additional ways to configure uvicorn can be found at
+    https://www.uvicorn.org/.
+
+
+`Gunicorn <https://docs.gunicorn.org/en/stable/index.html>`__ is a server with
+more complex management options.
+
+This factory function can be executed as a uvicorn worker managed with gunicorn
+with the following command-line.
+
+::
+
+    gunicorn 'tool_shed.webapp.fast_factory:factory()' --env TOOL_SHED_CONFIG_FILE=config/tool_shed.yml --pythonpath lib -w 4 -k uvicorn.workers.UvicornWorker
+
+"""
+
+from galaxy.main_config import (
+    WebappConfigResolver,
+    WebappSetupProps
+)
 from tool_shed.webapp.buildapp import app_factory
+from tool_shed.webapp.config import TOOLSHED_APP_NAME
 from .fast_app import initialize_fast_app
-
-APP_NAME = "tool_shed"
 
 
 def factory():
-    kwds = get_app_kwds(APP_NAME, APP_NAME)
-    config_file = kwds.get("config_file")
-    if not config_file and os.environ.get('TOOL_SHED_CONFIG_FILE'):
-        config_file = os.path.abspath(os.environ["TOOL_SHED_CONFIG_FILE"])
-    else:
-        config_file = find_config_file([APP_NAME])
-
-    config_section = APP_NAME
-
-    if 'config_file' not in kwds:
-        kwds['config_file'] = config_file
-    if 'config_section' not in kwds:
-        kwds['config_section'] = config_section
-    global_conf = {}
-    gx_webapp = app_factory(global_conf=global_conf, load_app_kwds=kwds, wsgi_preflight=False)
+    props = WebappSetupProps(
+        app_name=TOOLSHED_APP_NAME,
+        default_section_name=TOOLSHED_APP_NAME,
+        env_config_file='TOOL_SHED_CONFIG_FILE',
+    )
+    config_provider = WebappConfigResolver(props)
+    config = config_provider.resolve_config()
+    gx_webapp = app_factory(global_conf=config.global_conf, load_app_kwds=config.load_app_kwds, wsgi_preflight=config.wsgi_preflight)
     return initialize_fast_app(gx_webapp)
