@@ -5514,6 +5514,7 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
 
     def to_dict(self, view='collection', value_mapper=None, step_details=False, legacy_job_state=False):
         rval = super().to_dict(view=view, value_mapper=value_mapper)
+        rval['stored_workflow_id'] = self.workflow.stored_workflow.id
         if view == 'element':
             steps = []
             for step in self.steps:
