@@ -41,7 +41,7 @@ def lint_inputs(tool_xml, lint_ctx):
 
             # check if options are defined by exactly one possibility
             if (dynamic_options is not None) + (len(options) > 0) + (len(select_options) > 0) != 1:
-                lint_ctx.error(f"Select parameter [{param_name}] options have to be defined by either 'option' tags, a 'option' tag or the attribute 'dynamic_options'.")
+                lint_ctx.error(f"Select parameter [{param_name}] options have to be defined by either 'option' children elements, a 'options' element or the 'dynamic_options' attribute.")
 
             # lint dynamic options
             if len(options) == 1:
