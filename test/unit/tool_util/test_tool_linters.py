@@ -138,7 +138,7 @@ TESTS = [
             "Select parameter [select_noopt] options have to be defined by either 'option' children elements, a 'options' element or the 'dynamic_options' attribute." in x.error_messages
             and "Select parameter [select_noopts] options tag defines no options. Use 'from_dataset', 'from_data_table', or a filter that adds values." in x.error_messages
             and "Select parameter [select_fd_op] options have to be defined by either 'option' children elements, a 'options' element or the 'dynamic_options' attribute." in x.error_messages
-            and "Select parameter [select_fd_op] contains multiple options tags" in x.error_messages
+            and "Select parameter [select_fd_op] contains multiple options elements" in x.error_messages
             and "Select parameter [select_fd_fdt] options uses 'from_dataset' and 'from_data_table' attribute." in x.error_messages
             and len(x.warn_messages) == 0 and len(x.error_messages) == 5
     ),
