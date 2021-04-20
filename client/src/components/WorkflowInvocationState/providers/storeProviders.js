@@ -80,6 +80,24 @@ export const DatasetCollectionProvider = {
     },
 };
 
+export const DatasetCollectionAttributesProvider = {
+    mixins: [SimpleProviderMixin, StoreProviderMixin],
+    methods: {
+        ...mapCacheActions("datasetCollectionAttributes", ["fetchDatasetCollectionAttributes"]),
+        async load() {
+            this.loading = true;
+            this.item = await this.fetchDatasetCollectionAttributes(this.id);
+            this.loading = false;
+        },
+    },
+    computed: {
+        ...mapGetters("datasetCollectionAttributes", ["getDatasetCollectionAttributesById"]),
+        storeItem() {
+            return this.getDatasetCollectionAttributesById(this.id);
+        },
+    },
+};
+
 export const DatasetCollectionContentProvider = {
     mixins: [SimpleProviderMixin],
     computed: {

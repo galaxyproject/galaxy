@@ -2,7 +2,7 @@ import { of, race, pipe, concat, iif } from "rxjs";
 import { filter, mergeMap, switchMap, delay, share, repeat, take, takeWhile } from "rxjs/operators";
 import { cacheContent, monitorContentQuery } from "components/History/caching";
 import { singleUpdateResult } from "components/History/caching/db/monitorQuery";
-import { fetchDatasetById, fetchDatasetCollectionById, fetchInvocationStepById } from "./fetch";
+import { fetchDatasetById, fetchDatasetCollectionById, fetchInvocationStepById, fetchDatasetCollectionAttributesById } from "./fetch";
 import { loadHistoryContents } from "components/History/caching";
 
 // prettier-ignore
@@ -21,6 +21,11 @@ export const datasetCollectionMonitor = (cfg = {}) => {
     return pipe(switchMap((id) => createContentMonitor(id, "dataset_collection", spinUpDelay)));
 };
 
+export const datasetCollectionAttributesMonitor = (cfg = {}) => {
+    const { spinUpDelay } = cfg;
+    return pipe(switchMap((id) => createContentMonitor(id, "dataset_collection_attributes", spinUpDelay)));
+};
+
 const createContentMonitor = (id, contentType, spinUpDelay = 250) => {
     let fetcher;
     switch (contentType) {
@@ -29,6 +34,9 @@ const createContentMonitor = (id, contentType, spinUpDelay = 250) => {
             break;
         case "dataset_collection":
             fetcher = fetchDatasetCollectionById;
+            break;
+        case "dataset_collection_attributes":
+            fetcher = fetchDatasetCollectionAttributesById;
             break;
         default:
             console.error(`Can't create monitor for ${contentType}-${id}`);

@@ -1,5 +1,11 @@
 <template>
     <div>
+        <dataset-collection-attributes-provider :id="collection_id" v-slot="{ item, loading }">
+            <div v-if="!loading">
+                {{ loading }}
+                {{ item }}
+            </div>
+        </dataset-collection-attributes-provider>
         <h4>{{ l("Edit Collection Attributes") }}</h4>
         <b-alert show variant="info" dismissible>
             {{ l("This will create a new collection in your History. Your quota usage will not increase. ") }}
@@ -54,10 +60,6 @@
                     </template> --> </multiselect
                 ><i>original input: {{ datatypeFromElements }}</i>
             </b-tab>
-            <b-tab>
-                <template v-slot:title> <font-awesome-icon icon="user" /> &nbsp;{{ l("Permissions") }}</template>
-                <p>WIP Permissions</p>
-            </b-tab>
         </b-tabs>
     </div>
 </template>
@@ -79,6 +81,7 @@ import { faBars } from "@fortawesome/free-solid-svg-icons";
 import { faUser } from "@fortawesome/free-solid-svg-icons";
 import { faCog } from "@fortawesome/free-solid-svg-icons";
 import store from "../../../store/index";
+import { DatasetCollectionAttributesProvider } from "../../WorkflowInvocationState/providers";
 
 //import VueObserveVisibility from "vue-observe-visibility";
 
@@ -96,8 +99,9 @@ export default {
         // this.apiCallToGetAttributes();
         this.getDatatypesAndGenomes();
         this.getCollectionDataAndAttributes();
+        console.log("item is", this.item);
     },
-    components: { Multiselect, DatabaseEditTab, FontAwesomeIcon },
+    components: { Multiselect, DatabaseEditTab, FontAwesomeIcon, DatasetCollectionAttributesProvider },
     data: function () {
         return {
             collection_data: {}, //all data from the response
@@ -118,21 +122,6 @@ export default {
         },
     },
     computed: {
-        collectionName: {
-            get() {
-                return this.collection_data.name;
-            },
-            //TODO : #6966
-            // set(collection_name) {
-            //     this.collection_data.name = collection_name;
-            // },
-        },
-        collectionType: {
-            // no setter; for display only
-            get() {
-                return this.collection_data.collection_type;
-            },
-        },
         extension: {
             get() {
                 return this.selectedExtension;
@@ -163,8 +152,6 @@ export default {
             this.genomes = genomes;
         },
         getCollectionDataAndAttributes: async function () {
-            this.apiCallToGetData();
-
             let attributesGet = store.getters.getCollectionAttributes(this.collection_id);
             if (attributesGet == null) {
                 await store.dispatch("fetchCollectionAttributes", this.collection_id);
@@ -173,15 +160,6 @@ export default {
             this.attributes_data = attributesGet;
             this.getDatabaseKeyFromElements();
             this.getExtensionFromElements();
-        },
-        apiCallToGetData: function () {
-            axios
-                .get(prependPath("/api/dataset_collections/" + this.collection_id + "?instance_type=history"))
-                .then((response) => {
-                    this.collection_data = response.data;
-                });
-
-            //TODO error handling
         },
         getDatabaseKeyFromElements: function () {
             this.databaseKeyFromElements = this.attributes_data.dbkey;
