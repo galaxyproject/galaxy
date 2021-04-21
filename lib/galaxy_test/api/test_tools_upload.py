@@ -777,6 +777,11 @@ class ToolsUploadTestCase(ApiTestCase):
         history_id, new_dataset = self._upload('https://usegalaxy.org/api/version')
         self.dataset_populator.get_history_dataset_details(history_id, dataset_id=new_dataset["id"], assert_ok=True)
 
+    @skip_if_site_down("https://usegalaxy.org")
+    def test_upload_from_valid_url_spaces(self):
+        history_id, new_dataset = self._upload('  https://usegalaxy.org/api/version  ')
+        self.dataset_populator.get_history_dataset_details(history_id, dataset_id=new_dataset["id"], assert_ok=True)
+
     def test_upload_and_validate_invalid(self):
         path = TestDataResolver().get_filename("1.fastqsanger")
         with open(path, "rb") as fh:
