@@ -69,7 +69,7 @@ requests = "*"
 Routes = "*"
 social-auth-core = {version = "==3.3.0", extras = ["openidconnect"]}
 sortedcontainers = "*"
-SQLAlchemy = ">=1.4.9"
+SQLAlchemy = ">=1.4.10"
 sqlalchemy-migrate = "*"
 sqlitedict = "*"
 sqlparse = "*"
