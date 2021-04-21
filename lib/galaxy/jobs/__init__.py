@@ -1585,14 +1585,6 @@ class JobWrapper(HasResourceParameters):
 
         self.sa_session.add(dataset)
 
-        # This is a temporary fix for a probem that happens under SQLAlchemy 1.4.
-        # The 'dataset' attribute (which is an HDA) of the JobToOutputDatasetAssociation is expired in SA's instance state.
-        # Thus, upon access, it is reloaded from the database, which erases the metadata that has been loaded but not flushed to the db.
-        # In SA 1.3, the 'dataset' attribute is NOT expired, so accessing it does not trigger database access and the metadata is not erased.
-        # (Specifics: hda._metadata is a populated dict. Under 1.3 it is unchanged, but under 1.4 it becomes None.)
-        # This is NOT a good solution because it deals with the symptom, not the problem. The real cause should be identified before merge.
-        self.sa_session.flush()
-
     def finish(
         self,
         tool_stdout,
