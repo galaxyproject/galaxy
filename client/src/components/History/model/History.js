@@ -22,6 +22,10 @@ export class History extends dateMixin(ModelBase) {
         return this.size ? bytesToString(this.size, true, 2) : "(empty)";
     }
 
+    get empty() {
+        return this.size == 0;
+    }
+
     get statusDescription() {
         const status = [];
         if (this.shared) status.push("Shared");
@@ -30,6 +34,12 @@ export class History extends dateMixin(ModelBase) {
         if (this.isDeleted) status.push("Deleted");
         if (this.purged) status.push("Purged");
         return status.join(", ");
+    }
+
+    loadProps(raw = {}) {
+        // eslint-disable-next-line no-unused-vars
+        const { empty, ...theRest } = raw;
+        Object.assign(this, theRest);
     }
 }
 

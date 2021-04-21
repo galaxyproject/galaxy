@@ -75,14 +75,13 @@ function formData(fields = {}) {
 
 const stdHistoryParams = {
     view: "betawebclient",
-    // keys: historyFields.join(","),
 };
 
 /**
  * Return list of available histories
  */
 export async function getHistoryList() {
-    const response = await api.get("/histories?view=summary");
+    const response = await api.get("/histories", { params: stdHistoryParams });
     return doResponse(response);
 }
 
@@ -93,7 +92,7 @@ export async function getHistoryList() {
 export async function getHistoryById(id, since) {
     const path = `/histories/${id}`;
     const sinceParam = since !== undefined ? moment.utc(since).toISOString() : null;
-    const url = sinceParam ? path : `${path}?q=update_time-gt&qv=${sinceParam}`;
+    const url = sinceParam ? `${path}?q=update_time-gt&qv=${sinceParam}` : path;
     const response = await api.get(url, { params: stdHistoryParams });
     return doResponse(response);
 }
@@ -103,11 +102,22 @@ export async function getHistoryById(id, since) {
  * @param {Object} props Optional history props
  */
 export async function createNewHistory(props = {}) {
-    const url = `/histories`;
-    const data = Object.assign({ name: "New History" }, props);
-    const response = await api.post(url, data, { params: stdHistoryParams });
-    return doResponse(response);
+    // TODO: adjust api, keep this for later
+    // const url = `/histories`;
+    // const data = Object.assign({ name: "New History" }, props);
+    // const response = await api.post(url, data, { params: stdHistoryParams });
+
+    // using old route to create and select new history at same time
+    const url = prependPath("/history/create_new_current");
+    const createResponse = await api.get(url, { baseURL: "" });
+    const id = createResponse?.data?.id || null;
+    if (!id) {
+        throw new Error("failed to create and select new history");
+    }
+    return doResponse(createResponse);
 }
+
+//localhost:8081/history/create_new_current
 
 /**
  * Generates copy of history on server

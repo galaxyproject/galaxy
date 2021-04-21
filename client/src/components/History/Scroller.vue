@@ -14,7 +14,13 @@
 
         <!-- big blank scroll region uses scroll bar to drag view to entirely new region, calculated
         by visual height of the scroller knob --->
-        <div v-show="showScroller" ref="scrollSliderContainer" class="scrollSliderContainer" @scroll="onScroll">
+        <div
+            v-show="showScroller"
+            ref="scrollSliderContainer"
+            class="scrollSliderContainer"
+            :style="scrollSliderContainerStyles"
+            @scroll="onScroll"
+        >
             <div ref="scrollSlider"></div>
         </div>
     </div>
@@ -66,8 +72,8 @@ export default {
             // manual change of start key index, happens when user moves mouse-wheel
             manualStartIndex: null,
 
-            // show/hide the draggable scrollbar
-            showScroller: false,
+            // width of scroll bar container
+            sbWidth: 30,
         };
     },
 
@@ -98,6 +104,17 @@ export default {
         manualStartKey() {
             const newIdx = this.manualStartIndex;
             return this.contents?.[newIdx]?.[this.keyField];
+        },
+
+        // need to dynamically calculate width
+        scrollSliderContainerStyles() {
+            const w = this.sbWidth;
+            return { width: `${w}px` };
+        },
+
+        // show/hide the draggable scrollbar
+        showScroller() {
+            return this.sbWidth > 0 || this.topRows > 0;
         },
     },
 
@@ -260,8 +277,7 @@ export default {
         // this value is used to toggle the overlay scroller on/off
 
         checkScrollbars() {
-            const underScrollWidth = this.scrollBarWidth("listing");
-            this.showScroller = underScrollWidth > 0 || this.topRows > 0;
+            this.sbWidth = this.scrollBarWidth("listing");
         },
 
         scrollBarWidth(refName) {
@@ -304,7 +320,6 @@ export default {
 
     .scrollSliderContainer {
         left: unset;
-        width: 100px;
         overflow-y: scroll;
         z-index: 1;
         > div {
