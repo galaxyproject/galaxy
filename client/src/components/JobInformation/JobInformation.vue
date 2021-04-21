@@ -75,7 +75,8 @@ import CodeRow from "./CodeRow.vue";
 import UtcDate from "components/UtcDate";
 import CopyToClipboard from "components/CopyToClipboard";
 import JOB_STATES_MODEL from "mvc/history/job-states-model";
-import Duration from "luxon/src/duration.js";
+import intervalToDuration from "date-fns/intervalToDuration";
+import formatDuration from "date-fns/formatDuration";
 
 export default {
     components: {
@@ -102,10 +103,9 @@ export default {
             return this.$store.getters.job(this.job_id);
         },
         runTime: function () {
-            const diff = new Date(this.job.update_time) - new Date(this.job.create_time);
-            if (!isNaN(diff)) {
-                return Duration.fromObject({ milliseconds: diff }).toISOTime();
-            }
+            return formatDuration(
+                intervalToDuration({ start: new Date(this.job.create_time), end: new Date(this.job.update_time) })
+            );
         },
         jobIsTerminal() {
             return !JOB_STATES_MODEL.NON_TERMINAL_STATES.includes(this.job.state);
