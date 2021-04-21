@@ -1,11 +1,12 @@
 import { merge } from "rxjs";
-import { map, distinctUntilChanged } from "rxjs/operators";
+import { map, distinctUntilChanged, publish, withLatestFrom, share } from "rxjs/operators";
 import { content$, dscContent$, buildContentId, buildCollectionId } from "./db/observables";
 import { monitorQuery } from "./db/monitorQuery";
 import { SearchParams } from "../model/SearchParams";
 import { deepEqual } from "deep-equal";
-import { hydrate, shareButDie } from "utils/observable";
+import { hydrate } from "utils/observable";
 import { SEEK } from "./enums";
+import { matchesSelector } from "pouchdb-selector-core";
 
 // history contents monitor
 export const monitorHistoryContent = (cfg = {}) => {
@@ -44,37 +45,61 @@ export const twoWayMonitor = (cfg = {}) => (src$) => {
         debug = false,
     } = cfg;
 
-    const input$ = src$.pipe(
+    return src$.pipe(
         hydrate([undefined, SearchParams]), 
-        shareButDie(1)
-    );
+        publish(input$ => {
 
-    // one page up
-    const up$ = input$.pipe(
-        map(buildRequest({ seek: SEEK.ASC, pageSize })),
-        distinctUntilChanged(deepEqual),
-        monitorQuery({ db$, inputDebounce, debug, label: "up" }),
-    );
-
-    // current page + next page = 2 pages down
-    const down$ = input$.pipe(
-        map(buildRequest({ seek: SEEK.DESC, pageSize })),
-        distinctUntilChanged(deepEqual),
-        monitorQuery({ db$, inputDebounce, debug, label: "down" }),
-    );
-
-    const change$ = merge(up$, down$).pipe(
-        map((response) => {
+            const upRequest$ = input$.pipe(
+                map(buildRequest({ seek: SEEK.ASC, pageSize })),
+                distinctUntilChanged(deepEqual),
+                share(),
+            );
+        
+            const downRequest$ = input$.pipe(
+                map(buildRequest({ seek: SEEK.DESC, pageSize })),
+                distinctUntilChanged(deepEqual),
+                share(),
+            );
+        
+            // one page up
+            const up$ = upRequest$.pipe(
+                monitorQuery({ db$, inputDebounce, debug, label: "up" }),
+                alsoMatchWith(downRequest$),
+            );
+        
+            // current page + next page = 2 pages down
+            const down$ = downRequest$.pipe(
+                monitorQuery({ db$, inputDebounce, debug, label: "down" }),
+                alsoMatchWith(upRequest$),
+            );
+        
+            return merge(up$, down$)
+        }),
+        map((change) => {
             // don't bother sending back non-matching results
             // we're just going to delete them from the skiplist
             // using the aggregation key, so no need to serialize them
-            const { match, doc, ...more} = response;
+            const { match, doc, ...more} = change;
             const key = doc[aggregationKeyField];
             return match ? { key, match, doc, ...more } : { key, match, ...more };
-        }),
+        })
     );
+};
 
-    return change$;
+// utility operator, checks to see if change matches with the other selector
+const alsoMatchWith = (req$) => (change$) => {
+    // As the scroller moves, a given row may no longer match in one query
+    // but it may in the other, simply because it has moved from the "up" results
+    // to the "down" results
+
+    return change$.pipe(
+        withLatestFrom(req$),
+        map(([change, otherRequest]) => {
+            const result = { ...change };
+            result.match = change.match || matchesSelector(result.doc, otherRequest.selector);
+            return result;
+        })
+    );
 };
 
 /**
@@ -92,7 +117,7 @@ export const buildContentPouchRequest = (cfg = {}) => (inputs) => {
     const targetId = buildContentId({ history_id, hid });
 
     // SEEK.ASC means the top seek, HID > target
-    const comparator = seek == SEEK.ASC ? "$gte" : "$lte";
+    const comparator = seek == SEEK.ASC ? "$gt" : "$lte";
 
     // one page above the target, then 2 after to get the current page and some buffer
     const pages = seek == SEEK.ASC ? 1 : 2;
@@ -132,7 +157,7 @@ export const buildCollectionPouchRequest = (cfg = {}) => (inputs) => {
     const targetId = buildCollectionId({ parent_url, element_index });
 
     // SEEK.ASC means above the target means element_index < target
-    const comparator = seek == SEEK.ASC ? "$lte" : "$gte";
+    const comparator = seek == SEEK.ASC ? "$lt" : "$gte";
 
     // 3 pages total, 1 before, the current one, 1 after;
     const pages = seek == SEEK.ASC ? 1 : 2;

@@ -47,9 +47,12 @@ export const getters = {
         const { histories, currentHistoryId: id } = state;
         return id in histories ? id : getters.firstHistoryId;
     },
-    firstHistoryId: (state, getters) => {
+    firstHistory: (state, getters) => {
         const { histories } = getters;
-        return histories.length ? histories[0].id : null;
+        return histories.length ? histories[0] : null;
+    },
+    firstHistoryId: (state, getters) => {
+        return getters?.firstHistory?.id || null;
     },
     currentHistory: (state, getters) => {
         const { currentHistoryId: id } = getters;
@@ -87,11 +90,19 @@ export const actions = {
     },
     loadHistoryById({ commit, getters }, id) {
         if (!promises.byId.has(id)) {
+            // immediately set if we have something current
             const existing = getters.getHistoryById(id);
+            if (existing) {
+                commit("setHistory", existing);
+            }
+
+            // but also check for updates
             const lastUpdated = existing?.update_time || null;
             const p = getHistoryById(id, lastUpdated)
                 .then((history) => {
-                    commit("setHistory", history);
+                    if (history.update_time !== lastUpdated) {
+                        commit("setHistory", history);
+                    }
                 })
                 .catch((err) => {
                     console.warn("loadHistoryById error", id, err);
@@ -102,11 +113,12 @@ export const actions = {
             promises.byId.set(id, p);
         }
     },
-    async setCurrentHistoryId({ dispatch }, id) {
+    async setCurrentHistoryId({ dispatch, getters }, id) {
         const nextHistory = await setCurrentHistoryOnServer(id);
         dispatch("selectHistory", nextHistory);
     },
     async createNewHistory({ dispatch }) {
+        // create history, then select it as current at the same time
         const newHistory = await createNewHistory();
         dispatch("selectHistory", newHistory);
     },
@@ -119,7 +131,9 @@ export const actions = {
     async deleteHistory({ dispatch, commit, getters }, { history, purge = false }) {
         const deletedHistory = await deleteHistoryById(history.id, purge);
         commit("deleteHistory", deletedHistory);
-        if (getters.histories.length == 0) {
+        if (getters.firstHistoryId) {
+            await dispatch("setCurrentHistoryId", getters.firstHistoryId);
+        } else {
             await dispatch("createNewHistory");
         }
     },

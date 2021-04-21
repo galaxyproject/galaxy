@@ -3,6 +3,7 @@ import {
     tap,
     distinctUntilChanged,
     map,
+    filter,
     share,
     withLatestFrom,
     pluck,
@@ -58,11 +59,12 @@ export const contentPayload = (cfg = {}) => {
             withLatestFrom(cursorToHid$),
             map((inputs) => estimateHid(...inputs)),
             map(hid => Math.round(hid)),
-            show(debug, hid => console.log("estimatedHid", hid)),
+            show(debug, hid => console.log("estimatedHid", hid, history)),
         );
 
         const hid$ = merge(knownHid$, estimatedHid$).pipe(
             distinctUntilChanged(),
+            filter(hid => !isNaN(hid)),
             share(),
         );
         
