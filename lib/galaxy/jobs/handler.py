@@ -78,25 +78,34 @@ class ItemGrabber:
         self.sa_session = app.model.context
         self.grab_this = getattr(model, grab_type)
         self.grab_type = grab_type
+        self.handler_assignment_method = handler_assignment_method
+        self.self_handler_tags = self_handler_tags
+        self.max_grab = max_grab
+        self.handler_tags = handler_tags
         self._grab_conn_opts = {'autocommit': False}
+        self._grab_query = None
+        self._supports_returning = self.app.application_stack.supports_returning()
+
+    def setup_query(self):
         subq = select([self.grab_this.id]) \
             .where(and_(
-                self.grab_this.table.c.handler.in_(self_handler_tags),
+                self.grab_this.table.c.handler.in_(self.self_handler_tags),
                 self.grab_this.table.c.state == self.grab_this.states.NEW)) \
             .order_by(self.grab_this.table.c.id)
-        if max_grab:
-            subq = subq.limit(max_grab)
-        if handler_assignment_method == HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED:
+        if self.max_grab:
+            subq = subq.limit(self.max_grab)
+        if self.handler_assignment_method == HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED:
             subq = subq.with_for_update(skip_locked=True)
         self._grab_query = self.grab_this.table.update() \
-            .returning(self.grab_this.table.c.id) \
             .where(self.grab_this.table.c.id.in_(subq)) \
             .values(handler=self.app.config.server_name)
-        if handler_assignment_method == HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION:
+        if self._supports_returning:
+            self._grab_query = self._grab_query.returning(self.grab_this.table.c.id)
+        if self.handler_assignment_method == HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION:
             self._grab_conn_opts['isolation_level'] = 'SERIALIZABLE'
         log.info(
-            "Handler job grabber initialized with '%s' assignment method for handler '%s', tag(s): %s", handler_assignment_method,
-            self.app.config.server_name, ', '.join(str(x) for x in handler_tags)
+            "Handler job grabber initialized with '%s' assignment method for handler '%s', tag(s): %s", self.handler_assignment_method,
+            self.app.config.server_name, ', '.join(str(x) for x in self.handler_tags)
         )
 
     @staticmethod
@@ -119,16 +128,22 @@ class ItemGrabber:
         """
         # an excellent discussion on PostgreSQL concurrency safety:
         # https://blog.2ndquadrant.com/what-is-select-skip-locked-for-in-postgresql-9-5/
+        if self._grab_query is None:
+            self.setup_query()
         self.sa_session.expunge_all()
         conn = self.sa_session.connection(execution_options=self._grab_conn_opts)
         with conn.begin() as trans:
             try:
-                rows = conn.execute(self._grab_query).fetchall()
-                if rows:
-                    log.debug(f"Grabbed {self.grab_type}(s): {', '.join(str(row[0]) for row in rows)}")
-                    trans.commit()
+                proxy = conn.execute(self._grab_query)
+                if self._supports_returning:
+                    rows = proxy.fetchall()
+                    if rows:
+                        log.debug(f"Grabbed {self.grab_type}(s): {', '.join(str(row[0]) for row in rows)}")
+                        trans.commit()
+                    else:
+                        trans.rollback()
                 else:
-                    trans.rollback()
+                    trans.commit()
             except OperationalError as e:
                 # If this is a serialization failure on PostgreSQL, then e.orig is a psycopg2 TransactionRollbackError
                 # and should have attribute `code`. Other engines should just report the message and move on.
@@ -909,7 +924,7 @@ class JobHandlerStopQueue(Monitors):
         if error_msg is not None:
             final_state = job.states.ERROR
             job.info = error_msg
-        job.set_final_state(final_state)
+        job.set_final_state(final_state, supports_skip_locked=self.app.application_stack.supports_skip_locked())
         self.sa_session.add(job)
         self.sa_session.flush()
 

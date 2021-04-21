@@ -13,6 +13,7 @@ from whoosh.qparser import MultifieldParser
 
 from galaxy import exceptions
 from galaxy.exceptions import ObjectNotFound
+from galaxy.util import unicodify
 
 log = logging.getLogger(__name__)
 
@@ -82,7 +83,8 @@ class ToolSearch:
                     hit_dict['repo_name'] = hit.get('repo_name')
                     hit_dict['name'] = hit.get('name')
                     hit_dict['description'] = hit.get('description')
-                    results['hits'].append({'tool': hit_dict, 'matched_terms': hit.matched_terms(), 'score': hit.score})
+                    matched_terms = {k: unicodify(v) for k, v in hit.matched_terms()}
+                    results['hits'].append({'tool': hit_dict, 'matched_terms': matched_terms, 'score': hit.score})
                 return results
             finally:
                 searcher.close()

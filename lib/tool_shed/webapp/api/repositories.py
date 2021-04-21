@@ -17,7 +17,6 @@ from galaxy.exceptions import (
     ActionInputError,
     ConfigDoesNotAllowException,
     InsufficientPermissionsException,
-    MalformedId,
     ObjectNotFound,
     RequestParameterInvalidException,
     RequestParameterMissingException
@@ -684,11 +683,6 @@ class RepositoriesController(BaseAPIController):
 
         :raises:  ObjectNotFound, MalformedId
         """
-        try:
-            trans.security.decode_id(id)
-        except Exception:
-            raise MalformedId('The given id is invalid.')
-
         repository = repository_util.get_repository_in_tool_shed(self.app, id)
         if repository is None:
             raise ObjectNotFound('Unable to locate repository for the given id.')
@@ -806,10 +800,6 @@ class RepositoriesController(BaseAPIController):
 
         :not found:  Empty dictionary.
         """
-        try:
-            trans.security.decode_id(id)
-        except Exception:
-            raise MalformedId('The given id is invalid.')
         recursive = util.asbool(kwd.get('recursive', 'True'))
         all_metadata = {}
         repository = repository_util.get_repository_in_tool_shed(self.app, id, eagerload_columns=['downloadable_revisions'])

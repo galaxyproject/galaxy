@@ -7,7 +7,7 @@ import moment from "moment";
 import deepEqual from "deep-equal";
 import { defer, pipe, from } from "rxjs";
 import { tap, filter, mergeMap, reduce, shareReplay } from "rxjs/operators";
-import { needs } from "../operators/needs";
+import { needs } from "utils/observable";
 import { dasherize } from "underscore.string";
 
 import PouchDB from "pouchdb";

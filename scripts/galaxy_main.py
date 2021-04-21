@@ -194,7 +194,7 @@ class GalaxyConfigBuilder:
         arg_parser.add_argument("--log-file", default=None, help="Galaxy log file (overrides log configuration in config_file if set)")
         arg_parser.add_argument("--pid-file", default=DEFAULT_PID, help="pid file (default is %s)" % DEFAULT_PID)
         arg_parser.add_argument("--server-name", default=None, help="set a galaxy server name")
-        arg_parser.add_argument("--attach-to-pool", action="append", default=None, help="attach to asynchronous worker pool (specify multiple times for multiple pools)")
+        arg_parser.add_argument("--attach-to-pool", action="append", default=['job-handlers'], help="attach to asynchronous worker pool (specify multiple times for multiple pools)")
 
     @property
     def config_is_ini(self):

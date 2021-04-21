@@ -57,10 +57,10 @@ from .fast_app import initialize_fast_app
 def factory():
     kwds = get_app_kwds("galaxy", "galaxy")
     config_file = kwds.get("config_file")
-    if not config_file and "GALAXY_CONFIG_FILE" in os.environ:
+    if not config_file and os.environ.get('GALAXY_CONFIG_FILE'):
         config_file = os.path.abspath(os.environ["GALAXY_CONFIG_FILE"])
     else:
-        galaxy_root = kwds.get("galaxy_root")
+        galaxy_root = kwds.get("galaxy_root") or os.environ.get("GALAXY_ROOT_DIR")
         config_file = find_config(config_file, galaxy_root)
         config_file = absolute_config_path(config_file, galaxy_root=galaxy_root)
 

@@ -131,6 +131,11 @@ class ToolInputsNotReadyException(MessageException):
     error_code = error_codes_by_name['TOOL_INPUTS_NOT_READY']
 
 
+class RealUserRequiredException(MessageException):
+    status_code = 400
+    error_code = error_codes_by_name['REAL_USER_REQUIRED']
+
+
 class AuthenticationFailed(MessageException):
     status_code = 401
     err_code = error_codes_by_name['USER_AUTHENTICATION_FAILED']

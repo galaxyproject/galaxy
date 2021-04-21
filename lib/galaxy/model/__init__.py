@@ -37,6 +37,7 @@ from sqlalchemy import (
     true,
     type_coerce,
     types)
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext import hybrid
 from sqlalchemy.orm import (
     aliased,
@@ -1177,7 +1178,36 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
 
         return rval
 
-    def set_final_state(self, final_state):
+    def update_hdca_update_time_for_job(self, update_time, sa_session, supports_skip_locked):
+        subq = sa_session.query(HistoryDatasetCollectionAssociation.id) \
+            .join(ImplicitCollectionJobs) \
+            .join(ImplicitCollectionJobsJobAssociation) \
+            .filter(ImplicitCollectionJobsJobAssociation.job_id == self.id)
+        if supports_skip_locked:
+            subq = subq.with_for_update(skip_locked=True).subquery()
+        implicit_statement = HistoryDatasetCollectionAssociation.table.update() \
+            .where(HistoryDatasetCollectionAssociation.table.c.id.in_(subq)) \
+            .values(update_time=update_time)
+        explicit_statement = HistoryDatasetCollectionAssociation.table.update() \
+            .where(HistoryDatasetCollectionAssociation.table.c.job_id == self.id) \
+            .values(update_time=update_time)
+        sa_session.execute(explicit_statement)
+        if supports_skip_locked:
+            sa_session.execute(implicit_statement)
+        else:
+            conn = sa_session.connection(execution_options={'isolation_level': 'SERIALIZABLE'})
+            with conn.begin() as trans:
+                try:
+                    conn.execute(implicit_statement)
+                    trans.commit()
+                except OperationalError as e:
+                    # If this is a serialization failure on PostgreSQL, then e.orig is a psycopg2 TransactionRollbackError
+                    # and should have attribute `code`. Other engines should just report the message and move on.
+                    if int(getattr(e.orig, 'pgcode', -1)) != 40001:
+                        log.debug(f"Updating implicit collection uptime_time for job {self.id} failed (this is expected for large collections and not a problem): {unicodify(e)}")
+                    trans.rollback()
+
+    def set_final_state(self, final_state, supports_skip_locked):
         self.set_state(final_state)
         # TODO: migrate to where-in subqueries?
         statement = '''
@@ -1186,9 +1216,11 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             WHERE job_id = :job_id;
         '''
         sa_session = object_session(self)
+        update_time = galaxy.model.orm.now.now()
+        self.update_hdca_update_time_for_job(update_time=update_time, sa_session=sa_session, supports_skip_locked=supports_skip_locked)
         params = {
             'job_id': self.id,
-            'update_time': galaxy.model.orm.now.now()
+            'update_time': update_time
         }
         sa_session.execute(statement, params)
 
@@ -1212,7 +1244,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         for dataset_assoc in self.output_datasets:
             return dataset_assoc.dataset.tool_version
 
-    def update_output_states(self):
+    def update_output_states(self, supports_skip_locked):
         # TODO: migrate to where-in subqueries?
         statements = ['''
             UPDATE dataset
@@ -1256,11 +1288,13 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             );
         ''']
         sa_session = object_session(self)
+        update_time = galaxy.model.orm.now.now()
+        self.update_hdca_update_time_for_job(update_time=update_time, sa_session=sa_session, supports_skip_locked=supports_skip_locked)
         params = {
             'job_id': self.id,
             'state': self.state,
             'info': self.info,
-            'update_time': galaxy.model.orm.now.now()
+            'update_time': update_time
         }
         for statement in statements:
             sa_session.execute(statement, params)
@@ -1541,7 +1575,7 @@ class ImplicitCollectionJobs(RepresentById):
 class ImplicitCollectionJobsJobAssociation(RepresentById):
 
     def __init__(self):
-        pass
+        self.implicit_collection_jobs_id = None
 
 
 class PostJobAction(RepresentById):
@@ -2697,10 +2731,11 @@ class DatasetInstance:
         INVALID = 'invalid'
         OK = 'ok'
 
-    def __init__(self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, tool_version=None, extension=None,
-                 dbkey=None, metadata=None, history=None, dataset=None, deleted=False, designation=None,
-                 parent_id=None, validated_state='unknown', validated_state_message=None, visible=True, create_dataset=False, sa_session=None,
-                 extended_metadata=None, flush=True):
+    def __init__(self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, tool_version=None,
+                 extension=None, dbkey=None, metadata=None, history=None, dataset=None, deleted=False,
+                 designation=None, parent_id=None, validated_state='unknown', validated_state_message=None,
+                 visible=True, create_dataset=False, sa_session=None, extended_metadata=None, flush=True,
+                 creating_job_id=None):
         self.name = name or "Unnamed dataset"
         self.id = id
         self.info = info
@@ -2723,6 +2758,7 @@ class DatasetInstance:
         if not dataset and create_dataset:
             # Had to pass the sqlalchemy session in order to create a new dataset
             dataset = Dataset(state=Dataset.states.NEW)
+            dataset.job_id = creating_job_id
             if flush:
                 sa_session.add(dataset)
                 sa_session.flush()
@@ -3088,6 +3124,7 @@ class DatasetInstance:
 
     @property
     def creating_job(self):
+        # TODO this should work with `return self.dataset.job` (revise failing unit tests)
         creating_job_associations = None
         if self.creating_job_associations:
             creating_job_associations = self.creating_job_associations
@@ -3313,6 +3350,8 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
 
     def copy_tags_to(self, copy_tags=None):
         if copy_tags is not None:
+            if isinstance(copy_tags, dict):
+                copy_tags = copy_tags.values()
             for tag in copy_tags:
                 copied_tag = tag.copy(cls=HistoryDatasetAssociationTagAssociation)
                 self.tags.append(copied_tag)
@@ -4952,6 +4991,7 @@ class Workflow(Dictifiable, RepresentById):
         self.has_cycles = None
         self.has_errors = None
         self.steps = []
+        self.stored_workflow_id = None
         if uuid is None:
             self.uuid = uuid4()
         else:

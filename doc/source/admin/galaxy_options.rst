@@ -1468,6 +1468,51 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~
+``plausible_server``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Please enter the URL for the Plausible server (including https) so
+    this can be used for tracking with Plausible
+    (https://plausible.io/).
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~
+``plausible_domain``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Please enter the URL for the Galaxy server so this can be used for
+    tracking with Plausible (https://plausible.io/).
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~
+``matomo_server``
+~~~~~~~~~~~~~~~~~
+
+:Description:
+    Please enter the URL for the Matomo server (including https) so
+    this can be used for tracking with Matomo (https://matomo.org/).
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~
+``matomo_site_id``
+~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Please enter the site ID for the Matomo server so this can be used
+    for tracking with Matomo (https://matomo.org/).
+:Default: ``None``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~
 ``display_servers``
 ~~~~~~~~~~~~~~~~~~~
@@ -4358,6 +4403,18 @@
     the commented out line below).
 :Default: ``sqlalchemy+sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~
+``enable_celery_tasks``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Offload long-running tasks to a Celery task queue. Activate this
+    only if you have setup a Celery worker for Galaxy. For details,
+    see https://docs.galaxyproject.org/en/master/admin/production.html
+:Default: ``false``
+:Type: bool
 
 
 ~~~~~~~~~~~~~~

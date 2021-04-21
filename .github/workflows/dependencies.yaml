@@ -27,9 +27,11 @@ jobs:
       - name: Create pull request
         uses: peter-evans/create-pull-request@v3
         with:
+          token: ${{ secrets.GALAXYBOT_PAT }}
           commit-message: Update Python dependencies
-          title: Update Python dependencies
-          body: Run `make update-dependencies`.
           branch: dev_auto_update_dependencies
           delete-branch: true
+          push-to-fork: galaxybot/galaxy
+          title: Update Python dependencies
+          body: Run `make update-dependencies`.
           labels: area/dependencies

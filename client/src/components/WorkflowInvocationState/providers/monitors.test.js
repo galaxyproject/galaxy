@@ -1,6 +1,6 @@
 import { of } from "rxjs";
 import { ObserverSpy } from "@hirez_io/observer-spy";
-import * as caching from "components/History/caching/loadHistoryContents";
+import { loadHistoryContents } from "../../History/caching";
 import { monitorHistoryUntilTrue, invocationStepMonitor } from "./monitors";
 import * as fetch from "./fetch";
 
@@ -58,7 +58,7 @@ describe("monitorHistoryUntilTrue", () => {
         stopMonitor = false;
         completed = false;
         mockLoadHistoryContent = of(1, 2, 3);
-        jest.spyOn(caching, 'loadHistoryContents').mockImplementation(() => () => mockLoadHistoryContent);
+        loadHistoryContents.mockImplementation(() => () => mockLoadHistoryContent);
         monitor$ = monitorHistoryUntilTrue(stopFn, historyId, 20);
     });
 

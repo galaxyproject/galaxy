@@ -5,6 +5,7 @@ galaxy-tool-util
 galaxy-web-framework
 galaxy-web-stack
 
+celery
 kombu
 Beaker
 pykwalify

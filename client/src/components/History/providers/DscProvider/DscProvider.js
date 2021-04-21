@@ -32,7 +32,8 @@ export default {
     },
     computed: {
         dsc() {
-            return new DatasetCollection(this.raw);
+            const cleanObj = JSON.parse(JSON.stringify(this.raw));
+            return new DatasetCollection(cleanObj);
         },
     },
     watch: {

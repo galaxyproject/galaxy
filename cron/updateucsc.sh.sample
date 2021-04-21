@@ -6,6 +6,13 @@
 
 ## Change the Galaxy path on the next line if needed:
 GALAXY=$(dirname "$0")/..
+
+GALAXY_VIRTUAL_ENV="${GALAXY_VIRTUAL_ENV:-$GALAXY/.venv}"
+if [ -d "$GALAXY_VIRTUAL_ENV" ]; then
+    echo "Activating virtualenv at $GALAXY_VIRTUAL_ENV"
+    . "$GALAXY_VIRTUAL_ENV/bin/activate"
+fi
+
 PYTHONPATH=${GALAXY}/lib
 export PYTHONPATH
 
@@ -61,7 +68,7 @@ echo "Building chromInfo tables."
 python "${GALAXY}/cron/build_chrom_db.py" "${GALAXY}/tool-data/shared/ucsc/chrom/new/" "${GALAXY}/tool-data/shared/ucsc/builds.txt"
 if [ $? -eq 0 ]
 then
-    for src in ${GALAXY}/tool-data/shared/ucsc/chrom/new/*.len
+    for src in "${GALAXY}"/tool-data/shared/ucsc/chrom/new/*.len
     do
         dst=${GALAXY}/tool-data/shared/ucsc/chrom/$(basename "$src")
         diff "$src" "$dst" > /dev/null 2>&1

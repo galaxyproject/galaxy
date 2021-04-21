@@ -49,7 +49,7 @@ from galaxy.model.custom_types import (
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
 from galaxy.model.security import GalaxyRBACAgent
-from galaxy.model.triggers import drop_timestamp_triggers
+from galaxy.model.triggers import install_timestamp_triggers
 from galaxy.model.view import HistoryDatasetCollectionJobStateSummary
 from galaxy.model.view.utils import install_views
 
@@ -271,6 +271,7 @@ model.HistoryDatasetAssociationHistory.table = Table(
 model.Dataset.table = Table(
     "dataset", metadata,
     Column("id", Integer, primary_key=True),
+    Column('job_id', Integer, ForeignKey('job.id'), index=True, nullable=True),
     Column("create_time", DateTime, default=now),
     Column("update_time", DateTime, index=True, default=now, onupdate=now),
     Column("state", TrimmedString(64), index=True),
@@ -1769,6 +1770,7 @@ simple_mapping(model.HistoryDatasetAssociation,
 )
 
 simple_mapping(model.Dataset,
+    job=relation(model.Job, primaryjoin=(model.Dataset.table.c.job_id == model.Job.table.c.id)),
     history_associations=relation(model.HistoryDatasetAssociation,
         primaryjoin=(model.Dataset.table.c.id == model.HistoryDatasetAssociation.table.c.dataset_id)),
     active_history_associations=relation(model.HistoryDatasetAssociation,
@@ -2910,11 +2912,8 @@ def init(file_path, url, engine_options=None, create_tables=False, map_install_m
     # Create tables if needed
     if create_tables:
         metadata.create_all()
+        install_timestamp_triggers(engine)
         install_views(engine)
-        # metadata.engine.commit()
-    else:
-        # TODO: replace this in 21.01 with a migration.
-        drop_timestamp_triggers(engine)
 
     result.create_tables = create_tables
     # load local galaxy security policy

@@ -18,6 +18,7 @@ import galaxy.jobs
 from galaxy import model
 from galaxy.job_execution.output_collect import default_exit_code_file, read_exit_code_from
 from galaxy.jobs.command_factory import build_command
+from galaxy.jobs.runners.util import runner_states
 from galaxy.jobs.runners.util.env import env_to_statement
 from galaxy.jobs.runners.util.job_script import (
     job_script,
@@ -36,7 +37,6 @@ from galaxy.util import (
     shrink_stream_by_size,
     unicodify,
 )
-from galaxy.util.bunch import Bunch
 from galaxy.util.custom_logging import get_logger
 from galaxy.util.monitors import Monitors
 from .state_handler_factory import build_state_handlers
@@ -548,15 +548,7 @@ class JobState:
     """
     Encapsulate state of jobs.
     """
-    runner_states = Bunch(
-        WALLTIME_REACHED='walltime_reached',
-        MEMORY_LIMIT_REACHED='memory_limit_reached',
-        JOB_OUTPUT_NOT_RETURNED_FROM_CLUSTER='Job output not returned from cluster',
-        UNKNOWN_ERROR='unknown_error',
-        GLOBAL_WALLTIME_REACHED='global_walltime_reached',
-        OUTPUT_SIZE_LIMIT='output_size_limit',
-        TOOL_DETECT_ERROR='tool_detected',  # job runner interaction worked fine but the tool indicated error
-    )
+    runner_states = runner_states
 
     def __init__(self, job_wrapper, job_destination):
         self.runner_state_handled = False
