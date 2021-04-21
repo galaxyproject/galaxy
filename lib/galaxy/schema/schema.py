@@ -149,7 +149,13 @@ UuidField: UUID4 = Field(
 )
 
 
-class UserModel(BaseModel):
+class Model(BaseModel):
+    """Base model definition with common configuration used by all derived models."""
+    class Config:
+        use_enum_values = True  # when using .dict()
+
+
+class UserModel(Model):
     """User in a transaction context."""
     id: EncodedDatabaseIdField = Field(title='ID', description='User ID')
     username: str = Field(title='Username', description='User username')
@@ -184,7 +190,7 @@ class DatasetSourceType(str, Enum):
     ldda = "ldda"
 
 
-class TagCollection(BaseModel):
+class TagCollection(Model):
     """Represents the collection of tags associated with an item."""
     __root__: List[str] = Field(
         [],
@@ -193,7 +199,7 @@ class TagCollection(BaseModel):
     )
 
 
-class MetadataFile(BaseModel):
+class MetadataFile(Model):
     """Metadata file associated with a dataset."""
     file_type: str = Field(
         ...,
@@ -203,7 +209,7 @@ class MetadataFile(BaseModel):
     download_url: AnyUrl = DownloadUrlField
 
 
-class DatasetPermissions(BaseModel):
+class DatasetPermissions(Model):
     """Role-based permissions for accessing and managing a dataset."""
     manage: List[EncodedDatabaseIdField] = Field(
         [],
@@ -217,7 +223,7 @@ class DatasetPermissions(BaseModel):
     )
 
 
-class Hyperlink(BaseModel):
+class Hyperlink(Model):
     """Represents some text with an Hyperlink."""
     target: str = Field(
         ...,
@@ -237,7 +243,7 @@ class Hyperlink(BaseModel):
     )
 
 
-class DisplayApp(BaseModel):
+class DisplayApp(Model):
     """Basic linked information about an application that can display certain datatypes."""
     label: str = Field(
         ...,
@@ -251,12 +257,12 @@ class DisplayApp(BaseModel):
     )
 
 
-class Visualization(BaseModel):  # TODO annotate this model
+class Visualization(Model):  # TODO annotate this model
     class Config:
         extra = Extra.allow  # Allow any fields temporarily until the model is annotated
 
 
-class HistoryItemBase(BaseModel):
+class HistoryItemBase(Model):
     """Basic information provided by items contained in a History."""
     id: EncodedDatabaseIdField = EncodedEntityIdField
     name: str = Field(
@@ -489,7 +495,7 @@ class HDABeta(HDADetailed):  # TODO: change HDABeta name to a more appropriate o
     pass
 
 
-class DCSummary(BaseModel):
+class DCSummary(Model):
     """Dataset Collection summary information."""
     model_class: str = ModelClassField(DC_MODEL_CLASS_NAME)
     id: EncodedDatabaseIdField = EncodedEntityIdField
@@ -501,7 +507,7 @@ class DCSummary(BaseModel):
     element_count: Optional[int] = ElementCountField
 
 
-class DCESummary(BaseModel):
+class DCESummary(Model):
     """Dataset Collection Element summary information."""
     id: EncodedDatabaseIdField = EncodedEntityIdField
     model_class: str = ModelClassField(DCE_MODEL_CLASS_NAME)
@@ -569,7 +575,7 @@ class HDCADetailed(HDCASummary):
     elements: List[DCESummary] = ElementsField
 
 
-class HDCJobStateSummary(BaseModel):
+class HDCJobStateSummary(Model):
     """Overview of the job states working inside a dataset collection."""
     all_jobs: int = Field(
         0,
@@ -655,7 +661,7 @@ class HDCABeta(HDCADetailed):  # TODO: change HDCABeta name to a more appropriat
     )
 
 
-class JobSummary(BaseModel):
+class JobSummary(Model):
     """Basic information about a job."""
     id: EncodedDatabaseIdField = EncodedEntityIdField
     model_class: str = ModelClassField(JOB_MODEL_CLASS_NAME)
@@ -709,7 +715,7 @@ class JobSummary(BaseModel):
     )
 
 
-class DatasetJobInfo(BaseModel):
+class DatasetJobInfo(Model):
     id: EncodedDatabaseIdField = EncodedEntityIdField
     src: DatasetSourceType = Field(
         ...,
@@ -745,7 +751,7 @@ class JobDetails(JobSummary):
     )
 
 
-class JobMetric(BaseModel):
+class JobMetric(Model):
     title: str = Field(
         ...,
         title="Title",
@@ -784,7 +790,7 @@ class JobMetric(BaseModel):
         }
 
 
-class JobMetricCollection(BaseModel):
+class JobMetricCollection(Model):
     """Represents a collection of metrics associated with a Job."""
     __root__: List[JobMetric] = Field(
         [],
