@@ -4,7 +4,7 @@ import os
 import sys
 import tempfile
 
-assert sys.version_info[:2] >= (2.4)
+assert sys.version_info[:2] >= (2, 4)
 
 
 def stop_err(msg):

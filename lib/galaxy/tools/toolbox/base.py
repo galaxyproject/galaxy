@@ -56,7 +56,7 @@ SHED_TOOL_CONF_XML = """<?xml version="1.0"?>
 
 # A fake ToolShedRepository constructed from a shed tool conf
 _ToolConfRepository = namedtuple(
-    'ToolConfRepository',
+    '_ToolConfRepository',
     (
         'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision',
         'tool_dependencies_installed_or_in_error', 'repository_path', 'tool_path',

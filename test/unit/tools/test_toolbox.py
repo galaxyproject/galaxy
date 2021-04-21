@@ -37,7 +37,7 @@ CONFIG_TEST_TOOL_VERSION_1 = CONFIG_TEST_TOOL_VERSION_TEMPLATE.safe_substitute(d
 CONFIG_TEST_TOOL_VERSION_2 = CONFIG_TEST_TOOL_VERSION_TEMPLATE.safe_substitute(dict(version="2"))
 
 REPO_TYPE = collections.namedtuple(
-    'DEFAULT_TEST_REPO',
+    'REPO_TYPE',
     'tool_shed owner name changeset_revision installed_changeset_revision description status',
 )
 DEFAULT_TEST_REPO = REPO_TYPE('github.com', 'galaxyproject', 'example', '1', '1', 'description', 'OK')

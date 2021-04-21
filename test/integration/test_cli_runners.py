@@ -12,7 +12,7 @@ from galaxy_test.base.ssh_util import generate_ssh_keys
 from galaxy_test.driver import integration_util
 from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
 
-RemoteConnection = collections.namedtuple('remote_connection', ['hostname', 'username', 'port', 'private_key', 'public_key'])
+RemoteConnection = collections.namedtuple('RemoteConnection', ['hostname', 'username', 'port', 'private_key', 'public_key'])
 
 
 def start_ssh_docker(container_name, jobs_directory, port=10022, image='agaveapi/slurm'):

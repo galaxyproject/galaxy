@@ -9,6 +9,7 @@ import re
 import subprocess
 import sys
 import tempfile
+from typing import Union
 
 
 def stop_err(msg):
@@ -45,7 +46,7 @@ infile_type = sys.argv[6]
 gff_option = ""
 if infile_type == "gff":
     gff_option = "-gff "
-minMatch = sys.argv[7]
+minMatch: Union[str, float] = sys.argv[7]
 multiple = int(sys.argv[8])
 multiple_option = ""
 if multiple:
@@ -73,6 +74,7 @@ try:
     try:
         proc = subprocess.Popen(args=cmd_line, shell=True, stderr=subprocess.PIPE)
         returncode = proc.wait()
+        assert proc.stderr
         stderr = proc.stderr.read()
         if returncode != 0:
             raise Exception(stderr)
