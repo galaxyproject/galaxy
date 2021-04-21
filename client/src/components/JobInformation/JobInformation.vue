@@ -75,8 +75,7 @@ import CodeRow from "./CodeRow.vue";
 import UtcDate from "components/UtcDate";
 import CopyToClipboard from "components/CopyToClipboard";
 import JOB_STATES_MODEL from "mvc/history/job-states-model";
-import intervalToDuration from "date-fns/intervalToDuration";
-import formatDuration from "date-fns/formatDuration";
+import { formatDuration, intervalToDuration } from "date-fns";
 
 export default {
     components: {
