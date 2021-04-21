@@ -1,4 +1,4 @@
-import { merge, partition, Observable, BehaviorSubject } from "rxjs";
+import { merge, partition, Observable, BehaviorSubject, Subject } from "rxjs";
 import {
     tap,
     distinctUntilChanged,
@@ -36,8 +36,8 @@ export const contentPayload = (cfg = {}) => {
         disablePoll = false,
         debug = false,
         // status outputs
-        loading$,
-        resetPos$,
+        loading$ = new BehaviorSubject(),
+        resetPos$ = new Subject(),
     } = cfg;
 
     // stats for this history + filters, accumulates and improves over successive polls

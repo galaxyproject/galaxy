@@ -18,6 +18,8 @@ const resetTestData = () => {
     fullHistories = historySummaries.map((h) => ({ ...h, detailView: true }));
 };
 
+const fakeUser = { id: 123234, name: "Bob" };
+
 // #endregion
 
 // #region Mock server responses
@@ -108,6 +110,9 @@ describe("UserHistories", () => {
         wrapper = shallowMount(UserHistories, {
             localVue,
             store: historiesStore,
+            propsData: {
+                user: fakeUser,
+            },
             scopedSlots: {
                 default(props) {
                     slotProps = props;
