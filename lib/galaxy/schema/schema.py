@@ -1,7 +1,10 @@
+"""This module contains general pydantic models and common schema field annotations for them."""
+
 from datetime import datetime
 from enum import Enum
 from typing import (
     Any,
+    Dict,
     List,
     Optional,
     Union,
@@ -20,6 +23,7 @@ from galaxy.model import (
     Dataset,
     DatasetCollection,
     DatasetInstance,
+    Job,
 )
 from galaxy.schema.fields import (
     EncodedDatabaseIdField,
@@ -31,6 +35,7 @@ HDA_MODEL_CLASS_NAME = "HistoryDatasetAssociation"
 DC_MODEL_CLASS_NAME = "DatasetCollection"
 DCE_MODEL_CLASS_NAME = "DatasetCollectionElement"
 HDCA_MODEL_CLASS_NAME = "HistoryDatasetCollectionAssociation"
+JOB_MODEL_CLASS_NAME = "Job"
 
 
 # Generic and common Field annotations that can be reused across models
@@ -131,6 +136,18 @@ ElementsField: List['DCESummary'] = Field(
     description="The summary information of each of the elements inside the dataset collection.",
 )
 
+HistoryIdField: EncodedDatabaseIdField = Field(
+    ...,
+    title="History ID",
+    description="The encoded ID of the history associated with this item.",
+)
+
+UuidField: UUID4 = Field(
+    ...,
+    title="UUID",
+    description="Universal unique identifier for this dataset.",
+)
+
 
 class UserModel(BaseModel):
     """User in a transaction context."""
@@ -160,6 +177,11 @@ class DCEType(str, Enum):  # TODO: suspiciously similar to HistoryContentType
     """Available types of dataset collection elements."""
     hda = "hda"
     dataset_collection = "dataset_collection"
+
+
+class DatasetSourceType(str, Enum):
+    hda = "hda"
+    ldda = "ldda"
 
 
 class TagCollection(BaseModel):
@@ -242,11 +264,7 @@ class HistoryItemBase(BaseModel):
         title="Name",
         description="The name of the item.",
     )
-    history_id: EncodedDatabaseIdField = Field(
-        ...,
-        title="History ID",
-        description="The encoded ID of the history containing this item.",
-    )
+    history_id: EncodedDatabaseIdField = HistoryIdField
     hid: int = Field(
         ...,
         title="HID",
@@ -318,8 +336,8 @@ class HDAInaccessible(HistoryItemBase):
 class HDADetailed(HDASummary):
     """History Dataset Association detailed information."""
     model_class: str = ModelClassField(HDA_MODEL_CLASS_NAME)
-    hda_ldda: str = Field(
-        "hda",
+    hda_ldda: DatasetSourceType = Field(
+        DatasetSourceType.hda,
         const=True,
         title="HDA or LDDA",
         description="Whether this dataset belongs to a history (HDA) or a library (LDDA).",
@@ -387,11 +405,7 @@ class HDADetailed(HDASummary):
         title="Rerunnable",
         description="Whether the job creating this dataset can be run again.",
     )
-    uuid: UUID4 = Field(
-        ...,
-        title="UUID",
-        description="Universal unique identifier for this dataset.",
-    )
+    uuid: UUID4 = UuidField
     permissions: DatasetPermissions = Field(
         ...,
         title="Permissions",
@@ -560,7 +574,7 @@ class HDCJobStateSummary(BaseModel):
     all_jobs: int = Field(
         0,
         title="All jobs",
-        description="Total number of jobs in the associated with a dataset collection.",
+        description="Total number of jobs associated with a dataset collection.",
     )
     new: int = Field(
         0,
@@ -638,4 +652,188 @@ class HDCABeta(HDCADetailed):  # TODO: change HDCABeta name to a more appropriat
         None,
         title="Job State Summary",
         description="Overview of the job states working inside the dataset collection.",
+    )
+
+
+class JobSummary(BaseModel):
+    """Basic information about a job."""
+    id: EncodedDatabaseIdField = EncodedEntityIdField
+    model_class: str = ModelClassField(JOB_MODEL_CLASS_NAME)
+    tool_id: str = Field(
+        ...,
+        title="Tool ID",
+        description="Identifier of the tool that generated this job.",
+    )
+    history_id: EncodedDatabaseIdField = HistoryIdField
+    state: Job.states = Field(
+        ...,
+        title="State",
+        description="Current state of the job.",
+    )
+    exit_code: Optional[int] = Field(
+        None,
+        title="Exit Code",
+        description="The exit code returned by the tool. Can be unset if the job is not completed yet.",
+    )
+    create_time: datetime = CreateTimeField
+    update_time: datetime = UpdateTimeField
+    galaxy_version: str = Field(
+        ...,
+        title="Galaxy Version",
+        description="The (major) version of Galaxy used to create this job.",
+        example="21.05"
+    )
+    external_id: Optional[str] = Field(
+        None,
+        title="External ID",
+        description=(
+            "The job id used by the external job runner (Condor, Pulsar, etc.)"
+            "Only administrator can see this value."
+        )
+    )
+    command_line: Optional[str] = Field(
+        None,
+        title="Command Line",
+        description=(
+            "The command line produced by the job. "
+            "Users can see this value if allowed in the configuration, administrator can always see this value."
+        ),
+    )
+    user_email: Optional[str] = Field(
+        None,
+        title="User Email",
+        description=(
+            "The email of the user that owns this job. "
+            "Only the owner of the job and administrators can see this value."
+        ),
+    )
+
+
+class DatasetJobInfo(BaseModel):
+    id: EncodedDatabaseIdField = EncodedEntityIdField
+    src: DatasetSourceType = Field(
+        ...,
+        title="Source",
+        description="The source of this dataset, either `hda` or `ldda` depending of its origin.",
+    )
+    uuid: UUID4 = UuidField
+
+
+class JobDetails(JobSummary):
+    command_version: str = Field(
+        ...,
+        title="Command Version",
+        description="Tool version indicated during job execution.",
+    )
+    params: Any = Field(
+        ...,
+        title="Parameters",
+        description=(
+            "Object containing all the parameters of the tool associated with this job. "
+            "The specific parameters depend on the tool itself."
+        ),
+    )
+    inputs: Dict[str, DatasetJobInfo] = Field(
+        ...,
+        title="Inputs",
+        description="Dictionary mapping all the tool inputs (by name) with the corresponding dataset information.",
+    )
+    outputs: Dict[str, DatasetJobInfo] = Field(
+        ...,
+        title="Outputs",
+        description="Dictionary mapping all the tool outputs (by name) with the corresponding dataset information.",
+    )
+
+
+class JobMetric(BaseModel):
+    title: str = Field(
+        ...,
+        title="Title",
+        description="A descriptive title for this metric.",
+    )
+    value: str = Field(
+        ...,
+        title="Value",
+        description="The textual representation of the metric value.",
+    )
+    plugin: str = Field(
+        ...,
+        title="Plugin",
+        description="The instrumenter plugin that generated this metric.",
+    )
+    name: str = Field(
+        ...,
+        title="Name",
+        description="The name of the metric variable.",
+    )
+    raw_value: str = Field(
+        ...,
+        title="Raw Value",
+        description="The raw value of the metric as a string.",
+    )
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "title": "Job Start Time",
+                "value": "2021-02-25 14:55:40",
+                "plugin": "core",
+                "name": "start_epoch",
+                "raw_value": "1614261340.0000000"
+            }
+        }
+
+
+class JobMetricCollection(BaseModel):
+    """Represents a collection of metrics associated with a Job."""
+    __root__: List[JobMetric] = Field(
+        [],
+        title="Job Metrics",
+        description="Collections of metrics provided by `JobInstrumenter` plugins on a particular job.",
+    )
+
+
+class JobFullDetails(JobDetails):
+    tool_stdout: str = Field(
+        ...,
+        title="Tool Standard Output",
+        description="The captured standard output of the tool executed by the job.",
+    )
+    tool_stderr: str = Field(
+        ...,
+        title="Tool Standard Error",
+        description="The captured standard error of the tool executed by the job.",
+    )
+    job_stdout: str = Field(
+        ...,
+        title="Job Standard Output",
+        description="The captured standard output of the job execution.",
+    )
+    job_stderr: str = Field(
+        ...,
+        title="Job Standard Error",
+        description="The captured standard error of the job execution.",
+    )
+    stdout: str = Field(  # Redundant? it seems to be (tool_stdout + "\n" + job_stdout)
+        ...,
+        title="Standard Output",
+        description="Combined tool and job standard output streams.",
+    )
+    stderr: str = Field(  # Redundant? it seems to be (tool_stderr + "\n" + job_stderr)
+        ...,
+        title="Standard Error",
+        description="Combined tool and job standard error streams.",
+    )
+    job_messages: List[str] = Field(
+        ...,
+        title="Job Messages",
+        description="List with additional information and possible reasons for a failed job.",
+    )
+    job_metrics: Optional[JobMetricCollection] = Field(
+        None,
+        title="Job Metrics",
+        description=(
+            "Collections of metrics provided by `JobInstrumenter` plugins on a particular job. "
+            "Only administrators can see these metrics."
+        ),
     )
