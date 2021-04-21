@@ -134,7 +134,6 @@ export const contentPayload = (cfg = {}) => {
                 return aboveTop && scrollAtTop;
             }),
             map(([hid]) => ScrollPos.create({ key: hid })),
-            tap((hid) => console.log("trigger", hid)),
             debounceTime(debouncePeriod),
         );
 
