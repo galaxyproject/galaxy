@@ -91,11 +91,12 @@ var ImportCollectionModal = Backbone.View.extend({
         const new_history_name = this.modal.$("input[name=history_name]").val();
         if (new_history_name !== "") {
             this.createNewHistory(new_history_name)
-                .done((new_history) => {
+                .then((new_history) => {
                     Toast.success("History created");
                     this.collectionImport(collection_elements, new_history.id, new_history.name);
                 })
-                .fail((xhr, status, error) => {
+                .catch((error) => {
+                    console.error(error);
                     Toast.error("An error occurred.");
                 });
         } else {
