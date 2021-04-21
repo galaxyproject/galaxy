@@ -22,6 +22,12 @@ class BaseExportTestCase(BaseTestCase):
         self.app.history_manager = mock.MagicMock()
         self.app.dataset_collections_service = mock.MagicMock()
 
+    def _new_history(self):
+        history = model.History()
+        history.id = 1
+        history.name = "New History"
+        return history
+
     def _new_hda(self, contents=None):
         hda = model.HistoryDatasetAssociation()
         hda.id = 1
@@ -38,6 +44,12 @@ class BaseExportTestCase(BaseTestCase):
         invocation.id = 1
         invocation.create_time = now()
         return invocation
+
+    @contextmanager
+    def _expect_get_history(self, history):
+        self.app.history_manager.get_accessible.return_value = history
+        yield
+        self.app.history_manager.get_accessible.assert_called_once_with(history.id, self.trans.user)
 
     @contextmanager
     def _expect_get_hda(self, hda, hda_id=1):
@@ -127,6 +139,17 @@ history_dataset_peek(history_dataset_id=1)
         with self._expect_get_hda(hda):
             result = self._to_basic(example)
         assert '\n*No Dataset Peek Available*\n' in result
+
+    def test_history_link(self):
+        history = self._new_history()
+        example = """# Example
+```galaxy
+history_link(history_id=1)
+```
+"""
+        with self._expect_get_history(history):
+            result = self._to_basic(example)
+        assert '\n    New History\n\n' in result
 
     def test_history_display_binary(self):
         hda = self._new_hda()
