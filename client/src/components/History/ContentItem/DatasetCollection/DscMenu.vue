@@ -4,32 +4,32 @@
             <PriorityMenuItem
                 v-if="notIn(STATES.DISCARDED)"
                 key="edit-collection"
-                :title="deleteButtonTitle"
-                @click.stop="$emit('delete')"
-                icon="fas fa-trash"
-            >
-                <!-- <b-dropdown no-caret right variant="link" size="sm" boundary="window" toggle-class="p-1"> -->
-                <!-- <template v-slot:button-content>
-                    <i class="fas fa-trash" />
-                    <span class="sr-only">Delete Collection</span>
-                </template>
-                <b-dropdown-item @click.stop="$emit('delete')"> Delete Collection Only </b-dropdown-item>
-                <b-dropdown-item @click.stop="$emit('delete', { recursive: true })">
-                    Delete Contained Datasets
-                </b-dropdown-item>
-                <b-dropdown-item @click.stop="$emit('delete', { recursive: true, purge: true })">
-                    Purge Contained Datasets
-                </b-dropdown-item> -->
-                <!-- </b-dropdown> -->
-            </PriorityMenuItem>
-            <PriorityMenuItem
-                v-if="notIn(STATES.DISCARDED)"
-                key="edit-collection"
                 class="collection-edit-view"
                 :title="editButtonTitle"
                 :disabled="collection.deleted || isIn(STATES.UPLOAD, STATES.NEW)"
                 @click.stop="backboneRoute('collection/edit/' + collection.hdca_id)"
                 icon="fa fa-pencil"
+            />
+            <PriorityMenuItem
+                v-if="notIn(STATES.DISCARDED)"
+                key="edit-collection"
+                :title="deleteCollectionButtonTitle"
+                @click.stop="$emit('delete')"
+                icon="fas fa-trash"
+            />
+            <PriorityMenuItem
+                v-if="notIn(STATES.DISCARDED)"
+                key="edit-collection"
+                :title="deleteDatasetsButtonTitle"
+                @click.stop="$emit('delete', { recursive: true })"
+                icon="fas fa-trash"
+            />
+            <PriorityMenuItem
+                v-if="notIn(STATES.DISCARDED)"
+                key="edit-collection"
+                :title="purgeCollectionButtonTitle"
+                @click.stop="$emit('delete', { recursive: true, purge: true })"
+                icon="fas fa-trash"
             />
         </PriorityMenu>
     </div>
@@ -52,7 +52,7 @@ export default {
     computed: {
         editButtonTitle() {
             if (this.collection.deleted) {
-                return "Undelete collection to edit attributes";
+                return "Collection must not be deleted to edit";
             }
             if (this.collection.purged) {
                 return "Cannot edit attributes of collections removed from disk";
@@ -63,8 +63,14 @@ export default {
             }
             return "Edit attributes";
         },
-        deleteButtonTitle() {
+        deleteCollectionButtonTitle() {
             return "Delete Collection Only";
+        },
+        deleteDatasetsButtonTitle() {
+            return "Delete Contained Datasets";
+        },
+        purgeCollectionButtonTitle() {
+            return "Purge Contained Datasets";
         },
     },
     methods: {

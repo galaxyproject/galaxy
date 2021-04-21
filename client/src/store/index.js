@@ -20,7 +20,9 @@ import { toolStore } from "./toolStore";
 import { datasetPathDestinationStore } from "./datasetPathDestinationStore";
 import { datasetExtFilesStore } from "./datasetExtFilesStore";
 import { jobStore } from "./jobStore";
-import { collectionStore } from "./collectionStore";
+import { collectionAttributesStore } from "./collectionAttributesStore";
+import { genomeStore } from "./genomeStore";
+import { datatypeStore } from "./datatypeStore";
 
 // beta features
 import { historyStore as betaHistoryStore } from "components/History/model/historyStore";
@@ -50,7 +52,9 @@ export function createStore() {
             workflows: workflowStore,
             informationStore: jobStore,
             tools: toolStore,
-            collectionStore: collectionStore,
+            collectionAttributesStore: collectionAttributesStore,
+            genomeStore: genomeStore,
+            datatypeStore: datatypeStore,
         },
     };
 

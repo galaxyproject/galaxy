@@ -54,10 +54,6 @@
                     </template> --> </multiselect
                 ><i>original input: {{ datatypeFromElements }}</i>
             </b-tab>
-            <b-tab>
-                <template v-slot:title> <font-awesome-icon icon="user" /> &nbsp;{{ l("Permissions") }}</template>
-                <p>WIP Permissions</p>
-            </b-tab>
         </b-tabs>
     </div>
 </template>
@@ -118,21 +114,6 @@ export default {
         },
     },
     computed: {
-        collectionName: {
-            get() {
-                return this.collection_data.name;
-            },
-            //TODO : #6966
-            // set(collection_name) {
-            //     this.collection_data.name = collection_name;
-            // },
-        },
-        collectionType: {
-            // no setter; for display only
-            get() {
-                return this.collection_data.collection_type;
-            },
-        },
         extension: {
             get() {
                 return this.selectedExtension;
