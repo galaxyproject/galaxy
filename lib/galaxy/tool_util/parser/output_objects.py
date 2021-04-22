@@ -108,6 +108,7 @@ class ToolExpressionOutput(ToolOutputBase):
         self.format = "expression.json"  # galaxy.datatypes.text.ExpressionJson.file_ext
 
         self.format_source = None
+        self.format_from = None
         self.metadata_source = None
         self.parent = None
         self.actions = actions
@@ -136,7 +137,7 @@ class ToolOutputCollection(ToolOutputBase):
         <outputs>
     """
     dict_collection_visible_keys = ['name', 'format', 'label', 'hidden', 'output_type', 'default_format',
-                                    'default_format_source', 'default_metadata_source', 'inherit_format', 'inherit_metadata']
+                                    'default_format_source', 'default_format_from', 'default_metadata_source', 'inherit_format', 'inherit_metadata']
 
     def __init__(
         self,
@@ -147,6 +148,7 @@ class ToolOutputCollection(ToolOutputBase):
         hidden=False,
         default_format="data",
         default_format_source=None,
+        default_format_from=None,
         default_metadata_source=None,
         inherit_format=False,
         inherit_metadata=False
@@ -163,6 +165,7 @@ class ToolOutputCollection(ToolOutputBase):
 
         self.metadata_source = default_metadata_source
         self.format_source = default_format_source
+        self.format_from = default_format_from
         self.change_format = []  # TODO
 
     def known_outputs(self, inputs, type_registry):
@@ -186,6 +189,7 @@ class ToolOutputCollection(ToolOutputBase):
                     name,
                     format=format,
                     format_source=self.format_source,
+                    format_from=self.format_from,
                     metadata_source=self.metadata_source,
                     implicit=True,
                 )
@@ -242,6 +246,7 @@ class ToolOutputCollection(ToolOutputBase):
             hidden=output_dict.get("hidden", False),
             default_format=output_dict.get("default_format", "data"),
             default_format_source=output_dict.get("default_format_source", None),
+            default_format_from=output_dict.get("default_format_from", None),
             default_metadata_source=output_dict.get("default_metadata_source", None),
             inherit_format=output_dict.get("inherit_format", False),
             inherit_metadata=output_dict.get("inherit_metadata", False),
