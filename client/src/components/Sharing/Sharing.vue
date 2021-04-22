@@ -57,26 +57,37 @@
             </div>
             <br />
             <h4>Share {{ model_class }} with Individual Users</h4>
-            <div>
+            <div v-if="!isExposeEmail">
                 <div v-if="item.users_shared_with && item.users_shared_with.length > 0">
-                    <b-alert show>
-                        The following users will see this {{ model_class }} in their {{ model_class }} list and will be
-                        able to view, import and run it.
-                    </b-alert>
+                    <b-table small caption-top :fields="shareFields" :items="item.users_shared_with">
+                        <template v-slot:table-caption>
+                            The following users will see this {{ model_class }} in their {{ model_class }} list and will
+                            be able to view, import and run it.
+                        </template>
+                        <template v-slot:cell(id)="cell">
+                            <b-button
+                                class="unshare_user"
+                                size="sm"
+                                @click.stop="setSharing('unshare_user', cell.value)"
+                                >Remove</b-button
+                            >
+                        </template>
+                    </b-table>
                 </div>
                 <div v-else>
                     <p>You have not shared this {{ model_class }} with any users.</p>
                 </div>
-                <SelectUsers
-                    v-if="item"
-                    :users_shared_with="item.users_shared_with"
-                    :share_with="actions.share_with"
-                    :unshare_with="actions.unshare_with"
-                    :plural-name="pluralNameLower"
-                    :id="id"
-                />
-                <b-button :href="shareUrl" id="share_with_a_user"> <span>Share with a user</span> </b-button>
             </div>
+            <SelectUsers
+                v-else-if="item"
+                :users_shared_with="item.users_shared_with"
+                :share_with="actions.share_with"
+                :unshare_with="actions.unshare_with"
+                :plural-name="pluralNameLower"
+                :id="id"
+                :is-expose-email="isExposeEmail"
+            />
+            <b-button :href="shareUrl" id="share_with_a_user"> <span>Share with a user</span> </b-button>
         </div>
     </div>
 </template>
@@ -121,6 +132,7 @@ export default {
     data() {
         const Galaxy = getGalaxyInstance();
         return {
+            isExposeEmail: Galaxy.config.expose_user_email || Galaxy.user.attributes.is_admin,
             ready: false,
             hasUsername: Galaxy.user.get("username"),
             newUsername: "",
