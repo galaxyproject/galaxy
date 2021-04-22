@@ -67,10 +67,11 @@ export const ContentProvider = {
     created() {
         this.params$ = this.watch$("params");
         this.scrollPos$ = this.watch$("scrollPos");
-        const { payload$, loading$, scrolling$ } = this.initStreams();
+        const { payload$, loading$, scrolling$, resetPos$ = NEVER } = this.initStreams();
 
         this.listenTo(scrolling$, (val) => (this.scrolling = val));
         this.listenTo(loading$, (val) => (this.loading = val));
+        this.listenTo(resetPos$, (val) => this.resetScrollPos(val));
 
         // render output
         this.listenTo(payload$, {
@@ -81,13 +82,13 @@ export const ContentProvider = {
     },
 
     methods: {
-        resetScrollPos() {
-            this.scrollPos = ScrollPos.create();
+        resetScrollPos(pos = ScrollPos.create()) {
+            this.scrollPos = pos;
         },
 
         initStreams() {
             console.warn("Override initStreams in ContentProvider");
-            return { payload$: NEVER, loading$: NEVER, scrolling$: NEVER };
+            return { payload$: NEVER, loading$: NEVER, scrolling$: NEVER, resetPos$: NEVER };
         },
 
         /**
