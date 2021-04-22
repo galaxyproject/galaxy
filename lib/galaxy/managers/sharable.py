@@ -11,6 +11,7 @@ A sharable Galaxy object:
 """
 import logging
 import re
+from enum import Enum
 from typing import (
     List,
     Optional,
@@ -473,23 +474,28 @@ class SharableModelFilters(base.ModelFilterParser,
         })
 
 
+class ShareActionType(str, Enum):
+    """Available actions for sharing a resource."""
+    enable_link_access = 'enable_link_access'
+    disable_link_access = 'disable_link_access'
+    publish = 'publish'
+    unpublish = 'unpublish'
+    share_with = 'share_with'
+    unshare_with = 'unshare_with'
+
+
 class SharingPayload(BaseModel):
-    action: str = Field(  # TODO: this seems like it should be a list of actions instead of separating them by '-'
+    action: ShareActionType = Field(
         ...,  # Mark this field as required
         title="Action",
-        description=(
-            "The name of the sharing action. "
-            "Can be one (or multiple values separated by '-') of the following: "
-            "make_accessible_via_link, make_accessible_and_publish, publish, "
-            "unpublish, disable_link_access, disable_link_access_and_unpublish, unshare_user"
-        ),
+        description="The type of the sharing action.",
     )
-    user_id: Optional[EncodedDatabaseIdField] = Field(
+    user_ids: Optional[List[EncodedDatabaseIdField]] = Field(
         None,
-        title="User ID",
+        title="User IDs",
         description=(
-            "The ID of the user with whom this resource will be shared. "
-            "*Required* when the action is `unshare_user`."
+            "The list IDs of the users with whom this resource will be shared. "
+            f"*Required* when the action is either `{ShareActionType.share_with}` or `{ShareActionType.unshare_with}`."
         ),
     )
 
@@ -612,47 +618,24 @@ class ShareableService:
         skipped = False
         class_name = self.manager.model_class.__name__
         item = base.get_object(trans, id, class_name, check_ownership=True, check_accessible=True, deleted=False)
-        actions = []
+
         if payload:
-            actions += payload.action.split("-")
-        for action in actions:
-            if action == "make_accessible_via_link":
-                self._make_item_accessible(trans.sa_session, item)
-                if hasattr(item, "has_possible_members") and item.has_possible_members:
-                    skipped = self._make_members_public(trans, item)
-            elif action == "make_accessible_and_publish":
-                self._make_item_accessible(trans.sa_session, item)
-                if hasattr(item, "has_possible_members") and item.has_possible_members:
-                    skipped = self._make_members_public(trans, item)
-                item.published = True
+            action = payload.action.value
+            if action == "enable_link_access":
+                self.manager.make_importable(item, False)
             elif action == "publish":
-                if item.importable:
-                    item.published = True
-                    if hasattr(item, "has_possible_members") and item.has_possible_members:
-                        skipped = self._make_members_public(trans, item)
-                else:
-                    raise exceptions.MessageException(f"{class_name} not importable.")
+                self.manager.publish(item, False)
             elif action == "disable_link_access":
-                item.importable = False
+                self.manager.make_non_importable(item, False)
             elif action == "unpublish":
-                item.published = False
-            elif action == "disable_link_access_and_unpublish":
-                item.importable = item.published = False
-            elif action == "unshare_user":
-                if payload is None or payload.user_id is None:
-                    raise exceptions.MessageException(f"Missing required user_id to perform {action}")
-                user = trans.sa_session.query(trans.app.model.User).get(trans.app.security.decode_id(payload.user_id))
-                class_name_lc = class_name.lower()
-                ShareAssociation = getattr(trans.app.model, f"{class_name}UserShareAssociation")
-                usas = trans.sa_session.query(ShareAssociation).filter_by(**{"user": user, class_name_lc: item}).all()
-                if not usas:
-                    raise exceptions.MessageException(f"{class_name} was not shared with user.")
-                for usa in usas:
-                    trans.sa_session.delete(usa)
+                self.manager.unpublish(item, False)
+            elif action == "share_with":
+                self._share_with(trans, item, payload)
+            elif action == "unshare_with":
+                self._unshare_with(trans, item, payload)
             trans.sa_session.add(item)
             trans.sa_session.flush()
-        if item.importable and not item.slug:
-            self._make_item_accessible(trans.sa_session, item)
+
         item_dict = self.serializer.serialize_to_view(item,
             user=trans.user, trans=trans, default_view="sharing")
         item_dict["users_shared_with"] = [{"id": self.manager.app.security.encode_id(a.user.id), "email": a.user.email} for a in item.users_shared_with]
@@ -660,33 +643,18 @@ class ShareableService:
             item_dict["skipped"] = True
         return SharingStatus.parse_obj(item_dict)
 
-    def _is_valid_slug(self, slug):
-        """ Returns true if slug is valid. """
-        return base.is_valid_slug(slug)
+    def _get_users_by_ids(self, trans, user_ids):
+        users = [trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(x)) for x in user_ids]
+        return users
 
-    def _make_item_accessible(self, sa_session, item):
-        """ Makes item accessible--viewable and importable--and sets item's slug.
-            Does not flush/commit changes, however. Item must have name, user,
-            importable, and slug attributes. """
-        item.importable = True
-        self.slug_builder.create_item_slug(sa_session, item)
+    def _share_with(self, trans, item, payload: SharingPayload):
+        if payload.user_ids is None:
+            raise exceptions.MessageException(f"Missing required user_ids to perform {payload.action}")
+        users = self._get_users_by_ids(trans, payload.user_ids)
+        self.manager.share_with(item, users, False)
 
-    def _make_members_public(self, trans, item):
-        """ Make the non-purged datasets in history public
-        Performs pemissions check.
-        """
-        # TODO eventually we should handle more classes than just History
-        skipped = False
-        for hda in item.activatable_datasets:
-            dataset = hda.dataset
-            if not trans.app.security_agent.dataset_is_public(dataset):
-                if trans.app.security_agent.can_manage_dataset(trans.user.all_roles(), dataset):
-                    try:
-                        trans.app.security_agent.make_dataset_public(hda.dataset)
-                    except Exception:
-                        log.warning("Unable to make dataset with id: %s public", dataset.id)
-                        skipped = True
-                else:
-                    log.warning("User without permissions tried to make dataset with id: %s public", dataset.id)
-                    skipped = True
-        return skipped
+    def _unshare_with(self, trans, item, payload: SharingPayload):
+        if payload.user_ids is None:
+            raise exceptions.MessageException(f"Missing required user_ids to perform {payload.action}")
+        users = self._get_users_by_ids(trans, payload.user_ids)
+        self.manager.unshare_with(item, users, False)
