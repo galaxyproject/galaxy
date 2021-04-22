@@ -248,7 +248,7 @@ class WorkflowsManager:
         trans.sa_session.flush()
         return workflow_invocation_step
 
-    def build_invocations_query(self, trans, stored_workflow_id=None, history_id=None, dataset_id=None, user_id=None,
+    def build_invocations_query(self, trans, stored_workflow_id=None, history_id=None, job_id=None, user_id=None,
                                 include_terminal=True, limit=None):
         """Get invocations owned by the current user."""
         sa_session = trans.sa_session
@@ -275,10 +275,10 @@ class WorkflowsManager:
                 model.WorkflowInvocation.table.c.history_id == history_id
             )
 
-        if dataset_id is not None:
+        if job_id is not None:
             invocations_query = invocations_query.join(
-                model.WorkflowInvocationOutputDatasetAssociation
-            ).filter(model.WorkflowInvocationOutputDatasetAssociation.table.c.dataset_id == dataset_id)
+                model.WorkflowInvocationStep
+            ).filter(model.WorkflowInvocationStep.table.c.job_id == job_id)
 
         if not include_terminal:
             invocations_query = invocations_query.filter(

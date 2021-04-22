@@ -62,7 +62,6 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
     def __init__(self, app: StructuredApp):
         super().__init__(app)
         self.history_manager = app.history_manager
-        self.hda_manager = app.hda_manager
         self.workflow_manager = app.workflow_manager
         self.workflow_contents_manager = app.workflow_contents_manager
         self.tool_recommendations = recommendations.ToolRecommendations()
@@ -884,8 +883,8 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         :param  history_id:       an encoded history id to restrict query to
         :type   history_id:       str
 
-        :param  dataset_id:       an encoded dataset id to restrict query to
-        :type   dataset_id:       str
+        :param  job_id:           an encoded job id to restrict query to
+        :type   job_id:           str
 
         :param  user_id:          an encoded user id to restrict query to, must be own id if not admin user
         :type   user_id:          str
@@ -910,13 +909,11 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         else:
             history_id = None
 
-        encoded_dataset_id = kwd.get("dataset_id", None)
-        if encoded_dataset_id:
-            dataset = self.hda_manager.get_accessible(self.decode_id(encoded_dataset_id), trans.user,
-                                                      current_history=trans.history)
-            dataset_id = dataset.id
+        encoded_job_id = kwd.get("job_id", None)
+        if encoded_job_id:
+            job_id = self.decode_id(encoded_job_id)
         else:
-            dataset_id = None
+            job_id = None
 
         encoded_user_id = kwd.get("user_id", None)
         if encoded_user_id:
@@ -938,7 +935,7 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         if limit is not None:
             limit = int(limit)
         invocations = self.workflow_manager.build_invocations_query(
-            trans, stored_workflow_id=stored_workflow_id, history_id=history_id, dataset_id=dataset_id, user_id=user_id, include_terminal=include_terminal, limit=limit
+            trans, stored_workflow_id=stored_workflow_id, history_id=history_id, job_id=job_id, user_id=user_id, include_terminal=include_terminal, limit=limit
         )
         return self.workflow_manager.serialize_workflow_invocations(invocations, **kwd)
 
