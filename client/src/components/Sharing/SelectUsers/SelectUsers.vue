@@ -6,9 +6,10 @@
             :clear-on-select="true"
             :preserve-search="true"
             :multiple="true"
-            :custom-label="nameWithLang"
+            @select="onSelect"
+            @remove="onRemove"
+            label="email"
             track-by="id"
-            @input="valueChanged"
             @search-change="searchChanged"
             :internal-search="false"
         >
@@ -22,7 +23,7 @@
 </template>
 
 <script>
-import { Services } from "./services";
+import { Services } from "components/Sharing/services";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import Multiselect from "vue-multiselect";
@@ -31,11 +32,32 @@ export default {
     components: {
         Multiselect,
     },
+    props: {
+        users_shared_with: {
+            type: Array,
+        },
+        share_with: {
+            type: String,
+            required: true,
+        },
+        unshare_with: {
+            type: String,
+            required: true,
+        },
+        pluralName: {
+            type: String,
+            required: true,
+        },
+        id: {
+            type: String,
+            required: true,
+        },
+    },
     data() {
         const galaxy = getGalaxyInstance();
         return {
             usersList: [],
-            selectedUsers: undefined,
+            selectedUsers: this.users_shared_with,
             isAdmin: galaxy.user.isAdmin(),
             emptyResult: "Please enter user email",
             root: getAppRoot(),
@@ -43,13 +65,16 @@ export default {
     },
     created() {
         this.services = new Services({ root: this.root });
+        console.log("users_shared_with");
+        console.log("users_shared_with", this.users_shared_with);
     },
     methods: {
-        nameWithLang({ username, email }) {
-            return `${username} — ${email}`;
+        onSelect(user) {
+            this.services.saveSharingPreferences(this.pluralName, this.id, this.share_with, user.id);
         },
-        valueChanged() {
-            this.services.saveSharingPreferences(this.selectedUsers)
+        onRemove(user) {
+            console.log(user);
+            this.services.saveSharingPreferences(this.pluralName, this.id, this.share_with, user.id);
         },
         searchChanged(searchValue) {
             if (searchValue === "") {

@@ -59,25 +59,22 @@
             <h4>Share {{ model_class }} with Individual Users</h4>
             <div>
                 <div v-if="item.users_shared_with && item.users_shared_with.length > 0">
-                    <b-table small caption-top :fields="shareFields" :items="item.users_shared_with">
-                        <template v-slot:table-caption>
-                            The following users will see this {{ model_class }} in their {{ model_class }} list and will
-                            be able to view, import and run it.
-                        </template>
-                        <template v-slot:cell(id)="cell">
-                            <b-button
-                                class="unshare_user"
-                                size="sm"
-                                @click.stop="setSharing('unshare_user', cell.value)"
-                                >Remove</b-button
-                            >
-                        </template>
-                    </b-table>
+                    <b-alert show>
+                        The following users will see this {{ model_class }} in their {{ model_class }} list and will be
+                        able to view, import and run it.
+                    </b-alert>
                 </div>
                 <div v-else>
                     <p>You have not shared this {{ model_class }} with any users.</p>
                 </div>
-                <SelectUsers />
+                <SelectUsers
+                    v-if="item"
+                    :users_shared_with="item.users_shared_with"
+                    :share_with="actions.share_with"
+                    :unshare_with="actions.unshare_with"
+                    :plural-name="pluralNameLower"
+                    :id="id"
+                />
                 <b-button :href="shareUrl" id="share_with_a_user"> <span>Share with a user</span> </b-button>
             </div>
         </div>
@@ -93,7 +90,7 @@ import { faLink, faEdit } from "@fortawesome/free-solid-svg-icons";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import SlugInput from "components/Common/SlugInput";
-import SelectUsers from "components/SelectUsers/SelectUsers";
+import SelectUsers from "components/Sharing/SelectUsers/SelectUsers";
 import axios from "axios";
 
 Vue.use(BootstrapVue);
@@ -139,6 +136,14 @@ export default {
             makeMembersPublic: false,
             showUrl: true,
             tooltipClipboard: "Copy URL",
+            actions: {
+                enable_link_access: "enable_link_access",
+                disable_link_access: "disable_link_access",
+                publish: "publish",
+                unpublish: "unpublish",
+                share_with: "share_with",
+                unshare_with: "unshare_with",
+            },
         };
     },
     computed: {
@@ -208,18 +213,18 @@ export default {
         },
         onImportable(importable) {
             if (importable) {
-                this.setSharing(`make_accessible_via_link-${this.item.published ? "publish" : "unpublish"}`);
+                this.setSharing(this.actions.enable_link_access);
             } else {
                 this.item.published = false;
-                this.setSharing("disable_link_access-unpublish");
+                this.setSharing(this.actions.disable_link_access);
             }
         },
         onPublish(published) {
             if (published) {
                 this.item.importable = true;
-                this.setSharing("make_accessible_and_publish");
+                this.setSharing(this.actions.publish);
             } else {
-                this.setSharing("unpublish");
+                this.setSharing(this.actions.unpublish);
             }
         },
         getModel() {
@@ -228,6 +233,7 @@ export default {
                 .get(`${getAppRoot()}api/${this.pluralNameLower}/${this.id}/sharing`)
                 .then((response) => {
                     this.item = response.data;
+                    console.log(response.data);
                     this.ready = true;
                 })
                 .catch((error) => (this.errMsg = error.response.data.err_msg));
