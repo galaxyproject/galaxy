@@ -81,7 +81,7 @@ const stdHistoryParams = {
  * Return list of available histories
  */
 export async function getHistoryList() {
-    const response = await api.get("/histories", { params: stdHistoryParams });
+    const response = await api.get("/histories", { params: { view: "summary" } });
     return doResponse(response);
 }
 
