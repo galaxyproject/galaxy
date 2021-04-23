@@ -1,6 +1,6 @@
 import { NEVER } from "rxjs";
 import { SearchParams, ScrollPos } from "../../model";
-import { isValidNumber } from "./helpers";
+import { isValidNumber } from "utils/validation";
 // import { reportPayload } from "../../test/providerTestHelpers";
 
 // first emission, emitted when parent (history) or filters changes to reset the view

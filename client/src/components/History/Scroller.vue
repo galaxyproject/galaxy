@@ -108,7 +108,7 @@ export default {
 
         // need to dynamically calculate width
         scrollSliderContainerStyles() {
-            const w = this.sbWidth;
+            const w = this.sbWidth + 1;
             return { width: `${w}px` };
         },
 

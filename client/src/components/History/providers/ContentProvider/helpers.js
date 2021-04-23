@@ -20,16 +20,6 @@ export const clamp = (val, [bottom, top]) => {
     return Math.max(bottom, Math.min(top, val));
 };
 
-// simple comparators
-export const isDefined = (val) => {
-    return val !== null && val !== undefined;
-};
-
-// defined, number and finite
-export const isValidNumber = (val) => {
-    return isDefined(val) && !isNaN(val) && isFinite(val);
-};
-
 export const paginationEqual = (a, b) => {
     return a.offset == b.offset && a.limit == b.limit;
 };

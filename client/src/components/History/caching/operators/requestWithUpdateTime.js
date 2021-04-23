@@ -21,7 +21,7 @@ export const requestWithUpdateTime = (config = {}) => {
     const {
         dateStore = requestDateStore,
         bufferSeconds = 0,
-        dateFieldName = "update_time",
+        dateFieldName = "update_time-gt",
         requestTime = moment.utc(),
         // indicates we don't want initial results
         noInitial = false
@@ -51,14 +51,14 @@ export const requestWithUpdateTime = (config = {}) => {
 const appendUpdateTime = (cfg = {}) => {
     const {
         dateStore = requestDateStore,
-        dateFieldName = "update_time",
+        dateFieldName = "update_time-gt",
     } = cfg;
 
     return pipe(
         map((baseUrl) => {
             if (!dateStore.has(baseUrl)) return baseUrl;
             const lastRequest = dateStore.get(baseUrl);
-            const parts = [baseUrl, `${dateFieldName}-gt=${lastRequest.toISOString()}`];
+            const parts = [baseUrl, `${dateFieldName}=${lastRequest.toISOString()}`];
             const separator = baseUrl.includes("?") ? "&" : "?";
             return parts.join(separator);
         })
