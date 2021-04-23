@@ -57,6 +57,10 @@
             </div>
             <br />
             <h4>Share {{ model_class }} with Individual Users</h4>
+            <p>
+                The following users will see this {{ model_class }} in their {{ model_class }} list and will be able to
+                view, import and run it.
+            </p>
             <div v-if="!isExposeEmail">
                 <div>
                     <b-table
@@ -70,10 +74,7 @@
                         <template #empty="scope">
                             <p>You have not shared this {{ model_class }} with any users.</p>
                         </template>
-                        <template v-slot:table-caption>
-                            The following users will see this {{ model_class }} in their {{ model_class }} list and will
-                            be able to view, import and run it.
-                        </template>
+
                         <template v-slot:cell(id)="cell">
                             <b-button
                                 class="unshare_user"

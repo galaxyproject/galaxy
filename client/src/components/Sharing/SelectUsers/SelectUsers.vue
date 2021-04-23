@@ -7,8 +7,8 @@
                 :clear-on-select="true"
                 :preserve-search="true"
                 :multiple="true"
-                @select="onSelect(id)"
-                @remove="onRemove(id)"
+                @select="onSelect"
+                @remove="onRemove"
                 label="email"
                 track-by="id"
                 @search-change="searchChanged"
@@ -70,12 +70,12 @@ export default {
         this.services = new Services({ root: this.root });
     },
     methods: {
-        onSelect(user) {
-            this.services.saveSharingPreferences(this.pluralName, this.id, this.share_with, user);
+        onSelect({id}) {
+            this.services.saveSharingPreferences(this.pluralName, this.id, this.share_with, id);
         },
-        onRemove(user) {
-            console.log(user);
-            this.services.saveSharingPreferences(this.pluralName, this.id, this.share_with, user);
+        onRemove({id}) {
+            console.log(id);
+            this.services.saveSharingPreferences(this.pluralName, this.id, this.share_with, id);
         },
         searchChanged(searchValue) {
             if (searchValue === "") {
