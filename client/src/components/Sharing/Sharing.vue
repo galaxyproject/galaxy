@@ -88,7 +88,7 @@
                         </template>
                         <template #foot(id)="cell">
                             <b-button
-                                class="unshare_user"
+                                class="share_user"
                                 size="sm"
                                 @click.stop="setSharing(actions.share_with, shareWithEmail)"
                                 >Share</b-button
@@ -122,6 +122,7 @@ import { getGalaxyInstance } from "app";
 import SlugInput from "components/Common/SlugInput";
 import SelectUsers from "components/Sharing/SelectUsers/SelectUsers";
 import axios from "axios";
+import { Toast } from "ui/toast";
 
 Vue.use(BootstrapVue);
 
@@ -281,6 +282,11 @@ export default {
                 .catch((error) => (this.errMsg = error.response.data.err_msg));
         },
         setSharing(action, user_id) {
+            if (action === this.actions.share_with && this.item.users_shared_with.some(user => user_id === user.email)) {
+                Toast.warning(`You already shared this ${this.model_class} with ${user_id}`);
+                return;
+            }
+
             const data = {
                 action: action,
                 user_ids: [user_id],
