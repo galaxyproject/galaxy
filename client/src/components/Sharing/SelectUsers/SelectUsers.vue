@@ -1,14 +1,14 @@
 <template>
     <div>
-        <div v-if="isExposeEmail">
+        <div >
             <multiselect
                 v-model="selectedUsers"
                 :options="usersList"
                 :clear-on-select="true"
                 :preserve-search="true"
                 :multiple="true"
-                @select="onSelect"
-                @remove="onRemove"
+                @select="onSelect(id)"
+                @remove="onRemove(id)"
                 label="email"
                 track-by="id"
                 @search-change="searchChanged"
@@ -20,14 +20,6 @@
                     </div>
                 </template>
             </multiselect>
-        </div>
-        <div v-else>
-            <b-input-group class="mt-3">
-                <b-form-input v-model="email_input"></b-form-input>
-                <b-input-group-append>
-                    <b-button @click="onSelect(email_input)" variant="info">Submit</b-button>
-                </b-input-group-append>
-            </b-input-group>
         </div>
     </div>
 </template>
@@ -62,10 +54,6 @@ export default {
             type: String,
             required: true,
         },
-        isExposeEmail: {
-            type: Boolean,
-            required: true,
-        },
     },
     data() {
         const galaxy = getGalaxyInstance();
@@ -80,16 +68,14 @@ export default {
     },
     created() {
         this.services = new Services({ root: this.root });
-        console.log(getGalaxyInstance().config);
-        console.log("users_shared_with", this.users_shared_with);
     },
     methods: {
         onSelect(user) {
-            this.services.saveSharingPreferences(this.pluralName, this.id, this.share_with, user.id);
+            this.services.saveSharingPreferences(this.pluralName, this.id, this.share_with, user);
         },
         onRemove(user) {
             console.log(user);
-            this.services.saveSharingPreferences(this.pluralName, this.id, this.share_with, user.id);
+            this.services.saveSharingPreferences(this.pluralName, this.id, this.share_with, user);
         },
         searchChanged(searchValue) {
             if (searchValue === "") {

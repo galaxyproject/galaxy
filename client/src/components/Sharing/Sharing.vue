@@ -58,8 +58,18 @@
             <br />
             <h4>Share {{ model_class }} with Individual Users</h4>
             <div v-if="!isExposeEmail">
-                <div v-if="item.users_shared_with && item.users_shared_with.length > 0">
-                    <b-table small caption-top :fields="shareFields" :items="item.users_shared_with">
+                <div>
+                    <b-table
+                        show-empty
+                        foot-clone
+                        small
+                        caption-top
+                        :fields="shareFields"
+                        :items="item.users_shared_with"
+                    >
+                        <template #empty="scope">
+                            <p>You have not shared this {{ model_class }} with any users.</p>
+                        </template>
                         <template v-slot:table-caption>
                             The following users will see this {{ model_class }} in their {{ model_class }} list and will
                             be able to view, import and run it.
@@ -68,14 +78,22 @@
                             <b-button
                                 class="unshare_user"
                                 size="sm"
-                                @click.stop="setSharing('unshare_user', cell.value)"
+                                @click.stop="setSharing(actions.unshare_with, cell.value)"
                                 >Remove</b-button
                             >
                         </template>
+                        <template #foot(email)="cell">
+                            <b-form-input v-model="shareWithEmail" placeholder="Please enter user email" />
+                        </template>
+                        <template #foot(id)="cell">
+                            <b-button
+                                class="unshare_user"
+                                size="sm"
+                                @click.stop="setSharing(actions.share_with, shareWithEmail)"
+                                >Share</b-button
+                            >
+                        </template>
                     </b-table>
-                </div>
-                <div v-else>
-                    <p>You have not shared this {{ model_class }} with any users.</p>
                 </div>
             </div>
             <SelectUsers
@@ -86,8 +104,8 @@
                 :plural-name="pluralNameLower"
                 :id="id"
                 :is-expose-email="isExposeEmail"
+                @shared_with="shared_with"
             />
-            <b-button :href="shareUrl" id="share_with_a_user"> <span>Share with a user</span> </b-button>
         </div>
     </div>
 </template>
@@ -148,6 +166,7 @@ export default {
             makeMembersPublic: false,
             showUrl: true,
             tooltipClipboard: "Copy URL",
+            shareWithEmail: "",
             actions: {
                 enable_link_access: "enable_link_access",
                 disable_link_access: "disable_link_access",
@@ -187,9 +206,6 @@ export default {
         },
         published_url() {
             return `${getAppRoot()}${this.pluralNameLower}/list_published`;
-        },
-        shareUrl() {
-            return `${getAppRoot()}${this.modelClassLower}/share/?id=${this.id}`;
         },
         slugUrl() {
             return `${getAppRoot()}${this.modelClassLower}/set_slug_async/?id=${this.id}`;
@@ -266,7 +282,7 @@ export default {
         setSharing(action, user_id) {
             const data = {
                 action: action,
-                user_id: user_id,
+                user_ids: [user_id],
             };
             return axios
                 .post(`${getAppRoot()}api/${this.pluralNameLower}/${this.id}/sharing`, data)
@@ -278,6 +294,9 @@ export default {
                     this.ready = true;
                 })
                 .catch((error) => (this.errMsg = error.response.data.err_msg));
+        },
+        shared_with(user) {
+            this.item.users_shared_with.push(user);
         },
     },
 };
