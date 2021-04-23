@@ -11,6 +11,8 @@ TEST_KEYS_FOR_ALL_USERS = [
     'wiki_url',
     'support_url',
     'logo_url',
+    'logo_src',
+    'logo_src_secondary',
     'terms_url',
     'allow_user_dataset_purge',
 ]
