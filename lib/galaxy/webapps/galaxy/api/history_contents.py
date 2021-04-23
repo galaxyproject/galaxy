@@ -4,7 +4,6 @@ API operations on the contents of a history.
 import logging
 import os
 import re
-
 from datetime import datetime
 
 from galaxy import (
@@ -1077,7 +1076,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         * GET /api/histories/{history_id}/contents/near/{hid}/{limit}
         """
         history = self.history_manager.get_accessible(self.decode_id(history_id), trans.user, current_history=trans.history)
-        
+
         # while polling, if we have a "since" parameter then check to see if the history has changed
         # since that date, if it hasn't then we can short-circuit the poll request
         since = kwd.pop('since', None)
@@ -1091,7 +1090,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
                 trans.response.status = 204
                 trans.response.headers['Content-Length'] = 4
                 return None
-        
+
         # parse content params
         filter_params = self._parse_rest_params(kwd)
         serialization_params = self._parse_serialization_params(kwd, 'betawebclient')
