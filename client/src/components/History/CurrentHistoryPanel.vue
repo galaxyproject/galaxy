@@ -8,6 +8,7 @@
                             :histories="histories"
                             :current-history="currentHistory"
                             @update:currentHistory="handlers.setCurrentHistory"
+                            class="select-history"
                         />
                         <HistoriesMenu v-on="handlers" />
                     </div>
@@ -38,3 +39,9 @@ export default {
     },
 };
 </script>
+<style>
+.select-history .dropdown-menu {
+    max-width: 90%;
+    overflow-x: auto;
+}
+</style>

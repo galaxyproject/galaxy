@@ -1,5 +1,5 @@
 <template>
-    <b-dropdown text="Select history..." size="sm" boundary="viewport" class="select-history">
+    <b-dropdown text="Select history..." size="sm" boundary="viewport">
         <b-dropdown-item
             v-for="h in histories"
             :key="h.id"
@@ -19,9 +19,3 @@ export default {
     },
 };
 </script>
-<style>
-.select-history .dropdown-menu {
-    max-width: 90%;
-    overflow-x: auto;
-}
-</style>
