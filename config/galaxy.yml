@@ -1,0 +1,152 @@
+# Galaxy is configured by default to be usable in a single-user development
+# environment.  To tune the application for a multi-user production
+# environment, see the documentation at:
+# 
+#  https://docs.galaxyproject.org/en/master/admin/production.html
+# 
+# Throughout this sample configuration file, except where stated otherwise,
+# uncommented values override the default if left unset, whereas commented
+# values are set to the default value.  Relative paths are relative to the root
+# Galaxy directory.
+# 
+# Examples of many of these options are explained in more detail in the Galaxy
+# Community Hub.
+# 
+#   https://galaxyproject.org/admin/config
+# 
+# Config hackers are encouraged to check there before asking for help.
+# 
+uwsgi:
+
+  # The address and port on which to listen.  By default, only listen to
+  # localhost (galaxy will not be accessible over the network).  Use
+  # ':8080' to listen on all available network interfaces.
+  # AMP host and port
+  http: :8300
+
+  # By default uWSGI allocates a very small buffer (4096 bytes) for the
+  # headers of each request. If you start receiving "invalid request
+  # block size" in your logs, it could mean you need a bigger buffer. We
+  # recommend at least 16384.
+  buffer-size: 16384
+
+  # Number of web server (worker) processes to fork after the
+  # application has loaded. If this is set to greater than 1,
+  # thunder-lock likely should be enabled below.
+  processes: 1
+
+  # Number of threads for each web server process.
+  threads: 4
+
+  # Number of threads for serving static content and handling internal
+  # routing requests.
+  offload-threads: 2
+
+  # Mapping to serve static content.
+  static-map: /static=static
+
+  # Mapping to serve the favicon.
+  static-map: /favicon.ico=static/favicon.ico
+
+  # Allow serving certain assets out of `client`.  Most modern Galaxy
+  # interfaces bundle all of this, but some older pages still serve
+  # these via symlink, requiring this rule.
+  static-safe: client/src/assets
+
+  # Enable the master process manager. Disabled by default for maximum
+  # compatibility with CTRL+C, but should be enabled for use with
+  # --daemon and/or production deployments.
+  master: false
+
+  # Path to the application's Python virtual environment. If using Conda
+  # for Galaxy's framework dependencies (not tools!), do not set this.
+  virtualenv: .venv
+
+  # Path to the application's Python library.
+  pythonpath: lib
+
+  # The entry point which returns the web application (e.g. Galaxy,
+  # Reports, etc.) that you are loading.
+  module: galaxy.webapps.galaxy.buildapp:uwsgi_app()
+
+  # Mount the web application (e.g. Galaxy, Reports, etc.) at the given
+  # URL prefix. Cannot be used together with 'module:' above.
+  #mount: /galaxy=galaxy.webapps.galaxy.buildapp:uwsgi_app()
+
+  # Make uWSGI rewrite PATH_INFO and SCRIPT_NAME according to
+  # mount-points. Set this to true if a URL prefix is used.
+  manage-script-name: false
+
+  # It is usually a good idea to set this to ``true`` if processes is
+  # greater than 1.
+  thunder-lock: false
+
+  # Cause uWSGI to respect the traditional behavior of dying on SIGTERM
+  # (its default is to brutally reload workers)
+  die-on-term: true
+
+  # Cause uWSGI to gracefully reload workers and mules upon receipt of
+  # SIGINT (its default is to brutally kill workers)
+  hook-master-start: unix_signal:2 gracefully_kill_them_all
+
+  # Cause uWSGI to gracefully reload workers and mules upon receipt of
+  # SIGTERM (its default is to brutally kill workers)
+  hook-master-start: unix_signal:15 gracefully_kill_them_all
+
+  # Feature necessary for proper mule signal handling on Python versions
+  # below 3.7.2. The default is set to false to prevent a runtime error
+  # under Python 3.7.2 and newer (see
+  # https://github.com/unbit/uwsgi/issues/1978).
+  py-call-osafterfork: false
+
+  # Ensure application threads will run if `threads` is unset.
+  enable-threads: true
+
+  # uWSGI default umask. On some systems uWSGI has a default umask of
+  # 000, for Galaxy a somewhat safer default is chosen. If Galaxy
+  # submits jobs as real user then all users needs to be able to read
+  # the files, i.e. the umask needs to be '022' or the Galaxy users need
+  # to be in the same group as the Galaxy system user
+  umask: 027
+
+  # AMP Galaxy metrics settings
+  # enable API performance logging  
+  enable-metrics: true
+  dlopen: metrics/system_metrics.so
+  metric: name=system_load,collector=func,arg1=load_average,freq=3
+  metric: name=system_swap,collector=func,arg1=swap,freq=3
+  metric: name=system_ram,collector=func,arg1=memory,freq=3
+  metric: name=cpu_user,collector=func,arg1=cpu_user,freq=3
+  metric: name=cpu_system,collector=func,arg1=cpu_system,freq=3
+  metric: name=cpu_iowait,collector=func,arg1=cpu_iowait,freq=3
+  metric: name=cpu_idle,collector=func,arg1=cpu_idle,freq=3
+  req-logger: file:logs/requests.log
+  logformat: 0%(time)|%(wid)|%(core)|%(secs)|%(metric.system_load)|%(metric.system_ram)|%(metric.system_swap)|%(metric.cpu_user)|%(metric.cpu_system)|%(metric.cpu_idle)|%(metric.cpu_iowait)|%(addr)|%(var.X-FORWARDED-FOR)|%(method)|%(uri)
+
+galaxy:
+
+  # Add an option to the library upload form which allows administrators
+  # to upload a directory of files.
+  # AMP library_import_dir points to media dir 
+  library_import_dir: /srv/amp/media/
+  
+  # Allow admins to paste filesystem paths during upload. For libraries
+  # this adds an option to the admin library upload tool allowing admins
+  # to paste filesystem paths to files and directories in a box, and
+  # these paths will be added to a library.  For history uploads, this
+  # allows pasting in paths as URIs. (i.e. prefixed with file://). Set
+  # to True to enable.  Please note the security implication that this
+  # will give Galaxy Admins access to anything your Galaxy user has
+  # access to.
+  # AMP allow_path_paste
+  allow_path_paste: true
+  
+  # Administrative users - set this to a comma-separated list of valid
+  # Galaxy users (email addresses).  These users will have access to the
+  # Admin section of the server, and will have access to create users,
+  # groups, roles, libraries, and more.  For more information, see:
+  # https://galaxyproject.org/admin/
+  # AMP admin users
+  admin_users: amppd@iu.edu, amppd-ci@iu.edu
+  
+  
