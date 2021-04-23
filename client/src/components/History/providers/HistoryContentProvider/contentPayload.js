@@ -13,7 +13,7 @@ import {
     window,
 } from "rxjs/operators";
 import { chunk, show } from "utils/observable";
-import { isValidNumber } from "../ContentProvider";
+import { isValidNumber } from "utils/validation";
 import { SearchParams, CurveFit, ScrollPos } from "../../model";
 import { loadContents } from "./loadContents";
 import { watchHistoryContents } from "./watchHistoryContents";
