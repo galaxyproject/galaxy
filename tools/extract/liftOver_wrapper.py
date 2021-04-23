@@ -73,10 +73,8 @@ try:
     # have to nest try-except in try-finally to handle 2.4
     try:
         proc = subprocess.Popen(args=cmd_line, shell=True, stderr=subprocess.PIPE)
-        returncode = proc.wait()
-        assert proc.stderr
-        stderr = proc.stderr.read()
-        if returncode != 0:
+        stderr = proc.communicate()[1]
+        if proc.returncode != 0:
             raise Exception(stderr)
     except Exception as e:
         raise Exception('Exception caught attempting conversion: ' + str(e))
