@@ -53,7 +53,7 @@ fi
 # AMP customization START
 # Build the UWSGI module needed for the config
 mkdir logs
-pushd metrics
+pushd amp_metrics
 make || (
     echo "NOTICE: Cannot build the uwsg system_metrics.so file"
     echo "        API metrics will not be collected"
