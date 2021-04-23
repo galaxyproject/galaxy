@@ -1,0 +1,26 @@
+<tool id="gentle_forced_alignment" name="Gentle Forced Alignment" version="1.0.0">
+  <description>Align an audio file's speech with a transcript</description>
+  <requirements>
+	<requirement type="package" version="3.8">python</requirement>
+    <requirement type="package" version="8.30">coreutils</requirement>
+  </requirements>
+  <command detect_errors="exit_code">
+  	'$__tool_directory__/gentle_forced_alignment.py' '$input_audio' '$input_transcript' '$amp_transcript'
+  </command>
+  <inputs>
+    <!-- should be wave data type -->
+    <param name="input_audio" type="data" format="wav" label="Input Audio" help="Input audio file in wav format"/>
+    <param name="input_transcript" type="data" format="transcript" label="Input AMP Transcript" help="Input AMP Transcript Json"/>
+  </inputs>
+  <outputs>
+    <data name="amp_transcript" format="transcript" label="AMP Transcript"/>
+  </outputs>
+  <tests>
+  </tests>
+  <help>
+.. class:: infomark
+
+Align an audio file's speech with a transcript
+
+  </help>
+</tool>

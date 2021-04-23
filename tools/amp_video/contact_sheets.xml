@@ -1,0 +1,38 @@
+<tool id="contact_sheets" name="Contact Sheets" version="1.0.0">
+  <description>Contact Sheet Creation</description>
+  <requirements>
+    <requirement type="package" version="8.30">coreutils</requirement>
+    <requirement type="package" version="3.4">ffmpeg</requirement>
+	<requirement type="package" version="3.8">python</requirement>
+  </requirements>
+  <command detect_errors="exit_code">
+  	'$__tool_directory__/contact_sheets.py' '$input_video' '$type' '$frame_seconds' '$frame_quantity' '$amp_shots' '$amp_faces' '$contact_sheet' '$number_of_columns' '$photo_width' '$margin' '$padding'
+  </command>
+  <inputs>
+	<param name="input_video" type="data" format="video" label="Input Video" help="An input video file for OCR"/>
+    <param name="type" type="select" label="Contact Sheet Type" help="Type of contact sheet to create">
+        <option value="time">Extract frames by time period (seconds)</option>
+        <option value="quantity">Extract fixed number of frames</option>
+        <option value="shot">Extract frames based on shot detection</option>
+        <option value="facial">Extract frames based on facial recognition</option>
+    </param>
+    <param name="amp_shots" type="data" format="shot" optional="true" label="AMP Shots" help="AMP Shot file to create frames from"/>
+	<param name="amp_faces" type="data" format="face" optional="true" label="AMP Faces" help="AMP Face file to create frames from"/>
+	<param name="frame_seconds" type="integer" optional="true" min="0" max="60" label="Seconds" help="Interval in seconds to space frames"/>
+	<param name="frame_quantity" type="integer" optional="true" min="0" label="Quantity" help="Total number of frames"/>
+	<param name="number_of_columns" type="integer" optional="true" min="0" value="4" label="Number of Columns" help="Number of columns in the contact sheet"/>
+	<param name="photo_width" type="integer" optional="true" min="0" value="300" label="Photo Width" help="Photo Width"/>
+	<param name="margin" type="integer" optional="true" min="0" value="10" label="Margin" help="Margin around each frame"/>
+	<param name="padding" type="integer" optional="true" min="0" value="3" label="Padding" help="Padding around each frame"/>
+  </inputs>
+  <outputs>
+    <data name="contact_sheet" format="png" label="Contact Sheet Image Generated"/>
+  </outputs>
+  <tests>
+  </tests>
+  <help>
+.. class:: infomark
+
+  Create contact sheets based on a quantity, time interval, facial recognition, or shot detection of a video
+  </help>
+</tool>

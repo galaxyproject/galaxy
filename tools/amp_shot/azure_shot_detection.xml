@@ -1,0 +1,23 @@
+<tool id="azure_shot_detection" name="Azure Shot Detection Generator" version="1.0.0">
+  <description>Generate AMP Shot using results from Azure Video Indexer</description>
+  <requirements>
+	<requirement type="package" version="3.8">python</requirement>
+  </requirements>
+  <command detect_errors="exit_code">
+  	'$__tool_directory__/azure_shot_detection.py' '$input_video' '$azure_video_index' '$amp_shots'
+  </command>
+  <inputs>
+	<param name="input_video" type="data" format="video" label="Input Video" help="Input video file used by Azure Video Indexer"/>
+	<param name="azure_video_index" type="data" format="json" label="Azure Video Index JSON" help="Azure Video Index JSON file from Azure Video Indexer"/>
+  </inputs>
+  <outputs>
+    <data name="amp_shots" format="shot" label="AMP Shots Generated" />
+  </outputs>
+  <tests>
+  </tests>
+  <help>
+.. class:: infomark
+
+  Generate AMP Shots using results from Microsoft Azure Video Indexer
+  </help>
+</tool>
