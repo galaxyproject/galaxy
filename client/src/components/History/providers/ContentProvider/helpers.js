@@ -15,11 +15,6 @@ export const loadInputsSame = ([inputsA, cursorA], [inputsB, cursorB]) => {
     return cursorA == cursorB && inputsSame(inputsA, inputsB);
 };
 
-// dumb math util
-export const clamp = (val, [bottom, top]) => {
-    return Math.max(bottom, Math.min(top, val));
-};
-
 export const paginationEqual = (a, b) => {
     return a.offset == b.offset && a.limit == b.limit;
 };

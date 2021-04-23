@@ -29,6 +29,7 @@
 <script>
 import { debounce } from "lodash";
 import { SearchParams } from "./model";
+import { clamp } from "utils/math";
 
 const clean = (o) => JSON.parse(JSON.stringify(o));
 
@@ -181,18 +182,11 @@ export default {
         onWheel({ deltaY }) {
             // no wheel if list too short to warrant a scroll bar
             // let the browser figure that out
+            // console.log("onWheel", deltaY, this.showScroller);
             if (this.showScroller) {
-                if (deltaY > 0) this.wheelDown();
-                if (deltaY < 0) this.wheelUp();
+                const n = deltaY == 0 ? 0 : Math.abs(deltaY) / deltaY;
+                this.manualStartIndex = clamp(this.itemStartIndex + n, 0, this.totalMatches - 1);
             }
-        },
-
-        wheelDown(n = 1) {
-            this.manualStartIndex = Math.min(this.itemStartIndex + n, this.totalMatches - 1);
-        },
-
-        wheelUp(n = 1) {
-            this.manualStartIndex = Math.max(0, this.itemStartIndex - n);
         },
 
         // move to whole new regions with the scrollbar, takes the percentage
