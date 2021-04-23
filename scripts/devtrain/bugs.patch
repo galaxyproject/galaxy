@@ -1,0 +1,58 @@
+From d13fe717822ec6e7ae096b8f2759d31b75b005ca Mon Sep 17 00:00:00 2001
+From: John Chilton <jmchilton@gmail.com>
+Date: Fri, 23 Apr 2021 09:34:33 -0400
+Subject: [PATCH] Introduce bugs.
+
+pytest test/unit/tool_util/test_tool_loader.py
+pytest lib/galaxy_test/api/test_configuration.py::ConfigurationApiTestCase::test_normal_user_configuration
+make client-lint
+make client-test
+---
+ client/src/components/JobDestinationParams/JobDestinationParams.vue | 3 +--
+ lib/galaxy/managers/configuration.py                                | 2 +-
+ lib/galaxy/util/xml_macros.py                                       | 2 +-
+ 3 files changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/client/src/components/JobDestinationParams/JobDestinationParams.vue b/client/src/components/JobDestinationParams/JobDestinationParams.vue
+index 7732edf..31f5bc9 100644
+--- a/client/src/components/JobDestinationParams/JobDestinationParams.vue
++++ b/client/src/components/JobDestinationParams/JobDestinationParams.vue
+@@ -3,8 +3,7 @@
+         <table id="destination_parameters" class="tabletip info_data_table">
+             <tbody>
+                 <tr v-for="(value, title) in jobDestinationParams" :key="title">
+-                    <td>{{ title }}</td>
+-                    <td>{{ value }}</td>
++                    <td>{{ title }}: {{ value }}</td>
+                 </tr>
+             </tbody>
+         </table>
+diff --git a/lib/galaxy/managers/configuration.py b/lib/galaxy/managers/configuration.py
+index 0018945..4f7e566 100644
+--- a/lib/galaxy/managers/configuration.py
++++ b/lib/galaxy/managers/configuration.py
+@@ -132,7 +132,7 @@ class ConfigSerializer(base.ModelSerializer):
+             'display_galaxy_brand': _use_config,
+             'logo_url': _use_config,
+             'logo_src': _use_config,
+-            'logo_src_secondary': _use_config,
++            # 'logo_src_secondary': _use_config,
+             'terms_url': _use_config,
+             'myexperiment_target_url': _use_config,
+             'wiki_url': _use_config,
+diff --git a/lib/galaxy/util/xml_macros.py b/lib/galaxy/util/xml_macros.py
+index 65879ae..c9f72dc 100644
+--- a/lib/galaxy/util/xml_macros.py
++++ b/lib/galaxy/util/xml_macros.py
+@@ -149,7 +149,7 @@ def _expand_macro(element, expand_el, macros, tokens):
+     # Recursively expand contained macros.
+     _expand_macros(expanded_elements, macros, tokens)
+     macro_tokens = macro_def.macro_tokens(expand_el)
+-    if macro_tokens:
++    if macro_tokens is None:
+         _expand_tokens(expanded_elements, macro_tokens)
+ 
+     _xml_replace(expand_el, expanded_elements)
+-- 
+2.7.4
+
