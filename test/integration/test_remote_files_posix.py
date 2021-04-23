@@ -37,7 +37,7 @@ def create_file_source_config_file_on(temp_dir, root_dir):
     return file_path
 
 
-class PosixFileSourceIntegrationTestCase(integration_util.IntegrationTestCase):
+class PosixFileSourceSetup:
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -53,10 +53,32 @@ class PosixFileSourceIntegrationTestCase(integration_util.IntegrationTestCase):
         config["library_import_dir"] = None
         config["user_library_import_dir"] = None
 
+    def _write_file_fixtures(self):
+        root = self.root_dir
+        if os.path.exists(root):
+            shutil.rmtree(root)
+        os.mkdir(root)
+
+        with open(os.path.join(root, "a"), "w") as f:
+            f.write("a\n")
+
+        subdir1 = os.path.join(root, "subdir1")
+        os.mkdir(subdir1)
+        with open(os.path.join(subdir1, "b"), "w") as f:
+            f.write("b\n")
+
+        return root
+
+    def setUp(self):
+        super().setUp()
+        self._write_file_fixtures()
+
+
+class PosixFileSourceIntegrationTestCase(PosixFileSourceSetup, integration_util.IntegrationTestCase):
+
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
-        self._write_file_fixtures()
 
     def test_plugin_config(self):
         plugin_config_response = self.galaxy_interactor.get("remote_files/plugins")
@@ -117,19 +139,3 @@ class PosixFileSourceIntegrationTestCase(integration_util.IntegrationTestCase):
 
     def _assert_access_forbidden_response(self, response):
         api_asserts.assert_status_code_is(response, 403)
-
-    def _write_file_fixtures(self):
-        root = PosixFileSourceIntegrationTestCase.root_dir
-        if os.path.exists(root):
-            shutil.rmtree(root)
-        os.mkdir(root)
-
-        with open(os.path.join(root, "a"), "w") as f:
-            f.write("a\n")
-
-        subdir1 = os.path.join(root, "subdir1")
-        os.mkdir(subdir1)
-        with open(os.path.join(subdir1, "b"), "w") as f:
-            f.write("b\n")
-
-        return root
