@@ -182,7 +182,6 @@ export default {
         onWheel({ deltaY }) {
             // no wheel if list too short to warrant a scroll bar
             // let the browser figure that out
-            // console.log("onWheel", deltaY, this.showScroller);
             if (this.showScroller) {
                 const n = deltaY == 0 ? 0 : Math.abs(deltaY) / deltaY;
                 this.manualStartIndex = clamp(this.itemStartIndex + n, 0, this.totalMatches - 1);

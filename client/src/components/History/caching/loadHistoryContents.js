@@ -1,6 +1,7 @@
 import { zip } from "rxjs";
-import { map, pluck, share } from "rxjs/operators";
+import { map, pluck, share, filter } from "rxjs/operators";
 import { hydrate } from "utils/observable";
+import { areDefined } from "utils/validation";
 import { requestWithUpdateTime } from "./operators/requestWithUpdateTime";
 import { prependPath } from "./workerConfig";
 import { bulkCacheContent } from "./db";
@@ -36,21 +37,30 @@ export const loadHistoryContents = (cfg = {}) => (rawInputs$) => {
             return `${baseUrl}?${params.historyContentQueryString}`;
         }),
         map(prependPath),
-        requestWithUpdateTime({ dateStore, noInitial }),
+        requestWithUpdateTime({ dateStore, noInitial, dateFieldName: "since" }),
+    );
+
+    const validResponses$ = ajaxResponse$.pipe(
+        filter(response => response.status == 200),
         share(),
     );
 
-    const cacheSummary$ = ajaxResponse$.pipe(
+    const cacheSummary$ = validResponses$.pipe(
         pluck("response"),
         bulkCacheContent(),
         summarizeCacheOperation(),
     );
 
-    return zip(ajaxResponse$, cacheSummary$).pipe(
+    return zip(validResponses$, cacheSummary$).pipe(
         map(([ajaxResponse, summary]) => {
             const { xhr, response = [] } = ajaxResponse;
             const { max: maxContentHid, min: minContentHid } = getPropRange(response, "hid");
-            const headerInt = field => parseInt(xhr.getResponseHeader(field));
+
+            // return an in or undefined if the field does not exist in the headers
+            const headerInt = field => {
+                const raw = xhr.getResponseHeader(field);
+                return raw === null ? undefined : parseInt(raw);
+            };
 
             // header counts
             const matchesUp = headerInt("matches_up");
@@ -60,10 +70,13 @@ export const loadHistoryContents = (cfg = {}) => (rawInputs$) => {
             const minHid = headerInt("min_hid");
             const maxHid = headerInt("max_hid");
 
+            const matches = areDefined(matchesUp, matchesDown) ? matchesUp + matchesDown : undefined;
+            const totalMatches = areDefined(totalMatchesUp, totalMatchesDown) ? totalMatchesUp + totalMatchesDown : undefined;
+            
             return {
                 summary,
-                matches: matchesUp + matchesDown,
-                totalMatches: totalMatchesUp + totalMatchesDown,
+                matches,
+                totalMatches,
                 minHid,
                 maxHid,
                 minContentHid, // minimum hid in the returned result

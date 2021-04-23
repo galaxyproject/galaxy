@@ -5,6 +5,8 @@ import logging
 import os
 import re
 
+from datetime import datetime
+
 from galaxy import (
     exceptions,
     util
@@ -1075,6 +1077,22 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         * GET /api/histories/{history_id}/contents/near/{hid}/{limit}
         """
         history = self.history_manager.get_accessible(self.decode_id(history_id), trans.user, current_history=trans.history)
+        
+        # while polling, if we have a "since" parameter then check to see if the history has changed
+        # since that date, if it hasn't then we can short-circuit the poll request
+        since = kwd.pop('since', None)
+        if since:
+            kwd['update_time-gt'] = since
+            since_str = self.history_contents_filters.parse_date(since)
+            since_date = datetime.fromisoformat(since_str)
+            if history.update_time <= since_date:
+                # Our json decorator is apparently rendering an empty result as a null
+                # so we have to send back a content-length header for a no-content response
+                trans.response.status = 204
+                trans.response.headers['Content-Length'] = 4
+                return None
+        
+        # parse content params
         filter_params = self._parse_rest_params(kwd)
         serialization_params = self._parse_serialization_params(kwd, 'betawebclient')
         view = serialization_params.pop('view')

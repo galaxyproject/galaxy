@@ -40,10 +40,12 @@ export const contentPayload = (cfg = {}) => {
         resetPos$ = new Subject(),
     } = cfg;
 
-    // stats for this history + filters, accumulates and improves over successive polls
-    const totalMatches$ = new BehaviorSubject(0);
-    const cursorToHid$ = new BehaviorSubject(createCursorToHid(history));
-    const hidToTopRows$ = new BehaviorSubject(createHidToTopRows(history));
+    // These running totals are shared between instances of content payload because a lot of the
+    // stats do not get returned on every single pol. That means the most recent values need to be
+    // preserved when the user switches the filters back and forth
+    const totalMatches$ = getSubject("totalMatches", history, filters, () => new BehaviorSubject(history.hidItems));
+    const cursorToHid$ = getSubject("cursorToHid", history, filters, () => new BehaviorSubject(createCursorToHid(history)));
+    const hidToTopRows$ = getSubject("hidToTopRows", history, filters, () => new BehaviorSubject(createHidToTopRows(history)));
 
     return publish((pos$) => {
 
@@ -126,15 +128,17 @@ export const contentPayload = (cfg = {}) => {
             pluck('contents'),
             mergeAll(),
             pluck('hid'),
-            withLatestFrom(pos$, hidToTopRows$),
+            map(hid => parseInt(hid)),
+            withLatestFrom(pos$, cursorToHid$),
             filter(([hid, pos, fit]) => {
-                const domainMax = Math.max(...fit.domain);
-                const aboveTop = hid > domainMax;
-                const scrollAtTop = pos.cursor !== undefined && pos.cursor !== null && pos.cursor == 0.0;
-                return aboveTop && scrollAtTop;
+                const newRowAtTop = hid == fit.get(0);
+                const cursorAtTop = isValidNumber(pos.cursor) && pos.cursor == 0;
+                const keyInt = parseInt(pos.key);
+                const keyAtTop = isValidNumber(keyInt) && hid > keyInt;
+                const scrollAtTop = cursorAtTop || keyAtTop;
+                return newRowAtTop && scrollAtTop;
             }),
-            map(([hid]) => ScrollPos.create({ key: hid })),
-            debounceTime(debouncePeriod),
+            map(([hid]) => ScrollPos.create({ key: hid, cursor: null })),
         );
 
         // #endregion
@@ -286,4 +290,21 @@ const createCursorToHid = (history) => {
     fit.set(0.0, history.hidItems);
     fit.set(1.0, 1);
     return fit;
+};
+
+// Need to stash these subjects in memory now that we don't get the counts
+// back every on every single poll request any more
+
+const subjects = new Map();
+
+const getSubject = (label, history, filters, subjectFactory) => {
+    const key = makeSubjectKey(label, history, filters);
+    if (!subjects.has(key)) {
+        subjects.set(key, subjectFactory());
+    }
+    return subjects.get(key);
+};
+
+const makeSubjectKey = (label, history, filters) => {
+    return JSON.stringify({ label, historyId: history.id, filters: filters.export() });
 };
