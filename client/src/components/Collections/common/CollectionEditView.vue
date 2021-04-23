@@ -88,6 +88,12 @@ library.add(faUser);
 Vue.use(BootstrapVue);
 export default {
     created() {
+        // TODO remove
+        axios
+                .get(prependPath("/api/datatypes/suitable_converters"), {"datatypes": ["bed", "fasta"]})
+                .then((response) => {
+                    console.log("did it");
+                });
         // this.apiCallToGetData();
         // this.apiCallToGetAttributes();
         this.getDatatypesAndGenomes();

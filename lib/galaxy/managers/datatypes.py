@@ -90,6 +90,15 @@ def view_converters(datatypes_registry: Registry) -> DatatypeConverterList:
             })
     return parse_obj_as(DatatypeConverterList, converters)
 
+def get_converters_for_collection(self, datatypes, datatypes_registry: Registry):
+    suitable_converters = []
+    # TODO error checking
+    for datatype in datatypes:
+        new_converters = []
+        new_converters = datatypes_registry.get_converters_by_datatype(datatype)
+        print("********************************************************************" + str(new_converters))
+        #
+    return suitable_converters
 
 def view_edam_formats(datatypes_registry: Registry) -> Dict[str, str]:
     return datatypes_registry.edam_formats

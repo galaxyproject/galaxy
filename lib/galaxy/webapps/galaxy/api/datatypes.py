@@ -113,6 +113,15 @@ class FastAPIDatatypes:
         return view_converters(self.datatypes_registry)
 
     @router.get(
+        '/api/datatypes/suitable_converters',
+        summary="Returns the list of converters that are suitable for an array of datatypes",
+        response_description="List of suitable converters"
+    )
+    async def suitable_converters(self, datatypes) -> List[str]:
+        """Gets the list of suitable converters."""
+        return get_converters_for_collection(datatypes, self.datatypes_registry)
+
+    @router.get(
         '/api/datatypes/edam_formats',
         summary="Returns a dictionary/map of datatypes and EDAM formats",
         response_description="Dictionary/map of datatypes and EDAM formats"
