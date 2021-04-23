@@ -12,9 +12,9 @@ import {
     debounceTime,
     window,
 } from "rxjs/operators";
-import { chunk, show } from "utils/observable";
+import { chunk, show, nth } from "utils/observable";
 import { isValidNumber } from "utils/validation";
-import { SearchParams, CurveFit, ScrollPos } from "../../model";
+import { SearchParams, CurveFit } from "../../model";
 import { loadContents } from "./loadContents";
 import { watchHistoryContents } from "./watchHistoryContents";
 
@@ -54,7 +54,8 @@ export const contentPayload = (cfg = {}) => {
         const [ noKey$, hasKey$ ] = partition(pos$, (pos) => pos.key === null);
 
         const knownHid$ = hasKey$.pipe(
-            pluck('key')
+            pluck('key'),
+            show(debug, hid => console.log("knownHid", hid)),
         );
 
         // only have cursor height, need to make a guess
@@ -69,6 +70,7 @@ export const contentPayload = (cfg = {}) => {
         const hid$ = merge(knownHid$, estimatedHid$).pipe(
             distinctUntilChanged(),
             filter(hid => !isNaN(hid)),
+            show(debug, hid => console.log("hid", hid)),
             share(),
         );
         
@@ -98,6 +100,7 @@ export const contentPayload = (cfg = {}) => {
         const cacheHid$ = hid$.pipe(
             window(serverHid$),
             mergeAll(),
+            show(debug, hid => console.log("cacheHid", hid)),
             debounceTime(100),
         );
         
@@ -126,19 +129,19 @@ export const contentPayload = (cfg = {}) => {
 
         const adjustedScrollPos$ = cacheMonitor$.pipe(
             pluck('contents'),
-            mergeAll(),
-            pluck('hid'),
-            map(hid => parseInt(hid)),
+            map(contents => Math.max(...contents.map(o => o.hid))),
             withLatestFrom(pos$, cursorToHid$),
-            filter(([hid, pos, fit]) => {
-                const newRowAtTop = hid == fit.get(0);
+            filter(([maxHid, pos, fit]) => {
+                const newRowAtTop = maxHid >= fit.get(0);
+                // console.log("newRowAtTop", newRowAtTop, maxHid, fit.get(0));
                 const cursorAtTop = isValidNumber(pos.cursor) && pos.cursor == 0;
                 const keyInt = parseInt(pos.key);
-                const keyAtTop = isValidNumber(keyInt) && hid > keyInt;
+                const keyAtTop = isValidNumber(keyInt) && maxHid > keyInt;
                 const scrollAtTop = cursorAtTop || keyAtTop;
+                // console.log("scrollAtTop", scrollAtTop);
                 return newRowAtTop && scrollAtTop;
             }),
-            map(([hid]) => ScrollPos.create({ key: hid, cursor: null })),
+            nth(0),
         );
 
         // #endregion

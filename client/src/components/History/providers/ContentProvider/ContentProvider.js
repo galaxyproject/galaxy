@@ -67,11 +67,15 @@ export const ContentProvider = {
     created() {
         this.params$ = this.watch$("params");
         this.scrollPos$ = this.watch$("scrollPos");
+
         const { payload$, loading$, scrolling$, resetPos$ = NEVER } = this.initStreams();
 
         this.listenTo(scrolling$, (val) => (this.scrolling = val));
         this.listenTo(loading$, (val) => (this.loading = val));
-        this.listenTo(resetPos$, (val) => this.resetScrollPos(val));
+        this.listenTo(resetPos$, (maxHid) => {
+            const newPos = ScrollPos.create({ cursor: 0.0, key: maxHid });
+            this.setScrollPos(newPos);
+        });
 
         // render output
         this.listenTo(payload$, {
@@ -82,8 +86,8 @@ export const ContentProvider = {
     },
 
     methods: {
-        resetScrollPos(pos = ScrollPos.create()) {
-            this.scrollPos = pos;
+        resetScrollPos() {
+            this.setScrollPos();
         },
 
         initStreams() {
@@ -116,6 +120,7 @@ export const ContentProvider = {
          */
         setPayload(props = {}) {
             const payload = Object.assign({}, defaultPayload, props);
+            // reportPayload(payload);
             this.$set(this, "payload", payload);
         },
     },
