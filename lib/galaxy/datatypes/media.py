@@ -13,8 +13,32 @@ def ffprobe(path):
     return data['format'], data['streams']
 
 
-class Audio(Binary):
+# AMP extension
+class AudioVideo(Binary):
+    """Class describing an audio/video binary file"""
+    file_ext = "av"
 
+    def sniff(self, filename):
+        mt = subprocess.check_output(['file', '--mime-type', filename])
+        return  mt.find("audio/")>=0 or mt.find("video/")>=0
+    
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Audio/video binary file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "Audio/video binary file (%s)" % (nice_size(dataset.get_size()))
+        
+
+# AMP customization        
+class Audio(AudioVideo):
     MetadataElement(name="duration", default=0, desc="Length of audio sample", readonly=True, visible=True, optional=True, no_value=0)
     MetadataElement(name="audio_codecs", default=[], desc="Audio codec(s)", param=ListParameter, readonly=True, visible=True, optional=True, no_value=[])
     MetadataElement(name="sample_rates", default=[], desc="Sampling Rate(s)", param=ListParameter, readonly=True, visible=True, optional=True, no_value=[])
@@ -28,10 +52,32 @@ class Audio(Binary):
             dataset.metadata.audio_codecs = [stream['codec_name'] for stream in streams if stream['codec_type'] == 'audio']
             dataset.metadata.sample_rates = [stream['sample_rate'] for stream in streams if stream['codec_type'] == 'audio']
             dataset.metadata.audio_streams = len([stream for stream in streams if stream['codec_type'] == 'audio'])
+            
+    # AMP customization START  
+    file_ext = "audio"
+ 
+    def sniff(self, filename):
+        mt = subprocess.check_output(['file', '--mime-type', filename])
+        return  mt.find("audio/")>=0
+     
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Audio file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+ 
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "Audio file (%s)" % (nice_size(dataset.get_size()))            
+    # AMP customization END
 
 
-class Video(Binary):
-
+# AMP customization
+class Video(AudioVideo):
     MetadataElement(name="resolution_w", default=0, desc="Width of video stream", readonly=True, visible=True, optional=True, no_value=0)
     MetadataElement(name="resolution_h", default=0, desc="Height of video stream", readonly=True, visible=True, optional=True, no_value=0)
     MetadataElement(name="fps", default=0, desc="FPS of video stream", readonly=True, visible=True, optional=True, no_value=0)
@@ -65,7 +111,29 @@ class Video(Binary):
             dataset.metadata.audio_streams = len([stream for stream in streams if stream['codec_type'] == 'audio'])
             dataset.metadata.video_streams = len([stream for stream in streams if stream['codec_type'] == 'video'])
 
-
+    # AMP customization START
+    file_ext = "video"
+ 
+    def sniff(self, filename):
+        mt = subprocess.check_output(['file', '--mime-type', filename])
+        return  mt.find("video/")>=0
+     
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Video file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+ 
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "Video file (%s)" % (nice_size(dataset.get_size()))
+    # AMP customization END
+    
+    
 class Mkv(Video):
     file_ext = "mkv"
 

@@ -1,0 +1,160 @@
+<?xml version="1.0"?>
+<datatypes>
+  <registration converters_path="lib/galaxy/datatypes/converters" display_path="display_applications">
+    <!-- AMP extended datatypes START -->
+    <!--  media subtypes -->
+    <datatype extension="av" type="galaxy.datatypes.media:AudioVideo" display_in_upload="true"/>
+    <datatype extension="audio" type="galaxy.datatypes.media:Audio" display_in_upload="true"/>
+    <datatype extension="video" type="galaxy.datatypes.media:Video" display_in_upload="true"/>
+    <datatype extension="music" type="galaxy.datatypes.amp_media:Music" display_in_upload="true"/>
+    <datatype extension="speech" type="galaxy.datatypes.amp_media:Speech" display_in_upload="true"/>
+    <!--  JSON subtypes -->
+    <datatype extension="segment" type="galaxy.datatypes.text:Segment" display_in_upload="true" />
+    <datatype extension="transcript" type="galaxy.datatypes.amp_text:Transcript" mimetype="application/json" display_in_upload="true"/>
+	<datatype extension="ner" type="galaxy.datatypes.amp_text:Ner" mimetype="application/json" display_in_upload="true"/>
+    <datatype extension="shot" type="galaxy.datatypes.amp_text:Shot" mimetype="application/json" display_in_upload="true"/>
+    <datatype extension="vocr" type="galaxy.datatypes.amp_text:VideoOcr" mimetype="application/json" display_in_upload="true"/>
+    <datatype extension="face" type="galaxy.datatypes.amp_text:Face" mimetype="application/json" display_in_upload="true"/>
+    <datatype extension="vtt" type="galaxy.datatypes.amp_text:Vtt" mimetype="text/vtt" display_in_upload="true"/>
+	<!-- below segments data type is deprecated, keep it for existing legacy datasets of this type -->
+    <datatype extension="segments" type="galaxy.datatypes.amp_text:Segments" display_in_upload="true" />
+    <!-- AMP extended datatypes END -->
+
+	<!-- Below are Galaxy built-in datatypes used by or potentially useful for AMP, copied from the sample file, add more as needed. -->
+
+    <!-- Galaxy media datatypes -->
+    <datatype extension="wav" type="galaxy.datatypes.media:Wav" display_in_upload="true" mimetype="audio/wav"/>
+    <datatype extension="mp3" type="galaxy.datatypes.media:Mp3" display_in_upload="true" mimetype="audio/mp3"/>
+    <datatype extension="mkv" type="galaxy.datatypes.media:Mkv" display_in_upload="true" mimetype="video/mkv"/>
+    <datatype extension="mp4" type="galaxy.datatypes.media:Mp4" display_in_upload="true" mimetype="video/mp4"/>
+    <datatype extension="flv" type="galaxy.datatypes.media:Flv" display_in_upload="true" mimetype="video/flv"/>
+    <datatype extension="mpg" type="galaxy.datatypes.media:Mpg" display_in_upload="true" mimetype="video/mpeg"/>
+
+	<!-- Galaxy image datatypes -->
+    <datatype extension="pdf" type="galaxy.datatypes.images:Pdf" mimetype="application/pdf" display_in_upload="true"/>
+    <datatype extension="png" type="galaxy.datatypes.images:Png" mimetype="image/png" display_in_upload="true"/>
+    <datatype extension="gif" type="galaxy.datatypes.images:Gif" mimetype="image/gif"/>
+    <datatype extension="jpg" type="galaxy.datatypes.images:Jpg" mimetype="image/jpeg"/>
+    <datatype extension="bmp" type="galaxy.datatypes.images:Bmp" mimetype="image/bmp"/>
+    <datatype extension="rgb" type="galaxy.datatypes.images:Rgb" mimetype="image/rgb"/>
+    <datatype extension="tiff" type="galaxy.datatypes.images:Tiff" mimetype="image/tiff" display_in_upload="true"/>
+    <datatype extension="im" type="galaxy.datatypes.images:Im" mimetype="image/im"/>
+    <datatype extension="nrrd" type="galaxy.datatypes.images:Nrrd" mimetype="image/nrrd"/>
+    <datatype extension="pcd" type="galaxy.datatypes.images:Pcd" mimetype="image/pcd"/>
+    <datatype extension="pcx" type="galaxy.datatypes.images:Pcx" mimetype="image/pcx"/>
+    <datatype extension="ppm" type="galaxy.datatypes.images:Ppm" mimetype="image/ppm"/>
+    <datatype extension="psd" type="galaxy.datatypes.images:Psd" mimetype="image/psd"/>
+    <datatype extension="xbm" type="galaxy.datatypes.images:Xbm" mimetype="image/xbm"/>
+    <datatype extension="xpm" type="galaxy.datatypes.images:Xpm" mimetype="image/xpm"/>
+    <datatype extension="pbm" type="galaxy.datatypes.images:Pbm" mimetype="image/pbm"/>
+    <datatype extension="pgm" type="galaxy.datatypes.images:Pgm" mimetype="image/pgm"/>
+    
+    <!-- Galaxy archive datatypes -->
+    <datatype extension="zip" type="galaxy.datatypes.binary:CompressedZipArchive" display_in_upload="true"/>
+    <datatype extension="tar" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true">
+      <converter file="tar_to_directory.xml" target_datatype="directory"/>
+    </datatype>
+    <datatype extension="tgz" type="galaxy.datatypes.binary:Binary" subclass="true" mimetype="multipart/x-gzip" display_in_upload="true" />
+    <datatype extension="directory" type="galaxy.datatypes.data:Directory"/>
+    
+    <!-- Galaxy tabular datatypes -->
+    <datatype extension="csv" type="galaxy.datatypes.tabular:CSV" display_in_upload="true">
+      <converter file="csv_to_tabular.xml" target_datatype="tabular"/>
+    </datatype>
+    <datatype extension="tsv" type="galaxy.datatypes.tabular:TSV" display_in_upload="true">
+      <converter file="tabular_to_csv.xml" target_datatype="csv"/>
+    </datatype>
+    <datatype extension="excel.xls" type="galaxy.datatypes.binary:ExcelXls" display_in_upload="true"/>
+    <datatype extension="xlsx" type="galaxy.datatypes.binary:Xlsx" display_in_upload="true"/>
+    
+    <!-- Galaxy triples datatypes -->
+    <datatype extension="rdf" type="galaxy.datatypes.triples:Rdf" display_in_upload="true"/>
+    <datatype extension="jsonld" type="galaxy.datatypes.triples:Jsonld" display_in_upload="true"/>
+            
+	<!-- Galaxy textual datatypes -->
+    <datatype extension="json" type="galaxy.datatypes.text:Json" display_in_upload="true"/>
+    <datatype extension="expression.json" type="galaxy.datatypes.text:ExpressionJson" display_in_upload="true"/>
+    <datatype extension="xml" type="galaxy.datatypes.xml:GenericXml" mimetype="application/xml" display_in_upload="true"/>
+	<datatype extension="html" type="galaxy.datatypes.text:Html" mimetype="text/html"/>
+    <datatype extension="ipynb" type="galaxy.datatypes.text:Ipynb" display_in_upload="true"/>
+        	
+	<!-- Galaxy base datatypes -->
+    <datatype extension="data" type="galaxy.datatypes.data:Data" mimetype="application/octet-stream" max_optional_metadata_filesize="1048576"/>
+    <datatype extension="binary" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" max_optional_metadata_filesize="1048576"/>
+    <datatype extension="txt" type="galaxy.datatypes.data:Text" display_in_upload="true" description="Any text file." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Plain_text"/>
+  </registration>
+  
+  <sniffers>
+    <!--
+    The order in which Galaxy attempts to determine data types is
+    important because some formats are much more loosely defined
+    than others.  The following list should be the most rigidly
+    defined format first, followed by next-most rigidly defined,
+    and so on.
+    -->
+    
+    <!-- AMP extended datatypes (some Galaxy media datatypes included) START -->   
+    <!--  media sniffers -->
+    <sniffer type="galaxy.datatypes.media:Wav"/>
+    <sniffer type="galaxy.datatypes.media:Mp3"/>
+    <sniffer type="galaxy.datatypes.media:Audio"/>
+    <sniffer type="galaxy.datatypes.media:Mp4"/>
+    <sniffer type="galaxy.datatypes.media:Mpg"/>
+    <sniffer type="galaxy.datatypes.media:Mkv"/>
+    <sniffer type="galaxy.datatypes.media:Flv"/>
+    <sniffer type="galaxy.datatypes.media:Video"/>
+    <sniffer type="galaxy.datatypes.media:AudioVideo"/>
+    <!--  JSON sniffers -->
+    <sniffer type="galaxy.datatypes.amp_text:Segment"/>    
+    <sniffer type="galaxy.datatypes.amp_text:Transcript"/>    
+    <sniffer type="galaxy.datatypes.amp_text:Ner"/>    
+    <sniffer type="galaxy.datatypes.amp_text:Shot"/>    
+    <sniffer type="galaxy.datatypes.amp_text:VideoOcr"/>    
+    <sniffer type="galaxy.datatypes.amp_text:Face"/>    
+    <sniffer type="galaxy.datatypes.amp_text:Vtt"/>    
+    <!-- AMP extended datatypes END -->   
+    
+    <!-- Galaxy built-in datatype sniffers -->    
+    <!--  image sniffers -->
+    <sniffer type="galaxy.datatypes.images:Pdf"/>
+    <sniffer type="galaxy.datatypes.images:Png"/>
+    <sniffer type="galaxy.datatypes.images:Gif"/>
+    <sniffer type="galaxy.datatypes.images:Jpg"/>
+    <sniffer type="galaxy.datatypes.images:Bmp"/>
+    <sniffer type="galaxy.datatypes.images:Rgb"/>
+    <sniffer type="galaxy.datatypes.images:Tiff"/>
+    <sniffer type="galaxy.datatypes.images:Im"/>
+    <sniffer type="galaxy.datatypes.images:Nrrd"/>
+    <sniffer type="galaxy.datatypes.images:Pcd"/>
+    <sniffer type="galaxy.datatypes.images:Pcx"/>
+    <sniffer type="galaxy.datatypes.images:Ppm"/>
+    <sniffer type="galaxy.datatypes.images:Psd"/>
+    <sniffer type="galaxy.datatypes.images:Xbm"/>
+    <sniffer type="galaxy.datatypes.images:Xpm"/>
+    <sniffer type="galaxy.datatypes.images:Pbm"/>
+    <sniffer type="galaxy.datatypes.images:Pgm"/>
+	<!-- archive sniffers --> 
+    <sniffer type="galaxy.datatypes.binary:CompressedZipArchive"/>
+    <sniffer type="galaxy.datatypes.binary:CompressedArchive" >
+    <sniffer type="galaxy.datatypes.data:Directory"/>
+    <!-- tabular sniffers -->
+    <sniffer type="galaxy.datatypes.tabular:CSV"/>
+    <sniffer type="galaxy.datatypes.tabular:TSV"/>
+    <sniffer type="galaxy.datatypes.binary:ExcelXls"/>
+    <sniffer type="galaxy.datatypes.binary:Xlsx"/>
+    <!-- triples sniffers -->
+    <sniffer type="galaxy.datatypes.triples:Rdf"/>
+    <sniffer type="galaxy.datatypes.triples:Jsonld"/>
+	<!-- textual sniffers -->
+    <sniffer type="galaxy.datatypes.text:ExpressionJson"/>
+    <sniffer type="galaxy.datatypes.text:Json"/>
+    <sniffer type="galaxy.datatypes.xml:GenericXml"/>
+	<sniffer type="galaxy.datatypes.text:Html"/>
+    <sniffer type="galaxy.datatypes.text:Ipynb"/>
+	<!-- base sniffers -->
+    <sniffer type="galaxy.datatypes.data:Text"/>
+    <sniffer type="galaxy.datatypes.binary:Binary"/>
+    <sniffer type="galaxy.datatypes.data:Data"/>
+    
+  </sniffers>
+</datatypes>
