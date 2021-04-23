@@ -1,12 +1,39 @@
+import json
+import logging
+
+from galaxy.datatypes.data import get_file_peek, Text
 from galaxy.datatypes.text import Json
+from galaxy.datatypes.sniff import build_sniff_from_prefix
+from galaxy.util import nice_size
+
+log = logging.getLogger(__name__)
+
 
 ###########################
 ## AMP extended Json Types
 ###########################
 
+@build_sniff_from_prefix
+class AmpJson(Json):
+    label = "AMP JSON"
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.blurb = self.label
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disc'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return self.label + " file (%s)" % (nice_size(dataset.get_size()))
+
 # Deprecated, use Segment instead
 @build_sniff_from_prefix
-class Segments(Json):
+class Segments(AmpJson):
     file_ext = "segments"
     label = "AMP Segments JSON (depreated, use segnment instead)"
 
@@ -16,7 +43,7 @@ class Segments(Json):
         return false
        
 @build_sniff_from_prefix
-class Segment(Json):
+class Segment(AmpJson):
     file_ext = "segment"
     label = "AMP Segment JSON"
 
@@ -39,7 +66,7 @@ class Segment(Json):
             return False
        
 @build_sniff_from_prefix
-class Transcript(Json):
+class Transcript(AmpJson):
     file_ext = "transcript"
     label = "AMP Transcript JSON"
 
@@ -67,7 +94,7 @@ class Transcript(Json):
             return False
        
 @build_sniff_from_prefix
-class Ner(Json):
+class Ner(AmpJson):
     file_ext = "ner"
     label = "AMP NER JSON"
     
@@ -92,7 +119,7 @@ class Ner(Json):
             return False
  
 @build_sniff_from_prefix
-class Shot(Json):
+class Shot(AmpJson):
     file_ext = "shot"
     label = "AMP Shot JSON"
 
@@ -117,7 +144,7 @@ class Shot(Json):
             return False
            
 @build_sniff_from_prefix
-class VideoOcr(Json):
+class VideoOcr(AmpJson):
     file_ext = "vocr"
     label = "AMP Video OCR JSON"
 
@@ -152,7 +179,7 @@ class VideoOcr(Json):
 # If there is no frame or no objects in a frame then we can't tell the two types apart, and the sniffer may fall back to JSON.
    
 @build_sniff_from_prefix
-class Face(Json):
+class Face(AmpJson):
     file_ext = "face"
     label = "AMP Face JSON"
 

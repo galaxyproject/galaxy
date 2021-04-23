@@ -5,7 +5,7 @@ import wave
 
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.metadata import ListParameter, MetadataElement
-from galaxy.util import which
+from galaxy.util import which, nice_size    # AMP addition
 
 
 def ffprobe(path):
@@ -13,10 +13,11 @@ def ffprobe(path):
     return data['format'], data['streams']
 
 
-# AMP extension
+# AMP customization
 class AudioVideo(Binary):
     """Class describing an audio/video binary file"""
     file_ext = "av"
+    label = "Audio/Video"
 
     def sniff(self, filename):
         mt = subprocess.check_output(['file', '--mime-type', filename])
@@ -24,7 +25,7 @@ class AudioVideo(Binary):
     
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = "Audio/video binary file"
+            dataset.peek = label
             dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = 'file does not exist'
@@ -34,7 +35,7 @@ class AudioVideo(Binary):
         try:
             return dataset.peek
         except Exception:
-            return "Audio/video binary file (%s)" % (nice_size(dataset.get_size()))
+            return self.label + " file (%s)" % (nice_size(dataset.get_size()))
         
 
 # AMP customization        
@@ -55,24 +56,11 @@ class Audio(AudioVideo):
             
     # AMP customization START  
     file_ext = "audio"
+    label = "Audio"
  
     def sniff(self, filename):
         mt = subprocess.check_output(['file', '--mime-type', filename])
-        return  mt.find("audio/")>=0
-     
-    def set_peek(self, dataset, is_multi_byte=False):
-        if not dataset.dataset.purged:
-            dataset.peek = "Audio file"
-            dataset.blurb = nice_size(dataset.get_size())
-        else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
- 
-    def display_peek(self, dataset):
-        try:
-            return dataset.peek
-        except Exception:
-            return "Audio file (%s)" % (nice_size(dataset.get_size()))            
+        return  mt.find("audio/")>=0         
     # AMP customization END
 
 
@@ -113,29 +101,17 @@ class Video(AudioVideo):
 
     # AMP customization START
     file_ext = "video"
+    label = "Video"
  
     def sniff(self, filename):
         mt = subprocess.check_output(['file', '--mime-type', filename])
         return  mt.find("video/")>=0
-     
-    def set_peek(self, dataset, is_multi_byte=False):
-        if not dataset.dataset.purged:
-            dataset.peek = "Video file"
-            dataset.blurb = nice_size(dataset.get_size())
-        else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
- 
-    def display_peek(self, dataset):
-        try:
-            return dataset.peek
-        except Exception:
-            return "Video file (%s)" % (nice_size(dataset.get_size()))
     # AMP customization END
     
     
 class Mkv(Video):
     file_ext = "mkv"
+    label = "MKV Audio" # AMP customization
 
     def sniff(self, filename):
         if which('ffprobe'):
@@ -154,6 +130,7 @@ class Mp4(Video):
     """
 
     file_ext = "mp4"
+    label = "MP4 Audio" # AMP customization
 
     def sniff(self, filename):
         if which('ffprobe'):
@@ -163,6 +140,7 @@ class Mp4(Video):
 
 class Flv(Video):
     file_ext = "flv"
+    label = "FLV Video" # AMP customization
 
     def sniff(self, filename):
         if which('ffprobe'):
@@ -189,6 +167,7 @@ class Mp3(Audio):
     False
     """
     file_ext = "mp3"
+    label = "MP3 Audio" # AMP customization
 
     def sniff(self, filename):
         if which('ffprobe'):
@@ -209,6 +188,7 @@ class Wav(Audio):
     file_ext = "wav"
     blurb = "RIFF WAV Audio file"
     is_binary = True
+    label = "WAV Audio" # AMP customization
 
     MetadataElement(name="rate", desc="Sample Rate", default=0, no_value=0, readonly=True, visible=True, optional=True)
     MetadataElement(name="nframes", desc="Number of Samples", default=0, no_value=0, readonly=True, visible=True, optional=True)
