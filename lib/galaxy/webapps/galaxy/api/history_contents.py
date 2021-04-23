@@ -1,6 +1,7 @@
 """
 API operations on the contents of a history.
 """
+import json
 import logging
 import os
 import re
@@ -1058,7 +1059,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         trans.response.headers.update(archive.get_headers())
         return archive.response()
 
-    @expose_api_anonymous
+    @expose_api_raw_anonymous
     def contents_near(self, trans, history_id, hid, limit, **kwd):
         """
         This endpoint provides random access to a large history without having
@@ -1077,19 +1078,15 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         """
         history = self.history_manager.get_accessible(self.decode_id(history_id), trans.user, current_history=trans.history)
 
-        # while polling, if we have a "since" parameter then check to see if the history has changed
-        # since that date, if it hasn't then we can short-circuit the poll request
-        since = kwd.pop('since', None)
+        # while polling, check to see if the history has changed
+        # if it hasn't then we can short-circuit the poll request
+        since = kwd.get('update_time-gt', None)
         if since:
-            kwd['update_time-gt'] = since
             since_str = self.history_contents_filters.parse_date(since)
             since_date = datetime.fromisoformat(since_str)
             if history.update_time <= since_date:
-                # Our json decorator is apparently rendering an empty result as a null
-                # so we have to send back a content-length header for a no-content response
                 trans.response.status = 204
-                trans.response.headers['Content-Length'] = 4
-                return None
+                return
 
         # parse content params
         filter_params = self._parse_rest_params(kwd)
@@ -1123,7 +1120,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         trans.response.headers['max_hid'] = max_hid
         trans.response.headers['min_hid'] = min_hid
 
-        return contents
+        return json.dumps(contents)
 
     # Perform content query and matching count
     def _seek(self, history, filter_params, order_by_string, limit, serialization_params):

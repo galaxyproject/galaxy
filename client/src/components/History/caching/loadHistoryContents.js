@@ -37,7 +37,7 @@ export const loadHistoryContents = (cfg = {}) => (rawInputs$) => {
             return `${baseUrl}?${params.historyContentQueryString}`;
         }),
         map(prependPath),
-        requestWithUpdateTime({ dateStore, noInitial, dateFieldName: "since" }),
+        requestWithUpdateTime({ dateStore, noInitial }),
     );
 
     const validResponses$ = ajaxResponse$.pipe(
