@@ -54,11 +54,11 @@ class SharingApiTests(UsesApiTestCaseMixin):
         assert sharing_response["importable"] is True
         assert sharing_response["published"] is False
 
-    def test_sharing_with_user(self):
+    def test_sharing_with_user_id(self):
         target_user = self._setup_user("target@user.com")
         target_user_id = target_user["id"]
 
-        resource_id = self.create("resource-to-share-user")
+        resource_id = self.create("resource-to-share-user-id")
 
         sharing_response = self._get_resource_sharing_status(resource_id)
         assert not sharing_response["users_shared_with"]
@@ -71,6 +71,37 @@ class SharingApiTests(UsesApiTestCaseMixin):
         payload = {"action": "unshare_with", "user_ids": [target_user_id]}
         sharing_response = self._set_resource_sharing(resource_id, payload)
         assert not sharing_response["users_shared_with"]
+
+    def test_sharing_with_user_email(self):
+        target_user = self._setup_user("target@user.com")
+        target_user_email = target_user["email"]
+
+        resource_id = self.create("resource-to-share-user-email")
+
+        sharing_response = self._get_resource_sharing_status(resource_id)
+        assert not sharing_response["users_shared_with"]
+
+        payload = {"action": "share_with", "user_ids": [target_user_email]}
+        sharing_response = self._set_resource_sharing(resource_id, payload)
+        assert sharing_response["users_shared_with"]
+        assert sharing_response["users_shared_with"][0]["email"] == target_user_email
+
+        payload = {"action": "unshare_with", "user_ids": [target_user_email]}
+        sharing_response = self._set_resource_sharing(resource_id, payload)
+        assert not sharing_response["users_shared_with"]
+
+    def test_sharing_with_invalid_user(self):
+        invalid_user_email = "unknown@user.com"
+
+        resource_id = self.create("resource-to-share-user-unknown")
+
+        sharing_response = self._get_resource_sharing_status(resource_id)
+        assert not sharing_response["users_shared_with"]
+
+        payload = {"action": "share_with", "user_ids": [invalid_user_email]}
+        sharing_response = self._set_resource_sharing(resource_id, payload)
+        assert not sharing_response["users_shared_with"]
+        assert invalid_user_email in sharing_response["share_with_err"]
 
     def _get_resource_sharing_status(self, resource_id: str):
         sharing_response = self._get(f"{self.api_name}/{resource_id}/sharing")

@@ -16,13 +16,17 @@ from typing import (
     List,
     Optional,
     Type,
+    Union,
 )
 
 from pydantic import (
     BaseModel,
     Field,
 )
-from sqlalchemy import true
+from sqlalchemy import (
+    false,
+    true,
+)
 
 from galaxy import exceptions
 from galaxy.managers import (
@@ -490,11 +494,11 @@ class SharingPayload(BaseModel):
         title="Action",
         description="The type of the sharing action.",
     )
-    user_ids: Optional[List[EncodedDatabaseIdField]] = Field(
+    user_ids: Optional[List[Union[EncodedDatabaseIdField, str]]] = Field(
         None,
         title="User IDs",
         description=(
-            "The list IDs of the users with whom this resource will be shared. "
+            "The list of IDs (or email addresses) of the users with whom this resource will be shared. "
             f"*Required* when the action is either `{ShareActionType.share_with}` or `{ShareActionType.unshare_with}`."
         ),
     )
@@ -544,10 +548,10 @@ class SharingStatus(BaseModel):
         title="Username and slug",
         description="The relative URL in the form of /u/{username}/{resource_single_char}/{slug}",
     )
-    skipped: Optional[bool] = Field(
+    share_with_err: Optional[str] = Field(
         None,
-        title="Skipped",
-        description="Indicates that some of the resources within this object were not published due to an error.",
+        title="Sharing Errors",
+        description="Possible error messages indicating that the resource was not shared with some (or all users) due to an error.",
     )
 
 
@@ -615,46 +619,74 @@ class ShareableService:
         :return: The current sharing status of the resource.
         :rtype: sharable.SharingStatus
         """
-        skipped = False
+        share_with_err = None
         class_name = self.manager.model_class.__name__
         item = base.get_object(trans, id, class_name, check_ownership=True, check_accessible=True, deleted=False)
 
         if payload:
-            action = payload.action.value
-            if action == "enable_link_access":
-                self.manager.make_importable(item, False)
-            elif action == "publish":
-                self.manager.publish(item, False)
-            elif action == "disable_link_access":
-                self.manager.make_non_importable(item, False)
-            elif action == "unpublish":
-                self.manager.unpublish(item, False)
-            elif action == "share_with":
-                self._share_with(trans, item, payload)
-            elif action == "unshare_with":
-                self._unshare_with(trans, item, payload)
+            action = payload.action
+            if action == ShareActionType.enable_link_access:
+                self.manager.make_importable(item, flush=False)
+            elif action == ShareActionType.publish:
+                self.manager.publish(item, flush=False)
+            elif action == ShareActionType.disable_link_access:
+                self.manager.make_non_importable(item, flush=False)
+            elif action == ShareActionType.unpublish:
+                self.manager.unpublish(item, flush=False)
+            elif action == ShareActionType.share_with:
+                share_with_err = self._share_with(trans, item, payload)
+            elif action == ShareActionType.unshare_with:
+                share_with_err = self._unshare_with(trans, item, payload)
             trans.sa_session.add(item)
             trans.sa_session.flush()
 
         item_dict = self.serializer.serialize_to_view(item,
             user=trans.user, trans=trans, default_view="sharing")
         item_dict["users_shared_with"] = [{"id": self.manager.app.security.encode_id(a.user.id), "email": a.user.email} for a in item.users_shared_with]
-        if skipped:
-            item_dict["skipped"] = True
+        if share_with_err:
+            item_dict["share_with_err"] = share_with_err
         return SharingStatus.parse_obj(item_dict)
 
-    def _get_users_by_ids(self, trans, user_ids):
-        users = [trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(x)) for x in user_ids]
-        return users
+    def _share_with(self, trans, item, payload: SharingPayload) -> Optional[str]:
+        users, errors = self._get_users(trans, payload.user_ids)
+        self.manager.share_with(item, users, flush=False)
+        return errors
 
-    def _share_with(self, trans, item, payload: SharingPayload):
-        if payload.user_ids is None:
-            raise exceptions.MessageException(f"Missing required user_ids to perform {payload.action}")
-        users = self._get_users_by_ids(trans, payload.user_ids)
-        self.manager.share_with(item, users, False)
+    def _unshare_with(self, trans, item, payload: SharingPayload) -> Optional[str]:
+        users, errors = self._get_users(trans, payload.user_ids)
+        self.manager.unshare_with(item, users, flush=False)
+        return errors
 
-    def _unshare_with(self, trans, item, payload: SharingPayload):
-        if payload.user_ids is None:
-            raise exceptions.MessageException(f"Missing required user_ids to perform {payload.action}")
-        users = self._get_users_by_ids(trans, payload.user_ids)
-        self.manager.unshare_with(item, users, False)
+    def _get_users(self, trans, emails_or_ids: Optional[List] = None):
+        if emails_or_ids is None:
+            raise exceptions.MessageException("Missing required user IDs or emails in `user_ids`")
+        send_to_users = []
+        send_to_err = ""
+        for string in emails_or_ids:
+            string = string.strip()
+            if not string:
+                continue
+
+            send_to_user = None
+            if '@' in string:
+                email_address = string
+                send_to_user = self.manager.user_manager.by_email(email_address,
+                    filters=[trans.app.model.User.table.c.deleted == false()])
+
+            else:
+                try:
+                    decoded_user_id = trans.security.decode_id(string)
+                    send_to_user = self.manager.user_manager.by_id(decoded_user_id)
+                    if send_to_user.deleted:
+                        send_to_user = None
+                except exceptions.MalformedId:
+                    send_to_user = None
+
+            if not send_to_user:
+                send_to_err += f"{string} is not a valid Galaxy user.  "
+            elif send_to_user == trans.user:
+                send_to_err += "You cannot share resources with yourself.  "
+            else:
+                send_to_users.append(send_to_user)
+
+        return send_to_users, send_to_err
