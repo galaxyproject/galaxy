@@ -420,15 +420,12 @@ define({
     "Show/Hide Scratchbook": "Mostrar/Ocultar Scratchbook",
 
     // ---------------------------------------------------------------------------- misc. MVC
-    Tags: false,
-    "Edit annotation": "Editar anotacion",
 
     // ---------------------------------------------------------------------------- galaxy.pages
     Subscript: false,
     Superscript: false,
     // ---------------------------------------------------------------------------- data
     Trackster: false,
-    Visualize: false,
     // ---------------------------------------------------------------------------- dataset-error
     "Any additional comments you can provide regarding what you were doing at the time of the bug.":
         "Cualquier comentario adicional que puedas proporcionar sobre lo que estabas haciendo en el momento que se produjo el error.",
@@ -454,8 +451,6 @@ define({
     Datatypes: false,
     Convert: false,
     Attributes: false,
-    // ---------------------------------------------------------------------------- dataset-li-edit
-    Visualization: false,
     // ---------------------------------------------------------------------------- library-dataset-view
     "Import into History": "Importar al historial",
     // ---------------------------------------------------------------------------- library-foldertoolbar-view
@@ -487,8 +482,6 @@ define({
     "Set dataset permissions for new histories": "Establecer permisos de conjuntos de datos para historiales nuevos",
     "Change password": "Cambiar contraseña",
     "Manage information": "Administrar información",
-    // ---------------------------------------------------------------------------- history-list
-    Histories: false,
     // ---------------------------------------------------------------------------- shed-list-view
     "Configured Tool Sheds": "Tool Sheds configurados",
     // ---------------------------------------------------------------------------- repository-queue-view
@@ -500,9 +493,7 @@ define({
     // ---------------------------------------------------------------------------- tool-form-base
     "See in Tool Shed": "Ver en Tool Shed",
     Requirements: false,
-    Download: false,
     Share: false,
-    Search: false,
     // ---------------------------------------------------------------------------- tool-form-composite
     "Workflow submission failed": "Error en el envío de flujo de trabajo",
     "Run workflow": "Ejecutar flujo de trabajo",
@@ -511,7 +502,6 @@ define({
     Execute: false,
     "Tool request failed": "Error en solicitud de herramienta",
     // ---------------------------------------------------------------------------- workflow
-    Workflows: false,
     // ---------------------------------------------------------------------------- workflow-view
     "Copy and insert individual steps": "Copiar e insertar pasos individuales",
     Warning: false,
@@ -565,10 +555,6 @@ define({
     "Install new tools": "Instalar nuevas herramientas",
     "Tool Management": "Gestión de herramienta",
     Forms: false,
-    Roles: false,
-    Groups: false,
-    Quotas: false,
-    Users: false,
     "User Management": "Gestión de usuario",
     "Manage jobs": "Administrar trabajos",
     "Display applications": "Mostrar aplicaciones",
