@@ -11,6 +11,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import pandas as pd
 from json import dumps
 
 import pysam
@@ -426,6 +427,29 @@ class Tabular(TabularData):
 
     def as_ucsc_display_file(self, dataset, **kwd):
         return open(dataset.file_name, 'rb')
+
+
+@dataproviders.decorators.has_dataproviders
+class DataFrame(Tabular):
+    """CSV or TSV hanled using pandas DataFrame. 
+    """
+    def set_peek(self, dataset, peek_max_lines=10, peek_max_columns=50):
+        df = pd.read_csv(
+            dataset.file_name, sep=dataset.metadata.delimiter,
+            usecols=range(min(peek_max_columns, dataset.metadata.columns)),
+            nrows=peek_max_lines)
+        if not dataset.dataset.purged:
+            dataset.peek = df.to_html()
+            dataset.blurb = "shape: ({}, {})".format(dataset.metadata.data_lines, dataset.metadata.columns) 
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return dataset.blurb
 
 
 class SraManifest(Tabular):
