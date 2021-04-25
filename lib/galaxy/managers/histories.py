@@ -247,6 +247,7 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
             'published',
             'annotation',
             'tags',
+            'update_time',
         ])
         self.add_view('detailed', [
             'contents_url',
