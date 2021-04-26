@@ -100,10 +100,10 @@ def get_converters_for_collection(trans, id, datatypes_registry: Registry, colle
             check_ownership=True
         )
     dbkeys_and_extensions = dataset_collection_instance.dataset_dbkeys_and_extensions_summary
-    print("********************************************************** " + str(dbkeys_and_extenions))
+    print("********************************************************** " + str(dbkeys_and_extensions))
     suitable_converters = []
     # TODO error checking
-    for datatype in dbkeys_and_extensions[0]:
+    for datatype in dbkeys_and_extensions[1]:
         new_converters = []
         new_converters = datatypes_registry.get_converters_by_datatype(datatype)
         print("********************************************************************" + str(new_converters))
