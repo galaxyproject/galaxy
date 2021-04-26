@@ -112,7 +112,7 @@ uwsgi:
   # AMP Galaxy metrics settings
   # enable API performance logging  
   enable-metrics: true
-  dlopen: metrics/system_metrics.so
+  dlopen: amp_metrics/system_metrics.so
   metric: name=system_load,collector=func,arg1=load_average,freq=3
   metric: name=system_swap,collector=func,arg1=swap,freq=3
   metric: name=system_ram,collector=func,arg1=memory,freq=3
