@@ -86,6 +86,7 @@
                 </div>
             </div>
             <div class="portlet-content">
+                <FormMessage class="mt-2" :message="messageText" :variant="messageVariant" />
                 <slot name="body" />
             </div>
         </div>
@@ -104,16 +105,18 @@
 </template>
 <script>
 import axios from "axios";
+import ariaAlert from "utils/ariaAlert";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
-import ariaAlert from "utils/ariaAlert";
 import { copy } from "utils/clipboard";
+import FormMessage from "./FormMessage";
 import ToolFooter from "components/Tool/ToolFooter";
 import ToolHelp from "components/Tool/ToolHelp";
 import Webhooks from "mvc/webhooks";
 
 export default {
     components: {
+        FormMessage,
         ToolFooter,
         ToolHelp,
     },
@@ -141,6 +144,14 @@ export default {
         options: {
             type: Object,
             required: true,
+        },
+        messageText: {
+            type: String,
+            required: true,
+        },
+        messageVariant: {
+            type: String,
+            default: "info",
         },
     },
     data() {

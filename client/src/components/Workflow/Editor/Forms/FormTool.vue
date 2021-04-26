@@ -5,6 +5,8 @@
         :title="node.config_form.name"
         :description="node.config_form.description"
         :options="node.config_form"
+        :message-text="messageText"
+        :message-variant="messageVariant"
         @onChangeVersion="onChangeVersion"
     >
         <template v-slot:body>
@@ -74,6 +76,8 @@ export default {
             errorLabel: null,
             mainValues: {},
             sectionValues: {},
+            messageVariant: "",
+            messageText: "",
         };
     },
     computed: {
@@ -84,7 +88,7 @@ export default {
             return this.getManager();
         },
         id() {
-            return `${this.node.id}${this.node.version}`;
+            return `${this.node.id}:${this.node.config_form.id}`;
         },
         inputs() {
             const inputs = this.node.config_form.inputs;
@@ -139,13 +143,15 @@ export default {
             console.log(this.sectionValues);
             this.postChanges();
         },
-        onChangeVersion() {},
-        postChanges() {
+        onChangeVersion(newVersion) {
+            this.postChanges(newVersion);
+        },
+        postChanges(newVersion) {
             const options = this.node.config_form;
             axios
                 .post(`${getAppRoot()}api/workflows/build_module`, {
                     tool_id: options.id,
-                    tool_version: options.version,
+                    tool_version: newVersion || options.version,
                     type: "tool",
                     inputs: Object.assign({}, this.mainValues, this.sectionValues),
                 })
@@ -159,6 +165,11 @@ export default {
                     console.log(form);
                     form.parseUpdate(data.config_form);
                     form.parseErrors(data.config_form);
+                    if (newVersion) {
+                        const options = this.node.config_form;
+                        this.messageVariant = "success";
+                        this.messageText = `Now you are using '${options.name}' version ${options.version}, id '${options.id}'.`;
+                    }
                 });
         },
     },
