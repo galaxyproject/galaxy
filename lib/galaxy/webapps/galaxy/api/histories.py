@@ -6,6 +6,11 @@ API operations on a history.
 import logging
 from typing import Optional
 
+from fastapi import (
+    Body,
+    Path,
+)
+
 from galaxy import (
     util
 )
@@ -13,8 +18,12 @@ from galaxy.managers import (
     histories,
     sharable,
 )
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema import FilterQueryParams
-from galaxy.schema.fields import OrderParamField
+from galaxy.schema.fields import (
+    EncodedDatabaseIdField,
+    OrderParamField,
+)
 from galaxy.schema.schema import (
     CreateHistoryPayload,
     ExportHistoryArchivePayload,
@@ -29,9 +38,65 @@ from galaxy.web import (
     expose_api_raw,
 )
 from galaxy.webapps.galaxy.api.configuration import parse_serialization_params
-from . import BaseGalaxyAPIController, depends
+from . import (
+    BaseGalaxyAPIController,
+    depends,
+    DependsOnTrans,
+    Router,
+)
 
 log = logging.getLogger(__name__)
+
+router = Router(tags=['histories'])
+
+HistoryIdPathParam: EncodedDatabaseIdField = Path(
+    ...,
+    title="History ID",
+    description="The encoded database identifier of the History."
+)
+
+
+@router.cbv
+class FastAPIHistories:
+    service: histories.HistoriesService = depends(histories.HistoriesService)
+
+    @router.get(
+        '/api/histories/{id}/sharing',
+        summary="Get sharing the status of the given History.",
+    )
+    def get_sharing(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = HistoryIdPathParam,
+    ) -> sharable.SharingStatus:
+        """Return the sharing status of the History."""
+        return self.service.shareable_service.sharing(trans, id)
+
+    @router.post(
+        '/api/histories/{id}/sharing',
+        summary="Set sharing options for the given History.",
+    )
+    def post_sharing(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = HistoryIdPathParam,
+        payload: sharable.SharingPayload = Body(...),
+    ) -> sharable.SharingStatus:
+        """Return the sharing status of the History after the changes."""
+        return self.service.shareable_service.sharing(trans, id, payload)
+
+    @router.put(
+        '/api/histories/{id}/slug/{new_slug}',
+        summary="Set a new slug for this shared History.",
+    )
+    def put_set_slug(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = HistoryIdPathParam,
+        payload: sharable.SetSlugPayload = Body(...),
+    ):
+        """Return the sharing status of the History after the changes."""
+        return self.service.shareable_service.set_slug(trans, id, payload)
 
 
 class HistoryFilterQueryParams(FilterQueryParams):

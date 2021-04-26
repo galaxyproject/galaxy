@@ -7,23 +7,89 @@ may change often.
 import json
 import logging
 
+from fastapi import (
+    Body,
+    Path,
+)
 
 from galaxy import (
     exceptions,
     util,
     web
 )
-from galaxy.managers.sharable import SharingPayload
+from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.sharable import (
+    SetSlugPayload,
+    SharingPayload,
+    SharingStatus,
+)
 from galaxy.managers.visualizations import VisualizationsService
+from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.web import expose_api
 from galaxy.webapps.base.controller import (
     UsesVisualizationMixin
 )
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
-from . import BaseGalaxyAPIController, depends
+from . import (
+    BaseGalaxyAPIController,
+    depends,
+    DependsOnTrans,
+    Router,
+)
 
 log = logging.getLogger(__name__)
+
+router = Router(tags=['visualizations'])
+
+VisualizationIdPathParam: EncodedDatabaseIdField = Path(
+    ...,
+    title="Visualization ID",
+    description="The encoded database identifier of the Visualization."
+)
+
+
+@router.cbv
+class FastAPIVisualizations:
+    service: VisualizationsService = depends(VisualizationsService)
+
+    @router.get(
+        '/api/visualizations/{id}/sharing',
+        summary="Get sharing the status of the given Visualization.",
+    )
+    def get_sharing(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = VisualizationIdPathParam,
+    ) -> SharingStatus:
+        """Return the sharing status of the Visualization."""
+        return self.service.shareable_service.sharing(trans, id)
+
+    @router.post(
+        '/api/visualizations/{id}/sharing',
+        summary="Set sharing options for the given Visualization.",
+    )
+    def post_sharing(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = VisualizationIdPathParam,
+        payload: SharingPayload = Body(...),
+    ) -> SharingStatus:
+        """Return the sharing status of the Visualization after the changes."""
+        return self.service.shareable_service.sharing(trans, id, payload)
+
+    @router.put(
+        '/api/visualizations/{id}/slug/{new_slug}',
+        summary="Set a new slug for this shared Visualization.",
+    )
+    def put_set_slug(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = VisualizationIdPathParam,
+        payload: SetSlugPayload = Body(...),
+    ):
+        """Return the sharing status of the Visualization after the changes."""
+        return self.service.shareable_service.set_slug(trans, id, payload)
 
 
 class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, UsesAnnotations):

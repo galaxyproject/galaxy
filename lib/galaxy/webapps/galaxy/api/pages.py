@@ -51,7 +51,7 @@ DeletedQueryParam: bool = Query(
 PageIdPathParam: EncodedDatabaseIdField = Path(
     ...,  # Required
     title="Page ID",
-    description="The encoded indentifier of the Page."
+    description="The encoded database identifier of the Page."
 )
 
 
