@@ -63,7 +63,7 @@
             </p>
             <div v-if="!isExposeEmail">
                 <b-table
-                    class="share_with_table"
+                    class="share_with_view"
                     show-empty
                     foot-clone
                     small
@@ -106,16 +106,27 @@
                     </template>
                 </b-table>
             </div>
-            <SelectUsers
+            <multiselect
                 v-else-if="item"
-                :users_shared_with="item.users_shared_with"
-                :share_with="actions.share_with"
-                :unshare_with="actions.unshare_with"
-                :plural-name="pluralNameLower"
-                :id="id"
-                :is-expose-email="isExposeEmail"
-                @shared_with="shared_with"
-            />
+                class="select-users"
+                v-model="item.users_shared_with"
+                :options="usersList"
+                :clear-on-select="true"
+                :preserve-search="true"
+                :multiple="true"
+                @select="setSharing(actions.share_with, $event.email)"
+                @remove="setSharing(actions.unshare_with, $event.email)"
+                label="email"
+                track-by="id"
+                @search-change="searchChanged"
+                :internal-search="false"
+            >
+                <template slot="noOptions">
+                    <div>
+                        {{ emptyResult }}
+                    </div>
+                </template>
+            </multiselect>
             <b-alert show v-if="share_with_err" variant="danger" dismissible> {{ share_with_err }} </b-alert>
         </div>
     </div>
@@ -130,8 +141,8 @@ import { faLink, faEdit, faUserPlus, faUserSlash } from "@fortawesome/free-solid
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import SlugInput from "components/Common/SlugInput";
-import SelectUsers from "components/Sharing/SelectUsers/SelectUsers";
 import axios from "axios";
+import Multiselect from "vue-multiselect";
 
 Vue.use(BootstrapVue);
 [faLink, faEdit, faUserPlus, faUserSlash].forEach((icon) => library.add(icon));
@@ -140,7 +151,7 @@ export default {
     components: {
         FontAwesomeIcon,
         SlugInput,
-        SelectUsers,
+        Multiselect,
     },
     props: {
         id: {
@@ -160,6 +171,8 @@ export default {
         const Galaxy = getGalaxyInstance();
         return {
             isExposeEmail: Galaxy.config.expose_user_email || Galaxy.user.attributes.is_admin,
+            usersList: [],
+            emptyResult: "Please enter user email",
             ready: false,
             hasUsername: Galaxy.user.get("username"),
             newUsername: "",
@@ -225,6 +238,7 @@ export default {
         },
     },
     created: function () {
+        console.log(getGalaxyInstance().config)
         this.getModel();
     },
     methods: {
@@ -298,6 +312,7 @@ export default {
                 .catch((error) => (this.errMsg = error.response.data.err_msg));
         },
         setSharing(action, user_id) {
+            console.log(user_id);
             if (
                 action === this.actions.share_with &&
                 this.item.users_shared_with.some((user) => user_id === user.email)
@@ -323,8 +338,17 @@ export default {
                 })
                 .catch((error) => (this.errMsg = error.response.data.err_msg));
         },
-        shared_with(user) {
-            this.item.users_shared_with.push(user);
+        searchChanged(searchValue) {
+            if (searchValue === "") {
+                this.usersList = [];
+            } else {
+                axios
+                    .get(`${getAppRoot()}api/users?f_email=${searchValue}`)
+                    .then((response) => {
+                        this.usersList = response.data;
+                    })
+                    .catch((error) => (this.errMsg = error.response.data.err_msg));
+            }
         },
     },
 };
@@ -334,7 +358,7 @@ export default {
 .sharing_icon {
     margin-top: 0.15rem;
 }
-.share_with_table {
+.share_with_view {
     max-width: 680px;
 }
 </style>
