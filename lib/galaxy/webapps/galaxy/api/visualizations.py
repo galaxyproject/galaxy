@@ -24,8 +24,8 @@ from galaxy.managers.sharable import (
     SharingStatus,
 )
 from galaxy.managers.visualizations import VisualizationsService
-from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.web import expose_api
 from galaxy.webapps.base.controller import (
     UsesVisualizationMixin
