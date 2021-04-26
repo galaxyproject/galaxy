@@ -44,6 +44,7 @@
                 <div v-else-if="obj.name == 'generate_time'" class="galaxy-time">
                     <pre><code>{{ getTime }}</code></pre>
                 </div>
+                <HistoryLink v-else-if="obj.name == 'history_link'" :args="obj.args" :histories="histories" />
                 <HistoryDatasetAsImage v-else-if="obj.name == 'history_dataset_as_image'" :args="obj.args" />
                 <HistoryDatasetLink v-else-if="obj.name == 'history_dataset_link'" :args="obj.args" />
                 <HistoryDatasetIndex v-else-if="obj.name == 'history_dataset_index'" :args="obj.args" />
@@ -105,6 +106,7 @@ import HistoryDatasetLink from "./Elements/HistoryDatasetLink";
 import HistoryDatasetIndex from "./Elements/HistoryDatasetIndex";
 import HistoryDatasetCollectionDisplay from "./Elements/HistoryDatasetCollection/CollectionDisplay";
 import HistoryDatasetDetails from "./Elements/HistoryDatasetDetails";
+import HistoryLink from "./Elements/HistoryLink";
 import InvocationTime from "./Elements/InvocationTime";
 import JobMetrics from "./Elements/JobMetrics";
 import JobParameters from "./Elements/JobParameters";
@@ -137,6 +139,7 @@ export default {
         HistoryDatasetDisplay,
         HistoryDatasetIndex,
         HistoryDatasetLink,
+        HistoryLink,
         JobMetrics,
         JobParameters,
         LoadingSpan,
@@ -165,6 +168,7 @@ export default {
             markdownObjects: [],
             markdownErrors: [],
             historyDatasets: {},
+            histories: {},
             historyDatasetCollections: {},
             workflows: {},
             jobs: {},
@@ -201,6 +205,7 @@ export default {
             this.markdownErrors = config.errors || [];
             this.markdownObjects = this.splitMarkdown(markdown);
             this.historyDatasets = config.history_datasets || {};
+            this.histories = config.histories || {};
             this.historyDatasetCollections = config.history_dataset_collections || {};
             this.workflows = config.workflows || {};
             this.jobs = config.jobs || {};

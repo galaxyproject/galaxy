@@ -1131,14 +1131,25 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         return job_attrs
 
     def to_dict(self, view='collection', system_details=False):
-        rval = super().to_dict(view=view)
+        if view == 'admin_job_list':
+            rval = super().to_dict(view='collection')
+        else:
+            rval = super().to_dict(view=view)
         rval['tool_id'] = self.tool_id
         rval['history_id'] = self.history_id
-        if system_details:
+        if system_details or view == 'admin_job_list':
             # System level details that only admins should have.
             rval['external_id'] = self.job_runner_external_id
             rval['command_line'] = self.command_line
-
+        if view == 'admin_job_list':
+            rval['user_email'] = self.user.email if self.user else None
+            rval['handler'] = self.handler
+            rval['job_runner_name'] = self.job_runner_name
+            rval['info'] = self.info
+            rval['traceback'] = self.traceback
+            rval['session_id'] = self.session_id
+            if self.galaxy_session and self.galaxy_session.remote_host:
+                rval['remote_host'] = self.galaxy_session.remote_host
         if view == 'element':
             param_dict = {p.name: p.value for p in self.parameters}
             rval['params'] = param_dict
@@ -5604,6 +5615,7 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
 
     def to_dict(self, view='collection', value_mapper=None, step_details=False, legacy_job_state=False):
         rval = super().to_dict(view=view, value_mapper=value_mapper)
+        rval['stored_workflow_id'] = self.workflow.stored_workflow.id
         if view == 'element':
             steps = []
             for step in self.steps:

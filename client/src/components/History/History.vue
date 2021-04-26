@@ -56,7 +56,7 @@
                     </template>
 
                     <template v-slot:listing>
-                        <HistoryEmpty v-if="history.empty" class="m-2" />
+                        <HistoryEmpty v-if="history.empty && payload.contents.length == 0" class="m-2" />
                         <Scroller
                             v-else
                             :class="{ loadingBackground: loading }"

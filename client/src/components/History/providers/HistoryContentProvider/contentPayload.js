@@ -1,8 +1,9 @@
-import { merge, partition, Observable, BehaviorSubject } from "rxjs";
+import { merge, partition, Observable, BehaviorSubject, Subject } from "rxjs";
 import {
     tap,
     distinctUntilChanged,
     map,
+    filter,
     share,
     withLatestFrom,
     pluck,
@@ -13,7 +14,7 @@ import {
 } from "rxjs/operators";
 import { chunk, show } from "utils/observable";
 import { isValidNumber } from "../ContentProvider";
-import { SearchParams, CurveFit } from "../../model";
+import { SearchParams, CurveFit, ScrollPos } from "../../model";
 import { loadContents } from "./loadContents";
 import { watchHistoryContents } from "./watchHistoryContents";
 
@@ -34,7 +35,9 @@ export const contentPayload = (cfg = {}) => {
         debouncePeriod = 250,
         disablePoll = false,
         debug = false,
+        // status outputs
         loading$ = new BehaviorSubject(),
+        resetPos$ = new Subject(),
     } = cfg;
 
     // stats for this history + filters, accumulates and improves over successive polls
@@ -58,11 +61,12 @@ export const contentPayload = (cfg = {}) => {
             withLatestFrom(cursorToHid$),
             map((inputs) => estimateHid(...inputs)),
             map(hid => Math.round(hid)),
-            show(debug, hid => console.log("estimatedHid", hid)),
+            show(debug, hid => console.log("estimatedHid", hid, history)),
         );
 
         const hid$ = merge(knownHid$, estimatedHid$).pipe(
             distinctUntilChanged(),
+            filter(hid => !isNaN(hid)),
             share(),
         );
         
@@ -98,6 +102,7 @@ export const contentPayload = (cfg = {}) => {
         const cacheMonitor$ = cacheHid$.pipe(
             watchHistoryContents({ history, filters, pageSize, debouncePeriod, debug }),
             show(debug, (result) => console.log("cacheMonitor.contents (hid)", result.contents.map(o => o.hid))),
+            share(),
         );
 
         const payload$ = cacheMonitor$.pipe(
@@ -105,6 +110,31 @@ export const contentPayload = (cfg = {}) => {
             map(buildPayload(pageSize)),
             tap(() => loading$.next(false)),
             show(debug, (payload) => console.log("payload", payload)),
+        );
+
+        // #endregion
+
+        // #region Reposition View to accomodate recent updates
+        
+        // When new updates to the history come in, we should shift the scrollPos so that we can see
+        // them. Without some kind of explicit move, the system will think they're just random
+        // updates that are happening outside the region of interest, and there would be no
+        // particular reason to shift the view. But that's not ideal when you're already looking at
+        // the top of the history and expect to see the most recent updates as they come in.
+
+        const adjustedScrollPos$ = cacheMonitor$.pipe(
+            pluck('contents'),
+            mergeAll(),
+            pluck('hid'),
+            withLatestFrom(pos$, hidToTopRows$),
+            filter(([hid, pos, fit]) => {
+                const domainMax = Math.max(...fit.domain);
+                const aboveTop = hid > domainMax;
+                const scrollAtTop = pos.cursor !== undefined && pos.cursor !== null && pos.cursor == 0.0;
+                return aboveTop && scrollAtTop;
+            }),
+            map(([hid]) => ScrollPos.create({ key: hid })),
+            debounceTime(debouncePeriod),
         );
 
         // #endregion
@@ -137,6 +167,7 @@ export const contentPayload = (cfg = {}) => {
             sub.add(newCursorToHid$.subscribe(cursorToHid$));
             sub.add(newHidToTopRows$.subscribe(hidToTopRows$));
             sub.add(newMatches$.subscribe(totalMatches$));
+            sub.add(adjustedScrollPos$.subscribe(resetPos$))
 
             return sub;
         })

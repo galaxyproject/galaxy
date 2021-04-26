@@ -827,7 +827,7 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         :raises: exceptions.MessageException, exceptions.RequestParameterInvalidException
         """
         # Get workflow + accessibility check.
-        stored_workflow = self.__get_stored_accessible_workflow(trans, workflow_id)
+        stored_workflow = self.__get_stored_accessible_workflow(trans, workflow_id, instance=kwd.get('instance', False))
         workflow = stored_workflow.latest_workflow
         run_configs = build_workflow_run_configs(trans, workflow, payload)
         is_batch = payload.get('batch')
@@ -876,6 +876,10 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         :param  workflow_id:      an encoded stored workflow id to restrict query to
         :type   workflow_id:      str
 
+        :param  instance:         true if fetch by Workflow ID instead of StoredWorkflow id, false
+                                  by default.
+        :type   instance:         boolean
+
         :param  history_id:       an encoded history id to restrict query to
         :type   history_id:       str
 
@@ -891,7 +895,7 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
         if workflow_id is not None:
-            stored_workflow_id = self.__get_stored_workflow(trans, workflow_id).id
+            stored_workflow_id = self.__get_stored_workflow(trans, workflow_id, instance=kwd.get('instance', False)).id
         else:
             stored_workflow_id = None
 

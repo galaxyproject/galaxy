@@ -16,6 +16,9 @@ import { mapActions, mapGetters } from "vuex";
 import { History } from "../../model/History";
 
 export default {
+    props: {
+        user: { type: Object, required: true },
+    },
     computed: {
         ...mapGetters("betaHistory", ["currentHistoryId", "currentHistory", "histories"]),
 
@@ -42,18 +45,18 @@ export default {
         ]),
     },
     watch: {
-        // load history when the current id changes
-        currentHistoryId: {
+        // when user changes reload histories
+        user: {
             immediate: true,
-            handler(newId, oldId) {
-                if (newId && newId !== oldId) {
-                    this.loadHistoryById(newId);
-                }
+            handler() {
+                this.loadUserHistories();
             },
         },
-    },
-    created() {
-        this.loadUserHistories();
+
+        // refresh history when the current id changes
+        currentHistoryId(newId) {
+            this.loadHistoryById(newId);
+        },
     },
     render() {
         return this.$scopedSlots.default({
