@@ -1,3 +1,4 @@
+import json
 from typing import Any
 from unittest import SkipTest
 
@@ -103,6 +104,22 @@ class SharingApiTests(UsesApiTestCaseMixin):
         assert not sharing_response["users_shared_with"]
         assert invalid_user_email in sharing_response["share_with_err"]
 
+    def test_set_slug(self):
+        resource_id = self.create("resource-to-set-slug")
+        other_resource_id = self.create("other-resource-to-set-slug")
+
+        response = self._set_slug(resource_id, "new-slug")
+        self._assert_status_code_is_ok(response)
+
+        # Slugs must be unique for the same user/resource
+        response = self._set_slug(other_resource_id, "new-slug")
+        self._assert_status_code_is(response, 409)
+
+        # Other users can not change the slug if they don't own the resource
+        with self._different_user():
+            response = self._set_slug(resource_id, "another-slug")
+            self._assert_status_code_is(response, 403)
+
     def _get_resource_sharing_status(self, resource_id: str):
         sharing_response = self._get(f"{self.api_name}/{resource_id}/sharing")
         self._assert_status_code_is(sharing_response, 200)
@@ -112,3 +129,8 @@ class SharingApiTests(UsesApiTestCaseMixin):
         sharing_response = self._post(f"{self.api_name}/{resource_id}/sharing", data=payload, json=True)
         self._assert_status_code_is(sharing_response, expect_response_status)
         return sharing_response.json()
+
+    def _set_slug(self, resource_id: str, new_slug: str):
+        payload = {"new_slug": new_slug}
+        response = self._put(f"{self.api_name}/{resource_id}/slug", json.dumps(payload))
+        return response
