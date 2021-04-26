@@ -11,9 +11,9 @@ import re
 import shutil
 import subprocess
 import tempfile
-import pandas as pd
 from json import dumps
 
+import pandas as pd
 import pysam
 from markupsafe import escape
 
@@ -1418,7 +1418,7 @@ class DataFrame(TabularData):
                 dataset.file_name, sep=dataset.metadata.delimiter,
                 usecols=range(min(peek_max_columns, dataset.metadata.columns)),
                 nrows=peek_max_lines)
-            dataset.peek = df.to_html()
+            dataset.peek = df.to_json()
             dataset.blurb = "shape: {}".format(self.get_shape(dataset))
         else:
             dataset.peek = 'file does not exist'
@@ -1426,7 +1426,7 @@ class DataFrame(TabularData):
 
     def display_peek(self, dataset):
         try:
-            return dataset.peek
+            return pd.read_json(dataset.peek).to_html()
         except Exception:
             return "DataFrame in shape {}".format(self.get_shape(dataset))
 
