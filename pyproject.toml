@@ -52,7 +52,7 @@ mrcfile = "*"
 nodeenv = "*"
 nose = "*"
 numpy = "*"
-pandas = "*"
+pandas = "<=1.1.5"  # Last version compatible with python 3.6
 paramiko = "*"
 Parsley = "*"
 Paste = "*"
