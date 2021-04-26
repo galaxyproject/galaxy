@@ -510,8 +510,12 @@ def populate_api_routes(webapp, app):
     webapp.mapper.resource('datatype',
                            'datatypes',
                            path_prefix='/api',
-                           collection={'sniffers': 'GET', 'mapping': 'GET', 'converters': 'GET', 'suitable_converters': 'GET', 'edam_data': 'GET', 'edam_formats': 'GET', 'types_and_mapping': 'GET'},
+                           collection={'sniffers': 'GET', 'mapping': 'GET', 'converters': 'GET', 'edam_data': 'GET', 'edam_formats': 'GET', 'types_and_mapping': 'GET'},
                            parent_resources=dict(member_name='datatype', collection_name='datatypes'))
+    webapp.mapper.connect("api_suitable_converters",
+                          "/api/datatypes/suitable_converters/{id}", controller='datatypes',
+                          action='suitable_converters',
+                          conditions=dict(method=['GET']))
     webapp.mapper.resource('search', 'search', path_prefix='/api')
     webapp.mapper.connect('/api/pages/{id}.pdf', action='show_pdf', controller="pages", conditions=dict(method=["GET"]))
     webapp.mapper.resource('page', 'pages', path_prefix="/api")

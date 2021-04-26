@@ -9,7 +9,10 @@ from typing import (
     Union,
 )
 
-from fastapi import Query
+from fastapi import (
+    Query,
+    Path
+)
 
 from galaxy.datatypes.registry import Registry
 from galaxy.managers.datatypes import (
@@ -17,6 +20,7 @@ from galaxy.managers.datatypes import (
     DatatypeDetails,
     DatatypesCombinedMap,
     DatatypesMap,
+    get_converters_for_collection,
     view_converters,
     view_edam_data,
     view_edam_formats,
@@ -25,6 +29,8 @@ from galaxy.managers.datatypes import (
     view_sniffers,
     view_types_and_mapping
 )
+from galaxy.managers.collections import DatasetCollectionManager
+from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.util import asbool
 from galaxy.web import expose_api_anonymous_and_sessionless
 from . import (
@@ -49,10 +55,10 @@ UploadOnlyQueryParam: Optional[bool] = Query(
     description="Whether to return only datatypes which can be uploaded",
 )
 
-
 @router.cbv
 class FastAPIDatatypes:
     datatypes_registry: Registry = depends(Registry)
+    collection_manager: DatasetCollectionManager = depends(DatasetCollectionManager)
 
     @router.get(
         '/api/datatypes',
@@ -117,9 +123,9 @@ class FastAPIDatatypes:
         summary="Returns the list of converters that are suitable for an array of datatypes",
         response_description="List of suitable converters"
     )
-    async def suitable_converters(self, datatypes) -> List[str]:
+    async def suitable_converters(self, trans, id, instance_type='history') -> List[str]:
         """Gets the list of suitable converters."""
-        return get_converters_for_collection(datatypes, self.datatypes_registry)
+        return get_converters_for_collection(trans, id, self.datatypes_registry, self.collection_manager, instance_type)
 
     @router.get(
         '/api/datatypes/edam_formats',
@@ -142,6 +148,7 @@ class FastAPIDatatypes:
 
 class DatatypesController(BaseGalaxyAPIController):
     datatypes_registry: Registry = depends(Registry)
+    collection_manager: DatasetCollectionManager = depends(DatasetCollectionManager)
 
     @expose_api_anonymous_and_sessionless
     def index(self, trans, **kwd):
@@ -185,6 +192,10 @@ class DatatypesController(BaseGalaxyAPIController):
     @expose_api_anonymous_and_sessionless
     def converters(self, trans, **kwd):
         return view_converters(self.datatypes_registry)
+
+    @expose_api_anonymous_and_sessionless
+    def suitable_converters(self, trans, id, instance_type='history', **kwd):
+        return get_converters_for_collection(trans, id, self.datatypes_registry, self.collection_manager, instance_type)
 
     @expose_api_anonymous_and_sessionless
     def edam_formats(self, trans, **kwds):

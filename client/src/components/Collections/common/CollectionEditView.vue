@@ -90,7 +90,7 @@ export default {
     created() {
         // TODO remove
         axios
-                .get(prependPath("/api/datatypes/suitable_converters"), {"datatypes": ["bed", "fasta"]})
+                .get(prependPath("/api/datatypes/suitable_converters/" + this.collection_id), {"datatypes": ["bed", "fasta"]})
                 .then((response) => {
                     console.log("did it");
                 });

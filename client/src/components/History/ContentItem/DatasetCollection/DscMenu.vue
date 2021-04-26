@@ -1,7 +1,7 @@
 <template>
     <div class="collection-menu">
         <PriorityMenu :starting-height="27">
-            <PriorityMenuItem
+            <!-- <PriorityMenuItem
                 v-if="notIn(STATES.DISCARDED)"
                 key="edit-collection"
                 class="collection-edit-view"
@@ -9,7 +9,7 @@
                 :disabled="collection.deleted || isIn(STATES.UPLOAD, STATES.NEW)"
                 @click.stop="backboneRoute('collection/edit/' + collection.hdca_id)"
                 icon="fa fa-pencil"
-            />
+            /> -->
             <PriorityMenuItem
                 v-if="notIn(STATES.DISCARDED)"
                 key="edit-collection"
