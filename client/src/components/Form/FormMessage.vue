@@ -26,7 +26,7 @@ export default {
     data() {
         return {
             showDismissable: false,
-        }
+        };
     },
     watch: {
         message(newMessage) {
@@ -41,6 +41,7 @@ export default {
                 }
                 return true;
             }
+            return false;
         },
     },
     methods: {
@@ -54,7 +55,7 @@ export default {
                     this.showDismissable = false;
                 }, this.timeout);
             }
-        },  
+        },
     },
 };
 </script>

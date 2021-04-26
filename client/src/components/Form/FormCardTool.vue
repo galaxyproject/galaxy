@@ -48,7 +48,7 @@
                         <template v-slot:button-content>
                             <span class="fa fa-cubes" />
                         </template>
-                        <b-dropdown-item v-for="v of reversedVersions" :key="v" @click="$emit('onChangeVersion', v)">
+                        <b-dropdown-item v-for="v of availableVersions" :key="v" @click="$emit('onChangeVersion', v)">
                             <span class="fa fa-cube" /> Switch to {{ v }}
                         </b-dropdown-item>
                     </b-dropdown>
@@ -170,8 +170,13 @@ export default {
         showVersions() {
             return !this.sustainVersion && this.versions && this.versions.length > 1;
         },
-        reversedVersions() {
-            return this.versions.reverse();
+        availableVersions() {
+            const versions = this.versions.slice();
+            const index = versions.indexOf(this.version);
+            if (index > -1) {
+                versions.splice(index, 1);
+            }
+            return versions.reverse();
         },
         showDownload() {
             const user = this.getUser();
