@@ -3,17 +3,17 @@
 define({
     // ----------------------------------------------------------------------------- masthead
 
-    "Analyze Data": "Analizar datos",
+    "Analyze Data": "Analizar Datos",
 
-    Workflow: "Flujo de trabajo",
+    Workflow: "Flujo de Trabajo",
 
-    "Shared Data": "Datos compartidos",
+    "Shared Data": "Datos Compartidos",
 
-    "Data Libraries": "Bibliotecas de datos",
+    "Data Libraries": "Bibliotecas de Datos",
 
     Histories: "Historiales",
 
-    Workflows: "Flujos de trabajo",
+    Workflows: "Flujos de Trabajo",
 
     Visualizations: "Visualizaciones",
 
@@ -21,7 +21,7 @@ define({
 
     Visualization: "Visualización",
 
-    "New Track Browser": "Nuevo navegador de pistas",
+    "New Track Browser": "Nuevo Navegador de Pistas",
 
     "Saved Visualizations": "Visualizaciones Guardadas",
 
@@ -31,19 +31,19 @@ define({
 
     Help: "Ayuda",
 
-    Support: "Apoyo",
+    Support: "Soporte",
 
     Search: "Buscar",
 
-    "Mailing Lists": "Listas de correo",
+    "Mailing Lists": "Listas de Correo",
 
     Videos: "Videos",
 
     Wiki: "Wiki",
 
-    "How to Cite Galaxy": "Cómo citar a Galaxy",
+    "How to Cite Galaxy": "Cómo citar Galaxy",
 
-    "Interactive Tours": "Recorridos interactivos",
+    "Interactive Tours": "Tours Interactivos",
 
     User: "Usuario",
 
@@ -59,29 +59,29 @@ define({
 
     "Custom Builds": "Construcciones personalizadas",
 
-    Logout: "Cerrar sesión",
+    Logout: "Cerrar Sesión",
 
-    "Saved Histories": "Historiales guardados",
+    "Saved Histories": "Historiales Guardados",
 
-    "Saved Datasets": "Conjuntos de datos guardados",
+    "Saved Datasets": "Conjuntos de Datos Guardados",
 
-    "Saved Pages": "Páginas guardadas",
+    "Saved Pages": "Páginas Guardadas",
 
     //Tooltip
 
-    "Account and saved data": "Cuenta y datos guardados",
+    "Account and saved data": "Cuenta y Datos Guardados",
 
-    "Account registration or login": "Registro de cuenta o inicio de sesión",
+    "Account registration or login": "Crear Cuenta o Iniciar Sesión",
 
     "Support, contact, and community": "Apoyo, contacto y comunidad",
 
-    "Administer this Galaxy": "Administrar este Galaxy",
+    "Administer this Galaxy": "Administrar esta instancia de Galaxy",
 
     "Visualize datasets": "Visualizar conjuntos de datos",
 
-    "Access published resources": "Acceso a los recursos publicados",
+    "Access published resources": "Acceder a los recursos publicados",
 
-    "Chain tools into workflows": "Cadena de  herramientas en flujos de trabajo",
+    "Chain tools into workflows": "Encadenar herramientas en flujos de trabajo",
 
     "Analysis home view": "Vista de inicio del análisis",
 
@@ -103,13 +103,13 @@ define({
 
     "Create New": "Crear nuevo",
 
-    "Copy History": "Copiar historial",
+    "Copy History": "Copiar Historial",
 
-    "Share or Publish": "Compartir o publicar",
+    "Share or Publish": "Compartir o Publicar",
 
     "Show Structure": "Mostrar Estructura",
 
-    "Extract Workflow": "Extraer flujo de trabajo",
+    "Extract Workflow": "Extraer Flujo de Trabajo",
 
     // Delete is defined elsewhere, but is also in this menu.
 
@@ -117,33 +117,33 @@ define({
 
     //     false,
 
-    "Delete Permanently": "Borrar permanentemente",
+    "Delete Permanently": "Borrar Permanentemente",
 
-    "Dataset Actions": "Acciones de conjuntos de datos",
+    "Dataset Actions": "Acciones de Conjuntos de Datos",
 
-    "Copy Datasets": "Copiar conjuntos de datos",
+    "Copy Datasets": "Copiar Conjuntos de Datos",
 
-    "Dataset Security": "Seguridad del conjunto de datos",
+    "Dataset Security": "Seguridad del Conjunto de Datos",
 
-    "Resume Paused Jobs": "Reanudar trabajos en pausa",
+    "Resume Paused Jobs": "Reanudar Trabajos en Pausa",
 
-    "Collapse Expanded Datasets": "Colapsar conjuntos de datos expandidos",
+    "Collapse Expanded Datasets": "Contraer Conjuntos de Datos Expandidos",
 
-    "Unhide Hidden Datasets": "Mostrar conjuntos de datos ocultos",
+    "Unhide Hidden Datasets": "Mostrar Conjuntos de Datos Ocultos",
 
-    "Delete Hidden Datasets": "Eliminar conjuntos de datos ocultos",
+    "Delete Hidden Datasets": "Eliminar Conjuntos de Datos Ocultos",
 
-    "Purge Deleted Datasets": "Depurar los conjuntos de datos eliminados",
+    "Purge Deleted Datasets": "Eliminar Definitivamente los Conjuntos de Datos Eliminados",
 
     Downloads: "Descargas",
 
-    "Export Tool Citations": "Citas de herramientas de exportación",
+    "Export Tool Citations": "Exportar las Citas de la Herramienta",
 
-    "Export History to File": "Exportar historial a archivo",
+    "Export History to File": "Exportar Historial a un Archivo",
 
-    "Other Actions": "Otras acciones",
+    "Other Actions": "Otras Acciones",
 
-    "Import from File": "Importar desde archivo",
+    "Import from File": "Importar desde Archivo",
 
     Webhooks: "WebHooks",
 
@@ -159,7 +159,7 @@ define({
         "Se ha producido un error al obtener actualizaciones desde el servidor",
 
     "Please contact a Galaxy administrator if the problem persists":
-        "Favor de contactar a un administrador de Galaxy si el problema persiste",
+        "Por favor, contacte a un administrador de Galaxy si el problema persiste",
 
     //TODO:
 
@@ -167,9 +167,9 @@ define({
 
     //false,
 
-    "search datasets": "Conjuntos de datos de búsqueda",
+    "search datasets": "buscar conjuntos de datos",
 
-    "You are currently viewing a deleted history!": "¡Te encuentras visualizando un historial eliminado!",
+    "You are currently viewing a deleted history!": "¡Estás viendo un historial eliminado!",
 
     "You are over your disk quota": "Has sobrepasado tu espacio disponible de disco",
 
@@ -248,7 +248,7 @@ define({
 
     // ---- hda-model
 
-    "Unable to purge dataset": "No se puede depurar el conjunto de datos",
+    "Unable to purge dataset": "No se puede eliminar permanentemente el conjunto de datos",
 
     // ---- hda-base
 
@@ -258,7 +258,7 @@ define({
         "No se pueden mostrar conjuntos de datos que han sido eliminados del disco",
 
     "This dataset must finish uploading before it can be viewed":
-        "Este conjunto de datos debe terminar de cargar antes de que se pueda ver",
+        "Este conjunto de datos debe terminar de cargar antes de visualizarlo",
 
     "This dataset is not yet viewable": "Este conjunto de datos aún no se puede ver",
 
@@ -334,13 +334,13 @@ define({
     // purged'd/del'd msg
 
     "This dataset has been deleted and removed from disk":
-        "Este conjunto de datos ha sido eliminado y removido de disco",
+        "Este conjunto de datos ha sido eliminado permanentemente del disco",
 
     "This dataset has been deleted": "Este conjunto de datos ha sido eliminado",
 
     "This dataset has been hidden": "Este conjunto de datos ha sido ocultado",
 
-    format: "Formato",
+    format: "formato",
 
     database: "base de datos",
 
@@ -376,9 +376,9 @@ define({
 
     "Unhide it": "Mostrar",
 
-    "You may be able to": "Podrás tener la capacidad de",
+    "You may be able to": "Podrás",
 
-    "set it manually or retry auto-detection": "Configurar manualmente o volver a intentar la detección automática",
+    "set it manually or retry auto-detection": "configurar manualmente o volver a intentar la detección automática",
 
     "Edit dataset tags": "Editar etiquetas del conjunto de datos",
 
@@ -394,7 +394,7 @@ define({
 
     // ---------------------------------------------------------------------------- admin
     "Reset passwords": "Restablecer contraseña",
-    "Search Tool Shed": "Buscar Tool Shed",
+    "Search Tool Shed": "Buscar en el Tool Shed",
     "Monitor installing repositories": "Monitorear instalación de repositorios",
     "Manage installed tools": "Administrar herramientas instaladas",
     "Reset metadata": "Reconfigurar metadatos",
@@ -456,12 +456,12 @@ define({
     // ---------------------------------------------------------------------------- library-foldertoolbar-view
     "Location Details": "Detalles de ubicación",
     "Deleting selected items": "Eliminar elementos seleccionados",
-    "Please select folders or files": "Favor de seleccionar directorios o archivos",
-    "Please enter paths to import": "Favor de ingresar rutas para importar",
+    "Please select folders or files": "Por favor, seleccione directorios o archivos",
+    "Please enter paths to import": "Por favor, introduce las rutas a importar",
     "Adding datasets from your history": "Agregar conjuntos de datos desde tu historial",
-    "Create New Folder": "Crear nuevo directorio",
+    "Create New Folder": "Crear Nuevo Directorio",
     // ---------------------------------------------------------------------------- library-librarytoolbar-view
-    "Create New Library": "Crear nueva biblioteca",
+    "Create New Library": "Crear Nueva Biblioteca",
     // ---------------------------------------------------------------------------- tours
     Tours: false,
     // ---------------------------------------------------------------------------- user-preferences
@@ -471,14 +471,14 @@ define({
     "Associate OpenIDs with your account.": "Asociar OpenIDs a su cuenta",
     "Customize your Toolbox by displaying or omitting sets of Tools.":
         "Personalizar Toolbox para mostrar u omitir conjuntos de herramientas",
-    "Access your current API key or create a new one.": "Acceder a llave API actual o crear una nueva",
+    "Access your current API key or create a new one.": "Acceder a su clave API actual o crear una nueva",
     "Allows you to change your login credentials.": "Permitir modificar tus credenciales de inicio de sesión ",
     "User Preferences": "Preferencias de usuario",
     "Sign out": "Cerrar sesión",
     "Manage custom builds": "Administrar construcciones personalizadas",
     "Manage OpenIDs": "Administrar OpenIDs",
     "Manage Toolbox filters": "Administrar filtros de Toolbox",
-    "Manage API key": "Administrar llave API",
+    "Manage API key": "Administrar clave API",
     "Set dataset permissions for new histories": "Establecer permisos de conjuntos de datos para historiales nuevos",
     "Change password": "Cambiar contraseña",
     "Manage information": "Administrar información",
@@ -489,7 +489,7 @@ define({
     // ---------------------------------------------------------------------------- repo-status-view
     "Repository Status": "Estado del repositorio",
     // ---------------------------------------------------------------------------- workflows-view
-    "Workflows Missing Tools": "Flujos de trabajo con herramientas faltantes",
+    "Workflows Missing Tools": "Flujos de trabajo a los que les faltan herramientas",
     // ---------------------------------------------------------------------------- tool-form-base
     "See in Tool Shed": "Ver en Tool Shed",
     Requirements: false,
@@ -562,7 +562,7 @@ define({
     "Data types": "Tipos de datos",
     Server: false,
     // ---------------------------------------------------------------------------- circster
-    "Could Not Save": "No fue posible guardar",
+    "Could Not Save": "No se pudo guardar",
     "Saving...": "Guardando",
     Settings: false,
     "Add tracks": "Agregar pistas",
