@@ -62,40 +62,49 @@
                 view, import and run it.
             </p>
             <div v-if="!isExposeEmail">
-                <div>
-                    <b-table
-                        show-empty
-                        foot-clone
-                        small
-                        caption-top
-                        :fields="shareFields"
-                        :items="item.users_shared_with"
-                    >
-                        <template #empty="scope">
-                            <p>You have not shared this {{ model_class }} with any users.</p>
-                        </template>
+                <b-table
+                    class="share_with_table"
+                    show-empty
+                    foot-clone
+                    small
+                    caption-top
+                    :fields="shareFields"
+                    :items="item.users_shared_with"
+                >
+                    <template #empty="scope">
+                        <p>You have not shared this {{ model_class }} with any users.</p>
+                    </template>
 
-                        <template v-slot:cell(id)="cell">
-                            <b-button
-                                class="unshare_user"
-                                size="sm"
+                    <template v-slot:cell(id)="cell">
+                        <b-button
+                            variant="danger"
+                            size="sm"
+                            @click="setSharing(actions.share_with, shareWithEmail)"
+                            class="sharing_icon"
+                        >
+                            <font-awesome-icon
+                                class="unshare_user sharing_icon"
                                 @click.stop="setSharing(actions.unshare_with, cell.value)"
-                                >Remove</b-button
-                            >
-                        </template>
-                        <template #foot(email)="cell">
-                            <b-form-input v-model="shareWithEmail" placeholder="Please enter user email" />
-                        </template>
-                        <template #foot(id)="cell">
-                            <b-button
-                                class="share_user"
-                                size="sm"
-                                @click.stop="setSharing(actions.share_with, shareWithEmail)"
-                                >Share</b-button
-                            >
-                        </template>
-                    </b-table>
-                </div>
+                                icon="user-slash"
+                            />
+                        </b-button>
+                    </template>
+                    <template #foot(email)="cell">
+                        <b-form-input v-model="shareWithEmail" placeholder="Please enter user email" />
+                    </template>
+                    <template #foot(id)="cell">
+                        <b-button
+                            variant="link"
+                            size="sm"
+                            @click.stop="setSharing(actions.share_with, shareWithEmail)"
+                            v-b-tooltip.hover
+                            :title="shareWithEmail ? `Share with ${shareWithEmail}` : ''"
+                            class="sharing_icon"
+                        >
+                            <font-awesome-icon class="share_with" icon="user-plus" size="lg" />
+                        </b-button>
+                    </template>
+                </b-table>
             </div>
             <SelectUsers
                 v-else-if="item"
@@ -107,6 +116,7 @@
                 :is-expose-email="isExposeEmail"
                 @shared_with="shared_with"
             />
+            <b-alert show v-if="share_with_err" variant="danger" dismissible> {{ share_with_err }} </b-alert>
         </div>
     </div>
 </template>
@@ -116,18 +126,15 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faLink, faEdit } from "@fortawesome/free-solid-svg-icons";
+import { faLink, faEdit, faUserPlus, faUserSlash } from "@fortawesome/free-solid-svg-icons";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import SlugInput from "components/Common/SlugInput";
 import SelectUsers from "components/Sharing/SelectUsers/SelectUsers";
 import axios from "axios";
-import { Toast } from "ui/toast";
 
 Vue.use(BootstrapVue);
-
-library.add(faLink);
-library.add(faEdit);
+[faLink, faEdit, faUserPlus, faUserSlash].forEach((icon) => library.add(icon));
 
 export default {
     components: {
@@ -156,6 +163,7 @@ export default {
             ready: false,
             hasUsername: Galaxy.user.get("username"),
             newUsername: "",
+            share_with_err: undefined,
             errMsg: null,
             item: {
                 title: "title",
@@ -237,14 +245,15 @@ export default {
         },
         onChange(newSlug) {
             this.showUrl = true;
-            
+
             const requestUrl = `${this.slugUrl}/${newSlug}`;
-            axios.put(requestUrl,{
+            axios
+                .put(requestUrl, {
                     new_slug: newSlug,
                 })
-                .then(response=>{
+                .then((response) => {
                     this.errMsg = null;
-            this.item.username_and_slug = `${this.itemSlugParts[0]}${newSlug}`;
+                    this.item.username_and_slug = `${this.itemSlugParts[0]}${newSlug}`;
                 })
                 .catch((error) => (this.errMsg = error.response.data.err_msg));
         },
@@ -289,14 +298,17 @@ export default {
                 .catch((error) => (this.errMsg = error.response.data.err_msg));
         },
         setSharing(action, user_id) {
-            if (action === this.actions.share_with && this.item.users_shared_with.some(user => user_id === user.email)) {
-                Toast.warning(`You already shared this ${this.model_class} with ${user_id}`);
+            if (
+                action === this.actions.share_with &&
+                this.item.users_shared_with.some((user) => user_id === user.email)
+            ) {
+                this.share_with_err = `You already shared this ${this.model_class} with ${user_id}`;
                 return;
             }
 
             const data = {
                 action: action,
-                user_ids: [user_id],
+                user_ids: user_id ? [user_id] : undefined,
             };
             return axios
                 .post(`${getAppRoot()}api/${this.pluralNameLower}/${this.id}/sharing`, data)
@@ -304,8 +316,10 @@ export default {
                     if (response.data.skipped) {
                         this.errMsg = "Some of the items within this object were not published due to an error.";
                     }
+                    this.share_with_err = response.data.share_with_err;
                     this.item = response.data;
                     this.ready = true;
+                    this.shareWithEmail = "";
                 })
                 .catch((error) => (this.errMsg = error.response.data.err_msg));
         },
@@ -315,3 +329,12 @@ export default {
     },
 };
 </script>
+
+<style scoped>
+.sharing_icon {
+    margin-top: 0.15rem;
+}
+.share_with_table {
+    max-width: 680px;
+}
+</style>
