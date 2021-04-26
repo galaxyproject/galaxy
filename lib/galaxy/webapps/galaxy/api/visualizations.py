@@ -10,6 +10,7 @@ import logging
 from fastapi import (
     Body,
     Path,
+    status,
 )
 
 from galaxy import (
@@ -79,17 +80,18 @@ class FastAPIVisualizations:
         return self.service.shareable_service.sharing(trans, id, payload)
 
     @router.put(
-        '/api/visualizations/{id}/slug/{new_slug}',
+        '/api/visualizations/{id}/slug',
         summary="Set a new slug for this shared Visualization.",
+        status_code=status.HTTP_204_NO_CONTENT,
     )
-    def put_set_slug(
+    def set_slug(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: EncodedDatabaseIdField = VisualizationIdPathParam,
         payload: SetSlugPayload = Body(...),
     ):
-        """Return the sharing status of the Visualization after the changes."""
-        return self.service.shareable_service.set_slug(trans, id, payload)
+        """Sets a new slug to access this item by URL. The new slug must be unique."""
+        self.service.shareable_service.set_slug(trans, id, payload)
 
 
 class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, UsesAnnotations):
@@ -226,6 +228,16 @@ class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, 
         if payload:
             payload = SharingPayload(**payload)
         return self.service.shareable_service.sharing(trans, id, payload)
+
+    @expose_api
+    def set_slug(self, trans, id, payload, **kwd):
+        """
+        * PUT /api/visualizations/{id}/slug
+            Set or modify the slug used to access this visualization.
+
+        """
+        payload = SetSlugPayload(**payload)
+        self.service.shareable_service.set_slug(trans, id, payload)
 
     def _validate_and_parse_payload(self, payload):
         """

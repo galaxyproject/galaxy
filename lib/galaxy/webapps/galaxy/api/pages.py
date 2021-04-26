@@ -163,17 +163,18 @@ class FastAPIPages:
         return self.service.shareable_service.sharing(trans, id, payload)
 
     @router.put(
-        '/api/pages/{id}/slug/{new_slug}',
+        '/api/pages/{id}/slug',
         summary="Set a new slug for this shared Page.",
+        status_code=status.HTTP_204_NO_CONTENT,
     )
-    def put_set_slug(
+    def set_slug(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: EncodedDatabaseIdField = PageIdPathParam,
         payload: SetSlugPayload = Body(...),
     ):
-        """Return the sharing status of the Page after the changes."""
-        return self.service.shareable_service.set_slug(trans, id, payload)
+        """Sets a new slug to access this item by URL. The new slug must be unique."""
+        self.service.shareable_service.set_slug(trans, id, payload)
 
 
 class PagesController(BaseGalaxyAPIController):
@@ -267,3 +268,13 @@ class PagesController(BaseGalaxyAPIController):
         if payload:
             payload = SharingPayload(**payload)
         return self.service.shareable_service.sharing(trans, id, payload)
+
+    @expose_api
+    def set_slug(self, trans, id, payload, **kwd):
+        """
+        * PUT /api/pages/{id}/slug
+            Set or modify the slug used to access this page.
+
+        """
+        payload = SetSlugPayload(**payload)
+        self.service.shareable_service.set_slug(trans, id, payload)

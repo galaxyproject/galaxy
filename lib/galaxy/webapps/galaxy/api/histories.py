@@ -9,6 +9,7 @@ from typing import Optional
 from fastapi import (
     Body,
     Path,
+    status,
 )
 
 from galaxy import (
@@ -86,17 +87,18 @@ class FastAPIHistories:
         return self.service.shareable_service.sharing(trans, id, payload)
 
     @router.put(
-        '/api/histories/{id}/slug/{new_slug}',
+        '/api/histories/{id}/slug',
         summary="Set a new slug for this shared History.",
+        status_code=status.HTTP_204_NO_CONTENT,
     )
-    def put_set_slug(
+    def set_slug(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: EncodedDatabaseIdField = HistoryIdPathParam,
         payload: sharable.SetSlugPayload = Body(...),
     ):
-        """Return the sharing status of the History after the changes."""
-        return self.service.shareable_service.set_slug(trans, id, payload)
+        """Sets a new slug to access this item by URL. The new slug must be unique."""
+        self.service.shareable_service.set_slug(trans, id, payload)
 
 
 class HistoryFilterQueryParams(FilterQueryParams):
@@ -440,3 +442,13 @@ class HistoriesController(BaseGalaxyAPIController):
         if payload:
             payload = sharable.SharingPayload(**payload)
         return self.service.shareable_service.sharing(trans, id, payload)
+
+    @expose_api
+    def set_slug(self, trans, id, payload, **kwd):
+        """
+        * PUT /api/histories/{id}/slug
+            Set or modify the slug used to access this history.
+
+        """
+        payload = sharable.SetSlugPayload(**payload)
+        self.service.shareable_service.set_slug(trans, id, payload)
