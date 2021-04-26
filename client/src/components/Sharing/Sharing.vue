@@ -210,7 +210,7 @@ export default {
             return `${getAppRoot()}${this.pluralNameLower}/list_published`;
         },
         slugUrl() {
-            return `${getAppRoot()}${this.modelClassLower}/set_slug_async/?id=${this.id}`;
+            return `${getAppRoot()}api/${this.pluralNameLower}/${this.id}/slug`;
         },
         showDanger() {
             return this.errMsg !== null;
@@ -237,9 +237,16 @@ export default {
         },
         onChange(newSlug) {
             this.showUrl = true;
+            
+            const requestUrl = `${this.slugUrl}/${newSlug}`;
+            axios.put(requestUrl,{
+                    new_slug: newSlug,
+                })
+                .then(response=>{
+                    this.errMsg = null;
             this.item.username_and_slug = `${this.itemSlugParts[0]}${newSlug}`;
-            const requestUrl = `${this.slugUrl}&new_slug=${newSlug}`;
-            axios.get(requestUrl).catch((error) => (this.errMsg = error.response.data.err_msg));
+                })
+                .catch((error) => (this.errMsg = error.response.data.err_msg));
         },
         onImportable(importable) {
             if (importable) {
