@@ -428,6 +428,7 @@ class Tabular(TabularData):
     def as_ucsc_display_file(self, dataset, **kwd):
         return open(dataset.file_name, 'rb')
 
+
 class SraManifest(Tabular):
     """A manifest received from the sra_source tool."""
     ext = 'sra_manifest.tabular'
