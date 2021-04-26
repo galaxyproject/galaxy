@@ -1395,8 +1395,8 @@ class DataFrame(TabularData):
 
         sep = '\t'
         try:
-            CSV().sniff(dataset.file_name)
-            sep = ','
+            if CSV().sniff(dataset.file_name):
+                sep = ','
         except Exception:
             pass
 
