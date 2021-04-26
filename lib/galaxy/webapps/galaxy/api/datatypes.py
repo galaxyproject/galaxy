@@ -9,12 +9,10 @@ from typing import (
     Union,
 )
 
-from fastapi import (
-    Query,
-    Path
-)
+from fastapi import Query
 
 from galaxy.datatypes.registry import Registry
+from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.datatypes import (
     DatatypeConverterList,
     DatatypeDetails,
@@ -29,8 +27,7 @@ from galaxy.managers.datatypes import (
     view_sniffers,
     view_types_and_mapping
 )
-from galaxy.managers.collections import DatasetCollectionManager
-from galaxy.managers.context import ProvidesHistoryContext
+
 from galaxy.util import asbool
 from galaxy.web import expose_api_anonymous_and_sessionless
 from . import (
@@ -54,6 +51,7 @@ UploadOnlyQueryParam: Optional[bool] = Query(
     title="Upload only",
     description="Whether to return only datatypes which can be uploaded",
 )
+
 
 @router.cbv
 class FastAPIDatatypes:

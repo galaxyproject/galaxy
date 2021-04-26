@@ -7,7 +7,6 @@ from typing import (
 
 from pydantic.tools import parse_obj_as
 
-from galaxy import model
 from galaxy.datatypes._schema import (
     DatatypeConverterList,
     DatatypeDetails,
@@ -92,13 +91,14 @@ def view_converters(datatypes_registry: Registry) -> DatatypeConverterList:
             })
     return parse_obj_as(DatatypeConverterList, converters)
 
+
 def get_converters_for_collection(trans, id, datatypes_registry: Registry, collection_manager: DatasetCollectionManager, instance_type="history"):
     dataset_collection_instance = collection_manager.get_dataset_collection_instance(
-            trans,
-            id=id,
-            instance_type=instance_type,
-            check_ownership=True
-        )
+        trans,
+        id=id,
+        instance_type=instance_type,
+        check_ownership=True
+    )
     dbkeys_and_extensions = dataset_collection_instance.dataset_dbkeys_and_extensions_summary
     print("********************************************************** " + str(dbkeys_and_extensions))
     suitable_converters = []
@@ -108,6 +108,7 @@ def get_converters_for_collection(trans, id, datatypes_registry: Registry, colle
         new_converters = datatypes_registry.get_converters_by_datatype(datatype)
         print("********************************************************************" + str(new_converters))
     return suitable_converters
+
 
 def view_edam_formats(datatypes_registry: Registry) -> Dict[str, str]:
     return datatypes_registry.edam_formats
