@@ -9,7 +9,7 @@
     <datatype extension="music" type="galaxy.datatypes.amp_media:Music" display_in_upload="true"/>
     <datatype extension="speech" type="galaxy.datatypes.amp_media:Speech" display_in_upload="true"/>
     <!--  JSON subtypes -->
-    <datatype extension="segment" type="galaxy.datatypes.text:Segment" display_in_upload="true" />
+    <datatype extension="segment" type="galaxy.datatypes.amp_text:Segment" display_in_upload="true" />
     <datatype extension="transcript" type="galaxy.datatypes.amp_text:Transcript" mimetype="application/json" display_in_upload="true"/>
 	<datatype extension="ner" type="galaxy.datatypes.amp_text:Ner" mimetype="application/json" display_in_upload="true"/>
     <datatype extension="shot" type="galaxy.datatypes.amp_text:Shot" mimetype="application/json" display_in_upload="true"/>
