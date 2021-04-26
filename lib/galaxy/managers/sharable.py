@@ -249,6 +249,9 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         if not self.is_valid_slug(new_slug):
             raise exceptions.RequestParameterInvalidException("Invalid slug", slug=new_slug)
 
+        if item.slug == new_slug:
+            return item
+
         # error if slug is already in use
         if self._slug_exists(user, new_slug):
             raise exceptions.Conflict("Slug already exists", slug=new_slug)
@@ -490,9 +493,9 @@ class ShareActionType(str, Enum):
 
 class SharingPayload(BaseModel):
     action: ShareActionType = Field(
-        ...,  # Mark this field as required
+        ...,
         title="Action",
-        description="The type of the sharing action.",
+        description="The sharing action to perform on the resource.",
     )
     user_ids: Optional[List[Union[EncodedDatabaseIdField, str]]] = Field(
         None,
@@ -504,14 +507,22 @@ class SharingPayload(BaseModel):
     )
 
 
+class SetSlugPayload(BaseModel):
+    new_slug: str = Field(
+        ...,
+        title="New Slug",
+        description="The slug that will be used to access this shared item.",
+    )
+
+
 class UserEmail(BaseModel):
     id: EncodedDatabaseIdField = Field(
-        ...,  # Mark this field as required
+        ...,
         title="User ID",
         description="The encoded ID of the user.",
     )
     email: str = Field(
-        ...,  # Mark this field as required
+        ...,
         title="Email",
         description="The email of the user.",
     )
@@ -519,22 +530,22 @@ class UserEmail(BaseModel):
 
 class SharingStatus(BaseModel):
     id: EncodedDatabaseIdField = Field(
-        ...,  # Mark this field as required
+        ...,
         title="ID",
         description="The encoded ID of the resource to be shared.",
     )
     title: str = Field(
-        ...,  # Mark this field as required
+        ...,
         title="Title",
         description="The title or name of the resource.",
     )
     importable: bool = Field(
-        ...,  # Mark this field as required
+        ...,
         title="Importable",
         description="Whether this resource can be published using a link.",
     )
     published: bool = Field(
-        ...,  # Mark this field as required
+        ...,
         title="Published",
         description="Whether this resource is currently published.",
     )
@@ -608,6 +619,10 @@ class ShareableService:
         self.serializer = serializer
         self.slug_builder = SlugBuilder()
 
+    def set_slug(self, trans, id: EncodedDatabaseIdField, payload: SetSlugPayload):
+        item = self._get_item_by_id(trans, id)
+        self.manager.set_slug(item, payload.new_slug, trans.user)
+
     def sharing(self, trans, id: EncodedDatabaseIdField, payload: Optional[SharingPayload] = None) -> SharingStatus:
         """Allows to publish or share with other users the given resource (by id) and returns the current sharing
         status of the resource.
@@ -620,9 +635,7 @@ class ShareableService:
         :rtype: sharable.SharingStatus
         """
         share_with_err = None
-        class_name = self.manager.model_class.__name__
-        item = base.get_object(trans, id, class_name, check_ownership=True, check_accessible=True, deleted=False)
-
+        item = self._get_item_by_id(trans, id)
         if payload:
             action = payload.action
             if action == ShareActionType.enable_link_access:
@@ -646,6 +659,11 @@ class ShareableService:
         if share_with_err:
             item_dict["share_with_err"] = share_with_err
         return SharingStatus.parse_obj(item_dict)
+
+    def _get_item_by_id(self, trans, id: EncodedDatabaseIdField):
+        class_name = self.manager.model_class.__name__
+        item = base.get_object(trans, id, class_name, check_ownership=True, check_accessible=True, deleted=False)
+        return item
 
     def _share_with(self, trans, item, payload: SharingPayload) -> Optional[str]:
         users, errors = self._get_users(trans, payload.user_ids)
@@ -672,7 +690,6 @@ class ShareableService:
                 email_address = string
                 send_to_user = self.manager.user_manager.by_email(email_address,
                     filters=[trans.app.model.User.table.c.deleted == false()])
-
             else:
                 try:
                     decoded_user_id = trans.security.decode_id(string)

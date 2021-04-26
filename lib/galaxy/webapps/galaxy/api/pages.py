@@ -20,7 +20,11 @@ from galaxy.managers.pages import (
     PageSummary,
     PageSummaryList,
 )
-from galaxy.managers.sharable import SharingPayload, SharingStatus
+from galaxy.managers.sharable import (
+    SetSlugPayload,
+    SharingPayload,
+    SharingStatus,
+)
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.web import (
     expose_api,
@@ -143,7 +147,7 @@ class FastAPIPages:
         id: EncodedDatabaseIdField = PageIdPathParam,
     ) -> SharingStatus:
         """Return the sharing status of the Page."""
-        return self.service.sharing(trans, id)
+        return self.service.shareable_service.sharing(trans, id)
 
     @router.post(
         '/api/pages/{id}/sharing',
@@ -156,7 +160,20 @@ class FastAPIPages:
         payload: SharingPayload = Body(...),
     ) -> SharingStatus:
         """Return the sharing status of the Page after the changes."""
-        return self.service.sharing(trans, id, payload)
+        return self.service.shareable_service.sharing(trans, id, payload)
+
+    @router.put(
+        '/api/pages/{id}/slug/{new_slug}',
+        summary="Set a new slug for this shared Page.",
+    )
+    def put_set_slug(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = PageIdPathParam,
+        payload: SetSlugPayload = Body(...),
+    ):
+        """Return the sharing status of the Page after the changes."""
+        return self.service.shareable_service.set_slug(trans, id, payload)
 
 
 class PagesController(BaseGalaxyAPIController):
@@ -249,4 +266,4 @@ class PagesController(BaseGalaxyAPIController):
         """
         if payload:
             payload = SharingPayload(**payload)
-        return self.service.sharing(trans, id, payload)
+        return self.service.shareable_service.sharing(trans, id, payload)
