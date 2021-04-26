@@ -428,33 +428,6 @@ class Tabular(TabularData):
     def as_ucsc_display_file(self, dataset, **kwd):
         return open(dataset.file_name, 'rb')
 
-
-@dataproviders.decorators.has_dataproviders
-class DataFrame(Tabular):
-    """CSV or TSV hanled using pandas DataFrame. 
-    """
-    def get_shape(self, dataset):
-        return (dataset.metadata.data_lines, dataset.metadata.columns)
-
-    def set_peek(self, dataset, peek_max_lines=10, peek_max_columns=20):
-        if not dataset.dataset.purged:
-            df = pd.read_csv(
-                dataset.file_name, sep=dataset.metadata.delimiter,
-                usecols=range(min(peek_max_columns, dataset.metadata.columns)),
-                nrows=peek_max_lines)
-            dataset.peek = df.to_html()
-            dataset.blurb = "shape: {}".format(self.get_shape(dataset)) 
-        else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
-
-    def display_peek(self, dataset):
-        try:
-            return dataset.peek
-        except Exception:
-            return dataset.blurb
-
-
 class SraManifest(Tabular):
     """A manifest received from the sra_source tool."""
     ext = 'sra_manifest.tabular'
@@ -1407,3 +1380,75 @@ class CMAP(TabularData):
             dataset.metadata.column_types = cleaned_column_types
             dataset.metadata.columns = number_of_columns
             dataset.metadata.delimiter = '\t'
+
+
+@dataproviders.decorators.has_dataproviders
+class DataFrame(TabularData):
+    """CSV or TSV hanled using pandas DataFrame.
+    """
+    file_ext = 'dataframe'
+
+    def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=10):
+        if not dataset.has_data():
+            log.warning("The dataset has empty data!")
+            return
+
+        sep = '\t'
+        try:
+            CSV().sniff(dataset.file_name)
+            sep = ','
+        except Exception:
+            pass
+
+        dataset.metadata.delimiter = sep
+
+        with compression_utils.get_fileobj(dataset.file_name) as dataset_fh:
+            df = pd.read_csv(dataset_fh, nrows=0, sep=sep)
+            dataset.metadata.columns = df.shape[1]
+            # dataset.metadata.column_names = list(df.columns)
+            dataset_fh.seek(0)
+            dataset.metadata.data_lines = sum(1 for line in dataset_fh) - 1
+
+    def get_shape(self, dataset):
+        return (dataset.metadata.data_lines, dataset.metadata.columns)
+
+    def set_peek(self, dataset, peek_max_lines=5, peek_max_columns=10):
+        if not dataset.dataset.purged:
+            df = pd.read_csv(
+                dataset.file_name, sep=dataset.metadata.delimiter,
+                usecols=range(min(peek_max_columns, dataset.metadata.columns)),
+                nrows=peek_max_lines)
+            dataset.peek = df.to_html()
+            dataset.blurb = "shape: {}".format(self.get_shape(dataset))
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "DataFrame in shape {}".format(self.get_shape(dataset))
+
+    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
+        # TODO take parameters from client
+        display_max_lines = 10
+        columns_per_page = 50
+        page = 0
+
+        preview = util.string_as_bool(preview)
+        if offset is not None:
+            return self.get_chunk(trans, dataset, offset, ck_size)
+        elif to_ext or not preview:
+            to_ext = to_ext or dataset.extension
+            return self._serve_raw(trans, dataset, to_ext, **kwd)
+
+        # suppose no out of index range
+        start_column = columns_per_page * page
+        end_column = min(start_column + columns_per_page, dataset.metadata.columns)
+        df = pd.read_csv(
+            dataset.file_name, sep=dataset.metadata.delimiter,
+            usecols=range(start_column, end_column),
+            nrows=display_max_lines)
+
+        return df.to_html()
