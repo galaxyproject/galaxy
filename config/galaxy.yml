@@ -125,6 +125,16 @@ uwsgi:
 
 galaxy:
 
+  # Tool config files, defines what tools are available in Galaxy. Tools
+  # can be locally developed or installed from Galaxy tool sheds.
+  # (config/tool_conf.xml.sample will be used if left unset and
+  # config/tool_conf.xml does not exist). Can be a single file, a list
+  # of files, or (for backwards compatibility) a comma-separated list of
+  # files.
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
+  tool_config_file: tool_conf.xml  
+
   # Add an option to the library upload form which allows administrators
   # to upload a directory of files.
   # AMP library_import_dir points to media dir 
@@ -148,5 +158,4 @@ galaxy:
   # https://galaxyproject.org/admin/
   # AMP admin users
   admin_users: amppd@iu.edu, amppd-ci@iu.edu
-  
-  
+    
