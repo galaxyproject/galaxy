@@ -135,7 +135,7 @@
     <sniffer type="galaxy.datatypes.images:Pgm"/>
 	<!-- archive sniffers --> 
     <sniffer type="galaxy.datatypes.binary:CompressedZipArchive"/>
-    <sniffer type="galaxy.datatypes.binary:CompressedArchive" >
+    <sniffer type="galaxy.datatypes.binary:CompressedArchive"/>
     <sniffer type="galaxy.datatypes.data:Directory"/>
     <!-- tabular sniffers -->
     <sniffer type="galaxy.datatypes.tabular:CSV"/>
