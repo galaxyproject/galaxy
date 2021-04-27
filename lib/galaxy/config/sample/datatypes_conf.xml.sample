@@ -185,6 +185,7 @@
       <display file="rviewer/bed.xml" inherit="true"/>
       <display file="igv/interval_as_bed.xml" inherit="true"/>
     </datatype>
+    <datatype extension="jellyfish" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true" description="Jellyfish database files are k-mer counts in binary format with a readable head. They are operated on and converted to human-readable text through jellyfish commands." />
 
     <!-- ISA data types -->
     <datatype extension="isa-tab" type="galaxy.datatypes.isa:IsaTab" mimetype="application/isa-tools" display_in_upload="true" description="ISA-Tab data type." description_url="https://isa-tools.org"/>
