@@ -79,12 +79,12 @@
                         <b-button
                             variant="danger"
                             size="sm"
-                            @click="setSharing(actions.share_with, shareWithEmail)"
+                            @click="setSharing(actions.share, shareWithEmail)"
                             class="sharing_icon"
                         >
                             <font-awesome-icon
                                 class="unshare_user sharing_icon"
-                                @click.stop="setSharing(actions.unshare_with, cell.value)"
+                                @click.stop="setSharing(actions.unshare, cell.value)"
                                 icon="user-slash"
                             />
                         </b-button>
@@ -96,7 +96,7 @@
                         <b-button
                             variant="link"
                             size="sm"
-                            @click.stop="setSharing(actions.share_with, shareWithEmail)"
+                            @click.stop="setSharing(actions.share, shareWithEmail)"
                             v-b-tooltip.hover
                             :title="shareWithEmail ? `Share with ${shareWithEmail}` : ''"
                             class="sharing_icon"
@@ -114,8 +114,8 @@
                 :clear-on-select="true"
                 :preserve-search="true"
                 :multiple="true"
-                @select="setSharing(actions.share_with, $event.email)"
-                @remove="setSharing(actions.unshare_with, $event.email)"
+                @select="setSharing(actions.share, $event.email)"
+                @remove="setSharing(actions.unshare, $event.email)"
                 label="email"
                 track-by="id"
                 @search-change="searchChanged"
@@ -195,8 +195,8 @@ export default {
                 disable_link_access: "disable_link_access",
                 publish: "publish",
                 unpublish: "unpublish",
-                share_with: "share_with",
-                unshare_with: "unshare_with",
+                share: "share",
+                unshare: "unshare",
             },
         };
     },
@@ -259,8 +259,7 @@ export default {
         },
         onChange(newSlug) {
             this.showUrl = true;
-
-            const requestUrl = `${this.slugUrl}/${newSlug}`;
+            const requestUrl = `${this.slugUrl}`;
             axios
                 .put(requestUrl, {
                     new_slug: newSlug,
@@ -314,19 +313,19 @@ export default {
         setSharing(action, user_id) {
             console.log(user_id);
             if (
-                action === this.actions.share_with &&
+                action === this.actions.share &&
                 this.item.users_shared_with.some((user) => user_id === user.email)
             ) {
                 this.share_with_err = `You already shared this ${this.model_class} with ${user_id}`;
                 return;
             }
 
-            const data = {
-                action: action,
-                user_ids: user_id ? [user_id] : undefined,
-            };
+            // const data = {
+            //     action: action,
+            //     user_ids: user_id ? [user_id] : undefined,
+            // };
             return axios
-                .post(`${getAppRoot()}api/${this.pluralNameLower}/${this.id}/sharing`, data)
+                .put(`${getAppRoot()}api/${this.pluralNameLower}/${this.id}/${action}`)
                 .then((response) => {
                     if (response.data.skipped) {
                         this.errMsg = "Some of the items within this object were not published due to an error.";
