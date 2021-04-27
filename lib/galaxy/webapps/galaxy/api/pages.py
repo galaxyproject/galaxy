@@ -324,17 +324,58 @@ class PagesController(BaseGalaxyAPIController):
     @expose_api
     def sharing(self, trans, id, **kwd):
         """
-        * GET/POST /api/pages/{id}/sharing
-            View/modify sharing options for the page with the given id.
+        * GET /api/pages/{id}/sharing
         """
         return self.service.shareable_service.sharing(trans, id)
+
+    @expose_api
+    def enable_link_access(self, trans, id, **kwd):
+        """
+        * PUT /api/pages/{id}/enable_link_access
+        """
+        return self.service.shareable_service.enable_link_access(trans, id)
+
+    @expose_api
+    def disable_link_access(self, trans, id, **kwd):
+        """
+        * PUT /api/pages/{id}/disable_link_access
+        """
+        return self.service.shareable_service.disable_link_access(trans, id)
+
+    @expose_api
+    def publish(self, trans, id, **kwd):
+        """
+        * PUT /api/pages/{id}/publish
+        """
+        return self.service.shareable_service.publish(trans, id)
+
+    @expose_api
+    def unpublish(self, trans, id, **kwd):
+        """
+        * PUT /api/pages/{id}/unpublish
+        """
+        return self.service.shareable_service.unpublish(trans, id)
+
+    @expose_api
+    def share(self, trans, id, payload, **kwd):
+        """
+        * PUT /api/pages/{id}/share
+        """
+        payload = UserIdsPayload(**payload)
+        return self.service.shareable_service.share_with(trans, id, payload)
+
+    @expose_api
+    def unshare(self, trans, id, payload, **kwd):
+        """
+        * PUT /api/pages/{id}/unshare
+        """
+        payload = UserIdsPayload(**payload)
+        return self.service.shareable_service.unshare_with(trans, id, payload)
 
     @expose_api
     def set_slug(self, trans, id, payload, **kwd):
         """
         * PUT /api/pages/{id}/slug
-            Set or modify the slug used to access this page.
-
         """
         payload = SetSlugPayload(**payload)
         self.service.shareable_service.set_slug(trans, id, payload)

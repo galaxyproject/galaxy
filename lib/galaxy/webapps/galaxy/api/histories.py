@@ -502,11 +502,53 @@ class HistoriesController(BaseGalaxyAPIController):
         return self.service.shareable_service.sharing(trans, id)
 
     @expose_api
+    def enable_link_access(self, trans, id, **kwd):
+        """
+        * PUT /api/histories/{id}/enable_link_access
+        """
+        return self.service.shareable_service.enable_link_access(trans, id)
+
+    @expose_api
+    def disable_link_access(self, trans, id, **kwd):
+        """
+        * PUT /api/histories/{id}/disable_link_access
+        """
+        return self.service.shareable_service.disable_link_access(trans, id)
+
+    @expose_api
+    def publish(self, trans, id, **kwd):
+        """
+        * PUT /api/histories/{id}/publish
+        """
+        return self.service.shareable_service.publish(trans, id)
+
+    @expose_api
+    def unpublish(self, trans, id, **kwd):
+        """
+        * PUT /api/histories/{id}/unpublish
+        """
+        return self.service.shareable_service.unpublish(trans, id)
+
+    @expose_api
+    def share(self, trans, id, payload, **kwd):
+        """
+        * PUT /api/histories/{id}/share
+        """
+        payload = sharable.UserIdsPayload(**payload)
+        return self.service.shareable_service.share_with(trans, id, payload)
+
+    @expose_api
+    def unshare(self, trans, id, payload, **kwd):
+        """
+        * PUT /api/histories/{id}/unshare
+        """
+        payload = sharable.UserIdsPayload(**payload)
+        return self.service.shareable_service.unshare_with(trans, id, payload)
+
+    @expose_api
     def set_slug(self, trans, id, payload, **kwd):
         """
         * PUT /api/histories/{id}/slug
-            Set or modify the slug used to access this history.
-
         """
         payload = sharable.SetSlugPayload(**payload)
         self.service.shareable_service.set_slug(trans, id, payload)
