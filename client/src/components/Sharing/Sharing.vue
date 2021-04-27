@@ -1,7 +1,9 @@
 <template>
     <div v-if="ready">
         <h3>Share or Publish {{ model_class }} `{{ item.title }}`</h3>
-        <b-alert :show="showDanger" variant="danger" dismissible> {{ errMsg }} </b-alert>
+        <div v-for="error in errors" :key="error">
+            <b-alert show variant="danger" dismissible> {{ error }} </b-alert>
+        </div>
         <br />
         <div v-if="!hasUsername">
             <div>To make a {{ model_class }} accessible via link or publish it, you must create a public username:</div>
@@ -127,7 +129,6 @@
                     </div>
                 </template>
             </multiselect>
-            <b-alert show v-if="share_with_err" variant="danger" dismissible> {{ share_with_err }} </b-alert>
         </div>
     </div>
 </template>
@@ -176,8 +177,7 @@ export default {
             ready: false,
             hasUsername: Galaxy.user.get("username"),
             newUsername: "",
-            share_with_err: undefined,
-            errMsg: null,
+            errors: [],
             item: {
                 title: "title",
                 username_and_slug: "username/slug",
@@ -233,12 +233,9 @@ export default {
         slugUrl() {
             return `${getAppRoot()}api/${this.pluralNameLower}/${this.id}/slug`;
         },
-        showDanger() {
-            return this.errMsg !== null;
-        },
     },
     created: function () {
-        console.log(getGalaxyInstance().config)
+        console.log(getGalaxyInstance().config);
         this.getModel();
     },
     methods: {
@@ -268,7 +265,7 @@ export default {
                     this.errMsg = null;
                     this.item.username_and_slug = `${this.itemSlugParts[0]}${newSlug}`;
                 })
-                .catch((error) => (this.errMsg = error.response.data.err_msg));
+                .catch((error) => this.errors.push(error.response.data.err_msg));
         },
         onImportable(importable) {
             if (importable) {
@@ -308,34 +305,26 @@ export default {
                     this.hasUsername = true;
                     this.getModel();
                 })
-                .catch((error) => (this.errMsg = error.response.data.err_msg));
+                .catch((error) => this.errors.push(error.response.data.err_msg));
         },
         setSharing(action, user_id) {
-            console.log(user_id);
-            if (
-                action === this.actions.share &&
-                this.item.users_shared_with.some((user) => user_id === user.email)
-            ) {
-                this.share_with_err = `You already shared this ${this.model_class} with ${user_id}`;
+            if (action === this.actions.share && this.item.users_shared_with.some((user) => user_id === user.email)) {
+                this.errors.push(`You already shared this ${this.model_class} with ${user_id}`);
                 return;
             }
 
-            // const data = {
-            //     action: action,
-            //     user_ids: user_id ? [user_id] : undefined,
-            // };
+            const data = {
+                user_ids: user_id ? [user_id] : undefined,
+            };
             return axios
-                .put(`${getAppRoot()}api/${this.pluralNameLower}/${this.id}/${action}`)
+                .put(`${getAppRoot()}api/${this.pluralNameLower}/${this.id}/${action}`, data)
                 .then((response) => {
-                    if (response.data.skipped) {
-                        this.errMsg = "Some of the items within this object were not published due to an error.";
-                    }
-                    this.share_with_err = response.data.share_with_err;
+                    this.errors = response.data.errors;
                     this.item = response.data;
                     this.ready = true;
                     this.shareWithEmail = "";
                 })
-                .catch((error) => (this.errMsg = error.response.data.err_msg));
+                .catch((error) => this.errors.push(error.response.data.err_msg));
         },
         searchChanged(searchValue) {
             if (searchValue === "") {
@@ -346,7 +335,7 @@ export default {
                     .then((response) => {
                         this.usersList = response.data;
                     })
-                    .catch((error) => (this.errMsg = error.response.data.err_msg));
+                    .catch((error) => this.errors.push(error.response.data.err_msg));
             }
         },
     },
