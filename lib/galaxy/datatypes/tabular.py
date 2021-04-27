@@ -38,6 +38,7 @@ class TabularData(data.Text):
     # All tabular data is chunkable.
     CHUNKABLE = True
     data_line_offset = 0
+    max_peek_columns = 50
 
     """Add metadata elements"""
     MetadataElement(name="comment_lines", default=0, desc="Number of comment lines", readonly=False, optional=True, no_value=0)
@@ -154,6 +155,7 @@ class TabularData(data.Text):
             columns = dataset.metadata.columns
             if columns is None:
                 columns = dataset.metadata.spec.columns.no_value
+            columns = min(columns, self.max_peek_columns)
             column_headers = [None] * columns
 
             # fill in empty headers with data from column_names
@@ -198,12 +200,14 @@ class TabularData(data.Text):
             columns = dataset.metadata.columns
             if columns is None:
                 columns = dataset.metadata.spec.columns.no_value
+            columns = min(columns, self.max_peek_columns)
             for i, line in enumerate(peek.splitlines()):
                 if i >= self.data_line_offset:
                     if line.startswith(tuple(skipchars)):
                         out.append('<tr><td colspan="100%%">%s</td></tr>' % escape(line))
                     elif line:
                         elems = line.split(dataset.metadata.delimiter)
+                        elems = elems[:min(len(elems), self.max_peek_columns)]
                         # pad shortened elems, since lines could have been truncated by width
                         if len(elems) < columns:
                             elems.extend([''] * (columns - len(elems)))
@@ -864,7 +868,7 @@ class Eland(Tabular):
                 out.append('<th>{}.{}</th>'.format(str(i + 1), name))
             # This data type requires at least 11 columns in the data
             if dataset.metadata.columns - len(self.column_names) > 0:
-                for i in range(len(self.column_names), dataset.metadata.columns):
+                for i in range(max(len(self.column_names), 50), dataset.metadata.columns):
                     out.append('<th>%s</th>' % str(i + 1))
                 out.append('</tr>')
             out.append(self.make_html_peek_rows(dataset, skipchars=skipchars, peek=peek))
