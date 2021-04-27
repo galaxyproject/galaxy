@@ -11,7 +11,6 @@ A sharable Galaxy object:
 """
 import logging
 import re
-from enum import Enum
 from typing import (
     List,
     Optional,
@@ -168,9 +167,12 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         Get or create a share for the given user (or users if `user` is a list).
         """
         # precondition: user has been validated
-        # allow user to be a list and call recursivly
+        # allow user to be a list and call recursively
         if isinstance(user, list):
-            return [self.share_with(item, _, flush=False) for _ in user]
+            user_assocs = [self.share_with(item, _, flush=False) for _ in user]
+            if flush:
+                self.session().flush()
+            return user_assocs
         # get or create
         existing = self.get_share_assocs(item, user=user)
         if existing:
@@ -199,7 +201,10 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         Delete a user share (or list of shares) from the database.
         """
         if isinstance(user, list):
-            return [self.unshare_with(item, _, flush=False) for _ in user]
+            user_assocs = [self.unshare_with(item, _, flush=False) for _ in user]
+            if flush:
+                self.session().flush()
+            return user_assocs
         # Look for and delete sharing relation for user.
         user_share_assoc = self.get_share_assocs(item, user=user)[0]
         self.session().delete(user_share_assoc)
@@ -481,28 +486,12 @@ class SharableModelFilters(base.ModelFilterParser,
         })
 
 
-class ShareActionType(str, Enum):
-    """Available actions for sharing a resource."""
-    enable_link_access = 'enable_link_access'
-    disable_link_access = 'disable_link_access'
-    publish = 'publish'
-    unpublish = 'unpublish'
-    share_with = 'share_with'
-    unshare_with = 'unshare_with'
-
-
-class SharingPayload(BaseModel):
-    action: ShareActionType = Field(
+class UserIdsPayload(BaseModel):
+    user_ids: List[Union[EncodedDatabaseIdField, str]] = Field(
         ...,
-        title="Action",
-        description="The sharing action to perform on the resource.",
-    )
-    user_ids: Optional[List[Union[EncodedDatabaseIdField, str]]] = Field(
-        None,
-        title="User IDs",
+        title="User Identifiers",
         description=(
-            "The list of IDs (or email addresses) of the users with whom this resource will be shared. "
-            f"*Required* when the action is either `{ShareActionType.share_with}` or `{ShareActionType.unshare_with}`."
+            "A collection of encoded IDs (or email addresses) of users."
         ),
     )
 
@@ -559,10 +548,13 @@ class SharingStatus(BaseModel):
         title="Username and slug",
         description="The relative URL in the form of /u/{username}/{resource_single_char}/{slug}",
     )
-    share_with_err: Optional[str] = Field(
-        None,
-        title="Sharing Errors",
-        description="Possible error messages indicating that the resource was not shared with some (or all users) due to an error.",
+
+
+class ShareWithStatus(SharingStatus):
+    errors: List[str] = Field(
+        [],
+        title="Errors",
+        description="Collection of messages indicating that the resource was not shared with some (or all users) due to an error.",
     )
 
 
@@ -617,69 +609,76 @@ class ShareableService:
     def __init__(self, manager: SharableModelManager, serializer: SharableModelSerializer) -> None:
         self.manager = manager
         self.serializer = serializer
-        self.slug_builder = SlugBuilder()
 
     def set_slug(self, trans, id: EncodedDatabaseIdField, payload: SetSlugPayload):
         item = self._get_item_by_id(trans, id)
         self.manager.set_slug(item, payload.new_slug, trans.user)
 
-    def sharing(self, trans, id: EncodedDatabaseIdField, payload: Optional[SharingPayload] = None) -> SharingStatus:
-        """Allows to publish or share with other users the given resource (by id) and returns the current sharing
-        status of the resource.
-
-        :param id: The encoded ID of the resource to share.
-        :type id: EncodedDatabaseIdField
-        :param payload: The options to share this resource, defaults to None
-        :type payload: Optional[sharable.SharingPayload], optional
-        :return: The current sharing status of the resource.
-        :rtype: sharable.SharingStatus
-        """
-        share_with_err = None
+    def sharing(self, trans, id: EncodedDatabaseIdField) -> SharingStatus:
+        """Gets the current sharing status of the item with the given id."""
         item = self._get_item_by_id(trans, id)
-        if payload:
-            action = payload.action
-            if action == ShareActionType.enable_link_access:
-                self.manager.make_importable(item, flush=False)
-            elif action == ShareActionType.publish:
-                self.manager.publish(item, flush=False)
-            elif action == ShareActionType.disable_link_access:
-                self.manager.make_non_importable(item, flush=False)
-            elif action == ShareActionType.unpublish:
-                self.manager.unpublish(item, flush=False)
-            elif action == ShareActionType.share_with:
-                share_with_err = self._share_with(trans, item, payload)
-            elif action == ShareActionType.unshare_with:
-                share_with_err = self._unshare_with(trans, item, payload)
-            trans.sa_session.add(item)
-            trans.sa_session.flush()
+        return self._get_sharing_status(trans, item)
 
-        item_dict = self.serializer.serialize_to_view(item,
-            user=trans.user, trans=trans, default_view="sharing")
-        item_dict["users_shared_with"] = [{"id": self.manager.app.security.encode_id(a.user.id), "email": a.user.email} for a in item.users_shared_with]
-        if share_with_err:
-            item_dict["share_with_err"] = share_with_err
-        return SharingStatus.parse_obj(item_dict)
+    def enable_link_access(self, trans, id: EncodedDatabaseIdField) -> SharingStatus:
+        item = self._get_item_by_id(trans, id)
+        self.manager.make_importable(item)
+        return self._get_sharing_status(trans, item)
+
+    def disable_link_access(self, trans, id: EncodedDatabaseIdField) -> SharingStatus:
+        item = self._get_item_by_id(trans, id)
+        self.manager.make_non_importable(item)
+        return self._get_sharing_status(trans, item)
+
+    def publish(self, trans, id: EncodedDatabaseIdField) -> SharingStatus:
+        item = self._get_item_by_id(trans, id)
+        self.manager.publish(item)
+        return self._get_sharing_status(trans, item)
+
+    def unpublish(self, trans, id: EncodedDatabaseIdField) -> SharingStatus:
+        item = self._get_item_by_id(trans, id)
+        self.manager.unpublish(item)
+        return self._get_sharing_status(trans, item)
+
+    def share_with(self, trans, id: EncodedDatabaseIdField, payload: UserIdsPayload) -> ShareWithStatus:
+        item = self._get_item_by_id(trans, id)
+        users, errors = self._get_users(trans, payload.user_ids)
+        try:
+            self.manager.share_with(item, users)
+        except Exception as e:  # TODO catch particular exception
+            errors.append(e)
+        base_status = self._get_sharing_status(trans, item)
+        status = ShareWithStatus.parse_obj(base_status)
+        status.errors = errors
+        return status
+
+    def unshare_with(self, trans, id: EncodedDatabaseIdField, payload: UserIdsPayload) -> ShareWithStatus:
+        item = self._get_item_by_id(trans, id)
+        users, errors = self._get_users(trans, payload.user_ids)
+        try:
+            self.manager.unshare_with(item, users)
+        except Exception as e:  # TODO catch particular exception
+            errors.append(e)
+        base_status = self._get_sharing_status(trans, item)
+        status = ShareWithStatus.parse_obj(base_status)
+        status.errors = errors
+        return status
 
     def _get_item_by_id(self, trans, id: EncodedDatabaseIdField):
         class_name = self.manager.model_class.__name__
         item = base.get_object(trans, id, class_name, check_ownership=True, check_accessible=True, deleted=False)
         return item
 
-    def _share_with(self, trans, item, payload: SharingPayload) -> Optional[str]:
-        users, errors = self._get_users(trans, payload.user_ids)
-        self.manager.share_with(item, users, flush=False)
-        return errors
-
-    def _unshare_with(self, trans, item, payload: SharingPayload) -> Optional[str]:
-        users, errors = self._get_users(trans, payload.user_ids)
-        self.manager.unshare_with(item, users, flush=False)
-        return errors
+    def _get_sharing_status(self, trans, item):
+        status = self.serializer.serialize_to_view(item,
+            user=trans.user, trans=trans, default_view="sharing")
+        status["users_shared_with"] = [{"id": self.manager.app.security.encode_id(a.user.id), "email": a.user.email} for a in item.users_shared_with]
+        return SharingStatus.parse_obj(status)
 
     def _get_users(self, trans, emails_or_ids: Optional[List] = None):
         if emails_or_ids is None:
-            raise exceptions.MessageException("Missing required user IDs or emails in `user_ids`")
+            raise exceptions.MessageException("Missing required user IDs or emails")
         send_to_users = []
-        send_to_err = ""
+        send_to_err = []
         for string in emails_or_ids:
             string = string.strip()
             if not string:
@@ -700,9 +699,9 @@ class ShareableService:
                     send_to_user = None
 
             if not send_to_user:
-                send_to_err += f"{string} is not a valid Galaxy user.  "
+                send_to_err.append(f"{string} is not a valid Galaxy user.")
             elif send_to_user == trans.user:
-                send_to_err += "You cannot share resources with yourself.  "
+                send_to_err.append("You cannot share resources with yourself.")
             else:
                 send_to_users.append(send_to_user)
 
