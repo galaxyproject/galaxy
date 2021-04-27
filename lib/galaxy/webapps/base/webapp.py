@@ -968,6 +968,9 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             return []
         return render
 
+    def qualified_url_for_path(self, path):
+        return url_for(path, qualified=True)
+
 
 def default_url_path(path):
     return os.path.abspath(os.path.join(os.path.dirname(__file__), path))

@@ -25,7 +25,6 @@ from galaxy.util import (
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.rules_dsl import RuleSet
-from galaxy.web import url_for
 from . import (
     dynamic_options,
     history_query,
@@ -792,14 +791,16 @@ class BaseURLToolParameter(HiddenToolParameter):
         self.value = input_source.get('value', '')
 
     def get_initial_value(self, trans, other_values):
-        return self._get_value()
+        return self._get_value(trans)
 
     def from_json(self, value=None, trans=None, other_values=None):
-        return self._get_value()
+        return self._get_value(trans)
 
-    def _get_value(self):
+    def _get_value(self, trans):
         try:
-            return url_for(self.value, qualified=True)
+            if not self.value.startswith("/"):
+                raise Exception("baseurl value must start with a /")
+            return trans.qualified_url_for_path(self.value)
         except Exception as e:
             log.debug('Url creation failed for "%s": %s', self.name, unicodify(e))
             return self.value
