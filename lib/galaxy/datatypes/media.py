@@ -32,7 +32,7 @@ class AudioVideo(Binary):
     
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = label
+            dataset.peek = self.label
             dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = 'file does not exist'

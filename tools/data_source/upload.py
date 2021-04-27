@@ -21,6 +21,10 @@ from galaxy.util import (
 )
 from galaxy.util.compression_utils import CompressedFile
 
+import logging
+log = logging.getLogger(__name__)
+
+
 assert sys.version_info[:2] >= (2, 7)
 
 
