@@ -59,7 +59,7 @@ class HmgmRunner(AsynchronousJobRunner):
             initially) or just override check_watched_item and allow the list processing to
             reuse the logic here.
             """
-            log.debug("Inside hmgm.py check_watched_items")
+#             log.debug("Inside hmgm.py check_watched_items")
             new_watched = []
             for async_job_state in self.watched:
                 # AMPPD - don't fail the whole thing if we have a single error. 

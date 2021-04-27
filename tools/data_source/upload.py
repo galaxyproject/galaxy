@@ -305,16 +305,23 @@ def __main__():
     if len(sys.argv) < 4:
         print('usage: upload.py <root> <datatypes_conf> <json paramfile> <output spec> ...', file=sys.stderr)
         sys.exit(1)
+        
+    # AMP customization
+    log.debug("inside upload.py, currentDir = " + os.getcwd())
 
     output_paths = parse_outputs(sys.argv[4:])
 
     registry = Registry()
     registry.load_datatypes(root_dir=sys.argv[1], config=sys.argv[2])
 
+    log.debug("inside upload.py, loaded datatypes")
+
     try:
         datasets = __read_paramfile(sys.argv[3])
     except (ValueError, AssertionError):
         datasets = __read_old_paramfile(sys.argv[3])
+
+    log.debug("inside upload.py, read_old_paramfile")
 
     metadata = []
     for dataset in datasets:
@@ -332,8 +339,12 @@ def __main__():
                 metadata.append(add_file(dataset, registry, output_path))
         except UploadProblemException as e:
             metadata.append(file_err(unicodify(e), dataset))
+            
+    log.debug("inside upload.py, done metadata.append")
+            
     __write_job_metadata(metadata)
 
+    log.debug("inside upload.py, __write_job_metadata")
 
 if __name__ == '__main__':
     __main__()

@@ -5,7 +5,14 @@ import wave
 
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.metadata import ListParameter, MetadataElement
-from galaxy.util import which, nice_size    # AMP customization
+
+# AMP customization START
+from galaxy.util import which, nice_size    
+
+import os
+import logging
+log = logging.getLogger(__name__)
+# AMP customization END
 
 
 def ffprobe(path):
@@ -201,6 +208,8 @@ class Wav(Audio):
         return 'audio/wav'
 
     def sniff(self, filename):
+        # AMP customization
+        log.debug("inside Wav.sniff, filename = " + filename + ", currentDir = " + os.getcwd())
         with wave.open(filename, 'rb'):
             return True
 
