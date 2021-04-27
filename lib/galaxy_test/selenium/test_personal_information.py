@@ -138,12 +138,10 @@ class DeleteCurrentAccountTestCase(SeleniumTestCase):
         self.register(email)
         self.navigate_to_user_preferences()
         self.sleep_for(self.wait_types.UX_RENDER)
-
         self.components.preferences.delete_account.wait_for_and_click()
         delete_confirmation_field = self.components.preferences.delete_account_input.wait_for_visible()
         delete_confirmation_field.send_keys(email)
         self.components.preferences.delete_account_ok_btn.wait_for_and_click()
         self.submit_login(email=email, assert_valid=False)
-        self.assert_error_message(contains='This account has been marked deleted, contact your local Galaxy administrator to restore the account.')
-
-
+        self.assert_error_message(contains='This account has been marked deleted, contact your local Galaxy'
+                                           ' administrator to restore the account.')
