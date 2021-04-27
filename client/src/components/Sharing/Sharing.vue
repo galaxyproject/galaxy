@@ -38,7 +38,7 @@
                         <font-awesome-icon icon="edit" />
                     </b-button>
                     <b-button id="tooltip-clipboard" @click="onCopy" @mouseout="onCopyOut" variant="link" size="sm">
-                        <font-awesome-icon icon="link" />
+                        <font-awesome-icon :icon="['far', 'copy']" />
                     </b-button>
                     <b-tooltip target="tooltip-clipboard" triggers="hover">
                         {{ tooltipClipboard }}
@@ -138,15 +138,16 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faLink, faEdit, faUserPlus, faUserSlash } from "@fortawesome/free-solid-svg-icons";
+import { faCopy, faEdit, faUserPlus, faUserSlash } from "@fortawesome/free-solid-svg-icons";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import SlugInput from "components/Common/SlugInput";
 import axios from "axios";
 import Multiselect from "vue-multiselect";
+import { copy } from "utils/clipboard";
 
 Vue.use(BootstrapVue);
-[faLink, faEdit, faUserPlus, faUserSlash].forEach((icon) => library.add(icon));
+[faCopy, faEdit, faUserPlus, faUserSlash].forEach((icon) => library.add(icon));
 
 export default {
     components: {
@@ -240,12 +241,7 @@ export default {
     },
     methods: {
         onCopy() {
-            const clipboard = document.createElement("input");
-            document.body.appendChild(clipboard);
-            clipboard.value = this.itemUrl;
-            clipboard.select();
-            document.execCommand("copy");
-            document.body.removeChild(clipboard);
+            copy(this.itemUrl);
             this.tooltipClipboard = "Copied!";
         },
         onCopyOut() {
