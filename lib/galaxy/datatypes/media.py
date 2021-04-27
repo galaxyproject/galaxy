@@ -8,8 +8,6 @@ from galaxy.datatypes.metadata import ListParameter, MetadataElement
 
 # AMP customization START
 from galaxy.util import which, nice_size    
-
-import os
 import logging
 log = logging.getLogger(__name__)
 # AMP customization END
@@ -207,8 +205,8 @@ class Wav(Audio):
         """Returns the mime type of the datatype."""
         return 'audio/wav'
 
+    # AMP customization
     def sniff(self, filename):
-        # AMP customization
         log.debug("inside Wav.sniff, filename = " + filename + ", currentDir = " + os.getcwd())
         try:
             with wave.open(filename, 'rb'):
