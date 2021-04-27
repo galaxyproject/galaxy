@@ -73,7 +73,7 @@
                     :fields="shareFields"
                     :items="item.users_shared_with"
                 >
-                    <template #empty="scope">
+                    <template v-slot:empty>
                         <p>You have not shared this {{ model_class }} with any users.</p>
                     </template>
 
@@ -91,10 +91,10 @@
                             />
                         </b-button>
                     </template>
-                    <template #foot(email)="cell">
+                    <template v-slot:foot(email)>
                         <b-form-input v-model="shareWithEmail" placeholder="Please enter user email" />
                     </template>
-                    <template #foot(id)="cell">
+                    <template v-slot:foot(id)>
                         <b-button
                             variant="link"
                             size="sm"
