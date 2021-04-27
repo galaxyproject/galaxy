@@ -5,7 +5,7 @@ import wave
 
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.metadata import ListParameter, MetadataElement
-from galaxy.util import which, nice_size    # AMP addition
+from galaxy.util import which, nice_size    # AMP customization
 
 
 def ffprobe(path):
@@ -111,7 +111,7 @@ class Video(AudioVideo):
     
 class Mkv(Video):
     file_ext = "mkv"
-    label = "MKV Audio" # AMP customization
+    label = "MKV Video" # AMP customization
 
     def sniff(self, filename):
         if which('ffprobe'):
@@ -130,7 +130,7 @@ class Mp4(Video):
     """
 
     file_ext = "mp4"
-    label = "MP4 Audio" # AMP customization
+    label = "MP4 Video" # AMP customization
 
     def sniff(self, filename):
         if which('ffprobe'):
@@ -150,6 +150,7 @@ class Flv(Video):
 
 class Mpg(Video):
     file_ext = "mpg"
+    label = "MPG Video" # AMP customization
 
     def sniff(self, filename):
         if which('ffprobe'):

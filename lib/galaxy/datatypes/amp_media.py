@@ -1,6 +1,4 @@
-
-
-from galaxy.datatypes.media import Audio
+from galaxy.datatypes.media import Wav
 
 
 ###########################
@@ -62,6 +60,7 @@ class Music(Wav):
     """Class describing an AMP music WAV file"""
     file_ext = "music"
     label = "AMP Music WAV"
+
 
 class Speech(Wav):
     """Class describing an AMP speech WAV file"""
