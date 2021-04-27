@@ -32,43 +32,41 @@
                 </div>
             </div>
         </b-row>
-        <ConfigProvider v-slot="{ config }">
-            <b-row v-if="config && !config.single_user" class="ml-3 mb-1">
-                <i class="pref-icon pt-1 fa fa-lg fa-radiation" />
-                <div class="pref-content pr-1">
-                    <a href="javascript:void(0)"><b v-b-modal.modal-prevent-closing>Delete Account</b></a>
-                    <div class="form-text text-muted">Delete your account on this Galaxy server.</div>
-                    <b-modal
-                        id="modal-prevent-closing"
-                        centered
-                        ref="modal"
-                        title="Account Deletion"
-                        title-tag="h2"
-                        @show="resetModal"
-                        @hidden="resetModal"
-                        @ok="handleOk"
-                    >
-                        <p>
-                            <b-alert variant="danger" :show="showDeleteError">{{ deleteError }}</b-alert>
-                            <b>
-                                This action cannot be undone. Your account will be permanently deleted, along with the
-                                data contained in it.
-                            </b>
-                        </p>
-                        <b-form ref="form" @submit.prevent="handleSubmit">
-                            <b-form-group
-                                :state="nameState"
-                                label="Enter your user email for this account as confirmation."
-                                label-for="Email"
-                                invalid-feedback="Incorrect email"
-                            >
-                                <b-form-input id="name-input" v-model="name" :state="nameState" required></b-form-input>
-                            </b-form-group>
-                        </b-form>
-                    </b-modal>
-                </div>
-            </b-row>
-        </ConfigProvider>
+        <b-row v-if="!isSingleUser" class="ml-3 mb-1">
+            <i class="pref-icon pt-1 fa fa-lg fa-radiation" />
+            <div class="pref-content pr-1">
+                <a href="javascript:void(0)"><b v-b-modal.modal-prevent-closing>Delete Account</b></a>
+                <div class="form-text text-muted">Delete your account on this Galaxy server.</div>
+                <b-modal
+                    id="modal-prevent-closing"
+                    centered
+                    ref="modal"
+                    title="Account Deletion"
+                    title-tag="h2"
+                    @show="resetModal"
+                    @hidden="resetModal"
+                    @ok="handleOk"
+                >
+                    <p>
+                        <b-alert variant="danger" :show="showDeleteError">{{ deleteError }}</b-alert>
+                        <b>
+                            This action cannot be undone. Your account will be permanently deleted, along with the data
+                            contained in it.
+                        </b>
+                    </p>
+                    <b-form ref="form" @submit.prevent="handleSubmit">
+                        <b-form-group
+                            :state="nameState"
+                            label="Enter your user email for this account as confirmation."
+                            label-for="Email"
+                            invalid-feedback="Incorrect email"
+                        >
+                            <b-form-input id="name-input" v-model="name" :state="nameState" required></b-form-input>
+                        </b-form-group>
+                    </b-form>
+                </b-modal>
+            </div>
+        </b-row>
         <p class="mt-2">
             You are using <strong>{{ diskUsage }}</strong> of disk space in this Galaxy instance.
             <span v-html="quotaUsageString"></span>
@@ -114,6 +112,7 @@ export default {
             diskUsage: "",
             quotaUsageString: "",
             baseUrl: `${getAppRoot()}user`,
+            isSingleUser: getGalaxyInstance().config.single_user,
             messageVariant: null,
             message: null,
             name: "",
