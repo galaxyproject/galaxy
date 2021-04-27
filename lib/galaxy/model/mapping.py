@@ -42,7 +42,7 @@ from galaxy import model
 from galaxy.model.base import SharedModelMapping
 from galaxy.model.custom_types import (
     JSONType,
-    MetadataType,
+    MutableJSONType,
     TrimmedString,
     UUIDType,
 )
@@ -142,7 +142,7 @@ model.UserAuthnzToken.table = Table(
     Column('user_id', Integer, ForeignKey("galaxy_user.id"), index=True),
     Column('uid', VARCHAR(255)),
     Column('provider', VARCHAR(32)),
-    Column('extra_data', JSONType, nullable=True),
+    Column('extra_data', MutableJSONType, nullable=True),
     Column('lifetime', Integer),
     Column('assoc_type', VARCHAR(64)))
 
@@ -166,9 +166,9 @@ model.CloudAuthz.table = Table(
     Column('id', Integer, primary_key=True),
     Column('user_id', Integer, ForeignKey("galaxy_user.id"), index=True),
     Column('provider', String(255)),
-    Column('config', JSONType),
+    Column('config', MutableJSONType),
     Column('authn_id', Integer, ForeignKey("oidc_user_authnz_tokens.id"), index=True),
-    Column('tokens', JSONType),
+    Column('tokens', MutableJSONType),
     Column('last_update', DateTime),
     Column('last_activity', DateTime),
     Column('description', TEXT),
@@ -194,7 +194,7 @@ model.DynamicTool.table = Table(
     Column("tool_directory", Unicode(255)),
     Column("hidden", Boolean, default=True),
     Column("active", Boolean, default=True),
-    Column("value", JSONType),
+    Column("value", MutableJSONType),
 )
 
 
@@ -240,7 +240,7 @@ model.HistoryDatasetAssociation.table = Table(
     Column("peek", TEXT, key="_peek"),
     Column("tool_version", TEXT),
     Column("extension", TrimmedString(64)),
-    Column("metadata", MetadataType, key="_metadata"),
+    Column("metadata", JSONType, key="_metadata"),
     Column("parent_id", Integer, ForeignKey("history_dataset_association.id"), nullable=True),
     Column("designation", TrimmedString(255)),
     Column("deleted", Boolean, index=True, default=False),
@@ -263,7 +263,7 @@ model.HistoryDatasetAssociationHistory.table = Table(
     Column("version", Integer),
     Column("name", TrimmedString(255)),
     Column("extension", TrimmedString(64)),
-    Column("metadata", MetadataType, key="_metadata"),
+    Column("metadata", JSONType, key="_metadata"),
     Column("extended_metadata_id", Integer, ForeignKey("extended_metadata.id"), index=True),
 )
 
@@ -292,7 +292,7 @@ model.DatasetSource.table = Table(
     Column("dataset_id", Integer, ForeignKey("dataset.id"), index=True),
     Column("source_uri", TEXT),
     Column("extra_files_path", TEXT),
-    Column("transform", JSONType)
+    Column("transform", MutableJSONType)
 )
 
 model.DatasetHash.table = Table(
@@ -519,7 +519,7 @@ model.LibraryDatasetDatasetAssociation.table = Table(
     Column("peek", TEXT, key="_peek"),
     Column("tool_version", TEXT),
     Column("extension", TrimmedString(64)),
-    Column("metadata", MetadataType, key="_metadata"),
+    Column("metadata", JSONType, key="_metadata"),
     Column("parent_id", Integer, ForeignKey("library_dataset_dataset_association.id"), nullable=True),
     Column("designation", TrimmedString(255)),
     Column("deleted", Boolean, index=True, default=False),
@@ -533,7 +533,7 @@ model.LibraryDatasetDatasetAssociation.table = Table(
 model.ExtendedMetadata.table = Table(
     "extended_metadata", metadata,
     Column("id", Integer, primary_key=True),
-    Column("data", JSONType))
+    Column("data", MutableJSONType))
 
 model.ExtendedMetadataIndex.table = Table(
     "extended_metadata_index", metadata,
@@ -613,8 +613,8 @@ model.Job.table = Table(
     Column("info", TrimmedString(255)),
     Column("copied_from_job_id", Integer, nullable=True),
     Column("command_line", TEXT),
-    Column("dependencies", JSONType, nullable=True),
-    Column("job_messages", JSONType, nullable=True),
+    Column("dependencies", MutableJSONType, nullable=True),
+    Column("job_messages", MutableJSONType, nullable=True),
     Column("param_filename", String(1024)),
     Column("runner_name", String(255)),
     Column("job_stdout", TEXT),
@@ -628,7 +628,7 @@ model.Job.table = Table(
     Column("job_runner_name", String(255)),
     Column("job_runner_external_id", String(255), index=True),
     Column("destination_id", String(255), nullable=True),
-    Column("destination_params", JSONType, nullable=True),
+    Column("destination_params", MutableJSONType, nullable=True),
     Column("object_store_id", TrimmedString(255), index=True),
     Column("imported", Boolean, default=False, index=True),
     Column("params", TrimmedString(255), index=True),
@@ -820,7 +820,7 @@ model.InteractiveToolEntryPoint.table = Table(
     Column("protocol", TEXT),
     Column("entry_url", TEXT),
     Column("requires_domain", Boolean, default=True),
-    Column("info", JSONType, nullable=True),
+    Column("info", MutableJSONType, nullable=True),
     Column("configured", Boolean, default=False),
     Column("deleted", Boolean, default=False),
     Column("created_time", DateTime, default=now),
@@ -832,7 +832,7 @@ model.JobContainerAssociation.table = Table(
     Column("job_id", Integer, ForeignKey("job.id"), index=True),
     Column("container_type", TEXT),
     Column("container_name", TEXT),
-    Column("container_info", JSONType, nullable=True),
+    Column("container_info", MutableJSONType, nullable=True),
     Column("created_time", DateTime, default=now),
     Column("modified_time", DateTime, default=now, onupdate=now))
 
@@ -851,7 +851,7 @@ model.Task.table = Table(
     Column("tool_stdout", TEXT),
     Column("tool_stderr", TEXT),
     Column("exit_code", Integer, nullable=True),
-    Column("job_messages", JSONType, nullable=True),
+    Column("job_messages", MutableJSONType, nullable=True),
     Column("info", TrimmedString(255)),
     Column("traceback", TEXT),
     Column("job_id", Integer, ForeignKey("job.id"), index=True, nullable=False),
@@ -866,7 +866,7 @@ model.PostJobAction.table = Table(
     Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True, nullable=True),
     Column("action_type", String(255), nullable=False),
     Column("output_name", String(255), nullable=True),
-    Column("action_arguments", JSONType, nullable=True))
+    Column("action_arguments", MutableJSONType, nullable=True))
 
 model.PostJobActionAssociation.table = Table(
     "post_job_action_association", metadata,
@@ -881,7 +881,7 @@ model.DeferredJob.table = Table(
     Column("update_time", DateTime, default=now, onupdate=now),
     Column("state", String(64), index=True),
     Column("plugin", String(128), index=True),
-    Column("params", JSONType))
+    Column("params", MutableJSONType))
 
 model.TransferJob.table = Table(
     "transfer_job", metadata,
@@ -893,7 +893,7 @@ model.TransferJob.table = Table(
     Column("info", TEXT),
     Column("pid", Integer),
     Column("socket", Integer),
-    Column("params", JSONType))
+    Column("params", MutableJSONType))
 
 model.DatasetCollection.table = Table(
     "dataset_collection", metadata,
@@ -1008,8 +1008,8 @@ model.Workflow.table = Table(
     Column("name", TEXT),
     Column("has_cycles", Boolean),
     Column("has_errors", Boolean),
-    Column("reports_config", JSONType),
-    Column("creator_metadata", JSONType),
+    Column("reports_config", MutableJSONType),
+    Column("creator_metadata", MutableJSONType),
     Column("license", TEXT),
     Column("uuid", UUIDType, nullable=True))
 
@@ -1024,10 +1024,10 @@ model.WorkflowStep.table = Table(
     Column("type", String(64)),
     Column("tool_id", TEXT),
     Column("tool_version", TEXT),
-    Column("tool_inputs", JSONType),
-    Column("tool_errors", JSONType),
-    Column("position", JSONType),
-    Column("config", JSONType),
+    Column("tool_inputs", MutableJSONType),
+    Column("tool_errors", MutableJSONType),
+    Column("position", MutableJSONType),
+    Column("config", MutableJSONType),
     Column("order_index", Integer),
     Column("uuid", UUIDType),
     # Column( "input_connections", JSONType ),
@@ -1041,9 +1041,9 @@ model.WorkflowStepInput.table = Table(
     Column("name", TEXT),
     Column("merge_type", TEXT),
     Column("scatter_type", TEXT),
-    Column("value_from", JSONType),
+    Column("value_from", MutableJSONType),
     Column("value_from_type", TEXT),
-    Column("default_value", JSONType),
+    Column("default_value", MutableJSONType),
     Column("default_value_set", Boolean, default=False),
     Column("runtime_value", Boolean, default=False),
     Index('ix_workflow_step_input_workflow_step_id_name_unique', "workflow_step_id", "name", unique=True, mysql_length={'name': 200}),
@@ -1056,7 +1056,7 @@ model.WorkflowRequestStepState.table = Table(
     Column("workflow_invocation_id", Integer,
         ForeignKey("workflow_invocation.id", onupdate="CASCADE", ondelete="CASCADE")),
     Column("workflow_step_id", Integer, ForeignKey("workflow_step.id")),
-    Column("value", JSONType))
+    Column("value", MutableJSONType))
 
 model.WorkflowRequestInputParameter.table = Table(
     "workflow_request_input_parameters", metadata,
@@ -1072,7 +1072,7 @@ model.WorkflowRequestInputStepParameter.table = Table(
     Column("id", Integer, primary_key=True),
     Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id"), index=True),
     Column("workflow_step_id", Integer, ForeignKey("workflow_step.id")),
-    Column("parameter_value", JSONType),
+    Column("parameter_value", MutableJSONType),
 )
 
 model.WorkflowRequestToInputDatasetAssociation.table = Table(
@@ -1131,7 +1131,7 @@ model.WorkflowInvocationStep.table = Table(
     Column("state", TrimmedString(64), index=True),
     Column("job_id", Integer, ForeignKey("job.id"), index=True, nullable=True),
     Column("implicit_collection_jobs_id", Integer, ForeignKey("implicit_collection_jobs.id"), index=True, nullable=True),
-    Column("action", JSONType, nullable=True))
+    Column("action", MutableJSONType, nullable=True))
 
 model.WorkflowInvocationOutputDatasetAssociation.table = Table(
     "workflow_invocation_output_dataset_association", metadata,
@@ -1157,7 +1157,7 @@ model.WorkflowInvocationOutputValue.table = Table(
     Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id"), index=True),
     Column("workflow_step_id", Integer, ForeignKey("workflow_step.id")),
     Column("workflow_output_id", Integer, ForeignKey("workflow_output.id"), index=True),
-    Column("value", JSONType),
+    Column("value", MutableJSONType),
 )
 
 model.WorkflowInvocationStepOutputDatasetAssociation.table = Table(
@@ -1227,9 +1227,9 @@ model.FormDefinition.table = Table(
     Column("name", TrimmedString(255), nullable=False),
     Column("desc", TEXT),
     Column("form_definition_current_id", Integer, ForeignKey("form_definition_current.id", use_alter=True), index=True, nullable=False),
-    Column("fields", JSONType),
+    Column("fields", MutableJSONType),
     Column("type", TrimmedString(255), index=True),
-    Column("layout", JSONType))
+    Column("layout", MutableJSONType))
 
 model.FormValues.table = Table(
     "form_values", metadata,
@@ -1237,7 +1237,7 @@ model.FormValues.table = Table(
     Column("create_time", DateTime, default=now),
     Column("update_time", DateTime, default=now, onupdate=now),
     Column("form_definition_id", Integer, ForeignKey("form_definition.id"), index=True),
-    Column("content", JSONType))
+    Column("content", MutableJSONType))
 
 model.Page.table = Table(
     "page", metadata,
@@ -1298,7 +1298,7 @@ model.VisualizationRevision.table = Table(
     Column("visualization_id", Integer, ForeignKey("visualization.id"), index=True, nullable=False),
     Column("title", TEXT),
     Column("dbkey", TEXT),
-    Column("config", JSONType),
+    Column("config", MutableJSONType),
     Index('ix_visualization_revision_dbkey', 'dbkey', mysql_length=200),
 )
 
