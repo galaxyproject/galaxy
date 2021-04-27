@@ -210,8 +210,11 @@ class Wav(Audio):
     def sniff(self, filename):
         # AMP customization
         log.debug("inside Wav.sniff, filename = " + filename + ", currentDir = " + os.getcwd())
-        with wave.open(filename, 'rb'):
-            return True
+        if which('ffprobe'):
+            metadata, streams = ffprobe(filename)
+            return 'wav' in metadata['format_name'].split(',')
+#         with wave.open(filename, 'rb'):
+#             return True
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         """Set the metadata for this dataset from the file contents."""
