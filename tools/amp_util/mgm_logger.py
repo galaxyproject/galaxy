@@ -54,7 +54,7 @@ class MgmLogger(object):
     
     def get_log_dir(self, root_dir):
         config = configparser.ConfigParser()
-        config.read(root_dir + "/config/mgm.ini") 
+        config.read(root_dir + "/config/amp_mgm.ini") 
         return config["general"]["log_dir"]
 
     def flush(self):

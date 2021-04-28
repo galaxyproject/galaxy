@@ -83,5 +83,5 @@ def write_json_file(object, output_file):
 # Get the configuration file
 def get_config(root_dir):
 	config = configparser.ConfigParser()
-	config.read(root_dir + "/config/mgm.ini")    
+	config.read(root_dir + "/config/amp_mgm.ini")    
 	return config

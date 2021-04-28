@@ -193,7 +193,7 @@ def delete_from_s3(s3_path, bucket):
 
 def read_config(root_dir):
     config = configparser.ConfigParser()
-    config.read(root_dir + "/config/mgm.ini")
+    config.read(root_dir + "/config/amp_mgm.ini")
     return config
 
 

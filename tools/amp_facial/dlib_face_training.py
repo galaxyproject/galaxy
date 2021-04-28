@@ -116,7 +116,7 @@ def get_model_file(training_photos):
 # Get the facial recognition working directory path for training and matching.
 def get_facial_dir(root_dir):
     config = configparser.ConfigParser()
-    config.read(root_dir + "/config/mgm.ini")    
+    config.read(root_dir + "/config/amp_mgm.ini")    
     facial_dir = config["general"]["facial_dir"]
     return facial_dir
 

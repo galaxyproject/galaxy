@@ -91,7 +91,7 @@ def main():
 # Load basic HGMG configuration based from the property file under the given root directory and return the configuration instance.
 def config_hmgm(root_dir):
 	config = configparser.ConfigParser()
-	config.read(root_dir + "/config/mgm.ini")    
+	config.read(root_dir + "/config/amp_mgm.ini")    
 	return config
 
 
