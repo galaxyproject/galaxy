@@ -51,8 +51,6 @@ export default {
         clickedSave: function () {
             this.$emit("clicked-save", "dbkey", this.genome);
             this.selectedGenome = this.genomes.find((element) => element.id == this.databaseKeyFromElements);
-            console.log("DBKFE", this.databaseKeyFromElements);
-            console.log("SG", this.selectedGenome);
         },
         getGenomes: async function () {
             let genomes = store.getters.getUploadGenomes();

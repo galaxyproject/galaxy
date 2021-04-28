@@ -121,7 +121,7 @@ class FastAPIDatatypes:
         summary="Returns the list of converters that are suitable for an array of datatypes",
         response_description="List of suitable converters"
     )
-    async def suitable_converters(self, trans, id, instance_type='history') -> List[str]:
+    async def suitable_converters(self, trans, id, instance_type='history') -> List[dict]:
         """Gets the list of suitable converters."""
         return get_converters_for_collection(trans, id, self.datatypes_registry, self.collection_manager, instance_type)
 

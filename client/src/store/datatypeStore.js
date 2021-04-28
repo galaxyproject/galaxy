@@ -12,7 +12,7 @@ const getters = {
 const actions = {
     fetchUploadDatatypes: async ({ commit }) => {
         try {
-            const data = await UploadUtils.getUploadDatatypes(true, UploadUtils.AUTO_EXTENSION);
+            const data = await UploadUtils.getUploadDatatypes(false, UploadUtils.AUTO_EXTENSION);
             commit("saveUploadDatatypes", { datatypes: data });
         } catch (err) {
             console.log("Error: unable to load datatypes", err);

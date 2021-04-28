@@ -67,26 +67,6 @@ class DatasetCollectionsController(
         return dictify_dataset_collection_instance(dataset_collection_instance,
                                                    security=trans.security, parent=create_params["parent"])
 
-    # @expose_api
-    # def update(self, trans: ProvidesHistoryContext, payload: dict, id, instance_type='history'):
-    #     """
-    #     Iterate over all datasets of a collection and update all attributes listed in attributes.
-    #     e.g attributes = {'dbkey': 'dm3', 'file_ext' = 'txt'}
-
-    #     * PUT /api/dataset_collections/{hdca_id}:
-    #         create a new dataset collection instance.
-    #     """
-
-    #     dataset_collection_instance = self.__service.get_dataset_collection_instance(
-    #         trans,
-    #         id=id,
-    #         instance_type=instance_type,
-    #         check_ownership=True
-    #     )
-    #     # TODO: make sure attributes are valid
-    #     self.hdca_manager.update_attributes(dataset_collection_instance, payload)
-    #     trans.sa_session.flush()
-
     @expose_api
     def update(self, trans: ProvidesHistoryContext, payload: dict, id):
         """

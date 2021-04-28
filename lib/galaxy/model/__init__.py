@@ -4108,6 +4108,7 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
     """
     dict_collection_visible_keys = ['id', 'collection_type']
     dict_element_visible_keys = ['id', 'collection_type']
+
     class populated_states(str, Enum):
         NEW = 'new'  # New dataset collection, unpopulated elements
         OK = 'ok'  # Collection elements populated (HDAs may or may not have errors)

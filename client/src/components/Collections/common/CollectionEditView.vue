@@ -20,7 +20,35 @@
             </b-tab>
             <b-tab>
                 <template v-slot:title> <font-awesome-icon icon="cog" /> &nbsp; {{ l("Convert") }}</template>
-                <b>{{ l("Datatype: ") }}</b> <i>{{ datatypeFromElements }}</i>
+                <div class="alert alert-secondary" role="alert">
+                    <div class="float-left">Convert all datasets to new format</div>
+                    <div class="text-right">
+                        <button
+                            class="run-tool-collection-edit btn btn-primary"
+                            @click="clickedConvert"
+                            :disabled="chosenConverter == {}"
+                        >
+                            {{ l("Convert Collection") }}
+                        </button>
+                    </div>
+                </div>
+                <b>{{ l("Convterter Tool: ") }}</b>
+                <multiselect
+                    v-model="chosenConverter"
+                    deselect-label="Can't remove this value"
+                    track-by="name"
+                    label="name"
+                    :options="suitableConverters"
+                    :searchable="true"
+                    :allow-empty="true"
+                >
+                    {{ extension.text }}
+                    <!-- <template slot="afterList">
+                        <div v-observe-visibility="reachedEndOfList" v-if="hasMorePages">
+                            <span class="spinner fa fa-spinner fa-spin fa-1x" />
+                        </div>
+                    </template> -->
+                </multiselect>
             </b-tab>
             <b-tab>
                 <template v-slot:title> <font-awesome-icon icon="database" /> &nbsp; {{ l("Datatype") }}</template>
@@ -88,14 +116,8 @@ library.add(faUser);
 Vue.use(BootstrapVue);
 export default {
     created() {
-        // TODO remove
-        axios
-                .get(prependPath("/api/datatypes/suitable_converters/" + this.collection_id), {"datatypes": ["bed", "fasta"]})
-                .then((response) => {
-                    console.log("did it");
-                });
-        // this.apiCallToGetData();
-        // this.apiCallToGetAttributes();
+        // this.getCollectionData(item);
+        this.getConverterList();
         this.getDatatypesAndGenomes();
         this.getCollectionDataAndAttributes();
     },
@@ -107,7 +129,9 @@ export default {
             extensions: [],
             genomes: [],
             selectedExtension: {},
+            chosenConverter: {},
             databaseKeyFromElements: null,
+            suitableConverters: [],
             datatypeFromElements: null,
             errorMessage: null,
             jobError: null,
@@ -134,6 +158,9 @@ export default {
             // _l conflicts private methods of Vue internals, expose as l instead
             return _l(str);
         },
+        // getCollectionData: async function (item) {
+        //     this.collection_data = item;
+        // },
         getDatatypesAndGenomes: async function () {
             let datatypes = store.getters.getUploadDatatypes();
             if (!datatypes || datatypes.length == 0) {
@@ -141,7 +168,6 @@ export default {
                 datatypes = store.getters.getUploadDatatypes();
             }
             this.extensions = datatypes;
-
             let genomes = store.getters.getUploadGenomes();
             if (!genomes || genomes.length == 0) {
                 await store.dispatch("fetchUploadGenomes");
@@ -150,8 +176,6 @@ export default {
             this.genomes = genomes;
         },
         getCollectionDataAndAttributes: async function () {
-            this.apiCallToGetData();
-
             let attributesGet = store.getters.getCollectionAttributes(this.collection_id);
             if (attributesGet == null) {
                 await store.dispatch("fetchCollectionAttributes", this.collection_id);
@@ -161,15 +185,6 @@ export default {
             this.getDatabaseKeyFromElements();
             this.getExtensionFromElements();
         },
-        apiCallToGetData: function () {
-            axios
-                .get(prependPath("/api/dataset_collections/" + this.collection_id + "?instance_type=history"))
-                .then((response) => {
-                    this.collection_data = response.data;
-                });
-
-            //TODO error handling
-        },
         getDatabaseKeyFromElements: function () {
             this.databaseKeyFromElements = this.attributes_data.dbkey;
         },
@@ -177,8 +192,12 @@ export default {
             this.datatypeFromElements = this.attributes_data.extension;
             this.selectedExtension = this.extensions.find((element) => element.id == this.datatypeFromElements);
         },
+        getConverterList: async function () {
+            axios.get(prependPath("/api/datatypes/suitable_converters/" + this.collection_id)).then((response) => {
+                this.suitableConverters = response.data;
+            });
+        },
         clickedSave: function (attribute, newValue) {
-            console.log("user clicked Save.... genome is", newValue);
             const url = prependPath("/api/dataset_collections/" + this.collection_id);
             const data = {};
             if (attribute == "dbkey") {
@@ -186,13 +205,23 @@ export default {
             } else if (attribute == "file_ext") {
                 data["file_ext"] = newValue.id;
             }
-
             axios
                 .put(url, data)
                 .then((response) => {
                     this.apiCallToGetData();
                     this.getDatabaseKeyFromElements();
                     this.getExtensionFromElements();
+                })
+                .catch(this.handleError);
+        },
+        clickedConvert: function () {
+            console.log("this.chosenConverter = ", this.chosenConverter);
+            const url = prependPath("/api/tools/");
+            const data = { tool_id: this.chosenConverter.tool_id, inputs: { input: { batch: true } } };
+            axios
+                .post(url, data)
+                .then((response) => {
+                    console.log("donee!");
                 })
                 .catch(this.handleError);
         },
