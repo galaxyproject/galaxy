@@ -1099,8 +1099,7 @@ def _verify_outputs(testdef, history, jobs, tool_id, data_list, data_collection_
         expected = testdef.num_outputs
         actual = len(data_list) + len(data_collection_list)
         if expected != actual:
-            message_template = "Incorrect number of outputs - expected %d, found %s."
-            message = message_template % (expected, actual)
+            message = f"Incorrect number of outputs - expected {expected}, found {actual}: datasets {data_list} collections {data_collection_list}"
             raise Exception(message)
     found_exceptions = []
 
