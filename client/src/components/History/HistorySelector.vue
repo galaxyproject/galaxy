@@ -14,6 +14,7 @@
                 :current-page="currentPage"
                 @filtered="onFiltered"
                 @row-clicked="switchToHistory"
+                sticky-header="50vh"
             >
                 <template v-slot:cell(tags)="row">
                     <!-- just display tags, don't allow editing -->
