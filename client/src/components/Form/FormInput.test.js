@@ -10,7 +10,6 @@ describe("FormInput", () => {
     let wrapper;
 
     beforeEach(() => {
-        jest.useFakeTimers();
         wrapper = mount(FormInput, {
             propsData: {
                 id: "input",
