@@ -944,12 +944,13 @@ def on_text_for_names(input_names):
 
 
 def filter_output(tool, output, incoming):
+
     for filter in output.filters:
         try:
             if not eval(filter.text.strip(), globals(), incoming):
                 return True  # do not create this dataset
         except Exception as e:
-            log.debug('Tool %s output %s: dataset output filter (%s) failed: %s' % (tool.id, output.name, filter.text, e))
+            log.info(f'Tool {tool.id} output {output.name}: dataset output filter ({filter.text}) failed: {e}')
     return False
 
 
