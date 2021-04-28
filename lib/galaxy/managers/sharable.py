@@ -11,7 +11,9 @@ A sharable Galaxy object:
 """
 import logging
 import re
+from enum import Enum
 from typing import (
+    Any,
     List,
     Optional,
     Type,
@@ -42,6 +44,13 @@ from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import ready_name_for_url
 
 log = logging.getLogger(__name__)
+
+
+class SharingOptions(str, Enum):
+    """Options for sharing resources that may have restricted access."""
+    make_public = "make_public"
+    make_accessible_to_shared = "make_accessible_to_shared"
+    no_changes = "no_changes"
 
 
 class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secured.AccessibleManagerMixin,
@@ -242,6 +251,13 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         # apply limit and offset afterwards
         items = self._apply_fn_filters_gen(query.all(), fn_filters)
         return list(self._apply_fn_limit_offset_gen(items, limit, offset))
+
+    def get_sharing_extra_information(self, trans, item, users, errors: List[str], option: Optional[SharingOptions] = None) -> Optional[Any]:
+        """Returns optional extra information about the shareability of the given item.
+
+        This function should be overridden in the particular manager class that wants
+        to provide the extra information, otherwise, it will be None by default."""
+        return None
 
     # .... slugs
     # slugs are human readable strings often used to link to sharable resources (replacing ids)
@@ -486,12 +502,23 @@ class SharableModelFilters(base.ModelFilterParser,
         })
 
 
-class UserIdsPayload(BaseModel):
+class ShareWithPayload(BaseModel):
     user_ids: List[Union[EncodedDatabaseIdField, str]] = Field(
         ...,
         title="User Identifiers",
         description=(
             "A collection of encoded IDs (or email addresses) of users."
+        ),
+    )
+    share_option: Optional[SharingOptions] = Field(
+        None,
+        title="Share Option",
+        description=(
+            "User choice for sharing resources which its contents may be restricted:\n"
+            " - None: The user did not choose anything yet.\n"
+            f" - {SharingOptions.make_public}: The contents of the resource will be made publicly accessible.\n"
+            f" - {SharingOptions.make_accessible_to_shared}: This will automatically create a new `sharing role` allowing protected contents to be accessed only by the desired users.\n"
+            f" - {SharingOptions.no_changes}: This won't change the current permissions for the contents. The user which this resource will be shared may not be able to access all its contents.\n"
         ),
     )
 
@@ -555,6 +582,11 @@ class ShareWithStatus(SharingStatus):
         [],
         title="Errors",
         description="Collection of messages indicating that the resource was not shared with some (or all users) due to an error.",
+    )
+    extra: Optional[Any] = Field(
+        None,
+        title="Extra",
+        description="Optional extra information about this shareable resource that may be of interest.",
     )
 
 
@@ -639,19 +671,17 @@ class ShareableService:
         self.manager.unpublish(item)
         return self._get_sharing_status(trans, item)
 
-    def share_with(self, trans, id: EncodedDatabaseIdField, payload: UserIdsPayload) -> ShareWithStatus:
+    def share_with(self, trans, id: EncodedDatabaseIdField, payload: ShareWithPayload) -> ShareWithStatus:
         item = self._get_item_by_id(trans, id)
         users, errors = self._get_users(trans, payload.user_ids)
-        try:
-            self.manager.share_with(item, users)
-        except Exception as e:  # TODO catch particular exception
-            errors.append(e)
+        extra = self._share_with_options(trans, item, users, errors, payload.share_option)
         base_status = self._get_sharing_status(trans, item)
         status = ShareWithStatus.parse_obj(base_status)
+        status.extra = extra
         status.errors = errors
         return status
 
-    def unshare_with(self, trans, id: EncodedDatabaseIdField, payload: UserIdsPayload) -> ShareWithStatus:
+    def unshare_with(self, trans, id: EncodedDatabaseIdField, payload: ShareWithPayload) -> ShareWithStatus:
         item = self._get_item_by_id(trans, id)
         users, errors = self._get_users(trans, payload.user_ids)
         try:
@@ -662,6 +692,12 @@ class ShareableService:
         status = ShareWithStatus.parse_obj(base_status)
         status.errors = errors
         return status
+
+    def _share_with_options(self, trans, item, users, errors: List[str], share_option: Optional[SharingOptions] = None):
+        extra = self.manager.get_sharing_extra_information(trans, item, users, errors, share_option)
+        if not extra or (share_option and share_option.no_changes):
+            self.manager.share_with(item, users)
+        return extra
 
     def _get_item_by_id(self, trans, id: EncodedDatabaseIdField):
         class_name = self.manager.model_class.__name__

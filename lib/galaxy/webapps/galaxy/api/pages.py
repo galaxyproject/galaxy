@@ -22,9 +22,9 @@ from galaxy.managers.pages import (
 )
 from galaxy.managers.sharable import (
     SetSlugPayload,
+    ShareWithPayload,
     ShareWithStatus,
     SharingStatus,
-    UserIdsPayload,
 )
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.web import (
@@ -206,7 +206,7 @@ class FastAPIPages:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: EncodedDatabaseIdField = PageIdPathParam,
-        payload: UserIdsPayload = Body(...)
+        payload: ShareWithPayload = Body(...)
     ) -> ShareWithStatus:
         """Shares this item with specific users and return the current sharing status."""
         return self.service.shareable_service.share_with(trans, id, payload)
@@ -219,7 +219,7 @@ class FastAPIPages:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: EncodedDatabaseIdField = PageIdPathParam,
-        payload: UserIdsPayload = Body(...)
+        payload: ShareWithPayload = Body(...)
     ) -> ShareWithStatus:
         """Stops sharing this item with specific users and return the current sharing status."""
         return self.service.shareable_service.unshare_with(trans, id, payload)
@@ -361,7 +361,7 @@ class PagesController(BaseGalaxyAPIController):
         """
         * PUT /api/pages/{id}/share_with
         """
-        payload = UserIdsPayload(**payload)
+        payload = ShareWithPayload(**payload)
         return self.service.shareable_service.share_with(trans, id, payload)
 
     @expose_api
@@ -369,7 +369,7 @@ class PagesController(BaseGalaxyAPIController):
         """
         * PUT /api/pages/{id}/unshare_with
         """
-        payload = UserIdsPayload(**payload)
+        payload = ShareWithPayload(**payload)
         return self.service.shareable_service.unshare_with(trans, id, payload)
 
     @expose_api

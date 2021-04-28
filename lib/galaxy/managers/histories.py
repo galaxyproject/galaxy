@@ -8,13 +8,17 @@ import glob
 import logging
 import os
 from typing import (
+    Any,
+    cast,
     List,
     Optional,
     Tuple,
     Union,
 )
 
+from pydantic import BaseModel
 from sqlalchemy import (
+    and_,
     asc,
     desc,
     false,
@@ -58,6 +62,16 @@ from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import restore_text
 
 log = logging.getLogger(__name__)
+
+
+class HDABasicInfo(BaseModel):
+    id: EncodedDatabaseIdField
+    name: str
+
+
+class ShareHistoryExtra(BaseModel):
+    can_change: List[HDABasicInfo] = []
+    cannot_change: List[HDABasicInfo] = []
 
 
 class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMixin, SortableManager):
@@ -248,6 +262,48 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         history_exp_tool = trans.app.toolbox.get_tool(export_tool_id)
         job, _ = history_exp_tool.execute(trans, incoming=params, history=history, set_output_hid=True)
         return job
+
+    def get_sharing_extra_information(
+        self, trans, item, users, errors: List[str], option: Optional[sharable.SharingOptions] = None
+    ) -> Optional[Any]:
+        """Returns optional extra information about the datasets of the history that can be accessed by the users."""
+        display_only = option is None
+        extra = ShareHistoryExtra()
+        history = cast(model.History, item)
+        owner = trans.user
+        owner_roles = owner.all_roles()
+        for user in users:
+            if self.is_history_shared_with(history, user):
+                errors.append(f"History ({history.name}) already shared with user ({user.email})")
+                continue
+
+            user_roles = user.all_roles()
+            # Only deal with datasets that have not been purged
+            for hda in history.activatable_datasets:
+                if not trans.app.security_agent.can_access_dataset(user_roles, hda.dataset):
+                    # The user with which we are sharing the history does not have access permission on the current dataset
+                    if trans.app.security_agent.can_manage_dataset(owner_roles, hda.dataset):
+                        # The current user has authority to change permissions on the current dataset because
+                        # they have permission to manage permissions on the dataset.
+                        if display_only:
+                            extra.can_change.append(HDABasicInfo(id=trans.security.encode_id(hda.id), name=hda.name))
+                    else:
+                        if option in [sharable.SharingOptions.make_public, sharable.SharingOptions.make_accessible_to_shared]:
+                            # The user has made a choice, so 'unique' doesn't apply.  Don't change stuff
+                            # that the user doesn't have permission to change
+                            continue
+                        if display_only:
+                            # Build the dictionaries for display, containing unique histories only
+                            extra.cannot_change.append(HDABasicInfo(id=trans.security.encode_id(hda.id), name=hda.name))
+        return extra
+
+    def is_history_shared_with(self, history, user) -> bool:
+        return self.session().query(self.user_share_model).filter(
+            and_(
+                self.user_share_model.table.c.user_id == user.id,
+                self.user_share_model.table.c.history_id == history.id,
+            )
+        ).count() > 0
 
 
 class HistoryExportView:

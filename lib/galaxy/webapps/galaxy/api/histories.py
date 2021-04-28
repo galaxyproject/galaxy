@@ -129,7 +129,7 @@ class FastAPIHistories:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: EncodedDatabaseIdField = HistoryIdPathParam,
-        payload: sharable.UserIdsPayload = Body(...)
+        payload: sharable.ShareWithPayload = Body(...)
     ) -> sharable.ShareWithStatus:
         """Shares this item with specific users and return the current sharing status."""
         return self.service.shareable_service.share_with(trans, id, payload)
@@ -142,7 +142,7 @@ class FastAPIHistories:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: EncodedDatabaseIdField = HistoryIdPathParam,
-        payload: sharable.UserIdsPayload = Body(...)
+        payload: sharable.ShareWithPayload = Body(...)
     ) -> sharable.ShareWithStatus:
         """Stops sharing this item with specific users and return the current sharing status."""
         return self.service.shareable_service.unshare_with(trans, id, payload)
@@ -534,7 +534,7 @@ class HistoriesController(BaseGalaxyAPIController):
         """
         * PUT /api/histories/{id}/share_with
         """
-        payload = sharable.UserIdsPayload(**payload)
+        payload = sharable.ShareWithPayload(**payload)
         return self.service.shareable_service.share_with(trans, id, payload)
 
     @expose_api
@@ -542,7 +542,7 @@ class HistoriesController(BaseGalaxyAPIController):
         """
         * PUT /api/histories/{id}/unshare_with
         """
-        payload = sharable.UserIdsPayload(**payload)
+        payload = sharable.ShareWithPayload(**payload)
         return self.service.shareable_service.unshare_with(trans, id, payload)
 
     @expose_api

@@ -21,9 +21,9 @@ from galaxy import (
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.sharable import (
     SetSlugPayload,
+    ShareWithPayload,
     ShareWithStatus,
     SharingStatus,
-    UserIdsPayload,
 )
 from galaxy.managers.visualizations import VisualizationsService
 from galaxy.model.item_attrs import UsesAnnotations
@@ -123,7 +123,7 @@ class FastAPIVisualizations:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: EncodedDatabaseIdField = VisualizationIdPathParam,
-        payload: UserIdsPayload = Body(...)
+        payload: ShareWithPayload = Body(...)
     ) -> ShareWithStatus:
         """Shares this item with specific users and return the current sharing status."""
         return self.service.shareable_service.share_with(trans, id, payload)
@@ -136,7 +136,7 @@ class FastAPIVisualizations:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: EncodedDatabaseIdField = VisualizationIdPathParam,
-        payload: UserIdsPayload = Body(...)
+        payload: ShareWithPayload = Body(...)
     ) -> ShareWithStatus:
         """Stops sharing this item with specific users and return the current sharing status."""
         return self.service.shareable_service.unshare_with(trans, id, payload)
@@ -321,7 +321,7 @@ class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, 
         """
         * PUT /api/visualizations/{id}/share_with
         """
-        payload = UserIdsPayload(**payload)
+        payload = ShareWithPayload(**payload)
         return self.service.shareable_service.share_with(trans, id, payload)
 
     @expose_api
@@ -329,7 +329,7 @@ class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, 
         """
         * PUT /api/visualizations/{id}/unshare_with
         """
-        payload = UserIdsPayload(**payload)
+        payload = ShareWithPayload(**payload)
         return self.service.shareable_service.unshare_with(trans, id, payload)
 
     @expose_api
