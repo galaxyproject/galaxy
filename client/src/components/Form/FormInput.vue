@@ -1,6 +1,6 @@
 <template>
-    <textarea v-if="area" class="ui-input" v-model="currentValue" @change="onChange" />
-    <input v-else class="ui-input" v-model="currentValue" @change="onChange" />
+    <textarea v-if="area" class="ui-input" v-model="currentValue" @input="onChange" @change="onChange" />
+    <input v-else class="ui-input" v-model="currentValue" @input="onChange" @change="onChange" />
 </template>
 <script>
 export default {

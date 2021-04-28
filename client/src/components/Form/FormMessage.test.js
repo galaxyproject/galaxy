@@ -30,7 +30,6 @@ describe("FormMessage", () => {
     });
 
     it("check transient message and status", async () => {
-        console.log(wrapper.html());
         await wrapper.setProps({
             persistent: false,
             variant: "info",
