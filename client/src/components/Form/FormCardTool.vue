@@ -199,7 +199,7 @@ export default {
                             title: webhook.config.title,
                             onclick: function () {
                                 const func = new Function("options", webhook.config.function);
-                                func(options);
+                                func(this.options);
                             },
                         });
                     }
@@ -242,7 +242,7 @@ export default {
             );
         },
         onCopyId() {
-            copy(`${options.id}`, "Tool ID was copied to your clipboard");
+            copy(`${this.options.id}`, "Tool ID was copied to your clipboard");
         },
         onDownload() {
             window.location.href = `${getAppRoot()}api/tools/${this.id}/download`;
