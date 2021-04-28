@@ -199,10 +199,10 @@ class FastAPIPages:
         return self.service.shareable_service.unpublish(trans, id)
 
     @router.put(
-        '/api/pages/{id}/share',
+        '/api/pages/{id}/share_with',
         summary="Share this item with specific users.",
     )
-    def share(
+    def share_with(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: EncodedDatabaseIdField = PageIdPathParam,
@@ -212,10 +212,10 @@ class FastAPIPages:
         return self.service.shareable_service.share_with(trans, id, payload)
 
     @router.put(
-        '/api/pages/{id}/unshare',
+        '/api/pages/{id}/unshare_with',
         summary="Stop sharing this item with specific users.",
     )
-    def unshare(
+    def unshare_with(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: EncodedDatabaseIdField = PageIdPathParam,
@@ -357,17 +357,17 @@ class PagesController(BaseGalaxyAPIController):
         return self.service.shareable_service.unpublish(trans, id)
 
     @expose_api
-    def share(self, trans, id, payload, **kwd):
+    def share_with(self, trans, id, payload, **kwd):
         """
-        * PUT /api/pages/{id}/share
+        * PUT /api/pages/{id}/share_with
         """
         payload = UserIdsPayload(**payload)
         return self.service.shareable_service.share_with(trans, id, payload)
 
     @expose_api
-    def unshare(self, trans, id, payload, **kwd):
+    def unshare_with(self, trans, id, payload, **kwd):
         """
-        * PUT /api/pages/{id}/unshare
+        * PUT /api/pages/{id}/unshare_with
         """
         payload = UserIdsPayload(**payload)
         return self.service.shareable_service.unshare_with(trans, id, payload)

@@ -81,12 +81,12 @@
                         <b-button
                             variant="danger"
                             size="sm"
-                            @click="setSharing(actions.share, shareWithEmail)"
+                            @click="setSharing(actions.share_with, shareWithEmail)"
                             class="sharing_icon"
                         >
                             <font-awesome-icon
                                 class="unshare_user sharing_icon"
-                                @click.stop="setSharing(actions.unshare, cell.value)"
+                                @click.stop="setSharing(actions.unshare_with, cell.value)"
                                 icon="user-slash"
                             />
                         </b-button>
@@ -98,7 +98,7 @@
                         <b-button
                             variant="link"
                             size="sm"
-                            @click.stop="setSharing(actions.share, shareWithEmail)"
+                            @click.stop="setSharing(actions.share_with, shareWithEmail)"
                             v-b-tooltip.hover
                             :title="shareWithEmail ? `Share with ${shareWithEmail}` : ''"
                             class="sharing_icon"
@@ -116,8 +116,8 @@
                 :clear-on-select="true"
                 :preserve-search="true"
                 :multiple="true"
-                @select="setSharing(actions.share, $event.email)"
-                @remove="setSharing(actions.unshare, $event.email)"
+                @select="setSharing(actions.share_with, $event.email)"
+                @remove="setSharing(actions.unshare_with, $event.email)"
                 label="email"
                 track-by="id"
                 @search-change="searchChanged"
@@ -196,8 +196,8 @@ export default {
                 disable_link_access: "disable_link_access",
                 publish: "publish",
                 unpublish: "unpublish",
-                share: "share",
-                unshare: "unshare",
+                share_with: "share_with",
+                unshare_with: "unshare_with",
             },
         };
     },
@@ -304,7 +304,7 @@ export default {
                 .catch((error) => this.errors.push(error.response.data.err_msg));
         },
         setSharing(action, user_id) {
-            if (action === this.actions.share && this.item.users_shared_with.some((user) => user_id === user.email)) {
+            if (action === this.actions.share_with && this.item.users_shared_with.some((user) => user_id === user.email)) {
                 this.errors.push(`You already shared this ${this.model_class} with ${user_id}`);
                 return;
             }
