@@ -1957,13 +1957,11 @@ mapper(model.PasswordResetToken, model.PasswordResetToken.table,
 # <user_obj>.preferences[pref_name] = pref_value
 model.User.preferences = association_proxy('_preferences', 'value', creator=model.UserPreference)  # type: ignore
 
-mapper(model.Group, model.Group.table, properties=dict(
-    users=relation(model.UserGroupAssociation)
-))
+mapper(model.Group, model.Group.table)
 
 mapper(model.UserGroupAssociation, model.UserGroupAssociation.table, properties=dict(
     user=relation(model.User, backref="groups"),
-    group=relation(model.Group, backref="members")
+    group=relation(model.Group, backref="users")
 ))
 
 mapper(model.DefaultUserPermissions, model.DefaultUserPermissions.table, properties=dict(
