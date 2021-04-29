@@ -129,7 +129,7 @@ function addIframe() {
                     tool_id = $(target).data("tool");
 
                     if (tool_id === "upload1" || tool_id === "upload") {
-                        Galaxy.upload.show();
+                        document.getElementById("tool-panel-upload-button").click();
                     } else {
                         Galaxy.router.push(`?tool_id=${tool_id}`);
                     }
