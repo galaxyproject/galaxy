@@ -17,15 +17,6 @@ class GalaxyInteractorBackwardCompatTestCase(ApiTestCase):
 class GalaxyInteractorTestCase(ApiTestCase):
 
     @skip_without_tool("multiple_versions")
-    def test_new_version_has_loaded(self):
-        # this test is redundant, it is just testing that new tool is loaded and the next test will break for the right reasons.  I'll remove this
-        tool_id = "multiple_versions"
-        tool_version = "0.1+galaxy6"
-        tool_show_response = self._get("tools/%s" % tool_id, data={'tool_version': tool_version})
-        self._assert_status_code_is(tool_show_response, 200)
-        self.assertEqual(tool_show_response.json().get('version'), tool_version, msg="The new version has not loaded")
-
-    @skip_without_tool("multiple_versions")
     def test_get_tool_tests(self):
         # test that get_tool_tests will return the right tests when the tool_version has a '+' in it
         test_data = self.galaxy_interactor.get_tool_tests(tool_id="multiple_versions", tool_version="0.1+galaxy6")
