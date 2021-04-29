@@ -8,7 +8,7 @@ import { activity, whenAny, show } from "utils/observable";
 import { propMatch } from "./helpers";
 import { SearchParams, ScrollPos } from "../../model";
 import { defaultPayload } from "../ContentProvider";
-import { BehaviorSubject, Subject } from "rxjs";
+import { Subject } from "rxjs";
 
 /**
  * Takes incoming history, filters and scroll position and generates loading, scrolling and payload
@@ -43,7 +43,12 @@ export function processContentStreams(payloadOperator, sources = {}, settings = 
         activity(200)
     );
 
-    const loading$ = new BehaviorSubject(false);
+    const loadingEvents$ = new Subject();
+    const loading$ = loadingEvents$.pipe(
+        activity(debouncePeriod),
+        startWith(true)
+    );
+    
     const resetPos$ = new Subject();
 
     // The actual loader, when history or params change we poll against the api and
@@ -55,7 +60,7 @@ export function processContentStreams(payloadOperator, sources = {}, settings = 
                 console.clear();
                 console.log("processContentStreams: pos", JSON.stringify(pos));
             }),
-            payloadOperator({ parent, filters, loading$, resetPos$, ...settings }),
+            payloadOperator({ parent, filters, loadingEvents$, resetPos$, ...settings }),
             startWith({ ...defaultPayload, placeholder: true }),
         )),
         share()

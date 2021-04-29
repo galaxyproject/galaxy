@@ -88,7 +88,7 @@ export const actions = {
                 });
         }
     },
-    loadHistoryById({ commit, getters }, id) {
+    loadHistoryById({ commit, getters, dispatch }, id) {
         if (!promises.byId.has(id)) {
             // immediately set if we have something current
             const existing = getters.getHistoryById(id);
@@ -97,12 +97,9 @@ export const actions = {
             }
 
             // but also check for updates
-            const lastUpdated = existing?.update_time || null;
-            const p = getHistoryById(id, lastUpdated)
+            const p = getHistoryById(id)
                 .then((history) => {
-                    if (history.update_time !== lastUpdated) {
-                        commit("setHistory", history);
-                    }
+                    dispatch("selectHistory", history);
                 })
                 .catch((err) => {
                     console.warn("loadHistoryById error", id, err);
@@ -114,8 +111,12 @@ export const actions = {
         }
     },
     async setCurrentHistoryId({ dispatch, getters }, id) {
-        const nextHistory = await setCurrentHistoryOnServer(id);
-        dispatch("selectHistory", nextHistory);
+        // Need to do 2 requests because apparently the response from "setHistory"
+        // can't be twisted to be the same as a normal lookup
+        if (id !== getters.currentHistoryId) {
+            const changedHistory = await setCurrentHistoryOnServer(id);
+            dispatch("loadHistoryById", changedHistory.id);
+        }
     },
     async createNewHistory({ dispatch }) {
         // create history, then select it as current at the same time
