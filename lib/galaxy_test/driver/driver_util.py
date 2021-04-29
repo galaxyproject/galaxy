@@ -563,7 +563,7 @@ def uvicorn_serve(app, port, host=None):
     import asyncio
     from uvicorn.server import Server
     from uvicorn.config import Config
-    config = Config(app, host=host, port=int(port))
+    config = Config(app, host=host, port=int(port), access_log=False)
     server = Server(config=config)
 
     def run_in_loop(loop):
