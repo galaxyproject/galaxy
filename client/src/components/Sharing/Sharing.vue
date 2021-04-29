@@ -67,7 +67,7 @@
                 <b-table
                     class="share_with_view"
                     show-empty
-                    foot-clone
+                    :foot-clone="!permissionsChangeRequired"
                     small
                     caption-top
                     :fields="shareFields"
@@ -109,7 +109,7 @@
                 </b-table>
             </div>
             <multiselect
-                v-else-if="item"
+                v-else-if="item && !permissionsChangeRequired"
                 class="select-users"
                 v-model="item.users_shared_with"
                 :options="usersList"
@@ -129,6 +129,61 @@
                     </div>
                 </template>
             </multiselect>
+
+            <!--            <b-card-group header-tag="header" no-body role="tab"  deck>-->
+            <b-alert variant="warning" dismissible fade :show="permissionsChangeRequired">
+                <div class="text-center">
+                    {{ `${item.extra.can_change.length} datasets are exclusively private to you` }}
+                </div>
+            </b-alert>
+            <b-row v-if="permissionsChangeRequired">
+                <b-col>
+                    <b-card>
+                        <b-card-header header-tag="header" class="p-1" role="tab">
+                            <b-button block v-b-toggle.can-share variant="warning"
+                                >Datasets can be shared by updating their permissions</b-button
+                            >
+                        </b-card-header>
+                        <b-collapse id="can-share" visible accordion="my-accordion" role="tabpanel">
+                            <b-list-group>
+                                <b-list-group-item v-for="dataset in item.extra.can_change">{{
+                                    dataset.name
+                                }}</b-list-group-item>
+                            </b-list-group>
+                        </b-collapse>
+                    </b-card>
+                </b-col>
+                <b-col>
+                    <b-card>
+                        <b-card-header header-tag="header" class="p-1" role="tab">
+                            <b-button block v-b-toggle.cannot-share variant="danger"
+                                >Datasets cannot be shared, you are not authorized to change permissions</b-button
+                            >
+                        </b-card-header>
+                        <b-collapse id="cannot-share" visible accordion="my-accordion2" role="tabpanel">
+                            <b-list-group>
+                                <b-list-group-item v-for="dataset in item.extra.cannot_change">{{
+                                    dataset.name
+                                }}</b-list-group-item>
+                            </b-list-group>
+                        </b-collapse>
+                    </b-card>
+                </b-col>
+                <b-col>
+                    <b-card
+                        border-variant="primary"
+                        header="How would like to proceed?"
+                        header-bg-variant="primary"
+                        header-text-variant="white"
+                        align="center"
+                    >
+                        <b-button block variant="outline-primary">Make datasets public</b-button>
+                        <b-button block variant="outline-primary">Share only with {{ shareWithEmail }}</b-button>
+                        <b-button block variant="outline-primary">Share Anyway</b-button>
+                    </b-card>
+                </b-col>
+            </b-row>
+            <!--            </b-card-group>-->
         </div>
     </div>
 </template>
@@ -149,6 +204,13 @@ import { copy } from "utils/clipboard";
 Vue.use(BootstrapVue);
 [faCopy, faEdit, faUserPlus, faUserSlash].forEach((icon) => library.add(icon));
 
+const defaultExtra = () => {
+    return {
+        cannot_change: [],
+        can_change: [],
+        can_share: true,
+    };
+};
 export default {
     components: {
         FontAwesomeIcon,
@@ -185,6 +247,7 @@ export default {
                 importable: false,
                 published: false,
                 users_shared_with: [],
+                extra: defaultExtra(),
             },
             shareFields: ["email", { key: "id", label: "" }],
             makeMembersPublic: false,
@@ -204,6 +267,12 @@ export default {
     computed: {
         modelClassLower() {
             return this.model_class.toLowerCase();
+        },
+        permissionsChangeRequired() {
+            if (!this.item.extra) return false;
+            return (
+                this.item.extra && (this.item.extra.can_change.length > 0 || this.item.extra.cannot_change.length > 0)
+            );
         },
         pluralNameLower() {
             return this.plural_name.toLowerCase();
@@ -236,7 +305,6 @@ export default {
         },
     },
     created: function () {
-        console.log(getGalaxyInstance().config);
         this.getModel();
     },
     methods: {
@@ -250,6 +318,16 @@ export default {
         onEdit() {
             this.showUrl = false;
         },
+        assignItem(newItem) {
+            if (newItem.errors) this.errors = newItem.errors;
+            this.item = newItem;
+            if (!this.item.extra) {
+                this.item.extra = defaultExtra();
+            }
+            console.log(this.item);
+
+            this.ready = true;
+        },
         onChange(newSlug) {
             this.showUrl = true;
             const requestUrl = `${this.slugUrl}`;
@@ -259,6 +337,7 @@ export default {
                 })
                 .then((response) => {
                     this.errMsg = null;
+                    this.assignItem(response.data);
                     this.item.username_and_slug = `${this.itemSlugParts[0]}${newSlug}`;
                 })
                 .catch((error) => this.errors.push(error.response.data.err_msg));
@@ -283,12 +362,8 @@ export default {
             this.ready = false;
             axios
                 .get(`${getAppRoot()}api/${this.pluralNameLower}/${this.id}/sharing`)
-                .then((response) => {
-                    this.item = response.data;
-                    console.log(response.data);
-                    this.ready = true;
-                })
-                .catch((error) => (this.errMsg = error.response.data.err_msg));
+                .then((response) => this.assignItem(response.data))
+                .catch((error) => this.errors.push(error.response.data.err_msg));
         },
         setUsername() {
             const Galaxy = getGalaxyInstance();
@@ -297,14 +372,16 @@ export default {
                     username: this.newUsername || "",
                 })
                 .then((response) => {
-                    this.errMsg = null;
                     this.hasUsername = true;
                     this.getModel();
                 })
                 .catch((error) => this.errors.push(error.response.data.err_msg));
         },
         setSharing(action, user_id) {
-            if (action === this.actions.share_with && this.item.users_shared_with.some((user) => user_id === user.email)) {
+            if (
+                action === this.actions.share_with &&
+                this.item.users_shared_with.some((user) => user_id === user.email)
+            ) {
                 this.errors.push(`You already shared this ${this.model_class} with ${user_id}`);
                 return;
             }
@@ -314,10 +391,8 @@ export default {
             };
             return axios
                 .put(`${getAppRoot()}api/${this.pluralNameLower}/${this.id}/${action}`, data)
-                .then((response) => {
-                    this.errors = response.data.errors;
-                    this.item = response.data;
-                    this.ready = true;
+                .then(({ data }) => {
+                    this.assignItem(data);
                     this.shareWithEmail = "";
                 })
                 .catch((error) => this.errors.push(error.response.data.err_msg));
