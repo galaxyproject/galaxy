@@ -306,9 +306,11 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
 
         extra.can_change = list(can_change_dict.values())
         extra.cannot_change = list(cannot_change_dict.values())
+        if extra.cannot_change and not extra.can_change:
+            errors.append("The history you are sharing do not contain any datasets that can be accessed by the users with which you are sharing.")
 
         # If there is no HDA to take care of, then we can safely share
-        extra.can_share = not extra.can_change and not extra.cannot_change
+        extra.can_share = not errors and not extra.can_change and not extra.cannot_change
         return extra
 
     def is_history_shared_with(self, history, user) -> bool:
