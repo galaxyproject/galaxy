@@ -38,7 +38,11 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories, SharingApiTests):
 
     def create(self, name: str) -> str:
         response_json = self._create_history(name)
-        return response_json["id"]
+        history_id = response_json["id"]
+        # History to share cannot be empty
+        populator = DatasetPopulator(self.galaxy_interactor)
+        populator.new_dataset(history_id)
+        return history_id
 
     def test_create_history(self):
         # Create a history.

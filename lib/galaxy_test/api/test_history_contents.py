@@ -730,3 +730,44 @@ class HistoryContentsApiTestCase(ApiTestCase):
         assert len(contents_response) == expected_num_datasets
         contents_response = self._get(f"histories/{history_id}/contents?types=dataset_collection").json()
         assert len(contents_response) == expected_num_collections
+
+    def test_share_restricted(self):
+        history_id = self.dataset_populator.new_history()
+        hda = self.dataset_populator.new_dataset(history_id)
+        hda_id = hda["id"]
+
+        self._make_dataset_private(history_id, hda_id)
+
+        with self._different_user():
+            target_user_id = self.dataset_populator.user_id()
+
+        payload = {"user_ids": [target_user_id]}
+        sharing_response = self._share_history_with_payload(history_id, payload)
+
+        # If no share_option is provided, the extra field will contain the
+        # datasets that need to be accessible before sharing
+        assert sharing_response["extra"]
+        assert sharing_response["extra"]["can_share"] is False
+        assert sharing_response["extra"]["can_change"][0]["id"] == hda_id
+
+        # Now we provide the share_option
+        payload = {
+            "user_ids": [target_user_id],
+            "share_option": "make_accessible_to_shared"
+        }
+        sharing_response = self._share_history_with_payload(history_id, payload)
+        assert sharing_response["extra"]
+        assert sharing_response["extra"]["can_share"] is True
+        assert sharing_response["users_shared_with"]
+        assert sharing_response["users_shared_with"][0]["id"] == target_user_id
+
+    def _make_dataset_private(self, history_id, hda_id):
+        update_url = f"histories/{history_id}/contents/{hda_id}/permissions"
+        payload = {"action": "make_private"}
+        update_response = self._update_permissions(update_url, payload)
+        self._assert_status_code_is(update_response, 200)
+
+    def _share_history_with_payload(self, history_id, payload):
+        sharing_response = self._put(f"histories/{history_id}/share_with", data=json.dumps(payload))
+        self._assert_status_code_is(sharing_response, 200)
+        return sharing_response.json()

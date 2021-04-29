@@ -112,7 +112,7 @@ class SharingApiTests(UsesApiTestCaseMixin):
         response = self._set_slug(other_resource_id, "new-slug")
         self._assert_status_code_is(response, 409)
 
-        # Other users can not change the slug if they don't own the resource
+        # Other users cannot change the slug if they don't own the resource
         with self._different_user():
             response = self._set_slug(resource_id, "another-slug")
             self._assert_status_code_is(response, 403)
