@@ -274,6 +274,8 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
 
         owner = trans.user
         owner_roles = owner.all_roles()
+        can_change_dict = {}
+        cannot_change_dict = {}
         for user in users:
             if self.is_history_shared_with(history, user):
                 errors.append(f"History ({history.name}) already shared with user ({user.email})")
@@ -295,11 +297,15 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
                     elif option == sharable.SharingOptions.make_public:
                         trans.app.security_agent.make_dataset_public(hda.dataset)
                 elif not option:
-                    hda_info = HDABasicInfo(id=trans.security.encode_id(hda.id), name=hda.name)
+                    hda_id = trans.security.encode_id(hda.id)
+                    hda_info = HDABasicInfo(id=hda_id, name=hda.name)
                     if owner_can_manage_dataset:
-                        extra.can_change.append(hda_info)
+                        can_change_dict[hda_id] = hda_info
                     else:
-                        extra.cannot_change.append(hda_info)
+                        cannot_change_dict[hda_id] = hda_info
+
+        extra.can_change = list(can_change_dict.values())
+        extra.cannot_change = list(cannot_change_dict.values())
 
         # If there is no HDA to take care of, then we can safely share
         extra.can_share = not extra.can_change and not extra.cannot_change
