@@ -177,9 +177,24 @@
                         header-text-variant="white"
                         align="center"
                     >
-                        <b-button block variant="outline-primary">Make datasets public</b-button>
-                        <b-button block variant="outline-primary">Share only with {{ shareWithEmail }}</b-button>
-                        <b-button block variant="outline-primary">Share Anyway</b-button>
+                        <b-button
+                            @click="setSharing(actions.share_with, shareWithEmail, share_option.make_public)"
+                            block
+                            variant="outline-primary"
+                            >Make datasets public</b-button
+                        >
+                        <b-button
+                            @click="setSharing(actions.share_with, shareWithEmail, share_option.make_accessible_to_shared)"
+                            block
+                            variant="outline-primary"
+                            >Share only with {{ shareWithEmail }}</b-button
+                        >
+                        <b-button
+                            @click="setSharing(actions.share_with, shareWithEmail, share_option.no_changes)"
+                            block
+                            variant="outline-primary"
+                            >Share Anyway</b-button
+                        >
                     </b-card>
                 </b-col>
             </b-row>
@@ -262,6 +277,11 @@ export default {
                 share_with: "share_with",
                 unshare_with: "unshare_with",
             },
+            share_option:{
+                make_public: "make_public",
+                make_accessible_to_shared: "make_accessible_to_shared",
+                no_changes: "no_changes"
+            }
         };
     },
     computed: {
@@ -377,7 +397,7 @@ export default {
                 })
                 .catch((error) => this.errors.push(error.response.data.err_msg));
         },
-        setSharing(action, user_id) {
+        setSharing(action, user_id, share_option) {
             if (
                 action === this.actions.share_with &&
                 this.item.users_shared_with.some((user) => user_id === user.email)
@@ -388,12 +408,13 @@ export default {
 
             const data = {
                 user_ids: user_id ? [user_id] : undefined,
+                share_option: share_option ? share_option : undefined,
             };
             return axios
                 .put(`${getAppRoot()}api/${this.pluralNameLower}/${this.id}/${action}`, data)
                 .then(({ data }) => {
                     this.assignItem(data);
-                    this.shareWithEmail = "";
+                    if (data.can_share) this.shareWithEmail = "";
                 })
                 .catch((error) => this.errors.push(error.response.data.err_msg));
         },
