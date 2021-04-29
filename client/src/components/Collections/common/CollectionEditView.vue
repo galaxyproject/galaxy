@@ -18,7 +18,7 @@
                     @clicked-save="clickedSave"
                 />
             </b-tab>
-            <b-tab>
+            <b-tab v-if="atleastOneSuitableConverter">
                 <template v-slot:title> <font-awesome-icon icon="cog" /> &nbsp; {{ l("Convert") }}</template>
                 <div class="alert alert-secondary" role="alert">
                     <div class="float-left">Convert all datasets to new format</div>
@@ -42,12 +42,6 @@
                     :searchable="true"
                     :allow-empty="true"
                 >
-                    {{ extension.text }}
-                    <!-- <template slot="afterList">
-                        <div v-observe-visibility="reachedEndOfList" v-if="hasMorePages">
-                            <span class="spinner fa fa-spinner fa-spin fa-1x" />
-                        </div>
-                    </template> -->
                 </multiselect>
             </b-tab>
             <b-tab>
@@ -75,12 +69,7 @@
                     :allow-empty="false"
                 >
                     {{ extension.text }}
-                    <!-- <template slot="afterList">
-                        <div v-observe-visibility="reachedEndOfList" v-if="hasMorePages">
-                            <span class="spinner fa fa-spinner fa-spin fa-1x" />
-                        </div>
-                    </template> --> </multiselect
-                ><i>original input: {{ datatypeFromElements }}</i>
+                </multiselect>
             </b-tab>
         </b-tabs>
     </div>
@@ -104,9 +93,6 @@ import { faUser } from "@fortawesome/free-solid-svg-icons";
 import { faCog } from "@fortawesome/free-solid-svg-icons";
 import store from "../../../store/index";
 
-//import VueObserveVisibility from "vue-observe-visibility";
-
-//Vue.use(VueObserveVisibility);
 library.add(faDatabase);
 library.add(faTable);
 library.add(faBars);
@@ -116,15 +102,13 @@ library.add(faUser);
 Vue.use(BootstrapVue);
 export default {
     created() {
-        // this.getCollectionData(item);
-        this.getConverterList();
         this.getDatatypesAndGenomes();
         this.getCollectionDataAndAttributes();
+        this.getConverterList();
     },
     components: { Multiselect, DatabaseEditTab, FontAwesomeIcon },
     data: function () {
         return {
-            collection_data: {}, //all data from the response
             attributes_data: {},
             extensions: [],
             genomes: [],
@@ -152,15 +136,15 @@ export default {
                 this.selectedExtension = element;
             },
         },
+        atleastOneSuitableConverter: function () {
+            return this.suitableConverters.length > 0;
+        },
     },
     methods: {
         l(str) {
             // _l conflicts private methods of Vue internals, expose as l instead
             return _l(str);
         },
-        // getCollectionData: async function (item) {
-        //     this.collection_data = item;
-        // },
         getDatatypesAndGenomes: async function () {
             let datatypes = store.getters.getUploadDatatypes();
             if (!datatypes || datatypes.length == 0) {
@@ -217,7 +201,10 @@ export default {
         clickedConvert: function () {
             console.log("this.chosenConverter = ", this.chosenConverter);
             const url = prependPath("/api/tools/");
-            const data = { tool_id: this.chosenConverter.tool_id, inputs: { input: { batch: true } } };
+            const data = {
+                tool_id: this.chosenConverter.tool_id,
+                inputs: { input: { batch: true, values: { 0: { src: "hdca", id: this.collection_id } } } },
+            };
             axios
                 .post(url, data)
                 .then((response) => {
