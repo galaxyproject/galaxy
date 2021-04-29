@@ -2565,10 +2565,10 @@ simple_mapping(model.WorkflowInvocationStep,
     job=relation(model.Job, backref=backref('workflow_invocation_step', uselist=False), uselist=False),
     implicit_collection_jobs=relation(model.ImplicitCollectionJobs, backref=backref('workflow_invocation_step', uselist=False), uselist=False),
     subworkflow_invocation_id=column_property(
-        select([(model.WorkflowInvocationToSubworkflowInvocationAssociation.table.c.subworkflow_invocation_id)]).where(and_(
+        select(model.WorkflowInvocationToSubworkflowInvocationAssociation.table.c.subworkflow_invocation_id).where(and_(
             model.WorkflowInvocationToSubworkflowInvocationAssociation.table.c.workflow_invocation_id == model.WorkflowInvocationStep.table.c.workflow_invocation_id,
             model.WorkflowInvocationToSubworkflowInvocationAssociation.table.c.workflow_step_id == model.WorkflowInvocationStep.table.c.workflow_step_id,
-        )),
+        )).scalar_subquery(),
     ),
 )
 
