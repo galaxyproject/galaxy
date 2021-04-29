@@ -13,7 +13,6 @@ import logging
 import re
 from enum import Enum
 from typing import (
-    Any,
     List,
     Optional,
     Type,
@@ -22,6 +21,7 @@ from typing import (
 
 from pydantic import (
     BaseModel,
+    Extra,
     Field,
 )
 from sqlalchemy import (
@@ -47,10 +47,112 @@ log = logging.getLogger(__name__)
 
 
 class SharingOptions(str, Enum):
-    """Options for sharing resources that may have restricted access."""
+    """Options for sharing resources that may have restricted access to all or part of their contents."""
     make_public = "make_public"
     make_accessible_to_shared = "make_accessible_to_shared"
     no_changes = "no_changes"
+
+
+class ShareWithExtra(BaseModel):
+    can_share: bool = Field(
+        False,
+        title="Can Share",
+        description="Indicates whether the resource can be directly shared or requires further actions.",
+    )
+
+    class Config:
+        extra = Extra.allow
+
+
+class ShareWithPayload(BaseModel):
+    user_ids: List[Union[EncodedDatabaseIdField, str]] = Field(
+        ...,
+        title="User Identifiers",
+        description=(
+            "A collection of encoded IDs (or email addresses) of users."
+        ),
+    )
+    share_option: Optional[SharingOptions] = Field(
+        None,
+        title="Share Option",
+        description=(
+            "User choice for sharing resources which its contents may be restricted:\n"
+            " - None: The user did not choose anything yet or no option is needed.\n"
+            f" - {SharingOptions.make_public}: The contents of the resource will be made publicly accessible.\n"
+            f" - {SharingOptions.make_accessible_to_shared}: This will automatically create a new `sharing role` allowing protected contents to be accessed only by the desired users.\n"
+            f" - {SharingOptions.no_changes}: This won't change the current permissions for the contents. The user which this resource will be shared may not be able to access all its contents.\n"
+        ),
+    )
+
+
+class SetSlugPayload(BaseModel):
+    new_slug: str = Field(
+        ...,
+        title="New Slug",
+        description="The slug that will be used to access this shared item.",
+    )
+
+
+class UserEmail(BaseModel):
+    id: EncodedDatabaseIdField = Field(
+        ...,
+        title="User ID",
+        description="The encoded ID of the user.",
+    )
+    email: str = Field(
+        ...,
+        title="Email",
+        description="The email of the user.",
+    )
+
+
+class SharingStatus(BaseModel):
+    id: EncodedDatabaseIdField = Field(
+        ...,
+        title="ID",
+        description="The encoded ID of the resource to be shared.",
+    )
+    title: str = Field(
+        ...,
+        title="Title",
+        description="The title or name of the resource.",
+    )
+    importable: bool = Field(
+        ...,
+        title="Importable",
+        description="Whether this resource can be published using a link.",
+    )
+    published: bool = Field(
+        ...,
+        title="Published",
+        description="Whether this resource is currently published.",
+    )
+    users_shared_with: List[UserEmail] = Field(
+        [],
+        title="Users shared with",
+        description="The list of encoded ids for users the resource has been shared.",
+    )
+    username_and_slug: Optional[str] = Field(
+        None,
+        title="Username and slug",
+        description="The relative URL in the form of /u/{username}/{resource_single_char}/{slug}",
+    )
+
+
+class ShareWithStatus(SharingStatus):
+    errors: List[str] = Field(
+        [],
+        title="Errors",
+        description="Collection of messages indicating that the resource was not shared with some (or all users) due to an error.",
+    )
+    extra: Optional[ShareWithExtra] = Field(
+        None,
+        title="Extra",
+        description=(
+            "Optional extra information about this shareable resource that may be of interest. "
+            "The contents of this field depend on the particular resource."
+        ),
+    )
 
 
 class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secured.AccessibleManagerMixin,
@@ -252,7 +354,9 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         items = self._apply_fn_filters_gen(query.all(), fn_filters)
         return list(self._apply_fn_limit_offset_gen(items, limit, offset))
 
-    def get_sharing_extra_information(self, trans, item, users, errors: List[str], option: Optional[SharingOptions] = None) -> Optional[Any]:
+    def get_sharing_extra_information(
+        self, trans, item, users, errors: List[str], option: Optional[SharingOptions] = None
+    ) -> Optional[ShareWithExtra]:
         """Returns optional extra information about the shareability of the given item.
 
         This function should be overridden in the particular manager class that wants
@@ -502,94 +606,6 @@ class SharableModelFilters(base.ModelFilterParser,
         })
 
 
-class ShareWithPayload(BaseModel):
-    user_ids: List[Union[EncodedDatabaseIdField, str]] = Field(
-        ...,
-        title="User Identifiers",
-        description=(
-            "A collection of encoded IDs (or email addresses) of users."
-        ),
-    )
-    share_option: Optional[SharingOptions] = Field(
-        None,
-        title="Share Option",
-        description=(
-            "User choice for sharing resources which its contents may be restricted:\n"
-            " - None: The user did not choose anything yet.\n"
-            f" - {SharingOptions.make_public}: The contents of the resource will be made publicly accessible.\n"
-            f" - {SharingOptions.make_accessible_to_shared}: This will automatically create a new `sharing role` allowing protected contents to be accessed only by the desired users.\n"
-            f" - {SharingOptions.no_changes}: This won't change the current permissions for the contents. The user which this resource will be shared may not be able to access all its contents.\n"
-        ),
-    )
-
-
-class SetSlugPayload(BaseModel):
-    new_slug: str = Field(
-        ...,
-        title="New Slug",
-        description="The slug that will be used to access this shared item.",
-    )
-
-
-class UserEmail(BaseModel):
-    id: EncodedDatabaseIdField = Field(
-        ...,
-        title="User ID",
-        description="The encoded ID of the user.",
-    )
-    email: str = Field(
-        ...,
-        title="Email",
-        description="The email of the user.",
-    )
-
-
-class SharingStatus(BaseModel):
-    id: EncodedDatabaseIdField = Field(
-        ...,
-        title="ID",
-        description="The encoded ID of the resource to be shared.",
-    )
-    title: str = Field(
-        ...,
-        title="Title",
-        description="The title or name of the resource.",
-    )
-    importable: bool = Field(
-        ...,
-        title="Importable",
-        description="Whether this resource can be published using a link.",
-    )
-    published: bool = Field(
-        ...,
-        title="Published",
-        description="Whether this resource is currently published.",
-    )
-    users_shared_with: List[UserEmail] = Field(
-        [],
-        title="Users shared with",
-        description="The list of encoded ids for users the resource has been shared.",
-    )
-    username_and_slug: Optional[str] = Field(
-        None,
-        title="Username and slug",
-        description="The relative URL in the form of /u/{username}/{resource_single_char}/{slug}",
-    )
-
-
-class ShareWithStatus(SharingStatus):
-    errors: List[str] = Field(
-        [],
-        title="Errors",
-        description="Collection of messages indicating that the resource was not shared with some (or all users) due to an error.",
-    )
-    extra: Optional[Any] = Field(
-        None,
-        title="Extra",
-        description="Optional extra information about this shareable resource that may be of interest.",
-    )
-
-
 class SlugBuilder:
     """Builder for creating slugs out of items."""
 
@@ -684,10 +700,7 @@ class ShareableService:
     def unshare_with(self, trans, id: EncodedDatabaseIdField, payload: ShareWithPayload) -> ShareWithStatus:
         item = self._get_item_by_id(trans, id)
         users, errors = self._get_users(trans, payload.user_ids)
-        try:
-            self.manager.unshare_with(item, users)
-        except Exception as e:  # TODO catch particular exception
-            errors.append(e)
+        self.manager.unshare_with(item, users)
         base_status = self._get_sharing_status(trans, item)
         status = ShareWithStatus.parse_obj(base_status)
         status.errors = errors
@@ -695,7 +708,7 @@ class ShareableService:
 
     def _share_with_options(self, trans, item, users, errors: List[str], share_option: Optional[SharingOptions] = None):
         extra = self.manager.get_sharing_extra_information(trans, item, users, errors, share_option)
-        if not extra or (share_option and share_option.no_changes):
+        if not extra or extra.can_share:
             self.manager.share_with(item, users)
         return extra
 

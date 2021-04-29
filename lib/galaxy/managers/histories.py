@@ -8,7 +8,6 @@ import glob
 import logging
 import os
 from typing import (
-    Any,
     cast,
     List,
     Optional,
@@ -69,7 +68,7 @@ class HDABasicInfo(BaseModel):
     name: str
 
 
-class ShareHistoryExtra(BaseModel):
+class ShareHistoryExtra(sharable.ShareWithExtra):
     can_change: List[HDABasicInfo] = []
     cannot_change: List[HDABasicInfo] = []
 
@@ -265,11 +264,14 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
 
     def get_sharing_extra_information(
         self, trans, item, users, errors: List[str], option: Optional[sharable.SharingOptions] = None
-    ) -> Optional[Any]:
+    ) -> Optional[sharable.ShareWithExtra]:
         """Returns optional extra information about the datasets of the history that can be accessed by the users."""
-        display_only = option is None
         extra = ShareHistoryExtra()
         history = cast(model.History, item)
+        if history.empty:
+            errors.append("You cannot share an empty history.")
+            return extra
+
         owner = trans.user
         owner_roles = owner.all_roles()
         for user in users:
@@ -280,21 +282,27 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
             user_roles = user.all_roles()
             # Only deal with datasets that have not been purged
             for hda in history.activatable_datasets:
-                if not trans.app.security_agent.can_access_dataset(user_roles, hda.dataset):
-                    # The user with which we are sharing the history does not have access permission on the current dataset
-                    if trans.app.security_agent.can_manage_dataset(owner_roles, hda.dataset):
-                        # The current user has authority to change permissions on the current dataset because
-                        # they have permission to manage permissions on the dataset.
-                        if display_only:
-                            extra.can_change.append(HDABasicInfo(id=trans.security.encode_id(hda.id), name=hda.name))
+                if trans.app.security_agent.can_access_dataset(user_roles, hda.dataset):
+                    continue
+                # The user with which we are sharing the history does not have access permission on the current dataset
+                owner_can_manage_dataset = (
+                    trans.app.security_agent.can_manage_dataset(owner_roles, hda.dataset)
+                    and not hda.dataset.library_associations
+                )
+                if option and owner_can_manage_dataset:
+                    if option == sharable.SharingOptions.make_accessible_to_shared:
+                        trans.app.security_agent.privately_share_dataset(hda.dataset, users=[owner, user])
+                    elif option == sharable.SharingOptions.make_public:
+                        trans.app.security_agent.make_dataset_public(hda.dataset)
+                elif not option:
+                    hda_info = HDABasicInfo(id=trans.security.encode_id(hda.id), name=hda.name)
+                    if owner_can_manage_dataset:
+                        extra.can_change.append(hda_info)
                     else:
-                        if option in [sharable.SharingOptions.make_public, sharable.SharingOptions.make_accessible_to_shared]:
-                            # The user has made a choice, so 'unique' doesn't apply.  Don't change stuff
-                            # that the user doesn't have permission to change
-                            continue
-                        if display_only:
-                            # Build the dictionaries for display, containing unique histories only
-                            extra.cannot_change.append(HDABasicInfo(id=trans.security.encode_id(hda.id), name=hda.name))
+                        extra.cannot_change.append(hda_info)
+
+        # If there is no HDA to take care of, then we can safely share
+        extra.can_share = not extra.can_change and not extra.cannot_change
         return extra
 
     def is_history_shared_with(self, history, user) -> bool:
