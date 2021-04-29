@@ -134,7 +134,7 @@ class CloudAuthzController(BaseGalaxyAPIController):
 
         # No two authorization configuration with
         # exact same key/value should exist.
-        for ca in trans.user.cloudauthzs:
+        for ca in trans.user.cloudauthz:
             if ca.equals(trans.user.id, provider, authn_id, config):
                 log.debug("Rejected user `{}`'s request to create cloud authorization because a similar config "
                           "already exists.".format(trans.user.id))
