@@ -2,8 +2,8 @@
 
 from packaging.version import Version
 
-from ._framework import ApiTestCase
 from galaxy_test.base.populators import skip_without_tool
+from ._framework import ApiTestCase
 
 
 class GalaxyInteractorBackwardCompatTestCase(ApiTestCase):
@@ -35,8 +35,7 @@ class GalaxyInteractorTestCase(ApiTestCase):
         assert isinstance(test_data[0], dict)
         assert test_data[0].get('tool_version') == "0.1+galaxy6"
 
-        test_data = self.galaxy_interactor.get_tool_tests(tool_id="multiple_versions") # test that tool_version=None does not break it
+        test_data = self.galaxy_interactor.get_tool_tests(tool_id="multiple_versions")  # test that tool_version=None does not break it
         assert isinstance(test_data, list)
         assert len(test_data) > 0
         assert isinstance(test_data[0], dict)
-
