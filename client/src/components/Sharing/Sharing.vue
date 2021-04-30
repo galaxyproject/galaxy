@@ -133,7 +133,11 @@
             <!--            <b-card-group header-tag="header" no-body role="tab"  deck>-->
             <b-alert variant="warning" dismissible fade :show="permissionsChangeRequired">
                 <div class="text-center">
-                    {{ `${item.extra.can_change.length} datasets are exclusively private to you` }}
+                    {{
+                        item.extra.can_change.length > 0
+                            ? `${item.extra.can_change.length} datasets are exclusively private to you`
+                            : `You are not authorized to share ${item.extra.cannot_change.length} datasets`
+                    }}
                 </div>
             </b-alert>
             <b-row v-if="permissionsChangeRequired">
@@ -153,7 +157,7 @@
                         </b-collapse>
                     </b-card>
                 </b-col>
-                <b-col>
+                <b-col v-if="item.extra.cannot_change.length > 0">
                     <b-card>
                         <b-card-header header-tag="header" class="p-1" role="tab">
                             <b-button block v-b-toggle.cannot-share variant="danger"
@@ -179,12 +183,16 @@
                     >
                         <b-button
                             @click="setSharing(actions.share_with, shareWithEmail, share_option.make_public)"
+                            v-if="item.extra.can_change.length > 0"
                             block
                             variant="outline-primary"
                             >Make datasets public</b-button
                         >
                         <b-button
-                            @click="setSharing(actions.share_with, shareWithEmail, share_option.make_accessible_to_shared)"
+                            @click="
+                                setSharing(actions.share_with, shareWithEmail, share_option.make_accessible_to_shared)
+                            "
+                            v-if="item.extra.can_change.length > 0"
                             block
                             variant="outline-primary"
                             >Share only with {{ shareWithEmail }}</b-button
@@ -193,8 +201,8 @@
                             @click="setSharing(actions.share_with, shareWithEmail, share_option.no_changes)"
                             block
                             variant="outline-primary"
-                            >Share Anyway</b-button
-                        >
+                            >Share Anyway
+                        </b-button>
                     </b-card>
                 </b-col>
             </b-row>
@@ -277,11 +285,11 @@ export default {
                 share_with: "share_with",
                 unshare_with: "unshare_with",
             },
-            share_option:{
+            share_option: {
                 make_public: "make_public",
                 make_accessible_to_shared: "make_accessible_to_shared",
-                no_changes: "no_changes"
-            }
+                no_changes: "no_changes",
+            },
         };
     },
     computed: {
