@@ -1396,7 +1396,7 @@ class DataFrame(TabularData):
 
     file_ext = 'dataframe'
     # as we will limit number of rows and columns, bigger chunk is read.
-    max_peek_size = 10000000   # 10 MB
+    max_peek_size = 1000000   # 10 MB
     max_cell_width = 50
 
     def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=10):
@@ -1464,7 +1464,7 @@ class DataFrame(TabularData):
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
         # TODO take page parameters from client
         max_preview_lines = 50
-        columns_per_page = 25
+        columns_per_page = 10
         # page = 0
         n_pages = (dataset.metadata.columns - 1) // columns_per_page + 1
 
