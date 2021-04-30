@@ -203,7 +203,7 @@ export default {
             const url = prependPath("/api/tools/");
             const data = {
                 tool_id: this.chosenConverter.tool_id,
-                inputs: { input: { batch: true, values: { 0: { src: "hdca", id: this.collection_id } } } },
+                inputs: { input: { batch: true, values: [{ src: "hdca", id: this.collection_id }] } },
             };
             axios
                 .post(url, data)
