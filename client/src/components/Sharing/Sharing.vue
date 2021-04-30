@@ -97,7 +97,7 @@
                             :disabled="shareWithEmail === ''"
                             @click.stop="setSharing(actions.share_with, shareWithEmail)"
                             v-b-tooltip.hover
-                            :title="shareWithEmail ? `Share with ${shareWithEmail}` : ''"
+                            :title="shareWithEmail ? `Share with ${shareWithEmail}` : 'Please enter user email'"
                             class="sharing_icon"
                         >
                             <font-awesome-icon class="share_with" icon="user-plus" size="lg" />
@@ -199,6 +199,12 @@
                             block
                             variant="outline-primary"
                             >Share Anyway
+                        </b-button>
+                        <b-button
+                            @click="getModel()"
+                            block
+                            variant="outline-danger"
+                            >Cancel
                         </b-button>
                     </b-card>
                 </b-col>
