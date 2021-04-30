@@ -88,7 +88,7 @@
                         </b-button>
                     </template>
                     <template v-slot:foot(email)>
-                        <b-form-input v-model="shareWithEmail" placeholder="Please enter user email" />
+                        <b-form-input v-model="shareWithEmail" placeholder="Please enter user email(s) using comma separated values" />
                     </template>
                     <template v-slot:foot(id)>
                         <b-button
@@ -424,7 +424,7 @@ export default {
                 .put(`${getAppRoot()}api/${this.pluralNameLower}/${this.id}/${action}`, data)
                 .then(({ data }) => {
                     this.assignItem(data);
-                    if (data.can_share) this.shareWithEmail = "";
+                    if (data.extra && data.extra.can_share) this.shareWithEmail = "";
                     else this.shareWithEmail = user_id || "";
                 })
                 .catch((error) => this.errors.push(error.response.data.err_msg));
