@@ -200,12 +200,7 @@
                             variant="outline-primary"
                             >Share Anyway
                         </b-button>
-                        <b-button
-                            @click="getModel()"
-                            block
-                            variant="outline-danger"
-                            >Cancel
-                        </b-button>
+                        <b-button @click="getModel()" block variant="outline-danger">Cancel </b-button>
                     </b-card>
                 </b-col>
             </b-row>
@@ -430,6 +425,7 @@ export default {
                 .then(({ data }) => {
                     this.assignItem(data);
                     if (data.can_share) this.shareWithEmail = "";
+                    else this.shareWithEmail = user_id || "";
                 })
                 .catch((error) => this.errors.push(error.response.data.err_msg));
         },
