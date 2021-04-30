@@ -2392,7 +2392,7 @@ simple_mapping(model.LibraryDatasetCollectionAssociation,
         backref="dataset_collections"),
     ratings=relation(model.LibraryDatasetCollectionRatingAssociation,
         order_by=model.LibraryDatasetCollectionRatingAssociation.table.c.id,
-        backref="dataset_collections"))
+        backref="dataset_collection"))
 
 simple_mapping(model.DatasetCollectionElement,
     hda=relation(model.HistoryDatasetAssociation,
@@ -2771,8 +2771,7 @@ rating_mapping(model.StoredWorkflowRatingAssociation)
 rating_mapping(model.PageRatingAssociation)
 rating_mapping(model.VisualizationRatingAssociation)
 rating_mapping(model.HistoryDatasetCollectionRatingAssociation)
-rating_mapping(model.LibraryDatasetCollectionRatingAssociation,
-    libary_dataset_collection=model.LibraryDatasetCollectionAssociation)
+rating_mapping(model.LibraryDatasetCollectionRatingAssociation)
 
 mapper(model.Job, model.Job.table, properties=dict(
     # user=relation( model.User.mapper ),
