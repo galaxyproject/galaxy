@@ -296,9 +296,6 @@ export default {
         };
     },
     computed: {
-        modelClassLower() {
-            return this.model_class.toLowerCase();
-        },
         permissionsChangeRequired() {
             if (!this.item.extra) return false;
             return (
@@ -339,6 +336,10 @@ export default {
         this.getModel();
     },
     methods: {
+        addError(newError) {
+            // temporary turning Set into Array, until we update till Vue 3.0, that supports Set reactivity
+            this.errors = Array.from(new Set(this.errors).add(newError));
+        },
         onCopy() {
             copy(this.itemUrl);
             this.tooltipClipboard = "Copied!";
@@ -371,7 +372,7 @@ export default {
                     this.assignItem(response.data);
                     this.item.username_and_slug = `${this.itemSlugParts[0]}${newSlug}`;
                 })
-                .catch((error) => this.errors.push(error.response.data.err_msg));
+                .catch((error) => this.addError(error.response.data.err_msg));
         },
         onImportable(importable) {
             if (importable) {
@@ -394,7 +395,7 @@ export default {
             axios
                 .get(`${getAppRoot()}api/${this.pluralNameLower}/${this.id}/sharing`)
                 .then((response) => this.assignItem(response.data))
-                .catch((error) => this.errors.push(error.response.data.err_msg));
+                .catch((error) => this.addError(error.response.data.err_msg));
         },
         setUsername() {
             const Galaxy = getGalaxyInstance();
@@ -406,18 +407,14 @@ export default {
                     this.hasUsername = true;
                     this.getModel();
                 })
-                .catch((error) => this.errors.push(error.response.data.err_msg));
+                .catch((error) => this.addError(error.response.data.err_msg));
         },
         setSharing(action, user_id, share_option) {
-            console.log("!!!!");
-            console.log(user_id);
-            console.log(user_id);
-            console.log(user_id);
             if (
                 action === this.actions.share_with &&
                 this.item.users_shared_with.some((user) => user_id === user.email)
             ) {
-                this.errors.push(`You already shared this ${this.model_class} with ${user_id}`);
+                this.addError(`You already shared this ${this.model_class} with ${user_id}`);
                 return;
             }
 
@@ -433,7 +430,7 @@ export default {
                     if (data.extra && data.extra.can_share) this.shareWithEmail = "";
                     else this.shareWithEmail = user_id || "";
                 })
-                .catch((error) => this.errors.push(error.response.data.err_msg));
+                .catch((error) => this.addError(error.response.data.err_msg));
         },
         searchChanged(searchValue) {
             if (searchValue === "") {
@@ -444,7 +441,7 @@ export default {
                     .then((response) => {
                         this.usersList = response.data;
                     })
-                    .catch((error) => this.errors.push(error.response.data.err_msg));
+                    .catch((error) => this.addError(error.response.data.err_msg));
             }
         },
     },
