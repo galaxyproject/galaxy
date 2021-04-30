@@ -79,12 +79,12 @@
 
                     <template v-slot:cell(id)="cell">
                         <b-button
-                            variant="danger"
+                            variant="outline-danger"
                             size="sm"
                             class="sharing_icon"
                             @click.stop="setSharing(actions.unshare_with, cell.value)"
                         >
-                            <font-awesome-icon class="unshare_user sharing_icon" icon="user-slash" />
+                            <font-awesome-icon class="unshare_user sharing_icon" size="lg" icon="user-slash" />
                         </b-button>
                     </template>
                     <template v-slot:foot(email)>
@@ -92,8 +92,9 @@
                     </template>
                     <template v-slot:foot(id)>
                         <b-button
-                            variant="link"
+                            variant="outline-primary"
                             size="sm"
+                            :disabled="shareWithEmail === ''"
                             @click.stop="setSharing(actions.share_with, shareWithEmail)"
                             v-b-tooltip.hover
                             :title="shareWithEmail ? `Share with ${shareWithEmail}` : ''"
