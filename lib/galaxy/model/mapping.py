@@ -1762,7 +1762,7 @@ simple_mapping(model.HistoryDatasetAssociation,
         backref="hdas"),
     ratings=relation(model.HistoryDatasetAssociationRatingAssociation,
         order_by=model.HistoryDatasetAssociationRatingAssociation.table.c.id,
-        backref="hdas"),
+        backref="hda"),
     extended_metadata=relation(model.ExtendedMetadata,
         primaryjoin=(model.HistoryDatasetAssociation.table.c.extended_metadata_id
                      == model.ExtendedMetadata.table.c.id)),
@@ -2766,7 +2766,7 @@ def rating_mapping(rating_class, **kwds):
 
 
 rating_mapping(model.HistoryRatingAssociation)
-rating_mapping(model.HistoryDatasetAssociationRatingAssociation, hda=model.HistoryDatasetAssociation)
+rating_mapping(model.HistoryDatasetAssociationRatingAssociation)
 rating_mapping(model.StoredWorkflowRatingAssociation, stored_workflow=model.StoredWorkflow)
 rating_mapping(model.PageRatingAssociation)
 rating_mapping(model.VisualizationRatingAssociation)
