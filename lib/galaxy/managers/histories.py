@@ -15,7 +15,10 @@ from typing import (
     Union,
 )
 
-from pydantic import BaseModel
+from pydantic import (
+    BaseModel,
+    Field,
+)
 from sqlalchemy import (
     and_,
     asc,
@@ -69,8 +72,29 @@ class HDABasicInfo(BaseModel):
 
 
 class ShareHistoryExtra(sharable.ShareWithExtra):
-    can_change: List[HDABasicInfo] = []
-    cannot_change: List[HDABasicInfo] = []
+    can_change: List[HDABasicInfo] = Field(
+        [],
+        title="Can Change",
+        description=(
+            "A collection of datasets that are not accessible by one or more of the target users "
+            "but, the user sharing the history, has permission to make them accessible for others."
+        ),
+    )
+    cannot_change: List[HDABasicInfo] = Field(
+        [],
+        title="Cannot Change",
+        description=(
+            "A collection of datasets that are not accessible by one or more of the target users "
+            "and, the user sharing the history, does not have permission to make them accessible for others."
+        ),
+    )
+    num_accessible: int = Field(
+        0,
+        title="Accessible",
+        description=(
+            "The number of datasets in the history that are public or accessible by all the target users."
+        ),
+    )
 
 
 class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMixin, SortableManager):
@@ -276,6 +300,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         owner_roles = owner.all_roles()
         can_change_dict = {}
         cannot_change_dict = {}
+        total_datasets = 0
         for user in users:
             if self.is_history_shared_with(history, user):
                 errors.append(f"History ({history.name}) already shared with user ({user.email})")
@@ -284,6 +309,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
             user_roles = user.all_roles()
             # Only deal with datasets that have not been purged
             for hda in history.activatable_datasets:
+                total_datasets += 1
                 if trans.app.security_agent.can_access_dataset(user_roles, hda.dataset):
                     continue
                 # The user with which we are sharing the history does not have access permission on the current dataset
@@ -296,7 +322,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
                         trans.app.security_agent.privately_share_dataset(hda.dataset, users=[owner, user])
                     elif option == sharable.SharingOptions.make_public:
                         trans.app.security_agent.make_dataset_public(hda.dataset)
-                elif not option:
+                elif not option or not owner_can_manage_dataset:
                     hda_id = trans.security.encode_id(hda.id)
                     hda_info = HDABasicInfo(id=hda_id, name=hda.name)
                     if owner_can_manage_dataset:
@@ -306,11 +332,14 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
 
         extra.can_change = list(can_change_dict.values())
         extra.cannot_change = list(cannot_change_dict.values())
-        if extra.cannot_change and not extra.can_change:
+        extra.num_accessible = total_datasets - len(extra.can_change) - len(extra.cannot_change)
+        if not extra.num_accessible:
             errors.append("The history you are sharing do not contain any datasets that can be accessed by the users with which you are sharing.")
 
-        # If there is no HDA to take care of, then we can safely share
-        extra.can_share = not errors and not extra.can_change and not extra.cannot_change
+        extra.can_share = (
+            not errors and extra.num_accessible == total_datasets
+            or (not errors and option is not None and option == sharable.SharingOptions.no_changes)
+        )
         return extra
 
     def is_history_shared_with(self, history, user) -> bool:
