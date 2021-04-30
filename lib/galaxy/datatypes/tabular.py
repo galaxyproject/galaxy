@@ -5,6 +5,7 @@ Tabular datatype
 import abc
 import binascii
 import csv
+import io
 import logging
 import os
 import re
@@ -13,6 +14,7 @@ import subprocess
 import tempfile
 from json import dumps
 
+import numpy as np
 import pandas as pd
 import pysam
 from markupsafe import escape
@@ -1391,7 +1393,12 @@ class CMAP(TabularData):
 class DataFrame(TabularData):
     """CSV or TSV hanled using pandas DataFrame.
     """
+    # TODO make header and index metadata
+
     file_ext = 'dataframe'
+    # as we will limit number of rows and columns, bigger chunk is read.
+    max_peek_size = 10000000   # 10 MB
+    max_cell_width = 50
 
     def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=10):
         if not dataset.has_data():
@@ -1408,21 +1415,41 @@ class DataFrame(TabularData):
         dataset.metadata.delimiter = sep
 
         with compression_utils.get_fileobj(dataset.file_name) as dataset_fh:
-            df = pd.read_csv(dataset_fh, nrows=0, sep=sep)
-            dataset.metadata.columns = df.shape[1]
+            data = dataset_fh.read(self.max_peek_size)
+            lines = data.split('\n')
+            if len(lines) < 2 and len(data) == self.max_peek_size:
+                raise ValueError("The first line of the dataset is longer than the maximum allowed (10 MB)!") 
+            dataset.metadata.columns = len(lines[0].split(sep))
             # dataset.metadata.column_names = list(df.columns)
             dataset_fh.seek(0)
-            dataset.metadata.data_lines = sum(1 for line in dataset_fh) - 1
+            dataset.metadata.data_lines = sum(1 for line in dataset_fh)
 
     def get_shape(self, dataset):
         return (dataset.metadata.data_lines, dataset.metadata.columns)
 
-    def set_peek(self, dataset, peek_max_lines=5, peek_max_columns=10):
+    def wrap(self, elm):
+        elm_str = str(elm)
+        if len(elm_str) > self.max_cell_width:
+            elm = elm_str[:self.max_cell_width] + '...'
+        return elm
+
+    def set_peek(self, dataset):
+        max_peek_lines=5
+        max_peek_columns=10
+
         if not dataset.dataset.purged:
+            with compression_utils.get_fileobj(dataset.file_name) as dataset_fh:
+                data = dataset_fh.read(self.max_peek_size)
             df = pd.read_csv(
-                dataset.file_name, sep=dataset.metadata.delimiter,
-                usecols=range(min(peek_max_columns, dataset.metadata.columns)),
-                nrows=peek_max_lines)
+                io.StringIO(data),
+                sep=dataset.metadata.delimiter,
+                header=None,
+                dtype={'float64': 'float32'},
+                usecols=range(min(max_peek_columns, dataset.metadata.columns)),
+                nrows=max_peek_lines,
+                compression=None
+            )         
+            df = df.applymap(self.wrap)
             dataset.peek = df.to_json()
             dataset.blurb = "shape: {}".format(self.get_shape(dataset))
         else:
@@ -1436,9 +1463,9 @@ class DataFrame(TabularData):
             return "DataFrame in shape {}".format(self.get_shape(dataset))
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
-        # TODO take parameters from client
-        display_max_lines = 10
-        columns_per_page = 50
+        # TODO take page parameters from client
+        max_preview_lines = 50
+        columns_per_page = 20
         page = 0
 
         preview = util.string_as_bool(preview)
@@ -1451,9 +1478,21 @@ class DataFrame(TabularData):
         # suppose no out of index range
         start_column = columns_per_page * page
         end_column = min(start_column + columns_per_page, dataset.metadata.columns)
-        df = pd.read_csv(
-            dataset.file_name, sep=dataset.metadata.delimiter,
-            usecols=range(start_column, end_column),
-            nrows=display_max_lines)
+        with compression_utils.get_fileobj(dataset.file_name) as dataset_fh:
+            data = dataset_fh.read(self.max_peek_size)
 
+        # The c engine in current version of pandas fails on some datasets.
+        # TODO replace with c engine.
+        df = pd.read_csv(
+            io.StringIO(data),
+            sep=dataset.metadata.delimiter,
+            header=None,
+            engine='python',
+            dtype={'float64': 'float32'},
+            usecols=range(start_column, end_column),
+            nrows=max_preview_lines,
+            compression=None
+        )
+        df = df.applymap(self.wrap)
+        # TODO make template to take page navigator
         return df.to_html()
