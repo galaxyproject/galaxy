@@ -141,7 +141,7 @@
                 </div>
             </b-alert>
             <b-row v-if="permissionsChangeRequired">
-                <b-col>
+                <b-col v-if="item.extra.can_change.length > 0">
                     <b-card>
                         <b-card-header header-tag="header" class="p-1" role="tab">
                             <b-button block v-b-toggle.can-share variant="warning"
@@ -150,7 +150,7 @@
                         </b-card-header>
                         <b-collapse id="can-share" visible accordion="my-accordion" role="tabpanel">
                             <b-list-group>
-                                <b-list-group-item v-for="dataset in item.extra.can_change">{{
+                                <b-list-group-item :key="dataset.id" v-for="dataset in item.extra.can_change">{{
                                     dataset.name
                                 }}</b-list-group-item>
                             </b-list-group>
@@ -166,7 +166,7 @@
                         </b-card-header>
                         <b-collapse id="cannot-share" visible accordion="my-accordion2" role="tabpanel">
                             <b-list-group>
-                                <b-list-group-item v-for="dataset in item.extra.cannot_change">{{
+                                <b-list-group-item :key="dataset.id" v-for="dataset in item.extra.cannot_change">{{
                                     dataset.name
                                 }}</b-list-group-item>
                             </b-list-group>
@@ -406,6 +406,7 @@ export default {
                 .catch((error) => this.errors.push(error.response.data.err_msg));
         },
         setSharing(action, user_id, share_option) {
+            console.log(user_id)
             if (
                 action === this.actions.share_with &&
                 this.item.users_shared_with.some((user) => user_id === user.email)
