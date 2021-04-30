@@ -3,6 +3,7 @@
   <requirements>
 	<requirement type="package" version="3.8">python</requirement>
 	<requirement type="package" version="1.14">aws-cli</requirement>
+	<requirement type="package" version="1.10">boto3</requirement>
   </requirements>
   <command detect_errors="exit_code">
     '$__tool_directory__/aws_comprehend.py' '$amp_transcript' '$amp_entities' '$bucket_name' '$data_access_role' '$ignore_categories'

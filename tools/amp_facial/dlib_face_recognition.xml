@@ -4,7 +4,7 @@
 	<requirement type="package" version="3.8">python</requirement>
     <requirement type="package" version="19.21.0">dlib</requirement>
     <requirement type="package" version="4.4.0">opencv</requirement>
-    <requirement type="package" version="1.2.3">face_recognition</requirement>
+    <requirement type="package" version="1.3.0">face_recognition</requirement>
     <!-- <requirement type="package" version="4.53.0">tqdm</requirement>  -->
   </requirements>
   <command detect_errors="exit_code"> 

@@ -3,6 +3,7 @@
   <requirements>
 	<requirement type="package" version="3.8">python</requirement>
     <requirement type="package" version="8.30">coreutils</requirement>
+    <requirement type="package" version="2.2">spacy</requirement>
   </requirements>
   <command detect_errors="exit_code">
     '$__tool_directory__/spacy_.py' '$amp_transcript' '$amp_entities' '$ignore_categories'

@@ -1,9 +1,9 @@
 <tool id="contact_sheets" name="Contact Sheets" version="1.0.0">
   <description>Contact Sheet Creation</description>
   <requirements>
+	<requirement type="package" version="3.8">python</requirement>
     <requirement type="package" version="8.30">coreutils</requirement>
     <requirement type="package" version="3.4">ffmpeg</requirement>
-	<requirement type="package" version="3.8">python</requirement>
   </requirements>
   <command detect_errors="exit_code">
   	'$__tool_directory__/contact_sheets.py' '$input_video' '$type' '$frame_seconds' '$frame_quantity' '$amp_shots' '$amp_faces' '$contact_sheet' '$number_of_columns' '$photo_width' '$margin' '$padding'
