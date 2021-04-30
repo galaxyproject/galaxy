@@ -11,7 +11,7 @@ face-recognition==1.3.0
 face-recognition-models==0.3.0
 
 # hmgm
-jira=2.0
+jira==2.0.0
 
 # spacy
 spacy==2.2.2
