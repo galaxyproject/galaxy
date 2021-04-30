@@ -1,5 +1,4 @@
 import { dateMixin, ModelBase } from "./ModelBase";
-import { bytesToString } from "utils/utils";
 
 export class History extends dateMixin(ModelBase) {
     // not deleted
@@ -18,14 +17,6 @@ export class History extends dateMixin(ModelBase) {
         }, 0);
     }
 
-    get niceSize() {
-        return this.size ? bytesToString(this.size, true, 2) : "(empty)";
-    }
-
-    get empty() {
-        return this.size == 0;
-    }
-
     get statusDescription() {
         const status = [];
         if (this.shared) status.push("Shared");
@@ -34,12 +25,6 @@ export class History extends dateMixin(ModelBase) {
         if (this.isDeleted) status.push("Deleted");
         if (this.purged) status.push("Purged");
         return status.join(", ");
-    }
-
-    loadProps(raw = {}) {
-        // eslint-disable-next-line no-unused-vars
-        const { empty, ...theRest } = raw;
-        Object.assign(this, theRest);
     }
 }
 

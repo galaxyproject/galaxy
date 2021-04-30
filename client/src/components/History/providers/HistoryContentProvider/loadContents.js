@@ -1,5 +1,5 @@
-import { concat, defer, of, throwError } from "rxjs";
-import { delay, repeat, switchMap, switchMapTo, debounceTime, startWith } from "rxjs/operators";
+import { defer, of, throwError } from "rxjs";
+import { switchMap, debounceTime, startWith, repeatWhen } from "rxjs/operators";
 import { decay } from "utils/observable";
 import { monitorXHR } from "utils/observable/monitorXHR";
 import { loadHistoryContents } from "../../caching";
@@ -13,9 +13,7 @@ export const loadContents = (cfg = {}) => {
         initialInterval = 2 * 1000,
         maxInterval = 10 * initialInterval,
         disablePoll = false,
-        // debug = false,
-        // time between initial load and polling start
-        startingDelay = 5000,
+        debug = false,
         windowSize = 2 * SearchParams.pageSize,
     } = cfg;
 
@@ -28,39 +26,32 @@ export const loadContents = (cfg = {}) => {
 
     const { id } = history;
 
+    const singleLoad = (hid) => defer(() => of([id, filters, hid]).pipe(
+        loadHistoryContents({ windowSize }),
+    ));
+
+    const poll = (request$) => resetPoll(100).pipe(
+        switchMap(() => request$.pipe(
+            repeatWhen(completed$ => completed$.pipe(
+                decay({ initialInterval, maxInterval, debug }),
+            ))
+        ))
+    );
+
     return switchMap((hid) => {
-
-        // a single history update
-        const singleLoad$ = of([id, filters, hid]).pipe(
-            loadHistoryContents({ windowSize })
-        );
-
-        // start repeating, delay gets longer over time until unsubscribed
-        const freshPoll$ = defer(() => singleLoad$.pipe(
-            decay({ initialInterval, maxInterval }),
-            repeat()
-        ));
-
-        // history, tools routes all refresh
-        // exclude our own polling url though
-        const routes = [/api\/(history|tools|histories)/];
-        const methods = ["POST", "PUT", "DELETE"];
-        const resetPoll$ = monitorXHR({ methods, routes });
-
-        // resets re-subscribe to freshPoll$ starting the decay over again
-        const poll$ = resetPoll$.pipe(
-            startWith(true),
-            debounceTime(100),
-            switchMapTo(freshPoll$)
-        );
-
-        // if we're polling, add a little delay between initial load and polling
-        // avoids pointless polling if the user is rapidly changing the view
-        const polling$ = of(true).pipe(
-            delay(startingDelay),
-            switchMapTo(poll$)
-        );
-
-        return disablePoll ? singleLoad$ : concat(singleLoad$, polling$);
+        const request$ = singleLoad(hid);
+        return disablePoll ? request$ : poll(request$);
     })
+};
+
+// history, tools routes all refresh
+// prettier-ignore
+const resetPoll = (debouncePeriod) => {
+    const routes = [/api\/(history|tools|histories)/];
+    const methods = ["POST", "PUT", "DELETE"];
+
+    return monitorXHR({ methods, routes }).pipe(
+        startWith(true), 
+        debounceTime(debouncePeriod)
+    );
 };

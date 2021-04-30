@@ -1,9 +1,11 @@
 """
 API operations on the contents of a history.
 """
+import json
 import logging
 import os
 import re
+from datetime import datetime
 
 from galaxy import (
     exceptions,
@@ -1057,7 +1059,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         trans.response.headers.update(archive.get_headers())
         return archive.response()
 
-    @expose_api_anonymous
+    @expose_api_raw_anonymous
     def contents_near(self, trans, history_id, hid, limit, **kwd):
         """
         This endpoint provides random access to a large history without having
@@ -1075,6 +1077,18 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         * GET /api/histories/{history_id}/contents/near/{hid}/{limit}
         """
         history = self.history_manager.get_accessible(self.decode_id(history_id), trans.user, current_history=trans.history)
+
+        # while polling, check to see if the history has changed
+        # if it hasn't then we can short-circuit the poll request
+        since = kwd.get('update_time-gt', None)
+        if since:
+            since_str = self.history_contents_filters.parse_date(since)
+            since_date = datetime.fromisoformat(since_str)
+            if history.update_time <= since_date:
+                trans.response.status = 204
+                return
+
+        # parse content params
         filter_params = self._parse_rest_params(kwd)
         serialization_params = self._parse_serialization_params(kwd, 'betawebclient')
         view = serialization_params.pop('view')
@@ -1105,8 +1119,10 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         trans.response.headers['total_matches_down'] = down_count
         trans.response.headers['max_hid'] = max_hid
         trans.response.headers['min_hid'] = min_hid
+        trans.response.headers['history_size'] = str(history.disk_size)
+        trans.response.headers['history_empty'] = json.dumps(history.empty)  # convert to proper bool
 
-        return contents
+        return json.dumps(contents)
 
     # Perform content query and matching count
     def _seek(self, history, filter_params, order_by_string, limit, serialization_params):

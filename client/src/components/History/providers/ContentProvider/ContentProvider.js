@@ -1,6 +1,6 @@
 import { NEVER } from "rxjs";
 import { SearchParams, ScrollPos } from "../../model";
-import { isValidNumber } from "./helpers";
+import { isValidNumber } from "utils/validation";
 // import { reportPayload } from "../../test/providerTestHelpers";
 
 // first emission, emitted when parent (history) or filters changes to reset the view
@@ -71,7 +71,7 @@ export const ContentProvider = {
 
         this.listenTo(scrolling$, (val) => (this.scrolling = val));
         this.listenTo(loading$, (val) => (this.loading = val));
-        this.listenTo(resetPos$, (val) => this.resetScrollPos(val));
+        this.listenTo(resetPos$, (pos) => this.setScrollPos(pos));
 
         // render output
         this.listenTo(payload$, {
@@ -82,8 +82,8 @@ export const ContentProvider = {
     },
 
     methods: {
-        resetScrollPos(pos = ScrollPos.create()) {
-            this.scrollPos = pos;
+        resetScrollPos() {
+            this.setScrollPos(ScrollPos.create());
         },
 
         initStreams() {

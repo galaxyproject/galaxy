@@ -81,7 +81,8 @@ const stdHistoryParams = {
  * Return list of available histories
  */
 export async function getHistoryList() {
-    const response = await api.get("/histories", { params: { view: "summary" } });
+    const params = { view: "summary" };
+    const response = await api.get("/histories", { params });
     return doResponse(response);
 }
 
@@ -116,8 +117,6 @@ export async function createNewHistory(props = {}) {
     }
     return doResponse(createResponse);
 }
-
-//localhost:8081/history/create_new_current
 
 /**
  * Generates copy of history on server
