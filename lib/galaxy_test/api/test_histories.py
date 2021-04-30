@@ -465,8 +465,6 @@ class SharingHistoryTestCase(ApiTestCase, BaseHistories, SharingApiTests):
             "share_option": "make_accessible_to_shared"
         }
         sharing_response = self._share_history_with_payload(history_id, payload)
-        assert sharing_response["extra"]
-        assert sharing_response["extra"]["can_share"] is True
         assert sharing_response["users_shared_with"]
         assert sharing_response["users_shared_with"][0]["id"] == target_user_id
 
@@ -482,12 +480,12 @@ class SharingHistoryTestCase(ApiTestCase, BaseHistories, SharingApiTests):
         with self._different_user("alice@test.com"):
             alice_role_id = self.dataset_populator.user_private_role_id()
 
-        # Remove manage access from owner
+        # We have one dataset that we cannot manage
         payload = {"access": [owner_role_id], "manage": [alice_role_id]}
-        update_response = self._set_dataset_permissions_with_payload(history_id, hda_id, payload)
+        update_response = self._update_permissions(history_id, hda_id, payload)
         self._assert_status_code_is(update_response, 200)
 
-        # The owner cannot change the dataset permissions
+        # We will get an error if none of the datasets can be made accessible
         payload = {"user_ids": [target_user_id]}
         sharing_response = self._share_history_with_payload(history_id, payload)
         assert sharing_response["extra"]
@@ -497,6 +495,7 @@ class SharingHistoryTestCase(ApiTestCase, BaseHistories, SharingApiTests):
         assert not sharing_response["users_shared_with"]
 
         # Trying to change the permissions when sharing should fail
+        # because we don't have manage permissions
         payload = {
             "user_ids": [target_user_id],
             "share_option": "make_public"
@@ -507,7 +506,17 @@ class SharingHistoryTestCase(ApiTestCase, BaseHistories, SharingApiTests):
         assert sharing_response["errors"]
         assert not sharing_response["users_shared_with"]
 
-    def test_share_empty_not_allowed(self):
+        # we can share if we don't try to make any permission changes
+        payload = {
+            "user_ids": [target_user_id],
+            "share_option": "no_changes"
+        }
+        sharing_response = self._share_history_with_payload(history_id, payload)
+        assert not sharing_response["errors"]
+        assert sharing_response["users_shared_with"]
+        assert sharing_response["users_shared_with"][0]["id"] == target_user_id
+
+    def test_sharing_empty_not_allowed(self):
         history_id = self.dataset_populator.new_history()
 
         with self._different_user():
@@ -524,8 +533,8 @@ class SharingHistoryTestCase(ApiTestCase, BaseHistories, SharingApiTests):
         self._assert_status_code_is(sharing_response, 200)
         return sharing_response.json()
 
-    def _set_dataset_permissions_with_payload(self, history_id: str, dataset_id: str, payload) -> dict:
+    def _update_permissions(self, history_id: str, dataset_id: str, payload):
         url = f"histories/{history_id}/contents/{dataset_id}/permissions"
-        update_response = self._put(url, payload, admin=True)
-        assert update_response.status_code == 200, update_response.content
-        return update_response.json()
+        update_url = self._api_url(url, **{"use_admin_key": True})
+        update_response = put(update_url, json=payload)
+        return update_response
