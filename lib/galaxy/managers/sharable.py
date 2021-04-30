@@ -707,6 +707,8 @@ class ShareableService:
         return status
 
     def _share_with_options(self, trans, item, users, errors: List[str], share_option: Optional[SharingOptions] = None):
+        if not users:
+            return None
         extra = self.manager.get_sharing_extra_information(trans, item, users, errors, share_option)
         if not extra or extra.can_share:
             self.manager.share_with(item, users)
