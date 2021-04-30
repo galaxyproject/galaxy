@@ -14,7 +14,6 @@ import subprocess
 import tempfile
 from json import dumps
 
-import numpy as np
 import pandas as pd
 import pysam
 from markupsafe import escape
@@ -1418,7 +1417,7 @@ class DataFrame(TabularData):
             data = dataset_fh.read(self.max_peek_size)
             lines = data.split('\n')
             if len(lines) < 2 and len(data) == self.max_peek_size:
-                raise ValueError("The first line of the dataset is longer than the maximum allowed (10 MB)!") 
+                raise ValueError("The first line of the dataset is longer than the maximum allowed (10 MB)!")
             dataset.metadata.columns = len(lines[0].split(sep))
             # dataset.metadata.column_names = list(df.columns)
             dataset_fh.seek(0)
@@ -1434,8 +1433,8 @@ class DataFrame(TabularData):
         return elm
 
     def set_peek(self, dataset):
-        max_peek_lines=5
-        max_peek_columns=10
+        max_peek_lines = 5
+        max_peek_columns = 10
 
         if not dataset.dataset.purged:
             with compression_utils.get_fileobj(dataset.file_name) as dataset_fh:
@@ -1448,7 +1447,7 @@ class DataFrame(TabularData):
                 usecols=range(min(max_peek_columns, dataset.metadata.columns)),
                 nrows=max_peek_lines,
                 compression=None
-            )         
+            )
             df = df.applymap(self.wrap)
             dataset.peek = df.to_json()
             dataset.blurb = "shape: {}".format(self.get_shape(dataset))
@@ -1465,8 +1464,9 @@ class DataFrame(TabularData):
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
         # TODO take page parameters from client
         max_preview_lines = 50
-        columns_per_page = 20
-        page = 0
+        columns_per_page = 25
+        # page = 0
+        n_pages = (dataset.metadata.columns - 1) // columns_per_page + 1
 
         preview = util.string_as_bool(preview)
         if offset is not None:
@@ -1475,24 +1475,22 @@ class DataFrame(TabularData):
             to_ext = to_ext or dataset.extension
             return self._serve_raw(trans, dataset, to_ext, **kwd)
 
-        # suppose no out of index range
-        start_column = columns_per_page * page
-        end_column = min(start_column + columns_per_page, dataset.metadata.columns)
         with compression_utils.get_fileobj(dataset.file_name) as dataset_fh:
             data = dataset_fh.read(self.max_peek_size)
 
-        # The c engine in current version of pandas fails on some datasets.
-        # TODO replace with c engine.
-        df = pd.read_csv(
-            io.StringIO(data),
-            sep=dataset.metadata.delimiter,
-            header=None,
-            engine='python',
-            dtype={'float64': 'float32'},
-            usecols=range(start_column, end_column),
-            nrows=max_preview_lines,
-            compression=None
-        )
-        df = df.applymap(self.wrap)
-        # TODO make template to take page navigator
-        return df.to_html()
+        for page in range(n_pages):
+            start_column = columns_per_page * page
+            end_column = min(start_column + columns_per_page, dataset.metadata.columns)
+            # The c engine in current version of pandas fails on some datasets.
+            # TODO replace with c engine.
+            yield pd.read_csv(
+                io.StringIO(data),
+                sep=dataset.metadata.delimiter,
+                header=None,
+                engine='python',
+                dtype={'float64': 'float32'},
+                usecols=range(start_column, end_column),
+                nrows=max_preview_lines,
+                compression=None)\
+                .applymap(self.wrap)\
+                .to_html()
