@@ -1681,10 +1681,7 @@ mapper(model.FormValues, model.FormValues.table, properties=dict(
         primaryjoin=(model.FormValues.table.c.form_definition_id == model.FormDefinition.table.c.id))
 ))
 
-mapper(model.FormDefinition, model.FormDefinition.table, properties=dict(
-    current=relation(model.FormDefinitionCurrent,
-        primaryjoin=(model.FormDefinition.table.c.form_definition_current_id == model.FormDefinitionCurrent.table.c.id))
-))
+mapper(model.FormDefinition, model.FormDefinition.table)
 
 mapper(model.FormDefinitionCurrent, model.FormDefinitionCurrent.table, properties=dict(
     forms=relation(model.FormDefinition,
