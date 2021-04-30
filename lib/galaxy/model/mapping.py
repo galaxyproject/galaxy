@@ -1922,8 +1922,8 @@ mapper(model.User, model.User.table, properties=dict(
             (model.History.table.c.user_id == model.User.table.c.id)
             & (not_(model.History.table.c.deleted))
         ),
+        viewonly=True,
         order_by=desc(model.History.update_time)),
-
     galaxy_sessions=relation(model.GalaxySession,
         order_by=desc(model.GalaxySession.table.c.update_time)),
     stored_workflow_menu_entries=relation(model.StoredWorkflowMenuEntry,
