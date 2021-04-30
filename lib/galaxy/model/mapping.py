@@ -2506,7 +2506,7 @@ mapper(model.StoredWorkflow, model.StoredWorkflow.table, properties=dict(
         backref="stored_workflows"),
     ratings=relation(model.StoredWorkflowRatingAssociation,
         order_by=model.StoredWorkflowRatingAssociation.table.c.id,
-        backref="stored_workflows"),
+        backref="stored_workflow"),
     average_rating=column_property(
         select(func.avg(model.StoredWorkflowRatingAssociation.table.c.rating)).where(model.StoredWorkflowRatingAssociation.table.c.stored_workflow_id == model.StoredWorkflow.table.c.id).scalar_subquery(),
         deferred=True
@@ -2767,7 +2767,7 @@ def rating_mapping(rating_class, **kwds):
 
 rating_mapping(model.HistoryRatingAssociation)
 rating_mapping(model.HistoryDatasetAssociationRatingAssociation)
-rating_mapping(model.StoredWorkflowRatingAssociation, stored_workflow=model.StoredWorkflow)
+rating_mapping(model.StoredWorkflowRatingAssociation)
 rating_mapping(model.PageRatingAssociation)
 rating_mapping(model.VisualizationRatingAssociation)
 rating_mapping(model.HistoryDatasetCollectionRatingAssociation,
