@@ -1,6 +1,9 @@
+from typing import Optional
+
 from galaxy.managers.context import (
     ProvidesHistoryContext,
 )
+from galaxy.model import History
 
 
 class WorkRequestContext(ProvidesHistoryContext):
@@ -63,3 +66,13 @@ class SessionRequestContext(WorkRequestContext):
 
     def get_galaxy_session(self):
         return self.galaxy_session
+
+
+def proxy_work_context_for_history(trans: ProvidesHistoryContext, history: Optional[History] = None, workflow_building_mode=False):
+    """Create a WorkContext for supplied context with potentially different history.
+
+    This provides semi-structured access to a transaction/work context with a supplied target
+    history that is different from the user's current history (which also might change during
+    the request).
+    """
+    return WorkRequestContext(app=trans.app, user=trans.user, history=history or trans.history, qualified_url_builder=trans.qualified_url_builder, workflow_building_mode=workflow_building_mode)
