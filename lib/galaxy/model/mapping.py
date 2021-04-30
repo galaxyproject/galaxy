@@ -1886,7 +1886,7 @@ mapper(model.History, model.History.table, properties=dict(
         backref="histories"),
     ratings=relation(model.HistoryRatingAssociation,
         order_by=model.HistoryRatingAssociation.table.c.id,
-        backref="histories"),
+        backref="history"),
     average_rating=column_property(
         select(func.avg(model.HistoryRatingAssociation.table.c.rating)).where(model.HistoryRatingAssociation.table.c.history_id == model.History.table.c.id).scalar_subquery(),
         deferred=True
@@ -2765,7 +2765,7 @@ def rating_mapping(rating_class, **kwds):
     simple_mapping(rating_class, **dict(user=relation(model.User), **kwds))
 
 
-rating_mapping(model.HistoryRatingAssociation, history=model.History)
+rating_mapping(model.HistoryRatingAssociation)
 rating_mapping(model.HistoryDatasetAssociationRatingAssociation, hda=model.HistoryDatasetAssociation)
 rating_mapping(model.StoredWorkflowRatingAssociation, stored_workflow=model.StoredWorkflow)
 rating_mapping(model.PageRatingAssociation)
