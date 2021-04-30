@@ -1,3 +1,4 @@
+import json
 import time
 
 from requests import (
@@ -32,17 +33,7 @@ class BaseHistories:
         return create_response
 
 
-class HistoriesApiTestCase(ApiTestCase, BaseHistories, SharingApiTests):
-
-    api_name = "histories"
-
-    def create(self, name: str) -> str:
-        response_json = self._create_history(name)
-        history_id = response_json["id"]
-        # History to share cannot be empty
-        populator = DatasetPopulator(self.galaxy_interactor)
-        populator.new_dataset(history_id)
-        return history_id
+class HistoriesApiTestCase(ApiTestCase, BaseHistories):
 
     def test_create_history(self):
         # Create a history.
@@ -429,3 +420,112 @@ class ImportExportHistoryTestCase(ApiTestCase, BaseHistories):
 
         if elements_checker is not None:
             elements_checker(imported_collection_metadata["elements"])
+
+
+class SharingHistoryTestCase(ApiTestCase, BaseHistories, SharingApiTests):
+    """Tests specific for the particularities of sharing Histories."""
+
+    api_name = "histories"
+
+    def create(self, name: str) -> str:
+        response_json = self._create_history(name)
+        history_id = response_json["id"]
+        # History to share cannot be empty
+        populator = DatasetPopulator(self.galaxy_interactor)
+        populator.new_dataset(history_id)
+        return history_id
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+
+    def test_sharing_with_private_datasets(self):
+        history_id = self.dataset_populator.new_history()
+        hda = self.dataset_populator.new_dataset(history_id)
+        hda_id = hda["id"]
+
+        self.dataset_populator.make_private(history_id, hda_id)
+
+        with self._different_user():
+            target_user_id = self.dataset_populator.user_id()
+
+        payload = {"user_ids": [target_user_id]}
+        sharing_response = self._share_history_with_payload(history_id, payload)
+
+        # If no share_option is provided, the extra field will contain the
+        # datasets that need to be accessible before sharing
+        assert sharing_response["extra"]
+        assert sharing_response["extra"]["can_share"] is False
+        assert sharing_response["extra"]["can_change"][0]["id"] == hda_id
+        assert not sharing_response["users_shared_with"]
+
+        # Now we provide the share_option
+        payload = {
+            "user_ids": [target_user_id],
+            "share_option": "make_accessible_to_shared"
+        }
+        sharing_response = self._share_history_with_payload(history_id, payload)
+        assert sharing_response["extra"]
+        assert sharing_response["extra"]["can_share"] is True
+        assert sharing_response["users_shared_with"]
+        assert sharing_response["users_shared_with"][0]["id"] == target_user_id
+
+    def test_sharing_without_manage_permissions(self):
+        history_id = self.dataset_populator.new_history()
+        hda = self.dataset_populator.new_dataset(history_id)
+        hda_id = hda["id"]
+        owner_role_id = self.dataset_populator.user_private_role_id()
+
+        with self._different_user():
+            target_user_id = self.dataset_populator.user_id()
+
+        with self._different_user("alice@test.com"):
+            alice_role_id = self.dataset_populator.user_private_role_id()
+
+        # Remove manage access from owner
+        payload = {"access": [owner_role_id], "manage": [alice_role_id]}
+        update_response = self._set_dataset_permissions_with_payload(history_id, hda_id, payload)
+        self._assert_status_code_is(update_response, 200)
+
+        # The owner cannot change the dataset permissions
+        payload = {"user_ids": [target_user_id]}
+        sharing_response = self._share_history_with_payload(history_id, payload)
+        assert sharing_response["extra"]
+        assert sharing_response["extra"]["can_share"] is False
+        assert sharing_response["extra"]["cannot_change"][0]["id"] == hda_id
+        assert sharing_response["errors"]
+        assert not sharing_response["users_shared_with"]
+
+        # Trying to change the permissions when sharing should fail
+        payload = {
+            "user_ids": [target_user_id],
+            "share_option": "make_public"
+        }
+        sharing_response = self._share_history_with_payload(history_id, payload)
+        assert sharing_response["extra"]
+        assert sharing_response["extra"]["can_share"] is False
+        assert sharing_response["errors"]
+        assert not sharing_response["users_shared_with"]
+
+    def test_share_empty_not_allowed(self):
+        history_id = self.dataset_populator.new_history()
+
+        with self._different_user():
+            target_user_id = self.dataset_populator.user_id()
+
+        payload = {"user_ids": [target_user_id]}
+        sharing_response = self._share_history_with_payload(history_id, payload)
+        assert sharing_response["extra"]["can_share"] is False
+        assert sharing_response["errors"]
+        assert "empty" in sharing_response["errors"][0]
+
+    def _share_history_with_payload(self, history_id, payload):
+        sharing_response = self._put(f"histories/{history_id}/share_with", data=json.dumps(payload))
+        self._assert_status_code_is(sharing_response, 200)
+        return sharing_response.json()
+
+    def _set_dataset_permissions_with_payload(self, history_id: str, dataset_id: str, payload) -> dict:
+        url = f"histories/{history_id}/contents/{dataset_id}/permissions"
+        update_response = self._put(url, payload, admin=True)
+        assert update_response.status_code == 200, update_response.content
+        return update_response.json()
