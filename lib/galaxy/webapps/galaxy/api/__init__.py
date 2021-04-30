@@ -124,13 +124,12 @@ def get_user(galaxy_session: Optional[model.GalaxySession] = Depends(get_session
     return api_user
 
 
-class HttpSessionRequestContext(SessionRequestContext):
+class QualifiedUrlBuilder:
 
-    def __init__(self, **kwd):
-        self.request = kwd.pop('request', None)
-        super().__init__(**kwd)
+    def __init__(self, request: Request):
+        self.request = request
 
-    def qualified_url_for_path(self, path):
+    def __call__(self, path):
         return self.request.url_for(path)
 
 
@@ -139,8 +138,9 @@ DependsOnUser = Depends(get_user)
 
 def get_trans(request: Request, app: StructuredApp = DependsOnApp, user: Optional[User] = Depends(get_user),
               galaxy_session: Optional[model.GalaxySession] = Depends(get_session),
-              ) -> HttpSessionRequestContext:
-    return HttpSessionRequestContext(app=app, user=user, galaxy_session=galaxy_session, request=request)
+              ) -> SessionRequestContext:
+    qualified_url_builder = QualifiedUrlBuilder(request)
+    return SessionRequestContext(app=app, user=user, galaxy_session=galaxy_session, qualified_url_builder=qualified_url_builder)
 
 
 DependsOnTrans = Depends(get_trans)

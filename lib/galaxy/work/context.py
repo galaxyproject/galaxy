@@ -16,16 +16,21 @@ class WorkRequestContext(ProvidesHistoryContext):
     objects.
     """
 
-    def __init__(self, app, user=None, history=None, workflow_building_mode=False):
+    def __init__(self, app, user=None, history=None, workflow_building_mode=False, qualified_url_builder=None):
         self._app = app
         self.__user = user
         self.__user_current_roles = None
         self.__history = history
+        self._qualified_url_builder = qualified_url_builder
         self.workflow_building_mode = workflow_building_mode
 
     @property
     def app(self):
         return self._app
+
+    @property
+    def qualified_url_builder(self):
+        return self._qualified_url_builder
 
     def get_history(self, create=False):
         return self.__history

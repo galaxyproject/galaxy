@@ -800,7 +800,7 @@ class BaseURLToolParameter(HiddenToolParameter):
         try:
             if not self.value.startswith("/"):
                 raise Exception("baseurl value must start with a /")
-            return trans.qualified_url_for_path(self.value)
+            return trans.qualified_url_builder(self.value)
         except Exception as e:
             log.debug('Url creation failed for "%s": %s', self.name, unicodify(e))
             return self.value
