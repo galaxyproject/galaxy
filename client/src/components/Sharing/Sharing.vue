@@ -2,7 +2,9 @@
     <div v-if="ready">
         <h3>Share or Publish {{ model_class }} `{{ item.title }}`</h3>
         <div v-for="error in errors" :key="error">
-            <b-alert show variant="danger" dismissible> {{ error }} </b-alert>
+            <b-alert show variant="danger" dismissible @dismissed="errors = errors.filter((e) => e !== error)">
+                {{ error }}
+            </b-alert>
         </div>
         <br />
         <div v-if="!hasUsername">
@@ -88,7 +90,10 @@
                         </b-button>
                     </template>
                     <template v-slot:foot(email)>
-                        <b-form-input v-model="shareWithEmail" placeholder="Please enter user email(s) using comma separated values" />
+                        <b-form-input
+                            v-model="shareWithEmail"
+                            placeholder="Please enter user email(s) using comma separated values"
+                        />
                     </template>
                     <template v-slot:foot(id)>
                         <b-button
@@ -423,6 +428,7 @@ export default {
             return axios
                 .put(`${getAppRoot()}api/${this.pluralNameLower}/${this.id}/${action}`, data)
                 .then(({ data }) => {
+                    this.errors = [];
                     this.assignItem(data);
                     if (data.extra && data.extra.can_share) this.shareWithEmail = "";
                     else this.shareWithEmail = user_id || "";
