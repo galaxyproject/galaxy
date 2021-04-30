@@ -1396,7 +1396,7 @@ class DataFrame(TabularData):
 
     file_ext = 'dataframe'
     # as we will limit number of rows and columns, bigger chunk is read.
-    max_peek_size = 1000000   # 10 MB
+    max_peek_size = 10000000   # 10 MB
     max_cell_width = 50
 
     def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=10):
@@ -1416,8 +1416,8 @@ class DataFrame(TabularData):
         with compression_utils.get_fileobj(dataset.file_name) as dataset_fh:
             data = dataset_fh.read(self.max_peek_size)
             lines = data.split('\n')
-            if len(lines) < 2 and len(data) == self.max_peek_size:
-                raise ValueError("The first line of the dataset is longer than the maximum allowed (10 MB)!")
+            if len(lines) == 1 and len(data) == self.max_peek_size:
+                raise ValueError("The first line of the dataset is longer than the maximum allowed (%.1f MB)!" % (self.max_peek_size / 1000000))
             dataset.metadata.columns = len(lines[0].split(sep))
             # dataset.metadata.column_names = list(df.columns)
             dataset_fh.seek(0)
@@ -1430,6 +1430,11 @@ class DataFrame(TabularData):
         elm_str = str(elm)
         if len(elm_str) > self.max_cell_width:
             elm = elm_str[:self.max_cell_width] + '...'
+        try:
+            elm = float(elm)
+            elm = '%g' % elm
+        except Exception:
+            pass
         return elm
 
     def set_peek(self, dataset):
