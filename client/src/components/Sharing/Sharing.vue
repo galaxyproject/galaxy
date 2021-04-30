@@ -81,14 +81,10 @@
                         <b-button
                             variant="danger"
                             size="sm"
-                            @click="setSharing(actions.share_with, shareWithEmail)"
                             class="sharing_icon"
+                            @click.stop="setSharing(actions.unshare_with, cell.value)"
                         >
-                            <font-awesome-icon
-                                class="unshare_user sharing_icon"
-                                @click.stop="setSharing(actions.unshare_with, cell.value)"
-                                icon="user-slash"
-                            />
+                            <font-awesome-icon class="unshare_user sharing_icon" icon="user-slash" />
                         </b-button>
                     </template>
                     <template v-slot:foot(email)>
@@ -406,7 +402,10 @@ export default {
                 .catch((error) => this.errors.push(error.response.data.err_msg));
         },
         setSharing(action, user_id, share_option) {
-            console.log(user_id)
+            console.log("!!!!");
+            console.log(user_id);
+            console.log(user_id);
+            console.log(user_id);
             if (
                 action === this.actions.share_with &&
                 this.item.users_shared_with.some((user) => user_id === user.email)
