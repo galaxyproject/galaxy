@@ -2701,7 +2701,7 @@ mapper(model.Visualization, model.Visualization.table, properties=dict(
         backref="visualizations"),
     ratings=relation(model.VisualizationRatingAssociation,
         order_by=model.VisualizationRatingAssociation.table.c.id,
-        backref="visualizations"),
+        backref="visualization"),
     average_rating=column_property(
         select(func.avg(model.VisualizationRatingAssociation.table.c.rating)).where(model.VisualizationRatingAssociation.table.c.visualization_id == model.Visualization.table.c.id).scalar_subquery(),
         deferred=True
@@ -2769,7 +2769,7 @@ rating_mapping(model.HistoryRatingAssociation, history=model.History)
 rating_mapping(model.HistoryDatasetAssociationRatingAssociation, hda=model.HistoryDatasetAssociation)
 rating_mapping(model.StoredWorkflowRatingAssociation, stored_workflow=model.StoredWorkflow)
 rating_mapping(model.PageRatingAssociation)
-rating_mapping(model.VisualizationRatingAssociation, visualizaiton=model.Visualization)
+rating_mapping(model.VisualizationRatingAssociation)
 rating_mapping(model.HistoryDatasetCollectionRatingAssociation,
     history_dataset_collection=model.HistoryDatasetCollectionAssociation)
 rating_mapping(model.LibraryDatasetCollectionRatingAssociation,
