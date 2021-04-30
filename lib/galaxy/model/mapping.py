@@ -2377,7 +2377,7 @@ simple_mapping(model.HistoryDatasetCollectionAssociation,
         backref="dataset_collections"),
     ratings=relation(model.HistoryDatasetCollectionRatingAssociation,
         order_by=model.HistoryDatasetCollectionRatingAssociation.table.c.id,
-        backref="dataset_collections")
+        backref="dataset_collection")
 )
 
 simple_mapping(model.LibraryDatasetCollectionAssociation,
@@ -2770,8 +2770,7 @@ rating_mapping(model.HistoryDatasetAssociationRatingAssociation)
 rating_mapping(model.StoredWorkflowRatingAssociation)
 rating_mapping(model.PageRatingAssociation)
 rating_mapping(model.VisualizationRatingAssociation)
-rating_mapping(model.HistoryDatasetCollectionRatingAssociation,
-    history_dataset_collection=model.HistoryDatasetCollectionAssociation)
+rating_mapping(model.HistoryDatasetCollectionRatingAssociation)
 rating_mapping(model.LibraryDatasetCollectionRatingAssociation,
     libary_dataset_collection=model.LibraryDatasetCollectionAssociation)
 
