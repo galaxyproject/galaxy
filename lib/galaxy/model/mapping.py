@@ -2665,7 +2665,7 @@ mapper(model.Page, model.Page.table, properties=dict(
         backref="pages"),
     ratings=relation(model.PageRatingAssociation,
         order_by=model.PageRatingAssociation.table.c.id,
-        backref="pages"),
+        backref="page"),
     average_rating=column_property(
         select(func.avg(model.PageRatingAssociation.table.c.rating)).where(model.PageRatingAssociation.table.c.page_id == model.Page.table.c.id).scalar_subquery(),
         deferred=True
@@ -2768,13 +2768,12 @@ def rating_mapping(rating_class, **kwds):
 rating_mapping(model.HistoryRatingAssociation, history=model.History)
 rating_mapping(model.HistoryDatasetAssociationRatingAssociation, hda=model.HistoryDatasetAssociation)
 rating_mapping(model.StoredWorkflowRatingAssociation, stored_workflow=model.StoredWorkflow)
-rating_mapping(model.PageRatingAssociation, page=model.Page)
+rating_mapping(model.PageRatingAssociation)
 rating_mapping(model.VisualizationRatingAssociation, visualizaiton=model.Visualization)
 rating_mapping(model.HistoryDatasetCollectionRatingAssociation,
     history_dataset_collection=model.HistoryDatasetCollectionAssociation)
 rating_mapping(model.LibraryDatasetCollectionRatingAssociation,
     libary_dataset_collection=model.LibraryDatasetCollectionAssociation)
-
 
 mapper(model.Job, model.Job.table, properties=dict(
     # user=relation( model.User.mapper ),
