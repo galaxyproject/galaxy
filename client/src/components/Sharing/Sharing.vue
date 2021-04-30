@@ -101,7 +101,7 @@
                             size="sm"
                             :disabled="shareWithEmail === ''"
                             @click.stop="setSharing(actions.share_with, shareWithEmail)"
-                            v-b-tooltip.hover
+                            v-b-tooltip.hover.bottom
                             :title="shareWithEmail ? `Share with ${shareWithEmail}` : 'Please enter user email'"
                             class="sharing_icon"
                         >
