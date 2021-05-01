@@ -2,7 +2,7 @@
 Database trigger installation and removal
 """
 
-from sqlalchemy import DDL
+from galaxy.model.migrate.versions.util import execute_statements
 
 
 def install_timestamp_triggers(engine):
@@ -19,12 +19,6 @@ def drop_timestamp_triggers(engine):
     """
     statements = get_timestamp_drop_sql(engine.name)
     execute_statements(engine, statements)
-
-
-def execute_statements(engine, statements):
-    for sql in statements:
-        cmd = DDL(sql)
-        cmd.execute(bind=engine)
 
 
 def get_timestamp_install_sql(variant):

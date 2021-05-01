@@ -1845,6 +1845,12 @@ def is_hda(d):
     return isinstance(d, HistoryDatasetAssociation)
 
 
+class HistoryAudit(RepresentById):
+    def __init__(self, history, update_time):
+        self.history = history
+        self.update_time = update_time
+
+
 class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
 
     dict_collection_visible_keys = ['id', 'name', 'published', 'deleted']
