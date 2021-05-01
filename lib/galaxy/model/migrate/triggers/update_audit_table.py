@@ -124,7 +124,7 @@ def _sqlite_install():
                 FOR EACH ROW
                 BEGIN
                     INSERT INTO history_audit (history_id, update_time)
-                    SELECT NEW.{id_field}, CURRENT_TIMESTAMP
+                    SELECT NEW.{id_field}, strftime('%%Y-%%m-%%d %%H:%%M:%%f', 'now')
                     WHERE NEW.{id_field} IS NOT NULL;
                 END;
         """
