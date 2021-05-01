@@ -108,7 +108,8 @@ def _sqlite_remove():
 
 
 def _sqlite_install():
-    sql = []
+    # delete old stuff first
+    sql = _sqlite_remove()
 
     def trigger_def(source_table, id_field, operation, when="AFTER"):
 
