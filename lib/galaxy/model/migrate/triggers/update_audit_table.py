@@ -58,7 +58,8 @@ def _postgres_install():
                 BEGIN
                     INSERT INTO history_audit (history_id, update_time)
                     SELECT {id_field}, CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-                    FROM new_table;
+                    FROM new_table
+                    WHERE {id_field} IS NOT NULL;
                     RETURN NULL;
                 END;
             $BODY$
@@ -122,7 +123,8 @@ def _sqlite_install():
                 FOR EACH ROW
                 BEGIN
                     INSERT INTO history_audit (history_id, update_time)
-                    VALUES (NEW.{id_field}, CURRENT_TIMESTAMP);
+                    SELECT NEW.{id_field}, CURRENT_TIMESTAMP
+                    WHERE NEW.{id_field} IS NOT NULL;
                 END;
         """
 
