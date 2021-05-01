@@ -1866,6 +1866,7 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
         self.importing = False
         self.genome_build = None
         self.published = False
+        self.update_time = None
         # Relationships
         self.user = user
         self.datasets = []
