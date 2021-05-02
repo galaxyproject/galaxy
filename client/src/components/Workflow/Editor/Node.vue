@@ -392,6 +392,7 @@ export default {
         makeInactive() {
             // Keep inactive nodes stacked from most to least recently active
             // by moving element to the end of parent's node list
+            document.activeElement.blur();
             const element = this.element;
             ((p) => {
                 p.removeChild(element);
