@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 
 QUAY_REPOSITORY_API_ENDPOINT = 'https://quay.io/api/v1/repository'
 BUILD_NUMBER_REGEX = re.compile(r'\d+$')
-PARSED_TAG = collections.namedtuple('ParsedTag', 'tag version build_string build_number')
+PARSED_TAG = collections.namedtuple('PARSED_TAG', 'tag version build_string build_number')
 QUAY_IO_TIMEOUT = 10
 
 

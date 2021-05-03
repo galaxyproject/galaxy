@@ -16,7 +16,7 @@ IO_INJECTION_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "io_injection_job_
 SETS_TMP_DIR_TO_TRUE_JOB_CONFIG = os.path.join(SCRIPT_DIRECTORY, "sets_tmp_dir_to_true_job_conf.xml")
 SETS_TMP_DIR_AS_EXPRESSION_JOB_CONFIG = os.path.join(SCRIPT_DIRECTORY, "sets_tmp_dir_expression_job_conf.xml")
 
-JobEnviromentProperties = collections.namedtuple("JobEnvironmentProperties", [
+JobEnvironmentProperties = collections.namedtuple("JobEnvironmentProperties", [
     "user_id",
     "group_id",
     "pwd",
@@ -42,7 +42,7 @@ class RunsEnvironmentJobs:
         home = self.dataset_populator.get_history_dataset_content(history_id, hid=4).strip()
         tmp = self.dataset_populator.get_history_dataset_content(history_id, hid=5).strip()
         some_env = self.dataset_populator.get_history_dataset_content(history_id, hid=6).strip()
-        return JobEnviromentProperties(user_id, group_id, pwd, home, tmp, some_env)
+        return JobEnvironmentProperties(user_id, group_id, pwd, home, tmp, some_env)
 
     def _check_completed_history(self, history_id):
         """Extension point that lets subclasses investigate the completed job."""

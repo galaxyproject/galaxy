@@ -1,7 +1,6 @@
 """
 Classes encapsulating galaxy tools and tool configuration.
 """
-import collections
 import itertools
 import json
 import logging
@@ -12,7 +11,7 @@ import tempfile
 import threading
 from datetime import datetime
 from pathlib import Path
-from typing import List, Type
+from typing import List, NamedTuple, Type, Union
 from urllib.parse import unquote_plus
 
 import packaging.version
@@ -190,7 +189,13 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "substitutions1": packaging.version.parse("1.0.1"),
     "winSplitter": packaging.version.parse("1.0.1"),
 }
-safe_update = collections.namedtuple("SafeUpdate", "min_version current_version")
+
+
+class safe_update(NamedTuple):
+    min_version: Union[packaging.version.LegacyVersion, packaging.version.Version]
+    current_version: Union[packaging.version.LegacyVersion, packaging.version.Version]
+
+
 # Tool updates that did not change parameters in a way that requires rebuilding workflows
 WORKFLOW_SAFE_TOOL_VERSION_UPDATES = {
     'Filter1': safe_update(packaging.version.parse("1.1.0"), packaging.version.parse("1.1.1")),
