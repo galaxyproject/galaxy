@@ -76,6 +76,9 @@ preferences:
     manage_api_key: '#edit-preferences-api-key'
     current_email: "#user-preferences-current-email"
     get_new_key: '#submit'
+    delete_account: '#delete-account'
+    delete_account_input: '#name-input'
+    delete_account_ok_btn: '.modal-footer .btn-primary'
 
 toolbox_filters:
   selectors:
