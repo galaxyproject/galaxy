@@ -337,7 +337,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         if not extra.accessible_count and not share_anyway:
             errors.append("The history you are sharing do not contain any datasets that can be accessed by the users with which you are sharing.")
 
-        extra.can_share = not errors and (extra.accessible_count == total_dataset_count or share_anyway)
+        extra.can_share = not errors and (extra.accessible_count == total_dataset_count or option is not None)
         return extra
 
     def is_history_shared_with(self, history, user) -> bool:
