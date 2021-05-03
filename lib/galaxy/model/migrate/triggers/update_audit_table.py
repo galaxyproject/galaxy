@@ -57,7 +57,7 @@ def _postgres_install():
             AS $BODY$
                 BEGIN
                     INSERT INTO history_audit (history_id, update_time)
-                    SELECT {id_field}, CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                    SELECT DISTINCT {id_field}, CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
                     FROM new_table
                     WHERE {id_field} IS NOT NULL;
                     RETURN NULL;
