@@ -564,7 +564,7 @@ def uvicorn_serve(app, port, host=None):
     from uvicorn.server import Server
     from uvicorn.config import Config
 
-    access_log = os.environ.get('GALAXY_UVICORN_ACCESS_LOG', None)
+    access_log = os.environ.get('GALAXY_TEST_UVICORN_ACCESS_LOG', None)
     if access_log:
         eal = asbool(access_log)
     else:
