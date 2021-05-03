@@ -528,6 +528,18 @@ class SharingHistoryTestCase(ApiTestCase, BaseHistories, SharingApiTests):
         assert sharing_response["errors"]
         assert "empty" in sharing_response["errors"][0]
 
+    def test_sharing_with_duplicated_users(self):
+        history_id = self.create("HistoryToShareWithDuplicatedUser")
+
+        with self._different_user():
+            target_user_id = self.dataset_populator.user_id()
+
+        payload = {"user_ids": [target_user_id, target_user_id]}
+        sharing_response = self._share_history_with_payload(history_id, payload)
+        assert sharing_response["users_shared_with"]
+        assert len(sharing_response["users_shared_with"]) == 1
+        assert sharing_response["users_shared_with"][0]["id"] == target_user_id
+
     def _share_history_with_payload(self, history_id, payload):
         sharing_response = self._put(f"histories/{history_id}/share_with", data=json.dumps(payload))
         self._assert_status_code_is(sharing_response, 200)

@@ -15,6 +15,8 @@ from enum import Enum
 from typing import (
     List,
     Optional,
+    Set,
+    Tuple,
     Type,
     Union,
 )
@@ -38,7 +40,10 @@ from galaxy.managers import (
     taggable,
     users
 )
-from galaxy.model import UserShareAssociation
+from galaxy.model import (
+    User,
+    UserShareAssociation,
+)
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import ready_name_for_url
@@ -355,7 +360,7 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         return list(self._apply_fn_limit_offset_gen(items, limit, offset))
 
     def get_sharing_extra_information(
-        self, trans, item, users, errors: List[str], option: Optional[SharingOptions] = None
+        self, trans, item, users: Set[User], errors: Set[str], option: Optional[SharingOptions] = None
     ) -> Optional[ShareWithExtra]:
         """Returns optional extra information about the shareability of the given item.
 
@@ -694,24 +699,24 @@ class ShareableService:
         base_status = self._get_sharing_status(trans, item)
         status = ShareWithStatus.parse_obj(base_status)
         status.extra = extra
-        status.errors = errors
+        status.errors.extend(errors)
         return status
 
     def unshare_with(self, trans, id: EncodedDatabaseIdField, payload: ShareWithPayload) -> ShareWithStatus:
         item = self._get_item_by_id(trans, id)
         users, errors = self._get_users(trans, payload.user_ids)
-        self.manager.unshare_with(item, users)
+        self.manager.unshare_with(item, list(users))
         base_status = self._get_sharing_status(trans, item)
         status = ShareWithStatus.parse_obj(base_status)
-        status.errors = errors
+        status.errors.extend(errors)
         return status
 
-    def _share_with_options(self, trans, item, users, errors: List[str], share_option: Optional[SharingOptions] = None):
+    def _share_with_options(self, trans, item, users: Set[User], errors: Set[str], share_option: Optional[SharingOptions] = None):
         if not users:
             return None
         extra = self.manager.get_sharing_extra_information(trans, item, users, errors, share_option)
         if not extra or extra.can_share:
-            self.manager.share_with(item, users)
+            self.manager.share_with(item, list(users))
             extra = None
         return extra
 
@@ -726,12 +731,12 @@ class ShareableService:
         status["users_shared_with"] = [{"id": self.manager.app.security.encode_id(a.user.id), "email": a.user.email} for a in item.users_shared_with]
         return SharingStatus.parse_obj(status)
 
-    def _get_users(self, trans, emails_or_ids: Optional[List] = None):
+    def _get_users(self, trans, emails_or_ids: Optional[List] = None) -> Tuple[Set[User], Set[str]]:
         if emails_or_ids is None:
             raise exceptions.MessageException("Missing required user IDs or emails")
-        send_to_users = []
-        send_to_err = []
-        for string in emails_or_ids:
+        send_to_users: Set[User] = set()
+        send_to_err: Set[str] = set()
+        for string in set(emails_or_ids):
             string = string.strip()
             if not string:
                 continue
@@ -740,7 +745,7 @@ class ShareableService:
             if '@' in string:
                 email_address = string
                 send_to_user = self.manager.user_manager.by_email(email_address,
-                    filters=[trans.app.model.User.table.c.deleted == false()])
+                    filters=[User.table.c.deleted == false()])
             else:
                 try:
                     decoded_user_id = trans.security.decode_id(string)
@@ -751,10 +756,10 @@ class ShareableService:
                     send_to_user = None
 
             if not send_to_user:
-                send_to_err.append(f"{string} is not a valid Galaxy user.")
+                send_to_err.add(f"{string} is not a valid Galaxy user.")
             elif send_to_user == trans.user:
-                send_to_err.append("You cannot share resources with yourself.")
+                send_to_err.add("You cannot share resources with yourself.")
             else:
-                send_to_users.append(send_to_user)
+                send_to_users.add(send_to_user)
 
         return send_to_users, send_to_err

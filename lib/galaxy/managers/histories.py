@@ -11,6 +11,7 @@ from typing import (
     cast,
     List,
     Optional,
+    Set,
     Tuple,
     Union,
 )
@@ -287,13 +288,13 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         return job
 
     def get_sharing_extra_information(
-        self, trans, item, users, errors: List[str], option: Optional[sharable.SharingOptions] = None
+        self, trans, item, users: Set[model.User], errors: Set[str], option: Optional[sharable.SharingOptions] = None
     ) -> Optional[sharable.ShareWithExtra]:
         """Returns optional extra information about the datasets of the history that can be accessed by the users."""
         extra = ShareHistoryExtra()
         history = cast(model.History, item)
         if history.empty:
-            errors.append("You cannot share an empty history.")
+            errors.add("You cannot share an empty history.")
             return extra
 
         owner = trans.user
@@ -304,7 +305,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         share_anyway = option is not None and option == sharable.SharingOptions.no_changes
         for user in users:
             if self.is_history_shared_with(history, user):
-                errors.append(f"History ({history.name}) already shared with user ({user.email})")
+                errors.add(f"History ({history.name}) already shared with user ({user.email})")
                 continue
 
             user_roles = user.all_roles()
@@ -335,7 +336,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         extra.cannot_change = list(cannot_change_dict.values())
         extra.accessible_count = total_dataset_count - len(extra.can_change) - len(extra.cannot_change)
         if not extra.accessible_count and not share_anyway:
-            errors.append("The history you are sharing do not contain any datasets that can be accessed by the users with which you are sharing.")
+            errors.add("The history you are sharing do not contain any datasets that can be accessed by the users with which you are sharing.")
 
         extra.can_share = not errors and (extra.accessible_count == total_dataset_count or option is not None)
         return extra
