@@ -353,7 +353,7 @@ export default {
         assignItem(newItem) {
             if (newItem.errors) this.errors = newItem.errors;
             this.item = newItem;
-            if (!this.item.extra) {
+            if (!this.item.extra || newItem.errors.length > 0) {
                 this.item.extra = defaultExtra();
             }
 
@@ -409,18 +409,23 @@ export default {
                 .catch((error) => this.addError(error.response.data.err_msg));
         },
         setSharing(action, user_id, share_option) {
-            if (
-                action === this.actions.share_with &&
-                this.item.users_shared_with.some((user) => user_id === user.email)
-            ) {
-                this.addError(`You already shared this ${this.model_class} with ${user_id}`);
-                return;
-            }
-            let user_ids = undefined
+            let user_ids = undefined;
             if (user_id) {
                 if (user_id.includes(",")) {
-                    user_ids = user_id.split(",");
+                    user_ids = user_id.replace(/ /g, "").split(",");
                 } else user_ids = [user_id];
+            }
+
+            if (
+                action === this.actions.share_with &&
+                user_ids &&
+                this.item.users_shared_with.some(({ email }) => user_ids.includes(email))
+            ) {
+                this.addError(
+                    `You already shared this ${this.model_class} with
+                    ${user_ids.filter((user) => this.item.users_shared_with.some(({ email }) => email === user))}`
+                );
+                return;
             }
 
             const data = {
