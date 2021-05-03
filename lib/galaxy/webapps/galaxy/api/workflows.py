@@ -883,6 +883,9 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         :param  history_id:       an encoded history id to restrict query to
         :type   history_id:       str
 
+        :param  job_id:           an encoded job id to restrict query to
+        :type   job_id:           str
+
         :param  user_id:          an encoded user id to restrict query to, must be own id if not admin user
         :type   user_id:          str
 
@@ -906,6 +909,12 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         else:
             history_id = None
 
+        encoded_job_id = kwd.get("job_id", None)
+        if encoded_job_id:
+            job_id = self.decode_id(encoded_job_id)
+        else:
+            job_id = None
+
         encoded_user_id = kwd.get("user_id", None)
         if encoded_user_id:
             target_user_id = self.decode_id(encoded_user_id)
@@ -926,7 +935,7 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         if limit is not None:
             limit = int(limit)
         invocations = self.workflow_manager.build_invocations_query(
-            trans, stored_workflow_id=stored_workflow_id, history_id=history_id, user_id=user_id, include_terminal=include_terminal, limit=limit
+            trans, stored_workflow_id=stored_workflow_id, history_id=history_id, job_id=job_id, user_id=user_id, include_terminal=include_terminal, limit=limit
         )
         return self.workflow_manager.serialize_workflow_invocations(invocations, **kwd)
 
