@@ -49,9 +49,8 @@ import { CloudAuth } from "components/User/CloudAuth";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
 import Confirmation from "components/login/Confirmation.vue";
 import LibraryFolderRouter from "components/Libraries/LibraryFolderRouter";
-import Vue from "vue";
-import store from "store";
 import VueRouterMain from "./VueRouterMain.vue";
+import { mountVueComponent } from "utils/mountVueComponent";
 
 /** Routes */
 export const getAnalysisRouter = (Galaxy) => {
@@ -109,25 +108,17 @@ export const getAnalysisRouter = (Galaxy) => {
             return (Galaxy.user && Galaxy.user.id) || this.require_login.indexOf(name) == -1;
         },
 
-        _display_vue_helper: function (component, propsData = {}, active_tab = null, noPadding = false) {
-            const instance = Vue.extend(component);
+        _display_vue_helper: function (component, propsData = {}, active_tab = null, noPadding = false, ...moreConfig) {
             const container = document.createElement("div");
             if (active_tab) {
                 container.active_tab = active_tab;
             }
             this.page.display(container, noPadding);
-            new instance({ store, propsData }).$mount(container);
+            const mountFn = mountVueComponent(component);
+            mountFn(propsData, container, ...moreConfig);
         },
         _display_vue_router: function (router, propsData = {}, active_tab = null, noPadding = false) {
-            const container = document.createElement("div");
-            if (active_tab) {
-                container.active_tab = active_tab;
-            }
-            this.page.display(container, noPadding);
-            new Vue({
-                router: router,
-                render: (h) => h(VueRouterMain),
-            }).$mount(container);
+            this._display_vue_helper(VueRouterMain, propsData, active_tab, noPadding, router);
         },
 
         show_tours: function (tour_id) {
@@ -387,13 +378,6 @@ export const getAnalysisRouter = (Galaxy) => {
         },
 
         show_custom_builds: function () {
-            const historyPanel = this.page.historyPanel.historyView;
-            if (!historyPanel || !historyPanel.model || !historyPanel.model.id) {
-                window.setTimeout(() => {
-                    this.show_custom_builds();
-                }, 500);
-                return;
-            }
             this._display_vue_helper(CustomBuilds);
         },
 

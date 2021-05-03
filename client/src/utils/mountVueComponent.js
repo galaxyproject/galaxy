@@ -26,5 +26,5 @@ Vue.use(vueRxShortcutPlugin);
 
 export const mountVueComponent = (ComponentDefinition) => {
     const component = Vue.extend(ComponentDefinition);
-    return (propsData, el) => new component({ store, propsData, el });
+    return (propsData, el, ...moreConfig) => new component({ store, propsData, el, ...moreConfig });
 };
