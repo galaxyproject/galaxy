@@ -62,12 +62,15 @@
     </div>
 </template>
 <script>
-import $ from "jquery";
-import { getAppRoot } from "onload/loadConfig";
-import { getGalaxyInstance } from "app";
 import axios from "axios";
+import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 
 export default {
+    mixins: [legacyNavigationMixin],
+    props: {
+        datasetId: { type: String, required: true },
+        currentHistoryId: { type: String, required: true },
+    },
     data() {
         return {
             plugins: [],
@@ -80,13 +83,11 @@ export default {
         };
     },
     created() {
-        const Galaxy = getGalaxyInstance();
-        let url = `${getAppRoot()}api/plugins`;
-        const dataset_id = Galaxy.params.dataset_id;
-        if (dataset_id) {
+        let url = this.prependUrl("api/plugins");
+        if (this.datasetId) {
             this.fixed = true;
-            this.selected = dataset_id;
-            url += `?dataset_id=${dataset_id}`;
+            this.selected = this.datasetId;
+            url += `?dataset_id=${this.datasetId}`;
         }
         axios
             .get(url)
@@ -102,11 +103,11 @@ export default {
             if (this.fixed) {
                 this.create(plugin);
             } else {
-                const Galaxy = getGalaxyInstance();
-                const history_id = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
+                const history_id = this.currentHistoryId;
                 if (history_id) {
+                    const url = this.prependPath(`api/plugins/${plugin.name}?history_id=${history_id}`);
                     axios
-                        .get(`${getAppRoot()}api/plugins/${plugin.name}?history_id=${history_id}`)
+                        .get(url)
                         .then((response) => {
                             this.name = plugin.name;
                             this.hdas = response.data && response.data.hdas;
@@ -127,7 +128,7 @@ export default {
             if (plugin.target == "_top") {
                 window.location.href = href;
             } else {
-                $("#galaxy_main").attr("src", href);
+                document.getElementById("galaxy_main").setAttribute("src", href);
             }
         },
         match: function (plugin) {

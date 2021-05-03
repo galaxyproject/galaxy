@@ -39,7 +39,7 @@ import RecentInvocations from "components/User/RecentInvocations.vue";
 import ToolsView from "components/ToolsView/ToolsView.vue";
 import ToolsJson from "components/ToolsView/ToolsSchemaJson/ToolsJson.vue";
 import HistoryList from "mvc/history/history-list";
-import PluginList from "components/PluginList.vue";
+import PluginList from "components/PluginList";
 import QueryStringParsing from "utils/query-string-parsing";
 import DatasetError from "mvc/dataset/dataset-error";
 import DatasetEditAttributes from "mvc/dataset/dataset-edit-attributes";
@@ -331,7 +331,9 @@ export const getAnalysisRouter = (Galaxy) => {
         },
 
         show_plugins: function () {
-            this._display_vue_helper(PluginList);
+            this._display_vue_helper(PluginList, {
+                datasetId: Galaxy.params.dataset_id,
+            });
         },
 
         show_workflows: function () {
