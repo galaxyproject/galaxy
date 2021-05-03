@@ -92,6 +92,7 @@
                     <template v-slot:foot(email)>
                         <b-form-input
                             v-model="shareWithEmail"
+                            class="user-email-input-form"
                             placeholder="Please enter user email(s) using comma separated values"
                         />
                     </template>
@@ -103,7 +104,7 @@
                             @click.stop="setSharing(actions.share_with, shareWithEmail)"
                             v-b-tooltip.hover.bottom
                             :title="shareWithEmail ? `Share with ${shareWithEmail}` : 'Please enter user email'"
-                            class="sharing_icon"
+                            class="sharing_icon submit-sharing-with"
                         >
                             <font-awesome-icon class="share_with" icon="user-plus" size="lg" />
                         </b-button>

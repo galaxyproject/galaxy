@@ -96,10 +96,6 @@ class HistorySharingTestCase(SeleniumTestCase):
         self.home()
         self.click_history_option("Share or Publish")
 
-    def navigate_to_history_user_share_page(self):
-        self.navigate_to_history_share_page()
-        self.components.histories.sharing.share_with_a_user_button.wait_for_and_click()
-
     def share_history_with_user(self, user_id=None, user_email=None, assert_valid=False, screenshot=False):
         """Share the current history with a target user by ID or email.
 
@@ -107,16 +103,14 @@ class HistorySharingTestCase(SeleniumTestCase):
         is also specified. The ``user_email`` however is always used to check
         the result if ``assert_valid`` is True.
         """
-        self.navigate_to_history_user_share_page()
-        form_selector = "form#share"
-        form = self.wait_for_selector(form_selector)
-        # If expose_user_info is on would fill form out with this
-        # line, in future dispatch on actual select2 div present or not.
-        # self.select2_set_value(form_selector, email)
-        self.fill(form, {"email": user_id or user_email})
+        self.navigate_to_history_share_page()
+        self.components.histories.sharing.user_email_input.wait_for_and_send_keys(user_id or user_email)
+        self.components.histories.sharing.user_email_input.wait_for_and_send_keys(user_id or user_email)
+
         if screenshot:
             self.screenshot("history_sharing_user")
-        self.click_submit(form)
+        self.components.histories.sharing.submit_sharing_with.wait_for_and_click()
+
         if assert_valid:
             self.assert_no_error_message()
 

@@ -395,7 +395,8 @@ histories:
   sharing:
     selectors:
       unshare_user_button: '.unshare_user'
-      share_with_a_user_button: '#share_with_a_user'
+      user_email_input: '.user-email-input-form'
+      submit_sharing_with: '.submit-sharing-with'
       make_accessible: '.make-accessible label'
       make_publishable: '.make-publishable label'
     labels:
