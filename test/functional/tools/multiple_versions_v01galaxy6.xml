@@ -1,0 +1,21 @@
+<tool id="multiple_versions" name="multiple_versions" version="0.1+galaxy6">
+    <command>
+        echo "Version 0.1+galaxy6" > $out_file1
+    </command>
+    <inputs>
+        <param name="inttest" value="1" type="integer" />
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="intest" value="1" />
+            <output name="out_file1">
+                <assert_contents>
+                    <has_line line="Version 0.1+galaxy6" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>
