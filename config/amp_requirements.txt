@@ -1,8 +1,10 @@
-# shared
-boto3==1.10.20
+# already exist in Galaxy requirements with a slightly higher version, commented out so we use Galaxy's versions
+#boto3==1.16.33
+#numpy==1.19.4
+#tqdm==4.54.1
+
+# shared by multi MGMs
 ffmpeg-python==0.2.0
-numpy==1.17.4
-tqdm==4.38.0
 
 # dlib_face_recognition
 dlib==19.21.0
