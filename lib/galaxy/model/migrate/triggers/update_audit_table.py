@@ -93,9 +93,6 @@ def _postgres_install():
     return sql
 
 
-# Other DBs
-
-
 def _sqlite_remove():
     sql = []
 
@@ -134,9 +131,6 @@ def _sqlite_install():
             sql.append(trigger_def(source_table, id_field, operation))
 
     return sql
-
-
-# Utils
 
 
 def get_trigger_name(label, operation, when, statement=False):
