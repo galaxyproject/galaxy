@@ -154,22 +154,17 @@ chr5    152537259</pre
 </template>
 
 <script>
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
 import axios from "axios";
-import { getGalaxyInstance } from "app";
 import Multiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.min.css";
-Vue.use(BootstrapVue);
+import { mapGetters } from "vuex";
 
 export default {
     components: {
         Multiselect,
     },
     data() {
-        const Galaxy = getGalaxyInstance();
         return {
-            customBuildsUrl: `${Galaxy.root}api/users/${Galaxy.user.id}/custom_builds`,
             selectedInstalledBuilds: [],
             installedBuilds: [],
             maxFileSize: 100,
@@ -204,6 +199,14 @@ export default {
         };
     },
     computed: {
+        ...mapGetters("user", ["currentUser"]),
+        ...mapGetters("betaHistory", ["currentHistoryId"]),
+
+        customBuildsUrl() {
+            const userId = this.currentUser.id;
+            return this.prependPath(`api/users/${userId}/custom_builds`);
+        },
+
         lengthType: function () {
             return this.selectedDataSource || "";
         },
@@ -220,11 +223,9 @@ export default {
         },
     },
     created() {
-        const Galaxy = getGalaxyInstance();
-        const historyId = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
         this.loadCustomBuilds();
-        if (historyId) {
-            this.loadCustomBuildsMetadata(historyId);
+        if (this.currentHistoryId) {
+            this.loadCustomBuildsMetadata(this.currentHistoryId);
         } else {
             this.fastaFilesLoading = false;
         }
@@ -241,9 +242,9 @@ export default {
                 });
         },
         loadCustomBuildsMetadata(historyId) {
-            const Galaxy = getGalaxyInstance();
+            const url = this.prependPath("api/histories/${historyId}/custom_builds_metadata");
             axios
-                .get(`${Galaxy.root}api/histories/${historyId}/custom_builds_metadata`)
+                .get(url)
                 .then((response) => {
                     const fastaHdas = response.data.fasta_hdas;
                     for (let i = 0; i < fastaHdas.length; i++) {
