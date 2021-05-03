@@ -356,7 +356,6 @@ export default {
             if (!this.item.extra) {
                 this.item.extra = defaultExtra();
             }
-            console.log(this.item);
 
             this.ready = true;
         },
@@ -417,9 +416,15 @@ export default {
                 this.addError(`You already shared this ${this.model_class} with ${user_id}`);
                 return;
             }
+            let user_ids = undefined
+            if (user_id) {
+                if (user_id.includes(",")) {
+                    user_ids = user_id.split(",");
+                } else user_ids = [user_id];
+            }
 
             const data = {
-                user_ids: user_id ? [user_id] : undefined,
+                user_ids: user_ids,
                 share_option: share_option ? share_option : undefined,
             };
             return axios
