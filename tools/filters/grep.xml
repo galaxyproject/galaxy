@@ -3,7 +3,9 @@
   <edam_operations>
     <edam_operation>operation_3695</edam_operation>
   </edam_operations>
-  <command interpreter="python">grep.py -i $input -o $out_file1 -pattern '$pattern' -v $invert --keep_header $keep_header</command>
+  <command detect_errors="exit_code"><![CDATA[
+    python '$__tool_directory__/grep.py' -i '$input' -o '$out_file1' -pattern '$pattern' -v $invert --keep_header $keep_header
+  ]]></command>
   <inputs>
     <param format="txt" name="input" type="data" label="Select lines from"/>
     <param name="invert" type="select" label="that">

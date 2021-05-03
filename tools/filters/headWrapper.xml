@@ -3,7 +3,7 @@
   <edam_operations>
     <edam_operation>operation_3695</edam_operation>
   </edam_operations>
-  <command>
+  <command detect_errors="exit_code"><![CDATA[
     set -eo pipefail;
     (
     #if $header
@@ -14,7 +14,7 @@
     #end if
     | head -n 1 $lineNum 
     ) > '$out_file1'
-  </command>
+  ]]></command>
   <inputs>
     <param name="lineNum" type="integer" value="10" min="1" label="Select first" help="lines"/>
     <param name="input" type="data" format="txt" label="from"/>

@@ -1,4 +1,4 @@
-<tool id="Show tail1" name="Select last" version="1.0.0">
+<tool id="Show tail1" name="Select last" version="1.0.1">
   <description>lines from a dataset</description>
   <command detect_errors="exit_code"><![CDATA[
     set -eo pipefail;
