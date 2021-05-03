@@ -1,9 +1,9 @@
+from galaxy_test.driver.integration_setup import (
+    PosixFileSourceSetup,
+)
 from .framework import (
     selenium_test,
     SeleniumIntegrationTestCase,
-)
-from ..integration.test_remote_files_posix import (
-    PosixFileSourceSetup,
 )
 
 
