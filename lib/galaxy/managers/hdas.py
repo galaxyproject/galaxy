@@ -281,6 +281,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             'history_id', 'hid',
             # why include if model_class is there?
             'hda_ldda',
+            'copied_from_ldda_id',
             # TODO: accessible needs to go away
             'accessible',
 
@@ -373,6 +374,14 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             'validated_state_message',
         ])
 
+    def serialize_copied_from_ldda_id(self, item, key, **context):
+        """
+        Serialize an id attribute of `item`.
+        """
+        if item.copied_from_library_dataset_dataset_association is not None:
+            return self.app.security.encode_id(item.copied_from_library_dataset_dataset_association.id)
+        return None
+
     def add_serializers(self):
         super().add_serializers()
         taggable.TaggableSerializerMixin.add_serializers(self)
@@ -383,7 +392,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             'history_content_type': lambda *a, **c: 'dataset',
             'hda_ldda': lambda *a, **c: 'hda',
             'type_id': self.serialize_type_id,
-
+            'copied_from_ldda_id': self.serialize_copied_from_ldda_id,
             'history_id': self.serialize_id,
 
             # remapped
