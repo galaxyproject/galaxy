@@ -66,7 +66,7 @@ class HistorySharingTestCase(SeleniumTestCase):
         user1_email = self._get_random_email()
         self.register(user1_email)
         self.share_history_with_user(user_email=user1_email)
-        self.assert_error_message(contains='You cannot send histories to yourself')
+        self.assert_error_message(contains='You cannot share resources with yourself')
 
     def setup_two_users_with_one_shared_history(self, share_by_id=False):
         user1_email = self._get_random_email()
@@ -84,6 +84,7 @@ class HistorySharingTestCase(SeleniumTestCase):
         self.wait_for_history()
 
         history_id = self.current_history_id()
+
         if share_by_id:
             self.share_history_with_user(user_email=user2_email, assert_valid=True)
         else:
@@ -104,7 +105,6 @@ class HistorySharingTestCase(SeleniumTestCase):
         the result if ``assert_valid`` is True.
         """
         self.navigate_to_history_share_page()
-        self.components.histories.sharing.user_email_input.wait_for_and_send_keys(user_id or user_email)
         self.components.histories.sharing.user_email_input.wait_for_and_send_keys(user_id or user_email)
 
         if screenshot:
