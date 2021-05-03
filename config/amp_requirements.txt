@@ -1,7 +1,23 @@
-# already exist in Galaxy requirements with a slightly higher version, commented out so we use Galaxy's versions
+# common libs already existing in Galaxy requirements with a slightly higher version, commented out so we use Galaxy's versions
 #boto3==1.16.33
 #numpy==1.19.4
 #tqdm==4.54.1
+
+# common libs not existing in Galaxy but currently existing on test server, may or may not needed by MGMs
+blis>=0.4.1
+cymem>=2.0.3
+distro>=1.5.0
+more-itertools>=7.2.0
+murmurhash>=1.0.2
+Pillow>=7.0.0
+plac>=1.1.3
+preshed>=3.0.2
+progress-bar>=8
+pyee>=7.0.3
+scikit-build>=0.11.1
+srsly>=0.2.0
+thinc>=7.3.1
+wasabi>=0.4.0
 
 # shared by multi MGMs
 ffmpeg-python==0.2.0
@@ -17,6 +33,8 @@ jira==2.0.0
 
 # spacy
 spacy==2.2.2
+en-core-web-lg==2.2.5
+en-core-web-sm==2.2.5
 
 # pyscenedetect
 scenedetect==0.5.3
