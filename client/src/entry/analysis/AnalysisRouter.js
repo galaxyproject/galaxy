@@ -21,7 +21,7 @@ import Sharing from "components/Sharing.vue";
 import UserPreferences from "components/User/UserPreferences.vue";
 import DatasetList from "components/Dataset/DatasetList.vue";
 import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
-import CustomBuilds from "components/User/CustomBuilds.vue";
+import CustomBuilds from "components/User/CustomBuilds";
 import Tours from "mvc/tours";
 import GridView from "mvc/grid/grid-view";
 import GridShared from "mvc/grid/grid-shared";

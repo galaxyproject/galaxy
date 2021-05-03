@@ -157,11 +157,16 @@ chr5    152537259</pre
 import axios from "axios";
 import Multiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.min.css";
-import { mapGetters } from "vuex";
+import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 
 export default {
+    mixins: [legacyNavigationMixin],
     components: {
         Multiselect,
+    },
+    props: {
+        currentUserId: { type: String, required: true },
+        currentHistoryId: { type: String, required: true },
     },
     data() {
         return {
@@ -199,12 +204,8 @@ export default {
         };
     },
     computed: {
-        ...mapGetters("user", ["currentUser"]),
-        ...mapGetters("betaHistory", ["currentHistoryId"]),
-
         customBuildsUrl() {
-            const userId = this.currentUser.id;
-            return this.prependPath(`api/users/${userId}/custom_builds`);
+            return this.prependPath(`api/users/${this.currentUserId}/custom_builds`);
         },
 
         lengthType: function () {
@@ -223,16 +224,19 @@ export default {
         },
     },
     created() {
-        this.loadCustomBuilds();
-        if (this.currentHistoryId) {
-            this.loadCustomBuildsMetadata(this.currentHistoryId);
-        } else {
-            this.fastaFilesLoading = false;
-        }
+        this.load();
     },
     methods: {
+        async load() {
+            await this.loadCustomBuilds();
+            if (this.currentHistoryId) {
+                await this.loadCustomBuildsMetadata(this.currentHistoryId);
+            } else {
+                this.fastaFilesLoading = false;
+            }
+        },
         loadCustomBuilds() {
-            axios
+            return axios
                 .get(this.customBuildsUrl)
                 .then((response) => {
                     this.customBuilds = response.data;
@@ -242,7 +246,7 @@ export default {
                 });
         },
         loadCustomBuildsMetadata(historyId) {
-            const url = this.prependPath("api/histories/${historyId}/custom_builds_metadata");
+            const url = this.prependPath(`api/histories/${historyId}/custom_builds_metadata`);
             axios
                 .get(url)
                 .then((response) => {
@@ -285,7 +289,7 @@ export default {
                     } else {
                         this.showAlert("success", "Successfully added a new custom build.");
                     }
-                    this.loadCustomBuilds();
+                    return this.loadCustomBuilds();
                 })
                 .catch((error) => {
                     const message = error.response.data.err_msg;
