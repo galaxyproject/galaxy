@@ -564,13 +564,8 @@ def uvicorn_serve(app, port, host=None):
     from uvicorn.server import Server
     from uvicorn.config import Config
 
-    access_log = os.environ.get('GALAXY_TEST_UVICORN_ACCESS_LOG', None)
-    if access_log:
-        eal = asbool(access_log)
-    else:
-        eal = True
-
-    config = Config(app, host=host, port=int(port), access_log=eal)
+    access_log = False if 'GALAXY_TEST_DISABLE_ACCESS_LOG' in os.environ else True
+    config = Config(app, host=host, port=int(port), access_log=access_log)
     server = Server(config=config)
 
     def run_in_loop(loop):

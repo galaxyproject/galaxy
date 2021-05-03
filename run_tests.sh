@@ -246,7 +246,7 @@ TOOL_SHED_TEST_TMP_DIR          Defaults to random /tmp directory - place for
                                 tool shed test server files to be placed.
 TOOL_SHED_TEST_OMIT_GALAXY      Do not launch a Galaxy server for tool shed
                                 testing.
-GALAXY_TEST_UVICORN_ACCESS_LOG  Do not output uvicorn access messages to log if non-enmpty
+GALAXY_TEST_DISABLE_ACCESS_LOG  Do not log access messages
 
 Unit Test Environment Variables
 
