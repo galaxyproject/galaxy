@@ -77,12 +77,11 @@
 
 <script>
 import { getAppRoot } from "onload/loadConfig";
-import { getGalaxyInstance } from "app";
 import { WorkflowInvocationState } from "components/WorkflowInvocationState";
 import UtcDate from "components/UtcDate";
 import LoadingSpan from "components/LoadingSpan";
 import { mapCacheActions } from "vuex-cache";
-import { mapGetters } from "vuex";
+import { mapActions, mapGetters } from "vuex";
 
 export default {
     components: {
@@ -120,6 +119,7 @@ export default {
     },
     methods: {
         ...mapCacheActions(["fetchWorkflowForInstanceId", "fetchHistoryForId"]),
+        ...mapActions("betaHistory", ["setCurrentHistoryId"]),
         computeItems(items) {
             return items.map((invocation) => {
                 if (this.ownerGrid) {
@@ -144,8 +144,7 @@ export default {
             window.location = `${getAppRoot()}workflows/run?id=${workflowId}`;
         },
         switchHistory(historyId) {
-            const Galaxy = getGalaxyInstance();
-            Galaxy.currHistoryPanel.switchToHistory(historyId);
+            this.setCurrentHistoryId(historyId);
         },
     },
 };
