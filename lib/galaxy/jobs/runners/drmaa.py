@@ -413,7 +413,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         """
         cmd = shlex.split(external_runjob_script)
         cmd.extend([str(username), jobtemplate_filename])
-        log.info("Running command %s" % cmd)
+        log.info(f"Running command: {' '.join(cmd)}")
         try:
             stdoutdata = commands.execute(cmd).strip()
         except commands.CommandLineException:
