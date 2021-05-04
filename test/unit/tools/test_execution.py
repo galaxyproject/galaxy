@@ -204,6 +204,7 @@ class MockTrans:
         self.workflow_building_mode = False
         self.webapp = Bunch(name="galaxy")
         self.sa_session = self.app.model.context
+        self.qualified_url_builder = None
 
     def get_history(self, **kwargs):
         return self.history

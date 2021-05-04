@@ -207,6 +207,16 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         assert output["inherit_format"] is True
 
     @skip_without_tool("test_data_source")
+    def test_data_source_build_request(self):
+        with self.dataset_populator.test_history() as history_id:
+            build = self.dataset_populator.build_tool_state("test_data_source", history_id)
+            galaxy_url_param = build["inputs"][0]
+            assert galaxy_url_param["name"] == "GALAXY_URL"
+            galaxy_url = galaxy_url_param["value"]
+            assert galaxy_url.startswith("http")
+            assert galaxy_url.endswith("tool_runner?tool_id=ratmine")
+
+    @skip_without_tool("test_data_source")
     def test_data_source_ok_request(self):
         with self.dataset_populator.test_history() as history_id:
             payload = self.dataset_populator.run_tool_payload(
@@ -1574,7 +1584,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
     @uses_test_history(require_new=False)
     def test_list_selectable_in_multidata_input(self, history_id):
         self.dataset_collection_populator.create_list_in_history(history_id, contents=["123", "456"])
-        build = self._post("tools/identifier_multiple/build?history_id=%s" % history_id).json()
+        build = self.dataset_populator.build_tool_state("identifier_multiple", history_id)
         assert len(build['inputs'][0]['options']['hdca']) == 1
 
     @skip_without_tool("identifier_multiple")

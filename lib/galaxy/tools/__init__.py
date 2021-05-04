@@ -106,7 +106,7 @@ from galaxy.util.tool_shed.common_util import (
     get_tool_shed_url_from_tool_shed_registry,
 )
 from galaxy.version import VERSION_MAJOR
-from galaxy.work.context import WorkRequestContext
+from galaxy.work.context import proxy_work_context_for_history
 from .execute import (
     execute as execute_job,
     MappingParameters,
@@ -1598,7 +1598,7 @@ class Tool(Dictifiable):
         to the form or execute the tool (only if 'execute' was clicked and
         there were no errors).
         """
-        request_context = WorkRequestContext(app=trans.app, user=trans.user, history=history or trans.history)
+        request_context = proxy_work_context_for_history(trans, history=history)
         all_params, all_errors, rerun_remap_job_id, collection_info = self.expand_incoming(trans=trans, incoming=incoming, request_context=request_context, input_format=input_format)
         # If there were errors, we stay on the same page and display them
         if any(all_errors):
@@ -1772,7 +1772,7 @@ class Tool(Dictifiable):
         from a database in case new parameters have been added.
         """
         messages = {}
-        request_context = WorkRequestContext(app=trans.app, user=trans.user, history=trans.history, workflow_building_mode=workflow_building_mode)
+        request_context = proxy_work_context_for_history(trans, workflow_building_mode=workflow_building_mode)
 
         def validate_inputs(input, value, error, parent, context, prefixed_name, prefixed_label, **kwargs):
             if not error:
@@ -2135,7 +2135,7 @@ class Tool(Dictifiable):
                 raise exceptions.MessageException('History unavailable. Please specify a valid history id')
 
         # build request context
-        request_context = WorkRequestContext(app=trans.app, user=trans.user, history=history, workflow_building_mode=workflow_building_mode)
+        request_context = proxy_work_context_for_history(trans, history, workflow_building_mode=workflow_building_mode)
 
         # load job parameters into incoming
         tool_message = ''
