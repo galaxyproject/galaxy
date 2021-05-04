@@ -2506,7 +2506,7 @@ mapper(model.StoredWorkflow, model.StoredWorkflow.table, properties=dict(
         order_by=model.StoredWorkflowTagAssociation.table.c.id),
     annotations=relation(model.StoredWorkflowAnnotationAssociation,
         order_by=model.StoredWorkflowAnnotationAssociation.table.c.id,
-        backref="stored_workflows"),
+        backref="stored_workflow"),
     ratings=relation(model.StoredWorkflowRatingAssociation,
         order_by=model.StoredWorkflowRatingAssociation.table.c.id,
         backref="stored_workflow"),
@@ -2752,7 +2752,7 @@ def annotation_mapping(annotation_class, **kwds):
 
 annotation_mapping(model.HistoryAnnotationAssociation)
 annotation_mapping(model.HistoryDatasetAssociationAnnotationAssociation)
-annotation_mapping(model.StoredWorkflowAnnotationAssociation, stored_workflow=model.StoredWorkflow)
+annotation_mapping(model.StoredWorkflowAnnotationAssociation)
 annotation_mapping(model.WorkflowStepAnnotationAssociation, workflow_step=model.WorkflowStep)
 annotation_mapping(model.PageAnnotationAssociation)
 annotation_mapping(model.VisualizationAnnotationAssociation)
