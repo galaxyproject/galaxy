@@ -17,8 +17,12 @@ export const testHistory = new History({
 // simplified filter simlates server-side complete set
 export const serverContent = (filters = new SearchParams()) => {
     return testHistoryContent.filter((o) => {
-        if (!filters.showDeleted && o.deleted) return false;
-        if (!filters.showHidden && !o.visible) return false;
+        if (!filters.showDeleted && o.deleted) {
+            return false;
+        }
+        if (!filters.showHidden && !o.visible) {
+            return false;
+        }
         return true;
     });
 };

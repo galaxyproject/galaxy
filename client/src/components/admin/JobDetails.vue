@@ -1,6 +1,6 @@
 <template>
     <b-card>
-        <job-information :job_id="job.id" :includeTimes="true">
+        <job-information :job_id="job.id" :include-times="true">
             <tr v-if="job.traceback">
                 <td>Traceback</td>
                 <td>

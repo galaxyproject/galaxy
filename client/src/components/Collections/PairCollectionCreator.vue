@@ -82,7 +82,7 @@
                     @onUpdateHideSourceItems="onUpdateHideSourceItems"
                     @clicked-create="clickedCreate"
                     @remove-extensions-toggle="removeExtensionsToggle"
-                    :suggestedName="initialSuggestedName"
+                    :suggested-name="initialSuggestedName"
                 >
                     <template v-slot:help-content>
                         <p>

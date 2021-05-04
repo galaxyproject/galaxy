@@ -32,7 +32,9 @@ export default {
                 const pathDestination = this.$store.getters.pathDestination(this.history_dataset_id, this.path);
                 this.imageUrl = pathDestination.fileLink;
             });
-        } else this.imageUrl = `${getAppRoot()}dataset/display?dataset_id=${this.history_dataset_id}`;
+        } else {
+            this.imageUrl = `${getAppRoot()}dataset/display?dataset_id=${this.history_dataset_id}`;
+        }
     },
     data() {
         return {

@@ -47,10 +47,14 @@ export default {
 
     methods: {
         setFocus(index) {
-            if (this.suppressFocus) return;
+            if (this.suppressFocus) {
+                return;
+            }
             const ul = this.$el.closest(".scroller");
             const el = ul.querySelector(`[tabindex="${index}"]`);
-            if (el) el.focus();
+            if (el) {
+                el.focus();
+            }
         },
     },
 
