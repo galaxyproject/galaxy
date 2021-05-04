@@ -1,22 +1,28 @@
-import { merge, partition, Observable, BehaviorSubject, Subject } from "rxjs";
+import { concat, race, timer, merge, partition, Observable, BehaviorSubject, Subject } from "rxjs";
 import {
-    tap,
+    debounceTime,
     distinctUntilChanged,
-    map,
     filter,
-    share,
-    withLatestFrom,
+    map,
+    mapTo,
+    mergeAll,
+    pairwise,
     pluck,
     publish,
-    mergeAll,
-    debounceTime,
+    share,
+    shareReplay,
+    take,
+    tap,
     window,
+    withLatestFrom,
 } from "rxjs/operators";
 import { chunk, show } from "utils/observable";
-import { isValidNumber } from "../ContentProvider";
+import { isValidNumber } from "utils/validation";
 import { SearchParams, CurveFit, ScrollPos } from "../../model";
 import { loadContents } from "./loadContents";
 import { watchHistoryContents } from "./watchHistoryContents";
+import { default as store } from "store/index";
+import { defaultPayload } from "../ContentProvider";
 
 /**
  * Observable operator accepts history, search filters as config values, then uses an observable
@@ -33,17 +39,20 @@ export const contentPayload = (cfg = {}) => {
         filters = new SearchParams(),
         pageSize = SearchParams.pageSize, 
         debouncePeriod = 250,
+        loadingTimeout = 2000,
         disablePoll = false,
         debug = false,
-        // status outputs
-        loading$ = new BehaviorSubject(),
+        // optional feedback indicators
+        loadingEvents$ = new Subject(),
         resetPos$ = new Subject(),
     } = cfg;
 
-    // stats for this history + filters, accumulates and improves over successive polls
-    const totalMatches$ = new BehaviorSubject(0);
-    const cursorToHid$ = new BehaviorSubject(createCursorToHid(history));
-    const hidToTopRows$ = new BehaviorSubject(createHidToTopRows(history));
+    // These running totals are shared between instances of content payload because a lot of the
+    // stats do not get returned on every single pol. That means the most recent values need to be
+    // preserved when the user switches the filters back and forth
+    const totalMatches$ = getSubject("totalMatches", history, filters, () => new BehaviorSubject(history.hidItems));
+    const cursorToHid$ = getSubject("cursorToHid", history, filters, () => new BehaviorSubject(createCursorToHid(history)));
+    const hidToTopRows$ = getSubject("hidToTopRows", history, filters, () => new BehaviorSubject(createHidToTopRows(history)));
 
     return publish((pos$) => {
 
@@ -82,8 +91,10 @@ export const contentPayload = (cfg = {}) => {
         );
 
         const serverLoad$ = serverHid$.pipe(
-            tap(() => loading$.next(true)),
+            tap(() => loadingEvents$.next(true)),
             loadContents({ history, filters, disablePoll, debug }),
+            tap(() => loadingEvents$.next(false)),
+            tap((response) => updateVuexHistory(history.id, response)),
             share(),
         );
 
@@ -102,15 +113,22 @@ export const contentPayload = (cfg = {}) => {
         const cacheMonitor$ = cacheHid$.pipe(
             watchHistoryContents({ history, filters, pageSize, debouncePeriod, debug }),
             show(debug, (result) => console.log("cacheMonitor.contents (hid)", result.contents.map(o => o.hid))),
-            share(),
+            shareReplay(1)
         );
 
-        const payload$ = cacheMonitor$.pipe(
+        const cachePayload$ = cacheMonitor$.pipe(
             withLatestFrom(totalMatches$, hidToTopRows$),
             map(buildPayload(pageSize)),
-            tap(() => loading$.next(false)),
             show(debug, (payload) => console.log("payload", payload)),
         );
+
+        // An empty cache response, wait a while then emit an empty payload
+        const noResults$ = timer(loadingTimeout).pipe(
+            mapTo({ ...defaultPayload, noResults: true }),
+            take(1)
+        );
+        const noInitialResults$ = concat(noResults$, cachePayload$);
+        const payload$ = race(noInitialResults$, cachePayload$);
 
         // #endregion
 
@@ -122,19 +140,29 @@ export const contentPayload = (cfg = {}) => {
         // particular reason to shift the view. But that's not ideal when you're already looking at
         // the top of the history and expect to see the most recent updates as they come in.
 
-        const adjustedScrollPos$ = cacheMonitor$.pipe(
-            pluck('contents'),
-            mergeAll(),
-            pluck('hid'),
-            withLatestFrom(pos$, hidToTopRows$),
-            filter(([hid, pos, fit]) => {
-                const domainMax = Math.max(...fit.domain);
-                const aboveTop = hid > domainMax;
-                const scrollAtTop = pos.cursor !== undefined && pos.cursor !== null && pos.cursor == 0.0;
-                return aboveTop && scrollAtTop;
+        const adjustedScrollPos$ = serverLoad$.pipe(
+            pairwise(),
+            filter(([a,b]) => !isNaN(a.maxHid) && !isNaN(b.maxHid)),
+            withLatestFrom(pos$, hid$),
+            map(([[lastResponse, response], pos, hid]) => {
+                const updatesAtTop = response.maxHid > lastResponse.maxHid;
+
+                const scrollerInDefault = (pos.cursor == 0 && pos.key == null);
+                const fudge = 2;
+                const scrollNearLastTop = Math.abs(hid - lastResponse.maxContentHid) < fudge;
+                const scrollerAtTop = scrollerInDefault || scrollNearLastTop;
+                
+                // console.group("should i reposition?");
+                // console.log("updatesAtTop", updatesAtTop);
+                // console.log("scrollerAtTop", scrollerAtTop);
+                // console.groupEnd();
+
+                if (updatesAtTop && scrollerAtTop) {
+                    return new ScrollPos({ cursor: 0, key: response.maxHid })
+                }
+                return null;
             }),
-            map(([hid]) => ScrollPos.create({ key: hid })),
-            debounceTime(debouncePeriod),
+            filter(Boolean),
         );
 
         // #endregion
@@ -167,7 +195,7 @@ export const contentPayload = (cfg = {}) => {
             sub.add(newCursorToHid$.subscribe(cursorToHid$));
             sub.add(newHidToTopRows$.subscribe(hidToTopRows$));
             sub.add(newMatches$.subscribe(totalMatches$));
-            sub.add(adjustedScrollPos$.subscribe(resetPos$))
+            sub.add(adjustedScrollPos$.subscribe(resetPos$));
 
             return sub;
         })
@@ -188,7 +216,6 @@ const estimateHid = (cursor, fit) => {
     }
 
     // we're screwed
-    console.log("estimateHid no estimate available");
     return undefined;
 };
 
@@ -286,4 +313,37 @@ const createCursorToHid = (history) => {
     fit.set(0.0, history.hidItems);
     fit.set(1.0, 1);
     return fit;
+};
+
+// Need to stash these subjects in memory since we don't get the counts
+// back on every single poll request
+
+const subjects = new Map();
+
+const getSubject = (label, history, filters, subjectFactory) => {
+    const key = makeSubjectKey(label, history, filters);
+    if (!subjects.has(key)) {
+        subjects.set(key, subjectFactory());
+    }
+    return subjects.get(key);
+};
+
+const makeSubjectKey = (label, history, filters) => {
+    return JSON.stringify({ label, historyId: history.id, filters: filters.export() });
+};
+
+/**
+ * Updates the vuex history when a polling result comes back.
+ * TODO: consider storing histories in cache instead of Vuex, since some users have very large lists
+ * of histories.
+ *
+ * @param   {string}  historyId     History id from poll result
+ * @param   {object}  pollResponse  Poll summary response
+ */
+const updateVuexHistory = (historyId, pollResponse) => {
+    const getter = store.getters["betaHistory/getHistoryById"];
+    const existingHistory = getter(historyId);
+    const { historySize: size, historyEmpty: empty } = pollResponse;
+    const history = { ...existingHistory, size, empty };
+    store.dispatch("betaHistory/setHistory", history);
 };

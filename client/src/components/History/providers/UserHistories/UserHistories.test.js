@@ -1,6 +1,6 @@
 import Vuex from "vuex";
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue, wait, waitForLifecyleEvent } from "jest/helpers";
+import { getLocalVue, wait, waitForLifecyleEvent, watchForChange } from "jest/helpers";
 import { historyStore } from "../../model/historyStore";
 import { History } from "../../model";
 import UserHistories from "./UserHistories";
@@ -152,7 +152,12 @@ describe("UserHistories", () => {
             // set another history as current
             const nextHistory = historySummaries[1];
             setCurrentHistory(nextHistory);
-            await waitForLifecyleEvent(wrapper.vm, "updated");
+
+            await watchForChange({
+                vm: wrapper.vm,
+                propName: "currentHistory",
+                label: "currenntHistoryChange",
+            });
 
             // wait for it to register
             const { currentHistory: changedHistory, histories: newHistories } = slotProps;
@@ -167,7 +172,11 @@ describe("UserHistories", () => {
 
             // create new history
             await createNewHistory();
-            await waitForLifecyleEvent(wrapper.vm, "updated");
+
+            await watchForChange({
+                vm: wrapper.vm,
+                propName: "currentHistory",
+            });
 
             // wait for it to come out of the slot
             expect(slotProps.currentHistory.id).toEqual(createdHistory.id);
@@ -184,8 +193,8 @@ describe("UserHistories", () => {
 
             expect(modifiedHistory.id).toBeDefined();
             await updateHistory(modifiedHistory);
-
             await waitForLifecyleEvent(wrapper.vm, "updated");
+
             expect(slotProps.histories.find((h) => h.foo == "bar")).toBeTruthy();
         });
 

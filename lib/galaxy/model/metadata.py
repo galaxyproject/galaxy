@@ -15,6 +15,7 @@ from collections.abc import Mapping
 from os.path import abspath
 
 from sqlalchemy.orm import object_session
+from sqlalchemy.orm.attributes import flag_modified
 
 import galaxy.model
 from galaxy.util import (
@@ -133,6 +134,7 @@ class MetadataCollection(Mapping):
                 self.parent._metadata[name] = self.spec[name].unwrap(value)
             else:
                 self.parent._metadata[name] = value
+            flag_modified(self.parent, '_metadata')
 
     def remove_key(self, name):
         if name in self.parent._metadata:
@@ -226,6 +228,7 @@ class MetadataCollection(Mapping):
             dataset.validated_state = JSONified_dict['__validated_state__']
         if '__validated_state_message__' in JSONified_dict:
             dataset.validated_state_message = JSONified_dict['__validated_state_message__']
+        flag_modified(dataset, '_metadata')
 
     def to_JSON_dict(self, filename=None):
         meta_dict = {}

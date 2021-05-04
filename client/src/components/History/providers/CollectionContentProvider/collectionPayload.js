@@ -1,4 +1,4 @@
-import { of, Observable, BehaviorSubject, partition, merge } from "rxjs";
+import { of, Observable, Subject, partition, merge } from "rxjs";
 import { tap, map, pluck, switchMap, publish, distinctUntilChanged, share } from "rxjs/operators";
 import { chunk } from "utils/observable";
 import { SearchParams } from "../../model/SearchParams";
@@ -12,7 +12,7 @@ export const collectionPayload = (cfg = {}) => {
         filters = new SearchParams(),
         pageSize = SearchParams.pageSize,
         debug = false,
-        loading$ = new BehaviorSubject(),
+        loadingEvents$ = new Subject(),
     } = cfg;
 
     const { totalElements: totalMatches, contents_url } = dsc;
@@ -48,9 +48,10 @@ export const collectionPayload = (cfg = {}) => {
         );
 
         const serverLoad$ = pagination$.pipe(
-            tap(() => loading$.next(true)),
             switchMap(pagination => of([contents_url, filters, pagination]).pipe(
+                tap(() => loadingEvents$.next(true)),
                 loadDscContent({ debug }),
+                tap(() => loadingEvents$.next(false)),
             )),
         );
 
@@ -62,7 +63,6 @@ export const collectionPayload = (cfg = {}) => {
                 const bottomRows = Math.max(0, totalMatches - contents.length - topRows);
                 return { ...result, topRows, bottomRows, totalMatches };
             }),
-            tap(() => loading$.next(false)),
         );
 
         return new Observable((obs) => {

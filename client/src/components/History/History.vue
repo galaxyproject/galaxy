@@ -40,7 +40,6 @@
 
                     <template v-slot:listcontrols>
                         <ContentOperations
-                            v-if="!history.empty"
                             :history="history"
                             :total-matches="payload.totalMatches"
                             :loading="loading"
@@ -56,9 +55,10 @@
                     </template>
 
                     <template v-slot:listing>
-                        <HistoryEmpty v-if="history.empty && payload.contents.length == 0" class="m-2" />
+                        <HistoryEmpty v-if="history.empty" class="m-2" />
+                        <HistoryEmpty v-else-if="payload && payload.noResults" message="No Results." class="m-2" />
                         <Scroller
-                            v-else
+                            v-else-if="payload"
                             :class="{ loadingBackground: loading }"
                             key-field="hid"
                             v-bind="payload"

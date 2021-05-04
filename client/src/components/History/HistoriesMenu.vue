@@ -2,6 +2,12 @@
     <div id="current-history-panel">
         <PriorityMenu :starting-height="27">
             <PriorityMenuItem
+                key="select-new-history"
+                title="Select History"
+                icon="fa fa-folder-open"
+                @click="$emit('selectHistoryModal')"
+            />
+            <PriorityMenuItem
                 key="create-new-history"
                 title="Create New History"
                 icon="fa fa-plus"

@@ -1,4 +1,5 @@
 """This module contains a linting functions for tool inputs."""
+from galaxy.tools.parameters.dynamic_options import filter_types
 from galaxy.util import string_as_bool
 from ._util import is_datasource, is_valid_cheetah_placeholder
 from ..parser.util import _parse_name
@@ -29,20 +30,72 @@ def lint_inputs(tool_xml, lint_ctx):
             if "format" not in param_attrib:
                 lint_ctx.warn(f"Param input [{param_name}] with no format specified - 'data' format will be assumed.")
         elif param_type == "select":
+            # get dynamic/statically defined options
             dynamic_options = param.get("dynamic_options", None)
-            if dynamic_options is None:
-                dynamic_options = param.find("options")
-
+            options = param.findall("./options")
+            filters = param.findall("./options/filter")
             select_options = param.findall('./option')
-            if any(['value' not in option.attrib for option in select_options]):
-                lint_ctx.error(f"Select [{param_name}] has option without value")
-            if len(set([option.text.strip() for option in select_options])) != len(select_options):
-                lint_ctx.error(f"Select [{param_name}] has multiple options with the same text content")
-            if len(set([option.attrib.get("value") for option in select_options])) != len(select_options):
-                lint_ctx.error(f"Select [{param_name}] has multiple options with the same value")
 
-            if dynamic_options is None and len(select_options) == 0:
-                lint_ctx.warn(f"No options defined for select [{param_name}]")
+            if dynamic_options is not None:
+                lint_ctx.warn(f"Select parameter [{param_name}] uses deprecated 'dynamic_options' attribute.")
+
+            # check if options are defined by exactly one possibility
+            if (dynamic_options is not None) + (len(options) > 0) + (len(select_options) > 0) != 1:
+                lint_ctx.error(f"Select parameter [{param_name}] options have to be defined by either 'option' children elements, a 'options' element or the 'dynamic_options' attribute.")
+
+            # lint dynamic options
+            if len(options) == 1:
+                filters = options[0].findall("./filter")
+                # lint filters
+                filter_adds_options = False
+                for f in filters:
+                    ftype = f.get("type", None)
+                    if ftype is None:
+                        lint_ctx.error(f"Select parameter [{param_name}] contains filter without type.")
+                        continue
+                    if ftype not in filter_types:
+                        lint_ctx.error(f"Select parameter [{param_name}] contains filter with unknown type '{ftype}'.")
+                        continue
+                    if ftype in ['add_value', 'data_meta']:
+                        filter_adds_options = True
+                    # TODO more linting of filters
+
+                from_file = options[0].get("from_file", None)
+                from_parameter = options[0].get("from_parameter", None)
+                from_dataset = options[0].get("from_dataset", None)
+                from_data_table = options[0].get("from_data_table", None)
+                if (from_file is None and from_parameter is None
+                        and from_dataset is None and from_data_table is None
+                        and not filter_adds_options):
+                    lint_ctx.error(f"Select parameter [{param_name}] options tag defines no options. Use 'from_dataset', 'from_data_table', or a filter that adds values.")
+
+                if from_file is not None:
+                    lint_ctx.warn(f"Select parameter [{param_name}] options uses deprecated 'from_file' attribute.")
+                if from_parameter is not None:
+                    lint_ctx.warn(f"Select parameter [{param_name}] options uses deprecated 'from_parameter' attribute.")
+
+                if from_dataset is not None and from_data_table is not None:
+                    lint_ctx.error(f"Select parameter [{param_name}] options uses 'from_dataset' and 'from_data_table' attribute.")
+
+                if options[0].get("meta_file_key", None) is not None and from_dataset is None:
+                    lint_ctx.error(f"Select parameter [{param_name}] 'meta_file_key' is only compatible with 'from_dataset'.")
+
+                if options[0].get("options_filter_attribute", None) is not None:
+                    lint_ctx.warn(f"Select parameter [{param_name}] options uses deprecated 'options_filter_attribute' attribute.")
+
+                if options[0].get("transform_lines", None) is not None:
+                    lint_ctx.warn(f"Select parameter [{param_name}] options uses deprecated 'transform_lines' attribute.")
+
+            elif len(options) > 1:
+                lint_ctx.error(f"Select parameter [{param_name}] contains multiple options elements")
+
+            # lint statically defined options
+            if any(['value' not in option.attrib for option in select_options]):
+                lint_ctx.error(f"Select parameter [{param_name}] has option without value")
+            if len(set([option.text.strip() for option in select_options])) != len(select_options):
+                lint_ctx.error(f"Select parameter [{param_name}] has multiple options with the same text content")
+            if len(set([option.attrib.get("value") for option in select_options])) != len(select_options):
+                lint_ctx.error(f"Select parameter [{param_name}] has multiple options with the same value")
 
             if param_attrib.get("display") == "checkboxes":
                 if not string_as_bool(param_attrib.get("multiple", "false")):
@@ -54,6 +107,7 @@ def lint_inputs(tool_xml, lint_ctx):
                     lint_ctx.error(f'Select [{param_name}] display="radio" is incompatible with multiple="true"')
                 if string_as_bool(param_attrib.get("optional", "false")):
                     lint_ctx.error(f'Select [{param_name}] display="radio" is incompatible with optional="true"')
+
         # TODO: Validate type, much more...
 
     conditional_selects = tool_xml.findall("./inputs//conditional")

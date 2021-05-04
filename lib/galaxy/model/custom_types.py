@@ -113,6 +113,10 @@ class JSONType(sqlalchemy.types.TypeDecorator):
         return (x == y)
 
 
+class MutableJSONType(JSONType):
+    """Associated with MutationObj"""
+
+
 class MutationObj(Mutable):
     """
     Mutable JSONType for SQLAlchemy from original gist:
@@ -269,7 +273,8 @@ class MutationList(MutationObj, list):
         self.changed()
 
 
-MutationObj.associate_with(JSONType)
+MutationObj.associate_with(MutableJSONType)
+
 
 metadata_pickler = AliasPickleModule({
     ("cookbook.patterns", "Bunch"): ("galaxy.util.bunch", "Bunch")

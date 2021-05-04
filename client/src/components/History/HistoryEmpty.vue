@@ -1,8 +1,8 @@
 <template>
     <b-alert show>
-        <h4>
+        <h4 class="mb-1">
             <i class="fa fa-info-circle"></i>
-            <span v-localize>This history is empty.</span>
+            <span>{{ message | l }}</span>
         </h4>
         <p>
             <a href="#" @click.prevent="openGlobalUploadModal" v-localize>You can load your own data</a> or
@@ -15,6 +15,9 @@
 import { openGlobalUploadModal } from "components/Upload";
 
 export default {
+    props: {
+        message: { type: String, default: "This history is empty." },
+    },
     methods: {
         openGlobalUploadModal,
         clickDataLink() {

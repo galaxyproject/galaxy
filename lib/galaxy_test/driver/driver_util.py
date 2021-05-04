@@ -563,7 +563,9 @@ def uvicorn_serve(app, port, host=None):
     import asyncio
     from uvicorn.server import Server
     from uvicorn.config import Config
-    config = Config(app, host=host, port=int(port))
+
+    access_log = False if 'GALAXY_TEST_DISABLE_ACCESS_LOG' in os.environ else True
+    config = Config(app, host=host, port=int(port), access_log=access_log)
     server = Server(config=config)
 
     def run_in_loop(loop):

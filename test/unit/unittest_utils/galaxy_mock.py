@@ -236,6 +236,7 @@ class MockTrans:
         self.anonymous = False
         self.debug = True
         self.user_is_admin = True
+        self.qualified_url_builder = None
 
         self.galaxy_session = None
         self.__user = user

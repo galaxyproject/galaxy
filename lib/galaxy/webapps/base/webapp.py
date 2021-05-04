@@ -188,6 +188,10 @@ def config_allows_origin(origin_raw, config):
     return False
 
 
+def qualified_url_builder(path):
+    return url_for(path, qualified=True)
+
+
 class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryContext):
     """
     Encapsulates web transaction specific state for the Galaxy application
@@ -276,6 +280,10 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
     @property
     def app(self):
         return self._app
+
+    @property
+    def qualified_url_builder(self):
+        return qualified_url_builder
 
     def setup_i18n(self):
         locales = []
@@ -967,6 +975,9 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             template.render_context(context)
             return []
         return render
+
+    def qualified_url_for_path(self, path):
+        return url_for(path, qualified=True)
 
 
 def default_url_path(path):

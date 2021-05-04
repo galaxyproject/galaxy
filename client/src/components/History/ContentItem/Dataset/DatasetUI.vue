@@ -15,15 +15,10 @@ either through the props, and make updates through the events -->
         @keydown.space.self.stop.prevent="$emit('update:selected', !selected)"
     >
         <!-- name, state buttons, menus -->
-        <nav
-            class="content-top-menu d-flex align-items-center justify-content-between"
-            @click.stop="$emit('update:expanded', !expanded)"
-        >
-            <div class="d-flex mr-1 align-items-center" @click.stop>
+        <nav class="content-top-menu" @click.stop="$emit('update:expanded', !expanded)">
+            <div class="content-status-indicators" @click.stop>
                 <b-check v-if="showSelection" :checked="selected" @change="$emit('update:selected', $event)" />
-
                 <StatusIcon v-if="!ok" class="status-icon px-1" :state="dataset.state" @click.stop="onStatusClick" />
-
                 <StateBtn
                     v-if="!dataset.visible"
                     class="px-1"
@@ -42,20 +37,18 @@ either through the props, and make updates through the events -->
                 />
             </div>
 
-            <h5 class="flex-grow-1 overflow-hidden mr-auto text-nowrap text-truncate">
-                <span class="hid">{{ dataset.hid }}</span>
-                <span v-if="collapsed || !dataset.canEditName" class="name">{{ dataset.title }}</span>
-            </h5>
+            <div class="content-title">
+                <h5 class="text-truncate">
+                    <span class="hid">{{ dataset.hid }}</span>
+                    <span v-if="collapsed || !dataset.canEditName" class="name">{{ dataset.title }}</span>
+                </h5>
+            </div>
 
-            <slot name="menu">
-                <DatasetMenu
-                    class="content-item-menu"
-                    :dataset="dataset"
-                    :expanded="expanded"
-                    v-on="$listeners"
-                    :show-tags.sync="showTags"
-                />
-            </slot>
+            <div class="content-item-menu">
+                <slot name="menu">
+                    <DatasetMenu :dataset="dataset" :expanded="expanded" v-on="$listeners" :show-tags.sync="showTags" />
+                </slot>
+            </div>
         </nav>
 
         <!--- read-only tags with name: prefix -->
