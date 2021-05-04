@@ -1782,11 +1782,13 @@ simple_mapping(model.Dataset,
         primaryjoin=(
             (model.Dataset.table.c.id == model.HistoryDatasetAssociation.table.c.dataset_id)
             & (model.HistoryDatasetAssociation.table.c.deleted == false())
-            & (model.HistoryDatasetAssociation.table.c.purged == false()))),
+            & (model.HistoryDatasetAssociation.table.c.purged == false())),
+        viewonly=True),
     purged_history_associations=relation(model.HistoryDatasetAssociation,
         primaryjoin=(
             (model.Dataset.table.c.id == model.HistoryDatasetAssociation.table.c.dataset_id)
-            & (model.HistoryDatasetAssociation.table.c.purged == true()))),
+            & (model.HistoryDatasetAssociation.table.c.purged == true())),
+        viewonly=True),
     library_associations=relation(model.LibraryDatasetDatasetAssociation,
         primaryjoin=(model.Dataset.table.c.id == model.LibraryDatasetDatasetAssociation.table.c.dataset_id)),
     active_library_associations=relation(model.LibraryDatasetDatasetAssociation,
