@@ -1884,7 +1884,7 @@ mapper(model.History, model.History.table, properties=dict(
         backref="histories"),
     annotations=relation(model.HistoryAnnotationAssociation,
         order_by=model.HistoryAnnotationAssociation.table.c.id,
-        backref="histories"),
+        backref="history"),
     ratings=relation(model.HistoryRatingAssociation,
         order_by=model.HistoryRatingAssociation.table.c.id,
         backref="history"),
@@ -2750,7 +2750,7 @@ def annotation_mapping(annotation_class, **kwds):
     simple_mapping(annotation_class, **dict(user=relation(model.User), **kwds))
 
 
-annotation_mapping(model.HistoryAnnotationAssociation, history=model.History)
+annotation_mapping(model.HistoryAnnotationAssociation)
 annotation_mapping(model.HistoryDatasetAssociationAnnotationAssociation, hda=model.HistoryDatasetAssociation)
 annotation_mapping(model.StoredWorkflowAnnotationAssociation, stored_workflow=model.StoredWorkflow)
 annotation_mapping(model.WorkflowStepAnnotationAssociation, workflow_step=model.WorkflowStep)
