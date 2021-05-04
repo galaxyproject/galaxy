@@ -605,6 +605,16 @@ class JobHandlerQueue(Monitors):
                 log.debug("Intentionally failing job with message (%s)" % failure_message)
             job_wrapper.fail(failure_message)
             return JOB_ERROR, job_destination
+
+        try:
+            failure_message= 'You do not seem to be logged in, and can therefore not submit jobs.'
+            assert job.user is not None, failure_message
+        except AssertionError as e:
+            log.debug("Intentionally failing job with message (%s)" % e)
+            job_wrapper.fail(e)
+            state = JOB_ERROR
+            return JOB_ERROR, job_destination
+        
         # job is ready to run, check limits
         # TODO: these checks should be refactored to minimize duplication and made more modular/pluggable
         state = self.__check_destination_jobs(job, job_wrapper)
