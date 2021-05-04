@@ -315,7 +315,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                     "type": "ClusterIP"
                 }
             }
-            log.debug(k8s_spec_template)
             return k8s_spec_template
 
     def __get_k8s_ingress_spec(self, ajs):
@@ -333,7 +332,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 eps = self.app.interactivetool_manager.configure_entry_points(ajs.job_wrapper.get_job(), ports_dict)
                 entry_points = []
                 for entry_point in eps.get('configured', []):
-                    log.debug(entry_point.to_dict())
                     # sending in self.app as `trans` since it's only used for `.security` so seems to work
                     entry_point_path = self.app.interactivetool_manager.get_entry_point_path(self.app, entry_point)
                     if '?' in entry_point_path:
@@ -373,7 +371,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                                    }]}} for ep in entry_points]
                 }
             }
-            log.debug(k8s_spec_template)
             return k8s_spec_template
 
     def __get_k8s_security_context(self):
@@ -613,24 +610,14 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                         )
                         service = Service(self._pykube_api, k8s_service_obj)
                         try:
-                            log.debug(k8s_service_obj)
                             service.create()
                         except Exception as e:
-                            log.debug(str(e))
+                            log.debug(f'Failed to create service k8s resource for IT due to: {str(e)}')
                         ingress = Ingress(self._pykube_api, k8s_ingress_obj)
                         try:
-                            log.debug(k8s_ingress_obj)
                             ingress.create()
                         except Exception as e:
-                            log.debug(str(e))
-                    # if len(guest_ports) > 0:
-                    #     pod = self._get_pod_for_job(job_state)
-                    #     if pod:
-                    #       pod_ip = pod.obj['status']['podIP']
-                    #       ports_dict = {}
-                    #       for guest_port in guest_ports:
-                    #           ports_dict[str(guest_port)] = dict(host=pod_ip, port=guest_port, protocol="http")
-                    #       self.app.interactivetool_manager.configure_entry_points(job_state.job_wrapper.get_job(), ports_dict)
+                            log.debug(f'Failed to create ingress k8s resource for IT due to: {str(e)}')
                     if self.__job_pending_due_to_unschedulable_pod(job_state):
                         creation_time_str = job.obj['metadata'].get('creationTimestamp')
                         creation_time = datetime.strptime(creation_time_str, '%Y-%m-%dT%H:%M:%SZ')
