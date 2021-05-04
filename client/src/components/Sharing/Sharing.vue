@@ -65,75 +65,85 @@
                 The following users will see this {{ modelClass }} in their {{ modelClass }} list and will be able to
                 view, import and run it.
             </p>
-            <div v-if="!isExposeEmail">
-                <b-table
-                    class="share_with_view"
-                    show-empty
-                    :foot-clone="!permissionsChangeRequired"
-                    small
-                    caption-top
-                    :fields="shareFields"
-                    :items="item.users_shared_with"
-                >
-                    <template v-slot:empty>
-                        <p>You have not shared this {{ modelClass }} with any users.</p>
-                    </template>
+            <ConfigProvider v-slot="{ config }">
+                <CurrentUser v-slot="{ user }">
+                    <div v-if="user && config">
+                        <div v-if="!(config.expose_user_email || user.is_admin)">
+                            <b-table
+                                class="share_with_view"
+                                show-empty
+                                :foot-clone="!permissionsChangeRequired"
+                                small
+                                caption-top
+                                :fields="shareFields"
+                                :items="item.users_shared_with"
+                            >
+                                <template v-slot:empty>
+                                    <p>You have not shared this {{ modelClass }} with any users.</p>
+                                </template>
 
-                    <template v-slot:cell(id)="cell">
-                        <b-button
-                            variant="outline-danger"
-                            size="sm"
-                            class="sharing_icon"
-                            @click.stop="setSharing(actions.unshare_with, cell.value)"
+                                <template v-slot:cell(id)="cell">
+                                    <b-button
+                                        variant="outline-danger"
+                                        size="sm"
+                                        class="sharing_icon"
+                                        @click.stop="setSharing(actions.unshare_with, cell.value)"
+                                    >
+                                        <font-awesome-icon
+                                            class="unshare_user sharing_icon"
+                                            size="lg"
+                                            icon="user-slash"
+                                        />
+                                    </b-button>
+                                </template>
+                                <template v-slot:foot(email)>
+                                    <b-form-input
+                                        v-model="shareWithEmail"
+                                        class="user-email-input-form"
+                                        placeholder="Please enter user email(s) using comma separated values"
+                                    />
+                                </template>
+                                <template v-slot:foot(id)>
+                                    <b-button
+                                        variant="outline-primary"
+                                        size="sm"
+                                        :disabled="shareWithEmail === ''"
+                                        @click.stop="setSharing(actions.share_with, shareWithEmail)"
+                                        v-b-tooltip.hover.bottom
+                                        :title="
+                                            shareWithEmail ? `Share with ${shareWithEmail}` : 'Please enter user email'
+                                        "
+                                        class="sharing_icon submit-sharing-with"
+                                    >
+                                        <font-awesome-icon class="share_with" icon="user-plus" size="lg" />
+                                    </b-button>
+                                </template>
+                            </b-table>
+                        </div>
+                        <multiselect
+                            v-else-if="item && !permissionsChangeRequired"
+                            class="select-users"
+                            v-model="item.users_shared_with"
+                            :options="usersList"
+                            :clear-on-select="true"
+                            :preserve-search="true"
+                            :multiple="true"
+                            @select="setSharing(actions.share_with, $event.email)"
+                            @remove="setSharing(actions.unshare_with, $event.email)"
+                            label="email"
+                            track-by="id"
+                            @search-change="searchChanged"
+                            :internal-search="false"
                         >
-                            <font-awesome-icon class="unshare_user sharing_icon" size="lg" icon="user-slash" />
-                        </b-button>
-                    </template>
-                    <template v-slot:foot(email)>
-                        <b-form-input
-                            v-model="shareWithEmail"
-                            class="user-email-input-form"
-                            placeholder="Please enter user email(s) using comma separated values"
-                        />
-                    </template>
-                    <template v-slot:foot(id)>
-                        <b-button
-                            variant="outline-primary"
-                            size="sm"
-                            :disabled="shareWithEmail === ''"
-                            @click.stop="setSharing(actions.share_with, shareWithEmail)"
-                            v-b-tooltip.hover.bottom
-                            :title="shareWithEmail ? `Share with ${shareWithEmail}` : 'Please enter user email'"
-                            class="sharing_icon submit-sharing-with"
-                        >
-                            <font-awesome-icon class="share_with" icon="user-plus" size="lg" />
-                        </b-button>
-                    </template>
-                </b-table>
-            </div>
-            <multiselect
-                v-else-if="item && !permissionsChangeRequired"
-                class="select-users"
-                v-model="item.users_shared_with"
-                :options="usersList"
-                :clear-on-select="true"
-                :preserve-search="true"
-                :multiple="true"
-                @select="setSharing(actions.share_with, $event.email)"
-                @remove="setSharing(actions.unshare_with, $event.email)"
-                label="email"
-                track-by="id"
-                @search-change="searchChanged"
-                :internal-search="false"
-            >
-                <template slot="noOptions">
-                    <div>
-                        {{ emptyResult }}
+                            <template slot="noOptions">
+                                <div>
+                                    {{ emptyResult }}
+                                </div>
+                            </template>
+                        </multiselect>
                     </div>
-                </template>
-            </multiselect>
-
-            <!--            <b-card-group header-tag="header" no-body role="tab"  deck>-->
+                </CurrentUser>
+            </ConfigProvider>
             <b-alert variant="warning" dismissible fade :show="permissionsChangeRequired">
                 <div class="text-center">
                     {{
@@ -210,7 +220,6 @@
                     </b-card>
                 </b-col>
             </b-row>
-            <!--            </b-card-group>-->
         </div>
     </div>
 </template>
@@ -227,6 +236,8 @@ import SlugInput from "components/Common/SlugInput";
 import axios from "axios";
 import Multiselect from "vue-multiselect";
 import { copy } from "utils/clipboard";
+import ConfigProvider from "../providers/ConfigProvider";
+import CurrentUser from "../providers/CurrentUser";
 
 Vue.use(BootstrapVue);
 [faCopy, faEdit, faUserPlus, faUserSlash].forEach((icon) => library.add(icon));
@@ -240,9 +251,11 @@ const defaultExtra = () => {
 };
 export default {
     components: {
+        ConfigProvider,
         FontAwesomeIcon,
         SlugInput,
         Multiselect,
+        CurrentUser,
     },
     props: {
         id: {
@@ -261,7 +274,6 @@ export default {
     data() {
         const Galaxy = getGalaxyInstance();
         return {
-            isExposeEmail: Galaxy.config.expose_user_email || Galaxy.user.attributes.is_admin,
             usersList: [],
             emptyResult: "Please enter user email",
             ready: false,
