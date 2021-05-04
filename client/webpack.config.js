@@ -222,6 +222,8 @@ module.exports = (env = {}, argv = {}) => {
             hot: true,
             // proxy *everything* to the galaxy server
             // someday, this can be a more limited set -- e.g. `/api`, `/auth`
+            port: 8081,
+            host: '0.0.0.0',
             proxy: {
                 "/": {
                     target: process.env.GALAXY_URL || "http://localhost:8080",
