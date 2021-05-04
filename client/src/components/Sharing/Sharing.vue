@@ -68,7 +68,7 @@
             <ConfigProvider v-slot="{ config }">
                 <CurrentUser v-slot="{ user }">
                     <div v-if="user && config">
-                        <div v-if="!(config.expose_user_email || user.is_admin)">
+                        <div>
                             <b-table
                                 class="share_with_view"
                                 show-empty
@@ -98,49 +98,69 @@
                                 </template>
                                 <template v-slot:foot(email)>
                                     <b-form-input
+                                        v-if="!(config.expose_user_email || user.is_admin)"
                                         v-model="shareWithEmail"
                                         class="user-email-input-form"
                                         placeholder="Please enter user email(s) using comma separated values"
                                     />
+                                    <multiselect
+                                        v-else-if="item && !permissionsChangeRequired"
+                                        class="select-users"
+                                        v-model="item.users_shared_with"
+                                        :options="usersList"
+                                        :clear-on-select="true"
+                                        :preserve-search="true"
+                                        :multiple="true"
+                                        @select="setSharing(actions.share_with, $event.email)"
+                                        @remove="setSharing(actions.unshare_with, $event.email)"
+                                        label="email"
+                                        track-by="id"
+                                        @search-change="searchChanged"
+                                        :internal-search="false"
+                                    >
+                                        <template slot="tag" slot-scope="{ option, remove }">
+                                            <span class="multiselect__tag">
+                                                <span>{{ option.email }}</span>
+                                                <i
+                                                    aria-hidden="true"
+                                                    @click="remove(option)"
+                                                    tabindex="1"
+                                                    class="multiselect__tag-icon"
+                                                ></i>
+                                                <!-- <font-awesome-icon :style="{ color: '#f4a3a5' }" @click="remove(option)" :icon="['fas', 'times']" />-->
+                                            </span>
+                                        </template>
+
+                                        <template slot="noOptions">
+                                            <div>
+                                                {{ emptyResult }}
+                                            </div>
+                                        </template>
+                                    </multiselect>
                                 </template>
                                 <template v-slot:foot(id)>
-                                    <b-button
-                                        variant="outline-primary"
-                                        size="sm"
-                                        :disabled="shareWithEmail === ''"
-                                        @click.stop="setSharing(actions.share_with, shareWithEmail)"
-                                        v-b-tooltip.hover.bottom
-                                        :title="
-                                            shareWithEmail ? `Share with ${shareWithEmail}` : 'Please enter user email'
-                                        "
-                                        class="sharing_icon submit-sharing-with"
-                                    >
-                                        <font-awesome-icon class="share_with" icon="user-plus" size="lg" />
-                                    </b-button>
+                                    <b-row align-v="center">
+                                        <b-col>
+                                            <b-button
+                                                variant="outline-primary"
+                                                size="sm"
+                                                :disabled="shareWithEmail === ''"
+                                                @click.stop="setSharing(actions.share_with, shareWithEmail)"
+                                                v-b-tooltip.hover.bottom
+                                                :title="
+                                                    shareWithEmail
+                                                        ? `Share with ${shareWithEmail}`
+                                                        : 'Please enter user email'
+                                                "
+                                                class="sharing_icon submit-sharing-with"
+                                            >
+                                                <font-awesome-icon class="share_with" icon="user-plus" size="lg" />
+                                            </b-button>
+                                        </b-col>
+                                    </b-row>
                                 </template>
                             </b-table>
                         </div>
-                        <multiselect
-                            v-else-if="item && !permissionsChangeRequired"
-                            class="select-users"
-                            v-model="item.users_shared_with"
-                            :options="usersList"
-                            :clear-on-select="true"
-                            :preserve-search="true"
-                            :multiple="true"
-                            @select="setSharing(actions.share_with, $event.email)"
-                            @remove="setSharing(actions.unshare_with, $event.email)"
-                            label="email"
-                            track-by="id"
-                            @search-change="searchChanged"
-                            :internal-search="false"
-                        >
-                            <template slot="noOptions">
-                                <div>
-                                    {{ emptyResult }}
-                                </div>
-                            </template>
-                        </multiselect>
                     </div>
                 </CurrentUser>
             </ConfigProvider>
@@ -419,7 +439,7 @@ export default {
         },
         setSharing(action, user_id, share_option) {
             const user_ids = user_id ? user_id.replace(/ /g, "").split(",") : undefined;
-
+            console.log(this.item.users_shared_with);
             if (
                 action === this.actions.share_with &&
                 user_ids &&
@@ -453,7 +473,9 @@ export default {
                 axios
                     .get(`${getAppRoot()}api/users?f_email=${searchValue}`)
                     .then((response) => {
-                        this.usersList = response.data;
+                        this.usersList = response.data.filter(
+                            ({ email }) => !this.item.users_shared_with.map(({ email }) => email).includes(email)
+                        );
                     })
                     .catch((error) => this.addError(error.response.data.err_msg));
             }
@@ -464,9 +486,17 @@ export default {
 
 <style scoped>
 .sharing_icon {
-    margin-top: 0.15rem;
+    margin-top: 12%;
 }
 .share_with_view {
     max-width: 680px;
+}
+.multiselect__tag {
+    background: #338ca9;
+    font-weight: normal;
+}
+.multiselect__tag-icon:focus,
+.multiselect__tag-icon:hover {
+    background: #25537b;
 }
 </style>
