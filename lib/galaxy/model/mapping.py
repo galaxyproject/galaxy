@@ -1733,7 +1733,9 @@ simple_mapping(model.DynamicTool)
 
 simple_mapping(model.HistoryDatasetAssociation,
     dataset=relation(model.Dataset,
-        primaryjoin=(model.Dataset.table.c.id == model.HistoryDatasetAssociation.table.c.dataset_id), lazy=False),
+        primaryjoin=(model.Dataset.table.c.id == model.HistoryDatasetAssociation.table.c.dataset_id),
+        lazy=False,
+        backref='history_associations'),
     # .history defined in History mapper
     copied_from_history_dataset_association=relation(model.HistoryDatasetAssociation,
         primaryjoin=(model.HistoryDatasetAssociation.table.c.copied_from_history_dataset_association_id
@@ -1776,8 +1778,6 @@ simple_mapping(model.HistoryDatasetAssociation,
 
 simple_mapping(model.Dataset,
     job=relation(model.Job, primaryjoin=(model.Dataset.table.c.job_id == model.Job.table.c.id)),
-    history_associations=relation(model.HistoryDatasetAssociation,
-        primaryjoin=(model.Dataset.table.c.id == model.HistoryDatasetAssociation.table.c.dataset_id)),
     active_history_associations=relation(model.HistoryDatasetAssociation,
         primaryjoin=(
             (model.Dataset.table.c.id == model.HistoryDatasetAssociation.table.c.dataset_id)
