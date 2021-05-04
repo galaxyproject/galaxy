@@ -5,7 +5,7 @@
     (
     #if $header
       head -n 1 '$input' &&
-      tail -n +1 '$input'
+      tail -n +2 '$input'
     #else
       cat '$input'
     #end if
