@@ -2377,7 +2377,7 @@ simple_mapping(model.HistoryDatasetCollectionAssociation,
         backref='dataset_collections'),
     annotations=relation(model.HistoryDatasetCollectionAssociationAnnotationAssociation,
         order_by=model.HistoryDatasetCollectionAssociationAnnotationAssociation.table.c.id,
-        backref="dataset_collections"),
+        backref="history_dataset_collection"),
     ratings=relation(model.HistoryDatasetCollectionRatingAssociation,
         order_by=model.HistoryDatasetCollectionRatingAssociation.table.c.id,
         backref="dataset_collection")
@@ -2756,8 +2756,7 @@ annotation_mapping(model.StoredWorkflowAnnotationAssociation, stored_workflow=mo
 annotation_mapping(model.WorkflowStepAnnotationAssociation, workflow_step=model.WorkflowStep)
 annotation_mapping(model.PageAnnotationAssociation)
 annotation_mapping(model.VisualizationAnnotationAssociation)
-annotation_mapping(model.HistoryDatasetCollectionAssociationAnnotationAssociation,
-    history_dataset_collection=model.HistoryDatasetCollectionAssociation)
+annotation_mapping(model.HistoryDatasetCollectionAssociationAnnotationAssociation)
 annotation_mapping(model.LibraryDatasetCollectionAnnotationAssociation)
 
 
