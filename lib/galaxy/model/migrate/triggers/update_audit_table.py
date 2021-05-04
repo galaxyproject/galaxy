@@ -47,7 +47,7 @@ def _postgres_install(engine):
     # different for different source tables. There may be a fancier way to dynamically choose
     # between incoming fields, but having 2 triggers fns seems straightforward
 
-    def trigger_fn(id_field):
+    def statement_trigger_fn(id_field):
         fn = f"{fn_prefix}_{id_field}"
 
         return f"""
@@ -66,7 +66,24 @@ def _postgres_install(engine):
             $BODY$
         """
 
-    def trigger_def(source_table, id_field, operation, when="AFTER"):
+    def row_trigger_fn(id_field):
+        fn = f"{fn_prefix}_{id_field}"
+
+        return f"""
+            CREATE OR REPLACE FUNCTION {fn}()
+                RETURNS TRIGGER
+                LANGUAGE 'plpgsql'
+            AS $BODY$
+                BEGIN
+                    INSERT INTO history_audit (history_id, update_time)
+                    VALUES (NEW.{id_field}, CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+                    ON CONFLICT DO NOTHING;
+                    RETURN NULL;
+                END;
+            $BODY$
+        """
+
+    def statement_trigger_def(source_table, id_field, operation, when="AFTER"):
         fn = f"{fn_prefix}_{id_field}"
 
         # Postgres supports many triggers per operation/table so the label can
@@ -81,12 +98,26 @@ def _postgres_install(engine):
             FOR EACH STATEMENT EXECUTE FUNCTION {fn}();
         """
 
-    # trigger functions, each reads a different incoming id
+    def row_trigger_def(source_table, id_field, operation, when="AFTER"):
+        fn = f"{fn_prefix}_{id_field}"
+
+        label = f"history_audit_by_{id_field}"
+        trigger_name = get_trigger_name(label, operation, when, statement=True)
+
+        return f"""
+            CREATE TRIGGER {trigger_name}
+            {when} {operation} ON {source_table}
+            FOR EACH ROW EXECUTE FUNCTION {fn}();
+        """
+
+    # pick row or statement triggers depending on postgres version
+    version = engine.dialect.server_version_info[0]
+    trigger_fn = statement_trigger_fn if version > 10 else row_trigger_fn
+    trigger_def = statement_trigger_def if version > 10 else row_trigger_def
+
     for id_field in ["history_id", "id"]:
         sql.append(trigger_fn(id_field))
 
-    # add triggers for each configured table (history, hda, hdca)
-    # picking the appropriate function via the config
     for source_table, id_field in trigger_config.items():
         for operation in ["UPDATE", "INSERT"]:
             sql.append(trigger_def(source_table, id_field, operation))

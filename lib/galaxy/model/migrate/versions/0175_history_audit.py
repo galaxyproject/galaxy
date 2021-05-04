@@ -35,6 +35,7 @@ def upgrade(migrate_engine):
     metadata.reflect()
 
     # create table + index
+    AuditTable.drop(migrate_engine, checkfirst=True)
     create_table(AuditTable)
 
     # populate with update_time from every history
