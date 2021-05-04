@@ -2392,7 +2392,7 @@ simple_mapping(model.LibraryDatasetCollectionAssociation,
         backref='dataset_collections'),
     annotations=relation(model.LibraryDatasetCollectionAnnotationAssociation,
         order_by=model.LibraryDatasetCollectionAnnotationAssociation.table.c.id,
-        backref="dataset_collections"),
+        backref="dataset_collection"),
     ratings=relation(model.LibraryDatasetCollectionRatingAssociation,
         order_by=model.LibraryDatasetCollectionRatingAssociation.table.c.id,
         backref="dataset_collection"))
@@ -2758,8 +2758,7 @@ annotation_mapping(model.PageAnnotationAssociation)
 annotation_mapping(model.VisualizationAnnotationAssociation)
 annotation_mapping(model.HistoryDatasetCollectionAssociationAnnotationAssociation,
     history_dataset_collection=model.HistoryDatasetCollectionAssociation)
-annotation_mapping(model.LibraryDatasetCollectionAnnotationAssociation,
-    library_dataset_collection=model.LibraryDatasetCollectionAssociation)
+annotation_mapping(model.LibraryDatasetCollectionAnnotationAssociation)
 
 
 # Rating tables.
