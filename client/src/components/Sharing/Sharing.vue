@@ -105,14 +105,12 @@
                                     />
                                     <multiselect
                                         v-else-if="item && !permissionsChangeRequired"
-                                        class="select-users"
-                                        v-model="item.users_shared_with"
+                                        class="multiselect-users"
+                                        v-model="shareWithEmail"
                                         :options="usersList"
                                         :clear-on-select="true"
                                         :preserve-search="true"
                                         :multiple="true"
-                                        @select="setSharing(actions.share_with, $event.email)"
-                                        @remove="setSharing(actions.unshare_with, $event.email)"
                                         label="email"
                                         track-by="id"
                                         @search-change="searchChanged"
@@ -145,11 +143,22 @@
                                                 variant="outline-primary"
                                                 size="sm"
                                                 :disabled="shareWithEmail === ''"
-                                                @click.stop="setSharing(actions.share_with, shareWithEmail)"
+                                                @click.stop="
+                                                    setSharing(
+                                                        actions.share_with,
+                                                        config.expose_user_email || user.is_admin
+                                                            ? shareWithEmail.map(({ email }) => email)
+                                                            : shareWithEmail
+                                                    )
+                                                "
                                                 v-b-tooltip.hover.bottom
                                                 :title="
                                                     shareWithEmail
-                                                        ? `Share with ${shareWithEmail}`
+                                                        ? `Share with ${
+                                                              config.expose_user_email || user.is_admin
+                                                                  ? shareWithEmail.map(({ email }) => email)
+                                                                  : shareWithEmail
+                                                          }`
                                                         : 'Please enter user email'
                                                 "
                                                 class="sharing_icon submit-sharing-with"
@@ -438,8 +447,9 @@ export default {
                 .catch((error) => this.addError(error.response.data.err_msg));
         },
         setSharing(action, user_id, share_option) {
-            const user_ids = user_id ? user_id.replace(/ /g, "").split(",") : undefined;
-            console.log(this.item.users_shared_with);
+            let user_ids = undefined;
+            if (Array.isArray(user_id)) user_ids = user_id;
+            else user_ids = user_id ? user_id.replace(/ /g, "").split(",") : undefined;
             if (
                 action === this.actions.share_with &&
                 user_ids &&
@@ -486,14 +496,22 @@ export default {
 
 <style scoped>
 .sharing_icon {
-    margin-top: 12%;
+    margin-top: 0.15rem;
 }
 .share_with_view {
     max-width: 680px;
 }
-.multiselect__tag {
-    background: #338ca9;
+.multiselect-users {
     font-weight: normal;
+}
+.multiselect-users::v-deep .multiselect__option--highlight {
+    background: #377ab6;
+}
+.multiselect__tag {
+    background: #377ab6;
+}
+.multiselect__tag-icon:after{
+    color: white;
 }
 .multiselect__tag-icon:focus,
 .multiselect__tag-icon:hover {
