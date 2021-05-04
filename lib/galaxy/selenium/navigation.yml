@@ -200,6 +200,9 @@ history_panel:
     options_show_export_history_to_file:
       type: xpath
       selector: '//a[text()="Export History to File"]'
+    options_use_beta_history:
+      type: xpath
+      selector: '//a[text()="Use Beta History Panel"]'
     new_history_button: '.history-new-button'
     multi_view_button: '#history-view-multi-button'
 
