@@ -2665,7 +2665,7 @@ mapper(model.Page, model.Page.table, properties=dict(
         backref="pages"),
     annotations=relation(model.PageAnnotationAssociation,
         order_by=model.PageAnnotationAssociation.table.c.id,
-        backref="pages"),
+        backref="page"),
     ratings=relation(model.PageRatingAssociation,
         order_by=model.PageRatingAssociation.table.c.id,
         backref="page"),
@@ -2754,7 +2754,7 @@ annotation_mapping(model.HistoryAnnotationAssociation, history=model.History)
 annotation_mapping(model.HistoryDatasetAssociationAnnotationAssociation, hda=model.HistoryDatasetAssociation)
 annotation_mapping(model.StoredWorkflowAnnotationAssociation, stored_workflow=model.StoredWorkflow)
 annotation_mapping(model.WorkflowStepAnnotationAssociation, workflow_step=model.WorkflowStep)
-annotation_mapping(model.PageAnnotationAssociation, page=model.Page)
+annotation_mapping(model.PageAnnotationAssociation)
 annotation_mapping(model.VisualizationAnnotationAssociation, visualization=model.Visualization)
 annotation_mapping(model.HistoryDatasetCollectionAssociationAnnotationAssociation,
     history_dataset_collection=model.HistoryDatasetCollectionAssociation)
