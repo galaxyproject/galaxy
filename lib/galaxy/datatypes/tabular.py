@@ -827,7 +827,7 @@ class VcfGz(BaseVcf, binary.Binary):
             index_file = dataset.metadata.spec['tabix_index'].param.new_file(dataset=dataset)
 
         try:
-            pysam.tabix_index(dataset.file_name, index=index_file.file_name, preset='vcf', force=True)
+            pysam.tabix_index(dataset.file_name, index=index_file.file_name, preset='vcf', keep_original=True, force=True)
         except Exception as e:
             raise Exception('Error setting VCF.gz metadata: %s' % (util.unicodify(e)))
         dataset.metadata.tabix_index = index_file
