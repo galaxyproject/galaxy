@@ -32,7 +32,10 @@ module.exports = (env = {}, argv = {}) => {
         resolve: {
             extensions: ["*", ".js", ".json", ".vue", ".scss"],
             modules: [scriptsBase, "node_modules", styleBase, testsBase],
-            fallback: { timers: require.resolve("timers-browserify") },
+            fallback: {
+                timers: require.resolve("timers-browserify"),
+                stream: require.resolve("stream-browserify"),
+            },
             alias: {
                 jquery$: `${libsBase}/jquery.custom.js`,
                 jqueryVendor$: `${libsBase}/jquery/jquery.js`,
