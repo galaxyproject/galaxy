@@ -157,7 +157,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             # store runner information for tracking if Galaxy restarts
             job_wrapper.set_external_id(job_id)
         except Exception as e:
-            log.debug(str(e))
+            log.exception("Error occurred while creating kubernetes job object")
             raise e
 
         self.monitor_queue.put(ajs)
