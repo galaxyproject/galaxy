@@ -534,11 +534,18 @@ class SharingHistoryTestCase(ApiTestCase, BaseHistories, SharingApiTests):
         with self._different_user():
             target_user_id = self.dataset_populator.user_id()
 
+        # Ignore repeated users in the same request
         payload = {"user_ids": [target_user_id, target_user_id]}
         sharing_response = self._share_history_with_payload(history_id, payload)
         assert sharing_response["users_shared_with"]
         assert len(sharing_response["users_shared_with"]) == 1
         assert sharing_response["users_shared_with"][0]["id"] == target_user_id
+
+        # Do not share with the same user multiple times
+        payload = {"user_ids": [target_user_id]}
+        sharing_response = self._share_history_with_payload(history_id, payload)
+        assert sharing_response["errors"]
+        assert "already shared" in sharing_response["errors"][0]
 
     def _share_history_with_payload(self, history_id, payload):
         sharing_response = self._put(f"histories/{history_id}/share_with", data=json.dumps(payload))

@@ -342,12 +342,12 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         return extra
 
     def is_history_shared_with(self, history, user) -> bool:
-        return self.session().query(self.user_share_model).filter(
+        return bool(self.session().query(self.user_share_model).filter(
             and_(
                 self.user_share_model.table.c.user_id == user.id,
                 self.user_share_model.table.c.history_id == history.id,
             )
-        ).exists()
+        ).first())
 
 
 class HistoryExportView:
