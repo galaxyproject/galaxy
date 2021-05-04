@@ -8,7 +8,6 @@
  * instances.
  */
 
-import { pipe } from "rxjs";
 import { content$, dscContent$ } from "./db/observables";
 import { monitorQuery } from "./db/monitorQuery";
 
@@ -16,17 +15,15 @@ export * from "./db/promises";
 
 export { loadDscContent } from "./loadDscContent";
 export { loadHistoryContents, clearHistoryDateStore } from "./loadHistoryContents";
-export { monitorHistoryContent } from "./monitorHistoryContent";
+export { monitorHistoryContent, monitorCollectionContent } from "./monitorHistoryContent";
 export { wipeDatabase } from "./db/wipeDatabase";
 
 // generic content query monitor
 export const monitorContentQuery = (cfg = {}) => {
-    const monitorCfg = { db$: content$, ...cfg };
-    return pipe(monitorQuery(monitorCfg));
+    return monitorQuery({ db$: content$, ...cfg });
 };
 
 // generic collection content monitor
 export const monitorDscQuery = (cfg = {}) => {
-    const monitorCfg = { db$: dscContent$, ...cfg };
-    return pipe(monitorQuery(monitorCfg));
+    return monitorQuery({ db$: dscContent$, ...cfg });
 };

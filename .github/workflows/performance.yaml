@@ -1,7 +1,7 @@
 name: Performance tests
 on: [push, pull_request]
 env:
-  GALAXY_TEST_DBURI: 'postgres://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
+  GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
 jobs:
   test:
     name: Test
@@ -11,7 +11,7 @@ jobs:
         python-version: ['3.7']
     services:
       postgres:
-        image: postgres:11
+        image: postgres:13
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -38,7 +38,7 @@ jobs:
         with:
           name: API test results
           path: 'galaxy root/run_api_tests.html'
-      - uses: actions/upload-artifact@v2.0.1
+      - uses: actions/upload-artifact@v2
         with:
-          name: 'Performance Metrics'
+          name: Performance Metrics
           path: 'galaxy root/test.html'

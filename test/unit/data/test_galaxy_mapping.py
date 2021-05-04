@@ -5,11 +5,11 @@ import uuid
 
 import pytest
 from sqlalchemy import inspect
-from sqlalchemy_utils import create_database
 
 import galaxy.datatypes.registry
 import galaxy.model
 import galaxy.model.mapping as mapping
+from galaxy.model.database_utils import create_database
 from galaxy.model.security import GalaxyRBACAgent
 
 datatypes_registry = galaxy.datatypes.registry.Registry()
@@ -385,6 +385,15 @@ class MappingTests(BaseModelTestCase):
         assert d.metadata.chromCol == 1
         assert d.metadata.anyAttribute is None
         assert 'items' not in d.metadata
+
+    def test_dataset_job_relationship(self):
+        model = self.model
+        dataset = model.Dataset()
+        job = model.Job()
+        dataset.job = job
+        self.persist(job, dataset)
+        loaded_dataset = model.session.query(model.Dataset).filter(model.Dataset.id == dataset.id).one()
+        assert loaded_dataset.job_id == job.id
 
     def test_jobs(self):
         model = self.model

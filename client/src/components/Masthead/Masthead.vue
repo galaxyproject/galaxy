@@ -48,7 +48,7 @@ export default {
             type: String,
             default: null,
         },
-        activeTab: {
+        initialActiveTab: {
             type: String,
             default: null,
         },
@@ -96,6 +96,7 @@ export default {
     },
     data() {
         return {
+            activeTab: null,
             baseTabs: [],
             extensionTabs: [],
         };
@@ -115,6 +116,7 @@ export default {
         },
     },
     created() {
+        this.activeTab = this.initialActiveTab;
         this.baseTabs = fetchMenu(this.menuOptions);
         loadWebhookMenuItems(this.extensionTabs);
     },

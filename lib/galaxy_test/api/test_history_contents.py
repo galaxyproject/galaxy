@@ -1,4 +1,6 @@
 import json
+import time
+from datetime import datetime
 
 from requests import delete, put
 
@@ -440,6 +442,18 @@ class HistoryContentsApiTestCase(ApiTestCase):
         self._assert_has_keys(new_forward, "history_id")
         assert new_forward["history_id"] == self.history_id
 
+    def test_hdca_copy_with_new_dbkey(self):
+        hdca = self.dataset_collection_populator.create_pair_in_history(self.history_id).json()
+        hdca_id = hdca["id"]
+        assert hdca["elements"][0]["object"]["metadata_dbkey"] == "?"
+        assert hdca["elements"][0]["object"]["genome_build"] == "?"
+        create_data = {'source': 'hdca', 'content': hdca_id, 'dbkey': 'hg19'}
+        create_response = self._post(f"histories/{self.history_id}/contents/dataset_collections", create_data)
+        collection = self.__check_create_collection_response(create_response)
+        new_forward = collection['elements'][0]['object']
+        assert new_forward["metadata_dbkey"] == "hg19"
+        assert new_forward["genome_build"] == "hg19"
+
     def test_hdca_copy_and_elements(self):
         hdca = self.dataset_collection_populator.create_pair_in_history(self.history_id).json()
         hdca_id = hdca["id"]
@@ -551,3 +565,59 @@ class HistoryContentsApiTestCase(ApiTestCase):
             assert isinstance(c, dict)
             assert 'job_state_summary' in c
             assert isinstance(c['job_state_summary'], dict)
+
+    def _get_content(self, history_id, update_time):
+        return self._get(f"/api/histories/{history_id}/contents/near/100/100?update_time-ge={update_time}").json()
+
+    def test_history_contents_near_with_update_time(self):
+        with self.dataset_populator.test_history() as history_id:
+            first_time = datetime.utcnow().isoformat()
+            assert len(self._get_content(history_id, update_time=first_time)) == 0
+            self.dataset_collection_populator.create_list_in_history(history_id=history_id)
+            assert len(self._get_content(history_id, update_time=first_time)) == 4  # 3 datasets
+            self.dataset_populator.wait_for_history(history_id)
+            all_datasets_finished = first_time = datetime.utcnow().isoformat()
+            assert len(self._get_content(history_id, update_time=all_datasets_finished)) == 0
+
+    @skip_without_tool('cat_data_and_sleep')
+    def test_history_contents_near_with_update_time_implicit_collection(self):
+        with self.dataset_populator.test_history() as history_id:
+            hdca_id = self.dataset_collection_populator.create_list_in_history(history_id=history_id).json()['id']
+            self.dataset_populator.wait_for_history(history_id)
+            inputs = {
+                "input1": {'batch': True, 'values': [{"src": "hdca", "id": hdca_id}]},
+                "sleep_time": 2,
+            }
+            response = self.dataset_populator.run_tool(
+                "cat_data_and_sleep",
+                inputs,
+                history_id,
+                assert_ok=False,
+            ).json()
+            collection_id = response['implicit_collections'][0]['id']
+            for _ in range(20):
+                update_time = datetime.utcnow().isoformat()
+                time.sleep(1)
+                update = self._get_content(history_id, update_time=update_time)
+                if any((c for c in update if c['history_content_type'] == 'dataset_collection' and c['job_state_summary']['ok'] == 3)):
+                    return
+            raise Exception(f"History content update time query did not include final update for implicit collection {collection_id}")
+
+    @skip_without_tool('collection_creates_dynamic_nested')
+    def test_history_contents_near_with_update_time_explicit_collection(self):
+        with self.dataset_populator.test_history() as history_id:
+            inputs = {'foo': 'bar', 'sleep_time': 2}
+            response = self.dataset_populator.run_tool(
+                "collection_creates_dynamic_nested",
+                inputs,
+                history_id,
+                assert_ok=False,
+            ).json()
+            collection_id = response['output_collections'][0]['id']
+            for _ in range(20):
+                update_time = datetime.utcnow().isoformat()
+                time.sleep(1)
+                update = self._get_content(history_id, update_time=update_time)
+                if any((c for c in update if c['history_content_type'] == 'dataset_collection' and c['populated_state'] == 'ok')):
+                    return
+            raise Exception(f"History content update time query did not include populated_state update for dynamic nested collection {collection_id}")

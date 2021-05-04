@@ -1,5 +1,5 @@
 <template>
-    <CurrentUser v-slot="{ user }">
+    <CurrentUser class="d-flex flex-column" v-slot="{ user }">
         <UserHistories v-if="user" :user="user" v-slot="{ currentHistory, histories, handlers }">
             <HistoryPanel v-if="currentHistory" :history="currentHistory" v-on="handlers">
                 <template v-slot:nav>
@@ -7,9 +7,11 @@
                         <HistorySelector
                             :histories="histories"
                             :current-history="currentHistory"
+                            :show-modal="showModal"
                             @update:currentHistory="handlers.setCurrentHistory"
+                            @hideModal="showModalHandler"
                         />
-                        <HistoriesMenu v-on="handlers" />
+                        <HistoriesMenu v-on="handlers" @selectHistoryModal="showModalHandler" />
                     </div>
                 </template>
             </HistoryPanel>
@@ -35,6 +37,16 @@ export default {
         HistoryPanel,
         HistorySelector,
         HistoriesMenu,
+    },
+    data() {
+        return {
+            showModal: false,
+        };
+    },
+    methods: {
+        showModalHandler(event) {
+            this.showModal = !this.showModal;
+        },
     },
 };
 </script>

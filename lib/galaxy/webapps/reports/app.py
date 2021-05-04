@@ -4,17 +4,21 @@ import time
 
 import galaxy.model
 from galaxy.config import configure_logging
+from galaxy.model.base import SharedModelMapping
 from galaxy.security import idencoding
+from galaxy.structured_app import BasicApp
 from galaxy.web_stack import application_stack_instance
 from . import config
 
 log = logging.getLogger(__name__)
 
 
-class UniverseApplication:
+class UniverseApplication(BasicApp):
     """Encapsulates the state of a Universe application"""
 
     def __init__(self, **kwargs):
+        super().__init__()
+        self[BasicApp] = self
         log.debug("python path is: %s", ", ".join(sys.path))
         self.name = "reports"
         # Read config file and check for errors
@@ -38,6 +42,10 @@ class UniverseApplication:
             self.targets_mysql = 'mysql' in self.config.database_connection
         # Security helper
         self.security = idencoding.IdEncodingHelper(id_secret=self.config.id_secret)
+
+        self._register_singleton(idencoding.IdEncodingHelper, self.security)
+        self._register_singleton(SharedModelMapping, self.model)
+
         # used for cachebusting -- refactor this into a *SINGLE* UniverseApplication base.
         self.server_starttime = int(time.time())
 

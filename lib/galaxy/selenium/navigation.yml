@@ -76,6 +76,9 @@ preferences:
     manage_api_key: '#edit-preferences-api-key'
     current_email: "#user-preferences-current-email"
     get_new_key: '#submit'
+    delete_account: '#delete-account'
+    delete_account_input: '#name-input'
+    delete_account_ok_btn: '.modal-footer .btn-primary'
 
 toolbox_filters:
   selectors:
@@ -361,6 +364,7 @@ tool_form:
     options: '#options [data-toggle="dropdown"]'
     execute: 'button#execute'
     parameter_div: 'div.ui-form-element[tour_id="${parameter}"]'
+    parameter_textarea: 'div.ui-form-element[tour_id="${parameter}"] textarea'
     reference: '.formatted-reference'
     about: '.tool-footer'
 
@@ -407,12 +411,52 @@ workflow_editor:
     tool_menu: '.toolMenuContainer'
     tool_menu_section_link: '.tool-menu-section-${section_name} a span'
     tool_menu_item_link: 'a.tool-menu-item-${item_name}'
+    workflow_link:
+      type: xpath
+      selector: '//a[contains(., "${workflow_title}")]'
 
     connect_icon: 'div.ui-form-element[tour_id="${name}"] .ui-form-connected-icon'
     collapse_icon: 'div.ui-form-element[tour_id="${name}"] .ui-form-collapsible-icon'
+    node_title:
+      type: xpath
+      selector: '//span[@class="node-title" and text()="${title}"]'
 
-    label_input: "[tour_id='__label'] input"
-    annotation_input: "[tour_id='__annotation'] textarea"
+    label_input:
+      type: xpath
+      selector: >
+        //div[@tour_id='__label' and not(ancestor::div[contains(@style,'display: none')])]//input
+    annotation_input:
+      type: xpath
+      selector: >
+        //div[@tour_id='__annotation' and not(ancestor::div[contains(@style,'display: none')])]//textarea
+    configure_output:
+      type: xpath
+      selector: >
+        //span[text()="Configure Output: '${output}'" and not(ancestor::div[contains(@style,'display: none')])]
+    label_output:
+      type: xpath
+      selector: >
+        //div[@tour_id='__label__${output}' and not(ancestor::div[contains(@style,'display: none')])]//input
+    rename_output:
+      type: xpath
+      selector: >
+        //div[@data-label='Rename dataset' and not(ancestor::div[contains(@style,'display: none')])]//input
+    change_datatype:
+      type: xpath
+      selector: >
+        //div[@data-label='Change datatype' and not(ancestor::div[contains(@style,'display: none')])]//span[contains(@class, 'select2-chosen')]
+    select_datatype:
+      type: xpath
+      selector: >
+        //div[@class="select2-result-label" and contains(text(), "${datatype}") and not(ancestor::div[contains(@style,'display: none')])]
+    add_tags:
+      type: xpath
+      selector: >
+        //div[@data-label='Add Tags' and not(ancestor::div[contains(@style,'display: none')])]//input
+    remove_tags:
+      type: xpath
+      selector: >
+        //div[@data-label='Remove Tags' and not(ancestor::div[contains(@style,'display: none')])]//input
     tool_version_button: ".tool-versions"
 
     connector_for: "div[output-handle-id='${source_id}'][input-handle-id='${sink_id}']"
@@ -420,6 +464,7 @@ workflow_editor:
     connector_destroy_callout: '.delete-terminal'
     save_button: '.editor-button-save'
     state_modal_body: '.state-upgrade-modal'
+    modal_button_continue: '.modal-footer .btn'
 
 invocations:
   selectors:
@@ -529,15 +574,19 @@ admin:
 libraries:
 
   selectors:
-    _: .library_style_container
+    _: '#libraries_list'
+    create_new_library_btn: '#create-new-lib'
     permission_library_btn: '.permission_library_btn'
     toolbtn_save_permissions: '.toolbtn_save_permissions'
-    add_items_permission_field: '.add_perm > ul input'
-    add_items_permission_field_text:
-      type: xpath
-      selector: '//ul/*/div[contains(text(), "${email}")]'
+    save_new_library_btn: '#save_new_library'
+    search_field: '#filterInput'
+    new_library_name_input: 'input[placeholder="Name"]'
+    new_library_description_input: 'input[placeholder="Description"]'
+    add_items_permission: '.add_library_item_role_list'
+    add_items_permission_input_field: '.add_library_item_role_list input'
+    add_items_permission_field_text: '.add_library_item_role_list .multiselect__tag span'
 
-    add_items_permission_option: '.select2-result-label[role="option"]'
+    add_items_permission_option: '.add_library_item_role_list ul'
 
   folder:
     selectors:
@@ -555,12 +604,18 @@ libraries:
       import_modal: '.modal'
       import_datasets_ok_button: '.modal-footer .buttons #button-0'
       import_datasets_cancel_button: '.modal-footer .buttons #button-1'
+      export_to_history_options: '#library-collection-type-select'
+      export_to_history_paired_option: 'option[value="${collection_option}"]'
+      export_to_history_collection_name: '.collection-name'
+      export_to_history_new_history: 'input[name=history_name]'
+      clear_filters: '.clear-filters-link'
       import_progress_bar: '.progress-bar-import'
       import_history_content: '.library_selected_history_content'
       import_history_contents_items: '.library_selected_history_content tbody > tr'
       import_from_path_textarea: '#import_paths'
       select_all: '#select-all-checkboxes'
       select_one: '.lib-folder-checkbox'
+      select_dataset: 'tr[aria-rowindex="${rowindex}"] .lib-folder-checkbox'
       empty_folder_message: '.empty-folder-message'
       btn_open_parent_folder:
         type: xpath
@@ -627,6 +682,10 @@ upload:
     rule_dataset_selector_row:
       selector: '.selection-dialog-modal [aria-rowindex="${rowindex}"]'
     build_btn: '#rule-based #btn-build'
+    file_source_selector:
+      type: xpath
+      selector: '//span[contains(@title, "${path}")]'
+    file_dialog_ok: '.file-dialog-modal-ok'
 
 rule_builder:
   selectors:

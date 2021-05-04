@@ -57,7 +57,7 @@ from galaxy.jobs.runners import BaseJobRunner, JobState
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model import store
 from galaxy.objectstore import ObjectStorePopulator
-from galaxy.structured_app import StructuredApp
+from galaxy.structured_app import MinimalManagerApp
 from galaxy.tool_util.deps import requirements
 from galaxy.tool_util.output_checker import (
     check_output,
@@ -301,7 +301,7 @@ class JobConfiguration(ConfiguresHandlers):
         <when value="yes"/>
     </conditional>"""
 
-    def __init__(self, app: StructuredApp):
+    def __init__(self, app: MinimalManagerApp):
         """Parse the job configuration XML.
         """
         self.app = app
@@ -1321,7 +1321,7 @@ class JobWrapper(HasResourceParameters):
                 # Pause any dependent jobs (and those jobs' outputs)
                 for dep_job_assoc in dataset.dependent_jobs:
                     self.pause(dep_job_assoc.job, "Execution of this dataset's job is paused because its input datasets are in an error state.")
-            job.set_final_state(job.states.ERROR)
+            job.set_final_state(job.states.ERROR, supports_skip_locked=self.app.application_stack.supports_skip_locked())
             job.command_line = unicodify(self.command_line)
             job.info = message
             # TODO: Put setting the stdout, stderr, and exit code in one place
@@ -1348,7 +1348,10 @@ class JobWrapper(HasResourceParameters):
             ActionBox.execute(self.app, self.sa_session, pja, job)
         # If the job was deleted, call tool specific fail actions (used for e.g. external metadata) and clean up
         if self.tool:
-            self.tool.job_failed(self, message, exception)
+            try:
+                self.tool.job_failed(self, message, exception)
+            except Exception:
+                log.exception(f"Error occured while calling tool specific fail actions for job {job.id}")
         cleanup_job = self.cleanup_job
         delete_files = cleanup_job == 'always' or (cleanup_job == 'onsuccess' and job.state == job.states.DELETED)
         self.cleanup(delete_files=delete_files)
@@ -1405,7 +1408,7 @@ class JobWrapper(HasResourceParameters):
             job.info = info
         job.set_state(state)
         self.sa_session.add(job)
-        job.update_output_states()
+        job.update_output_states(self.app.application_stack.supports_skip_locked())
         if flush:
             self.sa_session.flush()
 
@@ -1773,7 +1776,7 @@ class JobWrapper(HasResourceParameters):
 
         # Finally set the job state.  This should only happen *after* all
         # dataset creation, and will allow us to eliminate force_history_refresh.
-        job.set_final_state(final_job_state)
+        job.set_final_state(final_job_state, supports_skip_locked=self.app.application_stack.supports_skip_locked())
         if not job.tasks:
             # If job was composed of tasks, don't attempt to recollect statistics
             self._collect_metrics(job, job_metrics_directory)

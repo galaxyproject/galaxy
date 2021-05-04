@@ -4,6 +4,7 @@
 import inspect
 import json
 import logging
+import multiprocessing
 import os
 from typing import Callable, Dict, FrozenSet, List, Optional, Tuple, Type
 from urllib.request import install_opener
@@ -48,7 +49,7 @@ class ApplicationStack:
     prohibited_middleware: FrozenSet[str] = frozenset()
     transport_class = ApplicationStackTransport
     log_filter_class: Type[logging.Filter] = ApplicationStackLogFilter
-    log_format = '%(name)s %(levelname)s %(asctime)s %(message)s'
+    log_format = '%(name)s %(levelname)s %(asctime)s [pN:%(processName)s,p:%(process)d,tN:%(threadName)s] %(message)s'
     # TODO: this belongs in the pool configuration
     server_name_template = '{server_name}'
     default_app_name = 'main'
@@ -69,8 +70,43 @@ class ApplicationStack:
         self.app = app
         self.config = config or (app and app.config)
         self.running = False
+        self._supports_returning = None
+        self._supports_skip_locked = None
+        self._preferred_handler_assignment_method = None
+        multiprocessing.current_process().name = getattr(self.config, 'server_name', 'main')
         if app:
             log.debug("%s initialized", self.__class__.__name__)
+
+    def supports_returning(self):
+        if self._supports_returning is None:
+            job_table = self.app.model.Job.table
+            stmt = job_table.update().where(job_table.c.id == -1).returning(job_table.c.id)
+            try:
+                self.app.model.session.execute(stmt)
+                self._supports_returning = True
+            except Exception:
+                self._supports_returning = False
+        return self._supports_returning
+
+    def supports_skip_locked(self):
+        if self._supports_skip_locked is None:
+            job_table = self.app.model.Job.table
+            stmt = job_table.select().where(job_table.c.id == -1).with_for_update(skip_locked=True)
+            try:
+                self.app.model.session.execute(stmt)
+                self._supports_skip_locked = True
+            except Exception:
+                self._supports_skip_locked = False
+        return self._supports_skip_locked
+
+    def get_preferred_handler_assignment_method(self):
+        if self._preferred_handler_assignment_method is None:
+            if self.app.application_stack.supports_skip_locked():
+                self._preferred_handler_assignment_method = HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED
+            else:
+                log.debug("Database does not support WITH FOR UPDATE statement, cannot use DB-SKIP-LOCKED handler assignment")
+                self._preferred_handler_assignment_method = HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION
+        return self._preferred_handler_assignment_method
 
     def _set_default_job_handler_assignment_methods(self, job_config, base_pool):
         """Override in subclasses to set default job handler assignment methods if not explicitly configured by the administrator.
@@ -163,8 +199,9 @@ class ApplicationStack:
         return facts
 
     def set_postfork_server_name(self, app):
-        app.config.server_name = self.server_name_template.format(**self.facts)
-        log.debug('server_name set to: %s', app.config.server_name)
+        new_server_name = self.server_name_template.format(**self.facts)
+        multiprocessing.current_process().name = app.config.server_name = new_server_name
+        log.debug('server_name set to: %s', new_server_name)
 
     def register_message_handler(self, func, name=None):
         pass
@@ -233,7 +270,7 @@ class UWSGIApplicationStack(MessageApplicationStack):
     })
     transport_class = UWSGIFarmMessageTransport
     log_filter_class = UWSGILogFilter
-    log_format = '%(name)s %(levelname)s %(asctime)s [p:%(process)s,w:%(worker_id)s,m:%(mule_id)s] [%(threadName)s] %(message)s'
+    log_format = '%(name)s %(levelname)s %(asctime)s [pN:%(processName)s,p:%(process)d,w:%(worker_id)s,m:%(mule_id)s,tN:%(threadName)s] %(message)s'
     server_name_template = '{server_name}.{pool_name}.{instance_id}'
 
     postfork_functions: List[Tuple[Callable, List, Dict]] = []
@@ -349,7 +386,7 @@ class UWSGIApplicationStack(MessageApplicationStack):
 
     def _set_default_job_handler_assignment_methods(self, job_config, base_pool):
         # Disable DB_SELF if a valid farm (pool) is configured. Use mule messaging unless the job_config doesn't allow
-        # it (e.g. workflow scheduling manager), in which case, use DB_PREASSIGN.
+        # it (e.g. workflow scheduling manager), in which case, use DB-SKIP-LOCKED or DB-TRANSACTION-ISOLATION.
         #
         # TODO MULTIPOOL: if there is no default in any base_pool (and no job_config.default_handler_id) then don't
         # remove DB_SELF
@@ -358,7 +395,7 @@ class UWSGIApplicationStack(MessageApplicationStack):
         if (HANDLER_ASSIGNMENT_METHODS.UWSGI_MULE_MESSAGE not in job_config.UNSUPPORTED_HANDLER_ASSIGNMENT_METHODS):
             add_method = HANDLER_ASSIGNMENT_METHODS.UWSGI_MULE_MESSAGE
         else:
-            add_method = HANDLER_ASSIGNMENT_METHODS.DB_PREASSIGN
+            add_method = self.get_preferred_handler_assignment_method()
             remove_methods.append(HANDLER_ASSIGNMENT_METHODS.UWSGI_MULE_MESSAGE)
         log.debug("%s: No job handler assignment methods were configured but a uWSGI farm named '%s' exists,"
                   " automatically enabling the '%s' assignment method", conf_class_name, base_pool, add_method)
@@ -532,18 +569,7 @@ class WeblessApplicationStack(ApplicationStack):
         # isolation if it doesn't, or DB_PREASSIGN if the job_config doesn't allow either.
         conf_class_name = job_config.__class__.__name__
         remove_methods = [HANDLER_ASSIGNMENT_METHODS.DB_SELF]
-        with self.app.model.session.connection():
-            # Force a connection so dialect.server_version_info is populated
-            pass
-        dialect = self.app.model.session.bind.dialect
-        if ((dialect.name == 'postgresql' and dialect.server_version_info >= (9, 5))
-                or (dialect.name == 'mysql' and dialect.server_version_info >= (8, 0, 1))):
-            add_method = HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED
-        else:
-            add_method = HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION
-        if add_method in job_config.UNSUPPORTED_HANDLER_ASSIGNMENT_METHODS:
-            remove_methods.append(add_method)
-            add_method = HANDLER_ASSIGNMENT_METHODS.DB_PREASSIGN
+        add_method = self.get_preferred_handler_assignment_method()
         log.debug("%s: No job handler assignment methods were configured but this server is configured to attach to the"
                   " '%s' pool, automatically enabling the '%s' assignment method", conf_class_name, base_pool, add_method)
         for m in remove_methods:

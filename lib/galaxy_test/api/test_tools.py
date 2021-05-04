@@ -402,11 +402,21 @@ class ToolsTestCase(ApiTestCase, TestsTools):
 
     def test_unzip_nested(self):
         with self.dataset_populator.test_history() as history_id:
-            hdca_list_id = self.__build_nested_list(history_id)
+            response = self.dataset_collection_populator.upload_collection(history_id, "list:paired", elements=[
+                {
+                    "name": "test0",
+                    "elements": [
+                        {"src": "pasted", "paste_content": "123\n", "name": "forward", "ext": "txt", "tags": ["#foo"]},
+                        {"src": "pasted", "paste_content": "456\n", "name": "reverse", "ext": "txt", "tags": ["#bar"]},
+                    ]
+                }
+            ])
+            self._assert_status_code_is(response, 200)
+            hdca_id = response.json()["outputs"][0]["id"]
             inputs = {
                 "input": {
                     'batch': True,
-                    'values': [{'src': 'hdca', 'map_over_type': 'paired', 'id': hdca_list_id}],
+                    'values': [{'src': 'hdca', 'map_over_type': 'paired', 'id': hdca_id}],
                 }
             }
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
@@ -714,7 +724,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         test_data_response = self._get("tools/%s/test_data?tool_version=*" % "multiple_versions")
         test_data_response.raise_for_status()
         test_data_dicts = test_data_response.json()
-        assert len(test_data_dicts) == 2
+        assert len(test_data_dicts) == 3
 
     @skip_without_tool("multiple_versions")
     @uses_test_history(require_new=False)
@@ -1438,6 +1448,21 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         implicit_collections = create['implicit_collections']
         self.assertEqual(len(jobs), 3)
         self.assertEqual(len(implicit_collections), 3)
+        self._check_implicit_collection_populated(create)
+
+    @skip_without_tool("output_filter_with_input_optional")
+    @uses_test_history(require_new=False)
+    def test_map_over_with_output_filter_on_optional_input(self, history_id):
+        hdca_id = self.dataset_collection_populator.create_list_in_history(history_id, contents=["myinputs"]).json()["id"]
+        inputs = {
+            "input_1": {'batch': True, 'values': [{'src': 'hdca', 'id': hdca_id}]},
+        }
+        create = self._run('output_filter_with_input_optional', history_id, inputs).json()
+        jobs = create['jobs']
+        implicit_collections = create['implicit_collections']
+        self.assertEqual(len(jobs), 1)
+        self.dataset_populator.wait_for_job(jobs[0]["id"], assert_ok=True)
+        self.assertEqual(len(implicit_collections), 1)
         self._check_implicit_collection_populated(create)
 
     @skip_without_tool("output_filter_with_input")

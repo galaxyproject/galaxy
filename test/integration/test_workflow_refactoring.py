@@ -232,8 +232,8 @@ class WorkflowRefactoringIntegrationTestCase(integration_util.IntegrationTestCas
         wf = self.workflow_populator.load_workflow_from_resource("test_workflow_randomlines_legacy_params")
         self.workflow_populator.create_workflow(wf)
         actions = [
-            {"action_type": "extract_legacy_parameter", "name": "seed"},
-            {"action_type": "extract_legacy_parameter", "name": "num", "label": "renamed_num"},
+            {"action_type": "extract_untyped_parameter", "name": "seed"},
+            {"action_type": "extract_untyped_parameter", "name": "num", "label": "renamed_num"},
         ]
         self._refactor(actions)
         assert self._latest_workflow.step_by_label("seed").tool_inputs["parameter_type"] == "text"
@@ -257,7 +257,7 @@ class WorkflowRefactoringIntegrationTestCase(integration_util.IntegrationTestCas
         wf = self.workflow_populator.load_workflow_from_resource("test_workflow_randomlines_legacy_params_mixed_types")
         self.workflow_populator.create_workflow(wf)
         actions = [
-            {"action_type": "extract_legacy_parameter", "name": "mixed_param"},
+            {"action_type": "extract_untyped_parameter", "name": "mixed_param"},
         ]
         expected_exception = None
         try:
@@ -285,7 +285,7 @@ steps:
         rename: "${pja_only_param} name"
 """)
         actions = [
-            {"action_type": "extract_legacy_parameter", "name": "pja_only_param"},
+            {"action_type": "extract_untyped_parameter", "name": "pja_only_param"},
         ]
         self._refactor(actions)
         assert self._latest_workflow.step_by_label("pja_only_param").tool_inputs["parameter_type"] == "text"
@@ -306,7 +306,7 @@ steps:
         rename: "${pja_only_param} name"
 """)
         actions = [
-            {"action_type": "extract_legacy_parameter", "name": "pja_only_param"},
+            {"action_type": "extract_untyped_parameter", "name": "pja_only_param"},
         ]
         response = self._dry_run(actions)
         new_step = _step_with_label(response.workflow, "pja_only_param")
@@ -330,7 +330,7 @@ steps:
         rename: "${pja_only_param} name"
 """)
         actions = [
-            {"action_type": "extract_legacy_parameter", "name": "pja_only_param", "label": "new_label"},
+            {"action_type": "extract_untyped_parameter", "name": "pja_only_param", "label": "new_label"},
         ]
         self._refactor(actions)
         assert self._latest_workflow.step_by_label("new_label").tool_inputs["parameter_type"] == "text"

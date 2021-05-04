@@ -907,8 +907,9 @@ class NavigatesGalaxy(HasDriver):
     def admin_open(self):
         self.components.masthead.admin.wait_for_and_click()
 
-    def select_dataset_from_lib_import_modal(self, name):
-        self.components.libraries.folder.select_import_dir_item(name=name).wait_for_and_click()
+    def select_dataset_from_lib_import_modal(self, filenames):
+        for name in filenames:
+            self.components.libraries.folder.select_import_dir_item(name=name).wait_for_and_click()
         self.components.libraries.folder.import_dir_btn.wait_for_and_click()
 
     def create_new_library(self, login=True):
@@ -931,8 +932,9 @@ class NavigatesGalaxy(HasDriver):
 
     @retry_during_transitions
     def libraries_index_table_elements(self):
-        container = self.wait_for_selector_visible(".library_container")
-        elements = container.find_elements_by_css_selector("#library_list_body")
+        container = self.components.libraries._.wait_for_visible()
+
+        elements = container.find_elements_by_css_selector("tbody")
         if not elements:
             return []
         else:
@@ -940,24 +942,23 @@ class NavigatesGalaxy(HasDriver):
             element = elements[0]
             return element.find_elements_by_css_selector("tr")  # [style='display: table-row']
 
-    def libraries_index_click_create_new(self):
-        self.wait_for_and_click_selector("#create_new_library_btn")
-
     def libraries_index_create(self, name):
-        self.libraries_index_click_create_new()
-        name_text_box = self.wait_for_selector_visible("textarea[name='input_library_name']")
-        name_text_box.send_keys(name)
+        self.components.libraries.create_new_library_btn.wait_for_and_click()
+        name_input_field = self.components.libraries.new_library_name_input.wait_for_visible()
+        input_field = self.components.libraries.new_library_description_input.wait_for_visible()
 
-        self.wait_for_and_click_selector(".save_library_btn")
+        name_input_field.send_keys(name)
+        input_field.send_keys(self._get_random_name(prefix="description"))
+        self.components.libraries.save_new_library_btn.wait_for_and_click()
 
     def libraries_index_click_search(self):
         self.sleep_for(WAIT_TYPES.UX_RENDER)
-        search_element = self.wait_for_selector_clickable("input.library-search-input")
+        search_element = self.components.libraries.search_field.wait_for_visible()
         search_element.click()
         return search_element
 
     def libraries_index_sort_selector(self):
-        return ".sort-libraries-link"
+        return "th[aria-sort]"
 
     def libraries_index_sort_click(self):
         sort_element = self.wait_for_selector_clickable(self.libraries_index_sort_selector())
@@ -1009,6 +1010,15 @@ class NavigatesGalaxy(HasDriver):
     def libraries_table_elements(self):
         tbody_element = self.wait_for_selector_visible("#folder_list_body > tbody")
         return tbody_element.find_elements_by_css_selector("tr:not(.b-table-empty-row)")
+
+    def populate_library_folder_from_import_dir(self, library_name, filenames):
+        self.libraries_open_with_name(library_name)
+        self.libraries_dataset_import(self.navigation.libraries.folder.labels.from_import_dir)
+        self.select_dataset_from_lib_import_modal(filenames)
+
+    def navigate_to_new_library(self, login=True):
+        self.create_new_library(login)
+        self.libraries_open_with_name(self.name)
 
     def wait_for_overlays_cleared(self):
         """Wait for modals and Toast notifications to disappear."""
@@ -1334,8 +1344,6 @@ class NavigatesGalaxy(HasDriver):
         details_component = item_component.details
         details_displayed = details_component.is_displayed
         item_component.title.wait_for_and_click()
-        # for i in range(88888):
-        #     self.sleep_for(WAIT_TYPES.UX_RENDER)
 
         if kwds.get("wait", False):
             if details_displayed:

@@ -1,7 +1,8 @@
 import Vuex from "vuex";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
-import { mount, createLocalVue } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 import JobInformation from "./JobInformation";
 import datasetResponse from "components/DatasetInformation/testData/datasetResponse";
 import jobResponse from "./testData/jobInformationResponse.json";
@@ -13,8 +14,7 @@ jest.mock("app");
 
 const JOB_ID = "test_id";
 
-const localVue = createLocalVue();
-localVue.use(Vuex);
+const localVue = getLocalVue();
 
 const jobStore = new Vuex.Store({
     plugins: [createCache()],

@@ -171,15 +171,16 @@ class ShellJobRunner(AsynchronousJobRunner):
             job_state = ajs.job_wrapper.get_state()
             if state != old_state:
                 log.debug(f"({id_tag}/{external_job_id}) state change: from {old_state} to {state}")
-                if not state == model.Job.states.OK:
-                    # No need to change_state when the state is OK, this will be handled by `self.finish_job`
-                    ajs.job_wrapper.change_state(state)
                 if state == model.Job.states.ERROR and job_state != model.Job.states.STOPPED:
-                    # Try to find out the reason for exiting
+                    # Try to find out the reason for exiting - this needs to happen before change_state
+                    # otherwise jobs depending on resubmission outputs see that job as failed and pause.
                     self.__handle_out_of_memory(ajs, external_job_id)
                     self.work_queue.put((self.mark_as_failed, ajs))
                     # Don't add the job to the watched items once it fails, deals with https://github.com/galaxyproject/galaxy/issues/7820
                     continue
+                if not state == model.Job.states.OK:
+                    # No need to change_state when the state is OK, this will be handled by `self.finish_job`
+                    ajs.job_wrapper.change_state(state)
             if state == model.Job.states.RUNNING and not ajs.running:
                 ajs.running = True
             ajs.old_state = state

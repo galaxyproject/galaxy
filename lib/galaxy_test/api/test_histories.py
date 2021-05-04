@@ -5,6 +5,7 @@ from requests import (
     put
 )
 
+from galaxy_test.api.sharable import SharingApiTests
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
@@ -31,7 +32,13 @@ class BaseHistories:
         return create_response
 
 
-class HistoriesApiTestCase(ApiTestCase, BaseHistories):
+class HistoriesApiTestCase(ApiTestCase, BaseHistories, SharingApiTests):
+
+    api_name = "histories"
+
+    def create(self, name: str) -> str:
+        response_json = self._create_history(name)
+        return response_json["id"]
 
     def test_create_history(self):
         # Create a history.
@@ -189,6 +196,12 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories):
         histories_url = self._api_url("histories")
         create_response = post(url=histories_url, data=post_data)
         self._assert_status_code_is(create_response, 403)
+
+    def test_create_without_session_fails(self):
+        post_data = dict(name="SessionNeeded")
+        # Using admin=True will boostrap an Admin user without session
+        create_response = self._post("histories", data=post_data, admin=True)
+        self._assert_status_code_is(create_response, 400)
 
     def test_create_tag(self):
         post_data = dict(name="TestHistoryForTag")

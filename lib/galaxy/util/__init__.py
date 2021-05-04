@@ -7,6 +7,7 @@ import binascii
 import collections
 import errno
 import importlib
+import itertools
 import json
 import os
 import random
@@ -20,6 +21,7 @@ import tempfile
 import textwrap
 import threading
 import time
+import typing
 import unicodedata
 import xml.dom.minidom
 from datetime import datetime
@@ -210,6 +212,21 @@ def file_reader(fp, chunk_size=CHUNK_SIZE):
             break
         yield data
     fp.close()
+
+
+def chunk_iterable(it: typing.Iterable, size: int = 1000):
+    """
+    Break an iterable into chunks of ``size`` elements.
+
+    >>> list(chunk_iterable([1, 2, 3, 4, 5, 6, 7], 3))
+    [(1, 2, 3), (4, 5, 6), (7,)]
+    """
+    it = iter(it)
+    while True:
+        p = tuple(itertools.islice(it, size))
+        if not p:
+            break
+        yield p
 
 
 def unique_id(KEY_SIZE=128):
@@ -1608,6 +1625,23 @@ def url_get(base_url, auth=None, pathspec=None, params=None, max_retries=5, back
     response = s.get(full_url, auth=auth)
     response.raise_for_status()
     return response.text
+
+
+def is_url(uri, allow_list=None):
+    """
+    Check if uri is (most likely) an URL, more precisely the function checks
+    if uri starts with a scheme from the allow list (defaults to "http://",
+    "https://", "ftp://")
+    >>> is_url('https://zenodo.org/record/4104428/files/UCSC-hg38-chr22-Coding-Exons.bed')
+    True
+    >>> is_url('file:///some/path')
+    False
+    >>> is_url('/some/path')
+    False
+    """
+    if allow_list is None:
+        allow_list = ("http://", "https://", "ftp://")
+    return any(uri.startswith(scheme) for scheme in allow_list)
 
 
 def download_to_file(url, dest_file_path, timeout=30, chunk_size=2 ** 20):

@@ -21,12 +21,13 @@ from galaxy.model import mapping, tags
 from galaxy.model.base import SharedModelMapping
 from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.security import idencoding
-from galaxy.structured_app import BasicApp, StructuredApp
+from galaxy.structured_app import BasicApp, MinimalManagerApp, StructuredApp
 from galaxy.tool_util.deps.containers import NullContainerFinder
 from galaxy.util import StructuredExecutionTimer
 from galaxy.util.bunch import Bunch
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web_stack import ApplicationStack
+from galaxy_test.base.celery_helper import rebind_container_to_task
 
 
 # =============================================================================
@@ -67,6 +68,7 @@ class MockApp(di.Container):
     def __init__(self, config=None, **kwargs):
         super().__init__()
         self[BasicApp] = self
+        self[MinimalManagerApp] = self
         self[StructuredApp] = self
         self.config = config or MockAppConfig(**kwargs)
         self.security = self.config.security
@@ -85,7 +87,9 @@ class MockApp(di.Container):
         self.init_datatypes()
         self.job_config = Bunch(
             dynamic_params=None,
-            destinations={}
+            destinations={},
+            use_messaging=False,
+            assign_handler=lambda *args, **kwargs: None
         )
         self.tool_data_tables = {}
         self.dataset_collections_service = None
@@ -98,6 +102,8 @@ class MockApp(di.Container):
         self.auth_manager = AuthManager(self.config)
         self.user_manager = UserManager(self)
         self.execution_timer_factory = Bunch(get_timer=StructuredExecutionTimer)
+        self.is_job_handler = False
+        rebind_container_to_task(self)
 
         def url_for(*args, **kwds):
             return "/mock/url"
@@ -139,6 +145,7 @@ class MockAppConfig(Bunch):
         self.security = idencoding.IdEncodingHelper(id_secret='6e46ed6483a833c100e68cc3f1d0dd76')
         self.database_connection = kwargs.get('database_connection', "sqlite:///:memory:")
         self.use_remote_user = kwargs.get('use_remote_user', False)
+        self.enable_celery_tasks = False
         self.data_dir = os.path.join(root, 'database')
         self.file_path = os.path.join(self.data_dir, 'files')
         self.jobs_directory = os.path.join(self.data_dir, 'jobs_directory')
@@ -166,6 +173,7 @@ class MockAppConfig(Bunch):
         self.password_expiration_period = 0
 
         self.umask = 0o77
+        self.flush_per_n_datasets = 0
 
         # Compliance related config
         self.redact_email_in_job_name = False

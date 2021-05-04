@@ -190,15 +190,10 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
             workflows = []
             workflows_by_toolshed = dict()
             for value in rval:
-                tool_ids = []
-                workflow_details = self.workflow_contents_manager.workflow_to_dict(trans, self.__get_stored_workflow(trans, value['id']), style='instance')
-                if 'steps' in workflow_details:
-                    for step in workflow_details['steps']:
-                        tool_id = workflow_details['steps'][step].get('tool_id')
-                        if tool_id and tool_id not in tool_ids and self.app.toolbox.is_missing_shed_tool(tool_id):
-                            tool_ids.append(tool_id)
-                if len(tool_ids) > 0:
-                    value['missing_tools'] = tool_ids
+                tool_ids = self.workflow_contents_manager.get_all_tool_ids(self.__get_stored_workflow(trans, value['id']).latest_workflow)
+                missing_tool_ids = [tool_id for tool_id in tool_ids if self.app.toolbox.is_missing_shed_tool(tool_id)]
+                if len(missing_tool_ids) > 0:
+                    value['missing_tools'] = missing_tool_ids
                     workflows_missing_tools.append(value)
             for workflow in workflows_missing_tools:
                 for tool_id in workflow['missing_tools']:
@@ -828,14 +823,20 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
 
         .. note:: This method takes the same arguments as
             :func:`galaxy.webapps.galaxy.api.workflows.WorkflowsAPIController.create` above.
+
+        :raises: exceptions.MessageException, exceptions.RequestParameterInvalidException
         """
         # Get workflow + accessibility check.
-        stored_workflow = self.__get_stored_accessible_workflow(trans, workflow_id)
+        stored_workflow = self.__get_stored_accessible_workflow(trans, workflow_id, instance=kwd.get('instance', False))
         workflow = stored_workflow.latest_workflow
         run_configs = build_workflow_run_configs(trans, workflow, payload)
         is_batch = payload.get('batch')
         if not is_batch and len(run_configs) != 1:
             raise exceptions.RequestParameterInvalidException("Must specify 'batch' to use batch parameters.")
+
+        tool_ids = self.workflow_contents_manager.get_all_tool_ids(workflow)
+        if not all([self.app.toolbox.has_tool(tool_id) for tool_id in tool_ids]):
+            raise exceptions.MessageException("Workflow was not invoked; some required tools are not installed.")
 
         invocations = []
         for run_config in run_configs:
@@ -875,8 +876,15 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         :param  workflow_id:      an encoded stored workflow id to restrict query to
         :type   workflow_id:      str
 
+        :param  instance:         true if fetch by Workflow ID instead of StoredWorkflow id, false
+                                  by default.
+        :type   instance:         boolean
+
         :param  history_id:       an encoded history id to restrict query to
         :type   history_id:       str
+
+        :param  job_id:           an encoded job id to restrict query to
+        :type   job_id:           str
 
         :param  user_id:          an encoded user id to restrict query to, must be own id if not admin user
         :type   user_id:          str
@@ -890,7 +898,7 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
         if workflow_id is not None:
-            stored_workflow_id = self.__get_stored_workflow(trans, workflow_id).id
+            stored_workflow_id = self.__get_stored_workflow(trans, workflow_id, instance=kwd.get('instance', False)).id
         else:
             stored_workflow_id = None
 
@@ -900,6 +908,12 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
             history_id = history.id
         else:
             history_id = None
+
+        encoded_job_id = kwd.get("job_id", None)
+        if encoded_job_id:
+            job_id = self.decode_id(encoded_job_id)
+        else:
+            job_id = None
 
         encoded_user_id = kwd.get("user_id", None)
         if encoded_user_id:
@@ -921,7 +935,7 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         if limit is not None:
             limit = int(limit)
         invocations = self.workflow_manager.build_invocations_query(
-            trans, stored_workflow_id=stored_workflow_id, history_id=history_id, user_id=user_id, include_terminal=include_terminal, limit=limit
+            trans, stored_workflow_id=stored_workflow_id, history_id=history_id, job_id=job_id, user_id=user_id, include_terminal=include_terminal, limit=limit
         )
         return self.workflow_manager.serialize_workflow_invocations(invocations, **kwd)
 

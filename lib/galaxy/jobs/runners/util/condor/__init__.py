@@ -26,11 +26,12 @@ SUBMIT_PARAM_PREFIX = "submit_"
 
 def submission_params(prefix=SUBMIT_PARAM_PREFIX, **kwds):
     submission_params = {}
+    prefix_len = len(prefix)
     for key in kwds:
         value = kwds[key]
         key = key.lower()
         if key.startswith(prefix):
-            condor_key = key[len(prefix):]
+            condor_key = key[prefix_len:]
             submission_params[condor_key] = value
     return submission_params
 
@@ -73,16 +74,17 @@ def condor_submit(submit_file):
     the submission or return None and a reason for the failure.
     """
     external_id = None
+    failure_message = None
     try:
-        message = commands.execute(('condor_submit', submit_file))
+        condor_message = commands.execute(('condor_submit', submit_file))
     except commands.CommandLineException as e:
-        message = unicodify(e)
+        failure_message = unicodify(e)
     else:
         try:
-            external_id = parse_external_id(message, type='condor')
+            external_id = parse_external_id(condor_message, type='condor')
         except Exception:
-            message = PROBLEM_PARSING_EXTERNAL_ID
-    return external_id, message
+            failure_message = f"{PROBLEM_PARSING_EXTERNAL_ID}: {condor_message}"
+    return external_id, failure_message
 
 
 def condor_stop(external_id):

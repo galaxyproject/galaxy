@@ -1,4 +1,4 @@
-<tool id="interactive_tool_openrefine" tool_type="interactive" name="OpenRefine" version="0.1">
+<tool id="interactive_tool_openrefine" tool_type="interactive" name="OpenRefine" version="0.2">
     <description>Working with messy data</description>
     <requirements>
         <container type="docker">ylebras/openrefine-docker</container>
@@ -32,20 +32,26 @@ done
     </configfiles>
     <command detect_errors="aggressive"><![CDATA[
 
-cp '$infile' /import/input.tabular &&
+#if $infile:
+    cp '$infile' /import/input.tabular &&
+#end if
+
 cat '$start_openrefine' &&
 bash '$start_openrefine' &&
 
 ## Createnew project with the dataset
 cd /refine-python &&
-python openrefine_create_project_API.py '/import/input.tabular' &&
+
+#if $infile:
+    python openrefine_create_project_API.py '/import/input.tabular' &&
+#end if
 
 tail -f /dev/null
 
     ]]>
     </command>
     <inputs>
-        <param name="infile" type="data" format="tabular" label="tabular file"/>
+        <param name="infile" type="data" format="tabular,tsv" optional="true" label="Input file in tabular format"/>
     </inputs>
     <outputs>
         <data name="outfile" format="tabular" />
@@ -75,3 +81,4 @@ Example input file (TAB separated)::
 ]]>
     </help>
 </tool>
+

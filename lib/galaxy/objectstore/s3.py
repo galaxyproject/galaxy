@@ -207,7 +207,11 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
 
     def _configure_connection(self):
         log.debug("Configuring S3 Connection")
-        self.conn = S3Connection(self.access_key, self.secret_key)
+        # If access_key is empty use default credential chain
+        if self.access_key:
+            self.conn = S3Connection(self.access_key, self.secret_key)
+        else:
+            self.conn = S3Connection()
 
     @classmethod
     def parse_xml(clazz, config_xml):

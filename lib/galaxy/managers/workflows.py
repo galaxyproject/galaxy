@@ -26,7 +26,7 @@ from galaxy import (
 )
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.structured_app import StructuredApp
+from galaxy.structured_app import MinimalManagerApp
 from galaxy.tools.parameters import (
     params_to_incoming,
     visit_input_values
@@ -69,7 +69,7 @@ class WorkflowsManager:
     the galaxy.workflow module.
     """
 
-    def __init__(self, app: StructuredApp):
+    def __init__(self, app: MinimalManagerApp):
         self.app = app
 
     def get_stored_workflow(self, trans, workflow_id, by_stored_id=True):
@@ -248,7 +248,8 @@ class WorkflowsManager:
         trans.sa_session.flush()
         return workflow_invocation_step
 
-    def build_invocations_query(self, trans, stored_workflow_id=None, history_id=None, user_id=None, include_terminal=True, limit=None):
+    def build_invocations_query(self, trans, stored_workflow_id=None, history_id=None, job_id=None, user_id=None,
+                                include_terminal=True, limit=None):
         """Get invocations owned by the current user."""
         sa_session = trans.sa_session
         invocations_query = sa_session.query(model.WorkflowInvocation).order_by(model.WorkflowInvocation.table.c.id.desc())
@@ -273,6 +274,11 @@ class WorkflowsManager:
             invocations_query = invocations_query.filter(
                 model.WorkflowInvocation.table.c.history_id == history_id
             )
+
+        if job_id is not None:
+            invocations_query = invocations_query.join(
+                model.WorkflowInvocationStep
+            ).filter(model.WorkflowInvocationStep.table.c.job_id == job_id)
 
         if not include_terminal:
             invocations_query = invocations_query.filter(
@@ -306,7 +312,7 @@ CreatedWorkflow = namedtuple("CreatedWorkflow", ["stored_workflow", "workflow", 
 
 class WorkflowContentsManager(UsesAnnotations):
 
-    def __init__(self, app: StructuredApp):
+    def __init__(self, app: MinimalManagerApp):
         self.app = app
         self._resource_mapper_function = get_resource_mapper_function(app)
 
@@ -361,8 +367,9 @@ class WorkflowContentsManager(UsesAnnotations):
             raise exceptions.RequestParameterInvalidException(f"Invalid workflow format detected [{data}]")
 
         workflow_input_name = data['name']
-        if source:
-            name = f"{workflow_input_name} (imported from {source})"
+        imported_sufix = f"(imported from {source})"
+        if source and imported_sufix not in workflow_input_name:
+            name = f"{workflow_input_name} {imported_sufix}"
         else:
             name = workflow_input_name
         workflow, missing_tool_tups = self._workflow_from_raw_description(
@@ -538,7 +545,6 @@ class WorkflowContentsManager(UsesAnnotations):
         option describes the workflow in a context more tied to the current Galaxy instance and includes
         fields like 'url' and 'url' and actual unencoded step ids instead of 'order_index'.
         """
-
         def to_format_2(wf_dict, **kwds):
             return from_galaxy_native(wf_dict, None, **kwds)
 
@@ -1484,6 +1490,16 @@ class WorkflowContentsManager(UsesAnnotations):
             workflow=self.workflow_to_dict(trans, refactored_workflow.stored_workflow, style=refactor_request.style),
             dry_run=refactor_request.dry_run,
         )
+
+    def get_all_tool_ids(self, workflow):
+        tool_ids = set()
+        for step in workflow.steps:
+            if step.type == 'tool':
+                if step.tool_id:
+                    tool_ids.add(step.tool_id)
+            elif step.type == 'subworkflow':
+                tool_ids.update(self.get_all_tool_ids(step.subworkflow))
+        return tool_ids
 
 
 class RefactorRequest(RefactorActions):

@@ -15,6 +15,7 @@ GALAXY_FLAVORED_MARKDOWN_CONTAINER_LINE_PATTERN = re.compile(
 VALID_CONTAINER_END_PATTERN = re.compile(r"^```\s*$")
 DYNAMIC_ARGUMENTS = object()
 VALID_ARGUMENTS = {
+    "history_link": ["history_id"],
     "history_dataset_display": ["input", "output", "history_dataset_id"],
     "history_dataset_embedded": ["input", "output", "history_dataset_id"],
     "history_dataset_as_image": ["input", "output", "history_dataset_id", "path"],

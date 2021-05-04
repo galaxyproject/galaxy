@@ -48,9 +48,15 @@
                         <UtcDate :date="job.update_time" mode="pretty" />
                     </td>
                 </tr>
-                <code-row id="command-line" v-if="job" :codeLabel="'Command Line'" :codeItem="job.command_line" />
-                <code-row id="stdout" v-if="job" :codeLabel="'Tool Standard Output'" :codeItem="job.tool_stdout" />
-                <code-row id="stderr" v-if="job" :codeLabel="'Tool Standard Error'" :codeItem="job.tool_stderr" />
+                <tr v-if="job && includeTimes && jobIsTerminal">
+                    <td>Time To Finish</td>
+                    <td id="runtime">
+                        {{ runTime }}
+                    </td>
+                </tr>
+                <code-row id="command-line" v-if="job" :code-label="'Command Line'" :code-item="job.command_line" />
+                <code-row id="stdout" v-if="job" :code-label="'Tool Standard Output'" :code-item="job.tool_stdout" />
+                <code-row id="stderr" v-if="job" :code-label="'Tool Standard Error'" :code-item="job.tool_stderr" />
                 <tr v-if="job">
                     <td>Tool Exit Code:</td>
                     <td id="exist-code">{{ job.exit_code }}</td>
@@ -58,11 +64,12 @@
                 <tr id="job-messages" v-if="job && job.job_messages && job.job_messages.length > 0">
                     <td>Job Messages</td>
                     <td>
-                        <ul style="padding-left: 15px; margin-bottom: 0px;">
+                        <ul style="padding-left: 15px; margin-bottom: 0px">
                             <li v-for="message in job.job_messages" :key="message">{{ message }}</li>
                         </ul>
                     </td>
                 </tr>
+                <slot></slot>
                 <tr v-if="job && job.id">
                     <td>Job API ID:</td>
                     <td id="encoded-job-id">
@@ -89,6 +96,8 @@ import DecodedId from "../DecodedId.vue";
 import CodeRow from "./CodeRow.vue";
 import UtcDate from "components/UtcDate";
 import CopyToClipboard from "components/CopyToClipboard";
+import JOB_STATES_MODEL from "mvc/history/job-states-model";
+import { formatDuration, intervalToDuration } from "date-fns";
 
 export default {
     components: {
@@ -116,8 +125,15 @@ export default {
     },
     computed: {
         job: function () {
-            const job = this.$store.getters.job(this.job_id);
-            return job;
+            return this.$store.getters.job(this.job_id);
+        },
+        runTime: function () {
+            return formatDuration(
+                intervalToDuration({ start: new Date(this.job.create_time), end: new Date(this.job.update_time) })
+            );
+        },
+        jobIsTerminal() {
+            return !JOB_STATES_MODEL.NON_TERMINAL_STATES.includes(this.job.state);
         },
     },
     methods: {

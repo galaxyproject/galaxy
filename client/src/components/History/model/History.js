@@ -1,5 +1,4 @@
 import { dateMixin, ModelBase } from "./ModelBase";
-import { bytesToString } from "utils/utils";
 
 export class History extends dateMixin(ModelBase) {
     // not deleted
@@ -16,10 +15,6 @@ export class History extends dateMixin(ModelBase) {
             const val = this.contents_active[key];
             return result + parseInt(val);
         }, 0);
-    }
-
-    get niceSize() {
-        return this.size ? bytesToString(this.size, true, 2) : "(empty)";
     }
 
     get statusDescription() {

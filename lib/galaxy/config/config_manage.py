@@ -351,7 +351,7 @@ GALAXY_APP = App(
 SHED_APP = App(
     ["tool_shed_wsgi.ini", "config/tool_shed.ini"],
     "9009",
-    ["galaxy.webapps.tool_shed.buildapp:app_factory"],
+    ["tool_shed.webapp.buildapp:app_factory"],
     "config/tool_shed.yml",
     "lib/tool_shed/webapp/config_schema.yml",
     'tool_shed.webapp.buildapp:uwsgi_app()',

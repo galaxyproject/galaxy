@@ -32,6 +32,7 @@ TEST_DIR = 'tests'
 PACKAGES = [
     'galaxy',
     'galaxy.actions',
+    'galaxy.config',
     'galaxy.files',
     'galaxy.files.sources',
     'galaxy.forms',
@@ -88,6 +89,8 @@ PACKAGES = [
     'galaxy.webhooks',
     'galaxy.work',
     'galaxy.workflow',
+    'galaxy.workflow.refactor',
+    'galaxy.workflow.reports',
     'galaxy.workflow.resources',
     'galaxy.workflow.schedulers',
 ]

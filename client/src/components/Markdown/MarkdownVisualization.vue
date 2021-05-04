@@ -106,7 +106,7 @@ export default {
             this.formData = formDataNew;
         },
         onLabel(response) {
-            this.dataTag = `output=${response}`;
+            this.dataTag = `output="${response}"`;
             this.labelShow = false;
             if (this.formInputs) {
                 this.formShow = true;

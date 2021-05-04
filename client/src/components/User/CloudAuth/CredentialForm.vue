@@ -39,9 +39,7 @@
         <credential-config v-model="credential.config" />
 
         <footer class="border-top">
-            <b-button variant="secondary" @click.prevent="$emit('delete', credential)">
-                Delete Key
-            </b-button>
+            <b-button variant="secondary" @click.prevent="$emit('delete', credential)"> Delete Key </b-button>
             <b-button
                 aria-label="Save Key"
                 :variant="saveButtonVariant"

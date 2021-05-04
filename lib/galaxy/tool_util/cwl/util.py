@@ -180,6 +180,8 @@ def galactic_job_json(
         kwd = {}
         if "tags" in value:
             kwd["tags"] = value.get("tags")
+        if "dbkey" in value:
+            kwd["dbkey"] = value.get("dbkey")
         if composite_data_raw:
             composite_data = []
             for entry in composite_data_raw:

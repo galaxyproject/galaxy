@@ -6,6 +6,7 @@ import logging
 import math
 import os
 import re
+from datetime import datetime
 
 import yaml
 
@@ -21,6 +22,7 @@ from galaxy.jobs.runners.util.pykube_util import (
     find_job_object_by_name,
     find_pod_object_by_name,
     galaxy_instance_id,
+    is_pod_unschedulable,
     Job,
     job_object_dict,
     Pod,
@@ -70,7 +72,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_fs_group_id=dict(map=int),
             k8s_cleanup_job=dict(map=str, valid=lambda s: s in {"onsuccess", "always", "never"}, default="always"),
             k8s_pod_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=3),
-            k8s_walltime_limit=dict(map=int, valid=lambda x: int(x) >= 0, default=172800))
+            k8s_walltime_limit=dict(map=int, valid=lambda x: int(x) >= 0, default=172800),
+            k8s_unschedulable_walltime_limit=dict(map=int, valid=lambda x: int(x) >= 0, default=1800),)
 
         if 'runner_param_specs' not in kwargs:
             kwargs['runner_param_specs'] = dict()
@@ -97,11 +100,17 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             volume_claims = dict(volume.split(":") for volume in self.runner_params['k8s_persistent_volume_claims'].split(','))
         else:
             volume_claims = {}
-        mountable_volumes = [{'name': claim_name, 'persistentVolumeClaim': {'claimName': claim_name}}
-                             for claim_name in volume_claims if claim_name]
+        mountable_volumes = list(set([claim_name if "/" not in claim_name else claim_name.split("/")[0] for claim_name in volume_claims]))
+        mountable_volumes = [{'name': claim_name, 'persistentVolumeClaim': {'claimName': claim_name}} for claim_name in mountable_volumes]
         self.runner_params['k8s_mountable_volumes'] = mountable_volumes
-        volume_mounts = [{'name': claim_name, 'mountPath': mount_path}
-                         for claim_name, mount_path in volume_claims.items() if claim_name]
+        volume_mounts = [{'name': claim_name, 'mountPath': mount_path} for claim_name, mount_path in volume_claims.items()]
+        for each in volume_mounts:
+            vmount = each.get("name")
+            if "/" in vmount:
+                name = vmount.split("/")[0]
+                subpath = vmount.split("/")[1]
+                each["name"] = name
+                each["subPath"] = subpath
         self.runner_params['k8s_volume_mounts'] = volume_mounts
 
     def queue_job(self, job_wrapper):
@@ -484,8 +493,15 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 return None
             elif active > 0 and failed <= max_pod_retries:
                 if not job_state.running:
-                    job_state.running = True
-                    job_state.job_wrapper.change_state(model.Job.states.RUNNING)
+                    if self.__job_pending_due_to_unschedulable_pod(job_state):
+                        creation_time_str = job.obj['metadata'].get('creationTimestamp')
+                        creation_time = datetime.strptime(creation_time_str, '%Y-%m-%dT%H:%M:%SZ')
+                        elapsed_seconds = (datetime.utcnow() - creation_time).total_seconds()
+                        if elapsed_seconds > self.runner_params['k8s_unschedulable_walltime_limit']:
+                            return self._handle_unschedulable_job(job, job_state)
+                    else:
+                        job_state.running = True
+                        job_state.job_wrapper.change_state(model.Job.states.RUNNING)
                 return job_state
             elif job_persisted_state == model.Job.states.DELETED:
                 # Job has been deleted via stop_job and job has not been deleted,
@@ -514,6 +530,18 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             self.mark_as_failed(job_state)
             # job is no longer viable - remove from watched jobs
             return None
+
+    def _handle_unschedulable_job(self, job, job_state):
+        # Handle unschedulable job that exceeded deadline
+        job_state.fail_message = "Job was unschedulable longer than specified deadline"
+        job_state.runner_state = JobState.runner_states.WALLTIME_REACHED
+        job_state.running = False
+        self.mark_as_failed(job_state)
+        try:
+            self.__cleanup_k8s_job(job)
+        except Exception:
+            log.exception("Could not clean up k8s batch job. Ignoring...")
+        return None
 
     def _handle_job_failure(self, job, job_state):
         # Figure out why job has failed
@@ -562,6 +590,17 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             return True
 
         return False
+
+    def __job_pending_due_to_unschedulable_pod(self, job_state):
+        """
+        checks the state of the pod to see if it is unschedulable.
+        """
+        pods = find_pod_object_by_name(self._pykube_api, job_state.job_id, self.runner_params['k8s_namespace'])
+        if not pods.response['items']:
+            return False
+
+        pod = Pod(self._pykube_api, pods.response['items'][0])
+        return is_pod_unschedulable(self._pykube_api, pod, self.runner_params['k8s_namespace'])
 
     def stop_job(self, job_wrapper):
         """Attempts to delete a dispatched job to the k8s cluster"""

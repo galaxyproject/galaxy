@@ -1,7 +1,6 @@
 """
 Classes encapsulating galaxy tools and tool configuration.
 """
-import collections
 import itertools
 import json
 import logging
@@ -12,7 +11,7 @@ import tempfile
 import threading
 from datetime import datetime
 from pathlib import Path
-from typing import List, Type
+from typing import List, NamedTuple, Type, Union
 from urllib.parse import unquote_plus
 
 import packaging.version
@@ -190,7 +189,13 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "substitutions1": packaging.version.parse("1.0.1"),
     "winSplitter": packaging.version.parse("1.0.1"),
 }
-safe_update = collections.namedtuple("SafeUpdate", "min_version current_version")
+
+
+class safe_update(NamedTuple):
+    min_version: Union[packaging.version.LegacyVersion, packaging.version.Version]
+    current_version: Union[packaging.version.LegacyVersion, packaging.version.Version]
+
+
 # Tool updates that did not change parameters in a way that requires rebuilding workflows
 WORKFLOW_SAFE_TOOL_VERSION_UPDATES = {
     'Filter1': safe_update(packaging.version.parse("1.1.0"), packaging.version.parse("1.1.1")),
@@ -1360,7 +1365,7 @@ class Tool(Dictifiable):
     def populate_resource_parameters(self, tool_source):
         root = getattr(tool_source, 'root', None)
         if root is not None and hasattr(self.app, 'job_config') and hasattr(self.app.job_config, 'get_tool_resource_xml'):
-            resource_xml = self.app.job_config.get_tool_resource_xml(root.get('id'), self.tool_type)
+            resource_xml = self.app.job_config.get_tool_resource_xml(root.get('id', '').lower(), self.tool_type)
             if resource_xml is not None:
                 inputs = root.find('inputs')
                 if inputs is None:
@@ -1936,6 +1941,7 @@ class Tool(Dictifiable):
             input_dbkey,
             object_store=tool.app.object_store,
             final_job_state=final_job_state,
+            flush_per_n_datasets=tool.app.config.flush_per_n_datasets,
         )
         collected = output_collect.collect_primary_datasets(
             job_context,

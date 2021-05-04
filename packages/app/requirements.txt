@@ -5,6 +5,7 @@ galaxy-tool-util
 galaxy-web-framework
 galaxy-web-stack
 
+celery
 kombu
 Beaker
 pykwalify
@@ -15,6 +16,6 @@ sqlitedict
 svgwrite
 sortedcontainers
 Markdown
-refgenconf
+refgenconf>=0.7.0,<0.10.0 # https://github.com/galaxyproject/galaxy/issues/11601
 Fabric3
 lagom

@@ -21,35 +21,31 @@ export const requestWithUpdateTime = (config = {}) => {
     const {
         dateStore = requestDateStore,
         bufferSeconds = 0,
-        dateFieldName = "update_time",
+        dateFieldName = "update_time-gt",
         requestTime = moment.utc(),
+        // indicates we don't want initial results
+        noInitial = false,
+        responseQualifier = () => true
     } = config;
 
     // mark and flag this update-time, append to next request with same base
     return pipe(
+        tap((url) => {
+            if (noInitial && !dateStore.has(url)) {
+                dateStore.set(url, moment.utc());
+            }
+        }),
         mergeMap((baseUrl) => of(baseUrl).pipe(
             appendUpdateTime({ dateStore, bufferSeconds, dateFieldName }),
             mergeMap(ajax),
-            tap(() => dateStore.set(baseUrl, requestTime))
+            tap((response) => {
+                if (responseQualifier(response)) {
+                    dateStore.set(baseUrl, requestTime)
+                }
+            })
         ))
     );
 };
-
-// prettier-ignore
-// Like request withUpdateTime but omits initial results
-export const requestWithUpdateTimeNoInitial = (config = {}) => {
-    const {
-        dateStore = requestDateStore,
-    } = config;
-    return pipe(
-        tap((url) => {
-            if (!dateStore.has(url)) {
-                dateStore.set(url,  moment.utc());
-            }
-        }),
-        requestWithUpdateTime(config)
-    );
-}
 
 /**
  * Takes a base URL appends an update_time-gt restriction based on the lst
@@ -60,14 +56,14 @@ export const requestWithUpdateTimeNoInitial = (config = {}) => {
 const appendUpdateTime = (cfg = {}) => {
     const {
         dateStore = requestDateStore,
-        dateFieldName = "update_time"
+        dateFieldName = "update_time-gt",
     } = cfg;
 
     return pipe(
         map((baseUrl) => {
             if (!dateStore.has(baseUrl)) return baseUrl;
             const lastRequest = dateStore.get(baseUrl);
-            const parts = [baseUrl, `${dateFieldName}-gt=${lastRequest.toISOString()}`];
+            const parts = [baseUrl, `${dateFieldName}=${lastRequest.toISOString()}`];
             const separator = baseUrl.includes("?") ? "&" : "?";
             return parts.join(separator);
         })
