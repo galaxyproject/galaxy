@@ -42,5 +42,10 @@ jobs:
         working-directory: 'galaxy root'
       - uses: actions/upload-artifact@v2
         with:
-          name: Selenium test results (${{ matrix.python-version }}, ${{ matrix.chunk }})
+          name: Selenium beta history panel test results (${{ matrix.python-version }}, ${{ matrix.chunk }})
           path: 'galaxy root/database/test_errors'
+      - uses: actions/upload-artifact@v2
+        with:
+          name: Selenium beta history panel test results (${{ matrix.python-version }})
+          path: 'galaxy root/run_selenium_tests.html'
+ 
