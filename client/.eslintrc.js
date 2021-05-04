@@ -25,6 +25,9 @@ module.exports = {
         "vue/valid-v-slot": "error",
         "vue/v-slot-style": ["error", { atComponent: "v-slot", default: "v-slot", named: "longform" }],
 
+        // Now in strongly-recommended, enforce instead of warn.
+        "vue/attribute-hyphenation": "error",
+
         // Vue TODO (enable these)
         "vue/require-default-prop": "warn",
         "vue/require-prop-types": "warn",
