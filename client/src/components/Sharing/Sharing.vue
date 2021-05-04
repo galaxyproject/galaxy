@@ -418,12 +418,7 @@ export default {
                 .catch((error) => this.addError(error.response.data.err_msg));
         },
         setSharing(action, user_id, share_option) {
-            let user_ids = undefined;
-            if (user_id) {
-                if (user_id.includes(",")) {
-                    user_ids = user_id.replace(/ /g, "").split(",");
-                } else user_ids = [user_id];
-            }
+            const user_ids = user_id ? user_id.replace(/ /g, "").split(",") : undefined;
 
             if (
                 action === this.actions.share_with &&
