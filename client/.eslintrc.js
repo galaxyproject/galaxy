@@ -21,6 +21,7 @@ module.exports = {
         "no-unused-vars": ["error", { args: "none" }],
         "prefer-const": "error",
         "one-var": ["error", "never"],
+        "curly": "error",
 
         "vue/valid-v-slot": "error",
         "vue/v-slot-style": ["error", { atComponent: "v-slot", default: "v-slot", named: "longform" }],
