@@ -591,13 +591,13 @@ class JobHandlerQueue(Monitors):
         if (state == JOB_READY and
                 "delta" in self.app.job_config.limits.total_walltime):
             jobs_to_check = self.sa_session.query(model.Job).filter(
-                model.Job.user_id == job.user.id,
-                model.Job.update_time >= datetime.datetime.now() -
-                datetime.timedelta(
-                    self.app.job_config.limits.total_walltime["window"]
-                ),
+                model.Job.update_time >= datetime.datetime.now() - datetime.timedelta(self.app.job_config.limits.total_walltime["window"]),
                 model.Job.state == 'ok'
-            ).all()
+            )
+            if job.user_id:
+                jobs_to_check = jobs_to_check.filter(model.Job.user_id == job.user_id)
+            else:
+                jobs_to_check = jobs_to_check.filter(model.Job.session_id == job.session_id)
             time_spent = datetime.timedelta(0)
             for job in jobs_to_check:
                 # History is job.state_history
