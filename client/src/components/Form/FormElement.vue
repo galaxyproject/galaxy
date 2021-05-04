@@ -1,5 +1,5 @@
 <template>
-    <div :class="cls">
+    <div :class="cls" :tour_id="id">
         <div v-if="hasError" class="ui-form-error">
             <span class="fa fa-arrow-down mr-1" />
             <span class="ui-form-error-text">{{ error }}</span>
