@@ -30,7 +30,7 @@
             <b-btn
                 v-if="multiple"
                 size="sm"
-                class="float-right ml-1"
+                class="float-right ml-1 file-dialog-modal-ok"
                 variant="primary"
                 @click="finalize"
                 :disabled="!hasValue"
