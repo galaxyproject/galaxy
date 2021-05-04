@@ -2701,7 +2701,7 @@ mapper(model.Visualization, model.Visualization.table, properties=dict(
         backref="visualizations"),
     annotations=relation(model.VisualizationAnnotationAssociation,
         order_by=model.VisualizationAnnotationAssociation.table.c.id,
-        backref="visualizations"),
+        backref="visualization"),
     ratings=relation(model.VisualizationRatingAssociation,
         order_by=model.VisualizationRatingAssociation.table.c.id,
         backref="visualization"),
@@ -2755,7 +2755,7 @@ annotation_mapping(model.HistoryDatasetAssociationAnnotationAssociation, hda=mod
 annotation_mapping(model.StoredWorkflowAnnotationAssociation, stored_workflow=model.StoredWorkflow)
 annotation_mapping(model.WorkflowStepAnnotationAssociation, workflow_step=model.WorkflowStep)
 annotation_mapping(model.PageAnnotationAssociation)
-annotation_mapping(model.VisualizationAnnotationAssociation, visualization=model.Visualization)
+annotation_mapping(model.VisualizationAnnotationAssociation)
 annotation_mapping(model.HistoryDatasetCollectionAssociationAnnotationAssociation,
     history_dataset_collection=model.HistoryDatasetCollectionAssociation)
 annotation_mapping(model.LibraryDatasetCollectionAnnotationAssociation,
