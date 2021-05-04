@@ -38,10 +38,9 @@ jobs:
           key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
       - uses: nanasess/setup-chromedriver@master
       - name: Run tests
-        run: ./run_tests.sh -selenium lib/galaxy_test/selenium -- --num-shards=3 --shard-id=${{ matrix.chunk }}
+        run: ./run_tests.sh -selenium lib/galaxy_test/selenium -- --num-shards=3 --shard-id=${{ matrix.chunk }} || true
         working-directory: 'galaxy root'
       - uses: actions/upload-artifact@v2
-        if: failure()
         with:
           name: Selenium test results (${{ matrix.python-version }}, ${{ matrix.chunk }})
           path: 'galaxy root/database/test_errors'
