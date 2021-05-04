@@ -236,8 +236,8 @@ import SlugInput from "components/Common/SlugInput";
 import axios from "axios";
 import Multiselect from "vue-multiselect";
 import { copy } from "utils/clipboard";
-import ConfigProvider from "../providers/ConfigProvider";
-import CurrentUser from "../providers/CurrentUser";
+import ConfigProvider from "components/providers/ConfigProvider";
+import CurrentUser from "components/providers/CurrentUser";
 
 Vue.use(BootstrapVue);
 [faCopy, faEdit, faUserPlus, faUserSlash].forEach((icon) => library.add(icon));
@@ -375,8 +375,6 @@ export default {
         onChange(newSlug) {
             this.showUrl = true;
             const requestUrl = `${this.slugUrl}`;
-            console.log("requestUrl", requestUrl);
-            console.log("this.slugUrl", this.slugUrl);
             axios
                 .put(requestUrl, {
                     new_slug: newSlug,
