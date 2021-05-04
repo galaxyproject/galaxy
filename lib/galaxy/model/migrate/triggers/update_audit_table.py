@@ -14,7 +14,7 @@ trigger_config = {
 
 def install(engine):
     """Install history audit table triggers"""
-    sql = _postgres_install() if 'postgres' in engine.name else _sqlite_install()
+    sql = _postgres_install(engine) if 'postgres' in engine.name else _sqlite_install()
     execute_statements(engine, sql)
 
 
@@ -37,7 +37,7 @@ def _postgres_remove():
     return sql
 
 
-def _postgres_install():
+def _postgres_install(engine):
     """postgres trigger installation sql"""
 
     sql = []
@@ -59,7 +59,8 @@ def _postgres_install():
                     INSERT INTO history_audit (history_id, update_time)
                     SELECT DISTINCT {id_field}, CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
                     FROM new_table
-                    WHERE {id_field} IS NOT NULL;
+                    WHERE {id_field} IS NOT NULL
+                    ON CONFLICT DO NOTHING;
                     RETURN NULL;
                 END;
             $BODY$
@@ -122,7 +123,8 @@ def _sqlite_install():
                 BEGIN
                     INSERT INTO history_audit (history_id, update_time)
                     SELECT NEW.{id_field}, strftime('%%Y-%%m-%%d %%H:%%M:%%f', 'now')
-                    WHERE NEW.{id_field} IS NOT NULL;
+                    WHERE NEW.{id_field} IS NOT NULL
+                    ON CONFLICT IGNORE;
                 END;
         """
 

@@ -5,7 +5,7 @@ Add history audit table and associated triggers
 import datetime
 import logging
 
-from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, MetaData, Table
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, Table
 
 from galaxy.model.migrate.triggers import (
     history_update_time_field as old_triggers,  # rollback to old ones
@@ -20,17 +20,12 @@ log = logging.getLogger(__name__)
 now = datetime.datetime.utcnow
 metadata = MetaData()
 
-# NOTE: A normal incrementing PK is not typically used in an audit table,
-# just foreign keys, but the ORM will probably choke without it
 AuditTable = Table(
     "history_audit",
     metadata,
-    Column("id", Integer, primary_key=True),
-    Column("history_id", Integer, ForeignKey("history.id"), nullable=False),
-    Column("update_time", DateTime, default=now, nullable=False),
+    Column("history_id", Integer, ForeignKey("history.id"), primary_key=True, nullable=False),
+    Column("update_time", DateTime, default=now, primary_key=True, nullable=False),
 )
-
-Index('ix_history_audit_history_id_update_time_desc', AuditTable.c.history_id.desc(), AuditTable.c.update_time.desc())
 
 
 def upgrade(migrate_engine):
@@ -71,7 +66,7 @@ def downgrade(migrate_engine):
             FROM (
                 SELECT history_id, max(update_time) as max_update_time
                 FROM history_audit
-                GROUP BY history_id, update_time
+                GROUP BY history_id
             ) a
             WHERE h.id = a.history_id
         """

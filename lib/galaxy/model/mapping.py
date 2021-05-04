@@ -218,12 +218,9 @@ model.History.table = Table(
 
 model.HistoryAudit.table = Table(
     "history_audit", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("history_id", Integer, ForeignKey("history.id"), nullable=False),
-    Column("update_time", DateTime, default=now, nullable=False),
+    Column("history_id", Integer, ForeignKey("history.id"), primary_key=True, nullable=False),
+    Column("update_time", DateTime, default=now, primary_key=True, nullable=False),
 )
-
-Index('ix_history_audit_history_id_update_time_desc', model.HistoryAudit.table.c.history_id.desc(), model.HistoryAudit.table.c.update_time.desc())
 
 model.HistoryUserShareAssociation.table = Table(
     "history_user_share_association", metadata,
