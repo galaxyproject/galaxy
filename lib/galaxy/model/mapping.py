@@ -1993,19 +1993,16 @@ mapper(model.GroupRoleAssociation, model.GroupRoleAssociation.table, properties=
     role=relation(model.Role)
 ))
 
-mapper(model.Quota, model.Quota.table, properties=dict(
-    users=relation(model.UserQuotaAssociation),
-    groups=relation(model.GroupQuotaAssociation)
-))
+mapper(model.Quota, model.Quota.table)
 
 mapper(model.UserQuotaAssociation, model.UserQuotaAssociation.table, properties=dict(
     user=relation(model.User, backref="quotas"),
-    quota=relation(model.Quota)
+    quota=relation(model.Quota, backref="users")
 ))
 
 mapper(model.GroupQuotaAssociation, model.GroupQuotaAssociation.table, properties=dict(
     group=relation(model.Group, backref="quotas"),
-    quota=relation(model.Quota)
+    quota=relation(model.Quota, backref="groups")
 ))
 
 mapper(model.DefaultQuotaAssociation, model.DefaultQuotaAssociation.table, properties=dict(
