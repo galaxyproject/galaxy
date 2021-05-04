@@ -1,6 +1,6 @@
 <template>
     <div v-if="ready">
-        <h3>Share or Publish {{ model_class }} `{{ item.title }}`</h3>
+        <h3>Share or Publish {{ modelClass }} `{{ item.title }}`</h3>
         <div v-for="error in errors" :key="error">
             <b-alert show variant="danger" dismissible @dismissed="errors = errors.filter((e) => e !== error)">
                 {{ error }}
@@ -8,7 +8,7 @@
         </div>
         <br />
         <div v-if="!hasUsername">
-            <div>To make a {{ model_class }} accessible via link or publish it, you must create a public username:</div>
+            <div>To make a {{ modelClass }} accessible via link or publish it, you must create a public username:</div>
             <form class="form-group" @submit.prevent="setUsername()">
                 <input class="form-control" type="text" v-model="newUsername" />
             </form>
@@ -16,7 +16,7 @@
         </div>
         <div v-else>
             <b-form-checkbox switch class="make-accessible" v-model="item.importable" @change="onImportable">
-                Make {{ model_class }} accessible
+                Make {{ modelClass }} accessible
             </b-form-checkbox>
             <b-form-checkbox
                 v-if="item.importable"
@@ -25,16 +25,16 @@
                 v-model="item.published"
                 @change="onPublish"
             >
-                Make {{ model_class }} publicly available in
-                <a :href="published_url" target="_top">Published {{ plural_name }}</a>
+                Make {{ modelClass }} publicly available in
+                <a :href="published_url" target="_top">Published {{ pluralName }}</a>
             </b-form-checkbox>
             <br />
             <div v-if="item.importable">
                 <div>
-                    This {{ model_class }} is currently <strong>{{ itemStatus }}</strong
+                    This {{ modelClass }} is currently <strong>{{ itemStatus }}</strong
                     >.
                 </div>
-                <p>Anyone can view and import this {{ model_class }} by visiting the following URL:</p>
+                <p>Anyone can view and import this {{ modelClass }} by visiting the following URL:</p>
                 <blockquote>
                     <b-button title="Edit URL" @click="onEdit" v-b-tooltip.hover variant="link" size="sm">
                         <font-awesome-icon icon="edit" />
@@ -56,13 +56,13 @@
                 </blockquote>
             </div>
             <div v-else>
-                Access to this {{ model_class }} is currently restricted so that only you and the users listed below can
+                Access to this {{ modelClass }} is currently restricted so that only you and the users listed below can
                 access it. Note that sharing a History will also allow access to all of its datasets.
             </div>
             <br />
-            <h4>Share {{ model_class }} with Individual Users</h4>
+            <h4>Share {{ modelClass }} with Individual Users</h4>
             <p>
-                The following users will see this {{ model_class }} in their {{ model_class }} list and will be able to
+                The following users will see this {{ modelClass }} in their {{ modelClass }} list and will be able to
                 view, import and run it.
             </p>
             <div v-if="!isExposeEmail">
@@ -76,7 +76,7 @@
                     :items="item.users_shared_with"
                 >
                     <template v-slot:empty>
-                        <p>You have not shared this {{ model_class }} with any users.</p>
+                        <p>You have not shared this {{ modelClass }} with any users.</p>
                     </template>
 
                     <template v-slot:cell(id)="cell">
@@ -249,11 +249,11 @@ export default {
             type: String,
             required: true,
         },
-        plural_name: {
+        pluralName: {
             type: String,
             required: true,
         },
-        model_class: {
+        modelClass: {
             type: String,
             required: true,
         },
@@ -304,7 +304,7 @@ export default {
             );
         },
         pluralNameLower() {
-            return this.plural_name.toLowerCase();
+            return this.pluralName.toLowerCase();
         },
         itemStatus() {
             return this.item.published ? "accessible via link and published" : "accessible via link";
@@ -421,7 +421,7 @@ export default {
                 this.item.users_shared_with.some(({ email }) => user_ids.includes(email))
             ) {
                 this.addError(
-                    `You already shared this ${this.model_class} with
+                    `You already shared this ${this.modelClass} with
                     ${user_ids.filter((user) => this.item.users_shared_with.some(({ email }) => email === user))}`
                 );
                 return;
