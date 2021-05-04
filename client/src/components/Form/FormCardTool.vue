@@ -10,8 +10,7 @@
                         title="Options"
                         variant="link"
                         aria-label="View all Options"
-                        class="float-right py-0 px-1"
-                        button-class="p-0"
+                        class="float-right"
                         size="sm"
                         v-b-tooltip.hover
                     >
@@ -40,8 +39,7 @@
                         title="Versions"
                         variant="link"
                         aria-label="Select Versions"
-                        class="float-right py-0 px-1"
-                        button-class="p-0"
+                        class="float-right"
                         size="sm"
                         v-b-tooltip.hover
                     >
@@ -58,7 +56,7 @@
                         title="Add to Favorites"
                         variant="link"
                         size="sm"
-                        class="float-right py-0 px-1"
+                        class="float-right"
                         v-b-tooltip.hover
                         @click="onAddFavorite"
                     >
@@ -70,7 +68,7 @@
                         title="Remove from Favorites"
                         variant="link"
                         size="sm"
-                        class="float-right py-0 px-1"
+                        class="float-right"
                         v-b-tooltip.hover
                         @click="onRemoveFavorite"
                     >
