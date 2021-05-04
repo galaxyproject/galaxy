@@ -505,16 +505,16 @@ export default {
     font-weight: normal;
 }
 .multiselect-users::v-deep .multiselect__option--highlight {
-    background: #377ab6;
+    background: #25537b;
 }
 .multiselect__tag {
-    background: #377ab6;
+    background: #25537b;
 }
 .multiselect__tag-icon:after{
     color: white;
 }
 .multiselect__tag-icon:focus,
 .multiselect__tag-icon:hover {
-    background: #25537b;
+    background: #132c40;
 }
 </style>
