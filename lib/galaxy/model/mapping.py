@@ -1794,7 +1794,8 @@ simple_mapping(model.Dataset,
     active_library_associations=relation(model.LibraryDatasetDatasetAssociation,
         primaryjoin=(
             (model.Dataset.table.c.id == model.LibraryDatasetDatasetAssociation.table.c.dataset_id)
-            & (model.LibraryDatasetDatasetAssociation.table.c.deleted == false()))),
+            & (model.LibraryDatasetDatasetAssociation.table.c.deleted == false())),
+        viewonly=True),
 )
 
 mapper(model.DatasetHash, model.DatasetHash.table, properties=dict(
