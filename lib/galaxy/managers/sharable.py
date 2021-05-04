@@ -736,19 +736,19 @@ class ShareableService:
             raise exceptions.MessageException("Missing required user IDs or emails")
         send_to_users: Set[User] = set()
         send_to_err: Set[str] = set()
-        for string in set(emails_or_ids):
-            string = string.strip()
-            if not string:
+        for email_or_id in set(emails_or_ids):
+            email_or_id = email_or_id.strip()
+            if not email_or_id:
                 continue
 
             send_to_user = None
-            if '@' in string:
-                email_address = string
+            if '@' in email_or_id:
+                email_address = email_or_id
                 send_to_user = self.manager.user_manager.by_email(email_address,
                     filters=[User.table.c.deleted == false()])
             else:
                 try:
-                    decoded_user_id = trans.security.decode_id(string)
+                    decoded_user_id = trans.security.decode_id(email_or_id)
                     send_to_user = self.manager.user_manager.by_id(decoded_user_id)
                     if send_to_user.deleted:
                         send_to_user = None
@@ -756,7 +756,7 @@ class ShareableService:
                     send_to_user = None
 
             if not send_to_user:
-                send_to_err.add(f"{string} is not a valid Galaxy user.")
+                send_to_err.add(f"{email_or_id} is not a valid Galaxy user.")
             elif send_to_user == trans.user:
                 send_to_err.add("You cannot share resources with yourself.")
             else:

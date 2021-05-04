@@ -78,7 +78,7 @@ class ShareHistoryExtra(sharable.ShareWithExtra):
         title="Can Change",
         description=(
             "A collection of datasets that are not accessible by one or more of the target users "
-            "but, the user sharing the history, has permission to make them accessible for others."
+            "and that can be made accessible for others by the user sharing the history."
         ),
     )
     cannot_change: List[HDABasicInfo] = Field(
@@ -86,7 +86,7 @@ class ShareHistoryExtra(sharable.ShareWithExtra):
         title="Cannot Change",
         description=(
             "A collection of datasets that are not accessible by one or more of the target users "
-            "and, the user sharing the history, does not have permission to make them accessible for others."
+            "and that cannot be made accessible for others by the user sharing the history."
         ),
     )
     accessible_count: int = Field(
@@ -347,7 +347,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
                 self.user_share_model.table.c.user_id == user.id,
                 self.user_share_model.table.c.history_id == history.id,
             )
-        ).count() > 0
+        ).exists()
 
 
 class HistoryExportView:
