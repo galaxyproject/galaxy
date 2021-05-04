@@ -205,7 +205,3 @@ class HistoryPanelTestCase(SeleniumTestCase):
     def assert_name_changed(self):
         name = self.history_panel_name()
         self.assertEqual(name, NEW_HISTORY_NAME)
-
-
-class BetaHistoryPanelTestCase(HistoryPanelTestCase):
-    ensure_beta_history = True
