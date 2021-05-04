@@ -48,7 +48,7 @@
                 :permission_type="modify_item_roles_type"
                 :initial_value="modify_item_roles"
                 title="Roles that can modify the library item"
-                :apiRootUrl="apiRootUrl"
+                :api-root-url="apiRootUrl"
                 alert="User with <strong>any</strong> of these roles can modify name, metadata, and other information about this library item."
                 @input="setUserPermissionsPreferences"
             />
@@ -79,7 +79,7 @@
                 :id="dataset_id"
                 :permission_type="access_dataset_roles_type"
                 :initial_value="access_dataset_roles"
-                :apiRootUrl="apiRootUrl"
+                :api-root-url="apiRootUrl"
                 title="Roles that can access the dataset"
                 alert="User has to have <strong>all these roles</strong> in order to access this dataset.
                         Users without access permission <strong>cannot</strong> have other permissions on this dataset.
@@ -91,7 +91,7 @@
                 :id="dataset_id"
                 :permission_type="manage_dataset_roles_type"
                 :initial_value="manage_dataset_roles"
-                :apiRootUrl="apiRootUrl"
+                :api-root-url="apiRootUrl"
                 title="Roles that can manage permissions on the dataset"
                 alert="User with <strong>any</strong> of these roles can manage permissions of this dataset.
                         If you remove yourself you will lose the ability manage this dataset unless you are an admin."

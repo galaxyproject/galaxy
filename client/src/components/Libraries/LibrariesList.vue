@@ -8,7 +8,7 @@
                 <font-awesome-icon icon="plus" />
                 Library
             </b-button>
-            <SearchField :typingDelay="0" @updateSearch="searchValue($event)" />
+            <SearchField :typing-delay="0" @updateSearch="searchValue($event)" />
             <b-form-checkbox class="mr-1" @input="toggle_include_deleted($event)"> include deleted </b-form-checkbox>
             <b-form-checkbox class="mr-1" @input="toggle_exclude_restricted($event)">
                 exclude restricted
@@ -43,7 +43,7 @@
             ref="libraries_list"
             @filtered="onFiltered"
             :filter="filter"
-            :filterIncludedFields="filterOn"
+            :filter-included-fields="filterOn"
         >
             <template v-slot:cell(name)="row">
                 <textarea
@@ -61,8 +61,8 @@
                 <LibraryEditField
                     @toggleDescriptionExpand="toggleDescriptionExpand(row.item)"
                     :ref="`description-${row.item.id}`"
-                    :isExpanded="row.item.isExpanded"
-                    :isEditMode="row.item.editMode"
+                    :is-expanded="row.item.isExpanded"
+                    :is-edit-mode="row.item.editMode"
                     :text="row.item.description"
                 />
             </template>
@@ -70,8 +70,8 @@
                 <LibraryEditField
                     @toggleDescriptionExpand="toggleDescriptionExpand(row.item)"
                     :ref="`synopsis-${row.item.id}`"
-                    :isExpanded="row.item.isExpanded"
-                    :isEditMode="row.item.editMode"
+                    :is-expanded="row.item.isExpanded"
+                    :is-edit-mode="row.item.editMode"
                     :text="row.item.synopsis"
                 />
             </template>
