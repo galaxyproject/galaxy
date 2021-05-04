@@ -339,7 +339,9 @@ export default {
     },
     computed: {
         permissionsChangeRequired() {
-            if (!this.item.extra) return false;
+            if (!this.item.extra) {
+                return false;
+            }
             return (
                 this.item.extra && (this.item.extra.can_change.length > 0 || this.item.extra.cannot_change.length > 0)
             );
@@ -393,7 +395,9 @@ export default {
             this.showUrl = false;
         },
         assignItem(newItem) {
-            if (newItem.errors) this.errors = newItem.errors;
+            if (newItem.errors) {
+                this.errors = newItem.errors;
+            }
             this.item = newItem;
             if (!this.item.extra || newItem.errors.length > 0) {
                 this.item.extra = defaultExtra();
@@ -448,8 +452,11 @@ export default {
         },
         setSharing(action, user_id, share_option) {
             let user_ids = undefined;
-            if (Array.isArray(user_id)) user_ids = user_id;
-            else user_ids = user_id ? user_id.replace(/ /g, "").split(",") : undefined;
+            if (Array.isArray(user_id)) {
+                user_ids = user_id;
+            } else {
+                user_ids = user_id ? user_id.replace(/ /g, "").split(",") : undefined;
+            }
             if (
                 action === this.actions.share_with &&
                 user_ids &&
@@ -471,8 +478,11 @@ export default {
                 .then(({ data }) => {
                     this.errors = [];
                     this.assignItem(data);
-                    if (data.extra && data.extra.can_share) this.shareWithEmail = "";
-                    else this.shareWithEmail = user_id || "";
+                    if (data.extra && data.extra.can_share) {
+                        this.shareWithEmail = "";
+                    } else {
+                        this.shareWithEmail = user_id || "";
+                    }
                 })
                 .catch((error) => this.addError(error.response.data.err_msg));
         },
@@ -510,7 +520,7 @@ export default {
 .multiselect__tag {
     background: #25537b;
 }
-.multiselect__tag-icon:after{
+.multiselect__tag-icon:after {
     color: white;
 }
 .multiselect__tag-icon:focus,
