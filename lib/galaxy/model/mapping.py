@@ -22,6 +22,7 @@ from sqlalchemy import (
     MetaData,
     not_,
     Numeric,
+    PrimaryKeyConstraint,
     select,
     String, Table,
     TEXT,
@@ -220,6 +221,7 @@ model.HistoryAudit.table = Table(
     "history_audit", metadata,
     Column("history_id", Integer, ForeignKey("history.id"), primary_key=True, nullable=False),
     Column("update_time", DateTime, default=now, primary_key=True, nullable=False),
+    PrimaryKeyConstraint(sqlite_on_conflict='IGNORE')
 )
 
 model.HistoryUserShareAssociation.table = Table(

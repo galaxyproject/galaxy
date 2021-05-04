@@ -5,7 +5,7 @@ Add history audit table and associated triggers
 import datetime
 import logging
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, Table
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, PrimaryKeyConstraint, Table
 
 from galaxy.model.migrate.triggers import (
     history_update_time_field as old_triggers,  # rollback to old ones
@@ -25,6 +25,7 @@ AuditTable = Table(
     metadata,
     Column("history_id", Integer, ForeignKey("history.id"), primary_key=True, nullable=False),
     Column("update_time", DateTime, default=now, primary_key=True, nullable=False),
+    PrimaryKeyConstraint(sqlite_on_conflict='IGNORE')
 )
 
 

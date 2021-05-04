@@ -123,8 +123,7 @@ def _sqlite_install():
                 BEGIN
                     INSERT INTO history_audit (history_id, update_time)
                     SELECT NEW.{id_field}, strftime('%%Y-%%m-%%d %%H:%%M:%%f', 'now')
-                    WHERE NEW.{id_field} IS NOT NULL
-                    ON CONFLICT IGNORE;
+                    WHERE NEW.{id_field} IS NOT NULL;
                 END;
         """
 
