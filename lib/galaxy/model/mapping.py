@@ -1789,8 +1789,6 @@ simple_mapping(model.Dataset,
             (model.Dataset.table.c.id == model.HistoryDatasetAssociation.table.c.dataset_id)
             & (model.HistoryDatasetAssociation.table.c.purged == true())),
         viewonly=True),
-    library_associations=relation(model.LibraryDatasetDatasetAssociation,
-        primaryjoin=(model.Dataset.table.c.id == model.LibraryDatasetDatasetAssociation.table.c.dataset_id)),
     active_library_associations=relation(model.LibraryDatasetDatasetAssociation,
         primaryjoin=(
             (model.Dataset.table.c.id == model.LibraryDatasetDatasetAssociation.table.c.dataset_id)
@@ -2132,7 +2130,9 @@ mapper(model.LibraryDataset, model.LibraryDataset.table, properties=dict(
 ))
 
 mapper(model.LibraryDatasetDatasetAssociation, model.LibraryDatasetDatasetAssociation.table, properties=dict(
-    dataset=relation(model.Dataset),
+    dataset=relation(model.Dataset,
+        primaryjoin=(model.LibraryDatasetDatasetAssociation.table.c.dataset_id == model.Dataset.table.c.id),
+        backref='library_associations'),
     library_dataset=relation(model.LibraryDataset,
         foreign_keys=model.LibraryDatasetDatasetAssociation.table.c.library_dataset_id),
     # user=relation( model.User.mapper ),
