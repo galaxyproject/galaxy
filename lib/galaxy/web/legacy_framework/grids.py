@@ -399,7 +399,7 @@ class StateColumn(GridColumn):
         """Modify query to filter self.model_class by state."""
         if column_filter == "All":
             pass
-        elif column_filter in [state.value for state in self.model_class.states]:
+        elif column_filter in list(self.model_class.states):
             query = query.filter(self.model_class.state == column_filter)
         return query
 
