@@ -390,9 +390,6 @@ class DeletedColumn(GridColumn):
 class StateColumn(GridColumn):
     """
     Column that tracks and filters for items with state attribute.
-
-    IMPORTANT NOTE: self.model_class must have a states Bunch or dict if
-    this column type is used in the grid.
     """
 
     def get_value(self, trans, grid, item):
@@ -402,7 +399,7 @@ class StateColumn(GridColumn):
         """Modify query to filter self.model_class by state."""
         if column_filter == "All":
             pass
-        elif column_filter in [v for k, v in self.model_class.states.items()]:
+        elif column_filter in list(self.model_class.states):
             query = query.filter(self.model_class.state == column_filter)
         return query
 
@@ -410,9 +407,9 @@ class StateColumn(GridColumn):
         """Returns a list of accepted filters for this column."""
         all = GridColumnFilter('all', {self.key: 'All'})
         accepted_filters = [all]
-        for v in self.model_class.states.values():
-            args = {self.key: v}
-            accepted_filters.append(GridColumnFilter(v, args))
+        for state in self.model_class.states:
+            args = {self.key: state.value}
+            accepted_filters.append(GridColumnFilter(state.value, args))
         return accepted_filters
 
 
