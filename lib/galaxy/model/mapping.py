@@ -2450,7 +2450,7 @@ mapper(model.WorkflowStep, model.WorkflowStep.table, properties=dict(
         backref="workflow_steps"),
     annotations=relation(model.WorkflowStepAnnotationAssociation,
         order_by=model.WorkflowStepAnnotationAssociation.table.c.id,
-        backref="workflow_steps")
+        backref="workflow_step")
 ))
 
 mapper(model.WorkflowStepInput, model.WorkflowStepInput.table, properties=dict(
@@ -2753,7 +2753,7 @@ def annotation_mapping(annotation_class, **kwds):
 annotation_mapping(model.HistoryAnnotationAssociation)
 annotation_mapping(model.HistoryDatasetAssociationAnnotationAssociation)
 annotation_mapping(model.StoredWorkflowAnnotationAssociation)
-annotation_mapping(model.WorkflowStepAnnotationAssociation, workflow_step=model.WorkflowStep)
+annotation_mapping(model.WorkflowStepAnnotationAssociation)
 annotation_mapping(model.PageAnnotationAssociation)
 annotation_mapping(model.VisualizationAnnotationAssociation)
 annotation_mapping(model.HistoryDatasetCollectionAssociationAnnotationAssociation)
