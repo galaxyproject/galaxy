@@ -1761,7 +1761,7 @@ simple_mapping(model.HistoryDatasetAssociation,
         backref='history_tag_associations'),
     annotations=relation(model.HistoryDatasetAssociationAnnotationAssociation,
         order_by=model.HistoryDatasetAssociationAnnotationAssociation.table.c.id,
-        backref="hdas"),
+        backref="hda"),
     ratings=relation(model.HistoryDatasetAssociationRatingAssociation,
         order_by=model.HistoryDatasetAssociationRatingAssociation.table.c.id,
         backref="hda"),
@@ -2751,7 +2751,7 @@ def annotation_mapping(annotation_class, **kwds):
 
 
 annotation_mapping(model.HistoryAnnotationAssociation)
-annotation_mapping(model.HistoryDatasetAssociationAnnotationAssociation, hda=model.HistoryDatasetAssociation)
+annotation_mapping(model.HistoryDatasetAssociationAnnotationAssociation)
 annotation_mapping(model.StoredWorkflowAnnotationAssociation, stored_workflow=model.StoredWorkflow)
 annotation_mapping(model.WorkflowStepAnnotationAssociation, workflow_step=model.WorkflowStep)
 annotation_mapping(model.PageAnnotationAssociation)
