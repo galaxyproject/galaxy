@@ -61,7 +61,7 @@ const appendUpdateTime = (cfg = {}) => {
 
     return pipe(
         map((baseUrl) => {
-            if (!dateStore.has(baseUrl)) return baseUrl;
+            if (!dateStore.has(baseUrl)) {return baseUrl;}
             const lastRequest = dateStore.get(baseUrl);
             const parts = [baseUrl, `${dateFieldName}=${lastRequest.toISOString()}`];
             const separator = baseUrl.includes("?") ? "&" : "?";

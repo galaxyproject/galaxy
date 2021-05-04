@@ -274,7 +274,9 @@ export default {
                 const selected = await this.services.getFilteredFolderContents(this.folder_id, this.unselected);
                 this.$emit("setBusy", false);
                 return selected;
-            } else return this.selected;
+            } else {
+                return this.selected;
+            }
         },
         newFolder() {
             this.$emit("newFolder");

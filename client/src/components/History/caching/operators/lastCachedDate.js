@@ -28,7 +28,7 @@ import { find } from "../db/find";
 export const lastCachedDate = (db$) => pipe(
     find(db$),
     map((docs) => {
-        if (!docs.length) return null;
+        if (!docs.length) {return null;}
         const dates = docs.map((d) => d.cached_at);
         const maxDate = Math.max(...dates);
         return moment.utc(maxDate).toISOString();

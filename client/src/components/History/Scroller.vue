@@ -199,7 +199,9 @@ export default {
         // determines cursor from scrollTop, need to wait until after render to calculate
         // this stuff because it depends on DOM elements
         updateCursor() {
-            if (this.suppressEvents) return;
+            if (this.suppressEvents) {
+                return;
+            }
 
             const box = this.$refs.scrollSliderContainer;
             const slider = this.$refs.scrollSlider;
@@ -219,7 +221,9 @@ export default {
         adjustScrollTop(newCursor) {
             const box = this.$refs.scrollSliderContainer;
             const slider = this.$refs.scrollSlider;
-            if (!(box && slider)) return; // might be empty history panel
+            if (!(box && slider)) {
+                return;
+            } // might be empty history panel
 
             const maxHeight = slider.clientHeight - box.clientHeight;
 
@@ -275,7 +279,9 @@ export default {
 
         scrollBarWidth(refName) {
             const listing = this.$refs?.[refName];
-            if (!listing) return 0;
+            if (!listing) {
+                return 0;
+            }
             // offset width includes scrollbar, clientWidth does not
             return listing.offsetWidth - listing.clientWidth;
         },

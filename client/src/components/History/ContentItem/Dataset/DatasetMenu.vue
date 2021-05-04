@@ -241,7 +241,9 @@ export default {
 
         viewData() {
             const id = this.dataset.id;
-            if (!id) return;
+            if (!id) {
+                return;
+            }
             this.useGalaxy((Galaxy) => {
                 if (Galaxy.frame && Galaxy.frame.active) {
                     Galaxy.frame.addDataset(id);

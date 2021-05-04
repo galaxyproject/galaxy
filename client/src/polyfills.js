@@ -38,7 +38,7 @@ import _ from "underscore";
         window.cancelRequestAnimationFrame = window[`${vendors[x]}CancelRequestAnimationFrame`];
     }
 
-    if (!window.requestAnimationFrame)
+    if (!window.requestAnimationFrame) {
         window.requestAnimationFrame = (callback, element) => {
             var currTime = new Date().getTime();
             var timeToCall = Math.max(0, 16 - (currTime - lastTime));
@@ -48,11 +48,13 @@ import _ from "underscore";
             lastTime = currTime + timeToCall;
             return id;
         };
+    }
 
-    if (!window.cancelAnimationFrame)
+    if (!window.cancelAnimationFrame) {
         window.cancelAnimationFrame = (id) => {
             window.clearTimeout(id);
         };
+    }
 
     // ------------------------------------------------------------------ can't/won't polyfill
     var features = [

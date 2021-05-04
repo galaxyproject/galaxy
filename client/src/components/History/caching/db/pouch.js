@@ -165,7 +165,7 @@ export const cacheItem = (db$, returnDoc = false) => pipe(
 
             // ignore if what we're caching is the same as what's in there
             const same = deepEqual(item, existingFields);
-            if (same) return false;
+            if (same) {return false;}
 
             return {
                 ...existing,

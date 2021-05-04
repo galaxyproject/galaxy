@@ -260,7 +260,9 @@ export default {
                     Toast.success("Library has been marked deleted.");
                     deletedLib.deleted = true;
                     this.toggleEditMode(deletedLib);
-                    if (!this.include_deleted) this.hideOn("deleted", false);
+                    if (!this.include_deleted) {
+                        this.hideOn("deleted", false);
+                    }
                 },
                 (error) => onError(error)
             );
@@ -298,8 +300,11 @@ export default {
         hideOn(property, value) {
             const filtered = [];
             this.librariesList = this.librariesList.filter((lib) => {
-                if (lib[property] === value) return lib;
-                else filtered.push(lib);
+                if (lib[property] === value) {
+                    return lib;
+                } else {
+                    filtered.push(lib);
+                }
             });
             return filtered;
         },
