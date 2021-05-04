@@ -363,16 +363,14 @@ export default {
         onChange(newSlug) {
             this.showUrl = true;
             const requestUrl = `${this.slugUrl}`;
+            console.log("requestUrl", requestUrl);
+            console.log("this.slugUrl", this.slugUrl);
             axios
                 .put(requestUrl, {
                     new_slug: newSlug,
                 })
-                .then((response) => {
-                    this.errMsg = null;
-                    this.assignItem(response.data);
-                    this.item.username_and_slug = `${this.itemSlugParts[0]}${newSlug}`;
-                })
-                .catch((error) => this.addError(error.response.data.err_msg));
+                .then(() => (this.item.username_and_slug = `${this.itemSlugParts[0]}${newSlug}`))
+                .catch((error) => this.addError(error));
         },
         onImportable(importable) {
             if (importable) {
