@@ -362,13 +362,11 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                                "http": {
                                    "paths": [{
                                        "backend": {
-                                           "serviceName": "{}-{}".format(self.__produce_k8s_job_prefix(),
-                                                                         self.__force_label_conformity(ajs.job_wrapper.get_id_tag())),
-                                           "servicePort": int(ep["tool_port"])
-                                           # "service": {
-                                           #     "name": "job-{}-{}".format(self.__force_label_conformity(ajs.job_wrapper.get_id_tag()), p),
-                                           #     "port": { "number": int(p)}
-                                           # }
+                                           "service": {
+                                               "name": "{}-{}".format(self.__produce_k8s_job_prefix(),
+                                                                      self.__force_label_conformity(ajs.job_wrapper.get_id_tag())),
+                                               "port": { "number": int(ep["tool_port"]) }
+                                           }
                                        },
                                        "path": ep.get("entry_path", '/'),
                                        "pathType": "Prefix"
