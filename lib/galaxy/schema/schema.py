@@ -148,6 +148,12 @@ UuidField: UUID4 = Field(
     description="Universal unique identifier for this dataset.",
 )
 
+GenomeBuildField: str = Field(
+    "?",
+    title="Genome Build",
+    description="TODO",
+)
+
 
 class Model(BaseModel):
     """Base model definition with common configuration used by all derived models."""
@@ -350,11 +356,7 @@ class HDADetailed(HDASummary):
         deprecated=False  # TODO Should this field be deprecated in favor of model_class?
     )
     accessible: bool = AccessibleField
-    genome_build: str = Field(
-        "?",
-        title="Genome Build",
-        description="TODO",
-    )
+    genome_build: str = GenomeBuildField
     misc_info: str = Field(
         ...,
         title="Miscellaneous Information",
@@ -573,6 +575,129 @@ class HDCADetailed(HDCASummary):
     """History Dataset Collection Association detailed information."""
     populated: bool = PopulatedField
     elements: List[DCESummary] = ElementsField
+
+
+class HistorySummary(Model):
+    """History summary information."""
+    model_class: str = ModelClassField(HDCA_MODEL_CLASS_NAME)
+    id: EncodedDatabaseIdField = EncodedEntityIdField
+    name: str = Field(
+        ...,
+        title="Name",
+        description="The name of the history.",
+    )
+    deleted: bool = Field(
+        ...,
+        title="Deleted",
+        description="Whether this item is marked as deleted.",
+    )
+    purged: bool = Field(
+        ...,
+        title="Purged",
+        description="Whether this item has been permanently removed.",
+    )
+    url: AnyUrl = UrlField
+    published: bool = Field(
+        ...,
+        title="Published",
+        description="Whether this resource is currently publicly available to all users.",
+    )
+    annotation: Optional[str] = AnnotationField
+    tags: TagCollection
+
+
+class HistoryActiveContentCounts(Model):
+    """Contains the number of active, deleted or hidden items in a History."""
+    active: int = Field(
+        ...,
+        title="Active",
+        description="Number of active datasets.",
+    )
+    hidden: int = Field(
+        ...,
+        title="Hidden",
+        description="Number of hidden datasets.",
+    )
+    deleted: int = Field(
+        ...,
+        title="Deleted",
+        description="Number of deleted datasets.",
+    )
+
+
+class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, which seems the default
+    """History detailed information."""
+    contents_url: AnyUrl = Field(
+        ...,
+        title="Contents URL",
+        description="The relative URL to access the contents of this History.",
+    )
+    size: int = Field(
+        ...,
+        title="Size",
+        description="The total size of the contents of this history in bytes.",
+    )
+    user_id: EncodedDatabaseIdField = Field(
+        ...,
+        title="User ID",
+        description="The encoded ID of the user that owns this History.",
+    )
+    create_time: datetime = CreateTimeField
+    update_time: datetime = UpdateTimeField
+    importable: bool = Field(
+        ...,
+        title="Importable",
+        description="Whether this History can be imported by other users with a shared link.",
+    )
+    slug: Optional[str] = Field(
+        None,
+        title="Slug",
+        description="Part of the URL to uniquely identify this History by link in a readable way.",
+    )
+    username_and_slug: Optional[str] = Field(
+        None,
+        title="Username and slug",
+        description="The relative URL in the form of /u/{username}/h/{slug}",
+    )
+    genome_build: str = GenomeBuildField
+    contents_active: HistoryActiveContentCounts = Field(
+        ...,
+        title="Active Contents",
+        description="Contains the number of active, deleted or hidden items in the History.",
+    )
+    hid_counter: int = Field(
+        ...,
+        title="HID Counter",
+        description="TODO",
+    )
+
+
+class HistoryBeta(HistoryDetailed):
+    """History detailed information used in the new Beta History."""
+    annotation: Optional[str] = AnnotationField
+    empty: bool = Field(
+        ...,
+        title="Empty",
+        description="Whether this History has any content.",
+    )
+    nice_size: str = Field(
+        ...,
+        title="Nice Size",
+        description="Human-readable size of the contents of this history.",
+        example="95.4 MB"
+    )
+    purged: bool = Field(
+        ...,
+        title="Purged",
+        description="Whether this History has been permanently removed.",
+    )
+    state: Dataset.states = Field(
+        ...,
+        title="State",
+        description="The current state of the History based on the states of the datasets it contains.",
+    )
+    tags: TagCollection
+    url: AnyUrl = UrlField
 
 
 class HDCJobStateSummary(Model):
