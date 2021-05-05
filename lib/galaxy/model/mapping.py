@@ -2531,7 +2531,7 @@ mapper(model.StoredWorkflowMenuEntry, model.StoredWorkflowMenuEntry.table, prope
 
 mapper(model.WorkflowInvocation, model.WorkflowInvocation.table, properties=dict(
     history=relation(model.History, backref=backref('workflow_invocations', uselist=True)),
-    input_parameters=relation(model.WorkflowRequestInputParameter),
+    input_parameters=relation(model.WorkflowRequestInputParameter, backref='workflow_invocation'),
     step_states=relation(model.WorkflowRequestStepState),
     input_step_parameters=relation(model.WorkflowRequestInputStepParameter),
     input_datasets=relation(model.WorkflowRequestToInputDatasetAssociation),
@@ -2568,8 +2568,7 @@ simple_mapping(model.WorkflowInvocationStep,
 )
 
 
-simple_mapping(model.WorkflowRequestInputParameter,
-    workflow_invocation=relation(model.WorkflowInvocation))
+simple_mapping(model.WorkflowRequestInputParameter)
 
 simple_mapping(model.WorkflowRequestStepState,
     workflow_invocation=relation(model.WorkflowInvocation),
