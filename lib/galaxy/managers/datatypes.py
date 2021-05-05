@@ -15,8 +15,6 @@ from galaxy.datatypes._schema import (
 )
 from galaxy.datatypes.data import Data
 from galaxy.datatypes.registry import Registry
-from galaxy.managers.collections import DatasetCollectionManager
-
 
 def view_index(
     datatypes_registry: Registry,
@@ -90,39 +88,6 @@ def view_converters(datatypes_registry: Registry) -> DatatypeConverterList:
                 'tool_id': targets[target_type].id,
             })
     return parse_obj_as(DatatypeConverterList, converters)
-
-
-def get_converters_for_collection(trans, id, datatypes_registry: Registry, collection_manager: DatasetCollectionManager, instance_type="history"):
-    dataset_collection_instance = collection_manager.get_dataset_collection_instance(
-        trans,
-        id=id,
-        instance_type=instance_type,
-        check_ownership=True
-    )
-    dbkeys_and_extensions = dataset_collection_instance.dataset_dbkeys_and_extensions_summary
-    print("********************************************************** " + str(dbkeys_and_extensions))
-    suitable_converters = set()
-    first_time = True
-    # TODO error checking
-    for datatype in dbkeys_and_extensions[1]:
-        new_converters = []
-        new_converters = datatypes_registry.get_converters_by_datatype(datatype)
-        print("********************************************************************" + str(new_converters))
-        set_of_new_converters = set(new_converters.values())
-        if (first_time is True):
-            suitable_converters = set_of_new_converters
-            first_time = False
-        else:
-            suitable_converters = suitable_converters.intersection(set_of_new_converters)
-        print("********************************************sc******" + str(suitable_converters))
-    suitable_tool_ids = list()
-    for tool in suitable_converters:
-        tool_info = {"tool_id": tool.id, "name": tool.name}
-        suitable_tool_ids.append(tool_info)
-
-    print("************toolIDs*************" + str(suitable_tool_ids))
-    return suitable_tool_ids
-
 
 def view_edam_formats(datatypes_registry: Registry) -> Dict[str, str]:
     return datatypes_registry.edam_formats

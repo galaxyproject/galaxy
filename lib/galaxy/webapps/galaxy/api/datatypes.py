@@ -18,7 +18,6 @@ from galaxy.managers.datatypes import (
     DatatypeDetails,
     DatatypesCombinedMap,
     DatatypesMap,
-    get_converters_for_collection,
     view_converters,
     view_edam_data,
     view_edam_formats,
@@ -117,15 +116,6 @@ class FastAPIDatatypes:
         return view_converters(self.datatypes_registry)
 
     @router.get(
-        '/api/datatypes/suitable_converters',
-        summary="Returns the list of converters that are suitable for an array of datatypes",
-        response_description="List of suitable converters"
-    )
-    async def suitable_converters(self, trans, id, instance_type='history') -> List[dict]:
-        """Gets the list of suitable converters."""
-        return get_converters_for_collection(trans, id, self.datatypes_registry, self.collection_manager, instance_type)
-
-    @router.get(
         '/api/datatypes/edam_formats',
         summary="Returns a dictionary/map of datatypes and EDAM formats",
         response_description="Dictionary/map of datatypes and EDAM formats"
@@ -190,10 +180,6 @@ class DatatypesController(BaseGalaxyAPIController):
     @expose_api_anonymous_and_sessionless
     def converters(self, trans, **kwd):
         return view_converters(self.datatypes_registry)
-
-    @expose_api_anonymous_and_sessionless
-    def suitable_converters(self, trans, id, instance_type='history', **kwd):
-        return get_converters_for_collection(trans, id, self.datatypes_registry, self.collection_manager, instance_type)
 
     @expose_api_anonymous_and_sessionless
     def edam_formats(self, trans, **kwds):

@@ -32,7 +32,7 @@
                         </button>
                     </div>
                 </div>
-                <b>{{ l("Convterter Tool: ") }}</b>
+                <b>{{ l("Converter Tool: ") }}</b>
                 <multiselect
                     v-model="chosenConverter"
                     deselect-label="Can't remove this value"
@@ -42,33 +42,6 @@
                     :searchable="true"
                     :allow-empty="true"
                 >
-                </multiselect>
-            </b-tab>
-            <b-tab>
-                <template v-slot:title> <font-awesome-icon icon="database" /> &nbsp; {{ l("Datatype") }}</template>
-                <div class="alert alert-secondary" role="alert">
-                    <div class="float-left">Change datatype of all elements in collection</div>
-                    <div class="text-right">
-                        <button
-                            class="save-collection-edit btn btn-primary"
-                            @click="clickedSave('file_ext', extension)"
-                            :disabled="extension.id == datatypeFromElements"
-                        >
-                            {{ l("Save") }}
-                        </button>
-                    </div>
-                </div>
-                <b>{{ l("Datatype: ") }}</b>
-                <multiselect
-                    v-model="extension"
-                    deselect-label="Can't remove this value"
-                    track-by="id"
-                    label="text"
-                    :options="extensions"
-                    :searchable="true"
-                    :allow-empty="false"
-                >
-                    {{ extension.text }}
                 </multiselect>
             </b-tab>
         </b-tabs>
@@ -177,7 +150,7 @@ export default {
             this.selectedExtension = this.extensions.find((element) => element.id == this.datatypeFromElements);
         },
         getConverterList: async function () {
-            axios.get(prependPath("/api/datatypes/suitable_converters/" + this.collection_id)).then((response) => {
+            axios.get(prependPath("/api/dataset_collections/suitable_converters/" + this.collection_id)).then((response) => {
                 this.suitableConverters = response.data;
             });
         },

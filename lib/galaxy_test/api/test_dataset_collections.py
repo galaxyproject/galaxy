@@ -356,6 +356,21 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         assert len(offset_contents) == 1
         assert offset_contents[0]['element_index'] == 1
 
+    def test_get_suitable_converters_single_datatype(self):
+        # create collection with a single datatype (2)
+        # get converters
+        # assert they match what should be allowed
+
+    def test_get_suitable_converters_different_datatypes_matches(self):
+        # create collection with a single datatype
+        # get converters
+        # assert they match what should be allowed
+
+    def test_get_suitable_converters_different_datatypes_no_matches(self):
+        # create collection with a single datatype
+        # get converters
+        # assert they match what should be allowed
+
     def _compare_collection_contents_elements(self, contents_elements, hdca_elements):
         # compare collection api results to existing hdca element contents
         fields = ['element_identifier', 'element_index', 'element_type', 'id', 'model_class']

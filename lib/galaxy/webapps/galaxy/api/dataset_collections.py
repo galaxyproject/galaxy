@@ -3,12 +3,13 @@ from logging import getLogger
 import routes
 
 from galaxy import exceptions
+from galaxy.datatypes.registry import Registry
 from galaxy.managers.base import decode_id
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.collections_util import (
     api_payload_to_create_params,
     dictify_dataset_collection_instance,
-    dictify_element_reference
+    dictify_element_reference,
 )
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.hdcas import HDCAManager
@@ -27,6 +28,7 @@ class DatasetCollectionsController(
     history_manager: HistoryManager = depends(HistoryManager)
     hdca_manager: HDCAManager = depends(HDCAManager)
     collection_manager: DatasetCollectionManager = depends(DatasetCollectionManager)
+    datatypes_registry: Registry = depends(Registry)
 
     @expose_api
     def index(self, trans, **kwd):
@@ -88,7 +90,6 @@ class DatasetCollectionsController(
 
         Returns dbkey/extension for collection elements
         """
-
         dataset_collection_instance = self.__service.get_dataset_collection_instance(
             trans,
             id=id,
@@ -96,6 +97,15 @@ class DatasetCollectionsController(
             check_ownership=True
         )
         return dataset_collection_instance.to_dict(view="dbkeysandextensions")
+
+    @expose_api
+    def suitable_converters(self, trans: ProvidesHistoryContext, id, instance_type='history', **kwds):
+        """
+        GET /api/dataset_collections/{hdca_id}/suitable_converters
+
+        Returns suitable converters for all datatypes in collection
+        """
+        return self.collection_manager.get_converters_for_collection(trans, id, self.datatypes_registry, instance_type)
 
     @expose_api
     def show(self, trans: ProvidesHistoryContext, id, instance_type='history', **kwds):
