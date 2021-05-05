@@ -1923,6 +1923,7 @@ mapper(model.User, model.User.table, properties=dict(
         viewonly=True,
         order_by=desc(model.History.update_time)),
     galaxy_sessions=relation(model.GalaxySession,
+        backref="user",
         order_by=desc(model.GalaxySession.table.c.update_time)),
     stored_workflow_menu_entries=relation(model.StoredWorkflowMenuEntry,
         primaryjoin=(
@@ -2412,8 +2413,6 @@ mapper(model.Event, model.Event.table, properties=dict(
 mapper(model.GalaxySession, model.GalaxySession.table, properties=dict(
     histories=relation(model.GalaxySessionToHistoryAssociation),
     current_history=relation(model.History),
-    # user=relation( model.User.mapper ) ) )
-    user=relation(model.User)
 ))
 
 mapper(model.GalaxySessionToHistoryAssociation, model.GalaxySessionToHistoryAssociation.table, properties=dict(
