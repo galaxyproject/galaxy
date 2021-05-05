@@ -115,6 +115,7 @@
                                         track-by="id"
                                         @search-change="searchChanged"
                                         :internal-search="false"
+                                        placeholder="Please enter user email"
                                     >
                                         <template slot="tag" slot-scope="{ option, remove }">
                                             <span class="multiselect__tag">
@@ -125,7 +126,6 @@
                                                     tabindex="1"
                                                     class="multiselect__tag-icon"
                                                 ></i>
-                                                <!-- <font-awesome-icon :style="{ color: '#f4a3a5' }" @click="remove(option)" :icon="['fas', 'times']" />-->
                                             </span>
                                         </template>
 
@@ -487,7 +487,7 @@ export default {
                 .catch((error) => this.addError(error.response.data.err_msg));
         },
         searchChanged(searchValue) {
-            if (searchValue === "") {
+            if (searchValue.length < 3) {
                 this.usersList = [];
             } else {
                 axios
