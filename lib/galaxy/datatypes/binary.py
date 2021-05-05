@@ -1466,6 +1466,9 @@ class H5MLM(H5):
     file_ext = "h5mlm"
     URL = "https://github.com/goeckslab/Galaxy-ML"
 
+    max_peek_size = 1000      # 1 KB
+    max_preview_size = 1000000   # 1 MB
+
     MetadataElement(name="hyper_params", desc="Hyperparameter File", param=FileParameter, file_ext="tabular", readonly=True, no_value=None, visible=False, optional=True)
 
     def set_meta(self, dataset, overwrite=True, **kwd):
@@ -1516,7 +1519,8 @@ class H5MLM(H5):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = self.get_repr(dataset.file_name)
+            repr_ = self.get_repr(dataset.file_name)
+            dataset.peek = repr_[:self.max_peek_size]
             dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = 'file does not exist'
@@ -1544,8 +1548,10 @@ class H5MLM(H5):
 
         config = self.get_config_string(dataset.file_name)
         rval['Config'] = json.loads(config)
+        rval = json.dumps(rval, sort_keys=True, indent=2)
+        rval = rval[:self.max_preview_size]
 
-        return "<pre>%s</pre>" % json.dumps(rval, sort_keys=True, indent=2)
+        return "<pre>%s</pre>" % rval
 
 
 class Scf(Binary):
