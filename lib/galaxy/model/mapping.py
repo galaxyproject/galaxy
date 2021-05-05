@@ -1842,7 +1842,6 @@ mapper(model.ImplicitlyConvertedDatasetAssociation, model.ImplicitlyConvertedDat
 ))
 
 mapper(model.History, model.History.table, properties=dict(
-    galaxy_sessions=relation(model.GalaxySessionToHistoryAssociation),
     datasets=relation(model.HistoryDatasetAssociation,
         backref="history",
         order_by=asc(model.HistoryDatasetAssociation.table.c.hid)),
@@ -2417,7 +2416,7 @@ mapper(model.GalaxySession, model.GalaxySession.table, properties=dict(
 
 mapper(model.GalaxySessionToHistoryAssociation, model.GalaxySessionToHistoryAssociation.table, properties=dict(
     galaxy_session=relation(model.GalaxySession),
-    history=relation(model.History)
+    history=relation(model.History, backref='galaxy_sessions')
 ))
 
 mapper(model.Workflow, model.Workflow.table, properties=dict(
