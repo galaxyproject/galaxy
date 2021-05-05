@@ -1,0 +1,27 @@
+<tool id="applause_detection_to_avalon_xml" name="Applause Detection To Avalon XML" version="1.0.0">
+  <description>Converts AMP Applause Detection Segmentation to Avalon Structural Metadata XML</description>
+  <requirements>
+	<requirement type="package" version="3.8">python</requirement>
+  </requirements>
+  <command detect_errors="exit_code">
+  	'$__tool_directory__/applause_detection_to_avalon_xml.py' '$amp_applause_segments' '$context_json' '$avalon_applause_sme'
+  </command>
+  <inputs>
+    <param name="amp_applause_segments" type="data" format="segment" label="Input Applause Segments" help="Input applause detection segmentation"/>
+    <param name="context_json" type="text" label="HMGM Task Context" help="JSON string containing context information needed for creating a MGM task" >
+    	<sanitizer sanitize="false">
+    	</sanitizer>
+	</param>
+  </inputs>
+  <outputs>
+    <data name="avalon_applause_sme" format="xml" label="Avalon Applause Structural Metadata"/>
+  </outputs>
+  <tests>
+  </tests>
+  <help>
+.. class:: infomark
+
+Converts the AMP Applause Detection Segments to the Avalon Structural Metadata XML
+
+  </help>
+</tool>

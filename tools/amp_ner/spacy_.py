@@ -5,6 +5,7 @@ import os.path
 import json
 import shutil
 import spacy
+import string
 import subprocess
 import sys
 import tempfile
@@ -66,7 +67,7 @@ def main():
             for wordPos in range(lastPos, sttWords):
                 word = stt.results.words[wordPos]
                 # If it matches, set the time offset.
-                if word.text == entityPart:
+                if clean_entity_word(word.text) == clean_entity_word(entityPart):
                     # Keep track of last position to save iterations
                     lastPos = wordPos
                     # Set start if we haven't set it yet
@@ -84,6 +85,12 @@ def main():
 # Standardize ignore list text
 def clean_text(text):
     return text.lower().strip()
+
+def clean_entity_word(entity_word):
+    cleaned_word = entity_word
+    #if(entity_word.endswith('\'s')):
+    #    cleaned_word = entity_word.replace('\'s', '')
+    return cleaned_word.translate(str.maketrans('', '', string.punctuation))
 
 # Split a comma separated string, standardize input, and return list
 def split_ignore_list(ignore_list_string):

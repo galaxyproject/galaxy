@@ -26,6 +26,7 @@
     <tool file="amp_segment/adjust_transcript_timestamps.xml"/>
     <tool file="amp_segment/adjust_diarization_timestamps.xml"/>
     <tool file="amp_segment/applause_detection.xml"/>
+    <tool file="amp_segment/applause_detection_to_avalon_xml.xml"/>
   </section>
 
   <section id="speech_to_text" name="Speech to Text">

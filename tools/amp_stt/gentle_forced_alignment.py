@@ -13,6 +13,7 @@ import uuid
 sys.path.insert(0, os.path.abspath('../../../../../tools/amp_util'))
 import mgm_utils
 
+
 def main():
 	(input_audio_file, input_transcript_file, json_file) = sys.argv[1:4]
 	try:
@@ -80,7 +81,7 @@ def write_amp_json(temp_gentle_output, original_transcript, amp_transcript_outpu
 		output["results"]["transcript"] = original_transcript["results"]["transcript"]
 		output["results"]["words"] = list()
 		previous_end = 0
-		prepend = ""
+		last_success_index = 0
 		for word in gentle_output["words"]:
 			# Make sure we have all the data
 			if word["case"] == 'success':
@@ -90,48 +91,6 @@ def write_amp_json(temp_gentle_output, original_transcript, amp_transcript_outpu
 							"type": "pronunciation", 
 							"start": word["start"], 
 							"end": word["end"], 
-							"text": prepend + word["word"],
-							"score": {
-									"type": "confidence", 
-									"scoreValue": 1.0
-							} 
-						}
-					)
-				prepend = ""
-			else:
-				word_index = gentle_output["words"].index(word)
-				next_success_index = find_next_success(gentle_output, word_index)
-				# If the next word is a success, append this word to the next
-				if(next_success_index == word_index + 1):
-					prepend = word["word"] + " "
-					print("Prepending word " + prepend  + " at index " + str(word_index))
-				else:
-					avg_time = 0
-					# If we found another success
-					if(next_success_index > word_index):
-						# Average the times based on how many words in between
-						next_success_word = gentle_output["words"][next_success_index]
-						skips_ahead = (next_success_index - word_index)
-						avg_time = (next_success_word["start"] - previous_end)/skips_ahead
-						print("Averaging time from next success")
-					else:
-						duration = original_transcript["results"]["duration"]
-						skips_ahead = (len(gentle_output["words"]) - word_index)
-						avg_time = duration/skips_ahead
-						print("Averaging time from end of file")
-					
-					# From the previous words end (last recorded), skip time ahead
-					time = previous_end + avg_time
-					previous_end = time
-					print(word["word"]  + " at index " + str(word_index))
-					print("Avg_time " + str(avg_time)  + " Skips ahead " + str(skips_ahead))
-
-					# Add the word to the results
-					output["results"]["words"].append(
-						{
-							"type": "pronunciation", 
-							"start": time, 
-							"end": time, 
 							"text": word["word"],
 							"score": {
 									"type": "confidence", 
@@ -139,9 +98,46 @@ def write_amp_json(temp_gentle_output, original_transcript, amp_transcript_outpu
 							} 
 						}
 					)
-					
+			else:
+				word_index = gentle_output["words"].index(word)
+				next_success_index = find_next_success(gentle_output, word_index)
+				avg_time = 0
+				# If we found another success
+				if(next_success_index > word_index):
+					# Average the times based on how many words in between
+					next_success_word = gentle_output["words"][next_success_index]
+					skips_ahead = (next_success_index - last_success_index)
+					avg_time = (next_success_word["start"] - previous_end)/skips_ahead
+					print("Averaging time from next success")
+				else:
+					duration = original_transcript["results"]["duration"]
+					skips_ahead = (len(gentle_output["words"]) - word_index) + 1
+					avg_time = (duration - previous_end)/skips_ahead
+					print("Averaging time from end of file")
+				
+				# From the previous words end (last recorded), skip time ahead
+				time = previous_end + avg_time
+				previous_end = time
+				print(word["word"]  + " at index " + str(word_index))
+				print("Avg_time " + str(avg_time)  + " Skips ahead " + str(skips_ahead))
 
-			
+				# Add the word to the results
+				output["results"]["words"].append(
+					{
+						"type": "pronunciation", 
+						"start": time, 
+						"end": time, 
+						"text": word["word"],
+						"score": {
+								"type": "confidence", 
+								"scoreValue": 1.0
+						} 
+					}
+				)
+			last_success_index = gentle_output["words"].index(word)
+								
 		mgm_utils.write_json_file(output, amp_transcript_output)
+		
+		
 if __name__ == "__main__":
 	main()

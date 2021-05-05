@@ -10,6 +10,7 @@ import sys
 import traceback
 import tempfile
 import uuid
+import string
 import time
 import tarfile
 from datetime import datetime
@@ -91,22 +92,31 @@ def main():
             entityParts = text.split()
 
             # For each word in the entity, find the corresponding word in the STT word list
+            foundWordPos = None
             for entityPart in entityParts:
                 for wordPos in range(lastPos, sttWords):
                     # If it matches, set the time offset.
                     word = stt.results.words[wordPos]
-                    if clean_entity_word(word.text) == entityPart:
+                    if clean_entity_word(word.text) == clean_entity_word(entityPart):
                         # Keep track of last position to save iterations
-                        lastPos = wordPos
+                        foundWordPos = wordPos
                         # Set start if we haven't set it yet
-                        if start == None:
+                        if start is None:
                             start = word.start
                         end = word.end
                         break
                     else:
                         start = None
                         end = None
+                        foundWordPos = None
 
+            if start is not None:
+                lastPos = foundWordPos
+            else:
+                print("Could not find word")
+                print(text)
+                print(entityParts)
+                print(lastPos)
             if clean_text(entity_type) not in ignore_cats_list and start is not None:
                 ner.addEntity(entity_type, text, None, None, "relevance", float(entity["Score"]), start, None)  #AMP-636 removed startOffset=endOffset=end=None
 
@@ -127,8 +137,8 @@ def create_temp_transcript_file(jobName, transcript):
 def clean_entity_word(entity_word):
     cleaned_word = entity_word
     if(entity_word.endswith('\'s')):
-        cleaned_word = entity_word.replace('\'s', '')
-    return cleaned_word
+       cleaned_word = entity_word.replace('\'s', '')
+    return cleaned_word.translate(str.maketrans('', '', string.punctuation))
 
 def download_from_s3(output_uri, base_uri, bucket_name):
     tarFileName = "comprehend_output.tar.gz"
