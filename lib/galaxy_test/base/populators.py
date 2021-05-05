@@ -463,6 +463,11 @@ class BaseDatasetPopulator(BasePopulator):
             **kwds
         )
 
+    def build_tool_state(self, tool_id: str, history_id: str):
+        response = self._post(f"tools/{tool_id}/build?history_id={history_id}")
+        response.raise_for_status()
+        return response.json()
+
     def run_tool(self, tool_id: str, inputs: dict, history_id: str, assert_ok: bool = True, **kwds):
         payload = self.run_tool_payload(tool_id, inputs, history_id, **kwds)
         tool_response = self.tools_post(payload)

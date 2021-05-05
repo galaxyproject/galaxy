@@ -92,10 +92,8 @@ class LibraryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
                     ld.api_type = 'file'
                     rval.append(ld)
             return rval
-        try:
-            decoded_library_id = self.decode_id(library_id)
-        except Exception:
-            raise exceptions.MalformedId('Malformed library id ( %s ) specified, unable to decode.' % library_id)
+
+        decoded_library_id = self.decode_id(library_id)
         try:
             library = trans.sa_session.query(trans.app.model.Library).filter(trans.app.model.Library.table.c.id == decoded_library_id).one()
         except MultipleResultsFound:

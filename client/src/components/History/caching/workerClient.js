@@ -18,7 +18,9 @@ const thread$ = threadInstance$.pipe(shareReplay(1));
 
 const buildThread = async (cfg) => {
     const thread = await spawn(new CacheWorker());
-    if (!thread) throw new MissingWorkerError();
+    if (!thread) {
+        throw new MissingWorkerError();
+    }
 
     // Configure the worker This is sending in settings that are derived from
     // galaxy's absurd global application instance or written directly to

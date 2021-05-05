@@ -49,7 +49,9 @@ export function make_spin_state(
 /* Log/display an error when spinning fails. */
 export function spin_error(console_msg, user_msg, clear) {
     console.log(console_msg);
-    if (clear) clear_main_area();
+    if (clear) {
+        clear_main_area();
+    }
     if (typeof user_msg == "string") {
         Toast.clear();
         Toast.error(user_msg, "Error", {
@@ -102,14 +104,20 @@ export function spin(url, bool_response, success_callback, timeout_callback, err
                         spin_state.ajax_timeout += spin_state.ajax_timeout_step;
                     }
                     spin_state.count++;
-                    if (!timeout_callback(jqxhr, status, error)) spin_again(spin_state);
+                    if (!timeout_callback(jqxhr, status, error)) {
+                        spin_again(spin_state);
+                    }
                 } else {
                     spin_state.count++;
-                    if (!error_callback(jqxhr, status, error)) spin_again(spin_state);
+                    if (!error_callback(jqxhr, status, error)) {
+                        spin_again(spin_state);
+                    }
                 }
             },
         };
-        if (bool_response) ajax_params.dataType = "json";
+        if (bool_response) {
+            ajax_params.dataType = "json";
+        }
         $.ajax(ajax_params);
     };
     console.log(`Setting up new spinner for ${spin_state.type} on ${url}`);

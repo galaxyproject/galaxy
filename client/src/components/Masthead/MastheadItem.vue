@@ -126,7 +126,9 @@ export default {
             return this.galaxyIframe.contentDocument.addEventListener("click", this.hideDropdown);
         },
         hideDropdown() {
-            if (this.$refs.dropdown) this.$refs.dropdown.hide();
+            if (this.$refs.dropdown) {
+                this.$refs.dropdown.hide();
+            }
         },
         open(tab, event) {
             if (tab.onclick) {

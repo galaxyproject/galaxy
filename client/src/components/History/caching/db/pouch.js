@@ -7,7 +7,7 @@ import moment from "moment";
 import deepEqual from "deep-equal";
 import { defer, pipe, from } from "rxjs";
 import { tap, filter, mergeMap, reduce, shareReplay } from "rxjs/operators";
-import { needs } from "../operators/needs";
+import { needs } from "utils/observable";
 import { dasherize } from "underscore.string";
 
 import PouchDB from "pouchdb";
@@ -165,7 +165,7 @@ export const cacheItem = (db$, returnDoc = false) => pipe(
 
             // ignore if what we're caching is the same as what's in there
             const same = deepEqual(item, existingFields);
-            if (same) return false;
+            if (same) {return false;}
 
             return {
                 ...existing,

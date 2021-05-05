@@ -1,9 +1,8 @@
 import imp
 import logging
 import os
-from datetime import datetime, timedelta
 
-from sqlalchemy import and_, false, or_
+from sqlalchemy import false
 
 from galaxy import (
     model,
@@ -1518,58 +1517,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             trans.app.security_agent.set_entity_user_associations(users=[user], roles=in_roles, groups=in_groups)
             trans.sa_session.refresh(user)
             return {'message': f"User '{user.email}' has been updated with {len(in_roles) - 1} associated roles and {len(in_groups)} associated groups (private roles are not displayed)."}
-
-    @web.expose
-    @web.json
-    @web.require_admin
-    def jobs_list(self, trans, cutoff=180, **kwd):
-        message = kwd.get('message', '')
-        status = kwd.get('status', 'info')
-        cutoff_time = datetime.utcnow() - timedelta(seconds=int(cutoff))
-        jobs = trans.sa_session.query(trans.app.model.Job) \
-                               .filter(and_(trans.app.model.Job.table.c.update_time > cutoff_time,
-                                            or_(trans.app.model.Job.state == trans.app.model.Job.states.NEW,
-                                                trans.app.model.Job.state == trans.app.model.Job.states.QUEUED,
-                                                trans.app.model.Job.state == trans.app.model.Job.states.RUNNING,
-                                                trans.app.model.Job.state == trans.app.model.Job.states.UPLOAD))) \
-                               .order_by(trans.app.model.Job.table.c.update_time.desc()).all()
-        recent_jobs = trans.sa_session.query(trans.app.model.Job) \
-            .filter(and_(trans.app.model.Job.table.c.update_time > cutoff_time,
-                         or_(trans.app.model.Job.state == trans.app.model.Job.states.ERROR,
-                             trans.app.model.Job.state == trans.app.model.Job.states.OK))) \
-            .order_by(trans.app.model.Job.table.c.update_time.desc()).all()
-
-        def prepare_jobs_list(jobs):
-            res = []
-            for job in jobs:
-                res.append({
-                    'job_info': {
-                        'id': job.id,
-                    },
-                    'id': trans.security.encode_id(job.id),
-                    'user': job.history.user.email if job.history and job.history.user else 'anonymous',
-                    'update_time': job.update_time.isoformat(),
-                    'tool_id': job.tool_id,
-                    'state': job.state,
-                    'command_line': job.command_line,
-                    'job_runner_name': job.job_runner_name,
-                    'job_runner_external_id': job.job_runner_external_id
-                })
-            return res
-        return {'jobs': prepare_jobs_list(jobs),
-                'recent_jobs': prepare_jobs_list(recent_jobs),
-                'cutoff': cutoff,
-                'message': message,
-                'status': status}
-
-    @web.expose
-    @web.require_admin
-    def job_info(self, trans, jobid=None):
-        job = None
-        if jobid is not None:
-            job = trans.sa_session.query(trans.app.model.Job).get(jobid)
-        return trans.fill_template('/webapps/reports/job_info.mako',
-                                   job=job)
 
     @web.expose
     @web.require_admin

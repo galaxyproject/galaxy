@@ -1321,7 +1321,7 @@ class JobWrapper(HasResourceParameters):
                 # Pause any dependent jobs (and those jobs' outputs)
                 for dep_job_assoc in dataset.dependent_jobs:
                     self.pause(dep_job_assoc.job, "Execution of this dataset's job is paused because its input datasets are in an error state.")
-            job.set_final_state(job.states.ERROR)
+            job.set_final_state(job.states.ERROR, supports_skip_locked=self.app.application_stack.supports_skip_locked())
             job.command_line = unicodify(self.command_line)
             job.info = message
             # TODO: Put setting the stdout, stderr, and exit code in one place
@@ -1408,7 +1408,7 @@ class JobWrapper(HasResourceParameters):
             job.info = info
         job.set_state(state)
         self.sa_session.add(job)
-        job.update_output_states()
+        job.update_output_states(self.app.application_stack.supports_skip_locked())
         if flush:
             self.sa_session.flush()
 
@@ -1776,7 +1776,7 @@ class JobWrapper(HasResourceParameters):
 
         # Finally set the job state.  This should only happen *after* all
         # dataset creation, and will allow us to eliminate force_history_refresh.
-        job.set_final_state(final_job_state)
+        job.set_final_state(final_job_state, supports_skip_locked=self.app.application_stack.supports_skip_locked())
         if not job.tasks:
             # If job was composed of tasks, don't attempt to recollect statistics
             self._collect_metrics(job, job_metrics_directory)

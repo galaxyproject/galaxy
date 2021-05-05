@@ -19,6 +19,7 @@ from pulsar.client import (
     ClientInputs,
     ClientJobDescription,
     ClientOutputs,
+    EXTENDED_METADATA_DYNAMIC_COLLECTION_PATTERN,
     finish_job as pulsar_finish_job,
     PathMapper,
     PulsarClientTransportError,
@@ -754,12 +755,19 @@ class PulsarJobRunner(AsynchronousJobRunner):
         work_dir_outputs = self.get_work_dir_outputs(job_wrapper)
         output_files = self.get_output_files(job_wrapper)
         metadata_directory = os.path.join(job_wrapper.working_directory, "metadata")
+        metadata_strategy = job_wrapper.get_destination_configuration('metadata_strategy', None)
+        dynamic_outputs = None  # use default
+        if metadata_strategy == "extended" and PulsarJobRunner.__remote_metadata(client):
+            # if Pulsar is doing remote metdata and the remote metadata is extended,
+            # we only need to recover the final model store.
+            dynamic_outputs = EXTENDED_METADATA_DYNAMIC_COLLECTION_PATTERN
         client_outputs = ClientOutputs(
             working_directory=job_wrapper.tool_working_directory,
             metadata_directory=metadata_directory,
             work_dir_outputs=work_dir_outputs,
             output_files=output_files,
             version_file=job_wrapper.get_version_string_path(),
+            dynamic_outputs=dynamic_outputs,
         )
         return client_outputs
 

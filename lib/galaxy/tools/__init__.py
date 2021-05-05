@@ -1,7 +1,6 @@
 """
 Classes encapsulating galaxy tools and tool configuration.
 """
-import collections
 import itertools
 import json
 import logging
@@ -12,7 +11,7 @@ import tempfile
 import threading
 from datetime import datetime
 from pathlib import Path
-from typing import List, Type
+from typing import List, NamedTuple, Type, Union
 from urllib.parse import unquote_plus
 
 import packaging.version
@@ -107,7 +106,7 @@ from galaxy.util.tool_shed.common_util import (
     get_tool_shed_url_from_tool_shed_registry,
 )
 from galaxy.version import VERSION_MAJOR
-from galaxy.work.context import WorkRequestContext
+from galaxy.work.context import proxy_work_context_for_history
 from .execute import (
     execute as execute_job,
     MappingParameters,
@@ -190,13 +189,22 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "substitutions1": packaging.version.parse("1.0.1"),
     "winSplitter": packaging.version.parse("1.0.1"),
 }
-safe_update = collections.namedtuple("SafeUpdate", "min_version current_version")
+
+
+class safe_update(NamedTuple):
+    min_version: Union[packaging.version.LegacyVersion, packaging.version.Version]
+    current_version: Union[packaging.version.LegacyVersion, packaging.version.Version]
+
+
 # Tool updates that did not change parameters in a way that requires rebuilding workflows
 WORKFLOW_SAFE_TOOL_VERSION_UPDATES = {
     'Filter1': safe_update(packaging.version.parse("1.1.0"), packaging.version.parse("1.1.1")),
     '__BUILD_LIST__': safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.0.1")),
     '__APPLY_RULES__': safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.1.0")),
     '__EXTRACT_DATASET__': safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.0.1")),
+    'Grep1': safe_update(packaging.version.parse("1.0.1"), packaging.version.parse("1.0.2")),
+    'Show beginning1': safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.0.1")),
+    'Show tail1': safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.0.1")),
 }
 
 
@@ -1593,7 +1601,7 @@ class Tool(Dictifiable):
         to the form or execute the tool (only if 'execute' was clicked and
         there were no errors).
         """
-        request_context = WorkRequestContext(app=trans.app, user=trans.user, history=history or trans.history)
+        request_context = proxy_work_context_for_history(trans, history=history)
         all_params, all_errors, rerun_remap_job_id, collection_info = self.expand_incoming(trans=trans, incoming=incoming, request_context=request_context, input_format=input_format)
         # If there were errors, we stay on the same page and display them
         if any(all_errors):
@@ -1767,7 +1775,7 @@ class Tool(Dictifiable):
         from a database in case new parameters have been added.
         """
         messages = {}
-        request_context = WorkRequestContext(app=trans.app, user=trans.user, history=trans.history, workflow_building_mode=workflow_building_mode)
+        request_context = proxy_work_context_for_history(trans, workflow_building_mode=workflow_building_mode)
 
         def validate_inputs(input, value, error, parent, context, prefixed_name, prefixed_label, **kwargs):
             if not error:
@@ -2130,7 +2138,7 @@ class Tool(Dictifiable):
                 raise exceptions.MessageException('History unavailable. Please specify a valid history id')
 
         # build request context
-        request_context = WorkRequestContext(app=trans.app, user=trans.user, history=history, workflow_building_mode=workflow_building_mode)
+        request_context = proxy_work_context_for_history(trans, history, workflow_building_mode=workflow_building_mode)
 
         # load job parameters into incoming
         tool_message = ''

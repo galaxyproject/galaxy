@@ -3430,6 +3430,29 @@ and demonstrates generating options from a dataset directly.
 </param>
 ```
 
+Starting from Galaxy v21.01, ``meta_file_key`` can be used together with
+``from_dataset``. In such cases, options are generated using the dataset's
+medadata file that the ``meta_file_key`` implies, instead of the dataset
+itself.
+
+```xml
+<param name="input" type="data" format="maf" label="MAF File"/>
+<param name="species" type="select" optional="False" label="Select species for the input dataset" multiple="True">
+    <options from_dataset="input" meta_file_key="species_chromosomes">
+        <column name="name" index="0"/>
+        <column name="value" index="0"/>
+    </options>
+</param>
+<param name="input_2" type="data_collection" collection_type="list" format="maf" label="MAF Collection" multiple="true" />
+<param name="species_2" type="select" optional="false" label="Select species for the input dataset" multiple="true">
+    <options from_dataset="input_2" meta_file_key="species_chromosomes" >
+        <column name="name" index="0"/>
+        <column name="value" index="0"/>
+        <filter type="unique_value" name="unique_param" column="0"/>
+  </options>
+</param>
+```
+
 Filters can be used to generate options from dataset directly also as the
 example below demonstrates (many more examples are present in the
 [filter](#tool-inputs-param-options-filter) documentation).
@@ -3486,37 +3509,42 @@ used to generate dynamic options.
     </xs:sequence>
     <xs:attribute name="from_dataset" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for from_dataset</xs:documentation>
+        <xs:documentation xml:lang="en">Determine options from the dataset given in the referred input parameter. If 'meta_file_key' is given, the options are determined from the data in the metadata file of the input.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="from_file" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for from_file</xs:documentation>
+        <xs:documentation xml:lang="en">Deprecated.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="from_data_table" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for from_data_table</xs:documentation>
+        <xs:documentation xml:lang="en">Determine options from a data table. </xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="from_parameter" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for from_parameter</xs:documentation>
+        <xs:documentation xml:lang="en">Deprecated.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="options_filter_attribute" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for options_filter_attribute</xs:documentation>
+        <xs:documentation xml:lang="en">Deprecated.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="transform_lines" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for transform_lines</xs:documentation>
+        <xs:documentation xml:lang="en">Deprecated.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="startswith" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for startswith</xs:documentation>
+        <xs:documentation xml:lang="en">Ignore lines starting with the given character.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="meta_file_key" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Works with from_dataset only. See [docs](#from-dataset)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -6039,6 +6067,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
       <xs:enumeration value="regexp"/>
       <xs:enumeration value="unique_value"/>
       <xs:enumeration value="multiple_splitter"/>
+      <xs:enumeration value="attribute_value_splitter" />
       <xs:enumeration value="add_value"/>
       <xs:enumeration value="remove_value"/>
       <xs:enumeration value="sort_by"/>

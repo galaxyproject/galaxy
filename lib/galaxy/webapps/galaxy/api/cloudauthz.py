@@ -122,13 +122,13 @@ class CloudAuthzController(BaseGalaxyAPIController):
                                                    'but received `{}`.'.format(type(config)))
         if authn_id:
             try:
-                authn_id = self.decode_id(authn_id)
-            except Exception:
-                log.debug(msg_template.format("cannot decode authn_id `" + str(authn_id) + "`"))
-                raise MalformedId('Invalid `authn_id`!')
+                decoded_authn_id = self.decode_id(authn_id)
+            except MalformedId as e:
+                log.debug(msg_template.format(f"cannot decode authz_id `{authn_id}`"))
+                raise e
 
             try:
-                trans.app.authnz_manager.can_user_assume_authn(trans, authn_id)
+                trans.app.authnz_manager.can_user_assume_authn(trans, decoded_authn_id)
             except Exception as e:
                 raise e
 
@@ -175,9 +175,9 @@ class CloudAuthzController(BaseGalaxyAPIController):
         msg_template = "Rejected user `" + str(trans.user.id) + "`'s request to delete cloudauthz config because of {}."
         try:
             authz_id = self.decode_id(encoded_authz_id)
-        except Exception:
-            log.debug(msg_template.format("cannot decode authz_id `" + str(encoded_authz_id) + "`"))
-            raise MalformedId('Invalid `authz_id`!')
+        except MalformedId as e:
+            log.debug(msg_template.format(f"cannot decode authz_id `{encoded_authz_id}`"))
+            raise e
 
         try:
             cloudauthz = trans.app.authnz_manager.try_get_authz_config(trans.sa_session, trans.user.id, authz_id)
@@ -239,9 +239,9 @@ class CloudAuthzController(BaseGalaxyAPIController):
         msg_template = "Rejected user `" + str(trans.user.id) + "`'s request to delete cloudauthz config because of {}."
         try:
             authz_id = self.decode_id(encoded_authz_id)
-        except Exception:
-            log.debug(msg_template.format("cannot decode authz_id `" + str(encoded_authz_id) + "`"))
-            raise MalformedId('Invalid `authz_id`!')
+        except MalformedId as e:
+            log.debug(msg_template.format(f"cannot decode authz_id `{encoded_authz_id}`"))
+            raise e
 
         try:
             cloudauthz_to_update = trans.app.authnz_manager.try_get_authz_config(trans.sa_session, trans.user.id, authz_id)

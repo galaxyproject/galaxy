@@ -195,8 +195,11 @@ export default {
             return this.items.filter((item) => item.selected === false);
         },
         changeToggleCheckboxState(event) {
-            if (event && this.unchecked().length === 1) this.toggleState = true;
-            else this.toggleState = false;
+            if (event && this.unchecked().length === 1) {
+                this.toggleState = true;
+            } else {
+                this.toggleState = false;
+            }
         },
         toggleSelectAll: function (event) {
             this.items.forEach((item) => (item.selected = event));

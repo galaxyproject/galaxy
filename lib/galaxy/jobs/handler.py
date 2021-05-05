@@ -924,7 +924,7 @@ class JobHandlerStopQueue(Monitors):
         if error_msg is not None:
             final_state = job.states.ERROR
             job.info = error_msg
-        job.set_final_state(final_state)
+        job.set_final_state(final_state, supports_skip_locked=self.app.application_stack.supports_skip_locked())
         self.sa_session.add(job)
         self.sa_session.flush()
 

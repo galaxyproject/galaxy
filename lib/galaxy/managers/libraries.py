@@ -368,7 +368,7 @@ class LibrariesManager:
 
         :raises: MalformedId, ObjectNotFound
         """
-        library = self.library_manager.get(trans, self.__decode_id(trans, id, 'library'))
+        library = self.library_manager.get(trans, trans.security.decode_id(id, object_name='library'))
         library_dict = self.library_manager.get_library_dict(trans, library)
         return library_dict
 
@@ -419,7 +419,7 @@ class LibrariesManager:
         :rtype:     dict
         :raises: RequestParameterMissingException
         """
-        library = self.library_manager.get(trans, self.__decode_id(trans, id, 'library'))
+        library = self.library_manager.get(trans, trans.security.decode_id(id, object_name='library'))
         name = payload.get('name', None)
         if name == '':
             raise exceptions.RequestParameterMissingException("Parameter 'name' of library is required. You cannot remove it.")
@@ -445,7 +445,7 @@ class LibrariesManager:
 
         .. seealso:: :attr:`galaxy.model.Library.dict_element_visible_keys`
         """
-        library = self.library_manager.get(trans, self.__decode_id(trans, id, 'library'))
+        library = self.library_manager.get(trans, trans.security.decode_id(id, object_name='library'))
         library = self.library_manager.delete(trans, library, undelete)
         library_dict = self.library_manager.get_library_dict(trans, library)
         return library_dict
@@ -478,7 +478,7 @@ class LibrariesManager:
         """
         current_user_roles = trans.get_current_user_roles()
         is_admin = trans.user_is_admin
-        library = self.library_manager.get(trans, self.__decode_id(trans, id, 'library'))
+        library = self.library_manager.get(trans, trans.security.decode_id(id, object_name='library'))
         if not (is_admin or trans.app.security_agent.can_manage_library_item(current_user_roles, library)):
             raise exceptions.InsufficientPermissionsException('You do not have proper permission to access permissions of this library.')
 
@@ -525,7 +525,7 @@ class LibrariesManager:
         """
         is_admin = trans.user_is_admin
         current_user_roles = trans.get_current_user_roles()
-        library = self.library_manager.get(trans, self.__decode_id(trans, id, 'library'))
+        library = self.library_manager.get(trans, trans.security.decode_id(id, object_name='library'))
 
         if not (is_admin or trans.app.security_agent.can_manage_library_item(current_user_roles, library)):
             raise exceptions.InsufficientPermissionsException('You do not have proper permission to modify permissions of this library.')
@@ -551,7 +551,7 @@ class LibrariesManager:
             valid_access_roles = []
             invalid_access_roles_names = []
             for role_id in new_access_roles_ids:
-                role = self.role_manager.get(trans, self.__decode_id(trans, role_id, 'role'))
+                role = self.role_manager.get(trans, trans.security.decode_id(role_id, object_name='role'))
                 valid_roles, total_roles = trans.app.security_agent.get_valid_roles(trans, library, is_library_access=True)
                 if role in valid_roles:
                     valid_access_roles.append(role)
@@ -564,7 +564,7 @@ class LibrariesManager:
             valid_add_roles = []
             invalid_add_roles_names = []
             for role_id in new_add_roles_ids:
-                role = self.role_manager.get(trans, self.__decode_id(trans, role_id, 'role'))
+                role = self.role_manager.get(trans, trans.security.decode_id(role_id, object_name='role'))
                 valid_roles, total_roles = trans.app.security_agent.get_valid_roles(trans, library)
                 if role in valid_roles:
                     valid_add_roles.append(role)
@@ -577,7 +577,7 @@ class LibrariesManager:
             valid_manage_roles = []
             invalid_manage_roles_names = []
             for role_id in new_manage_roles_ids:
-                role = self.role_manager.get(trans, self.__decode_id(trans, role_id, 'role'))
+                role = self.role_manager.get(trans, trans.security.decode_id(role_id, object_name='role'))
                 valid_roles, total_roles = trans.app.security_agent.get_valid_roles(trans, library)
                 if role in valid_roles:
                     valid_manage_roles.append(role)
@@ -590,7 +590,7 @@ class LibrariesManager:
             valid_modify_roles = []
             invalid_modify_roles_names = []
             for role_id in new_modify_roles_ids:
-                role = self.role_manager.get(trans, self.__decode_id(trans, role_id, 'role'))
+                role = self.role_manager.get(trans, trans.security.decode_id(role_id, object_name='role'))
                 valid_roles, total_roles = trans.app.security_agent.get_valid_roles(trans, library)
                 if role in valid_roles:
                     valid_modify_roles.append(role)
@@ -632,22 +632,3 @@ class LibrariesManager:
         trans.app.security_agent.copy_library_permissions(trans, library, library.root_folder)
         item = library.to_dict(view='element', value_mapper={'id': trans.security.encode_id, 'root_folder_id': trans.security.encode_id})
         return item
-
-    def __decode_id(
-        self,
-        trans: ProvidesAppContext,
-        encoded_id,
-        object_name: Optional[str] = None,
-    ):
-        """
-        Try to decode the id.
-
-        :param  object_name:      Name of the object the id belongs to. (optional)
-        :type   object_name:      str
-        """
-        try:
-            return trans.security.decode_id(encoded_id)
-        except TypeError:
-            raise exceptions.MalformedId(f"Malformed {object_name if object_name is not None else ''} id specified, unable to decode.")
-        except ValueError:
-            raise exceptions.MalformedId(f"Wrong {object_name if object_name is not None else ''} id specified, unable to decode.")

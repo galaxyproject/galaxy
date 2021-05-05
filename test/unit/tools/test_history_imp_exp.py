@@ -622,6 +622,8 @@ def _import_export(app, h, dest_export=None):
         dest_export = os.path.join(dest_parent, "moo.tgz")
 
     job = model.Job()
+    app.model.session.add(job, h)
+    app.model.session.flush()
     jeha = model.JobExportHistoryArchive.create_for_history(
         h, job, app.model.context, app.object_store, compressed=True
     )

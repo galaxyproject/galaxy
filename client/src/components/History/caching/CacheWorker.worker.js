@@ -13,6 +13,7 @@ const {
     monitorContentQuery,
     monitorDscQuery,
     monitorHistoryContent,
+    monitorCollectionContent,
     loadHistoryContents,
     loadDscContent,
     pollHistory,
@@ -22,13 +23,15 @@ const {
 expose({
     configure,
 
-    // observables
+    // observable operators
     monitorContentQuery: asObservable(monitorContentQuery),
     monitorDscQuery: asObservable(monitorDscQuery),
     monitorHistoryContent: asObservable(monitorHistoryContent),
+    monitorCollectionContent: asObservable(monitorCollectionContent),
     loadHistoryContents: asObservable(loadHistoryContents),
     loadDscContent: asObservable(loadDscContent),
     pollHistory: asObservable(pollHistory),
 
+    // promise functions
     ...promises,
 });

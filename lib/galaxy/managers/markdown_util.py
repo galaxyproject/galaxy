@@ -28,7 +28,6 @@ except Exception:
 
 from galaxy.exceptions import (
     MalformedContents,
-    MalformedId,
     MessageException,
 )
 from galaxy.managers.hdcas import HDCASerializer
@@ -50,8 +49,8 @@ INPUT_LABEL_PATTERN = re.compile(r'input=\s*%s\s*' % ARG_VAL_CAPTURED_REGEX)
 STEP_LABEL_PATTERN = re.compile(r'step=\s*%s\s*' % ARG_VAL_CAPTURED_REGEX)
 PATH_LABEL_PATTERN = re.compile(r'path=\s*%s\s*' % ARG_VAL_CAPTURED_REGEX)
 # STEP_OUTPUT_LABEL_PATTERN = re.compile(r'step_output=([\w_\-]+)/([\w_\-]+)')
-UNENCODED_ID_PATTERN = re.compile(r'(workflow_id|history_dataset_id|history_dataset_collection_id|job_id|invocation_id)=([\d]+)')
-ENCODED_ID_PATTERN = re.compile(r'(workflow_id|history_dataset_id|history_dataset_collection_id|job_id|invocation_id)=([a-z0-9]+)')
+UNENCODED_ID_PATTERN = re.compile(r'(history_id|workflow_id|history_dataset_id|history_dataset_collection_id|job_id|invocation_id)=([\d]+)')
+ENCODED_ID_PATTERN = re.compile(r'(history_id|workflow_id|history_dataset_id|history_dataset_collection_id|job_id|invocation_id)=([a-z0-9]+)')
 INVOCATION_SECTION_MARKDOWN_CONTAINER_LINE_PATTERN = re.compile(
     r"```\s*galaxy\s*"
 )
@@ -69,10 +68,7 @@ def ready_galaxy_markdown_for_import(trans, external_galaxy_markdown):
         object_id = None
         if id_match:
             object_id = id_match.group(2)
-            try:
-                decoded_id = trans.security.decode_id(object_id)
-            except Exception:
-                raise MalformedId("Invalid encoded ID %s" % object_id)
+            decoded_id = trans.security.decode_id(object_id)
             line = line.replace(id_match.group(), "%s=%d" % (id_match.group(1), decoded_id))
         return (line, False)
 
@@ -84,6 +80,7 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
 
     def walk(self, trans, internal_galaxy_markdown):
         hda_manager = trans.app.hda_manager
+        history_manager = trans.app.history_manager
         workflow_manager = trans.app.workflow_manager
         job_manager = JobManager(trans.app)
         collection_manager = trans.app.dataset_collections_service
@@ -100,7 +97,11 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
                 object_id = int(id_match.group(2))
                 encoded_id = trans.security.encode_id(object_id)
                 line = line.replace(id_match.group(), "{}={}".format(id_match.group(1), encoded_id))
-            if container == "history_dataset_display":
+            if container == "history_link":
+                _check_object(object_id, line)
+                history = history_manager.get_accessible(object_id, trans.user)
+                rval = self.handle_history_link(line, history)
+            elif container == "history_dataset_display":
                 _check_object(object_id, line)
                 hda = hda_manager.get_accessible(object_id, trans.user)
                 rval = self.handle_dataset_display(line, hda)
@@ -179,6 +180,10 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
 
         export_markdown = _remap_galaxy_markdown_calls(_remap_container, internal_galaxy_markdown)
         return export_markdown
+
+    @abc.abstractmethod
+    def handle_history_link(self, line, history):
+        pass
 
     @abc.abstractmethod
     def handle_dataset_display(self, line, hda):
@@ -292,6 +297,9 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
     def handle_tool_stderr(self, line, job):
         self.ensure_rendering_data_for("jobs", job)["tool_stderr"] = job.tool_stderr or "*No Standard Error Available*"
 
+    def handle_history_link(self, line, history):
+        self.ensure_rendering_data_for("histories", history)["name"] = history.name
+
     # Following three cases - the client side widgets have everything they need
     # from the encoded ID. Don't implement a default on the base class though because
     # it is good to force both Client and PDF/HTML export to deal with each new directive
@@ -399,6 +407,13 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
             base64_image_data = base64.b64encode(f.read()).decode("utf-8")
         rval = (f"![{name}](data:image/png;base64,{base64_image_data})", True)
         return rval
+
+    def handle_history_link(self, line, history):
+        if history:
+            content = self.markdown_formatting_helpers.literal_via_fence(history.name)
+        else:
+            content = "*No History available*"
+        return (content, True)
 
     def handle_dataset_peek(self, line, hda):
         if hda.peek:
@@ -668,6 +683,8 @@ history_dataset_collection_display(input={})
             # TODO: this really should be workflow id not stored workflow id but the API
             # it consumes wants the stored id.
             return ("workflow_display(workflow_id=%s)\n" % invocation.workflow.stored_workflow.id, False)
+        if container == "history_link":
+            return ("history_link(history_id=%s)\n" % invocation.history.id, False)
         if container == "invocation_date":
             return ("invocation_date(invocation_id=%s)\n" % invocation.id, False)
         ref_object_type = None

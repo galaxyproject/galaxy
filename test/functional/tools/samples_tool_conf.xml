@@ -91,6 +91,7 @@
   <tool file="exit_code_from_file.xml" />
   <tool file="exit_code_from_env.xml" />
   <tool file="gzipped_inputs.xml" />
+  <tool file="options_from_metadata_file.xml" />
   <tool file="output_order.xml" />
   <tool file="output_format.xml" />
   <tool file="output_format_deprecated_when.xml" />
@@ -195,6 +196,7 @@
   <tool file="config_vars.xml" />
 
   <tool file="multiple_versions_v01.xml" />
+  <tool file="multiple_versions_v01galaxy6.xml" />
   <tool file="multiple_versions_v02.xml" />
   <tool file="multiple_versions_changes_v01.xml" />
   <tool file="multiple_versions_changes_v02.xml" />

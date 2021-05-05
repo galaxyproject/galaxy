@@ -419,17 +419,25 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                 log.debug("Wanted to push file '%s' to iRODS collection '%s' but its size is 0; skipping.", source_file, rel_path)
                 return True
 
+            # Create sub-collection first
+            self.session.collections.create(collection_path, recurse=True)
+
+            # Create data object
+            data_obj = self.session.data_objects.create(data_object_path, self.resource, **options)
+
             if from_string:
-                data_obj = self.session.data_objects.create(data_object_path, self.resource, **options)
+                # Save 'from_string' as a file
                 with data_obj.open('w') as data_obj_fp:
                     data_obj_fp.write(from_string)
+
+                # Add file containing 'from_string' to the irods collection, since
+                # put() expects a file as input. Get file name from data object's 'desc' field
+                self.session.data_objects.put(data_obj.desc, collection_path + "/", **options)
+
                 log.debug("Pushed data from string '%s' to collection '%s'", from_string, data_object_path)
             else:
                 start_time = datetime.now()
                 log.debug("Pushing cache file '%s' of size %s bytes to collection '%s'", source_file, os.path.getsize(source_file), rel_path)
-
-                # Create sub-collection first
-                self.session.collections.create(collection_path, recurse=True)
 
                 # Add the source file to the irods collection
                 self.session.data_objects.put(source_file, collection_path + "/", **options)

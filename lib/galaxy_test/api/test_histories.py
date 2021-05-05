@@ -197,6 +197,12 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories, SharingApiTests):
         create_response = post(url=histories_url, data=post_data)
         self._assert_status_code_is(create_response, 403)
 
+    def test_create_without_session_fails(self):
+        post_data = dict(name="SessionNeeded")
+        # Using admin=True will boostrap an Admin user without session
+        create_response = self._post("histories", data=post_data, admin=True)
+        self._assert_status_code_is(create_response, 400)
+
     def test_create_tag(self):
         post_data = dict(name="TestHistoryForTag")
         history_id = self._post("histories", data=post_data).json()["id"]

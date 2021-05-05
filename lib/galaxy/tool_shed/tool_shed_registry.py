@@ -1,5 +1,5 @@
 import logging
-from collections import namedtuple
+from typing import NamedTuple
 
 from galaxy.util import parse_xml_string
 from galaxy.util.tool_shed.common_util import remove_protocol_from_tool_shed_url
@@ -13,7 +13,10 @@ DEFAULT_TOOL_SHEDS_CONF_XML = """<?xml version="1.0"?>
 </tool_sheds>
 """
 
-AUTH_TUPLE = namedtuple('AuthSetting', 'username password')
+
+class AUTH_TUPLE(NamedTuple):
+    username: str
+    password: str
 
 
 class Registry:

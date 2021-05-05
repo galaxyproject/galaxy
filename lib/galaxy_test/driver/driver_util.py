@@ -34,6 +34,7 @@ from galaxy.util import asbool, download_to_file, galaxy_directory
 from galaxy.util.properties import load_app_properties
 from galaxy.webapps.galaxy import buildapp
 from galaxy_test.base.api_util import get_admin_api_key, get_user_api_key
+from galaxy_test.base.celery_helper import rebind_container_to_task
 from galaxy_test.base.env import (
     DEFAULT_WEB_HOST,
     target_url_parts,
@@ -562,7 +563,9 @@ def uvicorn_serve(app, port, host=None):
     import asyncio
     from uvicorn.server import Server
     from uvicorn.config import Config
-    config = Config(app, host=host, port=int(port))
+
+    access_log = False if 'GALAXY_TEST_DISABLE_ACCESS_LOG' in os.environ else True
+    config = Config(app, host=host, port=int(port), access_log=access_log)
     server = Server(config=config)
 
     def run_in_loop(loop):
@@ -626,6 +629,8 @@ def build_galaxy_app(simple_kwargs):
     )
     # Build the Universe Application
     app = GalaxyUniverseApplication(**simple_kwargs)
+    rebind_container_to_task(app)
+
     log.info("Embedded Galaxy application started")
 
     global galaxy_context

@@ -109,11 +109,17 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             volume_claims = dict(volume.split(":") for volume in self.runner_params['k8s_persistent_volume_claims'].split(','))
         else:
             volume_claims = {}
-        mountable_volumes = [{'name': claim_name, 'persistentVolumeClaim': {'claimName': claim_name}}
-                             for claim_name in volume_claims if claim_name]
+        mountable_volumes = list(set([claim_name if "/" not in claim_name else claim_name.split("/")[0] for claim_name in volume_claims]))
+        mountable_volumes = [{'name': claim_name, 'persistentVolumeClaim': {'claimName': claim_name}} for claim_name in mountable_volumes]
         self.runner_params['k8s_mountable_volumes'] = mountable_volumes
-        volume_mounts = [{'name': claim_name, 'mountPath': mount_path}
-                         for claim_name, mount_path in volume_claims.items() if claim_name]
+        volume_mounts = [{'name': claim_name, 'mountPath': mount_path} for claim_name, mount_path in volume_claims.items()]
+        for each in volume_mounts:
+            vmount = each.get("name")
+            if "/" in vmount:
+                name = vmount.split("/")[0]
+                subpath = vmount.split("/")[1]
+                each["name"] = name
+                each["subPath"] = subpath
         self.runner_params['k8s_volume_mounts'] = volume_mounts
 
     def queue_job(self, job_wrapper):

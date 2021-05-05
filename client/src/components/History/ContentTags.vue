@@ -27,7 +27,9 @@ export default {
     methods: {
         async saveTag({ tag, addTag }) {
             const newTag = createTag(tag);
-            if (!newTag.valid) return;
+            if (!newTag.valid) {
+                return;
+            }
             const tagSet = new Set(this.tags);
             tagSet.add(newTag.text);
             const tags = Array.from(tagSet);
@@ -37,7 +39,9 @@ export default {
         },
         async deleteTag({ tag, deleteTag }) {
             const doomedTag = createTag(tag);
-            if (!doomedTag.valid) return;
+            if (!doomedTag.valid) {
+                return;
+            }
             const tagSet = new Set([...this.tags]);
             tagSet.delete(doomedTag.text);
             const tags = Array.from(tagSet);
