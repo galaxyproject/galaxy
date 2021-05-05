@@ -831,7 +831,7 @@ class Fastq(BaseFastq):
 class FastqSanger(Fastq):
     """Class representing a FASTQ sequence (the Sanger variant)
 
-    phred scored quality values 0:93 represented by ASCII 33:126
+    phred scored quality values 0:50 represented by ASCII 33:83
     """
     edam_format = "format_1932"
     file_ext = "fastqsanger"
@@ -849,20 +849,34 @@ class FastqSanger(Fastq):
 class FastqSolexa(Fastq):
     """Class representing a FASTQ sequence ( the Solexa variant )
     
-    solexa scored quality values -5:62 represented by ASCII 59:126
+    solexa scored quality values -5:40 represented by ASCII 59:104
     """
     edam_format = "format_1933"
     file_ext = "fastqsolexa"
 
+    @staticmethod
+    def quality_check(lines):
+        """Presuming lines are lines from a fastq file, return True if the qualities are compatible with sanger encoding"""
+        for line in islice(lines, 3, None, 4):
+            if not all(_ >= ';' and _ <= 'h' for _ in line[0]):
+                return False
+        return True
 
 class FastqIllumina(Fastq):
     """Class representing a FASTQ sequence ( the Illumina 1.3+ variant )
     
-    phred scored quality values 0:62 represented by ASCII 64:126
+    phred scored quality values 0:40 represented by ASCII 64:104
     """
     edam_format = "format_1931"
     file_ext = "fastqillumina"
 
+    @staticmethod
+    def quality_check(lines):
+        """Presuming lines are lines from a fastq file, return True if the qualities are compatible with sanger encoding"""
+        for line in islice(lines, 3, None, 4):
+            if not all(_ >= '@' and _ <= 'h' for _ in line[0]):
+                return False
+        return True
 
 class FastqCSSanger(Fastq):
     """Class representing a Color Space FASTQ sequence ( e.g a SOLiD variant )
