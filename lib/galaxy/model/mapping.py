@@ -2410,12 +2410,11 @@ mapper(model.Event, model.Event.table, properties=dict(
 ))
 
 mapper(model.GalaxySession, model.GalaxySession.table, properties=dict(
-    histories=relation(model.GalaxySessionToHistoryAssociation),
     current_history=relation(model.History),
 ))
 
 mapper(model.GalaxySessionToHistoryAssociation, model.GalaxySessionToHistoryAssociation.table, properties=dict(
-    galaxy_session=relation(model.GalaxySession),
+    galaxy_session=relation(model.GalaxySession, backref='histories'),
     history=relation(model.History, backref='galaxy_sessions')
 ))
 
