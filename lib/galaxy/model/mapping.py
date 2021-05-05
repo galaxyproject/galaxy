@@ -1971,7 +1971,6 @@ mapper(model.DefaultHistoryPermissions, model.DefaultHistoryPermissions.table, p
 ))
 
 mapper(model.Role, model.Role.table, properties=dict(
-    users=relation(model.UserRoleAssociation),
     groups=relation(model.GroupRoleAssociation)
 ))
 
@@ -1985,7 +1984,7 @@ mapper(model.UserRoleAssociation, model.UserRoleAssociation.table, properties=di
             & (model.UserRoleAssociation.table.c.role_id == model.Role.table.c.id)
             & not_(model.Role.table.c.name == model.User.table.c.email))
     ),
-    role=relation(model.Role)
+    role=relation(model.Role, backref="users")
 ))
 
 mapper(model.GroupRoleAssociation, model.GroupRoleAssociation.table, properties=dict(
