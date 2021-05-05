@@ -10,12 +10,14 @@ try:
         Job,
         Pod,
         Service,
-        Ingress
+        Ingress,
     )
 except ImportError as exc:
     KubeConfig = None
+    Ingress = None
     Job = None
     Pod = None
+    Service = None
     K8S_IMPORT_MESSAGE = ('The Python pykube package is required to use '
                           'this feature, please install it or correct the '
                           'following error:\nImportError %s' % str(exc))
