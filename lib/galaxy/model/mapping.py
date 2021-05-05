@@ -2499,6 +2499,7 @@ mapper(model.StoredWorkflow, model.StoredWorkflow.table, properties=dict(
             and_(model.StoredWorkflow.table.c.id == model.StoredWorkflowTagAssociation.table.c.stored_workflow_id,
                  model.StoredWorkflow.table.c.user_id == model.StoredWorkflowTagAssociation.table.c.user_id)
         ),
+        viewonly=True,
         order_by=model.StoredWorkflowTagAssociation.table.c.id),
     annotations=relation(model.StoredWorkflowAnnotationAssociation,
         order_by=model.StoredWorkflowAnnotationAssociation.table.c.id,
