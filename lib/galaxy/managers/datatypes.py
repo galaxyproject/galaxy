@@ -16,6 +16,7 @@ from galaxy.datatypes._schema import (
 from galaxy.datatypes.data import Data
 from galaxy.datatypes.registry import Registry
 
+
 def view_index(
     datatypes_registry: Registry,
     extension_only: Optional[bool] = True,
@@ -88,6 +89,7 @@ def view_converters(datatypes_registry: Registry) -> DatatypeConverterList:
                 'tool_id': targets[target_type].id,
             })
     return parse_obj_as(DatatypeConverterList, converters)
+
 
 def view_edam_formats(datatypes_registry: Registry) -> Dict[str, str]:
     return datatypes_registry.edam_formats

@@ -276,4 +276,5 @@ def gen_rank_fuzzy_counts(collection_type, fuzzy_count=None):
 
         return rank_fuzzy_counts
 
+
 __all__ = ('api_payload_to_create_params', 'dictify_dataset_collection_instance')

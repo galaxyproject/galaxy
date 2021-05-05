@@ -218,7 +218,7 @@ class DatasetCollectionManager:
             dataset_collection = model.DatasetCollection(populated=False)
         dataset_collection.collection_type = collection_type
         return dataset_collection
-    
+
     def get_converters_for_collection(self, trans, id, datatypes_registry: Registry, instance_type="history"):
         dataset_collection_instance = self.get_dataset_collection_instance(
             trans,

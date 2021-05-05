@@ -12,7 +12,6 @@ from typing import (
 from fastapi import Query
 
 from galaxy.datatypes.registry import Registry
-from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.datatypes import (
     DatatypeConverterList,
     DatatypeDetails,
@@ -26,7 +25,6 @@ from galaxy.managers.datatypes import (
     view_sniffers,
     view_types_and_mapping
 )
-
 from galaxy.util import asbool
 from galaxy.web import expose_api_anonymous_and_sessionless
 from . import (
@@ -55,7 +53,6 @@ UploadOnlyQueryParam: Optional[bool] = Query(
 @router.cbv
 class FastAPIDatatypes:
     datatypes_registry: Registry = depends(Registry)
-    collection_manager: DatasetCollectionManager = depends(DatasetCollectionManager)
 
     @router.get(
         '/api/datatypes',
@@ -136,7 +133,6 @@ class FastAPIDatatypes:
 
 class DatatypesController(BaseGalaxyAPIController):
     datatypes_registry: Registry = depends(Registry)
-    collection_manager: DatasetCollectionManager = depends(DatasetCollectionManager)
 
     @expose_api_anonymous_and_sessionless
     def index(self, trans, **kwd):
