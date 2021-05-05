@@ -1976,15 +1976,16 @@ mapper(model.Role, model.Role.table, properties=dict(
 
 mapper(model.UserRoleAssociation, model.UserRoleAssociation.table, properties=dict(
     user=relation(model.User, backref="roles"),
+    role=relation(model.Role, backref="users"),
     non_private_roles=relation(
         model.User,
         backref="non_private_roles",
+        viewonly=True,
         primaryjoin=(
             (model.User.table.c.id == model.UserRoleAssociation.table.c.user_id)
             & (model.UserRoleAssociation.table.c.role_id == model.Role.table.c.id)
             & not_(model.Role.table.c.name == model.User.table.c.email))
-    ),
-    role=relation(model.Role, backref="users")
+    )
 ))
 
 mapper(model.GroupRoleAssociation, model.GroupRoleAssociation.table, properties=dict(
