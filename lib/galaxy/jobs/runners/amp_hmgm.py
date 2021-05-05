@@ -17,6 +17,7 @@ from galaxy.jobs.runners import (
 
 
 from galaxy import model
+from galaxy.job_execution.output_collect import default_exit_code_file
 from galaxy.util import (
     asbool,
     DATABASE_MAX_STRING_SIZE,
@@ -154,7 +155,6 @@ class HmgmRunner(AsynchronousJobRunner):
             return False
         return True
     
-    # This copied out of runners/local.py - handle 
     def stop_job(self, job_wrapper):
         # if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
         job = job_wrapper.get_job()
@@ -169,24 +169,14 @@ class HmgmRunner(AsynchronousJobRunner):
             log.warning("stop_job(): %s: no PID in database for job, unable to stop" % job.id)
             return
         pid = int(pid)
-        if not self._check_pid(pid):
-            log.warning("stop_job(): %s: PID %d was already dead or can't be signaled" % (job.id, pid))
-            # Kill works fine in cases where the job is actully running.  But in the case of HMGMs, this often isn't the case.  
+        if not check_pg(pid):
+            log.warning("stop_job(): %s: Process group %d was already dead or can't be signaled" % (job.id, pid))
+            # Kill works fine in cases where the job is actually running.  But in the case of HMGMs, this often isn't the case.  
             # Instead, mark the job as deleted and handle appropriately before we run it next time.  
             job_wrapper.change_state(model.Job.states.DELETED)
             return
-        for sig in [15, 9]:
-            try:
-                os.killpg(pid, sig)
-            except OSError as e:
-                log.warning("stop_job(): %s: Got errno %s when attempting to signal %d to PID %d: %s" % (job.id, errno.errorcode[e.errno], sig, pid, e.strerror))
-                return  # give up
-            sleep(2)
-            if not self._check_pid(pid):
-                log.debug("stop_job(): %s: PID %d successfully killed with signal %d" % (job.id, pid, sig))
-                return
-        else:
-            log.warning("stop_job(): %s: PID %d refuses to die after signaling TERM/KILL" % (job.id, pid))
+        log.debug('stop_job(): %s: Terminating process group %d', job.id, pid)
+        kill_pg(pid)
     
     # Run job is a slightly modified version of run_job in runners/local.py - queue_job().  It builds a command line proc
     # to execute, reads the stdout and stderr, and returns the status
@@ -274,37 +264,28 @@ class HmgmRunner(AsynchronousJobRunner):
         job_state.stop_job = False
         self.fail_job(job_state, exception=True)
 
-    # Copied from runners/local.py
+    # Copied from runners/local.py with modifications
     def __command_line(self, job_wrapper):
         """
         """
         command_line = job_wrapper.runner_command_line
 
+        # AMP: do not use local slots (differs from local.py)
         # slots would be cleaner name, but don't want deployers to see examples and think it
         # is going to work with other job runners.
         slots_statement = 'GALAXY_SLOTS="1"; export GALAXY_SLOTS;'
 
         job_id = job_wrapper.get_id_tag()
         job_file = JobState.default_job_file(job_wrapper.working_directory, job_id)
-        exit_code_path = JobState.default_exit_code_file(job_wrapper.working_directory, job_id)
+        exit_code_path = default_exit_code_file(job_wrapper.working_directory, job_id)
         job_script_props = {
             'slots_statement': slots_statement,
             'command': command_line,
             'exit_code_path': exit_code_path,
             'working_directory': job_wrapper.working_directory,
+            'shell': job_wrapper.shell,
         }
         job_file_contents = self.get_job_file(job_wrapper, **job_script_props)
         self.write_executable_script(job_file, job_file_contents)
         return job_file, exit_code_path
     
-    # Copied from runners/local.py
-    def _check_pid(self, pid):
-        try:
-            os.kill(pid, 0)
-            return True
-        except OSError as e:
-            if e.errno == errno.ESRCH:
-                log.debug("_check_pid(): PID %d is dead" % pid)
-            else:
-                log.warning("_check_pid(): Got errno %s when attempting to check PID %d: %s" % (errno.errorcode[e.errno], pid, e.strerror))
-            return False
