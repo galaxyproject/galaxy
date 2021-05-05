@@ -2277,7 +2277,6 @@ simple_mapping(
 mapper(model.JobParameter, model.JobParameter.table)
 
 mapper(model.JobExternalOutputMetadata, model.JobExternalOutputMetadata.table, properties=dict(
-    job=relation(model.Job),
     history_dataset_association=relation(model.HistoryDatasetAssociation, lazy=False),
     library_dataset_dataset_association=relation(model.LibraryDatasetDatasetAssociation, lazy=False)
 ))
@@ -2781,7 +2780,7 @@ mapper(model.Job, model.Job.table, properties=dict(
     post_job_actions=relation(model.PostJobActionAssociation, lazy=False),
     input_library_datasets=relation(model.JobToInputLibraryDatasetAssociation),
     output_library_datasets=relation(model.JobToOutputLibraryDatasetAssociation, lazy=True),
-    external_output_metadata=relation(model.JobExternalOutputMetadata, lazy=True),
+    external_output_metadata=relation(model.JobExternalOutputMetadata, lazy=True, backref='job'),
     tasks=relation(model.Task, backref='job')
 ))
 model.Job.any_output_dataset_deleted = column_property(  # type: ignore
