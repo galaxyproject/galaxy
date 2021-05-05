@@ -31,7 +31,7 @@ module.exports = (env = {}, argv = {}) => {
             chunkFilename: "[name].chunk.js",
         },
         resolve: {
-            extensions: ["*", ".js", ".json", ".vue", ".scss"],
+            extensions: [".js", ".json", ".vue", ".scss"],
             modules: [scriptsBase, "node_modules", styleBase, testsBase],
             fallback: {
                 timers: require.resolve("timers-browserify"),
