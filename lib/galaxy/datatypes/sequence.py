@@ -848,7 +848,7 @@ class FastqSanger(Fastq):
 
 class FastqSolexa(Fastq):
     """Class representing a FASTQ sequence ( the Solexa variant )
-    
+
     solexa scored quality values -5:40 represented by ASCII 59:104
     """
     edam_format = "format_1933"
@@ -862,9 +862,10 @@ class FastqSolexa(Fastq):
                 return False
         return True
 
+
 class FastqIllumina(Fastq):
     """Class representing a FASTQ sequence ( the Illumina 1.3+ variant )
-    
+
     phred scored quality values 0:40 represented by ASCII 64:104
     """
     edam_format = "format_1931"
@@ -878,9 +879,10 @@ class FastqIllumina(Fastq):
                 return False
         return True
 
+
 class FastqCSSanger(Fastq):
     """Class representing a Color Space FASTQ sequence ( e.g a SOLiD variant )
-    
+
     sequence in in color space
     phred scored quality values 0:93 represented by ASCII 33:126
     """
