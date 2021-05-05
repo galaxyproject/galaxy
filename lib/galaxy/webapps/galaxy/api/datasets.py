@@ -105,7 +105,7 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
                     separated list of values.
                     Allowed ordering attributes are: 'create_time', 'extension',
                     'hid', 'history_id', 'name', 'update_time'.
-                   'order' defaults to 'create_time'.
+                    'order' defaults to 'create_time'.
 
         ..example:
             To sort by name descending then create time descending:
