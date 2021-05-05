@@ -39,7 +39,7 @@
                         title="Versions"
                         variant="link"
                         aria-label="Select Versions"
-                        class="float-right"
+                        class="float-right tool-versions"
                         size="sm"
                         v-b-tooltip.hover
                     >
