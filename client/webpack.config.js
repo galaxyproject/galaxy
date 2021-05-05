@@ -4,7 +4,7 @@ const path = require("path");
 const VueLoaderPlugin = require("vue-loader/lib/plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
-const DuplicatePackageCheckerPlugin = require("duplicate-package-checker-webpack-plugin");
+const DuplicatePackageCheckerPlugin = require("@cerner/duplicate-package-checker-webpack-plugin");
 
 const scriptsBase = path.join(__dirname, "src");
 const testsBase = path.join(__dirname, "tests");
@@ -15,6 +15,7 @@ module.exports = (env = {}, argv = {}) => {
     // environment name based on -d, -p, webpack flag
     const targetEnv = process.env.NODE_ENV == "production" || argv.mode == "production" ? "production" : "development";
 
+    console.debug("Build mode is ", targetEnv)
     const buildconfig = {
         mode: targetEnv,
         entry: {
