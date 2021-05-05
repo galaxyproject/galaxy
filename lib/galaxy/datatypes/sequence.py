@@ -829,7 +829,10 @@ class Fastq(BaseFastq):
 
 
 class FastqSanger(Fastq):
-    """Class representing a FASTQ sequence ( the Sanger variant )"""
+    """Class representing a FASTQ sequence (the Sanger variant)
+
+    phred scored quality values 0:93 represented by ASCII 33:126
+    """
     edam_format = "format_1932"
     file_ext = "fastqsanger"
     bases_regexp = re.compile("^[NGTAC]*$", re.IGNORECASE)
@@ -844,19 +847,29 @@ class FastqSanger(Fastq):
 
 
 class FastqSolexa(Fastq):
-    """Class representing a FASTQ sequence ( the Solexa variant )"""
+    """Class representing a FASTQ sequence ( the Solexa variant )
+    
+    solexa scored quality values -5:62 represented by ASCII 59:126
+    """
     edam_format = "format_1933"
     file_ext = "fastqsolexa"
 
 
 class FastqIllumina(Fastq):
-    """Class representing a FASTQ sequence ( the Illumina 1.3+ variant )"""
+    """Class representing a FASTQ sequence ( the Illumina 1.3+ variant )
+    
+    phred scored quality values 0:62 represented by ASCII 64:126
+    """
     edam_format = "format_1931"
     file_ext = "fastqillumina"
 
 
 class FastqCSSanger(Fastq):
-    """Class representing a Color Space FASTQ sequence ( e.g a SOLiD variant )"""
+    """Class representing a Color Space FASTQ sequence ( e.g a SOLiD variant )
+    
+    sequence in in color space
+    phred scored quality values 0:93 represented by ASCII 33:126
+    """
     file_ext = "fastqcssanger"
     bases_regexp = re.compile(r"^[NGTAC][0123\.]*$", re.IGNORECASE)
 

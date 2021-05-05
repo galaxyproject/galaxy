@@ -124,16 +124,16 @@
     <datatype extension="fastq" auto_compressed_types="gz,bz2" type="galaxy.datatypes.sequence:Fastq" display_in_upload="true" description="FASTQ format is a text-based format for storing both a biological sequence (usually nucleotide sequence) and its corresponding quality scores." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Fastq">
       <converter file="fastq_to_fqtoc.xml" target_datatype="fqtoc"/>
     </datatype>
-    <datatype extension="fastqsanger" auto_compressed_types="gz,bz2" type="galaxy.datatypes.sequence:FastqSanger" display_in_upload="true">
+    <datatype extension="fastqsanger" auto_compressed_types="gz,bz2" type="galaxy.datatypes.sequence:FastqSanger" display_in_upload="true" description="Sanger variant of the FASTQ format: phred+33">
       <converter file="fastq_to_fqtoc.xml" target_datatype="fqtoc"/>
     </datatype>
-    <datatype extension="fastqsolexa" auto_compressed_types="gz,bz2" type="galaxy.datatypes.sequence:FastqSolexa" display_in_upload="true" description="FastqSolexa is the Illumina (Solexa) variant of the Fastq format, which stores sequences and quality scores in a single file." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#FastqSolexa">
+    <datatype extension="fastqsolexa" auto_compressed_types="gz,bz2" type="galaxy.datatypes.sequence:FastqSolexa" display_in_upload="true" description="Solexa variant of the FASTQ format: solexa+64" description_url="https://wiki.galaxyproject.org/Learn/Datatypes#FastqSolexa">
       <converter file="fastq_to_fqtoc.xml" target_datatype="fqtoc"/>
     </datatype>
-    <datatype extension="fastqcssanger" auto_compressed_types="gz,bz2" type="galaxy.datatypes.sequence:FastqCSSanger" display_in_upload="true">
+    <datatype extension="fastqcssanger" auto_compressed_types="gz,bz2" type="galaxy.datatypes.sequence:FastqCSSanger" display_in_upload="true" description="sequence in in color space phred scored quality values 0:93 represented by ASCII 33:126">
       <converter file="fastq_to_fqtoc.xml" target_datatype="fqtoc"/>
     </datatype>
-    <datatype extension="fastqillumina" auto_compressed_types="gz,bz2" type="galaxy.datatypes.sequence:FastqIllumina" display_in_upload="true">
+    <datatype extension="fastqillumina" auto_compressed_types="gz,bz2" type="galaxy.datatypes.sequence:FastqIllumina" display_in_upload="true" description="Sanger variant of the FASTQ format: phred+33, sequence in color space">
       <converter file="fastq_to_fqtoc.xml" target_datatype="fqtoc"/>
     </datatype>
     <datatype extension="fqtoc" type="galaxy.datatypes.sequence:SequenceSplitLocations" display_in_upload="true"/>
