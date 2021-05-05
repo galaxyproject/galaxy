@@ -2533,7 +2533,7 @@ mapper(model.WorkflowInvocation, model.WorkflowInvocation.table, properties=dict
     history=relation(model.History, backref=backref('workflow_invocations', uselist=True)),
     input_parameters=relation(model.WorkflowRequestInputParameter, backref='workflow_invocation'),
     step_states=relation(model.WorkflowRequestStepState, backref='workflow_invocation'),
-    input_step_parameters=relation(model.WorkflowRequestInputStepParameter),
+    input_step_parameters=relation(model.WorkflowRequestInputStepParameter, backref='workflow_invocation'),
     input_datasets=relation(model.WorkflowRequestToInputDatasetAssociation),
     input_dataset_collections=relation(model.WorkflowRequestToInputDatasetCollectionAssociation),
     subworkflow_invocations=relation(model.WorkflowInvocationToSubworkflowInvocationAssociation,
@@ -2574,7 +2574,6 @@ simple_mapping(model.WorkflowRequestStepState,
     workflow_step=relation(model.WorkflowStep))
 
 simple_mapping(model.WorkflowRequestInputStepParameter,
-    workflow_invocation=relation(model.WorkflowInvocation),
     workflow_step=relation(model.WorkflowStep))
 
 simple_mapping(model.WorkflowRequestToInputDatasetAssociation,
