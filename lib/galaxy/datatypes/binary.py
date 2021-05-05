@@ -1538,7 +1538,7 @@ class H5MLM(H5):
             with h5py.File(dataset.file_name, "r") as handle:
                 rval['Attributes'] = {}
                 for k in handle.attrs.keys():
-                    if k == '-repr-':
+                    if k in ('-URL-', '-repr-'):
                         continue
                     v = util.unicodify(handle.attrs.get(k))
                     rval['Attributes'][k] = v
@@ -1551,7 +1551,9 @@ class H5MLM(H5):
         rval = json.dumps(rval, sort_keys=True, indent=2)
         rval = rval[:self.max_preview_size]
 
-        return "<pre>%s</pre>" % rval
+        repr_ = self.get_repr(dataset.file_name)
+
+        return "<pre>{}</pre><pre>{}</pre>".format(repr_, rval)
 
 
 class Scf(Binary):
