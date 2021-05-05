@@ -292,7 +292,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
     def __get_k8s_service_spec(self, ajs):
         """The k8s spec template is nothing but a Service spec, except that it is nested and does not have an apiversion
         nor kind."""
-        if not ajs.job_wrapper.guest_ports:
+        guest_ports = ajs.job_wrapper.guest_ports
+        if not guest_ports:
             return None
         else:
             k8s_spec_template = {
@@ -324,7 +325,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
     def __get_k8s_ingress_spec(self, ajs):
         """The k8s spec template is nothing but a Ingress spec, except that it is nested and does not have an apiversion
         nor kind."""
-        if not ajs.job_wrapper.guest_ports:
+        guest_ports = ajs.job_wrapper.guest_ports
+        if not guest_ports:
             return None
         else:
             if len(guest_ports) > 0:
@@ -543,7 +545,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         return "job-container"
 
     def __get_k8s_job_name(self, prefix, job_wrapper):
-      return "{}-{}".format(prefix, self.__force_label_conformity(job_wrapper.get_id_tag()))
+        return "{}-{}".format(prefix, self.__force_label_conformity(job_wrapper.get_id_tag()))
 
     def __get_destination_params(self, job_wrapper):
         """Obtains allowable runner param overrides from the destination"""
@@ -762,7 +764,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             job_to_delete = find_job_object_by_name(self._pykube_api, job.get_job_runner_external_id(), self.runner_params['k8s_namespace'])
             if job_to_delete and len(job_to_delete.response['items']) > 0:
                 k8s_job = Job(self._pykube_api, job_to_delete.response['items'][0])
-                if job_state.job_wrapper.guest_ports:
+                if job_wrapper.guest_ports:
                     k8s_job_prefix = self.__produce_k8s_job_prefix()
                     k8s_job_name = "{}-{}".format(k8s_job_prefix, self.__force_label_conformity(job_wrapper.get_id_tag()))
                     log.debug(f'Deleting service/ingress for job with ID {job_wrapper.get_id_tag()}')
