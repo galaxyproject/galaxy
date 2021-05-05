@@ -161,6 +161,7 @@
     "sinon": "^9.0.2",
     "store": "^2.0.12",
     "style-loader": "^2.0.0",
+    "uuid": "^7",
     "vue-jest": "^3.0.6",
     "vue-loader": "^15.9.6",
     "vue-styleguidist": "^4.36.0",
