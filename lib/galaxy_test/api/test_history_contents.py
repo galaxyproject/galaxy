@@ -594,12 +594,12 @@ class HistoryContentsApiTestCase(ApiTestCase):
                 history_id,
                 assert_ok=False,
             ).json()
+            update_time = datetime.utcnow().isoformat()
             collection_id = response['implicit_collections'][0]['id']
             for _ in range(20):
-                update_time = datetime.utcnow().isoformat()
                 time.sleep(1)
                 update = self._get_content(history_id, update_time=update_time)
-                if any((c for c in update if c['history_content_type'] == 'dataset_collection' and c['job_state_summary']['ok'] == 3)):
+                if any(c for c in update if c['history_content_type'] == 'dataset_collection' and c['job_state_summary']['ok'] == 3):
                     return
             raise Exception(f"History content update time query did not include final update for implicit collection {collection_id}")
 
@@ -613,11 +613,11 @@ class HistoryContentsApiTestCase(ApiTestCase):
                 history_id,
                 assert_ok=False,
             ).json()
+            update_time = datetime.utcnow().isoformat()
             collection_id = response['output_collections'][0]['id']
             for _ in range(20):
-                update_time = datetime.utcnow().isoformat()
                 time.sleep(1)
                 update = self._get_content(history_id, update_time=update_time)
-                if any((c for c in update if c['history_content_type'] == 'dataset_collection' and c['populated_state'] == 'ok')):
+                if any(c for c in update if c['history_content_type'] == 'dataset_collection' and c['populated_state'] == 'ok'):
                     return
             raise Exception(f"History content update time query did not include populated_state update for dynamic nested collection {collection_id}")
