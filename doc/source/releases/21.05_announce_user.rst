@@ -1,0 +1,129 @@
+
+===========================================================
+May 2021 Galaxy Release (v 21.05)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**Feature1**
+  Feature description.
+
+**Feature2**
+  Feature description.
+
+**Feature3**
+  Feature description.
+
+
+New Visualizations
+===========================================================
+
+.. visualizations
+* Migrate api/genomes to fastapi
+  `Pull Request 11241`_
+* Shared visualization display fix
+  `Pull Request 11906`_
+
+New Datatypes
+===========================================================
+
+.. datatypes
+* Add FlowCytometry and MetaCyto datatypes
+  (thanks to `@pcm32 <https://github.com/pcm32>`__).
+  `Pull Request 9807`_
+* Add FastAPI routes for datatypes
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 11098`_
+* Fix remaining issues reported by bugbear; add it to flake8 reqs
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 11153`_
+* Add mrc datatype (and Python dependency)
+  (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__).
+  `Pull Request 11220`_
+* remove duplicated qcml from datatypes_conf sample
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 11378`_
+* Refactor display_applications API logic into DisplayApplicationsManager
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 11386`_
+* Merge release_21.01 -> dev
+  `Pull Request 11394`_
+* Add HHR datatype
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 11661`_
+* add meryldb datatype
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 11694`_
+* Merge 20.09 into dev
+  `Pull Request 11711`_
+* Add datatype for PretextMap output
+  `Pull Request 11747`_
+* add new datatype class for meryldb
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 11758`_
+* Make Avivator GEDA and sniffer for ome.tiff datatype
+  (thanks to `@qiagu <https://github.com/qiagu>`__).
+  `Pull Request 11801`_
+* jellyfish db datatype
+  (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
+  `Pull Request 11802`_
+* add new datatype JPEG 2000 in Galaxy
+  (thanks to `@annefou <https://github.com/annefou>`__).
+  `Pull Request 11812`_
+* Make datatype h5_model for machine leaning models
+  (thanks to `@qiagu <https://github.com/qiagu>`__).
+  `Pull Request 11825`_
+* Add support for the Relion STAR data format
+  (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__).
+  `Pull Request 11831`_
+* add minerva display app for covid
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
+  `Pull Request 11880`_
+* Limit max column in tabular dataset preview
+  `Pull Request 11901`_
+* Add toml datatype
+  (thanks to `@jj-umn <https://github.com/jj-umn>`__).
+  `Pull Request 11909`_
+* Use keep_original in pysam.tabix_index to not remove original data
+  `Pull Request 11913`_
+
+Builtin Tool Updates
+===========================================================
+
+.. tools
+* Fix remaining issues reported by bugbear; add it to flake8 reqs
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 11153`_
+* Resolve session problems, enabled pages and tags fastAPI routes
+  `Pull Request 11342`_
+* Make filter work with file containing header
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 11365`_
+* Add the SimText shiny app as Interactive Tool
+  (thanks to `@dlal-group <https://github.com/dlal-group>`__).
+  `Pull Request 11680`_
+* grep, tail, head: add option to keep header
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 11859`_
+* add a bit of docs to the add tags tool
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 11874`_
+
+Release Testing Team
+===========================================================
+
+A special thanks to the release testing team for testing many of the new features and reporting many bugs:
+
+<team members go here>
+
+Release Notes
+===========================================================
+
+Please see the `full release notes <21.05_announce.html>`_ for more details.
+
+.. include:: 21.05_prs.rst
+
+.. include:: _thanks.rst
