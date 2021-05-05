@@ -2320,9 +2320,7 @@ mapper(model.PostJobActionAssociation, model.PostJobActionAssociation.table, pro
     post_job_action=relation(model.PostJobAction)
 ))
 
-mapper(model.Task, model.Task.table, properties=dict(
-    job=relation(model.Job)
-))
+mapper(model.Task, model.Task.table)
 
 mapper(model.DeferredJob, model.DeferredJob.table, properties={})
 
@@ -2784,7 +2782,7 @@ mapper(model.Job, model.Job.table, properties=dict(
     input_library_datasets=relation(model.JobToInputLibraryDatasetAssociation),
     output_library_datasets=relation(model.JobToOutputLibraryDatasetAssociation, lazy=True),
     external_output_metadata=relation(model.JobExternalOutputMetadata, lazy=True),
-    tasks=relation(model.Task)
+    tasks=relation(model.Task, backref='job')
 ))
 model.Job.any_output_dataset_deleted = column_property(  # type: ignore
     exists([model.HistoryDatasetAssociation],
