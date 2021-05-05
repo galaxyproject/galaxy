@@ -100,21 +100,17 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         The list returned can be ordered using the optional parameter:
             order:  string containing one of the valid ordering attributes followed
-                    (optionally) by '-asc' or '-dsc' for ascending and descending
+                    (optionally) by '-asc' or '-dsc' (default) for ascending and descending
                     order respectively. Orders can be stacked as a comma-
                     separated list of values.
+                    Allowed ordering attributes are: 'create_time', 'extension',
+                    'hid', 'history_id', 'name', 'update_time'.
+                   'order' defaults to 'create_time'.
 
         ..example:
             To sort by name descending then create time descending:
                 '?order=name-dsc,create_time'
 
-        The ordering attributes and their default orders are:
-            hid defaults to 'hid-asc'
-            create_time defaults to 'create_time-dsc'
-            update_time defaults to 'update_time-dsc'
-            name    defaults to 'name-asc'
-
-        'order' defaults to 'create_time'
         """
         filter_params = self.parse_filter_params(kwd)
         filters = self.history_contents_filters.parse_filters(filter_params)
