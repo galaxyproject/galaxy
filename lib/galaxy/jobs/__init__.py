@@ -2151,7 +2151,7 @@ class JobWrapper(HasResourceParameters):
             return True
 
     def container_monitor_command(self, container, **kwds):
-        if not container or not self.tool.produces_entry_points:
+        if not container or not self.tool.produces_entry_points or not self.get_destination_configuration("container_monitor", True):
             return None
 
         exec_dir = kwds.get('exec_dir', os.path.abspath(os.getcwd()))
