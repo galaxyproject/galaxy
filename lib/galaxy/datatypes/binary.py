@@ -1528,6 +1528,25 @@ class H5MLM(H5):
         except Exception:
             return "HDF5 Model (%s)" % (nice_size(dataset.get_size()))
 
+    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
+        rval = {}
+        try:
+            with h5py.File(dataset.file_name, "r") as handle:
+                rval['Attributes'] = {}
+                for k in handle.attrs.keys():
+                    if k == '-repr-':
+                        continue
+                    v = util.unicodify(handle.attrs.get(k))
+                    rval['Attributes'][k] = v
+        except Exception as e:
+            log.warning(e)
+            pass
+
+        config = self.get_config_string(dataset.file_name)
+        rval['Config'] = json.loads(config)
+
+        return "<pre>%s</pre>" % json.dumps(rval, sort_keys=True, indent=2)
+
 
 class Scf(Binary):
     """Class describing an scf binary sequence file"""
