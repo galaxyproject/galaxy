@@ -25,9 +25,6 @@ runners:
     k8s_fs_group_id: "101"
     k8s_galaxy_instance_id: 'my-galaxy-instance'
     k8s_namespace: 'galaxy-namespace'
-    k8s_persistent_volume_claims: |-
-      my-galaxy-instance-galaxy-pvc:/galaxy/server/database,my-galaxy-instance-cvmfs-gxy-data-pvc:/cvmfs/data.galaxyproject.org
-      ,my-galaxy-instance-galaxy-pvc/cvmfsclone:/cvmfs/cloud.galaxyproject.org
     k8s_pod_priority_class: 'my-galaxy-instance-job-priority'
     k8s_pull_policy: IfNotPresent
     k8s_run_as_group_id: "101"
