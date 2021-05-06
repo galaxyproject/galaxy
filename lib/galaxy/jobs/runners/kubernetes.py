@@ -82,7 +82,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_cleanup_job=dict(map=str, valid=lambda s: s in {"onsuccess", "always", "never"}, default="always"),
             k8s_pod_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=3),
             k8s_walltime_limit=dict(map=int, valid=lambda x: int(x) >= 0, default=172800),
-            k8s_unschedulable_walltime_limit=dict(map=int, valid=lambda x: int(x) >= 0, default=1800),)
+            k8s_unschedulable_walltime_limit=dict(map=int, valid=lambda x: int(x) >= 0, default=1800),
+            k8s_interactivetools_use_ssl=dict(map=bool, default=False),
+            k8s_interactivetools_ingress_annotations=dict(map=str),)
 
         if 'runner_param_specs' not in kwargs:
             kwargs['runner_param_specs'] = dict()
@@ -372,6 +374,14 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                                    }]}} for ep in entry_points]
                 }
             }
+            if self.runner_params.get("k8s_interactivetools_use_ssl"):
+                domains = list(set([e["domain"] for e in entry_points]))
+                k8s_spec_template["spec"]["tls"] = [{"hosts": [domain],
+                                                     "secretName": re.sub("[^a-z0-9\-]", "-", domain)
+                                                    } for domain in domains]
+            if self.runner_params.get("k8s_interactivetools_ingress_annotations"):
+                new_ann = yaml.safe_load(self.runner_params.get("k8s_interactivetools_ingress_annotations"))
+                k8s_spec_template["metadata"]["annotations"].update(new_ann)
             return k8s_spec_template
 
     def __get_k8s_security_context(self):
