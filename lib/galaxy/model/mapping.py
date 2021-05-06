@@ -2214,7 +2214,6 @@ mapper(model.JobToInputLibraryDatasetAssociation, model.JobToInputLibraryDataset
 ))
 
 mapper(model.JobToOutputLibraryDatasetAssociation, model.JobToOutputLibraryDatasetAssociation.table, properties=dict(
-    job=relation(model.Job),
     dataset=relation(model.LibraryDatasetDatasetAssociation,
         lazy=False)
 ))
@@ -2775,7 +2774,8 @@ mapper(model.Job, model.Job.table, properties=dict(
         backref="job", lazy=True),
     post_job_actions=relation(model.PostJobActionAssociation, backref="job", lazy=False),
     input_library_datasets=relation(model.JobToInputLibraryDatasetAssociation, backref="job"),
-    output_library_datasets=relation(model.JobToOutputLibraryDatasetAssociation, lazy=True),
+    output_library_datasets=relation(model.JobToOutputLibraryDatasetAssociation,
+        backref="job", lazy=True),
     external_output_metadata=relation(model.JobExternalOutputMetadata, lazy=True, backref='job'),
     tasks=relation(model.Task, backref='job')
 ))
