@@ -2309,7 +2309,6 @@ mapper(model.PostJobAction, model.PostJobAction.table, properties=dict(
 ))
 
 mapper(model.PostJobActionAssociation, model.PostJobActionAssociation.table, properties=dict(
-    job=relation(model.Job),
     post_job_action=relation(model.PostJobAction)
 ))
 
@@ -2775,7 +2774,7 @@ mapper(model.Job, model.Job.table, properties=dict(
         backref="job", lazy=True),
     output_dataset_collections=relation(model.JobToImplicitOutputDatasetCollectionAssociation,
         backref="job", lazy=True),
-    post_job_actions=relation(model.PostJobActionAssociation, lazy=False),
+    post_job_actions=relation(model.PostJobActionAssociation, backref="job", lazy=False),
     input_library_datasets=relation(model.JobToInputLibraryDatasetAssociation),
     output_library_datasets=relation(model.JobToOutputLibraryDatasetAssociation, lazy=True),
     external_output_metadata=relation(model.JobExternalOutputMetadata, lazy=True, backref='job'),
