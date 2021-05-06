@@ -1846,6 +1846,7 @@ mapper(model.History, model.History.table, properties=dict(
         backref="history",
         order_by=asc(model.HistoryDatasetAssociation.table.c.hid)),
     exports=relation(model.JobExportHistoryArchive,
+        backref="history",
         primaryjoin=(model.JobExportHistoryArchive.table.c.history_id == model.History.table.c.id),
         order_by=desc(model.JobExportHistoryArchive.table.c.id)),
     active_datasets=relation(model.HistoryDatasetAssociation,
@@ -2277,7 +2278,6 @@ mapper(model.JobExternalOutputMetadata, model.JobExternalOutputMetadata.table, p
 
 mapper(model.JobExportHistoryArchive, model.JobExportHistoryArchive.table, properties=dict(
     job=relation(model.Job),
-    history=relation(model.History),
     dataset=relation(model.Dataset, backref='job_export_history_archive')
 ))
 
