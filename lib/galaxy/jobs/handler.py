@@ -633,7 +633,11 @@ class JobHandlerQueue(Monitors):
                     elif history.state == "ok":
                         finished = history.create_time
 
-                time_spent += finished - started
+                if started is not None and finished is not None:
+                    time_spent += finished - started
+                else:
+                    log.warning("Unable to calculate time spent for job %s; started: %s, finished: %s",
+                                job.id, started, finished)
 
             if time_spent > self.app.job_config.limits.total_walltime["delta"]:
                 return JOB_USER_OVER_TOTAL_WALLTIME, job_destination
