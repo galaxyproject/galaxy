@@ -2216,7 +2216,8 @@ mapper(model.JobToInputLibraryDatasetAssociation, model.JobToInputLibraryDataset
 
 mapper(model.JobToOutputLibraryDatasetAssociation, model.JobToOutputLibraryDatasetAssociation.table, properties=dict(
     dataset=relation(model.LibraryDatasetDatasetAssociation,
-        lazy=False)
+        lazy=False,
+        backref="creating_job_associations")
 ))
 
 simple_mapping(model.JobStateHistory,
@@ -2808,8 +2809,6 @@ mapper(model.DataManagerJobAssociation, model.DataManagerJobAssociation.table, p
         uselist=False)
 ))
 
-class_mapper(model.LibraryDatasetDatasetAssociation).add_property(
-    "creating_job_associations", relation(model.JobToOutputLibraryDatasetAssociation))
 class_mapper(model.HistoryDatasetCollectionAssociation).add_property(
     "creating_job_associations", relation(model.JobToOutputDatasetCollectionAssociation))
 
