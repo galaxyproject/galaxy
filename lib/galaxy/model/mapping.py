@@ -2188,7 +2188,6 @@ mapper(model.JobToOutputDatasetAssociation, model.JobToOutputDatasetAssociation.
 ))
 
 mapper(model.JobToInputDatasetCollectionAssociation, model.JobToInputDatasetCollectionAssociation.table, properties=dict(
-    job=relation(model.Job),
     dataset_collection=relation(model.HistoryDatasetCollectionAssociation,
         lazy=False)
 ))
@@ -2771,7 +2770,7 @@ mapper(model.Job, model.Job.table, properties=dict(
     library_folder=relation(model.LibraryFolder, lazy=True),
     parameters=relation(model.JobParameter, lazy=True),
     input_datasets=relation(model.JobToInputDatasetAssociation, backref="job"),
-    input_dataset_collections=relation(model.JobToInputDatasetCollectionAssociation, lazy=True),
+    input_dataset_collections=relation(model.JobToInputDatasetCollectionAssociation, backref="job", lazy=True),
     input_dataset_collection_elements=relation(model.JobToInputDatasetCollectionElementAssociation, lazy=True),
     output_datasets=relation(model.JobToOutputDatasetAssociation, lazy=True),
     output_dataset_collection_instances=relation(model.JobToOutputDatasetCollectionAssociation, lazy=True),
