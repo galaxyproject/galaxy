@@ -35,7 +35,9 @@ HDA_MODEL_CLASS_NAME = "HistoryDatasetAssociation"
 DC_MODEL_CLASS_NAME = "DatasetCollection"
 DCE_MODEL_CLASS_NAME = "DatasetCollectionElement"
 HDCA_MODEL_CLASS_NAME = "HistoryDatasetCollectionAssociation"
+HISTORY_MODEL_CLASS_NAME = "History"
 JOB_MODEL_CLASS_NAME = "Job"
+STORED_WORKFLOW_MODEL_CLASS_NAME = "StoredWorkflow"
 
 
 # Generic and common Field annotations that can be reused across models
@@ -579,7 +581,7 @@ class HDCADetailed(HDCASummary):
 
 class HistorySummary(Model):
     """History summary information."""
-    model_class: str = ModelClassField(HDCA_MODEL_CLASS_NAME)
+    model_class: str = ModelClassField(HISTORY_MODEL_CLASS_NAME)
     id: EncodedDatabaseIdField = EncodedEntityIdField
     name: str = Field(
         ...,
@@ -865,12 +867,12 @@ class JobDetails(JobSummary):
         ),
     )
     inputs: Dict[str, DatasetJobInfo] = Field(
-        ...,
+        {},
         title="Inputs",
         description="Dictionary mapping all the tool inputs (by name) with the corresponding dataset information.",
     )
     outputs: Dict[str, DatasetJobInfo] = Field(
-        ...,
+        {},
         title="Outputs",
         description="Dictionary mapping all the tool outputs (by name) with the corresponding dataset information.",
     )
@@ -967,4 +969,199 @@ class JobFullDetails(JobDetails):
             "Collections of metrics provided by `JobInstrumenter` plugins on a particular job. "
             "Only administrators can see these metrics."
         ),
+    )
+
+
+class StoredWorkflowSummary(Model):
+    id: EncodedDatabaseIdField = EncodedEntityIdField
+    model_class: str = ModelClassField(STORED_WORKFLOW_MODEL_CLASS_NAME)
+    create_time: datetime = CreateTimeField
+    update_time: datetime = UpdateTimeField
+    name: str = Field(
+        ...,
+        title="Name",
+        description="The name of the history.",
+    )
+    url: AnyUrl = UrlField
+    published: bool = Field(
+        ...,
+        title="Published",
+        description="Whether this workflow is currently publicly available to all users.",
+    )
+    annotations: List[str] = Field(  # Inconsistency? Why workflows summaries use a list instead of an optional string?
+        ...,
+        title="Annotations",
+        description="An list of annotations to provide details or to help understand the purpose and usage of this workflow.",
+    )
+    tags: TagCollection
+    deleted: bool = Field(
+        ...,
+        title="Deleted",
+        description="Whether this item is marked as deleted.",
+    )
+    hidden: bool = Field(
+        ...,
+        title="Hidden",
+        description="TODO",
+    )
+    owner: str = Field(
+        ...,
+        title="Owner",
+        description="The name of the user who owns this workflow.",
+    )
+    latest_workflow_uuid: UUID4 = Field(  # Is this really used?
+        ...,
+        title="Latest workflow UUID",
+        description="TODO",
+    )
+    number_of_steps: int = Field(
+        ...,
+        title="Number of Steps",
+        description="The number of steps that make up this workflow.",
+    )
+    show_in_tool_panel: bool = Field(
+        ...,
+        title="Show in Tool Panel",
+        description="Whether to display this workflow in the Tools Panel.",
+    )
+
+
+class WorkflowInput(BaseModel):
+    label: str = Field(
+        ...,
+        title="Label",
+        description="Label of the input.",
+    )
+    value: str = Field(
+        ...,
+        title="Value",
+        description="TODO",
+    )
+    uuid: UUID4 = Field(
+        ...,
+        title="UUID",
+        description="Universal unique identifier of the input.",
+    )
+
+
+class WorkflowStep(BaseModel):
+    id: int = Field(
+        ...,
+        title="ID",
+        description="The identifier of the step. It matches the index order of the step inside the workflow."
+    )
+    type: str = Field(
+        ...,
+        title="Type",
+        description="The type of workflow module."
+    )
+    tool_id: Optional[str] = Field(
+        None,
+        title="Tool ID",
+        description="The unique name of the tool associated with this step."
+    )
+    tool_version: Optional[str] = Field(
+        None,
+        title="Tool Version",
+        description="The version of the tool associated with this step."
+    )
+    annotation: Optional[str] = AnnotationField
+    tool_inputs: Any = Field(
+        ...,
+        title="Tool Inputs",
+        description="TODO"
+    )
+    input_steps: Any = Field(
+        ...,
+        title="Input Steps",
+        description="TODO"
+    )
+
+
+class InputDataStep(WorkflowStep):
+    type: str = Field(
+        "data_input", const=True,
+        title="Type",
+        description="The type of workflow module."
+    )
+
+
+class InputDataCollectionStep(WorkflowStep):
+    type: str = Field(
+        "data_collection_input", const=True,
+        title="Type",
+        description="The type of workflow module."
+    )
+
+
+class InputParameterStep(WorkflowStep):
+    type: str = Field(
+        "parameter_input", const=True,
+        title="Type",
+        description="The type of workflow module."
+    )
+
+
+class PauseStep(WorkflowStep):
+    type: str = Field(
+        "pause", const=True,
+        title="Type",
+        description="The type of workflow module."
+    )
+
+
+class ToolStep(WorkflowStep):
+    type: str = Field(
+        "tool", const=True,
+        title="Type",
+        description="The type of workflow module."
+    )
+
+
+class SubworkflowStep(WorkflowStep):
+    type: str = Field(
+        "subworkflow", const=True,
+        title="Type",
+        description="The type of workflow module."
+    )
+
+
+class StoredWorkflowDetailed(StoredWorkflowSummary):
+    annotation: Optional[str] = AnnotationField  # Inconsistency? See comment on StoredWorkflowSummary.annotations
+    license: Optional[Any] = Field(
+        None,
+        title="License",
+        description="SPDX Identifier of the license associated with this workflow."
+    )
+    version: int = Field(
+        ...,
+        title="Version",
+        description="The version of this workflow represented by an incremental number."
+    )
+    inputs: Dict[int, WorkflowInput] = Field(
+        {},
+        title="Inputs",
+        description="A dictionary containing information about all the inputs of the workflow."
+    )
+    creator: Optional[Any] = Field(
+        None,
+        title="Creator",
+        description=(
+            "Additional information about the creator of this workflow. "
+            "This information is heterogeneous."
+        )
+    )
+    steps: Dict[int,
+        Union[
+            InputDataStep,
+            InputDataCollectionStep,
+            InputParameterStep,
+            PauseStep,
+            ToolStep,
+            SubworkflowStep,
+        ]
+    ] = Field(
+        {},
+        title="Steps",
+        description="A dictionary with information about all the steps of the workflow."
     )
