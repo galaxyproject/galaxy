@@ -661,6 +661,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         job_state.running = False
         self.mark_as_failed(job_state)
         try:
+            if job_state.job_wrapper.guest_ports:
+                self.__cleanup_k8s_interactivetools(job_state.job_wrapper, job)
             self.__cleanup_k8s_job(job)
         except Exception:
             log.exception("Could not clean up k8s batch job. Ignoring...")
@@ -684,19 +686,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         self.mark_as_failed(job_state)
         try:
             if job_state.job_wrapper.guest_ports:
-                k8s_job_prefix = self.__produce_k8s_job_prefix()
-                k8s_job_name = self.__get_k8s_job_name(k8s_job_prefix, job_state.job_wrapper)
-                job_failed = (job.obj['status']['failed'] > 0
-                              if 'failed' in job.obj['status'] else False)
-                log.debug(f'Deleting service/ingress for job with ID {job_state.job_wrapper.get_id_tag()}')
-                ingress_to_delete = find_ingress_object_by_name(self._pykube_api, k8s_job_name, self.runner_params['k8s_namespace'])
-                if ingress_to_delete and len(ingress_to_delete.response['items']) > 0:
-                    k8s_ingress = Ingress(self._pykube_api, ingress_to_delete.response['items'][0])
-                    self.__cleanup_k8s_ingress(k8s_ingress, job_failed)
-                service_to_delete = find_service_object_by_name(self._pykube_api, k8s_job_name, self.runner_params['k8s_namespace'])
-                if service_to_delete and len(service_to_delete.response['items']) > 0:
-                    k8s_service = Service(self._pykube_api, service_to_delete.response['items'][0])
-                    self.__cleanup_k8s_service(k8s_service, job_failed)
+                self.__cleanup_k8s_interactivetools(job_state.job_wrapper, job)
             self.__cleanup_k8s_job(job)
         except Exception:
             log.exception("Could not clean up k8s batch job. Ignoring...")
@@ -755,6 +745,21 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         pod = Pod(self._pykube_api, pods.response['items'][0])
         return is_pod_unschedulable(self._pykube_api, pod, self.runner_params['k8s_namespace'])
 
+    def __cleanup_k8s_interactivetools(self, job_wrapper, k8s_job):
+        k8s_job_prefix = self.__produce_k8s_job_prefix()
+        k8s_job_name = "{}-{}".format(k8s_job_prefix, self.__force_label_conformity(job_wrapper.get_id_tag()))
+        log.debug(f'Deleting service/ingress for job with ID {job_wrapper.get_id_tag()}')
+        job_failed = (k8s_job.obj['status']['failed'] > 0
+                      if 'failed' in k8s_job.obj['status'] else False)
+        ingress_to_delete = find_ingress_object_by_name(self._pykube_api, k8s_job_name, self.runner_params['k8s_namespace'])
+        if ingress_to_delete and len(ingress_to_delete.response['items']) > 0:
+            k8s_ingress = Ingress(self._pykube_api, ingress_to_delete.response['items'][0])
+            self.__cleanup_k8s_ingress(k8s_ingress, job_failed)
+        service_to_delete = find_service_object_by_name(self._pykube_api, k8s_job_name, self.runner_params['k8s_namespace'])
+        if service_to_delete and len(service_to_delete.response['items']) > 0:
+            k8s_service = Service(self._pykube_api, service_to_delete.response['items'][0])
+            self.__cleanup_k8s_service(k8s_service, job_failed)
+
     def stop_job(self, job_wrapper):
         """Attempts to delete a dispatched job to the k8s cluster"""
         job = job_wrapper.get_job()
@@ -763,19 +768,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             if job_to_delete and len(job_to_delete.response['items']) > 0:
                 k8s_job = Job(self._pykube_api, job_to_delete.response['items'][0])
                 if job_wrapper.guest_ports:
-                    k8s_job_prefix = self.__produce_k8s_job_prefix()
-                    k8s_job_name = "{}-{}".format(k8s_job_prefix, self.__force_label_conformity(job_wrapper.get_id_tag()))
-                    log.debug(f'Deleting service/ingress for job with ID {job_wrapper.get_id_tag()}')
-                    job_failed = (k8s_job.obj['status']['failed'] > 0
-                                  if 'failed' in k8s_job.obj['status'] else False)
-                    ingress_to_delete = find_ingress_object_by_name(self._pykube_api, k8s_job_name, self.runner_params['k8s_namespace'])
-                    if ingress_to_delete and len(ingress_to_delete.response['items']) > 0:
-                        k8s_ingress = Ingress(self._pykube_api, ingress_to_delete.response['items'][0])
-                        self.__cleanup_k8s_ingress(k8s_ingress, job_failed)
-                    service_to_delete = find_service_object_by_name(self._pykube_api, k8s_job_name, self.runner_params['k8s_namespace'])
-                    if service_to_delete and len(service_to_delete.response['items']) > 0:
-                        k8s_service = Service(self._pykube_api, service_to_delete.response['items'][0])
-                        self.__cleanup_k8s_service(k8s_service, job_failed)
+                    self.__cleanup_k8s_interactivetools(job_wrapper, k8s_job)
                 self.__cleanup_k8s_job(k8s_job)
             # TODO assert whether job parallelism == 0
             # assert not job_to_delete.exists(), "Could not delete job,"+job.job_runner_external_id+" it still exists"
@@ -818,17 +811,5 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                         " in job id '%s'", job_state.job_id)
         job = Job(self._pykube_api, jobs.response['items'][0])
         if job_state.job_wrapper.guest_ports:
-            k8s_job_prefix = self.__produce_k8s_job_prefix()
-            k8s_job_name = self.__get_k8s_job_name(k8s_job_prefix, job_state.job_wrapper)
-            job_failed = (job.obj['status']['failed'] > 0
-                          if 'failed' in job.obj['status'] else False)
-            log.debug(f'Deleting service/ingress for job with ID {job_state.job_wrapper.get_id_tag()}')
-            ingress_to_delete = find_ingress_object_by_name(self._pykube_api, k8s_job_name, self.runner_params['k8s_namespace'])
-            if ingress_to_delete and len(ingress_to_delete.response['items']) > 0:
-                k8s_ingress = Ingress(self._pykube_api, ingress_to_delete.response['items'][0])
-                self.__cleanup_k8s_ingress(k8s_ingress, job_failed)
-            service_to_delete = find_service_object_by_name(self._pykube_api, k8s_job_name, self.runner_params['k8s_namespace'])
-            if service_to_delete and len(service_to_delete.response['items']) > 0:
-                k8s_service = Service(self._pykube_api, service_to_delete.response['items'][0])
-                self.__cleanup_k8s_service(k8s_service, job_failed)
+            self.__cleanup_k8s_interactivetools(job_state.job_wrapper, job)
         self.__cleanup_k8s_job(job)
