@@ -125,7 +125,7 @@ var View = Backbone.View.extend({
         var form = new Form({
             title: _l("Edit attributes"),
             operations: {
-                submit_attributes: new Ui.Button({
+                submit_atributes: new Ui.Button({
                     tooltip: _l("Save attributes of the dataset."),
                     icon: "fa-floppy-o",
                     title: _l("Save"),
