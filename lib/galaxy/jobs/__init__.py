@@ -1174,10 +1174,13 @@ class JobWrapper(HasResourceParameters):
     @property
     def guest_ports(self):
         if hasattr(self, "interactivetools"):
+            # This works when the job is being prepared
             guest_ports = [ep.get('port') for ep in self.interactivetools]
             return guest_ports
         else:
-            return []
+            # This works when handling a running job
+            job = self._load_job()
+            return [ep.tool_port for ep in job.interactivetool_entry_points]
 
     @property
     def working_directory(self):
