@@ -130,6 +130,8 @@
                                     :datatypes="datatypes"
                                     @onAnnotation="onAnnotation"
                                     @onLabel="onLabel"
+                                    @onEditSubworkflow="onEditSubworkflow"
+                                    @onAttemptRefactor="onAttemptRefactor"
                                 />
                                 <WorkflowAttributes
                                     v-else-if="showAttributes"

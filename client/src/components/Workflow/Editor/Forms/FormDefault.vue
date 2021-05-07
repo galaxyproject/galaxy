@@ -108,10 +108,10 @@ export default {
             this.$emit("onLabel", this.node.id, newLabel);
         },
         onEditSubworkflow() {
-            this.workflow.onEditSubworkflow(this.node.content_id);
+            this.$emit("onEditSubworkflow", this.node.content_id);
         },
         onUpgradeSubworkflow() {
-            this.workflow.onAttemptRefactor([
+            this.$emit("onAttemptRefactor", [
                 { action_type: "upgrade_subworkflow", step: { order_index: parseInt(this.node.id) } },
             ]);
         },
@@ -128,7 +128,6 @@ export default {
                     this.node.tool_state = data.tool_state;
                     this.node.inputs = data.inputs ? data.inputs.slice() : [];
                     this.node.outputs = data.outputs ? data.outputs.slice() : [];
-                    console.log(data);
                 });
         },
     },

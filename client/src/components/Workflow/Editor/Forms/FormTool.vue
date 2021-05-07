@@ -133,14 +133,6 @@ export default {
         onLabel(newLabel) {
             this.$emit("onLabel", this.node.id, newLabel);
         },
-        onEditSubworkflow() {
-            this.workflow.onEditSubworkflow(this.node.content_id);
-        },
-        onUpgradeSubworkflow() {
-            this.workflow.onAttemptRefactor([
-                { action_type: "upgrade_subworkflow", step: { order_index: parseInt(this.node.id) } },
-            ]);
-        },
         onChange(values) {
             this.mainValues = values;
             this.postChanges();
