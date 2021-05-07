@@ -415,13 +415,15 @@ class JobHandlerQueue(Monitors):
                                    JOB_USER_OVER_TOTAL_WALLTIME):
                     if job_state == JOB_USER_OVER_QUOTA:
                         log.info("(%d) User (%s) is over quota: job paused" % (job.id, job.user_id))
+                        what = "your disk quota"
                     else:
                         log.info("(%d) User (%s) is over total walltime limit: job paused" % (job.id, job.user_id))
+                        what = "your total job runtime"
 
                     job.set_state(model.Job.states.PAUSED)
                     for dataset_assoc in job.output_datasets + job.output_library_datasets:
                         dataset_assoc.dataset.dataset.state = model.Dataset.states.PAUSED
-                        dataset_assoc.dataset.info = "Execution of this dataset's job is paused because you were over your disk quota at the time it was ready to run"
+                        dataset_assoc.dataset.info = "Execution of this dataset's job is paused because you were over {} at the time it was ready to run".format(what)
                         self.sa_session.add(dataset_assoc.dataset.dataset)
                     self.sa_session.add(job)
                 elif job_state == JOB_ERROR:
