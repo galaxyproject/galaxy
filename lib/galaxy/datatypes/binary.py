@@ -1466,7 +1466,7 @@ class H5MLM(H5):
     file_ext = "h5mlm"
     URL = "https://github.com/goeckslab/Galaxy-ML"
 
-    max_peek_size = 1000      # 1 KB
+    max_peek_size = 1000         # 1 KB
     max_preview_size = 1000000   # 1 MB
 
     MetadataElement(name="hyper_params", desc="Hyperparameter File", param=FileParameter, file_ext="tabular", readonly=True, no_value=None, visible=False, optional=True)
@@ -1515,7 +1515,7 @@ class H5MLM(H5):
             return config
         except Exception as e:
             log.warning('%s, get model configuration Except: %s', self, e)
-            return ""
+            return "{}"
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
