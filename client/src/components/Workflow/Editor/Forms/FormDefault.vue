@@ -104,10 +104,10 @@ export default {
     },
     methods: {
         onAnnotation(newAnnotation) {
-            this.node.setAnnotation(newAnnotation);
+            this.$emit("onAnnotation", this.node.id, newAnnotation);
         },
         onLabel(newLabel) {
-            this.node.setLabel(newLabel);
+            this.node.label = newLabel;
             this.errorLabel = checkLabels(this.node.id, newLabel, this.workflow.nodes);
         },
         onEditSubworkflow() {

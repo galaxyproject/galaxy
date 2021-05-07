@@ -126,10 +126,10 @@ export default {
     },
     methods: {
         onAnnotation(newAnnotation) {
-            this.node.setAnnotation(newAnnotation);
+            this.$emit("onAnnotation", this.node.id, newAnnotation);
         },
         onLabel(newLabel) {
-            this.node.setLabel(newLabel);
+            this.node.label = newLabel;
             this.errorLabel = checkLabels(this.node.id, newLabel, this.workflow.nodes);
         },
         onEditSubworkflow() {
@@ -170,7 +170,6 @@ export default {
                     this.node.outputs = data.outputs ? data.outputs.slice() : [];
                     this.node.postJobActions = data.post_job_actions || {};
                     const form = this.$refs["form"];
-                    console.log(form);
                     form.parseUpdate(data.config_form);
                     form.parseErrors(data.config_form);
                     if (newVersion) {

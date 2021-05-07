@@ -120,12 +120,14 @@
                                     :get-manager="getManager"
                                     :get-node="getNode"
                                     :datatypes="datatypes"
+                                    @onAnnotation="onAnnotation"
                                 />
                                 <FormDefault
                                     v-else-if="hasActiveNodeDefault"
                                     :get-manager="getManager"
                                     :get-node="getNode"
                                     :datatypes="datatypes"
+                                    @onAnnotation="onAnnotation"
                                 />
                                 <WorkflowAttributes
                                     v-else-if="showAttributes"
@@ -459,6 +461,10 @@ export default {
             this._ensureParametersSet();
             this.onDeactivate();
             this.showInPanel = "attributes";
+        },
+        onAnnotation(nodeId, newAnnotation) {
+            const node = this.nodes[nodeId];
+            node.setAnnotation(newAnnotation);
         },
         onScrollTo(nodeId) {
             const node = this.nodes[nodeId];

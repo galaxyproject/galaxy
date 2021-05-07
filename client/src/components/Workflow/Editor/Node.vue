@@ -146,6 +146,7 @@ export default {
             outputTerminals: {},
             errors: null,
             label: null,
+            annotation: null,
             config_form: {},
             showLoading: true,
             highlight: false,
@@ -306,26 +307,12 @@ export default {
             });
         },
         setAnnotation(annotation) {
-            if (this.annotationTimeout) {
-                clearTimeout(this.annotationTimeout);
-            }
-            this.annotationTimeout = setTimeout(() => {
-                if (annotation !== this.annotation) {
-                    this.annotation = annotation;
-                    this.$emit("onChange");
-                }
-            }, 100);
+            this.annotation = annotation;
+            this.$emit("onChange");
         },
         setLabel(label) {
-            if (this.labelTimeout) {
-                clearTimeout(this.labelTimeout);
-            }
-            this.labelTimeout = setTimeout(() => {
-                if (label !== this.label) {
-                    this.label = label;
-                    this.$emit("onChange");
-                }
-            }, 100);
+            this.label = label;
+            this.$emit("onChange");
         },
         setData(data) {
             this.config_form = data.config_form;
