@@ -121,6 +121,7 @@
                                     :get-node="getNode"
                                     :datatypes="datatypes"
                                     @onAnnotation="onAnnotation"
+                                    @onLabel="onLabel"
                                 />
                                 <FormDefault
                                     v-else-if="hasActiveNodeDefault"
@@ -128,6 +129,7 @@
                                     :get-node="getNode"
                                     :datatypes="datatypes"
                                     @onAnnotation="onAnnotation"
+                                    @onLabel="onLabel"
                                 />
                                 <WorkflowAttributes
                                     v-else-if="showAttributes"
@@ -465,6 +467,10 @@ export default {
         onAnnotation(nodeId, newAnnotation) {
             const node = this.nodes[nodeId];
             node.setAnnotation(newAnnotation);
+        },
+        onLabel(nodeId, newLabel) {
+            const node = this.nodes[nodeId];
+            node.setLabel(newLabel);
         },
         onScrollTo(nodeId) {
             const node = this.nodes[nodeId];

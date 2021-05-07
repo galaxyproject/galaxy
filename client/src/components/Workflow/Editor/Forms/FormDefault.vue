@@ -77,11 +77,6 @@ export default {
             required: true,
         },
     },
-    data() {
-        return {
-            errorLabel: null,
-        };
-    },
     computed: {
         node() {
             return this.getNode();
@@ -101,14 +96,16 @@ export default {
         isSubworkflow() {
             return this.node.type == "subworkflow";
         },
+        errorLabel() {
+            return checkLabels(this.node.id, this.node.label, this.workflow.nodes);
+        },
     },
     methods: {
         onAnnotation(newAnnotation) {
             this.$emit("onAnnotation", this.node.id, newAnnotation);
         },
         onLabel(newLabel) {
-            this.node.label = newLabel;
-            this.errorLabel = checkLabels(this.node.id, newLabel, this.workflow.nodes);
+            this.$emit("onLabel", this.node.id, newLabel);
         },
         onEditSubworkflow() {
             this.workflow.onEditSubworkflow(this.node.content_id);

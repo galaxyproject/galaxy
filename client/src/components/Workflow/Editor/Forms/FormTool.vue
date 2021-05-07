@@ -79,7 +79,6 @@ export default {
     },
     data() {
         return {
-            errorLabel: null,
             mainValues: {},
             sectionValues: {},
             messageVariant: "",
@@ -95,6 +94,9 @@ export default {
         },
         id() {
             return `${this.node.id}:${this.node.config_form.id}`;
+        },
+        errorLabel() {
+            return checkLabels(this.node.id, this.node.label, this.workflow.nodes);
         },
         inputs() {
             const inputs = this.node.config_form.inputs;
@@ -129,8 +131,7 @@ export default {
             this.$emit("onAnnotation", this.node.id, newAnnotation);
         },
         onLabel(newLabel) {
-            this.node.label = newLabel;
-            this.errorLabel = checkLabels(this.node.id, newLabel, this.workflow.nodes);
+            this.$emit("onLabel", this.node.id, newLabel);
         },
         onEditSubworkflow() {
             this.workflow.onEditSubworkflow(this.node.content_id);
