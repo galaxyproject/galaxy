@@ -1533,6 +1533,12 @@ class H5MLM(H5):
             return "HDF5 Model (%s)" % (nice_size(dataset.get_size()))
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
+        preview = util.string_as_bool(preview)
+
+        if to_ext or not preview:
+            to_ext = to_ext or dataset.extension
+            return self._serve_raw(trans, dataset, to_ext, **kwd)
+
         rval = {}
         try:
             with h5py.File(dataset.file_name, "r") as handle:
