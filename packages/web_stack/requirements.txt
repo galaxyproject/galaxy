@@ -1,2 +1,2 @@
-SQLAlchemy
+SQLAlchemy>=1.4.12,<2
 galaxy-util
