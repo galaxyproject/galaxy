@@ -1,4 +1,9 @@
 from lagom import magic_bind_to_container
+from sqlalchemy import (
+    and_,
+    func,
+    tuple_
+)
 from sqlalchemy.orm.scoping import (
     scoped_session,
 )
@@ -9,6 +14,7 @@ from galaxy.celery import celery_app
 from galaxy.jobs.manager import JobManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
+from galaxy.util import ExecutionTimer
 from galaxy.util.custom_logging import get_logger
 from . import get_galaxy_app
 
@@ -73,3 +79,23 @@ def export_history(
     job.state = model.Job.states.NEW
     sa_session.flush()
     job_manager.enqueue(job)
+
+
+@celery_app.task
+@galaxy_task
+def prune_history_audit_table(sa_session: scoped_session):
+    """Prune ever growing history_audit table."""
+    history_audit_table = model.HistoryAudit.table
+    latest_subq = sa_session.query(
+        history_audit_table.c.history_id,
+        func.max(history_audit_table.c.update_time).label('max_update_time')).group_by(history_audit_table.c.history_id).subquery()
+    not_latest_query = sa_session.query(
+        history_audit_table.c.history_id, history_audit_table.c.update_time
+    ).select_from(latest_subq).join(
+        history_audit_table, and_(
+            history_audit_table.c.update_time < latest_subq.columns.max_update_time,
+            history_audit_table.c.history_id == latest_subq.columns.history_id))
+    d = history_audit_table.delete()
+    timer = ExecutionTimer()
+    sa_session.execute(d.where(tuple_(history_audit_table.c.history_id, history_audit_table.c.update_time).in_(not_latest_query)))
+    log.debug(f"Successfully pruned history_audit table {timer}")

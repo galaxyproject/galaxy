@@ -222,6 +222,10 @@ galaxy:
   # seconds).
   #database_wait_sleep: 1.0
 
+  # Time (in seconds) between attempts to remove old rows from the
+  # history_audit database table. Set to 0 to disable pruning.
+  #history_audit_table_prune_interval: 3600
+
   # Where dataset files are stored. It must be accessible at the same
   # path on any cluster nodes that will run Galaxy jobs, unless using
   # Pulsar. The default value has been changed from 'files' to 'objects'
@@ -1364,6 +1368,10 @@ galaxy:
   # Instead of sending prefix + dot-separated-path, Galaxy will send
   # prefix with a tag path set to the page url
   #statsd_influxdb: false
+
+  # Mock out statsd client calls - only used by testing infrastructure
+  # really. Do not set this in production environments.
+  #statsd_mock_calls: false
 
   # Add an option to the library upload form which allows administrators
   # to upload a directory of files.
