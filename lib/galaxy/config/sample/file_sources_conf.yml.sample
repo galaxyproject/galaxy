@@ -70,6 +70,15 @@
   port: 2222
 
 - type: s3fs
+  label: My MinIO storage
+  endpoint_url: "https://minio.usegalaxy.eu"
+  id: galaxy-minio-storage
+  doc: Galaxy MinIO S3 storage
+  anon: false
+  secret: "UHAJ6asd6asdhasd"
+  key: "MCJU76agdt98GGFAROIP7"
+
+- type: s3fs
   label: Genome Ark
   id: genomeark
   doc: Access to Genome Ark open data on AWS.
