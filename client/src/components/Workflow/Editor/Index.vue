@@ -150,7 +150,7 @@
                                     :annotation="annotation"
                                     :creator="creator"
                                     :license="license"
-                                    :getManager="getManager"
+                                    :get-manager="getManager"
                                     @onAttributes="onAttributes"
                                     @onHighlight="onHighlight"
                                     @onUnhighlight="onUnhighlight"

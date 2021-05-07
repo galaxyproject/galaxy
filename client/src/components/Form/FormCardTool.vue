@@ -92,7 +92,7 @@
             <ToolHelp :content="options.help" />
             <ToolFooter
                 :id="options.id"
-                :hasCitations="options.citations"
+                :has-citations="options.citations"
                 :xrefs="options.xrefs"
                 :license="options.license"
                 :creators="options.creator"
@@ -251,10 +251,10 @@ export default {
                 };
             }
         },
-        updateFavorites(object_type, new_favorites) {
+        updateFavorites(objectType, newFavorites) {
             const favorites = this.getFavorites();
-            favorites[object_type] = new_favorites[object_type];
-            this.user.preferences["favorites"] = JSON.stringify(favorites);
+            favorites[objectType] = newFavorites[objectType];
+            this.$emit("onUpdateFavorites", this.user, JSON.stringify(favorites));
         },
     },
 };

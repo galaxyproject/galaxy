@@ -10,6 +10,7 @@
             :message-text="messageText"
             :message-variant="messageVariant"
             @onChangeVersion="onChangeVersion"
+            @onUpdateFavorites="onUpdateFavorites"
         >
             <template v-slot:body>
                 <FormElement
@@ -31,13 +32,13 @@
                 <Form
                     :id="id"
                     :inputs="inputs"
-                    :initialErrors="true"
-                    textEnable="Set in Advance"
-                    textDisable="Set at Runtime"
+                    :initial-errors="true"
+                    text-enable="Set in Advance"
+                    text-disable="Set at Runtime"
                     @onChange="onChange"
                     ref="form"
                 />
-                <FormSection :id="id" :getNode="getNode" :datatypes="datatypes" @onChange="onChangeSection" />
+                <FormSection :id="id" :get-node="getNode" :datatypes="datatypes" @onChange="onChangeSection" />
             </template>
         </FormCardTool>
     </CurrentUser>
@@ -145,11 +146,13 @@ export default {
         },
         onChangeSection(values) {
             this.sectionValues = values;
-            console.log(this.sectionValues);
             this.postChanges();
         },
         onChangeVersion(newVersion) {
             this.postChanges(newVersion);
+        },
+        onUpdateFavorites(user, newFavorites) {
+            user.preferences["favorites"] = newFavorites;
         },
         postChanges(newVersion) {
             const options = this.node.config_form;
