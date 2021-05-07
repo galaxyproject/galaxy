@@ -104,7 +104,6 @@
 <script>
 import axios from "axios";
 import ariaAlert from "utils/ariaAlert";
-import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
 import { copy } from "utils/clipboard";
 import FormMessage from "./FormMessage";
@@ -121,6 +120,10 @@ export default {
     props: {
         id: {
             type: String,
+            required: true,
+        },
+        user: {
+            type: Object,
             required: true,
         },
         version: {
@@ -154,7 +157,6 @@ export default {
     },
     data() {
         return {
-            isFavorite: this.getFavorite(),
             webhookDetails: [],
         };
     },
@@ -163,7 +165,7 @@ export default {
             return this.options.versions;
         },
         showAddFavorite() {
-            return !this.getUser().isAnonymous() && !this.isFavorite;
+            return !!this.user.email && !this.isFavorite;
         },
         showVersions() {
             return !this.sustainVersion && this.versions && this.versions.length > 1;
@@ -177,11 +179,13 @@ export default {
             return versions.reverse();
         },
         showDownload() {
-            const user = this.getUser();
-            return user && user.get("is_admin");
+            return this.user && this.user.is_admin;
         },
         showLink() {
             return this.options.sharable_url;
+        },
+        isFavorite() {
+            return this.getFavorites().tools.includes(this.id);
         },
     },
     created() {
@@ -206,30 +210,19 @@ export default {
         });
     },
     methods: {
-        getUser() {
-            const galaxy = getGalaxyInstance();
-            return galaxy.user;
-        },
-        getFavorite() {
-            return this.getUser().getFavorites().tools.includes(this.id);
-        },
         onAddFavorite() {
-            const user = this.getUser();
             axios
-                .put(`${getAppRoot()}api/users/${user.id}/favorites/tools`, { object_id: this.id })
+                .put(`${getAppRoot()}api/users/${this.user.id}/favorites/tools`, { object_id: this.id })
                 .then((response) => {
-                    user.updateFavorites("tools", response.data);
-                    this.isFavorite = this.getFavorite();
+                    this.updateFavorites("tools", response.data);
                     ariaAlert("added to favorites");
                 });
         },
         onRemoveFavorite() {
-            const user = this.getUser();
             axios
-                .delete(`${getAppRoot()}api/users/${user.id}/favorites/tools/${encodeURIComponent(this.id)}`)
+                .delete(`${getAppRoot()}api/users/${this.user.id}/favorites/tools/${encodeURIComponent(this.id)}`)
                 .then((response) => {
-                    user.updateFavorites("tools", response.data);
-                    this.isFavorite = this.getFavorite();
+                    this.updateFavorites("tools", response.data);
                     ariaAlert("removed from favorites");
                 });
         },
@@ -247,6 +240,21 @@ export default {
         },
         onLink() {
             window.open(this.options.sharable_url);
+        },
+        getFavorites() {
+            const preferences = this.user.preferences;
+            if (preferences && preferences.favorites) {
+                return JSON.parse(preferences.favorites);
+            } else {
+                return {
+                    tools: [],
+                };
+            }
+        },
+        updateFavorites(object_type, new_favorites) {
+            const favorites = this.getFavorites();
+            favorites[object_type] = new_favorites[object_type];
+            this.user.preferences["favorites"] = JSON.stringify(favorites);
         },
     },
 };

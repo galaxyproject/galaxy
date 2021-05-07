@@ -1,47 +1,51 @@
 <template>
-    <FormCardTool
-        :id="node.config_form.id"
-        :version="node.config_form.version"
-        :title="node.config_form.name"
-        :description="node.config_form.description"
-        :options="node.config_form"
-        :message-text="messageText"
-        :message-variant="messageVariant"
-        @onChangeVersion="onChangeVersion"
-    >
-        <template v-slot:body>
-            <FormElement
-                id="__label"
-                :value="node.label"
-                title="Label"
-                help="Add a step label."
-                @onChange="onLabel"
-                :error="errorLabel"
-            />
-            <FormElement
-                id="__annotation"
-                :value="node.annotation"
-                title="Step Annotation"
-                :area="true"
-                help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
-                @onChange="onAnnotation"
-            />
-            <Form
-                :id="id"
-                :inputs="inputs"
-                :initialErrors="true"
-                textEnable="Set in Advance"
-                textDisable="Set at Runtime"
-                @onChange="onChange"
-                ref="form"
-            />
-            <FormSection :id="id" :getNode="getNode" :datatypes="datatypes" @onChange="onChangeSection" />
-        </template>
-    </FormCardTool>
+    <CurrentUser v-slot="{ user }">
+        <FormCardTool
+            :id="node.config_form.id"
+            :user="user"
+            :version="node.config_form.version"
+            :title="node.config_form.name"
+            :description="node.config_form.description"
+            :options="node.config_form"
+            :message-text="messageText"
+            :message-variant="messageVariant"
+            @onChangeVersion="onChangeVersion"
+        >
+            <template v-slot:body>
+                <FormElement
+                    id="__label"
+                    :value="node.label"
+                    title="Label"
+                    help="Add a step label."
+                    @onChange="onLabel"
+                    :error="errorLabel"
+                />
+                <FormElement
+                    id="__annotation"
+                    :value="node.annotation"
+                    title="Step Annotation"
+                    :area="true"
+                    help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
+                    @onChange="onAnnotation"
+                />
+                <Form
+                    :id="id"
+                    :inputs="inputs"
+                    :initialErrors="true"
+                    textEnable="Set in Advance"
+                    textDisable="Set at Runtime"
+                    @onChange="onChange"
+                    ref="form"
+                />
+                <FormSection :id="id" :getNode="getNode" :datatypes="datatypes" @onChange="onChangeSection" />
+            </template>
+        </FormCardTool>
+    </CurrentUser>
 </template>
 
 <script>
 import axios from "axios";
+import CurrentUser from "components/providers/CurrentUser";
 import { getAppRoot } from "onload/loadConfig";
 import Form from "components/Form/Form";
 import FormCardTool from "components/Form/FormCardTool";
@@ -52,6 +56,7 @@ import Utils from "utils/utils";
 
 export default {
     components: {
+        CurrentUser,
         Form,
         FormCardTool,
         FormElement,
