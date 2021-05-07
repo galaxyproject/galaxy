@@ -123,7 +123,7 @@
     "@testing-library/jest-dom": "^5.11.9",
     "@vue/test-utils": "^1.0.3",
     "amdi18n-loader": "^0.9.3",
-    "autoprefixer": "^9",
+    "autoprefixer": "^10.2.5",
     "axios-mock-adapter": "^1.18.2",
     "babel-core": "^7.0.0-bridge.0",
     "babel-eslint": "^10.1.0",
