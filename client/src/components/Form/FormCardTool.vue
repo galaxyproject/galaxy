@@ -211,7 +211,7 @@ export default {
             return galaxy.user;
         },
         getFavorite() {
-            return this.getUser().getFavorites().tools.indexOf(this.id) >= 0;
+            return this.getUser().getFavorites().tools.includes(this.id);
         },
         onAddFavorite() {
             const user = this.getUser();
