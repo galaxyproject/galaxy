@@ -124,10 +124,7 @@ export default {
                     inputs: values,
                 })
                 .then(({ data }) => {
-                    this.node.config_form = data.config_form;
-                    this.node.tool_state = data.tool_state;
-                    this.node.inputs = data.inputs ? data.inputs.slice() : [];
-                    this.node.outputs = data.outputs ? data.outputs.slice() : [];
+                    this.$emit("onSetData", this.node.id, data);
                 });
         },
     },

@@ -166,11 +166,7 @@ export default {
                     inputs: Object.assign({}, this.mainValues, this.sectionValues),
                 })
                 .then(({ data }) => {
-                    this.node.config_form = data.config_form;
-                    this.node.tool_state = data.tool_state;
-                    this.node.inputs = data.inputs ? data.inputs.slice() : [];
-                    this.node.outputs = data.outputs ? data.outputs.slice() : [];
-                    this.node.postJobActions = data.post_job_actions || {};
+                    this.$emit("onSetData", this.node.id, data);
                     const form = this.$refs["form"];
                     form.parseUpdate(data.config_form);
                     form.parseErrors(data.config_form);

@@ -123,6 +123,7 @@
                                     @onAnnotation="onAnnotation"
                                     @onLabel="onLabel"
                                     @onChangeOutputDatatype="onChangeOutputDatatype"
+                                    @onSetData="onSetData"
                                 />
                                 <FormDefault
                                     v-else-if="hasActiveNodeDefault"
@@ -133,6 +134,7 @@
                                     @onLabel="onLabel"
                                     @onEditSubworkflow="onEditSubworkflow"
                                     @onAttemptRefactor="onAttemptRefactor"
+                                    @onSetData="onSetData"
                                 />
                                 <WorkflowAttributes
                                     v-else-if="showAttributes"
@@ -470,6 +472,10 @@ export default {
         onAnnotation(nodeId, newAnnotation) {
             const node = this.nodes[nodeId];
             node.setAnnotation(newAnnotation);
+        },
+        onSetData(nodeId, newData) {
+            const node = this.nodes[nodeId];
+            node.setData(newData);
         },
         onChangeOutputDatatype(nodeId, outputName, newDatatype) {
             const node = this.nodes[nodeId];
