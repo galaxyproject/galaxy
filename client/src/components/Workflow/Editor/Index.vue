@@ -122,6 +122,7 @@
                                     :datatypes="datatypes"
                                     @onAnnotation="onAnnotation"
                                     @onLabel="onLabel"
+                                    @onChangeOutputDatatype="onChangeOutputDatatype"
                                 />
                                 <FormDefault
                                     v-else-if="hasActiveNodeDefault"
@@ -469,6 +470,10 @@ export default {
         onAnnotation(nodeId, newAnnotation) {
             const node = this.nodes[nodeId];
             node.setAnnotation(newAnnotation);
+        },
+        onChangeOutputDatatype(nodeId, outputName, newDatatype) {
+            const node = this.nodes[nodeId];
+            node.changeOutputDatatype(outputName, newDatatype);
         },
         onLabel(nodeId, newLabel) {
             const node = this.nodes[nodeId];

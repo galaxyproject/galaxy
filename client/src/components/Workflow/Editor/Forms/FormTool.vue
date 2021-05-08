@@ -38,7 +38,13 @@
                     @onChange="onChange"
                     ref="form"
                 />
-                <FormSection :id="id" :get-node="getNode" :datatypes="datatypes" @onChange="onChangeSection" />
+                <FormSection
+                    :id="id"
+                    :get-node="getNode"
+                    :datatypes="datatypes"
+                    @onChange="onChangeSection"
+                    @onChangeOutputDatatype="onChangeOutputDatatype"
+                />
             </template>
         </FormCardTool>
     </CurrentUser>
@@ -127,6 +133,9 @@ export default {
         },
     },
     methods: {
+        onChangeOutputDatatype(outputName, newDatatype) {
+            this.$emit("onChangeOutputDatatype", this.node.id, outputName, newDatatype);
+        },
         onAnnotation(newAnnotation) {
             this.$emit("onAnnotation", this.node.id, newAnnotation);
         },

@@ -52,7 +52,7 @@ export default {
                     }
                 },
                 (node, outputName, newDatatype) => {
-                    node.changeOutputDatatype(outputName, newDatatype);
+                    this.$emit("onChangeOutputDatatype", outputName, newDatatype);
                 }
             );
         },
