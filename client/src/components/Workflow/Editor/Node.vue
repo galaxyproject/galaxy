@@ -302,7 +302,12 @@ export default {
             });
             this.initData(data);
             Vue.nextTick(() => {
-                this.updateData(data);
+                // create array of new output names
+                const outputNames = this.outputs.map((output) => output.name);
+                this.activeOutputs.filterOutputs(outputNames);
+                // emit change completion event
+                this.showLoading = false;
+                this.$emit("onChange");
                 this.$emit("onActivate", this);
             });
         },
@@ -315,9 +320,7 @@ export default {
             this.$emit("onChange");
         },
         setData(data) {
-            this.uuid = data.uuid;
             this.config_form = data.config_form;
-            this.content_id = data.config_form.id || data.content_id;
             this.tool_state = data.tool_state;
             this.errors = data.errors;
             this.tooltip = data.tooltip || "";
@@ -326,20 +329,13 @@ export default {
             this.outputs = data.outputs ? data.outputs.slice() : [];
         },
         initData(data) {
-            this.setData(data);
+            this.uuid = data.uuid;
+            this.content_id = data.config_form.id || data.content_id;
             this.annotation = data.annotation;
             this.label = data.label;
+            this.setData(data);
             this.activeOutputs.initialize(this.outputs, data.workflow_outputs);
             this.showLoading = false;
-        },
-        updateData(data) {
-            this.setData(data);
-            // Create array of new output names
-            const outputNames = this.outputs.map((output) => output.name);
-            this.activeOutputs.filterOutputs(outputNames);
-            // emit change completion event
-            this.showLoading = false;
-            this.$emit("onChange");
         },
         labelOutput(outputName, label) {
             return this.activeOutputs.labelOutput(outputName, label);
