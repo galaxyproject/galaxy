@@ -171,7 +171,7 @@ export default {
                     form.parseUpdate(data.config_form);
                     form.parseErrors(data.config_form);
                     if (newVersion) {
-                        const options = this.node.config_form;
+                        const options = data.config_form;
                         this.messageVariant = "success";
                         this.messageText = `Now you are using '${options.name}' version ${options.version}, id '${options.id}'.`;
                     }
