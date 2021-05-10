@@ -3181,10 +3181,10 @@ class HexrdImagesNpz(Npz):
 
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('hexrd.images.npz')
-    >>> Npz().sniff(fname)
+    >>> HexrdImagesNpz().sniff(fname)
     True
     >>> fname = get_test_fname('eta_ome.npz')
-    >>> Npz().sniff(fname)
+    >>> HexrdImagesNpz().sniff(fname)
     False
     """
     file_ext = "hexrd.images.npz"
@@ -3242,10 +3242,10 @@ class HexrdEtaOmeNpz(Npz):
 
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('hexrd.eta_ome.npz')
-    >>> Npz().sniff(fname)
+    >>> HexrdEtaOmeNpz().sniff(fname)
     True
     >>> fname = get_test_fname('hexrd.images.npz')
-    >>> Npz().sniff(fname)
+    >>> HexrdEtaOmeNpz().sniff(fname)
     False
     """
     file_ext = "hexrd.eta_ome.npz"
