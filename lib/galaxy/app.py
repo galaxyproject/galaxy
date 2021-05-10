@@ -61,6 +61,7 @@ from galaxy.util import (
     heartbeat,
     StructuredExecutionTimer,
 )
+from galaxy.util.task import IntervalTask
 from galaxy.visualization.data_providers.registry import DataProviderRegistry
 from galaxy.visualization.genomes import Genomes
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
@@ -304,6 +305,16 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
             self.authnz_manager = managers.AuthnzManager(self,
                                                          self.config.oidc_config_file,
                                                          self.config.oidc_backends_config_file)
+
+        if not self.config.enable_celery_tasks and self.config.history_audit_table_prune_interval > 0:
+            self.prune_history_audit_task = IntervalTask(
+                func=lambda: galaxy.model.HistoryAudit.prune(self.model.session),
+                name="HistoryAuditTablePruneTask",
+                interval=self.config.history_audit_table_prune_interval,
+                immediate_start=False,
+                time_execution=True)
+            self.application_stack.register_postfork_function(self.prune_history_audit_task.start)
+            self.haltables.append(("HistoryAuditTablePruneTask", self.prune_history_audit_task.shutdown))
         # Start the job manager
         self.application_stack.register_postfork_function(self.job_manager.start)
         self.proxy_manager = ProxyManager(self.config)
