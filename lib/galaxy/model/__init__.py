@@ -35,6 +35,7 @@ from sqlalchemy import (
     select,
     text,
     true,
+    tuple_,
     type_coerce,
     types)
 from sqlalchemy.exc import OperationalError
@@ -1849,6 +1850,21 @@ class HistoryAudit(RepresentById):
     def __init__(self, history, update_time):
         self.history = history
         self.update_time = update_time
+
+    @classmethod
+    def prune(cls, sa_session):
+        history_audit_table = cls.table
+        latest_subq = sa_session.query(
+            history_audit_table.c.history_id,
+            func.max(history_audit_table.c.update_time).label('max_update_time')).group_by(history_audit_table.c.history_id).subquery()
+        not_latest_query = sa_session.query(
+            history_audit_table.c.history_id, history_audit_table.c.update_time
+        ).select_from(latest_subq).join(
+            history_audit_table, and_(
+                history_audit_table.c.update_time < latest_subq.columns.max_update_time,
+                history_audit_table.c.history_id == latest_subq.columns.history_id))
+        d = history_audit_table.delete()
+        sa_session.execute(d.where(tuple_(history_audit_table.c.history_id, history_audit_table.c.update_time).in_(not_latest_query)))
 
 
 class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
