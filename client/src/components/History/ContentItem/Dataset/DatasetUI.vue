@@ -8,6 +8,7 @@ either through the props, and make updates through the events -->
 <template>
     <div
         class="dataset"
+        :id="typedId"
         :class="{ expanded, collapsed, selected }"
         :data-state="dataset.state"
         @keydown.arrow-left.self.stop="$emit('update:expanded', false)"
@@ -142,6 +143,9 @@ export default {
         },
         ok() {
             return this.dataset.state == "ok";
+        },
+        typedId() {
+            return `dataset-${this.dataset.id}`;
         },
     },
     methods: {
