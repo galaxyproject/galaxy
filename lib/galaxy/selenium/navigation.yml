@@ -168,7 +168,7 @@ history_panel:
     beta: 'section.history'
     _: '#current-history-panel'
     search: '#current-history-panel input.search-query'
-    refresh_button: '#history-refresh-button'
+    refresh_button: '.history-refresh-button'
     name: '.title .name'
     name_beta: '.history-title span:last-child'
     name_edit_input: '.name input'
@@ -204,7 +204,7 @@ history_panel:
       type: xpath
       selector: '//a[text()="Use Beta History Panel"]'
     new_history_button: '.history-new-button'
-    multi_view_button: '#history-view-multi-button'
+    multi_view_button: '.history-view-multi-button'
 
     pagination_pages: '.list-pagination .pages'
     pagination_pages_options: '.list-pagination .pages option'

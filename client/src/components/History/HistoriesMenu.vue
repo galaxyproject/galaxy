@@ -17,6 +17,7 @@
             key="view-all-histories"
             title="View All Histories"
             icon="fa fa-columns"
+            class="history-view-multi-button"
             @click="redirect('/history/view_multiple')"
         />
         <PriorityMenuItem
@@ -28,7 +29,8 @@
         <PriorityMenuItem
             key="clear-history-cache"
             title="Refresh History"
-            icon="fa fa-sync"
+            icon="fa fa-refresh"
+            class="history-refresh-button"
             @click.stop="clearCache"
         />
         <PriorityMenuItem
