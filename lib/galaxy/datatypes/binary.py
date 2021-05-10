@@ -1552,7 +1552,7 @@ class HexrdMaterials(H5):
             req = {'AtomData', 'Atomtypes', 'CrystalSystem', 'LatticeParameters'}
             with h5py.File(filename, 'r') as mat_file:
                 for k in mat_file.keys():
-                    if set(mat_file[k].keys()) & req:
+                    if isinstance(mat_file[k], h5py._hl.group.Group) and set(mat_file[k].keys()) >= req:
                         return True
         return False
 
@@ -3130,7 +3130,7 @@ class Npz(CompressedArchive):
     Class describing an Numpy NPZ file
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname('test.mz5')
+    >>> fname = get_test_fname('hexrd.images.npz')
     >>> Npz().sniff(fname)
     True
     >>> fname = get_test_fname('interval.interval')
@@ -3183,7 +3183,7 @@ class HexrdImagesNpz(Npz):
     >>> fname = get_test_fname('hexrd.images.npz')
     >>> Npz().sniff(fname)
     True
-    >>> fname = get_test_fname('hexrd.estr(npz['panel_id'])ta_ome.npz')
+    >>> fname = get_test_fname('eta_ome.npz')
     >>> Npz().sniff(fname)
     False
     """
