@@ -3148,7 +3148,10 @@ class Npz(CompressedArchive):
     def sniff(self, filename):
         try:
             npz = np.load(filename)
-            return isinstance(npz, np.lib.npyio.NpzFile)
+            if isinstance(npz, np.lib.npyio.NpzFile):
+                for f in npz.files:
+                    if isinstance(npz[f], np.ndarray):
+                        return True
         except Exception:
             return False
         return False
