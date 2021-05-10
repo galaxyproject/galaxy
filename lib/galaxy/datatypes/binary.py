@@ -5,7 +5,6 @@ import gzip
 import io
 import json
 import logging
-import numpy as np
 import os
 import shutil
 import struct
@@ -18,6 +17,7 @@ from json import dumps
 from typing import Optional
 
 import h5py
+import numpy as np
 import pysam
 import pysam.bcftools
 from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP
@@ -3149,7 +3149,7 @@ class Npz(CompressedArchive):
         try:
             npz = np.load(filename)
             return isinstance(npz, np.lib.npyio.NpzFile)
-        except Exception as e:
+        except Exception:
             return False
         return False
 
@@ -3200,7 +3200,7 @@ class HexrdImagesNpz(Npz):
     def sniff(self, filename):
         if super().sniff(filename):
             try:
-                req_files = {'0_row', '0_col', '0_data', 'shape', 'nframes',  'dtype'}
+                req_files = {'0_row', '0_col', '0_data', 'shape', 'nframes', 'dtype'}
                 with np.load(filename) as npz:
                     return set(npz.files) >= req_files
             except Exception as e:
