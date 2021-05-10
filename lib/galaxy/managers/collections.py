@@ -232,7 +232,7 @@ class DatasetCollectionManager:
         first_extension = True
         # TODO error checking
         for datatype in dbkeys_and_extensions[1]:
-            new_converters = []
+            new_converters = {}
             new_converters = datatypes_registry.get_converters_by_datatype(datatype)
             print("********************************************************************" + str(new_converters))
             set_of_new_converters = set(new_converters.values())
