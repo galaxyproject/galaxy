@@ -33,8 +33,9 @@ jira==2.0.0
 
 # spacy
 spacy==2.2.2
-en-core-web-lg==2.2.5
-en-core-web-sm==2.2.5
+# the 2 packages below can't be installed with pip3, need to manually install with python
+#en-core-web-lg==2.2.5
+#en-core-web-sm==2.2.5
 
 # pyscenedetect
 scenedetect==0.5.3
