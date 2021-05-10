@@ -160,4 +160,27 @@ galaxy:
   # https://galaxyproject.org/admin/
   # AMP admin users
   admin_users: amppd@iu.edu, amppd-ci@iu.edu
+      
+  # AMP Performance Logging configuration
+  logging:
+    handlers:
+      logfile:
+        class: logging.FileHandler
+        level: DEBUG
+        filename: logs/galaxy.log
+        mode: a
+      perflog:
+        class: logging.FileHandler
+        level: DEBUG
+        filename: logs/performance.log  
+    loggers:
+      '':        
+        handlers:
+          - logfile
+        level: INFO
+      'performance':
+        handlers:
+          - perflog
+        level: DEBUG
+    version: 1
     

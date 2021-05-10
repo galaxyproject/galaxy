@@ -12,8 +12,8 @@ config/azure.ini
 /.settings
 
 # AMP metrics files
-metrics/system_metrics.so
-metrics/system_metrics
+amp_metrics/system_metrics.so
+amp_metrics/system_metrics
 
 
 .hg*

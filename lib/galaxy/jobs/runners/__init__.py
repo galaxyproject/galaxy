@@ -41,6 +41,18 @@ from galaxy.util.custom_logging import get_logger
 from galaxy.util.monitors import Monitors
 from .state_handler_factory import build_state_handlers
 
+# AMP Performance Logging START
+import logging
+from .amp_perflogging import (
+    perf_job_queued_msg, 
+    perf_job_started_msg,
+    perf_job_finished_msg,
+    perf_async_submit_msg, 
+    perf_async_submitted_msg,
+)
+perflog = logging.getLogger("performance")
+# AMP Performance Logging END
+
 log = get_logger(__name__)
 
 STOP_SIGNAL = object()
@@ -133,8 +145,18 @@ class BaseJobRunner:
                     'internals.%s' % action_str,
                     'job runner action %s for job ${job_id} executed' % (action_str)
                 )
+                # AMP: Add performance logging START
+                if isinstance(arg, AsynchronousJobState):
+                    perflog.info(perf_async_submit_msg(arg.job_wrapper, self.runner_name))
+                else:
+                    perflog.info(perf_job_started_msg(arg, self.runner_name))
+                # AMP END
                 method(arg)
                 log.trace(action_timer.to_str(job_id=job_id))
+                # AMP: async logging message START
+                if isinstance(arg, AsynchronousJobState):
+                    perflog.info(perf_async_submitted_msg(arg.job_wrapper, self.runner_name))
+                # AMP END
             except Exception:
                 log.exception(f"({job_id}) Unhandled exception calling {name}")
                 if not isinstance(arg, JobState):
@@ -149,6 +171,9 @@ class BaseJobRunner:
     def put(self, job_wrapper):
         """Add a job to the queue (by job identifier), indicate that the job is ready to run.
         """
+        # AMP log when job is put into the queue
+        perflog.info(perf_job_queued_msg(job_wrapper, self.runner_name))
+        
         put_timer = ExecutionTimer()
         job_wrapper.enqueue()
         self.mark_as_queued(job_wrapper)
@@ -536,7 +561,13 @@ class BaseJobRunner:
                 self._handle_runner_state('failure', job_state)
                 # Was resubmitted or something - I think we are done with it.
                 if job_state.runner_state_handled:
+                    # AMP: Log that the job has finished
+                    perflog.info(perf_job_finished_msg(job_state.job_wrapper, self.runner_name))
+
                     return
+
+            # AMP: Log that the job has finished
+            perflog.info(perf_job_finished_msg(job_state.job_wrapper, self.runner_name))
 
             job_wrapper.finish(tool_stdout, tool_stderr, exit_code, check_output_detected_state=check_output_detected_state, job_stdout=job_stdout, job_stderr=job_stderr)
         except Exception:
