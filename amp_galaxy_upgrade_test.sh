@@ -39,7 +39,8 @@ sh manage_db.sh upgrade;
 # install all MGM dependencies into venv
 source .venv/bin/activate;
 pip3 install -r amp_requirements.txt;
-#python -m spacy download en_core_web_lg;
+# en_core_web_lg can't be installed with pip3, need to install with python (include in Bamboo plan)
+python -m spacy download en_core_web_lg;
 deactivate;
 
 # now we can start Galaxy 21.01
