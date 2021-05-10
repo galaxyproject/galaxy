@@ -11,11 +11,13 @@ from typing import (
 )
 
 from pydantic import (
+    AnyHttpUrl,
     AnyUrl,
     BaseModel,
     Extra,
     Field,
     FilePath,
+    Json,
     UUID4,
 )
 
@@ -1044,6 +1046,24 @@ class WorkflowInput(BaseModel):
     )
 
 
+class WorkflowOutput(BaseModel):
+    label: Optional[str] = Field(
+        None,
+        title="Label",
+        description="Label of the output.",
+    )
+    output_name: str = Field(
+        ...,
+        title="Output Name",
+        description="The name assigned to the output.",
+    )
+    uuid: Optional[UUID4] = Field(
+        ...,
+        title="UUID",
+        description="Universal unique identifier of the output.",
+    )
+
+
 class InputStep(BaseModel):
     source_step: int = Field(
         ...,
@@ -1057,13 +1077,23 @@ class InputStep(BaseModel):
     )
 
 
+class WorkflowModuleType(str, Enum):
+    """Available types of modules that represent a step in a Workflow."""
+    data_input = "data_input"
+    data_collection_input = "data_collection_input"
+    parameter_input = "parameter_input"
+    subworkflow = "subworkflow"
+    tool = "tool"
+    pause = "pause"  # Experimental
+
+
 class WorkflowStepBase(BaseModel):
     id: int = Field(
         ...,
         title="ID",
         description="The identifier of the step. It matches the index order of the step inside the workflow."
     )
-    type: str = Field(
+    type: WorkflowModuleType = Field(
         ...,
         title="Type",
         description="The type of workflow module."
@@ -1076,7 +1106,7 @@ class WorkflowStepBase(BaseModel):
     )
 
 
-class WorkflowStep(WorkflowStepBase):
+class ToolBasedWorkflowStep(WorkflowStepBase):
     tool_id: Optional[str] = Field(
         None,
         title="Tool ID",
@@ -1094,49 +1124,49 @@ class WorkflowStep(WorkflowStepBase):
     )
 
 
-class InputDataStep(WorkflowStep):
-    type: str = Field(
-        "data_input", const=True,
+class InputDataStep(ToolBasedWorkflowStep):
+    type: WorkflowModuleType = Field(
+        WorkflowModuleType.data_input, const=True,
         title="Type",
         description="The type of workflow module."
     )
 
 
-class InputDataCollectionStep(WorkflowStep):
-    type: str = Field(
-        "data_collection_input", const=True,
+class InputDataCollectionStep(ToolBasedWorkflowStep):
+    type: WorkflowModuleType = Field(
+        WorkflowModuleType.data_collection_input, const=True,
         title="Type",
         description="The type of workflow module."
     )
 
 
-class InputParameterStep(WorkflowStep):
-    type: str = Field(
-        "parameter_input", const=True,
+class InputParameterStep(ToolBasedWorkflowStep):
+    type: WorkflowModuleType = Field(
+        WorkflowModuleType.parameter_input, const=True,
         title="Type",
         description="The type of workflow module."
     )
 
 
-class PauseStep(WorkflowStep):
-    type: str = Field(
-        "pause", const=True,
+class PauseStep(WorkflowStepBase):
+    type: WorkflowModuleType = Field(
+        WorkflowModuleType.pause, const=True,
         title="Type",
         description="The type of workflow module."
     )
 
 
-class ToolStep(WorkflowStep):
-    type: str = Field(
-        "tool", const=True,
+class ToolStep(ToolBasedWorkflowStep):
+    type: WorkflowModuleType = Field(
+        WorkflowModuleType.tool, const=True,
         title="Type",
         description="The type of workflow module."
     )
 
 
 class SubworkflowStep(WorkflowStepBase):
-    type: str = Field(
-        "subworkflow", const=True,
+    type: WorkflowModuleType = Field(
+        WorkflowModuleType.subworkflow, const=True,
         title="Type",
         description="The type of workflow module."
     )
@@ -1144,6 +1174,98 @@ class SubworkflowStep(WorkflowStepBase):
         ...,
         title="Workflow ID",
         description="The encoded ID of the workflow that will be run on this step."
+    )
+
+
+class Creator(BaseModel):
+    class_: str = Field(
+        ...,
+        alias="class",
+        title="Class",
+        description="The class representing this creator."
+    )
+    name: str = Field(
+        ...,
+        title="Name",
+        description="The name of the creator."
+    )
+    address: Optional[str] = Field(
+        None,
+        title="Address",
+    )
+    alternate_name: Optional[str] = Field(
+        None,
+        alias="alternateName",
+        title="Alternate Name",
+    )
+    email: Optional[str] = Field(
+        None,
+        title="Email",
+    )
+    fax_number: Optional[str] = Field(
+        None,
+        alias="faxNumber",
+        title="Fax Number",
+    )
+    identifier: Optional[str] = Field(
+        None,
+        title="Identifier",
+        description="Identifier (typically an orcid.org ID)"
+    )
+    image: Optional[AnyHttpUrl] = Field(
+        None,
+        title="Image URL",
+    )
+    telephone: Optional[str] = Field(
+        None,
+        title="Telephone",
+    )
+    url: Optional[AnyHttpUrl] = Field(
+        None,
+        title="URL",
+    )
+
+
+class Organization(Creator):
+    class_: str = Field(
+        "Organization",
+        const=True,
+        alias="class",
+    )
+
+
+class Person(Creator):
+    class_: str = Field(
+        "Person",
+        const=True,
+        alias="class",
+    )
+    family_name: Optional[str] = Field(
+        None,
+        alias="familyName",
+        title="Family Name",
+    )
+    givenName: Optional[str] = Field(
+        None,
+        alias="givenName",
+        title="Given Name",
+    )
+    honorific_prefix: Optional[str] = Field(
+        None,
+        alias="honorificPrefix",
+        title="Honorific Prefix",
+        description="Honorific Prefix (e.g. Dr/Mrs/Mr)",
+    )
+    honorific_suffix: Optional[str] = Field(
+        None,
+        alias="honorificSuffix",
+        title="Honorific Suffix",
+        description="Honorific Suffix (e.g. M.D.)"
+    )
+    job_title: Optional[str] = Field(
+        None,
+        alias="jobTitle",
+        title="Job Title",
     )
 
 
@@ -1157,19 +1279,18 @@ class StoredWorkflowDetailed(StoredWorkflowSummary):
     version: int = Field(
         ...,
         title="Version",
-        description="The version of this workflow represented by an incremental number."
+        description="The version of the workflow represented by an incremental number."
     )
     inputs: Dict[int, WorkflowInput] = Field(
         {},
         title="Inputs",
         description="A dictionary containing information about all the inputs of the workflow."
     )
-    creator: Optional[Any] = Field(
+    creator: Optional[List[Union[Person, Organization]]] = Field(
         None,
         title="Creator",
         description=(
-            "Additional information about the creator of this workflow. "
-            "This information is heterogeneous."
+            "Additional information about the creator (or multiple creators) of this workflow."
         )
     )
     steps: Dict[int,
@@ -1182,6 +1303,287 @@ class StoredWorkflowDetailed(StoredWorkflowSummary):
             SubworkflowStep,
         ]
     ] = Field(
+        {},
+        title="Steps",
+        description="A dictionary with information about all the steps of the workflow."
+    )
+
+
+class Input(BaseModel):
+    name: str = Field(
+        ...,
+        title="Name",
+        description="The name of the input."
+    )
+    description: str = Field(
+        ...,
+        title="Description",
+        description="The annotation or description of the input."
+
+    )
+
+
+class Output(BaseModel):
+    name: str = Field(
+        ...,
+        title="Name",
+        description="The name of the output."
+    )
+    type: str = Field(
+        ...,
+        title="Type",
+        description="The extension or type of output."
+
+    )
+
+
+class InputConnection(BaseModel):
+    id: int = Field(
+        ...,
+        title="ID",
+        description="The identifier of the input."
+    )
+    output_name: str = Field(
+        ...,
+        title="Output Name",
+        description="The name assigned to the output.",
+    )
+    input_subworkflow_step_id: Optional[int] = Field(
+        None,
+        title="Input Subworkflow Step ID",
+        description="TODO",
+    )
+
+
+class WorkflowStepLayoutPosition(BaseModel):
+    """Position and dimensions of the workflow step represented by a box on the graph."""
+    bottom: int = Field(
+        ...,
+        title="Bottom",
+        description="Position in pixels of the bottom of the box."
+    )
+    top: int = Field(
+        ...,
+        title="Top",
+        description="Position in pixels of the top of the box."
+    )
+    left: int = Field(
+        ...,
+        title="Left",
+        description="Left margin or left-most position of the box."
+    )
+    right: int = Field(
+        ...,
+        title="Right",
+        description="Right margin or right-most position of the box."
+    )
+    x: int = Field(
+        ...,
+        title="X",
+        description="Horizontal pixel coordinate of the top right corner of the box."
+    )
+    y: int = Field(
+        ...,
+        title="Y",
+        description="Vertical pixel coordinate of the top right corner of the box."
+    )
+    height: int = Field(
+        ...,
+        title="Height",
+        description="Height of the box in pixels."
+    )
+    width: int = Field(
+        ...,
+        title="Width",
+        description="Width of the box in pixels."
+    )
+
+
+class WorkflowStepToExportBase(BaseModel):
+    id: int = Field(
+        ...,
+        title="ID",
+        description="The identifier of the step. It matches the index order of the step inside the workflow."
+    )
+    type: str = Field(
+        ...,
+        title="Type",
+        description="The type of workflow module."
+    )
+    name: str = Field(
+        ...,
+        title="Name",
+        description="The descriptive name of the module or step."
+    )
+    annotation: Optional[str] = AnnotationField
+    tool_id: Optional[str] = Field(  # Duplicate of `content_id` or viceversa?
+        None,
+        title="Tool ID",
+        description="The unique name of the tool associated with this step."
+    )
+    uuid: UUID4 = Field(
+        ...,
+        title="UUID",
+        description="Universal unique identifier of the workflow.",
+    )
+    label: Optional[str] = Field(
+        None,
+        title="Label",
+    )
+    inputs: List[Input] = Field(
+        ...,
+        title="Inputs",
+        description="TODO",
+    )
+    outputs: List[Output] = Field(
+        ...,
+        title="Outputs",
+        description="TODO",
+    )
+    input_connections: Dict[str, InputConnection] = Field(
+        {},
+        title="Input Connections",
+        description="TODO",
+    )
+    position: WorkflowStepLayoutPosition = Field(
+        ...,
+        title="Position",
+        description="Layout position of this step in the graph",
+    )
+    workflow_outputs: List[WorkflowOutput] = Field(
+        [],
+        title="Workflow Outputs",
+        description="The version of the tool associated with this step."
+    )
+
+
+class WorkflowStepToExport(WorkflowStepToExportBase):
+    content_id: Optional[str] = Field(  # Duplicate of `tool_id` or viceversa?
+        None,
+        title="Content ID",
+        description="TODO"
+    )
+    tool_version: Optional[str] = Field(
+        None,
+        title="Tool Version",
+        description="The version of the tool associated with this step."
+    )
+    tool_state: Json = Field(
+        ...,
+        title="Tool State",
+        description="JSON string containing the serialized representation of the persistable state of the step.",
+    )
+    errors: Optional[str] = Field(
+        None,
+        title="Errors",
+        description="An message indicating possible errors in the step.",
+    )
+
+
+class ToolShedRepositorySummary(BaseModel):
+    name: str = Field(
+        ...,
+        title="Name",
+        description="The name of the repository.",
+    )
+    owner: str = Field(
+        ...,
+        title="Owner",
+        description="The owner of the repository.",
+    )
+    changeset_revision: str = Field(
+        ...,
+        title="Changeset Revision",
+        description="TODO",
+    )
+    tool_shed: str = Field(
+        ...,
+        title="Tool Shed",
+        description="The Tool Shed base URL.",
+    )
+
+
+class PostJobAction(BaseModel):
+    action_type: str = Field(
+        ...,
+        title="Action Type",
+        description="The type of action to run.",
+    )
+    output_name: str = Field(
+        ...,
+        title="Output Name",
+        description="The name of the output that will be affected by the action.",
+    )
+    action_arguments: Dict[str, Any] = Field(
+        ...,
+        title="Action Arguments",
+        description="Any additional arguments needed by the action.",
+    )
+
+
+class WorkflowToolStepToExport(WorkflowStepToExportBase):
+    tool_shed_repository: ToolShedRepositorySummary = Field(
+        ...,
+        title="Tool Shed Repository",
+        description="Information about the origin repository of this tool."
+    )
+    post_job_actions: Dict[str, PostJobAction] = Field(
+        ...,
+        title="Post-job Actions",
+        description="Set of actions that will be run when the job finish."
+    )
+
+
+class SubworkflowStepToExport(WorkflowStepToExportBase):
+    subworkflow: 'WorkflowToExport' = Field(
+        ...,
+        title="Subworkflow",
+        description="Full information about the subworkflow associated with this step."
+    )
+
+
+class WorkflowToExport(BaseModel):
+    a_galaxy_workflow: str = Field(  # Is this meant to be a bool instead?
+        "true",
+        title="Galaxy Workflow",
+        description="Whether this workflow is a Galaxy Workflow."
+    )
+    format_version: str = Field(
+        "0.1",
+        alias="format-version",  # why this field uses `-` instead of `_`?
+        title="Galaxy Workflow",
+        description="Whether this workflow is a Galaxy Workflow."
+    )
+    name: str = Field(
+        ...,
+        title="Name",
+        description="The name of the workflow."
+    )
+    annotation: Optional[str] = AnnotationField
+    tags: TagCollection
+    uuid: Optional[UUID4] = Field(
+        None,
+        title="UUID",
+        description="Universal unique identifier of the workflow.",
+    )
+    creator: Optional[List[Union[Person, Organization]]] = Field(
+        None,
+        title="Creator",
+        description=(
+            "Additional information about the creator (or multiple creators) of this workflow."
+        )
+    )
+    license: Optional[str] = Field(
+        None,
+        title="License",
+        description="SPDX Identifier of the license associated with this workflow."
+    )
+    version: int = Field(
+        ...,
+        title="Version",
+        description="The version of the workflow represented by an incremental number."
+    )
+    steps: Dict[int, Union[SubworkflowStepToExport, WorkflowToolStepToExport, WorkflowStepToExport]] = Field(
         {},
         title="Steps",
         description="A dictionary with information about all the steps of the workflow."
