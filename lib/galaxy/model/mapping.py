@@ -2182,9 +2182,7 @@ mapper(model.JobToInputDatasetAssociation, model.JobToInputDatasetAssociation.ta
 
 mapper(model.JobToOutputDatasetAssociation, model.JobToOutputDatasetAssociation.table, properties=dict(
     job=relation(model.Job),
-    dataset=relation(model.HistoryDatasetAssociation,
-        lazy=False,
-        backref="creating_job_associations")
+    dataset=relation(model.HistoryDatasetAssociation, lazy=False)
 ))
 
 mapper(model.JobToInputDatasetCollectionAssociation, model.JobToInputDatasetCollectionAssociation.table, properties=dict(
@@ -2806,6 +2804,9 @@ mapper(model.DataManagerJobAssociation, model.DataManagerJobAssociation.table, p
         backref=backref('data_manager_association', uselist=False),
         uselist=False)
 ))
+
+class_mapper(model.HistoryDatasetAssociation).add_property(
+    "creating_job_associations", relation(model.JobToOutputDatasetAssociation))
 
 class_mapper(model.HistoryDatasetCollectionAssociation).add_property(
     "creating_job_associations", relation(model.JobToOutputDatasetCollectionAssociation))
