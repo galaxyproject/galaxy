@@ -357,7 +357,8 @@ class NavigatesGalaxy(HasDriver):
 
     def history_panel_wait_for_hid_state(self, hid, state, allowed_force_refreshes=0):
         history_item_selector = self.history_panel_wait_for_hid_visible(hid, allowed_force_refreshes=allowed_force_refreshes)
-        history_item_selector_state = history_item_selector.with_class(f"state-{state}")
+        # history_item_selector_state = history_item_selector.with_class(f"state-{state}")
+        history_item_selector_state = history_item_selector.with_data("state", state)
         try:
             self.history_item_wait_for(history_item_selector_state, allowed_force_refreshes)
         except self.TimeoutException as e:

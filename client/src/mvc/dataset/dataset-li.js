@@ -135,6 +135,7 @@ export var DatasetListItemView = _super.extend(
             _super.prototype._swapNewRender.call(this, $newRender);
             if (this.model.has("state")) {
                 this.$el.addClass(`state-${this.model.get("state")}`);
+                this.$el.attr("data-state", this.model.get("state"));
             }
             return this.$el;
         },

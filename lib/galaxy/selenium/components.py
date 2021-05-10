@@ -23,12 +23,13 @@ class Target(metaclass=ABCMeta):
 
 class SelectorTemplate(Target):
 
-    def __init__(self, selector, selector_type, children=None, kwds=None, with_classes=None):
+    def __init__(self, selector, selector_type, children=None, kwds=None, with_classes=None, with_data=None):
         self._selector = selector
         self.selector_type = selector_type
         self._children = children or {}
         self.__kwds = kwds or {}
         self.with_classes = with_classes or []
+        self._with_data = with_data or {}
 
     @staticmethod
     def from_dict(raw_value, children=None):
@@ -40,7 +41,13 @@ class SelectorTemplate(Target):
 
     def with_class(self, class_):
         assert self.selector_type == "css"
-        return SelectorTemplate(self._selector, self.selector_type, kwds=self.__kwds, with_classes=self.with_classes + [class_], children=self._children)
+        return SelectorTemplate(self._selector, self.selector_type, kwds=self.__kwds, with_classes=self.with_classes + [class_], with_data=self._with_data.copy(), children=self._children)
+
+    def with_data(self, key, value):
+        assert self.selector_type == "css"
+        with_data = self._with_data.copy()
+        with_data[key] = value
+        return SelectorTemplate(self._selector, self.selector_type, kwds=self.__kwds, with_classes=self.with_classes, with_data=with_data, children=self._children)
 
     def descendant(self, has_selector):
         assert self.selector_type == "css"
@@ -72,6 +79,9 @@ class SelectorTemplate(Target):
         if self.__kwds is not None:
             selector = string.Template(selector).substitute(self.__kwds)
         selector = selector + "".join(f".{c}" for c in self.with_classes)
+        if self._with_data:
+            for key, value in self._with_data.items():
+                selector = selector + f'[data-{key}="{value}"]'
         return selector
 
     @property
