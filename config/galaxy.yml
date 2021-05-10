@@ -137,8 +137,10 @@ galaxy:
 
   # Add an option to the library upload form which allows administrators
   # to upload a directory of files.
-  # AMP library_import_dir points to media dir 
-  library_import_dir: /srv/amp/media/
+  # Below property is commented out as Galaxy always tries to create a new directory for it upon start,
+  # which will cause error in our case, since /srv/amp/media/ already exists
+  # AMP library_import_dir points to media dir
+  # library_import_dir: /srv/amp/media/
   
   # Allow admins to paste filesystem paths during upload. For libraries
   # this adds an option to the admin library upload tool allowing admins
