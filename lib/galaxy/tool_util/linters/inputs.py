@@ -1,8 +1,21 @@
+
 """This module contains a linting functions for tool inputs."""
-from galaxy.tools.parameters.dynamic_options import filter_types
 from galaxy.util import string_as_bool
 from ._util import is_datasource, is_valid_cheetah_placeholder
 from ..parser.util import _parse_name
+
+FILTER_TYPES = [
+    'data_meta',
+    'param_value',
+    'static_value',
+    'regexp',
+    'unique_value',
+    'multiple_splitter',
+    'attribute_value_splitter',
+    'add_value',
+    'remove_value',
+    'sort_by',
+]
 
 
 def lint_inputs(tool_xml, lint_ctx):
@@ -53,7 +66,7 @@ def lint_inputs(tool_xml, lint_ctx):
                     if ftype is None:
                         lint_ctx.error(f"Select parameter [{param_name}] contains filter without type.")
                         continue
-                    if ftype not in filter_types:
+                    if ftype not in FILTER_TYPES:
                         lint_ctx.error(f"Select parameter [{param_name}] contains filter with unknown type '{ftype}'.")
                         continue
                     if ftype in ['add_value', 'data_meta']:

@@ -25,7 +25,9 @@ const api = axios.create({
  */
 
 const doResponse = (response) => {
-    if (response.status != 200) throw new Error(response);
+    if (response.status != 200) {
+        throw new Error(response);
+    }
     return response.data;
 };
 
@@ -51,8 +53,12 @@ function buildLegacyParam(fields = {}) {
 }
 
 function pythonBooleanFormat(val) {
-    if (val === true) return "True";
-    if (val === false) return "False";
+    if (val === true) {
+        return "True";
+    }
+    if (val === false) {
+        return "False";
+    }
     return val;
 }
 

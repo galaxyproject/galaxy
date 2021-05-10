@@ -390,7 +390,9 @@ export default {
             this.$refs.folder_content_table.items.forEach((row, index) => {
                 if (!row.isNewFolder && !row.deleted && !this.unselected.some((unsel) => unsel.id === row.id)) {
                     this.select_unselect_row(index);
-                    if (!this.selected.some((selectedItem) => selectedItem.id === row.id)) this.selected.push(row);
+                    if (!this.selected.some((selectedItem) => selectedItem.id === row.id)) {
+                        this.selected.push(row);
+                    }
                 }
             });
         },
@@ -412,13 +414,17 @@ export default {
             });
         },
         isAllSelectedOnPage() {
-            if (!this.$refs.folder_content_table) return false;
+            if (!this.$refs.folder_content_table) {
+                return false;
+            }
 
             // Since we cannot select new folders, toggle should clear all if all rows match, expect new folders
             let unselectable = 0;
 
             this.$refs.folder_content_table.computedItems.forEach((row) => {
-                if (row.isNewFolder || row.deleted) unselectable++;
+                if (row.isNewFolder || row.deleted) {
+                    unselectable++;
+                }
             });
 
             return this.selected.length + unselectable === this.$refs.folder_content_table.computedItems.length;
@@ -469,20 +475,28 @@ export default {
             this.select_unselect_row(index, unselect);
         },
         select_unselect_row(index, unselect = false) {
-            if (unselect) this.$refs.folder_content_table.unselectRow(index);
-            else this.$refs.folder_content_table.selectRow(index);
+            if (unselect) {
+                this.$refs.folder_content_table.unselectRow(index);
+            } else {
+                this.$refs.folder_content_table.selectRow(index);
+            }
         },
         bytesToString(raw_size) {
             return Utils.bytesToString(raw_size);
         },
         navigateToPermission(element) {
-            if (element.type === "file")
+            if (element.type === "file") {
                 this.$router.push({ path: `${this.folder_id}/dataset/${element.id}/permissions` });
-            else if (element.type === "folder") this.$router.push({ path: `${element.id}/permissions` });
+            } else if (element.type === "folder") {
+                this.$router.push({ path: `${element.id}/permissions` });
+            }
         },
         getMessage(element) {
-            if (element.type === "file") return element.message;
-            else if (element.type === "folder") return element.description;
+            if (element.type === "file") {
+                return element.message;
+            } else if (element.type === "folder") {
+                return element.description;
+            }
         },
         expandMessage(element) {
             this.expandedMessage.push(element.id);
@@ -496,7 +510,9 @@ export default {
         toggleEditMode(item) {
             item.editMode = !item.editMode;
             this.folderContents = this.folderContents.filter((item) => {
-                if (!item.isNewFolder) return item;
+                if (!item.isNewFolder) {
+                    return item;
+                }
             });
             this.refreshTable();
         },
@@ -537,7 +553,7 @@ export default {
                     Toast.error(`An error occurred! ${message} was not undeleted. Please try again.`);
                 }
             };
-            if (element.type === "folder")
+            if (element.type === "folder") {
                 this.services.undeleteFolder(
                     element,
                     (response) => {
@@ -547,7 +563,7 @@ export default {
                     },
                     onError
                 );
-            else
+            } else {
                 this.services.undeleteDataset(
                     element,
                     (response) => {
@@ -563,6 +579,7 @@ export default {
                     },
                     onError
                 );
+            }
         },
 
         /*

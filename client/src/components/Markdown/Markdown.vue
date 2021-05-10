@@ -264,7 +264,9 @@ export default {
             // we need [... ] to return empty string, if regex doesn't match
             const function_arguments = [...content.matchAll(new RegExp(FUNCTION_CALL, "g"))];
             for (let i = 0; i < function_arguments.length; i++) {
-                if (function_arguments[i] === undefined) continue;
+                if (function_arguments[i] === undefined) {
+                    continue;
+                }
                 const arguments_str = function_arguments[i].toString().replace(/,/g, "").trim();
                 if (arguments_str) {
                     const [key, val] = arguments_str.split("=");

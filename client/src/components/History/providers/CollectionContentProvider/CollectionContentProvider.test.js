@@ -51,7 +51,9 @@ describe("CollectionContentProvider", () => {
     let wrapper;
 
     afterEach(async () => {
-        if (wrapper) wrapper.destroy();
+        if (wrapper) {
+            wrapper.destroy();
+        }
         wrapper = undefined;
     });
 

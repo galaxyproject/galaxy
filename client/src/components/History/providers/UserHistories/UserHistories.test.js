@@ -124,7 +124,9 @@ describe("UserHistories", () => {
 
     afterEach(async () => {
         historiesStore.dispatch("betaHistory/reset");
-        if (wrapper) await wrapper.destroy();
+        if (wrapper) {
+            await wrapper.destroy();
+        }
     });
 
     describe("slotProps: values", () => {

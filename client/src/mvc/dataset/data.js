@@ -377,7 +377,11 @@ var EmbeddedTabularDatasetChunkedView = TabularDatasetChunkedView.extend({
 });
 
 function search(str, array) {
-    for (var j = 0; j < array.length; j++) if (array[j].match(str)) return j;
+    for (var j = 0; j < array.length; j++) {
+        if (array[j].match(str)) {
+            return j;
+        }
+    }
     return -1;
 }
 
@@ -525,7 +529,9 @@ var TabularButtonTracksterView = Backbone.View.extend({
         }
 
         // check
-        if (this.col.chrom === null) return;
+        if (this.col.chrom === null) {
+            return;
+        }
 
         // get selected data line
         var row = $(e.target).parent();
