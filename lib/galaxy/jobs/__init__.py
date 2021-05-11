@@ -2135,6 +2135,15 @@ class JobWrapper(HasResourceParameters):
             log.debug("found container runtime %s" % container_runtime)
             self.app.interactivetool_manager.configure_entry_points(job, container_runtime)
             return True
+        container_exception_path = os.path.join(working_directory, "container_monitor_exception.txt")
+        if os.path.exists(container_exception_path):
+            with open(container_exception_path) as fh:
+                exception_string = fh.read()
+            error_message = "Monitoring interactive tool entry point failed"
+            log.error(f"Monitoring interactive tool entry point for job {self.job_id} failed: {exception_string}")
+            self.fail(error_message)
+            # local job runner uses return value to determine if we're done polling
+            return True
 
     def container_monitor_command(self, container, **kwds):
         if not container or not self.tool.produces_entry_points:
