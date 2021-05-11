@@ -878,6 +878,15 @@ galaxy:
   # <data_dir>.
   #interactivetools_map: interactivetools_map.sqlite
 
+  # Prefix to use in the formation of the subdomain or path for
+  # interactive tools
+  #interactivetools_prefix: interactivetools
+
+  # Shorten the uuid portion of the subdomain or path for interactive
+  # tools. Especially useful for avoiding the need for wildcard
+  # certificates by keeping subdomain under 63 chars
+  #interactivetools_shorten_url: false
+
   # Galaxy Interactive Tools (GxITs) can be stopped from within the
   # Galaxy interface, killing the GxIT job without completing its
   # metadata setting post-job steps. In such a case it may be desirable
@@ -1364,6 +1373,10 @@ galaxy:
   # Instead of sending prefix + dot-separated-path, Galaxy will send
   # prefix with a tag path set to the page url
   #statsd_influxdb: false
+
+  # Mock out statsd client calls - only used by testing infrastructure
+  # really. Do not set this in production environments.
+  #statsd_mock_calls: false
 
   # Add an option to the library upload form which allows administrators
   # to upload a directory of files.
