@@ -11,7 +11,7 @@ from galaxy import (
     web,
 )
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.managers.quotas import QuotasManager
+from galaxy.managers.quotas import QuotasService
 from galaxy.quota._schema import (
     CreateQuotaParams,
     CreateQuotaResult,
@@ -44,7 +44,7 @@ QuotaIdPathParam: EncodedDatabaseIdField = Path(
 
 @router.cbv
 class FastAPIQuota:
-    manager: QuotasManager = depends(QuotasManager)
+    service: QuotasService = depends(QuotasService)
 
     @router.get(
         '/api/quotas',
@@ -56,7 +56,7 @@ class FastAPIQuota:
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> QuotaSummaryList:
         """Displays a list with information of quotas that are currently active."""
-        return self.manager.index(trans)
+        return self.service.index(trans)
 
     @router.get(
         '/api/quotas/deleted',
@@ -68,7 +68,7 @@ class FastAPIQuota:
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> QuotaSummaryList:
         """Displays a list with information of quotas that have been deleted."""
-        return self.manager.index(trans, deleted=True)
+        return self.service.index(trans, deleted=True)
 
     @router.get(
         '/api/quotas/{id}',
@@ -81,7 +81,7 @@ class FastAPIQuota:
         id: EncodedDatabaseIdField = QuotaIdPathParam
     ) -> QuotaDetails:
         """Displays details on a particular active quota."""
-        return self.manager.show(trans, id)
+        return self.service.show(trans, id)
 
     @router.get(
         '/api/quotas/deleted/{id}',
@@ -94,7 +94,7 @@ class FastAPIQuota:
         id: EncodedDatabaseIdField = QuotaIdPathParam,
     ) -> QuotaDetails:
         """Displays details on a particular quota that has been deleted."""
-        return self.manager.show(trans, id, deleted=True)
+        return self.service.show(trans, id, deleted=True)
 
     @router.post(
         '/api/quotas',
@@ -107,7 +107,7 @@ class FastAPIQuota:
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> CreateQuotaResult:
         """Creates a new quota."""
-        return self.manager.create(trans, payload)
+        return self.service.create(trans, payload)
 
     @router.put(
         '/api/quotas/{id}',
@@ -121,7 +121,7 @@ class FastAPIQuota:
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> str:
         """Updates an existing quota."""
-        return self.manager.update(trans, id, payload)
+        return self.service.update(trans, id, payload)
 
     @router.delete(
         '/api/quotas/{id}',
@@ -135,7 +135,7 @@ class FastAPIQuota:
         payload: DeleteQuotaPayload = Body(None),  # Optional
     ) -> str:
         """Deletes an existing quota."""
-        return self.manager.delete(trans, id, payload)
+        return self.service.delete(trans, id, payload)
 
     @router.post(
         '/api/quotas/deleted/{id}/undelete',
@@ -148,12 +148,12 @@ class FastAPIQuota:
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> str:
         """Restores a previously deleted quota."""
-        return self.manager.undelete(trans, id)
+        return self.service.undelete(trans, id)
 
 
 class QuotaAPIController(BaseGalaxyAPIController):
 
-    manager: QuotasManager = depends(QuotasManager)
+    service: QuotasService = depends(QuotasService)
 
     @web.require_admin
     @web.expose_api
@@ -164,7 +164,7 @@ class QuotaAPIController(BaseGalaxyAPIController):
         Displays a collection (list) of quotas.
         """
         deleted = util.string_as_bool(deleted)
-        return self.manager.index(trans, deleted)
+        return self.service.index(trans, deleted)
 
     @web.require_admin
     @web.expose_api
@@ -175,7 +175,7 @@ class QuotaAPIController(BaseGalaxyAPIController):
         Displays information about a quota.
         """
         deleted = util.string_as_bool(deleted)
-        return self.manager.show(trans, id, deleted)
+        return self.service.show(trans, id, deleted)
 
     @web.require_admin
     @web.expose_api
@@ -185,7 +185,7 @@ class QuotaAPIController(BaseGalaxyAPIController):
         Creates a new quota.
         """
         params = CreateQuotaParams(**payload)
-        return self.manager.create(trans, params)
+        return self.service.create(trans, params)
 
     @web.require_admin
     @web.expose_api
@@ -195,7 +195,7 @@ class QuotaAPIController(BaseGalaxyAPIController):
         Modifies a quota.
         """
         params = UpdateQuotaParams(**payload)
-        return self.manager.update(trans, id, params)
+        return self.service.update(trans, id, params)
 
     @web.require_admin
     @web.expose_api
@@ -206,7 +206,7 @@ class QuotaAPIController(BaseGalaxyAPIController):
         """
         # a request body is optional here
         payload = DeleteQuotaPayload(**kwd.get('payload', {}))
-        return self.manager.delete(trans, id, payload)
+        return self.service.delete(trans, id, payload)
 
     @web.require_admin
     @web.expose_api
@@ -215,4 +215,4 @@ class QuotaAPIController(BaseGalaxyAPIController):
         POST /api/quotas/deleted/{encoded_quota_id}/undelete
         Undeletes a quota
         """
-        return self.manager.undelete(trans, id)
+        return self.service.undelete(trans, id)

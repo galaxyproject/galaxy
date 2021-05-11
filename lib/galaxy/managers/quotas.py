@@ -249,7 +249,7 @@ class QuotaManager:
         return base.get_object(trans, id, 'Quota', check_ownership=False, check_accessible=False, deleted=deleted)
 
 
-class QuotasManager:
+class QuotasService:
     """Interface/service object shared by controllers for interacting with quotas."""
 
     def __init__(self, app: StructuredApp):
