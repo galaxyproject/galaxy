@@ -230,12 +230,12 @@ def parse_port_text(port_text):
         for line in port_text.strip().split('\n'):
             if " -> " not in line:
                 raise Exception("Cannot parse host and port from line [%s]" % line)
-            if ':::' in line:
-                # Skip unspecified ipv6 address.
-                # This is brittle of course, but so is parsing the container ports like this.
-                continue
             tool, host = line.split(" -> ", 1)
             hostname, port = host.rsplit(':')
+            if hostname == '::':
+                # Skip unspecified IPv6 address, which is also specified as 0:0:0:0 in another line.
+                # This is brittle of course, but so is parsing the container ports like this.
+                continue
             port = int(port)
             tool_p, tool_prot = tool.split("/")
             tool_p = int(tool_p)
