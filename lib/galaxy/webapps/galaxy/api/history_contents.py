@@ -5,7 +5,8 @@ import json
 import logging
 import os
 import re
-from datetime import datetime
+
+import dateutil.parser
 
 from galaxy import (
     exceptions,
@@ -1082,8 +1083,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         # if it hasn't then we can short-circuit the poll request
         since = kwd.get('update_time-gt', None)
         if since:
-            since_str = self.history_contents_filters.parse_date(since)
-            since_date = datetime.fromisoformat(since_str)
+            since_date = dateutil.parser.isoparse(since)
             if history.update_time <= since_date:
                 trans.response.status = 204
                 return
