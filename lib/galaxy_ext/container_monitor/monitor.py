@@ -69,7 +69,7 @@ def main():
             exc_traceback = "".join(traceback.format_exception(*exc_info))
         time.sleep(i * 2)
     else:
-        with open("container_monitor_exception.txt", "a") as f:
+        with open("container_monitor_exception.txt", "w") as f:
             f.write(exc_traceback)
 
 
