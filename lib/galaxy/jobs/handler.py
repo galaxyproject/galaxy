@@ -449,13 +449,15 @@ class JobHandlerQueue(Monitors):
                                    JOB_USER_OVER_TOTAL_WALLTIME):
                     if job_state == JOB_USER_OVER_QUOTA:
                         log.info("(%d) User (%s) is over quota: job paused" % (job.id, job.user_id))
+                        what = "your disk quota"
                     else:
                         log.info("(%d) User (%s) is over total walltime limit: job paused" % (job.id, job.user_id))
+                        what = "your total job runtime"
 
                     job.set_state(model.Job.states.PAUSED)
                     for dataset_assoc in job.output_datasets + job.output_library_datasets:
                         dataset_assoc.dataset.dataset.state = model.Dataset.states.PAUSED
-                        dataset_assoc.dataset.info = "Execution of this dataset's job is paused because you were over your disk quota at the time it was ready to run"
+                        dataset_assoc.dataset.info = f"Execution of this dataset's job is paused because you were over {what} at the time it was ready to run"
                         self.sa_session.add(dataset_assoc.dataset.dataset)
                     self.sa_session.add(job)
                 elif job_state == JOB_ERROR:
@@ -616,10 +618,13 @@ class JobHandlerQueue(Monitors):
         # Check total walltime limits
         if (state == JOB_READY and "delta" in self.app.job_config.limits.total_walltime):
             jobs_to_check = self.sa_session.query(model.Job).filter(
-                model.Job.user_id == job.user.id,
                 model.Job.update_time >= datetime.datetime.now() - datetime.timedelta(self.app.job_config.limits.total_walltime["window"]),
                 model.Job.state == 'ok'
-            ).all()
+            )
+            if job.user_id:
+                jobs_to_check = jobs_to_check.filter(model.Job.user_id == job.user_id)
+            else:
+                jobs_to_check = jobs_to_check.filter(model.Job.session_id == job.session_id)
             time_spent = datetime.timedelta(0)
             for job in jobs_to_check:
                 # History is job.state_history

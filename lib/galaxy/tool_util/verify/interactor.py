@@ -514,10 +514,8 @@ class GalaxyInteractorApi:
     def __job_ready(self, job_id, history_id=None):
         if job_id is None:
             raise ValueError("__job_ready passed empty job_id")
-        job_json = self._get("jobs/%s" % job_id).json()
-        state = job_json['state']
         try:
-            return self._state_ready(state, error_msg="Job in error state.")
+            return self._state_ready(job_id, error_msg="Job in error state.")
         except Exception:
             if VERBOSE_ERRORS and history_id is not None:
                 self._summarize_history(history_id)
@@ -602,11 +600,13 @@ class GalaxyInteractorApi:
         history_contents_response.raise_for_status()
         return history_contents_response.json()
 
-    def _state_ready(self, state_str, error_msg):
+    def _state_ready(self, job_id, error_msg):
+        state_str = self.__get_job(job_id).json()['state']
         if state_str == 'ok':
             return True
         elif state_str == 'error':
-            raise Exception(error_msg)
+            job_json = self.get_job_stdio(job_id)
+            raise Exception(f"{error_msg}. tool_id: {job_json['tool_id']}, exit_code: {job_json['exit_code']}, stderr: {job_json['stderr']}.")
         return None
 
     def __submit_tool(self, history_id, tool_id, tool_input, extra_data=None, files=None):
