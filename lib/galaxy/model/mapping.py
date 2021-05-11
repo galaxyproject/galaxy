@@ -1743,10 +1743,8 @@ simple_mapping(model.HistoryDatasetAssociation,
         primaryjoin=(model.HistoryDatasetAssociation.table.c.copied_from_history_dataset_association_id
                      == model.HistoryDatasetAssociation.table.c.id),
         remote_side=[model.HistoryDatasetAssociation.table.c.id],
-        uselist=False),
-    copied_to_history_dataset_associations=relation(model.HistoryDatasetAssociation,
-        primaryjoin=(model.HistoryDatasetAssociation.table.c.copied_from_history_dataset_association_id
-                     == model.HistoryDatasetAssociation.table.c.id)),
+        uselist=False,
+        backref='copied_to_history_dataset_associations'),
     copied_from_library_dataset_dataset_association=relation(
         model.LibraryDatasetDatasetAssociation,
         primaryjoin=(model.HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id
