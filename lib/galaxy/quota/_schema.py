@@ -113,6 +113,7 @@ class QuotaSummary(QuotaBase):
         ...,
         title="URL",
         description="The relative URL to get this particular Quota details from the rest API.",
+        deprecated=True,
     )
 
 

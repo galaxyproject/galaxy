@@ -268,7 +268,7 @@ class QuotasService:
         for quota in query:
             item = quota.to_dict(value_mapper={'id': trans.security.encode_id})
             encoded_id = trans.security.encode_id(quota.id)
-            item['url'] = url_for(route, id=encoded_id)
+            item['url'] = self._url_for(route, id=encoded_id)
             rval.append(item)
         return QuotaSummaryList.parse_obj(rval)
 
@@ -284,7 +284,7 @@ class QuotasService:
         self.validate_in_users_and_groups(trans, payload)
         quota, message = self.quota_manager.create_quota(payload)
         item = quota.to_dict(value_mapper={'id': trans.security.encode_id})
-        item['url'] = url_for('quota', id=trans.security.encode_id(quota.id))
+        item['url'] = self._url_for('quota', id=trans.security.encode_id(quota.id))
         item['message'] = message
         return CreateQuotaResult.parse_obj(item)
 
@@ -357,3 +357,9 @@ class QuotasService:
             raise Exception(msg)
         payload['in_users'] = list(map(str, new_in_users))
         payload['in_groups'] = list(map(str, new_in_groups))
+
+    def _url_for(self, *args, **kargs):
+        try:
+            return url_for(*args, **kargs)
+        except AttributeError:
+            return "*deprecated attribute not filled in by FastAPI server*"
