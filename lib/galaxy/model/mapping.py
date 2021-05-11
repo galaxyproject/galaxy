@@ -518,9 +518,11 @@ model.LibraryDatasetDatasetAssociation.table = Table(
     Column("copied_from_history_dataset_association_id", Integer,
         ForeignKey("history_dataset_association.id", use_alter=True, name='history_dataset_association_dataset_id_fkey'),
         nullable=True),
+
     Column("copied_from_library_dataset_dataset_association_id", Integer,
         ForeignKey("library_dataset_dataset_association.id", use_alter=True, name='library_dataset_dataset_association_id_fkey'),
         nullable=True),
+
     Column("name", TrimmedString(255), index=True),
     Column("info", TrimmedString(255)),
     Column("blurb", TrimmedString(255)),
@@ -2134,10 +2136,8 @@ mapper(model.LibraryDatasetDatasetAssociation, model.LibraryDatasetDatasetAssoci
         primaryjoin=(model.LibraryDatasetDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id
                      == model.LibraryDatasetDatasetAssociation.table.c.id),
         remote_side=[model.LibraryDatasetDatasetAssociation.table.c.id],
-        uselist=False),
-    copied_to_library_dataset_dataset_associations=relation(model.LibraryDatasetDatasetAssociation,
-        primaryjoin=(model.LibraryDatasetDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id
-                     == model.LibraryDatasetDatasetAssociation.table.c.id)),
+        uselist=False,
+        backref='copied_to_library_dataset_dataset_associations'),
     copied_from_history_dataset_association=relation(model.HistoryDatasetAssociation,
         primaryjoin=(model.LibraryDatasetDatasetAssociation.table.c.copied_from_history_dataset_association_id
                      == model.HistoryDatasetAssociation.table.c.id),
