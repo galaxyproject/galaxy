@@ -69,12 +69,17 @@ class BaseInteractiveToolsIntegrationTestCase(ContainerizedIntegrationTestCase):
             entry_points = self.entry_points_for_job(job_id)
             if len(entry_points) != expected_num:
                 return None
-            elif any([not e["active"] for e in entry_points]):
+            elif any(not e["active"] for e in entry_points):
+                job_json = self._get("jobs/{}?full=true".format(job_id)).json()
+                if job_json['state'] == 'error':
+                    raise Exception("Interactive tool job {} failed: {}".format(job_id, job_json))
                 return None
             else:
                 return entry_points
 
-        return wait_on(active_entry_points, "entry points to become active")
+        # It currently takes at least 90 seconds until we can be sure the container monitor failed.
+        # Can be decreased when galaxy_ext/container_monitor/monitor.py changes
+        return wait_on(active_entry_points, "entry points to become active", timeout=120)
 
     def entry_points_for_job(self, job_id):
         entry_points_response = self._get("entry_points?job_id=%s" % job_id)
