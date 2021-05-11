@@ -2140,7 +2140,7 @@ class JobWrapper(HasResourceParameters):
             with open(container_exception_path) as fh:
                 exception_string = fh.read()
             error_message = "Monitoring interactive tool entry point failed"
-            log.error("Monitoring interactive tool entry point for job {} failed: {}".format(self.job_id, exception_string))
+            log.error(f"Monitoring interactive tool entry point for job {self.job_id} failed: {exception_string}")
             self.fail(error_message)
             # local job runner uses return value to determine if we're done polling
             return True
