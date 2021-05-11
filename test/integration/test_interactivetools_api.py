@@ -69,7 +69,7 @@ class BaseInteractiveToolsIntegrationTestCase(ContainerizedIntegrationTestCase):
             entry_points = self.entry_points_for_job(job_id)
             if len(entry_points) != expected_num:
                 return None
-            elif any([not e["active"] for e in entry_points]):
+            elif any(not e["active"] for e in entry_points):
                 job_json = self._get("jobs/%s?full=true" % job_id).json()
                 if job_json['state'] == 'error':
                     raise Exception("Interactive tool job {} failed: {}".format(job_id, job_json))
