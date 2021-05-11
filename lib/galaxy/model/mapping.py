@@ -1828,9 +1828,6 @@ mapper(model.ImplicitlyConvertedDatasetAssociation, model.ImplicitlyConvertedDat
     parent_hda=relation(model.HistoryDatasetAssociation,
         primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.hda_parent_id
                      == model.HistoryDatasetAssociation.table.c.id)),
-    parent_ldda=relation(model.LibraryDatasetDatasetAssociation,
-        primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.ldda_parent_id
-                     == model.LibraryDatasetDatasetAssociation.table.c.id)),
     dataset_ldda=relation(model.LibraryDatasetDatasetAssociation,
         primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.ldda_id
                      == model.LibraryDatasetDatasetAssociation.table.c.id),
@@ -2150,7 +2147,8 @@ mapper(model.LibraryDatasetDatasetAssociation, model.LibraryDatasetDatasetAssoci
                      == model.LibraryDatasetDatasetAssociation.table.c.id)),
     implicitly_converted_datasets=relation(model.ImplicitlyConvertedDatasetAssociation,
         primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.ldda_parent_id
-                     == model.LibraryDatasetDatasetAssociation.table.c.id)),
+                     == model.LibraryDatasetDatasetAssociation.table.c.id),
+        backref='parent_ldda'),
     tags=relation(model.LibraryDatasetDatasetAssociationTagAssociation,
                   order_by=model.LibraryDatasetDatasetAssociationTagAssociation.table.c.id,
                   backref='history_tag_associations'),
