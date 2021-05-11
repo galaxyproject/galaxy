@@ -22,7 +22,6 @@
         </template>
     </b-nav-item>
     <b-nav-item-dropdown
-        @blur="hideDropdown"
         ref="dropdown"
         v-else
         :class="classes"
@@ -113,10 +112,10 @@ export default {
         },
     },
     mounted() {
-        window.addEventListener("blur", () => this.hideDropdown());
+        window.addEventListener("blur", this.hideDropdown);
     },
     destroyed() {
-        window.removeEventListener("blur", () => this.hideDropdown());
+        window.removeEventListener("blur", this.hideDropdown);
     },
     methods: {
         hideDropdown() {
