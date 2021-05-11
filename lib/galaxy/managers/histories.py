@@ -301,8 +301,9 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         owner_roles = owner.all_roles()
         can_change_dict = {}
         cannot_change_dict = {}
-        total_dataset_count = 0
         share_anyway = option is not None and option == sharable.SharingOptions.no_changes
+        datasets = history.activatable_datasets
+        total_dataset_count = len(datasets)
         for user in users:
             if self.is_history_shared_with(history, user):
                 errors.add(f"History ({history.name}) already shared with user ({user.email})")
@@ -310,8 +311,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
 
             user_roles = user.all_roles()
             # Only deal with datasets that have not been purged
-            for hda in history.activatable_datasets:
-                total_dataset_count += 1
+            for hda in datasets:
                 if trans.app.security_agent.can_access_dataset(user_roles, hda.dataset):
                     continue
                 # The user with which we are sharing the history does not have access permission on the current dataset
