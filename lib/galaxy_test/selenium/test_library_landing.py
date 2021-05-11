@@ -75,10 +75,10 @@ class LibraryLandingTestCase(SeleniumTestCase):
         self.screenshot("libraries_index_search")
         # sort ascending
         self.libraries_index_sort_click()
-        self._assert_names_are([namebase + " a", namebase + " b", namebase + " c"])
+        self._assert_names_are([f"{namebase} a", f"{namebase} b", f"{namebase} c"])
         # sort descending
         self.libraries_index_sort_click()
-        self._assert_names_are([namebase + " c", namebase + " b", namebase + " a"])
+        self._assert_names_are([f"{namebase} c", f"{namebase} b", f"{namebase} a"])
 
     def _search_for_only_with_name(self, name):
         self.libraries_index_search_for(name)

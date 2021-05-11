@@ -1122,7 +1122,7 @@ class InputParameterModule(WorkflowModule):
         return state
 
     def _parameter_option_def_to_tool_form_str(self, parameter_def):
-        return ",".join("{}:{}".format(o["value"], o["label"]) if isinstance(o, dict) else o for o in parameter_def)
+        return ",".join(f"{o['value']}:{o['label']}" if isinstance(o, dict) else o for o in parameter_def)
 
     def get_export_state(self):
         export_state = self._parse_state_into_dict()

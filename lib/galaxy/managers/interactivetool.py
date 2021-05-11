@@ -280,7 +280,7 @@ class InteractiveToolManager:
         if not entry_point.requires_domain:
             rval = self.app.url_for(f'/{entry_point_prefix}/access/{entry_point_class}/{entry_point_encoded_id}/{entry_point.token}/')
         if entry_point.entry_url:
-            rval = '{}/{}'.format(rval.rstrip('/'), entry_point.entry_url.lstrip('/'))
+            rval = f"{rval.rstrip('/')}/{entry_point.entry_url.lstrip('/')}"
         if rval[0] != "/":
             rval = f'/{rval}'
         return rval

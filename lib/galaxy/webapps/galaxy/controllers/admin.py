@@ -1369,7 +1369,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         if users:
             if trans.request.method == 'GET':
                 return {
-                    'message': 'Changes password(s) for: %s.' % ', '.join(user.email for user in users.values()),
+                    'message': f"Changes password(s) for: {', '.join(user.email for user in users.values())}.",
                     'status': 'info',
                     'inputs': [{'name': 'password', 'label': 'New password', 'type': 'password'},
                               {'name': 'confirm', 'label': 'Confirm password', 'type': 'password'}]

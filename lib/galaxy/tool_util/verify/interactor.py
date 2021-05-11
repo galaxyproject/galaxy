@@ -131,10 +131,10 @@ class GalaxyInteractorApi:
         return response.json()
 
     def get_tool_tests(self, tool_id, tool_version=None):
-        url = "tools/%s/test_data" % tool_id
+        url = f"tools/{tool_id}/test_data"
         params = {'tool_version': tool_version} if tool_version else None
         response = self._get(url, data=params)
-        assert response.status_code == 200, "Non 200 response from tool test API. [%s]" % response.content
+        assert response.status_code == 200, f"Non 200 response from tool test API. [{response.content}]"
         return response.json()
 
     def verify_output_collection(self, output_collection_def, output_collection_id, history, tool_id):

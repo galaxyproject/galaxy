@@ -236,7 +236,7 @@ steps:
         job_lock_response.raise_for_status()
         assert not job_lock_response.json()["active"]
 
-        show_jobs_response = self._get("jobs/%s" % job_id, admin=False)
+        show_jobs_response = self._get(f"jobs/{job_id}", admin=False)
         self._assert_not_has_keys(show_jobs_response.json(), "external_id")
 
         # TODO: Re-activate test case when API accepts privacy settings

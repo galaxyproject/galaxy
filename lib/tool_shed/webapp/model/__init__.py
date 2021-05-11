@@ -313,7 +313,7 @@ class Repository(Dictifiable, _HasTable):
             for username in util.listify(usernames):
                 if username not in allow_push:
                     allow_push.append(username)
-        allow_push = '%s\n' % ','.join(allow_push)
+        allow_push = f"{','.join(allow_push)}\n"
         # Why doesn't the following work?
         # repo.ui.setconfig('web', 'allow_push', allow_push)
         repo_dir = self.repo_path()

@@ -308,7 +308,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                     }
                 },
                 "spec": {
-                    "ports": [{"name": "job-{}-{}".format(self.__force_label_conformity(ajs.job_wrapper.get_id_tag()), p),
+                    "ports": [{"name": f"job-{self.__force_label_conformity(ajs.job_wrapper.get_id_tag())}-{p}",
                                "port": int(p),
                                "protocol": "TCP",
                                "targetPort": int(p)} for p in guest_ports],
@@ -543,7 +543,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         return "job-container"
 
     def __get_k8s_job_name(self, prefix, job_wrapper):
-        return "{}-{}".format(prefix, self.__force_label_conformity(job_wrapper.get_id_tag()))
+        return f"{prefix}-{self.__force_label_conformity(job_wrapper.get_id_tag())}"
 
     def __get_destination_params(self, job_wrapper):
         """Obtains allowable runner param overrides from the destination"""
@@ -719,7 +719,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         return any(True for c in conditions if c['type'] == 'Failed' and c['reason'] == 'DeadlineExceeded')
 
     def _get_pod_for_job(self, job_state):
-        pods = Pod.objects(self._pykube_api).filter(selector="app=%s" % job_state.job_id,
+        pods = Pod.objects(self._pykube_api).filter(selector=f"app={job_state.job_id}",
                                                     namespace=self.runner_params['k8s_namespace'])
         if not pods.response['items']:
             return None
@@ -764,7 +764,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 k8s_job = Job(self._pykube_api, job_to_delete.response['items'][0])
                 if job_wrapper.guest_ports:
                     k8s_job_prefix = self.__produce_k8s_job_prefix()
-                    k8s_job_name = "{}-{}".format(k8s_job_prefix, self.__force_label_conformity(job_wrapper.get_id_tag()))
+                    k8s_job_name = f"{k8s_job_prefix}-{self.__force_label_conformity(job_wrapper.get_id_tag())}"
                     log.debug(f'Deleting service/ingress for job with ID {job_wrapper.get_id_tag()}')
                     job_failed = (k8s_job.obj['status']['failed'] > 0
                                   if 'failed' in k8s_job.obj['status'] else False)

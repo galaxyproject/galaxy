@@ -115,7 +115,7 @@ def validate_jsonrpc_request(request, regular_methods, notification_methods):
         return False, request, jsonrpc_response(request=request,
                                                 error=dict(code=-32601,
                                                            message='Method not found',
-                                                           data='Valid methods are: %s' % ', '.join(regular_methods + notification_methods)))
+                                                           data=f"Valid methods are: {', '.join(regular_methods + notification_methods)}"))
     try:
         if request['method'] in regular_methods:
             assert 'id' in request, f"No \"id\" member was sent with the Request object and the requested method \"{request['method']}\" is not a notification method"

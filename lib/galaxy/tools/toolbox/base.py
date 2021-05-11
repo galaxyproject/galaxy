@@ -325,7 +325,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             dynamic_tool_conf_paths.append(dynamic_tool_conf_path)
             if dynamic_tool_conf_path == filename:
                 return shed_config_dict
-        log.warning("'{}' not among installable tool config files ({})".format(filename, ', '.join(dynamic_tool_conf_paths)))
+        log.warning(f"'{filename}' not among installable tool config files ({', '.join(dynamic_tool_conf_paths)})")
         return None
 
     def update_shed_config(self, shed_conf):

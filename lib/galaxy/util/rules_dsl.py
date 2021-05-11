@@ -560,9 +560,9 @@ class RuleSet:
     @property
     def display(self):
         message = "Rules:\n"
-        message += "".join("- %s\n" % r for r in self.raw_rules)
+        message += "".join(f"- {r}\n" for r in self.raw_rules)
         message += "Column Definitions:\n"
-        message += "".join("- %s\n" % m for m in self.raw_mapping)
+        message += "".join(f"- {m}\n" for m in self.raw_mapping)
         return message
 
 

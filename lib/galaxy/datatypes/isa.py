@@ -275,7 +275,7 @@ class _Isa(data.Data):
                 html += f'<p>Submitted the {study.submission_date}</p>'
                 html += f'<p>Released on {study.public_release_date}</p>'
 
-                html += '<p>Experimental factors used: %s</p>' % ', '.join(x.name for x in study.factors)
+                html += f"<p>Experimental factors used: {', '.join(x.name for x in study.factors)}</p>"
 
                 # Loop on all assays of this study
                 for assay in study.assays:

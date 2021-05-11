@@ -100,9 +100,9 @@ def get_tests(args, pkg_path):
         if tests_commands:
             tests.append(' && '.join(tests_commands))
         if tests_imports and 'python' in requirements:
-            tests.append(' && '.join('python -c "import %s"' % imp for imp in tests_imports))
+            tests.append(' && '.join(f'python -c "import {imp}"' for imp in tests_imports))
         elif tests_imports and ('perl' in requirements or 'perl-threaded' in requirements):
-            tests.append(' && '.join('''perl -e "use %s;"''' % imp for imp in tests_imports))
+            tests.append(' && '.join(f'''perl -e "use {imp};\"''' for imp in tests_imports))
 
     tests = ' && '.join(tests)
     tests = tests.replace('$R ', 'Rscript ')

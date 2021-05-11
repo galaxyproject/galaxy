@@ -384,7 +384,7 @@ def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_al
                 else:
                     email_alerts.append(user.email)
         else:
-            subject = "Galaxy tool shed update alert for repository named %s" % str(repository.name)
+            subject = f"Galaxy tool shed update alert for repository named {str(repository.name)}"
             email_alerts = json.loads(repository.email_alerts)
         for email in email_alerts:
             to = email.strip()

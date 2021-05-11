@@ -486,7 +486,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
                          valid_tools_only=False,
                          uncompress_file=False,
                          remove_repo_files_not_in_tar=False,
-                         commit_message='Uploaded dependency on %s.' % ', '.join(repository_names),
+                         commit_message=f"Uploaded dependency on {', '.join(repository_names)}.",
                          strings_displayed=None,
                          strings_not_displayed=None)
 

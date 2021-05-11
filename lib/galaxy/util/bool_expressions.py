@@ -29,7 +29,7 @@ ParserElement.enablePackrat()
 
 # Defines the allowed characters that form a valid token.
 # Tokens that don't match this format will raise an exception when found.
-DEFAULT_TOKEN_FORMAT = alphanums + "_-@."
+DEFAULT_TOKEN_FORMAT = f"{alphanums}_-@."
 
 TRUE = Keyword("True")
 FALSE = Keyword("False")

@@ -135,7 +135,7 @@ def get_config(argv, use_argparse=True, cwd=None):
     if (f"{config_prefix}database_connection") in properties:
         db_url = properties[f"{config_prefix}database_connection"]
     else:
-        db_url = "sqlite:///%s?isolation_level=IMMEDIATE" % os.path.join(get_data_dir(properties), default_sqlite_file)
+        db_url = f"sqlite:///{os.path.join(get_data_dir(properties), default_sqlite_file)}?isolation_level=IMMEDIATE"
     install_database_connection = properties.get('install_database_connection')
 
     return dict(db_url=db_url, repo=repo, config_file=config_file, database=database, install_database_connection=install_database_connection)

@@ -68,7 +68,7 @@ def rgConv(inpedfilepath, outhtmlname, outfilepath):
                 g = lrow[6:]
                 gc = [recode.get(z, '0') for z in g]
                 lrow = p + gc
-                row = '%s\n' % ' '.join(lrow)
+                row = f"{' '.join(lrow)}\n"
             o.write(row)
 
 

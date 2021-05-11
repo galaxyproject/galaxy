@@ -96,7 +96,7 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
             if id_match:
                 object_id = int(id_match.group(2))
                 encoded_id = trans.security.encode_id(object_id)
-                line = line.replace(id_match.group(), "{}={}".format(id_match.group(1), encoded_id))
+                line = line.replace(id_match.group(), f"{id_match.group(1)}={encoded_id}")
             if container == "history_link":
                 _check_object(object_id, line)
                 history = history_manager.get_accessible(object_id, trans.user)
@@ -500,7 +500,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
             markdown += " | "
             value = parameter["value"]
             if isinstance(value, list):
-                markdown += ", ".join("{}: {}".format(p["hid"], p["name"]) for p in value)
+                markdown += ", ".join(f"{p['hid']}: {p['name']}" for p in value)
             else:
                 markdown += value
             markdown += " |\n"
@@ -682,9 +682,9 @@ history_dataset_collection_display(input={})
         if container == "workflow_display":
             # TODO: this really should be workflow id not stored workflow id but the API
             # it consumes wants the stored id.
-            return ("workflow_display(workflow_id=%s)\n" % invocation.workflow.stored_workflow.id, False)
+            return (f"workflow_display(workflow_id={invocation.workflow.stored_workflow.id})\n", False)
         if container == "history_link":
-            return ("history_link(history_id=%s)\n" % invocation.history.id, False)
+            return (f"history_link(history_id={invocation.history.id})\n", False)
         if container == "invocation_date":
             return (f"invocation_date(invocation_id={invocation.id})\n", False)
         ref_object_type = None

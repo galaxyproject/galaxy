@@ -432,7 +432,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
                 # Add file containing 'from_string' to the irods collection, since
                 # put() expects a file as input. Get file name from data object's 'desc' field
-                self.session.data_objects.put(data_obj.desc, collection_path + "/", **options)
+                self.session.data_objects.put(data_obj.desc, f"{collection_path}/", **options)
 
                 log.debug("Pushed data from string '%s' to collection '%s'", from_string, data_object_path)
             else:

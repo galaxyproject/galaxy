@@ -869,7 +869,7 @@ class Eland(Tabular):
             # This data type requires at least 11 columns in the data
             if dataset.metadata.columns - len(self.column_names) > 0:
                 for i in range(len(self.column_names), max(dataset.metadata.columns, self.max_peek_columns)):
-                    out.append('<th>%s</th>' % str(i + 1))
+                    out.append(f'<th>{str(i + 1)}</th>')
                 out.append('</tr>')
             out.append(self.make_html_peek_rows(dataset, skipchars=skipchars, peek=peek))
             out.append('</table>')

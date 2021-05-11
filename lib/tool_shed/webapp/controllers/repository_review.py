@@ -341,7 +341,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
             if revision_approved_setting_changed:
                 message += f'Approved value <b>{review.approved}</b> saved for this revision.<br/>'
             if saved_component_names:
-                message += 'Reviews were saved for components: %s' % ', '.join(saved_component_names)
+                message += f"Reviews were saved for components: {', '.join(saved_component_names)}"
             if not revision_approved_setting_changed and not saved_component_names:
                 message += 'No changes were made to this review, so nothing was saved.'
         if review and review.approved:

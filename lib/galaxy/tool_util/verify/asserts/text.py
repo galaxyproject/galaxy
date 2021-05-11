@@ -17,7 +17,7 @@ def assert_not_has_text(output, text):
     """ Asserts specified output does not contain the substring
     specified by the argument text."""
     assert output is not None, "Checking not_has_text assertion on empty output (None)"
-    assert output.find(text) < 0, "Output file contains unexpected text '%s'" % text
+    assert output.find(text) < 0, f"Output file contains unexpected text '{text}'"
 
 
 def assert_has_line(output, line, n=None):
