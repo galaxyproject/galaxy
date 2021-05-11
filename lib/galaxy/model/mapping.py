@@ -1749,7 +1749,8 @@ simple_mapping(model.HistoryDatasetAssociation,
         model.LibraryDatasetDatasetAssociation,
         primaryjoin=(model.HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id
                      == model.LibraryDatasetDatasetAssociation.table.c.id),
-        uselist=False),
+        uselist=False,
+        backref='copied_to_history_dataset_associations'),
     copied_to_library_dataset_dataset_associations=relation(model.LibraryDatasetDatasetAssociation,
         primaryjoin=(model.HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id
                      == model.LibraryDatasetDatasetAssociation.table.c.id)),
@@ -2140,9 +2141,6 @@ mapper(model.LibraryDatasetDatasetAssociation, model.LibraryDatasetDatasetAssoci
         primaryjoin=(model.LibraryDatasetDatasetAssociation.table.c.copied_from_history_dataset_association_id
                      == model.HistoryDatasetAssociation.table.c.id),
         uselist=False),
-    copied_to_history_dataset_associations=relation(model.HistoryDatasetAssociation,
-        primaryjoin=(model.HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id
-                     == model.LibraryDatasetDatasetAssociation.table.c.id)),
     implicitly_converted_datasets=relation(model.ImplicitlyConvertedDatasetAssociation,
         primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.ldda_parent_id
                      == model.LibraryDatasetDatasetAssociation.table.c.id),
