@@ -4,6 +4,7 @@ Manager and Serializer for Datasets.
 import glob
 import logging
 import os
+from re import S
 from typing import Type
 
 from galaxy import (
@@ -164,6 +165,7 @@ class DatasetSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin)
             'file_size',
             'total_size',
             'uuid',
+            'tool_type',
         ])
         # could do visualizations and/or display_apps
 
@@ -221,7 +223,6 @@ class DatasetSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin)
             'access': [self.app.security.encode_id(perm.role.id) for perm in access_permissions],
         }
         return permissions
-
 
 # ============================================================================= AKA DatasetInstanceManager
 class DatasetAssociationManager(base.ModelManager,
@@ -476,8 +477,9 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer,
             'meta_files': self.serialize_meta_files,
             'metadata': self.serialize_metadata,
 
-            'creating_job': self.serialize_creating_job,
-            'rerunnable': self.serialize_rerunnable,
+            'creating_job'  : self.serialize_creating_job,
+            'rerunnable'    : self.serialize_rerunnable,
+            'tool_type'     : self.serialize_tool_type,
 
             'parent_id': self.serialize_id,
             'designation': lambda i, k, **c: i.designation,
@@ -572,6 +574,13 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer,
             if tool and tool.is_workflow_compatible:
                 return True
         return False
+
+    def serialize_tool_type(self,dataset, key, user=None, **context):
+        if dataset.creating_job:
+            tool = self.app.toolbox.get_tool(dataset.creating_job.tool_id, dataset.creating_job.tool_version)
+            if tool:
+                return tool.tool_type
+        return None
 
     def serialize_converted_datasets(self, dataset_assoc, key, **context):
         """

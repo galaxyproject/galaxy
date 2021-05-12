@@ -4,6 +4,10 @@
         <table id="job-information" class="tabletip info_data_table">
             <tbody>
                 <tr v-if="job && job.tool_id">
+                    <td>FULL JOB:</td>
+                    <td id="galaxy-tool-id">{{ job }}</td>
+                </tr>
+                <tr v-if="job && job.tool_id">
                     <td>Galaxy Tool ID:</td>
                     <td id="galaxy-tool-id">
                         {{ job.tool_id }}

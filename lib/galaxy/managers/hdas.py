@@ -22,6 +22,9 @@ from galaxy.managers import (
 )
 from galaxy.structured_app import MinimalManagerApp
 
+from galaxy.tool_util.parser import get_tool_source
+
+
 log = logging.getLogger(__name__)
 
 
@@ -275,6 +278,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             'url',
             'create_time',
             'update_time',
+            'tool_type',
         ])
         self.add_view('detailed', [
             'model_class',
@@ -295,6 +299,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
 
             'creating_job',
             'rerunnable',
+            # 'job_type',
 
             'uuid',
             'permissions',
@@ -338,6 +343,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             'id',
             'name',
             'tags',
+            'tool_type',
             'type',
             'type_id',
             'update_time',
@@ -433,6 +439,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
         # TODO: to DatasetAssociationSerializer
         if not self.manager.is_accessible(hda, user, **context):
             keys = self._view_to_keys('inaccessible')
+
         return super().serialize(hda, keys, user=user, **context)
 
     def serialize_display_apps(self, hda, key, trans=None, **context):
@@ -511,6 +518,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             'meta_download': url_for(controller='dataset', action='get_metadata_file',
                                      hda_id=encoded_id, metadata_name=''),
         }
+
         return urls
 
 

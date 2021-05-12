@@ -54,6 +54,10 @@
                         <td>Full Path</td>
                         <td id="file_name">{{ dataset.file_name }}</td>
                     </tr>
+                    <tr v-if="dataset.tool_type">
+                        <td>Tool Type</td>
+                        <td id="tool_type">{{ dataset.tool_type }}</td>
+                    </tr>
                 </tbody>
             </table>
         </div>

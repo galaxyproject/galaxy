@@ -11,7 +11,11 @@ export default {
             const { history_content_type } = this.item;
             switch (history_content_type) {
                 case "dataset":
-                    return "Dataset";
+                    if ( this.item.tool_type == "interactive") {
+                        return "InteractiveTool";
+                    } else {
+                        return "Dataset";
+                    }
                 case "dataset_collection":
                     return "DatasetCollection";
                 default:
