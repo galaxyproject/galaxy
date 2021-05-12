@@ -107,7 +107,7 @@ class TaggableFilterMixin:
                 return True
             class_name = model_class.__name__
             if class_name == 'HistoryDatasetCollectionAssociation':
-                # Unfortunately we were a little inconsistent with out naming scheme
+                # Unfortunately we were a little inconsistent with our naming scheme
                 class_name = 'HistoryDatasetCollection'
             target_model = getattr(model, f"{class_name}TagAssociation")
             id_column = f"{target_model.table.name.rsplit('_tag_association')[0]}_id"
