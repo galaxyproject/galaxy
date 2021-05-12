@@ -320,7 +320,7 @@ def get_containing_library_from_library_dataset(trans, library_dataset):
     return None
 
 
-class LibrariesManager:
+class LibrariesService:
     """
     Interface/service object for sharing logic between controllers.
     """

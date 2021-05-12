@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 
 
 class LibrariesController(BaseGalaxyAPIController):
-    manager = depends(libraries.LibrariesManager)
+    service = depends(libraries.LibrariesService)
 
     @expose_api_anonymous
     def index(self, trans, **kwd):
@@ -38,7 +38,7 @@ class LibrariesController(BaseGalaxyAPIController):
 
         """
         deleted = util.string_as_bool_or_none(kwd.get('deleted', None))
-        return self.manager.index(trans, deleted)
+        return self.service.index(trans, deleted)
 
     @expose_api_anonymous
     def show(self, trans, id, deleted='False', **kwd):
@@ -61,7 +61,7 @@ class LibrariesController(BaseGalaxyAPIController):
 
         :raises: MalformedId, ObjectNotFound
         """
-        return self.manager.show(trans, id)
+        return self.service.show(trans, id)
 
     @expose_api
     def create(self, trans, payload: Dict[str, str], **kwd):
@@ -83,7 +83,7 @@ class LibrariesController(BaseGalaxyAPIController):
         :rtype:     dict
         :raises: RequestParameterMissingException
         """
-        return self.manager.create(trans, payload)
+        return self.service.create(trans, payload)
 
     @expose_api
     def update(self, trans, id, payload: Dict[str, str], **kwd):
@@ -107,7 +107,7 @@ class LibrariesController(BaseGalaxyAPIController):
         :rtype:     dict
         :raises: RequestParameterMissingException
         """
-        return self.manager.update(trans, id, payload)
+        return self.service.update(trans, id, payload)
 
     @expose_api
     def delete(self, trans, id, payload: Dict[str, Any] = None, **kwd):
@@ -132,7 +132,7 @@ class LibrariesController(BaseGalaxyAPIController):
         if payload:
             kwd.update(payload)
         undelete = util.string_as_bool(kwd.get('undelete', False))
-        return self.manager.delete(trans, id, undelete)
+        return self.service.delete(trans, id, undelete)
 
     @expose_api
     def get_permissions(self, trans, encoded_library_id, **kwd):
@@ -171,7 +171,7 @@ class LibrariesController(BaseGalaxyAPIController):
 
         query = kwd.get('q', None)
 
-        return self.manager.get_permissions(trans, encoded_library_id, scope, is_library_access, page, page_limit, query)
+        return self.service.get_permissions(trans, encoded_library_id, scope, is_library_access, page, page_limit, query)
 
     @expose_api
     def set_permissions(self, trans, encoded_library_id, payload: Dict[str, Any], **kwd):
@@ -202,4 +202,4 @@ class LibrariesController(BaseGalaxyAPIController):
         :raises: RequestParameterInvalidException, InsufficientPermissionsException, InternalServerError
                     RequestParameterMissingException
         """
-        return self.manager.set_permissions(trans, encoded_library_id, payload)
+        return self.service.set_permissions(trans, encoded_library_id, payload)
