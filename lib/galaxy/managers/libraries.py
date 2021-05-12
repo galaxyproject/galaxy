@@ -2,13 +2,21 @@
 Manager and Serializer for libraries.
 """
 import logging
+from datetime import datetime
+from enum import Enum
 from typing import (
     Any,
     Dict,
     List,
     Optional,
+    Tuple,
+    Union,
 )
 
+from pydantic import (
+    BaseModel,
+    Field,
+)
 from sqlalchemy import and_, false, not_, or_, true
 from sqlalchemy.orm.exc import MultipleResultsFound
 from sqlalchemy.orm.exc import NoResultFound
@@ -19,9 +27,12 @@ from galaxy import (
 )
 from galaxy.managers import (
     folders,
-    roles,
 )
 from galaxy.managers.context import ProvidesAppContext
+from galaxy.managers.roles import (
+    BasicRoleModel,
+    RoleManager,
+)
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.util import (
     pretty_print_time_interval,
@@ -318,6 +329,238 @@ def get_containing_library_from_library_dataset(trans, library_dataset):
         if library.root_folder == folder:
             return library
     return None
+
+
+class LibraryLegacySummary(BaseModel):
+    model_class: str = Field(
+        "Library", const=True,
+        title="Model class",
+        description="The name of the database model class.",
+    )
+    id: EncodedDatabaseIdField = Field(
+        ...,
+        title="ID",
+        description="Encoded ID of the Library.",
+    )
+    name: str = Field(
+        ...,
+        title="Name",
+        description="The name of the Library.",
+    )
+    description: Optional[str] = Field(
+        "",
+        title="Description",
+        description="A detailed description of the Library.",
+    )
+    synopsis: Optional[str] = Field(
+        None,
+        title="Description",
+        description="A short text describing the contents of the Library.",
+    )
+    root_folder_id: EncodedDatabaseIdField = Field(
+        ...,
+        title="Root Folder ID",
+        description="Encoded ID of the Library's base folder.",
+    )
+    create_time: datetime = Field(
+        ...,
+        title="Create Time",
+        description="The time and date this item was created.",
+    )
+    deleted: bool = Field(
+        ...,
+        title="Deleted",
+        description="Whether this Library has been deleted.",
+    )
+
+
+class LibrarySummary(LibraryLegacySummary):
+    create_time_pretty: str = Field(  # This is somewhat redundant, maybe the client can do this with `create_time`?
+        ...,
+        title="Create Time Pretty",
+        description="Nice time representation of the creation date.",
+        example="2 months ago",
+    )
+    public: bool = Field(
+        ...,
+        title="Public",
+        description="Whether this Library has been deleted.",
+    )
+    can_user_add: bool = Field(
+        ...,
+        title="Can User Add",
+        description="Whether the current user can add contents to this Library.",
+    )
+    can_user_modify: bool = Field(
+        ...,
+        title="Can User Modify",
+        description="Whether the current user can modify this Library.",
+    )
+    can_user_manage: bool = Field(
+        ...,
+        title="Can User Manage",
+        description="Whether the current user can manage the Library and its contents.",
+    )
+
+
+class LibrarySummaryList(BaseModel):
+    __root__: List[LibrarySummary] = Field(
+        default=[],
+        title='List with summary information of Libraries.',
+    )
+
+
+class CreateLibraryPayload(BaseModel):
+    name: str = Field(
+        ...,
+        title="Name",
+        description="The name of the Library.",
+    )
+    description: Optional[str] = Field(
+        "",
+        title="Description",
+        description="A detailed description of the Library.",
+    )
+    synopsis: Optional[str] = Field(
+        "",
+        title="Synopsis",
+        description="A short text describing the contents of the Library.",
+    )
+
+
+class UpdateLibraryPayload(BaseModel):
+    name: Optional[str] = Field(
+        None,
+        title="Name",
+        description="The new name of the Library. Leave unset to keep the existing.",
+    )
+    description: Optional[str] = Field(
+        None,
+        title="Description",
+        description="A detailed description of the Library. Leave unset to keep the existing.",
+    )
+    synopsis: Optional[str] = Field(
+        None,
+        title="Synopsis",
+        description="A short text describing the contents of the Library. Leave unset to keep the existing.",
+    )
+
+
+# The tuple should probably be another proper model instead?
+# Keeping it as a Tuple for now for backward compatibility
+RoleNameIdTuple = Tuple[str, EncodedDatabaseIdField]
+
+
+class LibraryCurrentPermissions(BaseModel):
+    access_library_role_list: List[RoleNameIdTuple] = Field(
+        ...,
+        title="Access Role List",
+        description="A list containing pairs of role names and corresponding encoded IDs which have access to the Library.",
+    )
+    modify_library_role_list: List[RoleNameIdTuple] = Field(
+        ...,
+        title="Modify Role List",
+        description="A list containing pairs of role names and corresponding encoded IDs which can modify the Library.",
+    )
+    manage_library_role_list: List[RoleNameIdTuple] = Field(
+        ...,
+        title="Manage Role List",
+        description="A list containing pairs of role names and corresponding encoded IDs which can manage the Library.",
+    )
+    add_library_item_role_list: List[RoleNameIdTuple] = Field(
+        ...,
+        title="Add Role List",
+        description="A list containing pairs of role names and corresponding encoded IDs which can add items to the Library.",
+    )
+
+
+class LibraryAvailablePermissions(BaseModel):
+    roles: List[BasicRoleModel] = Field(
+        ...,
+        title="Roles",
+        description="A list available roles that can be assigned to a particular permission.",
+    )
+    page: int = Field(
+        ...,
+        title="Page",
+        description="Current page .",
+    )
+    page_limit: int = Field(
+        ...,
+        title="Page Limit",
+        description="Maximum number of items per page.",
+    )
+    total: int = Field(
+        ...,
+        title="Total",
+        description="Total number of items",
+    )
+
+
+RoleIdList = Union[List[EncodedDatabaseIdField], EncodedDatabaseIdField]  # Should we support just List[EncodedDatabaseIdField] in the future?
+
+
+class LegacyLibraryPermissionsPayload(BaseModel):
+    LIBRARY_ACCESS_in: Optional[RoleIdList] = Field(
+        [],
+        title="Access IDs",
+        description="A list of role encoded IDs defining roles that should have access permission on the library.",
+    )
+    LIBRARY_MODIFY_in: Optional[RoleIdList] = Field(
+        [],
+        title="Add IDs",
+        description="A list of role encoded IDs defining roles that should be able to add items to the library.",
+    )
+    LIBRARY_ADD_in: Optional[RoleIdList] = Field(
+        [],
+        title="Manage IDs",
+        description="A list of role encoded IDs defining roles that should have manage permission on the library.",
+    )
+    LIBRARY_MANAGE_in: Optional[RoleIdList] = Field(
+        [],
+        title="Modify IDs",
+        description="A list of role encoded IDs defining roles that should have modify permission on the library.",
+    )
+
+
+class LibraryPermissionAction(str, Enum):
+    set_permissions = "set_permissions"
+    remove_restrictions = "remove_restrictions"  # name inconsistency? should be `make_public`?
+
+
+class LibraryPermissionsPayload(BaseModel):
+    class Config:
+        use_enum_values = True  # When using .dict()
+
+    action: LibraryPermissionAction = Field(
+        ...,
+        title="Action",
+        description="Indicates what action should be performed on the Library.",
+    )
+    access_ids: Optional[RoleIdList] = Field(
+        [],
+        alias="access_ids[]",  # Added for backward compatibility but it looks really ugly...
+        title="Access IDs",
+        description="A list of role encoded IDs defining roles that should have access permission on the library.",
+    )
+    add_ids: Optional[RoleIdList] = Field(
+        [],
+        alias="add_ids[]",
+        title="Add IDs",
+        description="A list of role encoded IDs defining roles that should be able to add items to the library.",
+    )
+    manage_ids: Optional[RoleIdList] = Field(
+        [],
+        alias="manage_ids[]",
+        title="Manage IDs",
+        description="A list of role encoded IDs defining roles that should have manage permission on the library.",
+    )
+    modify_ids: Optional[RoleIdList] = Field(
+        [],
+        alias="modify_ids[]",
+        title="Modify IDs",
+        description="A list of role encoded IDs defining roles that should have modify permission on the library.",
+    )
 
 
 class LibrariesService:
