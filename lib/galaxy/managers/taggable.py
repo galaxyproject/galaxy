@@ -111,7 +111,7 @@ class TaggableFilterMixin:
                 class_name = 'HistoryDatasetCollection'
             target_model = getattr(model, f"{class_name}TagAssociation")
             id_column = f"{target_model.table.name.rsplit('_tag_association')[0]}_id"
-            column = f"{target_model.table.c.user_tname}:{target_model.table.c.user_value}"
+            column = target_model.table.c.user_tname + ":" + target_model.table.c.user_value
             if op == 'eq':
                 if ':' not in val:
                     # We require an exact match and the tag to look for has no user_value,
