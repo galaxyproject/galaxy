@@ -314,6 +314,15 @@
                  a requirement of the other.
 
                  -->
+            <!-- <param id="k8s_run_as_user_id">101</param> -->
+            <!-- ID of user that should be used by the tool command in the job containers -->
+            <!-- <param id="k8s_run_as_group_id">101</param> -->
+            <!-- ID of group that should be used by the tool command in the job containers -->
+            <!-- <param id="k8s_interactivetools_use_ssl">True</param> -->
+            <!-- Whether to enabled HTTPS access in the k8s ingress spec generated for each interactive tools -->
+            <!-- <param id="k8s_interactivetools_ingress_annotations">{'cert-manager.io/cluster-issuer': 'letsencrypt-prod'}</param> -->
+            <!-- Annotations to add to the metadata section in the k8s ingress generated for each interactive tools -->
+
         </plugin>
         <plugin id="godocker" type="runner" load="galaxy.jobs.runners.godocker:GodockerJobRunner">
             <!-- Go-Docker is a batch computing/cluster management tool using Docker
@@ -1021,6 +1030,11 @@
             <!-- REQUIRED: To play nicely with the existing galaxy setup for containers. This could be set though
                  internally by the runner. -->
             <param id="docker_enabled">true</param>
+            <param id="container_monitor">true</param>
+            <!-- Flag for appending the container monitor command to jobs. This should be set to false
+                 when running Interactive Tools with the kubernetes runner, but is needed for running with the
+                 local docker runner.
+            -->
         </destination>
         <destination id="kubernetes" runner="k8s">
             <!-- <param id="requests_cpu">500m</param> -->

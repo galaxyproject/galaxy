@@ -1155,6 +1155,22 @@ mapping:
         desc: |
           Map for interactivetool proxy.
 
+      interactivetools_prefix:
+        type: str
+        default: "interactivetools"
+        required: false
+        desc: |
+          Prefix to use in the formation of the subdomain or path for interactive tools
+
+      interactivetools_shorten_url:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Shorten the uuid portion of the subdomain or path for interactive tools.
+          Especially useful for avoiding the need for wildcard certificates by keeping
+          subdomain under 63 chars
+
       retry_interactivetool_metadata_internally:
         type: bool
         default: true
