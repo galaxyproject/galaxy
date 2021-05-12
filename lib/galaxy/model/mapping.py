@@ -2321,10 +2321,8 @@ simple_mapping(model.HistoryDatasetCollectionAssociation,
         primaryjoin=(model.HistoryDatasetCollectionAssociation.table.c.copied_from_history_dataset_collection_association_id
                      == model.HistoryDatasetCollectionAssociation.table.c.id),
         remote_side=[model.HistoryDatasetCollectionAssociation.table.c.id],
+        backref='copied_to_history_dataset_collection_associations',
         uselist=False),
-    copied_to_history_dataset_collection_associations=relation(model.HistoryDatasetCollectionAssociation,
-        primaryjoin=(model.HistoryDatasetCollectionAssociation.table.c.copied_from_history_dataset_collection_association_id
-                     == model.HistoryDatasetCollectionAssociation.table.c.id)),
     implicit_input_collections=relation(model.ImplicitlyCreatedDatasetCollectionInput,
         primaryjoin=(model.HistoryDatasetCollectionAssociation.table.c.id
                      == model.ImplicitlyCreatedDatasetCollectionInput.table.c.dataset_collection_id),
