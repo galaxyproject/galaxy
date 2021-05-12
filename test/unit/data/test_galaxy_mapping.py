@@ -475,21 +475,42 @@ class MappingTests(BaseModelTestCase):
     def test_history_audit(self):
         model = self.model
         u = model.User(email="contents@foo.bar.baz", password="password")
-        # gs = model.GalaxySession()
         h1 = model.History(name="HistoryAuditHistory", user=u)
+        h2 = model.History(name="HistoryAuditHistory", user=u)
 
-        def count_audit_table_entries():
-            return self.session().query(model.HistoryAudit.table.c.history_id).filter(model.HistoryAudit.table.c.history_id == h1.id).count()
+        def get_audit_table_entries(history):
+            return self.session().query(model.HistoryAudit.table).filter(
+                model.HistoryAudit.table.c.history_id == history.id).all()
 
-        self.persist(u, h1, expunge=False)
-        assert count_audit_table_entries() == 1
+        def get_latest_entry(entries):
+            # key ensures result is correct if new columns are added
+            return max(entries, key=lambda x: x.update_time)
+
+        self.persist(u, h1, h2, expunge=False)
+        assert len(get_audit_table_entries(h1)) == 1
+        assert len(get_audit_table_entries(h2)) == 1
 
         self.new_hda(h1, name="1")
+        self.new_hda(h2, name="2")
         self.session().flush()
-        # db_next_hid modifies history, plus trigger on HDA means 2 additional audit rows
-        assert count_audit_table_entries() == 3
+        # db_next_hid modifies history, plus trigger on HDA means 2 additional audit rows per history
+
+        h1_audits = get_audit_table_entries(h1)
+        h2_audits = get_audit_table_entries(h2)
+        assert len(h1_audits) == 3
+        assert len(h2_audits) == 3
+
+        h1_latest = get_latest_entry(h1_audits)
+        h2_latest = get_latest_entry(h2_audits)
+
         model.HistoryAudit.prune(self.session())
-        assert count_audit_table_entries() == 1
+
+        h1_audits = get_audit_table_entries(h1)
+        h2_audits = get_audit_table_entries(h2)
+        assert len(h1_audits) == 1
+        assert len(h2_audits) == 1
+        assert h1_audits[0] == h1_latest
+        assert h2_audits[0] == h2_latest
 
     def _non_empty_flush(self):
         model = self.model
