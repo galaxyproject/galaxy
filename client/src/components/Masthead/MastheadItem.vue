@@ -111,20 +111,13 @@ export default {
             return document.getElementById("galaxy_main");
         },
     },
-    updated() {
-        if (this.$refs.dropdown && this.galaxyIframe) {
-            this.galaxyIframe.addEventListener("load", this.iframeListener);
-        }
+    mounted() {
+        window.addEventListener("blur", this.hideDropdown);
     },
     destroyed() {
-        if (this.$refs.dropdown && this.galaxyIframe) {
-            this.galaxyIframe.removeEventListener("load", this.iframeListener);
-        }
+        window.removeEventListener("blur", this.hideDropdown);
     },
     methods: {
-        iframeListener() {
-            return this.galaxyIframe.contentDocument.addEventListener("click", this.hideDropdown);
-        },
         hideDropdown() {
             if (this.$refs.dropdown) this.$refs.dropdown.hide();
         },
