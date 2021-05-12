@@ -349,6 +349,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                     if entry_point.requires_domain:
                         entry_point_subdomain = self.app.interactivetool_manager.get_entry_point_subdomain(self.app, entry_point)
                         entry_point_domain = f'{entry_point_subdomain}.{entry_point_domain}'
+                        entry_point_path = '/'
                     entry_points.append({"tool_port": entry_point.tool_port, "domain": entry_point_domain, "entry_path": entry_point_path})
             k8s_spec_template = {
                 "metadata": {
