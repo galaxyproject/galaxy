@@ -472,6 +472,25 @@ class MappingTests(BaseModelTestCase):
 
         assert contents_iter_names(ids=[d1.id, d3.id]) == ["1", "3"]
 
+    def test_history_audit(self):
+        model = self.model
+        u = model.User(email="contents@foo.bar.baz", password="password")
+        # gs = model.GalaxySession()
+        h1 = model.History(name="HistoryAuditHistory", user=u)
+
+        def count_audit_table_entries():
+            return self.session().query(model.HistoryAudit.table.c.history_id).filter(model.HistoryAudit.table.c.history_id == h1.id).count()
+
+        self.persist(u, h1, expunge=False)
+        assert count_audit_table_entries() == 1
+
+        self.new_hda(h1, name="1")
+        self.session().flush()
+        # db_next_hid modifies history, plus trigger on HDA means 2 additional audit rows
+        assert count_audit_table_entries() == 3
+        model.HistoryAudit.prune(self.session())
+        assert count_audit_table_entries() == 1
+
     def _non_empty_flush(self):
         model = self.model
         lf = model.LibraryFolder(name="RootFolder")
