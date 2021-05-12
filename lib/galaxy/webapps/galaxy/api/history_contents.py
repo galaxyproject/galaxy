@@ -1,6 +1,7 @@
 """
 API operations on the contents of a history.
 """
+import datetime
 import json
 import logging
 import os
@@ -1083,7 +1084,10 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         # if it hasn't then we can short-circuit the poll request
         since = kwd.get('update_time-gt', None)
         if since:
-            since_date = dateutil.parser.isoparse(since)
+            # sqlalchemy DateTime columns are not timezone aware, so parse `since` into timezone-aware
+            # datetime and then convert to naive datetime object representing UTC,
+            # assuming history.update_time represents UTC time.
+            since_date = dateutil.parser.isoparse(since).astimezone(datetime.timezone.utc).replace(tzinfo=None)
             if history.update_time <= since_date:
                 trans.response.status = 204
                 return
