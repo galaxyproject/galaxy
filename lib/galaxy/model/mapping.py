@@ -1745,15 +1745,10 @@ simple_mapping(model.HistoryDatasetAssociation,
         remote_side=[model.HistoryDatasetAssociation.table.c.id],
         uselist=False,
         backref='copied_to_history_dataset_associations'),
-    copied_from_library_dataset_dataset_association=relation(
-        model.LibraryDatasetDatasetAssociation,
-        primaryjoin=(model.HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id
-                     == model.LibraryDatasetDatasetAssociation.table.c.id),
-        uselist=False,
-        backref='copied_to_history_dataset_associations'),
     copied_to_library_dataset_dataset_associations=relation(model.LibraryDatasetDatasetAssociation,
-        primaryjoin=(model.HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id
-                     == model.LibraryDatasetDatasetAssociation.table.c.id)),
+        primaryjoin=(model.HistoryDatasetAssociation.table.c.id
+                     == model.LibraryDatasetDatasetAssociation.table.c.copied_from_history_dataset_association_id),
+        backref='copied_from_history_dataset_association'),
     implicitly_converted_datasets=relation(model.ImplicitlyConvertedDatasetAssociation,
         primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.hda_parent_id
                      == model.HistoryDatasetAssociation.table.c.id)),
@@ -2137,10 +2132,10 @@ mapper(model.LibraryDatasetDatasetAssociation, model.LibraryDatasetDatasetAssoci
         remote_side=[model.LibraryDatasetDatasetAssociation.table.c.id],
         uselist=False,
         backref='copied_to_library_dataset_dataset_associations'),
-    copied_from_history_dataset_association=relation(model.HistoryDatasetAssociation,
-        primaryjoin=(model.LibraryDatasetDatasetAssociation.table.c.copied_from_history_dataset_association_id
-                     == model.HistoryDatasetAssociation.table.c.id),
-        uselist=False),
+    copied_to_history_dataset_associations=relation(model.HistoryDatasetAssociation,
+        primaryjoin=(model.LibraryDatasetDatasetAssociation.table.c.id
+                     == model.HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id),
+        backref='copied_from_library_dataset_dataset_association'),
     implicitly_converted_datasets=relation(model.ImplicitlyConvertedDatasetAssociation,
         primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.ldda_parent_id
                      == model.LibraryDatasetDatasetAssociation.table.c.id),
