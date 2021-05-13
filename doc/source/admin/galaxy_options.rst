@@ -1620,7 +1620,7 @@
 :Description:
     Prefix to use in the formation of the subdomain or path for
     interactive tools
-:Default: ``interactivetools``
+:Default: ``interactivetool``
 :Type: str
 
 

@@ -1165,7 +1165,7 @@ mapping:
 
       interactivetools_prefix:
         type: str
-        default: "interactivetools"
+        default: "interactivetool"
         required: false
         desc: |
           Prefix to use in the formation of the subdomain or path for interactive tools
