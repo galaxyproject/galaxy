@@ -197,6 +197,14 @@ mapping:
         desc: |
           Time to sleep between attempts if database_wait is enabled (in seconds).
 
+      history_audit_table_prune_interval:
+        type: int
+        default: 3600
+        required: false
+        desc: |
+          Time (in seconds) between attempts to remove old rows from the history_audit database table.
+          Set to 0 to disable pruning.
+
       file_path:
         type: str
         default: objects

@@ -246,6 +246,17 @@
 :Type: float
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``history_audit_table_prune_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Time (in seconds) between attempts to remove old rows from the
+    history_audit database table. Set to 0 to disable pruning.
+:Default: ``3600``
+:Type: int
+
+
 ~~~~~~~~~~~~~
 ``file_path``
 ~~~~~~~~~~~~~

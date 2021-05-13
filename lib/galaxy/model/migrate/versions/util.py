@@ -3,6 +3,7 @@ import logging
 
 from sqlalchemy import (
     BLOB,
+    DDL,
     Index,
     Table,
     Text
@@ -193,3 +194,10 @@ def drop_index(index, table, column_name=None, metadata=None):
         index.drop()
     except Exception:
         log.exception("Dropping index '%s' from table '%s' failed", index, table)
+
+
+def execute_statements(engine, raw_sql):
+    statements = raw_sql if isinstance(raw_sql, list) else [raw_sql]
+    for sql in statements:
+        cmd = DDL(sql)
+        cmd.execute(bind=engine)
