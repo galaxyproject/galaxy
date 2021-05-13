@@ -1,6 +1,6 @@
 import logging
 import sqlite3
-
+from urllib.parse import urlparse
 
 from sqlalchemy import or_
 
@@ -255,15 +255,15 @@ class InteractiveToolManager:
         if entry_point.active and not entry_point.deleted:
             request_host = trans.request.host
             protocol = trans.request.host_url.split('//', 1)[0]
-            entry_point_encoded_id = trans.security.encode_id(entry_point.id)
-            entry_point_class = entry_point.__class__.__name__.lower()
-            entry_point_prefix = self.app.config.interactivetools_prefix
             if entry_point.requires_domain:
                 rval = f'{protocol}//{self.get_entry_point_subdomain(trans, entry_point)}.{request_host}/'
+                if entry_point.entry_url:
+                    rval = '{}/{}'.format(rval.rstrip('/'), entry_point.entry_url.lstrip('/'))
             else:
-                rval = self.app.url_for(f'/{entry_point_prefix}/access/{entry_point_class}/{entry_point_encoded_id}/{entry_point.token}/')
-            if entry_point.entry_url:
-                rval = '{}/{}'.format(rval.rstrip('/'), entry_point.entry_url.lstrip('/'))
+                rval = self.get_entry_point_path(trans, entry_point)
+            # Add trailing slash to the URL
+            if rval[-1] != "/":
+                rval = f'{rval}/'
             return rval
 
     def get_entry_point_subdomain(self, trans, entry_point):
@@ -281,10 +281,11 @@ class InteractiveToolManager:
         entry_point_prefix = self.app.config.interactivetools_prefix
         rval = "/"
         if not entry_point.requires_domain:
+            rval = str(urlparse(self.app.config.galaxy_infrastructure_url).path).rstrip("/").lstrip("/")
             if self.app.config.interactivetools_shorten_url:
-                rval = self.app.url_for(f'/{entry_point_prefix}/{entry_point_encoded_id}/{entry_point.token[:10]}/')
+                rval = f'/{rval}/{entry_point_prefix}/{entry_point_encoded_id}/{entry_point.token[:10]}/'
             else:
-                rval = self.app.url_for(f'/{entry_point_prefix}/access/{entry_point_class}/{entry_point_encoded_id}/{entry_point.token}/')
+                rval = f'/{rval}/{entry_point_prefix}/access/{entry_point_class}/{entry_point_encoded_id}/{entry_point.token}/'
         if entry_point.entry_url:
             rval = '{}/{}'.format(rval.rstrip('/'), entry_point.entry_url.lstrip('/'))
         if rval[0] != "/":
