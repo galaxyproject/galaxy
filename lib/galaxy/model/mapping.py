@@ -2029,17 +2029,10 @@ mapper(model.Library, model.Library.table, properties=dict(
 ))
 
 mapper(model.ExtendedMetadata, model.ExtendedMetadata.table, properties=dict(
-    children=relation(model.ExtendedMetadataIndex,
-        primaryjoin=(model.ExtendedMetadataIndex.table.c.extended_metadata_id == model.ExtendedMetadata.table.c.id),
-        backref=backref("parent",
-            primaryjoin=(model.ExtendedMetadataIndex.table.c.extended_metadata_id == model.ExtendedMetadata.table.c.id)))
+    children=relation(model.ExtendedMetadataIndex, backref='extended_metadata')
 ))
 
-mapper(model.ExtendedMetadataIndex, model.ExtendedMetadataIndex.table, properties=dict(
-    extended_metadata=relation(model.ExtendedMetadata,
-        primaryjoin=(model.ExtendedMetadataIndex.table.c.extended_metadata_id == model.ExtendedMetadata.table.c.id))
-))
-
+mapper(model.ExtendedMetadataIndex, model.ExtendedMetadataIndex.table)
 
 mapper(model.LibraryInfoAssociation, model.LibraryInfoAssociation.table, properties=dict(
     library=relation(model.Library,
