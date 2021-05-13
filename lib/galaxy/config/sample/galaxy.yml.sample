@@ -880,7 +880,7 @@ galaxy:
 
   # Prefix to use in the formation of the subdomain or path for
   # interactive tools
-  #interactivetools_prefix: interactivetools
+  #interactivetools_prefix: interactivetool
 
   # Shorten the uuid portion of the subdomain or path for interactive
   # tools. Especially useful for avoiding the need for wildcard
