@@ -69,9 +69,9 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         :param  history_id: encoded id string of the HDA's History
         :type   ids:        str
         :param  ids:        (optional) a comma separated list of encoded `HDA` ids
+        :type   types:      str
         :param  types:      (optional) kinds of contents to index (currently just
                             dataset, but dataset_collection will be added shortly).
-        :type   types:      str
 
         :rtype:     list
         :returns:   dictionaries containing summary or detailed HDA information
