@@ -364,19 +364,18 @@ class DatasetAssociationManager(base.ModelManager,
     def set_metadata(self, trans, dataset_assoc, overwrite=False, validate=True):
         """Trigger a job that detects and sets metadata on a given dataset association (ldda or hda)"""
         data = trans.sa_session.query(self.model_class).get(dataset_assoc.id)
-        if not data.ok_to_edit_metadata():
-            raise exceptions.ItemAccessibilityException('This dataset is currently being used as input or output. You cannot edit metadata until the jobs have completed or you have canceled them.')
-        else:
-            if overwrite:
-                for name, spec in data.metadata.spec.items():
-                    # We need to be careful about the attributes we are resetting
-                    if name not in ['name', 'info', 'dbkey', 'base_name']:
-                        if spec.get('default'):
-                            setattr(data.metadata, name, spec.unwrap(spec.get('default')))
+        if not data.ok_to_edit_metadata() and data.state != data.states.FAILED_METADATA:
+            raise exceptions.ItemAccessibilityException('This dataset is currently being used as input. You cannot edit metadata until the jobs have completed or you have canceled them.')
+        if overwrite:
+            for name, spec in data.metadata.spec.items():
+                # We need to be careful about the attributes we are resetting
+                if name not in ['name', 'info', 'dbkey', 'base_name']:
+                    if spec.get('default'):
+                        setattr(data.metadata, name, spec.unwrap(spec.get('default')))
 
-            self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(
-                self.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data, 'validate': validate},
-                overwrite=overwrite)
+        self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(
+            self.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data, 'validate': validate},
+            overwrite=overwrite)
 
     def update_permissions(self, trans, dataset_assoc, **kwd):
         action = kwd.get('action', 'set_permissions')
