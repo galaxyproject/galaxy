@@ -23,7 +23,7 @@ def test_base_image_for_targets(target, version, base_image):
 
 @external_dependency_management
 def test_mulled_build_files_cli(tmpdir):
-    singularity_image_dir = tmpdir.mkdir('singularity_image_dir')
+    singularity_image_dir = tmpdir.mkdir('singularity image dir')
     target = build_target('zlib')
     mull_targets([target], command='build-and-test', singularity=True, singularity_image_dir=singularity_image_dir)
     assert singularity_image_dir.join('zlib').exists()
