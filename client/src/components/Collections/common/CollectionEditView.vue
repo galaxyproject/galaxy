@@ -13,7 +13,7 @@
             <b-tab>
                 <template v-slot:title> <font-awesome-icon icon="table" /> &nbsp; {{ l("Database/Build") }}</template>
                 <database-edit-tab
-                    :databaseKeyFromElements="databaseKeyFromElements"
+                    :database-key-from-elements="databaseKeyFromElements"
                     :genomes="genomes"
                     @clicked-save="clickedSave"
                 />
@@ -150,9 +150,11 @@ export default {
             this.selectedExtension = this.extensions.find((element) => element.id == this.datatypeFromElements);
         },
         getConverterList: async function () {
-            axios.get(prependPath("/api/dataset_collections/suitable_converters/" + this.collection_id)).then((response) => {
-                this.suitableConverters = response.data;
-            });
+            axios
+                .get(prependPath("/api/dataset_collections/suitable_converters/" + this.collection_id))
+                .then((response) => {
+                    this.suitableConverters = response.data;
+                });
         },
         clickedSave: function (attribute, newValue) {
             const url = prependPath("/api/dataset_collections/" + this.collection_id);
