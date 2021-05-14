@@ -277,7 +277,9 @@ export default {
             this.nodes &&
                 Object.values(this.nodes).forEach((node) => {
                     node.activeOutputs.getAll().forEach((output) => {
-                        outputLabels.push(output.label);
+                        if (output.label) {
+                            outputLabels.push(output.label);
+                        }
                     });
                 });
             return outputLabels;
