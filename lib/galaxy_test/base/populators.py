@@ -1248,7 +1248,7 @@ class LibraryPopulator:
         action = action or "set_permissions"
 
         permissions = {
-            action: action,
+            "action": action,
             "access_ids[]": perm_list,
             "add_ids[]": perm_list,
             "manage_ids[]": perm_list,

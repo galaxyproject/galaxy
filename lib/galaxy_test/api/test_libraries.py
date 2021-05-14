@@ -68,13 +68,29 @@ class LibrariesApiTestCase(ApiTestCase):
         assert library['description'] == 'ChangedDescription'
         assert library['synopsis'] == 'ChangedSynopsis'
 
-    def test_create_private_library_permissions(self):
-        library = self.library_populator.new_library("PermissionTestLibrary")
+    def test_create_private_library_legacy_permissions(self):
+        library = self.library_populator.new_library("LegacyPermissionTestLibrary")
         library_id = library["id"]
         role_id = self.library_populator.user_private_role_id()
         self.library_populator.set_permissions(library_id, role_id)
         create_response = self._create_folder(library)
         self._assert_status_code_is(create_response, 200)
+
+        with self._different_user():
+            create_response = self._create_folder(library)
+            self._assert_status_code_is(create_response, 403)
+
+    def test_create_private_library_permissions(self):
+        library = self.library_populator.new_library("PermissionTestLibrary")
+        library_id = library["id"]
+        role_id = self.library_populator.user_private_role_id()
+        self.library_populator.set_permissions_with_action(library_id, role_id, action="set_permissions")
+        create_response = self._create_folder(library)
+        self._assert_status_code_is(create_response, 200)
+
+        with self._different_user():
+            create_response = self._create_folder(library)
+            self._assert_status_code_is(create_response, 403)
 
     def test_create_dataset_denied(self):
         library = self.library_populator.new_private_library("ForCreateDatasets")
