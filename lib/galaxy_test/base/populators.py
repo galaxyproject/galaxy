@@ -1224,6 +1224,7 @@ class LibraryPopulator:
         return create_response.json()
 
     def set_permissions(self, library_id, role_id=None):
+        """Old legacy way of setting permissions."""
         if role_id:
             perm_list = json.dumps(role_id)
         else:
@@ -1236,6 +1237,24 @@ class LibraryPopulator:
             LIBRARY_MANAGE_in=perm_list,
         )
         response = self.galaxy_interactor.post(f"libraries/{library_id}/permissions", data=permissions, admin=True)
+        api_asserts.assert_status_code_is(response, 200)
+
+    def set_permissions_with_action(self, library_id, role_id=None, action=None):
+        if role_id:
+            perm_list = json.dumps(role_id)
+        else:
+            perm_list = json.dumps([])
+
+        action = action or "set_permissions"
+
+        permissions = {
+            action: action,
+            "access_ids[]": perm_list,
+            "add_ids[]": perm_list,
+            "manage_ids[]": perm_list,
+            "modify_ids[]": perm_list,
+        }
+        response = self.galaxy_interactor.post("libraries/%s/permissions" % library_id, data=permissions, admin=True)
         api_asserts.assert_status_code_is(response, 200)
 
     def user_email(self):
