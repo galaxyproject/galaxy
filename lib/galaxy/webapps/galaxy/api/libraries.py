@@ -8,7 +8,13 @@ from typing import (
 )
 
 from galaxy import util
-from galaxy.managers import libraries
+from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.libraries import (
+    CreateLibraryPayload,
+    LibrariesService,
+    UpdateLibraryPayload,
+)
+from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.web import (
     expose_api,
     expose_api_anonymous,
@@ -19,10 +25,10 @@ log = logging.getLogger(__name__)
 
 
 class LibrariesController(BaseGalaxyAPIController):
-    service = depends(libraries.LibrariesService)
+    service: LibrariesService = depends(LibrariesService)
 
     @expose_api_anonymous
-    def index(self, trans, **kwd):
+    def index(self, trans: ProvidesUserContext, **kwd):
         """
         index( self, trans, **kwd )
         * GET /api/libraries:
@@ -41,7 +47,7 @@ class LibrariesController(BaseGalaxyAPIController):
         return self.service.index(trans, deleted)
 
     @expose_api_anonymous
-    def show(self, trans, id, deleted='False', **kwd):
+    def show(self, trans: ProvidesUserContext, id: EncodedDatabaseIdField, deleted='False', **kwd):
         """
         show( self, trans, id, deleted='False', **kwd )
         * GET /api/libraries/{encoded_id}:
@@ -64,7 +70,7 @@ class LibrariesController(BaseGalaxyAPIController):
         return self.service.show(trans, id)
 
     @expose_api
-    def create(self, trans, payload: Dict[str, str], **kwd):
+    def create(self, trans: ProvidesUserContext, payload: Dict[str, str], **kwd):
         """
         * POST /api/libraries:
             Creates a new library.
@@ -83,10 +89,11 @@ class LibrariesController(BaseGalaxyAPIController):
         :rtype:     dict
         :raises: RequestParameterMissingException
         """
-        return self.service.create(trans, payload)
+        create_payload = CreateLibraryPayload(**payload)
+        return self.service.create(trans, create_payload)
 
     @expose_api
-    def update(self, trans, id, payload: Dict[str, str], **kwd):
+    def update(self, trans: ProvidesUserContext, id: EncodedDatabaseIdField, payload: Dict[str, str], **kwd):
         """
         * PATCH /api/libraries/{encoded_id}
            Updates the library defined by an ``encoded_id`` with the data in the payload.
@@ -107,10 +114,11 @@ class LibrariesController(BaseGalaxyAPIController):
         :rtype:     dict
         :raises: RequestParameterMissingException
         """
-        return self.service.update(trans, id, payload)
+        update_payload = UpdateLibraryPayload(**payload)
+        return self.service.update(trans, id, update_payload)
 
     @expose_api
-    def delete(self, trans, id, payload: Dict[str, Any] = None, **kwd):
+    def delete(self, trans: ProvidesUserContext, id: EncodedDatabaseIdField, payload: Dict[str, Any] = None, **kwd):
         """
         * DELETE /api/libraries/{id}
             marks the library with the given ``id`` as `deleted` (or removes the `deleted` mark if the `undelete` param is true)
@@ -135,7 +143,7 @@ class LibrariesController(BaseGalaxyAPIController):
         return self.service.delete(trans, id, undelete)
 
     @expose_api
-    def get_permissions(self, trans, encoded_library_id, **kwd):
+    def get_permissions(self, trans: ProvidesUserContext, encoded_library_id: EncodedDatabaseIdField, **kwd):
         """
         * GET /api/libraries/{encoded_library_id}/permissions
 
@@ -174,7 +182,7 @@ class LibrariesController(BaseGalaxyAPIController):
         return self.service.get_permissions(trans, encoded_library_id, scope, is_library_access, page, page_limit, query)
 
     @expose_api
-    def set_permissions(self, trans, encoded_library_id, payload: Dict[str, Any], **kwd):
+    def set_permissions(self, trans: ProvidesUserContext, encoded_library_id: EncodedDatabaseIdField, payload: Dict[str, Any], **kwd):
         """
         POST /api/libraries/{encoded_library_id}/permissions
 

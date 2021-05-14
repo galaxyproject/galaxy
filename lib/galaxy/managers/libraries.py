@@ -572,13 +572,13 @@ class LibrariesService:
         self,
         folder_manager: folders.FolderManager,
         library_manager: LibraryManager,
-        role_manager: roles.RoleManager,
+        role_manager: RoleManager,
     ):
         self.folder_manager = folder_manager
         self.library_manager = library_manager
         self.role_manager = role_manager
 
-    def index(self, trans: ProvidesAppContext, deleted: Optional[bool] = False) -> List[Any]:
+    def index(self, trans: ProvidesAppContext, deleted: Optional[bool] = False) -> LibrarySummaryList:
         """Returns a list of summary data for all libraries.
 
         :param  deleted: if True, show only ``deleted`` libraries, if False show only ``non-deleted``
@@ -594,9 +594,9 @@ class LibrariesService:
         libraries = []
         for library in query:
             libraries.append(self.library_manager.get_library_dict(trans, library, prefetched_ids))
-        return libraries
+        return LibrarySummaryList.parse_obj(libraries)
 
-    def show(self, trans, id: EncodedDatabaseIdField):
+    def show(self, trans, id: EncodedDatabaseIdField) -> LibrarySummary:
         """ Returns detailed information about a library.
 
         :param  id:      the encoded id of the library
@@ -613,9 +613,9 @@ class LibrariesService:
         """
         library = self.library_manager.get(trans, trans.security.decode_id(id, object_name='library'))
         library_dict = self.library_manager.get_library_dict(trans, library)
-        return library_dict
+        return LibrarySummary.parse_obj(library_dict)
 
-    def create(self, trans, payload: Dict[str, str]):
+    def create(self, trans, payload: CreateLibraryPayload) -> LibrarySummary:
         """Creates a new library.
 
         .. note:: Currently, only admin users can create libraries.
@@ -632,18 +632,11 @@ class LibrariesService:
         :rtype:     dict
         :raises: RequestParameterMissingException
         """
-        name = payload.get('name', None)
-        if not name:
-            raise exceptions.RequestParameterMissingException("Missing required parameter 'name'.")
-        description = payload.get('description', '')
-        synopsis = payload.get('synopsis', '')
-        if synopsis in ['None', None]:
-            synopsis = ''
-        library = self.library_manager.create(trans, name, description, synopsis)
+        library = self.library_manager.create(trans, payload.name, payload.description, payload.synopsis)
         library_dict = self.library_manager.get_library_dict(trans, library)
-        return library_dict
+        return LibrarySummary.parse_obj(library_dict)
 
-    def update(self, trans, id: EncodedDatabaseIdField, payload: Dict[str, str]):
+    def update(self, trans, id: EncodedDatabaseIdField, payload: UpdateLibraryPayload) -> LibrarySummary:
         """Updates the library defined by an ``encoded_id`` with the data in the payload.
 
        .. note:: Currently, only admin users can update libraries. Also the library must not be `deleted`.
@@ -663,16 +656,14 @@ class LibrariesService:
         :raises: RequestParameterMissingException
         """
         library = self.library_manager.get(trans, trans.security.decode_id(id, object_name='library'))
-        name = payload.get('name', None)
+        name = payload.name
         if name == '':
             raise exceptions.RequestParameterMissingException("Parameter 'name' of library is required. You cannot remove it.")
-        description = payload.get('description', None)
-        synopsis = payload.get('synopsis', None)
-        updated_library = self.library_manager.update(trans, library, name, description, synopsis)
+        updated_library = self.library_manager.update(trans, library, name, payload.description, payload.synopsis)
         library_dict = self.library_manager.get_library_dict(trans, updated_library)
-        return library_dict
+        return LibrarySummary.parse_obj(library_dict)
 
-    def delete(self, trans, id: EncodedDatabaseIdField, undelete: Optional[bool] = False):
+    def delete(self, trans, id: EncodedDatabaseIdField, undelete: Optional[bool] = False) -> LibrarySummary:
         """Marks the library with the given ``id`` as `deleted` (or removes the `deleted` mark if the `undelete` param is true)
 
         .. note:: Currently, only admin users can un/delete libraries.
@@ -691,7 +682,7 @@ class LibrariesService:
         library = self.library_manager.get(trans, trans.security.decode_id(id, object_name='library'))
         library = self.library_manager.delete(trans, library, undelete)
         library_dict = self.library_manager.get_library_dict(trans, library)
-        return library_dict
+        return LibrarySummary.parse_obj(library_dict)
 
     def get_permissions(
         self,
@@ -702,7 +693,7 @@ class LibrariesService:
         page: Optional[int] = 1,
         page_limit: Optional[int] = 10,
         query: Optional[str] = None,
-    ):
+    ) -> Union[LibraryCurrentPermissions, LibraryAvailablePermissions]:
         """Load all permissions for the given library id and return it.
 
         :param  id:     the encoded id of the library
@@ -727,7 +718,7 @@ class LibrariesService:
 
         if scope == 'current' or scope is None:
             roles = self.library_manager.get_current_roles(trans, library)
-            return roles
+            return LibraryCurrentPermissions.parse_obj(roles)
 
         #  Return roles that are available to select.
         elif scope == 'available':
@@ -737,11 +728,16 @@ class LibrariesService:
             for role in roles:
                 role_id = trans.security.encode_id(role.id)
                 return_roles.append(dict(id=role_id, name=role.name, type=role.type))
-            return dict(roles=return_roles, page=page, page_limit=page_limit, total=total_roles)
+            return LibraryAvailablePermissions(roles=return_roles, page=page, page_limit=page_limit, total=total_roles)
         else:
             raise exceptions.RequestParameterInvalidException("The value of 'scope' parameter is invalid. Alllowed values: current, available")
 
-    def set_permissions(self, trans, id: EncodedDatabaseIdField, payload: Dict[str, Any]):
+    def set_permissions(
+        self, trans, id: EncodedDatabaseIdField, payload: Dict[str, Any]
+    ) -> Union[
+        LibraryLegacySummary,  # Old legacy response
+        LibraryCurrentPermissions,
+    ]:
         """Set permissions of the given library to the given role ids.
 
         :param  id:      the encoded id of the library to set the permissions of
@@ -855,9 +851,9 @@ class LibrariesService:
             raise exceptions.RequestParameterInvalidException('The mandatory parameter "action" has an invalid value.'
                                                               'Allowed values are: "remove_restrictions", set_permissions"')
         roles = self.library_manager.get_current_roles(trans, library)
-        return roles
+        return LibraryCurrentPermissions.parse_obj(roles)
 
-    def set_permissions_old(self, trans, library, payload):
+    def set_permissions_old(self, trans, library, payload) -> LibraryLegacySummary:
         """
         *** old implementation for backward compatibility ***
 
@@ -874,4 +870,4 @@ class LibrariesService:
         # Copy the permissions to the root folder
         trans.app.security_agent.copy_library_permissions(trans, library, library.root_folder)
         item = library.to_dict(view='element', value_mapper={'id': trans.security.encode_id, 'root_folder_id': trans.security.encode_id})
-        return item
+        return LibraryLegacySummary.parse_obj(item)
