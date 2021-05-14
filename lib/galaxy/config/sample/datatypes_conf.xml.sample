@@ -863,6 +863,7 @@
     <datatype extension="pretext" type="galaxy.datatypes.binary:Pretext" display_in_upload="true" />
     <!-- Structural Materials datatypes -->
     <datatype extension="hexrd.materials.h5" type="galaxy.datatypes.binary:HexrdMaterials" display_in_upload="true"/>
+    <datatype extension="npz" type="galaxy.datatypes.binary:Npz" display_in_upload="true"/>
     <datatype extension="hexrd.images.npz" type="galaxy.datatypes.binary:HexrdImagesNpz" display_in_upload="true"/>
     <datatype extension="hexrd.eta_ome.npz" type="galaxy.datatypes.binary:HexrdEtaOmeNpz" display_in_upload="true"/>
     <!-- End Structural Materials datatypes -->
