@@ -273,15 +273,11 @@ export default {
             return steps;
         },
         getOutputs() {
-            console.log(this.getManager().nodes);
-            console.log(this.nodes);
             const outputLabels = [];
             this.nodes &&
                 Object.values(this.nodes).forEach((node) => {
-                    node.outputs.forEach((output) => {
-                        if (output.activeLabel) {
-                            outputLabels.push(output.activeLabel);
-                        }
+                    node.activeOutputs.getAll().forEach((output) => {
+                        outputLabels.push(output.label);
                     });
                 });
             return outputLabels;

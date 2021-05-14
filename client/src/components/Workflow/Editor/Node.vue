@@ -301,15 +301,12 @@ export default {
                 };
             });
             this.initData(data);
-            Vue.nextTick(() => {
-                // create array of new output names
-                const outputNames = this.outputs.map((output) => output.name);
-                this.activeOutputs.filterOutputs(outputNames);
-                // emit change completion event
-                this.showLoading = false;
-                this.$emit("onChange");
-                this.$emit("onActivate", this);
-            });
+            this.updateData();
+
+            // emit change completion event
+            this.showLoading = false;
+            this.$emit("onChange");
+            this.$emit("onActivate", this);
         },
         setAnnotation(annotation) {
             this.annotation = annotation;
@@ -327,6 +324,7 @@ export default {
             this.postJobActions = data.post_job_actions || {};
             this.inputs = data.inputs ? data.inputs.slice() : [];
             this.outputs = data.outputs ? data.outputs.slice() : [];
+            this.updateData();
         },
         initData(data) {
             this.uuid = data.uuid;
@@ -336,6 +334,13 @@ export default {
             this.setData(data);
             this.activeOutputs.initialize(this.outputs, data.workflow_outputs);
             this.showLoading = false;
+        },
+        updateData() {
+            Vue.nextTick(() => {
+                // create array of new output names
+                const outputNames = this.outputs.map((output) => output.name);
+                this.activeOutputs.filterOutputs(outputNames);
+            });
         },
         labelOutput(outputName, label) {
             return this.activeOutputs.labelOutput(outputName, label);
