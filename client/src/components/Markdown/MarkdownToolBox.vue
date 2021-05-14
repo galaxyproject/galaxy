@@ -117,8 +117,8 @@ export default {
         ToolSection,
     },
     props: {
-        nodes: {
-            type: Object,
+        getManager: {
+            type: Function,
             default: null,
         },
     },
@@ -254,6 +254,9 @@ export default {
         hasVisualizations() {
             return this.visualizationSection.elems.length > 0;
         },
+        nodes() {
+            return this.getManager && this.getManager().nodes;
+        },
     },
     created() {
         this.getVisualizations();
@@ -270,6 +273,8 @@ export default {
             return steps;
         },
         getOutputs() {
+            console.log(this.getManager().nodes);
+            console.log(this.nodes);
             const outputLabels = [];
             this.nodes &&
                 Object.values(this.nodes).forEach((node) => {

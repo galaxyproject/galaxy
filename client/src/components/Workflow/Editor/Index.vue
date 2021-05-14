@@ -20,7 +20,7 @@
             :markdown-text="markdownText"
             :markdown-config="markdownConfig"
             :title="'Workflow Report: ' + name"
-            :nodes="nodes"
+            :get-manager="getManager"
             @onUpdate="onReportUpdate"
         >
             <template v-slot:buttons>

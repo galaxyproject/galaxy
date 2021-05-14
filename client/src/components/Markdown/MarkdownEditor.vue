@@ -2,7 +2,7 @@
     <div>
         <SidePanel id="left" side="left">
             <template v-slot:panel>
-                <MarkdownToolBox :nodes="nodes" @onInsert="onInsert" />
+                <MarkdownToolBox :get-manager="getManager" @onInsert="onInsert" />
             </template>
         </SidePanel>
         <div id="center" class="workflow-markdown-editor">
@@ -72,8 +72,8 @@ export default {
             type: Object,
             default: null,
         },
-        nodes: {
-            type: Object,
+        getManager: {
+            type: Function,
             default: null,
         },
         title: {
