@@ -244,7 +244,7 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
 
 def __copy_if_exists_command(work_dir_output):
     source_file, destination = work_dir_output
-    return f"if [ -f {source_file} ] ; then cp {source_file} {destination} ; fi"
+    return f'\nif [ -f "{source_file}" ] ; then cp "{source_file}" "{destination}" ; fi'
 
 
 class CommandsBuilder:
