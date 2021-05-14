@@ -169,11 +169,11 @@ class LibraryActions:
                 if os.path.isfile(path):
                     files.append(path)
         except Exception as e:
-            message = "Unable to get file list for configured {}, error: {}".format(import_dir_desc, util.unicodify(e))
+            message = f"Unable to get file list for configured {import_dir_desc}, error: {util.unicodify(e)}"
             response_code = 500
             return None, response_code, message
         if not files:
-            message = "The directory '%s' contains no valid files" % full_dir
+            message = f"The directory '{full_dir}' contains no valid files"
             response_code = 400
             return None, response_code, message
         return files, None, None
@@ -296,15 +296,15 @@ class LibraryActions:
         if isinstance(item, trans.model.HistoryDatasetAssociation):
             # Make sure the user has the DATASET_ACCESS permission on the history_dataset_association.
             if not item:
-                message = "Invalid history dataset (%s) specified." % escape(str(item))
+                message = f"Invalid history dataset ({escape(str(item))}) specified."
                 can_access = False
             elif not trans.app.security_agent.can_access_dataset(current_user_roles, item.dataset) and item.history.user == trans.user:
-                message = "You do not have permission to access the history dataset with id (%s)." % str(item.id)
+                message = f"You do not have permission to access the history dataset with id ({str(item.id)})."
                 can_access = False
         else:
             # Make sure the user has the LIBRARY_ACCESS permission on the library item.
             if not item:
-                message = "Invalid library item (%s) specified." % escape(str(item))
+                message = f"Invalid library item ({escape(str(item))}) specified."
                 can_access = False
             elif not (is_admin or trans.app.security_agent.can_access_library_item(current_user_roles, item, trans.user)):
                 if isinstance(item, trans.model.Library):
@@ -313,7 +313,7 @@ class LibraryActions:
                     item_type = 'folder'
                 else:
                     item_type = '(unknown item type)'
-                message = "You do not have permission to access the {} with id ({}).".format(escape(item_type), str(item.id))
+                message = f"You do not have permission to access the {escape(item_type)} with id ({str(item.id)})."
                 can_access = False
         if not can_access:
             return 400, message
@@ -321,5 +321,5 @@ class LibraryActions:
     def _check_add(self, trans, is_admin, item, current_user_roles):
         # Deny access if the user is not an admin and does not have the LIBRARY_ADD permission.
         if not (is_admin or trans.app.security_agent.can_add_library_item(current_user_roles, item)):
-            message = "You are not authorized to add an item to (%s)." % escape(item.name)
+            message = f"You are not authorized to add an item to ({escape(item.name)})."
             return 403, message

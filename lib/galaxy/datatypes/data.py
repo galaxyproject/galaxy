@@ -72,7 +72,7 @@ def validate(dataset_instance):
     try:
         datatype_validation = dataset_instance.datatype.validate(dataset_instance)
     except Exception as e:
-        datatype_validation = DatatypeValidation.invalid("Problem running datatype validation method [%s]" % str(e))
+        datatype_validation = DatatypeValidation.invalid(f"Problem running datatype validation method [{str(e)}]")
     return datatype_validation
 
 
@@ -244,11 +244,11 @@ class Data(metaclass=DataMeta):
                 line = line.strip()
                 if not line:
                     continue
-                out.append('<tr><td>%s</td></tr>' % escape(unicodify(line, 'utf-8')))
+                out.append(f"<tr><td>{escape(unicodify(line, 'utf-8'))}</td></tr>")
             out.append('</table>')
             out = "".join(out)
         except Exception as exc:
-            out = "Can't create peek: %s" % unicodify(exc)
+            out = f"Can't create peek: {unicodify(exc)}"
         return out
 
     def _archive_main_file(self, archive, display_name, data_filename):
@@ -261,7 +261,7 @@ class Data(metaclass=DataMeta):
         Returns a tuple of boolean, string, string: (error, msg, messagetype)
         """
         error, msg, messagetype = False, "", ""
-        archname = '%s.html' % display_name  # fake the real nature of the html file
+        archname = f'{display_name}.html'  # fake the real nature of the html file
         try:
             archive.write(data_filename, archname)
         except OSError:
@@ -319,7 +319,7 @@ class Data(metaclass=DataMeta):
         trans.response.headers['Content-Length'] = str(os.stat(dataset.file_name).st_size)
         trans.response.set_content_type("application/octet-stream")  # force octet-stream so Safari doesn't append mime extensions to filename
         filename = self._download_filename(dataset, to_ext, hdca=kwd.get("hdca"), element_identifier=kwd.get("element_identifier"), filename_pattern=kwd.get("filename_pattern"))
-        trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename
+        trans.response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
         return open(dataset.file_name, mode='rb')
 
     def to_archive(self, dataset, name=""):
@@ -386,7 +386,7 @@ class Data(metaclass=DataMeta):
                             # href = url_for(controller='dataset', action='display',
                             # dataset_id=trans.security.encode_id(data.dataset.id),
                             # preview=preview, filename=fname, to_ext=to_ext)
-                            tmp_fh.write('<tr bgcolor="{}"><td>{}</td></tr>\n'.format(bgcolor, escape(fname)))
+                            tmp_fh.write(f'<tr bgcolor="{bgcolor}"><td>{escape(fname)}</td></tr>\n')
                         tmp_fh.write('</table></body></html>\n')
                     return self._yield_user_file_content(trans, data, tmp_file_name)
                 mime = mimetypes.guess_type(file_path)[0]
@@ -401,7 +401,7 @@ class Data(metaclass=DataMeta):
                 return webob.exc.HTTPNotFound(f"Could not find '{filename}' on the extra files path {file_path}.")
         self._clean_and_set_mime_type(trans, data.get_mime())
 
-        trans.log_event("Display dataset id: %s" % str(data.id))
+        trans.log_event(f"Display dataset id: {str(data.id)}")
         from galaxy import datatypes  # DBTODO REMOVE THIS AT REFACTOR
         if to_ext or isinstance(data.datatype, datatypes.binary.Binary):  # Saving the file, or binary file
             if data.extension in composite_extensions:
@@ -410,10 +410,10 @@ class Data(metaclass=DataMeta):
                 trans.response.headers['Content-Length'] = str(os.stat(data.file_name).st_size)
                 filename = self._download_filename(data, to_ext, hdca=kwd.get("hdca"), element_identifier=kwd.get("element_identifier"), filename_pattern=kwd.get("filename_pattern"))
                 trans.response.set_content_type("application/octet-stream")  # force octet-stream so Safari doesn't append mime extensions to filename
-                trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename
+                trans.response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
                 return open(data.file_name, 'rb')
         if not os.path.exists(data.file_name):
-            raise webob.exc.HTTPNotFound("File Not Found (%s)." % data.file_name)
+            raise webob.exc.HTTPNotFound(f"File Not Found ({data.file_name}).")
         max_peek_size = DEFAULT_MAX_PEEK_SIZE  # 1 MB
         if isinstance(data.datatype, datatypes.text.Html):
             max_peek_size = 10000000  # 10 MB for html
@@ -639,7 +639,7 @@ class Data(metaclass=DataMeta):
         # Run converter, job is dispatched through Queue
         converted_dataset = converter.execute(trans, incoming=params, set_output_hid=visible, history=history)[1]
         if len(params) > 0:
-            trans.log_event("Converter params: %s" % (str(params)), tool_id=converter.id)
+            trans.log_event(f"Converter params: {str(params)}", tool_id=converter.id)
         if not visible:
             for value in converted_dataset.values():
                 value.visible = False
@@ -727,7 +727,7 @@ class Data(metaclass=DataMeta):
             max argument limitation of cat. gz and bz2 files are also working.
         """
         if not split_files:
-            raise ValueError('Asked to merge zero files as %s' % output_file)
+            raise ValueError(f'Asked to merge zero files as {output_file}')
         elif len(split_files) == 1:
             shutil.copyfileobj(open(split_files[0], 'rb'), open(output_file, 'wb'))
         else:
@@ -855,7 +855,7 @@ class Text(Data):
             if line_count is None:
                 # See if line_count is stored in the metadata
                 if dataset.metadata.data_lines:
-                    dataset.blurb = "{} {}".format(util.commaify(str(dataset.metadata.data_lines)), inflector.cond_plural(dataset.metadata.data_lines, self.line_class))
+                    dataset.blurb = f"{util.commaify(str(dataset.metadata.data_lines))} {inflector.cond_plural(dataset.metadata.data_lines, self.line_class)}"
                 else:
                     # Number of lines is not known ( this should not happen ), and auto-detect is
                     # needed to set metadata
@@ -865,17 +865,17 @@ class Text(Data):
                         lc = self.count_data_lines(dataset)
                         if lc is not None:
                             dataset.metadata.data_lines = lc
-                            dataset.blurb = "{} {}".format(util.commaify(str(lc)), inflector.cond_plural(lc, self.line_class))
+                            dataset.blurb = f"{util.commaify(str(lc))} {inflector.cond_plural(lc, self.line_class)}"
                         else:
                             dataset.blurb = "Error: Cannot count lines in dataset"
                     else:
                         est_lines = self.estimate_file_lines(dataset)
                         if est_lines is not None:
-                            dataset.blurb = "~{} {}".format(util.commaify(util.roundify(str(est_lines))), inflector.cond_plural(est_lines, self.line_class))
+                            dataset.blurb = f"~{util.commaify(util.roundify(str(est_lines)))} {inflector.cond_plural(est_lines, self.line_class)}"
                         else:
                             dataset.blurb = "Error: Cannot estimate lines in dataset"
             else:
-                dataset.blurb = "{} {}".format(util.commaify(str(line_count)), inflector.cond_plural(line_count, self.line_class))
+                dataset.blurb = f"{util.commaify(str(line_count))} {inflector.cond_plural(line_count, self.line_class)}"
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -916,7 +916,7 @@ class Text(Data):
         elif split_params['split_mode'] == 'to_size':
             chunk_size = int(split_params['split_size'])
         else:
-            raise Exception('Unsupported split mode %s' % split_params['split_mode'])
+            raise Exception(f"Unsupported split mode {split_params['split_mode']}")
 
         f = open(input_files[0])
         try:

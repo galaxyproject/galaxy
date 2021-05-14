@@ -292,7 +292,7 @@ class ToolParameter(Dictifiable):
         param_name = cls.parse_name(input_source)
         param_type = input_source.get('type')
         if not param_type:
-            raise ValueError("parameter '%s' requires a 'type'" % (param_name))
+            raise ValueError(f"parameter '{param_name}' requires a 'type'")
         elif param_type not in parameter_types:
             raise ValueError(f"parameter '{param_name}' uses an unknown type '{param_type}'")
         else:
@@ -658,7 +658,7 @@ class FTPFileToolParameter(ToolParameter):
     def get_initial_value(self, trans, other_values):
         if trans is not None:
             if trans.user is not None:
-                self.user_ftp_dir = "%s/" % trans.user_ftp_dir
+                self.user_ftp_dir = f"{trans.user_ftp_dir}/"
         return None
 
     @property
@@ -769,7 +769,7 @@ class ColorToolParameter(ToolParameter):
             try:
                 return str(tuple(int(value.lstrip('#')[i: i + 2], 16) for i in (0, 2, 4)))
             except Exception:
-                raise ParameterValueError("Failed to convert \'%s\' to RGB." % value, self.name)
+                raise ParameterValueError(f"Failed to convert '{value}' to RGB.", self.name)
         return str(value)
 
 
@@ -940,7 +940,7 @@ class SelectToolParameter(ToolParameter):
             elif set(value).issubset(set(fallback_values.keys())):
                 return [fallback_values[v] for v in value]
             else:
-                raise ParameterValueError("invalid options ({!r}) were selected (valid options: {})".format(",".join(set(value) - set(legal_values)), ",".join(legal_values)), self.name, is_dynamic=self.is_dynamic)
+                raise ParameterValueError(f"invalid options ({','.join(set(value) - set(legal_values))!r}) were selected (valid options: {','.join(legal_values)})", self.name, is_dynamic=self.is_dynamic)
         else:
             value_is_none = (value == "None" and "None" not in legal_values)
             if value_is_none or not value:
@@ -958,7 +958,7 @@ class SelectToolParameter(ToolParameter):
             elif not require_legal_value:
                 return value
             else:
-                raise ParameterValueError("an invalid option ({!r}) was selected (valid options: {})".format(value, ",".join(legal_values)), self.name, value, is_dynamic=self.is_dynamic)
+                raise ParameterValueError(f"an invalid option ({value!r}) was selected (valid options: {','.join(legal_values)})", self.name, value, is_dynamic=self.is_dynamic)
 
     def to_param_dict_string(self, value, other_values=None):
         if value in (None, []):
@@ -1177,7 +1177,7 @@ class SelectTagParameter(SelectToolParameter):
         """
         options = []
         for tag in self.get_tag_list(other_values):
-            options.append(('Tags: ' + tag, tag, False))
+            options.append((f"Tags: {tag}", tag, False))
         return options
 
     def get_initial_value(self, trans, other_values):
@@ -1350,7 +1350,7 @@ class ColumnListParameter(SelectToolParameter):
             if isinstance(col, tuple) and len(col) == 2:
                 options.append((col[1], col[0], False))
             else:
-                options.append(('Column: ' + col, col, False))
+                options.append((f"Column: {col}", col, False))
         return options
 
     def get_initial_value(self, trans, other_values):
@@ -1456,7 +1456,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         if from_file:
             if not os.path.isabs(from_file):
                 from_file = os.path.join(tool.app.config.tool_data_path, from_file)
-            elem = XML("<root>%s</root>" % open(from_file).read())
+            elem = XML(f"<root>{open(from_file).read()}</root>")
         self.dynamic_options = elem.get('dynamic_options', None)
         if self.dynamic_options:
             self.is_dynamic = True
@@ -1540,7 +1540,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         rval = []
         for val in value:
             if val not in legal_values:
-                raise ParameterValueError("an invalid option ({!r}) was selected (valid options: {})".format(val, ",".join(legal_values)), self.name, val)
+                raise ParameterValueError(f"an invalid option ({val!r}) was selected (valid options: {','.join(legal_values)})", self.name, val)
             rval.append(val)
         return rval
 
@@ -1898,7 +1898,7 @@ class DataToolParameter(BaseDataToolParameter):
                         decoded_id = trans.security.decode_id(single_value['id'])
                         rval.append(trans.sa_session.query(trans.app.model.LibraryDatasetDatasetAssociation).get(decoded_id))
                     else:
-                        raise ValueError("Unknown input source %s passed to job submission API." % single_value['src'])
+                        raise ValueError(f"Unknown input source {single_value['src']} passed to job submission API.")
                 elif isinstance(single_value, trans.app.model.HistoryDatasetCollectionAssociation):
                     rval.append(single_value)
                 elif isinstance(single_value, trans.app.model.DatasetCollectionElement):
@@ -1928,7 +1928,7 @@ class DataToolParameter(BaseDataToolParameter):
                 decoded_id = trans.security.decode_id(value['id'])
                 rval = trans.sa_session.query(trans.app.model.HistoryDatasetCollectionAssociation).get(decoded_id)
             else:
-                raise ValueError("Unknown input source %s passed to job submission API." % value['src'])
+                raise ValueError(f"Unknown input source {value['src']} passed to job submission API.")
         elif str(value).startswith("__collection_reduce__|"):
             encoded_ids = [v[len("__collection_reduce__|"):] for v in str(value).split(",")]
             decoded_ids = map(trans.security.decode_id, encoded_ids)
@@ -2097,7 +2097,7 @@ class DataToolParameter(BaseDataToolParameter):
 
                 name = hdca.name
                 if match.implicit_conversion:
-                    name = "%s (with implicit datatype conversion)" % name
+                    name = f"{name} (with implicit datatype conversion)"
                 append(d['options']['hdca'], hdca, name, 'hdca', subcollection_type=subcollection_type)
                 continue
 
@@ -2244,7 +2244,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
         for hdca, implicit_conversion in self.match_collections(trans, history, dataset_collection_matcher):
             name = hdca.name
             if implicit_conversion:
-                name = "%s (with implicit datatype conversion)" % name
+                name = f"{name} (with implicit datatype conversion)"
             d['options']['hdca'].append({
                 'id': trans.security.encode_id(hdca.id),
                 'hid': hdca.hid,
@@ -2258,7 +2258,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             subcollection_type = self._history_query(trans).can_map_over(hdca).collection_type
             name = hdca.name
             if implicit_conversion:
-                name = "%s (with implicit datatype conversion)" % name
+                name = f"{name} (with implicit datatype conversion)"
             d['options']['hdca'].append({
                 'id': trans.security.encode_id(hdca.id),
                 'hid': hdca.hid,

@@ -157,7 +157,7 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
         try:
             self._assign_handler(workflow_invocation, flush=flush)
         except HandlerAssignmentError:
-            raise RuntimeError("Unable to set a handler for workflow invocation '%s'" % workflow_invocation.id)
+            raise RuntimeError(f"Unable to set a handler for workflow invocation '{workflow_invocation.id}'")
 
         return workflow_invocation
 
@@ -181,7 +181,7 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
             log.info("No workflow schedulers plugin config file defined, using default scheduler.")
             use_default_scheduler = True
         elif not os.path.exists(config_file):
-            log.info("Cannot find workflow schedulers plugin config file '%s', using default scheduler." % config_file)
+            log.info(f"Cannot find workflow schedulers plugin config file '{config_file}', using default scheduler.")
             use_default_scheduler = True
 
         if use_default_scheduler:

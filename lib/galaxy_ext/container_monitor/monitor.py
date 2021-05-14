@@ -42,7 +42,7 @@ def main():
     callback_url = container_config.get("callback_url")
     connection_configuration = container_config["connection_configuration"]
     if container_type != "docker":
-        raise Exception("Monitoring container type [%s], not yet implemented." % container_type)
+        raise Exception(f"Monitoring container type [{container_type}], not yet implemented.")
 
     ports_raw = None
     exc_traceback = ""

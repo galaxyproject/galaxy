@@ -770,7 +770,7 @@ class ToolsUploadTestCase(ApiTestCase):
     def test_upload_from_404_url(self):
         history_id, new_dataset = self._upload('https://usegalaxy.org/bla123', assert_ok=False)
         dataset_details = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=new_dataset["id"], assert_ok=False)
-        assert dataset_details['state'] == 'error', "expected dataset state to be 'error', but got '%s'" % dataset_details['state']
+        assert dataset_details['state'] == 'error', f"expected dataset state to be 'error', but got '{dataset_details['state']}'"
 
     @skip_if_site_down("https://usegalaxy.org")
     def test_upload_from_valid_url(self):

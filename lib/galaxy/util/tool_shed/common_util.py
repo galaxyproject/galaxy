@@ -129,7 +129,7 @@ def generate_clone_url_for_repository_in_tool_shed(user, repository):
     base_url = url_for('/', qualified=True).rstrip('/')
     if user:
         protocol, base = base_url.split('://')
-        username = '%s@' % user.username
+        username = f'{user.username}@'
         return f'{protocol}://{username}{base}/repos/{repository.user.username}/{repository.name}'
     else:
         return f'{base_url}/repos/{repository.user.username}/{repository.name}'
@@ -264,7 +264,7 @@ def get_tool_shed_repository_url(app, tool_shed, owner, name):
     if tool_shed_url:
         # Append a slash to the tool shed URL, because urlparse.urljoin will eliminate
         # the last part of a URL if it does not end with a forward slash.
-        tool_shed_url = '%s/' % tool_shed_url
+        tool_shed_url = f'{tool_shed_url}/'
         return urljoin(tool_shed_url, f'view/{owner}/{name}')
     return tool_shed_url
 

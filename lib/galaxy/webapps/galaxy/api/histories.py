@@ -355,7 +355,7 @@ class HistoriesController(BaseGalaxyAPIController, ExportsHistoryMixin, ImportsH
                 raise exceptions.MessageException("Please provide a url or file.")
             job = self.queue_history_import(trans, archive_type=archive_type, archive_source=archive_source)
             job_dict = job.to_dict()
-            job_dict["message"] = "Importing history from source '%s'. This history will be visible when the import is complete." % archive_source
+            job_dict["message"] = f"Importing history from source '{archive_source}'. This history will be visible when the import is complete."
             return trans.security.encode_all_ids(job_dict)
 
         new_history = None
@@ -363,7 +363,7 @@ class HistoriesController(BaseGalaxyAPIController, ExportsHistoryMixin, ImportsH
         if copy_this_history_id:
             decoded_id = self.decode_id(copy_this_history_id)
             original_history = self.manager.get_accessible(decoded_id, trans.user, current_history=trans.history)
-            hist_name = hist_name or ("Copy of '%s'" % original_history.name)
+            hist_name = hist_name or (f"Copy of '{original_history.name}'")
             new_history = original_history.copy(name=hist_name, target_user=trans.user, all_datasets=all_datasets)
 
         # otherwise, create a new empty history

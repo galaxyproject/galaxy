@@ -46,6 +46,6 @@ class ToolShedController(BaseGalaxyAPIController):
             try:
                 return json.loads(url_get(tool_shed_url, params=dict(params), pathspec=pathspec))
             except Exception as e:
-                raise MessageException("Invalid server response. %s." % str(e))
+                raise MessageException(f"Invalid server response. {str(e)}.")
         else:
             raise MessageException("Invalid toolshed url.")

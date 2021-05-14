@@ -34,7 +34,7 @@ def upgrade(migrate_engine):
             default_false = "0"
         elif migrate_engine.name in ['postgresql', 'postgres']:
             default_false = "false"
-        migrate_engine.execute("UPDATE repository SET deprecated=%s" % default_false)
+        migrate_engine.execute(f"UPDATE repository SET deprecated={default_false}")
     except Exception:
         log.exception("Adding deprecated column to the repository table failed.")
 

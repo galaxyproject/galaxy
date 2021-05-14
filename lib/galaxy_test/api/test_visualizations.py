@@ -61,14 +61,14 @@ class VisualizationsApiTestCase(ApiTestCase, SharingApiTests):
 
     def test_update_title(self):
         viz_id, viz = self._create_viz()
-        update_url = self._api_url("visualizations/%s" % viz_id, use_key=True)
+        update_url = self._api_url(f"visualizations/{viz_id}", use_key=True)
         response = put(update_url, {"title": "New Name"})
         self._assert_status_code_is(response, 200)
         updated_viz = self._show_viz(viz_id)
         assert updated_viz["title"] == "New Name"
 
     def _show_viz(self, viz_id, assert_ok=True):
-        show_response = self._get("visualizations/%s" % viz_id)
+        show_response = self._get(f"visualizations/{viz_id}")
         if assert_ok:
             self._assert_status_code_is(show_response, 200)
 
@@ -83,7 +83,7 @@ class VisualizationsApiTestCase(ApiTestCase, SharingApiTests):
         uuid_str = str(uuid.uuid4())
 
         title = title if title is not None else 'Test Visualization'
-        slug = slug if slug is not None else 'test-visualization-%s' % uuid_str
+        slug = slug if slug is not None else f'test-visualization-{uuid_str}'
         config = config if config is not None else json.dumps({
             "x": 10,
             "y": 12,

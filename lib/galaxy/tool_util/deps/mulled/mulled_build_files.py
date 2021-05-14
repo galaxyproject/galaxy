@@ -57,7 +57,7 @@ def generate_targets(target_source):
     """Generate all targets from TSV files in specified file or directory."""
     target_source = os.path.abspath(target_source)
     if os.path.isdir(target_source):
-        target_source_files = glob.glob(target_source + "/*.tsv")
+        target_source_files = glob.glob(f"{target_source}/*.tsv")
     else:
         target_source_files = [target_source]
 
@@ -84,7 +84,7 @@ def tuple_from_header(header):
     for field in KNOWN_FIELDS:
         if field not in fields:
             fields.append(field)
-    return collections.namedtuple("_Line", "%s" % " ".join(fields))
+    return collections.namedtuple("_Line", f"{' '.join(fields)}")
 
 
 def line_to_targets(line_str, line_tuple):

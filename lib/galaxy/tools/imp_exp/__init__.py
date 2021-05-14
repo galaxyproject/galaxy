@@ -73,7 +73,7 @@ class JobImportHistoryArchiveWrapper:
                     shutil.rmtree(archive_dir)
 
         except Exception as e:
-            jiha.job.tool_stderr += "Error cleaning up history import job: %s" % e
+            jiha.job.tool_stderr += f"Error cleaning up history import job: {e}"
             self.sa_session.flush()
             raise
 

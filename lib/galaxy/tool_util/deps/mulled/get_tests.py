@@ -87,14 +87,14 @@ def get_anaconda_url(container, anaconda_channel='bioconda'):
     Download tarball from anaconda for test
     """
     name = split_container_name(container)  # list consisting of [name, version, (build, if present)]
-    return "https://anaconda.org/{}/{}/{}/download/linux-64/{}.tar.bz2".format(anaconda_channel, name[0], name[1], '-'.join(name))
+    return f"https://anaconda.org/{anaconda_channel}/{name[0]}/{name[1]}/download/linux-64/{'-'.join(name)}.tar.bz2"
 
 
 def prepend_anaconda_url(url):
     """
     Take a partial url and prepend 'https://anaconda.org'
     """
-    return 'https://anaconda.org%s' % url
+    return f'https://anaconda.org{url}'
 
 
 def get_test_from_anaconda(url):
@@ -165,14 +165,14 @@ def get_alternative_versions(filepath, filename, recipes_path=None, github_repo=
     Return files that match ``filepath/*/filename`` in the bioconda-recipes repository
     """
     if recipes_path:
-        return [n.replace('%s/' % recipes_path, '') for n in glob(f'{recipes_path}/{filepath}/*/{filename}')]
+        return [n.replace(f'{recipes_path}/', '') for n in glob(f'{recipes_path}/{filepath}/*/{filename}')]
     # else use the GitHub API:
     versions = []
     r = json.loads(requests.get(f'https://api.github.com/repos/{github_repo}/contents/{filepath}').text)
     for subfile in r:
         if subfile['type'] == 'dir':
-            if requests.get('https://raw.githubusercontent.com/{}/master/{}/{}'.format(github_repo, subfile['path'], filename)).status_code == 200:
-                versions.append('{}/{}'.format(subfile['path'], filename))
+            if requests.get(f"https://raw.githubusercontent.com/{github_repo}/master/{subfile['path']}/{filename}").status_code == 200:
+                versions.append(f"{subfile['path']}/{filename}")
     return versions
 
 
@@ -195,23 +195,23 @@ def deep_test_search(container, recipes_path=None, anaconda_channel='bioconda', 
     """
     name = split_container_name(container)
     for f in [
-        (get_commands_from_yaml, open_recipe_file, ('recipes/{}/{}/meta.yaml'.format(name[0], name[1]), recipes_path, github_repo), container),
-        (get_run_test, open_recipe_file, ('recipes/{}/{}/run_test.sh'.format(name[0], name[1]), recipes_path, github_repo), container),
-        (get_commands_from_yaml, open_recipe_file, ('recipes/%s/meta.yaml' % name[0], recipes_path, github_repo), container),
-        (get_run_test, open_recipe_file, ('recipes/%s/run_test.sh' % name[0], recipes_path, github_repo), container),
+        (get_commands_from_yaml, open_recipe_file, (f'recipes/{name[0]}/{name[1]}/meta.yaml', recipes_path, github_repo), container),
+        (get_run_test, open_recipe_file, (f'recipes/{name[0]}/{name[1]}/run_test.sh', recipes_path, github_repo), container),
+        (get_commands_from_yaml, open_recipe_file, (f'recipes/{name[0]}/meta.yaml', recipes_path, github_repo), container),
+        (get_run_test, open_recipe_file, (f'recipes/{name[0]}/run_test.sh', recipes_path, github_repo), container),
         (get_test_from_anaconda, get_anaconda_url, (container, anaconda_channel), container),
     ]:
         result = try_a_func(*f)
         if result:
             return result
 
-    versions = get_alternative_versions('recipes/%s' % name[0], 'meta.yaml', recipes_path, github_repo)
+    versions = get_alternative_versions(f'recipes/{name[0]}', 'meta.yaml', recipes_path, github_repo)
     for version in versions:
         result = try_a_func(get_commands_from_yaml, open_recipe_file, (version, recipes_path, github_repo), container)
         if result:
             return result
 
-    versions = get_alternative_versions('recipes/%s' % name[0], 'run_test.sh', recipes_path, github_repo)
+    versions = get_alternative_versions(f'recipes/{name[0]}', 'run_test.sh', recipes_path, github_repo)
     for version in versions:
         result = try_a_func(get_run_test, open_recipe_file, (version, recipes_path, github_repo), container)
         if result:
@@ -246,7 +246,7 @@ def hashed_test_search(container, recipes_path=None, deep=False, anaconda_channe
     """
     package_tests = {'commands': [], 'imports': [], 'container': container, 'import_lang': 'python -c'}
 
-    githubpage = requests.get('https://raw.githubusercontent.com/BioContainers/multi-package-containers/master/combinations/%s.tsv' % container)
+    githubpage = requests.get(f'https://raw.githubusercontent.com/BioContainers/multi-package-containers/master/combinations/{container}.tsv')
     if githubpage.status_code == 200:
         packages = githubpage.text.split(',')  # get names of packages from github
         packages = [package.split('=') for package in packages]
@@ -255,22 +255,21 @@ def hashed_test_search(container, recipes_path=None, deep=False, anaconda_channe
 
     containers = []
     for package in packages:
-        r = requests.get("https://anaconda.org/bioconda/%s/files" % package[0])
+        r = requests.get(f"https://anaconda.org/bioconda/{package[0]}/files")
         p = '-'.join(package)
         for line in r.text.split('\n'):
             if p in line:
                 build = line.split(p)[1].split('.tar.bz2')[0]
                 if build == "":
-                    containers.append('{}:{}'.format(package[0], package[1]))
+                    containers.append(f'{package[0]}:{package[1]}')
                 else:
-                    containers.append('%s:%s-%s' %
-                                      (package[0], package[1], build))
+                    containers.append(f'{package[0]}:{package[1]}-{build}')
                 break
 
     for container in containers:
         tests = main_test_search(container, recipes_path, deep, anaconda_channel, github_repo)
         package_tests['commands'] += tests.get('commands', [])  # not a very nice solution but probably the simplest
         for imp in tests.get('imports', []):
-            package_tests['imports'].append("{} 'import {}'".format(tests['import_lang'], imp))
+            package_tests['imports'].append(f"{tests['import_lang']} 'import {imp}'")
 
     return package_tests

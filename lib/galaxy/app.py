@@ -350,7 +350,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         self.url_for = url_for
 
         self.server_starttime = int(time.time())  # used for cachebusting
-        log.info("Galaxy app startup finished %s" % startup_timer)
+        log.info(f"Galaxy app startup finished {startup_timer}")
 
     def _shutdown_queue_worker(self):
         self.queue_worker.shutdown()

@@ -18,7 +18,7 @@ def engine_false(migrate_engine):
     elif migrate_engine.name in ['mysql', 'sqlite']:
         return 0
     else:
-        raise Exception('Unknown database type: %s' % migrate_engine.name)
+        raise Exception(f'Unknown database type: {migrate_engine.name}')
 
 
 def engine_true(migrate_engine):
@@ -27,7 +27,7 @@ def engine_true(migrate_engine):
     elif migrate_engine.name in ['mysql', 'sqlite']:
         return 1
     else:
-        raise Exception('Unknown database type: %s' % migrate_engine.name)
+        raise Exception(f'Unknown database type: {migrate_engine.name}')
 
 
 def nextval(migrate_engine, table, col='id'):
@@ -36,7 +36,7 @@ def nextval(migrate_engine, table, col='id'):
     elif migrate_engine.name in ['mysql', 'sqlite']:
         return "null"
     else:
-        raise Exception('Unable to convert data for unknown database type: %s' % migrate_engine.name)
+        raise Exception(f'Unable to convert data for unknown database type: {migrate_engine.name}')
 
 
 def localtimestamp(migrate_engine):
@@ -45,7 +45,7 @@ def localtimestamp(migrate_engine):
     elif migrate_engine.name == 'sqlite':
         return "current_date || ' ' || current_time"
     else:
-        raise Exception('Unable to convert data for unknown database type: %s' % migrate_engine.name)
+        raise Exception(f'Unable to convert data for unknown database type: {migrate_engine.name}')
 
 
 def truncate_index_name(index_name, engine):
@@ -53,7 +53,7 @@ def truncate_index_name(index_name, engine):
     max_index_name_length = engine.dialect.max_index_name_length or engine.dialect.max_identifier_length
     if len(index_name) > max_index_name_length:
         suffix = hashlib.md5(index_name.encode('utf-8')).hexdigest()[-4:]
-        index_name = "{trunc}_{suffix}".format(trunc=index_name[0:max_index_name_length - 8], suffix=suffix)
+        index_name = f"{index_name[0:max_index_name_length - 8]}_{suffix}"
     return index_name
 
 

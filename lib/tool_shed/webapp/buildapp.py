@@ -37,7 +37,7 @@ def add_ui_controllers(webapp, app):
     for fname in os.listdir(controller_dir):
         if not fname.startswith("_") and fname.endswith(".py"):
             name = fname[:-3]
-            module_name = "tool_shed.webapp.controllers." + name
+            module_name = f"tool_shed.webapp.controllers.{name}"
             module = __import__(module_name)
             for comp in module_name.split(".")[1:]:
                 module = getattr(module, comp)

@@ -97,7 +97,7 @@ class CollectionTypeDescription:
 
     def subcollection_type_description(self):
         if not self.__has_subcollections:
-            raise ValueError("Cannot generate subcollection type description for flat type %s" % self.collection_type)
+            raise ValueError(f"Cannot generate subcollection type description for flat type {self.collection_type}")
         subcollection_type = self.collection_type.split(":", 1)[1]
         return self.collection_type_description_factory.for_collection_type(subcollection_type)
 
@@ -123,7 +123,7 @@ class CollectionTypeDescription:
         return self.collection_type_description_factory.for_collection_type(collection_type)
 
     def __str__(self):
-        return "CollectionTypeDescription[%s]" % self.collection_type
+        return f"CollectionTypeDescription[{self.collection_type}]"
 
 
 def map_over_collection_type(mapped_over_collection_type, target_collection_type):

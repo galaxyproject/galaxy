@@ -29,14 +29,14 @@ def lint_command(tool_xml, lint_ctx):
         elif key == "detect_errors":
             detect_errors = value
             if detect_errors not in ["default", "exit_code", "aggressive"]:
-                lint_ctx.warn("Unknown detect_errors attribute [%s]" % detect_errors)
+                lint_ctx.warn(f"Unknown detect_errors attribute [{detect_errors}]")
 
     interpreter_info = ""
     if interpreter_type:
-        interpreter_info = " with interpreter of type [%s]" % interpreter_type
+        interpreter_info = f" with interpreter of type [{interpreter_type}]"
     if interpreter_type:
         lint_ctx.info("Command uses deprecated 'interpreter' attribute.")
-    lint_ctx.info("Tool contains a command%s." % interpreter_info)
+    lint_ctx.info(f"Tool contains a command{interpreter_info}.")
 
 
 def get_command(tool_xml):

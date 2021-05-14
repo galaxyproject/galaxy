@@ -126,7 +126,7 @@ class ExpressionValidator(Validator):
         try:
             evalresult = eval(self.expression, dict(value=value))
         except Exception:
-            log.debug("Validator {} could not be evaluated on {}".format(self.expression, str(value)), exc_info=True)
+            log.debug(f"Validator {self.expression} could not be evaluated on {str(value)}", exc_info=True)
             raise ValueError(message)
         if not(evalresult):
             raise ValueError(message)
@@ -439,7 +439,7 @@ class ValueInDataTableColumnValidator(Validator):
             column = int(column)
         except ValueError:
             pass
-        message = elem.get("message", "Value was not found in %s." % (table_name))
+        message = elem.get("message", f"Value was not found in {table_name}.")
         line_startswith = elem.get("line_startswith", None)
         if line_startswith:
             line_startswith = line_startswith.strip()

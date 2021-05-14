@@ -215,7 +215,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             tools = self.app.toolbox.get_tool(id, get_all_versions=True)
             for tool in tools:
                 if not tool.allow_user_access(trans.user):
-                    raise exceptions.AuthenticationFailed("Access denied, please login for tool with id '%s'." % id)
+                    raise exceptions.AuthenticationFailed(f"Access denied, please login for tool with id '{id}'.")
         else:
             tools = [self._get_tool(id, tool_version=tool_version, user=trans.user)]
 
@@ -433,7 +433,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         tool_tarball = trans.app.toolbox.package_tool(trans, id)
         trans.response.set_content_type('application/x-gzip')
         download_file = open(tool_tarball, "rb")
-        trans.response.headers["Content-Disposition"] = 'attachment; filename="%s.tgz"' % (id)
+        trans.response.headers["Content-Disposition"] = f'attachment; filename="{id}.tgz"'
         return download_file
 
     @expose_api_anonymous
@@ -493,7 +493,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         tool_id = payload.get("tool_id")
         tool_uuid = payload.get("tool_uuid")
         if tool_id in PROTECTED_TOOLS:
-            raise exceptions.RequestParameterInvalidException("Cannot execute tool [%s] directly, must use alternative endpoint." % tool_id)
+            raise exceptions.RequestParameterInvalidException(f"Cannot execute tool [{tool_id}] directly, must use alternative endpoint.")
         if tool_id is None and tool_uuid is None:
             raise exceptions.RequestParameterInvalidException("Must specify a valid tool_id to use this endpoint.")
         return self._create(trans, payload, **kwd)
@@ -525,7 +525,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             if not trans.user:
                 log.warning("Anonymous user attempts to execute tool, but account activation is turned on.")
             elif not trans.user.active:
-                log.warning("User \"%s\" attempts to execute tool, but account activation is turned on and user account is not active." % trans.user.email)
+                log.warning(f"User \"{trans.user.email}\" attempts to execute tool, but account activation is turned on and user account is not active.")
 
         # Set running history from payload parameters.
         # History not set correctly as part of this API call for
@@ -540,7 +540,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         # Set up inputs.
         inputs = payload.get('inputs', {})
         if not isinstance(inputs, dict):
-            raise exceptions.RequestParameterInvalidException("inputs invalid %s" % inputs)
+            raise exceptions.RequestParameterInvalidException(f"inputs invalid {inputs}")
 
         # Find files coming in as multipart file data and add to inputs.
         for k, v in payload.items():
@@ -640,9 +640,9 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
     def _get_tool(self, id, tool_version=None, user=None):
         tool = self.app.toolbox.get_tool(id, tool_version)
         if not tool:
-            raise exceptions.ObjectNotFound("Could not find tool with id '%s'." % id)
+            raise exceptions.ObjectNotFound(f"Could not find tool with id '{id}'.")
         if not tool.allow_user_access(user):
-            raise exceptions.AuthenticationFailed("Access denied, please login for tool with id '%s'." % id)
+            raise exceptions.AuthenticationFailed(f"Access denied, please login for tool with id '{id}'.")
         return tool
 
 

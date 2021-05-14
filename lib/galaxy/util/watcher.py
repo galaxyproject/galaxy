@@ -42,7 +42,7 @@ def get_observer_class(config_name, config_value, default, monitor_what_str):
         raise Exception(message)
 
     if expect_observer and observer_class is None:
-        message = "Watchdog library unavailable, cannot monitor %s." % monitor_what_str
+        message = f"Watchdog library unavailable, cannot monitor {monitor_what_str}."
         if config_value == "auto":
             log.info(message)
         else:

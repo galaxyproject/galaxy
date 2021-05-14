@@ -73,7 +73,7 @@ class RoleManager(base.ModelManager):
         except sqlalchemy_exceptions.NoResultFound:
             raise galaxy.exceptions.RequestParameterInvalidException('No accessible role found with the id provided.')
         except Exception as e:
-            raise galaxy.exceptions.InternalServerError('Error loading from the database.' + unicodify(e))
+            raise galaxy.exceptions.InternalServerError(f"Error loading from the database.{unicodify(e)}")
 
         if not (trans.user_is_admin or trans.app.security_agent.ok_to_display(trans.user, role)):
             raise galaxy.exceptions.RequestParameterInvalidException('No accessible role found with the id provided.')
