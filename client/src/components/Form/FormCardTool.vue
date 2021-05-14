@@ -84,6 +84,7 @@
                 </div>
             </div>
             <div class="portlet-content">
+                <FormMessage class="mt-2" :message="errorText" variant="danger" :persistent="true" />
                 <FormMessage class="mt-2" :message="messageText" :variant="messageVariant" />
                 <slot name="body" />
             </div>
@@ -158,7 +159,13 @@ export default {
     data() {
         return {
             webhookDetails: [],
+            errorText: null,
         };
+    },
+    watch: {
+        id() {
+            this.errorText = null;
+        },
     },
     computed: {
         versions() {
@@ -211,20 +218,32 @@ export default {
     },
     methods: {
         onAddFavorite() {
-            axios
-                .put(`${getAppRoot()}api/users/${this.user.id}/favorites/tools`, { object_id: this.id })
-                .then((response) => {
+            axios.put(`${getAppRoot()}api/users/${this.user.id}/favorites/tools`, { object_id: this.id }).then(
+                (response) => {
+                    this.errorText = null;
                     this.updateFavorites("tools", response.data);
                     ariaAlert("added to favorites");
-                });
+                },
+                () => {
+                    this.errorText = `Failed to add '${this.id}' to favorites.`;
+                    ariaAlert("failed to add to favorites");
+                }
+            );
         },
         onRemoveFavorite() {
             axios
                 .delete(`${getAppRoot()}api/users/${this.user.id}/favorites/tools/${encodeURIComponent(this.id)}`)
-                .then((response) => {
-                    this.updateFavorites("tools", response.data);
-                    ariaAlert("removed from favorites");
-                });
+                .then(
+                    (response) => {
+                        this.errorText = null;
+                        this.updateFavorites("tools", response.data);
+                        ariaAlert("removed from favorites");
+                    },
+                    () => {
+                        this.errorText = `Failed to remove '${this.id}' from favorites.`;
+                        ariaAlert("failed to remove from favorites");
+                    }
+                );
         },
         onCopyLink() {
             copy(

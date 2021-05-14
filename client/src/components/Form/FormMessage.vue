@@ -13,7 +13,7 @@ export default {
     props: {
         message: {
             type: String,
-            required: true,
+            default: null,
         },
         variant: {
             type: String,
