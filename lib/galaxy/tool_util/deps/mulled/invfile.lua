@@ -60,7 +60,7 @@ end
 
 local destination_base_image = VAR.DEST_BASE_IMAGE
 if destination_base_image == '' then
-    destination_base_image = 'bgruening/busybox-bash:0.1'
+    destination_base_image = 'quay.io/bioconda/base-glibc-busybox-bash:latest'
 end
 
 local verbose = VAR.VERBOSE
