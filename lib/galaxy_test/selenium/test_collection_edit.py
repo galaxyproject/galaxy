@@ -45,7 +45,6 @@ class CollectionEditTestCase(SeleniumTestCase):
         self.components.history_panel.options_use_beta_history.wait_for_and_click()
 
     def open_collection_edit_view(self):
-        self.components.history_panel.collection_menu_button.wait_for_and_click()
         self.components.history_panel.collection_menu_edit_attributes.wait_for_and_click()
 
     def navigate_to_database_tab(self):
