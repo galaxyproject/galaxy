@@ -504,7 +504,7 @@ export default {
             this.showInPanel = "lint";
         },
         onUpgrade() {
-            this.attemptRefactor([{ action_type: "upgrade_all_steps" }]);
+            this.onAttemptRefactor([{ action_type: "upgrade_all_steps" }]);
         },
         onEdit() {
             this.isCanvas = true;
