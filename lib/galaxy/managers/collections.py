@@ -227,27 +227,22 @@ class DatasetCollectionManager:
             check_ownership=True
         )
         dbkeys_and_extensions = dataset_collection_instance.dataset_dbkeys_and_extensions_summary
-        print("********************************************************** " + str(dbkeys_and_extensions))
         suitable_converters = set()
         first_extension = True
         # TODO error checking
         for datatype in dbkeys_and_extensions[1]:
             new_converters = {}
             new_converters = datatypes_registry.get_converters_by_datatype(datatype)
-            print("********************************************************************" + str(new_converters))
             set_of_new_converters = set(new_converters.values())
             if (first_extension is True):
                 suitable_converters = set_of_new_converters
                 first_extension = False
             else:
                 suitable_converters = suitable_converters.intersection(set_of_new_converters)
-            print("********************************************sc******" + str(suitable_converters))
         suitable_tool_ids = list()
         for tool in suitable_converters:
             tool_info = {"tool_id": tool.id, "name": tool.name}
             suitable_tool_ids.append(tool_info)
-
-        print("************toolIDs*************" + str(suitable_tool_ids))
         return suitable_tool_ids
 
     def _element_identifiers_to_elements(self,
