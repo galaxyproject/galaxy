@@ -1,3 +1,4 @@
+from collections import Counter
 import json
 import zipfile
 from io import BytesIO
@@ -355,6 +356,94 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         offset_contents = self._get(root_contents_url + '?offset=1').json()
         assert len(offset_contents) == 1
         assert offset_contents[0]['element_index'] == 1
+
+    def test_get_suitable_converters_single_datatype(self):
+        response = self.dataset_collection_populator.upload_collection(self.history_id, "list:paired", elements=[
+            {
+                "name": "test0",
+                "elements": [
+                    {"src": "pasted", "paste_content": "123\n", "name": "forward", "ext": "bed"},
+                    {"src": "pasted", "paste_content": "456\n", "name": "reverse", "ext": "bed"},
+                ]
+            },
+            {
+                "name": "test1",
+                "elements": [
+                    {"src": "pasted", "paste_content": "789\n", "name": "forward", "ext": "bed"},
+                    {"src": "pasted", "paste_content": "0ab\n", "name": "reverse", "ext": "bed"},
+                ]
+            }
+        ])
+        self._assert_status_code_is(response, 200)
+        hdca_list_id = response.json()["outputs"][0]["id"]
+        print(str(hdca_list_id))
+        converters = self._get("dataset_collections/suitable_converters/" + hdca_list_id)
+        print("CONVERTERS::::::::::::::::::: " + str(converters.json()))
+        expected = Counter([
+            'CONVERTER_bed_to_fli_0',
+            'CONVERTER_interval_to_bed_0',
+            'CONVERTER_bed_gff_or_vcf_to_bigwig_0',
+            'CONVERTER_bed_to_gff_0',
+            'CONVERTER_bed_to_bgzip_0',
+            'tabular_to_csv',
+            'CONVERTER_interval_to_bed6_0',
+            'CONVERTER_interval_to_bedstrict_0',
+            'CONVERTER_bed_to_tabix_0',
+            'CONVERTER_interval_to_bed12_0'])
+        actual = Counter([converter["tool_id"] for converter in converters.json()])
+        assert actual == expected
+
+    def test_get_suitable_converters_different_datatypes_matches(self):
+        response = self.dataset_collection_populator.upload_collection(self.history_id, "list:paired", elements=[
+            {
+                "name": "test0",
+                "elements": [
+                    {"src": "pasted", "paste_content": "123\n", "name": "forward", "ext": "bed"},
+                    {"src": "pasted", "paste_content": "456\n", "name": "reverse", "ext": "bed"},
+                ]
+            },
+            {
+                "name": "test1",
+                "elements": [
+                    {"src": "pasted", "paste_content": "789\n", "name": "forward", "ext": "tabular"},
+                    {"src": "pasted", "paste_content": "0ab\n", "name": "reverse", "ext": "tabular"},
+                ]
+            }
+        ])
+        self._assert_status_code_is(response, 200)
+        hdca_list_id = response.json()["outputs"][0]["id"]
+        print(str(hdca_list_id))
+        converters = self._get("dataset_collections/suitable_converters/" + hdca_list_id)
+        print("CONVERTERS::::::::::::::::::: " + str(converters.json()))
+        expected = Counter(['tabular_to_csv'])
+        actual = Counter([converter["tool_id"] for converter in converters.json()])
+        assert actual == expected
+
+    def test_get_suitable_converters_different_datatypes_no_matches(self):
+        response = self.dataset_collection_populator.upload_collection(self.history_id, "list:paired", elements=[
+            {
+                "name": "test0",
+                "elements": [
+                    {"src": "pasted", "paste_content": "123\n", "name": "forward", "ext": "bed"},
+                    {"src": "pasted", "paste_content": "456\n", "name": "reverse", "ext": "bed"},
+                ]
+            },
+            {
+                "name": "test1",
+                "elements": [
+                    {"src": "pasted", "paste_content": "789\n", "name": "forward", "ext": "fasta"},
+                    {"src": "pasted", "paste_content": "0ab\n", "name": "reverse", "ext": "fasta"},
+                ]
+            }
+        ])
+        self._assert_status_code_is(response, 200)
+        hdca_list_id = response.json()["outputs"][0]["id"]
+        print(str(hdca_list_id))
+        converters = self._get("dataset_collections/suitable_converters/" + hdca_list_id)
+        print("CONVERTERS::::::::::::::::::: " + str(converters.json()))
+        expected = Counter([])
+        actual = Counter([converter["tool_id"] for converter in converters.json()])
+        assert actual == expected
 
     def _compare_collection_contents_elements(self, contents_elements, hdca_elements):
         # compare collection api results to existing hdca element contents
