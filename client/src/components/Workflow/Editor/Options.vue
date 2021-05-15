@@ -12,7 +12,7 @@
         >
             <span class="fa fa-pencil-alt" />
         </b-button>
-        <b-button-group v-b-tooltip title="Save Workflow">
+        <b-button-group class="editor-button-save-group" v-b-tooltip title="Save Workflow">
             <b-button
                 id="workflow-save-button"
                 role="button"
