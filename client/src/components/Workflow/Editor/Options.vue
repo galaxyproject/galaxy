@@ -12,19 +12,19 @@
         >
             <span class="fa fa-pencil-alt" />
         </b-button>
-        <b-button
-            id="workflow-save-button"
-            role="button"
-            title="Save Workflow"
-            variant="link"
-            aria-label="Save Workflow"
-            class="editor-button-save"
-            :disabled="!hasChanges"
-            v-b-tooltip.hover
-            @click="$emit('onSave')"
-        >
-            <span class="fa fa-floppy-o" />
-        </b-button>
+        <b-button-group v-b-tooltip title="Save Workflow">
+            <b-button
+                id="workflow-save-button"
+                role="button"
+                variant="link"
+                aria-label="Save Workflow"
+                class="editor-button-save"
+                :disabled="!hasChanges"
+                @click="$emit('onSave')"
+            >
+                <span class="fa fa-floppy-o" />
+            </b-button>
+        </b-button-group>
         <b-button
             id="workflow-report-button"
             role="button"
