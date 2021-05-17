@@ -54,8 +54,11 @@ class Html(Text):
         """
         headers = iter_headers(file_prefix, None)
         for hdr in headers:
-            if hdr and hdr[0].lower().find('<html>') >= 0:
-                return True
+            for h in hdr:
+                print(h)
+                if h and h.lower().find('html>') >= 0:
+                    print("returning true")
+                    return True
         return False
 
 
