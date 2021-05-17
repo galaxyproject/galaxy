@@ -375,6 +375,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
             }
         ])
         self._assert_status_code_is(response, 200)
+        hdca_list_id = response.json()["outputs"][0]["id"]
         converters = self._get("dataset_collections/suitable_converters/" + hdca_list_id)
         expected = Counter([
             'CONVERTER_bed_to_fli_0',
