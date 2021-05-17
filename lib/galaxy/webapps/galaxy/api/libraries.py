@@ -47,7 +47,7 @@ class LibrariesController(BaseGalaxyAPIController):
         return self.service.index(trans, deleted)
 
     @expose_api_anonymous
-    def show(self, trans: ProvidesUserContext, id: EncodedDatabaseIdField, deleted='False', **kwd):
+    def show(self, trans: ProvidesUserContext, id: EncodedDatabaseIdField, **kwd):
         """
         show( self, trans, id, deleted='False', **kwd )
         * GET /api/libraries/{encoded_id}:
@@ -57,8 +57,6 @@ class LibrariesController(BaseGalaxyAPIController):
 
         :param  id:      the encoded id of the library
         :type   id:      an encoded id string
-        :param  deleted: if True, allow information on a ``deleted`` library
-        :type   deleted: boolean
 
         :returns:   detailed library information
         :rtype:     dictionary
