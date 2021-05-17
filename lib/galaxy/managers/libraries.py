@@ -546,7 +546,7 @@ class LibraryPermissionsPayload(BaseModel):
         use_enum_values = True  # When using .dict()
         allow_population_by_alias = True
 
-    action: LibraryPermissionAction = Field(
+    action: Optional[LibraryPermissionAction] = Field(
         ...,
         title="Action",
         description="Indicates what action should be performed on the Library.",

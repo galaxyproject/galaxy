@@ -25,6 +25,7 @@ from galaxy.managers.libraries import (
     LibraryAvailablePermissions,
     LibraryCurrentPermissions,
     LibraryLegacySummary,
+    LibraryPermissionAction,
     LibraryPermissionScope,
     LibraryPermissionsPayload,
     LibrarySummary,
@@ -202,6 +203,11 @@ class FastAPILibraries:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: EncodedDatabaseIdField = LibraryIdPathParam,
+        action: Optional[LibraryPermissionAction] = Query(
+            default=None,
+            title="Action",
+            description="Indicates what action should be performed on the Library.",
+        ),
         payload: Union[
             LibraryPermissionsPayload,
             LegacyLibraryPermissionsPayload,
@@ -211,7 +217,10 @@ class FastAPILibraries:
         LibraryCurrentPermissions,
     ]:
         """Sets the permissions to access and manipulate a library."""
-        return self.service.set_permissions(trans, id, payload.dict(by_alias=True))
+        payload_dict = payload.dict(by_alias=True)
+        if isinstance(payload, LibraryPermissionsPayload) and action is not None:
+            payload_dict["action"] = action
+        return self.service.set_permissions(trans, id, payload_dict)
 
 
 class LibrariesController(BaseGalaxyAPIController):
