@@ -236,7 +236,7 @@ model.HistoryDatasetAssociation.table = Table(
     Column("history_id", Integer, ForeignKey("history.id"), index=True),
     Column("dataset_id", Integer, ForeignKey("dataset.id"), index=True),
     Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
+    Column("update_time", DateTime, default=now, onupdate=now, index=True),
     Column("state", TrimmedString(64), index=True, key="_state"),
     Column("copied_from_history_dataset_association_id", Integer,
            ForeignKey("history_dataset_association.id"), nullable=True),
@@ -513,7 +513,7 @@ model.LibraryDatasetDatasetAssociation.table = Table(
     Column("library_dataset_id", Integer, ForeignKey("library_dataset.id"), index=True),
     Column("dataset_id", Integer, ForeignKey("dataset.id"), index=True),
     Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
+    Column("update_time", DateTime, default=now, onupdate=now, index=True),
     Column("state", TrimmedString(64), index=True, key="_state"),
     Column("copied_from_history_dataset_association_id", Integer,
         ForeignKey("history_dataset_association.id", use_alter=True, name='history_dataset_association_dataset_id_fkey'),
@@ -610,7 +610,7 @@ model.Job.table = Table(
     "job", metadata,
     Column("id", Integer, primary_key=True),
     Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
+    Column("update_time", DateTime, default=now, onupdate=now, index=True),
     Column("history_id", Integer, ForeignKey("history.id"), index=True),
     Column("library_folder_id", Integer, ForeignKey("library_folder.id"), index=True),
     Column("tool_id", String(255)),
@@ -928,7 +928,7 @@ model.HistoryDatasetCollectionAssociation.table = Table(
     Column("job_id", ForeignKey("job.id"), index=True, nullable=True),
     Column("implicit_collection_jobs_id", ForeignKey("implicit_collection_jobs.id"), index=True, nullable=True),
     Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now))
+    Column("update_time", DateTime, default=now, onupdate=now, index=True))
 
 model.LibraryDatasetCollectionAssociation.table = Table(
     "library_dataset_collection_association", metadata,
@@ -991,7 +991,7 @@ model.StoredWorkflow.table = Table(
     "stored_workflow", metadata,
     Column("id", Integer, primary_key=True),
     Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
+    Column("update_time", DateTime, default=now, onupdate=now, index=True),
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True, nullable=False),
     Column("latest_workflow_id", Integer,
         ForeignKey("workflow.id", use_alter=True, name='stored_workflow_latest_workflow_id_fk'), index=True),
@@ -1121,7 +1121,7 @@ model.WorkflowInvocation.table = Table(
     "workflow_invocation", metadata,
     Column("id", Integer, primary_key=True),
     Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
+    Column("update_time", DateTime, default=now, onupdate=now, index=True),
     Column("workflow_id", Integer, ForeignKey("workflow.id"), index=True, nullable=False),
     Column("state", TrimmedString(64), index=True),
     Column("scheduler", TrimmedString(255), index=True),
