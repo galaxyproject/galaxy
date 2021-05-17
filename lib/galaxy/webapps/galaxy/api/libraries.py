@@ -5,13 +5,30 @@ import logging
 from typing import (
     Any,
     Dict,
+    Optional,
+    Union,
+)
+
+from fastapi import (
+    Body,
+    Path,
+    Query,
 )
 
 from galaxy import util
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.libraries import (
     CreateLibraryPayload,
+    DeleteLibraryPayload,
+    LegacyLibraryPermissionsPayload,
     LibrariesService,
+    LibraryAvailablePermissions,
+    LibraryCurrentPermissions,
+    LibraryLegacySummary,
+    LibraryPermissionScope,
+    LibraryPermissionsPayload,
+    LibrarySummary,
+    LibrarySummaryList,
     UpdateLibraryPayload,
 )
 from galaxy.schema.fields import EncodedDatabaseIdField
@@ -19,9 +36,182 @@ from galaxy.web import (
     expose_api,
     expose_api_anonymous,
 )
-from . import BaseGalaxyAPIController, depends
+from . import (
+    BaseGalaxyAPIController,
+    depends,
+    DependsOnTrans,
+    Router,
+)
 
 log = logging.getLogger(__name__)
+
+router = Router(tags=['libraries'])
+
+DeletedQueryParam: Optional[bool] = Query(
+    default=None,
+    title="Display deleted",
+    description="Whether to include deleted libraries in the result."
+)
+
+LibraryIdPathParam: EncodedDatabaseIdField = Path(
+    ...,
+    title="Library ID",
+    description="The encoded identifier of the Library."
+)
+
+UndeleteQueryParam: Optional[bool] = Query(
+    default=None,
+    title="Undelete",
+    description="Whether to restore a deleted library."
+)
+
+
+@router.cbv
+class FastAPILibraries:
+    service: LibrariesService = depends(LibrariesService)
+
+    @router.get(
+        '/api/libraries',
+        summary="Returns a list of summary data for all libraries.",
+    )
+    def index(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        deleted: Optional[bool] = DeletedQueryParam,
+    ) -> LibrarySummaryList:
+        """Returns a list of summary data for all libraries."""
+        return self.service.index(trans, deleted)
+
+    @router.get(
+        '/api/libraries/deleted',
+        summary="Returns a list of summary data for all libraries marked as deleted.",
+    )
+    def index_deleted(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> LibrarySummaryList:
+        """Returns a list of summary data for all libraries marked as deleted."""
+        return self.service.index(trans, True)
+
+    @router.get(
+        '/api/libraries/{id}',
+        summary="Returns summary information about a particular library.",
+    )
+    def show(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = LibraryIdPathParam,
+    ) -> LibrarySummary:
+        """Returns summary information about a particular library."""
+        return self.service.show(trans, id)
+
+    @router.post(
+        '/api/libraries',
+        summary="Creates a new library and returns its summary information.",
+        require_admin=True,
+    )
+    def create(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        payload: CreateLibraryPayload = Body(...),
+    ) -> LibrarySummary:
+        """Creates a new library and returns its summary information. Currently, only admin users can create libraries."""
+        return self.service.create(trans, payload)
+
+    @router.put(
+        '/api/libraries/{id}',
+        summary="Updates the information of an existing library.",
+        require_admin=True,
+    )
+    def update(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = LibraryIdPathParam,
+        payload: UpdateLibraryPayload = Body(...),
+    ) -> LibrarySummary:
+        """Updates the information of an existing library.
+        Currently, only admin users can update libraries."""
+        return self.service.update(trans, id, payload)
+
+    @router.delete(
+        '/api/libraries/{id}',
+        summary="Marks the specified library as deleted (or undeleted).",
+        require_admin=True,
+    )
+    def delete(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = LibraryIdPathParam,
+        undelete: Optional[bool] = UndeleteQueryParam,
+        payload: Optional[DeleteLibraryPayload] = Body(default=None),
+    ) -> LibrarySummary:
+        """Marks the specified library as deleted (or undeleted).
+        Currently, only admin users can delete or restore libraries."""
+        if payload:
+            undelete = payload.undelete
+        return self.service.delete(trans, id, undelete)
+
+    @router.get(
+        '/api/libraries/{id}/permissions',
+        summary="Gets the current or available permissions of a particular library.",
+    )
+    def get_permissions(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = LibraryIdPathParam,
+        scope: Optional[LibraryPermissionScope] = Query(
+            None, title="Scope",
+            description="The scope of the permissions to retrieve. Either the `current` permissions or the `available`."
+        ),
+        is_library_access: Optional[bool] = Query(
+            None, title="Is Library Access",
+            description="Indicates whether the roles available for the library access are requested."
+        ),
+        page: Optional[int] = Query(
+            default=1,
+            title="Page",
+            description="The page number to retrieve when paginating the permissions."
+        ),
+        page_limit: Optional[int] = Query(
+            default=10,
+            title="Page Limit",
+            description="The maximum number of permissions per page when paginating."
+        ),
+        query: Optional[str] = Query(
+            None, title="Query",
+            description="Optional search query to retrieve the permissions."
+        ),
+    ) -> Union[LibraryCurrentPermissions, LibraryAvailablePermissions]:
+        """Gets the current or available permissions of a particular library.
+        The results can be paginated and additionally filtered by a query."""
+        return self.service.get_permissions(
+            trans,
+            id,
+            scope,
+            is_library_access,
+            page,
+            page_limit,
+            query,
+        )
+
+    @router.post(
+        '/api/libraries/{id}/permissions',
+        summary="Sets the permissions to access and manipulate a library.",
+    )
+    def set_permissions(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = LibraryIdPathParam,
+        payload: Union[
+            LibraryPermissionsPayload,
+            LegacyLibraryPermissionsPayload,
+        ] = Body(...),
+    ) -> Union[
+        LibraryLegacySummary,  # Old legacy response
+        LibraryCurrentPermissions,
+    ]:
+        """Sets the permissions to access and manipulate a library."""
+        return self.service.set_permissions(trans, id, payload.dict(by_alias=True))
 
 
 class LibrariesController(BaseGalaxyAPIController):

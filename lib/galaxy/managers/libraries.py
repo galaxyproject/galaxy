@@ -446,6 +446,19 @@ class UpdateLibraryPayload(BaseModel):
     )
 
 
+class DeleteLibraryPayload(BaseModel):
+    undelete: bool = Field(
+        ...,
+        title="Undelete",
+        description="Whether to restore this previously deleted library.",
+    )
+
+
+class LibraryPermissionScope(str, Enum):
+    current = "current"
+    available = "available"
+
+
 # The tuple should probably be another proper model instead?
 # Keeping it as a Tuple for now for backward compatibility
 RoleNameIdTuple = Tuple[str, EncodedDatabaseIdField]
@@ -531,6 +544,7 @@ class LibraryPermissionAction(str, Enum):
 class LibraryPermissionsPayload(BaseModel):
     class Config:
         use_enum_values = True  # When using .dict()
+        allow_population_by_alias = True
 
     action: LibraryPermissionAction = Field(
         ...,
@@ -688,7 +702,7 @@ class LibrariesService:
         self,
         trans,
         id: EncodedDatabaseIdField,
-        scope: Optional[str] = 'current',
+        scope: Optional[LibraryPermissionScope] = LibraryPermissionScope.current,
         is_library_access: Optional[bool] = False,
         page: Optional[int] = 1,
         page_limit: Optional[int] = 10,
@@ -716,12 +730,12 @@ class LibrariesService:
         if not (is_admin or trans.app.security_agent.can_manage_library_item(current_user_roles, library)):
             raise exceptions.InsufficientPermissionsException('You do not have proper permission to access permissions of this library.')
 
-        if scope == 'current' or scope is None:
+        if scope == LibraryPermissionScope.current or scope is None:
             roles = self.library_manager.get_current_roles(trans, library)
             return LibraryCurrentPermissions.parse_obj(roles)
 
         #  Return roles that are available to select.
-        elif scope == 'available':
+        elif scope == LibraryPermissionScope.available:
             roles, total_roles = trans.app.security_agent.get_valid_roles(trans, library, query, page, page_limit, is_library_access)
 
             return_roles = []
