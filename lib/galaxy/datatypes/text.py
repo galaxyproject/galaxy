@@ -56,7 +56,6 @@ class Html(Text):
         for hdr in headers:
             for h in hdr:
                 if h and h.lower().find('html>') >= 0:
-                    print("returning true")
                     return True
         return False
 
