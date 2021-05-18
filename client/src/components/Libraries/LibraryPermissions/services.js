@@ -87,7 +87,8 @@ export class Services {
             });
         });
 
-        axios.post(`${apiRootUrl}/${id}/permissions`, data)
+        axios
+            .post(`${apiRootUrl}/${id}/permissions`, data)
             .then(function (response) {
                 onSuccess(response);
             })
