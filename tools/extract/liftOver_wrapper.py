@@ -25,7 +25,7 @@ def safe_bed_file(infile):
     https://lists.soe.ucsc.edu/pipermail/genome/2007-May/013561.html
     """
     fix_pat = re.compile("^(track|browser)")
-    with tempfile.NamedTemporaryFile(mode='w', delete=False) as out_handle, open(infile, 'w') as in_handle:
+    with tempfile.NamedTemporaryFile(mode='w', delete=False) as out_handle, open(infile, 'r') as in_handle:
         for line in in_handle:
             if fix_pat.match(line):
                 line = "#" + line
