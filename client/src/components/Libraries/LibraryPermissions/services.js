@@ -87,12 +87,7 @@ export class Services {
             });
         });
 
-        axios({
-            method: "post",
-            url: `${apiRootUrl}/${id}/permissions`,
-            data: data,
-            headers: { "Content-Type": "multipart/form-data" },
-        })
+        axios.post(`${apiRootUrl}/${id}/permissions`, data)
             .then(function (response) {
                 onSuccess(response);
             })
