@@ -297,7 +297,7 @@ export default {
             const item = items[0];
             let urls;
             if (item.get("file_mode") == "ftp") {
-                urls = [item.get("file_path")];
+                urls = [item.get("file_uri") || item.get("file_path")];
             } else {
                 urls = item.get("url_paste").split("\n");
             }

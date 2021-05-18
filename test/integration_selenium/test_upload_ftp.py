@@ -37,3 +37,5 @@ class UploadFtpSeleniumIntegrationTestCase(SeleniumIntegrationTestCase):
         self.components.upload.ftp_close.wait_for_and_click()
         self.components.upload.row(n=0).wait_for_visible()
         self.upload_start()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.wait_for_history()
