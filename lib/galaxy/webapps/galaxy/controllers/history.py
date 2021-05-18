@@ -86,9 +86,9 @@ class HistoryListGrid(grids.Grid):
 
         def sort(self, trans, query, ascending, column_name=None):
             if ascending:
-                query = query.order_by(self.model_class.table.c.purged.asc(), self.model_class.table.c.update_time.desc())
+                query = query.order_by(self.model_class.table.c.purged.asc(), self.model_class.update_time.desc())
             else:
-                query = query.order_by(self.model_class.table.c.purged.desc(), self.model_class.table.c.update_time.desc())
+                query = query.order_by(self.model_class.table.c.purged.desc(), self.model_class.update_time.desc())
             return query
 
     def build_initial_query(self, trans, **kwargs):

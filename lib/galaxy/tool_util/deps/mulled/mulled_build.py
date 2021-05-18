@@ -46,9 +46,12 @@ from ..conda_compat import MetaData
 log = logging.getLogger(__name__)
 
 DIRNAME = os.path.dirname(__file__)
-DEFAULT_BASE_IMAGE = "bgruening/busybox-bash:0.1"
-DEFAULT_EXTENDED_BASE_IMAGE = "bioconda/extended-base-image:latest"
-DEFAULT_CHANNELS = ["conda-forge", "bioconda"]
+DEFAULT_BASE_IMAGE = os.environ.get("DEFAULT_BASE_IMAGE", "quay.io/bioconda/base-glibc-busybox-bash:latest")
+DEFAULT_EXTENDED_BASE_IMAGE = os.environ.get("DEFAULT_EXTENDED_BASE_IMAGE", "quay.io/bioconda/base-glibc-debian-bash:latest")
+if 'DEFAULT_MULLED_CONDA_CHANNELS' in os.environ:
+    DEFAULT_CHANNELS = os.environ['DEFAULT_MULLED_CONDA_CHANNELS'].split(',')
+else:
+    DEFAULT_CHANNELS = ["conda-forge", "bioconda"]
 DEFAULT_REPOSITORY_TEMPLATE = "quay.io/${namespace}/${image}"
 DEFAULT_BINDS = ["build/dist:/usr/local/"]
 DEFAULT_WORKING_DIR = '/source/'

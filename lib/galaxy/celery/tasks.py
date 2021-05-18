@@ -9,6 +9,7 @@ from galaxy.celery import celery_app
 from galaxy.jobs.manager import JobManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
+from galaxy.util import ExecutionTimer
 from galaxy.util.custom_logging import get_logger
 from . import get_galaxy_app
 
@@ -73,3 +74,12 @@ def export_history(
     job.state = model.Job.states.NEW
     sa_session.flush()
     job_manager.enqueue(job)
+
+
+@celery_app.task
+@galaxy_task
+def prune_history_audit_table(sa_session: scoped_session):
+    """Prune ever growing history_audit table."""
+    timer = ExecutionTimer()
+    model.HistoryAudit.prune(sa_session)
+    log.debug(f"Successfully pruned history_audit table {timer}")

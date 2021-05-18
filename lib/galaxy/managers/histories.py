@@ -85,7 +85,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         """
         if self.user_manager.is_anonymous(user):
             return None if (not current_history or current_history.deleted) else current_history
-        desc_update_time = desc(self.model_class.table.c.update_time)
+        desc_update_time = desc(self.model_class.update_time)
         filters = self._munge_filters(filters, self.model_class.user_id == user.id)
         # TODO: normalize this return value
         return self.query(filters=filters, order_by=desc_update_time, limit=1, **kwargs).first()

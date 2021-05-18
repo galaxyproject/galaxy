@@ -172,7 +172,7 @@ def galactic_job_json(
 
     def replacement_file(value):
         if value.get('galaxy_id'):
-            return {"src": "hda", "id": value['galaxy_id']}
+            return {"src": "hda", "id": str(value['galaxy_id'])}
         file_path = value.get("location", None) or value.get("path", None)
         # format to match output definitions in tool, where did filetype come from?
         filetype = value.get("filetype", None) or value.get("format", None)
@@ -283,7 +283,7 @@ def galactic_job_json(
 
     def replacement_collection(value):
         if value.get('galaxy_id'):
-            return {"src": "hdca", "id": value['galaxy_id']}
+            return {"src": "hdca", "id": str(value['galaxy_id'])}
         assert "collection_type" in value
         collection_type = value["collection_type"]
         elements = to_elements(value, collection_type)

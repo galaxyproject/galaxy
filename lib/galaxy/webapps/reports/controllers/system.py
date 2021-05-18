@@ -60,7 +60,7 @@ class System(BaseUIController):
             for history in trans.sa_session.query(model.History) \
                     .filter(and_(model.History.table.c.user_id == null(),
                     model.History.table.c.deleted == true(),
-                    model.History.table.c.update_time < cutoff_time)):
+                    model.History.update_time < cutoff_time)):
                 for dataset in history.datasets:
                     if not dataset.deleted:
                         dataset_count += 1
@@ -86,7 +86,7 @@ class System(BaseUIController):
             histories = trans.sa_session.query(model.History) \
                 .filter(and_(model.History.table.c.deleted == true(),
                     model.History.table.c.purged == false(),
-                    model.History.table.c.update_time < cutoff_time)) \
+                    model.History.update_time < cutoff_time)) \
                 .options(eagerload('datasets'))
 
             for history in histories:
