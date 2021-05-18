@@ -242,6 +242,7 @@ export default {
                                     name: ftp_file.path,
                                     size: ftp_file.size,
                                     path: ftp_file.path,
+                                    uri: ftp_file.uri,
                                 },
                             ]);
                         },

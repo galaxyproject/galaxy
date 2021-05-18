@@ -249,6 +249,7 @@ export default {
                 file_size: file.size,
                 file_mode: file.mode || "local",
                 file_path: file.path,
+                file_uri: file.uri,
                 file_data: file,
             };
         },
