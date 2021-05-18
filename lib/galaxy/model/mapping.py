@@ -1888,7 +1888,7 @@ mapper(model.History, model.History.table, properties=dict(
         deferred=True
     ),
     update_time=column_property(
-        select([func.max(model.HistoryAudit.table.c.update_time)]).where(model.HistoryAudit.table.c.history_id == model.History.table.c.id),
+        select(func.max(model.HistoryAudit.table.c.update_time)).where(model.HistoryAudit.table.c.history_id == model.History.table.c.id).scalar_subquery(),
     ),
 ))
 
