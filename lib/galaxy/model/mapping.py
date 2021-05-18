@@ -2588,7 +2588,8 @@ simple_mapping(
             model.WorkflowInvocationStep.table.c.workflow_invocation_id == model.WorkflowInvocationOutputValue.table.c.workflow_invocation_id,
             model.WorkflowInvocationStep.table.c.workflow_step_id == model.WorkflowInvocationOutputValue.table.c.workflow_step_id,
         ),
-        backref='output_value'
+        backref='output_value',
+        viewonly=True
     ),
     workflow_step=relation(model.WorkflowStep),
     workflow_output=relation(model.WorkflowOutput),
