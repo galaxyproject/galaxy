@@ -88,7 +88,6 @@ class HDCAManager(
         self.map_datasets(content, fn=lambda item, *args: set_collection_attributes(item, payload.items()))
 
 
-
 # serializers
 # -----------------------------------------------------------------------------
 class DCESerializer(base.ModelSerializer):
