@@ -201,7 +201,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         return pull_policy(self.runner_params)
 
     def __get_run_as_user_id(self):
-        if self.runner_params.get("k8s_run_as_user_id"):
+        if self.runner_params.get("k8s_run_as_user_id") or self.runner_params.get("k8s_run_as_user_id") == 0:
             run_as_user = self.runner_params["k8s_run_as_user_id"]
             if run_as_user == "$uid":
                 return os.getuid()
@@ -215,7 +215,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         return None
 
     def __get_run_as_group_id(self):
-        if self.runner_params.get("k8s_run_as_group_id"):
+        if self.runner_params.get("k8s_run_as_group_id") or self.runner_params.get("k8s_run_as_group_id") == 0:
             run_as_group = self.runner_params["k8s_run_as_group_id"]
             if run_as_group == "$gid":
                 return self.app.config.gid
@@ -228,7 +228,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         return None
 
     def __get_supplemental_group(self):
-        if self.runner_params.get("k8s_supplemental_group_id"):
+        if self.runner_params.get("k8s_supplemental_group_id") or self.runner_params.get("k8s_supplemental_group_id") == 0:
             try:
                 return int(self.runner_params["k8s_supplemental_group_id"])
             except Exception:
@@ -238,7 +238,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         return None
 
     def __get_fs_group(self):
-        if self.runner_params.get("k8s_fs_group_id"):
+        if self.runner_params.get("k8s_fs_group_id") or self.runner_params.get("k8s_fs_group_id") == 0:
             try:
                 return int(self.runner_params["k8s_fs_group_id"])
             except Exception:
@@ -408,9 +408,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
     def __get_k8s_security_context(self):
         security_context = {}
-        if self._run_as_user_id:
+        if self._run_as_user_id or self._run_as_user_id == 0:
             security_context["runAsUser"] = self._run_as_user_id
-        if self._run_as_group_id:
+        if self._run_as_group_id or self._run_as_group_id == 0:
             security_context["runAsGroup"] = self._run_as_group_id
         if self._supplemental_group and self._supplemental_group > 0:
             security_context["supplementalGroups"] = [self._supplemental_group]
