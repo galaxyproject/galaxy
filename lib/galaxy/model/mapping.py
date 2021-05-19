@@ -2787,7 +2787,8 @@ mapper(model.DataManagerJobAssociation, model.DataManagerJobAssociation.table, p
 ))
 
 class_mapper(model.HistoryDatasetCollectionAssociation).add_property(
-    "creating_job_associations", relation(model.JobToOutputDatasetCollectionAssociation))
+    "creating_job_associations", relation(model.JobToOutputDatasetCollectionAssociation,
+        overlaps="output_dataset_collection_instances, dataset_collection_instance"))
 
 
 # Helper methods.
