@@ -28,9 +28,9 @@ class InteractiveToolSqlite:
             conn = sqlite3.connect(self.sqlite_filename)
             try:
                 c = conn.cursor()
-                select = '''SELECT token, host, port, info
-                            FROM %s
-                            WHERE key=? and key_type=?''' % (DATABASE_TABLE_NAME)
+                select = f'''SELECT token, host, port, info
+                            FROM {DATABASE_TABLE_NAME}
+                            WHERE key=? and key_type=?'''
                 c.execute(select, (key, key_type,))
                 try:
                     token, host, port, info = c.fetchone()
@@ -72,7 +72,7 @@ class InteractiveToolSqlite:
                                   )''' % (DATABASE_TABLE_NAME))
                 except Exception:
                     pass
-                delete = '''DELETE FROM %s WHERE key=? and key_type=?''' % (DATABASE_TABLE_NAME)
+                delete = f'''DELETE FROM {DATABASE_TABLE_NAME} WHERE key=? and key_type=?'''
                 c.execute(delete, (key, key_type,))
                 insert = '''INSERT INTO %s
                             (key, key_type, token, host, port, info)
@@ -95,12 +95,12 @@ class InteractiveToolSqlite:
         with external resources. Remove entries that match all provided key=values
         """
         assert kwd, ValueError("You must provide some values to key upon")
-        delete = 'DELETE FROM %s WHERE' % (DATABASE_TABLE_NAME)
+        delete = f'DELETE FROM {DATABASE_TABLE_NAME} WHERE'
         value_list = []
         for i, (key, value) in enumerate(kwd.items()):
             if i != 0:
                 delete += ' and'
-            delete += ' %s=?' % (key)
+            delete += f' {key}=?'
             value_list.append(value)
         with FileLock(self.sqlite_filename):
             conn = sqlite3.connect(self.sqlite_filename)
@@ -263,14 +263,17 @@ class InteractiveToolManager:
             else:
                 rval = self.app.url_for(f'/{entry_point_prefix}/access/{entry_point_class}/{entry_point_encoded_id}/{entry_point.token}/')
             if entry_point.entry_url:
-                rval = '{}/{}'.format(rval.rstrip('/'), entry_point.entry_url.lstrip('/'))
+                rval = f"{rval.rstrip('/')}/{entry_point.entry_url.lstrip('/')}"
             return rval
 
     def get_entry_point_subdomain(self, trans, entry_point):
         entry_point_encoded_id = trans.security.encode_id(entry_point.id)
         entry_point_class = entry_point.__class__.__name__.lower()
         entry_point_prefix = self.app.config.interactivetools_prefix
-        return f'{entry_point_encoded_id}-{entry_point.token}.{entry_point_class}.{entry_point_prefix}'
+        entry_point_token = entry_point.token
+        if self.app.config.interactivetools_shorten_url:
+            return f'{entry_point_encoded_id}-{entry_point_token[:10]}.{entry_point_prefix}'
+        return f'{entry_point_encoded_id}-{entry_point_token}.{entry_point_class}.{entry_point_prefix}'
 
     def get_entry_point_path(self, trans, entry_point):
         entry_point_encoded_id = trans.security.encode_id(entry_point.id)
@@ -278,9 +281,12 @@ class InteractiveToolManager:
         entry_point_prefix = self.app.config.interactivetools_prefix
         rval = "/"
         if not entry_point.requires_domain:
-            rval = self.app.url_for(f'/{entry_point_prefix}/access/{entry_point_class}/{entry_point_encoded_id}/{entry_point.token}/')
+            if self.app.config.interactivetools_shorten_url:
+                rval = self.app.url_for(f'/{entry_point_prefix}/{entry_point_encoded_id}/{entry_point.token[:10]}/')
+            else:
+                rval = self.app.url_for(f'/{entry_point_prefix}/access/{entry_point_class}/{entry_point_encoded_id}/{entry_point.token}/')
         if entry_point.entry_url:
-            rval = '{}/{}'.format(rval.rstrip('/'), entry_point.entry_url.lstrip('/'))
+            rval = f"{rval.rstrip('/')}/{entry_point.entry_url.lstrip('/')}"
         if rval[0] != "/":
             rval = f'/{rval}'
         return rval

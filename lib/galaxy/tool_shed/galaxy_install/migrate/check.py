@@ -64,7 +64,7 @@ def verify_tools(app, url, galaxy_config_file=None, engine_options=None):
                 return_code = proc.wait()
                 output = proc.stdout.read(32768)
                 if return_code != 0:
-                    raise Exception("Error attempting to update the value of migrate_tools.version: %s" % output)
+                    raise Exception(f"Error attempting to update the value of migrate_tools.version: {output}")
                 elif missing_tool_configs_dict:
                     if len(tool_panel_configs) == 1:
                         plural = ''
@@ -106,13 +106,13 @@ def verify_tools(app, url, galaxy_config_file=None, engine_options=None):
                                                                                   tool_dependencies_tup[2])
                                     if len(tool_dependencies_tup) >= 4:
                                         msg += "Requirements and installation information:\n"
-                                        msg += "%s\n" % tool_dependencies_tup[3]
+                                        msg += f"{tool_dependencies_tup[3]}\n"
                                     else:
                                         msg += "\n"
                                     msg += "------------------------------------\n"
                                     processed_tool_dependencies.append(tool_dependencies_tup)
                         msg += "\n"
-                    msg += "%s" % output.replace('done', '')
+                    msg += f"{output.replace('done', '')}"
                     msg += "vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv\n"
                     msg += "sh ./scripts/migrate_tools/%04d_tools.sh\n" % latest_tool_migration_script_number
                     msg += "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\n"
@@ -128,11 +128,11 @@ def verify_tools(app, url, galaxy_config_file=None, engine_options=None):
                     msg += "tools will continue to be loaded into your tool panel.  Because of this, existing entries for these tools have been\n"
                     msg += f"removed from your file{plural} named {tool_panel_config_file_names}.\n\n"
                     for missing_tool_config in missing_tool_configs_dict.keys():
-                        msg += "%s\n" % missing_tool_config
+                        msg += f"{missing_tool_config}\n"
                     msg += "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n"
                     raise Exception(msg)
             else:
-                log.debug("The main Galaxy tool shed is not currently available, so skipped tool migration %s until next server startup" % db_schema.version)
+                log.debug(f"The main Galaxy tool shed is not currently available, so skipped tool migration {db_schema.version} until next server startup")
     else:
         log.info("At migrate_tools version %d" % db_schema.version)
 

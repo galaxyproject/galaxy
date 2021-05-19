@@ -56,7 +56,7 @@ class LibraryManager:
         except NoResultFound:
             raise exceptions.RequestParameterInvalidException('No library found with the id provided.')
         except Exception as e:
-            raise exceptions.InternalServerError('Error loading from the database.' + unicodify(e))
+            raise exceptions.InternalServerError(f"Error loading from the database.{unicodify(e)}")
         library = self.secure(trans, library, check_accessible)
         return library
 
@@ -558,7 +558,7 @@ class LibrariesManager:
                 else:
                     invalid_access_roles_names.append(role_id)
             if len(invalid_access_roles_names) > 0:
-                log.warning("The following roles could not be added to the library access permission: " + str(invalid_access_roles_names))
+                log.warning(f"The following roles could not be added to the library access permission: {str(invalid_access_roles_names)}")
 
             # ADD TO LIBRARY ROLES
             valid_add_roles = []
@@ -571,7 +571,7 @@ class LibrariesManager:
                 else:
                     invalid_add_roles_names.append(role_id)
             if len(invalid_add_roles_names) > 0:
-                log.warning("The following roles could not be added to the add library item permission: " + str(invalid_add_roles_names))
+                log.warning(f"The following roles could not be added to the add library item permission: {str(invalid_add_roles_names)}")
 
             # MANAGE LIBRARY ROLES
             valid_manage_roles = []
@@ -584,7 +584,7 @@ class LibrariesManager:
                 else:
                     invalid_manage_roles_names.append(role_id)
             if len(invalid_manage_roles_names) > 0:
-                log.warning("The following roles could not be added to the manage library permission: " + str(invalid_manage_roles_names))
+                log.warning(f"The following roles could not be added to the manage library permission: {str(invalid_manage_roles_names)}")
 
             # MODIFY LIBRARY ROLES
             valid_modify_roles = []
@@ -597,7 +597,7 @@ class LibrariesManager:
                 else:
                     invalid_modify_roles_names.append(role_id)
             if len(invalid_modify_roles_names) > 0:
-                log.warning("The following roles could not be added to the modify library permission: " + str(invalid_modify_roles_names))
+                log.warning(f"The following roles could not be added to the modify library permission: {str(invalid_modify_roles_names)}")
 
             permissions = {trans.app.security_agent.permitted_actions.LIBRARY_ACCESS: valid_access_roles}
             permissions.update({trans.app.security_agent.permitted_actions.LIBRARY_ADD: valid_add_roles})
@@ -623,7 +623,7 @@ class LibrariesManager:
         params = util.Params(payload)
         permissions = {}
         for k, v in trans.app.model.Library.permitted_actions.items():
-            role_params = params.get(k + '_in', [])
+            role_params = params.get(f"{k}_in", [])
             in_roles = [trans.sa_session.query(trans.app.model.Role).get(trans.security.decode_id(x)) for x in util.listify(role_params)]
             permissions[trans.app.security_agent.get_action(v.action)] = in_roles
         trans.app.security_agent.set_all_library_permissions(trans, library, permissions)

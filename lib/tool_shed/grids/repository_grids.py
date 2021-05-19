@@ -88,7 +88,7 @@ class RepositoryGrid(grids.Grid):
             else:
                 heads_str = ''
             for ctx in heads:
-                heads_str += '%s<br/>' % hg_util.get_revision_label_from_ctx(ctx, include_date=True)
+                heads_str += f'{hg_util.get_revision_label_from_ctx(ctx, include_date=True)}<br/>'
             heads_str.rstrip('<br/>')
             if multiple_heads:
                 heads_str += '</font>'
@@ -104,15 +104,15 @@ class RepositoryGrid(grids.Grid):
             # A repository's metadata revisions may not all be installable, as some may contain only invalid tools.
             select_field = grids_util.build_changeset_revision_select_field(trans, repository, downloadable=False)
             if len(select_field.options) > 1:
-                tmpl = "<select name='%s'>" % select_field.name
+                tmpl = f"<select name='{select_field.name}'>"
                 for o in select_field.options:
-                    tmpl += "<option value='{}'>{}</option>".format(o[1], o[0])
+                    tmpl += f"<option value='{o[1]}'>{o[0]}</option>"
                 tmpl += "</select>"
                 return tmpl
             elif len(select_field.options) == 1:
                 option_items = select_field.options[0][0]
                 rev_label, rev_date = option_items.split(' ')
-                rev_date = '<i><font color="#666666">%s</font></i>' % rev_date
+                rev_date = f'<i><font color="#666666">{rev_date}</font></i>'
                 return f'{rev_label} {rev_date}'
             return ''
 
@@ -986,8 +986,8 @@ class RepositoryDependenciesGrid(RepositoryMetadataGrid):
                                                                                                                   required_repository_id,
                                                                                                                   updated_changeset_revision)
                                 required_repository_metadata_id = trans.security.encode_id(required_repository_metadata.id)
-                                rd_line += '<a href="browse_repository_dependencies?operation=view_or_manage_repository&id=%s">' % (required_repository_metadata_id)
-                            rd_line += 'Repository <b>{}</b> revision <b>{}</b> owned by <b>{}</b>'.format(escape_html(name), escape_html(owner), escape_html(changeset_revision))
+                                rd_line += f'<a href="browse_repository_dependencies?operation=view_or_manage_repository&id={required_repository_metadata_id}">'
+                            rd_line += f'Repository <b>{escape_html(name)}</b> revision <b>{escape_html(owner)}</b> owned by <b>{escape_html(changeset_revision)}</b>'
                             if required_repository:
                                 rd_line += '</a>'
                             rd_str.append(rd_line)
@@ -1048,8 +1048,8 @@ class DatatypesGrid(RepositoryMetadataGrid):
                         sorted_datatype_tups = sorted(datatype_tups, key=lambda datatype_tup: datatype_tup[0])
                         for datatype_tup in sorted_datatype_tups:
                             extension, datatype = datatype_tup[:2]
-                            datatype_str = '<a href="browse_datatypes?operation=view_or_manage_repository&id=%s">' % trans.security.encode_id(repository_metadata.id)
-                            datatype_str += '<b>{}:</b> {}'.format(escape_html(extension), escape_html(datatype))
+                            datatype_str = f'<a href="browse_datatypes?operation=view_or_manage_repository&id={trans.security.encode_id(repository_metadata.id)}">'
+                            datatype_str += f'<b>{escape_html(extension)}:</b> {escape_html(datatype)}'
                             datatype_str += '</a>'
                             datatype_list.append(datatype_str)
             return '<br />'.join(datatype_list)
@@ -1106,7 +1106,7 @@ class ToolDependenciesGrid(RepositoryMetadataGrid):
                             env_dicts = tds_dict['set_environment']
                             num_env_dicts = len(env_dicts)
                             if num_env_dicts > 0:
-                                td_str += '<a href="browse_datatypes?operation=view_or_manage_repository&id=%s">' % trans.security.encode_id(repository_metadata.id)
+                                td_str += f'<a href="browse_datatypes?operation=view_or_manage_repository&id={trans.security.encode_id(repository_metadata.id)}">'
                                 td_str += '<b>environment:</b> '
                                 td_str += ', '.join(escape_html(env_dict['name']) for env_dict in env_dicts)
                                 td_str += '</a><br/>'
@@ -1117,8 +1117,8 @@ class ToolDependenciesGrid(RepositoryMetadataGrid):
                             # Example: {"name": "bwa", "type": "package", "version": "0.5.9"}
                             name = td_dict['name']
                             version = td_dict['version']
-                            td_str += '<a href="browse_datatypes?operation=view_or_manage_repository&id=%s">' % trans.security.encode_id(repository_metadata.id)
-                            td_str += '<b>{}</b> version <b>{}</b>'.format(escape_html(name), escape_html(version))
+                            td_str += f'<a href="browse_datatypes?operation=view_or_manage_repository&id={trans.security.encode_id(repository_metadata.id)}">'
+                            td_str += f'<b>{escape_html(name)}</b> version <b>{escape_html(version)}</b>'
                             td_str += '</a>'
                             if index < num_keys - 1:
                                 td_str += '<br/>'
@@ -1178,8 +1178,8 @@ class ToolsGrid(RepositoryMetadataGrid):
                         sorted_tool_tups = sorted(tool_tups, key=lambda tool_tup: tool_tup[0])
                         for tool_tup in sorted_tool_tups:
                             tool_id, version = tool_tup[:2]
-                            tool_str = '<a href="browse_datatypes?operation=view_or_manage_repository&id=%s">' % trans.security.encode_id(repository_metadata.id)
-                            tool_str += '<b>{}:</b> {}'.format(escape_html(tool_id), escape_html(version))
+                            tool_str = f'<a href="browse_datatypes?operation=view_or_manage_repository&id={trans.security.encode_id(repository_metadata.id)}">'
+                            tool_str += f'<b>{escape_html(tool_id)}:</b> {escape_html(version)}'
                             tool_str += '</a>'
                             tool_line.append(tool_str)
             return '<br />'.join(tool_line)
@@ -1287,9 +1287,9 @@ class ValidRepositoryGrid(RepositoryGrid):
             """Display a SelectField whose options are the changeset_revision strings of all download-able revisions of this repository."""
             select_field = grids_util.build_changeset_revision_select_field(trans, repository, downloadable=True)
             if len(select_field.options) > 1:
-                tmpl = "<select name='%s'>" % select_field.name
+                tmpl = f"<select name='{select_field.name}'>"
                 for o in select_field.options:
-                    tmpl += "<option value='{}'>{}</option>".format(o[1], o[0])
+                    tmpl += f"<option value='{o[1]}'>{o[0]}</option>"
                 tmpl += "</select>"
                 return tmpl
             elif len(select_field.options) == 1:

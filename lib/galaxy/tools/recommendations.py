@@ -79,7 +79,7 @@ class ToolRecommendations():
                         # iterate through all the attributes of the model to find weights of neural network layers
                         for item in trained_model.keys():
                             if "weight_" in item:
-                                weight = trained_model["weight_" + str(counter_layer_weights)][()]
+                                weight = trained_model[f"weight_{str(counter_layer_weights)}"][()]
                                 model_weights.append(weight)
                                 counter_layer_weights += 1
                         self.loaded_model = tf.keras.models.model_from_json(model_config)
@@ -271,7 +271,7 @@ class ToolRecommendations():
                 try:
                     sample[idx] = int(self.model_data_dictionary[tool_name])
                 except Exception:
-                    log.exception("Failed to find tool %s in model" % (tool_name))
+                    log.exception(f"Failed to find tool {tool_name} in model")
                     return prediction_data
             sample = np.reshape(sample, (1, self.max_seq_len))
             # boost the predicted scores using tools' usage

@@ -27,7 +27,7 @@ class SetMetadataToolAction(ToolAction):
                                           history_id, trans.user, incoming, set_output_hid,
                                           overwrite, history, job_params)
         # FIXME: can remove this when logging in execute_via_app method.
-        trans.log_event("Added set external metadata job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
+        trans.log_event(f"Added set external metadata job to the job queue, id: {str(job.id)}", tool_id=job.tool_id)
         return job, odict
 
     def execute_via_app(self, tool, app, session_id, history_id, user=None,

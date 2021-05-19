@@ -195,7 +195,7 @@ def lint_repeats(tool_xml, lint_ctx):
 
 def _find_with_attribute(element, tag, attribute, test_value=None):
     rval = []
-    for el in (element.findall('./%s' % tag) or []):
+    for el in (element.findall(f'./{tag}') or []):
         if attribute not in el.attrib:
             continue
         value = el.attrib[attribute]

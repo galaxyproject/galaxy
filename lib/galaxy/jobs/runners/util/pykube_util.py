@@ -83,7 +83,7 @@ def find_job_object_by_name(pykube_api, job_name, namespace=None):
 
 
 def find_pod_object_by_name(pykube_api, job_name, namespace=None):
-    return Pod.objects(pykube_api).filter(selector="job-name=" + job_name, namespace=namespace)
+    return Pod.objects(pykube_api).filter(selector=f"job-name={job_name}", namespace=namespace)
 
 
 def is_pod_unschedulable(pykube_api, pod, namespace=None):
@@ -145,7 +145,7 @@ def job_object_dict(params, job_prefix, spec):
         "apiVersion": params.get('k8s_job_api_version', DEFAULT_JOB_API_VERSION),
         "kind": "Job",
         "metadata": {
-                "generateName": job_prefix + "-",
+                "generateName": f"{job_prefix}-",
                 "namespace": params.get('k8s_namespace', DEFAULT_NAMESPACE),
         },
         "spec": spec,

@@ -81,7 +81,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         if not trans.app.config.allow_user_creation and not trans.user_is_admin:
             message = "User registration is disabled.  Please contact your local Galaxy administrator for an account."
             if trans.app.config.error_email_to is not None:
-                message += " Contact: %s" % trans.app.config.error_email_to
+                message += f" Contact: {trans.app.config.error_email_to}"
             return None, message
         if not email or not username or not password or not confirm:
             return None, "Please provide email, username and password."
@@ -170,7 +170,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         for address in user.addresses:
             self.session().delete(address)
         compliance_log = logging.getLogger('COMPLIANCE')
-        compliance_log.info('delete-user-event: %s' % user.username)
+        compliance_log.info(f'delete-user-event: {user.username}')
         # Maybe there is some case in the future where an admin needs
         # to prove that a user was using a server for some reason (e.g.
         # a court case.) So we make this painfully hard to recover (and
@@ -426,7 +426,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
 
         # boil the tag tuples down into a sorted list of DISTINCT name:val strings
         tags = all_tags_query.distinct().all()
-        tags = [((name + ':' + val) if val else name) for name, val in tags]
+        tags = [(f"{name}:{val}" if val else name) for name, val in tags]
         return sorted(tags)
 
     def change_password(self, trans, password=None, confirm=None, token=None, id=None, current=None):
@@ -493,7 +493,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         host = self.__get_host(trans)
         custom_message = ''
         if self.app.config.custom_activation_email_message:
-            custom_message = self.app.config.custom_activation_email_message + '\n\n'
+            custom_message = f"{self.app.config.custom_activation_email_message}\n\n"
         body = ("Hello %s,\n\n"
                 "In order to complete the activation process for %s begun on %s at %s, please click "
                 "on the following link to verify your account:\n\n" "%s \n\n"
@@ -518,7 +518,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                     custom_message)
                 )
         to = email
-        frm = self.app.config.email_from or 'galaxy-no-reply@' + host
+        frm = self.app.config.email_from or f"galaxy-no-reply@{host}"
         subject = 'Galaxy Account Activation'
         try:
             util.send_mail(frm, to, subject, body, self.app.config)
@@ -558,16 +558,16 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                 reset_url = url_for(controller='root', action='login', token=prt.token)
                 body = PASSWORD_RESET_TEMPLATE % (host, prt.expiration_time.strftime(trans.app.config.pretty_datetime_format),
                                                   trans.request.host, reset_url)
-                frm = trans.app.config.email_from or 'galaxy-no-reply@' + host
+                frm = trans.app.config.email_from or f"galaxy-no-reply@{host}"
                 subject = 'Galaxy Password Reset'
                 try:
                     util.send_mail(frm, email, subject, body, self.app.config)
                     trans.sa_session.add(reset_user)
                     trans.sa_session.flush()
-                    trans.log_event('User reset password: %s' % email)
+                    trans.log_event(f'User reset password: {email}')
                 except Exception as e:
                     log.debug(body)
-                    return "Failed to submit email. Please contact the administrator: %s" % util.unicodify(e)
+                    return f"Failed to submit email. Please contact the administrator: {util.unicodify(e)}"
             else:
                 return "Failed to produce password reset token. User not found."
 

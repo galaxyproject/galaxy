@@ -98,7 +98,7 @@ class DatasetsApiTestCase(ApiTestCase):
 
     def test_show(self):
         hda1 = self.dataset_populator.new_dataset(self.history_id)
-        show_response = self._get("datasets/%s" % (hda1["id"]))
+        show_response = self._get(f"datasets/{hda1['id']}")
         self._assert_status_code_is(show_response, 200)
         self.__assert_matches_hda(hda1, show_response.json())
 
@@ -115,7 +115,7 @@ class DatasetsApiTestCase(ApiTestCase):
         """)
         hda1 = self.dataset_populator.new_dataset(self.history_id, content=contents)
         self.dataset_populator.wait_for_history(self.history_id)
-        display_response = self._get("histories/{}/contents/{}/display".format(self.history_id, hda1["id"]), {
+        display_response = self._get(f"histories/{self.history_id}/contents/{hda1['id']}/display", {
             'raw': 'True'
         })
         self._assert_status_code_is(display_response, 200)

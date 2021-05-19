@@ -71,10 +71,10 @@ class RepoSearch:
 
         :returns results: dictionary containing hits themselves and the hits summary
         """
-        log.debug('raw search query: #' + str(search_term))
+        log.debug(f"raw search query: #{str(search_term)}")
         lower_search_term = search_term.lower()
         allow_query, search_term_without_filters = self._parse_reserved_filters(lower_search_term)
-        log.debug('term without filters: #' + str(search_term_without_filters))
+        log.debug(f"term without filters: #{str(search_term_without_filters)}")
 
         whoosh_index_dir = trans.app.config.whoosh_index_dir
         index_exists = whoosh.index.exists_in(whoosh_index_dir)
@@ -107,12 +107,12 @@ class RepoSearch:
                     user_query = Every('name')
                     sortedby = 'name'
                 else:
-                    user_query = parser.parse('*' + search_term_without_filters + '*')
+                    user_query = parser.parse(f"*{search_term_without_filters}*")
                     sortedby = ''
                 try:
                     hits = searcher.search_page(user_query, page, pagelen=page_size, filter=allow_query, terms=True, sortedby=sortedby)
-                    log.debug('total hits: ' + str(len(hits)))
-                    log.debug('scored hits: ' + str(hits.scored_length()))
+                    log.debug(f"total hits: {str(len(hits))}")
+                    log.debug(f"scored hits: {str(hits.scored_length())}")
                 except ValueError:
                     raise ObjectNotFound('The requested page does not exist.')
                 results = {}
@@ -121,7 +121,7 @@ class RepoSearch:
                 results['page_size'] = str(page_size)
                 results['hits'] = []
                 for hit in hits:
-                    log.debug('matched terms: ' + str(hit.matched_terms()))
+                    log.debug(f"matched terms: {str(hit.matched_terms())}")
                     hit_dict = {}
                     hit_dict['id'] = trans.security.encode_id(hit.get('id'))
                     hit_dict['repo_owner_username'] = hit.get('repo_owner_username')

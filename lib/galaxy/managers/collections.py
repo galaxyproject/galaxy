@@ -170,7 +170,7 @@ class DatasetCollectionManager:
             )
 
         else:
-            message = "Internal logic error - create called with unknown parent type %s" % type(parent)
+            message = f"Internal logic error - create called with unknown parent type {type(parent)}"
             log.exception(message)
             raise MessageException(message)
 
@@ -456,7 +456,7 @@ class DatasetCollectionManager:
         try:
             src_type = element_identifier.get('src', 'hda')
         except AttributeError:
-            raise MessageException("Dataset collection element definition (%s) not dictionary-like." % element_identifier)
+            raise MessageException(f"Dataset collection element definition ({element_identifier}) not dictionary-like.")
         encoded_id = element_identifier.get('id')
         if not src_type or not encoded_id:
             message_template = "Problem decoding element identifier %s - must contain a 'src' and a 'id'."
@@ -486,7 +486,7 @@ class DatasetCollectionManager:
             element = self.__get_history_collection_instance(trans, encoded_id).collection
         # TODO: ldca.
         else:
-            raise RequestParameterInvalidException("Unknown src_type parameter supplied '%s'." % src_type)
+            raise RequestParameterInvalidException(f"Unknown src_type parameter supplied '{src_type}'.")
         return element
 
     def match_collections(self, collections_to_match):
@@ -549,7 +549,7 @@ class DatasetCollectionManager:
                         columns = mapping_as_dict["group_tags"]["columns"]
                         for tag_column in columns:
                             tag = row_data[tag_column]
-                            tags.append("group:%s" % tag)
+                            tags.append(f"group:{tag}")
 
                     if "tags" in mapping_as_dict:
                         columns = mapping_as_dict["tags"]["columns"]

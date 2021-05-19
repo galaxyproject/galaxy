@@ -56,7 +56,7 @@ class BaseGitPlugin(ErrorPlugin, metaclass=ABCMeta):
             return None
         try:
             if job.tool_id not in self.ts_repo_cache:
-                ts_repo_request_data = requests.get(ts_url + "/api/repositories?tool_ids=" + str(job.tool_id)).json()
+                ts_repo_request_data = requests.get(f"{ts_url}/api/repositories?tool_ids={str(job.tool_id)}").json()
 
                 for repoinfo in ts_repo_request_data.values():
                     if isinstance(repoinfo, dict):

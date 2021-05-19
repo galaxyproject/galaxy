@@ -58,14 +58,14 @@ def multipart_upload(s3server, bucket, s3_key_name, tarball, mb_size):
     """
     def split_file(in_file, mb_size, split_num=5):
         prefix = os.path.join(os.path.dirname(in_file),
-                              "%sS3PART" % (os.path.basename(s3_key_name)))
+                              f"{os.path.basename(s3_key_name)}S3PART")
         max_chunk = s3server['max_chunk_size']
         # Split chunks so they are 5MB < chunk < 250MB(max_chunk_size)
         split_size = int(max(min(mb_size / (split_num * 2.0), max_chunk), 5))
-        if not os.path.exists("%saa" % prefix):
-            cl = ["split", "-b%sm" % split_size, in_file, prefix]
+        if not os.path.exists(f"{prefix}aa"):
+            cl = ["split", f"-b{split_size}m", in_file, prefix]
             subprocess.check_call(cl)
-        return sorted(glob.glob("%s*" % prefix))
+        return sorted(glob.glob(f"{prefix}*"))
 
     mp = bucket.initiate_multipart_upload(s3_key_name,
                                           reduced_redundancy=s3server['use_rr'])

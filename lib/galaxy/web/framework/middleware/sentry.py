@@ -70,7 +70,7 @@ class Sentry:
             headers['Cookie'] = 'redacted'
         cak = environ.get('controller_action_key', None) or environ.get('PATH_INFO', "NOPATH").strip('/').replace('/', '.')
         event_id = self.client.captureMessage(
-            "SLOREQ: %s" % cak,
+            f"SLOREQ: {cak}",
             data={
                 'sentry.interfaces.Http': {
                     'method': environ.get('REQUEST_METHOD'),

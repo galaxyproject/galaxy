@@ -62,7 +62,7 @@ def verify(
         try:
             verify_assertions(output_content, attributes["assert_list"])
         except AssertionError as err:
-            errmsg = '%s different than expected\n' % (item_label)
+            errmsg = f'{item_label} different than expected\n'
             errmsg += unicodify(err)
             raise AssertionError(errmsg)
 
@@ -82,7 +82,7 @@ def verify(
         try:
             _verify_checksum(output_content, expected_checksum_type, expected_checksum)
         except AssertionError as err:
-            errmsg = '%s different than expected\n' % (item_label)
+            errmsg = f'{item_label} different than expected\n'
             errmsg += unicodify(err)
             raise AssertionError(errmsg)
 
@@ -157,7 +157,7 @@ def verify(
             elif compare == "contains":
                 files_contains(local_name, temp_name, attributes=attributes)
             else:
-                raise Exception('Unimplemented Compare type: %s' % compare)
+                raise Exception(f'Unimplemented Compare type: {compare}')
         except AssertionError as err:
             errmsg = f'{item_label} different than expected, difference (using {compare}):\n'
             errmsg += f"( {local_name} v. {temp_name} )\n"
@@ -184,14 +184,14 @@ def _bam_to_sam(local_name, temp_name):
     temp_local = tempfile.NamedTemporaryFile(suffix='.sam', prefix='local_bam_converted_to_sam_')
     with tempfile.NamedTemporaryFile(suffix='.sam', prefix='history_bam_converted_to_sam_', delete=False) as temp:
         try:
-            pysam.view('-h', '-o%s' % temp_local.name, local_name)
+            pysam.view('-h', f'-o{temp_local.name}', local_name)
         except Exception as e:
-            msg = "Converting local (test-data) BAM to SAM failed: %s" % unicodify(e)
+            msg = f"Converting local (test-data) BAM to SAM failed: {unicodify(e)}"
             raise Exception(msg)
         try:
-            pysam.view('-h', '-o%s' % temp.name, temp_name)
+            pysam.view('-h', f'-o{temp.name}', temp_name)
         except Exception as e:
-            msg = "Converting history BAM to SAM failed: %s" % unicodify(e)
+            msg = f"Converting history BAM to SAM failed: {unicodify(e)}"
             raise Exception(msg)
     os.remove(temp_name)
     return temp_local, temp.name
@@ -199,7 +199,7 @@ def _bam_to_sam(local_name, temp_name):
 
 def _verify_checksum(data, checksum_type, expected_checksum_value):
     if checksum_type not in ["md5", "sha1", "sha256", "sha512"]:
-        raise Exception("Unimplemented hash algorithm [%s] encountered." % checksum_type)
+        raise Exception(f"Unimplemented hash algorithm [{checksum_type}] encountered.")
 
     h = hashlib.new(checksum_type)
     h.update(data)

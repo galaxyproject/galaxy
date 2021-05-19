@@ -54,7 +54,7 @@ class FolderManager:
         except NoResultFound:
             raise RequestParameterInvalidException('No folder found with the id provided.')
         except Exception as e:
-            raise InternalServerError('Error loading from the database.' + util.unicodify(e))
+            raise InternalServerError(f"Error loading from the database.{util.unicodify(e)}")
         folder = self.secure(trans, folder, check_manageable, check_accessible)
         return folder
 
@@ -135,9 +135,9 @@ class FolderManager:
         """
         folder_dict = folder.to_dict(view='element')
         folder_dict = trans.security.encode_all_ids(folder_dict, True)
-        folder_dict['id'] = 'F' + folder_dict['id']
+        folder_dict['id'] = f"F{folder_dict['id']}"
         if folder_dict['parent_id'] is not None:
-            folder_dict['parent_id'] = 'F' + folder_dict['parent_id']
+            folder_dict['parent_id'] = f"F{folder_dict['parent_id']}"
         folder_dict['update_time'] = folder.update_time.strftime("%Y-%m-%d %I:%M %p")
         return folder_dict
 
@@ -280,7 +280,7 @@ class FolderManager:
         if ((len(encoded_folder_id) % 16 == 1) and encoded_folder_id.startswith('F')):
             cut_id = encoded_folder_id[1:]
         else:
-            raise MalformedId('Malformed folder id ( %s ) specified, unable to decode.' % str(encoded_folder_id))
+            raise MalformedId(f'Malformed folder id ( {str(encoded_folder_id)} ) specified, unable to decode.')
         return cut_id
 
     def decode_folder_id(self, trans, encoded_folder_id):
@@ -458,7 +458,7 @@ class FoldersService:
                 else:
                     invalid_add_roles_names.append(role_id)
             if len(invalid_add_roles_names) > 0:
-                log.warning("The following roles could not be added to the add library item permission: " + str(invalid_add_roles_names))
+                log.warning(f"The following roles could not be added to the add library item permission: {str(invalid_add_roles_names)}")
 
             # MANAGE FOLDER ROLES
             valid_manage_roles = []
@@ -472,7 +472,7 @@ class FoldersService:
                 else:
                     invalid_manage_roles_names.append(role_id)
             if len(invalid_manage_roles_names) > 0:
-                log.warning("The following roles could not be added to the manage folder permission: " + str(invalid_manage_roles_names))
+                log.warning(f"The following roles could not be added to the manage folder permission: {str(invalid_manage_roles_names)}")
 
             # MODIFY FOLDER ROLES
             valid_modify_roles = []
@@ -486,7 +486,7 @@ class FoldersService:
                 else:
                     invalid_modify_roles_names.append(role_id)
             if len(invalid_modify_roles_names) > 0:
-                log.warning("The following roles could not be added to the modify folder permission: " + str(invalid_modify_roles_names))
+                log.warning(f"The following roles could not be added to the modify folder permission: {str(invalid_modify_roles_names)}")
 
             permissions = {trans.app.security_agent.permitted_actions.LIBRARY_ADD: valid_add_roles}
             permissions.update({trans.app.security_agent.permitted_actions.LIBRARY_MANAGE: valid_manage_roles})

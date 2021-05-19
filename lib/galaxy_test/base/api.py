@@ -25,7 +25,7 @@ class UsesApiTestCaseMixin:
         if os.environ.get('GALAXY_TEST_EXTERNAL') is None:
             # Only kill running jobs after test for managed test instances
             for job in self.galaxy_interactor.get('jobs?state=running&?user_details=true').json():
-                self._delete("jobs/%s" % job['id'])
+                self._delete(f"jobs/{job['id']}")
 
     def _api_url(self, path, params=None, use_key=None, use_admin_key=None):
         if not params:
@@ -56,7 +56,7 @@ class UsesApiTestCaseMixin:
 
     def _setup_user_get_key(self, email, password=None, is_admin=True):
         user = self._setup_user(email, password, is_admin)
-        return user, self._post("users/%s/api_key" % user["id"], admin=True).json()
+        return user, self._post(f"users/{user['id']}/api_key", admin=True).json()
 
     @contextmanager
     def _different_user(self, email=OTHER_USER):

@@ -34,7 +34,7 @@ class DatabaseHeartbeat:
 
     def start(self):
         if not self.active:
-            self.thread = threading.Thread(target=self.send_database_heartbeat, name="database_heartbeart_%s.thread" % self.server_name)
+            self.thread = threading.Thread(target=self.send_database_heartbeat, name=f"database_heartbeart_{self.server_name}.thread")
             self.thread.daemon = True
             self.active = True
             self.thread.start()

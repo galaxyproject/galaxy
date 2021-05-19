@@ -130,6 +130,14 @@ function log_exec() {
 }
 
 
+function sed_inplace() {
+    [ $# -gt 2 ] || { log_error "sed_inplace called with less than 3 args: " "$@"; exit 1; }
+    log_exec sed -i.bak-release "$@"
+    # filename should always be the final arg
+    rm "${!#}.bak-release"
+}
+
+
 function fork_owner() {
     local url=$(git remote get-url "$FORK_REMOTE")
     case "$url" in
@@ -427,7 +435,7 @@ function update_galaxy_version() {
     local val="$2"
     local match="${3:-.*}"
     log "Updating lib/galaxy/version.py for ${key} = ${val}..."
-    log_exec sed -E -i -e "s/^${key} = ${match}/${key} = \"$val\"/" lib/galaxy/version.py
+    sed_inplace -E -e "s/^${key} = ${match}/${key} = \"$val\"/" lib/galaxy/version.py
 }
 
 
@@ -455,7 +463,7 @@ function update_package_versions() {
         for dir in *; do
             project_file="${dir}/galaxy/project_galaxy_${dir}.py"
             if [ -f "${project_file}" ]; then
-                sed -i -e "s/^__version__ =.*/__version__ = \"${package_version}\"/" "$project_file"
+                sed_inplace -e "s/^__version__ =.*/__version__ = \"${package_version}\"/" "$project_file"
             fi
         done
     )
@@ -528,7 +536,7 @@ function create_release_rc_initial() {
     update_galaxy_version 'VERSION_MINOR' 'dev0'
     log_exec git diff --exit-code && { log_error 'Missing expected version.py changes'; exit 1; } || true
     git add -- lib/galaxy/version.py
-    log_exec sed -i -e "s/^RELEASE_CURR:=.*/RELEASE_CURR:=${RELEASE_NEXT}/" Makefile
+    sed_inplace -e "s/^RELEASE_CURR:=.*/RELEASE_CURR:=${RELEASE_NEXT}/" Makefile
     log_exec git diff --exit-code && { log_error 'Missing expected Makefile changes'; exit 1; } || true
     git add -- Makefile
     local package_version=$(packaging_version "${RELEASE_NEXT}.0dev0" "true")

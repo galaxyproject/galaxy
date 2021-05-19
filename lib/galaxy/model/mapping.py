@@ -22,6 +22,7 @@ from sqlalchemy import (
     MetaData,
     not_,
     Numeric,
+    PrimaryKeyConstraint,
     select,
     String, Table,
     TEXT,
@@ -46,10 +47,10 @@ from galaxy.model.custom_types import (
     TrimmedString,
     UUIDType,
 )
+from galaxy.model.migrate.triggers.update_audit_table import install as install_timestamp_triggers
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
 from galaxy.model.security import GalaxyRBACAgent
-from galaxy.model.triggers import install_timestamp_triggers
 from galaxy.model.view import HistoryDatasetCollectionJobStateSummary
 from galaxy.model.view.utils import install_views
 
@@ -202,7 +203,7 @@ model.History.table = Table(
     "history", metadata,
     Column("id", Integer, primary_key=True),
     Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, index=True, default=now, onupdate=now),
+    Column("update_time", DateTime, key="_update_time", index=True, default=now, onupdate=now),
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
     Column("name", TrimmedString(255)),
     Column("hid_counter", Integer, default=1),
@@ -214,6 +215,13 @@ model.History.table = Table(
     Column("slug", TEXT),
     Column("published", Boolean, index=True, default=False),
     Index('ix_history_slug', 'slug', mysql_length=200),
+)
+
+model.HistoryAudit.table = Table(
+    "history_audit", metadata,
+    Column("history_id", Integer, ForeignKey("history.id"), primary_key=True, nullable=False),
+    Column("update_time", DateTime, default=now, primary_key=True, nullable=False),
+    PrimaryKeyConstraint(sqlite_on_conflict='IGNORE')
 )
 
 model.HistoryUserShareAssociation.table = Table(
@@ -228,7 +236,7 @@ model.HistoryDatasetAssociation.table = Table(
     Column("history_id", Integer, ForeignKey("history.id"), index=True),
     Column("dataset_id", Integer, ForeignKey("dataset.id"), index=True),
     Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
+    Column("update_time", DateTime, default=now, onupdate=now, index=True),
     Column("state", TrimmedString(64), index=True, key="_state"),
     Column("copied_from_history_dataset_association_id", Integer,
            ForeignKey("history_dataset_association.id"), nullable=True),
@@ -505,7 +513,7 @@ model.LibraryDatasetDatasetAssociation.table = Table(
     Column("library_dataset_id", Integer, ForeignKey("library_dataset.id"), index=True),
     Column("dataset_id", Integer, ForeignKey("dataset.id"), index=True),
     Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
+    Column("update_time", DateTime, default=now, onupdate=now, index=True),
     Column("state", TrimmedString(64), index=True, key="_state"),
     Column("copied_from_history_dataset_association_id", Integer,
         ForeignKey("history_dataset_association.id", use_alter=True, name='history_dataset_association_dataset_id_fkey'),
@@ -602,7 +610,7 @@ model.Job.table = Table(
     "job", metadata,
     Column("id", Integer, primary_key=True),
     Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
+    Column("update_time", DateTime, default=now, onupdate=now, index=True),
     Column("history_id", Integer, ForeignKey("history.id"), index=True),
     Column("library_folder_id", Integer, ForeignKey("library_folder.id"), index=True),
     Column("tool_id", String(255)),
@@ -920,7 +928,7 @@ model.HistoryDatasetCollectionAssociation.table = Table(
     Column("job_id", ForeignKey("job.id"), index=True, nullable=True),
     Column("implicit_collection_jobs_id", ForeignKey("implicit_collection_jobs.id"), index=True, nullable=True),
     Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now))
+    Column("update_time", DateTime, default=now, onupdate=now, index=True))
 
 model.LibraryDatasetCollectionAssociation.table = Table(
     "library_dataset_collection_association", metadata,
@@ -983,7 +991,7 @@ model.StoredWorkflow.table = Table(
     "stored_workflow", metadata,
     Column("id", Integer, primary_key=True),
     Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
+    Column("update_time", DateTime, default=now, onupdate=now, index=True),
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True, nullable=False),
     Column("latest_workflow_id", Integer,
         ForeignKey("workflow.id", use_alter=True, name='stored_workflow_latest_workflow_id_fk'), index=True),
@@ -1113,7 +1121,7 @@ model.WorkflowInvocation.table = Table(
     "workflow_invocation", metadata,
     Column("id", Integer, primary_key=True),
     Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
+    Column("update_time", DateTime, default=now, onupdate=now, index=True),
     Column("workflow_id", Integer, ForeignKey("workflow.id"), index=True, nullable=False),
     Column("state", TrimmedString(64), index=True),
     Column("scheduler", TrimmedString(255), index=True),
@@ -1889,7 +1897,10 @@ mapper(model.History, model.History.table, properties=dict(
     users_shared_with_count=column_property(
         select([func.count(model.HistoryUserShareAssociation.table.c.id)]).where(model.History.table.c.id == model.HistoryUserShareAssociation.table.c.history_id),
         deferred=True
-    )
+    ),
+    update_time=column_property(
+        select([func.max(model.HistoryAudit.table.c.update_time)]).where(model.HistoryAudit.table.c.history_id == model.History.table.c.id),
+    ),
 ))
 
 # Set up proxy so that
@@ -1905,13 +1916,13 @@ mapper(model.HistoryUserShareAssociation, model.HistoryUserShareAssociation.tabl
 mapper(model.User, model.User.table, properties=dict(
     histories=relation(model.History,
         backref="user",
-        order_by=desc(model.History.table.c.update_time)),
+        order_by=desc(model.History.update_time)),
     active_histories=relation(model.History,
         primaryjoin=(
             (model.History.table.c.user_id == model.User.table.c.id)
             & (not_(model.History.table.c.deleted))
         ),
-        order_by=desc(model.History.table.c.update_time)),
+        order_by=desc(model.History.update_time)),
 
     galaxy_sessions=relation(model.GalaxySession,
         order_by=desc(model.GalaxySession.table.c.update_time)),

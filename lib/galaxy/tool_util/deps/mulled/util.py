@@ -22,7 +22,7 @@ QUAY_IO_TIMEOUT = 10
 
 def create_repository(namespace, repo_name, oauth_token):
     assert oauth_token
-    headers = {'Authorization': 'Bearer %s' % oauth_token}
+    headers = {'Authorization': f'Bearer {oauth_token}'}
     data = {
         "repository": repo_name,
         "namespace": namespace,
@@ -40,7 +40,7 @@ def quay_versions(namespace, pkg_name, session=None):
         return []
 
     if 'tags' not in data:
-        raise Exception("Unexpected response from quay.io - no tags description found [%s]" % data)
+        raise Exception(f"Unexpected response from quay.io - no tags description found [{data}]")
 
     return [tag for tag in data['tags'].keys() if tag != 'latest']
 
@@ -85,7 +85,7 @@ def mulled_tags_for(namespace, image, tag_prefix=None, resolution_cache=None, se
         # Following check is pretty expensive against biocontainers... don't even bother doing it
         # if can't cache the response.
         if not _namespace_has_repo_name(namespace, image, resolution_cache):
-            log.info("skipping mulled_tags_for [%s] no repository" % image)
+            log.info(f"skipping mulled_tags_for [{image}] no repository")
             return []
 
     cache_key = "galaxy.tool_util.deps.container_resolvers.mulled.util:tag_cache"
@@ -167,10 +167,10 @@ def build_target(package_name, version=None, build=None, tag=None):
 def conda_build_target_str(target):
     rval = target.package_name
     if target.version:
-        rval += "=%s" % target.version
+        rval += f"={target.version}"
 
         if target.build:
-            rval += "=%s" % target.build
+            rval += f"={target.build}"
 
     return rval
 
@@ -184,9 +184,9 @@ def _simple_image_name(targets, image_build=None):
             # Special case image_build == "0", which has been built without a suffix
             print("WARNING: Hard-coding image build instead of using Conda build - this is not recommended.")
             build = image_build
-        suffix += ":%s" % target.version
+        suffix += f":{target.version}"
         if build is not None:
-            suffix += "--%s" % build
+            suffix += f"--{build}"
     return f"{target.package_name}{suffix}"
 
 
@@ -223,7 +223,7 @@ def v1_image_name(targets, image_build=None, name_override=None):
         requirements_buffer = "\n".join(map(conda_build_target_str, targets_order))
         m = hashlib.sha1()
         m.update(requirements_buffer.encode())
-        suffix = "" if not image_build else ":%s" % image_build
+        suffix = "" if not image_build else f":{image_build}"
         return f"mulled-v1-{m.hexdigest()}{suffix}"
 
 
@@ -284,7 +284,7 @@ def v2_image_name(targets, image_build=None, name_override=None):
             build_suffix = ""
         elif version_hash_str:
             # tagged verson is <version_hash>-<build>
-            build_suffix = "-%s" % image_build
+            build_suffix = f"-{image_build}"
         else:
             # tagged version is simply the build
             build_suffix = image_build

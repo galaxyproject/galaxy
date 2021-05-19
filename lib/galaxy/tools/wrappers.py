@@ -312,7 +312,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
             if datatype is not None:
                 datatypes.append(datatype)
             else:
-                log.warning("Datatype class not found for extension '%s', which is used as parameter of 'is_of_type()' method" % (e))
+                log.warning(f"Datatype class not found for extension '{e}', which is used as parameter of 'is_of_type()' method")
         return self.dataset.datatype.matches_any(datatypes)
 
     def __str__(self):
@@ -530,7 +530,7 @@ class ElementIdentifierMapper:
 
     def __init__(self, input_datasets=None):
         if input_datasets is not None:
-            self.identifier_key_dict = {v: "%s|__identifier__" % k for k, v in input_datasets.items()}
+            self.identifier_key_dict = {v: f"{k}|__identifier__" for k, v in input_datasets.items()}
         else:
             self.identifier_key_dict = {}
 

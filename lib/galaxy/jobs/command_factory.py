@@ -124,7 +124,7 @@ def build_command(
 
     if include_metadata and job_wrapper.requires_setting_metadata:
         working_directory = remote_job_directory or job_wrapper.working_directory
-        commands_builder.append_command("cd '%s'" % working_directory)
+        commands_builder.append_command(f"cd '{working_directory}'")
         __handle_metadata(commands_builder, job_wrapper, runner, remote_command_params)
 
     return commands_builder.build()
@@ -167,7 +167,7 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
     #   https://github.com/galaxyproject/galaxy/pull/8449
     for_pulsar = False
     if 'script_directory' in remote_command_params:
-        commands = "{} {}".format(shell, join(remote_command_params['script_directory'], script_name))
+        commands = f"{shell} {join(remote_command_params['script_directory'], script_name)}"
         for_pulsar = True
     if not for_pulsar:
         commands += " > ../outputs/tool_stdout 2> ../outputs/tool_stderr"
@@ -244,7 +244,7 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
 
 def __copy_if_exists_command(work_dir_output):
     source_file, destination = work_dir_output
-    return f"if [ -f {source_file} ] ; then cp {source_file} {destination} ; fi"
+    return f'\nif [ -f "{source_file}" ] ; then cp "{source_file}" "{destination}" ; fi'
 
 
 class CommandsBuilder:
@@ -263,9 +263,7 @@ class CommandsBuilder:
 
     def prepend_command(self, command, sep=";"):
         if command:
-            self.commands = "{}{} {}".format(command,
-                                         sep,
-                                         self.commands)
+            self.commands = f"{command}{sep} {self.commands}"
         return self
 
     def prepend_commands(self, commands):
@@ -273,9 +271,7 @@ class CommandsBuilder:
 
     def append_command(self, command, sep=';'):
         if command:
-            self.commands = "{}{} {}".format(self.commands,
-                                          sep,
-                                          command)
+            self.commands = f"{self.commands}{sep} {command}"
         return self
 
     def append_commands(self, commands):
@@ -288,8 +284,7 @@ trap 'rm "$out" "$err"' EXIT
 tee -a stdout.log < "$out" &
 tee -a stderr.log < "$err" >&2 &""",
                              sep="")
-        self.append_command("> '{stdout_file}' 2> '{stderr_file}'".format(stdout_file=stdout_file,
-                                                                          stderr_file=stderr_file),
+        self.append_command(f"> '{stdout_file}' 2> '{stderr_file}'",
                             sep="")
 
     def capture_return_code(self):

@@ -241,11 +241,11 @@ class WorkflowInvoker:
 
         # No steps created yet - have to delay evaluation.
         if not step_invocation:
-            delayed_why = "depends on step [%s] but that step has not been invoked yet" % output_id
+            delayed_why = f"depends on step [{output_id}] but that step has not been invoked yet"
             raise modules.DelayedWorkflowEvaluation(why=delayed_why)
 
         if step_invocation.state != 'scheduled':
-            delayed_why = "depends on step [%s] job has not finished scheduling yet" % output_id
+            delayed_why = f"depends on step [{output_id}] job has not finished scheduling yet"
             raise modules.DelayedWorkflowEvaluation(delayed_why)
 
         for job_assoc in step_invocation.jobs:
@@ -253,7 +253,7 @@ class WorkflowInvoker:
             if job:
                 # At least one job in incomplete.
                 if not job.finished:
-                    delayed_why = "depends on step [%s] but one or more jobs created from that step have not finished yet" % output_id
+                    delayed_why = f"depends on step [{output_id}] but one or more jobs created from that step have not finished yet"
                     raise modules.DelayedWorkflowEvaluation(why=delayed_why)
 
                 if job.state != job.states.OK:
@@ -351,7 +351,7 @@ class WorkflowProgress:
             raise Exception(message)
         step_outputs = self.outputs[output_step_id]
         if step_outputs is STEP_OUTPUT_DELAYED:
-            delayed_why = "dependent step [%s] delayed, so this step must be delayed" % output_step_id
+            delayed_why = f"dependent step [{output_step_id}] delayed, so this step must be delayed"
             raise modules.DelayedWorkflowEvaluation(why=delayed_why)
         output_name = connection.output_name
         try:
@@ -370,7 +370,7 @@ class WorkflowProgress:
                     # TODO: consider distinguish between cancelled and failed?
                     raise modules.CancelWorkflowEvaluation()
 
-                delayed_why = "dependent collection [%s] not yet populated with datasets" % replacement.id
+                delayed_why = f"dependent collection [{replacement.id}] not yet populated with datasets"
                 raise modules.DelayedWorkflowEvaluation(why=delayed_why)
 
         data_inputs = (model.HistoryDatasetAssociation, model.HistoryDatasetCollectionAssociation, model.DatasetCollection)
@@ -399,7 +399,7 @@ class WorkflowProgress:
         output_name = workflow_output.output_name
         step_outputs = self.outputs[step.id]
         if step_outputs is STEP_OUTPUT_DELAYED:
-            delayed_why = "depends on workflow output [%s] but that output has not been created yet" % output_name
+            delayed_why = f"depends on workflow output [{output_name}] but that output has not been created yet"
             raise modules.DelayedWorkflowEvaluation(why=delayed_why)
         else:
             return step_outputs[output_name]
@@ -474,7 +474,7 @@ class WorkflowProgress:
         workflow_invocation = self.workflow_invocation
         subworkflow_invocation = workflow_invocation.get_subworkflow_invocation_for_step(step)
         if subworkflow_invocation is None:
-            raise Exception("Failed to find persisted workflow invocation for step [%s]" % step.id)
+            raise Exception(f"Failed to find persisted workflow invocation for step [{step.id}]")
         return subworkflow_invocation
 
     def subworkflow_invoker(self, trans, step, use_cached_job=False):

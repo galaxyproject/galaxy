@@ -638,10 +638,10 @@ class InstalledRepositoryManager:
             try:
                 # Remove the repository from disk.
                 shutil.rmtree(repository_install_dir)
-                log.debug("Removed repository installation directory: %s" % str(repository_install_dir))
+                log.debug(f"Removed repository installation directory: {str(repository_install_dir)}")
                 removed = True
             except Exception as e:
-                log.debug("Error removing repository installation directory {}: {}".format(str(repository_install_dir), str(e)))
+                log.debug(f"Error removing repository installation directory {str(repository_install_dir)}: {str(e)}")
                 if isinstance(e, OSError) and not os.path.exists(repository_install_dir):
                     removed = True
                     log.debug("Repository directory does not exist on disk, marking as uninstalled.")
@@ -777,7 +777,7 @@ class InstalledRepositoryManager:
         else:
             status = 'error'
             message = 'A repository must have the status <b>New</b> in order to be purged.  This repository has '
-            message += ' the status %s.' % str(repository.status)
+            message += f' the status {str(repository.status)}.'
         return status, message
 
     def remove_entry_from_installed_repository_dependencies_of_installed_repositories(self, repository):

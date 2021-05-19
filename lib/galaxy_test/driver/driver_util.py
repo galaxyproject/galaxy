@@ -261,7 +261,7 @@ def setup_galaxy_config(
     if default_shed_tool_data_table_config:
         config["shed_tool_data_table_config"] = default_shed_tool_data_table_config
     if not use_shared_connection_for_amqp:
-        config["amqp_internal_connection"] = "sqlalchemy+sqlite:///%s?isolation_level=IMMEDIATE" % os.path.join(tmpdir, "control.sqlite")
+        config["amqp_internal_connection"] = f"sqlalchemy+sqlite:///{os.path.join(tmpdir, 'control.sqlite')}?isolation_level=IMMEDIATE"
 
     config.update(database_conf(tmpdir, prefer_template_database=prefer_template_database))
     config.update(install_database_conf(tmpdir, default_merged=default_install_db_merged))
@@ -381,14 +381,14 @@ def copy_database_template(source, db_path):
             # do all migration steps instead of downloading a template.
             log.exception(e)
     else:
-        raise Exception("Failed to copy database template from source %s" % source)
+        raise Exception(f"Failed to copy database template from source {source}")
 
 
 def database_conf(db_path, prefix="GALAXY", prefer_template_database=False):
     """Find (and populate if needed) Galaxy database connection."""
     database_auto_migrate = False
     check_migrate_databases = True
-    dburi_var = "%s_TEST_DBURI" % prefix
+    dburi_var = f"{prefix}_TEST_DBURI"
     template_name = None
     if dburi_var in os.environ:
         database_connection = os.environ[dburi_var]
@@ -397,8 +397,8 @@ def database_conf(db_path, prefix="GALAXY", prefer_template_database=False):
         if do_template:
             database_template_parsed = urlparse(database_connection)
             template_name = database_template_parsed.path[1:]  # drop / from /galaxy
-            actual_db = "gxtest" + ''.join(random.choice(string.ascii_uppercase) for _ in range(10))
-            actual_database_parsed = database_template_parsed._replace(path="/%s" % actual_db)
+            actual_db = f"gxtest{''.join(random.choice(string.ascii_uppercase) for _ in range(10))}"
+            actual_database_parsed = database_template_parsed._replace(path=f"/{actual_db}")
             database_connection = actual_database_parsed.geturl()
             if not database_exists(database_connection):
                 # We pass by migrations and instantiate the current table
@@ -407,8 +407,8 @@ def database_conf(db_path, prefix="GALAXY", prefer_template_database=False):
                 toolshed_mapping.init(database_connection, create_tables=True)
                 check_migrate_databases = False
     else:
-        default_db_filename = "%s.sqlite" % prefix.lower()
-        template_var = "%s_TEST_DB_TEMPLATE" % prefix
+        default_db_filename = f"{prefix.lower()}.sqlite"
+        template_var = f"{prefix}_TEST_DB_TEMPLATE"
         db_path = os.path.join(db_path, default_db_filename)
         if template_var in os.environ:
             # Middle ground between recreating a completely new
@@ -418,7 +418,7 @@ def database_conf(db_path, prefix="GALAXY", prefer_template_database=False):
             # cases (namely tool shed tests expecting clean database).
             copy_database_template(os.environ[template_var], db_path)
             database_auto_migrate = True
-        database_connection = 'sqlite:///%s' % db_path
+        database_connection = f'sqlite:///{db_path}'
     config = {
         "check_migrate_databases": check_migrate_databases,
         "database_connection": database_connection,
@@ -439,7 +439,7 @@ def install_database_conf(db_path, default_merged=False):
         install_galaxy_database_connection = None
     else:
         install_galaxy_db_path = os.path.join(db_path, 'install.sqlite')
-        install_galaxy_database_connection = 'sqlite:///%s' % install_galaxy_db_path
+        install_galaxy_database_connection = f'sqlite:///{install_galaxy_db_path}'
     conf = {}
     if install_galaxy_database_connection is not None:
         conf["install_database_connection"] = install_galaxy_database_connection
@@ -452,7 +452,7 @@ def database_files_path(test_tmpdir, prefix="GALAXY"):
     Use prefix to default this if TOOL_SHED_TEST_DBPATH or
     GALAXY_TEST_DBPATH is set in the environment.
     """
-    environ_var = "%s_TEST_DBPATH" % prefix
+    environ_var = f"{prefix}_TEST_DBPATH"
     if environ_var in os.environ:
         db_path = os.environ[environ_var]
     else:
@@ -528,7 +528,7 @@ def attempt_ports(port):
     if port is not None:
         return port
 
-        raise Exception("An existing process seems bound to specified test server port [%s]" % port)
+        raise Exception(f"An existing process seems bound to specified test server port [{port}]")
     else:
         random.seed()
         for _ in range(0, 9):
@@ -538,7 +538,7 @@ def attempt_ports(port):
                 os.environ['GALAXY_WEB_PORT'] = port
                 return port
 
-        raise Exception("Unable to open a port between {} and {} to start Galaxy server".format(8000, 10000))
+        raise Exception(f"Unable to open a port between {8000} and {10000} to start Galaxy server")
 
 
 def serve_webapp(webapp, port=None, host=None):
@@ -586,7 +586,7 @@ def cleanup_directory(tempdir):
     """
     skip_cleanup = "GALAXY_TEST_NO_CLEANUP" in os.environ or "TOOL_SHED_TEST_NO_CLEANUP" in os.environ
     if skip_cleanup:
-        log.info("GALAXY_TEST_NO_CLEANUP is on. Temporary files in %s" % tempdir)
+        log.info(f"GALAXY_TEST_NO_CLEANUP is on. Temporary files in {tempdir}")
         return
     try:
         if os.path.exists(tempdir) and not skip_cleanup:
@@ -669,9 +669,9 @@ def build_shed_app(simple_kwargs):
 
 
 def explicitly_configured_host_and_port(prefix, config_object):
-    host_env_key = "%s_TEST_HOST" % prefix
-    port_env_key = "%s_TEST_PORT" % prefix
-    port_random_env_key = "%s_TEST_PORT_RANDOM" % prefix
+    host_env_key = f"{prefix}_TEST_HOST"
+    port_env_key = f"{prefix}_TEST_PORT"
+    port_random_env_key = f"{prefix}_TEST_PORT_RANDOM"
     default_web_host = getattr(config_object, "default_web_host", DEFAULT_WEB_HOST)
     host = os.environ.get(host_env_key, default_web_host)
 
@@ -693,8 +693,8 @@ def explicitly_configured_host_and_port(prefix, config_object):
 
 
 def set_and_wait_for_http_target(prefix, host, port, sleep_amount=0.1, sleep_tries=150):
-    host_env_key = "%s_TEST_HOST" % prefix
-    port_env_key = "%s_TEST_PORT" % prefix
+    host_env_key = f"{prefix}_TEST_HOST"
+    port_env_key = f"{prefix}_TEST_PORT"
     os.environ[host_env_key] = host
     os.environ[port_env_key] = port
     wait_for_http_server(host, port, sleep_amount=sleep_amount, sleep_tries=sleep_tries)
@@ -728,19 +728,19 @@ class EmbeddedServerWrapper(ServerWrapper):
 
     def stop(self):
         if self._server is not None and hasattr(self._server, "server_close"):
-            log.info("Shutting down embedded %s Paste server" % self.name)
+            log.info(f"Shutting down embedded {self.name} Paste server")
             self._server.server_close()
-            log.info("Embedded web server %s stopped" % self.name)
+            log.info(f"Embedded web server {self.name} stopped")
 
         if self._server is not None and hasattr(self._server, "shutdown"):
-            log.info("Shutting down embedded %s uvicorn server" % self.name)
+            log.info(f"Shutting down embedded {self.name} uvicorn server")
             self._server.should_exit = True
-            log.info("Embedded web server %s stopped" % self.name)
+            log.info(f"Embedded web server {self.name} stopped")
 
         if self._app is not None:
-            log.info("Stopping application %s" % self.name)
+            log.info(f"Stopping application {self.name}")
             self._app.shutdown()
-            log.info("Application %s stopped." % self.name)
+            log.info(f"Application {self.name} stopped.")
 
 
 class UwsgiServerWrapper(ServerWrapper):
@@ -1091,7 +1091,7 @@ class GalaxyTestDriver(TestDriver):
                 log.info(f"Functional tests will be run against external Galaxy server {server_wrapper.host}:{server_wrapper.port}")
             self.server_wrappers.append(server_wrapper)
         else:
-            log.info("Functional tests will be run against test managed Galaxy server %s" % self.external_galaxy)
+            log.info(f"Functional tests will be run against test managed Galaxy server {self.external_galaxy}")
             # Ensure test file directory setup even though galaxy config isn't built.
             ensure_test_file_dir_set()
 
