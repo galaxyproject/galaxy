@@ -103,7 +103,7 @@ class OIDC(JSAppLauncher):
         if success is False:
             return trans.show_error_message(message)
         if "?confirm" in redirect_url:
-            return trans.response.send_redirect(url_for(redirect_url))
+            return trans.response.send_redirect(redirect_url)
         elif redirect_url is None:
             redirect_url = url_for('/')
 
@@ -139,7 +139,7 @@ class OIDC(JSAppLauncher):
         trans.set_cookie(value=provider, name=PROVIDER_COOKIE_NAME)
         if redirect_url is None:
             redirect_url = url_for('/')
-        return trans.response.send_redirect(url_for(redirect_url))
+        return trans.response.send_redirect(redirect_url)
 
     @web.expose
     @web.require_login("authenticate against the selected identity provider")
