@@ -158,7 +158,7 @@
                                     id="paginationPerPage"
                                     autocomplete="off"
                                     type="number"
-                                    onkeyup="if(this.value<0)this.value=1"
+                                    onkeyup="if(this.value<1)this.value=1"
                                     v-model="perPage"
                                 />
                             </td>
