@@ -1,4 +1,4 @@
-<tool id="export_remote" name="Export datasets" version="0.1.0">
+<tool id="export_remote" name="Export datasets" version="0.1.0" profile="21.05">
     <description>to remote files source</description>
     <command><![CDATA[
         python '$__tool_directory__/export_remote.py'
@@ -11,12 +11,7 @@
                 #end for
                 --names
                 #for $name in $export_type.infiles:
-                    #if $name.ext == 'vcf_bgzip':
-                        #set file_ext = 'vcf.bz'
-                    #else:
-                        #set file_ext = $name.ext
-                    #end if
-                    '${name.element_identifier}.${file_ext}'
+                    '${name.element_identifier}.${name.file_ext}'
                 #end for
             #else
                 --infiles

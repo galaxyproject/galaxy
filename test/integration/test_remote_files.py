@@ -11,6 +11,7 @@ from galaxy_test.driver import integration_util
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 FILE_SOURCES_JOB_CONF = os.path.join(SCRIPT_DIRECTORY, "file_sources_conf.yml")
+VCF_GZ_PATH = os.path.join(SCRIPT_DIRECTORY, os.path.pardir, os.path.pardir, 'test-data', 'test.vcf.gz')
 
 USERNAME = 'user--bx--psu--edu'
 USER_EMAIL = 'user@bx.psu.edu'
@@ -147,24 +148,35 @@ class RemoteFilesIntegrationTestCase(ConfiguresRemoteFilesIntegrationTestCase):
             }
             inputs = {
                 "d_uri": "gxftp://",
-                "export_type|export_type_selector": "datasets_auto",
-                "export_type|infiles": [infile],
-            }
-            response = dataset_populator.run_tool("export_remote", inputs, history_id)
-            response.raise_for_status()
-            with open(os.path.join(ftp_dir, 'foo.txt')) as f:
-                assert 'example content\n' == f.read()
-
-            inputs = {
-                "d_uri": "gxftp://",
                 "export_type|export_type_selector": "datasets_named",
                 "export_type|datasets_0|infile": infile,
                 "export_type|datasets_0|name": "my_cool_name.txt",
             }
             response = dataset_populator.run_tool("export_remote", inputs, history_id)
-            response.raise_for_status()
+            dataset_populator.wait_for_job(response["jobs"][0]["id"])
             with open(os.path.join(ftp_dir, 'my_cool_name.txt')) as f:
                 assert 'example content\n' == f.read()
+
+    def test_export_remote_tool_with_metadata_file_auto_name(self):
+        dataset_populator = self.dataset_populator
+        ftp_dir = self.user_ftp_dir
+        _write_file_fixtures(self.root, ftp_dir)
+        with dataset_populator.test_history() as history_id:
+            with open(VCF_GZ_PATH, 'rb') as vcf_gz:
+                dataset = dataset_populator.new_dataset(history_id, content=vcf_gz, file_type="vcf_bgzip", wait=True, name="foo")
+            infile = {
+                "src": "hda",
+                "id": dataset["id"]
+            }
+            inputs = {
+                "d_uri": "gxftp://",
+                "export_type|export_type_selector": "datasets_auto",
+                "export_type|infiles": [infile],
+            }
+            response = dataset_populator.run_tool("export_remote", inputs, history_id)
+            dataset_populator.wait_for_job(response["jobs"][0]["id"])
+            with open(os.path.join(ftp_dir, 'foo.vcf.gz'), 'rb') as export, open(VCF_GZ_PATH, 'rb') as vcf_gz:
+                assert export.read() == vcf_gz.read()
 
     def _assert_index_empty(self, index):
         assert len(index) == 0
