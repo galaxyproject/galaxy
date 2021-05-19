@@ -10,8 +10,8 @@
                     '$filepath'
                 #end for
                 --names
-                #for $name in $export_type.infiles:
-                    '${name.element_identifier}.${name.file_ext}'
+                #for $infile in $export_type.infiles:
+                    '$infile.name_and_ext'
                 #end for
             #else
                 --infiles

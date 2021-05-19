@@ -306,6 +306,10 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         return getattr(self.unsanitized.datatype, 'file_ext_export_alias', None) or self.dataset.extension
 
     @property
+    def name_and_ext(self):
+        return f"{self.element_identifier}.{self.file_ext}"
+
+    @property
     def is_collection(self):
         return False
 
