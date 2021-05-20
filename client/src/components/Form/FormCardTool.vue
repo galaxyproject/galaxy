@@ -106,7 +106,7 @@
 import axios from "axios";
 import ariaAlert from "utils/ariaAlert";
 import { getAppRoot } from "onload/loadConfig";
-import { copy } from "utils/clipboard";
+import { copyLink, downloadTool } from "./utilities";
 import FormMessage from "./FormMessage";
 import ToolFooter from "components/Tool/ToolFooter";
 import ToolHelp from "components/Tool/ToolHelp";
@@ -245,19 +245,16 @@ export default {
             );
         },
         onCopyLink() {
-            copy(
-                `${window.location.origin + getAppRoot()}root?tool_id=${this.id}`,
-                "Link was copied to your clipboard"
-            );
+            copyLink(this.id);
         },
         onCopyId() {
             copy(`${this.options.id}`, "Tool ID was copied to your clipboard");
         },
         onDownload() {
-            window.location.href = `${getAppRoot()}api/tools/${this.id}/download`;
+            downloadTool(this.id);
         },
         onLink() {
-            window.open(this.options.sharable_url);
+            openLink(this.options.sharable_url);
         },
         getFavorites() {
             const preferences = this.user.preferences;
