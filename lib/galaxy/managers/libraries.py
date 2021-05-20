@@ -148,7 +148,7 @@ class LibraryManager:
         else:
             #  Nonadmins can't see deleted libraries
             if deleted:
-                query = []
+                raise exceptions.AdminRequiredException()
             else:
                 query = query.filter(trans.app.model.Library.table.c.deleted == false())
                 current_user_role_ids = [role.id for role in trans.get_current_user_roles()]
