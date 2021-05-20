@@ -287,7 +287,7 @@ export default {
                     Toast.info("You must select at least one dataset to download");
                     return;
                 }
-
+                console.log(folders);
                 download(format, datasets, folders);
             });
         },
@@ -303,12 +303,12 @@ export default {
         // helper function to make legacy code compatible
         findCheckedItems: async function (idOnly = true) {
             const datasets = [];
-            const folder = [];
+            const folders = [];
             const selected = await this.getSelected();
             selected.forEach((item) => {
-                item.type === "file" ? datasets.push(idOnly ? item.id : item) : idOnly ? item.id : item;
+                item.type === "file" ? datasets.push(idOnly ? item.id : item) : folders.push(idOnly ? item.id : item);
             });
-            return { datasets: datasets, folders: folder };
+            return { datasets: datasets, folders: folders };
         },
         importToHistoryModal: function (isCollection) {
             this.findCheckedItems(!isCollection).then(({ datasets, folders }) => {

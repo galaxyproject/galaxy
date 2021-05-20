@@ -32,5 +32,7 @@ export default function download(format, dataset_ids, folder_ids) {
     // function download(format) {
     var url = `${getAppRoot()}api/libraries/datasets/download/${format}`;
     var data = { ld_ids: dataset_ids, folder_ids: folder_ids };
+    console.log("data", data);
+    console.log("data", data);
     processDownload(url, data, "get");
 }
