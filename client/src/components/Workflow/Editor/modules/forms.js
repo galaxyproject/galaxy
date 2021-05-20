@@ -405,8 +405,7 @@ function _addSections(self, node) {
             type: "boolean",
             value: String(Boolean(postJobActions[`DeleteIntermediatesAction${outputFirst.name}`])),
             ignore: "false",
-            help:
-                "Upon completion of this step, delete non-starred outputs from completed workflow steps if they are no longer required as inputs.",
+            help: "Upon completion of this step, delete non-starred outputs from completed workflow steps if they are no longer required as inputs.",
             skipOnClone: true,
         });
         for (const output of node.outputs) {
