@@ -1,6 +1,6 @@
 <template>
     <b-alert :variant="variant" :show="showAlert">
-        {{ message }}
+        {{ message | l }}
     </b-alert>
 </template>
 <script>
