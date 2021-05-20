@@ -113,7 +113,9 @@ history_panel:
 
   item:
     selectors:
-      _: '#${history_content_type}-${id}'
+      # These now appear other places :_( - e.g. in the invocation view so we'll try
+      # prefixing ids with #current-history-panel but obviously we need to switch to classes or data
+      _: '#current-history-panel #${history_content_type}-${id}'
 
       title: '${_} .title'
       hid: '${_} .hid'
