@@ -11,7 +11,7 @@ export default {
     methods: {
         importVersion(toolId, version, isRunFormRedirect = false) {
             this.services
-                .importTrsTool(this.trsSelection.id, toolId, version.name)
+                .importTrsTool(this.trsSelection.id, toolId, version)
                 .then((response_data) => {
                     redirectOnImport(getAppRoot(), response_data, isRunFormRedirect);
                 })
