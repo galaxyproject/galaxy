@@ -287,6 +287,7 @@ export default {
                     Toast.info("You must select at least one dataset to download");
                     return;
                 }
+
                 download(format, datasets, folders);
             });
         },
@@ -305,7 +306,8 @@ export default {
             const folders = [];
             const selected = await this.getSelected();
             selected.forEach((item) => {
-                item.type === "file" ? datasets.push(idOnly ? item.id : item) : folders.push(idOnly ? item.id : item);
+                const selected_item = idOnly ? item.id : item;
+                item.type === "file" ? datasets.push(selected_item) : folders.push(selected_item);
             });
             return { datasets: datasets, folders: folders };
         },
