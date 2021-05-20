@@ -87,7 +87,7 @@
                     <font-awesome-icon icon="unlock" />
                     Undelete
                 </b-button>
-                <div v-else>
+                <div v-else-if="isAdmin">
                     <b-button
                         v-if="row.item.can_user_modify && row.item.editMode"
                         size="sm"
