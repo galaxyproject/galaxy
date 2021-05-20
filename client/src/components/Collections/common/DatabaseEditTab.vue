@@ -13,23 +13,22 @@
             </div>
         </div>
         <b>{{ l("Database/Build: ") }}</b>
-            <multiselect
-                v-if="genomes != null"
-                v-model="genome"
-                deselect-label="Can't remove this value"
-                track-by="id"
-                label="text"
-                :options="genomes"
-                :searchable="true"
-                :allow-empty="false"
-            >
-                {{ genome.text }}
-            </multiselect>
+        <multiselect
+            v-if="genomes != null"
+            v-model="genome"
+            deselect-label="Can't remove this value"
+            track-by="id"
+            label="text"
+            :options="genomes"
+            :searchable="true"
+            :allow-empty="false"
+        >
+            {{ genome.text }}
+        </multiselect>
     </div>
 </template>
 <script>
 import Multiselect from "vue-multiselect";
-import store from "../../../store/index";
 
 export default {
     components: { Multiselect },
@@ -41,7 +40,7 @@ export default {
     props: {
         genomes: {
             type: Array,
-            default: []
+            required: true,
         },
         databaseKeyFromElements: {
             type: String,

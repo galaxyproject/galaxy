@@ -13,7 +13,8 @@
             <b-tab>
                 <template v-slot:title> <font-awesome-icon icon="table" /> &nbsp; {{ l("Database/Build") }}</template>
                 <GenomeProvider v-slot="{ item, loading }">
-                    <database-edit-tab v-if="!loading"
+                    <database-edit-tab
+                        v-if="!loading"
                         :database-key-from-elements="databaseKeyFromElements"
                         :genomes="item"
                         @clicked-save="clickedSave"
@@ -182,9 +183,7 @@ export default {
                 tool_id: this.chosenConverter.tool_id,
                 inputs: { input: { batch: true, values: [{ src: "hdca", id: this.collection_id }] } },
             };
-            axios
-                .post(url, data)
-                .catch(this.handleError);
+            axios.post(url, data).catch(this.handleError);
         },
         handleError: function (err) {
             this.errorMessage = errorMessageAsString(err, "History import failed.");
