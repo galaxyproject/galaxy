@@ -287,7 +287,6 @@ export default {
                     Toast.info("You must select at least one dataset to download");
                     return;
                 }
-                console.log(folders);
                 download(format, datasets, folders);
             });
         },
