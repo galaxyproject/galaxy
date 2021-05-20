@@ -260,23 +260,24 @@ class DefaultToolAction:
         # Collect any input datasets from the incoming parameters
         inp_data, all_permissions = self._collect_input_datasets(tool, incoming, trans, history=history, current_user_roles=current_user_roles, collection_info=collection_info)
 
-        # grap tags from incoming HDAs
         preserved_tags = {}
+        preserved_hdca_tags = {}
+        # grab tags from incoming HDAs
         for data in inp_data.values():
             if not data:
                 continue
             for tag in data.auto_propagated_tags:
                 preserved_tags[tag.value] = tag
-
-        # grap tags from incoming HDCAs
+        # grab tags from incoming HDCAs
         for collection_pairs in inp_dataset_collections.values():
             for collection, _ in collection_pairs:
                 # if sub-collection mapping, this will be an DC not an HDCA
                 # (e.g. part of collection not a collection instance) and thus won't have tags.
                 if hasattr(collection, "tags"):
                     for tag in collection.auto_propagated_tags:
-                        preserved_tags[tag.value] = tag
-        return history, inp_data, inp_dataset_collections, preserved_tags, all_permissions
+                        preserved_hdca_tags[tag.value] = tag
+        preserved_tags.update(preserved_hdca_tags)
+        return history, inp_data, inp_dataset_collections, preserved_tags, preserved_hdca_tags, all_permissions
 
     def execute(self,
                 tool,
@@ -306,7 +307,7 @@ class DefaultToolAction:
         if execution_cache is None:
             execution_cache = ToolExecutionCache(trans)
         current_user_roles = execution_cache.current_user_roles
-        history, inp_data, inp_dataset_collections, preserved_tags, all_permissions = self._collect_inputs(tool, trans, incoming, history, current_user_roles, collection_info)
+        history, inp_data, inp_dataset_collections, preserved_tags, preserved_hdca_tags, all_permissions = self._collect_inputs(tool, trans, incoming, history, current_user_roles, collection_info)
         # Build name for output datasets based on tool name and input names
         on_text = self._get_on_text(inp_data)
 
@@ -370,6 +371,7 @@ class DefaultToolAction:
             params=wrapped_params.params,
             job_params=job_params,
             tags=preserved_tags,
+            hdca_tags=preserved_hdca_tags,
         )
 
         # Keep track of parent / child relationships, we'll create all the
@@ -813,7 +815,7 @@ class OutputCollections:
     parameter).
     """
 
-    def __init__(self, trans, history, tool, tool_action, input_collections, dataset_collection_elements, on_text, incoming, params, job_params, tags):
+    def __init__(self, trans, history, tool, tool_action, input_collections, dataset_collection_elements, on_text, incoming, params, job_params, tags, hdca_tags):
         self.trans = trans
         self.history = history
         self.tool = tool
@@ -826,9 +828,10 @@ class OutputCollections:
         self.job_params = job_params
         self.out_collections = {}
         self.out_collection_instances = {}
-        self.tags = tags
+        self.tags = tags  # all inherited tags
+        self.hdca_tags = hdca_tags  # only tags inherited from input HDCAs
 
-    def create_collection(self, output, name, collection_type=None, completed_job=None, **element_kwds):
+    def create_collection(self, output, name, collection_type=None, completed_job=None, propagate_hda_tags=True, **element_kwds):
         input_collections = self.input_collections
         collections_manager = self.trans.app.dataset_collections_service
         collection_type = collection_type or output.structure.collection_type
@@ -906,7 +909,7 @@ class OutputCollections:
                 name=hdca_name,
                 collection_type=collection_type,
                 trusted_identifiers=True,
-                tags=self.tags,
+                tags=self.tags if propagate_hda_tags else self.hdca_tags,
                 set_hid=False,
                 flush=False,
                 completed_job=completed_job,
