@@ -80,6 +80,25 @@ export const DatasetCollectionProvider = {
     },
 };
 
+export const GenomeProvider = {
+    mixins: [SimpleProviderMixin, StoreProviderMixin],
+    methods: {
+        ...mapCacheActions(["fetchUploadGenomes"]),
+        async load() {
+            this.loading = true;
+            this.item = await this.fetchUploadGenomes();
+            this.loading = false;
+        },
+    },
+    computed: {
+        ...mapGetters(["getUploadGenomes"]),
+        storeItem() {
+            const genomes = this.getUploadGenomes();
+            return genomes ? genomes : [];
+        },
+    },
+};
+
 export const DatasetCollectionContentProvider = {
     mixins: [SimpleProviderMixin],
     computed: {

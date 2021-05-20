@@ -12,11 +12,13 @@
         <b-tabs content-class="mt-3">
             <b-tab>
                 <template v-slot:title> <font-awesome-icon icon="table" /> &nbsp; {{ l("Database/Build") }}</template>
-                <database-edit-tab
-                    :database-key-from-elements="databaseKeyFromElements"
-                    :genomes="genomes"
-                    @clicked-save="clickedSave"
-                />
+                <GenomeProvider v-slot="{ item, loading }">
+                    <database-edit-tab v-if="!loading"
+                        :database-key-from-elements="databaseKeyFromElements"
+                        :genomes="item"
+                        @clicked-save="clickedSave"
+                    />
+                </GenomeProvider>
             </b-tab>
             <b-tab v-if="atleastOneSuitableConverter">
                 <template v-slot:title> <font-awesome-icon icon="cog" /> &nbsp; {{ l("Convert") }}</template>
@@ -57,6 +59,7 @@ import _l from "utils/localization";
 import Multiselect from "vue-multiselect";
 import { errorMessageAsString } from "utils/simple-error";
 import DatabaseEditTab from "./DatabaseEditTab";
+import { GenomeProvider } from "../../WorkflowInvocationState/providers";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faDatabase } from "@fortawesome/free-solid-svg-icons";
@@ -79,7 +82,7 @@ export default {
         this.getCollectionDataAndAttributes();
         this.getConverterList();
     },
-    components: { Multiselect, DatabaseEditTab, FontAwesomeIcon },
+    components: { Multiselect, DatabaseEditTab, FontAwesomeIcon, GenomeProvider },
     data: function () {
         return {
             attributes_data: {},
@@ -174,7 +177,6 @@ export default {
                 .catch(this.handleError);
         },
         clickedConvert: function () {
-            console.log("this.chosenConverter = ", this.chosenConverter);
             const url = prependPath("/api/tools/");
             const data = {
                 tool_id: this.chosenConverter.tool_id,
@@ -182,9 +184,6 @@ export default {
             };
             axios
                 .post(url, data)
-                .then((response) => {
-                    console.log("donee!");
-                })
                 .catch(this.handleError);
         },
         handleError: function (err) {

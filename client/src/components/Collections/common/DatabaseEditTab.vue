@@ -13,17 +13,18 @@
             </div>
         </div>
         <b>{{ l("Database/Build: ") }}</b>
-        <multiselect
-            v-model="genome"
-            deselect-label="Can't remove this value"
-            track-by="id"
-            label="text"
-            :options="genomes"
-            :searchable="true"
-            :allow-empty="false"
-        >
-            {{ genome.text }}
-        </multiselect>
+            <multiselect
+                v-if="genomes != null"
+                v-model="genome"
+                deselect-label="Can't remove this value"
+                track-by="id"
+                label="text"
+                :options="genomes"
+                :searchable="true"
+                :allow-empty="false"
+            >
+                {{ genome.text }}
+            </multiselect>
     </div>
 </template>
 <script>
@@ -31,17 +32,17 @@ import Multiselect from "vue-multiselect";
 import store from "../../../store/index";
 
 export default {
-    created() {
-        this.getGenomes();
-    },
     components: { Multiselect },
     data: function () {
         return {
             selectedGenome: {},
-            genomes: [],
         };
     },
     props: {
+        genomes: {
+            type: Array,
+            default: []
+        },
         databaseKeyFromElements: {
             type: String,
             required: true,
@@ -51,14 +52,6 @@ export default {
         clickedSave: function () {
             this.$emit("clicked-save", "dbkey", this.genome);
             this.selectedGenome = this.genomes.find((element) => element.id == this.databaseKeyFromElements);
-        },
-        getGenomes: async function () {
-            let genomes = store.getters.getUploadGenomes();
-            if (!genomes || genomes.length == 0) {
-                await store.dispatch("fetchUploadGenomes");
-                genomes = store.getters.getUploadGenomes();
-            }
-            this.genomes = genomes;
         },
     },
     computed: {
@@ -74,7 +67,7 @@ export default {
     watch: {
         //in order to have the dropdown populated with the correct genome, both databaseKeyFromElements and genomes have to be populated
         databaseKeyFromElements() {
-            if (this.genomes.length > 0) {
+            if (this.genomes && this.genomes.length > 0) {
                 this.selectedGenome = this.genomes.find((element) => element.id == this.databaseKeyFromElements);
             }
         },
