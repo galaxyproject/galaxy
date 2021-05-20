@@ -356,6 +356,39 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         assert len(offset_contents) == 1
         assert offset_contents[0]['element_index'] == 1
 
+    def test_collection_tools_tag_propagation(self):
+        elements = [{"src": "files", "tags": ["name:element_tag"]}]
+        targets = [{
+            "destination": {"type": "hdca"},
+            "elements": elements,
+            "collection_type": "list",
+            "name": "Test collection",
+            "tags": ["name:collection_tag"]
+        }]
+        payload = {
+            "history_id": self.history_id,
+            "targets": json.dumps(targets),
+            "__files": {"files_0|file_data": open(self.test_data_resolver.get_filename("4.bed"))},
+        }
+        hdca_id = self.dataset_populator.fetch(payload).json()['output_collections'][0]['id']
+        inputs = {
+            "input": {"batch": False, "src": "hdca", "id": hdca_id},
+        }
+        payload = self.dataset_populator.run_tool_payload(
+            tool_id='__FILTER_FAILED_DATASETS__',
+            inputs=inputs,
+            history_id=self.history_id,
+            input_format='legacy',
+        )
+        response = self._post("tools", payload).json()
+        self.dataset_populator.wait_for_history(self.history_id, assert_ok=False)
+        output_collection = response["output_collections"][0]
+        # collection should not inherit tags from input collection elements, only parent collection
+        assert output_collection['tags'] == ["name:collection_tag"]
+        element = output_collection['elements'][0]
+        # new element hda should have tags copied from old hda
+        assert element['object']['tags'] == ['name:element_tag']
+
     def _compare_collection_contents_elements(self, contents_elements, hdca_elements):
         # compare collection api results to existing hdca element contents
         fields = ['element_identifier', 'element_index', 'element_type', 'id', 'model_class']
