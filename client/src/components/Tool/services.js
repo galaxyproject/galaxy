@@ -3,7 +3,7 @@ import { rethrowSimple } from "utils/simple-error";
 import { getAppRoot } from "onload/loadConfig";
 
 export async function addFavorite(userId, toolId) {
-    let url = `${getAppRoot()}api/users/${userId}/favorites/tools`;
+    const url = `${getAppRoot()}api/users/${userId}/favorites/tools`;
     try {
         const { data } = await axios.put(url, { object_id: toolId });
         return data;
@@ -13,7 +13,7 @@ export async function addFavorite(userId, toolId) {
 }
 
 export async function removeFavorite(userId, toolId) {
-    let url = `${getAppRoot()}api/users/${userId}/favorites/tools/${encodeURIComponent(toolId)}`;
+    const url = `${getAppRoot()}api/users/${userId}/favorites/tools/${encodeURIComponent(toolId)}`;
     try {
         const { data } = await axios.delete(url);
         return data;
