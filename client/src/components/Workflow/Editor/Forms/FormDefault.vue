@@ -50,12 +50,11 @@
 </template>
 
 <script>
-import axios from "axios";
-import { getAppRoot } from "onload/loadConfig";
 import Form from "components/Form/Form";
 import FormCard from "components/Form/FormCard";
 import FormElement from "components/Form/FormElement";
 import FormMessage from "components/Form/FormMessage";
+import { getModule } from "components/Workflow/Editor/modules/services";
 import { checkLabels } from "components/Workflow/Editor/modules/utilities";
 import WorkflowIcons from "components/Workflow/icons";
 
@@ -129,22 +128,20 @@ export default {
             ]);
         },
         onChange(values) {
-            axios
-                .post(`${getAppRoot()}api/workflows/build_module`, {
-                    id: this.node.id,
-                    type: this.node.type,
-                    content_id: this.node.content_id,
-                    inputs: values,
-                })
-                .then(
-                    ({ data }) => {
-                        this.errorText = null;
-                        this.$emit("onSetData", this.node.id, data);
-                    },
-                    () => {
-                        this.errorText = `Failed to handle node state.`;
-                    }
-                );
+            getModule({
+                id: this.node.id,
+                type: this.node.type,
+                content_id: this.node.content_id,
+                inputs: values,
+            }).then(
+                (data) => {
+                    this.errorText = null;
+                    this.$emit("onSetData", this.node.id, data);
+                },
+                () => {
+                    this.errorText = `Failed to handle node state.`;
+                }
+            );
         },
     },
 };

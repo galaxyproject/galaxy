@@ -51,13 +51,12 @@
 </template>
 
 <script>
-import axios from "axios";
 import CurrentUser from "components/providers/CurrentUser";
-import { getAppRoot } from "onload/loadConfig";
 import Form from "components/Form/Form";
 import FormCardTool from "components/Form/FormCardTool";
 import FormSection from "./FormSection";
 import FormElement from "components/Form/FormElement";
+import { getModule } from "components/Workflow/Editor/modules/services";
 import { checkLabels } from "components/Workflow/Editor/modules/utilities";
 import Utils from "utils/utils";
 
@@ -155,24 +154,22 @@ export default {
         },
         postChanges(newVersion) {
             const options = this.node.config_form;
-            axios
-                .post(`${getAppRoot()}api/workflows/build_module`, {
-                    tool_id: options.id,
-                    tool_version: newVersion || options.version,
-                    type: "tool",
-                    inputs: Object.assign({}, this.mainValues, this.sectionValues),
-                })
-                .then(({ data }) => {
-                    this.$emit("onSetData", this.node.id, data);
-                    const form = this.$refs["form"];
-                    form.parseUpdate(data.config_form);
-                    form.parseErrors(data.config_form);
-                    if (newVersion) {
-                        const options = data.config_form;
-                        this.messageVariant = "success";
-                        this.messageText = `Now you are using '${options.name}' version ${options.version}, id '${options.id}'.`;
-                    }
-                });
+            getModule({
+                tool_id: options.id,
+                tool_version: newVersion || options.version,
+                type: "tool",
+                inputs: Object.assign({}, this.mainValues, this.sectionValues),
+            }).then((data) => {
+                this.$emit("onSetData", this.node.id, data);
+                const form = this.$refs["form"];
+                form.parseUpdate(data.config_form);
+                form.parseErrors(data.config_form);
+                if (newVersion) {
+                    const options = data.config_form;
+                    this.messageVariant = "success";
+                    this.messageText = `Now you are using '${options.name}' version ${options.version}, id '${options.id}'.`;
+                }
+            });
         },
     },
 };

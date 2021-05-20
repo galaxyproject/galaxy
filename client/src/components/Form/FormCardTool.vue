@@ -103,7 +103,6 @@
     </div>
 </template>
 <script>
-import axios from "axios";
 import ariaAlert from "utils/ariaAlert";
 import { getAppRoot } from "onload/loadConfig";
 import { copyLink, downloadTool } from "./utilities";
