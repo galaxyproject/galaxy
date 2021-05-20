@@ -111,6 +111,7 @@ import FormMessage from "./FormMessage";
 import ToolFooter from "components/Tool/ToolFooter";
 import ToolHelp from "components/Tool/ToolHelp";
 import Webhooks from "mvc/webhooks";
+import { addFavorite, removeFavorite } from "components/Tool/services";
 
 export default {
     components: {
@@ -218,10 +219,10 @@ export default {
     },
     methods: {
         onAddFavorite() {
-            axios.put(`${getAppRoot()}api/users/${this.user.id}/favorites/tools`, { object_id: this.id }).then(
-                (response) => {
+            addFavorite(this.user.id, this.id).then(
+                (data) => {
                     this.errorText = null;
-                    this.updateFavorites("tools", response.data);
+                    this.updateFavorites("tools", data);
                     ariaAlert("added to favorites");
                 },
                 () => {
@@ -231,19 +232,17 @@ export default {
             );
         },
         onRemoveFavorite() {
-            axios
-                .delete(`${getAppRoot()}api/users/${this.user.id}/favorites/tools/${encodeURIComponent(this.id)}`)
-                .then(
-                    (response) => {
-                        this.errorText = null;
-                        this.updateFavorites("tools", response.data);
-                        ariaAlert("removed from favorites");
-                    },
-                    () => {
-                        this.errorText = `Failed to remove '${this.id}' from favorites.`;
-                        ariaAlert("failed to remove from favorites");
-                    }
-                );
+            removeFavorite(this.user.id, this.id).then(
+                (data) => {
+                    this.errorText = null;
+                    this.updateFavorites("tools", data);
+                    ariaAlert("removed from favorites");
+                },
+                () => {
+                    this.errorText = `Failed to remove '${this.id}' from favorites.`;
+                    ariaAlert("failed to remove from favorites");
+                }
+            );
         },
         onCopyLink() {
             copy(
