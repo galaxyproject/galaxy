@@ -292,24 +292,23 @@ export default {
                 auto_decompress: true,
             };
 
-            // Composite does not use the fetch API, so we can just
-            // index into the first element of items
-            const item = items[0];
-            let urls;
-            if (item.get("file_mode") == "ftp") {
-                urls = [item.get("file_uri") || item.get("file_path")];
-            } else {
-                urls = item.get("url_paste").split("\n");
-            }
-            urls.forEach((url) => {
-                if (url != "") {
-                    data.targets[0].elements.push({
-                        url: url.trim(),
-                        src: "url",
-                        dbkey: item.get("genome", "?"),
-                        ext: item.get("extension", "auto"),
-                    });
+            items.forEach((item) => {
+                let urls;
+                if (item.get("file_mode") == "ftp") {
+                    urls = [item.get("file_uri") || item.get("file_path")];
+                } else {
+                    urls = item.get("url_paste").split("\n");
                 }
+                urls.forEach((url) => {
+                    if (url != "") {
+                        data.targets[0].elements.push({
+                            url: url.trim(),
+                            src: "url",
+                            dbkey: item.get("genome", "?"),
+                            ext: item.get("extension", "auto"),
+                        });
+                    }
+                });
             });
             return data;
         },
