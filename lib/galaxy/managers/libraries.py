@@ -147,32 +147,35 @@ class LibraryManager:
                 query = query.filter(trans.app.model.Library.table.c.deleted == false())
         else:
             #  Nonadmins can't see deleted libraries
-            query = query.filter(trans.app.model.Library.table.c.deleted == false())
-            current_user_role_ids = [role.id for role in trans.get_current_user_roles()]
-            all_actions = trans.sa_session.query(trans.model.LibraryPermissions).filter(trans.model.LibraryPermissions.table.c.role_id.in_(current_user_role_ids))
-            library_add_action = trans.app.security_agent.permitted_actions.LIBRARY_ADD.action
-            library_modify_action = trans.app.security_agent.permitted_actions.LIBRARY_MODIFY.action
-            library_manage_action = trans.app.security_agent.permitted_actions.LIBRARY_MANAGE.action
-            accessible_restricted_library_ids = set()
-            allowed_library_add_ids = set()
-            allowed_library_modify_ids = set()
-            allowed_library_manage_ids = set()
-            for action in all_actions:
-                if action.action == library_access_action:
-                    accessible_restricted_library_ids.add(action.library_id)
-                if action.action == library_add_action:
-                    allowed_library_add_ids.add(action.library_id)
-                if action.action == library_modify_action:
-                    allowed_library_modify_ids.add(action.library_id)
-                if action.action == library_manage_action:
-                    allowed_library_manage_ids.add(action.library_id)
-            query = query.filter(or_(
-                not_(trans.model.Library.table.c.id.in_(restricted_library_ids)),
-                trans.model.Library.table.c.id.in_(accessible_restricted_library_ids)
-            ))
-            prefetched_ids['allowed_library_add_ids'] = allowed_library_add_ids
-            prefetched_ids['allowed_library_modify_ids'] = allowed_library_modify_ids
-            prefetched_ids['allowed_library_manage_ids'] = allowed_library_manage_ids
+            if deleted:
+                raise exceptions.AdminRequiredException()
+            else:
+                query = query.filter(trans.app.model.Library.table.c.deleted == false())
+                current_user_role_ids = [role.id for role in trans.get_current_user_roles()]
+                all_actions = trans.sa_session.query(trans.model.LibraryPermissions).filter(trans.model.LibraryPermissions.table.c.role_id.in_(current_user_role_ids))
+                library_add_action = trans.app.security_agent.permitted_actions.LIBRARY_ADD.action
+                library_modify_action = trans.app.security_agent.permitted_actions.LIBRARY_MODIFY.action
+                library_manage_action = trans.app.security_agent.permitted_actions.LIBRARY_MANAGE.action
+                accessible_restricted_library_ids = set()
+                allowed_library_add_ids = set()
+                allowed_library_modify_ids = set()
+                allowed_library_manage_ids = set()
+                for action in all_actions:
+                    if action.action == library_access_action:
+                        accessible_restricted_library_ids.add(action.library_id)
+                    if action.action == library_add_action:
+                        allowed_library_add_ids.add(action.library_id)
+                    if action.action == library_modify_action:
+                        allowed_library_modify_ids.add(action.library_id)
+                    if action.action == library_manage_action:
+                        allowed_library_manage_ids.add(action.library_id)
+                query = query.filter(or_(
+                    not_(trans.model.Library.table.c.id.in_(restricted_library_ids)),
+                    trans.model.Library.table.c.id.in_(accessible_restricted_library_ids)
+                ))
+                prefetched_ids['allowed_library_add_ids'] = allowed_library_add_ids
+                prefetched_ids['allowed_library_modify_ids'] = allowed_library_modify_ids
+                prefetched_ids['allowed_library_manage_ids'] = allowed_library_manage_ids
         return query, prefetched_ids
 
     def secure(self, trans, library, check_accessible=True):

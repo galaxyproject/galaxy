@@ -242,6 +242,7 @@ export default {
                 file_mode: file.mode || "local",
                 file_path: file.path,
                 file_data: file,
+                file_uri: file.uri,
                 extension: this.extension,
                 genome: this.genome,
             };

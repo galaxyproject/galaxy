@@ -9,7 +9,9 @@
                 Library
             </b-button>
             <SearchField :typing-delay="0" @updateSearch="searchValue($event)" />
-            <b-form-checkbox class="mr-1" @input="toggle_include_deleted($event)"> include deleted </b-form-checkbox>
+            <b-form-checkbox v-if="isAdmin" class="mr-1" @input="toggle_include_deleted($event)">
+                include deleted
+            </b-form-checkbox>
             <b-form-checkbox class="mr-1" @input="toggle_exclude_restricted($event)">
                 exclude restricted
             </b-form-checkbox>
@@ -158,6 +160,7 @@
                                     id="paginationPerPage"
                                     autocomplete="off"
                                     type="number"
+                                    onkeyup="this.value|=0;if(this.value<1)this.value=1"
                                     v-model="perPage"
                                 />
                             </td>
