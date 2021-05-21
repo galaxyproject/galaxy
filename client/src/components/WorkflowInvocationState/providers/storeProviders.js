@@ -81,22 +81,26 @@ export const DatasetCollectionProvider = {
 };
 
 export const GenomeProvider = {
-    mixins: [SimpleProviderMixin, StoreProviderMixin],
+    mixins: [SimpleProviderMixin],
+    async mounted() {
+        await this.load();
+    },
     methods: {
         ...mapCacheActions(["fetchUploadGenomes"]),
         async load() {
             this.loading = true;
-            this.item = await this.fetchUploadGenomes();
+            let genomes = this.getUploadGenomes();
+            if (genomes == null || genomes.length == 0) {
+                await this.fetchUploadGenomes();
+                genomes = this.getUploadGenomes();
+            }
+            this.item = genomes;
             this.loading = false;
         },
     },
     computed: {
-        ...mapGetters(["getUploadGenomes"]),
-        storeItem() {
-            const genomes = this.getUploadGenomes();
-            return genomes ? genomes : [];
-        },
-    },
+        ...mapGetters(["getUploadGenomes"])
+    }
 };
 
 export const DatasetCollectionContentProvider = {

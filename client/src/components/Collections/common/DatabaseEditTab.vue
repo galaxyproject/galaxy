@@ -12,9 +12,8 @@
                 </button>
             </div>
         </div>
-        <b>{{ l("Database/Build: ") }}</b>
+        <b>{{ l("Database/Build") }}: </b>
         <multiselect
-            v-if="genomes != null"
             v-model="genome"
             deselect-label="Can't remove this value"
             track-by="id"
@@ -63,18 +62,18 @@ export default {
             },
         },
     },
-    watch: {
-        //in order to have the dropdown populated with the correct genome, both databaseKeyFromElements and genomes have to be populated
-        databaseKeyFromElements() {
-            if (this.genomes && this.genomes.length > 0) {
-                this.selectedGenome = this.genomes.find((element) => element.id == this.databaseKeyFromElements);
-            }
-        },
-        genomes() {
-            if (this.databaseKeyFromElements != null) {
-                this.selectedGenome = this.genomes.find((element) => element.id == this.databaseKeyFromElements);
-            }
-        },
-    },
+    // watch: {
+    //     //in order to have the dropdown populated with the correct genome, both databaseKeyFromElements and genomes have to be populated
+    //     databaseKeyFromElements() {
+    //         if (this.genomes && this.genomes.length > 0) {
+    //             this.selectedGenome = this.genomes.find((element) => element.id == this.databaseKeyFromElements);
+    //         }
+    //     },
+        // genomes() {
+        //     console.log("GENOME2: ", this.genomes);
+        //     // if (this.databaseKeyFromElements != null) {
+        //     //     this.selectedGenome = this.genomes.find((element) => element.id == this.databaseKeyFromElements);
+        //     // }
+        // },
 };
 </script>

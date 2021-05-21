@@ -2,7 +2,7 @@
     <div>
         <h4>{{ l("Edit Collection Attributes") }}</h4>
         <b-alert show variant="info" dismissible>
-            {{ l("This will create a new collection in your History. Your quota usage will not increase. ") }}
+            {{ l("This will create a new collection in your History. Your quota usage will not increase.") }}
         </b-alert>
         <div v-if="jobError">
             <b-alert show variant="danger" dismissible>
@@ -13,12 +13,15 @@
             <b-tab>
                 <template v-slot:title> <font-awesome-icon icon="table" /> &nbsp; {{ l("Database/Build") }}</template>
                 <GenomeProvider v-slot="{ item, loading }">
-                    <database-edit-tab
-                        v-if="!loading"
-                        :database-key-from-elements="databaseKeyFromElements"
-                        :genomes="item"
-                        @clicked-save="clickedSave"
-                    />
+                    <div v-if="loading"><b-spinner label="Loading Genomes..."></b-spinner></div>
+                    <div v-else>
+                        <database-edit-tab
+                            v-if="item"
+                            :database-key-from-elements="databaseKeyFromElements"
+                            :genomes="item"
+                            @clicked-save="clickedSave"
+                        />
+                    </div>
                 </GenomeProvider>
             </b-tab>
             <b-tab v-if="atleastOneSuitableConverter">
