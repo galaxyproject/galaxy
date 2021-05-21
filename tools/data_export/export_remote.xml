@@ -1,5 +1,10 @@
 <tool id="export_remote" name="Export datasets" version="0.1.0" profile="21.05">
     <description>to remote files source</description>
+    <!-- TODO
+    <requirements>
+        <requirement type="package" version="21.05">galaxy-files</requirement>
+    </requirements>
+    -->
     <command><![CDATA[
 python '$__tool_directory__/export_remote.py'
     --file-sources '$file_sources'
@@ -10,10 +15,11 @@ python '$__tool_directory__/export_remote.py'
     <configfiles>
         <file_sources name="file_sources" />
         <configfile name="files_to_export">#import json
+#from galaxy.util import filesystem_safe_string
 #if $export_type.export_type_selector == "datasets_auto":
-#set $fileconfig = json.dumps([{"real_data_path": str(infile), "name": infile.name_and_ext} for infile in $infiles])
+#set $fileconfig = json.dumps([{"real_data_path": str(infile), "name": infile.name_and_ext_filesystem_safe} for infile in $infiles])
 #else
-#set $fileconfig = json.dumps([{"real_data_path": str(dataset["infile"]), "name": str(dataset["name"])} for dataset in $export_type.datasets])
+#set $fileconfig = json.dumps([{"real_data_path": str(dataset["infile"]), "name": filesystem_safe_string(str(dataset["name"]), 255)} for dataset in $export_type.datasets])
 #end if
 $fileconfig
         </configfile>
@@ -31,7 +37,11 @@ $fileconfig
             <when value="datasets_named">
                 <repeat name="datasets" title="Dataset">
                     <param type="data" name="infile" label="Input dataset" />
-                    <param type="text" name="name" label="Name" />
+                    <param type="text" name="name" label="Name">
+                        <!-- 🔥 turn off sanitizer, so unicode strings can be used. Is sanitized in configfile -->
+                        <sanitizer sanitize="false"></sanitizer>
+                        <validator type="length" min="1" max="255"/>
+                    </param>
                 </repeat>
             </when>
         </conditional>

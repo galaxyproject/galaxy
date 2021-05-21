@@ -150,12 +150,38 @@ class RemoteFilesIntegrationTestCase(ConfiguresRemoteFilesIntegrationTestCase):
                 "d_uri": "gxftp://",
                 "export_type|export_type_selector": "datasets_named",
                 "export_type|datasets_0|infile": infile,
-                "export_type|datasets_0|name": "my_cool_name.txt",
+                "export_type|datasets_0|name": ".my_cool/utf8_name_😻.txt",
             }
             response = dataset_populator.run_tool("export_remote", inputs, history_id)
-            dataset_populator.wait_for_job(response["jobs"][0]["id"])
-            with open(os.path.join(ftp_dir, 'my_cool_name.txt')) as f:
+            dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
+            with open(os.path.join(ftp_dir, 'my_cool_utf8_name_😻.txt')) as f:
                 assert 'example content\n' == f.read()
+
+    def test_export_remote_tool_default_duplicate_name(self):
+        dataset_populator = self.dataset_populator
+        ftp_dir = self.user_ftp_dir
+        _write_file_fixtures(self.root, ftp_dir)
+        with dataset_populator.test_history() as history_id:
+            dataset = dataset_populator.new_dataset(history_id, content="example content", wait=True, name="foo")
+            infile = {
+                "src": "hda",
+                "id": dataset["id"]
+            }
+            inputs = {
+                "d_uri": "gxftp://",
+                "export_type|export_type_selector": "datasets_named",
+                "export_type|datasets_0|infile": infile,
+                "export_type|datasets_0|name": ".my_cool/utf8_name_😻.txt",
+                "export_type|datasets_1|infile": infile,
+                "export_type|datasets_1|name": ".my_cool/utf8_name_😻.txt",
+            }
+            response = dataset_populator.run_tool("export_remote", inputs, history_id)
+            job_id = response["jobs"][0]["id"]
+            dataset_populator.wait_for_job(job_id, assert_ok=False)
+            job = self.dataset_populator.get_job_details(job_id, full=True).json()
+            assert job['state'] == 'error'
+            assert 'Duplicate export filenames given' in job['tool_stderr']
+            assert not os.path.exists(os.path.join(ftp_dir, 'my_cool_utf8_name_😻.txt'))
 
     def test_export_remote_tool_with_metadata_file_auto_name(self):
         dataset_populator = self.dataset_populator
@@ -163,7 +189,7 @@ class RemoteFilesIntegrationTestCase(ConfiguresRemoteFilesIntegrationTestCase):
         _write_file_fixtures(self.root, ftp_dir)
         with dataset_populator.test_history() as history_id:
             with open(VCF_GZ_PATH, 'rb') as vcf_gz:
-                dataset = dataset_populator.new_dataset(history_id, content=vcf_gz, file_type="vcf_bgzip", wait=True, name="foo")
+                dataset = dataset_populator.new_dataset(history_id, content=vcf_gz, file_type="vcf_bgzip", wait=True, name="foo/1")
             infile = {
                 "src": "hda",
                 "id": dataset["id"]
@@ -174,8 +200,8 @@ class RemoteFilesIntegrationTestCase(ConfiguresRemoteFilesIntegrationTestCase):
                 "export_type|infiles": [infile],
             }
             response = dataset_populator.run_tool("export_remote", inputs, history_id)
-            dataset_populator.wait_for_job(response["jobs"][0]["id"])
-            with open(os.path.join(ftp_dir, 'foo.vcf.gz'), 'rb') as export, open(VCF_GZ_PATH, 'rb') as vcf_gz:
+            dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
+            with open(os.path.join(ftp_dir, 'foo_1.vcf.gz'), 'rb') as export, open(VCF_GZ_PATH, 'rb') as vcf_gz:
                 assert export.read() == vcf_gz.read()
 
     def _assert_index_empty(self, index):

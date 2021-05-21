@@ -3659,9 +3659,9 @@ Useful for parameters with dynamically defined options.
 
 For ``text`` inputs the following validators are useful:
 
-``length``: Check if the length of the value is within a range.
-``empty_field``: Check if the sting is not empty
-``value_in_data_table`` (``value_not_in_data_table``): Check if the value is
+- ``length``: Check if the length of the value is within a range.
+- ``empty_field``: Check if the string is not empty
+- ``value_in_data_table`` (``value_not_in_data_table``): Check if the value is
 contained in a column of a given data table.
 
 ### Validators for numeric inputs (``integer``, ``float``)

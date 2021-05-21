@@ -5,6 +5,7 @@ from functools import total_ordering
 
 from galaxy import exceptions
 from galaxy.model.none_like import NoneDataset
+from galaxy.util import filesystem_safe_string
 from galaxy.util.object_wrapper import wrap_with_safe_string
 
 log = logging.getLogger(__name__)
@@ -308,6 +309,17 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
     @property
     def name_and_ext(self):
         return f"{self.element_identifier}.{self.file_ext}"
+
+    @property
+    def name_and_ext_filesystem_safe(self):
+        """
+        Strip leading dots, unicode null chars, replace `/` with `_`, truncate at 255 characters.
+
+        Not safe for commandline use, would need additional sanitization.
+        """
+        max_len = 255 - len(self.file_ext)
+        safe_element_identifier = filesystem_safe_string(self.element_identifier, max_len=max_len)
+        return f"{safe_element_identifier}.{self.file_ext}"
 
     @property
     def is_collection(self):

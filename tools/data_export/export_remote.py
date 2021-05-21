@@ -14,6 +14,18 @@ def get_file_sources(file_sources_path):
     return file_sources
 
 
+def check_for_duplicate_name(files_to_export):
+    seen = set()
+    duplicates = set()
+    for entry in files_to_export:
+        name = entry['name']
+        if name in seen:
+            duplicates.add(name)
+        seen.add(name)
+    if duplicates:
+        sys.exit(f"Duplicate export filenames given: {', '.join(duplicates)}, failing export")
+
+
 def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
@@ -24,6 +36,7 @@ def main(argv=None):
     with open(args.files_to_export) as f:
         files_to_export = json.load(f)
     counter = 0
+    check_for_duplicate_name(files_to_export)
     for entry in files_to_export:
         name = entry["name"]
         real_data_path = entry["real_data_path"]
@@ -39,7 +52,7 @@ def main(argv=None):
         file_source = file_source_path.file_source
         file_source.write_from(file_source_path.path, real_data_path)
         counter += 1
-    print(f"'{counter}' out of '{len(args.infiles)}' files have been exported.\n")
+    print(f"{counter} out of {len(files_to_export)} files have been exported.\n")
     sys.exit(exit_code)
 
 
