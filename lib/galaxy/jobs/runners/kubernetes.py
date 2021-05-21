@@ -159,15 +159,15 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         try:
             job.create()
         except HTTPError:
-            job_wrapper.fail("Kubernetes failed to create job.", exception=True)
             log.exception("Kubernetes failed to create job, HTTP exception encountered")
             ajs.runner_state = JobState.runner_states.UNKNOWN_ERROR
+            ajs.fail_message = "Kubernetes failed to create job."
             self.mark_as_failed(ajs)
             return
         if not job.name:
-            job_wrapper.fail("Kubernetes failed to create job.")
             log.exception(f"Kubernetes failed to create job, empty name encountered: [{job.obj}]")
             ajs.runner_state = JobState.runner_states.UNKNOWN_ERROR
+            ajs.fail_message = "Kubernetes failed to create job."
             self.mark_as_failed(ajs)
             return
         job_id = job.name
