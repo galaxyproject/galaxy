@@ -1,30 +1,23 @@
 <tool id="export_remote" name="Export datasets" version="0.1.0" profile="21.05">
     <description>to remote files source</description>
     <command><![CDATA[
-        python '$__tool_directory__/export_remote.py'
-            --file-sources '$file_sources'
-            --directory-uri '$d_uri'
-            #if $export_type.export_type_selector == "datasets_auto"
-                --infiles
-                #for $filepath in $export_type.infiles:
-                    '$filepath'
-                #end for
-                --names
-                #for $infile in $export_type.infiles:
-                    '$infile.name_and_ext'
-                #end for
-            #else
-                --infiles
-                #for $dataset in $export_type.datasets:
-                    '$dataset.infile'
-                #end for
-                --names
-                #for $dataset in $export_type.datasets:
-                    '$dataset.name'
-                #end for
-            #end if
-            > '$out'
+python '$__tool_directory__/export_remote.py'
+    --file-sources '$file_sources'
+    --directory-uri '$d_uri'
+    --files-to-export '$files_to_export'
+    > '$out'
     ]]></command>
+    <configfiles>
+        <file_sources name="file_sources" />
+        <configfile name="files_to_export">#import json
+#if $export_type.export_type_selector == "datasets_auto":
+#set $fileconfig = json.dumps([{"real_data_path": str(infile), "name": infile.name_and_ext} for infile in $infiles])
+#else
+#set $fileconfig = json.dumps([{"real_data_path": str(dataset["infile"]), "name": str(dataset["name"])} for dataset in $export_type.datasets])
+#end if
+$fileconfig
+        </configfile>
+    </configfiles>
     <inputs>
         <conditional name="export_type">
             <param name="export_type_selector" type="select" label="What would you like to export?">
@@ -47,9 +40,6 @@
     <outputs>
         <data name="out" format="txt" label="Export logs"/>
     </outputs>
-    <configfiles>
-        <file_sources name="file_sources" />
-    </configfiles>
     <tests>
     </tests>
 </tool>
