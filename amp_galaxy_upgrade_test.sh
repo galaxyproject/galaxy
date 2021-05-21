@@ -22,7 +22,7 @@ chmod ugo+x tools/**/*.py tools/**/*.sh;
 export GALAXY_PYTHON=/bin/python3;
 
 # copy old Galaxy DB to new instance DB; NOTE: changes in old DB after this point will be ignored 
-cp -r ../galaxy/database/* database/;
+cp -r ../galaxy/database/ database/;
 
 # remove all pre-compiled python2 templates
 rm -rf database/compiled_templates/;
@@ -67,6 +67,9 @@ cd /srv/amp/galaxy_21.01;
 cd /srv/amp;
 mv galaxy galaxy_19.01;
 mv galaxy_21.01 galaxy;
+
+# resolve selinux to ensure symlinks work acoss galaxy/
+restorecon -vr;
 
 # rename mgm.ini
 cp /srv/amp/config/mgm.ini /srv/amp/config/amp_mgm.ini;

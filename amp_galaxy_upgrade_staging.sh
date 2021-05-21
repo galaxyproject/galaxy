@@ -17,9 +17,12 @@ mv galaxy galaxy_19.01;
 git clone -b staging --single-branch https://Github.com/AudiovisualMetadataPlatform/galaxy
 cd galaxy;
 
+# resolve selinux to ensure symlinks work acoss galaxy/
+restorecon -vr;
+
 # rename mgm.ini and copy it from config/ on server directly
 cp /srv/amp/config/mgm.ini /srv/amp/config/amp_mgm.ini;
-cp /srv/amp/galaxy/config/amp_mgm.ini config/;
+cp /srv/amp/config/amp_mgm.ini config/;
 
 # all python and shell scripts need to be executable
 chmod ugo+x tools/**/*.py tools/**/*.sh ./*.sh;
@@ -28,7 +31,7 @@ chmod ugo+x tools/**/*.py tools/**/*.sh ./*.sh;
 export GALAXY_PYTHON=/bin/python3;
 
 # copy old Galaxy DB to new instance DB; NOTE: changes in old DB after this point will be ignored 
-cp -r ../galaxy_19.01/database/* database/;
+cp -r ../galaxy_19.01/database/ database/;
 
 # remove all pre-compiled python2 templates
 rm -rf database/compiled_templates/;
