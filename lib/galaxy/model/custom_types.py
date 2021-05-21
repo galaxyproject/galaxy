@@ -10,6 +10,7 @@ from sys import getsizeof
 import numpy
 import sqlalchemy
 from sqlalchemy.ext.mutable import Mutable
+from sqlalchemy.inspection import inspect
 from sqlalchemy.types import (
     CHAR,
     LargeBinary,
@@ -156,15 +157,15 @@ class MutationObj(Mutable):
                 val = cls.coerce(key, val)
                 state.dict[key] = val
             if isinstance(val, cls):
-                val._parents[state.obj()] = key
+                val._parents[state] = key
 
         def set(target, value, oldvalue, initiator):
             if not isinstance(value, cls):
                 value = cls.coerce(key, value)
             if isinstance(value, cls):
-                value._parents[target.obj()] = key
+                value._parents[target] = key
             if isinstance(oldvalue, cls):
-                oldvalue._parents.pop(target.obj(), None)
+                oldvalue._parents.pop(inspect(target), None)
             return value
 
         def pickle(state, state_dict):
@@ -177,7 +178,7 @@ class MutationObj(Mutable):
         def unpickle(state, state_dict):
             if 'ext.mutable.values' in state_dict:
                 for val in state_dict['ext.mutable.values']:
-                    val._parents[state.obj()] = key
+                    val._parents[state] = key
 
         sqlalchemy.event.listen(parent_cls, 'load', load, raw=True, propagate=True)
         sqlalchemy.event.listen(parent_cls, 'refresh', load, raw=True, propagate=True)
