@@ -781,8 +781,11 @@ def handle_uploaded_dataset_file_internal(
         else:
             ext = guessed_ext
 
-        if not is_binary and check_content and check_html(converted_path):
-            raise InappropriateDatasetContentError('The uploaded file contains invalid HTML content')
+        # AMP Commenting this out.  Does not seem necessary.  check_html returns true for valid HTML, but the error
+        # thrown is "invalid html".  Similarly, if we change it to not check_html, then it throws an error with JSON
+        # or other non-binary data types
+        #if not is_binary and check_content and check_html(converted_path):
+            #raise InappropriateDatasetContentError('The uploaded file contains invalid HTML content')
     except Exception:
         if filename != converted_path:
             os.unlink(converted_path)
