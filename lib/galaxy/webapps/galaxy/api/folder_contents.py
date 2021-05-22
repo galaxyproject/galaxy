@@ -2,6 +2,17 @@
 API operations on the contents of a library folder.
 """
 import logging
+from typing import (
+    List,
+    Optional,
+    Tuple,
+    Union,
+)
+
+from pydantic import (
+    BaseModel,
+    Field,
+)
 
 from galaxy import (
     exceptions,
@@ -10,7 +21,13 @@ from galaxy import (
 from galaxy.managers import base as managers_base
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.hdas import HDAManager
-from galaxy.model import tags
+from galaxy.managers.hdcas import HDCAManager
+from galaxy.model import (
+    Dataset,
+    LibraryFolder,
+    tags,
+)
+from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.structured_app import StructuredApp
 from galaxy.web import (
     expose_api,
@@ -24,16 +41,236 @@ log = logging.getLogger(__name__)
 TIME_FORMAT = "%Y-%m-%d %I:%M %p"
 FOLDER_TYPE_NAME = "folder"
 FILE_TYPE_NAME = "file"
+COLLECTION_TYPE_NAME = "collection"
 
 
-class FolderContentsAPIView(UsesLibraryMixinItems):
+class LibraryItemBase(BaseModel):
+    """Represents a generic item inside a library."""
+    id: EncodedDatabaseIdField = Field(
+        ...,
+        title="ID",
+        description="Encoded ID of the library item.",
+    )
+    name: str = Field(
+        ...,
+        title="Name",
+        description="The name of the folder.",
+    )
+    deleted: bool = Field(
+        ...,
+        title="Deleted",
+        description="Whether this library item has been marked as deleted.",
+    )
+    can_manage: bool = Field(
+        ...,
+        title="User can manage",
+        description="Whether the current user can manage permissions of this library item.",
+    )
+    create_time: str = Field(
+        ...,
+        title="Create time",
+        description="The timestamp when this item was created.",
+    )
+    update_time: str = Field(
+        ...,
+        title="Update time",
+        description="The timestamp when this item was last updated.",
+    )
+
+
+class FolderItem(LibraryItemBase):
+    """Represents a library folder."""
+
+    type: str = Field(
+        FOLDER_TYPE_NAME,
+        title="Type",
+        description="The type of this item.",
+        const=True,
+    )
+    can_modify: bool = Field(
+        ...,
+        title="User can modify",
+        description="Whether the current user can modify this library item.",
+    )
+
+
+class FileItem(LibraryItemBase):
+    """Represents a dataset file inside a library folder."""
+
+    type: str = Field(
+        FILE_TYPE_NAME,
+        title="Type",
+        description="The type of this item.",
+        const=True,
+    )
+    file_ext: str = Field(
+        ...,
+        title="File extension",
+        description="The extension of this file.",
+        example="tabular",
+    )
+    state: Dataset.states = Field(
+        ...,
+        title="State",
+        description="The state of the dataset.",
+        example=Dataset.states.OK
+    )
+    file_size: str = Field(
+        ...,
+        title="Size",
+        description="The human-readable size of this file.",
+        example="1.1 KB",
+    )
+    raw_size: int = Field(
+        ...,
+        title="Raw size",
+        description="The size of this file in bytes.",
+    )
+    ldda_id: EncodedDatabaseIdField = Field(
+        ...,
+        title="Library Dataset Association ID",
+        description="Encoded ID of the corresponding LDDA.",
+    )
+    is_private: bool = Field(
+        ...,
+        title="Private",
+        description="Whether this library item is private.",
+    )
+    is_unrestricted: bool = Field(
+        ...,
+        title="Unrestricted",
+        description="Whether this library item is unrestricted or publicly available.",
+    )
+    date_uploaded: str = Field(
+        ...,
+        title="Uploaded date",
+        description="The timestamp when this item was uploaded.",
+    )
+    tags: str = Field(
+        ...,
+        title="Tags",
+        description="The tags associated with this library item.",
+    )
+
+
+class CollectionItem(LibraryItemBase):
+    """Represents a dataset collection inside a library folder."""
+    type: str = Field(
+        COLLECTION_TYPE_NAME,
+        title="Type",
+        description="The type of this item.",
+        const=True,
+    )
+    element_count: int = Field(
+        ...,
+        title="Element count",
+        description="The number of elements in the collection.",
+    )
+    collection_type: str = Field(  # TODO enum?
+        ...,
+        title="Collection type",
+        description="The type of the collection (list or paired).",
+    )
+
+
+class FolderContents(BaseModel):
+    __root__: List[Union[CollectionItem, FolderItem, FileItem]] = Field(
+        default=[],
+        title='List with the contents of a library folder.',
+    )
+
+
+class FolderMetadata(BaseModel):
+    folder_name: str = Field(
+        ...,
+        title="Folder name",
+        description="The name of the library folder.",
+    )
+    folder_description: str = Field(
+        ...,
+        title="Folder description",
+        description="The detailed description of the library folder.",
+    )
+    parent_library_id: EncodedDatabaseIdField = Field(
+        ...,
+        title="Parent library ID",
+        description="Encoded ID of the library that contains the folder.",
+    )
+    full_path: List[Tuple[EncodedDatabaseIdField, str]] = Field(  # TODO: this could/should be a BaseModel too... PathBreadcrum?
+        ...,
+        title="Full path",
+        description="The list of folders as tuples with (folder_id, folder_name) that compound the path to this folder.",
+    )
+    total_rows: int = Field(
+        ...,
+        title="Total rows",
+        description="Total number of items contained in the folder, including sub-folders.",
+    )
+    can_modify_folder: bool = Field(
+        ...,
+        title="User can modify",
+        description="Whether the current user can modify the properties of the folder.",
+    )
+    can_add_library_item: bool = Field(
+        ...,
+        title="User can add library item",
+        description="Whether the current user can add more sub-folders or datasets to the folder.",
+    )
+
+
+class FolderContainer(BaseModel):
+    metadata: FolderMetadata = Field(
+        ...,
+        title="Metadata",
+        description="General information about the folder and its contents.",
+    )
+    folder_contents: FolderContents = Field(
+        ...,
+        title="Folder contents",
+        description="List with all the items contained in the folder.",
+    )
+
+
+class CreateLibraryItemPayload(BaseModel):
+    from_hda_id: Optional[EncodedDatabaseIdField] = Field(
+        None,
+        title="HDA Encoded ID",
+        description="The encoded identifier of the History Dataset Association instance to add to the library.",
+    )
+    ldda_message: Optional[str] = Field(
+        None,
+        title="LDDA Message",
+        description=(
+            "The new message attribute of the Library Dataset Dataset Association created. "
+            "Only applies when specifying `from_hda_id`."
+        ),
+    )
+    from_hdca_id: Optional[EncodedDatabaseIdField] = Field(
+        None,
+        title="HDCA Encoded ID",
+        description="The encoded identifier of the History Dataset Collection Association instance to add to the library.",
+    )
+    collection_as_single_item: Optional[bool] = Field(
+        None,
+        title="Collection as single item",
+        description=(
+            "This will create the collection as a single item in the library instead of unpacking all the datasets."
+        ),
+    )
+
+
+# TODO: refactor and remove UsesLibraryMixinItems then move this class to lib/galaxy/managers/folder_contents.py
+class FolderContentsService(UsesLibraryMixinItems):
+    """Common interface/service logic for interactions with library folder contents in the context of the API.
+
+    Provides the logic of the actions invoked by API controllers and uses type definitions
+    and pydantic models to declare its parameters and return types.
     """
-    Interface/service object for interacting with folders contents providing a shared view for API controllers.
-    """
 
-    def __init__(self, app: StructuredApp, hda_manager: HDAManager, folder_manager: FolderManager):
+    def __init__(self, app: StructuredApp, hda_manager: HDAManager, hdca_manager: HDCAManager, folder_manager: FolderManager):
         self.app = app
         self.hda_manager = hda_manager
+        self.hdca_manager = hdca_manager
         self.folder_manager = folder_manager
 
     def get_object(self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None):
@@ -42,7 +279,7 @@ class FolderContentsAPIView(UsesLibraryMixinItems):
         """
         return managers_base.get_object(trans, id, class_name, check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted)
 
-    def index(self, trans, folder_id, limit=None, offset=None, search_text=None, include_deleted=False):
+    def index(self, trans, folder_id: EncodedDatabaseIdField, limit=None, offset=None, search_text=None, include_deleted=False) -> FolderContainer:
         """
         Displays a collection (list) of a folder's contents (files and folders). Encoded folder ID is prepended
         with 'F' if it is a folder as opposed to a data set which does not have it. Full path is provided in
@@ -90,10 +327,10 @@ class FolderContentsAPIView(UsesLibraryMixinItems):
         update_time = ''
         create_time = ''
 
-        folders, datasets = self._apply_preferences(folder, include_deleted, search_text)
+        folders, datasets, collections = self._apply_preferences(folder, include_deleted, search_text)
 
-        #  Go through every accessible item (folders, datasets) in the folder and include its metadata.
-        for content_item in self._load_folder_contents(trans, folders, datasets, offset, limit):
+        #  Go through every accessible item (folders, datasets, collections) in the folder and include its metadata.
+        for content_item in self._load_folder_contents(trans, folders, datasets, collections, offset, limit):
             return_item = {}
             encoded_id = trans.security.encode_id(content_item.id)
             create_time = content_item.create_time.strftime(TIME_FORMAT)
@@ -106,6 +343,17 @@ class FolderContentsAPIView(UsesLibraryMixinItems):
                 return_item.update(dict(can_modify=can_modify, can_manage=can_manage))
                 if content_item.description:
                     return_item.update(dict(description=content_item.description))
+
+            elif content_item.api_type == COLLECTION_TYPE_NAME:
+                can_manage = is_admin  # TODO or (trans.user and trans.app.security_agent.can_manage_library_item(current_user_roles, content_item.library_dataset_collection_association.collection))
+                update_time = content_item.update_time.strftime(TIME_FORMAT)
+                library_collection_dict = content_item.to_dict()
+                return_item.update(dict(
+                    can_manage=can_manage,
+                    update_time=update_time,
+                    collection_type=library_collection_dict["collection_type"],
+                    element_count=library_collection_dict["element_count"],
+                ))
 
             elif content_item.api_type == FILE_TYPE_NAME:
                 #  Is the dataset public or private?
@@ -174,11 +422,11 @@ class FolderContentsAPIView(UsesLibraryMixinItems):
                         folder_description=folder.description,
                         parent_library_id=parent_library_id)
         folder_container = dict(metadata=metadata, folder_contents=folder_contents)
-        return folder_container
+        return FolderContainer.parse_obj(folder_container)
 
-    def create(self, trans, encoded_folder_id, payload, **kwd):
+    def create(self, trans, encoded_folder_id: EncodedDatabaseIdField, payload: CreateLibraryItemPayload):
         """
-        Create a new library file from an HDA.
+        Create a new library file from an HDA or HDCA.
 
         :param  encoded_folder_id:      the encoded id of the folder to import dataset(s) to
         :type   encoded_folder_id:      an encoded id string
@@ -189,8 +437,6 @@ class FolderContentsAPIView(UsesLibraryMixinItems):
             :type  from_hdca_id:         encoded id
             :param ldda_message:        (optional) the new message attribute of the LDDA created
             :type   ldda_message:       str
-            :param extended_metadata:   (optional) dub-dictionary containing any extended metadata to associate with the item
-            :type  extended_metadata:   dict
         :type   payload:    dict
 
         :returns:   a dictionary describing the new item if ``from_hda_id`` is supplied or a list of
@@ -202,15 +448,17 @@ class FolderContentsAPIView(UsesLibraryMixinItems):
             InternalServerError
         """
         encoded_folder_id_16 = self.__decode_library_content_id(trans, encoded_folder_id)
-        from_hda_id = payload.pop('from_hda_id', None)
-        from_hdca_id = payload.pop('from_hdca_id', None)
-        ldda_message = payload.pop('ldda_message', '')
+        from_hda_id = payload.from_hda_id
+        from_hdca_id = payload.from_hdca_id
+        ldda_message = payload.ldda_message
         try:
             if from_hda_id:
                 decoded_hda_id = self._decode_id(from_hda_id)
                 return self._copy_hda_to_library_folder(trans, self.hda_manager, decoded_hda_id, encoded_folder_id_16, ldda_message)
             if from_hdca_id:
                 decoded_hdca_id = self._decode_id(from_hdca_id)
+                if payload.collection_as_single_item:
+                    return self._copy_hdca_to_library_folder_single(trans, self.hdca_manager, decoded_hdca_id, encoded_folder_id_16)
                 return self._copy_hdca_to_library_folder(trans, self.hda_manager, decoded_hdca_id, encoded_folder_id_16, ldda_message)
         except Exception as exc:
             # TODO handle exceptions better within the mixins
@@ -262,7 +510,7 @@ class FolderContentsAPIView(UsesLibraryMixinItems):
             path_to_root.extend(self._build_path(trans, upper_folder))
         return path_to_root
 
-    def _load_folder_contents(self, trans, folders, datasets, offset=None, limit=None):
+    def _load_folder_contents(self, trans, folders, datasets, collections, offset=None, limit=None):
         """
         Loads all contents of the folder (folders and data sets) but only
         in the first level. Include deleted if the flag is set and if the
@@ -283,7 +531,7 @@ class FolderContentsAPIView(UsesLibraryMixinItems):
         content_items = []
 
         offset = 0 if offset is None else int(offset)
-        limit = 0 if limit is None else int(limit)
+        original_limit = limit = 0 if limit is None else int(limit)
 
         current_folders = self._calculate_pagination(folders, offset, limit)
 
@@ -294,9 +542,30 @@ class FolderContentsAPIView(UsesLibraryMixinItems):
                 subfolder.api_type = FOLDER_TYPE_NAME
                 content_items.append(subfolder)
 
-        limit -= len(content_items)
-        offset -= len(folders)
+        num_folders = len(content_items)
+        limit -= num_folders
+        offset -= len(folders) - num_folders
         offset = max(0, offset)
+
+        if limit <= 0 and original_limit > 0:
+            return content_items
+
+        current_collections = self._calculate_pagination(collections, offset, limit)
+
+        for collection in current_collections:
+            if not collection.deleted or is_admin or trans.app.security_agent.can_modify_library_item(current_user_roles, collection):
+                # Admins or users with MODIFY permissions can see deleted folders.
+                collection.api_type = COLLECTION_TYPE_NAME
+                content_items.append(collection)
+            # TODO: check user access to collections?
+
+        num_collections = len(content_items) - num_folders
+        limit -= num_collections
+        offset -= len(collections) - num_collections
+        offset = max(0, offset)
+
+        if limit <= 0 and original_limit > 0:
+            return content_items
 
         current_datasets = self._calculate_pagination(datasets, offset, limit)
 
@@ -321,7 +590,7 @@ class FolderContentsAPIView(UsesLibraryMixinItems):
             paginated_items = items[offset:]
         return paginated_items
 
-    def _apply_preferences(self, folder, include_deleted: bool, search_text: str):
+    def _apply_preferences(self, folder: LibraryFolder, include_deleted: bool, search_text: str):
 
         def check_deleted(array, include_deleted):
             if include_deleted:
@@ -342,19 +611,21 @@ class FolderContentsAPIView(UsesLibraryMixinItems):
 
         datasets = check_deleted(folder.datasets, include_deleted)
         folders = check_deleted(folder.folders, include_deleted)
+        collections = check_deleted(folder.collections, include_deleted)
 
         if search_text is not None:
             folders = [item for item in folders if search_text in item.name or search_text in item.description]
             datasets = list(filter(filter_searched_datasets, datasets))
+            collections = [item for item in collections if search_text in item.name]
 
-        return folders, datasets
+        return folders, datasets, collections
 
 
 class FolderContentsController(BaseGalaxyAPIController):
     """
     Class controls retrieval, creation and updating of folder contents.
     """
-    view: FolderContentsAPIView = depends(FolderContentsAPIView)
+    service: FolderContentsService = depends(FolderContentsService)
 
     @expose_api_anonymous
     def index(self, trans, folder_id, limit=None, offset=None, search_text=None, **kwd):
@@ -393,7 +664,7 @@ class FolderContentsController(BaseGalaxyAPIController):
              InternalServerError
         """
         include_deleted = util.asbool(kwd.get('include_deleted', False))
-        return self.view.index(trans, folder_id, limit, offset, search_text, include_deleted)
+        return self.service.index(trans, folder_id, limit, offset, search_text, include_deleted)
 
     @expose_api
     def create(self, trans, encoded_folder_id, payload, **kwd):
@@ -423,4 +694,5 @@ class FolderContentsController(BaseGalaxyAPIController):
             InsufficientPermissionsException, ItemAccessibilityException,
             InternalServerError
         """
-        return self.view.create(trans, encoded_folder_id, payload)
+        create_payload = CreateLibraryItemPayload(**payload)
+        return self.service.create(trans, encoded_folder_id, create_payload)

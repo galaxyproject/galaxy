@@ -3719,6 +3719,7 @@ class LibraryFolder(Dictifiable, HasName, RepresentById):
         self.genome_build = genome_build
         self.folders = []
         self.datasets = []
+        self.collections = []
 
     def add_library_dataset(self, library_dataset, genome_build=None):
         library_dataset.folder_id = self.id
@@ -3730,6 +3731,11 @@ class LibraryFolder(Dictifiable, HasName, RepresentById):
     def add_folder(self, folder):
         folder.parent_id = self.id
         folder.order_id = self.item_count
+        self.item_count += 1
+
+    def add_library_collection(self, library_collection):
+        library_collection.folder_id = self.id
+        library_collection.order_id = self.item_count
         self.item_count += 1
 
     @property
@@ -3752,6 +3758,10 @@ class LibraryFolder(Dictifiable, HasName, RepresentById):
         for folder in self.folders:
             folders.append(folder.serialize(id_encoder, serialization_options))
         rval["folders"] = folders
+        collections = []
+        for collection in self.collections:
+            collections.append(collection.serialize(id_encoder, serialization_options))
+        rval["collections"] = collections
         datasets = []
         for dataset in self.datasets:
             datasets.append(dataset.serialize(id_encoder, serialization_options))
@@ -3780,6 +3790,55 @@ class LibraryFolder(Dictifiable, HasName, RepresentById):
         while f.parent:
             f = f.parent
         return f.library_root[0]
+
+
+class LibraryDatasetCollection(RepresentById):
+    # This class acts as a proxy to the currently selected LDCA
+
+    def __init__(self, folder=None, order_id=None, name=None, library_dataset_collection_association=None):
+        self.folder = folder
+        self.order_id = order_id
+        self.name = name
+        self.library_dataset_collection_association = library_dataset_collection_association
+
+    def get_name(self):
+        if self.library_dataset_collection_association:
+            return self.library_dataset_collection_association.name
+        elif self._name:
+            return self._name
+        else:
+            return 'Unnamed collection'
+
+    def set_name(self, name):
+        self._name = name
+    name = property(get_name, set_name)
+
+    def display_name(self):
+        self.library_dataset_collection_association.display_name()
+
+    def serialize(self, id_encoder, serialization_options):
+        rval = dict_for(
+            self,
+            name=self.name,
+            order_id=self.order_id,
+            ldca=self.library_dataset_collection_association.serialize(id_encoder, serialization_options, for_link=True),
+        )
+        serialization_options.attach_identifier(id_encoder, self, rval)
+        return rval
+
+    def to_dict(self, view='collection'):
+        ldca = self.library_dataset_collection_association
+        rval = dict(id=self.id,
+                    ldca_id=ldca.id,
+                    name=ldca.name,
+                    update_time=ldca.collection.update_time.isoformat(),
+                    collection_type=ldca.collection.collection_type,
+                    element_count=ldca.collection.element_count,
+                    parent_library_id=self.folder.parent_library.id,
+                    folder_id=self.folder_id,
+                    model_class=self.__class__.__name__,
+                    )
+        return rval
 
 
 class LibraryDataset(RepresentById):
@@ -4684,6 +4743,27 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
 
         results = qry.with_session(sa_session).all()
         return len(results) > 0
+
+    def to_library_dataset_collection_association(self, trans, target_folder: LibraryFolder, roles=None):
+        """
+        Copy this HDCA to a library.
+        """
+        # TODO: allow replace?
+        library_collection = LibraryDatasetCollection(folder=target_folder, name=self.name)
+        ldca = LibraryDatasetCollectionAssociation(name=self.name, collection=self.collection, deleted=self.deleted, folder=target_folder)
+        library_collection.library_dataset_collection_association = ldca
+        # TODO: If roles were selected on the upload form, restrict access to the collection to those roles
+        # roles = roles or []
+        # for role in roles:
+        #     dp = trans.model.DatasetPermissions(trans.app.security_agent.permitted_actions.DATASET_ACCESS.action,
+        #                                         ldca.collection, role)
+        #     trans.sa_session.add(dp)
+        # TODO: copy #tags from history
+        target_folder.add_library_collection(library_collection)
+        object_session(self).add(target_folder)
+        object_session(self).add(library_collection)
+        object_session(self).flush()
+        return ldca
 
 
 class LibraryDatasetCollectionAssociation(DatasetCollectionInstance, RepresentById):

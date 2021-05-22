@@ -932,6 +932,23 @@ model.HistoryDatasetCollectionAssociation.table = Table(
     Column("create_time", DateTime, default=now),
     Column("update_time", DateTime, default=now, onupdate=now, index=True))
 
+model.LibraryDatasetCollection.table = Table(
+    "library_dataset_collection", metadata,
+    Column("id", Integer, primary_key=True),
+    # current version of dataset, if null, there is not a current version selected
+    Column("library_dataset_collection_association_id", Integer,
+        ForeignKey("library_dataset_collection_association.id", use_alter=True, name="library_dataset_collection_association_id_fk"),
+        nullable=True, index=True),
+    Column("folder_id", Integer, ForeignKey("library_folder.id"), index=True),
+    # not currently being used, but for possible future use
+    Column("order_id", Integer),
+    Column("create_time", DateTime, default=now),
+    Column("update_time", DateTime, default=now, onupdate=now),
+    # when not None/null this will supercede display in library (but not when imported into user's history?)
+    Column("name", TrimmedString(255), key="_name", index=True),
+    Column("deleted", Boolean, index=True, default=False),
+    Column("purged", Boolean, index=True, default=False))
+
 model.LibraryDatasetCollectionAssociation.table = Table(
     "library_dataset_collection_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -2065,6 +2082,19 @@ mapper(model.LibraryFolder, model.LibraryFolder.table, properties=dict(
         # Cant use eager loading on a self referential relationship."""
         lazy=True,
         viewonly=True),
+    collections=relation(model.LibraryDatasetCollection,
+        primaryjoin=(model.LibraryDatasetCollection.table.c.folder_id == model.LibraryFolder.table.c.id),
+        order_by=asc(model.LibraryDatasetCollection.table.c._name),
+        lazy=True,
+        viewonly=True),
+    active_collections=relation(model.LibraryDatasetCollection,
+        primaryjoin=(
+            (model.LibraryDatasetCollection.table.c.folder_id == model.LibraryFolder.table.c.id)
+            & (not_(model.LibraryDatasetCollection.table.c.deleted))
+        ),
+        order_by=asc(model.LibraryDatasetCollection.table.c._name),
+        lazy=True,
+        viewonly=True),
     datasets=relation(model.LibraryDataset,
         primaryjoin=(model.LibraryDataset.table.c.folder_id == model.LibraryFolder.table.c.id),
         order_by=asc(model.LibraryDataset.table.c._name),
@@ -2107,6 +2137,13 @@ mapper(model.LibraryDataset, model.LibraryDataset.table, properties=dict(
         ),
         viewonly=True,
         uselist=True)
+))
+
+mapper(model.LibraryDatasetCollection, model.LibraryDatasetCollection.table, properties=dict(
+    folder=relation(model.LibraryFolder),
+    library_dataset_collection_association=relation(model.LibraryDatasetCollectionAssociation,
+        foreign_keys=model.LibraryDatasetCollection.table.c.library_dataset_collection_association_id,
+        post_update=True),
 ))
 
 mapper(model.LibraryDatasetDatasetAssociation, model.LibraryDatasetDatasetAssociation.table, properties=dict(
