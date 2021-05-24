@@ -152,8 +152,11 @@ class Wav(Audio):
         return 'audio/wav'
 
     def sniff(self, filename):
-        with wave.open(filename, 'rb'):
-            return True
+        try:
+            with wave.open(filename, 'rb'):
+                return True
+        except wave.Error:
+            return False
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         """Set the metadata for this dataset from the file contents."""
