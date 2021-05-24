@@ -46,6 +46,7 @@ from sqlalchemy.orm import (
     object_session,
     Query,
     reconstructor,
+    registry,
 )
 from sqlalchemy.schema import UniqueConstraint
 
@@ -76,6 +77,8 @@ from galaxy.util.sanitize_html import sanitize_html
 log = logging.getLogger(__name__)
 
 _datatypes_registry = None
+
+mapper_registry = registry()
 
 # When constructing filters with in for a fixed set of ids, maximum
 # number of items to place in the IN statement. Different databases
