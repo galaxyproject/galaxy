@@ -16,7 +16,7 @@
                     <div v-if="loading"><b-spinner label="Loading Genomes..."></b-spinner></div>
                     <div v-else>
                         <database-edit-tab
-                            v-if="item"
+                            v-if="item && databaseKeyFromElements"
                             :database-key-from-elements="databaseKeyFromElements"
                             :genomes="item"
                             @clicked-save="clickedSave"
@@ -24,32 +24,12 @@
                     </div>
                 </GenomeProvider>
             </b-tab>
-            <b-tab v-if="atleastOneSuitableConverter">
-                <template v-slot:title> <font-awesome-icon icon="cog" /> &nbsp; {{ l("Convert") }}</template>
-                <div class="alert alert-secondary" role="alert">
-                    <div class="float-left">Convert all datasets to new format</div>
-                    <div class="text-right">
-                        <button
-                            class="run-tool-collection-edit btn btn-primary"
-                            @click="clickedConvert"
-                            :disabled="chosenConverter == {}"
-                        >
-                            {{ l("Convert Collection") }}
-                        </button>
-                    </div>
-                </div>
-                <b>{{ l("Converter Tool: ") }}</b>
-                <multiselect
-                    v-model="chosenConverter"
-                    deselect-label="Can't remove this value"
-                    track-by="name"
-                    label="name"
-                    :options="suitableConverters"
-                    :searchable="true"
-                    :allow-empty="true"
-                >
-                </multiselect>
-            </b-tab>
+            <SuitableConvertersProvider :id="collection_id" v-slot="{ item }">
+                <b-tab v-if="item && item.length">
+                    <template v-slot:title> <font-awesome-icon icon="cog" /> &nbsp; {{ l("Convert") }}</template>
+                    <suitable-converters-tab :suitable-converters="item" @clicked-convert="clickedConvert" />
+                </b-tab>
+            </SuitableConvertersProvider>
         </b-tabs>
     </div>
 </template>
@@ -60,10 +40,10 @@ import BootstrapVue from "bootstrap-vue";
 import axios from "axios";
 import { prependPath } from "utils/redirect";
 import _l from "utils/localization";
-import Multiselect from "vue-multiselect";
 import { errorMessageAsString } from "utils/simple-error";
 import DatabaseEditTab from "./DatabaseEditTab";
-import { GenomeProvider } from "../../WorkflowInvocationState/providers";
+import SuitableConvertersTab from "./SuitableConvertersTab";
+import { GenomeProvider, SuitableConvertersProvider } from "../../WorkflowInvocationState/providers";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faDatabase } from "@fortawesome/free-solid-svg-icons";
@@ -71,7 +51,6 @@ import { faTable } from "@fortawesome/free-solid-svg-icons";
 import { faBars } from "@fortawesome/free-solid-svg-icons";
 import { faUser } from "@fortawesome/free-solid-svg-icons";
 import { faCog } from "@fortawesome/free-solid-svg-icons";
-import store from "../../../store/index";
 
 library.add(faDatabase);
 library.add(faTable);
@@ -82,21 +61,18 @@ library.add(faUser);
 Vue.use(BootstrapVue);
 export default {
     created() {
-        this.getDatatypesAndGenomes();
         this.getCollectionDataAndAttributes();
-        this.getConverterList();
     },
-    components: { Multiselect, DatabaseEditTab, FontAwesomeIcon, GenomeProvider },
+    components: {
+        DatabaseEditTab,
+        SuitableConvertersTab,
+        FontAwesomeIcon,
+        GenomeProvider,
+        SuitableConvertersProvider,
+    },
     data: function () {
         return {
             attributes_data: {},
-            extensions: [],
-            genomes: [],
-            selectedExtension: {},
-            chosenConverter: {},
-            databaseKeyFromElements: null,
-            suitableConverters: [],
-            datatypeFromElements: null,
             errorMessage: null,
             jobError: null,
         };
@@ -108,16 +84,8 @@ export default {
         },
     },
     computed: {
-        extension: {
-            get() {
-                return this.selectedExtension;
-            },
-            set(element) {
-                this.selectedExtension = element;
-            },
-        },
-        atleastOneSuitableConverter: function () {
-            return this.suitableConverters.length > 0;
+        databaseKeyFromElements: function () {
+            return this.attributes_data.dbkey;
         },
     },
     methods: {
@@ -125,43 +93,13 @@ export default {
             // _l conflicts private methods of Vue internals, expose as l instead
             return _l(str);
         },
-        getDatatypesAndGenomes: async function () {
-            let datatypes = store.getters.getUploadDatatypes();
-            if (!datatypes || datatypes.length == 0) {
-                await store.dispatch("fetchUploadDatatypes");
-                datatypes = store.getters.getUploadDatatypes();
-            }
-            this.extensions = datatypes;
-            let genomes = store.getters.getUploadGenomes();
-            if (!genomes || genomes.length == 0) {
-                await store.dispatch("fetchUploadGenomes");
-                genomes = store.getters.getUploadGenomes();
-            }
-            this.genomes = genomes;
-        },
         getCollectionDataAndAttributes: async function () {
-            let attributesGet = store.getters.getCollectionAttributes(this.collection_id);
+            let attributesGet = this.$store.getters.getCollectionAttributes(this.collection_id);
             if (attributesGet == null) {
-                await store.dispatch("fetchCollectionAttributes", this.collection_id);
-                attributesGet = store.getters.getCollectionAttributes(this.collection_id);
+                await this.$store.dispatch("fetchCollectionAttributes", this.collection_id);
+                attributesGet = this.$store.getters.getCollectionAttributes(this.collection_id);
             }
             this.attributes_data = attributesGet;
-            this.getDatabaseKeyFromElements();
-            this.getExtensionFromElements();
-        },
-        getDatabaseKeyFromElements: function () {
-            this.databaseKeyFromElements = this.attributes_data.dbkey;
-        },
-        getExtensionFromElements: function () {
-            this.datatypeFromElements = this.attributes_data.extension;
-            this.selectedExtension = this.extensions.find((element) => element.id == this.datatypeFromElements);
-        },
-        getConverterList: async function () {
-            axios
-                .get(prependPath("/api/dataset_collections/suitable_converters/" + this.collection_id))
-                .then((response) => {
-                    this.suitableConverters = response.data;
-                });
         },
         clickedSave: function (attribute, newValue) {
             const url = prependPath("/api/dataset_collections/" + this.collection_id);
@@ -171,19 +109,12 @@ export default {
             } else if (attribute == "file_ext") {
                 data["file_ext"] = newValue.id;
             }
-            axios
-                .put(url, data)
-                .then((response) => {
-                    this.apiCallToGetData();
-                    this.getDatabaseKeyFromElements();
-                    this.getExtensionFromElements();
-                })
-                .catch(this.handleError);
+            axios.put(url, data).catch(this.handleError);
         },
-        clickedConvert: function () {
+        clickedConvert: function (selectedConverter) {
             const url = prependPath("/api/tools/");
             const data = {
-                tool_id: this.chosenConverter.tool_id,
+                tool_id: selectedConverter.tool_id,
                 inputs: { input: { batch: true, values: [{ src: "hdca", id: this.collection_id }] } },
             };
             axios.post(url, data).catch(this.handleError);

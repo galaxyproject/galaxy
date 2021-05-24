@@ -99,8 +99,17 @@ export const GenomeProvider = {
         },
     },
     computed: {
-        ...mapGetters(["getUploadGenomes"])
-    }
+        ...mapGetters(["getUploadGenomes"]),
+    },
+};
+
+export const SuitableConvertersProvider = {
+    mixins: [SimpleProviderMixin],
+    computed: {
+        url() {
+            return prependPath(`/api/dataset_collections/suitable_converters/${this.id}`);
+        },
+    },
 };
 
 export const DatasetCollectionContentProvider = {
