@@ -18,7 +18,9 @@ from galaxy.util import (
     string_as_bool,
     unicodify,
 )
-
+from galaxy.util.checkers import (
+    check_html
+)
 log = logging.getLogger(__name__)
 
 
@@ -52,11 +54,7 @@ class Html(Text):
         >>> Html().sniff( fname )
         True
         """
-        headers = iter_headers(file_prefix, None)
-        for hdr in headers:
-            if hdr and hdr[0].lower().find('<html>') >= 0:
-                return True
-        return False
+        return check_html(file_prefix.filename)
 
 
 @build_sniff_from_prefix
