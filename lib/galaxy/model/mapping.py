@@ -59,17 +59,6 @@ log = logging.getLogger(__name__)
 metadata = mapper_registry.metadata
 
 
-model.WorkerProcess.table = Table(
-    'worker_process',
-    metadata,
-    Column("id", Integer, primary_key=True),
-    Column("server_name", String(255), index=True),
-    Column("hostname", String(255)),
-    Column("pid", Integer),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    UniqueConstraint('server_name', 'hostname'),
-)
-
 model.User.table = Table(
     "galaxy_user", metadata,
     Column("id", Integer, primary_key=True),
@@ -1664,9 +1653,6 @@ CleanupEventImplicitlyConvertedDatasetAssociationAssociation_table = Table("clea
 # relationships between the model objects.
 def simple_mapping(model, **kwds):
     mapper_registry.map_imperatively(model, model.table, properties=kwds)
-
-
-simple_mapping(model.WorkerProcess)
 
 
 # User tables.

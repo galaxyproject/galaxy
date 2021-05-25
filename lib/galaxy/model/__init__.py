@@ -27,17 +27,23 @@ from social_core.storage import AssociationMixin, CodeMixin, NonceMixin, Partial
 from sqlalchemy import (
     alias,
     and_,
+    Column,
+    DateTime,
     func,
     inspect,
+    Integer,
     join,
     not_,
     or_,
     select,
+    String,
     text,
     true,
     tuple_,
     type_coerce,
-    types)
+    types,
+    UniqueConstraint,
+)
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext import hybrid
 from sqlalchemy.orm import (
@@ -48,7 +54,6 @@ from sqlalchemy.orm import (
     reconstructor,
     registry,
 )
-from sqlalchemy.schema import UniqueConstraint
 
 import galaxy.exceptions
 import galaxy.model.metadata
@@ -57,6 +62,7 @@ import galaxy.model.tags
 import galaxy.security.passwords
 import galaxy.util
 from galaxy.model.item_attrs import get_item_annotation_str, UsesAnnotations
+from galaxy.model.orm.now import now
 from galaxy.security import get_permitted_actions
 from galaxy.security.validate_user_input import validate_password_str
 from galaxy.util import (
@@ -249,7 +255,18 @@ class UsesCreateAndUpdateTime:
         return (galaxy.model.orm.now.now() - create_time).total_seconds()
 
 
+@mapper_registry.mapped
 class WorkerProcess(UsesCreateAndUpdateTime, _HasTable):
+    __tablename__ = 'worker_process'
+    __table_args__ = (
+        UniqueConstraint('server_name', 'hostname'),
+    )
+
+    id = Column("id", Integer, primary_key=True)
+    server_name = Column("server_name", String(255), index=True)
+    hostname = Column("hostname", String(255))
+    pid = Column("pid", Integer)
+    update_time = Column("update_time", DateTime, default=now, onupdate=now)
 
     def __init__(self, server_name, hostname):
         self.server_name = server_name

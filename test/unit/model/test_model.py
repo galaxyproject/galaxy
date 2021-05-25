@@ -2,6 +2,7 @@ import pytest
 from sqlalchemy import (
     delete,
     select,
+    UniqueConstraint,
 )
 
 import galaxy.model.mapping as mapping
@@ -20,7 +21,13 @@ def session(model, request):
     Session.remove()  # Ensures we get a new session for each test
 
 
-def test_workerprocess(model, session):
+def test_WorkerProcess_table(model):
+    tbl = model.WorkerProcess.__table__
+    assert tbl.name == 'worker_process'
+    assert has_unique_constraint(tbl, ('server_name', 'hostname'))
+
+
+def test_WorkerProcess(model, session):
     server_name, hostname = 'a', 'b'
     wp = model.WorkerProcess(server_name, hostname)
     persist(session, wp)
@@ -43,3 +50,11 @@ def persist(session, obj):
 
 def cleanup(session, cls):
     session.execute(delete(cls))
+
+
+def has_unique_constraint(table, fields):
+    for constraint in table.constraints:
+        if isinstance(constraint, UniqueConstraint):
+            col_names = {c.name for c in constraint.columns}
+            if set(fields) == col_names:
+                return True
