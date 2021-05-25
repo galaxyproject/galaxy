@@ -1003,6 +1003,8 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         self._working_directory = remote_job_config["working_directory"]
         self._sep = remote_job_config["system_properties"]["separator"]
         self._tool_dir = remote_job_config["tools_directory"]
+        self._tmp_dir = remote_job_config.get('tmp_dir')
+        self._shared_home_dir = remote_job_config.get('shared_home_dir')
         version_path = self.local_path_config.version_path()
         new_version_path = self.path_mapper.remote_version_path_rewrite(version_path)
         if new_version_path:
@@ -1092,14 +1094,23 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         return self._tool_dir
 
     def home_directory(self):
-        # TODO: revisit and implement this, won't break anything working in the
-        # meantime.
-        return None
+        return self._target_to_directory(self.job_wrapper.home_target)
 
     def tmp_directory(self):
-        # TODO: revisit and implement this, won't break anything working in the
-        # meantime.
-        return None
+        return self._target_to_directory(self.job_wrapper.tmp_target)
+
+    def _target_to_directory(self, target):
+        tmp_dir = self._tmp_dir
+        if target is None or (target == "job_tmp_if_explicit" and tmp_dir is None):
+            return None
+        elif target in ["job_tmp", "job_tmp_if_explicit"]:
+            return "$_GALAXY_JOB_TMP_DIR"
+        elif target == "shared_home":
+            return self._shared_home_dir
+        elif target == "job_home":
+            return "$_GALAXY_JOB_HOME_DIR"
+        else:
+            raise Exception(f"Unknown target type [{target}]")
 
     def galaxy_url(self):
         return self.job_wrapper.get_destination_configuration("galaxy_infrastructure_url")
