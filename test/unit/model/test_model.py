@@ -43,6 +43,29 @@ def test_WorkerProcess(model, session):
     cleanup(session, model.WorkerProcess)
 
 
+def test_PSAAssociation_table(model):
+    tbl = model.PSAAssociation.__table__
+    assert tbl.name == 'psa_association'
+
+
+def test_PSAAssociation(model, session):
+    server_url, handle, secret, issued, lifetime, assoc_type = 'a', 'b', 'c', 1, 2, 'd'
+    psa = model.PSAAssociation(server_url, handle, secret, issued, lifetime, assoc_type)
+    persist(session, psa)
+
+    stmt = select(model.PSAAssociation)
+    stored_psa = session.execute(stmt).scalar_one()
+    assert stored_psa.id
+    assert stored_psa.server_url == server_url
+    assert stored_psa.handle == handle
+    assert stored_psa.secret == secret
+    assert stored_psa.issued == issued
+    assert stored_psa.lifetime == lifetime
+    assert stored_psa.assoc_type == assoc_type
+
+    cleanup(session, model.PSAAssociation)
+
+
 def test_PSACode_table(model):
     tbl = model.PSACode.__table__
     assert tbl.name == 'psa_code'

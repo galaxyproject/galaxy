@@ -95,16 +95,6 @@ model.UserAddress.table = Table(
     Column("deleted", Boolean, index=True, default=False),
     Column("purged", Boolean, index=True, default=False))
 
-model.PSAAssociation.table = Table(
-    "psa_association", metadata,
-    Column('id', Integer, primary_key=True),
-    Column('server_url', VARCHAR(255)),
-    Column('handle', VARCHAR(255)),
-    Column('secret', VARCHAR(255)),
-    Column('issued', Integer),
-    Column('lifetime', Integer),
-    Column('assoc_type', VARCHAR(64)))
-
 model.PSANonce.table = Table(
     "psa_nonce", metadata,
     Column('id', Integer, primary_key=True),
@@ -1681,8 +1671,6 @@ mapper_registry.map_imperatively(model.UserAddress, model.UserAddress.table, pro
         backref='addresses',
         order_by=desc(model.UserAddress.table.c.update_time)),
 ))
-
-mapper_registry.map_imperatively(model.PSAAssociation, model.PSAAssociation.table, properties=None)
 
 mapper_registry.map_imperatively(model.PSANonce, model.PSANonce.table, properties=None)
 

@@ -6059,7 +6059,17 @@ class UserAddress(RepresentById):
                 'phone': sanitize_html(self.phone)}
 
 
+@mapper_registry.mapped
 class PSAAssociation(AssociationMixin, RepresentById):
+    __tablename__ = 'psa_association'
+
+    id = Column('id', Integer, primary_key=True)
+    server_url = Column('server_url', VARCHAR(255))
+    handle = Column('handle', VARCHAR(255))
+    secret = Column('secret', VARCHAR(255))
+    issued = Column('issued', Integer)
+    lifetime = Column('lifetime', Integer)
+    assoc_type = Column('assoc_type', VARCHAR(64))
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None
