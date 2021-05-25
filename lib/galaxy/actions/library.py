@@ -11,6 +11,8 @@ from galaxy import util
 from galaxy.exceptions import (
     AdminRequiredException,
     ConfigDoesNotAllowException,
+    ItemAccessibilityException,
+    ObjectNotFound,
     RequestParameterInvalidException,
 )
 from galaxy.tools.actions import upload_common
@@ -292,20 +294,19 @@ class LibraryActions:
         return 200, dict(created=new_folder)
 
     def _check_access(self, trans, is_admin, item, current_user_roles):
-        can_access = True
         if isinstance(item, trans.model.HistoryDatasetAssociation):
             # Make sure the user has the DATASET_ACCESS permission on the history_dataset_association.
             if not item:
                 message = f"Invalid history dataset ({escape(str(item))}) specified."
-                can_access = False
+                raise ObjectNotFound(message)
             elif not trans.app.security_agent.can_access_dataset(current_user_roles, item.dataset) and item.history.user == trans.user:
                 message = f"You do not have permission to access the history dataset with id ({str(item.id)})."
-                can_access = False
+                raise ItemAccessibilityException(message)
         else:
             # Make sure the user has the LIBRARY_ACCESS permission on the library item.
             if not item:
                 message = f"Invalid library item ({escape(str(item))}) specified."
-                can_access = False
+                raise ObjectNotFound(message)
             elif not (is_admin or trans.app.security_agent.can_access_library_item(current_user_roles, item, trans.user)):
                 if isinstance(item, trans.model.Library):
                     item_type = 'data library'
@@ -314,12 +315,10 @@ class LibraryActions:
                 else:
                     item_type = '(unknown item type)'
                 message = f"You do not have permission to access the {escape(item_type)} with id ({str(item.id)})."
-                can_access = False
-        if not can_access:
-            return 400, message
+                raise ItemAccessibilityException(message)
 
     def _check_add(self, trans, is_admin, item, current_user_roles):
         # Deny access if the user is not an admin and does not have the LIBRARY_ADD permission.
         if not (is_admin or trans.app.security_agent.can_add_library_item(current_user_roles, item)):
             message = f"You are not authorized to add an item to ({escape(item.name)})."
-            return 403, message
+            raise ItemAccessibilityException(message)
