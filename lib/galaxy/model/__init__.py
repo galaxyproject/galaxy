@@ -6136,7 +6136,14 @@ class PSACode(CodeMixin, RepresentById):
         return cls.sa_session.query(cls).filter(cls.code == code).first()
 
 
+@mapper_registry.mapped
 class PSANonce(NonceMixin, RepresentById):
+    __tablename__ = 'psa_nonce'
+
+    id = Column('id', Integer, primary_key=True)
+    server_url = Column('server_url', VARCHAR(255))
+    timestamp = Column('timestamp', Integer)
+    salt = Column('salt', VARCHAR(40))
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None

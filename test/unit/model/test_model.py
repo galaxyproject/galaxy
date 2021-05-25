@@ -29,16 +29,16 @@ def test_WorkerProcess_table(model):
 
 def test_WorkerProcess(model, session):
     server_name, hostname = 'a', 'b'
-    wp = model.WorkerProcess(server_name, hostname)
-    persist(session, wp)
+    obj = model.WorkerProcess(server_name, hostname)
+    persist(session, obj)
 
     stmt = select(model.WorkerProcess)
-    stored_wp = session.execute(stmt).scalar_one()
-    assert stored_wp.id
-    assert stored_wp.server_name == server_name
-    assert stored_wp.hostname == hostname
-    assert stored_wp.pid is None
-    assert stored_wp.update_time
+    stored_obj = session.execute(stmt).scalar_one()
+    assert stored_obj.id
+    assert stored_obj.server_name == server_name
+    assert stored_obj.hostname == hostname
+    assert stored_obj.pid is None
+    assert stored_obj.update_time
 
     cleanup(session, model.WorkerProcess)
 
@@ -50,18 +50,18 @@ def test_PSAAssociation_table(model):
 
 def test_PSAAssociation(model, session):
     server_url, handle, secret, issued, lifetime, assoc_type = 'a', 'b', 'c', 1, 2, 'd'
-    psa = model.PSAAssociation(server_url, handle, secret, issued, lifetime, assoc_type)
-    persist(session, psa)
+    obj = model.PSAAssociation(server_url, handle, secret, issued, lifetime, assoc_type)
+    persist(session, obj)
 
     stmt = select(model.PSAAssociation)
-    stored_psa = session.execute(stmt).scalar_one()
-    assert stored_psa.id
-    assert stored_psa.server_url == server_url
-    assert stored_psa.handle == handle
-    assert stored_psa.secret == secret
-    assert stored_psa.issued == issued
-    assert stored_psa.lifetime == lifetime
-    assert stored_psa.assoc_type == assoc_type
+    stored_obj = session.execute(stmt).scalar_one()
+    assert stored_obj.id
+    assert stored_obj.server_url == server_url
+    assert stored_obj.handle == handle
+    assert stored_obj.secret == secret
+    assert stored_obj.issued == issued
+    assert stored_obj.lifetime == lifetime
+    assert stored_obj.assoc_type == assoc_type
 
     cleanup(session, model.PSAAssociation)
 
@@ -74,16 +74,36 @@ def test_PSACode_table(model):
 
 def test_PSACode(model, session):
     email, code = 'a', 'b'
-    psa = model.PSACode(email, code)
-    persist(session, psa)
+    obj = model.PSACode(email, code)
+    persist(session, obj)
 
     stmt = select(model.PSACode)
-    stored_psa = session.execute(stmt).scalar_one()
-    assert stored_psa.id
-    assert stored_psa.email == email
-    assert stored_psa.code == code
+    stored_obj = session.execute(stmt).scalar_one()
+    assert stored_obj.id
+    assert stored_obj.email == email
+    assert stored_obj.code == code
 
     cleanup(session, model.PSACode)
+
+
+def test_PSANonce_table(model):
+    tbl = model.PSANonce.__table__
+    assert tbl.name == 'psa_nonce'
+
+
+def test_PSANonce(model, session):
+    server_url, timestamp, salt = 'a', 1, 'b'
+    obj = model.PSANonce(server_url, timestamp, salt)
+    persist(session, obj)
+
+    stmt = select(model.PSANonce)
+    stored_obj = session.execute(stmt).scalar_one()
+    assert stored_obj.id
+    assert stored_obj.server_url
+    assert stored_obj.timestamp == timestamp
+    assert stored_obj.salt == salt
+
+    cleanup(session, model.PSANonce)
 
 
 def test_PSAPartial_table(model):

@@ -95,13 +95,6 @@ model.UserAddress.table = Table(
     Column("deleted", Boolean, index=True, default=False),
     Column("purged", Boolean, index=True, default=False))
 
-model.PSANonce.table = Table(
-    "psa_nonce", metadata,
-    Column('id', Integer, primary_key=True),
-    Column('server_url', VARCHAR(255)),
-    Column('timestamp', Integer),
-    Column('salt', VARCHAR(40)))
-
 model.UserAuthnzToken.table = Table(
     "oidc_user_authnz_tokens", metadata,
     Column('id', Integer, primary_key=True),
@@ -1663,8 +1656,6 @@ mapper_registry.map_imperatively(model.UserAddress, model.UserAddress.table, pro
         backref='addresses',
         order_by=desc(model.UserAddress.table.c.update_time)),
 ))
-
-mapper_registry.map_imperatively(model.PSANonce, model.PSANonce.table, properties=None)
 
 mapper_registry.map_imperatively(model.UserAuthnzToken, model.UserAuthnzToken.table, properties=dict(
     user=relation(model.User,
