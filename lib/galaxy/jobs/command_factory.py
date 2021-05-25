@@ -244,6 +244,8 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
 
 def __copy_if_exists_command(work_dir_output):
     source_file, destination = work_dir_output
+    if '?' in source_file or '*' in source_file:
+        source_file = source_file.replace('*', '"*"').replace('?', '"?"')
     return f'\nif [ -f "{source_file}" ] ; then cp "{source_file}" "{destination}" ; fi'
 
 
