@@ -56,7 +56,7 @@ class DatabaseHeartbeat:
         if last_seen_seconds is None:
             last_seen_seconds = self.heartbeat_interval
         seconds_ago = now() - datetime.timedelta(seconds=last_seen_seconds)
-        return self.sa_session.query(WorkerProcess).filter(WorkerProcess.table.c.update_time > seconds_ago).all()
+        return self.sa_session.query(WorkerProcess).filter(WorkerProcess.__table__.c.update_time > seconds_ago).all()
 
     def add_change_callback(self, callback):
         self._observers.append(callback)
