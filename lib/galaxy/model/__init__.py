@@ -43,6 +43,7 @@ from sqlalchemy import (
     type_coerce,
     types,
     UniqueConstraint,
+    VARCHAR,
 )
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext import hybrid
@@ -6097,8 +6098,16 @@ class PSAAssociation(AssociationMixin, RepresentById):
         cls.sa_session.query(cls).filter(cls.id.in_(ids_to_delete)).delete(synchronize_session='fetch')
 
 
+@mapper_registry.mapped
 class PSACode(CodeMixin, RepresentById):
-    __table_args__ = (UniqueConstraint('code', 'email'),)
+    __tablename__ = 'psa_code'
+    __table_args__ = (
+        UniqueConstraint('code', 'email'),
+    )
+
+    id = Column('id', Integer, primary_key=True)
+    email = Column('email', VARCHAR(200))
+    code = Column('code', VARCHAR(32))
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None

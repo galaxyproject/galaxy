@@ -105,12 +105,6 @@ model.PSAAssociation.table = Table(
     Column('lifetime', Integer),
     Column('assoc_type', VARCHAR(64)))
 
-model.PSACode.table = Table(
-    "psa_code", metadata,
-    Column('id', Integer, primary_key=True),
-    Column('email', VARCHAR(200)),
-    Column('code', VARCHAR(32)))
-
 model.PSANonce.table = Table(
     "psa_nonce", metadata,
     Column('id', Integer, primary_key=True),
@@ -1689,8 +1683,6 @@ mapper_registry.map_imperatively(model.UserAddress, model.UserAddress.table, pro
 ))
 
 mapper_registry.map_imperatively(model.PSAAssociation, model.PSAAssociation.table, properties=None)
-
-mapper_registry.map_imperatively(model.PSACode, model.PSACode.table, properties=None)
 
 mapper_registry.map_imperatively(model.PSANonce, model.PSANonce.table, properties=None)
 

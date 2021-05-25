@@ -15,7 +15,7 @@ def model():
 
 
 @pytest.fixture
-def session(model, request):
+def session(model):
     Session = model.session
     yield Session()
     Session.remove()  # Ensures we get a new session for each test
@@ -41,6 +41,26 @@ def test_WorkerProcess(model, session):
     assert stored_wp.update_time
 
     cleanup(session, model.WorkerProcess)
+
+
+def test_PSACode_table(model):
+    tbl = model.PSACode.__table__
+    assert tbl.name == 'psa_code'
+    assert has_unique_constraint(tbl, ('code', 'email'))
+
+
+def test_PSACode(model, session):
+    email, code = 'a', 'b'
+    psa = model.PSACode(email, code)
+    persist(session, psa)
+
+    stmt = select(model.PSACode)
+    stored_psa = session.execute(stmt).scalar_one()
+    assert stored_psa.id
+    assert stored_psa.email == email
+    assert stored_psa.code == code
+
+    cleanup(session, model.PSACode)
 
 
 def persist(session, obj):
