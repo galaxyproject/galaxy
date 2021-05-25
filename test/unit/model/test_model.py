@@ -86,6 +86,27 @@ def test_PSACode(model, session):
     cleanup(session, model.PSACode)
 
 
+def test_PSAPartial_table(model):
+    tbl = model.PSAPartial.__table__
+    assert tbl.name == 'psa_partial'
+
+
+def test_PSAPartial(model, session):
+    token, data, next_step, backend = 'a', 'b', 1, 'c'
+    obj = model.PSAPartial(token, data, next_step, backend)
+    persist(session, obj)
+
+    stmt = select(model.PSAPartial)
+    stored_obj = session.execute(stmt).scalar_one()
+    assert stored_obj.id
+    assert stored_obj.token == token
+    assert stored_obj.data == data
+    assert stored_obj.next_step == next_step
+    assert stored_obj.backend == backend
+
+    cleanup(session, model.PSACode)
+
+
 def persist(session, obj):
     session.add(obj)
     session.flush()

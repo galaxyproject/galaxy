@@ -37,6 +37,7 @@ from sqlalchemy import (
     or_,
     select,
     String,
+    TEXT,
     text,
     true,
     tuple_,
@@ -6160,7 +6161,15 @@ class PSANonce(NonceMixin, RepresentById):
             return instance
 
 
+@mapper_registry.mapped
 class PSAPartial(PartialMixin, RepresentById):
+    __tablename__ = 'psa_partial'
+
+    id = Column('id', Integer, primary_key=True)
+    token = Column('token', VARCHAR(32))
+    data = Column('data', TEXT)
+    next_step = Column('next_step', Integer)
+    backend = Column('backend', VARCHAR(32))
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None

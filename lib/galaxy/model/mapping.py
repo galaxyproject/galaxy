@@ -102,14 +102,6 @@ model.PSANonce.table = Table(
     Column('timestamp', Integer),
     Column('salt', VARCHAR(40)))
 
-model.PSAPartial.table = Table(
-    "psa_partial", metadata,
-    Column('id', Integer, primary_key=True),
-    Column('token', VARCHAR(32)),
-    Column('data', TEXT),
-    Column('next_step', Integer),
-    Column('backend', VARCHAR(32)))
-
 model.UserAuthnzToken.table = Table(
     "oidc_user_authnz_tokens", metadata,
     Column('id', Integer, primary_key=True),
@@ -1673,8 +1665,6 @@ mapper_registry.map_imperatively(model.UserAddress, model.UserAddress.table, pro
 ))
 
 mapper_registry.map_imperatively(model.PSANonce, model.PSANonce.table, properties=None)
-
-mapper_registry.map_imperatively(model.PSAPartial, model.PSAPartial.table, properties=None)
 
 mapper_registry.map_imperatively(model.UserAuthnzToken, model.UserAuthnzToken.table, properties=dict(
     user=relation(model.User,
