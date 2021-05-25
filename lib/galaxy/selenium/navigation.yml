@@ -254,6 +254,8 @@ multi_history_view:
 
   selectors:
     _: '.multi-panel-history'
+    item: '.multi-panel-history #${history_content_type}-${id}'
+
     histories: '.middle .history-column'
     current_label: '.current-label'
     create_new_button: '.create-new'

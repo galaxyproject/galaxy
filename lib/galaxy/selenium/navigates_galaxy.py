@@ -292,16 +292,19 @@ class NavigatesGalaxy(HasDriver):
     def history_panel_wait_for_hid_ok(self, hid, allowed_force_refreshes=0):
         self.history_panel_wait_for_hid_state(hid, 'ok', allowed_force_refreshes=allowed_force_refreshes)
 
-    def history_panel_item_component(self, history_item=None, hid=None):
+    def history_panel_item_component(self, history_item=None, hid=None, multi_history_panel=False):
         if history_item is None:
             assert hid
             history_item = self.hid_to_history_item(hid)
-        return self.components.history_panel.item.selector(
+        item = self.components.history_panel.item
+        if multi_history_panel:
+            item = self.components.multi_history_view.item
+        return item.selector(
             history_content_type=history_item["history_content_type"],
             id=history_item["id"]
         )
 
-    def history_panel_wait_for_hid_visible(self, hid, allowed_force_refreshes=0):
+    def history_panel_wait_for_hid_visible(self, hid, allowed_force_refreshes=0, multi_history_panel=False):
         current_history_id = self.current_history_id()
 
         def history_has_hid(driver):
@@ -311,7 +314,7 @@ class NavigatesGalaxy(HasDriver):
         timeout = self.timeout_for(wait_type=WAIT_TYPES.JOB_COMPLETION)
         self.wait(timeout).until(history_has_hid)
         history_item = self.hid_to_history_item(hid, current_history_id=current_history_id)
-        history_item_selector = self.history_panel_item_component(history_item)
+        history_item_selector = self.history_panel_item_component(history_item, multi_history_panel=multi_history_panel)
         try:
             self.history_item_wait_for(history_item_selector, allowed_force_refreshes)
         except self.TimeoutException as e:
@@ -349,14 +352,14 @@ class NavigatesGalaxy(HasDriver):
         # (even if empty).
         self.wait_for_visible(self.navigation.history_panel.selectors.search, wait_type=WAIT_TYPES.DATABASE_OPERATION)
 
-    def history_panel_wait_for_hid_hidden(self, hid):
+    def history_panel_wait_for_hid_hidden(self, hid, multi_history_panel=False):
         history_item = self.hid_to_history_item(hid)
-        history_item_selector = self.history_panel_item_component(history_item)
+        history_item_selector = self.history_panel_item_component(history_item, multi_history_panel=multi_history_panel)
         self.wait_for_absent_or_hidden(history_item_selector, wait_type=WAIT_TYPES.JOB_COMPLETION)
         return history_item_selector
 
-    def history_panel_wait_for_hid_state(self, hid, state, allowed_force_refreshes=0):
-        history_item_selector = self.history_panel_wait_for_hid_visible(hid, allowed_force_refreshes=allowed_force_refreshes)
+    def history_panel_wait_for_hid_state(self, hid, state, allowed_force_refreshes=0, multi_history_panel=False):
+        history_item_selector = self.history_panel_wait_for_hid_visible(hid, allowed_force_refreshes=allowed_force_refreshes, multi_history_panel=multi_history_panel)
         # history_item_selector_state = history_item_selector.with_class(f"state-{state}")
         history_item_selector_state = history_item_selector.with_data("state", state)
         try:
@@ -1315,7 +1318,7 @@ class NavigatesGalaxy(HasDriver):
     def history_multi_view_display_collection_contents(self, collection_hid, collection_type="list"):
         self.components.history_panel.multi_view_button.wait_for_and_click()
 
-        selector = self.history_panel_wait_for_hid_state(collection_hid, "ok")
+        selector = self.history_panel_wait_for_hid_state(collection_hid, "ok", multi_history_panel=True)
         self.click(selector)
         next_level_element_selector = selector
         for _ in range(len(collection_type.split(":")) - 1):
