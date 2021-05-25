@@ -10,7 +10,6 @@
 # - run playbook with client build steps only
 # - remove build artifacts + files not needed in container
 # Stage 3:
-# - install python-virtualenv
 # - create galaxy user + group + directory
 # - copy galaxy files from stage 2.1 and 2.2
 # - finalize container (set path, user...)
@@ -140,7 +139,6 @@ RUN set -xe; \
         bzip2 \
     && update-alternatives --install /usr/bin/nano nano /bin/nano-tiny 0 \
     && update-alternatives --install /usr/bin/vim vim /usr/bin/vim.tiny 0 \
-    && python -B -m pip install --no-cache virtualenv \
     && echo "$LANG UTF-8" > /etc/locale.gen \
     && locale-gen $LANG && update-locale LANG=$LANG \
     && apt-get autoremove -y && apt-get clean \
