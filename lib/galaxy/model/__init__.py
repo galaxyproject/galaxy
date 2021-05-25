@@ -2318,7 +2318,17 @@ class GroupRoleAssociation(RepresentById):
         self.role = role
 
 
+@mapper_registry.mapped
 class Role(Dictifiable, RepresentById):
+    __tablename__ = 'role'
+    id = Column('id', Integer, primary_key=True)
+    create_time = Column('create_time', DateTime, default=now)
+    update_time = Column('update_time', DateTime, default=now, onupdate=now)
+    name = Column('name', String(255), index=True, unique=True)
+    description = Column('description', TEXT)
+    type = Column('type', String(40), index=True)
+    deleted = Column('deleted', Boolean, index=True, default=False)
+
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name', 'description', 'type']
     private_id = None
@@ -2330,7 +2340,7 @@ class Role(Dictifiable, RepresentById):
         ADMIN = 'admin'
         SHARING = 'sharing'
 
-    def __init__(self, name="", description="", type="system", deleted=False):
+    def __init__(self, name=None, description=None, type=types.SYSTEM, deleted=False):
         self.name = name
         self.description = description
         self.type = type

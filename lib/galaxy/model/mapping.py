@@ -332,16 +332,6 @@ model.GroupRoleAssociation.table = Table(
     Column("create_time", DateTime, default=now),
     Column("update_time", DateTime, default=now, onupdate=now))
 
-model.Role.table = Table(
-    "role", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("name", String(255), index=True, unique=True),
-    Column("description", TEXT),
-    Column("type", String(40), index=True),
-    Column("deleted", Boolean, index=True, default=False))
-
 model.UserQuotaAssociation.table = Table(
     "user_quota_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -1899,8 +1889,6 @@ mapper_registry.map_imperatively(model.DefaultHistoryPermissions, model.DefaultH
     role=relation(model.Role)
 ))
 
-mapper_registry.map_imperatively(model.Role, model.Role.table)
-
 mapper_registry.map_imperatively(model.UserRoleAssociation, model.UserRoleAssociation.table, properties=dict(
     user=relation(model.User, backref="roles"),
     role=relation(model.Role, backref="users"),
@@ -1910,8 +1898,8 @@ mapper_registry.map_imperatively(model.UserRoleAssociation, model.UserRoleAssoci
         viewonly=True,
         primaryjoin=(
             (model.User.table.c.id == model.UserRoleAssociation.table.c.user_id)
-            & (model.UserRoleAssociation.table.c.role_id == model.Role.table.c.id)
-            & not_(model.Role.table.c.name == model.User.table.c.email))
+            & (model.UserRoleAssociation.table.c.role_id == model.Role.id)
+            & not_(model.Role.name == model.User.table.c.email))
     )
 ))
 
