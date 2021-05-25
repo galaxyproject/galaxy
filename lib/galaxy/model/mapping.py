@@ -36,7 +36,6 @@ from sqlalchemy.ext.orderinglist import ordering_list
 from sqlalchemy.orm import backref, class_mapper, column_property, deferred, object_session, relation
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.sql import exists
-from sqlalchemy.types import BigInteger
 
 from galaxy import model
 from galaxy.model import mapper_registry
@@ -347,17 +346,6 @@ model.GroupQuotaAssociation.table = Table(
     Column("quota_id", Integer, ForeignKey("quota.id"), index=True),
     Column("create_time", DateTime, default=now),
     Column("update_time", DateTime, default=now, onupdate=now))
-
-model.Quota.table = Table(
-    "quota", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("name", String(255), index=True, unique=True),
-    Column("description", TEXT),
-    Column("bytes", BigInteger),
-    Column("operation", String(8)),
-    Column("deleted", Boolean, index=True, default=False))
 
 model.DefaultQuotaAssociation.table = Table(
     "default_quota_association", metadata,
@@ -1907,8 +1895,6 @@ mapper_registry.map_imperatively(model.GroupRoleAssociation, model.GroupRoleAsso
     group=relation(model.Group, backref="roles"),
     role=relation(model.Role, backref="groups")
 ))
-
-mapper_registry.map_imperatively(model.Quota, model.Quota.table)
 
 mapper_registry.map_imperatively(model.UserQuotaAssociation, model.UserQuotaAssociation.table, properties=dict(
     user=relation(model.User, backref="quotas"),

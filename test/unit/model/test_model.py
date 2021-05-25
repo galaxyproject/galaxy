@@ -43,6 +43,31 @@ def test_Group(model, session):
     cleanup(session, cls)
 
 
+def test_Quota_table(model):
+    tbl = model.Quota.__table__
+    assert tbl.name == 'quota'
+
+
+def test_Quota(model, session):
+    cls = model.Quota
+    name, description = 'a', 'b'
+    obj = cls(name, description)
+    persist(session, obj)
+
+    stmt = select(cls)
+    stored_obj = session.execute(stmt).scalar_one()
+    assert stored_obj.id
+    assert stored_obj.create_time
+    assert stored_obj.update_time
+    assert stored_obj.name == name
+    assert stored_obj.description == description
+    assert stored_obj.bytes == 0
+    assert stored_obj.operation == '='
+    assert stored_obj.deleted is False
+
+    cleanup(session, cls)
+
+
 def test_Role_table(model):
     tbl = model.Role.__table__
     assert tbl.name == 'role'

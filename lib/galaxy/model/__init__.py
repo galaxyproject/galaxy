@@ -27,6 +27,7 @@ from social_core.storage import AssociationMixin, CodeMixin, NonceMixin, Partial
 from sqlalchemy import (
     alias,
     and_,
+    BigInteger,
     Boolean,
     Column,
     DateTime,
@@ -2363,12 +2364,24 @@ class GroupQuotaAssociation(Dictifiable, RepresentById):
         self.quota = quota
 
 
+@mapper_registry.mapped
 class Quota(Dictifiable, RepresentById):
+    __tablename__ = 'quota'
+
+    id = Column('id', Integer, primary_key=True)
+    create_time = Column('create_time', DateTime, default=now)
+    update_time = Column('update_time', DateTime, default=now, onupdate=now)
+    name = Column('name', String(255), index=True, unique=True)
+    description = Column('description', TEXT)
+    bytes = Column('bytes', BigInteger)
+    operation = Column('operation', String(8))
+    deleted = Column('deleted', Boolean, index=True, default=False)
+
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name', 'description', 'bytes', 'operation', 'display_amount', 'default', 'users', 'groups']
     valid_operations = ('+', '-', '=')
 
-    def __init__(self, name="", description="", amount=0, operation="="):
+    def __init__(self, name=None, description=None, amount=0, operation='='):
         self.name = name
         self.description = description
         if amount is None:
