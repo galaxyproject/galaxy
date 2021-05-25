@@ -19,7 +19,6 @@ from sqlalchemy import (
     func,
     Index,
     Integer,
-    MetaData,
     not_,
     Numeric,
     PrimaryKeyConstraint,
@@ -34,12 +33,13 @@ from sqlalchemy import (
 )
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
-from sqlalchemy.orm import backref, class_mapper, column_property, deferred, mapper, object_session, relation
+from sqlalchemy.orm import backref, class_mapper, column_property, deferred, object_session, relation
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.sql import exists
 from sqlalchemy.types import BigInteger
 
 from galaxy import model
+from galaxy.model import mapper_registry
 from galaxy.model.base import SharedModelMapping
 from galaxy.model.custom_types import (
     JSONType,
@@ -56,7 +56,7 @@ from galaxy.model.view.utils import install_views
 
 log = logging.getLogger(__name__)
 
-metadata = MetaData()
+metadata = mapper_registry.metadata
 
 
 model.WorkerProcess.table = Table(
@@ -1663,29 +1663,29 @@ CleanupEventImplicitlyConvertedDatasetAssociationAssociation_table = Table("clea
 # With the tables defined we can define the mappers and setup the
 # relationships between the model objects.
 def simple_mapping(model, **kwds):
-    mapper(model, model.table, properties=kwds)
+    mapper_registry.map_imperatively(model, model.table, properties=kwds)
 
 
 simple_mapping(model.WorkerProcess)
 
 
 # User tables.
-mapper(model.UserPreference, model.UserPreference.table, properties={})
-mapper(model.UserAction, model.UserAction.table, properties=dict(
+mapper_registry.map_imperatively(model.UserPreference, model.UserPreference.table, properties={})
+mapper_registry.map_imperatively(model.UserAction, model.UserAction.table, properties=dict(
     # user=relation( model.User.mapper )
     user=relation(model.User)
 ))
-mapper(model.APIKeys, model.APIKeys.table, properties={})
+mapper_registry.map_imperatively(model.APIKeys, model.APIKeys.table, properties={})
 
 
-mapper(model.FormValues, model.FormValues.table, properties=dict(
+mapper_registry.map_imperatively(model.FormValues, model.FormValues.table, properties=dict(
     form_definition=relation(model.FormDefinition,
         primaryjoin=(model.FormValues.table.c.form_definition_id == model.FormDefinition.table.c.id))
 ))
 
-mapper(model.FormDefinition, model.FormDefinition.table)
+mapper_registry.map_imperatively(model.FormDefinition, model.FormDefinition.table)
 
-mapper(model.FormDefinitionCurrent, model.FormDefinitionCurrent.table, properties=dict(
+mapper_registry.map_imperatively(model.FormDefinitionCurrent, model.FormDefinitionCurrent.table, properties=dict(
     forms=relation(model.FormDefinition,
         backref='form_definition_current',
         cascade="all, delete-orphan",
@@ -1695,34 +1695,34 @@ mapper(model.FormDefinitionCurrent, model.FormDefinitionCurrent.table, propertie
         primaryjoin=(model.FormDefinitionCurrent.table.c.latest_form_id == model.FormDefinition.table.c.id))
 ))
 
-mapper(model.UserAddress, model.UserAddress.table, properties=dict(
+mapper_registry.map_imperatively(model.UserAddress, model.UserAddress.table, properties=dict(
     user=relation(model.User,
         primaryjoin=(model.UserAddress.table.c.user_id == model.User.table.c.id),
         backref='addresses',
         order_by=desc(model.UserAddress.table.c.update_time)),
 ))
 
-mapper(model.PSAAssociation, model.PSAAssociation.table, properties=None)
+mapper_registry.map_imperatively(model.PSAAssociation, model.PSAAssociation.table, properties=None)
 
-mapper(model.PSACode, model.PSACode.table, properties=None)
+mapper_registry.map_imperatively(model.PSACode, model.PSACode.table, properties=None)
 
-mapper(model.PSANonce, model.PSANonce.table, properties=None)
+mapper_registry.map_imperatively(model.PSANonce, model.PSANonce.table, properties=None)
 
-mapper(model.PSAPartial, model.PSAPartial.table, properties=None)
+mapper_registry.map_imperatively(model.PSAPartial, model.PSAPartial.table, properties=None)
 
-mapper(model.UserAuthnzToken, model.UserAuthnzToken.table, properties=dict(
+mapper_registry.map_imperatively(model.UserAuthnzToken, model.UserAuthnzToken.table, properties=dict(
     user=relation(model.User,
                   primaryjoin=(model.UserAuthnzToken.table.c.user_id == model.User.table.c.id),
                   backref='social_auth')
 ))
 
-mapper(model.CustosAuthnzToken, model.CustosAuthnzToken.table, properties=dict(
+mapper_registry.map_imperatively(model.CustosAuthnzToken, model.CustosAuthnzToken.table, properties=dict(
     user=relation(model.User,
                   primaryjoin=(model.CustosAuthnzToken.table.c.user_id == model.User.table.c.id),
                   backref='custos_auth')
 ))
 
-mapper(model.CloudAuthz, model.CloudAuthz.table, properties=dict(
+mapper_registry.map_imperatively(model.CloudAuthz, model.CloudAuthz.table, properties=dict(
     user=relation(model.User,
                   primaryjoin=(model.CloudAuthz.table.c.user_id == model.User.table.c.id),
                   backref='cloudauthz'),
@@ -1789,26 +1789,26 @@ simple_mapping(model.Dataset,
         viewonly=True),
 )
 
-mapper(model.DatasetHash, model.DatasetHash.table, properties=dict(
+mapper_registry.map_imperatively(model.DatasetHash, model.DatasetHash.table, properties=dict(
     dataset=relation(model.Dataset, backref='hashes')
 ))
 
-mapper(model.DatasetSource, model.DatasetSource.table, properties=dict(
+mapper_registry.map_imperatively(model.DatasetSource, model.DatasetSource.table, properties=dict(
     dataset=relation(model.Dataset, backref='sources')
 ))
 
-mapper(model.DatasetSourceHash, model.DatasetSourceHash.table, properties=dict(
+mapper_registry.map_imperatively(model.DatasetSourceHash, model.DatasetSourceHash.table, properties=dict(
     source=relation(model.DatasetSource, backref='hashes')
 ))
 
-mapper(model.HistoryDatasetAssociationHistory, model.HistoryDatasetAssociationHistory.table)
+mapper_registry.map_imperatively(model.HistoryDatasetAssociationHistory, model.HistoryDatasetAssociationHistory.table)
 
-mapper(model.HistoryDatasetAssociationDisplayAtAuthorization, model.HistoryDatasetAssociationDisplayAtAuthorization.table, properties=dict(
+mapper_registry.map_imperatively(model.HistoryDatasetAssociationDisplayAtAuthorization, model.HistoryDatasetAssociationDisplayAtAuthorization.table, properties=dict(
     history_dataset_association=relation(model.HistoryDatasetAssociation),
     user=relation(model.User)
 ))
 
-mapper(model.HistoryDatasetAssociationSubset, model.HistoryDatasetAssociationSubset.table, properties=dict(
+mapper_registry.map_imperatively(model.HistoryDatasetAssociationSubset, model.HistoryDatasetAssociationSubset.table, properties=dict(
     hda=relation(model.HistoryDatasetAssociation,
         primaryjoin=(model.HistoryDatasetAssociationSubset.table.c.history_dataset_association_id
                      == model.HistoryDatasetAssociation.table.c.id)),
@@ -1817,7 +1817,7 @@ mapper(model.HistoryDatasetAssociationSubset, model.HistoryDatasetAssociationSub
                      == model.HistoryDatasetAssociation.table.c.id))
 ))
 
-mapper(model.ImplicitlyConvertedDatasetAssociation, model.ImplicitlyConvertedDatasetAssociation.table, properties=dict(
+mapper_registry.map_imperatively(model.ImplicitlyConvertedDatasetAssociation, model.ImplicitlyConvertedDatasetAssociation.table, properties=dict(
     parent_hda=relation(model.HistoryDatasetAssociation,
         primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.hda_parent_id
                      == model.HistoryDatasetAssociation.table.c.id),
@@ -1832,7 +1832,7 @@ mapper(model.ImplicitlyConvertedDatasetAssociation, model.ImplicitlyConvertedDat
         backref="implicitly_converted_parent_datasets")
 ))
 
-mapper(model.History, model.History.table, properties=dict(
+mapper_registry.map_imperatively(model.History, model.History.table, properties=dict(
     datasets=relation(model.HistoryDatasetAssociation,
         backref="history",
         order_by=asc(model.HistoryDatasetAssociation.table.c.hid)),
@@ -1897,12 +1897,12 @@ mapper(model.History, model.History.table, properties=dict(
 # returns a list of users that history is shared with.
 model.History.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')  # type: ignore
 
-mapper(model.HistoryUserShareAssociation, model.HistoryUserShareAssociation.table, properties=dict(
+mapper_registry.map_imperatively(model.HistoryUserShareAssociation, model.HistoryUserShareAssociation.table, properties=dict(
     user=relation(model.User, backref='histories_shared_by_others'),
     history=relation(model.History, backref='users_shared_with')
 ))
 
-mapper(model.User, model.User.table, properties=dict(
+mapper_registry.map_imperatively(model.User, model.User.table, properties=dict(
     histories=relation(model.History,
         backref="user",
         order_by=desc(model.History.update_time)),
@@ -1937,7 +1937,7 @@ mapper(model.User, model.User.table, properties=dict(
         order_by=desc(model.APIKeys.table.c.create_time)),
 ))
 
-mapper(model.PasswordResetToken, model.PasswordResetToken.table,
+mapper_registry.map_imperatively(model.PasswordResetToken, model.PasswordResetToken.table,
        properties=dict(user=relation(model.User, backref="reset_tokens")))
 
 
@@ -1945,26 +1945,26 @@ mapper(model.PasswordResetToken, model.PasswordResetToken.table,
 # <user_obj>.preferences[pref_name] = pref_value
 model.User.preferences = association_proxy('_preferences', 'value', creator=model.UserPreference)  # type: ignore
 
-mapper(model.Group, model.Group.table)
+mapper_registry.map_imperatively(model.Group, model.Group.table)
 
-mapper(model.UserGroupAssociation, model.UserGroupAssociation.table, properties=dict(
+mapper_registry.map_imperatively(model.UserGroupAssociation, model.UserGroupAssociation.table, properties=dict(
     user=relation(model.User, backref="groups"),
     group=relation(model.Group, backref="users")
 ))
 
-mapper(model.DefaultUserPermissions, model.DefaultUserPermissions.table, properties=dict(
+mapper_registry.map_imperatively(model.DefaultUserPermissions, model.DefaultUserPermissions.table, properties=dict(
     user=relation(model.User, backref="default_permissions"),
     role=relation(model.Role)
 ))
 
-mapper(model.DefaultHistoryPermissions, model.DefaultHistoryPermissions.table, properties=dict(
+mapper_registry.map_imperatively(model.DefaultHistoryPermissions, model.DefaultHistoryPermissions.table, properties=dict(
     history=relation(model.History, backref="default_permissions"),
     role=relation(model.Role)
 ))
 
-mapper(model.Role, model.Role.table)
+mapper_registry.map_imperatively(model.Role, model.Role.table)
 
-mapper(model.UserRoleAssociation, model.UserRoleAssociation.table, properties=dict(
+mapper_registry.map_imperatively(model.UserRoleAssociation, model.UserRoleAssociation.table, properties=dict(
     user=relation(model.User, backref="roles"),
     role=relation(model.Role, backref="users"),
     non_private_roles=relation(
@@ -1978,63 +1978,63 @@ mapper(model.UserRoleAssociation, model.UserRoleAssociation.table, properties=di
     )
 ))
 
-mapper(model.GroupRoleAssociation, model.GroupRoleAssociation.table, properties=dict(
+mapper_registry.map_imperatively(model.GroupRoleAssociation, model.GroupRoleAssociation.table, properties=dict(
     group=relation(model.Group, backref="roles"),
     role=relation(model.Role, backref="groups")
 ))
 
-mapper(model.Quota, model.Quota.table)
+mapper_registry.map_imperatively(model.Quota, model.Quota.table)
 
-mapper(model.UserQuotaAssociation, model.UserQuotaAssociation.table, properties=dict(
+mapper_registry.map_imperatively(model.UserQuotaAssociation, model.UserQuotaAssociation.table, properties=dict(
     user=relation(model.User, backref="quotas"),
     quota=relation(model.Quota, backref="users")
 ))
 
-mapper(model.GroupQuotaAssociation, model.GroupQuotaAssociation.table, properties=dict(
+mapper_registry.map_imperatively(model.GroupQuotaAssociation, model.GroupQuotaAssociation.table, properties=dict(
     group=relation(model.Group, backref="quotas"),
     quota=relation(model.Quota, backref="groups")
 ))
 
-mapper(model.DefaultQuotaAssociation, model.DefaultQuotaAssociation.table, properties=dict(
+mapper_registry.map_imperatively(model.DefaultQuotaAssociation, model.DefaultQuotaAssociation.table, properties=dict(
     quota=relation(model.Quota, backref="default")
 ))
 
-mapper(model.DatasetPermissions, model.DatasetPermissions.table, properties=dict(
+mapper_registry.map_imperatively(model.DatasetPermissions, model.DatasetPermissions.table, properties=dict(
     dataset=relation(model.Dataset, backref="actions"),
     role=relation(model.Role, backref="dataset_actions")
 ))
 
-mapper(model.LibraryPermissions, model.LibraryPermissions.table, properties=dict(
+mapper_registry.map_imperatively(model.LibraryPermissions, model.LibraryPermissions.table, properties=dict(
     library=relation(model.Library, backref="actions"),
     role=relation(model.Role, backref="library_actions")
 ))
 
-mapper(model.LibraryFolderPermissions, model.LibraryFolderPermissions.table, properties=dict(
+mapper_registry.map_imperatively(model.LibraryFolderPermissions, model.LibraryFolderPermissions.table, properties=dict(
     folder=relation(model.LibraryFolder, backref="actions"),
     role=relation(model.Role, backref="library_folder_actions")
 ))
 
-mapper(model.LibraryDatasetPermissions, model.LibraryDatasetPermissions.table, properties=dict(
+mapper_registry.map_imperatively(model.LibraryDatasetPermissions, model.LibraryDatasetPermissions.table, properties=dict(
     library_dataset=relation(model.LibraryDataset, backref="actions"),
     role=relation(model.Role, backref="library_dataset_actions")
 ))
 
-mapper(model.LibraryDatasetDatasetAssociationPermissions, model.LibraryDatasetDatasetAssociationPermissions.table, properties=dict(
+mapper_registry.map_imperatively(model.LibraryDatasetDatasetAssociationPermissions, model.LibraryDatasetDatasetAssociationPermissions.table, properties=dict(
     library_dataset_dataset_association=relation(model.LibraryDatasetDatasetAssociation, backref="actions"),
     role=relation(model.Role, backref="library_dataset_dataset_actions")
 ))
 
-mapper(model.Library, model.Library.table, properties=dict(
+mapper_registry.map_imperatively(model.Library, model.Library.table, properties=dict(
     root_folder=relation(model.LibraryFolder, backref=backref("library_root"))
 ))
 
-mapper(model.ExtendedMetadata, model.ExtendedMetadata.table, properties=dict(
+mapper_registry.map_imperatively(model.ExtendedMetadata, model.ExtendedMetadata.table, properties=dict(
     children=relation(model.ExtendedMetadataIndex, backref='extended_metadata')
 ))
 
-mapper(model.ExtendedMetadataIndex, model.ExtendedMetadataIndex.table)
+mapper_registry.map_imperatively(model.ExtendedMetadataIndex, model.ExtendedMetadataIndex.table)
 
-mapper(model.LibraryInfoAssociation, model.LibraryInfoAssociation.table, properties=dict(
+mapper_registry.map_imperatively(model.LibraryInfoAssociation, model.LibraryInfoAssociation.table, properties=dict(
     library=relation(model.Library,
         primaryjoin=(
             (model.LibraryInfoAssociation.table.c.library_id == model.Library.table.c.id)
@@ -2047,7 +2047,7 @@ mapper(model.LibraryInfoAssociation, model.LibraryInfoAssociation.table, propert
         primaryjoin=(model.LibraryInfoAssociation.table.c.form_values_id == model.FormValues.table.c.id))
 ))
 
-mapper(model.LibraryFolder, model.LibraryFolder.table, properties=dict(
+mapper_registry.map_imperatively(model.LibraryFolder, model.LibraryFolder.table, properties=dict(
     folders=relation(model.LibraryFolder,
         primaryjoin=(model.LibraryFolder.table.c.parent_id == model.LibraryFolder.table.c.id),
         order_by=asc(model.LibraryFolder.table.c.name),
@@ -2080,7 +2080,7 @@ mapper(model.LibraryFolder, model.LibraryFolder.table, properties=dict(
         viewonly=True)
 ))
 
-mapper(model.LibraryFolderInfoAssociation, model.LibraryFolderInfoAssociation.table, properties=dict(
+mapper_registry.map_imperatively(model.LibraryFolderInfoAssociation, model.LibraryFolderInfoAssociation.table, properties=dict(
     folder=relation(model.LibraryFolder,
         primaryjoin=(
             (model.LibraryFolderInfoAssociation.table.c.library_folder_id == model.LibraryFolder.table.c.id)
@@ -2093,7 +2093,7 @@ mapper(model.LibraryFolderInfoAssociation, model.LibraryFolderInfoAssociation.ta
         primaryjoin=(model.LibraryFolderInfoAssociation.table.c.form_values_id == model.FormValues.table.c.id))
 ))
 
-mapper(model.LibraryDataset, model.LibraryDataset.table, properties=dict(
+mapper_registry.map_imperatively(model.LibraryDataset, model.LibraryDataset.table, properties=dict(
     folder=relation(model.LibraryFolder),
     library_dataset_dataset_association=relation(model.LibraryDatasetDatasetAssociation,
         foreign_keys=model.LibraryDataset.table.c.library_dataset_dataset_association_id,
@@ -2109,7 +2109,7 @@ mapper(model.LibraryDataset, model.LibraryDataset.table, properties=dict(
         uselist=True)
 ))
 
-mapper(model.LibraryDatasetDatasetAssociation, model.LibraryDatasetDatasetAssociation.table, properties=dict(
+mapper_registry.map_imperatively(model.LibraryDatasetDatasetAssociation, model.LibraryDatasetDatasetAssociation.table, properties=dict(
     dataset=relation(model.Dataset,
         primaryjoin=(model.LibraryDatasetDatasetAssociation.table.c.dataset_id == model.Dataset.table.c.id),
         backref='library_associations'),
@@ -2140,7 +2140,7 @@ mapper(model.LibraryDatasetDatasetAssociation, model.LibraryDatasetDatasetAssoci
     _metadata=deferred(model.LibraryDatasetDatasetAssociation.table.c._metadata)
 ))
 
-mapper(model.LibraryDatasetDatasetInfoAssociation, model.LibraryDatasetDatasetInfoAssociation.table, properties=dict(
+mapper_registry.map_imperatively(model.LibraryDatasetDatasetInfoAssociation, model.LibraryDatasetDatasetInfoAssociation.table, properties=dict(
     library_dataset_dataset_association=relation(model.LibraryDatasetDatasetAssociation,
         primaryjoin=(
             (model.LibraryDatasetDatasetInfoAssociation.table.c.library_dataset_dataset_association_id
@@ -2154,13 +2154,13 @@ mapper(model.LibraryDatasetDatasetInfoAssociation, model.LibraryDatasetDatasetIn
         primaryjoin=(model.LibraryDatasetDatasetInfoAssociation.table.c.form_values_id == model.FormValues.table.c.id))
 ))
 
-mapper(model.JobToInputDatasetAssociation, model.JobToInputDatasetAssociation.table, properties=dict(
+mapper_registry.map_imperatively(model.JobToInputDatasetAssociation, model.JobToInputDatasetAssociation.table, properties=dict(
     dataset=relation(model.HistoryDatasetAssociation,
         lazy=False,
         backref="dependent_jobs")
 ))
 
-mapper(model.JobToOutputDatasetAssociation, model.JobToOutputDatasetAssociation.table, properties=dict(
+mapper_registry.map_imperatively(model.JobToOutputDatasetAssociation, model.JobToOutputDatasetAssociation.table, properties=dict(
     job=relation(model.Job,
         backref="output_datasets"),
     dataset=relation(model.HistoryDatasetAssociation,
@@ -2168,34 +2168,34 @@ mapper(model.JobToOutputDatasetAssociation, model.JobToOutputDatasetAssociation.
         backref="creating_job_associations")
 ))
 
-mapper(model.JobToInputDatasetCollectionAssociation, model.JobToInputDatasetCollectionAssociation.table, properties=dict(
+mapper_registry.map_imperatively(model.JobToInputDatasetCollectionAssociation, model.JobToInputDatasetCollectionAssociation.table, properties=dict(
     dataset_collection=relation(model.HistoryDatasetCollectionAssociation,
         lazy=False)
 ))
 
-mapper(model.JobToInputDatasetCollectionElementAssociation, model.JobToInputDatasetCollectionElementAssociation.table, properties=dict(
+mapper_registry.map_imperatively(model.JobToInputDatasetCollectionElementAssociation, model.JobToInputDatasetCollectionElementAssociation.table, properties=dict(
     dataset_collection_element=relation(model.DatasetCollectionElement,
     lazy=False)
 ))
 
-mapper(model.JobToOutputDatasetCollectionAssociation, model.JobToOutputDatasetCollectionAssociation.table, properties=dict(
+mapper_registry.map_imperatively(model.JobToOutputDatasetCollectionAssociation, model.JobToOutputDatasetCollectionAssociation.table, properties=dict(
     dataset_collection_instance=relation(model.HistoryDatasetCollectionAssociation,
         lazy=False,
         backref="output_dataset_collection_instances")
 ))
 
-mapper(model.JobToImplicitOutputDatasetCollectionAssociation, model.JobToImplicitOutputDatasetCollectionAssociation.table, properties=dict(
+mapper_registry.map_imperatively(model.JobToImplicitOutputDatasetCollectionAssociation, model.JobToImplicitOutputDatasetCollectionAssociation.table, properties=dict(
     dataset_collection=relation(model.DatasetCollection,
         backref="output_dataset_collections")
 ))
 
-mapper(model.JobToInputLibraryDatasetAssociation, model.JobToInputLibraryDatasetAssociation.table, properties=dict(
+mapper_registry.map_imperatively(model.JobToInputLibraryDatasetAssociation, model.JobToInputLibraryDatasetAssociation.table, properties=dict(
     dataset=relation(model.LibraryDatasetDatasetAssociation,
         lazy=False,
         backref="dependent_jobs")
 ))
 
-mapper(model.JobToOutputLibraryDatasetAssociation, model.JobToOutputLibraryDatasetAssociation.table, properties=dict(
+mapper_registry.map_imperatively(model.JobToOutputLibraryDatasetAssociation, model.JobToOutputLibraryDatasetAssociation.table, properties=dict(
     dataset=relation(model.LibraryDatasetDatasetAssociation,
         lazy=False,
         backref="creating_job_associations")
@@ -2249,24 +2249,24 @@ simple_mapping(
     ),
 )
 
-mapper(model.JobParameter, model.JobParameter.table)
+mapper_registry.map_imperatively(model.JobParameter, model.JobParameter.table)
 
-mapper(model.JobExternalOutputMetadata, model.JobExternalOutputMetadata.table, properties=dict(
+mapper_registry.map_imperatively(model.JobExternalOutputMetadata, model.JobExternalOutputMetadata.table, properties=dict(
     history_dataset_association=relation(model.HistoryDatasetAssociation, lazy=False),
     library_dataset_dataset_association=relation(model.LibraryDatasetDatasetAssociation, lazy=False)
 ))
 
-mapper(model.JobExportHistoryArchive, model.JobExportHistoryArchive.table, properties=dict(
+mapper_registry.map_imperatively(model.JobExportHistoryArchive, model.JobExportHistoryArchive.table, properties=dict(
     job=relation(model.Job),
     dataset=relation(model.Dataset, backref='job_export_history_archive')
 ))
 
-mapper(model.JobImportHistoryArchive, model.JobImportHistoryArchive.table, properties=dict(
+mapper_registry.map_imperatively(model.JobImportHistoryArchive, model.JobImportHistoryArchive.table, properties=dict(
     job=relation(model.Job),
     history=relation(model.History)
 ))
 
-mapper(model.GenomeIndexToolData, model.GenomeIndexToolData.table, properties=dict(
+mapper_registry.map_imperatively(model.GenomeIndexToolData, model.GenomeIndexToolData.table, properties=dict(
     job=relation(model.Job, backref='job'),
     dataset=relation(model.Dataset, backref='genome_index_tool_data'),
     user=relation(model.User),
@@ -2274,29 +2274,29 @@ mapper(model.GenomeIndexToolData, model.GenomeIndexToolData.table, properties=di
     transfer=relation(model.TransferJob, backref='transfer_job')
 ))
 
-mapper(model.InteractiveToolEntryPoint, model.InteractiveToolEntryPoint.table, properties=dict(
+mapper_registry.map_imperatively(model.InteractiveToolEntryPoint, model.InteractiveToolEntryPoint.table, properties=dict(
     job=relation(model.Job, backref=backref('interactivetool_entry_points', uselist=True), uselist=False)
 ))
 
-mapper(model.JobContainerAssociation, model.JobContainerAssociation.table, properties=dict(
+mapper_registry.map_imperatively(model.JobContainerAssociation, model.JobContainerAssociation.table, properties=dict(
     job=relation(model.Job, backref=backref('container', uselist=False), uselist=False)
 ))
 
-mapper(model.PostJobAction, model.PostJobAction.table, properties=dict(
+mapper_registry.map_imperatively(model.PostJobAction, model.PostJobAction.table, properties=dict(
     workflow_step=relation(model.WorkflowStep,
         backref='post_job_actions',
         primaryjoin=(model.WorkflowStep.table.c.id == model.PostJobAction.table.c.workflow_step_id))
 ))
 
-mapper(model.PostJobActionAssociation, model.PostJobActionAssociation.table, properties=dict(
+mapper_registry.map_imperatively(model.PostJobActionAssociation, model.PostJobActionAssociation.table, properties=dict(
     post_job_action=relation(model.PostJobAction)
 ))
 
-mapper(model.Task, model.Task.table)
+mapper_registry.map_imperatively(model.Task, model.Task.table)
 
-mapper(model.DeferredJob, model.DeferredJob.table, properties={})
+mapper_registry.map_imperatively(model.DeferredJob, model.DeferredJob.table, properties={})
 
-mapper(model.TransferJob, model.TransferJob.table, properties={})
+mapper_registry.map_imperatively(model.TransferJob, model.TransferJob.table, properties={})
 
 
 simple_mapping(model.DatasetCollection,
@@ -2370,23 +2370,23 @@ simple_mapping(model.DatasetCollectionElement,
     child_collection=relation(model.DatasetCollection,
         primaryjoin=(model.DatasetCollectionElement.table.c.child_collection_id == model.DatasetCollection.table.c.id)))
 
-mapper(model.Event, model.Event.table, properties=dict(
+mapper_registry.map_imperatively(model.Event, model.Event.table, properties=dict(
     history=relation(model.History),
     galaxy_session=relation(model.GalaxySession),
     # user=relation( model.User.mapper ) ) )
     user=relation(model.User)
 ))
 
-mapper(model.GalaxySession, model.GalaxySession.table, properties=dict(
+mapper_registry.map_imperatively(model.GalaxySession, model.GalaxySession.table, properties=dict(
     current_history=relation(model.History),
 ))
 
-mapper(model.GalaxySessionToHistoryAssociation, model.GalaxySessionToHistoryAssociation.table, properties=dict(
+mapper_registry.map_imperatively(model.GalaxySessionToHistoryAssociation, model.GalaxySessionToHistoryAssociation.table, properties=dict(
     galaxy_session=relation(model.GalaxySession, backref='histories'),
     history=relation(model.History, backref='galaxy_sessions')
 ))
 
-mapper(model.Workflow, model.Workflow.table, properties=dict(
+mapper_registry.map_imperatively(model.Workflow, model.Workflow.table, properties=dict(
     steps=relation(model.WorkflowStep,
         backref='workflow',
         primaryjoin=(model.Workflow.table.c.id == model.WorkflowStep.table.c.workflow_id),
@@ -2400,7 +2400,7 @@ mapper(model.Workflow, model.Workflow.table, properties=dict(
 
 ))
 
-mapper(model.WorkflowStep, model.WorkflowStep.table, properties=dict(
+mapper_registry.map_imperatively(model.WorkflowStep, model.WorkflowStep.table, properties=dict(
     subworkflow=relation(model.Workflow,
         primaryjoin=(model.Workflow.table.c.id == model.WorkflowStep.table.c.subworkflow_id),
         backref="parent_workflow_steps"),
@@ -2415,20 +2415,20 @@ mapper(model.WorkflowStep, model.WorkflowStep.table, properties=dict(
         backref="workflow_step")
 ))
 
-mapper(model.WorkflowStepInput, model.WorkflowStepInput.table, properties=dict(
+mapper_registry.map_imperatively(model.WorkflowStepInput, model.WorkflowStepInput.table, properties=dict(
     workflow_step=relation(model.WorkflowStep,
         backref=backref("inputs", uselist=True),
         cascade="all",
         primaryjoin=(model.WorkflowStepInput.table.c.workflow_step_id == model.WorkflowStep.table.c.id))
 ))
 
-mapper(model.WorkflowOutput, model.WorkflowOutput.table, properties=dict(
+mapper_registry.map_imperatively(model.WorkflowOutput, model.WorkflowOutput.table, properties=dict(
     workflow_step=relation(model.WorkflowStep,
         backref='workflow_outputs',
         primaryjoin=(model.WorkflowStep.table.c.id == model.WorkflowOutput.table.c.workflow_step_id))
 ))
 
-mapper(model.WorkflowStepConnection, model.WorkflowStepConnection.table, properties=dict(
+mapper_registry.map_imperatively(model.WorkflowStepConnection, model.WorkflowStepConnection.table, properties=dict(
     input_step_input=relation(model.WorkflowStepInput,
         backref="connections",
         cascade="all",
@@ -2444,7 +2444,7 @@ mapper(model.WorkflowStepConnection, model.WorkflowStepConnection.table, propert
 ))
 
 
-mapper(model.StoredWorkflow, model.StoredWorkflow.table, properties=dict(
+mapper_registry.map_imperatively(model.StoredWorkflow, model.StoredWorkflow.table, properties=dict(
     user=relation(model.User,
         primaryjoin=(model.User.table.c.id == model.StoredWorkflow.table.c.user_id),
         backref='stored_workflows'),
@@ -2484,18 +2484,18 @@ mapper(model.StoredWorkflow, model.StoredWorkflow.table, properties=dict(
 # returns a list of users that workflow is shared with.
 model.StoredWorkflow.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')  # type: ignore
 
-mapper(model.StoredWorkflowUserShareAssociation, model.StoredWorkflowUserShareAssociation.table, properties=dict(
+mapper_registry.map_imperatively(model.StoredWorkflowUserShareAssociation, model.StoredWorkflowUserShareAssociation.table, properties=dict(
     user=relation(model.User,
         backref='workflows_shared_by_others'),
     stored_workflow=relation(model.StoredWorkflow,
         backref='users_shared_with')
 ))
 
-mapper(model.StoredWorkflowMenuEntry, model.StoredWorkflowMenuEntry.table, properties=dict(
+mapper_registry.map_imperatively(model.StoredWorkflowMenuEntry, model.StoredWorkflowMenuEntry.table, properties=dict(
     stored_workflow=relation(model.StoredWorkflow)
 ))
 
-mapper(model.WorkflowInvocation, model.WorkflowInvocation.table, properties=dict(
+mapper_registry.map_imperatively(model.WorkflowInvocation, model.WorkflowInvocation.table, properties=dict(
     history=relation(model.History, backref=backref('workflow_invocations', uselist=True)),
     input_parameters=relation(model.WorkflowRequestInputParameter, backref='workflow_invocation'),
     step_states=relation(model.WorkflowRequestStepState, backref='workflow_invocation'),
@@ -2515,7 +2515,7 @@ mapper(model.WorkflowInvocation, model.WorkflowInvocation.table, properties=dict
     workflow=relation(model.Workflow)
 ))
 
-mapper(model.WorkflowInvocationToSubworkflowInvocationAssociation, model.WorkflowInvocationToSubworkflowInvocationAssociation.table, properties=dict(
+mapper_registry.map_imperatively(model.WorkflowInvocationToSubworkflowInvocationAssociation, model.WorkflowInvocationToSubworkflowInvocationAssociation.table, properties=dict(
     subworkflow_invocation=relation(model.WorkflowInvocation,
         primaryjoin=(model.WorkflowInvocationToSubworkflowInvocationAssociation.table.c.subworkflow_invocation_id == model.WorkflowInvocation.table.c.id),
         backref="parent_workflow_invocation_association",
@@ -2555,7 +2555,7 @@ simple_mapping(model.WorkflowRequestToInputDatasetCollectionAssociation,
     dataset_collection=relation(model.HistoryDatasetCollectionAssociation))
 
 
-mapper(model.MetadataFile, model.MetadataFile.table, properties=dict(
+mapper_registry.map_imperatively(model.MetadataFile, model.MetadataFile.table, properties=dict(
     history_dataset=relation(model.HistoryDatasetAssociation),
     library_dataset=relation(model.LibraryDatasetDatasetAssociation)
 ))
@@ -2610,9 +2610,9 @@ simple_mapping(
 )
 
 
-mapper(model.PageRevision, model.PageRevision.table)
+mapper_registry.map_imperatively(model.PageRevision, model.PageRevision.table)
 
-mapper(model.Page, model.Page.table, properties=dict(
+mapper_registry.map_imperatively(model.Page, model.Page.table, properties=dict(
     user=relation(model.User),
     revisions=relation(model.PageRevision,
         backref='page',
@@ -2642,13 +2642,13 @@ mapper(model.Page, model.Page.table, properties=dict(
 # returns a list of users that page is shared with.
 model.Page.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')  # type: ignore
 
-mapper(model.PageUserShareAssociation, model.PageUserShareAssociation.table,
+mapper_registry.map_imperatively(model.PageUserShareAssociation, model.PageUserShareAssociation.table,
        properties=dict(user=relation(model.User, backref='pages_shared_by_others'),
                        page=relation(model.Page, backref='users_shared_with')))
 
-mapper(model.VisualizationRevision, model.VisualizationRevision.table)
+mapper_registry.map_imperatively(model.VisualizationRevision, model.VisualizationRevision.table)
 
-mapper(model.Visualization, model.Visualization.table, properties=dict(
+mapper_registry.map_imperatively(model.Visualization, model.Visualization.table, properties=dict(
     user=relation(model.User),
     revisions=relation(model.VisualizationRevision,
         backref='visualization',
@@ -2678,7 +2678,7 @@ mapper(model.Visualization, model.Visualization.table, properties=dict(
 # returns a list of users that visualization is shared with.
 model.Visualization.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')  # type: ignore
 
-mapper(model.VisualizationUserShareAssociation, model.VisualizationUserShareAssociation.table, properties=dict(
+mapper_registry.map_imperatively(model.VisualizationUserShareAssociation, model.VisualizationUserShareAssociation.table, properties=dict(
     user=relation(model.User,
         backref='visualizations_shared_by_others'),
     visualization=relation(model.Visualization,
@@ -2736,7 +2736,7 @@ rating_mapping(model.VisualizationRatingAssociation)
 rating_mapping(model.HistoryDatasetCollectionRatingAssociation)
 rating_mapping(model.LibraryDatasetCollectionRatingAssociation)
 
-mapper(model.Job, model.Job.table, properties=dict(
+mapper_registry.map_imperatively(model.Job, model.Job.table, properties=dict(
     # user=relation( model.User.mapper ),
     user=relation(model.User),
     galaxy_session=relation(model.GalaxySession),
@@ -2774,13 +2774,13 @@ model.Job.any_output_dataset_collection_instances_deleted = column_property(  # 
 )
 
 # Data Manager tables
-mapper(model.DataManagerHistoryAssociation, model.DataManagerHistoryAssociation.table, properties=dict(
+mapper_registry.map_imperatively(model.DataManagerHistoryAssociation, model.DataManagerHistoryAssociation.table, properties=dict(
     history=relation(model.History),
     user=relation(model.User,
         backref='data_manager_histories')
 ))
 
-mapper(model.DataManagerJobAssociation, model.DataManagerJobAssociation.table, properties=dict(
+mapper_registry.map_imperatively(model.DataManagerJobAssociation, model.DataManagerJobAssociation.table, properties=dict(
     job=relation(model.Job,
         backref=backref('data_manager_association', uselist=False),
         uselist=False)
