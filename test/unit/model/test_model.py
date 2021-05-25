@@ -27,11 +27,12 @@ def test_Group_table(model):
 
 
 def test_Group(model, session):
+    cls = model.Group
     name = 'a'
-    obj = model.Group(name)
+    obj = cls(name)
     persist(session, obj)
 
-    stmt = select(model.Group)
+    stmt = select(cls)
     stored_obj = session.execute(stmt).scalar_one()
     assert stored_obj.id
     assert stored_obj.create_time
@@ -39,7 +40,7 @@ def test_Group(model, session):
     assert stored_obj.name == name
     assert stored_obj.deleted is False
 
-    cleanup(session, model.Group)
+    cleanup(session, cls)
 
 
 def test_Role_table(model):
@@ -48,11 +49,12 @@ def test_Role_table(model):
 
 
 def test_Role(model, session):
+    cls = model.Role
     name, description = 'a', 'b'
-    obj = model.Role(name, description)
+    obj = cls(name, description)
     persist(session, obj)
 
-    stmt = select(model.Role)
+    stmt = select(cls)
     stored_obj = session.execute(stmt).scalar_one()
     assert stored_obj.id
     assert stored_obj.create_time
@@ -62,7 +64,7 @@ def test_Role(model, session):
     assert stored_obj.type == model.Role.types.SYSTEM
     assert stored_obj.deleted is False
 
-    cleanup(session, model.Role)
+    cleanup(session, cls)
 
 
 def test_WorkerProcess_table(model):
@@ -72,11 +74,12 @@ def test_WorkerProcess_table(model):
 
 
 def test_WorkerProcess(model, session):
+    cls = model.WorkerProcess
     server_name, hostname = 'a', 'b'
-    obj = model.WorkerProcess(server_name, hostname)
+    obj = cls(server_name, hostname)
     persist(session, obj)
 
-    stmt = select(model.WorkerProcess)
+    stmt = select(cls)
     stored_obj = session.execute(stmt).scalar_one()
     assert stored_obj.id
     assert stored_obj.server_name == server_name
@@ -84,7 +87,7 @@ def test_WorkerProcess(model, session):
     assert stored_obj.pid is None
     assert stored_obj.update_time
 
-    cleanup(session, model.WorkerProcess)
+    cleanup(session, cls)
 
 
 def test_PSAAssociation_table(model):
@@ -93,11 +96,12 @@ def test_PSAAssociation_table(model):
 
 
 def test_PSAAssociation(model, session):
+    cls = model.PSAAssociation
     server_url, handle, secret, issued, lifetime, assoc_type = 'a', 'b', 'c', 1, 2, 'd'
-    obj = model.PSAAssociation(server_url, handle, secret, issued, lifetime, assoc_type)
+    obj = cls(server_url, handle, secret, issued, lifetime, assoc_type)
     persist(session, obj)
 
-    stmt = select(model.PSAAssociation)
+    stmt = select(cls)
     stored_obj = session.execute(stmt).scalar_one()
     assert stored_obj.id
     assert stored_obj.server_url == server_url
@@ -107,7 +111,7 @@ def test_PSAAssociation(model, session):
     assert stored_obj.lifetime == lifetime
     assert stored_obj.assoc_type == assoc_type
 
-    cleanup(session, model.PSAAssociation)
+    cleanup(session, cls)
 
 
 def test_PSACode_table(model):
@@ -117,17 +121,18 @@ def test_PSACode_table(model):
 
 
 def test_PSACode(model, session):
+    cls = model.PSACode
     email, code = 'a', 'b'
-    obj = model.PSACode(email, code)
+    obj = cls(email, code)
     persist(session, obj)
 
-    stmt = select(model.PSACode)
+    stmt = select(cls)
     stored_obj = session.execute(stmt).scalar_one()
     assert stored_obj.id
     assert stored_obj.email == email
     assert stored_obj.code == code
 
-    cleanup(session, model.PSACode)
+    cleanup(session, cls)
 
 
 def test_PSANonce_table(model):
@@ -136,18 +141,19 @@ def test_PSANonce_table(model):
 
 
 def test_PSANonce(model, session):
+    cls = model.PSANonce
     server_url, timestamp, salt = 'a', 1, 'b'
-    obj = model.PSANonce(server_url, timestamp, salt)
+    obj = cls(server_url, timestamp, salt)
     persist(session, obj)
 
-    stmt = select(model.PSANonce)
+    stmt = select(cls)
     stored_obj = session.execute(stmt).scalar_one()
     assert stored_obj.id
     assert stored_obj.server_url
     assert stored_obj.timestamp == timestamp
     assert stored_obj.salt == salt
 
-    cleanup(session, model.PSANonce)
+    cleanup(session, cls)
 
 
 def test_PSAPartial_table(model):
@@ -156,11 +162,12 @@ def test_PSAPartial_table(model):
 
 
 def test_PSAPartial(model, session):
+    cls = model.PSAPartial
     token, data, next_step, backend = 'a', 'b', 1, 'c'
-    obj = model.PSAPartial(token, data, next_step, backend)
+    obj = cls(token, data, next_step, backend)
     persist(session, obj)
 
-    stmt = select(model.PSAPartial)
+    stmt = select(cls)
     stored_obj = session.execute(stmt).scalar_one()
     assert stored_obj.id
     assert stored_obj.token == token
@@ -168,7 +175,7 @@ def test_PSAPartial(model, session):
     assert stored_obj.next_step == next_step
     assert stored_obj.backend == backend
 
-    cleanup(session, model.PSAPartial)
+    cleanup(session, cls)
 
 
 def persist(session, obj):
