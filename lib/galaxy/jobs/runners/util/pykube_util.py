@@ -16,7 +16,6 @@ try:
 except ImportError as exc:
     KubeConfig = None
     Ingress = None
-    HTTPClient = None
     Job = None
     Pod = None
     Service = None
