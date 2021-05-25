@@ -2976,7 +2976,7 @@ class MergeCollectionTool(DatabaseOperationTool):
             if getattr(value, "history_content_type", None) == "dataset":
                 copied_value = value.copy(copy_tags=value.tags, flush=False)
             else:
-                copied_value = value.copy(copy_tags=value.tags)
+                copied_value = value.copy()
             new_elements[key] = copied_value
 
         self._add_datasets_to_history(history, new_elements.values())
@@ -2994,7 +2994,7 @@ class FilterDatasetsTool(DatabaseOperationTool):
             if getattr(dce.element_object, "history_content_type", None) == "dataset":
                 copied_value = dce.element_object.copy(copy_tags=dce.element_object.tags, flush=False)
             else:
-                copied_value = dce.element_object.copy(copy_tags=dce.element_object.tags)
+                copied_value = dce.element_object.copy()
             new_elements[element_identifier] = copied_value
         return new_elements
 
@@ -3114,7 +3114,10 @@ class SortTool(DatabaseOperationTool):
 
         for dce in sorted_elements:
             dce_object = dce.element_object
-            copied_dataset = dce_object.copy(copy_tags=dce_object.tags, flush=False)
+            if getattr(dce_object, "history_content_type", None) == "dataset":
+                copied_dataset = dce_object.copy(copy_tags=dce_object.tags, flush=False)
+            else:
+                copied_dataset = dce_object.copy(flush=False)
             new_elements[dce.element_identifier] = copied_dataset
 
         self._add_datasets_to_history(history, new_elements.values())
@@ -3140,7 +3143,7 @@ class RelabelFromFileTool(DatabaseOperationTool):
             if getattr(dce_object, "history_content_type", None) == "dataset":
                 copied_value = dce_object.copy(copy_tags=dce_object.tags, flush=False)
             else:
-                copied_value = dce_object.copy(copy_tags=dce_object.tags)
+                copied_value = dce_object.copy()
             new_elements[new_label] = copied_value
 
         new_labels_path = new_labels_dataset_assoc.file_name
@@ -3229,7 +3232,7 @@ class TagFromFileTool(DatabaseOperationTool):
                     tag_handler.add_tags_from_list(user=history.user, item=copied_value, new_tags_list=new_tags, flush=False)
             else:
                 # We have a collection, and we copy the elements so that we don't manipulate the original tags
-                copied_value = dce.element_object.copy(copy_tags=dce.element_object.tags, element_destination=history)
+                copied_value = dce.element_object.copy(element_destination=history)
                 for new_element, old_element in zip(copied_value.dataset_elements, dce.element_object.dataset_elements):
                     # TODO: This should be eliminated, but collections created by the collection builder
                     # don't set `visible` to `False` if you don't hide the original elements.
@@ -3285,7 +3288,7 @@ class FilterFromFileTool(DatabaseOperationTool):
             if getattr(dce_object, "history_content_type", None) == "dataset":
                 copied_value = dce_object.copy(copy_tags=dce_object.tags, flush=False)
             else:
-                copied_value = dce_object.copy(copy_tags=dce_object.tags)
+                copied_value = dce_object.copy()
 
             if passes_filter:
                 filtered_elements[element_identifier] = copied_value
