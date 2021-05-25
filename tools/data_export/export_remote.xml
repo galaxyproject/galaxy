@@ -19,7 +19,7 @@ python '$__tool_directory__/export_remote.py'
 #if $export_type.export_type_selector == "datasets_auto":
 #set $fileconfig = json.dumps([{"real_data_path": str(infile), "name": infile.name_and_ext_filesystem_safe} for infile in $infiles])
 #else
-#set $fileconfig = json.dumps([{"real_data_path": str(dataset["infile"]), "name": filesystem_safe_string(str(dataset["name"]), 255)} for dataset in $export_type.datasets])
+#set $fileconfig = json.dumps([{"real_data_path": str(dataset["infile"]), "name": filesystem_safe_string(str(dataset["name"]), 255, invalid_chars=())} for dataset in $export_type.datasets])
 #end if
 $fileconfig
         </configfile>
@@ -28,16 +28,20 @@ $fileconfig
         <conditional name="export_type">
             <param name="export_type_selector" type="select" label="What would you like to export?">
                 <option value="datasets_auto" selected="True">Datasets using their Galaxy name and extension.</option>
+                <option value="collection_auto">Dataset Collections using their name, structure and extension</option>
                 <option value="datasets_named">Datasets using specified name.</option>
                 <!-- Allow more options - e.g. HTML, collections preserving their structure... -->
             </param>
             <when value="datasets_auto">
-                <param name="infiles" type="data" format="txt,binary" multiple="true" label="Choose your datasets"/>
+                <param name="infiles" type="data" format="txt,binary" multiple="true" label="Choose your datasets" help="Datasets must have unique names"/>
+            </when>
+            <when value="collection_auto">
+                <param name="incollection" type="data_collection" format="txt,binary" label="Choose your dataset collection" help="Dataset collection will be exported. Collections will become folders and datasets will be files"/>
             </when>
             <when value="datasets_named">
                 <repeat name="datasets" title="Dataset">
                     <param type="data" name="infile" label="Input dataset" />
-                    <param type="text" name="name" label="Name">
+                    <param type="text" name="name" label="Enter file name" help="To create a file named &quot;f1.txt&quot; in directory named &quot;dir1&quot; enter &quot;dir1/f1.txt&quot;">
                         <!-- 🔥 turn off sanitizer, so unicode strings can be used. Is sanitized in configfile -->
                         <sanitizer sanitize="false"></sanitizer>
                         <validator type="length" min="1" max="255"/>
