@@ -21,6 +21,27 @@ def session(model):
     Session.remove()  # Ensures we get a new session for each test
 
 
+def test_Group_table(model):
+    tbl = model.Group.__table__
+    assert tbl.name == 'galaxy_group'
+
+
+def test_Group(model, session):
+    name = 'a'
+    obj = model.Group(name)
+    persist(session, obj)
+
+    stmt = select(model.Group)
+    stored_obj = session.execute(stmt).scalar_one()
+    assert stored_obj.id
+    assert stored_obj.create_time
+    assert stored_obj.update_time
+    assert stored_obj.name == name
+    assert stored_obj.deleted is False
+
+    cleanup(session, model.WorkerProcess)
+
+
 def test_WorkerProcess_table(model):
     tbl = model.WorkerProcess.__table__
     assert tbl.name == 'worker_process'

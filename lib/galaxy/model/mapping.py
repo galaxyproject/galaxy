@@ -308,14 +308,6 @@ model.ImplicitlyConvertedDatasetAssociation.table = Table(
     Column("metadata_safe", Boolean, index=True, default=True),
     Column("type", TrimmedString(255)))
 
-model.Group.table = Table(
-    "galaxy_group", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("name", String(255), index=True, unique=True),
-    Column("deleted", Boolean, index=True, default=False))
-
 model.UserGroupAssociation.table = Table(
     "user_group_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -1891,8 +1883,6 @@ mapper_registry.map_imperatively(model.PasswordResetToken, model.PasswordResetTo
 # Set up proxy so that this syntax is possible:
 # <user_obj>.preferences[pref_name] = pref_value
 model.User.preferences = association_proxy('_preferences', 'value', creator=model.UserPreference)  # type: ignore
-
-mapper_registry.map_imperatively(model.Group, model.Group.table)
 
 mapper_registry.map_imperatively(model.UserGroupAssociation, model.UserGroupAssociation.table, properties=dict(
     user=relation(model.User, backref="groups"),

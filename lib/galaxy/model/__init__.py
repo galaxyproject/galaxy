@@ -27,6 +27,7 @@ from social_core.storage import AssociationMixin, CodeMixin, NonceMixin, Partial
 from sqlalchemy import (
     alias,
     and_,
+    Boolean,
     Column,
     DateTime,
     func,
@@ -1849,7 +1850,16 @@ class DeferredJob(RepresentById):
             return False
 
 
+@mapper_registry.mapped
 class Group(Dictifiable, RepresentById):
+    __tablename__ = 'galaxy_group'
+
+    id = Column("id", Integer, primary_key=True)
+    create_time = Column("create_time", DateTime, default=now)
+    update_time = Column("update_time", DateTime, default=now, onupdate=now)
+    name = Column("name", String(255), index=True, unique=True)
+    deleted = Column("deleted", Boolean, index=True, default=False)
+
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name']
 
