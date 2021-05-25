@@ -761,6 +761,7 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
                 with open(job_state.output_file, "rb") as stdout_file, open(job_state.error_file, 'rb') as stderr_file:
                     stdout = self._job_io_for_db(stdout_file)
                     stderr = self._job_io_for_db(stderr_file)
+                    collect_output_success = True
                 break
             except Exception as e:
                 if which_try == self.app.config.retry_job_output_collection:
