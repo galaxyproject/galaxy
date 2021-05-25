@@ -171,16 +171,16 @@ class FastAPILibraries:
         page: Optional[int] = Query(
             default=1,
             title="Page",
-            description="The page number to retrieve when paginating the permissions."
+            description="The page number to retrieve when paginating the available roles."
         ),
         page_limit: Optional[int] = Query(
             default=10,
             title="Page Limit",
             description="The maximum number of permissions per page when paginating."
         ),
-        query: Optional[str] = Query(
+        q: Optional[str] = Query(
             None, title="Query",
-            description="Optional search query to retrieve the permissions."
+            description="Optional search text to retrieve only the roles matching this query."
         ),
     ) -> Union[LibraryCurrentPermissions, LibraryAvailablePermissions]:
         """Gets the current or available permissions of a particular library.
@@ -192,7 +192,7 @@ class FastAPILibraries:
             is_library_access,
             page,
             page_limit,
-            query,
+            q,
         )
 
     @router.post(
