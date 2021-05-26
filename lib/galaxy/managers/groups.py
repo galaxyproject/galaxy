@@ -112,5 +112,5 @@ class GroupsManager:
 
     def _get_roles_by_encoded_ids(self, trans: ProvidesAppContext, encoded_role_ids: List[EncodedDatabaseIdField]) -> List[model.Role]:
         decoded_role_ids = self._decode_ids(encoded_role_ids)
-        roles = trans.sa_session.query(model.Role).filter(model.Role.table.c.id.in_(decoded_role_ids)).all()
+        roles = trans.sa_session.query(model.Role).filter(model.Role.id.in_(decoded_role_ids)).all()
         return roles
