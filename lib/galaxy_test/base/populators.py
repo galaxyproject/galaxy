@@ -1223,6 +1223,24 @@ class LibraryPopulator:
         create_response = self.galaxy_interactor.post("libraries", data=data, admin=True, json=True)
         return create_response.json()
 
+    def get_permissions(
+        self,
+        library_id,
+        scope: Optional[str] = "current",
+        is_library_access: Optional[bool] = False,
+        page: Optional[int] = 1,
+        page_limit: Optional[int] = 10,
+        q: Optional[str] = None,
+        admin: Optional[bool] = True
+    ):
+        query = f"&q={q}" if q else ""
+        response = self.galaxy_interactor.get(
+            f"libraries/{library_id}/permissions?scope={scope}&is_library_access={is_library_access}&page={page}&page_limit={page_limit}{query}",
+            admin=admin,
+        )
+        api_asserts.assert_status_code_is(response, 200)
+        return response.json()
+
     def set_permissions(self, library_id, role_id=None):
         """Old legacy way of setting permissions."""
         perm_list = role_id or []
