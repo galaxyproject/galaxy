@@ -48,10 +48,8 @@ import DisplayStructure from "components/DisplayStructured.vue";
 import { CloudAuth } from "components/User/CloudAuth";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
 import Confirmation from "components/login/Confirmation.vue";
-import LibraryFolderRouter from "components/Libraries/LibraryFolderRouter";
-import Vue from "vue";
-import store from "store";
-import VueRouterMain from "./VueRouterMain.vue";
+import Libraries from "components/Libraries";
+import { mountVueComponent } from "utils/mountVueComponent";
 
 /** Routes */
 export const getAnalysisRouter = (Galaxy) => {
@@ -110,24 +108,14 @@ export const getAnalysisRouter = (Galaxy) => {
         },
 
         _display_vue_helper: function (component, propsData = {}, active_tab = null, noPadding = false) {
-            const instance = Vue.extend(component);
             const container = document.createElement("div");
             if (active_tab) {
                 container.active_tab = active_tab;
             }
             this.page.display(container, noPadding);
-            new instance({ store, propsData }).$mount(container);
-        },
-        _display_vue_router: function (router, propsData = {}, active_tab = null, noPadding = false) {
-            const container = document.createElement("div");
-            if (active_tab) {
-                container.active_tab = active_tab;
-            }
-            this.page.display(container, noPadding);
-            new Vue({
-                router: router,
-                render: (h) => h(VueRouterMain),
-            }).$mount(container);
+
+            const mountFn = mountVueComponent(component);
+            return mountFn(propsData, container);
         },
 
         show_tours: function (tour_id) {
@@ -161,10 +149,10 @@ export const getAnalysisRouter = (Galaxy) => {
             this._display_vue_helper(InteractiveTools);
         },
 
-        show_library_folder: function (folder_id) {
+        show_library_folder: function () {
             this.page.toolPanel?.component.hide(0);
             this.page.panels.right.hide();
-            this._display_vue_router(LibraryFolderRouter, { folder_id: folder_id });
+            this._display_vue_helper(Libraries);
         },
 
         show_cloud_auth: function () {

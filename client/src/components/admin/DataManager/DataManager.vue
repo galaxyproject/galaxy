@@ -82,10 +82,14 @@
 import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import Alert from "components/Alert.vue";
+import { debounce } from "underscore";
 
 export default {
     components: {
         Alert,
+    },
+    props: {
+        debouncePeriod: { type: Number, required: false, default: 100 },
     },
     data() {
         return {
@@ -95,7 +99,7 @@ export default {
             viewOnly: false,
             message: "",
             status: "",
-            loading: true,
+            loading: false,
         };
     },
     computed: {
@@ -110,21 +114,34 @@ export default {
         kebabCase(s) {
             return s.toLowerCase().replace(/ /g, "-");
         },
+        load() {
+            this.loading = true;
+            axios
+                .get(`${getAppRoot()}data_manager/data_managers_list`)
+                .then((response) => {
+                    console.log("response", response);
+                    this.dataManagers = response.data.dataManagers;
+                    this.dataTables = response.data.dataTables;
+                    this.viewOnly = response.data.viewOnly;
+                    this.message = response.data.message;
+                    this.status = response.data.status;
+                })
+                .catch((error) => {
+                    console.error(error);
+                })
+                .finally(() => {
+                    this.loading = false;
+                });
+        },
     },
     created() {
-        axios
-            .get(`${getAppRoot()}data_manager/data_managers_list`)
-            .then((response) => {
-                this.dataManagers = response.data.dataManagers;
-                this.dataTables = response.data.dataTables;
-                this.viewOnly = response.data.viewOnly;
-                this.message = response.data.message;
-                this.status = response.data.status;
-                this.loading = false;
-            })
-            .catch((error) => {
-                console.error(error);
-            });
+        console.log("created");
+        this.debouncedLoad = debounce(this.load, this.debouncePeriod);
+        this.debouncedLoad();
+    },
+    beforeRouteEnter(to, from, next) {
+        console.log("beforeRouteEnter");
+        next((vm) => vm.debouncedLoad());
     },
 };
 </script>
