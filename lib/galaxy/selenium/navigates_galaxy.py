@@ -296,10 +296,10 @@ class NavigatesGalaxy(HasDriver):
         if history_item is None:
             assert hid
             history_item = self.hid_to_history_item(hid)
-        item = self.components.history_panel.item
+        item = self.components.history_panel.item.selector
         if multi_history_panel:
             item = self.components.multi_history_view.item
-        return item.selector(
+        return item(
             history_content_type=history_item["history_content_type"],
             id=history_item["id"]
         )
