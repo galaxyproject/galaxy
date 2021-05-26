@@ -58,6 +58,7 @@ from sqlalchemy.orm import (
     reconstructor,
     registry,
 )
+from sqlalchemy.orm.decl_api import DeclarativeMeta
 
 import galaxy.exceptions
 import galaxy.model.metadata
@@ -113,6 +114,16 @@ if TYPE_CHECKING:
 
 else:
     _HasTable = object
+
+
+class Base(metaclass=DeclarativeMeta):
+    __abstract__ = True
+    registry = mapper_registry
+    metadata = mapper_registry.metadata
+
+    @classmethod
+    def __declare_last__(cls):
+        cls.table = cls.__table__
 
 
 class RepresentById(_HasTable):
@@ -259,8 +270,7 @@ class UsesCreateAndUpdateTime:
         return (galaxy.model.orm.now.now() - create_time).total_seconds()
 
 
-@mapper_registry.mapped
-class WorkerProcess(UsesCreateAndUpdateTime, _HasTable):
+class WorkerProcess(Base, UsesCreateAndUpdateTime, _HasTable):
     __tablename__ = 'worker_process'
     __table_args__ = (
         UniqueConstraint('server_name', 'hostname'),
@@ -1851,8 +1861,7 @@ class DeferredJob(RepresentById):
             return False
 
 
-@mapper_registry.mapped
-class Group(Dictifiable, RepresentById):
+class Group(Base, Dictifiable, RepresentById):
     __tablename__ = 'galaxy_group'
 
     id = Column("id", Integer, primary_key=True)
@@ -2319,8 +2328,7 @@ class GroupRoleAssociation(RepresentById):
         self.role = role
 
 
-@mapper_registry.mapped
-class Role(Dictifiable, RepresentById):
+class Role(Base, Dictifiable, RepresentById):
     __tablename__ = 'role'
     id = Column('id', Integer, primary_key=True)
     create_time = Column('create_time', DateTime, default=now)
@@ -6093,8 +6101,7 @@ class UserAddress(RepresentById):
                 'phone': sanitize_html(self.phone)}
 
 
-@mapper_registry.mapped
-class PSAAssociation(AssociationMixin, RepresentById):
+class PSAAssociation(Base, AssociationMixin, RepresentById):
     __tablename__ = 'psa_association'
 
     id = Column('id', Integer, primary_key=True)
@@ -6142,8 +6149,7 @@ class PSAAssociation(AssociationMixin, RepresentById):
         cls.sa_session.query(cls).filter(cls.id.in_(ids_to_delete)).delete(synchronize_session='fetch')
 
 
-@mapper_registry.mapped
-class PSACode(CodeMixin, RepresentById):
+class PSACode(Base, CodeMixin, RepresentById):
     __tablename__ = 'psa_code'
     __table_args__ = (
         UniqueConstraint('code', 'email'),
@@ -6169,8 +6175,7 @@ class PSACode(CodeMixin, RepresentById):
         return cls.sa_session.query(cls).filter(cls.code == code).first()
 
 
-@mapper_registry.mapped
-class PSANonce(NonceMixin, RepresentById):
+class PSANonce(Base, NonceMixin, RepresentById):
     __tablename__ = 'psa_nonce'
 
     id = Column('id', Integer, primary_key=True)
@@ -6201,8 +6206,7 @@ class PSANonce(NonceMixin, RepresentById):
             return instance
 
 
-@mapper_registry.mapped
-class PSAPartial(PartialMixin, RepresentById):
+class PSAPartial(Base, PartialMixin, RepresentById):
     __tablename__ = 'psa_partial'
 
     id = Column('id', Integer, primary_key=True)
