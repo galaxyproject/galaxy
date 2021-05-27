@@ -319,6 +319,43 @@ class MappingTests(BaseModelTestCase):
         # self.assertEqual(len(loaded_dataset_collection.datasets), 2)
         # assert loaded_dataset_collection.collection_type == "pair"
 
+    def test_nested_collection_attributes(self):
+        model = self.model
+        u = model.User(email="mary2@example.com", password="password")
+        h1 = model.History(name="History 1", user=u)
+        d1 = model.HistoryDatasetAssociation(extension="bam", history=h1, create_dataset=True, sa_session=model.session)
+        d2 = model.HistoryDatasetAssociation(extension="txt", history=h1, create_dataset=True, sa_session=model.session)
+        c1 = model.DatasetCollection(collection_type='paired')
+        dce1 = model.DatasetCollectionElement(collection=c1, element=d1, element_identifier="forward", element_index=0)
+        dce2 = model.DatasetCollectionElement(collection=c1, element=d2, element_identifier="reverse", element_index=1)
+
+        c2 = model.DatasetCollection(collection_type="list:paired")
+        dce3 = model.DatasetCollectionElement(collection=c2, element=c1, element_identifier="inner_list", element_index=0)
+        c3 = model.DatasetCollection(collection_type="list:list")
+        c4 = model.DatasetCollection(collection_type="list:list:paired")
+        dce4 = model.DatasetCollectionElement(collection=c4, element=c2, element_identifier="outer_list", element_index=0)
+        model.session.add_all([d1, d2, c1, dce1, dce2, c2, dce3, c3, c4, dce4])
+        model.session.flush()
+        q = c2._get_nested_collection_attributes(element_attributes=('element_identifier',), hda_attributes=('extension',), dataset_attributes=('state',))
+        assert [(r.keys()) for r in q] == [['element_identifier_0', 'element_identifier_1', 'extension', 'state'], ['element_identifier_0', 'element_identifier_1', 'extension', 'state']]
+        assert q.all() == [('inner_list', 'forward', 'bam', 'new'), ('inner_list', 'reverse', 'txt', 'new')]
+        q = c2._get_nested_collection_attributes(return_entities=(model.HistoryDatasetAssociation,))
+        assert q.all() == [d1, d2]
+        q = c2._get_nested_collection_attributes(return_entities=(model.HistoryDatasetAssociation, model.Dataset))
+        assert q.all() == [(d1, d1.dataset), (d2, d2.dataset)]
+        # Assert properties that use _get_nested_collection_attributes return correct content
+        assert c2.dataset_instances == [d1, d2]
+        assert c2.dataset_elements == [dce1, dce2]
+        assert c2.dataset_action_tuples == []
+        assert c2.populated_optimized
+        assert c2.dataset_states_and_extensions_summary == ({'new'}, {'txt', 'bam'})
+        assert c3.dataset_instances == []
+        assert c3.dataset_elements == []
+        assert c3.dataset_states_and_extensions_summary == (set(), set())
+        q = c4._get_nested_collection_attributes(element_attributes=('element_identifier',))
+        assert q.all() == [('outer_list', 'inner_list', 'forward'), ('outer_list', 'inner_list', 'reverse')]
+        assert c4.dataset_elements == [dce1, dce2]
+
     def test_default_disk_usage(self):
         model = self.model
 
