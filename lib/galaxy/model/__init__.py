@@ -293,7 +293,6 @@ class WorkerProcess(Base, UsesCreateAndUpdateTime, _HasTable):
     def __init__(self, server_name, hostname):
         self.server_name = server_name
         self.hostname = hostname
-        self.pid = None
 
 
 def cached_id(galaxy_model_object):
@@ -6468,9 +6467,6 @@ class PageRevision(Base, Dictifiable, RepresentById):
     dict_element_visible_keys = ['id', 'page_id', 'title', 'content', 'content_format']
 
     def __init__(self):
-        self.user = None
-        self.title = None
-        self.content = None
         self.content_format = PageRevision.DEFAULT_CONTENT_FORMAT
 
     def to_dict(self, view='element'):
