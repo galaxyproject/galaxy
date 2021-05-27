@@ -26,7 +26,7 @@ import mgm_utils
 
 
 def main():
-	with tempfile.TemporaryDirectory as tmpdir:
+	with tempfile.TemporaryDirectory(dir = "/tmp") as tmpdir:
 		(input_file, output_name) = sys.argv[1:3]
 		dateTimeObj = datetime.now()
 
