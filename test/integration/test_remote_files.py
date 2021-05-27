@@ -172,9 +172,9 @@ class RemoteFilesIntegrationTestCase(ConfiguresRemoteFilesIntegrationTestCase):
                 "d_uri": "gxftp://",
                 "export_type|export_type_selector": "datasets_named",
                 "export_type|datasets_0|infile": infile,
-                "export_type|datasets_0|name": ".my_cool/utf8_name_😻.txt",
+                "export_type|datasets_0|name": "name.txt",
                 "export_type|datasets_1|infile": infile,
-                "export_type|datasets_1|name": ".my_cool/utf8_name_😻.txt",
+                "export_type|datasets_1|name": "name.txt",
             }
             response = dataset_populator.run_tool("export_remote", inputs, history_id)
             job_id = response["jobs"][0]["id"]
@@ -182,7 +182,7 @@ class RemoteFilesIntegrationTestCase(ConfiguresRemoteFilesIntegrationTestCase):
             job = self.dataset_populator.get_job_details(job_id, full=True).json()
             assert job['state'] == 'error'
             assert 'Duplicate export filenames given' in job['tool_stderr']
-            assert not os.path.exists(os.path.join(ftp_dir, 'my_cool_utf8_name_😻.txt'))
+            assert not os.path.exists(os.path.join(ftp_dir, 'name.txt'))
 
     def test_export_remote_tool_with_metadata_file_auto_name(self):
         dataset_populator = self.dataset_populator
