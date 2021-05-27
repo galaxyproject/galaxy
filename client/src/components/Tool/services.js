@@ -1,4 +1,3 @@
-import $ from "jquery";
 import axios from "axios";
 import { rethrowSimple } from "utils/simple-error";
 import { getAppRoot } from "onload/loadConfig";
@@ -6,7 +5,7 @@ import { getGalaxyInstance } from "app";
 
 /** Tools data request helper **/
 export async function getTool(tool_id, tool_version, job_id) {
-    const galaxy = getGalaxyInstance();
+    const Galaxy = getGalaxyInstance();
     let url = "";
     let data = {};
 
@@ -15,15 +14,15 @@ export async function getTool(tool_id, tool_version, job_id) {
         url = `${getAppRoot()}api/jobs/${job_id}/build_for_rerun`;
     } else {
         url = `${getAppRoot()}api/tools/${tool_id}/build`;
-        data = $.extend({}, galaxy.params);
+        data = Object.assign({}, Galaxy.params);
         data["tool_id"] && delete data["tool_id"];
     }
     tool_version && (data["tool_version"] = tool_version);
 
     // attach data to request url
-    if (!$.isEmptyObject(data)) {
-        url += url.indexOf("?") == -1 ? "?" : "&";
-        url += $.param(data, true);
+    if (Object.entries(data).length != 0) {
+        const params = new URLSearchParams(data);
+        url = `${url}?${params.toString()}`;
     }
 
     // request tool data
