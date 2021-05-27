@@ -17,10 +17,10 @@ class HistoryMultiViewTestCase(SeleniumTestCase):
         self.home()
 
         self.components.history_panel.multi_view_button.wait_for_and_click()
-        self.components.multi_history_view.create_new_button.wait_for_and_click()
-        self.components.multi_history_view.drag_drop_help.wait_for_visible()
         hdca_selector = self.history_panel_wait_for_hid_state(input_hid, "ok", multi_history_panel=True)
         self.wait_for_visible(hdca_selector)
+        self.components.multi_history_view.create_new_button.wait_for_and_click()
+        self.components.multi_history_view.drag_drop_help.wait_for_visible()
         self.screenshot("multi_history_collection")
 
     @selenium_test

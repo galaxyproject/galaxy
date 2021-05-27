@@ -304,15 +304,27 @@ class NavigatesGalaxy(HasDriver):
             id=history_item["id"]
         )
 
-    def history_panel_wait_for_hid_visible(self, hid, allowed_force_refreshes=0, multi_history_panel=False):
-        current_history_id = self.current_history_id()
+    def wait_for_history_to_have_hid(self, history_id, hid):
+
+        def get_hids():
+            contents = self.api_get(f"histories/{history_id}/contents")
+            return [d["hid"] for d in contents]
 
         def history_has_hid(driver):
-            contents = self.api_get(f"histories/{current_history_id}/contents")
-            return any([d for d in contents if d["hid"] == hid])
+            hids = get_hids()
+            return any([h == hid for h in hids])
 
         timeout = self.timeout_for(wait_type=WAIT_TYPES.JOB_COMPLETION)
-        self.wait(timeout).until(history_has_hid)
+        try:
+            self.wait(timeout).until(history_has_hid)
+        except self.TimeoutException as e:
+            hids = get_hids()
+            message = f"Timeout waiting for history {history_id} to have hid {hid} - have hids {hids}"
+            raise self.prepend_timeout_message(e, message)
+
+    def history_panel_wait_for_hid_visible(self, hid, allowed_force_refreshes=0, multi_history_panel=False):
+        current_history_id = self.current_history_id()
+        self.wait_for_history_to_have_hid(current_history_id, hid)
         history_item = self.hid_to_history_item(hid, current_history_id=current_history_id)
         history_item_selector = self.history_panel_item_component(history_item, multi_history_panel=multi_history_panel)
         try:
