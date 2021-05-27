@@ -33,6 +33,13 @@ def page(model, user):
     return p
 
 
+@pytest.fixture
+def visualization(model, user):
+    v = model.Visualization()
+    v.user = user
+    return v
+
+
 def test_Group_table(model):
     tbl = model.Group.__table__
     assert tbl.name == 'galaxy_group'
@@ -239,6 +246,31 @@ def test_PSAPartial(model, session):
     cleanup(session, cls)
 
 
+def test_VisualizationRevision_table(model):
+    tbl = model.VisualizationRevision.__table__
+    assert tbl.name == 'visualization_revision'
+    assert has_index(tbl, ('dbkey',))
+
+
+def test_VisualizationRevision(model, session, visualization):
+    cls = model.VisualizationRevision
+    obj = cls()
+    obj.visualization = visualization
+    persist(session, obj)
+
+    stmt = select(cls)
+    stored_obj = session.execute(stmt).scalar_one()
+    assert stored_obj.id
+    assert stored_obj.create_time
+    assert stored_obj.update_time
+    assert stored_obj.visualization_id
+    assert stored_obj.title is None
+    assert stored_obj.dbkey is None
+    assert stored_obj.config is None
+
+    cleanup(session, cls)
+
+
 def persist(session, obj):
     session.add(obj)
     session.flush()
@@ -254,3 +286,10 @@ def has_unique_constraint(table, fields):
             col_names = {c.name for c in constraint.columns}
             if set(fields) == col_names:
                 return True
+
+
+def has_index(table, fields):
+    for index in table.indexes:
+        col_names = {c.name for c in index.columns}
+        if set(fields) == col_names:
+            return True

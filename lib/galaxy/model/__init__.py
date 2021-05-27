@@ -39,6 +39,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     func,
+    Index,
     inspect,
     Integer,
     join,
@@ -73,7 +74,10 @@ import galaxy.model.orm.now
 import galaxy.model.tags
 import galaxy.security.passwords
 import galaxy.util
-from galaxy.model.custom_types import TrimmedString
+from galaxy.model.custom_types import (
+    MutableJSONType,
+    TrimmedString,
+)
 from galaxy.model.item_attrs import get_item_annotation_str, UsesAnnotations
 from galaxy.model.orm.now import now
 from galaxy.security import get_permitted_actions
@@ -6517,7 +6521,21 @@ class Visualization(RepresentById):
         return copy_viz
 
 
-class VisualizationRevision(RepresentById):
+class VisualizationRevision(Base, RepresentById):
+    __tablename__ = 'visualization_revision'
+    __table_args__ = (
+        Index('ix_visualization_revision_dbkey', 'dbkey', mysql_length=200),
+    )
+
+    id = Column('id', Integer, primary_key=True)
+    create_time = Column('create_time', DateTime, default=now)
+    update_time = Column('update_time', DateTime, default=now, onupdate=now)
+    visualization_id = Column('visualization_id', Integer, ForeignKey('visualization.id'),
+                              index=True, nullable=False)
+    title = Column('title', TEXT)
+    dbkey = Column('dbkey', TEXT)
+    config = Column('config', MutableJSONType)
+
     def __init__(self, visualization=None, title=None, dbkey=None, config=None):
         self.id = None
         self.visualization = visualization

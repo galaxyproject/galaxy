@@ -1218,18 +1218,6 @@ model.Visualization.table = Table(
     Index('ix_visualization_slug', 'slug', mysql_length=200),
 )
 
-model.VisualizationRevision.table = Table(
-    "visualization_revision", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("visualization_id", Integer, ForeignKey("visualization.id"), index=True, nullable=False),
-    Column("title", TEXT),
-    Column("dbkey", TEXT),
-    Column("config", MutableJSONType),
-    Index('ix_visualization_revision_dbkey', 'dbkey', mysql_length=200),
-)
-
 model.VisualizationUserShareAssociation.table = Table(
     "visualization_user_share_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -2545,17 +2533,15 @@ mapper_registry.map_imperatively(model.PageUserShareAssociation, model.PageUserS
        properties=dict(user=relation(model.User, backref='pages_shared_by_others'),
                        page=relation(model.Page, backref='users_shared_with')))
 
-mapper_registry.map_imperatively(model.VisualizationRevision, model.VisualizationRevision.table)
-
 mapper_registry.map_imperatively(model.Visualization, model.Visualization.table, properties=dict(
     user=relation(model.User),
     revisions=relation(model.VisualizationRevision,
         backref='visualization',
         cascade="all, delete-orphan",
-        primaryjoin=(model.Visualization.table.c.id == model.VisualizationRevision.table.c.visualization_id)),
+        primaryjoin=(model.Visualization.table.c.id == model.VisualizationRevision.visualization_id)),
     latest_revision=relation(model.VisualizationRevision,
         post_update=True,
-        primaryjoin=(model.Visualization.table.c.latest_revision_id == model.VisualizationRevision.table.c.id),
+        primaryjoin=(model.Visualization.table.c.latest_revision_id == model.VisualizationRevision.id),
         lazy=False),
     tags=relation(model.VisualizationTagAssociation,
         order_by=model.VisualizationTagAssociation.table.c.id,
