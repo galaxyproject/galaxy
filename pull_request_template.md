@@ -1,15 +1,9 @@
-## What did you do? 
-- [describe the proposed changes]
-- 
-
-
-## Why did you make this change?
-(Cite Issue number OR provide rationalization of changes if no issue exists)
+(Please replace this header with a description of your pull request. Please include *BOTH* what you did and why you made the changes. The "why" may simply be citing a relevant Galaxy issue.)
 (If fixing a bug, please add any relevant error or traceback)
+(For UI components, it is recommended to include screenshots or screencasts)
 
-
-## How to test the changes? 
-(select the most appropriate option; if the latter, provide steps for testing below)
+## How to test the changes?
+(Select one of the following 3 options)
 - [ ] I've included appropriate [automated tests](https://docs.galaxyproject.org/en/latest/dev/writing_tests.html).
 - [ ] This is a refactoring of components with existing test coverage.
 - [ ] Instructions for manual testing are as follows:
@@ -18,6 +12,3 @@
 ## License
 - [x] I agree to license these contributions under [Galaxy's current license](https://github.com/galaxyproject/galaxy/blob/dev/LICENSE.txt).
 - [x] I agree to allow the Galaxy committers to license these and all my past contributions to the core galaxy codebase under the [MIT license](https://opensource.org/licenses/MIT). If this condition is an issue, uncheck and just let us know why with an e-mail to galaxy-committers@lists.galaxyproject.org.
-
-## For UI Components
-- [ ] I've included a screenshot of the changes
