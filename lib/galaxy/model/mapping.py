@@ -1193,16 +1193,6 @@ model.Page.table = Table(
     Index('ix_page_slug', 'slug', mysql_length=200),
 )
 
-model.PageRevision.table = Table(
-    "page_revision", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("page_id", Integer, ForeignKey("page.id"), index=True, nullable=False),
-    Column("title", TEXT),
-    Column("content", TEXT),
-    Column("content_format", TrimmedString(32)))
-
 model.PageUserShareAssociation.table = Table(
     "page_user_share_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -2521,17 +2511,15 @@ simple_mapping(
 )
 
 
-mapper_registry.map_imperatively(model.PageRevision, model.PageRevision.table)
-
 mapper_registry.map_imperatively(model.Page, model.Page.table, properties=dict(
     user=relation(model.User),
     revisions=relation(model.PageRevision,
         backref='page',
         cascade="all, delete-orphan",
-        primaryjoin=(model.Page.table.c.id == model.PageRevision.table.c.page_id)),
+        primaryjoin=(model.Page.table.c.id == model.PageRevision.page_id)),
     latest_revision=relation(model.PageRevision,
         post_update=True,
-        primaryjoin=(model.Page.table.c.latest_revision_id == model.PageRevision.table.c.id),
+        primaryjoin=(model.Page.table.c.latest_revision_id == model.PageRevision.id),
         lazy=False),
     tags=relation(model.PageTagAssociation,
         order_by=model.PageTagAssociation.table.c.id,
