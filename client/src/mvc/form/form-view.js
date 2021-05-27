@@ -54,7 +54,7 @@ export default Backbone.View.extend({
     highlight: function (input_id, message, silent) {
         var input_element = this.element_list[input_id];
         if (input_element) {
-            input_element.error(message || "Please verify this parameter.");
+            input_element.error(message || "Please verify this option.");
             this.portlet.expand();
             this.trigger("expand", input_id);
             if (!silent) {

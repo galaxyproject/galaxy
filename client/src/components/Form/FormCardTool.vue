@@ -6,6 +6,7 @@
                     <b-dropdown
                         no-caret
                         right
+                        id="options"
                         role="button"
                         title="Options"
                         variant="link"
@@ -89,6 +90,7 @@
                 <slot name="body" />
             </div>
         </div>
+        <slot name="buttons" />
         <div class="m-1">
             <ToolHelp :content="options.help" />
             <ToolFooter

@@ -6,16 +6,19 @@
         </div>
         <div class="ui-form-title">{{ title }}</div>
         <div class="ui-form-field">
-            <FormInput :id="id" :value="value" :area="area" @onChange="onChange" />
+            <FormInput v-if="type == 'text'" :id="id" :value="value" :area="area" @onChange="onChange" />
+            <FormBoolean v-else-if="type == 'boolean'" :id="id" :value="value" @onChange="onChange" />
             <span class="ui-form-info form-text text-muted mt-2">{{ help }}</span>
         </div>
     </div>
 </template>
 <script>
-import FormInput from "./FormInput";
+import FormBoolean from "./Elements/FormBoolean";
+import FormInput from "./Elements/FormInput";
 
 export default {
     components: {
+        FormBoolean,
         FormInput,
     },
     props: {
@@ -42,6 +45,10 @@ export default {
         error: {
             type: String,
             default: null,
+        },
+        type: {
+            type: String,
+            default: "text",
         },
     },
     computed: {
