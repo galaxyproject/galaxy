@@ -78,7 +78,7 @@ class GalaxyLargeBinary(LargeBinary):
         return process
 
 
-class JSONType(sqlalchemy.types.TypeDecorator):
+class JSONType(TypeDecorator):
     """
     Represents an immutable structure as a json-encoded string.
 
@@ -90,6 +90,7 @@ class JSONType(sqlalchemy.types.TypeDecorator):
     # something like sqlalchemy.String, or even better, when applicable, native
     # sqlalchemy.dialects.postgresql.JSON
     impl = GalaxyLargeBinary
+    cache_ok = True
 
     def process_bind_param(self, value, dialect):
         if value is not None:
@@ -367,6 +368,7 @@ class UUIDType(TypeDecorator):
     CHAR(32), storing as stringified hex values.
     """
     impl = CHAR
+    cache_ok = True
 
     def load_dialect_impl(self, dialect):
         return dialect.type_descriptor(CHAR(32))
@@ -388,6 +390,7 @@ class UUIDType(TypeDecorator):
 
 class TrimmedString(TypeDecorator):
     impl = String
+    cache_ok = True
 
     def process_bind_param(self, value, dialect):
         """Automatically truncate string values"""
