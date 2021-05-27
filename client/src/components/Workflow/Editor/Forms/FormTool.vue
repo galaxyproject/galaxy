@@ -64,7 +64,7 @@ export default {
     components: {
         CurrentUser,
         Form,
-        FormCardTool,
+        ToolCard,
         FormElement,
         FormSection,
     },
