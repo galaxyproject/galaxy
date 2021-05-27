@@ -355,6 +355,7 @@ class MappingTests(BaseModelTestCase):
         q = c4._get_nested_collection_attributes(element_attributes=('element_identifier',))
         assert q.all() == [('outer_list', 'inner_list', 'forward'), ('outer_list', 'inner_list', 'reverse')]
         assert c4.dataset_elements == [dce1, dce2]
+        assert c4.element_identifiers_extensions_and_paths == [(('outer_list', 'inner_list', 'forward'), 'bam', 'mock_dataset_14.dat'), (('outer_list', 'inner_list', 'reverse'), 'txt', 'mock_dataset_14.dat')]
 
     def test_default_disk_usage(self):
         model = self.model
@@ -883,7 +884,7 @@ class MockObjectStore:
         return True
 
     def get_filename(self, *args, **kwds):
-        return "dataest_14.dat"
+        return "mock_dataset_14.dat"
 
     def get_store_by(self, *args, **kwds):
         return 'id'

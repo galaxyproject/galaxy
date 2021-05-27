@@ -1,4 +1,5 @@
 import logging
+import os
 import shlex
 import tempfile
 from functools import total_ordering
@@ -450,6 +451,7 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         super().__init__()
         self.job_working_directory = job_working_directory
         self._dataset_elements_cache = {}
+        self._element_identifiers_extensions_and_paths = None
         self.kwargs = kwargs
 
         if has_collection is None:
@@ -512,6 +514,26 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
     @property
     def element_identifier(self):
         return self.name
+
+    @property
+    def all_paths(self):
+        return [path for _, _, path in self.all_element_identifiers_extensions_and_paths]
+
+    @property
+    def all_element_identifiers_extensions_and_paths(self):
+        if self._element_identifiers_extensions_and_paths is None:
+            self._element_identifiers_extensions_and_paths = self.collection.element_identifiers_extensions_and_paths
+        return self._element_identifiers_extensions_and_paths
+
+    @property
+    def all_element_identifiers_and_extensions_filesystem_safe(self):
+        safe_element_identifiers = []
+        for element_identifiers, extension, _ in self.all_element_identifiers_extensions_and_paths:
+            current_element_identifiers = []
+            for element_identifier in element_identifiers:
+                current_element_identifiers.append(filesystem_safe_string(element_identifier, max_len=254 - len(extension)))
+            safe_element_identifiers.append(f'{os.path.sep.join(current_element_identifiers)}.{extension}')
+        return safe_element_identifiers
 
     @property
     def is_input_supplied(self):

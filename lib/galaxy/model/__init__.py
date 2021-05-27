@@ -4285,6 +4285,15 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
         return self._dataset_action_tuples
 
     @property
+    def element_identifiers_extensions_and_paths(self):
+        q = self._get_nested_collection_attributes(
+            element_attributes=('element_identifier',),
+            hda_attributes=('extension',),
+            return_entities=(Dataset,)
+        )
+        return [(row[:-2], row[-2], row[-1].file_name) for row in q]
+
+    @property
     def waiting_for_elements(self):
         top_level_waiting = self.populated_state == DatasetCollection.populated_states.NEW
         if not top_level_waiting and self.has_subcollections:

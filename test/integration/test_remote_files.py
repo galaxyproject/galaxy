@@ -6,7 +6,7 @@ from tempfile import mkdtemp
 
 from galaxy.exceptions import error_codes
 from galaxy_test.base.api_asserts import assert_error_code_is, assert_error_message_contains
-from galaxy_test.base.populators import DatasetPopulator
+from galaxy_test.base.populators import DatasetCollectionPopulator, DatasetPopulator
 from galaxy_test.driver import integration_util
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
@@ -41,6 +41,7 @@ class ConfiguresRemoteFilesIntegrationTestCase(integration_util.IntegrationTestC
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
 
         for d in [self.library_dir, self.user_library_dir, self.ftp_upload_dir]:
             if os.path.exists(d):
@@ -157,7 +158,7 @@ class RemoteFilesIntegrationTestCase(ConfiguresRemoteFilesIntegrationTestCase):
             with open(os.path.join(ftp_dir, 'my_cool_utf8_name_😻.txt')) as f:
                 assert 'example content\n' == f.read()
 
-    def test_export_remote_tool_default_duplicate_name(self):
+    def test_export_remote_tool_default_duplicate_name_fails(self):
         dataset_populator = self.dataset_populator
         ftp_dir = self.user_ftp_dir
         _write_file_fixtures(self.root, ftp_dir)
@@ -203,6 +204,33 @@ class RemoteFilesIntegrationTestCase(ConfiguresRemoteFilesIntegrationTestCase):
             dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
             with open(os.path.join(ftp_dir, 'foo_1.vcf.gz'), 'rb') as export, open(VCF_GZ_PATH, 'rb') as vcf_gz:
                 assert export.read() == vcf_gz.read()
+
+    def test_export_remote_tool_collection_structure(self):
+        dataset_populator = self.dataset_populator
+        ftp_dir = self.user_ftp_dir
+        assert 'test0' not in os.listdir(ftp_dir)
+        _write_file_fixtures(self.root, ftp_dir)
+        with dataset_populator.test_history() as history_id:
+            hdca = self.dataset_collection_populator.create_list_of_list_in_history(history_id).json()
+            outer_elements = hdca['elements'][0]
+            assert outer_elements['element_identifier'] == 'test0'
+            for i in range(2):
+                assert outer_elements['object']['elements'][i]['element_identifier'] == f'data{i + 1}'
+                assert outer_elements['object']['elements'][i]['object']['file_ext'] == 'txt'
+            incollection = {
+                "src": "hdca",
+                "id": hdca['id']
+            }
+            inputs = {
+                "d_uri": "gxftp://",
+                "export_type|export_type_selector": "collection_auto",
+                "export_type|infiles": [incollection],
+            }
+            response = dataset_populator.run_tool("export_remote", inputs, history_id)
+            dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
+            assert 'test0' in os.listdir(ftp_dir)
+            subdir_content = os.listdir(os.path.join(ftp_dir, 'test0'))
+            assert sorted(subdir_content) == ['data1.txt', 'data2.txt', 'data3.txt']
 
     def _assert_index_empty(self, index):
         assert len(index) == 0

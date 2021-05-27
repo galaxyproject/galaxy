@@ -18,6 +18,8 @@ python '$__tool_directory__/export_remote.py'
 #from galaxy.util import filesystem_safe_string
 #if $export_type.export_type_selector == "datasets_auto":
 #set $fileconfig = json.dumps([{"real_data_path": str(infile), "name": infile.name_and_ext_filesystem_safe} for infile in $infiles])
+#else if $export_type.export_type_selector == "collection_auto":
+#set $fileconfig = json.dumps([{"real_data_path": data_path, "name": identifier_and_extension} for data_path, identifier_and_extension in zip($export_type.incollection.all_paths, $export_type.incollection.all_element_identifiers_and_extensions_filesystem_safe)])
 #else
 #set $fileconfig = json.dumps([{"real_data_path": str(dataset["infile"]), "name": filesystem_safe_string(str(dataset["name"]), 255, invalid_chars=())} for dataset in $export_type.datasets])
 #end if
