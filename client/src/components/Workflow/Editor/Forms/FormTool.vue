@@ -1,6 +1,6 @@
 <template>
     <CurrentUser v-slot="{ user }">
-        <FormCardTool
+        <ToolCard
             :id="node.config_form.id"
             :user="user"
             :version="node.config_form.version"
@@ -46,14 +46,14 @@
                     @onChangeOutputDatatype="onChangeOutputDatatype"
                 />
             </template>
-        </FormCardTool>
+        </ToolCard>
     </CurrentUser>
 </template>
 
 <script>
 import CurrentUser from "components/providers/CurrentUser";
 import Form from "components/Form/Form";
-import FormCardTool from "components/Form/FormCardTool";
+import ToolCard from "components/Tool/ToolCard";
 import FormSection from "./FormSection";
 import FormElement from "components/Form/FormElement";
 import { getModule } from "components/Workflow/Editor/modules/services";

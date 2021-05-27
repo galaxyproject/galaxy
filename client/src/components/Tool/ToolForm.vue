@@ -15,7 +15,7 @@
                 <pre>{{ errorContentPretty }}</pre>
             </div>
             <ToolRecommendation v-if="showRecommendation" :tool-id="id" />
-            <FormCardTool
+            <ToolCard
                 v-if="showForm"
                 :id="formConfig.id"
                 :user="user"
@@ -68,7 +68,7 @@
                 <template v-slot:buttons>
                     <ButtonSpinner id="execute" title="Execute" @onClick="onExecute" :wait="showExecuting" />
                 </template>
-            </FormCardTool>
+            </ToolCard>
         </div>
     </CurrentUser>
 </template>
@@ -79,11 +79,11 @@ import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import { getTool, submitJob } from "./services";
 import { send } from "./utilities";
+import ToolCard from "./ToolCard";
 import ButtonSpinner from "components/Common/ButtonSpinner";
 import CurrentUser from "components/providers/CurrentUser";
 import LoadingSpan from "components/LoadingSpan";
 import Form from "components/Form/Form";
-import FormCardTool from "components/Form/FormCardTool";
 import FormElement from "components/Form/FormElement";
 import ToolSuccess from "./ToolSuccess";
 import Webhook from "components/Common/Webhook";

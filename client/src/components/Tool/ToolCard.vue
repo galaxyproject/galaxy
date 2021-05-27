@@ -106,7 +106,7 @@
 <script>
 import ariaAlert from "utils/ariaAlert";
 import { copyLink, downloadTool, openLink } from "./utilities";
-import FormMessage from "./FormMessage";
+import FormMessage from "components/Form/FormMessage";
 import ToolFooter from "components/Tool/ToolFooter";
 import ToolHelp from "components/Tool/ToolHelp";
 import Webhooks from "mvc/webhooks";
