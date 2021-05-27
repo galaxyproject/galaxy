@@ -10,6 +10,7 @@ python '$__tool_directory__/export_remote.py'
     --file-sources '$file_sources'
     --directory-uri '$d_uri'
     --files-to-export '$files_to_export'
+    --export-metadata-files $include_metadata_files
     > '$out'
     ]]></command>
     <configfiles>
@@ -17,11 +18,11 @@ python '$__tool_directory__/export_remote.py'
         <configfile name="files_to_export">#import json
 #from galaxy.util import filesystem_safe_string
 #if $export_type.export_type_selector == "datasets_auto":
-#set $fileconfig = json.dumps([{"real_data_path": str(infile), "name": infile.name_and_ext_filesystem_safe} for infile in $infiles])
+#set $fileconfig = json.dumps([{"real_data_path": str(infile), "name": infile.name_and_ext_filesystem_safe, "metadata_files": infile.all_metadata_files} for infile in $infiles])
 #else if $export_type.export_type_selector == "collection_auto":
-#set $fileconfig = json.dumps([{"real_data_path": data_path, "name": identifier_and_extension} for data_path, identifier_and_extension in zip($export_type.incollection.all_paths, $export_type.incollection.all_element_identifiers_and_extensions_filesystem_safe)])
+#set $fileconfig = json.dumps([{"real_data_path": data_path, "name": identifier_and_extension, "metadata_files": metadata_files} for data_path, identifier_and_extension, metadata_files in zip($export_type.incollection.all_paths, $export_type.incollection.all_element_identifiers_and_extensions_filesystem_safe, $export_type.incollection.all_metadata_files)])
 #else
-#set $fileconfig = json.dumps([{"real_data_path": str(dataset["infile"]), "name": filesystem_safe_string(str(dataset["name"]), 255, invalid_chars=())} for dataset in $export_type.datasets])
+#set $fileconfig = json.dumps([{"real_data_path": str(dataset["infile"]), "name": filesystem_safe_string(str(dataset["name"]), 255, invalid_chars=()), "metadata_files": dataset['infile'].all_metadata_files} for dataset in $export_type.datasets])
 #end if
 $fileconfig
         </configfile>
@@ -52,6 +53,7 @@ $fileconfig
             </when>
         </conditional>
         <param type="directory_uri" name="d_uri" label="Directory URI" />
+        <param name="include_metadata_files" type="boolean" checked="true" label="Include metadata files in export?" help="Examples of metadata files are bam, cram and vcf indexes that can be regenerated from raw data" />
     </inputs>
     <outputs>
         <data name="out" format="txt" label="Export logs"/>

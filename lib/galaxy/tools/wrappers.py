@@ -323,6 +323,10 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         return f"{safe_element_identifier}.{self.file_ext}"
 
     @property
+    def all_metadata_files(self):
+        return self.unsanitized.get_metadata_file_paths_and_extensions()
+
+    @property
     def is_collection(self):
         return False
 
@@ -447,11 +451,12 @@ class DatasetListWrapper(list, ToolParameterValueWrapper, HasDatasets):
 
 class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
 
-    def __init__(self, job_working_directory, has_collection, **kwargs):
+    def __init__(self, job_working_directory, has_collection, datatypes_registry=None, **kwargs):
         super().__init__()
         self.job_working_directory = job_working_directory
         self._dataset_elements_cache = {}
-        self._element_identifiers_extensions_and_paths = None
+        self._element_identifiers_extensions_paths_and_metadata_files = None
+        self.datatypes_registry = datatypes_registry
         self.kwargs = kwargs
 
         if has_collection is None:
@@ -517,18 +522,22 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
 
     @property
     def all_paths(self):
-        return [path for _, _, path in self.all_element_identifiers_extensions_and_paths]
+        return [path for _, _, path, _ in self.element_identifiers_extensions_paths_and_metadata_files]
 
     @property
-    def all_element_identifiers_extensions_and_paths(self):
-        if self._element_identifiers_extensions_and_paths is None:
-            self._element_identifiers_extensions_and_paths = self.collection.element_identifiers_extensions_and_paths
-        return self._element_identifiers_extensions_and_paths
+    def all_metadata_files(self):
+        return [metadata_files for _, _, _, metadata_files in self.element_identifiers_extensions_paths_and_metadata_files]
+
+    @property
+    def element_identifiers_extensions_paths_and_metadata_files(self):
+        if self._element_identifiers_extensions_paths_and_metadata_files is None:
+            self._element_identifiers_extensions_paths_and_metadata_files = self.collection.element_identifiers_extensions_paths_and_metadata_files
+        return self._element_identifiers_extensions_paths_and_metadata_files
 
     @property
     def all_element_identifiers_and_extensions_filesystem_safe(self):
         safe_element_identifiers = []
-        for element_identifiers, extension, _ in self.all_element_identifiers_extensions_and_paths:
+        for element_identifiers, extension, *_ in self.element_identifiers_extensions_paths_and_metadata_files:
             datatype = self.datatypes_registry.get_datatype_by_extension(extension)
             if datatype:
                 extension = getattr(datatype, 'file_ext_export_alias', extension)
