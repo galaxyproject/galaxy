@@ -6,12 +6,11 @@
                     <b-dropdown
                         no-caret
                         right
-                        id="options"
                         role="button"
                         title="Options"
                         variant="link"
                         aria-label="View all Options"
-                        class="float-right"
+                        class="tool-dropdown float-right"
                         size="sm"
                         v-b-tooltip.hover
                     >

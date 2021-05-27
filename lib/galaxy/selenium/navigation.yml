@@ -361,7 +361,7 @@ registration:
 
 tool_form:
   selectors:
-    options: '#options [data-toggle="dropdown"]'
+    options: '.tool-dropdown'
     execute: 'button#execute'
     parameter_div: 'div.ui-form-element[tour_id="${parameter}"]'
     parameter_textarea: 'div.ui-form-element[tour_id="${parameter}"] textarea'
