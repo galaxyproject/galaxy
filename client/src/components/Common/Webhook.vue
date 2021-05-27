@@ -19,7 +19,7 @@ export default {
         const el = this.$refs["webhook"];
         new Webhooks.WebhookView({
             el,
-            type: "tool",
+            type: this.type,
             toolId: this.toolId,
         });
     },
