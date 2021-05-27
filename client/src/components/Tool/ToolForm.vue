@@ -94,7 +94,7 @@ export default {
         CurrentUser,
         LoadingSpan,
         Form,
-        FormCardTool,
+        ToolCard,
         FormElement,
         ToolSuccess,
         Webhook,
