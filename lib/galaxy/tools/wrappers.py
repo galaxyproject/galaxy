@@ -305,7 +305,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
 
     @property
     def file_ext(self):
-        return getattr(self.unsanitized.datatype, 'file_ext_export_alias', None) or self.dataset.extension
+        return getattr(self.unsanitized.datatype, 'file_ext_export_alias', self.dataset.extension)
 
     @property
     def name_and_ext(self):
@@ -318,7 +318,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
 
         Not safe for commandline use, would need additional sanitization.
         """
-        max_len = 255 - len(self.file_ext)
+        max_len = 254 - len(self.file_ext)
         safe_element_identifier = filesystem_safe_string(self.element_identifier, max_len=max_len)
         return f"{safe_element_identifier}.{self.file_ext}"
 
