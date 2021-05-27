@@ -529,6 +529,9 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
     def all_element_identifiers_and_extensions_filesystem_safe(self):
         safe_element_identifiers = []
         for element_identifiers, extension, _ in self.all_element_identifiers_extensions_and_paths:
+            datatype = self.datatypes_registry.get_datatype_by_extension(extension)
+            if datatype:
+                extension = getattr(datatype, 'file_ext_export_alias', extension)
             current_element_identifiers = []
             for element_identifier in element_identifiers:
                 current_element_identifiers.append(filesystem_safe_string(element_identifier, max_len=254 - len(extension)))
