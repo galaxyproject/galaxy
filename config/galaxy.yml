@@ -159,7 +159,7 @@ galaxy:
   # groups, roles, libraries, and more.  For more information, see:
   # https://galaxyproject.org/admin/
   # AMP admin users
-  admin_users: amppd@iu.edu, amppd-ci@iu.edu
+  admin_users: amppd@iu.edu,amppd-ci@iu.edu
       
   # AMP Performance Logging configuration
   logging:
