@@ -2372,8 +2372,7 @@ class GroupQuotaAssociation(Dictifiable, RepresentById):
         self.quota = quota
 
 
-@mapper_registry.mapped
-class Quota(Dictifiable, RepresentById):
+class Quota(Base, Dictifiable, RepresentById):
     __tablename__ = 'quota'
 
     id = Column('id', Integer, primary_key=True)
@@ -2418,7 +2417,7 @@ class Quota(Dictifiable, RepresentById):
             return galaxy.util.nice_size(self.bytes)
 
 
-class DefaultQuotaAssociation(Quota, Dictifiable, RepresentById):
+class DefaultQuotaAssociation(Dictifiable, RepresentById):
     dict_element_visible_keys = ['type']
 
     class types(str, Enum):
