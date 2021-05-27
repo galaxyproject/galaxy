@@ -37,6 +37,7 @@ from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
+    ForeignKey,
     func,
     inspect,
     Integer,
@@ -72,6 +73,7 @@ import galaxy.model.orm.now
 import galaxy.model.tags
 import galaxy.security.passwords
 import galaxy.util
+from galaxy.model.custom_types import TrimmedString
 from galaxy.model.item_attrs import get_item_annotation_str, UsesAnnotations
 from galaxy.model.orm.now import now
 from galaxy.security import get_permitted_actions
@@ -6451,7 +6453,17 @@ class Page(Dictifiable, RepresentById):
         return self.user.username
 
 
-class PageRevision(Dictifiable, RepresentById):
+class PageRevision(Base, Dictifiable, RepresentById):
+    __tablename__ = 'page_revision'
+
+    id = Column('id', Integer, primary_key=True)
+    create_time = Column('create_time', DateTime, default=now)
+    update_time = Column('update_time', DateTime, default=now, onupdate=now)
+    page_id = Column('page_id', Integer, ForeignKey('page.id'), index=True, nullable=False)
+    title = Column('title', TEXT)
+    content = Column('content', TEXT)
+    content_format = Column('content_format', TrimmedString(32))
+
     DEFAULT_CONTENT_FORMAT = 'html'
     dict_element_visible_keys = ['id', 'page_id', 'title', 'content', 'content_format']
 

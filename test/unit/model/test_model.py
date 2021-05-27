@@ -21,6 +21,18 @@ def session(model):
     Session.remove()  # Ensures we get a new session for each test
 
 
+@pytest.fixture
+def user(model):
+    return model.User(email='test@example.com', password='password')
+
+
+@pytest.fixture
+def page(model, user):
+    p = model.Page()
+    p.user = user
+    return p
+
+
 def test_Group_table(model):
     tbl = model.Group.__table__
     assert tbl.name == 'galaxy_group'
@@ -39,6 +51,30 @@ def test_Group(model, session):
     assert stored_obj.update_time
     assert stored_obj.name == name
     assert stored_obj.deleted is False
+
+    cleanup(session, cls)
+
+
+def test_PageRevision_table(model):
+    tbl = model.PageRevision.__table__
+    assert tbl.name == 'page_revision'
+
+
+def test_PageRevision(model, session, page):
+    cls = model.PageRevision
+    obj = cls()
+    obj.page = page
+    persist(session, obj)
+
+    stmt = select(cls)
+    stored_obj = session.execute(stmt).scalar_one()
+    assert stored_obj.id
+    assert stored_obj.create_time
+    assert stored_obj.update_time
+    assert stored_obj.page_id
+    assert stored_obj.title is None
+    assert stored_obj.content is None
+    assert stored_obj.content_format == model.PageRevision.DEFAULT_CONTENT_FORMAT
 
     cleanup(session, cls)
 
