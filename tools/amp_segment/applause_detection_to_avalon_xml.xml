@@ -8,7 +8,7 @@
   </command>
   <inputs>
     <param name="amp_applause_segments" type="data" format="segment" label="Input Applause Segments" help="Input applause detection segmentation"/>
-    <param name="context_json" type="text" label="HMGM Task Context" help="JSON string containing context information needed for creating a MGM task" >
+    <param name="context_json" type="text" label="HMGM Task Context" help="JSON string containing context information needed by the MGM" >
     	<sanitizer sanitize="false">
     	</sanitizer>
 	</param>
