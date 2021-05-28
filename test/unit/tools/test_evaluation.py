@@ -231,6 +231,7 @@ class MockHistoryDatasetAssociation(HistoryDatasetAssociation):
 
 
 class TestComputeEnvironment(SimpleComputeEnvironment):
+    __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
     def __init__(
         self,

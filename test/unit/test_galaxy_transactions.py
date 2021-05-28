@@ -5,6 +5,7 @@ from galaxy.util import bunch
 
 
 class TestTransaction(context.ProvidesAppContext):
+    __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
     def __init__(self):
         self._app = TestApp()
@@ -65,6 +66,7 @@ def test_expunge_all():
 
 
 class TestApp:
+    __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
     def __init__(self):
         self.config = bunch.Bunch(

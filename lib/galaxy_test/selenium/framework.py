@@ -167,6 +167,7 @@ retry_assertion_during_transitions = partial(retry_during_transitions, exception
 
 
 class TestSnapshot:
+    __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
     def __init__(self, driver, index, description):
         self.screenshot_binary = driver.get_screenshot_as_png()

@@ -37,6 +37,7 @@ class MockTrans:
 
 
 class TestApp:
+    __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
     def __init__(self):
         self.config = bunch.Bunch(
@@ -54,6 +55,7 @@ class TestApp:
 
 
 class TestDatatypesRegistry:
+    __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
     def __init__(self):
         pass
@@ -67,6 +69,7 @@ class TestDatatypesRegistry:
 
 
 class TestToolbox:
+    __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
     def __init__(self):
         self.tools = {}
