@@ -1,11 +1,25 @@
 import io
-import zipfile
+import ast
 import uuid as _uuid
+import zipfile
 
 import yaml
 
 from galaxy.datatypes.binary import CompressedZipArchive
 from galaxy.datatypes.metadata import MetadataElement
+
+
+def strip_properties(expression):
+    try:
+        expression_tree = ast.parse(expression)
+        reconstructer = PredicateRemover()
+        reconstructer.visit(expression_tree)
+        return reconstructer.expression
+    # If we have any problems stripping properties just use the full expression
+    # this punts the error off to q2galaxy so if we error we do so there and
+    # not here
+    except Exception:
+        return expression
 
 
 class QIIME2Result(CompressedZipArchive):
@@ -21,7 +35,8 @@ class QIIME2Result(CompressedZipArchive):
             if value:
                 setattr(dataset.metadata, key, value)
 
-        dataset.metadata.semantic_type_simple = 'TODO'
+        dataset.metadata.semantic_type_simple = \
+            strip_properties(dataset.metadata.semantic_type)
 
     def set_peek(self, dataset, is_multi_byte=False):
         if dataset.metadata.semantic_type == 'Visualization':
@@ -74,6 +89,67 @@ class QIIME2Visualization(QIIME2Result):
     def sniff(self, filename):
         metadata = self._sniff(filename)
         return metadata and metadata['semantic_type'] == 'Visualization'
+
+
+# Python 3.9 has a built in unparse. We can probably use this in the future
+# when we are using 3.9
+# https://docs.python.org/3.9/library/ast.html#ast.unparse
+class PredicateRemover(ast.NodeVisitor):
+    binops = {
+        ast.Add: ' + ',
+        ast.Sub: ' - ',
+        ast.Mult: ' * ',
+        ast.Div: ' / ',
+        ast.FloorDiv: ' // ',
+        ast.Pow: ' ** ',
+        ast.LShift: ' << ',
+        ast.RShift: ' >> ',
+        ast.BitOr: ' | ',
+        ast.BitXor: ' ^ ',
+        ast.BitAnd: ' & ',
+        ast.MatMult: ' @ '
+    }
+
+    def __init__(self):
+        self.expression = ''
+        self.tuple_count = 0
+        self.in_index = False
+
+        super().__init__()
+
+    def visit_Name(self, node):
+        print(node.id)
+        if self.tuple_count == 0:
+            self.expression += node.id
+        else:
+            self.expression += node.id + ', '
+            self.tuple_count -= 1
+
+        self.generic_visit(node)
+
+    def visit_Index(self, node):
+        pre_strip = len(self.expression)
+        self.expression = self.expression.rstrip(', ')
+        post_strip = len(self.expression)
+
+        self.expression += '['
+        self.generic_visit(node)
+        self.expression += ']'
+
+        # If we stripped the space for the next tuple element to accomodate a
+        # nested index we now need to add that space back
+        if post_strip < pre_strip:
+            self.expression += ', '
+
+    def visit_Tuple(self, node):
+        self.tuple_count = len(node.elts) - 1
+        self.generic_visit(node)
+
+    def visit_BinOp(self, node):
+        self.visit(node.left)
+        if not isinstance(node.op, ast.Mod):
+            self.expression += self.binops[node.op.__class__]
+            self.visit(node.right)
 
 
 def _get_metadata_from_archive(archive):
