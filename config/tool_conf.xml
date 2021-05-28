@@ -47,6 +47,7 @@
   <section id="video_processing" name="Video Indexing">
     <tool file="amp_video/azure_video_indexer.xml"/>
     <tool file="amp_video/contact_sheets.xml"/>
+    <tool file="amp_video/contact_sheets_collection.xml"/>
   </section>
 
   <section id="shot_detection" name="Shot Detection">
