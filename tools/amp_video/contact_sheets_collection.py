@@ -19,14 +19,14 @@ def main():
 	amp_contact_sheets = sys.argv[3]
 
 	context = json.loads(context_json)
-	collection_name = context["collectionName"]
+	collection_id = context["collectionId"]
 	
 	c = ContactSheet(input_file, amp_contact_sheets, number_of_columns, photow, margin, padding)
 
 	video_length_seconds = c.get_length(input_file)
-	print("Collection: " + collection_name)
+	print("Collection: " + collection_id)
 	print("Duration: " + str(video_length_seconds))
-	if collection_name == "NYPL":
+	if int(collection_id) in (3, 4):
 		if video_length_seconds < 2000:
 			print("Creating a frame per 20 seconds")
 			c.create_time(20)
