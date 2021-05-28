@@ -369,7 +369,7 @@ tool_form:
     about: '.tool-footer'
 
   labels:
-    generate_tour: ' Generate Tour'
+    generate_tour: 'Generate Tour'
 
 workflows:
 
