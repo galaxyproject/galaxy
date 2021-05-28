@@ -76,24 +76,6 @@ model.User.table = Table(
     Column("active", Boolean, index=True, default=True, nullable=False),
     Column("activation_token", TrimmedString(64), nullable=True, index=True))
 
-model.UserAddress.table = Table(
-    "user_address", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("desc", TrimmedString(255)),
-    Column("name", TrimmedString(255), nullable=False),
-    Column("institution", TrimmedString(255)),
-    Column("address", TrimmedString(255), nullable=False),
-    Column("city", TrimmedString(255), nullable=False),
-    Column("state", TrimmedString(255), nullable=False),
-    Column("postal_code", TrimmedString(255), nullable=False),
-    Column("country", TrimmedString(255), nullable=False),
-    Column("phone", TrimmedString(255)),
-    Column("deleted", Boolean, index=True, default=False),
-    Column("purged", Boolean, index=True, default=False))
-
 model.UserAuthnzToken.table = Table(
     "oidc_user_authnz_tokens", metadata,
     Column('id', Integer, primary_key=True),
@@ -1598,13 +1580,6 @@ mapper_registry.map_imperatively(model.FormDefinitionCurrent, model.FormDefiniti
         primaryjoin=(model.FormDefinitionCurrent.table.c.latest_form_id == model.FormDefinition.table.c.id))
 ))
 
-mapper_registry.map_imperatively(model.UserAddress, model.UserAddress.table, properties=dict(
-    user=relation(model.User,
-        primaryjoin=(model.UserAddress.table.c.user_id == model.User.table.c.id),
-        backref='addresses',
-        order_by=desc(model.UserAddress.table.c.update_time)),
-))
-
 mapper_registry.map_imperatively(model.UserAuthnzToken, model.UserAuthnzToken.table, properties=dict(
     user=relation(model.User,
                   primaryjoin=(model.UserAuthnzToken.table.c.user_id == model.User.table.c.id),
@@ -1798,6 +1773,9 @@ mapper_registry.map_imperatively(model.HistoryUserShareAssociation, model.Histor
 ))
 
 mapper_registry.map_imperatively(model.User, model.User.table, properties=dict(
+    addresses=relation(model.UserAddress,
+        back_populates='user',
+        order_by=desc(model.UserAddress.update_time)),
     histories=relation(model.History,
         backref="user",
         order_by=desc(model.History.update_time)),
@@ -1823,8 +1801,6 @@ mapper_registry.map_imperatively(model.User, model.User.table, properties=dict(
     _preferences=relation(model.UserPreference,
         backref="user",
         collection_class=attribute_mapped_collection('name')),
-    # addresses=relation( UserAddress,
-    #     primaryjoin=( User.table.c.id == UserAddress.table.c.user_id ) ),
     values=relation(model.FormValues,
         primaryjoin=(model.User.table.c.form_values_id == model.FormValues.table.c.id)),
     api_keys=relation(model.APIKeys,
