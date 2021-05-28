@@ -246,6 +246,40 @@ def test_PSAPartial(model, session):
     cleanup(session, cls)
 
 
+def test_UserAddress_table(model):
+    tbl = model.UserAddress.__table__
+    assert tbl.name == 'user_address'
+
+
+def test_UserAddress(model, session, user):
+    cls = model.UserAddress
+    desc, name, institution, address, city, state, postal_code, country, phone = \
+        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'
+    obj = cls(user, desc, name, institution, address, city, state, postal_code, country, phone)
+    persist(session, obj)
+
+    stmt = select(cls)
+    stored_obj = session.execute(stmt).scalar_one()
+    assert stored_obj.id
+    assert stored_obj.create_time
+    assert stored_obj.update_time
+    assert stored_obj.user_id == user.id
+    assert stored_obj.desc == desc
+    assert stored_obj.name == name
+    assert stored_obj.institution == institution
+    assert stored_obj.address == address
+    assert stored_obj.city == city
+    assert stored_obj.state == state
+    assert stored_obj.postal_code == postal_code
+    assert stored_obj.country == country
+    assert stored_obj.phone == phone
+    assert stored_obj.deleted is False
+    assert stored_obj.purged is False
+    assert stored_obj.user == user
+
+    cleanup(session, cls)
+
+
 def test_VisualizationRevision_table(model):
     tbl = model.VisualizationRevision.__table__
     assert tbl.name == 'visualization_revision'
@@ -274,6 +308,8 @@ def test_VisualizationRevision(model, session, visualization):
 def persist(session, obj):
     session.add(obj)
     session.flush()
+    # Remove from session, so that on a subsequent load we get a *new* obj from the db
+    session.expunge(obj)
 
 
 def cleanup(session, cls):

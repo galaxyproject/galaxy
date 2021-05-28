@@ -28,6 +28,7 @@ from typing import (
 )
 from uuid import UUID, uuid4
 
+import sqlalchemy
 from boltons.iterutils import remap
 from social_core.storage import AssociationMixin, CodeMixin, NonceMixin, PartialMixin, UserMixin
 from sqlalchemy import (
@@ -65,6 +66,7 @@ from sqlalchemy.orm import (
     Query,
     reconstructor,
     registry,
+    relationship,
 )
 from sqlalchemy.orm.decl_api import DeclarativeMeta
 
@@ -6121,7 +6123,28 @@ class FormValues(RepresentById):
         self.content = content
 
 
-class UserAddress(RepresentById):
+class UserAddress(Base, RepresentById):
+    __tablename__ = 'user_address'
+
+    id = Column('id', Integer, primary_key=True)
+    create_time = Column('create_time', DateTime, default=now)
+    update_time = Column('update_time', DateTime, default=now, onupdate=now)
+    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
+    desc = Column('desc', TrimmedString(255))
+    name = Column('name', TrimmedString(255), nullable=False)
+    institution = Column('institution', TrimmedString(255))
+    address = Column('address', TrimmedString(255), nullable=False)
+    city = Column('city', TrimmedString(255), nullable=False)
+    state = Column('state', TrimmedString(255), nullable=False)
+    postal_code = Column('postal_code', TrimmedString(255), nullable=False)
+    country = Column('country', TrimmedString(255), nullable=False)
+    phone = Column('phone', TrimmedString(255))
+    deleted = Column('deleted', Boolean, index=True, default=False)
+    purged = Column('purged', Boolean, index=True, default=False)
+    # `desc` needs to be fully qualified because it is shadowed by `desc` Column defined above
+    # TODO: db migration to rename column, then use `desc`
+    user = relationship('User', back_populates='addresses', order_by=sqlalchemy.desc('update_time'))
+
     def __init__(self, user=None, desc=None, name=None, institution=None,
                  address=None, city=None, state=None, postal_code=None,
                  country=None, phone=None):
