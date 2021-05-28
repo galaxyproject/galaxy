@@ -3,7 +3,7 @@
 (For UI components, it is recommended to include screenshots or screencasts)
 
 ## How to test the changes?
-(Select one of the following 3 options)
+(Select all options that apply)
 - [ ] I've included appropriate [automated tests](https://docs.galaxyproject.org/en/latest/dev/writing_tests.html).
 - [ ] This is a refactoring of components with existing test coverage.
 - [ ] Instructions for manual testing are as follows:
