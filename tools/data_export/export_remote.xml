@@ -18,11 +18,15 @@ python '$__tool_directory__/export_remote.py'
         <configfile name="files_to_export">#import json
 #from galaxy.util import filesystem_safe_string
 #if $export_type.export_type_selector == "datasets_auto":
-#set $fileconfig = json.dumps([{"real_data_path": str(infile), "name": infile.name_and_ext_filesystem_safe, "metadata_files": infile.all_metadata_files} for infile in $infiles])
+#set $fileconfig = json.dumps($export_type.infiles.serialize())
 #else if $export_type.export_type_selector == "collection_auto":
-#set $fileconfig = json.dumps([{"real_data_path": data_path, "name": identifier_and_extension, "metadata_files": metadata_files} for data_path, identifier_and_extension, metadata_files in zip($export_type.incollection.all_paths, $export_type.incollection.all_element_identifiers_and_extensions_filesystem_safe, $export_type.incollection.all_metadata_files)])
+#set $fileconfig = json.dumps($export_type.incollection.serialize())
 #else
-#set $fileconfig = json.dumps([{"real_data_path": str(dataset["infile"]), "name": filesystem_safe_string(str(dataset["name"]), 255, invalid_chars=()), "metadata_files": dataset['infile'].all_metadata_files} for dataset in $export_type.datasets])
+#set $fileconfig = [d['infile'].serialize() for d in $export_type.datasets]
+#for $i, $dataset in enumerate($export_type.datasets):
+    #silent $fileconfig[$i]['staging_path'] = filesystem_safe_string(str(dataset["name"]), 255, invalid_chars=())
+#end for
+#silent fileconfig = json.dumps($fileconfig)
 #end if
 $fileconfig
         </configfile>

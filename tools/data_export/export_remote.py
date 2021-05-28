@@ -18,7 +18,7 @@ def check_for_duplicate_name(files_to_export):
     seen = set()
     duplicates = set()
     for entry in files_to_export:
-        name = entry['name']
+        name = entry['staging_path']
         if name in seen:
             duplicates.add(name)
         seen.add(name)
@@ -42,25 +42,24 @@ def main(argv=None):
     exit_code = 0
     file_sources = get_file_sources(args.file_sources)
     directory_uri = args.directory_uri
+    if not directory_uri.endswith("/"):
+        directory_uri = f"{directory_uri}/"
     export_metadata_files = args.export_metadata_files
     with open(args.files_to_export) as f:
         files_to_export = json.load(f)
     counter = 0
     check_for_duplicate_name(files_to_export)
     for entry in files_to_export:
-        name = entry["name"]
-        real_data_path = entry["real_data_path"]
-        if directory_uri.endswith("/"):
-            target_uri = directory_uri + name
-        else:
-            target_uri = directory_uri + "/" + name
+        name = entry["staging_path"]
+        real_data_path = entry["source_path"]
+        target_uri = f"{directory_uri}{name}"
         if write_if_not_exists(file_sources, target_uri, real_data_path):
             exit_code = 1
         if export_metadata_files:
             metadata_files = entry.get('metadata_files', [])
-            for extension, path in metadata_files:
-                metadata_file_uri = f"{target_uri}.{extension}"
-                if write_if_not_exists(file_sources, metadata_file_uri, path):
+            for metadata_file in metadata_files:
+                metadata_file_uri = f"{directory_uri}{metadata_file['staging_path']}"
+                if write_if_not_exists(file_sources, metadata_file_uri, metadata_file['source_path']):
                     exit_code = 1
         counter += 1
     print(f"{counter} out of {len(files_to_export)} files have been exported.\n")
