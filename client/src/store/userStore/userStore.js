@@ -10,15 +10,18 @@ const getters = {
     // persist it easily in localStorage or something,
     // hydrate with model object using the getter
     currentUser(state) {
-        const userProps = state.currentUser || {};
-        const user = new User(userProps);
-        return Object.freeze(user);
+        if (state.currentUser !== null) {
+            const userProps = state.currentUser;
+            const user = new User(userProps);
+            return Object.freeze(user);
+        }
+        return state.currentUser;
     },
 };
 
 const mutations = {
     setCurrentUser(state, user) {
-        state.currentUser = user;
+        state.currentUser = Object.freeze(user);
     },
 };
 
@@ -26,10 +29,11 @@ const mutations = {
 let loadPromise;
 
 const actions = {
-    loadUser({ dispatch }) {
-        if (!loadPromise) {
+    loadUser({ state, dispatch }, force = false) {
+        if ((!state.currentUser || force) && !loadPromise) {
             loadPromise = getCurrentUser()
                 .then((user) => {
+                    console.log("user", user);
                     dispatch("setCurrentUser", user);
                 })
                 .catch((err) => {
@@ -40,9 +44,11 @@ const actions = {
                 });
         }
     },
-    async setCurrentUser({ commit, dispatch }, user) {
-        commit("setCurrentUser", user);
-        await dispatch("betaHistory/loadUserHistories", user, { root: true });
+    async setCurrentUser({ commit, dispatch, getters }, user) {
+        if (!(getters.currentUser && getters.currentUser.isSameUser(new User(user)))) {
+            commit("setCurrentUser", user);
+            await dispatch("betaHistory/loadUserHistories", user, { root: true });
+        }
     },
 };
 

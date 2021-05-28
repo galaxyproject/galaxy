@@ -6,4 +6,15 @@ export default class User {
     get isAnonymous() {
         return !this.email;
     }
+
+    get isAdmin() {
+        return this?.is_admin || false;
+    }
+
+    isSameUser(otherUser) {
+        if (this.id) {
+            return this.id == otherUser.id;
+        }
+        return true;
+    }
 }
