@@ -1,0 +1,23 @@
+<tool id="bam4sam" name="bam4sam" version="1.0" profile="20.05">
+    <command detect_errors="exit_code"><![CDATA[
+        echo $forward.ext > '$output'
+    ]]>
+    </command>
+    <inputs>
+        <param argument="--forward" type="data" format="sam" label="First set of reads" help="This is usually the forward reads in your experiment." />
+    </inputs>
+    <outputs>
+        <data name="output" format="txt"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="forward" value="3unsorted.bam" ftype="unsorted.bam"/>
+            <output name="outfile">
+                <assert_contents>
+                    <has_text text="sam"/>
+                    <not_has_text text="unsorted.bam"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>
