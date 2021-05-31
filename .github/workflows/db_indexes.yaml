@@ -11,9 +11,13 @@ jobs:
       matrix:
         python-version: ['3.7']
         db: ['postgresql', 'sqlite']
+        postgresql-version: ['13']
+        include:
+          - db: postgresql
+            postgresql-version: '9.6'
     services:
       postgres:
-        image: postgres:13
+        image: postgres:${{ matrix.postgresql-version }}
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
