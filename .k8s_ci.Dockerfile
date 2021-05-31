@@ -48,7 +48,7 @@ RUN set -xe; \
         libc-dev \
         bzip2 \
         gcc \
-    && pip install --no-cache virtualenv 'ansible>=2.7' \
+    && pip install --no-cache virtualenv 'ansible<2.10' \
     && apt-get autoremove -y && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/*
 
