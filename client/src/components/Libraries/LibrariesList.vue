@@ -59,22 +59,22 @@
                 <div class="deleted-item" v-else-if="row.item.deleted && include_deleted">{{ row.item.name }}</div>
                 <b-link v-else :to="{ path: `folders/${row.item.root_folder_id}` }">{{ row.item.name }}</b-link>
             </template>
-            <template v-slot:cell(description)="row">
+            <template v-slot:cell(description)="{ item }">
                 <LibraryEditField
-                    @toggleDescriptionExpand="toggleDescriptionExpand(row.item)"
-                    :ref="`description-${row.item.id}`"
-                    :is-expanded="row.item.isExpanded"
-                    :is-edit-mode="row.item.editMode"
-                    :text="row.item.description"
+                    @toggleDescriptionExpand="toggleDescriptionExpand(item)"
+                    :ref="`description-${item.id}`"
+                    :is-expanded="item.isExpanded"
+                    :is-edit-mode="item.editMode"
+                    :text="item.description"
                 />
             </template>
-            <template v-slot:cell(synopsis)="row">
+            <template v-slot:cell(synopsis)="{ item }">
                 <LibraryEditField
-                    @toggleDescriptionExpand="toggleDescriptionExpand(row.item)"
-                    :ref="`synopsis-${row.item.id}`"
-                    :is-expanded="row.item.isExpanded"
-                    :is-edit-mode="row.item.editMode"
-                    :text="row.item.synopsis"
+                    @toggleDescriptionExpand="toggleDescriptionExpand(item)"
+                    :ref="`synopsis-${item.id}`"
+                    :is-expanded="item.isExpanded"
+                    :is-edit-mode="item.editMode"
+                    :text="item.synopsis"
                 />
             </template>
             <template v-slot:cell(is_unrestricted)="row">
