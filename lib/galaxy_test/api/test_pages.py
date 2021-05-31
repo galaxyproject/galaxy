@@ -88,7 +88,7 @@ steps:
             page_response = self._post("pages", page_request, json=True)
             self._assert_status_code_is(page_response, 200)
             page_response = page_response.json()
-            show_response = self._get("pages/%s" % page_response['id'])
+            show_response = self._get(f"pages/{page_response['id']}")
             self._assert_status_code_is(show_response, 200)
             show_json = show_response.json()
             self._assert_has_keys(show_json, "slug", "title", "id")
@@ -143,17 +143,17 @@ steps:
 
     def test_delete(self):
         response_json = self._create_valid_page_with_slug("testdelete")
-        delete_response = delete(self._api_url("pages/%s" % response_json['id'], use_key=True))
+        delete_response = delete(self._api_url(f"pages/{response_json['id']}", use_key=True))
         self._assert_status_code_is(delete_response, 204)
 
     def test_400_on_delete_invalid_page_id(self):
-        delete_response = delete(self._api_url("pages/%s" % self._random_key(), use_key=True))
+        delete_response = delete(self._api_url(f"pages/{self._random_key()}", use_key=True))
         self._assert_status_code_is(delete_response, 400)
         self._assert_error_code_is(delete_response, error_codes.MALFORMED_ID)
 
     def test_403_on_delete_unowned_page(self):
         page_response = self._create_valid_page_as("others_page@bx.psu.edu", "otherspage")
-        delete_response = delete(self._api_url("pages/%s" % page_response["id"], use_key=True))
+        delete_response = delete(self._api_url(f"pages/{page_response['id']}", use_key=True))
         self._assert_status_code_is(delete_response, 403)
         self._assert_error_code_is(delete_response, error_codes.USER_DOES_NOT_OWN_ITEM)
 
@@ -175,7 +175,7 @@ steps:
         dataset_populator = DatasetPopulator(self.galaxy_interactor)
         valid_id = dataset_populator.new_history()
         page_request = self._test_page_payload(slug="invalid-embed-content")
-        page_request["content"] = '''<p>Page!<div class="embedded-item" id="CoolObject-%s"></div></p>''' % valid_id
+        page_request["content"] = f'''<p>Page!<div class="embedded-item" id="CoolObject-{valid_id}"></div></p>'''
         page_response = self._post("pages", page_request, json=True)
         self._assert_status_code_is(page_response, 400)
         self._assert_error_code_is(page_response, error_codes.USER_REQUEST_INVALID_PARAMETER)
@@ -190,7 +190,7 @@ steps:
 
     def test_show(self):
         response_json = self._create_valid_page_with_slug("pagetoshow")
-        show_response = self._get("pages/%s" % response_json['id'])
+        show_response = self._get(f"pages/{response_json['id']}")
         self._assert_status_code_is(show_response, 200)
         show_json = show_response.json()
         self._assert_has_keys(show_json, "slug", "title", "id")
@@ -201,7 +201,7 @@ steps:
 
     def test_403_on_unowner_show(self):
         response_json = self._create_valid_page_as("others_page_show@bx.psu.edu", "otherspageshow")
-        show_response = self._get("pages/%s" % response_json['id'])
+        show_response = self._get(f"pages/{response_json['id']}")
         self._assert_status_code_is(show_response, 403)
         self._assert_error_code_is(show_response, error_codes.USER_CANNOT_ACCESS_ITEM)
 

@@ -54,7 +54,7 @@ class UniverseApplication(BasicApp):
         if self.config.database_connection:
             db_url = self.config.database_connection
         else:
-            db_url = "sqlite:///%s?isolation_level=IMMEDIATE" % self.config.database
+            db_url = f"sqlite:///{self.config.database}?isolation_level=IMMEDIATE"
         # Initialize the Tool Shed database and check for appropriate schema version.
         from tool_shed.webapp.model.migrate.check import create_or_verify_database
         create_or_verify_database(db_url, self.config.database_engine_options)

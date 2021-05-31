@@ -4,6 +4,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import traceback
 
 # insert *this* galaxy before all others on sys.path
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir)))
@@ -41,9 +42,10 @@ def main():
     callback_url = container_config.get("callback_url")
     connection_configuration = container_config["connection_configuration"]
     if container_type != "docker":
-        raise Exception("Monitoring container type [%s], not yet implemented." % container_type)
+        raise Exception(f"Monitoring container type [{container_type}], not yet implemented.")
 
     ports_raw = None
+    exc_traceback = ""
     for i in range(10):
         try:
             ports_raw = parse_ports(container_name, connection_configuration)
@@ -62,10 +64,13 @@ def main():
                 break
             else:
                 raise Exception("Failed to recover ports...")
-        except Exception as e:
-            with open("container_monitor_exception.txt", "a") as f:
-                f.write(str(e) + "\n\n\n")
+        except Exception:
+            exc_info = sys.exc_info()
+            exc_traceback = "".join(traceback.format_exception(*exc_info))
         time.sleep(i * 2)
+    else:
+        with open("container_monitor_exception.txt", "w") as f:
+            f.write(exc_traceback)
 
 
 if __name__ == "__main__":

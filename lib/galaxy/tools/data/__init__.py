@@ -159,7 +159,7 @@ class ToolDataTableManager:
                                                      tool_data_path=tool_data_path,
                                                      from_shed_config=True)
         except Exception as e:
-            error_message = 'Error attempting to parse file {}: {}'.format(str(os.path.split(config_filename)[1]), util.unicodify(e))
+            error_message = f'Error attempting to parse file {str(os.path.split(config_filename)[1])}: {util.unicodify(e)}'
             log.debug(error_message, exc_info=True)
             table_elems = []
         if persist:
@@ -245,7 +245,7 @@ class ToolDataTable:
     @classmethod
     def from_elem(cls, table_elem, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=None):
         table_type = table_elem.get('type', 'tabular')
-        assert table_type in tool_data_table_types, "Unknown data table type '%s'" % table_type
+        assert table_type in tool_data_table_types, f"Unknown data table type '{table_type}'"
         return tool_data_table_types[table_type](table_elem, tool_data_path, from_shed_config=from_shed_config, filename=filename, tool_data_path_files=tool_data_path_files, other_config_dict=other_config_dict)
 
     def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None, other_config_dict=None):
@@ -359,7 +359,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                 # Handle URLs as files
                 filename = file_element.get('url', None)
                 if filename:
-                    tmp_file = NamedTemporaryFile(prefix='TTDT_URL_%s-' % self.name, mode='w')
+                    tmp_file = NamedTemporaryFile(prefix=f'TTDT_URL_{self.name}-', mode='w')
                     try:
                         tmp_file.write(requests.get(filename, timeout=url_timeout).text)
                     except Exception as e:
@@ -405,9 +405,9 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                     if self.tool_data_path_files.exists(corrected_filename):
                         filename = corrected_filename
                         found = True
-                    elif not from_shed_config and self.tool_data_path_files.exists("%s.sample" % corrected_filename):
-                        log.info("Could not find tool data %s, reading sample" % corrected_filename)
-                        filename = "%s.sample" % corrected_filename
+                    elif not from_shed_config and self.tool_data_path_files.exists(f"{corrected_filename}.sample"):
+                        log.info(f"Could not find tool data {corrected_filename}, reading sample")
+                        filename = f"{corrected_filename}.sample"
                         found = True
 
             errors = []
@@ -661,7 +661,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                     last_char = data_table_fh.read(1)
                     if last_char not in [b'\n', b'\r']:
                         data_table_fh.write(b'\n')
-                fields = "%s\n" % self.separator.join(fields)
+                fields = f"{self.separator.join(fields)}\n"
                 data_table_fh.write(fields.encode('utf-8'))
         return not is_error
 
@@ -764,10 +764,10 @@ class TabularToolDataField(Dictifiable):
         return path
 
     def clean_base_dir(self, path):
-        return re.sub("^" + self.get_base_dir() + r"/*", "", path)
+        return re.sub(f"^{self.get_base_dir()}/*", "", path)
 
     def get_files(self):
-        return glob(self.get_base_path() + "*")
+        return glob(f"{self.get_base_path()}*")
 
     def get_filesize_map(self, rm_base_dir=False):
         out = {}

@@ -46,7 +46,7 @@ def _read_defined_parameter_definitions(config):
         params_file = getattr(config, "job_resource_params_file", None)
     if not params_file or not os.path.exists(params_file):
         params_file = None
-    log.debug("Loading workflow resource parameter definitions from %s" % params_file)
+    log.debug(f"Loading workflow resource parameter definitions from {params_file}")
     if params_file:
         return galaxy.util.parse_resource_parameters(params_file)
     else:
@@ -162,7 +162,7 @@ def _import_resource_mapping_function(qualified_function_path):
     try:
         __import__(full_module_name)
     except ImportError:
-        raise Exception("Failed to find workflow resource mapper module %s" % full_module_name)
+        raise Exception(f"Failed to find workflow resource mapper module {full_module_name}")
 
     module = sys.modules[full_module_name]
     if hasattr(module, function_name):

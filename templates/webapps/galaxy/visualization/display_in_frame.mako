@@ -49,7 +49,7 @@
 <%def name="render_item( visualization, config )">
     <div id="${trans.security.encode_id( visualization.id )}" class="unified-panel-body" style="overflow:none;top:0px;">
         <iframe frameborder="0" width="100%" height="100%" sandbox="allow-forms allow-same-origin allow-scripts"
-                src="/visualization/saved?id=${encoded_visualization_id}&embedded=True">
+                src="/visualization/saved?id=${encoded_visualization_id}">
         </iframe>
     </div>
 </%def>

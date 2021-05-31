@@ -60,7 +60,7 @@ __WRAP_MAPPINGS__ = (dict, UserDict, )
 
 # Define the set of characters that are not sanitized, and define a set of mappings for those that are.
 # characters that are valid
-VALID_CHARACTERS = set(string.ascii_letters + string.digits + " -=_.()/+*^,:?!@")
+VALID_CHARACTERS = set(f"{string.ascii_letters + string.digits} -=_.()/+*^,:?!@")
 
 # characters that are allowed but need to be escaped
 CHARACTER_MAP = {'>': '__gt__',
@@ -128,7 +128,7 @@ def wrap_with_safe_string(value, no_wrap_classes=None):
         value_mod = inspect.getmodule(value)
         if value_mod:
             wrapped_class_name = f"{value_mod.__name__}.{wrapped_class_name}"
-        wrapped_class_name = "SafeStringWrapper({}:{})".format(wrapped_class_name, ",".join(sorted(map(str, no_wrap_classes))))
+        wrapped_class_name = f"SafeStringWrapper({wrapped_class_name}:{','.join(sorted(map(str, no_wrap_classes)))})"
         do_wrap_func_name = f"__do_wrap_{wrapped_class_name}"
         do_wrap_func = __do_wrap
         global_dict = globals()
@@ -206,7 +206,7 @@ class SafeStringWrapper:
         return sanitize_lists_to_string(self.unsanitized, valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP)
 
     def __repr__(self):
-        return "{} object at {:x} on: {}".format(sanitize_lists_to_string(self.__class__.__name__, valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP), id(self), sanitize_lists_to_string(repr(self.unsanitized), valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP))
+        return f"{sanitize_lists_to_string(self.__class__.__name__, valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP)} object at {id(self):x} on: {sanitize_lists_to_string(repr(self.unsanitized), valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP)}"
 
     def __lt__(self, other):
         while isinstance(other, SafeStringWrapper):

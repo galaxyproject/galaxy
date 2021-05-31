@@ -1,5 +1,9 @@
 import re
 
+from pydantic import (
+    Field,
+)
+
 ENCODED_DATABASE_ID_PATTERN = re.compile('f?[0-9a-f]+')
 ENCODED_ID_LENGTH_MULTIPLE = 16
 
@@ -44,3 +48,17 @@ class EncodedDatabaseIdField(str):
 
     def __repr__(self):
         return f'EncodedDatabaseID ({super().__repr__()})'
+
+
+def ModelClassField(class_name: str) -> str:
+    """Represents a database model class name annotated as a constant
+    pydantic Field.
+    :param class_name: The name of the database class.
+    :return: A constant pydantic Field with default annotations for model classes.
+    """
+    return Field(
+        class_name,
+        title="Model class",
+        description="The name of the database model class.",
+        const=True,  # Make this field constant
+    )

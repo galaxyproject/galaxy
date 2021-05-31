@@ -49,7 +49,7 @@ class PersistentToolTagManager(AbstractToolTagManager):
         self.sa_session = app.model.context
 
     def reset_tags(self):
-        log.info("removing all tool tag associations (" + str(self.sa_session.query(self.app.model.ToolTagAssociation).count()) + ")")
+        log.info(f"removing all tool tag associations ({str(self.sa_session.query(self.app.model.ToolTagAssociation).count())})")
         self.sa_session.query(self.app.model.ToolTagAssociation).delete()
         self.sa_session.flush()
 

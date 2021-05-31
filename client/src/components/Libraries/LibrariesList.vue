@@ -8,8 +8,10 @@
                 <font-awesome-icon icon="plus" />
                 Library
             </b-button>
-            <SearchField :typingDelay="0" @updateSearch="searchValue($event)" />
-            <b-form-checkbox class="mr-1" @input="toggle_include_deleted($event)"> include deleted </b-form-checkbox>
+            <SearchField :typing-delay="0" @updateSearch="searchValue($event)" />
+            <b-form-checkbox v-if="isAdmin" class="mr-1" @input="toggle_include_deleted($event)">
+                include deleted
+            </b-form-checkbox>
             <b-form-checkbox class="mr-1" @input="toggle_exclude_restricted($event)">
                 exclude restricted
             </b-form-checkbox>
@@ -43,7 +45,7 @@
             ref="libraries_list"
             @filtered="onFiltered"
             :filter="filter"
-            :filterIncludedFields="filterOn"
+            :filter-included-fields="filterOn"
         >
             <template v-slot:cell(name)="row">
                 <textarea
@@ -61,8 +63,8 @@
                 <LibraryEditField
                     @toggleDescriptionExpand="toggleDescriptionExpand(row.item)"
                     :ref="`description-${row.item.id}`"
-                    :isExpanded="row.item.isExpanded"
-                    :isEditMode="row.item.editMode"
+                    :is-expanded="row.item.isExpanded"
+                    :is-edit-mode="row.item.editMode"
                     :text="row.item.description"
                 />
             </template>
@@ -70,8 +72,8 @@
                 <LibraryEditField
                     @toggleDescriptionExpand="toggleDescriptionExpand(row.item)"
                     :ref="`synopsis-${row.item.id}`"
-                    :isExpanded="row.item.isExpanded"
-                    :isEditMode="row.item.editMode"
+                    :is-expanded="row.item.isExpanded"
+                    :is-edit-mode="row.item.editMode"
                     :text="row.item.synopsis"
                 />
             </template>
@@ -87,7 +89,7 @@
                     <font-awesome-icon icon="unlock" />
                     Undelete
                 </b-button>
-                <div v-else>
+                <div v-else-if="isAdmin">
                     <b-button
                         v-if="row.item.can_user_modify && row.item.editMode"
                         size="sm"
@@ -158,6 +160,7 @@
                                     id="paginationPerPage"
                                     autocomplete="off"
                                     type="number"
+                                    onkeyup="this.value|=0;if(this.value<1)this.value=1"
                                     v-model="perPage"
                                 />
                             </td>
@@ -260,7 +263,9 @@ export default {
                     Toast.success("Library has been marked deleted.");
                     deletedLib.deleted = true;
                     this.toggleEditMode(deletedLib);
-                    if (!this.include_deleted) this.hideOn("deleted", false);
+                    if (!this.include_deleted) {
+                        this.hideOn("deleted", false);
+                    }
                 },
                 (error) => onError(error)
             );
@@ -298,8 +303,11 @@ export default {
         hideOn(property, value) {
             const filtered = [];
             this.librariesList = this.librariesList.filter((lib) => {
-                if (lib[property] === value) return lib;
-                else filtered.push(lib);
+                if (lib[property] === value) {
+                    return lib;
+                } else {
+                    filtered.push(lib);
+                }
             });
             return filtered;
         },

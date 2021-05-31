@@ -37,7 +37,9 @@ var Libraries = Backbone.Collection.extend({
          * [the term to search]
          * @type {string}
          */
-        if (search_term == "") return this;
+        if (search_term == "") {
+            return this;
+        }
         var lowercase_term = search_term.toLowerCase();
         return this.filter((data) => {
             var lowercase_name = data.get("name").toLowerCase();
@@ -91,7 +93,9 @@ var FolderContainer = Backbone.Model.extend({
      * @type {string}
      */
     search: function (search_term) {
-        if (search_term == "") return this;
+        if (search_term == "") {
+            return this;
+        }
         const lowercase_term = search_term.toLowerCase();
         return this.get("folder").filter((data) => {
             const lowercase_name = data.get("name").toLowerCase();

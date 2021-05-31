@@ -80,7 +80,7 @@ class ToolRunner(BaseUIController):
         except Exception as e:
             error(galaxy.util.unicodify(e))
         if len(params) > 0:
-            trans.log_event('Tool params: %s' % (str(params)), tool_id=tool_id)
+            trans.log_event(f'Tool params: {str(params)}', tool_id=tool_id)
         return trans.fill_template('root/tool_runner.mako', **vars)
 
     @web.expose
@@ -130,9 +130,9 @@ class ToolRunner(BaseUIController):
         # No tool matching the tool id, display an error (shouldn't happen)
         if not tool:
             log.error("data_source_redirect called with tool id '%s' but no such tool exists", tool_id)
-            trans.log_event("Tool id '%s' does not exist" % tool_id)
+            trans.log_event(f"Tool id '{tool_id}' does not exist")
             trans.response.status = 404
-            return trans.show_error_message("Tool '%s' does not exist." % (escape(tool_id)))
+            return trans.show_error_message(f"Tool '{escape(tool_id)}' does not exist.")
 
         if isinstance(tool, DataSourceTool):
             link = url_for(tool.action, **tool.get_static_param_values(trans))
@@ -144,5 +144,5 @@ class ToolRunner(BaseUIController):
     def redirect(self, trans, redirect_url=None, **kwd):
         if not redirect_url:
             return trans.show_error_message("Required URL for redirection missing")
-        trans.log_event("Redirecting to: %s" % redirect_url)
+        trans.log_event(f"Redirecting to: {redirect_url}")
         return trans.fill_template('root/redirect.mako', redirect_url=redirect_url)

@@ -104,7 +104,7 @@ class GalaxyRBACAgent(RBACAgent):
         roles = []
         if query not in [None, '']:
             query = query.strip().replace('_', '/_').replace('%', '/%').replace('/', '//')
-            search_query = query + '%'
+            search_query = f"{query}%"
         else:
             search_query = None
         # Limit the query only to get the page needed
@@ -360,7 +360,7 @@ class GalaxyRBACAgent(RBACAgent):
                                      len(new_result)))
                 log.debug("get_actions_for_items: Test end")
             except Exception as e:
-                log.debug("Exception in test code: %s" % e)
+                log.debug(f"Exception in test code: {e}")
 
         return ret_permissions
 
@@ -554,7 +554,7 @@ class GalaxyRBACAgent(RBACAgent):
         elif type(item) == self.model.LibraryDatasetCollectionAssociation:
             return self.can_access_library(roles, item.folder.parent_library)
         else:
-            log.warning('Unknown library item type: %s' % type(item))
+            log.warning(f'Unknown library item type: {type(item)}')
             return False
 
     def can_add_library_item(self, roles, item):
@@ -632,7 +632,7 @@ class GalaxyRBACAgent(RBACAgent):
         if 'action' in kwd:
             if 'dataset' in kwd and 'role' in kwd:
                 return self.associate_action_dataset_role(kwd['action'], kwd['dataset'], kwd['role'])
-        raise Exception('No valid method of associating provided components: %s' % kwd)
+        raise Exception(f'No valid method of associating provided components: {kwd}')
 
     def associate_user_group(self, user, group):
         assoc = self.model.UserGroupAssociation(user, group)
@@ -718,7 +718,7 @@ class GalaxyRBACAgent(RBACAgent):
 
     def get_sharing_roles(self, user):
         return self.sa_session.query(self.model.Role) \
-                              .filter(and_((self.model.Role.table.c.name).like("Sharing role for: %" + user.email + "%"),
+                              .filter(and_((self.model.Role.table.c.name).like(f"Sharing role for: %{user.email}%"),
                                            self.model.Role.table.c.type == self.model.Role.types.SHARING))
 
     def user_set_default_permissions(self, user, permissions=None, history=False, dataset=False, bypass_manage_permission=False, default_access_private=False):
@@ -911,7 +911,7 @@ class GalaxyRBACAgent(RBACAgent):
                     sharing_role = role
                     break
         if sharing_role is None:
-            sharing_role = self.model.Role(name="Sharing role for: " + ", ".join(u.email for u in users),
+            sharing_role = self.model.Role(name=f"Sharing role for: {', '.join(u.email for u in users)}",
                                            type=self.model.Role.types.SHARING)
             self.sa_session.add(sharing_role)
             self.sa_session.flush()
@@ -1119,7 +1119,7 @@ class GalaxyRBACAgent(RBACAgent):
             # Change for removing the prefix '_in' from the roles select box
             in_roles = [self.sa_session.query(self.model.Role).get(x) for x in listify(kwd[k])]
             if not in_roles:
-                in_roles = [self.sa_session.query(self.model.Role).get(x) for x in listify(kwd.get(k + '_in', []))]
+                in_roles = [self.sa_session.query(self.model.Role).get(x) for x in listify(kwd.get(f"{k}_in", []))]
             if v == self.permitted_actions.DATASET_ACCESS and in_roles:
                 if library:
                     item = self.sa_session.query(self.model.Library).get(item_id)
@@ -1144,7 +1144,7 @@ class GalaxyRBACAgent(RBACAgent):
                         msg += "The following roles are not associated with users that have the 'access' permission on this "
                         msg += "item, so they were incorrectly displayed: "
                         for role in illegitimate_roles:
-                            msg += "%s, " % role.name
+                            msg += f"{role.name}, "
                         msg = msg.rstrip(", ")
                         new_in_roles = []
                         for role in in_roles:
@@ -1369,7 +1369,7 @@ class GalaxyRBACAgent(RBACAgent):
         elif 'group' in kwd:
             if 'role' in kwd:
                 return self.sa_session.query(self.model.GroupRoleAssociation).filter_by(role_id=kwd['role'].id, group_id=kwd['group'].id).first()
-        raise Exception('No valid method of associating provided components: %s' % kwd)
+        raise Exception(f'No valid method of associating provided components: {kwd}')
 
     def check_folder_contents(self, user, roles, folder, hidden_folder_ids=''):
         """

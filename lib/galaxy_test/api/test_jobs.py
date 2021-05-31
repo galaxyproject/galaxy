@@ -47,6 +47,17 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         self._assert_has_keys(job, "command_line", "external_id")
 
     @uses_test_history(require_new=True)
+    def test_admin_job_list(self, history_id):
+        self.__history_with_new_dataset(history_id)
+        jobs_response = self._get("jobs?view=admin_job_list", admin=False)
+        assert jobs_response.status_code == 403
+        assert jobs_response.json()['err_msg'] == 'Only admins can use the admin_job_list view'
+
+        jobs = self._get("jobs?view=admin_job_list", admin=True).json()
+        job = jobs[0]
+        self._assert_has_keys(job, "command_line", "external_id", 'handler')
+
+    @uses_test_history(require_new=True)
     def test_index_state_filter(self, history_id):
         # Initial number of ok jobs
         original_count = len(self.__uploads_with_state("ok"))
@@ -202,13 +213,13 @@ steps:
         self._assert_has_key(first_job, 'id', 'state', 'exit_code', 'update_time', 'create_time')
 
         job_id = first_job["id"]
-        show_jobs_response = self._get("jobs/%s" % job_id)
+        show_jobs_response = self._get(f"jobs/{job_id}")
         self._assert_status_code_is(show_jobs_response, 200)
 
         job_details = show_jobs_response.json()
         self._assert_has_key(job_details, 'id', 'state', 'exit_code', 'update_time', 'create_time')
 
-        show_jobs_response = self._get("jobs/%s" % job_id, {"full": True})
+        show_jobs_response = self._get(f"jobs/{job_id}", {"full": True})
         self._assert_status_code_is(show_jobs_response, 200)
 
         job_details = show_jobs_response.json()
@@ -225,7 +236,7 @@ steps:
         job_lock_response.raise_for_status()
         assert not job_lock_response.json()["active"]
 
-        show_jobs_response = self._get("jobs/%s" % job_id, admin=False)
+        show_jobs_response = self._get(f"jobs/{job_id}", admin=False)
         self._assert_not_has_keys(show_jobs_response.json(), "external_id")
 
         # TODO: Re-activate test case when API accepts privacy settings
@@ -233,7 +244,7 @@ steps:
         #    show_jobs_response = self._get( "jobs/%s" % job_id, admin=False )
         #    self._assert_status_code_is( show_jobs_response, 200 )
 
-        show_jobs_response = self._get("jobs/%s" % job_id, admin=True)
+        show_jobs_response = self._get(f"jobs/{job_id}", admin=True)
         self._assert_has_keys(show_jobs_response.json(), "command_line", "external_id")
 
     def _run_detect_errors(self, history_id, inputs):
@@ -298,8 +309,8 @@ steps:
             )
             empty_output_job = empty_run_response["jobs"][0]
             cat_empty_job = cat_empty_twice_run_response["jobs"][0]
-            empty_output_common_problems_response = self._get('jobs/%s/common_problems' % empty_output_job["id"]).json()
-            cat_empty_common_problems_response = self._get('jobs/%s/common_problems' % cat_empty_job["id"]).json()
+            empty_output_common_problems_response = self._get(f"jobs/{empty_output_job['id']}/common_problems").json()
+            cat_empty_common_problems_response = self._get(f"jobs/{cat_empty_job['id']}/common_problems").json()
             self._assert_has_keys(empty_output_common_problems_response, "has_empty_inputs", "has_duplicate_inputs")
             self._assert_has_keys(cat_empty_common_problems_response, "has_empty_inputs", "has_duplicate_inputs")
             assert not empty_output_common_problems_response["has_empty_inputs"]
@@ -319,7 +330,7 @@ steps:
             job_id = run_response['jobs'][0]["id"]
             self.dataset_populator.wait_for_job(job_id)
             dataset_id = run_response['outputs'][0]['id']
-            response = self._post('jobs/%s/error' % job_id,
+            response = self._post(f'jobs/{job_id}/error',
                                   data={'dataset_id': dataset_id})
             assert response.status_code == 200, response.text
 
@@ -329,7 +340,7 @@ steps:
         cookies = requests.get(self.url).cookies
         payload = json.dumps({"tool_id": "detect_errors_aggressive",
                               "inputs": {"error_bool": "true"}})
-        run_response = requests.post("%s/tools" % self.galaxy_interactor.api_url, data=payload, cookies=cookies).json()
+        run_response = requests.post(f"{self.galaxy_interactor.api_url}/tools", data=payload, cookies=cookies).json()
         job_id = run_response['jobs'][0]["id"]
         dataset_id = run_response['outputs'][0]['id']
         response = requests.post(f'{self.galaxy_interactor.api_url}/jobs/{job_id}/error',
@@ -455,7 +466,7 @@ steps:
         assert len(jobs) == 1
 
         def job_state():
-            jobs_response = self._get("jobs/%s" % jobs[0]["id"])
+            jobs_response = self._get(f"jobs/{jobs[0]['id']}")
             return jobs_response
 
         # Give job some time to get up and running.
@@ -464,7 +475,7 @@ steps:
         assert running_state == "running", running_state
 
         def job_state():
-            jobs_response = self._get("jobs/%s" % jobs[0]["id"])
+            jobs_response = self._get(f"jobs/{jobs[0]['id']}")
             return jobs_response
 
         return job_state, outputs
@@ -505,19 +516,19 @@ steps:
         job_id = run_response['jobs'][0]['id']
         output = run_response["outputs"][0]
         # Delete second jobs input while second job is waiting for first job
-        delete_response = self._delete("histories/{}/contents/{}".format(history_id, hda1['id']))
+        delete_response = self._delete(f"histories/{history_id}/contents/{hda1['id']}")
         self._assert_status_code_is(delete_response, 200)
         self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=False)
-        dataset_details = self._get("histories/{}/contents/{}".format(history_id, output['id'])).json()
+        dataset_details = self._get(f"histories/{history_id}/contents/{output['id']}").json()
         assert dataset_details['state'] == 'paused'
         # Undelete input dataset
-        undelete_response = self._put("histories/{}/contents/{}".format(history_id, hda1['id']),
+        undelete_response = self._put(f"histories/{history_id}/contents/{hda1['id']}",
                                       data=json.dumps({'deleted': False}))
         self._assert_status_code_is(undelete_response, 200)
-        resume_response = self._put("jobs/%s/resume" % job_id)
+        resume_response = self._put(f"jobs/{job_id}/resume")
         self._assert_status_code_is(resume_response, 200)
         self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=True)
-        dataset_details = self._get("histories/{}/contents/{}".format(history_id, output['id'])).json()
+        dataset_details = self._get(f"histories/{history_id}/contents/{output['id']}").json()
         assert dataset_details['state'] == 'ok'
 
     def _get_history_item_as_admin(self, history_id, item_id):
@@ -531,7 +542,7 @@ steps:
         # We first copy the datasets, so that the update time is lower than the job creation time
         new_history_id = self.dataset_populator.new_history()
         copy_payload = {"content": dataset_id, "source": "hda", "type": "dataset"}
-        copy_response = self._post("histories/%s/contents" % new_history_id, data=copy_payload)
+        copy_response = self._post(f"histories/{new_history_id}/contents", data=copy_payload)
         self._assert_status_code_is(copy_response, 200)
         inputs = json.dumps({
             'input1': {'src': 'hda', 'id': dataset_id}
@@ -638,7 +649,7 @@ steps:
         # We test that a job can be found even if the collection has been copied to another history
         new_history_id = self.dataset_populator.new_history()
         copy_payload = {"content": list_id_a, "source": "hdca", "type": "dataset_collection"}
-        copy_response = self._post("histories/%s/contents" % new_history_id, data=copy_payload)
+        copy_response = self._post(f"histories/{new_history_id}/contents", data=copy_payload)
         self._assert_status_code_is(copy_response, 200)
         new_list_a = copy_response.json()['id']
         copied_inputs = json.dumps({
@@ -683,7 +694,7 @@ steps:
             wait_for_job=True,
             assert_ok=True,
         )
-        rerun_params = self._get("jobs/%s/build_for_rerun" % run_response['jobs'][0]['id']).json()
+        rerun_params = self._get(f"jobs/{run_response['jobs'][0]['id']}/build_for_rerun").json()
         # Since we call rerun on the first (and only) job we should get the expanded input
         # which is a dataset collection element (and not the list:pair hdca that was used as input to the original
         # job).
@@ -745,7 +756,7 @@ steps:
             assert_ok=True,
         )
         assert len(run_response['jobs']) == 2
-        rerun_params = self._get("jobs/%s/build_for_rerun" % run_response['jobs'][0]['id']).json()
+        rerun_params = self._get(f"jobs/{run_response['jobs'][0]['id']}/build_for_rerun").json()
         # Since we call rerun on the first (and only) job we should get the expanded input
         # which is a dataset collection element (and not the list:list hdca that was used as input to the original
         # job).

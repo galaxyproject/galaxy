@@ -248,7 +248,9 @@ var HistoryView = _super.extend(
         /** render pagination controls if not searching and contents says we're paginating */
         _renderPagination: function ($whereTo) {
             var $paginationControls = $whereTo.find("> .controls .list-pagination");
-            if (this.searchFor || !this.model.contents.shouldPaginate()) return $paginationControls.empty();
+            if (this.searchFor || !this.model.contents.shouldPaginate()) {
+                return $paginationControls.empty();
+            }
 
             $paginationControls.html(
                 this.templates.pagination(
@@ -427,7 +429,9 @@ var HistoryView = _super.extend(
 
         /** clear the search filters and show all views that are normally shown */
         clearSearch: function (searchFor) {
-            if (!this.searchFor) return this;
+            if (!this.searchFor) {
+                return this;
+            }
             //this.log( 'onSearchClear', this );
             this.searchFor = "";
             this.trigger("search:clear", this);

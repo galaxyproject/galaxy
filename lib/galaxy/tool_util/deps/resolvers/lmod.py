@@ -168,13 +168,13 @@ class LmodDependency(Dependency):
         # Build the list of command to add to run script
         # Note that since "module" is actually a bash function, we are directy executing the underlying executable instead
         # - Set the MODULEPATH environment variable
-        command = 'MODULEPATH=%s; ' % (self.lmod_dependency_resolver.modulepath)
+        command = f'MODULEPATH={self.lmod_dependency_resolver.modulepath}; '
         command += 'export MODULEPATH; '
         # - Execute the "module load" command (or rather the "/path/to/lmod load" command)
         command += f'eval `{self.lmod_dependency_resolver.lmodexec} load {module_to_load}` '
         # - Execute the "settarg" command in addition if needed
         if self.lmod_dependency_resolver.settargexec is not None:
-            command += '&& eval `%s -s sh`' % (self.lmod_dependency_resolver.settargexec)
+            command += f'&& eval `{self.lmod_dependency_resolver.settargexec} -s sh`'
 
         return command
 

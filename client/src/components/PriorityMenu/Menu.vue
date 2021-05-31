@@ -69,7 +69,9 @@ export default {
         },
 
         setHeight(entry) {
-            if (!entry) return;
+            if (!entry) {
+                return;
+            }
             const {
                 boundingClientRect: { height },
             } = entry;

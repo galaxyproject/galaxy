@@ -126,9 +126,9 @@ def type_descriptions_for_field_types(field_types):
         try:
             type_representation_names_for_field_type = CWL_TYPE_TO_REPRESENTATIONS.get(field_type)
         except TypeError:
-            raise Exception("Failed to convert field_type %s" % field_type)
+            raise Exception(f"Failed to convert field_type {field_type}")
         if type_representation_names_for_field_type is None:
-            raise Exception("Failed to convert type %s" % field_type)
+            raise Exception(f"Failed to convert type {field_type}")
         type_representation_names.update(type_representation_names_for_field_type)
     type_representations = []
     for type_representation in TYPE_REPRESENTATIONS:
@@ -316,7 +316,7 @@ def to_cwl_job(tool, param_dict, local_working_directory):
             type_description_name = type_descriptions[0].name
             input_json[input_name] = simple_value(input, param_dict[input_name], type_description_name)
 
-    log.debug("Galaxy Tool State is CWL State is %s" % input_json)
+    log.debug(f"Galaxy Tool State is CWL State is {input_json}")
     return input_json
 
 
@@ -384,20 +384,20 @@ def to_galaxy_parameters(tool, as_dict):
                         as_dict_value, type(as_dict_value), case_strings
                     )
                 )
-            galaxy_request["%s|_cwl__type_" % input_name] = type_representation_name
+            galaxy_request[f"{input_name}|_cwl__type_"] = type_representation_name
             if type_representation_name != "null":
                 current_case_index = input.get_current_case(type_representation_name)
                 current_case_inputs = input.cases[current_case_index].inputs
                 current_case_input = current_case_inputs["_cwl__value_"]
                 galaxy_value = from_simple_value(current_case_input, as_dict_value, type_representation_name)
-                galaxy_request["%s|_cwl__value_" % input_name] = galaxy_value
+                galaxy_request[f"{input_name}|_cwl__value_"] = galaxy_value
         elif as_dict_value is NOT_PRESENT:
             continue
         else:
             galaxy_value = from_simple_value(input, as_dict_value)
             galaxy_request[input_name] = galaxy_value
 
-    log.info("Converted galaxy_request is %s" % galaxy_request)
+    log.info(f"Converted galaxy_request is {galaxy_request}")
     return galaxy_request
 
 

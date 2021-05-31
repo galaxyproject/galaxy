@@ -68,7 +68,7 @@ class ModelOperationToolAction(DefaultToolAction):
         # Queue the job for execution
         # trans.app.job_manager.job_queue.put( job.id, tool.id )
         # trans.log_event( "Added database job action to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
-        log.info("Calling produce_outputs, tool is %s" % tool)
+        log.info(f"Calling produce_outputs, tool is {tool}")
         return job, out_data, history
 
     def _produce_outputs(self, trans, tool, out_data, output_collections, incoming, history, tags):

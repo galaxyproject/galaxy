@@ -194,7 +194,7 @@ class ToolCache:
             # If by chance the file is being removed while calculating the hash or modtime
             # we don't want the thread to die.
         if removed_tool_ids:
-            log.debug("Removed the following tools from cache: %s" % removed_tool_ids)
+            log.debug(f"Removed the following tools from cache: {removed_tool_ids}")
         return removed_tool_ids
 
     def _should_cleanup(self, config_filename):
@@ -303,10 +303,7 @@ class ToolShedRepositoryCache:
         try:
             session = self.app.install_model._SessionLocal()
             self.repositories = session.query(ToolShedRepository).options(
-                defer(ToolShedRepository.metadata),
-                joinedload('tool_dependencies').subqueryload('tool_shed_repository').options(
-                    defer(ToolShedRepository.metadata)
-                ),
+                defer(ToolShedRepository.metadata), joinedload('tool_dependencies')
             ).all()
             repos_by_tuple = defaultdict(list)
             for repository in self.repositories + self.local_repositories:

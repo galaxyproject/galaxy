@@ -288,13 +288,13 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
             try:
                 repository = get_tool_shed_repository_by_id(self.app, id)
             except ValueError:
-                raise HTTPBadRequest(detail="No repository with id '%s' found" % id)
+                raise HTTPBadRequest(detail=f"No repository with id '{id}' found")
         else:
             tsr_arguments = ['name', 'owner', 'changeset_revision', 'tool_shed_url']
             try:
                 tsr_arguments = {key: kwd[key] for key in tsr_arguments}
             except KeyError as e:
-                raise HTTPBadRequest(detail="Missing required parameter '%s'" % e.args[0])
+                raise HTTPBadRequest(detail=f"Missing required parameter '{e.args[0]}'")
             repository = get_installed_repository(app=self.app,
                                                   tool_shed=tsr_arguments['tool_shed_url'],
                                                   name=tsr_arguments['name'],
@@ -363,11 +363,11 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
                 except Exception:
                     failed.append(repository_id)
             if successful:
-                message = "Successful reset of metadata for %s." % len(successful)
+                message = f"Successful reset of metadata for {len(successful)}."
                 if failed:
-                    message += " Failed for %s." % len(failed)
+                    message += f" Failed for {len(failed)}."
             elif failed:
-                message = "Failed to reset metadata for %s." % len(failed)
+                message = f"Failed to reset metadata for {len(failed)}."
             return dict(message=message, successful=successful, failed=failed)
         else:
             raise exceptions.MessageException("Please specify repository ids [repository_ids].")
@@ -453,7 +453,7 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
         # Example URL: http://localhost:8763/api/tool_shed_repositories/df7a1f0c02a5b08e
         tool_shed_repository = get_tool_shed_repository_by_id(self.app, id)
         if tool_shed_repository is None:
-            log.debug("Unable to locate tool_shed_repository record for id %s." % (str(id)))
+            log.debug(f"Unable to locate tool_shed_repository record for id {str(id)}.")
             return {}
         tool_shed_repository_dict = tool_shed_repository.as_dict(value_mapper=self.__get_value_mapper(trans, tool_shed_repository))
         tool_shed_repository_dict['url'] = url_for(controller='tool_shed_repositories',

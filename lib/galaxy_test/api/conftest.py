@@ -14,11 +14,11 @@ def get_timings(test_uuid):
     # ts = datetime.datetime.fromtimestamp(to_timestamp).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
     params = {
         "db": "telegraf",
-        "q": "select * from galaxy_ where test='%s'" % (test_uuid,),
+        "q": f"select * from galaxy_ where test='{test_uuid}'",
     }
     query = urlencode(params)
     headers = {"content-type": "application/json"}
-    url = "http://localhost:8086/query?%s" % query
+    url = f"http://localhost:8086/query?{query}"
     response = requests.get(url, headers=headers)
     if response.ok:
         return response.json()

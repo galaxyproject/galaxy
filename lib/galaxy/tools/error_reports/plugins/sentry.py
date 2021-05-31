@@ -119,7 +119,7 @@ class SentryPlugin(ErrorPlugin):
                 extra=extra,
                 message=unicodify(error_message),
             )
-            return ('Submitted bug report to Sentry. Your guru meditation number is %s' % response, 'success')
+            return (f'Submitted bug report to Sentry. Your guru meditation number is {response}', 'success')
 
 
 __all__ = ('SentryPlugin', )

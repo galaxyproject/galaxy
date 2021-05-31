@@ -355,7 +355,7 @@ class TabixDataProvider(GenomeDataProvider, FilterableMixin):
                 # Write data in region.
                 iterator = self.get_iterator(data_file, region.chrom, region.start, region.end)
                 for line in iterator:
-                    out.write("%s\n" % line)
+                    out.write(f"{line}\n")
 
 #
 # -- Interval data providers --
@@ -532,7 +532,7 @@ class BedDataProvider(GenomeDataProvider):
                 with self.open_data_file() as data_file:
                     iterator = self.get_iterator(data_file, chrom, start, end)
                     for line in iterator:
-                        out.write("%s\n" % line)
+                        out.write(f"{line}\n")
 
 
 class BedTabixDataProvider(TabixDataProvider, BedDataProvider):
@@ -731,7 +731,7 @@ class VcfDataProvider(GenomeDataProvider):
                 # Write data in region.
                 iterator = self.get_iterator(data_file, region.chrom, region.start, region.end)
                 for line in iterator:
-                    out.write("%s\n" % line)
+                    out.write(f"{line}\n")
 
 
 class VcfTabixDataProvider(TabixDataProvider, VcfDataProvider):

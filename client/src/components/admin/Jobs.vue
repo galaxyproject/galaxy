@@ -57,7 +57,7 @@
                 </b-col>
             </b-row>
             <transition name="fade">
-                <b-form v-if="jobsItemsComputed.length && selectedStopJobIds.length" @submit.prevent="onStopJobs">
+                <b-form v-if="unfinishedJobs.length && selectedStopJobIds.length" @submit.prevent="onStopJobs">
                     <b-form-group label="Stop Selected Jobs" description="Stop message will be displayed to the user">
                         <b-input-group>
                             <b-form-input id="stop-message" v-model="stopMessage" placeholder="Stop message" required>
@@ -70,20 +70,20 @@
                 </b-form>
             </transition>
             <h4>Unfinished Jobs</h4>
-            <b-alert v-if="!jobsItemsComputed.length" variant="secondary" show>
+            <b-alert v-if="!unfinishedJobs.length" variant="secondary" show>
                 There are no unfinished jobs to show with current cutoff time of {{ cutoffMin }} minutes.
             </b-alert>
             <b-table
                 v-else
-                :fields="jobsFieldsComputed"
-                :items="jobsItemsComputed"
                 v-model="jobsItemsModel"
+                :fields="unfinishedJobFields"
+                :items="unfinishedJobs"
                 :filter="filter"
                 hover
                 responsive
                 striped
                 caption-top
-                @row-clicked="showRowDetails"
+                @row-clicked="toggleDetails"
                 :busy="busy"
             >
                 <template v-slot:table-caption>
@@ -109,53 +109,38 @@
                 <template v-slot:cell(update_time)="data">
                     <utc-date :date="data.value" mode="elapsed" />
                 </template>
-                <template v-slot:cell(job_info)="data">
-                    <b-link :href="data.value.info_url" @click.prevent="clickJobInfo(data.value.id)">
-                        {{ data.value.id }}
-                    </b-link>
-                </template>
                 <template v-slot:row-details="row">
                     <job-details :job="row.item" />
                 </template>
             </b-table>
 
             <h4>Finished Jobs</h4>
-            <b-alert v-if="!recentJobsItemsComputed.length" variant="secondary" show>
+            <b-alert v-if="!finishedJobs.length" variant="secondary" show>
                 There are no recently finished jobs to show with current cutoff time of {{ cutoffMin }} minutes.
             </b-alert>
 
             <b-table
                 v-else
-                :fields="recentJobsFieldsComputed"
-                :items="recentJobsItemsComputed"
+                :fields="finishedJobFields"
+                :items="finishedJobs"
                 :filter="filter"
                 hover
                 responsive
                 striped
                 caption-top
-                @row-clicked="showRowDetails"
+                @row-clicked="toggleDetails"
                 :busy="busy"
             >
                 <template v-slot:table-caption>
                     These jobs have completed in the previous {{ cutoffMin }} minutes.
                 </template>
-                <template v-slot:cell(job_info)="data">
-                    <b-link :href="data.value.info_url" @click.prevent="clickJobInfo(data.value.id)">
-                        {{ data.value.id }}
-                    </b-link>
-                </template>
                 <template v-slot:cell(update_time)="data">
                     <utc-date :date="data.value" mode="elapsed" />
                 </template>
                 <template v-slot:row-details="row">
-                    <job-details :command-line="row.item.command_line" :job-id="row.item.id" />
+                    <job-details :job="row.item" />
                 </template>
             </b-table>
-            <b-modal ref="job-info-modal" scrollable hide-header ok-only @hidden="resetModalContents">
-                <div class="info-frame-container">
-                    <iframe :src="selectedJobUrl"></iframe>
-                </div>
-            </b-modal>
         </div>
     </div>
 </template>
@@ -166,6 +151,8 @@ import UtcDate from "components/UtcDate";
 import axios from "axios";
 import JobDetails from "./JobDetails";
 import JobLock from "./JobLock";
+import JOB_STATES_MODEL from "mvc/history/job-states-model";
+import { commonJobFields } from "./JobFields";
 
 function cancelJob(jobId, message) {
     const url = `${getAppRoot()}api/jobs/${jobId}`;
@@ -176,16 +163,15 @@ export default {
     components: { UtcDate, JobDetails, JobLock },
     data() {
         return {
-            jobsItems: [],
+            jobs: [],
+            finishedJobs: [],
+            unfinishedJobs: [],
             jobsItemsModel: [],
-            recentJobsItems: [],
-            jobsFields: [
-                { key: "job_info", label: "Job ID", sortable: true },
-                { key: "user" },
-                { key: "tool_id", label: "Tool", tdClass: ["break-word"] },
-                { key: "state" },
-                { key: "job_runner_name", label: "Job Runner" },
-                { key: "job_runner_external_id", label: "PID/Cluster ID", sortable: true },
+            finishedJobFields: [...commonJobFields, { key: "update_time", label: "Finished", sortable: true }],
+            unfinishedJobFields: [
+                { key: "selected", label: "" },
+                ...commonJobFields,
+                { key: "update_time", label: "Last Update", sortable: true },
             ],
             selectedStopJobIds: [],
             selectedJobId: null,
@@ -213,20 +199,34 @@ export default {
                 this.allSelected = false;
             }
         },
+        jobs(newVal) {
+            const unfinishedJobs = [];
+            const finishedJobs = [];
+            newVal.forEach((item) => {
+                item._cellVariants = { state: this.translateState(item.state) };
+                if (JOB_STATES_MODEL.NON_TERMINAL_STATES.includes(item.state)) {
+                    unfinishedJobs.push(item);
+                } else {
+                    finishedJobs.push(item);
+                }
+            });
+            this.unfinishedJobs = unfinishedJobs;
+            this.finishedJobs = finishedJobs;
+        },
     },
     methods: {
         update() {
             this.busy = true;
             let params = [];
-            const cutoff = Math.floor(this.cutoffMin * 60);
-            params.push(`cutoff=${cutoff}`);
+            const cutoff = Math.floor(this.cutoffMin);
+            const dateRangeMin = new Date(Date.now() - cutoff * 60 * 1000).toISOString();
+            params.push(`date_range_min=${dateRangeMin}`);
+            params.push("view=admin_job_list");
             params = params.join("&");
             axios
-                .get(`${getAppRoot()}admin/jobs_list?${params}`)
+                .get(`${getAppRoot()}api/jobs?${params}`)
                 .then((response) => {
-                    this.jobsItems = response.data.jobs;
-                    this.recentJobsItems = response.data.recent_jobs;
-                    this.cutoffMin = Math.floor(response.data.cutoff / 60);
+                    this.jobs = response.data;
                     this.message = response.data.message;
                     this.status = response.data.status;
                     this.loading = false;
@@ -248,17 +248,9 @@ export default {
                 this.stopMessage = "";
             });
         },
-        clickJobInfo(id) {
-            this.selectedJobId = id;
-            this.$refs["job-info-modal"].show();
-        },
-        resetModalContents() {
-            this.selectedJobId = null;
-        },
-        showRowDetails(row, index, e) {
-            if (e.target.nodeName != "A") {
-                row._showDetails = !row._showDetails;
-            }
+
+        toggleDetails(item) {
+            this.$set(item, "_showDetails", !item._showDetails);
         },
         translateState(state) {
             const translateDict = {
@@ -280,10 +272,6 @@ export default {
                 };
             });
         },
-        computeFields(fields) {
-            const f = Array.from(fields).slice(0);
-            return f;
-        },
         toggleAll(checked) {
             this.selectedStopJobIds = checked ? this.jobsItemsModel.reduce((acc, j) => [...acc, j["id"]], []) : [];
         },
@@ -303,28 +291,6 @@ export default {
             } else {
                 return variant;
             }
-        },
-    },
-    computed: {
-        jobsItemsComputed() {
-            return this.computeItems(this.jobsItems);
-        },
-        recentJobsItemsComputed() {
-            return this.computeItems(this.recentJobsItems);
-        },
-        jobsFieldsComputed() {
-            const f = this.jobsFields.slice(0);
-            f.splice(0, 0, { key: "selected", label: "" });
-            f.splice(2, 0, { key: "update_time", label: "Last Update", sortable: true });
-            return this.computeFields(f);
-        },
-        recentJobsFieldsComputed() {
-            const f = this.jobsFields.slice(0);
-            f.splice(2, 0, { key: "update_time", label: "Finished", sortable: true });
-            return this.computeFields(f);
-        },
-        selectedJobUrl() {
-            return `${getAppRoot()}admin/job_info?jobid=${this.selectedJobId}`;
         },
     },
     created() {

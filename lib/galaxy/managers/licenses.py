@@ -89,7 +89,7 @@ SPDX_LICENSES_STRING = resource_string(__name__, 'licenses.json').decode("UTF-8"
 SPDX_LICENSES = json.loads(SPDX_LICENSES_STRING)
 for license in SPDX_LICENSES["licenses"]:
     license["recommended"] = license["licenseId"] in RECOMMENDED_LICENSES
-    license["spdxUrl"] = "https://spdx.org/licenses/%s" % license["reference"][len("./"):]
+    license["spdxUrl"] = f"https://spdx.org/licenses/{license['reference'][len('./'):]}"
     seeAlso = license.get("seeAlso", [])
     if len(seeAlso) > 0:
         url = seeAlso[0]
@@ -117,7 +117,7 @@ class LicensesManager:
         if uri in self._by_index:
             return self._by_index[uri]
         else:
-            log.warning("Unknown license URI encountered [%s]" % uri)
+            log.warning(f"Unknown license URI encountered [{uri}]")
         return {
             "url": uri
         }

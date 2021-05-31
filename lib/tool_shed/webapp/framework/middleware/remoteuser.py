@@ -91,7 +91,7 @@ class RemoteUser:
         if 'HTTP_REMOTE_USER' in environ and environ['HTTP_REMOTE_USER'] != '(null)':
             if not environ['HTTP_REMOTE_USER'].count('@'):
                 if self.maildomain is not None:
-                    environ['HTTP_REMOTE_USER'] += '@' + self.maildomain
+                    environ['HTTP_REMOTE_USER'] += f"@{self.maildomain}"
                 else:
                     title = "Access to this Galaxy tool shed is denied"
                     message = """

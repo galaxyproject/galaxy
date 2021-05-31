@@ -169,7 +169,9 @@ export default {
         },
         submitCILogon(idp) {
             const rootUrl = getAppRoot();
-            if (this.login_page) this.setIdpPreference();
+            if (this.login_page) {
+                this.setIdpPreference();
+            }
             axios
                 .post(`${rootUrl}authnz/${idp}/login/?idphint=${this.selected.EntityID}`)
                 .then((response) => {

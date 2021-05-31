@@ -1,5 +1,5 @@
 <template>
-    <b-card header-tag="header" body-class="p-0">
+    <b-card header-tag="header" body-class="p-0" id="lint-panel" class="right-content">
         <template v-slot:header>
             <div class="mb-1 font-weight-bold">
                 <font-awesome-icon icon="magic" class="mr-1" />
@@ -114,8 +114,8 @@ export default {
         untypedParameters: {
             type: UntypedParameters,
         },
-        nodes: {
-            type: Object,
+        getManager: {
+            type: Function,
             required: true,
         },
         annotation: {
@@ -193,6 +193,9 @@ export default {
         },
     },
     computed: {
+        nodes() {
+            return this.getManager().nodes;
+        },
         hasActiveOutputs() {
             this.forceRefresh;
             for (const node of Object.values(this.nodes)) {

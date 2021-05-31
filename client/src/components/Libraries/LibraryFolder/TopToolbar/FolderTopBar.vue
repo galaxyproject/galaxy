@@ -274,7 +274,9 @@ export default {
                 const selected = await this.services.getFilteredFolderContents(this.folder_id, this.unselected);
                 this.$emit("setBusy", false);
                 return selected;
-            } else return this.selected;
+            } else {
+                return this.selected;
+            }
         },
         newFolder() {
             this.$emit("newFolder");
@@ -301,12 +303,13 @@ export default {
         // helper function to make legacy code compatible
         findCheckedItems: async function (idOnly = true) {
             const datasets = [];
-            const folder = [];
+            const folders = [];
             const selected = await this.getSelected();
             selected.forEach((item) => {
-                item.type === "file" ? datasets.push(idOnly ? item.id : item) : idOnly ? item.id : item;
+                const selected_item = idOnly ? item.id : item;
+                item.type === "file" ? datasets.push(selected_item) : folders.push(selected_item);
             });
-            return { datasets: datasets, folders: folder };
+            return { datasets: datasets, folders: folders };
         },
         importToHistoryModal: function (isCollection) {
             this.findCheckedItems(!isCollection).then(({ datasets, folders }) => {

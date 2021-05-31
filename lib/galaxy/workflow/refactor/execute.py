@@ -67,7 +67,7 @@ class WorkflowRefactorExecutor:
             # the workflow state out of sync. It is fine if you're just executing one
             # action at a time or just performing actions that use raw_workflow_description.
             action_type = action.action_type
-            refactor_method_name = "_apply_%s" % action_type
+            refactor_method_name = f"_apply_{action_type}"
             refactor_method = getattr(self, refactor_method_name, None)
             if refactor_method is None:
                 raise RequestParameterInvalidException(

@@ -63,7 +63,7 @@ def dataset_collection_description(**kwargs):
     if discover_via == "tool_provided_metadata":
         for key in ["pattern", "sort_by"]:
             if kwargs.get(key):
-                raise Exception("Cannot specify attribute [%s] if from_provided_metadata is True" % key)
+                raise Exception(f"Cannot specify attribute [{key}] if from_provided_metadata is True")
         return ToolProvidedMetadataDatasetCollection(**kwargs)
     else:
         return FilePatternDatasetCollectionDescription(**kwargs)

@@ -227,15 +227,20 @@ def parse_port_text(port_text):
     >>> slurm_ports = parse_port_text("8888/tcp -> 0.0.0.0:32769")
     >>> slurm_ports[8888]['host']
     '0.0.0.0'
+    >>> ports = parse_port_text("5432/tcp -> :::5432")
     """
     ports = None
     if port_text is not None:
         ports = {}
         for line in port_text.strip().split('\n'):
             if " -> " not in line:
-                raise Exception("Cannot parse host and port from line [%s]" % line)
+                raise Exception(f"Cannot parse host and port from line [{line}]")
             tool, host = line.split(" -> ", 1)
-            hostname, port = host.split(':')
+            hostname, port = host.rsplit(':', 1)
+            if hostname == '::':
+                # Skip unspecified IPv6 address, which is also specified as 0:0:0:0 in another line.
+                # This is brittle of course, but so is parsing the container ports like this.
+                continue
             port = int(port)
             tool_p, tool_prot = tool.split("/")
             tool_p = int(tool_p)
