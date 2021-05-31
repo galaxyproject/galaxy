@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div v-if="imageUrl" class="w-50 p-2 float-left">
+        <div v-if="imageUrl" class="w-100 p-2">
             <b-card nobody body-class="p-1">
                 <b-img :src="imageUrl" fluid />
             </b-card>
