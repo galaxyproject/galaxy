@@ -32,7 +32,7 @@ def main():
 			c.create_time(20)
 		else:
 			print("Creating a frame every 1%: " + str(video_length_seconds * .01) + " seconds")
-			c.create_time(video_length_seconds * .01)
+			c.create_time(int(video_length_seconds * .01))
 	else:
 		if video_length_seconds < 300:
 			print("Creating a frame per 10 seconds")
