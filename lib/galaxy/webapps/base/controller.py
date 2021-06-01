@@ -211,7 +211,7 @@ class BaseAPIController(BaseController):
                 invalid.append(item)
         for item in util.listify(payload.get('in_groups', [])):
             try:
-                new_in_groups.append(get_id(item, trans.app.model.Group, trans.app.model.Group.table.c.name))
+                new_in_groups.append(get_id(item, trans.app.model.Group, trans.app.model.Group.name))
             except Exception:
                 invalid.append(item)
         if invalid:

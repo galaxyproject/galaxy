@@ -52,10 +52,10 @@ class GalaxyRBACAgent(RBACAgent):
         non-private, non-sharing roles
         """
         return trans.sa_session.query(trans.app.model.Role) \
-                    .filter(and_(self.model.Role.table.c.deleted == false(),
-                        self.model.Role.table.c.type != self.model.Role.types.PRIVATE,
-                        self.model.Role.table.c.type != self.model.Role.types.SHARING)) \
-                    .order_by(self.model.Role.table.c.name)
+                    .filter(and_(self.model.Role.deleted == false(),
+                        self.model.Role.type != self.model.Role.types.PRIVATE,
+                        self.model.Role.type != self.model.Role.types.SHARING)) \
+                    .order_by(self.model.Role.name)
 
     def get_all_roles(self, trans, cntrller):
         admin_controller = cntrller in ['library_admin']
@@ -65,8 +65,8 @@ class GalaxyRBACAgent(RBACAgent):
         if admin_controller:
             # The library is public and the user is an admin, so all roles are legitimate
             for role in trans.sa_session.query(trans.app.model.Role) \
-                                        .filter(self.model.Role.table.c.deleted == false()) \
-                                        .order_by(self.model.Role.table.c.name):
+                                        .filter(self.model.Role.deleted == false()) \
+                                        .order_by(self.model.Role.name):
                 roles.add(role)
         else:
             # Add the current user's private role
@@ -124,18 +124,18 @@ class GalaxyRBACAgent(RBACAgent):
         # Admins can always choose from all non-deleted roles
         if trans.user_is_admin or trans.app.config.expose_user_email:
             if trans.user_is_admin:
-                db_query = trans.sa_session.query(trans.app.model.Role).filter(self.model.Role.table.c.deleted == false())
+                db_query = trans.sa_session.query(trans.app.model.Role).filter(self.model.Role.deleted == false())
             else:
                 # User is not an admin but the configuration exposes all private roles to all users.
                 db_query = trans.sa_session.query(trans.app.model.Role) \
-                    .filter(and_(self.model.Role.table.c.deleted == false(),
-                                 self.model.Role.table.c.type == self.model.Role.types.PRIVATE))
+                    .filter(and_(self.model.Role.deleted == false(),
+                                 self.model.Role.type == self.model.Role.types.PRIVATE))
             if search_query:
-                db_query = db_query.filter(self.model.Role.table.c.name.like(search_query, escape='/'))
+                db_query = db_query.filter(self.model.Role.name.like(search_query, escape='/'))
             total_count = db_query.count()
             if limit is not None:
                 # Takes the least number of results from beginning that includes the requested page
-                roles = db_query.order_by(self.model.Role.table.c.name).limit(limit).all()
+                roles = db_query.order_by(self.model.Role.name).limit(limit).all()
                 page_start = (page * page_limit) - page_limit
                 page_end = page_start + page_limit
                 if total_count < page_start + 1:
@@ -144,7 +144,7 @@ class GalaxyRBACAgent(RBACAgent):
                 else:
                     roles = roles[page_start:page_end]
             else:
-                roles = db_query.order_by(self.model.Role.table.c.name)
+                roles = db_query.order_by(self.model.Role.name)
         # Non-admin and public item
         elif is_public_item:
             # Add the current user's private role
@@ -676,8 +676,8 @@ class GalaxyRBACAgent(RBACAgent):
     def get_private_user_role(self, user, auto_create=False):
         role = self.sa_session.query(self.model.Role) \
                               .filter(and_(self.model.UserRoleAssociation.table.c.user_id == user.id,
-                                           self.model.Role.table.c.id == self.model.UserRoleAssociation.table.c.role_id,
-                                           self.model.Role.table.c.type == self.model.Role.types.PRIVATE)) \
+                                           self.model.Role.id == self.model.UserRoleAssociation.table.c.role_id,
+                                           self.model.Role.type == self.model.Role.types.PRIVATE)) \
                               .one_or_none()
         if not role:
             if auto_create:
@@ -690,8 +690,8 @@ class GalaxyRBACAgent(RBACAgent):
         type = type or self.model.Role.types.SYSTEM
         # will raise exception if not found
         return self.sa_session.query(self.model.Role) \
-            .filter(and_(self.model.Role.table.c.name == name,
-                     self.model.Role.table.c.type == type)) \
+            .filter(and_(self.model.Role.name == name,
+                     self.model.Role.type == type)) \
             .one()
 
     def create_role(self, name, description, in_users, in_groups, create_group_for_role=False, type=None):
@@ -718,8 +718,8 @@ class GalaxyRBACAgent(RBACAgent):
 
     def get_sharing_roles(self, user):
         return self.sa_session.query(self.model.Role) \
-                              .filter(and_((self.model.Role.table.c.name).like(f"Sharing role for: %{user.email}%"),
-                                           self.model.Role.table.c.type == self.model.Role.types.SHARING))
+                              .filter(and_((self.model.Role.name).like(f"Sharing role for: %{user.email}%"),
+                                           self.model.Role.type == self.model.Role.types.SHARING))
 
     def user_set_default_permissions(self, user, permissions=None, history=False, dataset=False, bypass_manage_permission=False, default_access_private=False):
         # bypass_manage_permission is used to change permissions of datasets in a userless history when logging in

@@ -36,7 +36,6 @@ from sqlalchemy.ext.orderinglist import ordering_list
 from sqlalchemy.orm import backref, class_mapper, column_property, deferred, object_session, relation
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.sql import exists
-from sqlalchemy.types import BigInteger
 
 from galaxy import model
 from galaxy.model import mapper_registry
@@ -58,17 +57,6 @@ log = logging.getLogger(__name__)
 
 metadata = mapper_registry.metadata
 
-
-model.WorkerProcess.table = Table(
-    'worker_process',
-    metadata,
-    Column("id", Integer, primary_key=True),
-    Column("server_name", String(255), index=True),
-    Column("hostname", String(255)),
-    Column("pid", Integer),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    UniqueConstraint('server_name', 'hostname'),
-)
 
 model.User.table = Table(
     "galaxy_user", metadata,
@@ -105,37 +93,6 @@ model.UserAddress.table = Table(
     Column("phone", TrimmedString(255)),
     Column("deleted", Boolean, index=True, default=False),
     Column("purged", Boolean, index=True, default=False))
-
-model.PSAAssociation.table = Table(
-    "psa_association", metadata,
-    Column('id', Integer, primary_key=True),
-    Column('server_url', VARCHAR(255)),
-    Column('handle', VARCHAR(255)),
-    Column('secret', VARCHAR(255)),
-    Column('issued', Integer),
-    Column('lifetime', Integer),
-    Column('assoc_type', VARCHAR(64)))
-
-model.PSACode.table = Table(
-    "psa_code", metadata,
-    Column('id', Integer, primary_key=True),
-    Column('email', VARCHAR(200)),
-    Column('code', VARCHAR(32)))
-
-model.PSANonce.table = Table(
-    "psa_nonce", metadata,
-    Column('id', Integer, primary_key=True),
-    Column('server_url', VARCHAR(255)),
-    Column('timestamp', Integer),
-    Column('salt', VARCHAR(40)))
-
-model.PSAPartial.table = Table(
-    "psa_partial", metadata,
-    Column('id', Integer, primary_key=True),
-    Column('token', VARCHAR(32)),
-    Column('data', TEXT),
-    Column('next_step', Integer),
-    Column('backend', VARCHAR(32)))
 
 model.UserAuthnzToken.table = Table(
     "oidc_user_authnz_tokens", metadata,
@@ -350,14 +307,6 @@ model.ImplicitlyConvertedDatasetAssociation.table = Table(
     Column("metadata_safe", Boolean, index=True, default=True),
     Column("type", TrimmedString(255)))
 
-model.Group.table = Table(
-    "galaxy_group", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("name", String(255), index=True, unique=True),
-    Column("deleted", Boolean, index=True, default=False))
-
 model.UserGroupAssociation.table = Table(
     "user_group_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -382,16 +331,6 @@ model.GroupRoleAssociation.table = Table(
     Column("create_time", DateTime, default=now),
     Column("update_time", DateTime, default=now, onupdate=now))
 
-model.Role.table = Table(
-    "role", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("name", String(255), index=True, unique=True),
-    Column("description", TEXT),
-    Column("type", String(40), index=True),
-    Column("deleted", Boolean, index=True, default=False))
-
 model.UserQuotaAssociation.table = Table(
     "user_quota_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -407,17 +346,6 @@ model.GroupQuotaAssociation.table = Table(
     Column("quota_id", Integer, ForeignKey("quota.id"), index=True),
     Column("create_time", DateTime, default=now),
     Column("update_time", DateTime, default=now, onupdate=now))
-
-model.Quota.table = Table(
-    "quota", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("name", String(255), index=True, unique=True),
-    Column("description", TEXT),
-    Column("bytes", BigInteger),
-    Column("operation", String(8)),
-    Column("deleted", Boolean, index=True, default=False))
 
 model.DefaultQuotaAssociation.table = Table(
     "default_quota_association", metadata,
@@ -1666,9 +1594,6 @@ def simple_mapping(model, **kwds):
     mapper_registry.map_imperatively(model, model.table, properties=kwds)
 
 
-simple_mapping(model.WorkerProcess)
-
-
 # User tables.
 mapper_registry.map_imperatively(model.UserPreference, model.UserPreference.table, properties={})
 mapper_registry.map_imperatively(model.UserAction, model.UserAction.table, properties=dict(
@@ -1701,14 +1626,6 @@ mapper_registry.map_imperatively(model.UserAddress, model.UserAddress.table, pro
         backref='addresses',
         order_by=desc(model.UserAddress.table.c.update_time)),
 ))
-
-mapper_registry.map_imperatively(model.PSAAssociation, model.PSAAssociation.table, properties=None)
-
-mapper_registry.map_imperatively(model.PSACode, model.PSACode.table, properties=None)
-
-mapper_registry.map_imperatively(model.PSANonce, model.PSANonce.table, properties=None)
-
-mapper_registry.map_imperatively(model.PSAPartial, model.PSAPartial.table, properties=None)
 
 mapper_registry.map_imperatively(model.UserAuthnzToken, model.UserAuthnzToken.table, properties=dict(
     user=relation(model.User,
@@ -1945,8 +1862,6 @@ mapper_registry.map_imperatively(model.PasswordResetToken, model.PasswordResetTo
 # <user_obj>.preferences[pref_name] = pref_value
 model.User.preferences = association_proxy('_preferences', 'value', creator=model.UserPreference)  # type: ignore
 
-mapper_registry.map_imperatively(model.Group, model.Group.table)
-
 mapper_registry.map_imperatively(model.UserGroupAssociation, model.UserGroupAssociation.table, properties=dict(
     user=relation(model.User, backref="groups"),
     group=relation(model.Group, backref="users")
@@ -1962,8 +1877,6 @@ mapper_registry.map_imperatively(model.DefaultHistoryPermissions, model.DefaultH
     role=relation(model.Role)
 ))
 
-mapper_registry.map_imperatively(model.Role, model.Role.table)
-
 mapper_registry.map_imperatively(model.UserRoleAssociation, model.UserRoleAssociation.table, properties=dict(
     user=relation(model.User, backref="roles"),
     role=relation(model.Role, backref="users"),
@@ -1973,8 +1886,8 @@ mapper_registry.map_imperatively(model.UserRoleAssociation, model.UserRoleAssoci
         viewonly=True,
         primaryjoin=(
             (model.User.table.c.id == model.UserRoleAssociation.table.c.user_id)
-            & (model.UserRoleAssociation.table.c.role_id == model.Role.table.c.id)
-            & not_(model.Role.table.c.name == model.User.table.c.email))
+            & (model.UserRoleAssociation.table.c.role_id == model.Role.id)
+            & not_(model.Role.name == model.User.table.c.email))
     )
 ))
 
@@ -1982,8 +1895,6 @@ mapper_registry.map_imperatively(model.GroupRoleAssociation, model.GroupRoleAsso
     group=relation(model.Group, backref="roles"),
     role=relation(model.Role, backref="groups")
 ))
-
-mapper_registry.map_imperatively(model.Quota, model.Quota.table)
 
 mapper_registry.map_imperatively(model.UserQuotaAssociation, model.UserQuotaAssociation.table, properties=dict(
     user=relation(model.User, backref="quotas"),

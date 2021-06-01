@@ -33,17 +33,27 @@ from social_core.storage import AssociationMixin, CodeMixin, NonceMixin, Partial
 from sqlalchemy import (
     alias,
     and_,
+    BigInteger,
+    Boolean,
+    Column,
+    DateTime,
     func,
     inspect,
+    Integer,
     join,
     not_,
     or_,
     select,
+    String,
+    TEXT,
     text,
     true,
     tuple_,
     type_coerce,
-    types)
+    types,
+    UniqueConstraint,
+    VARCHAR,
+)
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext import hybrid
 from sqlalchemy.orm import (
@@ -54,7 +64,7 @@ from sqlalchemy.orm import (
     reconstructor,
     registry,
 )
-from sqlalchemy.schema import UniqueConstraint
+from sqlalchemy.orm.decl_api import DeclarativeMeta
 
 import galaxy.exceptions
 import galaxy.model.metadata
@@ -63,6 +73,7 @@ import galaxy.model.tags
 import galaxy.security.passwords
 import galaxy.util
 from galaxy.model.item_attrs import get_item_annotation_str, UsesAnnotations
+from galaxy.model.orm.now import now
 from galaxy.security import get_permitted_actions
 from galaxy.security.validate_user_input import validate_password_str
 from galaxy.util import (
@@ -109,6 +120,16 @@ if TYPE_CHECKING:
 
 else:
     _HasTable = object
+
+
+class Base(metaclass=DeclarativeMeta):
+    __abstract__ = True
+    registry = mapper_registry
+    metadata = mapper_registry.metadata
+
+    @classmethod
+    def __declare_last__(cls):
+        cls.table = cls.__table__
 
 
 class RepresentById(_HasTable):
@@ -255,7 +276,17 @@ class UsesCreateAndUpdateTime:
         return (galaxy.model.orm.now.now() - create_time).total_seconds()
 
 
-class WorkerProcess(UsesCreateAndUpdateTime, _HasTable):
+class WorkerProcess(Base, UsesCreateAndUpdateTime, _HasTable):
+    __tablename__ = 'worker_process'
+    __table_args__ = (
+        UniqueConstraint('server_name', 'hostname'),
+    )
+
+    id = Column("id", Integer, primary_key=True)
+    server_name = Column("server_name", String(255), index=True)
+    hostname = Column("hostname", String(255))
+    pid = Column("pid", Integer)
+    update_time = Column("update_time", DateTime, default=now, onupdate=now)
 
     def __init__(self, server_name, hostname):
         self.server_name = server_name
@@ -1836,7 +1867,15 @@ class DeferredJob(RepresentById):
             return False
 
 
-class Group(Dictifiable, RepresentById):
+class Group(Base, Dictifiable, RepresentById):
+    __tablename__ = 'galaxy_group'
+
+    id = Column("id", Integer, primary_key=True)
+    create_time = Column("create_time", DateTime, default=now)
+    update_time = Column("update_time", DateTime, default=now, onupdate=now)
+    name = Column("name", String(255), index=True, unique=True)
+    deleted = Column("deleted", Boolean, index=True, default=False)
+
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name']
 
@@ -2295,7 +2334,16 @@ class GroupRoleAssociation(RepresentById):
         self.role = role
 
 
-class Role(Dictifiable, RepresentById):
+class Role(Base, Dictifiable, RepresentById):
+    __tablename__ = 'role'
+    id = Column('id', Integer, primary_key=True)
+    create_time = Column('create_time', DateTime, default=now)
+    update_time = Column('update_time', DateTime, default=now, onupdate=now)
+    name = Column('name', String(255), index=True, unique=True)
+    description = Column('description', TEXT)
+    type = Column('type', String(40), index=True)
+    deleted = Column('deleted', Boolean, index=True, default=False)
+
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name', 'description', 'type']
     private_id = None
@@ -2307,7 +2355,7 @@ class Role(Dictifiable, RepresentById):
         ADMIN = 'admin'
         SHARING = 'sharing'
 
-    def __init__(self, name="", description="", type="system", deleted=False):
+    def __init__(self, name=None, description=None, type=types.SYSTEM, deleted=False):
         self.name = name
         self.description = description
         self.type = type
@@ -2330,12 +2378,23 @@ class GroupQuotaAssociation(Dictifiable, RepresentById):
         self.quota = quota
 
 
-class Quota(Dictifiable, RepresentById):
+class Quota(Base, Dictifiable, RepresentById):
+    __tablename__ = 'quota'
+
+    id = Column('id', Integer, primary_key=True)
+    create_time = Column('create_time', DateTime, default=now)
+    update_time = Column('update_time', DateTime, default=now, onupdate=now)
+    name = Column('name', String(255), index=True, unique=True)
+    description = Column('description', TEXT)
+    bytes = Column('bytes', BigInteger)
+    operation = Column('operation', String(8))
+    deleted = Column('deleted', Boolean, index=True, default=False)
+
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name', 'description', 'bytes', 'operation', 'display_amount', 'default', 'users', 'groups']
     valid_operations = ('+', '-', '=')
 
-    def __init__(self, name="", description="", amount=0, operation="="):
+    def __init__(self, name=None, description=None, amount=0, operation='='):
         self.name = name
         self.description = description
         if amount is None:
@@ -2364,7 +2423,7 @@ class Quota(Dictifiable, RepresentById):
             return galaxy.util.nice_size(self.bytes)
 
 
-class DefaultQuotaAssociation(Quota, Dictifiable, RepresentById):
+class DefaultQuotaAssociation(Dictifiable, RepresentById):
     dict_element_visible_keys = ['type']
 
     class types(str, Enum):
@@ -6039,7 +6098,16 @@ class UserAddress(RepresentById):
                 'phone': sanitize_html(self.phone)}
 
 
-class PSAAssociation(AssociationMixin, RepresentById):
+class PSAAssociation(Base, AssociationMixin, RepresentById):
+    __tablename__ = 'psa_association'
+
+    id = Column('id', Integer, primary_key=True)
+    server_url = Column('server_url', VARCHAR(255))
+    handle = Column('handle', VARCHAR(255))
+    secret = Column('secret', VARCHAR(255))
+    issued = Column('issued', Integer)
+    lifetime = Column('lifetime', Integer)
+    assoc_type = Column('assoc_type', VARCHAR(64))
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None
@@ -6078,8 +6146,15 @@ class PSAAssociation(AssociationMixin, RepresentById):
         cls.sa_session.query(cls).filter(cls.id.in_(ids_to_delete)).delete(synchronize_session='fetch')
 
 
-class PSACode(CodeMixin, RepresentById):
-    __table_args__ = (UniqueConstraint('code', 'email'),)
+class PSACode(Base, CodeMixin, RepresentById):
+    __tablename__ = 'psa_code'
+    __table_args__ = (
+        UniqueConstraint('code', 'email'),
+    )
+
+    id = Column('id', Integer, primary_key=True)
+    email = Column('email', VARCHAR(200))
+    code = Column('code', VARCHAR(32))
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None
@@ -6097,7 +6172,13 @@ class PSACode(CodeMixin, RepresentById):
         return cls.sa_session.query(cls).filter(cls.code == code).first()
 
 
-class PSANonce(NonceMixin, RepresentById):
+class PSANonce(Base, NonceMixin, RepresentById):
+    __tablename__ = 'psa_nonce'
+
+    id = Column('id', Integer, primary_key=True)
+    server_url = Column('server_url', VARCHAR(255))
+    timestamp = Column('timestamp', Integer)
+    salt = Column('salt', VARCHAR(40))
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None
@@ -6122,7 +6203,14 @@ class PSANonce(NonceMixin, RepresentById):
             return instance
 
 
-class PSAPartial(PartialMixin, RepresentById):
+class PSAPartial(Base, PartialMixin, RepresentById):
+    __tablename__ = 'psa_partial'
+
+    id = Column('id', Integer, primary_key=True)
+    token = Column('token', VARCHAR(32))
+    data = Column('data', TEXT)
+    next_step = Column('next_step', Integer)
+    backend = Column('backend', VARCHAR(32))
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None

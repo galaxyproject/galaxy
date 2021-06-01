@@ -85,7 +85,7 @@ class RoleManager(base.ModelManager):
 
     def list_displayable_roles(self, trans: ProvidesUserContext):
         roles = []
-        for role in trans.sa_session.query(Role).filter(Role.table.c.deleted == false()):
+        for role in trans.sa_session.query(Role).filter(Role.deleted == false()):
             if trans.user_is_admin or trans.app.security_agent.ok_to_display(trans.user, role):
                 roles.append(role)
         return roles
@@ -96,7 +96,7 @@ class RoleManager(base.ModelManager):
         user_ids = role_definition_model.user_ids or []
         group_ids = role_definition_model.group_ids or []
 
-        if trans.sa_session.query(Role).filter(Role.table.c.name == name).first():
+        if trans.sa_session.query(Role).filter(Role.name == name).first():
             raise RequestParameterInvalidException(f"A role with that name already exists [{name}]")
 
         role_type = Role.types.ADMIN  # TODO: allow non-admins to create roles
