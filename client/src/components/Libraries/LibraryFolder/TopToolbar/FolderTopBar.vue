@@ -271,7 +271,11 @@ export default {
         async getSelected() {
             if (this.isAllSelectedMode) {
                 this.$emit("setBusy", true);
-                const selected = await this.services.getFilteredFolderContents(this.folder_id, this.unselected, this.$parent.search_text);
+                const selected = await this.services.getFilteredFolderContents(
+                    this.folder_id,
+                    this.unselected,
+                    this.$parent.search_text
+                );
                 this.$emit("setBusy", false);
                 return selected;
             } else {
