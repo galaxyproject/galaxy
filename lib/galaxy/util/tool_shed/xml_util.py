@@ -69,13 +69,13 @@ def parse_xml(file_name, check_exists=True):
     """Returns a parsed xml tree with comments intact."""
     error_message = ''
     if check_exists and not os.path.exists(file_name):
-        return None, "File does not exist %s" % str(file_name)
+        return None, f"File does not exist {str(file_name)}"
     try:
         tree = galaxy_parse_xml(file_name, remove_comments=False, strip_whitespace=False)
     except OSError:
         raise
     except Exception as e:
-        error_message = "Exception attempting to parse {}: {}".format(str(file_name), unicodify(e))
+        error_message = f"Exception attempting to parse {str(file_name)}: {unicodify(e)}"
         log.exception(error_message)
         return None, error_message
     return tree, error_message

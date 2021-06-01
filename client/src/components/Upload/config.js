@@ -12,6 +12,7 @@ export function initializeUploadDefaults(propsData = {}) {
         ftpUploadSite: Galaxy.config.ftp_upload_site,
         defaultGenome: Galaxy.config.default_genome,
         defaultExtension: Galaxy.config.default_extension,
+        selectable: false,
     };
     return Object.assign({}, defaults, propsData);
 }

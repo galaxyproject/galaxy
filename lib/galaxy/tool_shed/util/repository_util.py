@@ -36,7 +36,7 @@ def check_for_updates(app, model, repository_id=None):
             if ok:
                 success_count += 1
             else:
-                repository_names_not_updated.append('<b>%s</b>' % escape(str(repository.name)))
+                repository_names_not_updated.append(f'<b>{escape(str(repository.name))}</b>')
             if updated:
                 updated_count += 1
         message = "Checked the status in the tool shed for %d repositories.  " % success_count
@@ -50,11 +50,11 @@ def check_for_updates(app, model, repository_id=None):
             check_or_update_tool_shed_status_for_installed_repository(app, repository)
         if ok:
             if updated:
-                message = "The tool shed status for repository <b>%s</b> has been updated." % escape(str(repository.name))
+                message = f"The tool shed status for repository <b>{escape(str(repository.name))}</b> has been updated."
             else:
-                message = "The status has not changed in the tool shed for repository <b>%s</b>." % escape(str(repository.name))
+                message = f"The status has not changed in the tool shed for repository <b>{escape(str(repository.name))}</b>."
         else:
-            message = "Unable to retrieve status from the tool shed for repository <b>%s</b>." % escape(str(repository.name))
+            message = f"Unable to retrieve status from the tool shed for repository <b>{escape(str(repository.name))}</b>."
             status = 'error'
     return message, status
 
@@ -284,7 +284,7 @@ def get_repo_info_tuple_contents(repo_info_tuple):
 
 
 def get_repository_admin_role_name(repository_name, repository_owner):
-    return '{}_{}_admin'.format(str(repository_name), str(repository_owner))
+    return f'{str(repository_name)}_{str(repository_owner)}_admin'
 
 
 def get_repository_and_repository_dependencies_from_repo_info_dict(app, repo_info_dict):

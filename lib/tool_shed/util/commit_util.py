@@ -1,5 +1,6 @@
 import bz2
 import gzip
+import json
 import logging
 import os
 import shutil
@@ -71,7 +72,8 @@ def check_file_contents_for_email_alerts(app):
     admin_users = app.config.get("admin_users", "").split(",")
     for repository in sa_session.query(app.model.Repository) \
                                 .filter(app.model.Repository.table.c.email_alerts != null()):
-        for user_email in repository.email_alerts:
+        email_alerts = json.loads(repository.email_alerts)
+        for user_email in email_alerts:
             if user_email in admin_users:
                 return True
     return False
@@ -80,9 +82,9 @@ def check_file_contents_for_email_alerts(app):
 def check_file_content_for_html_and_images(file_path):
     message = ''
     if checkers.check_html(file_path):
-        message = 'The file "%s" contains HTML content.\n' % str(file_path)
+        message = f'The file "{str(file_path)}" contains HTML content.\n'
     elif checkers.check_image(file_path):
-        message = 'The file "%s" contains image content.\n' % str(file_path)
+        message = f'The file "{str(file_path)}" contains image content.\n'
     return message
 
 
@@ -177,7 +179,7 @@ def handle_directory_changes(app, host, username, repository, full_path, filenam
             try:
                 hg_util.remove_file(repo_path, repo_file, force=True)
             except Exception as e:
-                log.debug("Error removing files using the mercurial API, so trying a different approach, the error was: %s" % str(e))
+                log.debug(f"Error removing files using the mercurial API, so trying a different approach, the error was: {str(e)}")
                 relative_selected_file = repo_file.split('repo_%d' % repository.id)[1].lstrip('/')
                 repo.dirstate.remove(relative_selected_file)
                 repo.dirstate.write()

@@ -60,7 +60,7 @@ def get_mercurial_default_options_dict(command):
     if type(possible) is tuple:
         possible = possible[0]
     if len(possible) != 1:
-        raise Exception('unable to find mercurial command "%s"' % command)
+        raise Exception(f'unable to find mercurial command "{command}"')
     return {r[1].replace(b'-', b'_'): r[2] for r in next(iter(possible.values()))[1][1]}
 
 
@@ -314,7 +314,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         if user_id:
             user = suc.get_user(trans.app, user_id)
             trailing_string = ''
-            default = 'Repositories Owned by %s' % str(user.username)
+            default = f'Repositories Owned by {str(user.username)}'
         else:
             trailing_string = ''
             default = 'Repositories'
@@ -371,7 +371,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                         repository = repository_util.get_repository_in_tool_shed(trans.app, repository_id)
                         user_id = trans.security.encode_id(repository.user.id)
                         user = suc.get_user(trans.app, user_id)
-                        self.repositories_by_user_grid.title = "Repositories owned by %s" % user.username
+                        self.repositories_by_user_grid.title = f"Repositories owned by {user.username}"
                         kwd['user_id'] = user_id
                         return self.repositories_by_user_grid(trans, **kwd)
         selected_changeset_revision, repository = suc.get_repository_from_refresh_on_change(trans.app, **kwd)
@@ -385,7 +385,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         if category_id:
             category = suc.get_category(trans.app, category_id)
             if category:
-                trailing_string = 'in Category %s' % str(category.name)
+                trailing_string = f'in Category {str(category.name)}'
             else:
                 trailing_string = 'in Category'
         else:
@@ -623,7 +623,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                           changeset_revision=changeset_revision)
             pathspec = ['admin_toolshed', 'update_to_changeset_revision']
         else:
-            message = 'Unable to check for updates due to an invalid Galaxy URL: <b>%s</b>.  ' % galaxy_url
+            message = f'Unable to check for updates due to an invalid Galaxy URL: <b>{galaxy_url}</b>.  '
             message += 'You may need to enable third-party cookies in your browser.  '
             return trans.show_error_message(message)
         if changeset_revision == repository.tip():
@@ -741,7 +741,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 string.Template(template).safe_substitute(selected_repositories=repository_string)
             docker_image_string = docker_image_template
             trans.response.set_content_type('application/text/plain')
-            trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % docker_file_name
+            trans.response.headers["Content-Disposition"] = f'attachment; filename="{docker_file_name}"'
             opened_file = open(docker_file_path, "w")
             opened_file.write(docker_image_string)
             opened_file.close()
@@ -829,11 +829,11 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         if mark_deprecated:
             # Update the repository registry.
             trans.app.repository_registry.remove_entry(repository)
-            message = 'The repository <b>%s</b> has been marked as deprecated.' % escape(repository.name)
+            message = f'The repository <b>{escape(repository.name)}</b> has been marked as deprecated.'
         else:
             # Update the repository registry.
             trans.app.repository_registry.add_entry(repository)
-            message = 'The repository <b>%s</b> has been marked as not deprecated.' % escape(repository.name)
+            message = f'The repository <b>{escape(repository.name)}</b> has been marked as not deprecated.'
         trans.response.send_redirect(web.url_for(controller='repository',
                                                  action='browse_repositories',
                                                  operation='repositories_i_own',
@@ -899,7 +899,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                                        message=message,
                                        status=status)
         except Exception as e:
-            message = "Error displaying tool, probably due to a problem in the tool config.  The exception is: %s." % util.unicodify(e)
+            message = f"Error displaying tool, probably due to a problem in the tool config.  The exception is: {util.unicodify(e)}."
         if trans.webapp.name == 'galaxy' or render_repository_actions_for == 'galaxy':
             return trans.response.send_redirect(web.url_for(controller='repository',
                                                             action='preview_tools_in_changeset',
@@ -1546,7 +1546,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             url = util.build_url(galaxy_url, pathspec=pathspec, params=params)
             return trans.response.send_redirect(url)
         else:
-            message = 'Repository installation is not possible due to an invalid Galaxy URL: <b>%s</b>.  ' % galaxy_url
+            message = f'Repository installation is not possible due to an invalid Galaxy URL: <b>{galaxy_url}</b>.  '
             message += 'You may need to enable third-party cookies in your browser.  '
             status = 'error'
             return trans.response.send_redirect(web.url_for(controller='repository',
@@ -1590,7 +1590,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                                        message=message,
                                        status='error')
         except Exception as e:
-            message = "Exception thrown attempting to display tool: %s." % util.unicodify(e)
+            message = f"Exception thrown attempting to display tool: {util.unicodify(e)}."
         if trans.webapp.name == 'galaxy':
             return trans.response.send_redirect(web.url_for(controller='repository',
                                                             action='preview_tools_in_changeset',
@@ -1658,6 +1658,10 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         alerts = kwd.get('alerts', '')
         alerts_checked = CheckboxField.is_checked(alerts)
         category_ids = util.listify(kwd.get('category_id', ''))
+        if repository.email_alerts:
+            email_alerts = json.loads(repository.email_alerts)
+        else:
+            email_alerts = []
         allow_push = kwd.get('allow_push', '')
         error = False
         user = trans.user
@@ -1710,12 +1714,14 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         elif kwd.get('receive_email_alerts_button', False):
             flush_needed = False
             if alerts_checked:
-                if user.email not in repository.email_alerts:
-                    repository.email_alerts.append(user.email)
+                if user.email not in email_alerts:
+                    email_alerts.append(user.email)
+                    repository.email_alerts = json.dumps(email_alerts)
                     flush_needed = True
             else:
-                if user.email in repository.email_alerts:
-                    repository.email_alerts.remove(user.email)
+                if user.email in email_alerts:
+                    email_alerts.remove(user.email)
+                    repository.email_alerts = json.dumps(email_alerts)
                     flush_needed = True
             if flush_needed:
                 trans.sa_session.add(repository)
@@ -1737,7 +1743,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         for obj in options:
             label = obj.username
             allow_push_select_field.add_option(label, trans.security.encode_id(obj.id))
-        checked = alerts_checked or user.email in repository.email_alerts
+        checked = alerts_checked or user.email in email_alerts
         alerts_check_box = CheckboxField('alerts', value=checked)
         changeset_revision_select_field = grids_util.build_changeset_revision_select_field(trans,
                                                                                            repository,
@@ -2235,14 +2241,14 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                                  email=trans.user.email,
                                  message=message,
                                  host=host)
-            subject = "Regarding your tool shed repository named %s" % repository.name
+            subject = f"Regarding your tool shed repository named {repository.name}"
             # Send it
             try:
                 util.send_mail(from_address, to_address, subject, body, trans.app.config)
                 message = "Your message has been sent"
                 status = "done"
             except Exception as e:
-                message = "An error occurred sending your message by email: %s" % util.unicodify(e)
+                message = f"An error occurred sending your message by email: {util.unicodify(e)}"
                 status = "error"
         else:
             # Do all we can to eliminate spam.
@@ -2267,14 +2273,19 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             flush_needed = False
             for repository_id in repository_ids:
                 repository = repository_util.get_repository_in_tool_shed(trans.app, repository_id)
-                email_alerts = repository.email_alerts
+                if repository.email_alerts:
+                    email_alerts = json.loads(repository.email_alerts)
+                else:
+                    email_alerts = []
                 if user.email in email_alerts:
                     email_alerts.remove(user.email)
+                    repository.email_alerts = json.dumps(email_alerts)
                     trans.sa_session.add(repository)
                     flush_needed = True
                     total_alerts_removed += 1
                 else:
                     email_alerts.append(user.email)
+                    repository.email_alerts = json.dumps(email_alerts)
                     trans.sa_session.add(repository)
                     flush_needed = True
                     total_alerts_added += 1
@@ -2347,7 +2358,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 user = None
             if user:
                 user_id = trans.security.encode_id(user.id)
-                message = "This list of repositories owned by <b>{}</b>, does not include one named <b>{}</b>.".format(str(owner), str(name))
+                message = f"This list of repositories owned by <b>{str(owner)}</b>, does not include one named <b>{str(name)}</b>."
                 return trans.response.send_redirect(web.url_for(controller='repository',
                                                                 action='index',
                                                                 user_id=user_id,
@@ -2457,7 +2468,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         repo = repository.hg_repo
         ctx = hg_util.get_changectx_for_changeset(repo, ctx_str)
         if ctx is None:
-            message = "Repository does not include changeset revision '%s'." % str(ctx_str)
+            message = f"Repository does not include changeset revision '{str(ctx_str)}'."
             status = 'error'
             return trans.response.send_redirect(web.url_for(controller='repository',
                                                             action='view_changelog',
@@ -2540,7 +2551,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     return trans.response.send_redirect(web.url_for(controller='repository',
                                                                     action='view_repository',
                                                                     **kwd))
-            return trans.show_error_message("Invalid repository id '%s' received." % repository_id)
+            return trans.show_error_message(f"Invalid repository id '{repository_id}' received.")
         return trans.show_error_message("The repository id was not received.")
 
     @web.expose
@@ -2557,7 +2568,10 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         display_reviews = kwd.get('display_reviews', False)
         alerts = kwd.get('alerts', '')
         alerts_checked = CheckboxField.is_checked(alerts)
-        email_alerts = repository.email_alerts
+        if repository.email_alerts:
+            email_alerts = json.loads(repository.email_alerts)
+        else:
+            email_alerts = []
         repository_dependencies = None
         user = trans.user
         if user and kwd.get('receive_email_alerts_button', False):
@@ -2565,10 +2579,12 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             if alerts_checked:
                 if user.email not in email_alerts:
                     email_alerts.append(user.email)
+                    repository.email_alerts = json.dumps(email_alerts)
                     flush_needed = True
             else:
                 if user.email in email_alerts:
                     email_alerts.remove(user.email)
+                    repository.email_alerts = json.dumps(email_alerts)
                     flush_needed = True
             if flush_needed:
                 trans.sa_session.add(repository)

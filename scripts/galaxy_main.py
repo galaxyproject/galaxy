@@ -129,7 +129,7 @@ def handle_signal(signum, frame):
 
 def register_signals():
     for name in ('TERM', 'INT', 'HUP'):
-        sig = getattr(signal, 'SIG%s' % name)
+        sig = getattr(signal, f'SIG{name}')
         signal.signal(sig, handle_signal)
 
 
@@ -179,7 +179,7 @@ class GalaxyConfigBuilder:
         self.config_file = unicodify(config_file)
         # FIXME: this won't work for non-Paste ini configs
         if self.config_is_ini:
-            self.config_section = "app:%s" % unicodify(kwds.get("app") or (args and args.app) or DEFAULT_INI_APP)
+            self.config_section = f"app:{unicodify(kwds.get('app') or args and args.app or DEFAULT_INI_APP)}"
         else:
             self.config_section = self.app_name
         self.log_file = (args and args.log_file)
@@ -192,7 +192,7 @@ class GalaxyConfigBuilder:
         arg_parser.add_argument("-d", "--daemonize", default=False, help="Daemonize process", action="store_true")
         arg_parser.add_argument("--daemon-log-file", default=None, help="log file for daemon script ")
         arg_parser.add_argument("--log-file", default=None, help="Galaxy log file (overrides log configuration in config_file if set)")
-        arg_parser.add_argument("--pid-file", default=DEFAULT_PID, help="pid file (default is %s)" % DEFAULT_PID)
+        arg_parser.add_argument("--pid-file", default=DEFAULT_PID, help=f"pid file (default is {DEFAULT_PID})")
         arg_parser.add_argument("--server-name", default=None, help="set a galaxy server name")
         arg_parser.add_argument("--attach-to-pool", action="append", default=None, help="attach to asynchronous worker pool (specify multiple times for multiple pools)")
 

@@ -1,9 +1,13 @@
 """
 API operations on the contents of a history.
 """
+import datetime
+import json
 import logging
 import os
 import re
+
+import dateutil.parser
 
 from galaxy import (
     exceptions,
@@ -30,7 +34,6 @@ from galaxy.web import (
     expose_api_raw_anonymous
 )
 from galaxy.webapps.base.controller import (
-    UsesLibraryMixin,
     UsesLibraryMixinItems,
     UsesTagsMixin
 )
@@ -39,7 +42,7 @@ from . import BaseGalaxyAPIController, depends
 log = logging.getLogger(__name__)
 
 
-class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesLibraryMixinItems, UsesTagsMixin):
+class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, UsesTagsMixin):
     hda_manager: hdas.HDAManager = depends(hdas.HDAManager)
     history_manager: histories.HistoryManager = depends(histories.HistoryManager)
     history_contents_manager: history_contents.HistoryContentsManager = depends(history_contents.HistoryContentsManager)
@@ -402,7 +405,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesL
         source = payload.get('source', None)
         if source not in ('library', 'hda'):
             raise exceptions.RequestParameterInvalidException(
-                "'source' must be either 'library' or 'hda': %s" % (source))
+                f"'source' must be either 'library' or 'hda': {source}")
         content = payload.get('content', None)
         if content is None:
             raise exceptions.RequestParameterMissingException("'content' id of lda or hda is missing")
@@ -430,7 +433,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesL
         ld = self.get_library_dataset(trans, content)
         if type(ld) is not trans.app.model.LibraryDataset:
             raise exceptions.RequestParameterInvalidException(
-                "Library content id ( %s ) is not a dataset" % content)
+                f"Library content id ( {content} ) is not a dataset")
         hda = ld.library_dataset_dataset_association.to_history_dataset_association(history, add_to_history=True)
         return hda
 
@@ -472,7 +475,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesL
                     user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
                 rval.append(hda_dict)
         else:
-            message = "Invalid 'source' parameter in request %s" % source
+            message = f"Invalid 'source' parameter in request {source}"
             raise exceptions.RequestParameterInvalidException(message)
 
         trans.sa_session.flush()
@@ -530,16 +533,24 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesL
             content = payload.get('content', None)
             if content is None:
                 raise exceptions.RequestParameterMissingException("'content' id of target to copy is missing")
-            copy_elements = payload.get('copy_elements', False)
+            dbkey = payload.get("dbkey")
+            copy_required = dbkey is not None
+            copy_elements = payload.get('copy_elements', copy_required)
+            if copy_required and not copy_elements:
+                raise exceptions.RequestParameterMissingException("copy_elements passed as 'false' but it is required to change specified attributes")
+            dataset_instance_attributes = {}
+            if dbkey is not None:
+                dataset_instance_attributes["dbkey"] = dbkey
             dataset_collection_instance = service.copy(
                 trans=trans,
                 parent=history,
                 source="hdca",
                 encoded_source_id=content,
                 copy_elements=copy_elements,
+                dataset_instance_attributes=dataset_instance_attributes,
             )
         else:
-            message = "Invalid 'source' parameter in request %s" % source
+            message = f"Invalid 'source' parameter in request {source}"
             raise exceptions.RequestParameterInvalidException(message)
 
         # if the consumer specified keys or view, use the secondary serializer
@@ -809,7 +820,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesL
                                                      user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
 
     def __handle_unknown_contents_type(self, trans, contents_type):
-        raise exceptions.UnknownContentsType('Unknown contents type: %s' % type)
+        raise exceptions.UnknownContentsType(f'Unknown contents type: {type}')
 
     def __index_v2(self, trans, history_id, **kwd):
         """
@@ -1014,7 +1025,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesL
             # ---- for composite files, we use id and name for a directory and, inside that, ...
             if self.hda_manager.is_composite(content):
                 # ...save the 'main' composite file (gen. html)
-                paths_and_files.append((content.file_name, os.path.join(archive_path, content.name + '.html')))
+                paths_and_files.append((content.file_name, os.path.join(archive_path, f"{content.name}.html")))
                 for extra_file in self.hda_manager.extra_files(content):
                     extra_file_basename = os.path.basename(extra_file)
                     archive_extra_file_path = os.path.join(archive_path, extra_file_basename)
@@ -1024,8 +1035,8 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesL
             # ---- for single files, we add the true extension to id and name and store that single filename
             else:
                 # some dataset names can contain their original file extensions, don't repeat
-                if not archive_path.endswith('.' + content.extension):
-                    archive_path += '.' + content.extension
+                if not archive_path.endswith(f".{content.extension}"):
+                    archive_path += f".{content.extension}"
                 paths_and_files.append((content.file_name, archive_path))
 
         # filter the contents that contain datasets using any filters possible from index above and map the datasets
@@ -1050,7 +1061,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesL
         trans.response.headers.update(archive.get_headers())
         return archive.response()
 
-    @expose_api_anonymous
+    @expose_api_raw_anonymous
     def contents_near(self, trans, history_id, hid, limit, **kwd):
         """
         This endpoint provides random access to a large history without having
@@ -1068,6 +1079,20 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesL
         * GET /api/histories/{history_id}/contents/near/{hid}/{limit}
         """
         history = self.history_manager.get_accessible(self.decode_id(history_id), trans.user, current_history=trans.history)
+
+        # while polling, check to see if the history has changed
+        # if it hasn't then we can short-circuit the poll request
+        since = kwd.get('update_time-gt', None)
+        if since:
+            # sqlalchemy DateTime columns are not timezone aware, so parse `since` into timezone-aware
+            # datetime and then convert to naive datetime object representing UTC,
+            # assuming history.update_time represents UTC time.
+            since_date = dateutil.parser.isoparse(since).astimezone(datetime.timezone.utc).replace(tzinfo=None)
+            if history.update_time <= since_date:
+                trans.response.status = 204
+                return
+
+        # parse content params
         filter_params = self._parse_rest_params(kwd)
         serialization_params = self._parse_serialization_params(kwd, 'betawebclient')
         view = serialization_params.pop('view')
@@ -1098,8 +1123,10 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesL
         trans.response.headers['total_matches_down'] = down_count
         trans.response.headers['max_hid'] = max_hid
         trans.response.headers['min_hid'] = min_hid
+        trans.response.headers['history_size'] = str(history.disk_size)
+        trans.response.headers['history_empty'] = json.dumps(history.empty)  # convert to proper bool
 
-        return contents
+        return json.dumps(contents)
 
     # Perform content query and matching count
     def _seek(self, history, filter_params, order_by_string, limit, serialization_params):

@@ -168,7 +168,7 @@ class DockerCLIInterface(DockerInterface):
                     kwopt_list.append('{vol}:{bind}{mode}'.format(
                         vol=hostvol,
                         bind=guestopts['bind'],
-                        mode=':' + mode if mode else ''
+                        mode=f":{mode}" if mode else ''
                     ))
         return self._stringify_kwopt_list(flag, kwopt_list)
 
@@ -198,7 +198,7 @@ class DockerCLIInterface(DockerInterface):
         try:
             return self._run_docker(subcommand='inspect', args=container_id)[0]
         except (IndexError, ContainerCLIError) as exc:
-            msg = "Invalid container id: %s" % container_id
+            msg = f"Invalid container id: {container_id}"
             if exc.stdout == '[]' and exc.stderr == f'Error: no such object: {container_id}':
                 log.warning(msg)
                 return []
@@ -210,7 +210,7 @@ class DockerCLIInterface(DockerInterface):
         try:
             return self._run_docker(subcommand='image inspect', args=image)[0]
         except (IndexError, ContainerCLIError) as exc:
-            msg = "%s not pulled, cannot get digest" % image
+            msg = f"{image} not pulled, cannot get digest"
             if exc.stdout == '[]' and exc.stderr == f'Error: no such image: {image}':
                 log.warning(msg, image)
                 return []
@@ -234,7 +234,7 @@ class DockerAPIClient:
         if isinstance(f, partial):
             f = f.func
         try:
-            return getattr(f, '__qualname__', f.im_class.__name__ + '.' + f.__name__)
+            return getattr(f, '__qualname__', f"{f.im_class.__name__}.{f.__name__}")
         except AttributeError:
             return f.__name__
 
@@ -489,7 +489,7 @@ class DockerAPIInterface(DockerInterface):
         # keyword arguments
         spec_kwopts = {}
         # retrieve the option map for the docker-py object we're creating
-        option_map = getattr(self, option_map_name + '_option_map')
+        option_map = getattr(self, f"{option_map_name}_option_map")
         # set defaults
         for key in filter(lambda k: option_map[k].get('default'), option_map.keys()):
             map_spec = option_map[key]
@@ -585,10 +585,10 @@ class DockerAPIInterface(DockerInterface):
         try:
             return self._client.inspect_container(container_id)
         except docker.errors.NotFound:
-            raise ContainerNotFound("Invalid container id: %s" % container_id, container_id=container_id)
+            raise ContainerNotFound(f"Invalid container id: {container_id}", container_id=container_id)
 
     def image_inspect(self, image):
         try:
             return self._client.inspect_image(image)
         except docker.errors.NotFound:
-            raise ContainerImageNotFound("%s not pulled, cannot get digest" % image, image=image)
+            raise ContainerImageNotFound(f"{image} not pulled, cannot get digest", image=image)

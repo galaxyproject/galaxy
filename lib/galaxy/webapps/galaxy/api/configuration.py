@@ -11,8 +11,6 @@ from typing import (
 )
 
 from fastapi import Path
-from fastapi_utils.cbv import cbv
-from fastapi_utils.inferring_router import InferringRouter as APIRouter
 
 from galaxy.managers.configuration import ConfigurationManager
 from galaxy.managers.context import (
@@ -20,21 +18,19 @@ from galaxy.managers.context import (
 )
 from galaxy.managers.users import (
     UserManager,
-    UserModel
 )
-from galaxy.model import User
 from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.schema import UserModel
 from galaxy.web import (
     expose_api,
     expose_api_anonymous_and_sessionless,
     require_admin
 )
 from . import (
-    AdminUserRequired,
     BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
-    DependsOnUser,
+    Router,
 )
 from .common import (
     parse_serialization_params,
@@ -44,7 +40,7 @@ from .common import (
 
 log = logging.getLogger(__name__)
 
-router = APIRouter(tags=['configuration'])
+router = Router(tags=['configuration'])
 
 
 EncodedIdPathParam: EncodedDatabaseIdField = Path(
@@ -54,7 +50,7 @@ EncodedIdPathParam: EncodedDatabaseIdField = Path(
 )
 
 
-@cbv(router)
+@router.cbv
 class FastAPIConfiguration:
     configuration_manager: ConfigurationManager = depends(ConfigurationManager)
 
@@ -63,9 +59,9 @@ class FastAPIConfiguration:
         summary="Return information about the current authenticated user",
         response_description="Information about the current authenticated user"
     )
-    def whoami(self, user: User = DependsOnUser) -> Optional[UserModel]:
+    def whoami(self, trans: ProvidesUserContext = DependsOnTrans) -> Optional[UserModel]:
         """Return information about the current authenticated user."""
-        return _user_to_model(user)
+        return _user_to_model(trans.user, trans.security)
 
     @router.get(
         '/api/configuration',
@@ -98,7 +94,7 @@ class FastAPIConfiguration:
 
     @router.get(
         '/api/configuration/dynamic_tool_confs',
-        dependencies=[AdminUserRequired],
+        require_admin=True,
         summary="Return dynamic tool configuration files",
         response_description="Dynamic tool configuration files"
     )
@@ -108,7 +104,7 @@ class FastAPIConfiguration:
 
     @router.get(
         '/api/configuration/decode/{encoded_id}',
-        dependencies=[AdminUserRequired],
+        require_admin=True,
         summary="Decode a given id",
         response_description="Decoded id"
     )
@@ -121,7 +117,7 @@ class FastAPIConfiguration:
 
     @router.get(
         '/api/configuration/tool_lineages',
-        dependencies=[AdminUserRequired],
+        require_admin=True,
         summary="Return tool lineages for tools that have them",
         response_description="Tool lineages for tools that have them"
     )
@@ -131,7 +127,7 @@ class FastAPIConfiguration:
 
     @router.put(
         '/api/configuration/toolbox',
-        dependencies=[AdminUserRequired],
+        require_admin=True,
         summary="Reload the Galaxy toolbox (but not individual tools)"
     )
     def reload_toolbox(self):
@@ -153,7 +149,7 @@ class ConfigurationController(BaseGalaxyAPIController):
         :rtype:   dict
         """
         user = self.user_manager.current_user(trans)
-        return _user_to_model(user)
+        return _user_to_model(user, trans.security)
 
     @expose_api_anonymous_and_sessionless
     def index(self, trans, **kwd):
@@ -209,8 +205,8 @@ class ConfigurationController(BaseGalaxyAPIController):
         return _index(self.configuration_manager, trans, view, keys)
 
 
-def _user_to_model(user):
-    return UserModel(**user.to_dict()) if user else None
+def _user_to_model(user, security):
+    return UserModel(**user.to_dict(view='element', value_mapper={'id': security.encode_id})) if user else None
 
 
 def _index(manager, trans, view, keys):

@@ -29,7 +29,6 @@ from galaxy.webapps.base.controller import (
     HTTPBadRequest,
     url_for,
     UsesFormDefinitionsMixin,
-    UsesLibraryMixin,
     UsesLibraryMixinItems
 )
 from . import BaseGalaxyAPIController
@@ -37,7 +36,7 @@ from . import BaseGalaxyAPIController
 log = logging.getLogger(__name__)
 
 
-class LibraryContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesLibraryMixinItems, UsesFormDefinitionsMixin, LibraryActions):
+class LibraryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, UsesFormDefinitionsMixin, LibraryActions):
 
     def __init__(self, app: StructuredApp, hda_manager: managers.hdas.HDAManager):
         super().__init__(app)
@@ -78,7 +77,7 @@ class LibraryContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesL
                 if not admin:
                     can_access, folder_ids = trans.app.security_agent.check_folder_contents(trans.user, current_user_roles, subfolder)
                 if (admin or can_access) and not subfolder.deleted:
-                    subfolder.api_path = folder.api_path + '/' + subfolder.name
+                    subfolder.api_path = f"{folder.api_path}/{subfolder.name}"
                     subfolder.api_type = 'folder'
                     rval.append(subfolder)
                     rval.extend(traverse(subfolder))
@@ -89,14 +88,12 @@ class LibraryContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesL
                         ld.library_dataset_dataset_association.dataset
                     )
                 if (admin or can_access) and not ld.deleted:
-                    ld.api_path = folder.api_path + '/' + ld.name
+                    ld.api_path = f"{folder.api_path}/{ld.name}"
                     ld.api_type = 'file'
                     rval.append(ld)
             return rval
-        try:
-            decoded_library_id = self.decode_id(library_id)
-        except Exception:
-            raise exceptions.MalformedId('Malformed library id ( %s ) specified, unable to decode.' % library_id)
+
+        decoded_library_id = self.decode_id(library_id)
         try:
             library = trans.sa_session.query(trans.app.model.Library).filter(trans.app.model.Library.table.c.id == decoded_library_id).one()
         except MultipleResultsFound:
@@ -104,10 +101,10 @@ class LibraryContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesL
         except NoResultFound:
             raise exceptions.RequestParameterInvalidException('No library found with the id provided.')
         except Exception as e:
-            raise exceptions.InternalServerError('Error loading from the database.' + util.unicodify(e))
+            raise exceptions.InternalServerError(f"Error loading from the database.{util.unicodify(e)}")
         if not (trans.user_is_admin or trans.app.security_agent.can_access_library(current_user_roles, library)):
             raise exceptions.RequestParameterInvalidException('No library found with the id provided.')
-        encoded_id = 'F' + trans.security.encode_id(library.root_folder.id)
+        encoded_id = f"F{trans.security.encode_id(library.root_folder.id)}"
         # appending root folder
         rval.append(dict(id=encoded_id,
                          type='folder',
@@ -118,7 +115,7 @@ class LibraryContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesL
         for content in traverse(library.root_folder):
             encoded_id = trans.security.encode_id(content.id)
             if content.api_type == 'folder':
-                encoded_id = 'F' + encoded_id
+                encoded_id = f"F{encoded_id}"
             rval.append(dict(id=encoded_id,
                              type=content.api_type,
                              name=content.api_path,
@@ -149,16 +146,16 @@ class LibraryContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesL
         if class_name == 'LibraryFolder':
             content = self.get_library_folder(trans, content_id, check_ownership=False, check_accessible=True)
             rval = content.to_dict(view='element', value_mapper={'id': trans.security.encode_id})
-            rval['id'] = 'F' + str(rval['id'])
+            rval['id'] = f"F{str(rval['id'])}"
             if rval['parent_id'] is not None:  # This can happen for root folders.
-                rval['parent_id'] = 'F' + str(trans.security.encode_id(rval['parent_id']))
+                rval['parent_id'] = f"F{str(trans.security.encode_id(rval['parent_id']))}"
             rval['parent_library_id'] = trans.security.encode_id(rval['parent_library_id'])
         else:
             content = self.get_library_dataset(trans, content_id, check_ownership=False, check_accessible=True)
             rval = content.to_dict(view='element')
             rval['id'] = trans.security.encode_id(rval['id'])
             rval['ldda_id'] = trans.security.encode_id(rval['ldda_id'])
-            rval['folder_id'] = 'F' + str(trans.security.encode_id(rval['folder_id']))
+            rval['folder_id'] = f"F{str(trans.security.encode_id(rval['folder_id']))}"
             rval['parent_library_id'] = trans.security.encode_id(rval['parent_library_id'])
 
             tag_manager = tags.GalaxyTagHandler(trans.sa_session)
@@ -224,7 +221,7 @@ class LibraryContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesL
             create_type = payload.pop('create_type')
         if create_type not in ('file', 'folder', 'collection'):
             trans.response.status = 400
-            return "Invalid value for 'create_type' parameter ( %s ) specified." % create_type
+            return f"Invalid value for 'create_type' parameter ( {create_type} ) specified."
 
         if 'folder_id' not in payload:
             trans.response.status = 400
@@ -291,7 +288,7 @@ class LibraryContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesL
                     v = v.library_dataset
                 encoded_id = trans.security.encode_id(v.id)
                 if create_type == 'folder':
-                    encoded_id = 'F' + encoded_id
+                    encoded_id = f"F{encoded_id}"
                 rval.append(dict(id=encoded_id,
                                  name=v.name,
                                  url=url_for('library_content', library_id=library_id, id=encoded_id)))
@@ -371,14 +368,14 @@ class LibraryContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesL
         """
         if isinstance(meta, dict):
             for a in meta:
-                yield from self._scan_json_block(meta[a], prefix + "/" + a)
+                yield from self._scan_json_block(meta[a], f"{prefix}/{a}")
         elif isinstance(meta, list):
             for i, a in enumerate(meta):
                 yield from self._scan_json_block(a, prefix + "[%d]" % (i))
         else:
             # BUG: Everything is cast to string, which can lead to false positives
             # for cross type comparisions, ie "True" == True
-            yield prefix, ("%s" % (meta)).encode("utf8", errors='replace')
+            yield prefix, (f"{meta}").encode("utf8", errors='replace')
 
     @expose_api
     def update(self, trans, id, library_id, payload, **kwd):
@@ -417,7 +414,7 @@ class LibraryContentsController(BaseGalaxyAPIController, UsesLibraryMixin, UsesL
         elif content_id.startswith('F'):
             return 'LibraryFolder', content_id[1:]
         else:
-            raise HTTPBadRequest('Malformed library content id ( %s ) specified, unable to decode.' % str(content_id))
+            raise HTTPBadRequest(f'Malformed library content id ( {str(content_id)} ) specified, unable to decode.')
 
     @expose_api
     def delete(self, trans, library_id, id, **kwd):

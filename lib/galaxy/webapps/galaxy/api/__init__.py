@@ -16,6 +16,8 @@ from fastapi import (
     Query,
 )
 from fastapi.params import Depends
+from fastapi_utils.cbv import cbv
+from fastapi_utils.inferring_router import InferringRouter
 try:
     from starlette_context import context as request_context
 except ImportError:
@@ -122,13 +124,23 @@ def get_user(galaxy_session: Optional[model.GalaxySession] = Depends(get_session
     return api_user
 
 
+class QualifiedUrlBuilder:
+
+    def __init__(self, request: Request):
+        self.request = request
+
+    def __call__(self, path):
+        return self.request.url_for(path)
+
+
 DependsOnUser = Depends(get_user)
 
 
-def get_trans(app: StructuredApp = DependsOnApp, user: Optional[User] = Depends(get_user),
+def get_trans(request: Request, app: StructuredApp = DependsOnApp, user: Optional[User] = Depends(get_user),
               galaxy_session: Optional[model.GalaxySession] = Depends(get_session),
               ) -> SessionRequestContext:
-    return SessionRequestContext(app=app, user=user, galaxy_session=galaxy_session)
+    qualified_url_builder = QualifiedUrlBuilder(request)
+    return SessionRequestContext(app=app, user=user, galaxy_session=galaxy_session, qualified_url_builder=qualified_url_builder)
 
 
 DependsOnTrans = Depends(get_trans)
@@ -147,3 +159,42 @@ class BaseGalaxyAPIController(BaseAPIController):
 
     def __init__(self, app: StructuredApp):
         super().__init__(app)
+
+
+class Router(InferringRouter):
+    """A FastAPI Inferring Router tailored to Galaxy.
+    """
+
+    def get(self, *args, **kwd):
+        """Extend FastAPI.get to accept a require_admin Galaxy flag."""
+        return super().get(*args, **self._handle_galaxy_kwd(kwd))
+
+    def put(self, *args, **kwd):
+        """Extend FastAPI.put to accept a require_admin Galaxy flag."""
+        return super().put(*args, **self._handle_galaxy_kwd(kwd))
+
+    def post(self, *args, **kwd):
+        """Extend FastAPI.post to accept a require_admin Galaxy flag."""
+        return super().post(*args, **self._handle_galaxy_kwd(kwd))
+
+    def delete(self, *args, **kwd):
+        """Extend FastAPI.delete to accept a require_admin Galaxy flag."""
+        return super().delete(*args, **self._handle_galaxy_kwd(kwd))
+
+    def _handle_galaxy_kwd(self, kwd):
+        require_admin = kwd.pop("require_admin", False)
+        if require_admin:
+            if "dependencies" in kwd:
+                kwd["dependencies"].append(AdminUserRequired)
+            else:
+                kwd["dependencies"] = [AdminUserRequired]
+        return kwd
+
+    @property
+    def cbv(self):
+        """Short-hand for frequently used Galaxy-pattern of FastAPI class based views.
+
+        Creates a class-based view for for this router, for more information see:
+        https://fastapi-utils.davidmontague.xyz/user-guide/class-based-views/
+        """
+        return cbv(self)

@@ -32,7 +32,7 @@ from galaxy.managers import (
     taggable,
     tools
 )
-from galaxy.structured_app import StructuredApp
+from galaxy.structured_app import MinimalManagerApp
 
 log = logging.getLogger(__name__)
 
@@ -73,7 +73,7 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
     )
     default_order_by = 'hid'
 
-    def __init__(self, app: StructuredApp):
+    def __init__(self, app: MinimalManagerApp):
         self.app = app
         self.contained_manager = app[self.contained_class_manager_class]
         self.subcontainer_manager = app[self.subcontainer_class_manager_class]
@@ -125,8 +125,8 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
         """Return an ORM compatible order_by using the given string"""
         available = ['create_time', 'extension', 'hid', 'history_id', 'name', 'update_time']
         for attribute in available:
-            attribute_dsc = '%s-dsc' % attribute
-            attribute_asc = '%s-asc' % attribute
+            attribute_dsc = f'{attribute}-dsc'
+            attribute_asc = f'{attribute}-asc'
             if order_by_string in (attribute, attribute_dsc):
                 return desc(attribute)
             if order_by_string == attribute_asc:
@@ -364,12 +364,9 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
             # TODO: should be purgable? fix
             purged=literal(False),
             extension=literal(None),
-            # these are attached instead to the inner collection joined below
-            create_time=model.DatasetCollection.create_time,
-            update_time=model.DatasetCollection.update_time
         )
         subquery = self._session().query(*columns)
-        # for the HDCA's we need to join the DatasetCollection since it has update/create times
+        # for the HDCA's we need to join the DatasetCollection since it has the populated_state
         subquery = subquery.join(model.DatasetCollection,
             model.DatasetCollection.id == component_class.collection_id)
         if history_id:
@@ -427,7 +424,7 @@ class HistoryContentsSerializer(base.ModelSerializer, deletable.PurgableSerializ
     """
     model_manager_class = HistoryContentsManager
 
-    def __init__(self, app: StructuredApp, **kwargs):
+    def __init__(self, app: MinimalManagerApp, **kwargs):
         super().__init__(app, **kwargs)
 
         self.default_view = 'summary'

@@ -71,7 +71,7 @@ class ToolsController(BaseAPIController):
             callback = kwd.get('callback', 'callback')
             search_results = self._search(trans, q, page, page_size)
             if return_jsonp:
-                response = str('{}({});'.format(callback, json.dumps(search_results)))
+                response = str(f'{callback}({json.dumps(search_results)});')
             else:
                 response = json.dumps(search_results)
             return response

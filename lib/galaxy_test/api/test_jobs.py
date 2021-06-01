@@ -15,6 +15,7 @@ from galaxy_test.base.populators import (
     uses_test_history,
     wait_on,
     wait_on_state,
+    WorkflowPopulator
 )
 from ._framework import ApiTestCase
 
@@ -23,6 +24,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
 
     def setUp(self):
         super().setUp()
+        self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
 
@@ -38,11 +40,22 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         self.__history_with_new_dataset(history_id)
         jobs = self.__jobs_index(admin=False)
         job = jobs[0]
-        self._assert_not_has_keys(job, "command_line", "external_id")
+        self._assert_not_has_keys(job, "external_id")
 
         jobs = self.__jobs_index(admin=True)
         job = jobs[0]
         self._assert_has_keys(job, "command_line", "external_id")
+
+    @uses_test_history(require_new=True)
+    def test_admin_job_list(self, history_id):
+        self.__history_with_new_dataset(history_id)
+        jobs_response = self._get("jobs?view=admin_job_list", admin=False)
+        assert jobs_response.status_code == 403
+        assert jobs_response.json()['err_msg'] == 'Only admins can use the admin_job_list view'
+
+        jobs = self._get("jobs?view=admin_job_list", admin=True).json()
+        job = jobs[0]
+        self._assert_has_keys(job, "command_line", "external_id", 'handler')
 
     @uses_test_history(require_new=True)
     def test_index_state_filter(self, history_id):
@@ -69,7 +82,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
     @uses_test_history(require_new=True)
     def test_index_date_filter(self, history_id):
         self.__history_with_new_dataset(history_id)
-        two_weeks_ago = (datetime.datetime.utcnow() - datetime.timedelta(7)).isoformat()
+        two_weeks_ago = (datetime.datetime.utcnow() - datetime.timedelta(14)).isoformat()
         last_week = (datetime.datetime.utcnow() - datetime.timedelta(7)).isoformat()
         next_week = (datetime.datetime.utcnow() + datetime.timedelta(7)).isoformat()
         today = datetime.datetime.utcnow().isoformat()
@@ -96,6 +109,88 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
             assert len(jobs) == 0
 
     @uses_test_history(require_new=True)
+    def test_index_workflow_and_invocation_filter(self, history_id):
+        workflow_simple = """
+class: GalaxyWorkflow
+name: Simple Workflow
+inputs:
+  input1: data
+outputs:
+  wf_output_1:
+    outputSource: first_cat/out_file1
+steps:
+  first_cat:
+    tool_id: cat1
+    in:
+      input1: input1
+"""
+        summary = self.workflow_populator.run_workflow(workflow_simple, history_id=history_id, test_data={"input1": "hello world"})
+        invocation_id = summary.invocation_id
+        workflow_id = self._get(f"invocations/{invocation_id}").json()['workflow_id']
+        self.workflow_populator.wait_for_invocation(workflow_id, invocation_id)
+        jobs1 = self.__jobs_index(data={"workflow_id": workflow_id})
+        assert len(jobs1) == 1
+        jobs2 = self.__jobs_index(data={"invocation_id": invocation_id})
+        assert len(jobs2) == 1
+        assert jobs1 == jobs2
+
+    @uses_test_history(require_new=True)
+    def test_index_workflow_filter_implicit_jobs(self, history_id):
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  input_datasets: collection
+steps:
+  multi_data_optional:
+    tool_id: multi_data_optional
+    in:
+      input1: input_datasets
+""")
+        hdca_id = self.dataset_collection_populator.create_list_of_list_in_history(history_id).json()
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        inputs = {
+            '0': self.dataset_populator.ds_entry(hdca_id),
+        }
+        invocation_id = self.workflow_populator.invoke_workflow(history_id, workflow_id, inputs)
+        self.workflow_populator.wait_for_invocation(workflow_id, invocation_id)
+        jobs1 = self.__jobs_index(data={"workflow_id": workflow_id})
+        jobs2 = self.__jobs_index(data={"invocation_id": invocation_id})
+        assert len(jobs1) == len(jobs2) == 1
+        second_invocation_id = self.workflow_populator.invoke_workflow(history_id, workflow_id, inputs)
+        self.workflow_populator.wait_for_invocation(workflow_id, second_invocation_id)
+        workflow_jobs = self.__jobs_index(data={"workflow_id": workflow_id})
+        second_invocation_jobs = self.__jobs_index(data={"invocation_id": second_invocation_id})
+        assert len(workflow_jobs) == 2
+        assert len(second_invocation_jobs) == 1
+
+    @uses_test_history(require_new=True)
+    def test_index_limit_and_offset_filter(self, history_id):
+        self.__history_with_new_dataset(history_id)
+        jobs = self.__jobs_index(data={"history_id": history_id})
+        assert len(jobs) > 0
+        length = len(jobs)
+        jobs = self.__jobs_index(data={"history_id": history_id, "offset": 1})
+        assert len(jobs) == length - 1
+        jobs = self.__jobs_index(data={"history_id": history_id, "limit": 0})
+        assert len(jobs) == 0
+
+    @uses_test_history(require_new=True)
+    def test_index_user_filter(self, history_id):
+        test_user_email = "user_for_jobs_index_test@bx.psu.edu"
+        user = self._setup_user(test_user_email)
+        with self._different_user(email=test_user_email):
+            # User should be able to jobs for their own ID.
+            jobs = self.__jobs_index(data={"user_id": user["id"]})
+            assert jobs == []
+        # Admin should be able to see jobs of another user.
+        jobs = self.__jobs_index(data={"user_id": user["id"]}, admin=True)
+        assert jobs == []
+        # Normal user should not be able to see jobs of another user.
+        jobs_response = self._get("jobs", data={"user_id": user["id"]})
+        self._assert_status_code_is(jobs_response, 403)
+        assert jobs_response.json() == {"err_msg": "Only admins can index the jobs of others", "err_code": 403006}
+
+    @uses_test_history(require_new=True)
     def test_index_multiple_states_filter(self, history_id):
         # Initial number of ok jobs
         original_count = len(self.__uploads_with_state("ok", "new"))
@@ -118,13 +213,13 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         self._assert_has_key(first_job, 'id', 'state', 'exit_code', 'update_time', 'create_time')
 
         job_id = first_job["id"]
-        show_jobs_response = self._get("jobs/%s" % job_id)
+        show_jobs_response = self._get(f"jobs/{job_id}")
         self._assert_status_code_is(show_jobs_response, 200)
 
         job_details = show_jobs_response.json()
         self._assert_has_key(job_details, 'id', 'state', 'exit_code', 'update_time', 'create_time')
 
-        show_jobs_response = self._get("jobs/%s" % job_id, {"full": True})
+        show_jobs_response = self._get(f"jobs/{job_id}", {"full": True})
         self._assert_status_code_is(show_jobs_response, 200)
 
         job_details = show_jobs_response.json()
@@ -141,15 +236,15 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         job_lock_response.raise_for_status()
         assert not job_lock_response.json()["active"]
 
-        show_jobs_response = self._get("jobs/%s" % job_id, admin=False)
-        self._assert_not_has_keys(show_jobs_response.json(), "command_line", "external_id")
+        show_jobs_response = self._get(f"jobs/{job_id}", admin=False)
+        self._assert_not_has_keys(show_jobs_response.json(), "external_id")
 
         # TODO: Re-activate test case when API accepts privacy settings
         # with self._different_user():
         #    show_jobs_response = self._get( "jobs/%s" % job_id, admin=False )
         #    self._assert_status_code_is( show_jobs_response, 200 )
 
-        show_jobs_response = self._get("jobs/%s" % job_id, admin=True)
+        show_jobs_response = self._get(f"jobs/{job_id}", admin=True)
         self._assert_has_keys(show_jobs_response.json(), "command_line", "external_id")
 
     def _run_detect_errors(self, history_id, inputs):
@@ -214,8 +309,8 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
             )
             empty_output_job = empty_run_response["jobs"][0]
             cat_empty_job = cat_empty_twice_run_response["jobs"][0]
-            empty_output_common_problems_response = self._get('jobs/%s/common_problems' % empty_output_job["id"]).json()
-            cat_empty_common_problems_response = self._get('jobs/%s/common_problems' % cat_empty_job["id"]).json()
+            empty_output_common_problems_response = self._get(f"jobs/{empty_output_job['id']}/common_problems").json()
+            cat_empty_common_problems_response = self._get(f"jobs/{cat_empty_job['id']}/common_problems").json()
             self._assert_has_keys(empty_output_common_problems_response, "has_empty_inputs", "has_duplicate_inputs")
             self._assert_has_keys(cat_empty_common_problems_response, "has_empty_inputs", "has_duplicate_inputs")
             assert not empty_output_common_problems_response["has_empty_inputs"]
@@ -235,7 +330,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
             job_id = run_response['jobs'][0]["id"]
             self.dataset_populator.wait_for_job(job_id)
             dataset_id = run_response['outputs'][0]['id']
-            response = self._post('jobs/%s/error' % job_id,
+            response = self._post(f'jobs/{job_id}/error',
                                   data={'dataset_id': dataset_id})
             assert response.status_code == 200, response.text
 
@@ -245,7 +340,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         cookies = requests.get(self.url).cookies
         payload = json.dumps({"tool_id": "detect_errors_aggressive",
                               "inputs": {"error_bool": "true"}})
-        run_response = requests.post("%s/tools" % self.galaxy_interactor.api_url, data=payload, cookies=cookies).json()
+        run_response = requests.post(f"{self.galaxy_interactor.api_url}/tools", data=payload, cookies=cookies).json()
         job_id = run_response['jobs'][0]["id"]
         dataset_id = run_response['outputs'][0]['id']
         response = requests.post(f'{self.galaxy_interactor.api_url}/jobs/{job_id}/error',
@@ -371,7 +466,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         assert len(jobs) == 1
 
         def job_state():
-            jobs_response = self._get("jobs/%s" % jobs[0]["id"])
+            jobs_response = self._get(f"jobs/{jobs[0]['id']}")
             return jobs_response
 
         # Give job some time to get up and running.
@@ -380,7 +475,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         assert running_state == "running", running_state
 
         def job_state():
-            jobs_response = self._get("jobs/%s" % jobs[0]["id"])
+            jobs_response = self._get(f"jobs/{jobs[0]['id']}")
             return jobs_response
 
         return job_state, outputs
@@ -421,19 +516,19 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         job_id = run_response['jobs'][0]['id']
         output = run_response["outputs"][0]
         # Delete second jobs input while second job is waiting for first job
-        delete_response = self._delete("histories/{}/contents/{}".format(history_id, hda1['id']))
+        delete_response = self._delete(f"histories/{history_id}/contents/{hda1['id']}")
         self._assert_status_code_is(delete_response, 200)
         self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=False)
-        dataset_details = self._get("histories/{}/contents/{}".format(history_id, output['id'])).json()
+        dataset_details = self._get(f"histories/{history_id}/contents/{output['id']}").json()
         assert dataset_details['state'] == 'paused'
         # Undelete input dataset
-        undelete_response = self._put("histories/{}/contents/{}".format(history_id, hda1['id']),
+        undelete_response = self._put(f"histories/{history_id}/contents/{hda1['id']}",
                                       data=json.dumps({'deleted': False}))
         self._assert_status_code_is(undelete_response, 200)
-        resume_response = self._put("jobs/%s/resume" % job_id)
+        resume_response = self._put(f"jobs/{job_id}/resume")
         self._assert_status_code_is(resume_response, 200)
         self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=True)
-        dataset_details = self._get("histories/{}/contents/{}".format(history_id, output['id'])).json()
+        dataset_details = self._get(f"histories/{history_id}/contents/{output['id']}").json()
         assert dataset_details['state'] == 'ok'
 
     def _get_history_item_as_admin(self, history_id, item_id):
@@ -447,7 +542,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         # We first copy the datasets, so that the update time is lower than the job creation time
         new_history_id = self.dataset_populator.new_history()
         copy_payload = {"content": dataset_id, "source": "hda", "type": "dataset"}
-        copy_response = self._post("histories/%s/contents" % new_history_id, data=copy_payload)
+        copy_response = self._post(f"histories/{new_history_id}/contents", data=copy_payload)
         self._assert_status_code_is(copy_response, 200)
         inputs = json.dumps({
             'input1': {'src': 'hda', 'id': dataset_id}
@@ -554,7 +649,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         # We test that a job can be found even if the collection has been copied to another history
         new_history_id = self.dataset_populator.new_history()
         copy_payload = {"content": list_id_a, "source": "hdca", "type": "dataset_collection"}
-        copy_response = self._post("histories/%s/contents" % new_history_id, data=copy_payload)
+        copy_response = self._post(f"histories/{new_history_id}/contents", data=copy_payload)
         self._assert_status_code_is(copy_response, 200)
         new_list_a = copy_response.json()['id']
         copied_inputs = json.dumps({
@@ -599,7 +694,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
             wait_for_job=True,
             assert_ok=True,
         )
-        rerun_params = self._get("jobs/%s/build_for_rerun" % run_response['jobs'][0]['id']).json()
+        rerun_params = self._get(f"jobs/{run_response['jobs'][0]['id']}/build_for_rerun").json()
         # Since we call rerun on the first (and only) job we should get the expanded input
         # which is a dataset collection element (and not the list:pair hdca that was used as input to the original
         # job).
@@ -661,7 +756,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
             assert_ok=True,
         )
         assert len(run_response['jobs']) == 2
-        rerun_params = self._get("jobs/%s/build_for_rerun" % run_response['jobs'][0]['id']).json()
+        rerun_params = self._get(f"jobs/{run_response['jobs'][0]['id']}/build_for_rerun").json()
         # Since we call rerun on the first (and only) job we should get the expanded input
         # which is a dataset collection element (and not the list:list hdca that was used as input to the original
         # job).

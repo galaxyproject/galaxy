@@ -19,7 +19,13 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from enum import Enum
 from string import Template
-from typing import List, Optional, TYPE_CHECKING
+from typing import (
+    Iterable,
+    List,
+    Optional,
+    TYPE_CHECKING,
+    Union,
+)
 from uuid import UUID, uuid4
 
 from boltons.iterutils import remap
@@ -35,8 +41,10 @@ from sqlalchemy import (
     select,
     text,
     true,
+    tuple_,
     type_coerce,
     types)
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext import hybrid
 from sqlalchemy.orm import (
     aliased,
@@ -44,6 +52,7 @@ from sqlalchemy.orm import (
     object_session,
     Query,
     reconstructor,
+    registry,
 )
 from sqlalchemy.schema import UniqueConstraint
 
@@ -75,6 +84,8 @@ log = logging.getLogger(__name__)
 
 _datatypes_registry = None
 
+mapper_registry = registry()
+
 # When constructing filters with in for a fixed set of ids, maximum
 # number of items to place in the IN statement. Different databases
 # are going to have different limits so it is likely best to not let
@@ -105,7 +116,7 @@ class RepresentById(_HasTable):
 
     def __repr__(self):
         try:
-            r = '<galaxy.model.{}({}) at {}>'.format(self.__class__.__name__, cached_id(self), hex(id(self)))
+            r = f'<galaxy.model.{self.__class__.__name__}({cached_id(self)}) at {hex(id(self))}>'
         except Exception:
             r = object.__repr__(self)
             log.exception("Caught exception attempting to generate repr for: %s", r)
@@ -157,7 +168,7 @@ class HasTags:
         for tag in self.tags:
             tag_str = tag.user_tname
             if tag.value is not None:
-                tag_str += ":" + tag.user_value
+                tag_str += f":{tag.user_value}"
             tags_str_list.append(tag_str)
         return tags_str_list
 
@@ -338,7 +349,7 @@ class JobLike:
         extra = ""
         safe_id = getattr(self, "id", None)
         if safe_id is not None:
-            extra += "id=%s" % safe_id
+            extra += f"id={safe_id}"
         else:
             extra += "unflushed"
 
@@ -348,7 +359,7 @@ class JobLike:
     def stdout(self):
         stdout = self.tool_stdout or ''
         if self.job_stdout:
-            stdout += "\n" + self.job_stdout
+            stdout += f"\n{self.job_stdout}"
         return stdout
 
     @stdout.setter
@@ -359,7 +370,7 @@ class JobLike:
     def stderr(self):
         stderr = self.tool_stderr or ''
         if self.job_stderr:
-            stderr += "\n" + self.job_stderr
+            stderr += f"\n{self.job_stderr}"
         return stderr
 
     @stderr.setter
@@ -401,7 +412,7 @@ class User(Dictifiable, RepresentById):
         extra_user_preferences = self.preferences.get('extra_user_preferences')
         if extra_user_preferences:
             try:
-                data = json.loads(extra_user_preferences)
+                data.update(json.loads(extra_user_preferences))
             except Exception:
                 pass
         return data
@@ -412,7 +423,7 @@ class User(Dictifiable, RepresentById):
         """
         message = validate_password_str(cleartext)
         if message:
-            raise Exception("Invalid password: %s" % message)
+            raise Exception(f"Invalid password: {message}")
         if User.use_pbkdf2:
             self.password = galaxy.security.passwords.hash_password(cleartext)
         else:
@@ -755,8 +766,11 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         self.state_history = []
         self.imported = False
         self.handler = None
+        self.create_time = None
         self.exit_code = None
+        self.history_id = None
         self.job_messages = None
+        self.update_time = None
         self._init_metrics()
         self.state_history.append(JobStateHistory(self))
 
@@ -881,7 +895,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         Return a tag that can be useful in identifying a Job.
         This returns the Job's get_id
         """
-        return "%s" % self.id
+        return f"{self.id}"
 
     def set_session_id(self, session_id):
         self.session_id = session_id
@@ -1127,14 +1141,25 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         return job_attrs
 
     def to_dict(self, view='collection', system_details=False):
-        rval = super().to_dict(view=view)
+        if view == 'admin_job_list':
+            rval = super().to_dict(view='collection')
+        else:
+            rval = super().to_dict(view=view)
         rval['tool_id'] = self.tool_id
         rval['history_id'] = self.history_id
-        if system_details:
+        if system_details or view == 'admin_job_list':
             # System level details that only admins should have.
             rval['external_id'] = self.job_runner_external_id
             rval['command_line'] = self.command_line
-
+        if view == 'admin_job_list':
+            rval['user_email'] = self.user.email if self.user else None
+            rval['handler'] = self.handler
+            rval['job_runner_name'] = self.job_runner_name
+            rval['info'] = self.info
+            rval['traceback'] = self.traceback
+            rval['session_id'] = self.session_id
+            if self.galaxy_session and self.galaxy_session.remote_host:
+                rval['remote_host'] = self.galaxy_session.remote_host
         if view == 'element':
             param_dict = {p.name: p.value for p in self.parameters}
             rval['params'] = param_dict
@@ -1174,7 +1199,36 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
 
         return rval
 
-    def set_final_state(self, final_state):
+    def update_hdca_update_time_for_job(self, update_time, sa_session, supports_skip_locked):
+        subq = sa_session.query(HistoryDatasetCollectionAssociation.id) \
+            .join(ImplicitCollectionJobs) \
+            .join(ImplicitCollectionJobsJobAssociation) \
+            .filter(ImplicitCollectionJobsJobAssociation.job_id == self.id)
+        if supports_skip_locked:
+            subq = subq.with_for_update(skip_locked=True).subquery()
+        implicit_statement = HistoryDatasetCollectionAssociation.table.update() \
+            .where(HistoryDatasetCollectionAssociation.table.c.id.in_(subq)) \
+            .values(update_time=update_time)
+        explicit_statement = HistoryDatasetCollectionAssociation.table.update() \
+            .where(HistoryDatasetCollectionAssociation.table.c.job_id == self.id) \
+            .values(update_time=update_time)
+        sa_session.execute(explicit_statement)
+        if supports_skip_locked:
+            sa_session.execute(implicit_statement)
+        else:
+            conn = sa_session.connection(execution_options={'isolation_level': 'SERIALIZABLE'})
+            with conn.begin() as trans:
+                try:
+                    conn.execute(implicit_statement)
+                    trans.commit()
+                except OperationalError as e:
+                    # If this is a serialization failure on PostgreSQL, then e.orig is a psycopg2 TransactionRollbackError
+                    # and should have attribute `code`. Other engines should just report the message and move on.
+                    if int(getattr(e.orig, 'pgcode', -1)) != 40001:
+                        log.debug(f"Updating implicit collection uptime_time for job {self.id} failed (this is expected for large collections and not a problem): {unicodify(e)}")
+                    trans.rollback()
+
+    def set_final_state(self, final_state, supports_skip_locked):
         self.set_state(final_state)
         # TODO: migrate to where-in subqueries?
         statement = '''
@@ -1183,9 +1237,11 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             WHERE job_id = :job_id;
         '''
         sa_session = object_session(self)
+        update_time = galaxy.model.orm.now.now()
+        self.update_hdca_update_time_for_job(update_time=update_time, sa_session=sa_session, supports_skip_locked=supports_skip_locked)
         params = {
             'job_id': self.id,
-            'update_time': galaxy.model.orm.now.now()
+            'update_time': update_time
         }
         sa_session.execute(statement, params)
 
@@ -1209,7 +1265,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         for dataset_assoc in self.output_datasets:
             return dataset_assoc.dataset.tool_version
 
-    def update_output_states(self):
+    def update_output_states(self, supports_skip_locked):
         # TODO: migrate to where-in subqueries?
         statements = ['''
             UPDATE dataset
@@ -1253,11 +1309,13 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             );
         ''']
         sa_session = object_session(self)
+        update_time = galaxy.model.orm.now.now()
+        self.update_hdca_update_time_for_job(update_time=update_time, sa_session=sa_session, supports_skip_locked=supports_skip_locked)
         params = {
             'job_id': self.id,
             'state': self.state,
             'info': self.info,
-            'update_time': galaxy.model.orm.now.now()
+            'update_time': update_time
         }
         for statement in statements:
             sa_session.execute(statement, params)
@@ -1538,7 +1596,7 @@ class ImplicitCollectionJobs(RepresentById):
 class ImplicitCollectionJobsJobAssociation(RepresentById):
 
     def __init__(self):
-        pass
+        self.implicit_collection_jobs_id = None
 
 
 class PostJobAction(RepresentById):
@@ -1633,7 +1691,7 @@ class JobExportHistoryArchive(RepresentById):
     def export_name(self):
         # Stream archive.
         hname = ready_name_for_url(self.history.name)
-        hname = "Galaxy-History-%s.tar" % (hname)
+        hname = f"Galaxy-History-{hname}.tar"
         if self.compressed:
             hname += ".gz"
         return hname
@@ -1797,6 +1855,27 @@ def is_hda(d):
     return isinstance(d, HistoryDatasetAssociation)
 
 
+class HistoryAudit(RepresentById):
+    def __init__(self, history, update_time):
+        self.history = history
+        self.update_time = update_time
+
+    @classmethod
+    def prune(cls, sa_session):
+        history_audit_table = cls.table
+        latest_subq = sa_session.query(
+            history_audit_table.c.history_id,
+            func.max(history_audit_table.c.update_time).label('max_update_time')).group_by(history_audit_table.c.history_id).subquery()
+        not_latest_query = sa_session.query(
+            history_audit_table.c.history_id, history_audit_table.c.update_time
+        ).select_from(latest_subq).join(
+            history_audit_table, and_(
+                history_audit_table.c.update_time < latest_subq.columns.max_update_time,
+                history_audit_table.c.history_id == latest_subq.columns.history_id))
+        d = history_audit_table.delete()
+        sa_session.execute(d.where(tuple_(history_audit_table.c.history_id, history_audit_table.c.update_time).in_(not_latest_query)))
+
+
 class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
 
     dict_collection_visible_keys = ['id', 'name', 'published', 'deleted']
@@ -1812,6 +1891,7 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
         self.importing = False
         self.genome_build = None
         self.published = False
+        self.update_time = None
         # Relationships
         self.user = user
         self.datasets = []
@@ -1868,7 +1948,7 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
             object_session(self).flush()
         elif not isinstance(dataset, (HistoryDatasetAssociation, HistoryDatasetCollectionAssociation)):
             raise TypeError("You can only add Dataset and HistoryDatasetAssociation instances to a history"
-                            + " ( you tried to add %s )." % str(dataset))
+                            + f" ( you tried to add {str(dataset)} ).")
         is_dataset = is_hda(dataset)
         if parent_id:
             for data in self.datasets:
@@ -2292,7 +2372,7 @@ class DefaultQuotaAssociation(Quota, Dictifiable, RepresentById):
         REGISTERED = 'registered'
 
     def __init__(self, type, quota):
-        assert type in self.types.__dict__.values(), 'Invalid type'
+        assert type in self.types.__members__.values(), 'Invalid type'
         self.type = type
         self.quota = quota
 
@@ -2313,7 +2393,7 @@ class LibraryPermissions(RepresentById):
         if isinstance(library_item, Library):
             self.library = library_item
         else:
-            raise Exception("Invalid Library specified: %s" % library_item.__class__.__name__)
+            raise Exception(f"Invalid Library specified: {library_item.__class__.__name__}")
         self.role = role
 
 
@@ -2323,7 +2403,7 @@ class LibraryFolderPermissions(RepresentById):
         if isinstance(library_item, LibraryFolder):
             self.folder = library_item
         else:
-            raise Exception("Invalid LibraryFolder specified: %s" % library_item.__class__.__name__)
+            raise Exception(f"Invalid LibraryFolder specified: {library_item.__class__.__name__}")
         self.role = role
 
 
@@ -2333,7 +2413,7 @@ class LibraryDatasetPermissions(RepresentById):
         if isinstance(library_item, LibraryDataset):
             self.library_dataset = library_item
         else:
-            raise Exception("Invalid LibraryDataset specified: %s" % library_item.__class__.__name__)
+            raise Exception(f"Invalid LibraryDataset specified: {library_item.__class__.__name__}")
         self.role = role
 
 
@@ -2343,7 +2423,7 @@ class LibraryDatasetDatasetAssociationPermissions(RepresentById):
         if isinstance(library_item, LibraryDatasetDatasetAssociation):
             self.library_dataset_dataset_association = library_item
         else:
-            raise Exception("Invalid LibraryDatasetDatasetAssociation specified: %s" % library_item.__class__.__name__)
+            raise Exception(f"Invalid LibraryDatasetDatasetAssociation specified: {library_item.__class__.__name__}")
         self.role = role
 
 
@@ -2452,7 +2532,7 @@ class Dataset(StorableObject, RepresentById, _HasTable):
 
     def get_file_name(self):
         if not self.external_filename:
-            assert self.object_store is not None, "Object Store has not been initialized for dataset %s" % self.id
+            assert self.object_store is not None, f"Object Store has not been initialized for dataset {self.id}"
             if self.object_store.exists(self):
                 return self.object_store.get_filename(self)
             else:
@@ -2502,7 +2582,7 @@ class Dataset(StorableObject, RepresentById, _HasTable):
     def extra_files_path_name_from(self, object_store):
         store_by = self.store_by
         if store_by is not None:
-            return "dataset_%s_files" % getattr(self, store_by)
+            return f"dataset_{getattr(self, store_by)}_files"
         else:
             return None
 
@@ -2656,6 +2736,7 @@ class DatasetSourceHash(RepresentById):
 
 class DatasetHash(RepresentById):
     """ """
+
     def serialize(self, id_encoder, serialization_options):
         # serialize Dataset objects only for jobs that can actually modify these models.
         rval = dict_for(
@@ -2677,7 +2758,7 @@ def datatype_for_extension(extension, datatypes_registry=None):
         extension = 'data'
     ret = datatypes_registry.get_datatype_by_extension(extension)
     if ret is None:
-        log.warning("Datatype class not found for extension '%s'" % extension)
+        log.warning(f"Datatype class not found for extension '{extension}'")
         return datatypes_registry.get_datatype_by_extension('data')
     return ret
 
@@ -2693,10 +2774,11 @@ class DatasetInstance:
         INVALID = 'invalid'
         OK = 'ok'
 
-    def __init__(self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, tool_version=None, extension=None,
-                 dbkey=None, metadata=None, history=None, dataset=None, deleted=False, designation=None,
-                 parent_id=None, validated_state='unknown', validated_state_message=None, visible=True, create_dataset=False, sa_session=None,
-                 extended_metadata=None, flush=True):
+    def __init__(self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, tool_version=None,
+                 extension=None, dbkey=None, metadata=None, history=None, dataset=None, deleted=False,
+                 designation=None, parent_id=None, validated_state='unknown', validated_state_message=None,
+                 visible=True, create_dataset=False, sa_session=None, extended_metadata=None, flush=True,
+                 creating_job_id=None):
         self.name = name or "Unnamed dataset"
         self.id = id
         self.info = info
@@ -2719,6 +2801,7 @@ class DatasetInstance:
         if not dataset and create_dataset:
             # Had to pass the sqlalchemy session in order to create a new dataset
             dataset = Dataset(state=Dataset.states.NEW)
+            dataset.job_id = creating_job_id
             if flush:
                 sa_session.add(dataset)
                 sa_session.flush()
@@ -2960,13 +3043,13 @@ class DatasetInstance:
                     # None means converter is running first time
                     return None
                 elif dep_dataset.state == Job.states.ERROR:
-                    raise ConverterDependencyException("A dependency (%s) was in an error state." % dependency)
+                    raise ConverterDependencyException(f"A dependency ({dependency}) was in an error state.")
                 elif dep_dataset.state != Job.states.OK:
                     # Pending
                     return None
                 deps[dependency] = dep_dataset
         except NoConverterException:
-            raise NoConverterException("A dependency (%s) is missing a converter." % dependency)
+            raise NoConverterException(f"A dependency ({dependency}) is missing a converter.")
         except KeyError:
             pass  # No deps
         new_dataset = next(iter(self.datatype.convert_dataset(trans, self, target_ext, return_output=True, visible=False, deps=deps, target_context=target_context, history=history).values()))
@@ -3084,6 +3167,7 @@ class DatasetInstance:
 
     @property
     def creating_job(self):
+        # TODO this should work with `return self.dataset.job` (revise failing unit tests)
         creating_job_associations = None
         if self.creating_job_associations:
             creating_job_associations = self.creating_job_associations
@@ -3309,6 +3393,8 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
 
     def copy_tags_to(self, copy_tags=None):
         if copy_tags is not None:
+            if isinstance(copy_tags, dict):
+                copy_tags = copy_tags.values()
             for tag in copy_tags:
                 copied_tag = tag.copy(cls=HistoryDatasetAssociationTagAssociation)
                 self.tags.append(copied_tag)
@@ -3470,7 +3556,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                     file_size=int(hda.get_size()),
                     create_time=hda.create_time.isoformat(),
                     update_time=hda.update_time.isoformat(),
-                    data_type=hda.datatype.__class__.__module__ + '.' + hda.datatype.__class__.__name__,
+                    data_type=f"{hda.datatype.__class__.__module__}.{hda.datatype.__class__.__name__}",
                     genome_build=hda.dbkey,
                     validated_state=hda.validated_state,
                     validated_state_message=hda.validated_state_message,
@@ -3496,9 +3582,9 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                     continue
                 val = val.file_name
             # If no value for metadata, look in datatype for metadata.
-            elif val is None and hasattr(hda.datatype, name):
+            elif not hda.metadata.element_is_set(name) and hasattr(hda.datatype, name):
                 val = getattr(hda.datatype, name)
-            rval['metadata_' + name] = val
+            rval[f"metadata_{name}"] = val
         return rval
 
     def unpause_dependent_jobs(self, jobs=None):
@@ -3597,7 +3683,7 @@ class Library(Dictifiable, HasName, RepresentById):
         """
         rval = super().to_dict(view=view, value_mapper=value_mapper)
         if 'root_folder_id' in rval:
-            rval['root_folder_id'] = 'F' + str(rval['root_folder_id'])
+            rval['root_folder_id'] = f"F{str(rval['root_folder_id'])}"
         return rval
 
     def get_active_folders(self, folder, folders=None):
@@ -3777,7 +3863,7 @@ class LibraryDataset(RepresentById):
                     update_time=ldda.update_time.isoformat(),
                     file_size=int(ldda.get_size()),
                     file_ext=ldda.ext,
-                    data_type=ldda.datatype.__class__.__module__ + '.' + ldda.datatype.__class__.__name__,
+                    data_type=f"{ldda.datatype.__class__.__module__}.{ldda.datatype.__class__.__name__}",
                     genome_build=ldda.dbkey,
                     misc_info=ldda.info,
                     misc_blurb=ldda.blurb,
@@ -3792,7 +3878,7 @@ class LibraryDataset(RepresentById):
                 val = val.file_name
             elif isinstance(val, list):
                 val = ', '.join(str(v) for v in val)
-            rval['metadata_' + name] = val
+            rval[f"metadata_{name}"] = val
         return rval
 
 
@@ -3921,7 +4007,7 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, RepresentById):
                     file_name=ldda.file_name,
                     update_time=ldda.update_time.isoformat(),
                     file_ext=ldda.ext,
-                    data_type=ldda.datatype.__class__.__module__ + '.' + ldda.datatype.__class__.__name__,
+                    data_type=f"{ldda.datatype.__class__.__module__}.{ldda.datatype.__class__.__name__}",
                     genome_build=ldda.dbkey,
                     misc_info=ldda.info,
                     misc_blurb=ldda.blurb,
@@ -3940,7 +4026,7 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, RepresentById):
             # If no value for metadata, look in datatype for metadata.
             elif val is None and hasattr(ldda.datatype, name):
                 val = getattr(ldda.datatype, name)
-            rval['metadata_' + name] = val
+            rval[f"metadata_{name}"] = val
         return rval
 
     def update_parent_folder_update_times(self):
@@ -4019,13 +4105,13 @@ class ImplicitlyConvertedDatasetAssociation(RepresentById):
         elif isinstance(dataset, LibraryDatasetDatasetAssociation):
             self.dataset_ldda = dataset
         else:
-            raise AttributeError('Unknown dataset type provided for dataset: %s' % type(dataset))
+            raise AttributeError(f'Unknown dataset type provided for dataset: {type(dataset)}')
         if isinstance(parent, HistoryDatasetAssociation):
             self.parent_hda = parent
         elif isinstance(parent, LibraryDatasetDatasetAssociation):
             self.parent_ldda = parent
         else:
-            raise AttributeError('Unknown dataset type provided for parent: %s' % type(parent))
+            raise AttributeError(f'Unknown dataset type provided for parent: {type(parent)}')
         self.type = file_type
         self.deleted = deleted
         self.purged = purged
@@ -4043,7 +4129,7 @@ class ImplicitlyConvertedDatasetAssociation(RepresentById):
             try:
                 os.unlink(self.file_name)
             except Exception as e:
-                log.error("Failed to purge associated file ({}) from disk: {}".format(self.file_name, unicodify(e)))
+                log.error(f"Failed to purge associated file ({self.file_name}) from disk: {unicodify(e)}")
 
 
 DEFAULT_COLLECTION_NAME = "Unnamed Collection"
@@ -4073,37 +4159,87 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
             self.populated_state = DatasetCollection.populated_states.NEW
         self.element_count = element_count
 
+    def _get_nested_collection_attributes(
+        self,
+        collection_attributes: Optional[Iterable[str]] = None,
+        element_attributes: Optional[Iterable[str]] = None,
+        hda_attributes: Optional[Iterable[str]] = None,
+        dataset_attributes: Optional[Iterable[str]] = None,
+        dataset_permission_attributes: Optional[Iterable[str]] = None,
+        return_entities: Optional[Iterable[Union[HistoryDatasetAssociation, Dataset, DatasetPermissions, 'DatasetCollectionElement']]] = None,
+    ):
+        collection_attributes = collection_attributes or ()
+        element_attributes = element_attributes or ()
+        hda_attributes = hda_attributes or ()
+        dataset_attributes = dataset_attributes or ()
+        dataset_permission_attributes = dataset_permission_attributes or ()
+        return_entities = return_entities or ()
+        dataset_collection = self
+        db_session = object_session(self)
+        dc = alias(DatasetCollection)
+        dce = alias(DatasetCollectionElement)
+
+        depth_collection_type = dataset_collection.collection_type
+        nesting_level = 0
+
+        def attribute_columns(column_collection, attributes, nesting_level=None):
+            label_fragment = f"_{nesting_level}" if nesting_level is not None else ""
+            return [getattr(column_collection, a).label(f"{a}{label_fragment}") for a in attributes]
+
+        q = db_session.query(
+            *attribute_columns(dce.c, element_attributes, nesting_level),
+            *attribute_columns(dc.c, collection_attributes, nesting_level),
+        ).select_from(
+            dce, dc
+        ).join(
+            dce, dce.c.dataset_collection_id == dc.c.id
+        ).filter(dc.c.id == dataset_collection.id)
+        while ':' in depth_collection_type:
+            nesting_level += 1
+            inner_dc = alias(DatasetCollection)
+            inner_dce = alias(DatasetCollectionElement)
+            q = q.join(
+                inner_dc, inner_dc.c.id == dce.c.child_collection_id
+            ).join(
+                inner_dce, inner_dce.c.dataset_collection_id == inner_dc.c.id
+            )
+            q = q.add_columns(
+                *attribute_columns(inner_dce.c, element_attributes, nesting_level),
+                *attribute_columns(inner_dc.c, collection_attributes, nesting_level),
+            )
+            dce = inner_dce
+            dc = inner_dc
+            depth_collection_type = depth_collection_type.split(":", 1)[1]
+
+        if hda_attributes or dataset_attributes or dataset_permission_attributes or return_entities and not return_entities == (DatasetCollectionElement,):
+            q = q.join(HistoryDatasetAssociation).join(Dataset)
+        if dataset_permission_attributes:
+            q = q.join(DatasetPermissions)
+        q = q.add_columns(
+            *attribute_columns(HistoryDatasetAssociation, hda_attributes)
+        ).add_columns(
+            *attribute_columns(Dataset, dataset_attributes)
+        ).add_columns(
+            *attribute_columns(DatasetPermissions, dataset_permission_attributes)
+        )
+        for entity in return_entities:
+            q = q.add_entity(entity)
+            if entity == DatasetCollectionElement:
+                q = q.filter(entity.id == dce.c.id)
+        return q.distinct()
+
     @property
     def dataset_states_and_extensions_summary(self):
         if not hasattr(self, '_dataset_states_and_extensions_summary'):
-            db_session = object_session(self)
-
-            dc = alias(DatasetCollection.table)
-            de = alias(DatasetCollectionElement.table)
-            hda = alias(HistoryDatasetAssociation.table)
-            dataset = alias(Dataset.table)
-
-            select_from = dc.outerjoin(de, de.c.dataset_collection_id == dc.c.id)
-
-            depth_collection_type = self.collection_type
-            while ":" in depth_collection_type:
-                child_collection = alias(DatasetCollection.table)
-                child_collection_element = alias(DatasetCollectionElement.table)
-                select_from = select_from.outerjoin(child_collection, child_collection.c.id == de.c.child_collection_id)
-                select_from = select_from.outerjoin(child_collection_element, child_collection_element.c.dataset_collection_id == child_collection.c.id)
-
-                de = child_collection_element
-                depth_collection_type = depth_collection_type.split(":", 1)[1]
-
-            select_from = select_from.outerjoin(hda, hda.c.id == de.c.hda_id).outerjoin(dataset, hda.c.dataset_id == dataset.c.id)
-            select_stmt = select([hda.c.extension, dataset.c.state]).select_from(select_from).where(dc.c.id == self.id).distinct()
+            q = self._get_nested_collection_attributes(
+                hda_attributes=('extension',),
+                dataset_attributes=('state',)
+            )
             extensions = set()
             states = set()
-            for extension, state in db_session.execute(select_stmt).fetchall():
-                if state is not None:
-                    # query may return (None, None) if not collection elements present
-                    states.add(state)
-                    extensions.add(extension)
+            for extension, state in q:
+                states.add(state)
+                extensions.add(extension)
 
             self._dataset_states_and_extensions_summary = (states, extensions)
 
@@ -4116,32 +4252,10 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
             if ":" not in self.collection_type:
                 _populated_optimized = self.populated_state == DatasetCollection.populated_states.OK
             else:
-                db_session = object_session(self)
-
-                dc = alias(DatasetCollection.table)
-                de = alias(DatasetCollectionElement.table)
-
-                select_from = dc.outerjoin(de, de.c.dataset_collection_id == dc.c.id)
-
-                collection_depth_aliases = [dc]
-
-                depth_collection_type = self.collection_type
-                while ":" in depth_collection_type:
-                    child_collection = alias(DatasetCollection.table)
-                    child_collection_element = alias(DatasetCollectionElement.table)
-                    select_from = select_from.outerjoin(child_collection, child_collection.c.id == de.c.child_collection_id)
-                    select_from = select_from.outerjoin(child_collection_element, child_collection_element.c.dataset_collection_id == child_collection.c.id)
-
-                    collection_depth_aliases.append(child_collection)
-
-                    de = child_collection_element
-                    depth_collection_type = depth_collection_type.split(":", 1)[1]
-
-                select_stmt = select(list(map(lambda dc: dc.c.populated_state, collection_depth_aliases))).select_from(select_from).where(dc.c.id == self.id).distinct()
-                for populated_states in db_session.execute(select_stmt).fetchall():
-                    for populated_state in populated_states:
-                        if populated_state and populated_state != DatasetCollection.populated_states.OK:
-                            _populated_optimized = False
+                q = self._get_nested_collection_attributes(
+                    collection_attributes=('populated_state',),
+                )
+                _populated_optimized = any(state != DatasetCollection.populated_states.OK for state in q)
 
             self._populated_optimized = _populated_optimized
 
@@ -4157,33 +4271,11 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
     @property
     def dataset_action_tuples(self):
         if not hasattr(self, '_dataset_action_tuples'):
-            db_session = object_session(self)
-
-            dc = alias(DatasetCollection.table)
-            de = alias(DatasetCollectionElement.table)
-            hda = alias(HistoryDatasetAssociation.table)
-            dataset = alias(Dataset.table)
-            dataset_permission = alias(DatasetPermissions.table)
-
-            select_from = dc.outerjoin(de, de.c.dataset_collection_id == dc.c.id)
-
-            depth_collection_type = self.collection_type
-            while ":" in depth_collection_type:
-                child_collection = alias(DatasetCollection.table)
-                child_collection_element = alias(DatasetCollectionElement.table)
-                select_from = select_from.outerjoin(child_collection, child_collection.c.id == de.c.child_collection_id)
-                select_from = select_from.outerjoin(child_collection_element, child_collection_element.c.dataset_collection_id == child_collection.c.id)
-
-                de = child_collection_element
-                depth_collection_type = depth_collection_type.split(":", 1)[1]
-
-            select_from = select_from.outerjoin(hda, hda.c.id == de.c.hda_id).outerjoin(dataset, hda.c.dataset_id == dataset.c.id)
-            select_from = select_from.outerjoin(dataset_permission, dataset.c.id == dataset_permission.c.dataset_id)
-
-            select_stmt = select([dataset_permission.c.action, dataset_permission.c.role_id]).select_from(select_from).where(dc.c.id == self.id).distinct()
-
+            q = self._get_nested_collection_attributes(
+                dataset_permission_attributes=('action', 'role_id')
+            )
             _dataset_action_tuples = []
-            for _dataset_action_tuple in db_session.execute(select_stmt).fetchall():
+            for _dataset_action_tuple in q:
                 if _dataset_action_tuple[0] is None:
                     continue
                 _dataset_action_tuples.append(_dataset_action_tuple)
@@ -4218,24 +4310,7 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
     def dataset_instances(self):
         db_session = object_session(self)
         if db_session and self.id:
-            dc = alias(DatasetCollection.table)
-            de = alias(DatasetCollectionElement.table)
-            hda = alias(HistoryDatasetAssociation.table)
-
-            depth_collection_type = self.collection_type
-            select_from = dc.outerjoin(de, de.c.dataset_collection_id == dc.c.id)
-
-            while ":" in depth_collection_type:
-                child_collection = alias(DatasetCollection.table)
-                child_collection_element = alias(DatasetCollectionElement.table)
-                select_from = select_from.outerjoin(child_collection, child_collection.c.id == de.c.child_collection_id)
-                select_from = select_from.outerjoin(child_collection_element, child_collection_element.c.dataset_collection_id == child_collection.c.id)
-
-                de = child_collection_element
-                depth_collection_type = depth_collection_type.split(":", 1)[1]
-            select_from = select_from.outerjoin(hda, hda.c.id == de.c.hda_id)
-            select_stmt = select([hda]).select_from(select_from).where(dc.c.id == self.id).distinct()
-            return db_session.query(HistoryDatasetAssociation).select_entity_from(select_stmt).filter(HistoryDatasetAssociation.id.isnot(None)).all()
+            return self._get_nested_collection_attributes(return_entities=(HistoryDatasetAssociation,)).all()
         else:
             # Sessionless context
             instances = []
@@ -4249,6 +4324,9 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
 
     @property
     def dataset_elements(self):
+        db_session = object_session(self)
+        if db_session and self.id:
+            return self._get_nested_collection_attributes(return_entities=(DatasetCollectionElement,)).all()
         elements = []
         for element in self.elements:
             if element.is_collection:
@@ -4285,7 +4363,7 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
         error_message = f"Dataset collection has no {get_by_attribute} with key {key}."
         raise KeyError(error_message)
 
-    def copy(self, destination=None, element_destination=None, flush=True):
+    def copy(self, destination=None, element_destination=None, dataset_instance_attributes=None, flush=True):
         new_collection = DatasetCollection(
             collection_type=self.collection_type,
             element_count=self.element_count
@@ -4295,6 +4373,7 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
                 new_collection,
                 destination=destination,
                 element_destination=element_destination,
+                dataset_instance_attributes=dataset_instance_attributes,
                 flush=flush
             )
         object_session(self).add(new_collection)
@@ -4536,7 +4615,7 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
                 break
         return matching_collection
 
-    def copy(self, element_destination=None):
+    def copy(self, element_destination=None, dataset_instance_attributes=None):
         """
         Create a copy of this history dataset collection association. Copy
         underlying collection.
@@ -4557,6 +4636,7 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
         collection_copy = self.collection.copy(
             destination=hdca,
             element_destination=element_destination,
+            dataset_instance_attributes=dataset_instance_attributes,
             flush=False,
         )
         hdca.collection = collection_copy
@@ -4658,7 +4738,7 @@ class DatasetCollectionElement(Dictifiable, RepresentById):
         elif isinstance(element, DatasetCollection):
             self.child_collection = element
         elif element != self.UNINITIALIZED_ELEMENT:
-            raise AttributeError('Unknown element type provided: %s' % type(element))
+            raise AttributeError(f'Unknown element type provided: {type(element)}')
 
         self.id = id
         self.collection = collection
@@ -4718,17 +4798,22 @@ class DatasetCollectionElement(Dictifiable, RepresentById):
         else:
             return [element_object]
 
-    def copy_to_collection(self, collection, destination=None, element_destination=None, flush=True):
+    def copy_to_collection(self, collection, destination=None, element_destination=None, dataset_instance_attributes=None, flush=True):
+        dataset_instance_attributes = dataset_instance_attributes or {}
         element_object = self.element_object
         if element_destination:
             if self.is_collection:
                 element_object = element_object.copy(
                     destination=destination,
                     element_destination=element_destination,
+                    dataset_instance_attributes=dataset_instance_attributes,
                     flush=flush
                 )
             else:
                 new_element_object = element_object.copy(flush=flush, copy_tags=element_object.tags)
+                for attribute, value in dataset_instance_attributes.items():
+                    setattr(new_element_object, attribute, value)
+
                 new_element_object.visible = False
                 if destination is not None and element_object.hidden_beneath_collection_instance:
                     new_element_object.hidden_beneath_collection_instance = destination
@@ -4894,6 +4979,7 @@ class Workflow(Dictifiable, RepresentById):
         self.has_cycles = None
         self.has_errors = None
         self.steps = []
+        self.stored_workflow_id = None
         if uuid is None:
             self.uuid = uuid4()
         else:
@@ -4925,13 +5011,13 @@ class Workflow(Dictifiable, RepresentById):
         for step in self.steps:
             if order_index == step.order_index:
                 return step
-        raise KeyError("Workflow has no step with order_index '%s'" % order_index)
+        raise KeyError(f"Workflow has no step with order_index '{order_index}'")
 
     def step_by_label(self, label):
         for step in self.steps:
             if label == step.label:
                 return step
-        raise KeyError("Workflow has no step with label '%s'" % label)
+        raise KeyError(f"Workflow has no step with label '{label}'")
 
     @property
     def input_steps(self):
@@ -4991,6 +5077,8 @@ class Workflow(Dictifiable, RepresentById):
         copied_workflow.has_cycles = self.has_cycles
         copied_workflow.has_errors = self.has_errors
         copied_workflow.reports_config = self.reports_config
+        copied_workflow.license = self.license
+        copied_workflow.creator_metadata = self.creator_metadata
 
         # Map old step ids to new steps
         step_mapping = {}
@@ -5008,7 +5096,7 @@ class Workflow(Dictifiable, RepresentById):
     def log_str(self):
         extra = ""
         if self.stored_workflow:
-            extra = ",name=%s" % self.stored_workflow.name
+            extra = f",name={self.stored_workflow.name}"
         return "Workflow[id=%d%s]" % (self.id, extra)
 
 
@@ -5320,6 +5408,7 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         self.subworkflow_invocations = []
         self.step_states = []
         self.steps = []
+        self.workflow_id = None
 
     def create_subworkflow_invocation_for_step(self, step):
         assert step.type == "subworkflow"
@@ -5472,7 +5561,7 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         # That probably isn't good.
         workflow_output = self.workflow.workflow_output_for(label)
         if workflow_output:
-            raise Exception("Failed to find workflow output named [%s], one was defined but none registered during execution." % label)
+            raise Exception(f"Failed to find workflow output named [{label}], one was defined but none registered during execution.")
         else:
             raise Exception(f"Failed to find workflow output named [{label}], workflow doesn't define output by that name - valid names are {self.workflow.workflow_output_labels}.")
 
@@ -5483,7 +5572,7 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         for input_dataset_collection_assoc in self.input_dataset_collections:
             if input_dataset_collection_assoc.workflow_step.label == label:
                 return input_dataset_collection_assoc.dataset_collection
-        raise Exception("Failed to find input with label %s" % label)
+        raise Exception(f"Failed to find input with label {label}")
 
     @property
     def output_associations(self):
@@ -5505,6 +5594,7 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
 
     def to_dict(self, view='collection', value_mapper=None, step_details=False, legacy_job_state=False):
         rval = super().to_dict(view=view, value_mapper=value_mapper)
+        rval['stored_workflow_id'] = self.workflow.stored_workflow.id
         if view == 'element':
             steps = []
             for step in self.steps:
@@ -5650,7 +5740,7 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         extra = ""
         safe_id = getattr(self, "id", None)
         if safe_id is not None:
-            extra += "id=%s" % safe_id
+            extra += f"id={safe_id}"
         else:
             extra += "unflushed"
         return f"{self.__class__.__name__}[{extra}]"
@@ -5671,6 +5761,11 @@ class WorkflowInvocationStep(Dictifiable, RepresentById):
         SCHEDULED = 'scheduled'  # Workflow invocation step has been scheduled.
         # CANCELLED = 'cancelled',  TODO: implement and expose
         # FAILED = 'failed',  TODO: implement and expose
+
+    def __init__(self):
+        self.implicit_collection_jobs_id = None
+        self.job_id = None
+        self.workflow_invocation_id = None
 
     @property
     def is_new(self):
@@ -5834,7 +5929,7 @@ class MetadataFile(StorableObject, RepresentById):
             if store_by == 'id' and self.id is None:
                 self.flush()
             identifier = getattr(self, store_by)
-            alt_name = "metadata_%s.dat" % identifier
+            alt_name = f"metadata_{identifier}.dat"
             if not object_store.exists(self, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name=alt_name):
                 object_store.create(self, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name=alt_name)
             path = object_store.get_filename(self, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name=alt_name)
@@ -6119,7 +6214,7 @@ class UserAuthnzToken(UserMixin, RepresentById):
         model = cls.user_model()
         instance = model(*args, **kwargs)
         if cls.get_users_by_email(instance.email).first():
-            raise Exception("User with this email '%s' already exists." % instance.email)
+            raise Exception(f"User with this email '{instance.email}' already exists.")
         instance.set_random_password()
         cls.sa_session.add(instance)
         cls.sa_session.flush()

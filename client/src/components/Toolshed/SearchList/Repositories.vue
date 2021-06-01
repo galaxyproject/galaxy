@@ -11,9 +11,7 @@
                 <RepositoryDetails :repo="row.item" :toolshed-url="toolshedUrl" />
             </template>
         </b-table>
-        <div class="unavailable-message" v-if="noResultsFound">
-            No matching repositories found.
-        </div>
+        <div class="unavailable-message" v-if="noResultsFound">No matching repositories found.</div>
         <loading-span v-if="pageLoading" message="Loading repositories" />
     </div>
 </template>

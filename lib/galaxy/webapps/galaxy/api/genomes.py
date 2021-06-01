@@ -8,8 +8,6 @@ from fastapi import (
     Query,
 )
 from fastapi.responses import Response
-from fastapi_utils.cbv import cbv
-from fastapi_utils.inferring_router import InferringRouter as APIRouter
 
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.genomes import GenomesManager
@@ -18,10 +16,15 @@ from galaxy.web import (
     expose_api_raw_anonymous,
 )
 from galaxy.web.framework.helpers import is_true
-from . import BaseGalaxyAPIController, depends, DependsOnTrans
+from . import (
+    BaseGalaxyAPIController,
+    depends,
+    DependsOnTrans,
+    Router,
+)
 
 
-router = APIRouter(tags=['genomes'])
+router = Router(tags=['genomes'])
 
 IdPathParam: str = Path(
     ...,
@@ -84,7 +87,7 @@ def get_id(base, format):
     return base
 
 
-@cbv(router)
+@router.cbv
 class FastAPIGenomes:
     manager: GenomesManager = depends(GenomesManager)
 

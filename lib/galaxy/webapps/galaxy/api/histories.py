@@ -20,6 +20,7 @@ from galaxy import (
 from galaxy.managers import (
     citations,
     histories,
+    sharable,
     users,
     workflows,
 )
@@ -36,14 +37,13 @@ from galaxy.web import (
 from galaxy.webapps.base.controller import (
     ExportsHistoryMixin,
     ImportsHistoryMixin,
-    SharableMixin
 )
 from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
 
 
-class HistoriesController(BaseGalaxyAPIController, ExportsHistoryMixin, ImportsHistoryMixin, SharableMixin):
+class HistoriesController(BaseGalaxyAPIController, ExportsHistoryMixin, ImportsHistoryMixin):
     citations_manager: citations.CitationsManager = depends(citations.CitationsManager)
     user_manager: users.UserManager = depends(users.UserManager)
     workflow_manager: workflows.WorkflowsManager = depends(workflows.WorkflowsManager)
@@ -52,6 +52,8 @@ class HistoriesController(BaseGalaxyAPIController, ExportsHistoryMixin, ImportsH
     serializer: histories.HistorySerializer = depends(histories.HistorySerializer)
     deserializer: histories.HistoryDeserializer = depends(histories.HistoryDeserializer)
     filters: histories.HistoryFilters = depends(histories.HistoryFilters)
+    # TODO move all managers above and the actions logic to the HistoriesService
+    service: histories.HistoriesService = depends(histories.HistoriesService)
 
     @expose_api_anonymous
     def index(self, trans, deleted='False', **kwd):
@@ -332,6 +334,8 @@ class HistoriesController(BaseGalaxyAPIController, ExportsHistoryMixin, ImportsH
         :rtype:     dict
         :returns:   element view of new history
         """
+        if trans.user and trans.user.bootstrap_admin_user:
+            raise exceptions.RealUserRequiredException("Only real users can create histories.")
         hist_name = None
         if payload.get('name', None):
             hist_name = restore_text(payload['name'])
@@ -351,7 +355,7 @@ class HistoriesController(BaseGalaxyAPIController, ExportsHistoryMixin, ImportsH
                 raise exceptions.MessageException("Please provide a url or file.")
             job = self.queue_history_import(trans, archive_type=archive_type, archive_source=archive_source)
             job_dict = job.to_dict()
-            job_dict["message"] = "Importing history from source '%s'. This history will be visible when the import is complete." % archive_source
+            job_dict["message"] = f"Importing history from source '{archive_source}'. This history will be visible when the import is complete."
             return trans.security.encode_all_ids(job_dict)
 
         new_history = None
@@ -359,7 +363,7 @@ class HistoriesController(BaseGalaxyAPIController, ExportsHistoryMixin, ImportsH
         if copy_this_history_id:
             decoded_id = self.decode_id(copy_this_history_id)
             original_history = self.manager.get_accessible(decoded_id, trans.user, current_history=trans.history)
-            hist_name = hist_name or ("Copy of '%s'" % original_history.name)
+            hist_name = hist_name or (f"Copy of '{original_history.name}'")
             new_history = original_history.copy(name=hist_name, target_user=trans.user, all_datasets=all_datasets)
 
         # otherwise, create a new empty history
@@ -577,3 +581,13 @@ class HistoriesController(BaseGalaxyAPIController, ExportsHistoryMixin, ImportsH
             'installed_builds': [{'label': ins, 'value': ins} for ins in installed_builds],
             'fasta_hdas': [{'label': f'{hda.hid}: {hda.name}', 'value': trans.security.encode_id(hda.id)} for hda in fasta_hdas],
         }
+
+    @expose_api
+    def sharing(self, trans, id, payload=None, **kwd):
+        """
+        * GET/POST /api/pages/{id}/sharing
+            View/modify sharing options for the page with the given id.
+        """
+        if payload:
+            payload = sharable.SharingPayload(**payload)
+        return self.service.sharing(trans, id, payload)

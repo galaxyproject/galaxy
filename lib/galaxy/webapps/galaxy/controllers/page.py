@@ -23,6 +23,7 @@ from galaxy.managers.pages import (
     PageContentProcessor,
     PageManager,
 )
+from galaxy.managers.sharable import SlugBuilder
 from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.structured_app import StructuredApp
@@ -276,6 +277,7 @@ class PageController(BaseUIController, SharableMixin,
     history_serializer: HistorySerializer = depends(HistorySerializer)
     hda_manager: HDAManager = depends(HDAManager)
     workflow_manager: WorkflowsManager = depends(WorkflowsManager)
+    slug_builder: SlugBuilder = depends(SlugBuilder)
 
     def __init__(self, app: StructuredApp):
         super().__init__(app)
@@ -336,8 +338,8 @@ class PageController(BaseUIController, SharableMixin,
             content_hide = True
             if "invocation_id" in kwd:
                 invocation_id = kwd.get("invocation_id")
-                form_title = form_title + " from Invocation Report"
-                slug = "invocation-report-" + invocation_id
+                form_title = f"{form_title} from Invocation Report"
+                slug = f"invocation-report-{invocation_id}"
                 invocation_report = self.workflow_manager.get_invocation_report(trans, invocation_id)
                 title = invocation_report.get("title")
                 content = invocation_report.get("markdown")
@@ -394,7 +396,7 @@ class PageController(BaseUIController, SharableMixin,
         p = trans.sa_session.query(model.Page).get(decoded_id)
         if trans.request.method == 'GET':
             if p.slug is None:
-                self.create_item_slug(trans.sa_session, p)
+                self.slug_builder.create_item_slug(trans.sa_session, p)
             return {
                 'title': 'Edit page attributes',
                 'inputs': [{
@@ -456,26 +458,26 @@ class PageController(BaseUIController, SharableMixin,
                                     .first()
             if not other:
                 mtype = "error"
-                msg = ("User '%s' does not exist" % escape(email))
+                msg = f"User '{escape(email)}' does not exist"
             elif other == trans.get_user():
                 mtype = "error"
                 msg = ("You cannot share a page with yourself")
             elif trans.sa_session.query(model.PageUserShareAssociation) \
                     .filter_by(user=other, page=page).count() > 0:
                 mtype = "error"
-                msg = ("Page already shared with '%s'" % escape(email))
+                msg = f"Page already shared with '{escape(email)}'"
             else:
                 share = model.PageUserShareAssociation()
                 share.page = page
                 share.user = other
                 session = trans.sa_session
                 session.add(share)
-                self.create_item_slug(session, page)
+                self.slug_builder.create_item_slug(session, page)
                 session.flush()
                 page_title = escape(page.title)
                 other_email = escape(other.email)
                 trans.set_message(f"Page '{page_title}' shared with user '{other_email}'")
-                return trans.response.send_redirect(url_for("/pages/sharing?id=%s" % id))
+                return trans.response.send_redirect(url_for(f"/pages/sharing?id={id}"))
         return trans.fill_template("/ind_share_base.mako",
                                    message=msg,
                                    messagetype=mtype,
@@ -572,7 +574,7 @@ class PageController(BaseUIController, SharableMixin,
         # TODO: user should be able to embed any item he has access to. see display_by_username_and_slug for security code.
         page = self.get_page(trans, id)
         if page:
-            return "Embedded Page '%s'" % page.title
+            return f"Embedded Page '{page.title}'"
 
     @web.expose
     @web.json
@@ -581,7 +583,7 @@ class PageController(BaseUIController, SharableMixin,
         """ Returns page's name and link. """
         page = self.get_page(trans, id)
 
-        if self.create_item_slug(trans.sa_session, page):
+        if self.slug_builder.create_item_slug(trans.sa_session, page):
             trans.sa_session.flush()
         return_dict = {"name": page.title, "link": url_for(controller='page',
                                                            action="display_by_username_and_slug",

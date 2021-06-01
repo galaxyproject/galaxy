@@ -22,7 +22,7 @@ from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
 
 PERSISTENT_VOLUME_NAME = 'pv-galaxy-integration-test'
 PERSISTENT_VOLUME_CLAIM_NAME = 'galaxy-pvc-integration-test'
-Config = collections.namedtuple('ConfigTuple', 'path')
+Config = collections.namedtuple('Config', 'path')
 TOOL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'tools'))
 
 

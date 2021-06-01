@@ -3,15 +3,43 @@
 
 .content-item {
     outline: none;
-    // margin-bottom: 1px;
     border-bottom: 1px solid white;
-
     &:focus-within {
         box-shadow: inset 0 0 1em 0.25em rgba(255, 255, 255, 0.25);
     }
+}
 
-    .content-top-menu {
-        cursor: pointer;
+// Nav across the top of the content item
+.content-item .content-top-menu {
+    /* a fixed-height is important for proper
+    functioning of the PriorityMenuItem dropdown since
+    it relies on flexbox and overflow */
+    min-height: 2em;
+
+    cursor: pointer;
+
+    // flex parent
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    // error, clock, etc.
+    .content-status-indicators {
+        // d-flex mr-1 align-items-center
+        display: flex;
+        align-items: center;
+    
+        &:blank {
+            display: none;
+        }
+    }
+
+    // name & labelling
+    .content-title {
+
+        // flex child
+        flex-grow: 1;
+        overflow: hidden;
 
         .hid {
             color: adjust-color($text-color, $alpha: -0.6);
@@ -24,29 +52,28 @@
                 content: ":";
             }
         }
-
         .name {
             font-weight: 700;
         }
-
-        /* a fixed-height is important for proper
-        functioning of the PriorityMenuItem dropdown since
-        it relies on flexbox and overflow */
-        min-height: 2em;
     }
 
-    .content-menu button:hover,
-    .content-menu .show > button.dropdown-toggle {
-        background-color: transparent;
-        border-color: transparent;
+    // priority menu on right side
+    .content-item-menu {
+        display: flex;
+        justify-content: flex-end;
     }
+
 }
 
-.collapsed .content-item-menu {
-    display: flex;
-    justify-content: flex-end;
-    .primary {
-        max-width: 0;
-    }
+// Setting a max-width here limits the number of icons that
+// will show. The priority menu is css awayre
+
+.content-item.collapsed .content-item-menu {
+    max-width: 90px;
 }
 
+// .content-menu button:hover,
+// .content-menu .show > button.dropdown-toggle {
+//     background-color: transparent;
+//     border-color: transparent;
+// }

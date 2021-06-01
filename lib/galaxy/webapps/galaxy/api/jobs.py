@@ -7,8 +7,6 @@ API operations on a jobs.
 import logging
 import typing
 
-from fastapi_utils.cbv import cbv
-from fastapi_utils.inferring_router import InferringRouter as APIRouter
 from sqlalchemy import (
     or_,
 )
@@ -29,7 +27,6 @@ from galaxy.managers.jobs import (
     summarize_job_parameters,
     view_show_job,
 )
-from galaxy.model import Job
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.web import (
     expose_api,
@@ -46,14 +43,15 @@ from . import (
     BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
+    Router,
 )
 
 log = logging.getLogger(__name__)
 
-router = APIRouter(tags=["jobs"])
+router = Router(tags=["jobs"])
 
 
-@cbv(router)
+@router.cbv
 class FastAPIJobs:
     job_manager: JobManager = depends(JobManager)
     job_search: JobSearch = depends(JobSearch)
@@ -79,7 +77,7 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
     hda_manager = depends(hdas.HDAManager)
 
     @expose_api
-    def index(self, trans: ProvidesUserContext, **kwd):
+    def index(self, trans: ProvidesUserContext, limit=500, offset=0, **kwd):
         """
         GET /api/jobs
 
@@ -97,6 +95,17 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         :type   user_details: boolean
         :param  user_details: if true, and requestor is an admin, will return external job id and user email.
 
+        :type   user_id: str
+        :param  user_id: an encoded user id to restrict query to, must be own id if not admin user
+
+        :type   limit: int
+        :param  limit: Maximum number of jobs to return.
+
+        :type   offset: int
+        :param  offset: Return jobs starting from this specified position.
+                        For example, if ``limit`` is set to 100 and ``offset`` to 200,
+                        jobs 200-299 will be returned.
+
         :type   date_range_min: string '2014-01-01'
         :param  date_range_min: limit the listing of jobs to those updated on or after requested date
 
@@ -106,17 +115,41 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         :type   history_id: string
         :param  history_id: limit listing of jobs to those that match the history_id. If none, all are returned.
 
+        :type   workflow_id: string
+        :param  workflow_id: limit listing of jobs to those that match the workflow_id. If none, all are returned.
+
+        :type   invocation_id: string
+        :param  invocation_id: limit listing of jobs to those that match the invocation_id. If none, all are returned.
+
+        :type   view: string
+        :param  view: Determines columns to return. Defaults to 'collection'.
+
         :rtype:     list
         :returns:   list of dictionaries containing summary job information
         """
         state = kwd.get('state', None)
         is_admin = trans.user_is_admin
         user_details = kwd.get('user_details', False)
+        user_id = kwd.get('user_id', None)
+        view = kwd.get('view', 'collection')
+        if view not in ('collection', 'admin_job_list'):
+            raise exceptions.RequestParameterInvalidException(f"view parameter '{view} is invalid")
+        if view == 'admin_job_list' and not is_admin:
+            raise exceptions.AdminRequiredException("Only admins can use the admin_job_list view")
 
-        if is_admin:
-            query = trans.sa_session.query(Job)
+        if user_id:
+            decoded_user_id = self.decode_id(user_id)
         else:
-            query = trans.sa_session.query(Job).filter(Job.table.c.user_id == trans.user.id)
+            decoded_user_id = None
+        if is_admin:
+            if decoded_user_id is not None:
+                query = trans.sa_session.query(model.Job).filter(model.Job.user_id == decoded_user_id)
+            else:
+                query = trans.sa_session.query(model.Job)
+        else:
+            if decoded_user_id is not None and decoded_user_id != trans.user.id:
+                raise exceptions.AdminRequiredException("Only admins can index the jobs of others")
+            query = trans.sa_session.query(model.Job).filter(model.Job.user_id == trans.user.id)
 
         def build_and_apply_filters(query, objects, filter_func):
             if objects is not None:
@@ -129,30 +162,53 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
                     query = query.filter(or_(*t))
             return query
 
-        query = build_and_apply_filters(query, state, lambda s: Job.table.c.state == s)
+        query = build_and_apply_filters(query, state, lambda s: model.Job.state == s)
 
-        query = build_and_apply_filters(query, kwd.get('tool_id', None), lambda t: Job.tool_id == t)
-        query = build_and_apply_filters(query, kwd.get('tool_id_like', None), lambda t: Job.tool_id.like(t))
+        query = build_and_apply_filters(query, kwd.get('tool_id', None), lambda t: model.Job.tool_id == t)
+        query = build_and_apply_filters(query, kwd.get('tool_id_like', None), lambda t: model.Job.tool_id.like(t))
 
-        query = build_and_apply_filters(query, kwd.get('date_range_min', None), lambda dmin: Job.table.c.update_time >= dmin)
-        query = build_and_apply_filters(query, kwd.get('date_range_max', None), lambda dmax: Job.table.c.update_time <= dmax)
+        query = build_and_apply_filters(query, kwd.get('date_range_min', None), lambda dmin: model.Job.update_time >= dmin)
+        query = build_and_apply_filters(query, kwd.get('date_range_max', None), lambda dmax: model.Job.update_time <= dmax)
 
         history_id = kwd.get('history_id', None)
+        workflow_id = kwd.get('workflow_id', None)
+        invocation_id = kwd.get('invocation_id', None)
         if history_id is not None:
-            try:
-                decoded_history_id = self.decode_id(history_id)
-                query = query.filter(Job.table.c.history_id == decoded_history_id)
-            except Exception:
-                raise exceptions.ObjectAttributeInvalidException()
+            decoded_history_id = self.decode_id(history_id)
+            query = query.filter(model.Job.history_id == decoded_history_id)
+        if workflow_id or invocation_id:
+            if workflow_id is not None:
+                decoded_workflow_id = self.decode_id(workflow_id)
+                wfi_step = trans.sa_session.query(model.WorkflowInvocationStep).join(model.WorkflowInvocation).join(model.Workflow).filter(
+                    model.Workflow.stored_workflow_id == decoded_workflow_id,
+                ).subquery()
+            elif invocation_id is not None:
+                decoded_invocation_id = self.decode_id(invocation_id)
+                wfi_step = trans.sa_session.query(model.WorkflowInvocationStep).filter(
+                    model.WorkflowInvocationStep.workflow_invocation_id == decoded_invocation_id
+                ).subquery()
+            query1 = query.join(wfi_step)
+            query2 = query.join(model.ImplicitCollectionJobsJobAssociation).join(
+                wfi_step,
+                model.ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id == wfi_step.c.implicit_collection_jobs_id
+            )
+            query = query1.union(query2)
+
+        if kwd.get('order_by') == 'create_time':
+            order_by = model.Job.create_time.desc()
+        else:
+            order_by = model.Job.update_time.desc()
+        query = query.order_by(order_by)
+
+        query = query.offset(offset)
+        query = query.limit(limit)
 
         out = []
-        if kwd.get('order_by') == 'create_time':
-            order_by = Job.table.c.create_time.desc()
-        else:
-            order_by = Job.table.c.update_time.desc()
-        for job in query.order_by(order_by).all():
-            job_dict = job.to_dict('collection', system_details=is_admin)
+        for job in query.all():
+            job_dict = job.to_dict(view, system_details=is_admin)
             j = self.encode_all_ids(trans, job_dict, True)
+            if view == 'admin_job_list':
+                j['decoded_job_id'] = job.id
             if user_details:
                 j['user_email'] = job.user.email
             out.append(j)
@@ -268,11 +324,11 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         """
         job = self.__get_job(trans, id)
         if not job:
-            raise exceptions.ObjectNotFound("Could not access job with id '%s'" % id)
+            raise exceptions.ObjectNotFound(f"Could not access job with id '{id}'")
         if job.state == job.states.PAUSED:
             job.resume()
         else:
-            exceptions.RequestParameterInvalidException("Job with id '%s' is not paused" % (job.tool_id))
+            exceptions.RequestParameterInvalidException(f"Job with id '{job.tool_id}' is not paused")
         return self.__dictify_associations(trans, job.output_datasets, job.output_library_datasets)
 
     @expose_api_anonymous
@@ -363,12 +419,12 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         job = self.__get_job(trans, id)
         if not job:
-            raise exceptions.ObjectNotFound("Could not access job with id '%s'" % id)
+            raise exceptions.ObjectNotFound(f"Could not access job with id '{id}'")
         tool = self.app.toolbox.get_tool(job.tool_id, kwd.get('tool_version') or job.tool_version)
         if tool is None:
             raise exceptions.ObjectNotFound("Requested tool not found")
         if not tool.is_workflow_compatible:
-            raise exceptions.ConfigDoesNotAllowException("Tool '%s' cannot be rerun." % (job.tool_id))
+            raise exceptions.ConfigDoesNotAllowException(f"Tool '{job.tool_id}' cannot be rerun.")
         return tool.to_json(trans, {}, job=job)
 
     def __dictify_associations(self, trans, *association_lists):

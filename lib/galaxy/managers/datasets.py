@@ -18,7 +18,7 @@ from galaxy.managers import (
     secured,
     users
 )
-from galaxy.structured_app import StructuredApp
+from galaxy.structured_app import MinimalManagerApp
 from galaxy.util.checkers import check_binary
 
 log = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ class DatasetManager(base.ModelManager, secured.AccessibleManagerMixin, deletabl
 
     # TODO:?? get + error_if_uploading is common pattern, should upload check be worked into access/owed?
 
-    def __init__(self, app: StructuredApp):
+    def __init__(self, app: MinimalManagerApp):
         super().__init__(app)
         self.permissions = DatasetRBACPermissions(app)
         # needed for admin test
@@ -143,7 +143,7 @@ class DatasetRBACPermissions:
 class DatasetSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
     model_manager_class = DatasetManager
 
-    def __init__(self, app: StructuredApp, user_manager: users.UserManager):
+    def __init__(self, app: MinimalManagerApp, user_manager: users.UserManager):
         super().__init__(app)
         self.dataset_manager = self.manager
         # needed for admin test
@@ -302,8 +302,10 @@ class DatasetAssociationManager(base.ModelManager,
             if not job.finished:
                 # Are *all* of the job's other output datasets deleted?
                 if job.check_if_output_datasets_deleted():
-                    job.mark_deleted(self.app.config.track_jobs_in_database)
-                    self.app.job_manager.stop(job)
+                    track_jobs_in_database = self.app.config.track_jobs_in_database
+                    job.mark_deleted(track_jobs_in_database)
+                    if not track_jobs_in_database:
+                        self.app.job_manager.stop(job)
                     return True
         return False
 
@@ -357,7 +359,7 @@ class DatasetAssociationManager(base.ModelManager,
                 trans.sa_session.flush()
                 self.set_metadata(trans, dataset_assoc)
         else:
-            raise exceptions.InsufficientPermissionsException('Changing datatype "%s" is not allowed.' % (data.extension))
+            raise exceptions.InsufficientPermissionsException(f'Changing datatype "{data.extension}" is not allowed.')
 
     def set_metadata(self, trans, dataset_assoc, overwrite=False, validate=True):
         """Trigger a job that detects and sets metadata on a given dataset association (ldda or hda)"""
@@ -413,7 +415,7 @@ class DatasetAssociationManager(base.ModelManager,
                 return role_id
 
             def parameters_roles_or_none(role_type):
-                encoded_role_ids = kwd.get(role_type, kwd.get("%s_ids[]" % role_type, None))
+                encoded_role_ids = kwd.get(role_type, kwd.get(f"{role_type}_ids[]", None))
                 if encoded_role_ids is not None:
                     return list(map(to_role_id, encoded_role_ids))
                 else:
@@ -487,7 +489,7 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer,
             'genome_build': lambda i, k, **c: i.dbkey,
 
             # derived (not mapped) attributes
-            'data_type': lambda i, k, **c: i.datatype.__class__.__module__ + '.' + i.datatype.__class__.__name__,
+            'data_type': lambda i, k, **c: f"{i.datatype.__class__.__module__}.{i.datatype.__class__.__name__}",
 
             'converted': self.serialize_converted_datasets,
             # TODO: metadata/extra files
@@ -634,7 +636,7 @@ class DatasetAssociationSerializer(_UnflattenedMetadataDatasetAssociationSeriali
         # prefix each key within and return
         prefixed = {}
         for key, val in metadata.items():
-            prefixed_key = 'metadata_' + key
+            prefixed_key = f"metadata_{key}"
             prefixed[prefixed_key] = val
         return prefixed
 

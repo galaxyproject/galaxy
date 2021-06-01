@@ -9,7 +9,7 @@
   ],
   "main": "index.js",
   "dependencies": {
-    "@galaxyproject/nora": "^1.1.0",
+    "@galaxyproject/nora": "1.1.2",
     "cpy-cli": "^3.1.1"
   },
   "scripts": {

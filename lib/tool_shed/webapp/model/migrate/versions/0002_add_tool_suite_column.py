@@ -34,7 +34,7 @@ def upgrade(migrate_engine):
             default_false = "0"
         elif migrate_engine.name in ['postgresql', 'postgres']:
             default_false = "false"
-        migrate_engine.execute("UPDATE tool SET suite=%s" % default_false)
+        migrate_engine.execute(f"UPDATE tool SET suite={default_false}")
     except Exception:
         log.exception("Adding suite column to the tool table failed.")
 

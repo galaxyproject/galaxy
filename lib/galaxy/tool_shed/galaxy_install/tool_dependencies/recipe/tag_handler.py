@@ -173,7 +173,7 @@ class Install(RecipeTag, SyncDatabase):
                                                                               include_after_install_actions=True)
                 if not actions_elem_tuples:
                     proceed_with_install = False
-                    error_message = 'Version {} of the {} package cannot be installed because '.format(str(package_version), str(package_name))
+                    error_message = f'Version {str(package_version)} of the {str(package_name)} package cannot be installed because '
                     error_message += 'the recipe for installing the package is missing either an &lt;actions&gt; tag set or an &lt;actions_group&gt; '
                     error_message += 'tag set.'
                     # Since there was an installation error, update the tool dependency status to Error.
@@ -262,7 +262,7 @@ class Repository(RecipeTag, SyncDatabase):
             return tmp_filename
         else:
             message = "Unable to retrieve required tool_dependencies.xml file from the Tool Shed for revision "
-            message += "{} of installed repository {} owned by {}.".format(str(changeset_revision), str(name), str(owner))
+            message += f"{str(changeset_revision)} of installed repository {str(name)} owned by {str(owner)}."
             raise Exception(message)
 
     def create_tool_dependency_with_initialized_env_sh_file(self, dependent_install_dir, tool_shed_repository,
@@ -430,7 +430,7 @@ class Repository(RecipeTag, SyncDatabase):
                 # required_repository.
                 if required_repository.is_deactivated_or_installed:
                     if not os.path.exists(required_repository_package_install_dir):
-                        log.error('Missing required tool dependency directory %s' % str(required_repository_package_install_dir))
+                        log.error(f'Missing required tool dependency directory {str(required_repository_package_install_dir)}')
                     repo_files_dir = required_repository.repo_files_directory(self.app)
                     if not repo_files_dir:
                         message = "Unable to locate the repository directory for revision %s of installed repository %s owned by %s." % \
@@ -488,7 +488,7 @@ class Repository(RecipeTag, SyncDatabase):
         for rd_tool_dependency in rd_tool_dependencies:
             if rd_tool_dependency.status == self.app.install_model.ToolDependency.installation_status.ERROR:
                 # We'll log the error here, but continue installing packages since some may not require this dependency.
-                log.error("Error installing tool dependency for required repository: %s" % str(rd_tool_dependency.error_message))
+                log.error(f"Error installing tool dependency for required repository: {str(rd_tool_dependency.error_message)}")
         return tool_dependency, proceed_with_install, action_elem_tuples
 
     def remove_file(self, file_name):
@@ -524,7 +524,7 @@ class SetEnvironment(RecipeTag):
         try:
             self.set_environment(package_elem, tool_shed_repository, attr_tups_of_dependencies_for_install)
         except Exception as e:
-            error_message = "Error setting environment for tool dependency: %s" % str(e)
+            error_message = f"Error setting environment for tool dependency: {str(e)}"
             log.debug(error_message)
         return tool_dependency, proceed_with_install, action_elem_tuples
 

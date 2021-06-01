@@ -77,7 +77,7 @@ def _fetch_target(upload_config, target):
                 _, elements_from_path = _has_src_to_path(upload_config, target_or_item, is_dataset=False)
                 items = _directory_to_items(elements_from_path)
             else:
-                raise Exception("Unknown elements from type encountered [%s]" % elements_from)
+                raise Exception(f"Unknown elements from type encountered [{elements_from}]")
 
         if items:
             del target_or_item["elements_from"]
@@ -87,11 +87,11 @@ def _fetch_target(upload_config, target):
     try:
         _for_each_src(expand_elements_from, target)
     except Exception as e:
-        expansion_error = "Error expanding elements/items for upload destination. %s" % str(e)
+        expansion_error = f"Error expanding elements/items for upload destination. {str(e)}"
 
     if expansion_error is None:
         items = target.get("elements", None)
-        assert items is not None, "No element definition found for destination [%s]" % destination
+        assert items is not None, f"No element definition found for destination [{destination}]"
     else:
         items = []
 
@@ -142,7 +142,7 @@ def _fetch_target(upload_config, target):
             name = item.get("name") or 'Composite Dataset'
             dataset_bunch.name = name
             primary_file = sniff.stream_to_file(StringIO(datatype.generate_primary_file(dataset_bunch)), prefix='upload_auto_primary_file', dir=".")
-            extra_files_path = primary_file + "_extra"
+            extra_files_path = f"{primary_file}_extra"
             os.mkdir(extra_files_path)
             rval = {
                 "name": name,
@@ -172,7 +172,7 @@ def _fetch_target(upload_config, target):
                     key,
                     writable_file.is_binary,
                     ".",
-                    os.path.basename(extra_files_path) + "_",
+                    f"{os.path.basename(extra_files_path)}_",
                     composite_item,
                 )
                 composite_item_idx += 1
@@ -188,7 +188,7 @@ def _fetch_target(upload_config, target):
             return rval
         else:
             if composite:
-                raise Exception("Non-composite datatype [%s] attempting to be created with composite data." % datatype)
+                raise Exception(f"Non-composite datatype [{datatype}] attempting to be created with composite data.")
             return _resolve_item_with_primary(item)
 
     def _resolve_item_with_primary(item):
@@ -262,7 +262,7 @@ def _fetch_target(upload_config, target):
             if extra_files:
                 # TODO: optimize to just copy the whole directory to extra files instead.
                 assert not upload_config.link_data_only, "linking composite dataset files not yet implemented"
-                extra_files_path = path + "_extra"
+                extra_files_path = f"{path}_extra"
                 staged_extra_files = extra_files_path
                 os.mkdir(extra_files_path)
 
@@ -314,7 +314,7 @@ def _fetch_target(upload_config, target):
         if is_collection and not upload_config.allow_failed_collections and len(failed_elements) > 0:
             element_error = "Failed to fetch collection element(s):\n"
             for failed_element in failed_elements:
-                element_error += "\n- %s" % failed_element["error_message"]
+                element_error += f"\n- {failed_element['error_message']}"
             fetched_target["error_message"] = element_error
             fetched_target["elements"] = None
         else:
@@ -384,7 +384,7 @@ def _has_src_to_path(upload_config, item, is_dataset=False):
         try:
             path = sniff.stream_url_to_file(url, file_sources=get_file_sources(upload_config.working_directory))
         except Exception as e:
-            raise Exception("Failed to fetch url {}. {}".format(url, str(e)))
+            raise Exception(f"Failed to fetch url {url}. {str(e)}")
 
         if not is_dataset:
             # Actual target dataset will validate and put results in dict

@@ -14,6 +14,7 @@ from galaxy import (
     util,
     web
 )
+from galaxy.managers.sharable import SlugBuilder
 from galaxy.managers.workflows import (
     MissingToolsException,
     WorkflowUpdateOptions,
@@ -181,6 +182,7 @@ class SingleTagContentsParser(HTMLParser):
 class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, UsesItemRatings):
     stored_list_grid = StoredWorkflowListGrid()
     published_list_grid = StoredWorkflowAllPublishedGrid()
+    slug_builder = SlugBuilder()
 
     @web.expose
     @web.require_login("use Galaxy workflows")
@@ -203,7 +205,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         Render workflow main page (management of existing workflows)
         """
         # Take care of proxy prefix in url as well
-        redirect_url = url_for('/') + 'workflow'
+        redirect_url = f"{url_for('/')}workflow"
         return trans.response.send_redirect(redirect_url)
 
     @web.expose
@@ -302,14 +304,14 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
                                     .first()
             if not other:
                 mtype = "error"
-                msg = ("User '%s' does not exist" % escape(email))
+                msg = f"User '{escape(email)}' does not exist"
             elif other == trans.get_user():
                 mtype = "error"
                 msg = ("You cannot share a workflow with yourself")
             elif trans.sa_session.query(model.StoredWorkflowUserShareAssociation) \
                     .filter_by(user=other, stored_workflow=stored).count() > 0:
                 mtype = "error"
-                msg = ("Workflow already shared with '%s'" % escape(email))
+                msg = f"Workflow already shared with '{escape(email)}'"
             else:
                 share = model.StoredWorkflowUserShareAssociation()
                 share.stored_workflow = stored
@@ -317,7 +319,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
                 session = trans.sa_session
                 session.add(share)
                 session.flush()
-                trans.set_message("Workflow '{}' shared with user '{}'".format(escape(stored.name), escape(other.email)))
+                trans.set_message(f"Workflow '{escape(stored.name)}' shared with user '{escape(other.email)}'")
                 return trans.response.send_redirect(url_for(controller='workflow', action='sharing', id=id))
         return trans.fill_template("/ind_share_base.mako",
                                    message=msg,
@@ -394,16 +396,16 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         # Set referer message.
         referer = trans.request.referer
         if referer:
-            referer_message = "<a href='%s'>return to the previous page</a>" % escape(referer)
+            referer_message = f"<a href='{escape(referer)}'>return to the previous page</a>"
         else:
-            referer_message = "<a href='%s'>go to Galaxy's start page</a>" % url_for('/')
+            referer_message = f"<a href='{url_for('/')}'>go to Galaxy's start page</a>"
 
         # Do import.
         stored = self.get_stored_workflow(trans, id, check_ownership=False)
         if stored.importable is False:
-            return trans.show_error_message("The owner of this workflow has disabled imports via this link.<br>You can %s" % referer_message, use_panels=True)
+            return trans.show_error_message(f"The owner of this workflow has disabled imports via this link.<br>You can {referer_message}", use_panels=True)
         elif stored.deleted:
-            return trans.show_error_message("You can't import this workflow because it has been deleted.<br>You can %s" % referer_message, use_panels=True)
+            return trans.show_error_message(f"You can't import this workflow because it has been deleted.<br>You can {referer_message}", use_panels=True)
         self._import_shared_workflow(trans, stored)
 
         # Redirect to load galaxy frames.
@@ -471,7 +473,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         # TODO: user should be able to embed any item he has access to. see display_by_username_and_slug for security code.
         stored = self.get_stored_workflow(trans, id)
         if stored:
-            return "Embedded Workflow '%s'" % stored.name
+            return f"Embedded Workflow '{stored.name}'"
 
     @web.expose
     @web.json
@@ -518,9 +520,9 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         # Copy.
         new_stored = model.StoredWorkflow()
         if (save_as_name):
-            new_stored.name = '%s' % save_as_name
+            new_stored.name = f'{save_as_name}'
         else:
-            new_stored.name = "Copy of %s" % stored.name
+            new_stored.name = f"Copy of {stored.name}"
         new_stored.latest_workflow = stored.latest_workflow
         # Copy annotation.
         annotation_obj = self.get_item_annotation_obj(trans.sa_session, stored.user, stored)
@@ -528,16 +530,16 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             self.add_item_annotation(trans.sa_session, trans.get_user(), new_stored, annotation_obj.annotation)
         new_stored.copy_tags_from(trans.user, stored)
         if not owner:
-            new_stored.name += " shared by %s" % stored.user.email
+            new_stored.name += f" shared by {stored.user.email}"
         new_stored.user = user
         # Persist
         session = trans.sa_session
         session.add(new_stored)
         session.flush()
         # Display the management page
-        message = 'Created new workflow with name: %s' % escape(new_stored.name)
+        message = f'Created new workflow with name: {escape(new_stored.name)}'
         trans.set_message(message)
-        return_url = url_for('/') + 'workflow?status=done&message=%s' % escape(message)
+        return_url = f"{url_for('/')}workflow?status=done&message={escape(message)}"
         trans.response.send_redirect(return_url)
 
     @web.legacy_expose_api
@@ -564,7 +566,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             stored_workflow = model.StoredWorkflow()
             stored_workflow.name = workflow_name
             stored_workflow.user = user
-            self.create_item_slug(trans.sa_session, stored_workflow)
+            self.slug_builder.create_item_slug(trans.sa_session, stored_workflow)
             # And the first (empty) workflow revision
             workflow = model.Workflow()
             workflow.name = workflow_name
@@ -577,7 +579,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             session = trans.sa_session
             session.add(stored_workflow)
             session.flush()
-            return {'id': trans.security.encode_id(stored_workflow.id), 'message': 'Workflow %s has been created.' % workflow_name}
+            return {'id': trans.security.encode_id(stored_workflow.id), 'message': f'Workflow {workflow_name} has been created.'}
 
     @web.json
     def save_workflow_as(self, trans, workflow_name, workflow_data, workflow_annotation="", from_tool_form=False):
@@ -591,7 +593,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             stored_workflow = model.StoredWorkflow()
             stored_workflow.name = workflow_name
             stored_workflow.user = user
-            self.create_item_slug(trans.sa_session, stored_workflow)
+            self.slug_builder.create_item_slug(trans.sa_session, stored_workflow)
             workflow = model.Workflow()
             workflow.name = workflow_name
             workflow.stored_workflow = stored_workflow
@@ -640,9 +642,9 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         trans.sa_session.add(stored)
         trans.sa_session.flush()
         # Display the management page
-        message = "Workflow deleted: %s" % escape(stored.name)
+        message = f"Workflow deleted: {escape(stored.name)}"
         trans.set_message(message)
-        return trans.response.send_redirect(url_for('/') + 'workflow?status=done&message=%s' % escape(message))
+        return trans.response.send_redirect(f"{url_for('/')}workflow?status=done&message={escape(message)}")
 
     @web.expose
     @web.require_login("edit workflows")
@@ -720,7 +722,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             'id': trans.security.encode_id(stored.id),
             'name': stored.name,
             'tags': item_tag_names,
-            'version': version,
+            'initialVersion': version,
             'annotation': self.get_item_annotation_str(trans.sa_session, trans.user, stored),
             'toolbox': trans.app.toolbox.to_dict(trans),
             'moduleSections': module_sections,
@@ -775,7 +777,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
 
         # Do request and get result.
         auth_header = base64.b64encode(f'{myexp_username}:{myexp_password}')
-        headers = {"Content-type": "text/xml", "Accept": "text/xml", "Authorization": "Basic %s" % auth_header}
+        headers = {"Content-type": "text/xml", "Accept": "text/xml", "Authorization": f"Basic {auth_header}"}
         myexp_url = trans.app.config.myexperiment_target_url
         conn = HTTPConnection(myexp_url)
         # NOTE: blocks web thread.
@@ -788,7 +790,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         parser = SingleTagContentsParser('id')
         parser.feed(response_data)
         myexp_workflow_id = parser.tag_content
-        workflow_list_str = " <br>Return to <a href='%s'>workflow list." % url_for(controller='workflows', action='list')
+        workflow_list_str = f" <br>Return to <a href='{url_for(controller='workflows', action='list')}'>workflow list."
         if myexp_workflow_id:
             return trans.show_message(
                 """Workflow '{}' successfully exported to myExperiment. <br/>
@@ -835,7 +837,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             return "Workflow cannot be exported due to missing tools."
         sname = stored.name
         sname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in sname)[0:150]
-        trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy-Workflow-%s.ga"' % (sname)
+        trans.response.headers["Content-Disposition"] = f'attachment; filename="Galaxy-Workflow-{sname}.ga"'
         trans.response.set_content_type('application/galaxy-archive')
         return stored_dict
 
@@ -904,9 +906,9 @@ def _build_workflow_on_str(instance_ds_names):
     if num_multi_inputs == 0:
         return ""
     elif num_multi_inputs == 1:
-        return " on %s" % instance_ds_names[0]
+        return f" on {instance_ds_names[0]}"
     else:
-        return " on {} and {}".format(", ".join(instance_ds_names[0:-1]), instance_ds_names[-1])
+        return f" on {', '.join(instance_ds_names[0:-1])} and {instance_ds_names[-1]}"
 
 
 def _expand_multiple_inputs(kwargs):
@@ -979,7 +981,7 @@ def _split_inputs(kwargs):
         input_val = kwargs[input_key]
         if isinstance(input_val, list):
             input_base = input_key[:-len("|input")]
-            mode_key = "%s|multi_mode" % input_base
+            mode_key = f"{input_base}|multi_mode"
             mode = kwargs.get(mode_key, "matched")
             if mode == "matched":
                 matched_multi_inputs[input_key] = input_val

@@ -6,6 +6,7 @@ import string
 import time
 import unittest
 
+import pytest
 import routes
 
 from galaxy import model
@@ -36,7 +37,7 @@ CONFIG_TEST_TOOL_VERSION_1 = CONFIG_TEST_TOOL_VERSION_TEMPLATE.safe_substitute(d
 CONFIG_TEST_TOOL_VERSION_2 = CONFIG_TEST_TOOL_VERSION_TEMPLATE.safe_substitute(dict(version="2"))
 
 REPO_TYPE = collections.namedtuple(
-    'DEFAULT_TEST_REPO',
+    'REPO_TYPE',
     'tool_shed owner name changeset_revision installed_changeset_revision description status',
 )
 DEFAULT_TEST_REPO = REPO_TYPE('github.com', 'galaxyproject', 'example', '1', '1', 'description', 'OK')
@@ -189,6 +190,7 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
         assert tool is not None
         assert len(tool._macro_paths) == 1
 
+    @pytest.mark.xfail(raises=AssertionError)
     def test_tool_reload_when_macro_is_altered(self):
         self._init_tool(filename="tool_with_macro.xml",
                         tool_contents=SIMPLE_TOOL_WITH_MACRO,
@@ -209,6 +211,7 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
 
         self._try_until_no_errors(check_tool_macro)
 
+    @pytest.mark.xfail(raises=AssertionError)
     def test_tool_reload_for_broken_tool(self):
         self._init_tool(filename="simple_tool.xml", version="1.0")
         self._add_config("""<toolbox><tool file="simple_tool.xml"/></toolbox>""")

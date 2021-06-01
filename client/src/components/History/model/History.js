@@ -1,5 +1,4 @@
 import { dateMixin, ModelBase } from "./ModelBase";
-import { bytesToString } from "utils/utils";
 
 export class History extends dateMixin(ModelBase) {
     // not deleted
@@ -18,17 +17,23 @@ export class History extends dateMixin(ModelBase) {
         }, 0);
     }
 
-    get niceSize() {
-        return this.size ? bytesToString(this.size, true, 2) : "(empty)";
-    }
-
     get statusDescription() {
         const status = [];
-        if (this.shared) status.push("Shared");
-        if (this.importable) status.push("Accessible");
-        if (this.published) status.push("Published");
-        if (this.isDeleted) status.push("Deleted");
-        if (this.purged) status.push("Purged");
+        if (this.shared) {
+            status.push("Shared");
+        }
+        if (this.importable) {
+            status.push("Accessible");
+        }
+        if (this.published) {
+            status.push("Published");
+        }
+        if (this.isDeleted) {
+            status.push("Deleted");
+        }
+        if (this.purged) {
+            status.push("Purged");
+        }
         return status.join(", ");
     }
 }

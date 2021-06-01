@@ -34,7 +34,7 @@
         <PriorityMenuItem
             v-if="expanded"
             key="edit-tags"
-            title="Edit History Tags"
+            title="Edit Dataset Tags"
             :pressed="showTags"
             @click.stop="$emit('update:showTags', !showTags)"
             icon="fas fa-tags"
@@ -241,7 +241,9 @@ export default {
 
         viewData() {
             const id = this.dataset.id;
-            if (!id) return;
+            if (!id) {
+                return;
+            }
             this.useGalaxy((Galaxy) => {
                 if (Galaxy.frame && Galaxy.frame.active) {
                     Galaxy.frame.addDataset(id);

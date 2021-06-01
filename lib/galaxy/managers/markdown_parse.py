@@ -15,6 +15,7 @@ GALAXY_FLAVORED_MARKDOWN_CONTAINER_LINE_PATTERN = re.compile(
 VALID_CONTAINER_END_PATTERN = re.compile(r"^```\s*$")
 DYNAMIC_ARGUMENTS = object()
 VALID_ARGUMENTS = {
+    "history_link": ["history_id"],
     "history_dataset_display": ["input", "output", "history_dataset_id"],
     "history_dataset_embedded": ["input", "output", "history_dataset_id"],
     "history_dataset_as_image": ["input", "output", "history_dataset_id", "path"],
@@ -46,7 +47,7 @@ FUNCTION_ARG = r'\s*[\w\|]+\s*=\s*(?:%s)\s*' % ARG_VAL_REGEX
 # embed commas between arguments
 FUNCTION_MULTIPLE_ARGS = fr'(?P<firstargcall>{FUNCTION_ARG})(?P<restargcalls>(?:,{FUNCTION_ARG})*)'
 FUNCTION_MULTIPLE_ARGS_PATTERN = re.compile(FUNCTION_MULTIPLE_ARGS)
-FUNCTION_CALL_LINE_TEMPLATE = r'\s*%s\s*\((?:' + FUNCTION_MULTIPLE_ARGS + r')?\)\s*'
+FUNCTION_CALL_LINE_TEMPLATE = f"\\s*%s\\s*\\((?:{FUNCTION_MULTIPLE_ARGS})?\\)\\s*"
 GALAXY_MARKDOWN_FUNCTION_CALL_LINE = re.compile(FUNCTION_CALL_LINE_TEMPLATE % GALAXY_FLAVORED_MARKDOWN_CONTAINER_REGEX)
 WHITE_SPACE_ONLY_PATTERN = re.compile(r"^[\s]+$")
 

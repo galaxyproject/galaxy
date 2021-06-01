@@ -60,7 +60,7 @@ class GroupManager:
             raise ItemAccessibilityException('Only administrators can create groups.')
         else:
             if self.get(trans, name=name):
-                raise Conflict('Group with the given name already exists. Name: ' + str(name))
+                raise Conflict(f"Group with the given name already exists. Name: {str(name)}")
             # TODO add description field to the model
             group = trans.app.model.Group(name=name)
             trans.sa_session.add(group)

@@ -383,9 +383,9 @@ class ToolShedRepository(_HasTable):
             value_mapper = {}
         rval = {}
         try:
-            visible_keys = self.__getattribute__('dict_' + view + '_visible_keys')
+            visible_keys = self.__getattribute__(f"dict_{view}_visible_keys")
         except AttributeError:
-            raise Exception('Unknown API view: %s' % view)
+            raise Exception(f'Unknown API view: {view}')
         for key in visible_keys:
             try:
                 rval[key] = self.__getattribute__(key)

@@ -1,18 +1,18 @@
 <template>
     <div id="columns" class="workflow-client">
-        <StateUpgradeModal :stateMessages="stateMessages" />
+        <StateUpgradeModal :state-messages="stateMessages" />
         <StateUpgradeModal
-            :stateMessages="insertedStateMessages"
+            :state-messages="insertedStateMessages"
             title="Subworkflow embedded with changes"
             message="Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save."
         />
         <RefactorConfirmationModal
-            :workflowId="id"
-            :refactorActions="refactorActions"
+            :workflow-id="id"
+            :refactor-actions="refactorActions"
             @onWorkflowError="onWorkflowError"
             @onWorkflowMessage="onWorkflowMessage"
             @onRefactor="onRefactor"
-            @onShow="hideModal()"
+            @onShow="hideModal"
         />
         <MessagesModal :title="messageTitle" :message="messageBody" :error="messageIsError" @onHidden="resetMessage" />
         <MarkdownEditor
@@ -20,7 +20,7 @@
             :markdown-text="markdownText"
             :markdown-config="markdownConfig"
             :title="'Workflow Report: ' + name"
-            :nodes="nodes"
+            :get-manager="getManager"
             @onUpdate="onReportUpdate"
         >
             <template v-slot:buttons>
@@ -99,7 +99,7 @@
                         <div class="unified-panel-header" unselectable="on">
                             <div class="unified-panel-header-inner">
                                 <WorkflowOptions
-                                    :hasChanges="hasChanges"
+                                    :has-changes="hasChanges"
                                     @onSave="onSave"
                                     @onSaveAs="onSaveAs"
                                     @onRun="onRun"
@@ -115,13 +115,35 @@
                         </div>
                         <div class="unified-panel-body workflow-right">
                             <div class="m-1">
+                                <FormTool
+                                    v-if="hasActiveNodeTool"
+                                    :get-manager="getManager"
+                                    :get-node="getNode"
+                                    :datatypes="datatypes"
+                                    @onAnnotation="onAnnotation"
+                                    @onLabel="onLabel"
+                                    @onChangeOutputDatatype="onChangeOutputDatatype"
+                                    @onSetData="onSetData"
+                                />
+                                <FormDefault
+                                    v-else-if="hasActiveNodeDefault"
+                                    :get-manager="getManager"
+                                    :get-node="getNode"
+                                    :datatypes="datatypes"
+                                    @onAnnotation="onAnnotation"
+                                    @onLabel="onLabel"
+                                    @onEditSubworkflow="onEditSubworkflow"
+                                    @onAttemptRefactor="onAttemptRefactor"
+                                    @onSetData="onSetData"
+                                />
                                 <WorkflowAttributes
+                                    v-else-if="showAttributes"
                                     :id="id"
                                     :tags="tags"
                                     :parameters="parameters"
-                                    :annotationCurrent.sync="annotation"
+                                    :annotation-current.sync="annotation"
                                     :annotation="annotation"
-                                    :nameCurrent.sync="name"
+                                    :name-current.sync="name"
                                     :name="name"
                                     :version="version"
                                     :versions="versions"
@@ -132,20 +154,18 @@
                                     @onCreator="onCreator"
                                 />
                                 <WorkflowLint
-                                    id="lint-panel"
-                                    class="right-content"
-                                    ref="lint"
-                                    style="display: none;"
-                                    :legacy-parameters="parameters"
+                                    v-else-if="showLint"
+                                    :untyped-parameters="parameters"
                                     :annotation="annotation"
                                     :creator="creator"
                                     :license="license"
-                                    :nodes="nodes"
+                                    :get-manager="getManager"
                                     @onAttributes="onAttributes"
-                                    @refactor="attemptRefactor"
-                                    @scrollTo="scrollTo"
+                                    @onHighlight="onHighlight"
+                                    @onUnhighlight="onUnhighlight"
+                                    @onRefactor="onAttemptRefactor"
+                                    @onScrollTo="onScrollTo"
                                 />
-                                <div id="right-content" class="right-content" />
                             </div>
                         </div>
                     </div>
@@ -159,17 +179,12 @@
 import { getDatatypesMapper } from "components/Datatypes";
 import { fromSimple } from "./modules/model";
 import { getModule, getVersions, saveWorkflow, loadWorkflow } from "./modules/services";
-import {
-    getStateUpgradeMessages,
-    copyIntoWorkflow,
-    getLegacyWorkflowParameters,
-    showAttributes,
-    showForm,
-    showLint,
-    saveAs,
-} from "./modules/utilities";
+import { getUntypedWorkflowParameters } from "./modules/parameters";
+import { getStateUpgradeMessages, copyIntoWorkflow, saveAs } from "./modules/utilities";
 import WorkflowCanvas from "./modules/canvas";
 import WorkflowOptions from "./Options";
+import FormDefault from "./Forms/FormDefault";
+import FormTool from "./Forms/FormTool";
 import MarkdownEditor from "components/Markdown/MarkdownEditor";
 import ToolBoxWorkflow from "components/Panels/ToolBoxWorkflow";
 import SidePanel from "components/Panels/SidePanel";
@@ -191,6 +206,8 @@ export default {
         SidePanel,
         StateUpgradeModal,
         ToolBoxWorkflow,
+        FormDefault,
+        FormTool,
         WorkflowOptions,
         WorkflowAttributes,
         ZoomControl,
@@ -204,7 +221,7 @@ export default {
             type: String,
             required: true,
         },
-        version: {
+        initialVersion: {
             type: Number,
             required: true,
         },
@@ -256,7 +273,23 @@ export default {
             messageTitle: null,
             messageBody: null,
             messageIsError: false,
+            version: this.initialVersion,
+            showInPanel: "attributes",
         };
+    },
+    computed: {
+        showAttributes() {
+            return this.showInPanel == "attributes";
+        },
+        showLint() {
+            return this.showInPanel == "lint";
+        },
+        hasActiveNodeDefault() {
+            return this.activeNode && this.activeNode.type != "tool";
+        },
+        hasActiveNodeTool() {
+            return this.activeNode && this.activeNode.type == "tool";
+        },
     },
     created() {
         getDatatypesMapper().then((mapper) => {
@@ -287,21 +320,30 @@ export default {
                 this.hasChanges = true;
             }
         },
+        steps: function (newSteps, oldSteps) {
+            this.hasChanges = true;
+        },
+        nodes: function (newNodes, oldNodes) {
+            this.hasChanges = true;
+        },
     },
     methods: {
         onActivate(node) {
             if (this.activeNode != node) {
-                if (this.activeNode) {
-                    this.activeNode.makeInactive();
-                }
+                this.onDeactivate();
                 document.activeElement.blur();
                 node.makeActive();
                 this.activeNode = node;
+                this.canvasManager.drawOverview();
             }
-            showForm(this, node, this.datatypes);
-            this.canvasManager.drawOverview();
         },
-        attemptRefactor(actions) {
+        onDeactivate() {
+            if (this.activeNode) {
+                this.activeNode.makeInactive();
+                this.activeNode = null;
+            }
+        },
+        onAttemptRefactor(actions) {
             if (this.hasChanges) {
                 const r = window.confirm(
                     "You've made changes to your workflow that need to be saved before attempting the requested action. Save those changes and continue?"
@@ -341,7 +383,7 @@ export default {
         },
         async onRefactor(response) {
             await fromSimple(this, response.workflow);
-            this._loadEditorData(response);
+            this._loadEditorData(response.workflow);
         },
         onAdd(node) {
             this.nodes[node.id] = node;
@@ -363,21 +405,34 @@ export default {
             delete this.nodes[node.id];
             Vue.delete(this.steps, node.id);
             this.canvasManager.drawOverview();
-            this.activeNode = null;
-            this.hasChanges = true;
-            showAttributes();
+            this.onDeactivate();
+            this.showInPanel = "attributes";
         },
         onEditSubworkflow(contentId) {
             const editUrl = `${getAppRoot()}workflow/editor?workflow_id=${contentId}`;
             this.onNavigate(editUrl);
         },
         onClone(node) {
-            Vue.set(this.steps, this.nodeIndex++, {
-                ...node.step,
+            const newId = this.nodeIndex++;
+            const stepCopy = JSON.parse(JSON.stringify(node.step));
+            const configFormCopy = JSON.parse(JSON.stringify(node.config_form));
+            Vue.set(this.steps, newId, {
+                ...stepCopy,
+                id: newId,
+                config_form: {
+                    ...configFormCopy,
+                    inputs: configFormCopy.inputs.filter((input) => !input.skipOnClone),
+                },
                 uuid: null,
-                annotation: node.annotation,
-                tool_state: node.tool_state,
-                post_job_actions: node.postJobActions,
+                label: null,
+                annotation: JSON.parse(JSON.stringify(node.annotation)),
+                tool_state: JSON.parse(JSON.stringify(node.tool_state)),
+                post_job_actions: JSON.parse(JSON.stringify(node.postJobActions)),
+            });
+            Vue.nextTick().then(() => {
+                this.canvasManager.drawOverview();
+                node = this.nodes[newId];
+                this.onActivate(node);
             });
         },
         onInsertTool(tool_id, tool_name) {
@@ -410,21 +465,46 @@ export default {
             });
         },
         onAttributes() {
-            showAttributes();
             this._ensureParametersSet();
+            this.onDeactivate();
+            this.showInPanel = "attributes";
         },
-        scrollTo(node) {
+        onAnnotation(nodeId, newAnnotation) {
+            const node = this.nodes[nodeId];
+            node.setAnnotation(newAnnotation);
+        },
+        onSetData(nodeId, newData) {
+            const node = this.nodes[nodeId];
+            node.setData(newData);
+        },
+        onChangeOutputDatatype(nodeId, outputName, newDatatype) {
+            const node = this.nodes[nodeId];
+            node.changeOutputDatatype(outputName, newDatatype);
+        },
+        onLabel(nodeId, newLabel) {
+            const node = this.nodes[nodeId];
+            node.setLabel(newLabel);
+        },
+        onScrollTo(nodeId) {
+            const node = this.nodes[nodeId];
             this.canvasManager.scrollToNode(node);
             node.onScrollTo();
         },
+        onHighlight(nodeId) {
+            const node = this.nodes[nodeId];
+            node.onHighlight();
+        },
+        onUnhighlight(nodeId) {
+            const node = this.nodes[nodeId];
+            node.onUnhighlight();
+        },
         onLint() {
             this._ensureParametersSet();
-            // See notes in Lint.vue about why refresh is needed.
-            this.$refs.lint.refresh();
-            showLint();
+            this.onDeactivate();
+            this.showInPanel = "lint";
         },
         onUpgrade() {
-            this.attemptRefactor([{ action_type: "upgrade_all_steps" }]);
+            this.onAttemptRefactor([{ action_type: "upgrade_all_steps" }]);
         },
         onEdit() {
             this.isCanvas = true;
@@ -489,7 +569,7 @@ export default {
             }
         },
         _ensureParametersSet() {
-            this.parameters = getLegacyWorkflowParameters(this.nodes);
+            this.parameters = getUntypedWorkflowParameters(this.nodes);
         },
         _insertStep(contentId, name, type) {
             if (!this.isCanvas) {
@@ -548,6 +628,9 @@ export default {
         },
         getCanvasManager() {
             return this.canvasManager;
+        },
+        getNode() {
+            return this.activeNode;
         },
         onInsertedStateMessages(insertedStateMessages) {
             this.insertedStateMessages = insertedStateMessages;

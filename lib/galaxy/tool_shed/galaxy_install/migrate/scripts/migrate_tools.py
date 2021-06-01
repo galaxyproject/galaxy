@@ -25,8 +25,8 @@ def main():
     else:
         plural = 's'
         file_names = ', '.join(non_shed_tool_confs)
-    msg = "\nThe installation process is finished.  All tools associated with this migration that were defined in your file%s named\n" % plural
-    msg += "%s, have been removed.  You may now start your Galaxy server.\n" % file_names
+    msg = f"\nThe installation process is finished.  All tools associated with this migration that were defined in your file{plural} named\n"
+    msg += f"{file_names}, have been removed.  You may now start your Galaxy server.\n"
     print(msg)
     app.shutdown()
     sys.exit(0)

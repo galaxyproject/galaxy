@@ -15,7 +15,7 @@ from typing import (
     List,
 )
 
-from galaxy.app import StructuredApp
+from galaxy.app import MinimalManagerApp
 from galaxy.managers import base
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.fields import EncodedDatabaseIdField
@@ -30,7 +30,7 @@ VERSION_JSON_FILE = 'version.json'
 class ConfigurationManager:
     """Interface/service object for interacting with configuration and related data."""
 
-    def __init__(self, app: StructuredApp):
+    def __init__(self, app: MinimalManagerApp):
         self._app = app
 
     def get_configuration(
@@ -122,6 +122,9 @@ class ConfigSerializer(base.ModelSerializer):
             assert hasattr(config, key)
             return getattr(config, key)
 
+        def _config_is_truthy(config, key, **context):
+            return True if config.get(key) else False
+
         self.serializers = {
             # TODO: this is available from user data, remove
             'is_admin_user': lambda *a, **c: False,
@@ -151,6 +154,7 @@ class ConfigSerializer(base.ModelSerializer):
             'allow_user_impersonation': _use_config,
             'allow_user_creation': _defaults_to(False),  # schema default is True
             'use_remote_user': _defaults_to(None),  # schema default is False; or config.single_user
+            'single_user': _config_is_truthy,
             'enable_oidc': _use_config,
             'oidc': _use_config,
             'enable_quotas': _use_config,
@@ -158,9 +162,12 @@ class ConfigSerializer(base.ModelSerializer):
             'datatypes_disable_auto': _use_config,
             'allow_user_dataset_purge': _defaults_to(False),  # schema default is True
             'ga_code': _use_config,
+            'plausible_server': _use_config,
+            'plausible_domain': _use_config,
+            'matomo_server': _use_config,
+            'matomo_site_id': _use_config,
             'enable_unique_workflow_defaults': _use_config,
             'enable_beta_markdown_export': _use_config,
-            'simplified_workflow_run_ui': _use_config,
             'simplified_workflow_run_ui_target_history': _use_config,
             'simplified_workflow_run_ui_job_cache': _use_config,
             'has_user_tool_filters': _defaults_to(False),

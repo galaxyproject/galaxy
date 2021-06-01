@@ -20,6 +20,7 @@ from galaxy.exceptions import (
 )
 from galaxy.model.dataset_collections import builder
 from galaxy.util import (
+    chunk_iterable,
     ExecutionTimer
 )
 from galaxy.util.hash_util import HASH_NAME_MAP
@@ -27,6 +28,7 @@ from galaxy.util.hash_util import HASH_NAME_MAP
 log = logging.getLogger(__name__)
 
 UNSET = object()
+DEFAULT_CHUNK_SIZE = 1000
 
 
 class ModelPersistenceContext(metaclass=abc.ABCMeta):
@@ -35,7 +37,6 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
     This class implement the create_dataset method that takes care of populating metadata
     required for datasets and other potential model objects.
     """
-
     def create_dataset(
         self,
         ext,
@@ -57,6 +58,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         hashes=None,
         created_from_basename=None,
         final_job_state='ok',
+        creating_job_id=None,
     ):
         tag_list = tag_list or []
         sources = sources or []
@@ -88,9 +90,10 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                                                                       dbkey=dbkey,
                                                                       create_dataset=True,
                                                                       flush=False,
-                                                                      sa_session=sa_session)
-
+                                                                      sa_session=sa_session,
+                                                                      creating_job_id=creating_job_id)
                 self.persist_object(primary_data)
+
                 if init_from:
                     self.permission_provider.copy_dataset_permissions(init_from, primary_data)
                     primary_data.state = init_from.state
@@ -217,13 +220,24 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         #    <sort regex="part_(\d+)_sample_([^_]+).fastq" by="2:lexical,1:numerical" />
         if name is None:
             name = "unnamed output"
+        if self.flush_per_n_datasets and self.flush_per_n_datasets > 0:
+            for chunk in chunk_iterable(filenames.items(), size=self.flush_per_n_datasets):
+                self._populate_elements(chunk=chunk, name=name, root_collection_builder=root_collection_builder, metadata_source_name=metadata_source_name, final_job_state=final_job_state)
+                if len(chunk) == self.flush_per_n_datasets:
+                    # In most cases we don't need to flush, that happens in the caller.
+                    # Only flush here for saving memory.
+                    root_collection_builder.populate_partial()
+                    self.flush()
+        else:
+            self._populate_elements(chunk=filenames.items(), name=name, root_collection_builder=root_collection_builder, metadata_source_name=metadata_source_name, final_job_state=final_job_state)
 
+    def _populate_elements(self, chunk, name, root_collection_builder, metadata_source_name, final_job_state):
         element_datasets = {'element_identifiers': [], 'datasets': [], 'tag_lists': [], 'paths': [], 'extra_files': []}
-        for filename, discovered_file in filenames.items():
+        for filename, discovered_file in chunk:
             create_dataset_timer = ExecutionTimer()
             fields_match = discovered_file.match
             if not fields_match:
-                raise Exception("Problem parsing metadata fields for file %s" % filename)
+                raise Exception(f"Problem parsing metadata fields for file {filename}")
             element_identifiers = fields_match.element_identifiers
             designation = fields_match.designation
             visible = fields_match.visible
@@ -404,6 +418,7 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
         self.sa_session = None
         self.object_store = object_store
         self.export_store = export_store
+        self.flush_per_n_datasets = None
 
         self.job_working_directory = working_directory  # TODO: rename...
 

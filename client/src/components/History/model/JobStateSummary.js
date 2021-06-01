@@ -9,7 +9,7 @@ import { STATES } from "./states";
 
 // Job-state-summary lists
 
-const NON_TERMINAL_STATES = [STATES.NEW, STATES.QUEUED, STATES.RUNNING];
+const NON_TERMINAL_STATES = [STATES.NEW, STATES.WAITING, STATES.QUEUED, STATES.RUNNING];
 
 const ERROR_STATES = [
     STATES.ERROR,
@@ -59,10 +59,18 @@ export class JobStateSummary extends Map {
         // }
 
         if (this.jobCount) {
-            if (this.isErrored) return STATES.ERROR;
-            if (this.isNew) return STATES.NEW;
-            if (this.isRunning) return STATES.RUNNING;
-            if (this.isTerminal) return STATES.OK;
+            if (this.isErrored) {
+                return STATES.ERROR;
+            }
+            if (this.isNew) {
+                return STATES.NEW;
+            }
+            if (this.isRunning) {
+                return STATES.RUNNING;
+            }
+            if (this.isTerminal) {
+                return STATES.OK;
+            }
             return STATES.QUEUED;
         }
 
@@ -84,7 +92,9 @@ export class JobStateSummary extends Map {
     }
 
     get isTerminal() {
-        if (this.isNew) return false;
+        if (this.isNew) {
+            return false;
+        }
         return !this.anyHasJobs(...NON_TERMINAL_STATES);
     }
 

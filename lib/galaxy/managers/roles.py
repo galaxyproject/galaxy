@@ -22,16 +22,19 @@ from galaxy.util import unicodify
 
 log = logging.getLogger(__name__)
 
-RoleIdField = Field("ID", description="Encoded ID of the role")
+RoleIdField = Field(title="ID", description="Encoded ID of the role")
 RoleNameField = Field(title="Name", description="Name of the role")
 RoleDescriptionField = Field(title="Description", description="Description of the role")
 
 
-class RoleModel(BaseModel):
+class BasicRoleModel(BaseModel):
     id: EncodedDatabaseIdField = RoleIdField
     name: str = RoleNameField
-    description: str = RoleDescriptionField
     type: str = Field(title="Type", description="Type or category of the role")
+
+
+class RoleModel(BasicRoleModel):
+    description: str = RoleDescriptionField
     url: str = Field(title="URL", description="URL for the role")
     model_class: str = Field(title="Model class", description="Database model class (Role)")
 
@@ -73,7 +76,7 @@ class RoleManager(base.ModelManager):
         except sqlalchemy_exceptions.NoResultFound:
             raise galaxy.exceptions.RequestParameterInvalidException('No accessible role found with the id provided.')
         except Exception as e:
-            raise galaxy.exceptions.InternalServerError('Error loading from the database.' + unicodify(e))
+            raise galaxy.exceptions.InternalServerError(f"Error loading from the database.{unicodify(e)}")
 
         if not (trans.user_is_admin or trans.app.security_agent.ok_to_display(trans.user, role)):
             raise galaxy.exceptions.RequestParameterInvalidException('No accessible role found with the id provided.')

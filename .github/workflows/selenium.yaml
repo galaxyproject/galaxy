@@ -1,7 +1,7 @@
 name: Selenium tests
 on: [push, pull_request]
 env:
-  GALAXY_TEST_DBURI: 'postgres://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
+  GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
   GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR: 'true'
   GALAXY_TEST_SELENIUM_RETRIES: 1
 jobs:
@@ -15,7 +15,7 @@ jobs:
         chunk: [0, 1, 2]
     services:
       postgres:
-        image: postgres:11
+        image: postgres:13
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres

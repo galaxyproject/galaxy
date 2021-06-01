@@ -197,6 +197,14 @@ mapping:
         desc: |
           Time to sleep between attempts if database_wait is enabled (in seconds).
 
+      history_audit_table_prune_interval:
+        type: int
+        default: 3600
+        required: false
+        desc: |
+          Time (in seconds) between attempts to remove old rows from the history_audit database table.
+          Set to 0 to disable pruning.
+
       file_path:
         type: str
         default: objects
@@ -776,12 +784,12 @@ mapping:
 
       enable_tool_document_cache:
         type: bool
-        default: true
+        default: false
         required: false
         desc: |
-          Set this to false to disable the tool document cache. This cache stores
-          expanded xml strings. Disabling the tool cache results in slower startup
-          times. The tool cache is backed by sqlite database, which cannot
+          Whether to enable the tool document cache. This cache stores
+          expanded XML strings. Enabling the tool cache results in slightly faster startup
+          times. The tool cache is backed by a SQLite database, which cannot
           be stored on certain network disks. The cache location is configurable
           using the ``tool_cache_data_dir`` setting, but can be disabled completely here.
 
@@ -1061,6 +1069,34 @@ mapping:
           You can enter tracking code here to track visitor's behavior
           through your Google Analytics account.  Example: UA-XXXXXXXX-Y
 
+      plausible_server:
+        type: str
+        required: false
+        desc: |
+          Please enter the URL for the Plausible server (including https) so this can be used for tracking
+          with Plausible (https://plausible.io/).
+
+      plausible_domain:
+        type: str
+        required: false
+        desc: |
+          Please enter the URL for the Galaxy server so this can be used for tracking
+          with Plausible (https://plausible.io/).
+
+      matomo_server:
+        type: str
+        required: false
+        desc: |
+          Please enter the URL for the Matomo server (including https) so this can be used for tracking
+          with Matomo (https://matomo.org/).
+
+      matomo_site_id:
+        type: str
+        required: false
+        desc: |
+          Please enter the site ID for the Matomo server so this can be used for tracking
+          with Matomo (https://matomo.org/).
+
       display_servers:
         type: str
         default: hgw1.cse.ucsc.edu,hgw2.cse.ucsc.edu,hgw3.cse.ucsc.edu,hgw4.cse.ucsc.edu,hgw5.cse.ucsc.edu,hgw6.cse.ucsc.edu,hgw7.cse.ucsc.edu,hgw8.cse.ucsc.edu,lowepub.cse.ucsc.edu
@@ -1126,6 +1162,22 @@ mapping:
         path_resolves_to: data_dir
         desc: |
           Map for interactivetool proxy.
+
+      interactivetools_prefix:
+        type: str
+        default: "interactivetool"
+        required: false
+        desc: |
+          Prefix to use in the formation of the subdomain or path for interactive tools
+
+      interactivetools_shorten_url:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Shorten the uuid portion of the subdomain or path for interactive tools.
+          Especially useful for avoiding the need for wildcard certificates by keeping
+          subdomain under 63 chars
 
       retry_interactivetool_metadata_internally:
         type: bool
@@ -2465,6 +2517,16 @@ mapping:
           are expunged from the SQL alchemy session between workflow invocation scheduling iterations.
           Set to -1 to disable any such maximum.
 
+      flush_per_n_datasets:
+        type: int
+        default: 1000
+        required: false
+        desc: |
+          Maximum number of datasets to create before flushing created datasets to database.
+          This affects tools that create many output datasets.
+          Higher values will lead to fewer database flushes and faster execution, but require
+          more memory. Set to -1 to disable creating datasets in batches.
+
       history_local_serial_workflow_scheduling:
         type: bool
         default: false
@@ -3172,6 +3234,15 @@ mapping:
           specified database_connection above.  If that's not specified either, Galaxy
           will automatically create and use a separate sqlite database located in your
           <galaxy>/database folder (indicated in the commented out line below).
+
+      enable_celery_tasks:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Offload long-running tasks to a Celery task queue.
+          Activate this only if you have setup a Celery worker for Galaxy.
+          For details, see https://docs.galaxyproject.org/en/master/admin/production.html
 
       use_pbkdf2:
         type: bool

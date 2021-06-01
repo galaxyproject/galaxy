@@ -1,184 +1,209 @@
 import { of, timer } from "rxjs";
-import { take, takeUntil } from "rxjs/operators";
+import { takeUntil } from "rxjs/operators";
 import { ObserverSpy } from "@hirez_io/observer-spy";
 import { wait } from "jest/helpers";
 import { wipeDatabase } from "./wipeDatabase";
 
-import { monitorQuery, ACTIONS } from "./monitorQuery";
+import { monitorQuery } from "./monitorQuery";
 import { content$, dscContent$ } from "./observables";
-import {
-    cacheContent,
-    getCachedContent,
-    bulkCacheContent,
-    bulkCacheDscContent,
-    cacheCollectionContent,
-    getCachedCollectionContent,
-} from "./promises";
+import { cacheContent, cacheCollectionContent, bulkCacheContent, bulkCacheDscContent } from "./promises";
 
 // test data
 import historyContent from "../../test/json/historyContent.json";
 import collectionContent from "../../test/json/collectionContent.json";
 
-const monitorSpinUp = 100;
+jest.mock("app");
+jest.mock("../../caching");
 
-afterEach(async () => await wipeDatabase());
+const monitorSpinUp = 100;
+const monitorSafetyTimeout = 800;
+
+const pluckAll = (arr, prop) => arr.map((o) => o[prop]);
+
+afterEach(wipeDatabase);
 
 // prettier-ignore
 describe("monitorQuery: history content", () => {
+
     describe("initial results", () => {
-        const selector = { hid: { $gt: 160 } };
+        test("first monitor event has initial results reflecting existing matches in db", async () => {
+            const cachedContent = await bulkCacheContent(historyContent, true);
+            const cachedContentIds = new Set(pluckAll(cachedContent, "_id"));
 
-        let monitor$;
-        let spy;
-
-        beforeEach(async () => {
-            // create monitor with query selector hid > 160
-            monitor$ = of({ selector }).pipe(
+            // create new monitor with query selector hid > 160
+            const cutoffHid = 120;
+            const selector = { hid: { $gt: cutoffHid } };
+            const monitor$ = of({ selector }).pipe(
                 monitorQuery({ db$: content$ }),
-                take(1),
-                takeUntil(timer(2000)), // safeguard
+                takeUntil(timer(monitorSafetyTimeout)),
             );
 
-            // insert content
-            await bulkCacheContent(historyContent);
-
-            // spy on output of observable;
-            spy = new ObserverSpy();
+            // // listen to observable, wait for complete
+            const spy = new ObserverSpy();
             monitor$.subscribe(spy);
-
-            // wait for monitor to spin-up
-            await wait(monitorSpinUp);
-        });
-
-        test("first monitor event has initial results reflecting existing matches in db", async () => {
-            // wait for monitor to run out
             await spy.onComplete();
 
-            // check initial matches
-            const { initialMatches } = spy.getFirstValue();
-            expect(initialMatches).toBeDefined();
-            expect(initialMatches.length).toBeGreaterThan(0);
-            initialMatches.forEach((doc) => {
-                expect(doc.hid).toBeGreaterThan(selector.hid.$gt);
+            // should get one emit out with just the intial matches
+            const emits = spy.getValues();
+            expect(spy.getValuesLength()).toBeGreaterThan(0);
+            expect(spy.getValuesLength()).toBeLessThanOrEqual(cachedContentIds.size);
+            emits.forEach(({ doc, match, initial }) => {
+                // we aren't changing anything, results should be initial matches
+                expect(match).toBeTruthy();
+                // initial results have an identifying flag
+                expect(initial).toBe(true);
+                // every doc should match the selector
+                expect(doc => doc.hid > cutoffHid).toBeTruthy();
+                // every doc should be in the initially cached items
+                expect(cachedContentIds.has(doc._id)).toBeTruthy();
             });
         });
     });
 
     describe("updates", () => {
-        const selector = { hid: { $gt: 160 } };
 
-        let monitor$;
-        let spy;
-        let insertResults;
+        test("INSERT: adding to cache after instantiation should emit a new doc", async () => {
 
-        beforeEach(async () => {
-            monitor$ = of({ selector }).pipe(
+            const cutoffHid = 50;
+            const selector = { hid: { $gt: cutoffHid } };
+            const monitor$ = of({ selector }).pipe(
                 monitorQuery({ db$: content$ }),
-                take(2),
-                takeUntil(timer(2000)), // safeguard
+                takeUntil(timer(monitorSafetyTimeout)),
             );
 
-            // insert content
-            insertResults = await bulkCacheContent(historyContent);
-
-            // spy on output of observable;
-            spy = new ObserverSpy();
+            const spy = new ObserverSpy();
             monitor$.subscribe(spy);
-
-            // wait for monitor to spin-up
+            
+            // wait for the monitor to spin-up so the insert doesn't look like the initial vals
             await wait(monitorSpinUp);
-        });
 
-        test("new insert matching selector should emit an ADD", async () => {
-            // copy document, insert copy with some new props
-            const id = insertResults[0].id;
-            // eslint-disable-next-line no-unused-vars
-            const { _id, _rev, ...newDoc } = await getCachedContent(id);
-            newDoc.hid = 10000;
-            newDoc.id = "234234234";
-            const cacheUpdate = await cacheContent(newDoc);
-            expect(cacheUpdate.updated).toBeTruthy();
+            // Insert a row, make sure it should match the selector
+            const insertedContent = await cacheContent(historyContent[0], true);
+            expect(insertedContent.hid > cutoffHid).toBeTruthy();
 
-            // wait for monitor to run out
+            // wait for observable end
             await spy.onComplete();
 
-            // look for initial matches
-            const { initialMatches } = spy.getFirstValue();
-            expect(initialMatches).toBeDefined();
-            expect(initialMatches.length).toBeGreaterThan(0);
-
-            // make sure the updated element is NOT in the initial matches
-            const inInitialSet = initialMatches.filter((doc) => doc._id == cacheUpdate.id);
-            expect(inInitialSet.length).toEqual(0);
-
-            // check for add event
-            const { action, doc } = spy.getLastValue();
-            expect(action).toBeDefined();
-            expect(doc).toBeDefined();
-            expect(action).toEqual(ACTIONS.ADD);
-            expect(doc.hid).toEqual(newDoc.hid);
+            const emits = spy.getValues();
+            expect(spy.getValuesLength()).toEqual(1);
+            emits.forEach(({ doc, match, initial, update }) => {
+                expect(doc.hid > cutoffHid).toBeTruthy();
+                expect(match).toBe(true);
+                expect(initial).toBeUndefined();
+                expect(update).toBe(true);
+            })
         });
 
-        test("update still covered by selector should emit an UPDATE", async () => {
-            // update existing doc
-            const id = insertResults[0].id;
-            const testDoc = await getCachedContent(id);
-            testDoc.foo = 123;
-            const cacheUpdate = await cacheContent(testDoc);
-            expect(cacheUpdate.updated).toBeTruthy();
+        test("UPDATE: updating a previously emitted doc should emit an update event", async () => {
+            const cutoffHid = 50;
 
-            // wait for monitor to run out
+            // Insert a row, make sure it should match the selector
+            const insertedContent = await cacheContent(historyContent[0], true);
+            expect(insertedContent.hid > cutoffHid).toBeTruthy();
+
+            // subscribe to listener
+            const selector = { hid: { $gt: cutoffHid } };
+            const monitor$ = of({ selector }).pipe(
+                monitorQuery({ db$: content$ }),
+                takeUntil(timer(monitorSafetyTimeout)),
+            );
+            const spy = new ObserverSpy();
+            monitor$.subscribe(spy);
+            
+            // wait for the monitor to spin-up so the insert doesn't look like the initial vals
+            await wait(monitorSpinUp);
+
+            // update the content
+            const fooVal = 123;
+            insertedContent.foo = fooVal;
+            const updatedContent = await cacheContent(insertedContent, true);
+            expect(updatedContent._id).toEqual(insertedContent._id);
+            expect(updatedContent.foo).toEqual(fooVal);
+
+            // wait for observable end
             await spy.onComplete();
+            expect(spy.getValuesLength()).toEqual(2); // initial insert + later update
 
-            // look for initial matches
-            const { initialMatches } = spy.getFirstValue();
-            expect(initialMatches).toBeDefined();
-            expect(initialMatches.length).toBeGreaterThan(0);
+            // check first event
+            const firstEvent = spy.getValueAt(0);
+            {
+                const { doc, match, initial, update } = firstEvent;
+                expect(doc.foo).toBeUndefined();
+                expect(match).toBe(true);
+                expect(initial).toBe(true);
+                expect(update).toBeUndefined();
+            }
 
-            // make sure the updated element is in the initial matches
-            const inInitialSet = initialMatches.filter((doc) => doc._id == cacheUpdate.id);
-            expect(inInitialSet.length).toEqual(1);
-
-            // check for update event
-            const { action, doc } = spy.getLastValue();
-            expect(action).toBeDefined();
-            expect(doc).toBeDefined();
-            expect(action).toEqual(ACTIONS.UPDATE);
-            expect(doc.foo).toEqual(testDoc.foo);
+            // check update event
+            const secondEvent = spy.getValueAt(1);
+            {
+                const { doc, match, initial, update } = secondEvent;
+                expect(doc.foo).toBe(fooVal);
+                expect(match).toBe(true);
+                expect(initial).toBeUndefined();
+                expect(update).toBe(true);
+            }
         });
 
-        test("update no longer covered by selector should emit a REMOVE", async () => {
-            // update doc to be outside query
-            const id = insertResults[0].id;
-            const testDoc = await getCachedContent(id);
-            testDoc.hid = -3000;
-            const cacheUpdate = await cacheContent(testDoc);
-            expect(cacheUpdate.updated).toBeTruthy();
+        test("DELETE: cache update causes element to no longer be in selection", async () => {
+            const cutoffHid = 50;
 
-            // wait for monitor to run out
+            // Insert a row, make sure it should match the selector
+            const insertedContent = await cacheContent(historyContent[0], true);
+            expect(insertedContent.hid > cutoffHid).toBeTruthy();
+
+            // subscribe to listener
+            const selector = { hid: { $gt: cutoffHid } };
+            const monitor$ = of({ selector }).pipe(
+                monitorQuery({ db$: content$ }),
+                takeUntil(timer(monitorSafetyTimeout)),
+            );
+            const spy = new ObserverSpy();
+            monitor$.subscribe(spy);
+            
+            // wait for the monitor to spin-up so the insert doesn't look like the initial vals
+            await wait(monitorSpinUp);
+
+            // update the content to be outside the selector
+            const badHid = -10000;
+            insertedContent.hid = badHid; // no longer > cutoffHid
+            const updatedContent = await cacheContent(insertedContent, true);
+            expect(updatedContent._id).toEqual(insertedContent._id);
+            expect(updatedContent.hid).toEqual(badHid);
+
+            // wait for observable end
             await spy.onComplete();
+            expect(spy.getValuesLength()).toEqual(2); // initial insert + later update
 
-            // look for initial matches
-            const { initialMatches } = spy.getFirstValue();
-            expect(initialMatches).toBeDefined();
-            expect(initialMatches.length).toBeGreaterThan(0);
+            // check first event
+            const firstEvent = spy.getValueAt(0);
+            {
+                const { doc, match, initial, update } = firstEvent;
+                expect(doc).toBeDefined();
+                expect(doc).toBeInstanceOf(Object);
+                expect(doc.hid).not.toEqual(badHid);
+                expect(match).toBe(true);
+                expect(initial).toBe(true);
+                expect(update).toBeUndefined();
+            }
 
-            // make sure the updated element is in the initial matches
-            const inInitialSet = initialMatches.filter((doc) => doc._id == cacheUpdate.id);
-            expect(inInitialSet.length).toEqual(1);
-
-            // check for remove event
-            const { action, doc } = spy.getLastValue();
-            expect(action).toBeDefined();
-            expect(doc).toBeDefined();
-            expect(action).toEqual(ACTIONS.REMOVE);
-            expect(doc.hid).toEqual(testDoc.hid);
+            // check update event
+            const secondEvent = spy.getValueAt(1);
+            {
+                const { doc, match, initial, update } = secondEvent;
+                expect(doc).toBeDefined();
+                expect(doc).toBeInstanceOf(Object);
+                expect(doc.hid).toEqual(badHid);
+                expect(match).toBe(false); // no longer matches selector
+                expect(initial).toBeUndefined();
+                expect(update).toBe(true);
+            }
         });
     });
 });
 
 describe("monitorQuery: collection content", () => {
-    // pre-process raw collection content
+    // doctor and cache sample content
     const fakeParentUrl = "/abc/def/ghi";
     const testContent = collectionContent.map((doc) => {
         doc.parent_url = fakeParentUrl;
@@ -186,167 +211,188 @@ describe("monitorQuery: collection content", () => {
     });
 
     describe("initial results", () => {
-        const selector = {
-            parent_url: fakeParentUrl,
-            element_index: { $gt: 1 },
-        };
+        test("first monitor event has initial results reflecting existing matches in db", async () => {
+            // insert some stuff
+            const cachedDscContent = await bulkCacheDscContent(testContent, true);
+            const cachedContentIds = new Set(pluckAll(cachedDscContent, "_id"));
 
-        let monitor$;
-        let spy;
-
-        beforeEach(async () => {
-            monitor$ = of({ selector }).pipe(
+            // create new monitor
+            const limitIndex = 1;
+            const selector = {
+                parent_url: fakeParentUrl,
+                element_index: { $gt: limitIndex },
+            };
+            const monitor$ = of({ selector }).pipe(
                 monitorQuery({ db$: dscContent$ }),
-                take(1),
-                takeUntil(timer(2000)) // safeguard
+                takeUntil(timer(monitorSafetyTimeout))
             );
 
-            // insert content
-            await bulkCacheDscContent(testContent);
-
-            // spy on output of observable;
-            spy = new ObserverSpy();
+            // wait til done
+            const spy = new ObserverSpy();
             monitor$.subscribe(spy);
-
-            // wait for monitor to spin-up
-            await wait(monitorSpinUp);
-        });
-
-        test("first monitor event has initial results reflecting existing matches in db", async () => {
-            // wait for monitor to run out
             await spy.onComplete();
 
-            // check initial matches
-            const { initialMatches } = spy.getFirstValue();
-            expect(initialMatches).toBeDefined();
-            expect(initialMatches.length).toBeGreaterThan(0);
-            initialMatches.forEach((doc) => {
-                expect(doc.parent_url).toEqual(selector.parent_url);
-                expect(doc.element_index).toBeGreaterThan(selector.element_index.$gt);
+            // check emits
+            const emits = spy.getValues();
+            expect(spy.getValuesLength()).toBeGreaterThan(0);
+            expect(spy.getValuesLength()).toBeLessThanOrEqual(cachedContentIds.size);
+            emits.forEach(({ doc, match, initial, update }) => {
+                expect(match).toBe(true);
+                expect(initial).toBe(true);
+                expect(update).toBeUndefined();
+                expect(cachedContentIds.has(doc._id)).toBeTruthy();
+                expect(doc.element_index > limitIndex).toBeTruthy();
+                expect(doc.parent_url).toEqual(fakeParentUrl);
             });
         });
     });
 
     describe("updates", () => {
-        const selector = {
-            parent_url: fakeParentUrl,
-            name: { $regex: /M117/i },
-        };
-
-        let monitor$;
-        let insertResults;
-        let spy;
-
-        beforeEach(async () => {
-            monitor$ = of({ selector }).pipe(
+        test("INSERT: adding to cache after instantiation should emit a new doc", async () => {
+            // createa  monitor
+            const limitIndex = 0;
+            const selector = {
+                parent_url: fakeParentUrl,
+                element_index: { $gt: limitIndex },
+            };
+            const monitor$ = of({ selector }).pipe(
                 monitorQuery({ db$: dscContent$ }),
-                take(2),
-                takeUntil(timer(2000)) // safeguard
+                takeUntil(timer(monitorSafetyTimeout))
             );
-            insertResults = await bulkCacheDscContent(testContent);
-            spy = new ObserverSpy();
+
+            const spy = new ObserverSpy();
             monitor$.subscribe(spy);
 
-            // wait for monitor to spin-up
+            // wait for the monitor to spin-up so the insert doesn't look like the initial vals
             await wait(monitorSpinUp);
-        });
 
-        test("new insert matching selector should emit an ADD", async () => {
-            // insert copy of new doc
-            const newDoc = testContent[0];
-            newDoc.element_index = 10000;
-            const addResult = await cacheCollectionContent(newDoc);
-            expect(addResult.updated).toBeTruthy();
+            // Insert a row, make sure it should match the selector
+            const insertedContent = await cacheCollectionContent(testContent[3], true);
+            expect(insertedContent.element_index > limitIndex).toBeTruthy();
 
-            // check the change is in there
-            const { id: newId } = addResult;
-            const lookup = await getCachedCollectionContent(newId);
-            expect(lookup.element_index).toEqual(newDoc.element_index);
-
-            // wait for monitor to run out
+            // wait for observable end
             await spy.onComplete();
 
-            expect(spy.receivedNext()).toBe(true);
-            expect(spy.receivedComplete()).toBe(true);
-            expect(spy.getValuesLength()).toBe(2);
-
-            // look for initial matches
-            const { initialMatches } = spy.getFirstValue();
-            expect(initialMatches).toBeDefined();
-            expect(initialMatches.length).toBeGreaterThan(0);
-
-            // make sure the insert element is NOT in the initial matches
-            const inInitialSet = initialMatches.filter((doc) => doc._id == addResult.id);
-            expect(inInitialSet.length).toEqual(0);
-
-            // look for add event
-            const { action, doc } = spy.getLastValue();
-            expect(action).toBeDefined();
-            expect(doc).toBeDefined();
-            expect(action).toEqual(ACTIONS.ADD);
-            expect(doc.element_index).toEqual(newDoc.element_index);
+            const emits = spy.getValues();
+            expect(spy.getValuesLength()).toEqual(1);
+            emits.forEach(({ doc, match, initial, update }) => {
+                expect(doc.element_index > limitIndex).toBeTruthy();
+                expect(doc._id).toEqual(insertedContent._id);
+                expect(match).toBe(true);
+                expect(initial).toBeUndefined();
+                expect(update).toBe(true);
+            });
         });
 
-        test("update still covered by selector should emit an UPDATE", async () => {
-            // look up an existing doc
-            const id = insertResults[0].id;
-            const lookupDoc = await getCachedCollectionContent(id);
-            expect(lookupDoc).toBeDefined();
-            expect(lookupDoc._id).toEqual(id);
+        test("UPDATE: updating a previously emitted doc should emit an update event", async () => {
+            const limitIndex = 0;
 
-            // update it
-            lookupDoc.foo = "fakestuff";
-            const updateResult = await cacheCollectionContent(lookupDoc);
-            expect(updateResult.updated).toBeTruthy();
+            // Insert a row, make sure it should match the selector
+            const insertedContent = await cacheCollectionContent(testContent[1], true);
+            expect(insertedContent.element_index > limitIndex).toBeTruthy();
 
-            // wait for monitor to run out
+            // create  monitor
+            const selector = {
+                parent_url: fakeParentUrl,
+                element_index: { $gt: limitIndex },
+            };
+            const monitor$ = of({ selector }).pipe(
+                monitorQuery({ db$: dscContent$ }),
+                takeUntil(timer(monitorSafetyTimeout))
+            );
+
+            const spy = new ObserverSpy();
+            monitor$.subscribe(spy);
+
+            // wait for the monitor to spin-up so the insert doesn't look like the initial vals
+            await wait(monitorSpinUp);
+
+            // update the content
+            const fooVal = 123;
+            insertedContent.foo = fooVal;
+            const updatedContent = await cacheCollectionContent(insertedContent, true);
+            expect(updatedContent._id).toEqual(insertedContent._id);
+            expect(updatedContent.foo).toEqual(fooVal);
+
+            // wait for observable end
             await spy.onComplete();
+            expect(spy.getValuesLength()).toEqual(2); // initial insert + later update
 
-            // look for initial matches
-            const { initialMatches } = spy.getFirstValue();
-            expect(initialMatches).toBeDefined();
-            expect(initialMatches.length).toBeGreaterThan(0);
+            // check first event
+            const firstEvent = spy.getValueAt(0);
+            {
+                const { doc, match, initial, update } = firstEvent;
+                expect(doc.foo).toBeUndefined();
+                expect(match).toBe(true);
+                expect(initial).toBe(true);
+                expect(update).toBeUndefined();
+            }
 
-            // make sure the updated doc is in the initial matches
-            const inInitialSet = initialMatches.filter((doc) => doc._id == updateResult.id);
-            expect(inInitialSet.length).toEqual(1);
-
-            // look for add event
-            const { action, doc } = spy.getLastValue();
-            expect(action).toBeDefined();
-            expect(doc).toBeDefined();
-            expect(action).toEqual(ACTIONS.UPDATE);
-            expect(doc.foo).toEqual(lookupDoc.foo);
+            // check update event
+            const secondEvent = spy.getValueAt(1);
+            {
+                const { doc, match, initial, update } = secondEvent;
+                expect(doc.foo).toBe(fooVal);
+                expect(match).toBe(true);
+                expect(initial).toBeUndefined();
+                expect(update).toBe(true);
+            }
         });
 
-        test("update no longer covered by selector should emit a REMOVE", async () => {
-            // set to deleted
-            const id = insertResults[0].id;
-            const testDoc = await getCachedCollectionContent(id);
-            testDoc.name = "ABC";
-            testDoc.element_identifier = "ABC";
-            const cacheUpdate = await cacheCollectionContent(testDoc);
-            expect(cacheUpdate.updated).toBeTruthy();
+        test("DELETE: cache update causes element to no longer be in selection", async () => {
+            const limitIndex = 0;
 
-            // wait for monitor to run out
+            // Insert a row, make sure it should match the selector
+            const insertedContent = await cacheCollectionContent(testContent[1], true);
+            expect(insertedContent.element_index > limitIndex).toBeTruthy();
+
+            // create  monitor
+            const selector = {
+                parent_url: fakeParentUrl,
+                element_index: { $gt: limitIndex },
+            };
+            const monitor$ = of({ selector }).pipe(
+                monitorQuery({ db$: dscContent$ }),
+                takeUntil(timer(monitorSafetyTimeout))
+            );
+
+            const spy = new ObserverSpy();
+            monitor$.subscribe(spy);
+
+            // update the content to be outside the selector
+            const badIndex = -10000;
+            insertedContent.element_index = badIndex; // no longer > cutoffHid
+            const updatedContent = await cacheCollectionContent(insertedContent, true);
+            expect(updatedContent._id).toEqual(insertedContent._id);
+            expect(updatedContent.element_index).toEqual(badIndex);
+
+            // wait for observable end
             await spy.onComplete();
+            expect(spy.getValuesLength()).toEqual(2); // initial insert + later update
 
-            // look for initial matches
-            const { initialMatches } = spy.getFirstValue();
-            expect(initialMatches).toBeDefined();
-            expect(initialMatches.length).toBeGreaterThan(0);
+            // check first event
+            const firstEvent = spy.getValueAt(0);
+            {
+                const { doc, match, initial, update } = firstEvent;
+                expect(doc).toBeDefined();
+                expect(doc).toBeInstanceOf(Object);
+                expect(doc.element_index).not.toEqual(badIndex);
+                expect(match).toBe(true);
+                expect(initial).toBe(true);
+                expect(update).toBeUndefined();
+            }
 
-            // make sure the updated element is in the initial matches
-            const inInitialSet = initialMatches.filter((doc) => doc._id == cacheUpdate.id);
-            expect(inInitialSet.length).toEqual(1);
-
-            // look for the remove event
-            const { action, doc } = spy.getLastValue();
-            expect(action).toBeDefined();
-            expect(doc).toBeDefined();
-            expect(action).toEqual(ACTIONS.REMOVE);
-            expect(doc.name).toEqual(testDoc.name);
-            expect(doc.element_identifier).toEqual(testDoc.element_identifier);
+            // check update event
+            const secondEvent = spy.getValueAt(1);
+            {
+                const { doc, match, initial, update } = secondEvent;
+                expect(doc).toBeDefined();
+                expect(doc).toBeInstanceOf(Object);
+                expect(doc.element_index).toEqual(badIndex);
+                expect(match).toBe(false); // no longer matches selector
+                expect(initial).toBeUndefined();
+                expect(update).toBe(true);
+            }
         });
     });
 });

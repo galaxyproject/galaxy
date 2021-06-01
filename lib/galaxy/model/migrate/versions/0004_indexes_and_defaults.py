@@ -28,12 +28,12 @@ def upgrade(migrate_engine):
     add_index('ix_galaxy_user_deleted', User_table, 'deleted')
     add_index('ix_galaxy_user_purged', User_table, 'purged')
     # Set the default data in the galaxy_user table, but only for null values
-    cmd = "UPDATE galaxy_user SET deleted = %s WHERE deleted is null" % engine_false(migrate_engine)
+    cmd = f"UPDATE galaxy_user SET deleted = {engine_false(migrate_engine)} WHERE deleted is null"
     try:
         migrate_engine.execute(cmd)
     except Exception:
         log.exception("Setting default data for galaxy_user.deleted column failed.")
-    cmd = "UPDATE galaxy_user SET purged = %s WHERE purged is null" % engine_false(migrate_engine)
+    cmd = f"UPDATE galaxy_user SET purged = {engine_false(migrate_engine)} WHERE purged is null"
     try:
         migrate_engine.execute(cmd)
     except Exception:

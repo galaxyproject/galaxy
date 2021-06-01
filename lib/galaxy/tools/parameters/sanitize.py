@@ -43,7 +43,7 @@ class ToolParameterSanitizer:
     True
     """
 
-    VALID_PRESET = {'default': (string.ascii_letters + string.digits + " -=_.()/+*^,:?!"), 'none': ''}
+    VALID_PRESET = {'default': (f"{string.ascii_letters + string.digits} -=_.()/+*^,:?!"), 'none': ''}
     MAPPING_PRESET = {'default': galaxy.util.mapped_chars, 'none': {}}
     DEFAULT_INVALID_CHAR = 'X'
 
@@ -69,7 +69,7 @@ class ToolParameterSanitizer:
                         while val in rval._valid_chars:
                             rval._valid_chars.remove(val)
                 else:
-                    log.debug('Invalid action tag in valid: %s' % action_elem.tag)
+                    log.debug(f'Invalid action tag in valid: {action_elem.tag}')
         for mapping_elem in elem.findall('mapping'):
             rval._mapped_chars = rval.get_mapping_by_name(mapping_elem.get('initial', 'default'))
             for action_elem in mapping_elem:
@@ -87,7 +87,7 @@ class ToolParameterSanitizer:
                     if map_source is not None and map_key in rval._mapped_chars:
                         del rval._mapped_chars[map_key]
                 else:
-                    log.debug('Invalid action tag in mapping: %s' % action_elem.tag)
+                    log.debug(f'Invalid action tag in mapping: {action_elem.tag}')
         return rval
 
     @classmethod
@@ -101,15 +101,15 @@ class ToolParameterSanitizer:
             if split_name.startswith('string.'):
                 string_constant = split_name[7:]
                 if string_constant in ('letters', 'lowercase', 'uppercase'):
-                    split_name = 'string.ascii_' + string_constant
+                    split_name = f"string.ascii_{string_constant}"
                 try:
                     value = eval(split_name)
                 except NameError as e:
-                    log.debug('Invalid string preset specified: %s' % e)
+                    log.debug(f'Invalid string preset specified: {e}')
             elif split_name in cls.VALID_PRESET:
                 value = cls.VALID_PRESET[split_name]
             else:
-                log.debug('Invalid preset name specified: %s' % split_name)
+                log.debug(f'Invalid preset name specified: {split_name}')
             rval.extend([val for val in value if val not in rval])
         return rval
 
@@ -121,7 +121,7 @@ class ToolParameterSanitizer:
             if split_name in cls.MAPPING_PRESET:
                 rval.update(cls.MAPPING_PRESET[split_name])
             else:
-                log.debug('Invalid preset name specified: %s' % split_name)
+                log.debug(f'Invalid preset name specified: {split_name}')
         return rval
     # end class methods
 
@@ -161,4 +161,4 @@ class ToolParameterSanitizer:
         elif isinstance(value, list):
             return list(map(self.sanitize_text, value))
         else:
-            raise Exception('Unknown parameter type ({}:{})'.format(type(value), value))
+            raise Exception(f'Unknown parameter type ({type(value)}:{value})')

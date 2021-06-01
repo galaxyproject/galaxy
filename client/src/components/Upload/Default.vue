@@ -128,12 +128,12 @@ export default {
     },
     data() {
         return {
+            uploadUrl: null,
             topInfo: "",
             highlightBox: false,
             showHelper: true,
             extension: this.app.defaultExtension,
             genome: this.app.defaultGenome,
-            callback: this.app.callback,
             listExtensions: [],
             listGenomes: [],
             running: false,
@@ -153,7 +153,6 @@ export default {
             btnStartTitle: _l("Start"),
             btnStopTitle: _l("Pause"),
             btnResetTitle: _l("Reset"),
-            btnCloseTitle: this.app.callback ? _l("Cancel") : _l("Close"),
             btnSelectTitle: _l("Select"),
         };
     },
@@ -166,7 +165,12 @@ export default {
         this.initFtpPopover();
         // file upload
         this.initUploadbox({
-            url: this.app.uploadPath,
+            initUrl: (index) => {
+                if (!this.uploadUrl) {
+                    this.uploadUrl = this.getRequestUrl([this.collection.get(index)], this.history_id);
+                }
+                return this.uploadUrl;
+            },
             multiple: this.multiple,
             announce: (index, file) => {
                 this._eventAnnounce(index, file);
@@ -232,10 +236,11 @@ export default {
                 return {
                     id: model.attributes.id, // model.id has datatype prefix
                     src: model.src,
+                    hid: model.attributes.hid,
+                    name: model.attributes.name,
                 };
             });
-            this.callback(asDict);
-            this.$emit("cancel");
+            this.$emit("dismiss", asDict);
         },
         _newUploadModelProps: function (index, file) {
             return {
@@ -244,6 +249,7 @@ export default {
                 file_size: file.size,
                 file_mode: file.mode || "local",
                 file_path: file.path,
+                file_uri: file.uri,
                 file_data: file,
             };
         },

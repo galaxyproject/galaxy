@@ -17,6 +17,7 @@ from galaxy import model
 from galaxy.util import (
     asbool,
     etree,
+    listify,
     parse_xml,
     string_as_bool,
     unicodify,
@@ -144,6 +145,8 @@ class AuthnzManager:
             rtv['url'] = config_xml.find('url').text
         if config_xml.find('icon') is not None:
             rtv['icon'] = config_xml.find('icon').text
+        if config_xml.find('extra_scopes') is not None:
+            rtv['extra_scopes'] = listify(config_xml.find('extra_scopes').text)
 
         return rtv
 

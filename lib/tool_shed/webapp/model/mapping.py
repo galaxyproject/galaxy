@@ -10,7 +10,7 @@ from sqlalchemy.orm import backref, mapper, relation
 import tool_shed.webapp.model
 import tool_shed.webapp.util.shed_statistics as shed_statistics
 from galaxy.model.base import SharedModelMapping
-from galaxy.model.custom_types import JSONType, TrimmedString
+from galaxy.model.custom_types import MutableJSONType, TrimmedString
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
 from tool_shed.webapp.model import APIKeys, Category, Component, ComponentReview
@@ -118,7 +118,7 @@ Repository.table = Table("repository", metadata,
                          Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
                          Column("private", Boolean, default=False),
                          Column("deleted", Boolean, index=True, default=False),
-                         Column("email_alerts", JSONType, nullable=True, default=list),
+                         Column("email_alerts", MutableJSONType, nullable=True),
                          Column("times_downloaded", Integer),
                          Column("deprecated", Boolean, default=False))
 
@@ -129,8 +129,8 @@ RepositoryMetadata.table = Table("repository_metadata", metadata,
                                  Column("repository_id", Integer, ForeignKey("repository.id"), index=True),
                                  Column("changeset_revision", TrimmedString(255), index=True),
                                  Column("numeric_revision", Integer, index=True),
-                                 Column("metadata", JSONType, nullable=True),
-                                 Column("tool_versions", JSONType, nullable=True),
+                                 Column("metadata", MutableJSONType, nullable=True),
+                                 Column("tool_versions", MutableJSONType, nullable=True),
                                  Column("malicious", Boolean, default=False),
                                  Column("downloadable", Boolean, default=True),
                                  Column("missing_test_components", Boolean, default=False, index=True),

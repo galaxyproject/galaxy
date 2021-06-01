@@ -13,14 +13,11 @@ from galaxy import (
     util,
     web
 )
-from galaxy.managers.visualizations import (
-    VisualizationManager,
-    VisualizationSerializer
-)
+from galaxy.managers.sharable import SharingPayload
+from galaxy.managers.visualizations import VisualizationsService
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.web import expose_api
 from galaxy.webapps.base.controller import (
-    SharableMixin,
     UsesVisualizationMixin
 )
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
@@ -29,12 +26,11 @@ from . import BaseGalaxyAPIController, depends
 log = logging.getLogger(__name__)
 
 
-class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, SharableMixin, UsesAnnotations):
+class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, UsesAnnotations):
     """
     RESTful controller for interactions with visualizations.
     """
-    manager: VisualizationManager = depends(VisualizationManager)
-    serializer: VisualizationSerializer = depends(VisualizationSerializer)
+    service: VisualizationsService = depends(VisualizationsService)
 
     @expose_api
     def index(self, trans: GalaxyWebTransaction, **kwargs):
@@ -155,6 +151,16 @@ class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, 
 
         return rval
 
+    @expose_api
+    def sharing(self, trans, id, payload=None, **kwd):
+        """
+        * GET/POST /api/pages/{id}/sharing
+            View/modify sharing options for the page with the given id.
+        """
+        if payload:
+            payload = SharingPayload(**payload)
+        return self.service.sharing(trans, id, payload)
+
     def _validate_and_parse_payload(self, payload):
         """
         Validate and parse incomming data payload for a visualization.
@@ -181,30 +187,30 @@ class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, 
             # TODO: validate types in VALID_TYPES/registry names at the mixin/model level?
             if key == 'type':
                 if not isinstance(val, str):
-                    raise ValidationError('{} must be a string or unicode: {}'.format(key, str(type(val))))
+                    raise ValidationError(f'{key} must be a string or unicode: {str(type(val))}')
                 val = util.sanitize_html.sanitize_html(val)
             elif key == 'config':
                 if not isinstance(val, dict):
-                    raise ValidationError('{} must be a dictionary: {}'.format(key, str(type(val))))
+                    raise ValidationError(f'{key} must be a dictionary: {str(type(val))}')
 
             elif key == 'annotation':
                 if not isinstance(val, str):
-                    raise ValidationError('{} must be a string or unicode: {}'.format(key, str(type(val))))
+                    raise ValidationError(f'{key} must be a string or unicode: {str(type(val))}')
                 val = util.sanitize_html.sanitize_html(val)
 
             # these are keys that actually only be *updated* at the revision level and not here
             #   (they are still valid for create, tho)
             elif key == 'title':
                 if not isinstance(val, str):
-                    raise ValidationError('{} must be a string or unicode: {}'.format(key, str(type(val))))
+                    raise ValidationError(f'{key} must be a string or unicode: {str(type(val))}')
                 val = util.sanitize_html.sanitize_html(val)
             elif key == 'slug':
                 if not isinstance(val, str):
-                    raise ValidationError('{} must be a string: {}'.format(key, str(type(val))))
+                    raise ValidationError(f'{key} must be a string: {str(type(val))}')
                 val = util.sanitize_html.sanitize_html(val)
             elif key == 'dbkey':
                 if not isinstance(val, str):
-                    raise ValidationError('{} must be a string or unicode: {}'.format(key, str(type(val))))
+                    raise ValidationError(f'{key} must be a string or unicode: {str(type(val))}')
                 val = util.sanitize_html.sanitize_html(val)
 
             elif key not in valid_but_uneditable_keys:

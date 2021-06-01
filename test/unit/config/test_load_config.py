@@ -13,6 +13,12 @@ MOCK_SCHEMA = {
 }
 
 
+MOCK_SCHEMA_DBURL = {
+    'database_connection': {'type': 'str'},
+    'install_database_connection': {'type': 'str'},
+}
+
+
 def get_schema(app_mapping):
     return {'mapping': {'_': {'mapping': app_mapping}}}
 
@@ -21,6 +27,11 @@ def get_schema(app_mapping):
 def mock_init(monkeypatch):
     monkeypatch.setattr(BaseAppConfiguration, '_load_schema', lambda a: AppSchema(None, '_'))
     monkeypatch.setattr(AppSchema, '_read_schema', lambda a, b: get_schema(MOCK_SCHEMA))
+
+
+@pytest.fixture
+def mock_init_dburl(mock_init, monkeypatch):
+    monkeypatch.setattr(AppSchema, '_read_schema', lambda a, b: get_schema(MOCK_SCHEMA_DBURL))
 
 
 def test_load_config_from_schema(mock_init):
@@ -138,3 +149,21 @@ def test_is_set(mock_init):
     assert config.is_set('property4')
     assert config.is_set('property4')
     assert config.is_set('property6')
+
+
+def test_deprecated_postgres_urls_are_fixed(mock_init_dburl):
+    error_message = '"postgres" prefix should become "postgresql"'
+
+    config = BaseAppConfiguration(
+        database_connection='postgres://foo',  # incorrect
+        install_database_connection='postgresql://foo')  # correct
+
+    assert config.database_connection == 'postgresql://foo', error_message
+    assert config.install_database_connection == 'postgresql://foo'
+
+    config = BaseAppConfiguration(
+        database_connection='postgresql+psycopg2://foo',  # correct
+        install_database_connection='postgres+psycopg2://foo')  # incorrect
+
+    assert config.database_connection == 'postgresql+psycopg2://foo', error_message
+    assert config.install_database_connection == 'postgresql+psycopg2://foo'

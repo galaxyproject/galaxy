@@ -95,7 +95,7 @@ def _handle_resubmit_definitions(resubmit_definitions, app, job_runner, job_stat
         if external_id:
             job_log_prefix = f"({job_state.job_wrapper.job_id}/{job_state.job_id})"
         else:
-            job_log_prefix = "(%s)" % (job_state.job_wrapper.job_id)
+            job_log_prefix = f"({job_state.job_wrapper.job_id})"
 
         # Is destination needed here, might these be serialized to the database?
         destination = resubmit.get('environment') or resubmit.get('destination')
@@ -139,7 +139,7 @@ def _handle_resubmit_definitions(resubmit_definitions, app, job_runner, job_stat
                 float(delay)
                 new_destination.params['__resubmit_delay_seconds'] = str(delay)
             except ValueError:
-                log.warning("Cannot delay job with delay [%s], does not appear to be a number." % delay)
+                log.warning(f"Cannot delay job with delay [{delay}], does not appear to be a number.")
         job_state.job_wrapper.set_job_destination(new_destination)
         # Clear external ID (state change below flushes the change)
         job.job_runner_external_id = None
@@ -187,7 +187,7 @@ class _ExpressionContext:
             self._lazy_context = {
                 "walltime_reached": runner_state == JobState.runner_states.WALLTIME_REACHED,
                 "memory_limit_reached": runner_state == JobState.runner_states.MEMORY_LIMIT_REACHED,
-                "unknown_error": JobState.runner_states.UNKNOWN_ERROR,
+                "unknown_error": runner_state == JobState.runner_states.UNKNOWN_ERROR,
                 "tool_detected_failure": runner_state == JobState.runner_states.TOOL_DETECT_ERROR,
                 "any_failure": True,
                 "any_potential_job_failure": True,  # Add a hook here - later on allow tools to describe things that are definitely input problems.

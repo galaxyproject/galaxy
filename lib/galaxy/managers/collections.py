@@ -169,7 +169,7 @@ class DatasetCollectionManager:
             )
 
         else:
-            message = "Internal logic error - create called with unknown parent type %s" % type(parent)
+            message = f"Internal logic error - create called with unknown parent type {type(parent)}"
             log.exception(message)
             raise MessageException(message)
 
@@ -254,18 +254,6 @@ class DatasetCollectionManager:
         for _, tag in tags.items():
             dataset_collection_instance.tags.append(tag.copy(cls=model.HistoryDatasetCollectionTagAssociation))
 
-    def set_collection_elements(self, dataset_collection, dataset_instances):
-        if dataset_collection.populated:
-            raise Exception("Cannot reset elements of an already populated dataset collection.")
-
-        collection_type = dataset_collection.collection_type
-        collection_type_description = self.collection_type_descriptions.for_collection_type(collection_type)
-        type_plugin = collection_type_description.rank_type_plugin()
-        builder.set_collection_elements(dataset_collection, type_plugin, dataset_instances)
-        dataset_collection.mark_as_populated()
-
-        return dataset_collection
-
     def collection_builder_for(self, dataset_collection):
         return builder.BoundCollectionBuilder(dataset_collection)
 
@@ -299,7 +287,7 @@ class DatasetCollectionManager:
         changed = self._set_from_dict(trans, dataset_collection_instance, payload)
         return changed
 
-    def copy(self, trans, parent, source, encoded_source_id, copy_elements=False):
+    def copy(self, trans, parent, source, encoded_source_id, copy_elements=False, dataset_instance_attributes=None):
         """
         PRECONDITION: security checks on ability to add to parent occurred
         during load.
@@ -308,7 +296,9 @@ class DatasetCollectionManager:
         source_hdca = self.__get_history_collection_instance(trans, encoded_source_id)
         copy_kwds = {}
         if copy_elements:
-            copy_kwds["element_destination"] = parent
+            copy_kwds["element_destination"] = parent  # e.g. a history
+        if dataset_instance_attributes is not None:
+            copy_kwds["dataset_instance_attributes"] = dataset_instance_attributes
         new_hdca = source_hdca.copy(**copy_kwds)
         new_hdca.copy_tags_from(target_user=trans.get_user(), source=source_hdca)
         if not copy_elements:
@@ -439,7 +429,7 @@ class DatasetCollectionManager:
         try:
             src_type = element_identifier.get('src', 'hda')
         except AttributeError:
-            raise MessageException("Dataset collection element definition (%s) not dictionary-like." % element_identifier)
+            raise MessageException(f"Dataset collection element definition ({element_identifier}) not dictionary-like.")
         encoded_id = element_identifier.get('id')
         if not src_type or not encoded_id:
             message_template = "Problem decoding element identifier %s - must contain a 'src' and a 'id'."
@@ -469,7 +459,7 @@ class DatasetCollectionManager:
             element = self.__get_history_collection_instance(trans, encoded_id).collection
         # TODO: ldca.
         else:
-            raise RequestParameterInvalidException("Unknown src_type parameter supplied '%s'." % src_type)
+            raise RequestParameterInvalidException(f"Unknown src_type parameter supplied '{src_type}'.")
         return element
 
     def match_collections(self, collections_to_match):
@@ -532,7 +522,7 @@ class DatasetCollectionManager:
                         columns = mapping_as_dict["group_tags"]["columns"]
                         for tag_column in columns:
                             tag = row_data[tag_column]
-                            tags.append("group:%s" % tag)
+                            tags.append(f"group:{tag}")
 
                     if "tags" in mapping_as_dict:
                         columns = mapping_as_dict["tags"]["columns"]

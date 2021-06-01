@@ -18,6 +18,6 @@ export default {
         this.loadConfigs();
     },
     render() {
-        return this.$scopedSlots.default(this.config);
+        return this.$scopedSlots.default({ config: this.config });
     },
 };

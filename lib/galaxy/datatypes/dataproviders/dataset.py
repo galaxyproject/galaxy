@@ -126,7 +126,7 @@ class DatasetDataProvider(base.DataProvider):
                                  or getattr(self.dataset.datatype, 'column_names', None) or None)
         if not metadata_column_names:
             raise KeyError('No column_names found for '
-                           + 'datatype: {}, dataset: {}'.format(str(self.dataset.datatype), str(self.dataset)))
+                           + f'datatype: {str(self.dataset.datatype)}, dataset: {str(self.dataset)}')
         indeces = []  # if indeces and column_names:
         # pull using indeces and re-name with given names - no need to alter (does as super would)
         #    pass
@@ -155,7 +155,7 @@ class DatasetDataProvider(base.DataProvider):
         region_column_names = ('chromCol', 'startCol', 'endCol')
         region_indices = [self.get_metadata_column_index_by_name(name) for name in region_column_names]
         if check and not all(_ is not None for _ in region_indices):
-            raise ValueError("Could not determine proper column indices for chrom, start, end: %s" % (str(region_indices)))
+            raise ValueError(f"Could not determine proper column indices for chrom, start, end: {str(region_indices)}")
         return region_indices
 
 
@@ -305,7 +305,7 @@ class GenomicRegionDataProvider(column.ColumnarDataProvider):
         indeces = [chrom_column, start_column, end_column]
         if not all(_ is not None for _ in indeces):
             raise ValueError("Could not determine proper column indeces for"
-                             + " chrom, start, end: %s" % (str(indeces)))
+                             + f" chrom, start, end: {str(indeces)}")
         kwargs.update({'indeces': indeces})
 
         if not kwargs.get('column_types', None):
@@ -664,11 +664,11 @@ class SamtoolsDataProvider(line.RegexLineDataProvider):
             validated_flag_list.append('S')
 
         if validated_flag_list:
-            opt_list.append('-' + ''.join(validated_flag_list))
+            opt_list.append(f"-{''.join(validated_flag_list)}")
 
         for flag, arg in options_dict.items():
             if flag in self.FLAGS_W_ARGS:
-                opt_list.extend(['-' + flag, str(arg)])
+                opt_list.extend([f"-{flag}", str(arg)])
 
         return opt_list
 

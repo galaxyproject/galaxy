@@ -288,7 +288,7 @@ class BaseObjectStore(ObjectStore):
             return obj.id
 
     def _invoke(self, delegate, obj=None, **kwargs):
-        return self.__getattribute__("_" + delegate)(obj=obj, **kwargs)
+        return self.__getattribute__(f"_{delegate}")(obj=obj, **kwargs)
 
     def exists(self, obj, **kwargs):
         return self._invoke('exists', obj, **kwargs)
@@ -516,8 +516,8 @@ class DiskObjectStore(ConcreteObjectStore):
                     rel_path = os.path.join(rel_path, extra_dir)
             path = os.path.join(base, rel_path)
         if not dir_only:
-            assert obj_id is not None, "The effective dataset identifier consumed by object store [%s] must be set before a path can be constructed." % (self.store_by)
-            path = os.path.join(path, alt_name if alt_name else "dataset_%s.dat" % obj_id)
+            assert obj_id is not None, f"The effective dataset identifier consumed by object store [{self.store_by}] must be set before a path can be constructed."
+            path = os.path.join(path, alt_name if alt_name else f"dataset_{obj_id}.dat")
         return os.path.abspath(path)
 
     def _exists(self, obj, **kwargs):
@@ -580,7 +580,7 @@ class DiskObjectStore(ConcreteObjectStore):
                 os.remove(path)
                 return True
         except OSError as ex:
-            log.critical('{} delete error {}'.format(self.__get_filename(obj, **kwargs), ex))
+            log.critical(f'{self.__get_filename(obj, **kwargs)} delete error {ex}')
         return False
 
     def _get_data(self, obj, start=0, count=-1, **kwargs):
@@ -626,7 +626,7 @@ class DiskObjectStore(ConcreteObjectStore):
                     shutil.copy(file_name, path)
                     umask_fix_perms(path, self.config.umask, 0o666)
             except OSError as ex:
-                log.critical('Error copying {} to {}: {}'.format(file_name, self.__get_filename(obj, **kwargs), ex))
+                log.critical(f'Error copying {file_name} to {self.__get_filename(obj, **kwargs)}: {ex}')
                 raise ex
 
     def _get_object_url(self, obj, **kwargs):
@@ -1088,18 +1088,18 @@ def convert_bytes(bytes):
 
     if bytes >= 1099511627776:
         terabytes = bytes / 1099511627776
-        size = '%.2fTB' % terabytes
+        size = f'{terabytes:.2f}TB'
     elif bytes >= 1073741824:
         gigabytes = bytes / 1073741824
-        size = '%.2fGB' % gigabytes
+        size = f'{gigabytes:.2f}GB'
     elif bytes >= 1048576:
         megabytes = bytes / 1048576
-        size = '%.2fMB' % megabytes
+        size = f'{megabytes:.2f}MB'
     elif bytes >= 1024:
         kilobytes = bytes / 1024
-        size = '%.2fKB' % kilobytes
+        size = f'{kilobytes:.2f}KB'
     else:
-        size = '%.2fb' % bytes
+        size = f'{bytes:.2f}b'
     return size
 
 

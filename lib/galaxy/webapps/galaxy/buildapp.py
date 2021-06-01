@@ -191,9 +191,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     # webapp.add_client_route('/workflows/invocations/view_bco')
     webapp.add_client_route('/custom_builds')
     webapp.add_client_route('/interactivetool_entry_points/list')
-    webapp.add_client_route('/library/folders/{folder_id}')
-    webapp.add_client_route('/library/folders/permissions/{folder_id}')
-    webapp.add_client_route('/library/folders/permissions/{folder_id}/dataset/{dataset_id}')
+    webapp.add_client_route('/libraries{path:.*?}')
 
     # ==== Done
     # Indicate that all configuration settings have been provided
@@ -664,14 +662,14 @@ def populate_api_routes(webapp, app):
     for noun, suffix in invoke_names.items():
         name = f"{noun}{suffix}"
         webapp.mapper.connect(
-            'list_workflow_%s' % name,
+            f'list_workflow_{name}',
             '/api/workflows/{workflow_id}/%s' % noun,
             controller='workflows',
             action='index_invocations',
             conditions=dict(method=['GET'])
         )
         webapp.mapper.connect(
-            'workflow_%s' % name,
+            f'workflow_{name}',
             '/api/workflows/{workflow_id}/%s' % noun,
             controller='workflows',
             action='invoke',
@@ -684,22 +682,22 @@ def populate_api_routes(webapp, app):
         # /api/workflows/<workflow_id>/usage/<invocation_id> (deprecated)
         conditions = conditions or dict(method=['GET'])
         webapp.mapper.connect(
-            'workflow_invocation_%s' % endpoint_name,
-            '/api/workflows/{workflow_id}/invocations/{invocation_id}' + endpoint_suffix,
+            f'workflow_invocation_{endpoint_name}',
+            f"/api/workflows/{{workflow_id}}/invocations/{{invocation_id}}{endpoint_suffix}",
             controller='workflows',
             action=action,
             conditions=conditions,
         )
         webapp.mapper.connect(
-            'workflow_usage_%s' % endpoint_name,
-            '/api/workflows/{workflow_id}/usage/{invocation_id}' + endpoint_suffix,
+            f'workflow_usage_{endpoint_name}',
+            f"/api/workflows/{{workflow_id}}/usage/{{invocation_id}}{endpoint_suffix}",
             controller='workflows',
             action=action,
             conditions=conditions,
         )
         webapp.mapper.connect(
-            'invocation_%s' % endpoint_name,
-            '/api/invocations/{invocation_id}' + endpoint_suffix,
+            f'invocation_{endpoint_name}',
+            f"/api/invocations/{{invocation_id}}{endpoint_suffix}",
             controller='workflows',
             action=action,
             conditions=conditions,
@@ -1226,47 +1224,47 @@ def populate_api_routes(webapp, app):
 
 def _add_item_tags_controller(webapp, name_prefix, path_prefix, **kwd):
     # Not just using map.resources because actions should be based on name not id
-    controller = "%stags" % name_prefix
-    name = "%stag" % name_prefix
-    path = "%s/tags" % path_prefix
+    controller = f"{name_prefix}tags"
+    name = f"{name_prefix}tag"
+    path = f"{path_prefix}/tags"
     map = webapp.mapper
     # Allow view items' tags.
     map.connect(name, path,
                 controller=controller, action="index",
                 conditions=dict(method=["GET"]))
     # Allow remove tag from item
-    map.connect("%s_delete" % name, "%s/tags/{tag_name}" % path_prefix,
+    map.connect(f"{name}_delete", "%s/tags/{tag_name}" % path_prefix,
                 controller=controller, action="delete",
                 conditions=dict(method=["DELETE"]))
     # Allow create a new tag with from name
-    map.connect("%s_create" % name, "%s/tags/{tag_name}" % path_prefix,
+    map.connect(f"{name}_create", "%s/tags/{tag_name}" % path_prefix,
                 controller=controller, action="create",
                 conditions=dict(method=["POST"]))
     # Allow update tag value
-    map.connect("%s_update" % name, "%s/tags/{tag_name}" % path_prefix,
+    map.connect(f"{name}_update", "%s/tags/{tag_name}" % path_prefix,
                 controller=controller, action="update",
                 conditions=dict(method=["PUT"]))
     # Allow show tag by name
-    map.connect("%s_show" % name, "%s/tags/{tag_name}" % path_prefix,
+    map.connect(f"{name}_show", "%s/tags/{tag_name}" % path_prefix,
                 controller=controller, action="show",
                 conditions=dict(method=["GET"]))
 
 
 def _add_item_extended_metadata_controller(webapp, name_prefix, path_prefix, **kwd):
-    controller = "%sextended_metadata" % name_prefix
-    name = "%sextended_metadata" % name_prefix
+    controller = f"{name_prefix}extended_metadata"
+    name = f"{name_prefix}extended_metadata"
     webapp.mapper.resource(name, "extended_metadata", path_prefix=path_prefix, controller=controller)
 
 
 def _add_item_annotation_controller(webapp, name_prefix, path_prefix, **kwd):
-    controller = "%sannotations" % name_prefix
-    name = "%sannotation" % name_prefix
+    controller = f"{name_prefix}annotations"
+    name = f"{name_prefix}annotation"
     webapp.mapper.resource(name, "annotation", path_prefix=path_prefix, controller=controller)
 
 
 def _add_item_provenance_controller(webapp, name_prefix, path_prefix, **kwd):
-    controller = "%sprovenance" % name_prefix
-    name = "%sprovenance" % name_prefix
+    controller = f"{name_prefix}provenance"
+    name = f"{name_prefix}provenance"
     webapp.mapper.resource(name, "provenance", path_prefix=path_prefix, controller=controller)
 
 

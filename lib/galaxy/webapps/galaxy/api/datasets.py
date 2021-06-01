@@ -100,21 +100,17 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         The list returned can be ordered using the optional parameter:
             order:  string containing one of the valid ordering attributes followed
-                    (optionally) by '-asc' or '-dsc' for ascending and descending
+                    (optionally) by '-asc' or '-dsc' (default) for ascending and descending
                     order respectively. Orders can be stacked as a comma-
                     separated list of values.
+                    Allowed ordering attributes are: 'create_time', 'extension',
+                    'hid', 'history_id', 'name', 'update_time'.
+                    'order' defaults to 'create_time'.
 
         ..example:
             To sort by name descending then create time descending:
                 '?order=name-dsc,create_time'
 
-        The ordering attributes and their default orders are:
-            hid defaults to 'hid-asc'
-            create_time defaults to 'create_time-dsc'
-            update_time defaults to 'update_time-dsc'
-            name    defaults to 'name-asc'
-
-        'order' defaults to 'create_time'
         """
         filter_params = self.parse_filter_params(kwd)
         filters = self.history_contents_filters.parse_filters(filter_params)
@@ -425,7 +421,7 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         return rval
 
-    @web.legacy_expose_api_raw_anonymous
+    @web.expose_api_raw_anonymous
     def display(self, trans, history_content_id, history_id,
                 preview=False, filename=None, to_ext=None, raw=False, **kwd):
         """
@@ -457,11 +453,12 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
                 if 'key' in display_kwd:
                     del display_kwd["key"]
                 rval = hda.datatype.display_data(trans, hda, preview, filename, to_ext, **display_kwd)
+        except galaxy_exceptions.MessageException:
+            raise
         except Exception as e:
-            log.exception("Error getting display data for dataset (%s) from history (%s)",
+            log.exception("Server error getting display data for dataset (%s) from history (%s)",
                           history_content_id, history_id)
-            trans.response.status = 500
-            rval = "Could not get display data for dataset: %s" % util.unicodify(e)
+            raise galaxy_exceptions.InternalServerError(f"Could not get display data for dataset: {util.unicodify(e)}")
         return rval
 
     @web.expose_api
@@ -498,7 +495,7 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             log.exception("Error getting metadata_file (%s) for dataset (%s) from history (%s)",
                           metadata_file, history_content_id, history_id)
             trans.response.status = 500
-            rval = "Could not get metadata for dataset: %s" % util.unicodify(e)
+            rval = f"Could not get metadata for dataset: {util.unicodify(e)}"
         return rval
 
     @web.expose_api_anonymous

@@ -10,8 +10,8 @@
         @keydown.space.self.stop.prevent="$emit('update:selected', !selected)"
         @click.stop="$emit('viewCollection')"
     >
-        <nav class="d-flex content-top-menu align-items-center justify-content-between">
-            <div class="d-flex mr-1 align-items-center" @click.stop>
+        <nav class="content-top-menu">
+            <div class="content-status-indicators mr-1" @click.stop>
                 <b-check v-if="showSelection" :checked="selected" @change="$emit('update:selected', $event)" />
 
                 <StatusIcon
@@ -31,6 +31,15 @@
                 />
 
                 <StateBtn
+                    v-if="dsc.deleted"
+                    class="px-1"
+                    state="deleted"
+                    title="Undelete"
+                    icon="fas fa-trash-restore"
+                    @click.stop="$emit('undelete')"
+                />
+
+                <StateBtn
                     class="px-1"
                     state="ok"
                     title="Collection"
@@ -39,26 +48,21 @@
                 />
             </div>
 
-            <h5 class="flex-grow-1 overflow-hidden mr-auto text-nowrap text-truncate">
-                <span class="hid">{{ dsc.hid }}</span>
-                <span class="name">{{ dsc.name }}</span>
-                <span class="description">
-                    ({{ dsc.collectionType | localize }} {{ dsc.collectionCountDescription | localize }})
-                </span>
-            </h5>
+            <div class="content-title mr-1">
+                <h5 class="text-truncate">
+                    <span class="hid">{{ dsc.hid }}</span>
+                    <span class="name">{{ dsc.name }}</span>
+                    <span class="description">
+                        ({{ dsc.collectionType | localize }} {{ dsc.collectionCountDescription | localize }})
+                    </span>
+                </h5>
+            </div>
 
-            <slot name="menu">
-                <DscMenu v-if="!dsc.deleted" class="content-item-menu" v-on="$listeners" />
-            </slot>
-
-            <StateBtn
-                v-if="dsc.deleted"
-                class="px-1"
-                state="deleted"
-                title="Undelete"
-                icon="fas fa-trash-restore"
-                @click.stop="$emit('undelete')"
-            />
+            <div class="content-item-menu">
+                <slot name="menu">
+                    <DscMenu v-if="!dsc.deleted" v-on="$listeners" />
+                </slot>
+            </div>
         </nav>
 
         <!--- read-only tags with name: prefix -->

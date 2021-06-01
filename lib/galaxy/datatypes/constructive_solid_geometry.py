@@ -107,7 +107,7 @@ class Ply:
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
-            dataset.blurb = "Faces: {}, Vertices: {}".format(str(dataset.metadata.face), str(dataset.metadata.vertex))
+            dataset.blurb = f"Faces: {str(dataset.metadata.face)}, Vertices: {str(dataset.metadata.vertex)}"
         else:
             dataset.peek = 'File does not exist'
             dataset.blurb = 'File purged from disc'
@@ -116,7 +116,7 @@ class Ply:
         try:
             return dataset.peek
         except Exception:
-            return "Ply file (%s)" % (nice_size(dataset.get_size()))
+            return f"Ply file ({nice_size(dataset.get_size())})"
 
 
 class PlyAscii(Ply, data.Text):
@@ -420,7 +420,7 @@ class Vtk:
     def get_blurb(self, dataset):
         blurb = ""
         if dataset.metadata.vtk_version is not None:
-            blurb += 'VTK Version %s' % str(dataset.metadata.vtk_version)
+            blurb += f'VTK Version {str(dataset.metadata.vtk_version)}'
         if dataset.metadata.dataset_type is not None:
             if blurb:
                 blurb += ' '
@@ -439,7 +439,7 @@ class Vtk:
         try:
             return dataset.peek
         except Exception:
-            return "Vtk file (%s)" % (nice_size(dataset.get_size()))
+            return f"Vtk file ({nice_size(dataset.get_size())})"
 
 
 class VtkAscii(Vtk, data.Text):

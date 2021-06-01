@@ -9,6 +9,7 @@ from pydantic import (
 )
 from sqlalchemy import and_, false, func, or_
 from sqlalchemy.orm import aliased
+from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.sql import select
 
 from galaxy import model
@@ -21,6 +22,7 @@ from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
+from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import StructuredApp
 from galaxy.util import (
     defaultdict,
@@ -96,17 +98,17 @@ class JobSearch:
     """Search for jobs using tool inputs or other jobs"""
     def __init__(
         self,
-        app: StructuredApp,
+        sa_session: scoped_session,
         hda_manager: HDAManager,
         dataset_collection_manager: DatasetCollectionManager,
-        ldda_manager: LDDAManager
+        ldda_manager: LDDAManager,
+        id_encoding_helper: IdEncodingHelper,
     ):
-        self.app = app
-        self.sa_session = app.model.context
+        self.sa_session = sa_session
         self.hda_manager = hda_manager
         self.dataset_collection_manager = dataset_collection_manager
         self.ldda_manager = ldda_manager
-        self.decode_id = self.app.security.decode_id
+        self.decode_id = id_encoding_helper.decode_id
 
     def by_tool_input(self, trans, tool_id, tool_version, param=None, param_dump=None, job_state='ok'):
         """Search for jobs producing same results using the 'inputs' part of a tool POST."""
@@ -251,7 +253,7 @@ class JobSearch:
                     name_condition = []
                     if identifier:
                         data_conditions.append(and_(model.Job.id == d.job_id,
-                                             d.name.in_({"%s|__identifier__" % _ for _ in k}),
+                                             d.name.in_({f"{_}|__identifier__" for _ in k}),
                                              d.value == json.dumps(identifier)))
                     else:
                         stmt = stmt.where(e.name == c.name)
@@ -394,6 +396,8 @@ class JobSearch:
 def view_show_job(trans, job, full: bool) -> typing.Dict:
     is_admin = trans.user_is_admin
     job_dict = trans.app.security.encode_all_ids(job.to_dict('element', system_details=is_admin), True)
+    if trans.app.config.expose_dataset_path and 'command_line' not in job_dict:
+        job_dict['command_line'] = job.command_line
     if full:
         job_dict.update(dict(
             tool_stdout=job.tool_stdout,
@@ -458,7 +462,7 @@ def fetch_job_states(sa_session, job_source_ids, job_source_types):
                     implicit_collection_job_ids.add(invocation_step_source_id)
             workflow_invocations_job_sources[job_source_id] = workflow_invocation_job_sources
         else:
-            raise RequestParameterInvalidException("Invalid job source type %s found." % job_source_type)
+            raise RequestParameterInvalidException(f"Invalid job source type {job_source_type} found.")
 
     job_summaries = {}
     implicit_collection_jobs_summaries = {}
@@ -657,7 +661,7 @@ def summarize_job_parameters(trans, job):
                     else:
                         rval.append(dict(text=input.name, depth=depth, notes="The previously used value is no longer valid.", error=True))
                 elif input.type == "upload_dataset":
-                    rval.append(dict(text=input.group_title(param_values), depth=depth, value="%s uploaded datasets" % len(param_values[input.name])))
+                    rval.append(dict(text=input.group_title(param_values), depth=depth, value=f"{len(param_values[input.name])} uploaded datasets"))
                 elif input.type == "data":
                     value = []
                     for element in listify(param_values[input.name]):

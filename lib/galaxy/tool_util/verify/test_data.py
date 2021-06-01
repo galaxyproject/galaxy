@@ -110,7 +110,7 @@ class GitDataResolver(FileDataResolver):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
-        print("Executing %s" % cmd)
+        print(f"Executing {cmd}")
         p = subprocess.Popen(cmd, **subprocess_kwds)
         stdout, stderr = p.communicate()
         if p.returncode != 0:

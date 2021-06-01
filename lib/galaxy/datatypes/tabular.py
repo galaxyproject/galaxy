@@ -38,6 +38,7 @@ class TabularData(data.Text):
     # All tabular data is chunkable.
     CHUNKABLE = True
     data_line_offset = 0
+    max_peek_columns = 50
 
     """Add metadata elements"""
     MetadataElement(name="comment_lines", default=0, desc="Number of comment lines", readonly=False, optional=True, no_value=0)
@@ -54,7 +55,7 @@ class TabularData(data.Text):
     def set_peek(self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None, line_wrap=False, **kwd):
         super().set_peek(dataset, line_count=line_count, WIDTH=WIDTH, skipchars=skipchars, line_wrap=line_wrap)
         if dataset.metadata.comment_lines:
-            dataset.blurb = "{}, {} comments".format(dataset.blurb, util.commaify(str(dataset.metadata.comment_lines)))
+            dataset.blurb = f"{dataset.blurb}, {util.commaify(str(dataset.metadata.comment_lines))} comments"
 
     def displayable(self, dataset):
         try:
@@ -136,7 +137,7 @@ class TabularData(data.Text):
             out.append('</table>')
             out = "".join(out)
         except Exception as exc:
-            out = "Can't create peek: %s" % util.unicodify(exc)
+            out = f"Can't create peek: {util.unicodify(exc)}"
         return out
 
     def make_html_peek_header(self, dataset, skipchars=None, column_names=None, column_number_format='%s', column_parameter_alias=None, **kwargs):
@@ -154,6 +155,7 @@ class TabularData(data.Text):
             columns = dataset.metadata.columns
             if columns is None:
                 columns = dataset.metadata.spec.columns.no_value
+            columns = min(columns, self.max_peek_columns)
             column_headers = [None] * columns
 
             # fill in empty headers with data from column_names
@@ -177,12 +179,12 @@ class TabularData(data.Text):
                 if header is None:
                     out.append(column_number_format % str(i + 1))
                 else:
-                    out.append('{}.{}'.format(str(i + 1), escape(header)))
+                    out.append(f'{str(i + 1)}.{escape(header)}')
                 out.append('</th>')
             out.append('</tr>')
         except Exception as exc:
             log.exception('make_html_peek_header failed on HDA %s', dataset.id)
-            raise Exception("Can't create peek header: %s" % util.unicodify(exc))
+            raise Exception(f"Can't create peek header: {util.unicodify(exc)}")
         return "".join(out)
 
     def make_html_peek_rows(self, dataset, skipchars=None, **kwargs):
@@ -198,26 +200,28 @@ class TabularData(data.Text):
             columns = dataset.metadata.columns
             if columns is None:
                 columns = dataset.metadata.spec.columns.no_value
+            columns = min(columns, self.max_peek_columns)
             for i, line in enumerate(peek.splitlines()):
                 if i >= self.data_line_offset:
                     if line.startswith(tuple(skipchars)):
-                        out.append('<tr><td colspan="100%%">%s</td></tr>' % escape(line))
+                        out.append(f'<tr><td colspan="100%">{escape(line)}</td></tr>')
                     elif line:
                         elems = line.split(dataset.metadata.delimiter)
+                        elems = elems[:min(len(elems), self.max_peek_columns)]
                         # pad shortened elems, since lines could have been truncated by width
                         if len(elems) < columns:
                             elems.extend([''] * (columns - len(elems)))
                         # we may have an invalid comment line or invalid data
                         if len(elems) != columns:
-                            out.append('<tr><td colspan="100%%">%s</td></tr>' % escape(line))
+                            out.append(f'<tr><td colspan="100%">{escape(line)}</td></tr>')
                         else:
                             out.append('<tr>')
                             for elem in elems:
-                                out.append('<td>%s</td>' % escape(elem))
+                                out.append(f'<td>{escape(elem)}</td>')
                             out.append('</tr>')
         except Exception as exc:
             log.exception('make_html_peek_rows failed on HDA %s', dataset.id)
-            raise Exception("Can't create peek rows: %s" % util.unicodify(exc))
+            raise Exception(f"Can't create peek rows: {util.unicodify(exc)}")
         return "".join(out)
 
     def display_peek(self, dataset):
@@ -340,7 +344,7 @@ class Tabular(TabularData):
 
         is_column_type = {}  # Dict to store column type string to checking function
         for column_type in column_type_set_order:
-            is_column_type[column_type] = locals()["is_%s" % (column_type)]
+            is_column_type[column_type] = locals()[f"is_{column_type}"]
 
         def guess_column_type(column_text):
             for column_type in column_type_set_order:
@@ -760,13 +764,13 @@ class BaseVcf(Tabular):
         stderr_f = tempfile.NamedTemporaryFile(prefix="bam_merge_stderr")
         stderr_name = stderr_f.name
         command = ["bcftools", "concat"] + split_files + ["-o", output_file]
-        log.info("Merging vcf files with command [%s]" % " ".join(command))
+        log.info(f"Merging vcf files with command [{' '.join(command)}]")
         exit_code = subprocess.call(args=command, stderr=open(stderr_name, 'wb'))
         with open(stderr_name, "rb") as f:
             stderr = f.read().strip()
         # Did merge succeed?
         if exit_code != 0:
-            raise Exception("Error merging VCF files: %s" % stderr)
+            raise Exception(f"Error merging VCF files: {stderr}")
 
     def validate(self, dataset, **kwd):
         def validate_row(row):
@@ -823,9 +827,9 @@ class VcfGz(BaseVcf, binary.Binary):
             index_file = dataset.metadata.spec['tabix_index'].param.new_file(dataset=dataset)
 
         try:
-            pysam.tabix_index(dataset.file_name, index=index_file.file_name, preset='vcf', force=True)
+            pysam.tabix_index(dataset.file_name, index=index_file.file_name, preset='vcf', keep_original=True, force=True)
         except Exception as e:
-            raise Exception('Error setting VCF.gz metadata: %s' % (util.unicodify(e)))
+            raise Exception(f'Error setting VCF.gz metadata: {util.unicodify(e)}')
         dataset.metadata.tabix_index = index_file
 
 
@@ -861,17 +865,17 @@ class Eland(Tabular):
             # Generate column header
             out.append('<tr>')
             for i, name in enumerate(self.column_names):
-                out.append('<th>{}.{}</th>'.format(str(i + 1), name))
+                out.append(f'<th>{str(i + 1)}.{name}</th>')
             # This data type requires at least 11 columns in the data
             if dataset.metadata.columns - len(self.column_names) > 0:
-                for i in range(len(self.column_names), dataset.metadata.columns):
-                    out.append('<th>%s</th>' % str(i + 1))
+                for i in range(len(self.column_names), max(dataset.metadata.columns, self.max_peek_columns)):
+                    out.append(f'<th>{str(i + 1)}</th>')
                 out.append('</tr>')
             out.append(self.make_html_peek_rows(dataset, skipchars=skipchars, peek=peek))
             out.append('</table>')
             out = "".join(out)
         except Exception as exc:
-            out = "Can't create peek %s" % exc
+            out = f"Can't create peek {exc}"
         return out
 
     def sniff_prefix(self, file_prefix):
@@ -1128,8 +1132,8 @@ class ConnectivityTable(Tabular):
     edam_format = "format_3309"
     file_ext = "ct"
 
-    header_regexp = re.compile("^[0-9]+" + "(?:\t|[ ]+)" + ".*?" + "(?:ENERGY|energy|dG)" + "[ \t].*?=")
-    structure_regexp = re.compile("^[0-9]+" + "(?:\t|[ ]+)" + "[ACGTURYKMSWBDHVN]+" + "(?:\t|[ ]+)" + "[^\t]+" + "(?:\t|[ ]+)" + "[^\t]+" + "(?:\t|[ ]+)" + "[^\t]+" + "(?:\t|[ ]+)" + "[^\t]+")
+    header_regexp = re.compile("^[0-9]+(?:	|[ ]+).*?(?:ENERGY|energy|dG)[ 	].*?=")
+    structure_regexp = re.compile("^[0-9]+(?:	|[ ]+)[ACGTURYKMSWBDHVN]+(?:	|[ ]+)[^	]+(?:	|[ ]+)[^	]+(?:	|[ ]+)[^	]+(?:	|[ ]+)[^	]+")
 
     def __init__(self, **kwd):
         super().__init__(**kwd)
@@ -1197,7 +1201,7 @@ class ConnectivityTable(Tabular):
                     else:
                         if j != int(re.split(r'\W+', line, 1)[0]):
                             return False
-                        elif j == length:  # Last line of first sequence has been recheached
+                        elif j == length:  # Last line of first sequence has been reached
                             return True
                         else:
                             j += 1
@@ -1226,7 +1230,7 @@ class ConnectivityTable(Tabular):
         ck_data_body = re.sub('\n[ \t]+', '\n', ck_data_body)
         ck_data_body = re.sub('[ ]+', '\t', ck_data_body)
 
-        return dumps({'ck_data': util.unicodify(ck_data_header + "\n" + ck_data_body), 'ck_index': ck_index + 1})
+        return dumps({'ck_data': util.unicodify(f"{ck_data_header}\n{ck_data_body}"), 'ck_index': ck_index + 1})
 
 
 @build_sniff_from_prefix
@@ -1297,3 +1301,86 @@ class MatrixMarket(TabularData):
             dataset.metadata.data_lines = data_lines
             dataset.metadata.columns = 3
             dataset.metadata.column_types = ['int', 'int', 'float']
+
+
+@build_sniff_from_prefix
+class CMAP(TabularData):
+    MetadataElement(name="cmap_version", default='0.2', desc="version of cmap", readonly=True, visible=True, optional=False, no_value='0.2')
+    MetadataElement(name="label_channels", default=1, desc="the number of label channels", readonly=True, visible=True, optional=False, no_value=1)
+    MetadataElement(name="nickase_recognition_site_1", default=[], desc="comma separated list of label motif recognition sequences for channel 1", readonly=True, visible=True, optional=False, no_value=[])
+    MetadataElement(name="number_of_consensus_nanomaps", default=0, desc="the total number of consensus genome maps in the CMAP file", readonly=True, visible=True, optional=False, no_value=0)
+    MetadataElement(name="nickase_recognition_site_2", default=[], desc="comma separated list of label motif recognition sequences for channel 2", readonly=True, visible=True, optional=True, no_value=[])
+    MetadataElement(name="channel_1_color", default=[], desc="channel 1 color", readonly=True, visible=True, optional=True, no_value=[])
+    MetadataElement(name="channel_2_color", default=[], desc="channel 2 color", readonly=True, visible=True, optional=True, no_value=[])
+    """
+    # CMAP File Version:    2.0
+    # Label Channels:   1
+    # Nickase Recognition Site 1:   cttaag;green_01
+    # Nickase Recognition Site 2:   cctcagc;red_01
+    # Number of Consensus Maps: 459
+    # Values corresponding to intervals (StdDev, HapDelta) refer to the interval between current site and next site
+    #h  CMapId  ContigLength    NumSites    SiteID  LabelChannel    Position    StdDev  Coverage    Occurrence  ChimQuality SegDupL SegDupR FragileL    FragileR    OutlierFrac ChimNorm    Mask
+    #f  int float   int int int float   float   float   float   float   float   float   float   float   float   float   Hex
+    182 58474736.7  10235   1   1   58820.9 35.4    13.5    13.5    -1.00   -1.00   -1.00   3.63    0.00    0.00    -1.00   0
+    182 58474736.7  10235   1   1   58820.9 35.4    13.5    13.5    -1.00   -1.00   -1.00   3.63    0.00    0.00    -1.00   0
+    182 58474736.7  10235   1   1   58820.9 35.4    13.5    13.5    -1.00   -1.00   -1.00   3.63    0.00    0.00    -1.00   0
+    """
+    file_ext = "cmap"
+
+    def sniff_prefix(self, file_prefix):
+        return file_prefix.startswith('# CMAP File Version:')
+
+    def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=7, **kwd):
+        if dataset.has_data():
+            with open(dataset.file_name) as dataset_fh:
+                comment_lines = 0
+                column_headers = None
+                cleaned_column_types = None
+                number_of_columns = 0
+                for i, line in enumerate(dataset_fh):
+                    line = line.strip('\n')
+                    if line.startswith('#'):
+
+                        if line.startswith('#h'):
+
+                            column_headers = line.split("\t")[1:]
+                        elif line.startswith('#f'):
+                            cleaned_column_types = []
+                            for column_type in line.split('\t')[1:]:
+                                if column_type == 'Hex':
+                                    cleaned_column_types.append('str')
+                                else:
+                                    cleaned_column_types.append(column_type)
+                        comment_lines += 1
+                        fields = line.split('\t')
+                        if len(fields) == 2:
+                            if fields[0] == '# CMAP File Version:':
+                                dataset.metadata.cmap_version = fields[1]
+                            elif fields[0] == '# Label Channels:':
+                                dataset.metadata.label_channels = int(fields[1])
+                            elif fields[0] == '# Nickase Recognition Site 1:':
+                                fields2 = fields[1].split(';')
+                                if len(fields2) == 2:
+                                    dataset.metadata.channel_1_color = fields2[1]
+                                dataset.metadata.nickase_recognition_site_1 = fields2[0].split(',')
+                            elif fields[0] == '# Number of Consensus Maps:':
+                                dataset.metadata.number_of_consensus_nanomaps = int(fields[1])
+                            elif fields[0] == '# Nickase Recognition Site 2:':
+                                fields2 = fields[1].split(';')
+                                if len(fields2) == 2:
+                                    dataset.metadata.channel_2_color = fields2[1]
+                                dataset.metadata.nickase_recognition_site_2 = fields2[0].split(',')
+                    elif self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
+                        # If the dataset is larger than optional_metadata, just count comment lines.
+                        # No more comments, and the file is too big to look at the whole thing. Give up.
+                        dataset.metadata.data_lines = None
+                        break
+                    elif i == comment_lines + 1:
+                        number_of_columns = len(line.split('\t'))
+                if not (self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize):
+                    dataset.metadata.data_lines = i + 1 - comment_lines
+            dataset.metadata.comment_lines = comment_lines
+            dataset.metadata.column_names = column_headers
+            dataset.metadata.column_types = cleaned_column_types
+            dataset.metadata.columns = number_of_columns
+            dataset.metadata.delimiter = '\t'

@@ -17,7 +17,7 @@ from sqlalchemy.orm import (
 from galaxy.model import tool_shed_install as install_model
 from galaxy.model.base import ModelMapping
 from galaxy.model.custom_types import (
-    JSONType,
+    MutableJSONType,
     TrimmedString
 )
 from galaxy.model.orm.engine_factory import build_engine
@@ -36,9 +36,9 @@ install_model.ToolShedRepository.table = Table("tool_shed_repository", metadata,
                                                Column("installed_changeset_revision", TrimmedString(255)),
                                                Column("changeset_revision", TrimmedString(255), index=True),
                                                Column("ctx_rev", TrimmedString(10)),
-                                               Column("metadata", JSONType, nullable=True),
+                                               Column("metadata", MutableJSONType, nullable=True),
                                                Column("includes_datatypes", Boolean, index=True, default=False),
-                                               Column("tool_shed_status", JSONType, nullable=True),
+                                               Column("tool_shed_status", MutableJSONType, nullable=True),
                                                Column("deleted", Boolean, index=True, default=False),
                                                Column("uninstalled", Boolean, default=False),
                                                Column("dist_to_shed", Boolean, default=False),

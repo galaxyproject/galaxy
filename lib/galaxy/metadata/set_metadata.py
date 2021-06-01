@@ -100,7 +100,7 @@ def set_meta_with_tool_provided(dataset_instance, file_dict, set_meta_kwds, data
     if max_metadata_value_size:
         for k, v in list(dataset_instance.metadata.items()):
             if total_size(v) > max_metadata_value_size:
-                log.info("Key %s too large for metadata, discarding" % k)
+                log.info(f"Key {k} too large for metadata, discarding")
                 dataset_instance.metadata.remove_key(k)
 
 
@@ -118,7 +118,7 @@ def set_metadata_portable():
         with open(metadata_params_path) as f:
             metadata_params = json.load(f)
     except OSError:
-        raise Exception("Failed to find metadata/params.json from cwd [%s]" % tool_job_working_directory)
+        raise Exception(f"Failed to find metadata/params.json from cwd [{tool_job_working_directory}]")
     datatypes_config = metadata_params["datatypes_config"]
     job_metadata = metadata_params["job_metadata"]
     provided_metadata_style = metadata_params.get("provided_metadata_style")
@@ -162,13 +162,26 @@ def set_metadata_portable():
 
             with open(os.path.join(outputs_directory, "tool_stderr"), "rb") as f:
                 tool_stderr = f.read()
+        elif os.path.exists(os.path.join(tool_job_working_directory, "stdout")):
+            with open(os.path.join(tool_job_working_directory, "stdout"), "rb") as f:
+                tool_stdout = f.read()
+
+            with open(os.path.join(tool_job_working_directory, "stderr"), "rb") as f:
+                tool_stderr = f.read()
         elif os.path.exists(os.path.join(outputs_directory, "stdout")):
-            # Puslar style working directory.
+            # Puslar style output directory? Was this ever used - did this ever work?
             with open(os.path.join(outputs_directory, "stdout"), "rb") as f:
                 tool_stdout = f.read()
 
             with open(os.path.join(outputs_directory, "stderr"), "rb") as f:
                 tool_stderr = f.read()
+        else:
+            wdc = os.listdir(tool_job_working_directory)
+            odc = os.listdir(outputs_directory)
+            error_desc = "Failed to find tool_stdout or tool_stderr for this job, cannot collect metadata"
+            error_extra = f"Working dir contents [{wdc}], output directory contents [{odc}]"
+            log.warn(f"{error_desc}. {error_extra}")
+            raise Exception(error_desc)
 
         job_id_tag = metadata_params["job_id_tag"]
 
@@ -188,7 +201,7 @@ def set_metadata_portable():
         job_context = ExpressionContext(dict(stdout=tool_stdout, stderr=tool_stderr))
 
         # Load outputs.
-        export_store = store.DirectoryModelExportStore('metadata/outputs_populated', serialize_dataset_objects=True, for_edit=True, strip_metadata_files=False)
+        export_store = store.DirectoryModelExportStore('metadata/outputs_populated', serialize_dataset_objects=True, for_edit=True, strip_metadata_files=False, serialize_jobs=False)
     try:
         import_model_store = store.imported_store_for_metadata('metadata/outputs_new', object_store=object_store)
     except AssertionError:
@@ -203,15 +216,15 @@ def set_metadata_portable():
             dataset = import_model_store.sa_session.query(klass).find(dataset_instance_id)
         if dataset is None:
             # legacy check for jobs that started before 21.01, remove on 21.05
-            filename_in = os.path.join("metadata/metadata_in_%s" % output_name)
+            filename_in = os.path.join(f"metadata/metadata_in_{output_name}")
             import pickle
             dataset = pickle.load(open(filename_in, 'rb'))  # load DatasetInstance
         assert dataset is not None
 
-        filename_kwds = os.path.join("metadata/metadata_kwds_%s" % output_name)
-        filename_out = os.path.join("metadata/metadata_out_%s" % output_name)
-        filename_results_code = os.path.join("metadata/metadata_results_%s" % output_name)
-        override_metadata = os.path.join("metadata/metadata_override_%s" % output_name)
+        filename_kwds = os.path.join(f"metadata/metadata_kwds_{output_name}")
+        filename_out = os.path.join(f"metadata/metadata_out_{output_name}")
+        filename_results_code = os.path.join(f"metadata/metadata_results_{output_name}")
+        override_metadata = os.path.join(f"metadata/metadata_override_{output_name}")
         dataset_filename_override = output_dict["filename_override"]
         # pre-20.05 this was a per job parameter and not a per dataset parameter, drop in 21.XX
         legacy_object_store_store_by = metadata_params.get("object_store_store_by", "id")
@@ -221,7 +234,7 @@ def set_metadata_portable():
         try:
             dataset.dataset.external_filename = dataset_filename_override
             store_by = output_dict.get("object_store_store_by", legacy_object_store_store_by)
-            extra_files_dir_name = "dataset_%s_files" % getattr(dataset.dataset, store_by)
+            extra_files_dir_name = f"dataset_{getattr(dataset.dataset, store_by)}_files"
             files_path = os.path.abspath(os.path.join(tool_job_working_directory, "working", extra_files_dir_name))
             dataset.dataset.external_extra_files_path = files_path
             file_dict = tool_provided_metadata.get_dataset_meta(output_name, dataset.dataset.id, dataset.dataset.uuid)
@@ -252,10 +265,10 @@ def set_metadata_portable():
                 dataset.info = (dataset.info or '')
                 if context['stdout'].strip():
                     # Ensure white space between entries
-                    dataset.info = dataset.info.rstrip() + "\n" + context['stdout'].strip()
+                    dataset.info = f"{dataset.info.rstrip()}\n{context['stdout'].strip()}"
                 if context['stderr'].strip():
                     # Ensure white space between entries
-                    dataset.info = dataset.info.rstrip() + "\n" + context['stderr'].strip()
+                    dataset.info = f"{dataset.info.rstrip()}\n{context['stderr'].strip()}"
                 dataset.tool_version = version_string
                 dataset.set_size()
                 if 'uuid' in context:
@@ -341,7 +354,7 @@ def validate_and_load_datatypes_config(datatypes_config):
         datatypes_config = "configs/registry.xml"
 
     if not os.path.exists(datatypes_config):
-        print("Metadata setting failed because registry.xml [%s] could not be found. You may retry setting metadata." % datatypes_config)
+        print(f"Metadata setting failed because registry.xml [{datatypes_config}] could not be found. You may retry setting metadata.")
         sys.exit(1)
     datatypes_registry = galaxy.datatypes.registry.Registry()
     datatypes_registry.load_datatypes(root_dir=galaxy_root, config=datatypes_config, use_build_sites=False, use_converters=False, use_display_applications=False)

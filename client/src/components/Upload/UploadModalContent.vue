@@ -1,16 +1,23 @@
 <template>
     <b-tabs v-if="ready">
         <b-tab title="Regular" id="regular" button-id="tab-title-link-regular" v-if="showRegular">
-            <default :app="this" :lazy-load-max="50" :multiple="multiple" :selectable="selectable" v-on="$listeners" />
+            <default
+                :app="this"
+                :lazy-load-max="50"
+                :multiple="multiple"
+                :has-callback="hasCallback"
+                :selectable="selectable"
+                v-on="$listeners"
+            />
         </b-tab>
         <b-tab title="Composite" id="composite" button-id="tab-title-link-composite" v-if="showComposite">
-            <composite :app="this" :selectable="selectable" v-on="$listeners" />
+            <composite :app="this" :has-callback="hasCallback" :selectable="selectable" v-on="$listeners" />
         </b-tab>
         <b-tab title="Collection" id="collection" button-id="tab-title-link-collection" v-if="showCollection">
-            <collection :app="this" :selectable="selectable" v-on="$listeners" />
+            <collection :app="this" :has-callback="hasCallback" :selectable="selectable" v-on="$listeners" />
         </b-tab>
         <b-tab title="Rule-based" id="rule-based" button-id="tab-title-link-rule-based" v-if="showRules">
-            <rules-input :app="this" :selectable="selectable" v-on="$listeners" />
+            <rules-input :app="this" :has-callback="hasCallback" :selectable="selectable" v-on="$listeners" />
         </b-tab>
     </b-tabs>
     <div v-else>
@@ -43,7 +50,6 @@ export default {
     props: {
         currentHistoryId: { type: String, required: true },
         currentUserId: { type: String, default: "" },
-        selectable: { type: Boolean, required: false, default: false },
         ...commonProps,
     },
     data: function () {
@@ -54,6 +60,7 @@ export default {
             extensionsSet: false,
             datatypesMapper: null,
             datatypesMapperReady: true,
+            URI_PREFIXES: ["http", "https", "ftp", "file", "gxfiles", "gximport", "gxuserimport", "gxftp"],
         };
     },
     created() {
@@ -167,12 +174,44 @@ export default {
         currentFtp: function () {
             return this.currentUserId && this.ftpUploadSite;
         },
-
+        toData: function (items, history_id) {
+            const data = {
+                fetchRequest: null,
+                uploadRequest: null,
+            };
+            if (items && items.length > 0) {
+                const split = this.preprocess(items);
+                if (split.urls.length > 0) {
+                    data.fetchRequest = this.toFetchData(split.urls, history_id);
+                } else {
+                    data.uploadRequest = this.toFileUploadData(split.files, history_id);
+                }
+            }
+            return data;
+        },
+        preprocess: function (items) {
+            const data = {
+                urls: [],
+                files: [],
+            };
+            for (var index in items) {
+                var it = items[index];
+                if (it.get("file_mode") != "new" || !this.itemIsURL(it)) {
+                    data.files.push(it);
+                } else {
+                    data.urls.push(it);
+                }
+            }
+            return data;
+        },
+        itemIsURL: function (item) {
+            return this.URI_PREFIXES.some((prefix) => item.get("url_paste").startsWith(prefix));
+        },
         /**
          * Package API data from array of models
          * @param{Array} items - Upload items/rows filtered from a collection
          */
-        toData: function (items, history_id) {
+        toFileUploadData: function (items, history_id) {
             // create dictionary for data submission
             var data = {
                 payload: {
@@ -236,6 +275,41 @@ export default {
                 }
                 data.payload.inputs = JSON.stringify(inputs);
             }
+            return data;
+        },
+        toFetchData: function (items, history_id) {
+            var data = {
+                history_id: history_id,
+                space_to_tab: items[0].get("space_to_tab"),
+                to_posix_lines: items[0].get("to_posix_lines"),
+                targets: [
+                    {
+                        destination: { type: "hdas" },
+                        elements: [],
+                        name: "",
+                    },
+                ],
+                auto_decompress: true,
+            };
+
+            items.forEach((item) => {
+                let urls;
+                if (item.get("file_mode") == "ftp") {
+                    urls = [item.get("file_uri") || item.get("file_path")];
+                } else {
+                    urls = item.get("url_paste").split("\n");
+                }
+                urls.forEach((url) => {
+                    if (url != "") {
+                        data.targets[0].elements.push({
+                            url: url.trim(),
+                            src: "url",
+                            dbkey: item.get("genome", "?"),
+                            ext: item.get("extension", "auto"),
+                        });
+                    }
+                });
+            });
             return data;
         },
     },
