@@ -249,10 +249,7 @@ export default {
             const Galaxy = getGalaxyInstance();
             // logic from legacy code
             return !!(this.contains_file_or_folder && Galaxy.user);
-        },
-        allDatasets: function () {
-            return this.folderContents.filter((element) => element.type === "file");
-        },
+        }
     },
     methods: {
         updateSearch: function (value) {
