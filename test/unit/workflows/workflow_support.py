@@ -13,7 +13,7 @@ from galaxy.workflow.modules import module_factory
 class MockTrans:
 
     def __init__(self):
-        self.app = TestApp()
+        self.app = MockApp()
         self.sa_session = self.app.model.context
         self._user = None
 
@@ -36,8 +36,7 @@ class MockTrans:
         return self._user
 
 
-class TestApp:
-    __test__ = False  # Prevent pytest from discovering this class (issue #12071)
+class MockApp:
 
     def __init__(self):
         self.config = bunch.Bunch(
@@ -48,14 +47,13 @@ class TestApp:
             "sqlite:///:memory:",
             create_tables=True
         )
-        self.toolbox = TestToolbox()
-        self.datatypes_registry = TestDatatypesRegistry()
+        self.toolbox = MockToolbox()
+        self.datatypes_registry = MockDatatypesRegistry()
         self.security = IdEncodingHelper(id_secret="testing")
         self.workflow_manager = WorkflowsManager(self)
 
 
-class TestDatatypesRegistry:
-    __test__ = False  # Prevent pytest from discovering this class (issue #12071)
+class MockDatatypesRegistry:
 
     def __init__(self):
         pass
@@ -68,8 +66,7 @@ class TestDatatypesRegistry:
         return {"fasta": object(), "fastqsanger": object(), "txt": object()}
 
 
-class TestToolbox:
-    __test__ = False  # Prevent pytest from discovering this class (issue #12071)
+class MockToolbox:
 
     def __init__(self):
         self.tools = {}
