@@ -86,7 +86,7 @@
     Galaxy offers you to use Jupyter Notebooks directly in Galaxy accessing and interacting with Galaxy datasets as you like. A very common use-case is to
     do the heavy lifting and data reduction steps in Galaxy and the plotting and more `interactive` part on smaller datasets in Jupyter.
 
-    You can start with a new Jupyter notebook from scratch or load an already existing one, e.g. from your collegue and execute it on your dataset.
+    You can start with a new Jupyter notebook from scratch or load an already existing one, e.g. from your colleague and execute it on your dataset.
     If you have a defined input dataset you can even execute a Jupyter notebook in a workflow, given that the notebook is writing the output back to the history.
 
     You can import data into the notebook via a predefined `get()` function and write results back to Galaxy with a `put()` function.
