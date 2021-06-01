@@ -52,17 +52,19 @@
                 <span class="fa fa-cog" />
             </template>
             <b-dropdown-item href="#" @click="$emit('onSaveAs')"
-                ><icon class="fa-floppy-o" />Save As...</b-dropdown-item
+                ><span class="fa fa-floppy-o" />Save As...</b-dropdown-item
             >
             <b-dropdown-item href="#" @click="$emit('onLayout')"
-                ><icon class="fa-align-left" />Auto Layout</b-dropdown-item
+                ><span class="fa fa-align-left" />Auto Layout</b-dropdown-item
             >
-            <b-dropdown-item href="#" @click="$emit('onLint')"><icon class="fa-magic" />Best Practices</b-dropdown-item>
+            <b-dropdown-item href="#" @click="$emit('onLint')"
+                ><span class="fa fa-magic" />Best Practices</b-dropdown-item
+            >
             <b-dropdown-item href="#" @click="$emit('onUpgrade')"
-                ><icon class="fa-recycle" />Upgrade Workflow</b-dropdown-item
+                ><span class="fa fa-recycle" />Upgrade Workflow</b-dropdown-item
             >
             <b-dropdown-item href="#" @click="$emit('onDownload')"
-                ><icon class="fa-download" />Download</b-dropdown-item
+                ><span class="fa fa-download" />Download</b-dropdown-item
             >
         </b-dropdown>
         <b-button

@@ -17,16 +17,16 @@
                         <template v-slot:button-content>
                             <span class="fa fa-caret-down" />
                         </template>
-                        <b-dropdown-item @click="onCopyLink"> <icon class="fa-chain" />Copy Link</b-dropdown-item>
-                        <b-dropdown-item @click="onCopyId"><icon class="fa-files-o" />Copy Tool ID</b-dropdown-item>
+                        <b-dropdown-item @click="onCopyLink"><span class="fa fa-chain" />Copy Link</b-dropdown-item>
+                        <b-dropdown-item @click="onCopyId"><span class="fa fa-files-o" />Copy Tool ID</b-dropdown-item>
                         <b-dropdown-item v-if="showDownload" @click="onDownload"
-                            ><icon class="fa-download" />Download</b-dropdown-item
+                            ><span class="fa fa-download" />Download</b-dropdown-item
                         >
                         <b-dropdown-item v-if="showLink" @click="onLink"
-                            ><icon class="fa-external-link" />See in Tool Shed</b-dropdown-item
+                            ><span class="fa fa-external-link" />See in Tool Shed</b-dropdown-item
                         >
                         <b-dropdown-item v-for="w of webhookDetails" :key="w.title" @click="w.onclick"
-                            ><icon :class="w.icon" />{{ w.title }}</b-dropdown-item
+                            ><span :class="w.icon" />{{ w.title }}</b-dropdown-item
                         >
                     </b-dropdown>
                     <b-dropdown
@@ -45,7 +45,7 @@
                             <span class="fa fa-cubes" />
                         </template>
                         <b-dropdown-item v-for="v of availableVersions" :key="v" @click="$emit('onChangeVersion', v)">
-                            <icon class="fa-cube" />Switch to {{ v }}</b-dropdown-item
+                            <i class="fa-cube" />Switch to {{ v }}</b-dropdown-item
                         >
                     </b-dropdown>
                     <b-button
@@ -204,7 +204,7 @@ export default {
                         this.webhookDetails.push({
                             icon: `fa ${webhook.config.icon}`,
                             title: webhook.config.title,
-                            onclick: function () {
+                            onclick: () => {
                                 const func = new Function("options", webhook.config.function);
                                 func(this.options);
                             },
