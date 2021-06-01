@@ -48,7 +48,7 @@ def transfer_part(s3server, mp_id, mp_keyname, mp_bucketname, i, part):
     """Transfer a part of a multipart upload. Designed to be run in parallel.
     """
     mp = mp_from_ids(s3server, mp_id, mp_keyname, mp_bucketname)
-    with open(part) as t_handle:
+    with open(part, 'rb') as t_handle:
         mp.upload_part_from_file(t_handle, i + 1)
     os.remove(part)
 
