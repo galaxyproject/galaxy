@@ -249,7 +249,7 @@ export default {
             const Galaxy = getGalaxyInstance();
             // logic from legacy code
             return !!(this.contains_file_or_folder && Galaxy.user);
-        }
+        },
     },
     methods: {
         updateSearch: function (value) {
