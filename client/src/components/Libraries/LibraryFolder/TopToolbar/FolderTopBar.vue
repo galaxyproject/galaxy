@@ -319,7 +319,6 @@ export default {
                 if (isCollection) {
                     new mod_import_collection.ImportCollectionModal({
                         selected: checkedItems,
-                        allDatasets: this.allDatasets,
                     });
                 } else {
                     new mod_import_dataset.ImportDatasetModal({
