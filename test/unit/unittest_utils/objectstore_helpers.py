@@ -29,8 +29,7 @@ extra_dirs:
 """
 
 
-class TestConfig:
-    __test__ = False  # Prevent pytest from discovering this class (issue #12071)
+class Config:
 
     def __init__(self, config_str=DISK_TEST_CONFIG, clazz=None, store_by="id"):
         self.temp_directory = mkdtemp()
