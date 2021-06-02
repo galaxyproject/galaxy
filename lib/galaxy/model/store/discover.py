@@ -171,8 +171,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         if info is not None:
             primary_data.info = info
 
-        if filename and not primary_data.id:
-            # If primary data has an id it should already have gone through the metadata process
+        if filename:
             self.set_datasets_metadata(datasets=[primary_data], datasets_attributes=[dataset_attributes])
 
         return primary_data
