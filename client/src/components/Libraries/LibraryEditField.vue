@@ -45,6 +45,9 @@ export default {
         text: {
             type: String,
         },
+        changedValue: {
+            type: String,
+        },
         isEditMode: {
             type: Boolean,
         },
@@ -55,12 +58,11 @@ export default {
     data() {
         return {
             maxDescriptionLength: MAX_DESCRIPTION_LENGTH,
-            textField: this.text,
         };
     },
     methods: {
         updateValue(value) {
-            this.textField = value;
+            this.$emit('update:changedValue', value)
         },
         toggleDescriptionExpand() {
             this.$emit("toggleDescriptionExpand");

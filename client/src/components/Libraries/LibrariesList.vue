@@ -65,6 +65,7 @@
                     :is-expanded="item.isExpanded"
                     :is-edit-mode="item.editMode"
                     :text="item.description"
+                    :changed-value.sync="item[newDescriptionProperty]"
                 />
             </template>
             <template v-slot:cell(synopsis)="{ item }">
@@ -74,6 +75,7 @@
                     :is-expanded="item.isExpanded"
                     :is-edit-mode="item.editMode"
                     :text="item.synopsis"
+                    :changed-value.sync="item[newSynopsisProperty]"
                 />
             </template>
             <template v-slot:cell(is_unrestricted)="row">
@@ -207,6 +209,8 @@ export default {
     data() {
         const galaxy = getGalaxyInstance();
         return {
+            newDescriptionProperty: "newDescription",
+            newSynopsisProperty: "newSynopsis",
             isNewLibFormVisible: false,
             currentPage: 1,
             fields: fields,
@@ -244,8 +248,14 @@ export default {
             this.$refs.libraries_list.refresh();
         },
         saveChanges(item) {
-            item.description = this.$refs[`description-${item.id}`].textField;
-            item.synopsis = this.$refs[`synopsis-${item.id}`].textField;
+            const description = item[this.newDescriptionProperty];
+            const synopsis = item[this.newSynopsisProperty];
+            if (description) {
+                item.description = description;
+            }
+            if (synopsis) {
+                item.synopsis = synopsis;
+            }
             this.services.saveChanges(
                 item,
                 () => {
