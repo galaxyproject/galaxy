@@ -22,7 +22,6 @@ from galaxy.quota._schema import (
 )
 from galaxy.schema.fields import EncodedDatabaseIdField
 from . import (
-    AdminUserRequired,
     BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
@@ -38,7 +37,7 @@ router = Router(tags=['quotas'])
 QuotaIdPathParam: EncodedDatabaseIdField = Path(
     ...,  # Required
     title="Quota ID",
-    description="The encoded indentifier of the Quota."
+    description="The encoded identifier of the Quota."
 )
 
 
@@ -49,7 +48,7 @@ class FastAPIQuota:
     @router.get(
         '/api/quotas',
         summary="Displays a list with information of quotas that are currently active.",
-        dependencies=[AdminUserRequired],
+        require_admin=True,
     )
     def index(
         self,
@@ -61,7 +60,7 @@ class FastAPIQuota:
     @router.get(
         '/api/quotas/deleted',
         summary="Displays a list with information of quotas that have been deleted.",
-        dependencies=[AdminUserRequired],
+        require_admin=True,
     )
     def index_deleted(
         self,
@@ -73,7 +72,7 @@ class FastAPIQuota:
     @router.get(
         '/api/quotas/{id}',
         summary="Displays details on a particular active quota.",
-        dependencies=[AdminUserRequired],
+        require_admin=True,
     )
     def show(
         self,
@@ -86,7 +85,7 @@ class FastAPIQuota:
     @router.get(
         '/api/quotas/deleted/{id}',
         summary="Displays details on a particular quota that has been deleted.",
-        dependencies=[AdminUserRequired],
+        require_admin=True,
     )
     def show_deleted(
         self,
@@ -99,7 +98,7 @@ class FastAPIQuota:
     @router.post(
         '/api/quotas',
         summary="Creates a new quota.",
-        dependencies=[AdminUserRequired],
+        require_admin=True,
     )
     def create(
         self,
@@ -112,7 +111,7 @@ class FastAPIQuota:
     @router.put(
         '/api/quotas/{id}',
         summary="Updates an existing quota.",
-        dependencies=[AdminUserRequired],
+        require_admin=True,
     )
     def update(
         self,
@@ -126,7 +125,7 @@ class FastAPIQuota:
     @router.delete(
         '/api/quotas/{id}',
         summary="Deletes an existing quota.",
-        dependencies=[AdminUserRequired],
+        require_admin=True,
     )
     def delete(
         self,
@@ -140,7 +139,7 @@ class FastAPIQuota:
     @router.post(
         '/api/quotas/deleted/{id}/undelete',
         summary="Restores a previously deleted quota.",
-        dependencies=[AdminUserRequired],
+        require_admin=True,
     )
     def undelete(
         self,
