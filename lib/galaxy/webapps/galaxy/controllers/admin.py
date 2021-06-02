@@ -705,7 +705,7 @@ class AdminGalaxy(controller.JSAppLauncher):
                         build_select_input('in_users', 'Users', all_users, [])]}
         else:
             try:
-                quota, message = self.quota_manager.create_quota(util.Params(payload), decode_id=trans.security.decode_id)
+                quota, message = self.quota_manager.create_quota(payload, decode_id=trans.security.decode_id)
                 return {'message': message}
             except ActionInputError as e:
                 return self.message_exception(trans, e.err_msg)

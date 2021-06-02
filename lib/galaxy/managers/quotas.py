@@ -53,7 +53,7 @@ class QuotaManager:
         return cast(DatabaseQuotaAgent, self.app.quota_agent)
 
     def create_quota(self, payload: dict, decode_id=None) -> Tuple[model.Quota, str]:
-        params = CreateQuotaParams(**payload)
+        params = CreateQuotaParams.parse_obj(payload)
         create_amount = self._parse_amount(params.amount)
         if self.sa_session.query(model.Quota).filter(model.Quota.name == params.name).first():
             raise ActionInputError("Quota names must be unique and a quota with that name already exists, please choose another name.")

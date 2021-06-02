@@ -172,7 +172,7 @@ class CreateQuotaParams(BaseModel):
     )
     operation: QuotaOperation = QuotaOperationField
     default: DefaultQuotaValues = Field(
-        default="no",
+        default=DefaultQuotaValues.NO,
         title="Default",
         description=(
             "Whether or not this is a default quota. Valid values"
@@ -180,12 +180,12 @@ class CreateQuotaParams(BaseModel):
             " equivalent to ``no``."
         ),
     )
-    in_users: List[str] = Field(
+    in_users: Optional[List[str]] = Field(
         default=[],
         title="Users",
         description="A list of user IDs or user emails to associate with this quota.",
     )
-    in_groups: List[str] = Field(
+    in_groups: Optional[List[str]] = Field(
         default=[],
         title="Groups",
         description="A list of group IDs or names to associate with this quota.",
