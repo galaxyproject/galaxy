@@ -62,7 +62,7 @@ export default {
     },
     methods: {
         updateValue(value) {
-            this.$emit('update:changedValue', value)
+            this.$emit("update:changedValue", value);
         },
         toggleDescriptionExpand() {
             this.$emit("toggleDescriptionExpand");
