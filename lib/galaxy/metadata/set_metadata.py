@@ -139,7 +139,7 @@ def set_metadata_portable():
     version_string = ""
 
     export_store = None
-    final_job_state = 'ok'
+    final_job_state = Job.states.OK
     if extended_metadata_collection:
         tool_dict = metadata_params["tool"]
         stdio_exit_code_dicts, stdio_regex_dicts = tool_dict["stdio_exit_codes"], tool_dict["stdio_regexes"]
