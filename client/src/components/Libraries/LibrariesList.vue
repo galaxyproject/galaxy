@@ -51,8 +51,7 @@
                 <textarea
                     v-if="row.item.editMode"
                     class="form-control input_library_name"
-                    :ref="`name-${row.item.id}`"
-                    :value="row.item.name"
+                    v-model="row.item.name"
                     rows="3"
                 />
 
