@@ -257,7 +257,10 @@ def set_metadata_portable():
                 setattr(dataset.metadata, metadata_name, metadata_file_override)
             if output_dict.get("validate", False):
                 set_validated_state(dataset)
-            set_meta(dataset, file_dict)
+            if dataset_instance_id not in unnamed_id_to_path:
+                # We're going to run through set_metadata in collect_dynamic_outputs with more contextual metadata,
+                # so skip set_meta here.
+                set_meta(dataset, file_dict)
 
             if extended_metadata_collection:
                 meta = tool_provided_metadata.get_dataset_meta(output_name, dataset.dataset.id, dataset.dataset.uuid)
