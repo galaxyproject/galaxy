@@ -25,6 +25,7 @@ LIST_SEP = re.compile(r"\s*,\s*")
 
 
 class TestDataResolver:
+    __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
     def __init__(self, file_dirs=None, env_var='GALAXY_TEST_FILE_DIR', environ=os.environ):
         if file_dirs is None:

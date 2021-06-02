@@ -909,6 +909,7 @@ class TestDriver:
     down. This is somewhat like a Python TestCase - but different
     because it is meant to provide a main() endpoint.
     """
+    __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
     def __init__(self):
         """Setup tracked resources."""

@@ -373,6 +373,7 @@ class InputSource(metaclass=ABCMeta):
 
 
 class TestCollectionDef:
+    __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
     def __init__(self, attrib, name, collection_type, elements):
         self.attrib = attrib
@@ -452,6 +453,7 @@ class TestCollectionDef:
 
 
 class TestCollectionOutputDef:
+    __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
     def __init__(self, name, attrib, element_tests):
         self.name = name
