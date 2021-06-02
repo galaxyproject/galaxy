@@ -839,9 +839,12 @@ class FastqSanger(Fastq):
 
     @staticmethod
     def quality_check(lines):
-        """Presuming lines are lines from a fastq file, return True if the qualities are compatible with sanger encoding"""
+        """
+        Presuming lines are lines from a fastq file,
+        return True if the qualities are compatible with sanger encoding
+        """
         for line in islice(lines, 3, None, 4):
-            if not all(_ >= '!' and _ <= 'S' for _ in line[0]):
+            if not all(q >= '!' and q <= 'S' for q in line[0]):
                 return False
         return True
 
@@ -856,9 +859,12 @@ class FastqSolexa(Fastq):
 
     @staticmethod
     def quality_check(lines):
-        """Presuming lines are lines from a fastq file, return True if the qualities are compatible with sanger encoding"""
+        """
+        Presuming lines are lines from a fastq file,
+        return True if the qualities are compatible with sanger encoding
+        """
         for line in islice(lines, 3, None, 4):
-            if not all(_ >= ';' and _ <= 'h' for _ in line[0]):
+            if not all(q >= ';' and q <= 'h' for q in line[0]):
                 return False
         return True
 
@@ -873,9 +879,12 @@ class FastqIllumina(Fastq):
 
     @staticmethod
     def quality_check(lines):
-        """Presuming lines are lines from a fastq file, return True if the qualities are compatible with sanger encoding"""
+        """
+        Presuming lines are lines from a fastq file,
+        return True if the qualities are compatible with sanger encoding
+        """
         for line in islice(lines, 3, None, 4):
-            if not all(_ >= '@' and _ <= 'h' for _ in line[0]):
+            if not all(q >= '@' and q <= 'h' for q in line[0]):
                 return False
         return True
 
