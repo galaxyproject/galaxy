@@ -31,7 +31,7 @@
             :fields="libraryFields"
             :current-page.sync="currentPage"
             :per-page="rowsPerPage"
-            @row-clicked="selectLibrary"
+            @row-clicked="drillDown"
             primary-key="id"
         >
             <template v-slot:cell(actions)="{ item }">
@@ -113,7 +113,7 @@ export default {
         createLibrary() {
             this.log("createLibrary");
         },
-        selectLibrary(library) {
+        drillDown(library) {
             this.$router.push({
                 name: "Library",
                 params: {

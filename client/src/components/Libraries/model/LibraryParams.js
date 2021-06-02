@@ -2,10 +2,35 @@
  * List params for the list of libraries
  */
 
+import hash from "object-hash";
+
 export class LibraryParams {
     constructor(options = {}) {
-        const props = Object.assign({}, LibraryParams.defaults, options);
+        const validOptions = Object.entries(options).reduce((clean, [propName, val]) => {
+            if (!LibraryParams.restrictedKeys.has(propName)) {
+                return { ...clean, [propName]: val };
+            }
+            return clean;
+        }, {});
+        const props = Object.assign({}, LibraryParams.defaults, validOptions);
         Object.assign(this, props);
+    }
+
+    // Equivalence
+
+    get hashKey() {
+        return hash(this, {
+            excludeKeys: (key) => LibraryParams.restrictedKeys.has(key),
+        });
+    }
+
+    equals(to) {
+        const otherLib = to instanceof LibraryParams ? to : LibraryParams.create(to);
+        return this.hashKey == otherLib.hashKey;
+    }
+
+    clone(newProps = {}) {
+        return LibraryParams.create({ ...this, ...newProps });
     }
 
     // The API is very limited, it's a list of deleted or a list of non-deleted, there is no ability
@@ -42,10 +67,6 @@ export class LibraryParams {
         }
         return true;
     }
-
-    clone(newProps = {}) {
-        return LibraryParams.create({ ...this, ...newProps });
-    }
 }
 
 LibraryParams.defaults = {
@@ -53,6 +74,8 @@ LibraryParams.defaults = {
     showDeleted: false,
     showRestricted: false,
 };
+
+LibraryParams.restrictedKeys = new Set(Object.getOwnPropertyNames(LibraryParams.prototype));
 
 // Only export the create function so we never give Vue a mutable object to butcher
 // Freeze to avoid Vue's mutation of the model class, hand Vue a fresh immutable object instead

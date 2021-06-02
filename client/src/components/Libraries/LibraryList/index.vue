@@ -6,7 +6,7 @@
 
 <script>
 import { LibraryParams } from "../model";
-import LibraryListProvider from "./LibraryListProvider";
+import LibraryListProvider from "../providers/LibraryListProvider";
 import Listing from "./Listing";
 import User from "store/userStore/User";
 

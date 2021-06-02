@@ -1,13 +1,12 @@
 <template>
-    <div>
-        <LibraryDetails :value="library" @input="saveLibrary" />
+    <div v-if="library">
+        <LibraryDetails :library="library" @update:library="updateLibrary" />
         <router-view :library="library"></router-view>
     </div>
 </template>
 
 <script>
 import { getLibraryById, saveLibrary } from "../model";
-import User from "store/userStore/User";
 import LibraryDetails from "./LibraryDetails";
 
 export default {
@@ -15,24 +14,19 @@ export default {
         LibraryDetails,
     },
     props: {
-        user: { type: User, required: true },
         libraryId: { type: String, required: true },
     },
     data() {
         return {
-            library: {},
+            library: null,
         };
     },
-    created() {
-        this.loadLibrary(this.libraryId);
+    async created() {
+        this.library = await getLibraryById(this.libraryId);
     },
     methods: {
-        async loadLibrary(id) {
-            getLibraryById(id).then((result) => (this.library = result));
-        },
-        async saveLibrary(lib) {
-            const result = await saveLibrary(lib);
-            console.log("saveLibrary", result);
+        async updateLibrary(lib) {
+            this.library = await saveLibrary(lib);
         },
     },
 };

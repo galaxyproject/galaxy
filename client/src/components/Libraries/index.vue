@@ -9,12 +9,7 @@
                     </b-breadcrumb-item>
                 </b-breadcrumb>
             </header>
-
             <router-view :user="user"></router-view>
-
-            <footer>
-                <pre>{{ user }}</pre>
-            </footer>
         </section>
     </CurrentUser>
 </template>
