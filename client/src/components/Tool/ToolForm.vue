@@ -136,10 +136,17 @@ export default {
             jobDef: {},
             jobResponse: {},
             validationErrors: {},
+            currentVersion: this.version,
         };
     },
     created() {
         this.requestTool();
+        const Galaxy = getGalaxyInstance();
+        if (Galaxy.currHistoryPanel) {
+            Galaxy.currHistoryPanel.collection.on("change", () => {
+                this.requestTool();
+            });
+        }
     },
     computed: {
         toolName() {
@@ -204,8 +211,8 @@ export default {
             user.preferences["favorites"] = newFavorites;
         },
         requestTool(newVersion) {
-            const version = newVersion || this.version;
-            getTool(this.id, version, this.job_id).then((data) => {
+            this.currentVersion = newVersion || this.currentVersion;
+            getTool(this.id, currentVersion, this.job_id).then((data) => {
                 this.formConfig = data;
                 this.showLoading = false;
                 this.showForm = true;
