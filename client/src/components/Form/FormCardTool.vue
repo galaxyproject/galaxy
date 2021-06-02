@@ -198,7 +198,7 @@ export default {
         // add tool menu webhooks
         Webhooks.load({
             type: "tool-menu",
-            callback: function (webhooks) {
+            callback: (webhooks) => {
                 webhooks.each((model) => {
                     const webhook = model.toJSON();
                     if (webhook.activate && webhook.config.function) {
