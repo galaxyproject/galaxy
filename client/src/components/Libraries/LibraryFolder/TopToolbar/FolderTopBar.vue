@@ -250,9 +250,6 @@ export default {
             // logic from legacy code
             return !!(this.contains_file_or_folder && Galaxy.user);
         },
-        allDatasets: function () {
-            return this.folderContents.filter((element) => element.type === "file");
-        },
     },
     methods: {
         updateSearch: function (value) {
@@ -323,7 +320,6 @@ export default {
                 if (isCollection) {
                     new mod_import_collection.ImportCollectionModal({
                         selected: checkedItems,
-                        allDatasets: this.allDatasets,
                     });
                 } else {
                     new mod_import_dataset.ImportDatasetModal({
