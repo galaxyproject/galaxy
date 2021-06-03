@@ -46,62 +46,6 @@ def test_PageRevision(model, session, page):
         assert stored_obj.content_format == model.PageRevision.DEFAULT_CONTENT_FORMAT
 
 
-def test_Quota(model, session):
-    cls = model.Quota
-    assert cls.__tablename__ == 'quota'
-    with dbcleanup(session, cls):
-        name, description = 'a', 'b'
-        obj = cls(name, description)
-        persist(session, obj)
-
-        stmt = select(cls)
-        stored_obj = session.execute(stmt).scalar_one()
-        assert stored_obj.id
-        assert stored_obj.create_time
-        assert stored_obj.update_time
-        assert stored_obj.name == name
-        assert stored_obj.description == description
-        assert stored_obj.bytes == 0
-        assert stored_obj.operation == '='
-        assert stored_obj.deleted is False
-
-
-def test_Role(model, session):
-    cls = model.Role
-    assert cls.__tablename__ == 'role'
-    with dbcleanup(session, cls):
-        name, description = 'a', 'b'
-        obj = cls(name, description)
-        persist(session, obj)
-
-        stmt = select(cls)
-        stored_obj = session.execute(stmt).scalar_one()
-        assert stored_obj.id
-        assert stored_obj.create_time
-        assert stored_obj.update_time
-        assert stored_obj.name == name
-        assert stored_obj.description == description
-        assert stored_obj.type == model.Role.types.SYSTEM
-        assert stored_obj.deleted is False
-
-
-def test_WorkerProcess(model, session):
-    cls = model.WorkerProcess
-    assert cls.__tablename__ == 'worker_process'
-    with dbcleanup(session, cls):
-        server_name, hostname = 'a', 'b'
-        obj = cls(server_name, hostname)
-        persist(session, obj)
-
-        stmt = select(cls)
-        stored_obj = session.execute(stmt).scalar_one()
-        assert stored_obj.id
-        assert stored_obj.server_name == server_name
-        assert stored_obj.hostname == hostname
-        assert stored_obj.pid is None
-        assert stored_obj.update_time
-
-
 def test_PSAAssociation(model, session):
     cls = model.PSAAssociation
     assert cls.__tablename__ == 'psa_association'
@@ -169,6 +113,45 @@ def test_PSAPartial(model, session):
         assert stored_obj.backend == backend
 
 
+def test_Quota(model, session):
+    cls = model.Quota
+    assert cls.__tablename__ == 'quota'
+    with dbcleanup(session, cls):
+        name, description = 'a', 'b'
+        obj = cls(name, description)
+        persist(session, obj)
+
+        stmt = select(cls)
+        stored_obj = session.execute(stmt).scalar_one()
+        assert stored_obj.id
+        assert stored_obj.create_time
+        assert stored_obj.update_time
+        assert stored_obj.name == name
+        assert stored_obj.description == description
+        assert stored_obj.bytes == 0
+        assert stored_obj.operation == '='
+        assert stored_obj.deleted is False
+
+
+def test_Role(model, session):
+    cls = model.Role
+    assert cls.__tablename__ == 'role'
+    with dbcleanup(session, cls):
+        name, description = 'a', 'b'
+        obj = cls(name, description)
+        persist(session, obj)
+
+        stmt = select(cls)
+        stored_obj = session.execute(stmt).scalar_one()
+        assert stored_obj.id
+        assert stored_obj.create_time
+        assert stored_obj.update_time
+        assert stored_obj.name == name
+        assert stored_obj.description == description
+        assert stored_obj.type == model.Role.types.SYSTEM
+        assert stored_obj.deleted is False
+
+
 def test_UserAddress(model, session, user):
     cls = model.UserAddress
     assert cls.__tablename__ == 'user_address'
@@ -215,6 +198,23 @@ def test_VisualizationRevision(model, session, visualization):
         assert stored_obj.title is None
         assert stored_obj.dbkey is None
         assert stored_obj.config is None
+
+
+def test_WorkerProcess(model, session):
+    cls = model.WorkerProcess
+    assert cls.__tablename__ == 'worker_process'
+    with dbcleanup(session, cls):
+        server_name, hostname = 'a', 'b'
+        obj = cls(server_name, hostname)
+        persist(session, obj)
+
+        stmt = select(cls)
+        stored_obj = session.execute(stmt).scalar_one()
+        assert stored_obj.id
+        assert stored_obj.server_name == server_name
+        assert stored_obj.hostname == hostname
+        assert stored_obj.pid is None
+        assert stored_obj.update_time
 
 
 @pytest.fixture(scope='module')
