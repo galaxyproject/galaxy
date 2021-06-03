@@ -32,6 +32,10 @@ export default {
             type: Object,
             default: null,
         },
+        formConfig: {
+            type: Object,
+            default: null,
+        },
     },
     data() {
         return {
@@ -58,6 +62,10 @@ export default {
                     this.form.highlight(this.validation[0], this.validation[1], true);
                 }
             }
+        },
+        formConfig() {
+            this.parseUpdate(this.formConfig);
+            this.parseErrors(this.formConfig);
         },
     },
     mounted() {

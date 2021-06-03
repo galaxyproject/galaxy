@@ -35,8 +35,8 @@
                         :id="formConfig.id"
                         :inputs="inputs"
                         :validation-errors="validationErrors"
+                        :form-config="formConfig"
                         @onChange="onChange"
-                        ref="form"
                     />
                     <FormElement
                         v-if="emailAllowed"
@@ -199,8 +199,7 @@ export default {
         },
         onUpdate() {
             updateTool(this.id, this.currentVersion, this.formData).then((data) => {
-                const form = this.$refs["form"];
-                form.parseUpdate(data, true);
+                this.formConfig = data;
             });
         },
         onChangeVersion(newVersion) {

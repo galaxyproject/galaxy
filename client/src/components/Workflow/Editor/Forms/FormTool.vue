@@ -33,10 +33,10 @@
                     :id="id"
                     :inputs="inputs"
                     :initial-errors="true"
+                    :form-config="formConfig"
                     text-enable="Set in Advance"
                     text-disable="Set at Runtime"
                     @onChange="onChange"
-                    ref="form"
                 />
                 <FormSection
                     :id="id"
@@ -88,6 +88,7 @@ export default {
             sectionValues: {},
             messageVariant: "",
             messageText: "",
+            formConfig: {},
         };
     },
     computed: {
@@ -161,9 +162,7 @@ export default {
                 inputs: Object.assign({}, this.mainValues, this.sectionValues),
             }).then((data) => {
                 this.$emit("onSetData", this.node.id, data);
-                const form = this.$refs["form"];
-                form.parseUpdate(data.config_form);
-                form.parseErrors(data.config_form);
+                this.formConfig = data;
                 if (newVersion) {
                     const options = data.config_form;
                     this.messageVariant = "success";
