@@ -36,6 +36,7 @@
                         :inputs="inputs"
                         :validation-errors="validationErrors"
                         @onChange="onChange"
+                        ref="form"
                     />
                     <FormElement
                         v-if="emailAllowed"
@@ -77,7 +78,7 @@
 import Scroller from "vue-scrollto";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
-import { getTool, submitJob } from "./services";
+import { getTool, submitJob, updateTool } from "./services";
 import { send } from "./utilities";
 import ToolCard from "./ToolCard";
 import ButtonSpinner from "components/Common/ButtonSpinner";
@@ -144,7 +145,7 @@ export default {
         const Galaxy = getGalaxyInstance();
         if (Galaxy.currHistoryPanel) {
             Galaxy.currHistoryPanel.collection.on("change", () => {
-                this.requestTool();
+                this.onUpdate();
             });
         }
     },
@@ -194,6 +195,13 @@ export default {
     methods: {
         onChange(newData) {
             this.formData = newData;
+            this.onUpdate();
+        },
+        onUpdate() {
+            updateTool(this.id, this.currentVersion, this.formData).then((data) => {
+                const form = this.$refs["form"];
+                form.parseUpdate(data, true);
+            });
         },
         onChangeVersion(newVersion) {
             this.requestTool(newVersion);
@@ -212,7 +220,7 @@ export default {
         },
         requestTool(newVersion) {
             this.currentVersion = newVersion || this.currentVersion;
-            getTool(this.id, currentVersion, this.job_id).then((data) => {
+            getTool(this.id, this.currentVersion, this.job_id).then((data) => {
                 this.formConfig = data;
                 this.showLoading = false;
                 this.showForm = true;

@@ -3,6 +3,21 @@ import { rethrowSimple } from "utils/simple-error";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 
+export async function updateTool(tool_id, tool_version, inputs) {
+    const current_state = {
+        tool_id: tool_id,
+        tool_version: tool_version,
+        inputs: inputs,
+    };
+    const url = `${getAppRoot()}api/tools/${tool_id}/build`;
+    try {
+        const { data } = await axios.post(url, current_state);
+        return data;
+    } catch (e) {
+        rethrowSimple(e);
+    }
+}
+
 /** Tools data request helper **/
 export async function getTool(tool_id, tool_version, job_id) {
     const Galaxy = getGalaxyInstance();

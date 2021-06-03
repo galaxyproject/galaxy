@@ -64,8 +64,7 @@ export default {
         this.onRender();
     },
     beforeDestroy() {
-        const Galaxy = getGalaxyInstance();
-        this.form.stopListening(Galaxy.currHistoryPanel.collection);
+        this.form.off();
     },
     computed: {
         validation() {
@@ -128,13 +127,16 @@ export default {
                     initial_errors: this.initialErrors,
                     text_enable: this.textEnable,
                     text_disable: this.textDisable,
-                }).on("change", this.onChange);
+                    onchange: () => {
+                        this.onChange();
+                    },
+                });
                 this.onChange();
             });
         },
         parseUpdate(data) {
             this.$nextTick(() => {
-                this.form.update(data, false);
+                this.form.update(data);
             });
         },
         parseErrors(data) {
