@@ -322,6 +322,28 @@ class ToolsUploadTestCase(ApiTestCase):
         assert output0["state"] == "ok"
         assert output1["state"] == "error"
 
+    @uses_test_history(require_new=False)
+    def test_fetch_bam_file_from_url_with_extension_set(self, history_id):
+        destination = {"type": "hdas"}
+        targets = [{
+            "destination": destination,
+            "items": [
+                {
+                    "src": "url",
+                    "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam",
+                    "ext": "bam"
+                },
+            ]
+        }]
+        payload = {
+            "history_id": history_id,
+            "targets": json.dumps(targets),
+        }
+        fetch_response = self.dataset_populator.fetch(payload)
+        self._assert_status_code_is(fetch_response, 200)
+        outputs = fetch_response.json()["outputs"]
+        self.dataset_populator.get_history_dataset_details(history_id, dataset=outputs[0], assert_ok=True)
+
     @skip_without_datatype("velvet")
     def test_composite_datatype(self):
         with self.dataset_populator.test_history() as history_id:
