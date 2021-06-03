@@ -68,6 +68,7 @@ def test_PSAAssociation(model, session):
 def test_PSACode(model, session):
     cls = model.PSACode
     assert cls.__tablename__ == 'psa_code'
+    assert has_unique_constraint(cls.__table__, ('code', 'email'))
     with dbcleanup(session, cls):
         email, code = 'a', 'b'
         obj = cls(email, code)
@@ -203,6 +204,7 @@ def test_UserAddress(model, session, user):
 def test_VisualizationRevision(model, session, visualization):
     cls = model.VisualizationRevision
     assert cls.__tablename__ == 'visualization_revision'
+    assert has_index(cls.__table__, ('dbkey',))
     with dbcleanup(session, cls):
         obj = cls()
         obj.visualization = visualization
@@ -222,6 +224,7 @@ def test_VisualizationRevision(model, session, visualization):
 def test_WorkerProcess(model, session):
     cls = model.WorkerProcess
     assert cls.__tablename__ == 'worker_process'
+    assert has_unique_constraint(cls.__table__, ('server_name', 'hostname'))
     with dbcleanup(session, cls):
         server_name, hostname = 'a', 'b'
         obj = cls(server_name, hostname)
