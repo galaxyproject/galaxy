@@ -65,7 +65,9 @@ export default {
         },
         formConfig() {
             this.parseUpdate(this.formConfig);
-            this.parseErrors(this.formConfig);
+            if (this.initialErrors) {
+                this.parseErrors(this.formConfig);
+            }
         },
     },
     mounted() {
