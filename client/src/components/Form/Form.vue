@@ -3,7 +3,6 @@
 </template>
 
 <script>
-import { getGalaxyInstance } from "app";
 import Form from "mvc/form/form-view";
 
 export default {
