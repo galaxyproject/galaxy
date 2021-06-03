@@ -53,7 +53,7 @@ from sqlalchemy import (
     true,
     tuple_,
     type_coerce,
-    types,
+    Unicode,
     UniqueConstraint,
     VARCHAR,
 )
@@ -3692,8 +3692,8 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
 
     @type_id.expression  # type: ignore
     def type_id(cls):
-        return ((type_coerce(cls.content_type, types.Unicode) + '-'
-                 + type_coerce(cls.id, types.Unicode)).label('type_id'))
+        return ((type_coerce(cls.content_type, Unicode) + '-'
+                 + type_coerce(cls.id, Unicode)).label('type_id'))
 
 
 class HistoryDatasetAssociationHistory(RepresentById):
@@ -4634,8 +4634,8 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
 
     @type_id.expression  # type: ignore
     def type_id(cls):
-        return ((type_coerce(cls.content_type, types.Unicode) + '-'
-                 + type_coerce(cls.id, types.Unicode)).label('type_id'))
+        return ((type_coerce(cls.content_type, Unicode) + '-'
+                 + type_coerce(cls.id, Unicode)).label('type_id'))
 
     @property
     def job_source_type(self):
