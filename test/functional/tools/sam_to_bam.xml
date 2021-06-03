@@ -11,7 +11,7 @@ cat '$input1' > '$out_file1'
     <tests>
         <test>
             <param name="input1" value="sam_with_header.sam" ftype="sam"/>
-            <output name="out_file1" file="bam_from_sam.bam"/>
+            <output name="out_file1" file="bam_from_sam.bam" ftype="bam"/>
         </test>
     </tests>
     <help>
