@@ -29,7 +29,6 @@ from sqlalchemy import (
     true,
     Unicode,
     UniqueConstraint,
-    VARCHAR
 )
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
@@ -75,16 +74,6 @@ model.User.table = Table(
     # Column("person_metadata", JSONType),  # TODO: add persistent, configurable metadata rep for workflow creator
     Column("active", Boolean, index=True, default=True, nullable=False),
     Column("activation_token", TrimmedString(64), nullable=True, index=True))
-
-model.UserAuthnzToken.table = Table(
-    "oidc_user_authnz_tokens", metadata,
-    Column('id', Integer, primary_key=True),
-    Column('user_id', Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column('uid', VARCHAR(255)),
-    Column('provider', VARCHAR(32)),
-    Column('extra_data', MutableJSONType, nullable=True),
-    Column('lifetime', Integer),
-    Column('assoc_type', VARCHAR(64)))
 
 model.CustosAuthnzToken.table = Table(
     "custos_authnz_token", metadata,
@@ -1564,12 +1553,6 @@ mapper_registry.map_imperatively(model.FormDefinitionCurrent, model.FormDefiniti
         primaryjoin=(model.FormDefinitionCurrent.table.c.latest_form_id == model.FormDefinition.table.c.id))
 ))
 
-mapper_registry.map_imperatively(model.UserAuthnzToken, model.UserAuthnzToken.table, properties=dict(
-    user=relation(model.User,
-                  primaryjoin=(model.UserAuthnzToken.table.c.user_id == model.User.table.c.id),
-                  backref='social_auth')
-))
-
 mapper_registry.map_imperatively(model.CustosAuthnzToken, model.CustosAuthnzToken.table, properties=dict(
     user=relation(model.User,
                   primaryjoin=(model.CustosAuthnzToken.table.c.user_id == model.User.table.c.id),
@@ -1581,7 +1564,7 @@ mapper_registry.map_imperatively(model.CloudAuthz, model.CloudAuthz.table, prope
                   primaryjoin=(model.CloudAuthz.table.c.user_id == model.User.table.c.id),
                   backref='cloudauthz'),
     authn=relation(model.UserAuthnzToken,
-                   primaryjoin=(model.CloudAuthz.table.c.authn_id == model.UserAuthnzToken.table.c.id),
+                   primaryjoin=(model.CloudAuthz.table.c.authn_id == model.UserAuthnzToken.id),
                    backref='cloudauthz')
 ))
 
@@ -1773,6 +1756,7 @@ mapper_registry.map_imperatively(model.User, model.User.table, properties=dict(
     galaxy_sessions=relation(model.GalaxySession,
         backref="user",
         order_by=desc(model.GalaxySession.table.c.update_time)),
+    social_auth=relation(model.UserAuthnzToken, back_populates='user'),
     stored_workflow_menu_entries=relation(model.StoredWorkflowMenuEntry,
         primaryjoin=(
             (model.StoredWorkflowMenuEntry.table.c.user_id == model.User.table.c.id)
