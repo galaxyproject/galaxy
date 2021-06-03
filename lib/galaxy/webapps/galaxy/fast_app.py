@@ -87,7 +87,7 @@ def add_galaxy_middleware(app: FastAPI, gx_app):
             return response
 
 
-def initialize_fast_app(gx_webapp, gx_app):
+def initialize_fast_app(gx_wsgi_webapp, gx_app):
     app = FastAPI(
         title="Galaxy API",
         docs_url="/api/docs",
@@ -97,6 +97,6 @@ def initialize_fast_app(gx_webapp, gx_app):
     add_galaxy_middleware(app, gx_app)
     add_request_id_middleware(app)
     include_all_package_routers(app, 'galaxy.webapps.galaxy.api')
-    wsgi_handler = WSGIMiddleware(gx_webapp)
+    wsgi_handler = WSGIMiddleware(gx_wsgi_webapp)
     app.mount('/', wsgi_handler)
     return app

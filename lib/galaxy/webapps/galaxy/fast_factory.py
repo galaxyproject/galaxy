@@ -60,5 +60,5 @@ def factory():
     )
     config_provider = WebappConfigResolver(props)
     config = config_provider.resolve_config()
-    gx_webapp, gx_app = app_pair(global_conf=config.global_conf, load_app_kwds=config.load_app_kwds, wsgi_preflight=config.wsgi_preflight)
-    return initialize_fast_app(gx_webapp, gx_app)
+    gx_wsgi_webapp, gx_app = app_pair(global_conf=config.global_conf, load_app_kwds=config.load_app_kwds, wsgi_preflight=config.wsgi_preflight)
+    return initialize_fast_app(gx_wsgi_webapp, gx_app)
