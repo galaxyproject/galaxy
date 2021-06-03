@@ -1463,23 +1463,12 @@ model.LibraryDatasetCollectionRatingAssociation.table = Table(
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
     Column("rating", Integer, index=True))
 
-# User tables.
 model.UserPreference.table = Table(
     "user_preference", metadata,
     Column("id", Integer, primary_key=True),
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
     Column("name", Unicode(255), index=True),
     Column("value", Text))
-
-model.UserAction.table = Table(
-    "user_action", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("session_id", Integer, ForeignKey("galaxy_session.id"), index=True),
-    Column("action", Unicode(255)),
-    Column("context", Unicode(512)),
-    Column("params", Unicode(1024)))
 
 model.APIKeys.table = Table(
     "api_keys", metadata,
@@ -1554,14 +1543,9 @@ def simple_mapping(model, **kwds):
     mapper_registry.map_imperatively(model, model.table, properties=kwds)
 
 
-# User tables.
 mapper_registry.map_imperatively(model.UserPreference, model.UserPreference.table, properties={})
-mapper_registry.map_imperatively(model.UserAction, model.UserAction.table, properties=dict(
-    # user=relation( model.User.mapper )
-    user=relation(model.User)
-))
-mapper_registry.map_imperatively(model.APIKeys, model.APIKeys.table, properties={})
 
+mapper_registry.map_imperatively(model.APIKeys, model.APIKeys.table, properties={})
 
 mapper_registry.map_imperatively(model.FormValues, model.FormValues.table, properties=dict(
     form_definition=relation(model.FormDefinition,

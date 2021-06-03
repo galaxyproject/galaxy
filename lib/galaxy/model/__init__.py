@@ -6798,11 +6798,20 @@ class UserPreference(RepresentById):
         self.value = value
 
 
-class UserAction(RepresentById):
-    def __init__(self, id=None, create_time=None, user_id=None, session_id=None, action=None, params=None, context=None):
-        self.id = id
-        self.create_time = create_time
-        self.user_id = user_id
+class UserAction(Base, RepresentById):
+    __tablename__ = 'user_action'
+
+    id = Column("id", Integer, primary_key=True)
+    create_time = Column("create_time", DateTime, default=now)
+    user_id = Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True)
+    session_id = Column("session_id", Integer, ForeignKey("galaxy_session.id"), index=True)
+    action = Column("action", Unicode(255))
+    context = Column("context", Unicode(512))
+    params = Column("params", Unicode(1024))
+    user = relationship('User')
+
+    def __init__(self, user=None, session_id=None, action=None, params=None, context=None):
+        self.user = user
         self.session_id = session_id
         self.action = action
         self.params = params
