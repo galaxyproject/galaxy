@@ -152,6 +152,25 @@ def test_Role(model, session):
         assert stored_obj.deleted is False
 
 
+def testUserAction(model, session, user, galaxy_session):
+    cls = model.UserAction
+    assert cls.__tablename__ == 'user_action'
+    with dbcleanup(session, cls):
+        action, params, context = 'a', 'b', 'c'
+        obj = cls(user, galaxy_session.id, action, params, context)
+        persist(session, obj)
+
+        stmt = select(cls)
+        stored_obj = session.execute(stmt).scalar_one()
+        assert stored_obj.id
+        assert stored_obj.create_time
+        assert stored_obj.user_id == user.id
+        assert stored_obj.session_id == galaxy_session.id
+        assert stored_obj.action == action
+        assert stored_obj.context == context
+        assert stored_obj.params == params
+
+
 def test_UserAddress(model, session, user):
     cls = model.UserAddress
     assert cls.__tablename__ == 'user_address'
@@ -231,9 +250,9 @@ def session(model):
 
 
 @pytest.fixture
-def user(model, session):
-    u = model.User(email='test@example.com', password='password')
-    yield from dbcleanup_wrapper(session, u)
+def galaxy_session(model, session, user):
+    s = model.GalaxySession()
+    yield from dbcleanup_wrapper(session, s)
 
 
 @pytest.fixture
@@ -241,6 +260,12 @@ def page(model, session, user):
     p = model.Page()
     p.user = user
     yield from dbcleanup_wrapper(session, p)
+
+
+@pytest.fixture
+def user(model, session):
+    u = model.User(email='test@example.com', password='password')
+    yield from dbcleanup_wrapper(session, u)
 
 
 @pytest.fixture
