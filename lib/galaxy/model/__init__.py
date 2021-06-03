@@ -6310,8 +6310,18 @@ class PSAPartial(Base, PartialMixin, RepresentById):
             cls.sa_session.delete(partial)
 
 
-class UserAuthnzToken(UserMixin, RepresentById):
+class UserAuthnzToken(Base, UserMixin, RepresentById):
+    __tablename__ = 'oidc_user_authnz_tokens'
     __table_args__ = (UniqueConstraint('provider', 'uid'),)
+
+    id = Column('id', Integer, primary_key=True)
+    user_id = Column('user_id', Integer, ForeignKey("galaxy_user.id"), index=True)
+    uid = Column('uid', VARCHAR(255))
+    provider = Column('provider', VARCHAR(32))
+    extra_data = Column('extra_data', MutableJSONType, nullable=True)
+    lifetime = Column('lifetime', Integer)
+    assoc_type = Column('assoc_type', VARCHAR(64))
+    user = relationship('User', back_populates='social_auth')
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None

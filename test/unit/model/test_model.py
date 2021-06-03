@@ -201,6 +201,27 @@ def test_UserAddress(model, session, user):
         assert stored_obj.user == user
 
 
+def test_UserAuthnzToken(model, session, user):
+    cls = model.UserAuthnzToken
+    assert cls.__tablename__ == 'oidc_user_authnz_tokens'
+    assert has_unique_constraint(cls.__table__, ('provider', 'uid'))
+    with dbcleanup(session, cls):
+        provider, uid, extra_data, lifetime, assoc_type = 'a', 'b', 'c', 1, 'd'
+        obj = cls(provider, uid, extra_data, lifetime, assoc_type, user)
+        persist(session, obj)
+
+        stmt = select(cls)
+        stored_obj = session.execute(stmt).scalar_one()
+        assert stored_obj.id
+        assert stored_obj.id
+        assert stored_obj.user_id == user.id
+        assert stored_obj.uid == uid
+        assert stored_obj.provider == provider
+        assert stored_obj.extra_data == extra_data
+        assert stored_obj.lifetime == lifetime
+        assert stored_obj.assoc_type == assoc_type
+
+
 def test_VisualizationRevision(model, session, visualization):
     cls = model.VisualizationRevision
     assert cls.__tablename__ == 'visualization_revision'
