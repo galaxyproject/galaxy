@@ -45,7 +45,7 @@
                             <span class="fa fa-cubes" />
                         </template>
                         <b-dropdown-item v-for="v of availableVersions" :key="v" @click="$emit('onChangeVersion', v)">
-                            <i class="fa-cube" />Switch to {{ v }}</b-dropdown-item
+                            <span class="fa fa-cube" />Switch to {{ v }}</b-dropdown-item
                         >
                     </b-dropdown>
                     <b-button
