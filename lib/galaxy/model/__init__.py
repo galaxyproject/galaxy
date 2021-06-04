@@ -2343,6 +2343,7 @@ class GroupRoleAssociation(RepresentById):
 
 class Role(Base, Dictifiable, RepresentById):
     __tablename__ = 'role'
+
     id = Column('id', Integer, primary_key=True)
     create_time = Column('create_time', DateTime, default=now)
     update_time = Column('update_time', DateTime, default=now, onupdate=now)
@@ -6321,6 +6322,7 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
     extra_data = Column('extra_data', MutableJSONType, nullable=True)
     lifetime = Column('lifetime', Integer)
     assoc_type = Column('assoc_type', VARCHAR(64))
+    cloudauthz = relationship('CloudAuthz', back_populates='authn')
     user = relationship('User', back_populates='social_auth')
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
@@ -6441,14 +6443,27 @@ class CustosAuthnzToken(RepresentById):
         self.refresh_expiration_time = refresh_expiration_time
 
 
-class CloudAuthz(_HasTable):
-    def __init__(self, user_id, provider, config, authn_id, description=""):
-        self.id = None
+class CloudAuthz(Base, _HasTable):
+    __tablename__ = 'cloudauthz'
+
+    id = Column('id', Integer, primary_key=True)
+    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
+    provider = Column('provider', String(255))
+    config = Column('config', MutableJSONType)
+    authn_id = Column('authn_id', Integer, ForeignKey('oidc_user_authnz_tokens.id'), index=True)
+    tokens = Column('tokens', MutableJSONType)
+    last_update = Column('last_update', DateTime)
+    last_activity = Column('last_activity', DateTime)
+    description = Column('description', TEXT)
+    create_time = Column('create_time', DateTime, default=now)
+    user = relationship('User', back_populates='cloudauthz')
+    authn = relationship('UserAuthnzToken', back_populates='cloudauthz')
+
+    def __init__(self, user_id, provider, config, authn_id, description=None):
         self.user_id = user_id
         self.provider = provider
         self.config = config
         self.authn_id = authn_id
-        self.tokens = None
         self.last_update = datetime.now()
         self.last_activity = datetime.now()
         self.description = description
