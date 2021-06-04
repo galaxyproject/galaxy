@@ -49,6 +49,7 @@ from sqlalchemy import (
     select,
     String,
     TEXT,
+    Text,
     text,
     true,
     tuple_,
@@ -6428,11 +6429,25 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
         return instance
 
 
-class CustosAuthnzToken(RepresentById):
+class CustosAuthnzToken(Base, RepresentById):
+    __tablename__ = 'custos_authnz_token'
+    __table_args__ = (
+        UniqueConstraint('user_id', 'external_user_id', 'provider'),
+        UniqueConstraint('external_user_id', 'provider'),
+    )
+
+    id = Column('id', Integer, primary_key=True)
+    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'))
+    external_user_id = Column('external_user_id', String(64))
+    provider = Column('provider', String(255))
+    access_token = Column('access_token', Text)
+    id_token = Column('id_token', Text)
+    refresh_token = Column('refresh_token', Text)
+    expiration_time = Column('expiration_time', DateTime)
+    refresh_expiration_time = Column('refresh_expiration_time', DateTime)
+    user = relationship('User', back_populates='custos_auth')
 
     def __init__(self, user, external_user_id, provider, access_token, id_token, refresh_token, expiration_time, refresh_expiration_time):
-        self.id = None
-        # 'user' is a backref to model.User
         self.user = user
         self.external_user_id = external_user_id
         self.provider = provider

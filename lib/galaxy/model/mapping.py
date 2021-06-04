@@ -75,21 +75,6 @@ model.User.table = Table(
     Column("active", Boolean, index=True, default=True, nullable=False),
     Column("activation_token", TrimmedString(64), nullable=True, index=True))
 
-model.CustosAuthnzToken.table = Table(
-    "custos_authnz_token", metadata,
-    Column('id', Integer, primary_key=True),
-    Column('user_id', Integer, ForeignKey("galaxy_user.id")),
-    Column('external_user_id', String(64)),
-    Column('provider', String(255)),
-    Column('access_token', Text),
-    Column('id_token', Text),
-    Column('refresh_token', Text),
-    Column("expiration_time", DateTime),
-    Column("refresh_expiration_time", DateTime),
-    UniqueConstraint("user_id", "external_user_id", "provider"),
-    UniqueConstraint("external_user_id", "provider"),
-)
-
 model.PasswordResetToken.table = Table(
     "password_reset_token", metadata,
     Column("token", String(32), primary_key=True, unique=True, index=True),
@@ -1540,12 +1525,6 @@ mapper_registry.map_imperatively(model.FormDefinitionCurrent, model.FormDefiniti
         primaryjoin=(model.FormDefinitionCurrent.table.c.latest_form_id == model.FormDefinition.table.c.id))
 ))
 
-mapper_registry.map_imperatively(model.CustosAuthnzToken, model.CustosAuthnzToken.table, properties=dict(
-    user=relation(model.User,
-                  primaryjoin=(model.CustosAuthnzToken.table.c.user_id == model.User.table.c.id),
-                  backref='custos_auth')
-))
-
 simple_mapping(model.DynamicTool)
 
 simple_mapping(model.HistoryDatasetAssociation,
@@ -1722,6 +1701,7 @@ mapper_registry.map_imperatively(model.User, model.User.table, properties=dict(
         back_populates='user',
         order_by=desc(model.UserAddress.update_time)),
     cloudauthz=relation(model.CloudAuthz, back_populates='user'),
+    custos_auth=relation(model.CustosAuthnzToken, back_populates='user'),
     histories=relation(model.History,
         backref="user",
         order_by=desc(model.History.update_time)),

@@ -1,5 +1,6 @@
 import random
 from contextlib import contextmanager
+from datetime import datetime
 
 import pytest
 from sqlalchemy import (
@@ -35,6 +36,36 @@ def test_CloudAuthz(model, session, user, user_authnz_token):
         assert stored_obj.create_time
         assert stored_obj.user == user
         assert stored_obj.authn == user_authnz_token
+
+
+def test_CustosAuthnzToken(model, session, user):
+    cls = model.CustosAuthnzToken
+    assert cls.__tablename__ == 'custos_authnz_token'
+    assert has_unique_constraint(cls.__table__, ('user_id', 'external_user_id', 'provider'))
+    assert has_unique_constraint(cls.__table__, ('external_user_id', 'provider'))
+    with dbcleanup(session, cls):
+        external_user_id = get_random_string()
+        provider = get_random_string()
+        access_token = 'c'
+        id_token = 'd'
+        refresh_token = 'e'
+        expiration_time = datetime.now()
+        refresh_expiration_time = datetime.now()
+        obj = cls(user, external_user_id, provider, access_token, id_token, refresh_token,
+            expiration_time, refresh_expiration_time)
+        obj_id = persist(session, obj)
+
+        stmt = select(cls).filter(cls.id == obj_id)
+        stored_obj = session.execute(stmt).scalar_one()
+        assert stored_obj.id == obj_id
+        assert stored_obj.external_user_id == external_user_id
+        assert stored_obj.provider == provider
+        assert stored_obj.access_token == access_token
+        assert stored_obj.id_token == id_token
+        assert stored_obj.refresh_token == refresh_token
+        assert stored_obj.expiration_time == expiration_time
+        assert stored_obj.refresh_expiration_time == refresh_expiration_time
+        assert stored_obj.user == user
 
 
 def test_PageRevision(model, session, page):
