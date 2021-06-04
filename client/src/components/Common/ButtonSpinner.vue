@@ -8,12 +8,9 @@
 </template>
 <script>
 import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheck, faSpinner } from "@fortawesome/free-solid-svg-icons";
-
-Vue.use(BootstrapVue);
 
 library.add(faCheck);
 library.add(faSpinner);
