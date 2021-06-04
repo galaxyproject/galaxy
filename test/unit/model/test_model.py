@@ -1,3 +1,4 @@
+import random
 from contextlib import contextmanager
 
 import pytest
@@ -10,21 +11,30 @@ from sqlalchemy import (
 import galaxy.model.mapping as mapping
 
 
-def test_Group(model, session):
-    cls = model.Group
-    assert cls.__tablename__ == 'galaxy_group'
+def test_CloudAuthz(model, session, user, user_authnz_token):
+    cls = model.CloudAuthz
+    assert cls.__tablename__ == 'cloudauthz'
     with dbcleanup(session, cls):
-        name = 'a'
-        obj = cls(name)
-        persist(session, obj)
+        provider, config, description = 'a', 'b', 'c'
+        obj = cls(user.id, provider, config, user_authnz_token.id, description)
+        obj.user = user
+        obj.authn = user_authnz_token
+        obj_id = persist(session, obj)
 
-        stmt = select(cls)
+        stmt = select(cls).filter(cls.id == obj_id)
         stored_obj = session.execute(stmt).scalar_one()
-        assert stored_obj.id
+        assert stored_obj.id == obj_id
+        assert stored_obj.user_id == user.id
+        assert stored_obj.provider == provider
+        assert stored_obj.config == config
+        assert stored_obj.authn_id == user_authnz_token.id
+        assert stored_obj.description == description
+        assert stored_obj.tokens is None
+        assert stored_obj.last_update
+        assert stored_obj.last_activity
         assert stored_obj.create_time
-        assert stored_obj.update_time
-        assert stored_obj.name == name
-        assert stored_obj.deleted is False
+        assert stored_obj.user == user
+        assert stored_obj.authn == user_authnz_token
 
 
 def test_PageRevision(model, session, page):
@@ -33,11 +43,11 @@ def test_PageRevision(model, session, page):
     with dbcleanup(session, cls):
         obj = cls()
         obj.page = page
-        persist(session, obj)
+        obj_id = persist(session, obj)
 
-        stmt = select(cls)
+        stmt = select(cls).filter(cls.id == obj_id)
         stored_obj = session.execute(stmt).scalar_one()
-        assert stored_obj.id
+        assert stored_obj.id == obj_id
         assert stored_obj.create_time
         assert stored_obj.update_time
         assert stored_obj.page_id
@@ -52,11 +62,11 @@ def test_PSAAssociation(model, session):
     with dbcleanup(session, cls):
         server_url, handle, secret, issued, lifetime, assoc_type = 'a', 'b', 'c', 1, 2, 'd'
         obj = cls(server_url, handle, secret, issued, lifetime, assoc_type)
-        persist(session, obj)
+        obj_id = persist(session, obj)
 
-        stmt = select(cls)
+        stmt = select(cls).filter(cls.id == obj_id)
         stored_obj = session.execute(stmt).scalar_one()
-        assert stored_obj.id
+        assert stored_obj.id == obj_id
         assert stored_obj.server_url == server_url
         assert stored_obj.handle == handle
         assert stored_obj.secret == secret
@@ -70,13 +80,13 @@ def test_PSACode(model, session):
     assert cls.__tablename__ == 'psa_code'
     assert has_unique_constraint(cls.__table__, ('code', 'email'))
     with dbcleanup(session, cls):
-        email, code = 'a', 'b'
+        email, code = 'a', get_random_string()
         obj = cls(email, code)
-        persist(session, obj)
+        obj_id = persist(session, obj)
 
-        stmt = select(cls)
+        stmt = select(cls).filter(cls.id == obj_id)
         stored_obj = session.execute(stmt).scalar_one()
-        assert stored_obj.id
+        assert stored_obj.id == obj_id
         assert stored_obj.email == email
         assert stored_obj.code == code
 
@@ -87,11 +97,11 @@ def test_PSANonce(model, session):
     with dbcleanup(session, cls):
         server_url, timestamp, salt = 'a', 1, 'b'
         obj = cls(server_url, timestamp, salt)
-        persist(session, obj)
+        obj_id = persist(session, obj)
 
-        stmt = select(cls)
+        stmt = select(cls).filter(cls.id == obj_id)
         stored_obj = session.execute(stmt).scalar_one()
-        assert stored_obj.id
+        assert stored_obj.id == obj_id
         assert stored_obj.server_url
         assert stored_obj.timestamp == timestamp
         assert stored_obj.salt == salt
@@ -103,11 +113,11 @@ def test_PSAPartial(model, session):
     with dbcleanup(session, cls):
         token, data, next_step, backend = 'a', 'b', 1, 'c'
         obj = cls(token, data, next_step, backend)
-        persist(session, obj)
+        obj_id = persist(session, obj)
 
-        stmt = select(cls)
+        stmt = select(cls).filter(cls.id == obj_id)
         stored_obj = session.execute(stmt).scalar_one()
-        assert stored_obj.id
+        assert stored_obj.id == obj_id
         assert stored_obj.token == token
         assert stored_obj.data == data
         assert stored_obj.next_step == next_step
@@ -118,13 +128,13 @@ def test_Quota(model, session):
     cls = model.Quota
     assert cls.__tablename__ == 'quota'
     with dbcleanup(session, cls):
-        name, description = 'a', 'b'
+        name, description = get_random_string(), 'b'
         obj = cls(name, description)
-        persist(session, obj)
+        obj_id = persist(session, obj)
 
-        stmt = select(cls)
+        stmt = select(cls).filter(cls.id == obj_id)
         stored_obj = session.execute(stmt).scalar_one()
-        assert stored_obj.id
+        assert stored_obj.id == obj_id
         assert stored_obj.create_time
         assert stored_obj.update_time
         assert stored_obj.name == name
@@ -138,13 +148,13 @@ def test_Role(model, session):
     cls = model.Role
     assert cls.__tablename__ == 'role'
     with dbcleanup(session, cls):
-        name, description = 'a', 'b'
+        name, description = get_random_string(), 'b'
         obj = cls(name, description)
-        persist(session, obj)
+        obj_id = persist(session, obj)
 
-        stmt = select(cls)
+        stmt = select(cls).filter(cls.id == obj_id)
         stored_obj = session.execute(stmt).scalar_one()
-        assert stored_obj.id
+        assert stored_obj.id == obj_id
         assert stored_obj.create_time
         assert stored_obj.update_time
         assert stored_obj.name == name
@@ -159,17 +169,18 @@ def testUserAction(model, session, user, galaxy_session):
     with dbcleanup(session, cls):
         action, params, context = 'a', 'b', 'c'
         obj = cls(user, galaxy_session.id, action, params, context)
-        persist(session, obj)
+        obj_id = persist(session, obj)
 
-        stmt = select(cls)
+        stmt = select(cls).filter(cls.id == obj_id)
         stored_obj = session.execute(stmt).scalar_one()
-        assert stored_obj.id
+        assert stored_obj.id == obj_id
         assert stored_obj.create_time
         assert stored_obj.user_id == user.id
         assert stored_obj.session_id == galaxy_session.id
         assert stored_obj.action == action
         assert stored_obj.context == context
         assert stored_obj.params == params
+        assert stored_obj.user == user
 
 
 def test_UserAddress(model, session, user):
@@ -179,11 +190,11 @@ def test_UserAddress(model, session, user):
         desc, name, institution, address, city, state, postal_code, country, phone = \
             'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'
         obj = cls(user, desc, name, institution, address, city, state, postal_code, country, phone)
-        persist(session, obj)
+        obj_id = persist(session, obj)
 
-        stmt = select(cls)
+        stmt = select(cls).filter(cls.id == obj_id)
         stored_obj = session.execute(stmt).scalar_one()
-        assert stored_obj.id
+        assert stored_obj.id == obj_id
         assert stored_obj.create_time
         assert stored_obj.update_time
         assert stored_obj.user_id == user.id
@@ -201,25 +212,28 @@ def test_UserAddress(model, session, user):
         assert stored_obj.user == user
 
 
-def test_UserAuthnzToken(model, session, user):
+def test_UserAuthnzToken(model, session, user, cloud_authz):
     cls = model.UserAuthnzToken
     assert cls.__tablename__ == 'oidc_user_authnz_tokens'
     assert has_unique_constraint(cls.__table__, ('provider', 'uid'))
     with dbcleanup(session, cls):
-        provider, uid, extra_data, lifetime, assoc_type = 'a', 'b', 'c', 1, 'd'
+        provider, uid, extra_data, lifetime, assoc_type = get_random_string(), 'b', 'c', 1, 'd'
         obj = cls(provider, uid, extra_data, lifetime, assoc_type, user)
-        persist(session, obj)
+        obj.cloudauthz.append(cloud_authz)
+        obj.user = user
+        obj_id = persist(session, obj)
 
-        stmt = select(cls)
+        stmt = select(cls).filter(cls.id == obj_id)
         stored_obj = session.execute(stmt).scalar_one()
-        assert stored_obj.id
-        assert stored_obj.id
+        assert stored_obj.id == obj_id
         assert stored_obj.user_id == user.id
         assert stored_obj.uid == uid
         assert stored_obj.provider == provider
         assert stored_obj.extra_data == extra_data
         assert stored_obj.lifetime == lifetime
         assert stored_obj.assoc_type == assoc_type
+        assert stored_obj.user == user
+        assert cloud_authz in stored_obj.cloudauthz
 
 
 def test_VisualizationRevision(model, session, visualization):
@@ -229,11 +243,11 @@ def test_VisualizationRevision(model, session, visualization):
     with dbcleanup(session, cls):
         obj = cls()
         obj.visualization = visualization
-        persist(session, obj)
+        obj_id = persist(session, obj)
 
-        stmt = select(cls)
+        stmt = select(cls).filter(cls.id == obj_id)
         stored_obj = session.execute(stmt).scalar_one()
-        assert stored_obj.id
+        assert stored_obj.id == obj_id
         assert stored_obj.create_time
         assert stored_obj.update_time
         assert stored_obj.visualization_id
@@ -247,13 +261,13 @@ def test_WorkerProcess(model, session):
     assert cls.__tablename__ == 'worker_process'
     assert has_unique_constraint(cls.__table__, ('server_name', 'hostname'))
     with dbcleanup(session, cls):
-        server_name, hostname = 'a', 'b'
+        server_name, hostname = get_random_string(), 'a'
         obj = cls(server_name, hostname)
-        persist(session, obj)
+        obj_id = persist(session, obj)
 
-        stmt = select(cls)
+        stmt = select(cls).filter(cls.id == obj_id)
         stored_obj = session.execute(stmt).scalar_one()
-        assert stored_obj.id
+        assert stored_obj.id == obj_id
         assert stored_obj.server_name == server_name
         assert stored_obj.hostname == hostname
         assert stored_obj.pid is None
@@ -274,6 +288,12 @@ def session(model):
 
 
 @pytest.fixture
+def cloud_authz(model, session, user, user_authnz_token):
+    ca = model.CloudAuthz(user.id, 'a', 'b', user_authnz_token.id, 'c')
+    yield from dbcleanup_wrapper(session, ca)
+
+
+@pytest.fixture
 def galaxy_session(model, session, user):
     s = model.GalaxySession()
     yield from dbcleanup_wrapper(session, s)
@@ -290,6 +310,12 @@ def page(model, session, user):
 def user(model, session):
     u = model.User(email='test@example.com', password='password')
     yield from dbcleanup_wrapper(session, u)
+
+
+@pytest.fixture
+def user_authnz_token(model, session, user):
+    t = model.UserAuthnzToken('a', 'b', 'c', 1, 'd', user)
+    yield from dbcleanup_wrapper(session, t)
 
 
 @pytest.fixture
@@ -318,8 +344,10 @@ def dbcleanup_wrapper(session, obj):
 def persist(session, obj):
     session.add(obj)
     session.flush()
+    obj_id = obj.id
     # Remove from session, so that on a subsequent load we get a *new* obj from the db
     session.expunge(obj)
+    return obj_id
 
 
 def has_unique_constraint(table, fields):
@@ -335,3 +363,8 @@ def has_index(table, fields):
         col_names = {c.name for c in index.columns}
         if set(fields) == col_names:
             return True
+
+
+def get_random_string():
+    """Generate unique values to accommodate unique constraints."""
+    return str(random.random())
