@@ -5,7 +5,7 @@ import { getGalaxyInstance } from "app";
 import HISTORY_VIEW_EDIT from "mvc/history/history-view-edit";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
-import { eventHub } from "components/plugins/eventHub";
+import { openGlobalUploadModal } from "components/Upload";
 
 // ============================================================================
 /** session storage for history panel preferences (and to maintain state)
@@ -338,7 +338,7 @@ var CurrentHistoryView = _super.extend(
         events: _.extend(_.clone(_super.prototype.events), {
             // the two links in the empty message
             "click .uploader-link": function (ev) {
-                eventHub.$emit("upload:open");
+                openGlobalUploadModal();
             },
             "click .get-data-link": function (ev) {
                 var $toolMenu = $(".toolMenuContainer");
