@@ -3,7 +3,7 @@
         <div class="text-field">
             <!-- edit mode -->
             <div v-if="isEditMode">
-                <textarea class="form-control" v-model="textField" rows="3" />
+                <b-form-textarea class="form-control" :value="text" @change="updateValue" rows="3" no-resize />
             </div>
             <!-- shrink long text -->
             <div v-else-if="text.length > maxDescriptionLength && !isExpanded">
@@ -45,6 +45,9 @@ export default {
         text: {
             type: String,
         },
+        changedValue: {
+            type: String,
+        },
         isEditMode: {
             type: Boolean,
         },
@@ -55,10 +58,12 @@ export default {
     data() {
         return {
             maxDescriptionLength: MAX_DESCRIPTION_LENGTH,
-            textField: this.text,
         };
     },
     methods: {
+        updateValue(value) {
+            this.$emit("update:changedValue", value);
+        },
         toggleDescriptionExpand() {
             this.$emit("toggleDescriptionExpand");
         },
