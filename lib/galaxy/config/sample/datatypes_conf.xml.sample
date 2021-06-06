@@ -1,6 +1,21 @@
 <?xml version="1.0"?>
 <datatypes>
   <registration converters_path="lib/galaxy/datatypes/converters" display_path="display_applications">
+
+    <!-- Various source code files -->
+    <datatype extension="source.h" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true" description="C or cpp header file"/>
+    <datatype extension="source.C" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true" description="C source file"/>
+    <datatype extension="source.cpp" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true" description="C++ source file" />
+    <datatype extension="source.py" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true" description="Python source file"/>
+    <datatype extension="source.go" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true" description="Go source file"/>
+    <!-- End various source code files -->
+
+    <!-- ROOT statistical analysis binary file - Used typicall in the High Energy Physics community -->
+    <datatype extension="root" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true" description="ROOT binary file."/>
+    <!-- End ROOT statistical analysis binary file - Used typicall in the High Energy Physics community -->
+    
+
+    
     <datatype extension="jp2" type="galaxy.datatypes.binary:JP2" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="ab1" type="galaxy.datatypes.binary:Ab1" mimetype="application/octet-stream" display_in_upload="true" description="A binary sequence file in 'ab1' format with a '.ab1' file extension.  You must manually select this 'File Format' when uploading the file." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Ab1"/>
     <datatype extension="afg" type="galaxy.datatypes.assembly:Amos" display_in_upload="false"/>
