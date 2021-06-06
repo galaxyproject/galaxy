@@ -421,6 +421,15 @@
       <display file="rviewer/vcf.xml" inherit="true"/>
       <display file="iobio/vcf.xml"/>
     </datatype>
+
+    <!-- source files -->
+    <datatype extension="source.c" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true" description="C source file" />
+    <datatype extension="source.h" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true" description="C header file" />
+    <datatype extension="source.cpp" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true" description="C++ source file" />
+    <datatype extension="source.rs" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true" description="Rust source file" />
+    <datatype extension="source.go" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true" description="GO source file" />
+    <datatype extension="source.cs" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true" description="C# source file" />
+
     <datatype extension="bcf" type="galaxy.datatypes.binary:Bcf" mimetype="application/octet-stream" display_in_upload="true">
       <converter file="bcf_to_bcf_uncompressed_converter.xml" target_datatype="bcf_uncompressed"/>
     </datatype>
