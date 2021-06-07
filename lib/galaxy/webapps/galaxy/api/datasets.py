@@ -18,6 +18,7 @@ from galaxy.managers.histories import HistoryManager
 from galaxy.managers.history_contents import HistoryContentsFilters
 from galaxy.managers.history_contents import HistoryContentsManager
 from galaxy.managers.lddas import LDDAManager
+from galaxy.util import str_as_bool
 from galaxy.util.path import (
     safe_walk
 )
@@ -122,7 +123,10 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         contents = self.history_contents_manager.contents(
             container=container, filters=filters, limit=limit, offset=offset, order_by=order_by, user_id=trans.user.id,
         )
-        return [self.serializer_by_type[content.history_content_type].serialize_to_view(content, user=trans.user, trans=trans, view=view) for content in contents]
+        if str_as_bool(trans.app.config.get('show_datasets', 'True')):
+            return [self.serializer_by_type[content.history_content_type].serialize_to_view(content, user=trans.user, trans=trans, view=view) for content in contents]
+        else:
+            raise Exception('This should not happen!')
 
     @web.legacy_expose_api_anonymous
     def show(self, trans, id, hda_ldda='hda', data_type=None, provider=None, **kwd):

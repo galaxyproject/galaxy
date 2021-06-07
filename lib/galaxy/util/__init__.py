@@ -100,6 +100,14 @@ XML = etree.XML
 defaultdict = collections.defaultdict
 
 
+def str_as_bool(string):
+    """ This is for training only."""
+    if str(string) in ('true', 'yes', 'on', '1'):
+        return True
+    else:
+        return False
+
+
 def remove_protocol_from_url(url):
     """ Supplied URL may be null, if not ensure http:// or https://
     etc... is stripped off.
