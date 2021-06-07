@@ -14,16 +14,16 @@
     </outputs>
     <tests>
         <test>
-            <param name="input1" format="xtc" value="traj.xtc"/>
-            <output name="output1" format="dcd">
+            <param name="input1" ftype="xtc" value="traj.xtc"/>
+            <output name="output1" ftype="dcd">
                 <assert_contents>
                     <has_size value="540"/>
                 </assert_contents>
             </output>
         </test>
         <test>
-            <param name="input1" format="trr" value="traj.trr"/>
-            <output name="output1" format="dcd">
+            <param name="input1" ftype="trr" value="traj.trr"/>
+            <output name="output1" ftype="dcd">
                 <assert_contents>
                     <has_size value="540"/>
                 </assert_contents>

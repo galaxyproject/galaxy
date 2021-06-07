@@ -12,8 +12,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="tabular" format="tabular" value="gtf_filter_by_attribute_values_list_in3.tabular"/>
-            <output name="csv" format="csv" value="gtf_filter_by_attribute_values_list_in3.csv"/>
+            <param name="tabular" ftype="tabular" value="gtf_filter_by_attribute_values_list_in3.tabular"/>
+            <output name="csv" ftype="csv" value="gtf_filter_by_attribute_values_list_in3.csv"/>
         </test>
     </tests>
     <help>
