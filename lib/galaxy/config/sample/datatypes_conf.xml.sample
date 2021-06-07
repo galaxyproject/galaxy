@@ -4,14 +4,16 @@
 
     <!-- Various source code files -->
     <datatype extension="source.h" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true" description="C or cpp header file"/>
-    <datatype extension="source.C" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true" description="C source file"/>
+    <datatype extension="source.c" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true" description="C source file"/>
     <datatype extension="source.cpp" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true" description="C++ source file" />
     <datatype extension="source.py" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true" description="Python source file"/>
     <datatype extension="source.go" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true" description="Go source file"/>
+    <datatype extension="source.rs" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true" description="Rust source file" />
+    <datatype extension="source.cs" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true" description="C# source file" />
     <!-- End various source code files -->
 
     <!-- ROOT statistical analysis binary file - Used typicall in the High Energy Physics community -->
-    <datatype extension="root" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true" description="ROOT binary file."/>
+    <datatype extension="hep.root" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true" description="ROOT binary file."/>
     <!-- End ROOT statistical analysis binary file - Used typicall in the High Energy Physics community -->
     
 
