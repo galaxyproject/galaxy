@@ -13,8 +13,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="input1" format="bed" value="droPer1.bed"/>
-            <output name="output1" format="tabix" value="droPer1.tabix"/>
+            <param name="input1" ftype="bed" value="droPer1.bed"/>
+            <output name="output1" ftype="tabix" value="droPer1.tabix"/>
         </test>
     </tests>
     <help>

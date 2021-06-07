@@ -12,8 +12,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="input1" format="interval" value="2.interval"/>
-            <output name="output1" format="bed" value="2.interval_to_bed.bed"/>
+            <param name="input1" ftype="interval" value="2.interval"/>
+            <output name="output1" ftype="bed" value="2.interval_to_bed.bed"/>
         </test>
     </tests>
     <help>
