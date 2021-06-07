@@ -33,7 +33,7 @@
             </div>
         </b-row>
         <ConfigProvider v-slot="{ config }">
-            <b-row v-if="config && !config.single_user && config.enable_account_management" class="ml-3 mb-1">
+            <b-row v-if="config && !config.single_user && config.enable_account_interface" class="ml-3 mb-1">
                 <i class="pref-icon pt-1 fa fa-lg fa-radiation" />
                 <div class="pref-content pr-1">
                     <a id="delete-account" href="javascript:void(0)"

@@ -1053,7 +1053,7 @@ mapping:
           screen when they log in after their password expires. Enter 0 to disable
           password expiration.
 
-      enable_account_management:
+      enable_account_interface:
         type: bool
         default: true
         required: false
