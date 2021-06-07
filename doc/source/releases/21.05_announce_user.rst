@@ -10,12 +10,20 @@ Highlights
 **¡Galaxy, ahora en español!**
 Thanks to Wendi Bacon (`Pull Request 11891`_), the spanish language translation of Galaxy has been finalised and merged, so if you prefer to use Galaxy in Spanish, now you can! This update will be part of an ongoing project from Spanish speakers within the Galaxy community to keep the Galaxy interface localisation up to date, and to produce some Spanish language training materials in the GTN.
 
+.. figure:: images/21.05-espanol.png
+   :alt: The shared data menu is shown, everything is in spanish. It reads "Datos compartidos" and lists items such as Bibliotecas de datos.
+
 **Bugfixes and Stability**
 This release of Galaxy features fewer user-facing changes, as a huge amount of developer time went into making this a maintenance release with better testing, better stability, and more bugfixes. But watch out, this is all in preparation for the next release of Galaxy, 21.09, which will have some of the biggest UI changes in years!
 
 **Remote Files: FTP Support**
 In the last release, the Remote Files interface was added granting access to a huge number of remote data sources directly in Galaxy. Support was added for FTP servers in the latest release so now you can connect e.g. the NCBI FTP server for all of your genomic data needs.
 
+**Download Collections from Reports**
+Workflow reports are gaining popularity and features! You can not only insert previews of collections in your reports, but also download them directly from the report interface.
+
+.. figure:: images/21.05-report.png
+   :alt: Screenshot of a workflow report box showing a dataset collection. A new button, a download icon, appears at the top right.
 
 New Visualizations
 ===========================================================
