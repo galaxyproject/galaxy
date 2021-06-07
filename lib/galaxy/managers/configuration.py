@@ -147,6 +147,7 @@ class ConfigSerializer(base.ModelSerializer):
             'default_locale': _use_config,
             'enable_openid': _use_config,
             'enable_tool_recommendations': _use_config,
+            'enable_account_management': _use_config,
             'tool_recommendation_model_path': _use_config,
             'admin_tool_recommendations_path': _use_config,
             'overwrite_model_recommendations': _use_config,

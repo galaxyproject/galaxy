@@ -12,7 +12,7 @@ export const getUserPreferencesModel = () => {
             url: `api/users/${Galaxy.user.id}/information/inputs`,
             icon: "fa-user",
             redirect: "user",
-            shouldRender: !config.use_remote_user,
+            shouldRender: !config.use_remote_user && config.enable_account_management,
         },
         password: {
             title: _l("Change Password"),
@@ -22,7 +22,7 @@ export const getUserPreferencesModel = () => {
             url: `api/users/${Galaxy.user.id}/password/inputs`,
             submit_title: "Save Password",
             redirect: "user",
-            shouldRender: !config.use_remote_user,
+            shouldRender: !config.use_remote_user && config.enable_account_management,
         },
         external_ids: {
             title: _l("Manage Third-Party Identities"),
@@ -67,6 +67,7 @@ export const getUserPreferencesModel = () => {
             icon: "fa-cloud",
             submit_title: "Create a new Key",
             submit_icon: "fa-check",
+            shouldRender: config.enable_account_management,
         },
         toolbox_filters: {
             title: _l("Manage Toolbox Filters"),

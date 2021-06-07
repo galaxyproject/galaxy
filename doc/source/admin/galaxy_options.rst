@@ -1456,6 +1456,17 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_account_management``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Allow users to manage their account data, change passwords or
+    delete their accounts.
+:Default: ``true``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~
 ``session_duration``
 ~~~~~~~~~~~~~~~~~~~~
