@@ -1959,15 +1959,18 @@ class DataToolParameter(BaseDataToolParameter):
                     raise ParameterValueError("the previously selected dataset has entered an unusable state", self.name)
                 elif hasattr(v, "dataset"):
                     match = dataset_matcher.hda_match(v)
-                    if match and match.implicit_conversion:
-                        v.implicit_conversion = True
+                    if match:
+                        if match.implicit_conversion:
+                            v.implicit_conversion = True
+                    else:
+                        raise ParameterValueError("Data set with invalid datatype supplied to input dataset parameter", self.name)
         if not self.multiple:
             if len(values) > 1:
                 raise ParameterValueError("more than one dataset supplied to single input dataset parameter", self.name)
             if len(values) > 0:
                 rval = values[0]
             else:
-                raise ParameterValueError("invalid dataset supplied to single input dataset parameter", self.name)
+                raise ParameterValueError("no valid dataset supplied to single input dataset parameter", self.name)
         return rval
 
     def to_param_dict_string(self, value, other_values=None):
