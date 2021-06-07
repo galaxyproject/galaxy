@@ -1,4 +1,3 @@
-
 ===========================================================
 May 2021 Galaxy Release (v 21.05)
 ===========================================================
@@ -8,109 +7,67 @@ May 2021 Galaxy Release (v 21.05)
 Highlights
 ===========================================================
 
-**Feature1**
-  Feature description.
+**¡Galaxy, ahora en español!**
+Thanks to Wendi Bacon (`Pull Request 11891`_), the spanish language translation of Galaxy has been finalised and merged, so if you prefer to use Galaxy in Spanish, now you can! This update will be part of an ongoing project from Spanish speakers within the Galaxy community to keep the Galaxy interface localisation up to date, and to produce some Spanish language training materials in the GTN.
 
-**Feature2**
-  Feature description.
+**Bugfixes and Stability**
+This release of Galaxy features fewer user-facing changes, as a huge amount of developer time went into making this a maintenance release with better testing, better stability, and more bugfixes. But watch out, this is all in preparation for the next release of Galaxy, 21.09, which will have some of the biggest UI changes in years!
 
-**Feature3**
-  Feature description.
+**Remote Files: FTP Support**
+In the last release, the Remote Files interface was added granting access to a huge number of remote data sources directly in Galaxy. Support was added for FTP servers in the latest release so now you can connect e.g. the NCBI FTP server for all of your genomic data needs.
 
 
 New Visualizations
 ===========================================================
 
 .. visualizations
-* Migrate api/genomes to fastapi
-  `Pull Request 11241`_
-* Shared visualization display fix
-  `Pull Request 11906`_
+
+Thanks to `@dlal-group <https://github.com/dlal-group>`__, the SimText suite of tools has been added as an interactive tool within Galaxy. You can read about how to use this new Interactive Tool in the associated `GTN tutorial <https://training.galaxyproject.org/training-material/topics/statistics/tutorials/text-mining_simtext/tutorial.html>`__.
+
 
 New Datatypes
 ===========================================================
 
 .. datatypes
+
 * Add FlowCytometry and MetaCyto datatypes
   (thanks to `@pcm32 <https://github.com/pcm32>`__).
   `Pull Request 9807`_
-* Add FastAPI routes for datatypes
-  (thanks to `@davelopez <https://github.com/davelopez>`__).
-  `Pull Request 11098`_
-* Fix remaining issues reported by bugbear; add it to flake8 reqs
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 11153`_
-* Add mrc datatype (and Python dependency)
+* Add support for `Mrc2014 format images <https://www.ccpem.ac.uk/mrc_format/mrc2014.php>`__, used in Microscopy
   (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__).
   `Pull Request 11220`_
-* remove duplicated qcml from datatypes_conf sample
-  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
-  `Pull Request 11378`_
-* Refactor display_applications API logic into DisplayApplicationsManager
-  (thanks to `@davelopez <https://github.com/davelopez>`__).
-  `Pull Request 11386`_
-* Merge release_21.01 -> dev
-  `Pull Request 11394`_
-* Add HHR datatype
-  (thanks to `@bgruening <https://github.com/bgruening>`__).
-  `Pull Request 11661`_
-* add meryldb datatype
+* Add meryldb datatype, used by the meryl and mercury tools, both part of the `VGP workflows <https://github.com/VGP/vgp-assembly>`__.
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 11694`_
-* Merge 20.09 into dev
-  `Pull Request 11711`_
 * Add datatype for PretextMap output
   `Pull Request 11747`_
-* add new datatype class for meryldb
-  (thanks to `@bgruening <https://github.com/bgruening>`__).
-  `Pull Request 11758`_
-* Make Avivator GEDA and sniffer for ome.tiff datatype
+* Add Avivator GEDA and sniffer for ome.tiff datatype. Aviator is a visualizer of high-resolution multiplexed bioimaging data on the web.
   (thanks to `@qiagu <https://github.com/qiagu>`__).
   `Pull Request 11801`_
-* jellyfish db datatype
+* Add jellyfish db datatype, Jellyfish database files are k-mer counts in binary format.
   (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
   `Pull Request 11802`_
-* add new datatype JPEG 2000 in Galaxy
+* Add support for JPEG 2000 in Galaxy, widely used for storing satellite imagery, for instance from EU Copernicus Sentinel.
   (thanks to `@annefou <https://github.com/annefou>`__).
   `Pull Request 11812`_
-* Make datatype h5_model for machine leaning models
+* Add an H5 format for Machine Leaning models
   (thanks to `@qiagu <https://github.com/qiagu>`__).
   `Pull Request 11825`_
-* Add support for the Relion STAR data format
+* Add support for the Relion STAR data format for Microscopy
   (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__).
   `Pull Request 11831`_
-* add minerva display app for covid
-  (thanks to `@hexylena <https://github.com/hexylena>`__).
-  `Pull Request 11880`_
-* Limit max column in tabular dataset preview
-  `Pull Request 11901`_
-* Add toml datatype
+* Add toml datatype, a generic configuration file format that's used by a number of Proteomics applications
   (thanks to `@jj-umn <https://github.com/jj-umn>`__).
   `Pull Request 11909`_
-* Use keep_original in pysam.tabix_index to not remove original data
-  `Pull Request 11913`_
 
 Builtin Tool Updates
 ===========================================================
 
 .. tools
-* Fix remaining issues reported by bugbear; add it to flake8 reqs
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 11153`_
-* Resolve session problems, enabled pages and tags fastAPI routes
-  `Pull Request 11342`_
-* Make filter work with file containing header
-  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
-  `Pull Request 11365`_
-* Add the SimText shiny app as Interactive Tool
-  (thanks to `@dlal-group <https://github.com/dlal-group>`__).
-  `Pull Request 11680`_
-* grep, tail, head: add option to keep header
-  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
-  `Pull Request 11859`_
-* add a bit of docs to the add tags tool
-  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
-  `Pull Request 11874`_
+
+* The filter, grep, tail, and head tools all now support working with a file
+  containing a header line (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 11365`_, `Pull Request 11859`_
 
 Release Testing Team
 ===========================================================
