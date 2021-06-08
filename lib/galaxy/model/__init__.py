@@ -4598,30 +4598,10 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
     @property
     def dataset_dbkeys_and_extensions_summary(self):
         if not hasattr(self, '_dataset_dbkeys_and_extensions_summary'):
-            db_session = object_session(self)
-
-            dc = alias(DatasetCollection.table)
-            de = alias(DatasetCollectionElement.table)
-            hda = alias(HistoryDatasetAssociation.table)
-            dataset = alias(Dataset.table)
-
-            select_from = dc.outerjoin(de, de.c.dataset_collection_id == dc.c.id)
-
-            depth_collection_type = self.collection.collection_type
-            while ":" in depth_collection_type:
-                child_collection = alias(DatasetCollection.table)
-                child_collection_element = alias(DatasetCollectionElement.table)
-                select_from = select_from.outerjoin(child_collection, child_collection.c.id == de.c.child_collection_id)
-                select_from = select_from.outerjoin(child_collection_element, child_collection_element.c.dataset_collection_id == child_collection.c.id)
-
-                de = child_collection_element
-                depth_collection_type = depth_collection_type.split(":", 1)[1]
-
-            select_from = select_from.outerjoin(hda, hda.c.id == de.c.hda_id).outerjoin(dataset, hda.c.dataset_id == dataset.c.id)
-            select_stmt = select([hda.c.extension, hda.c._metadata]).select_from(select_from).where(dc.c.id == self.collection.id).distinct()
+            rows = self.collection._get_nested_collection_attributes(hda_attributes=('_metadata', 'extension'))
             extensions = set()
             dbkeys = set()
-            for row in db_session.execute(select_stmt).fetchall():
+            for row in rows:
                 if row is not None:
                     dbkey_field = row._metadata.get('dbkey')
                     if isinstance(dbkey_field, list):

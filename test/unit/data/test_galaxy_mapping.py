@@ -356,6 +356,21 @@ class MappingTests(BaseModelTestCase):
         assert q.all() == [('outer_list', 'inner_list', 'forward'), ('outer_list', 'inner_list', 'reverse')]
         assert c4.dataset_elements == [dce1, dce2]
 
+    def test_dataset_dbkeys_and_extensions_summary(self):
+        model = self.model
+        u = model.User(email="mary2@example.com", password="password")
+        h1 = model.History(name="History 1", user=u)
+        d1 = model.HistoryDatasetAssociation(extension="bam", dbkey="hg19", history=h1, create_dataset=True, sa_session=model.session)
+        d2 = model.HistoryDatasetAssociation(extension="txt", dbkey="hg19", history=h1, create_dataset=True, sa_session=model.session)
+        c1 = model.DatasetCollection(collection_type='paired')
+        dce1 = model.DatasetCollectionElement(collection=c1, element=d1, element_identifier="forward", element_index=0)
+        dce2 = model.DatasetCollectionElement(collection=c1, element=d2, element_identifier="reverse", element_index=1)
+        hdca = model.HistoryDatasetCollectionAssociation(collection=c1, history=h1)
+        model.session.add_all([d1, d2, c1, dce1, dce2, hdca])
+        model.session.flush()
+        assert hdca.dataset_dbkeys_and_extensions_summary[0] == {"hg19"}
+        assert hdca.dataset_dbkeys_and_extensions_summary[1] == {"bam", "txt"}
+
     def test_default_disk_usage(self):
         model = self.model
 
