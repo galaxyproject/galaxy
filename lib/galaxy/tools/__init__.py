@@ -3190,7 +3190,7 @@ class ApplyRulesTool(DatabaseOperationTool):
             copied_datasets.append(copied_dataset)
             return copied_dataset
 
-        new_elements = self.app.dataset_collections_service.apply_rules(
+        new_elements = self.app.dataset_collection_manager.apply_rules(
             hdca, rule_set, copy_dataset
         )
         self._add_datasets_to_history(history, copied_datasets)

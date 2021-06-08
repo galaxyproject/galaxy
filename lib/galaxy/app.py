@@ -168,7 +168,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self.hda_manager = self._register_singleton(HDAManager)
         self.history_manager = self._register_singleton(HistoryManager)
         self.job_search = self._register_singleton(JobSearch)
-        self.dataset_collections_service = self._register_singleton(DatasetCollectionManager)
+        self.dataset_collection_manager = self._register_singleton(DatasetCollectionManager)
         self.workflow_manager = self._register_singleton(WorkflowsManager)
         self.workflow_contents_manager = self._register_singleton(WorkflowContentsManager)
         self.library_folder_manager = self._register_singleton(FolderManager)
