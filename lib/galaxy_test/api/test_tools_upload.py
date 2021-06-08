@@ -344,6 +344,32 @@ class ToolsUploadTestCase(ApiTestCase):
         outputs = fetch_response.json()["outputs"]
         self.dataset_populator.get_history_dataset_details(history_id, dataset=outputs[0], assert_ok=True)
 
+    @uses_test_history(require_new=False)
+    def test_fetch_html_from_url(self, history_id):
+        destination = {"type": "hdas"}
+        targets = [{
+            "destination": destination,
+            "items": [
+                {
+                    "src": "url",
+                    "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/html_file.txt",
+                },
+            ]
+        }]
+        payload = {
+            "history_id": history_id,
+            "targets": json.dumps(targets),
+        }
+        fetch_response = self.dataset_populator.fetch(payload)
+        self._assert_status_code_is(fetch_response, 200)
+        response = fetch_response.json()
+        output = response['outputs'][0]
+        job = response['jobs'][0]
+        self.dataset_populator.wait_for_job(job['id'])
+        dataset = self.dataset_populator.get_history_dataset_details(history_id, dataset=output, assert_ok=False)
+        assert dataset['state'] == 'error'
+        assert dataset['name'] == 'html_file.txt'
+
     @skip_without_datatype("velvet")
     def test_composite_datatype(self):
         with self.dataset_populator.test_history() as history_id:
