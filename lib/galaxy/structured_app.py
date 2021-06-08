@@ -30,12 +30,12 @@ class BasicApp(Container):
     using BasicApp instead of StructuredApp below.
     """
     name: str
-    config: Any
+    config: Any  # 'galaxy.config.BaseAppConfiguration'
     application_stack: ApplicationStack
     model: SharedModelMapping
     security: IdEncodingHelper
     auth_manager: AuthManager
-    toolbox: Any
+    toolbox: Any  # 'galaxy.tools.ToolBox'
     security_agent: Any
     quota_agent: QuotaAgent
     datatypes_registry: Registry
@@ -119,4 +119,4 @@ class StructuredApp(MinimalManagerApp):
     interactivetool_manager: Any
     job_manager: Any  # galaxy.jobs.manager.JobManager
     user_manager: Any
-    api_keys_manager: Any # 'galaxy.managers.api_keys.ApiKeyManager'
+    api_keys_manager: Any  # 'galaxy.managers.api_keys.ApiKeyManager'
