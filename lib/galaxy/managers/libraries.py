@@ -2,13 +2,21 @@
 Manager and Serializer for libraries.
 """
 import logging
+from datetime import datetime
+from enum import Enum
 from typing import (
     Any,
     Dict,
     List,
     Optional,
+    Tuple,
+    Union,
 )
 
+from pydantic import (
+    BaseModel,
+    Field,
+)
 from sqlalchemy import and_, false, not_, or_, true
 from sqlalchemy.orm.exc import MultipleResultsFound
 from sqlalchemy.orm.exc import NoResultFound
@@ -19,9 +27,12 @@ from galaxy import (
 )
 from galaxy.managers import (
     folders,
-    roles,
 )
 from galaxy.managers.context import ProvidesAppContext
+from galaxy.managers.roles import (
+    BasicRoleModel,
+    RoleManager,
+)
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.util import (
     pretty_print_time_interval,
@@ -147,32 +158,35 @@ class LibraryManager:
                 query = query.filter(trans.app.model.Library.table.c.deleted == false())
         else:
             #  Nonadmins can't see deleted libraries
-            query = query.filter(trans.app.model.Library.table.c.deleted == false())
-            current_user_role_ids = [role.id for role in trans.get_current_user_roles()]
-            all_actions = trans.sa_session.query(trans.model.LibraryPermissions).filter(trans.model.LibraryPermissions.table.c.role_id.in_(current_user_role_ids))
-            library_add_action = trans.app.security_agent.permitted_actions.LIBRARY_ADD.action
-            library_modify_action = trans.app.security_agent.permitted_actions.LIBRARY_MODIFY.action
-            library_manage_action = trans.app.security_agent.permitted_actions.LIBRARY_MANAGE.action
-            accessible_restricted_library_ids = set()
-            allowed_library_add_ids = set()
-            allowed_library_modify_ids = set()
-            allowed_library_manage_ids = set()
-            for action in all_actions:
-                if action.action == library_access_action:
-                    accessible_restricted_library_ids.add(action.library_id)
-                if action.action == library_add_action:
-                    allowed_library_add_ids.add(action.library_id)
-                if action.action == library_modify_action:
-                    allowed_library_modify_ids.add(action.library_id)
-                if action.action == library_manage_action:
-                    allowed_library_manage_ids.add(action.library_id)
-            query = query.filter(or_(
-                not_(trans.model.Library.table.c.id.in_(restricted_library_ids)),
-                trans.model.Library.table.c.id.in_(accessible_restricted_library_ids)
-            ))
-            prefetched_ids['allowed_library_add_ids'] = allowed_library_add_ids
-            prefetched_ids['allowed_library_modify_ids'] = allowed_library_modify_ids
-            prefetched_ids['allowed_library_manage_ids'] = allowed_library_manage_ids
+            if deleted:
+                raise exceptions.AdminRequiredException()
+            else:
+                query = query.filter(trans.app.model.Library.table.c.deleted == false())
+                current_user_role_ids = [role.id for role in trans.get_current_user_roles()]
+                all_actions = trans.sa_session.query(trans.model.LibraryPermissions).filter(trans.model.LibraryPermissions.table.c.role_id.in_(current_user_role_ids))
+                library_add_action = trans.app.security_agent.permitted_actions.LIBRARY_ADD.action
+                library_modify_action = trans.app.security_agent.permitted_actions.LIBRARY_MODIFY.action
+                library_manage_action = trans.app.security_agent.permitted_actions.LIBRARY_MANAGE.action
+                accessible_restricted_library_ids = set()
+                allowed_library_add_ids = set()
+                allowed_library_modify_ids = set()
+                allowed_library_manage_ids = set()
+                for action in all_actions:
+                    if action.action == library_access_action:
+                        accessible_restricted_library_ids.add(action.library_id)
+                    if action.action == library_add_action:
+                        allowed_library_add_ids.add(action.library_id)
+                    if action.action == library_modify_action:
+                        allowed_library_modify_ids.add(action.library_id)
+                    if action.action == library_manage_action:
+                        allowed_library_manage_ids.add(action.library_id)
+                query = query.filter(or_(
+                    not_(trans.model.Library.table.c.id.in_(restricted_library_ids)),
+                    trans.model.Library.table.c.id.in_(accessible_restricted_library_ids)
+                ))
+                prefetched_ids['allowed_library_add_ids'] = allowed_library_add_ids
+                prefetched_ids['allowed_library_modify_ids'] = allowed_library_modify_ids
+                prefetched_ids['allowed_library_manage_ids'] = allowed_library_manage_ids
         return query, prefetched_ids
 
     def secure(self, trans, library, check_accessible=True):
@@ -320,7 +334,253 @@ def get_containing_library_from_library_dataset(trans, library_dataset):
     return None
 
 
-class LibrariesManager:
+class LibraryLegacySummary(BaseModel):
+    model_class: str = Field(
+        "Library", const=True,
+        title="Model class",
+        description="The name of the database model class.",
+    )
+    id: EncodedDatabaseIdField = Field(
+        ...,
+        title="ID",
+        description="Encoded ID of the Library.",
+    )
+    name: str = Field(
+        ...,
+        title="Name",
+        description="The name of the Library.",
+    )
+    description: Optional[str] = Field(
+        "",
+        title="Description",
+        description="A detailed description of the Library.",
+    )
+    synopsis: Optional[str] = Field(
+        None,
+        title="Description",
+        description="A short text describing the contents of the Library.",
+    )
+    root_folder_id: EncodedDatabaseIdField = Field(
+        ...,
+        title="Root Folder ID",
+        description="Encoded ID of the Library's base folder.",
+    )
+    create_time: datetime = Field(
+        ...,
+        title="Create Time",
+        description="The time and date this item was created.",
+    )
+    deleted: bool = Field(
+        ...,
+        title="Deleted",
+        description="Whether this Library has been deleted.",
+    )
+
+
+class LibrarySummary(LibraryLegacySummary):
+    create_time_pretty: str = Field(  # This is somewhat redundant, maybe the client can do this with `create_time`?
+        ...,
+        title="Create Time Pretty",
+        description="Nice time representation of the creation date.",
+        example="2 months ago",
+    )
+    public: bool = Field(
+        ...,
+        title="Public",
+        description="Whether this Library has been deleted.",
+    )
+    can_user_add: bool = Field(
+        ...,
+        title="Can User Add",
+        description="Whether the current user can add contents to this Library.",
+    )
+    can_user_modify: bool = Field(
+        ...,
+        title="Can User Modify",
+        description="Whether the current user can modify this Library.",
+    )
+    can_user_manage: bool = Field(
+        ...,
+        title="Can User Manage",
+        description="Whether the current user can manage the Library and its contents.",
+    )
+
+
+class LibrarySummaryList(BaseModel):
+    __root__: List[LibrarySummary] = Field(
+        default=[],
+        title='List with summary information of Libraries.',
+    )
+
+
+class CreateLibraryPayload(BaseModel):
+    name: str = Field(
+        ...,
+        title="Name",
+        description="The name of the Library.",
+    )
+    description: Optional[str] = Field(
+        "",
+        title="Description",
+        description="A detailed description of the Library.",
+    )
+    synopsis: Optional[str] = Field(
+        "",
+        title="Synopsis",
+        description="A short text describing the contents of the Library.",
+    )
+
+
+class UpdateLibraryPayload(BaseModel):
+    name: Optional[str] = Field(
+        None,
+        title="Name",
+        description="The new name of the Library. Leave unset to keep the existing.",
+    )
+    description: Optional[str] = Field(
+        None,
+        title="Description",
+        description="A detailed description of the Library. Leave unset to keep the existing.",
+    )
+    synopsis: Optional[str] = Field(
+        None,
+        title="Synopsis",
+        description="A short text describing the contents of the Library. Leave unset to keep the existing.",
+    )
+
+
+class DeleteLibraryPayload(BaseModel):
+    undelete: bool = Field(
+        ...,
+        title="Undelete",
+        description="Whether to restore this previously deleted library.",
+    )
+
+
+class LibraryPermissionScope(str, Enum):
+    current = "current"
+    available = "available"
+
+
+# The tuple should probably be another proper model instead?
+# Keeping it as a Tuple for now for backward compatibility
+RoleNameIdTuple = Tuple[str, EncodedDatabaseIdField]
+
+
+class LibraryCurrentPermissions(BaseModel):
+    access_library_role_list: List[RoleNameIdTuple] = Field(
+        ...,
+        title="Access Role List",
+        description="A list containing pairs of role names and corresponding encoded IDs which have access to the Library.",
+    )
+    modify_library_role_list: List[RoleNameIdTuple] = Field(
+        ...,
+        title="Modify Role List",
+        description="A list containing pairs of role names and corresponding encoded IDs which can modify the Library.",
+    )
+    manage_library_role_list: List[RoleNameIdTuple] = Field(
+        ...,
+        title="Manage Role List",
+        description="A list containing pairs of role names and corresponding encoded IDs which can manage the Library.",
+    )
+    add_library_item_role_list: List[RoleNameIdTuple] = Field(
+        ...,
+        title="Add Role List",
+        description="A list containing pairs of role names and corresponding encoded IDs which can add items to the Library.",
+    )
+
+
+class LibraryAvailablePermissions(BaseModel):
+    roles: List[BasicRoleModel] = Field(
+        ...,
+        title="Roles",
+        description="A list available roles that can be assigned to a particular permission.",
+    )
+    page: int = Field(
+        ...,
+        title="Page",
+        description="Current page .",
+    )
+    page_limit: int = Field(
+        ...,
+        title="Page Limit",
+        description="Maximum number of items per page.",
+    )
+    total: int = Field(
+        ...,
+        title="Total",
+        description="Total number of items",
+    )
+
+
+RoleIdList = Union[List[EncodedDatabaseIdField], EncodedDatabaseIdField]  # Should we support just List[EncodedDatabaseIdField] in the future?
+
+
+class LegacyLibraryPermissionsPayload(BaseModel):
+    LIBRARY_ACCESS_in: Optional[RoleIdList] = Field(
+        [],
+        title="Access IDs",
+        description="A list of role encoded IDs defining roles that should have access permission on the library.",
+    )
+    LIBRARY_MODIFY_in: Optional[RoleIdList] = Field(
+        [],
+        title="Add IDs",
+        description="A list of role encoded IDs defining roles that should be able to add items to the library.",
+    )
+    LIBRARY_ADD_in: Optional[RoleIdList] = Field(
+        [],
+        title="Manage IDs",
+        description="A list of role encoded IDs defining roles that should have manage permission on the library.",
+    )
+    LIBRARY_MANAGE_in: Optional[RoleIdList] = Field(
+        [],
+        title="Modify IDs",
+        description="A list of role encoded IDs defining roles that should have modify permission on the library.",
+    )
+
+
+class LibraryPermissionAction(str, Enum):
+    set_permissions = "set_permissions"
+    remove_restrictions = "remove_restrictions"  # name inconsistency? should be `make_public`?
+
+
+class LibraryPermissionsPayload(BaseModel):
+    class Config:
+        use_enum_values = True  # When using .dict()
+        allow_population_by_alias = True
+
+    action: Optional[LibraryPermissionAction] = Field(
+        ...,
+        title="Action",
+        description="Indicates what action should be performed on the Library.",
+    )
+    access_ids: Optional[RoleIdList] = Field(
+        [],
+        alias="access_ids[]",  # Added for backward compatibility but it looks really ugly...
+        title="Access IDs",
+        description="A list of role encoded IDs defining roles that should have access permission on the library.",
+    )
+    add_ids: Optional[RoleIdList] = Field(
+        [],
+        alias="add_ids[]",
+        title="Add IDs",
+        description="A list of role encoded IDs defining roles that should be able to add items to the library.",
+    )
+    manage_ids: Optional[RoleIdList] = Field(
+        [],
+        alias="manage_ids[]",
+        title="Manage IDs",
+        description="A list of role encoded IDs defining roles that should have manage permission on the library.",
+    )
+    modify_ids: Optional[RoleIdList] = Field(
+        [],
+        alias="modify_ids[]",
+        title="Modify IDs",
+        description="A list of role encoded IDs defining roles that should have modify permission on the library.",
+    )
+
+
+class LibrariesService:
     """
     Interface/service object for sharing logic between controllers.
     """
@@ -329,13 +589,13 @@ class LibrariesManager:
         self,
         folder_manager: folders.FolderManager,
         library_manager: LibraryManager,
-        role_manager: roles.RoleManager,
+        role_manager: RoleManager,
     ):
         self.folder_manager = folder_manager
         self.library_manager = library_manager
         self.role_manager = role_manager
 
-    def index(self, trans: ProvidesAppContext, deleted: Optional[bool] = False) -> List[Any]:
+    def index(self, trans: ProvidesAppContext, deleted: Optional[bool] = False) -> LibrarySummaryList:
         """Returns a list of summary data for all libraries.
 
         :param  deleted: if True, show only ``deleted`` libraries, if False show only ``non-deleted``
@@ -351,9 +611,9 @@ class LibrariesManager:
         libraries = []
         for library in query:
             libraries.append(self.library_manager.get_library_dict(trans, library, prefetched_ids))
-        return libraries
+        return LibrarySummaryList.parse_obj(libraries)
 
-    def show(self, trans, id: EncodedDatabaseIdField):
+    def show(self, trans, id: EncodedDatabaseIdField) -> LibrarySummary:
         """ Returns detailed information about a library.
 
         :param  id:      the encoded id of the library
@@ -370,9 +630,9 @@ class LibrariesManager:
         """
         library = self.library_manager.get(trans, trans.security.decode_id(id, object_name='library'))
         library_dict = self.library_manager.get_library_dict(trans, library)
-        return library_dict
+        return LibrarySummary.parse_obj(library_dict)
 
-    def create(self, trans, payload: Dict[str, str]):
+    def create(self, trans, payload: CreateLibraryPayload) -> LibrarySummary:
         """Creates a new library.
 
         .. note:: Currently, only admin users can create libraries.
@@ -389,18 +649,11 @@ class LibrariesManager:
         :rtype:     dict
         :raises: RequestParameterMissingException
         """
-        name = payload.get('name', None)
-        if not name:
-            raise exceptions.RequestParameterMissingException("Missing required parameter 'name'.")
-        description = payload.get('description', '')
-        synopsis = payload.get('synopsis', '')
-        if synopsis in ['None', None]:
-            synopsis = ''
-        library = self.library_manager.create(trans, name, description, synopsis)
+        library = self.library_manager.create(trans, payload.name, payload.description, payload.synopsis)
         library_dict = self.library_manager.get_library_dict(trans, library)
-        return library_dict
+        return LibrarySummary.parse_obj(library_dict)
 
-    def update(self, trans, id: EncodedDatabaseIdField, payload: Dict[str, str]):
+    def update(self, trans, id: EncodedDatabaseIdField, payload: UpdateLibraryPayload) -> LibrarySummary:
         """Updates the library defined by an ``encoded_id`` with the data in the payload.
 
        .. note:: Currently, only admin users can update libraries. Also the library must not be `deleted`.
@@ -420,16 +673,14 @@ class LibrariesManager:
         :raises: RequestParameterMissingException
         """
         library = self.library_manager.get(trans, trans.security.decode_id(id, object_name='library'))
-        name = payload.get('name', None)
+        name = payload.name
         if name == '':
             raise exceptions.RequestParameterMissingException("Parameter 'name' of library is required. You cannot remove it.")
-        description = payload.get('description', None)
-        synopsis = payload.get('synopsis', None)
-        updated_library = self.library_manager.update(trans, library, name, description, synopsis)
+        updated_library = self.library_manager.update(trans, library, name, payload.description, payload.synopsis)
         library_dict = self.library_manager.get_library_dict(trans, updated_library)
-        return library_dict
+        return LibrarySummary.parse_obj(library_dict)
 
-    def delete(self, trans, id: EncodedDatabaseIdField, undelete: Optional[bool] = False):
+    def delete(self, trans, id: EncodedDatabaseIdField, undelete: Optional[bool] = False) -> LibrarySummary:
         """Marks the library with the given ``id`` as `deleted` (or removes the `deleted` mark if the `undelete` param is true)
 
         .. note:: Currently, only admin users can un/delete libraries.
@@ -448,18 +699,18 @@ class LibrariesManager:
         library = self.library_manager.get(trans, trans.security.decode_id(id, object_name='library'))
         library = self.library_manager.delete(trans, library, undelete)
         library_dict = self.library_manager.get_library_dict(trans, library)
-        return library_dict
+        return LibrarySummary.parse_obj(library_dict)
 
     def get_permissions(
         self,
         trans,
         id: EncodedDatabaseIdField,
-        scope: Optional[str] = 'current',
+        scope: Optional[LibraryPermissionScope] = LibraryPermissionScope.current,
         is_library_access: Optional[bool] = False,
         page: Optional[int] = 1,
         page_limit: Optional[int] = 10,
         query: Optional[str] = None,
-    ):
+    ) -> Union[LibraryCurrentPermissions, LibraryAvailablePermissions]:
         """Load all permissions for the given library id and return it.
 
         :param  id:     the encoded id of the library
@@ -482,23 +733,28 @@ class LibrariesManager:
         if not (is_admin or trans.app.security_agent.can_manage_library_item(current_user_roles, library)):
             raise exceptions.InsufficientPermissionsException('You do not have proper permission to access permissions of this library.')
 
-        if scope == 'current' or scope is None:
+        if scope == LibraryPermissionScope.current or scope is None:
             roles = self.library_manager.get_current_roles(trans, library)
-            return roles
+            return LibraryCurrentPermissions.parse_obj(roles)
 
         #  Return roles that are available to select.
-        elif scope == 'available':
+        elif scope == LibraryPermissionScope.available:
             roles, total_roles = trans.app.security_agent.get_valid_roles(trans, library, query, page, page_limit, is_library_access)
 
             return_roles = []
             for role in roles:
                 role_id = trans.security.encode_id(role.id)
                 return_roles.append(dict(id=role_id, name=role.name, type=role.type))
-            return dict(roles=return_roles, page=page, page_limit=page_limit, total=total_roles)
+            return LibraryAvailablePermissions(roles=return_roles, page=page, page_limit=page_limit, total=total_roles)
         else:
             raise exceptions.RequestParameterInvalidException("The value of 'scope' parameter is invalid. Alllowed values: current, available")
 
-    def set_permissions(self, trans, id: EncodedDatabaseIdField, payload: Dict[str, Any]):
+    def set_permissions(
+        self, trans, id: EncodedDatabaseIdField, payload: Dict[str, Any]
+    ) -> Union[
+        LibraryLegacySummary,  # Old legacy response
+        LibraryCurrentPermissions,
+    ]:
         """Set permissions of the given library to the given role ids.
 
         :param  id:      the encoded id of the library to set the permissions of
@@ -612,9 +868,9 @@ class LibrariesManager:
             raise exceptions.RequestParameterInvalidException('The mandatory parameter "action" has an invalid value.'
                                                               'Allowed values are: "remove_restrictions", set_permissions"')
         roles = self.library_manager.get_current_roles(trans, library)
-        return roles
+        return LibraryCurrentPermissions.parse_obj(roles)
 
-    def set_permissions_old(self, trans, library, payload):
+    def set_permissions_old(self, trans, library, payload) -> LibraryLegacySummary:
         """
         *** old implementation for backward compatibility ***
 
@@ -631,4 +887,4 @@ class LibrariesManager:
         # Copy the permissions to the root folder
         trans.app.security_agent.copy_library_permissions(trans, library, library.root_folder)
         item = library.to_dict(view='element', value_mapper={'id': trans.security.encode_id, 'root_folder_id': trans.security.encode_id})
-        return item
+        return LibraryLegacySummary.parse_obj(item)

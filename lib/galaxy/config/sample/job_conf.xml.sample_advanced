@@ -956,6 +956,10 @@
             <!-- The destination that you resubmit jobs to can be any runner type -->
             <param id="nativeSpecification">-l h_rt=96:00:00</param>
         </destination>
+        <destination id="4cpu_8gb_ram_queueA" runner="sge">
+            <!-- SGE DRMAA to send to a specific queue A, request 8 GB of RAM (2 per CPU) and 4 CPUs -->
+            <param id="nativeSpecification">-q A -l h_vmem=2G -pe smp 4</param>
+        </destination>
         <destination id="smallmem" runner="slurm">
             <param id="nativeSpecification">--mem-per-cpu=512</param>
             <resubmit condition="memory_limit_reached" destination="bigmem" />

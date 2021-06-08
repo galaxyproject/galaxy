@@ -252,5 +252,5 @@ class FolderContentsApiTestCase(ApiTestCase):
         data = {
             "access_ids[]": role_id,
         }
-        response = self._post(f"libraries/{library_id}/permissions?action={action}", data=data, admin=True)
+        response = self._post(f"libraries/{library_id}/permissions?action={action}", data=data, admin=True, json=True)
         self._assert_status_code_is(response, 200)

@@ -19,7 +19,13 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from enum import Enum
 from string import Template
-from typing import List, Optional, TYPE_CHECKING
+from typing import (
+    Iterable,
+    List,
+    Optional,
+    TYPE_CHECKING,
+    Union,
+)
 from uuid import UUID, uuid4
 
 from boltons.iterutils import remap
@@ -27,17 +33,27 @@ from social_core.storage import AssociationMixin, CodeMixin, NonceMixin, Partial
 from sqlalchemy import (
     alias,
     and_,
+    BigInteger,
+    Boolean,
+    Column,
+    DateTime,
     func,
     inspect,
+    Integer,
     join,
     not_,
     or_,
     select,
+    String,
+    TEXT,
     text,
     true,
     tuple_,
     type_coerce,
-    types)
+    types,
+    UniqueConstraint,
+    VARCHAR,
+)
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext import hybrid
 from sqlalchemy.orm import (
@@ -46,8 +62,9 @@ from sqlalchemy.orm import (
     object_session,
     Query,
     reconstructor,
+    registry,
 )
-from sqlalchemy.schema import UniqueConstraint
+from sqlalchemy.orm.decl_api import DeclarativeMeta
 
 import galaxy.exceptions
 import galaxy.model.metadata
@@ -56,6 +73,7 @@ import galaxy.model.tags
 import galaxy.security.passwords
 import galaxy.util
 from galaxy.model.item_attrs import get_item_annotation_str, UsesAnnotations
+from galaxy.model.orm.now import now
 from galaxy.security import get_permitted_actions
 from galaxy.security.validate_user_input import validate_password_str
 from galaxy.util import (
@@ -76,6 +94,8 @@ from galaxy.util.sanitize_html import sanitize_html
 log = logging.getLogger(__name__)
 
 _datatypes_registry = None
+
+mapper_registry = registry()
 
 # When constructing filters with in for a fixed set of ids, maximum
 # number of items to place in the IN statement. Different databases
@@ -100,6 +120,16 @@ if TYPE_CHECKING:
 
 else:
     _HasTable = object
+
+
+class Base(metaclass=DeclarativeMeta):
+    __abstract__ = True
+    registry = mapper_registry
+    metadata = mapper_registry.metadata
+
+    @classmethod
+    def __declare_last__(cls):
+        cls.table = cls.__table__
 
 
 class RepresentById(_HasTable):
@@ -246,7 +276,17 @@ class UsesCreateAndUpdateTime:
         return (galaxy.model.orm.now.now() - create_time).total_seconds()
 
 
-class WorkerProcess(UsesCreateAndUpdateTime, _HasTable):
+class WorkerProcess(Base, UsesCreateAndUpdateTime, _HasTable):
+    __tablename__ = 'worker_process'
+    __table_args__ = (
+        UniqueConstraint('server_name', 'hostname'),
+    )
+
+    id = Column("id", Integer, primary_key=True)
+    server_name = Column("server_name", String(255), index=True)
+    hostname = Column("hostname", String(255))
+    pid = Column("pid", Integer)
+    update_time = Column("update_time", DateTime, default=now, onupdate=now)
 
     def __init__(self, server_name, hostname):
         self.server_name = server_name
@@ -1827,7 +1867,15 @@ class DeferredJob(RepresentById):
             return False
 
 
-class Group(Dictifiable, RepresentById):
+class Group(Base, Dictifiable, RepresentById):
+    __tablename__ = 'galaxy_group'
+
+    id = Column("id", Integer, primary_key=True)
+    create_time = Column("create_time", DateTime, default=now)
+    update_time = Column("update_time", DateTime, default=now, onupdate=now)
+    name = Column("name", String(255), index=True, unique=True)
+    deleted = Column("deleted", Boolean, index=True, default=False)
+
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name']
 
@@ -2286,7 +2334,16 @@ class GroupRoleAssociation(RepresentById):
         self.role = role
 
 
-class Role(Dictifiable, RepresentById):
+class Role(Base, Dictifiable, RepresentById):
+    __tablename__ = 'role'
+    id = Column('id', Integer, primary_key=True)
+    create_time = Column('create_time', DateTime, default=now)
+    update_time = Column('update_time', DateTime, default=now, onupdate=now)
+    name = Column('name', String(255), index=True, unique=True)
+    description = Column('description', TEXT)
+    type = Column('type', String(40), index=True)
+    deleted = Column('deleted', Boolean, index=True, default=False)
+
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name', 'description', 'type']
     private_id = None
@@ -2298,7 +2355,7 @@ class Role(Dictifiable, RepresentById):
         ADMIN = 'admin'
         SHARING = 'sharing'
 
-    def __init__(self, name="", description="", type="system", deleted=False):
+    def __init__(self, name=None, description=None, type=types.SYSTEM, deleted=False):
         self.name = name
         self.description = description
         self.type = type
@@ -2321,12 +2378,23 @@ class GroupQuotaAssociation(Dictifiable, RepresentById):
         self.quota = quota
 
 
-class Quota(Dictifiable, RepresentById):
+class Quota(Base, Dictifiable, RepresentById):
+    __tablename__ = 'quota'
+
+    id = Column('id', Integer, primary_key=True)
+    create_time = Column('create_time', DateTime, default=now)
+    update_time = Column('update_time', DateTime, default=now, onupdate=now)
+    name = Column('name', String(255), index=True, unique=True)
+    description = Column('description', TEXT)
+    bytes = Column('bytes', BigInteger)
+    operation = Column('operation', String(8))
+    deleted = Column('deleted', Boolean, index=True, default=False)
+
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name', 'description', 'bytes', 'operation', 'display_amount', 'default', 'users', 'groups']
     valid_operations = ('+', '-', '=')
 
-    def __init__(self, name="", description="", amount=0, operation="="):
+    def __init__(self, name=None, description=None, amount=0, operation='='):
         self.name = name
         self.description = description
         if amount is None:
@@ -2355,7 +2423,7 @@ class Quota(Dictifiable, RepresentById):
             return galaxy.util.nice_size(self.bytes)
 
 
-class DefaultQuotaAssociation(Quota, Dictifiable, RepresentById):
+class DefaultQuotaAssociation(Dictifiable, RepresentById):
     dict_element_visible_keys = ['type']
 
     class types(str, Enum):
@@ -4150,37 +4218,87 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
             self.populated_state = DatasetCollection.populated_states.NEW
         self.element_count = element_count
 
+    def _get_nested_collection_attributes(
+        self,
+        collection_attributes: Optional[Iterable[str]] = None,
+        element_attributes: Optional[Iterable[str]] = None,
+        hda_attributes: Optional[Iterable[str]] = None,
+        dataset_attributes: Optional[Iterable[str]] = None,
+        dataset_permission_attributes: Optional[Iterable[str]] = None,
+        return_entities: Optional[Iterable[Union[HistoryDatasetAssociation, Dataset, DatasetPermissions, 'DatasetCollectionElement']]] = None,
+    ):
+        collection_attributes = collection_attributes or ()
+        element_attributes = element_attributes or ()
+        hda_attributes = hda_attributes or ()
+        dataset_attributes = dataset_attributes or ()
+        dataset_permission_attributes = dataset_permission_attributes or ()
+        return_entities = return_entities or ()
+        dataset_collection = self
+        db_session = object_session(self)
+        dc = alias(DatasetCollection)
+        dce = alias(DatasetCollectionElement)
+
+        depth_collection_type = dataset_collection.collection_type
+        nesting_level = 0
+
+        def attribute_columns(column_collection, attributes, nesting_level=None):
+            label_fragment = f"_{nesting_level}" if nesting_level is not None else ""
+            return [getattr(column_collection, a).label(f"{a}{label_fragment}") for a in attributes]
+
+        q = db_session.query(
+            *attribute_columns(dce.c, element_attributes, nesting_level),
+            *attribute_columns(dc.c, collection_attributes, nesting_level),
+        ).select_from(
+            dce, dc
+        ).join(
+            dce, dce.c.dataset_collection_id == dc.c.id
+        ).filter(dc.c.id == dataset_collection.id)
+        while ':' in depth_collection_type:
+            nesting_level += 1
+            inner_dc = alias(DatasetCollection)
+            inner_dce = alias(DatasetCollectionElement)
+            q = q.join(
+                inner_dc, inner_dc.c.id == dce.c.child_collection_id
+            ).join(
+                inner_dce, inner_dce.c.dataset_collection_id == inner_dc.c.id
+            )
+            q = q.add_columns(
+                *attribute_columns(inner_dce.c, element_attributes, nesting_level),
+                *attribute_columns(inner_dc.c, collection_attributes, nesting_level),
+            )
+            dce = inner_dce
+            dc = inner_dc
+            depth_collection_type = depth_collection_type.split(":", 1)[1]
+
+        if hda_attributes or dataset_attributes or dataset_permission_attributes or return_entities and not return_entities == (DatasetCollectionElement,):
+            q = q.join(HistoryDatasetAssociation).join(Dataset)
+        if dataset_permission_attributes:
+            q = q.join(DatasetPermissions)
+        q = q.add_columns(
+            *attribute_columns(HistoryDatasetAssociation, hda_attributes)
+        ).add_columns(
+            *attribute_columns(Dataset, dataset_attributes)
+        ).add_columns(
+            *attribute_columns(DatasetPermissions, dataset_permission_attributes)
+        )
+        for entity in return_entities:
+            q = q.add_entity(entity)
+            if entity == DatasetCollectionElement:
+                q = q.filter(entity.id == dce.c.id)
+        return q.distinct()
+
     @property
     def dataset_states_and_extensions_summary(self):
         if not hasattr(self, '_dataset_states_and_extensions_summary'):
-            db_session = object_session(self)
-
-            dc = alias(DatasetCollection.table)
-            de = alias(DatasetCollectionElement.table)
-            hda = alias(HistoryDatasetAssociation.table)
-            dataset = alias(Dataset.table)
-
-            select_from = dc.outerjoin(de, de.c.dataset_collection_id == dc.c.id)
-
-            depth_collection_type = self.collection_type
-            while ":" in depth_collection_type:
-                child_collection = alias(DatasetCollection.table)
-                child_collection_element = alias(DatasetCollectionElement.table)
-                select_from = select_from.outerjoin(child_collection, child_collection.c.id == de.c.child_collection_id)
-                select_from = select_from.outerjoin(child_collection_element, child_collection_element.c.dataset_collection_id == child_collection.c.id)
-
-                de = child_collection_element
-                depth_collection_type = depth_collection_type.split(":", 1)[1]
-
-            select_from = select_from.outerjoin(hda, hda.c.id == de.c.hda_id).outerjoin(dataset, hda.c.dataset_id == dataset.c.id)
-            select_stmt = select([hda.c.extension, dataset.c.state]).select_from(select_from).where(dc.c.id == self.id).distinct()
+            q = self._get_nested_collection_attributes(
+                hda_attributes=('extension',),
+                dataset_attributes=('state',)
+            )
             extensions = set()
             states = set()
-            for extension, state in db_session.execute(select_stmt).fetchall():
-                if state is not None:
-                    # query may return (None, None) if not collection elements present
-                    states.add(state)
-                    extensions.add(extension)
+            for extension, state in q:
+                states.add(state)
+                extensions.add(extension)
 
             self._dataset_states_and_extensions_summary = (states, extensions)
 
@@ -4193,32 +4311,10 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
             if ":" not in self.collection_type:
                 _populated_optimized = self.populated_state == DatasetCollection.populated_states.OK
             else:
-                db_session = object_session(self)
-
-                dc = alias(DatasetCollection.table)
-                de = alias(DatasetCollectionElement.table)
-
-                select_from = dc.outerjoin(de, de.c.dataset_collection_id == dc.c.id)
-
-                collection_depth_aliases = [dc]
-
-                depth_collection_type = self.collection_type
-                while ":" in depth_collection_type:
-                    child_collection = alias(DatasetCollection.table)
-                    child_collection_element = alias(DatasetCollectionElement.table)
-                    select_from = select_from.outerjoin(child_collection, child_collection.c.id == de.c.child_collection_id)
-                    select_from = select_from.outerjoin(child_collection_element, child_collection_element.c.dataset_collection_id == child_collection.c.id)
-
-                    collection_depth_aliases.append(child_collection)
-
-                    de = child_collection_element
-                    depth_collection_type = depth_collection_type.split(":", 1)[1]
-
-                select_stmt = select(list(map(lambda dc: dc.c.populated_state, collection_depth_aliases))).select_from(select_from).where(dc.c.id == self.id).distinct()
-                for populated_states in db_session.execute(select_stmt).fetchall():
-                    for populated_state in populated_states:
-                        if populated_state and populated_state != DatasetCollection.populated_states.OK:
-                            _populated_optimized = False
+                q = self._get_nested_collection_attributes(
+                    collection_attributes=('populated_state',),
+                )
+                _populated_optimized = any(state != DatasetCollection.populated_states.OK for state in q)
 
             self._populated_optimized = _populated_optimized
 
@@ -4234,33 +4330,11 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
     @property
     def dataset_action_tuples(self):
         if not hasattr(self, '_dataset_action_tuples'):
-            db_session = object_session(self)
-
-            dc = alias(DatasetCollection.table)
-            de = alias(DatasetCollectionElement.table)
-            hda = alias(HistoryDatasetAssociation.table)
-            dataset = alias(Dataset.table)
-            dataset_permission = alias(DatasetPermissions.table)
-
-            select_from = dc.outerjoin(de, de.c.dataset_collection_id == dc.c.id)
-
-            depth_collection_type = self.collection_type
-            while ":" in depth_collection_type:
-                child_collection = alias(DatasetCollection.table)
-                child_collection_element = alias(DatasetCollectionElement.table)
-                select_from = select_from.outerjoin(child_collection, child_collection.c.id == de.c.child_collection_id)
-                select_from = select_from.outerjoin(child_collection_element, child_collection_element.c.dataset_collection_id == child_collection.c.id)
-
-                de = child_collection_element
-                depth_collection_type = depth_collection_type.split(":", 1)[1]
-
-            select_from = select_from.outerjoin(hda, hda.c.id == de.c.hda_id).outerjoin(dataset, hda.c.dataset_id == dataset.c.id)
-            select_from = select_from.outerjoin(dataset_permission, dataset.c.id == dataset_permission.c.dataset_id)
-
-            select_stmt = select([dataset_permission.c.action, dataset_permission.c.role_id]).select_from(select_from).where(dc.c.id == self.id).distinct()
-
+            q = self._get_nested_collection_attributes(
+                dataset_permission_attributes=('action', 'role_id')
+            )
             _dataset_action_tuples = []
-            for _dataset_action_tuple in db_session.execute(select_stmt).fetchall():
+            for _dataset_action_tuple in q:
                 if _dataset_action_tuple[0] is None:
                     continue
                 _dataset_action_tuples.append(_dataset_action_tuple)
@@ -4295,24 +4369,7 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
     def dataset_instances(self):
         db_session = object_session(self)
         if db_session and self.id:
-            dc = alias(DatasetCollection.table)
-            de = alias(DatasetCollectionElement.table)
-            hda = alias(HistoryDatasetAssociation.table)
-
-            depth_collection_type = self.collection_type
-            select_from = dc.outerjoin(de, de.c.dataset_collection_id == dc.c.id)
-
-            while ":" in depth_collection_type:
-                child_collection = alias(DatasetCollection.table)
-                child_collection_element = alias(DatasetCollectionElement.table)
-                select_from = select_from.outerjoin(child_collection, child_collection.c.id == de.c.child_collection_id)
-                select_from = select_from.outerjoin(child_collection_element, child_collection_element.c.dataset_collection_id == child_collection.c.id)
-
-                de = child_collection_element
-                depth_collection_type = depth_collection_type.split(":", 1)[1]
-            select_from = select_from.outerjoin(hda, hda.c.id == de.c.hda_id)
-            select_stmt = select([hda]).select_from(select_from).where(dc.c.id == self.id).distinct()
-            return db_session.query(HistoryDatasetAssociation).select_entity_from(select_stmt).filter(HistoryDatasetAssociation.id.isnot(None)).all()
+            return self._get_nested_collection_attributes(return_entities=(HistoryDatasetAssociation,)).all()
         else:
             # Sessionless context
             instances = []
@@ -4326,6 +4383,9 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
 
     @property
     def dataset_elements(self):
+        db_session = object_session(self)
+        if db_session and self.id:
+            return self._get_nested_collection_attributes(return_entities=(DatasetCollectionElement,)).all()
         elements = []
         for element in self.elements:
             if element.is_collection:
@@ -6084,7 +6144,16 @@ class UserAddress(RepresentById):
                 'phone': sanitize_html(self.phone)}
 
 
-class PSAAssociation(AssociationMixin, RepresentById):
+class PSAAssociation(Base, AssociationMixin, RepresentById):
+    __tablename__ = 'psa_association'
+
+    id = Column('id', Integer, primary_key=True)
+    server_url = Column('server_url', VARCHAR(255))
+    handle = Column('handle', VARCHAR(255))
+    secret = Column('secret', VARCHAR(255))
+    issued = Column('issued', Integer)
+    lifetime = Column('lifetime', Integer)
+    assoc_type = Column('assoc_type', VARCHAR(64))
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None
@@ -6123,8 +6192,15 @@ class PSAAssociation(AssociationMixin, RepresentById):
         cls.sa_session.query(cls).filter(cls.id.in_(ids_to_delete)).delete(synchronize_session='fetch')
 
 
-class PSACode(CodeMixin, RepresentById):
-    __table_args__ = (UniqueConstraint('code', 'email'),)
+class PSACode(Base, CodeMixin, RepresentById):
+    __tablename__ = 'psa_code'
+    __table_args__ = (
+        UniqueConstraint('code', 'email'),
+    )
+
+    id = Column('id', Integer, primary_key=True)
+    email = Column('email', VARCHAR(200))
+    code = Column('code', VARCHAR(32))
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None
@@ -6142,7 +6218,13 @@ class PSACode(CodeMixin, RepresentById):
         return cls.sa_session.query(cls).filter(cls.code == code).first()
 
 
-class PSANonce(NonceMixin, RepresentById):
+class PSANonce(Base, NonceMixin, RepresentById):
+    __tablename__ = 'psa_nonce'
+
+    id = Column('id', Integer, primary_key=True)
+    server_url = Column('server_url', VARCHAR(255))
+    timestamp = Column('timestamp', Integer)
+    salt = Column('salt', VARCHAR(40))
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None
@@ -6167,7 +6249,14 @@ class PSANonce(NonceMixin, RepresentById):
             return instance
 
 
-class PSAPartial(PartialMixin, RepresentById):
+class PSAPartial(Base, PartialMixin, RepresentById):
+    __tablename__ = 'psa_partial'
+
+    id = Column('id', Integer, primary_key=True)
+    token = Column('token', VARCHAR(32))
+    data = Column('data', TEXT)
+    next_step = Column('next_step', Integer)
+    backend = Column('backend', VARCHAR(32))
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None

@@ -685,8 +685,8 @@ history_dataset_collection_display(input={})
             return (f"workflow_display(workflow_id={invocation.workflow.stored_workflow.id})\n", False)
         if container == "history_link":
             return (f"history_link(history_id={invocation.history.id})\n", False)
-        if container == "invocation_date":
-            return (f"invocation_date(invocation_id={invocation.id})\n", False)
+        if container == "invocation_time":
+            return (f"invocation_time(invocation_id={invocation.id})\n", False)
         ref_object_type = None
         output_match = re.search(OUTPUT_LABEL_PATTERN, line)
         input_match = re.search(INPUT_LABEL_PATTERN, line)

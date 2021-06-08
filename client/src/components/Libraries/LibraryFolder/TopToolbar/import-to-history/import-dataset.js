@@ -79,13 +79,13 @@ var ImportDatasetModal = Backbone.View.extend({
                     Toast.error("An error occurred.");
                 })
                 .always(() => {
-                    this.modal.enableButton("Import");
+                    this.modal.disableButton("Import");
                 });
         } else {
             var history_id = $("select[name=import_to_history] option:selected").val();
             var history_name = $("select[name=import_to_history] option:selected").text();
             this.processImportToHistory(history_id, history_name);
-            this.modal.enableButton("Import");
+            this.modal.disableButton("Import");
         }
     },
 

@@ -23,7 +23,7 @@ class LibrariesApiTestCase(ApiTestCase):
 
     def test_create(self):
         data = dict(name="CreateTestLibrary")
-        create_response = self._post("libraries", data=data, admin=True)
+        create_response = self._post("libraries", data=data, admin=True, json=True)
         self._assert_status_code_is(create_response, 200)
         library = create_response.json()
         self._assert_has_keys(library, "name")
@@ -46,7 +46,7 @@ class LibrariesApiTestCase(ApiTestCase):
     def test_nonadmin(self):
         # Anons can't create libs
         data = dict(name="CreateTestLibrary")
-        create_response = self._post("libraries", data=data, admin=False, anon=True)
+        create_response = self._post("libraries", data=data, admin=False, anon=True, json=True)
         self._assert_status_code_is(create_response, 403)
         # Anons can't delete libs
         library = self.library_populator.new_library("AnonDeleteTestLibrary")
@@ -68,13 +68,70 @@ class LibrariesApiTestCase(ApiTestCase):
         assert library['description'] == 'ChangedDescription'
         assert library['synopsis'] == 'ChangedSynopsis'
 
-    def test_create_private_library_permissions(self):
-        library = self.library_populator.new_library("PermissionTestLibrary")
+    def test_create_private_library_legacy_permissions(self):
+        library = self.library_populator.new_library("LegacyPermissionTestLibrary")
         library_id = library["id"]
         role_id = self.library_populator.user_private_role_id()
         self.library_populator.set_permissions(library_id, role_id)
         create_response = self._create_folder(library)
         self._assert_status_code_is(create_response, 200)
+
+        with self._different_user():
+            create_response = self._create_folder(library)
+            self._assert_status_code_is(create_response, 403)
+
+    def test_create_private_library_permissions(self):
+        library = self.library_populator.new_library("PermissionTestLibrary")
+        library_id = library["id"]
+        role_id = self.library_populator.user_private_role_id()
+        self.library_populator.set_permissions_with_action(library_id, role_id, action="set_permissions")
+        create_response = self._create_folder(library)
+        self._assert_status_code_is(create_response, 200)
+
+        with self._different_user():
+            create_response = self._create_folder(library)
+            self._assert_status_code_is(create_response, 403)
+
+    def test_get_library_current_permissions(self):
+        library = self.library_populator.new_library("GetCurrentPermissionTestLibrary")
+        library_id = library["id"]
+        current = self.library_populator.get_permissions(library_id, scope="current")
+        self._assert_has_keys(current, "access_library_role_list", "modify_library_role_list", "manage_library_role_list", "add_library_item_role_list")
+
+        role_id = self.library_populator.user_private_role_id()
+        self.library_populator.set_permissions_with_action(library_id, role_id, action="set_permissions")
+        current = self.library_populator.get_permissions(library_id, scope="current")
+        assert role_id in current["access_library_role_list"][0]
+        assert role_id in current["modify_library_role_list"][0]
+        assert role_id in current["manage_library_role_list"][0]
+        assert role_id in current["add_library_item_role_list"][0]
+
+    def test_get_library_available_permissions(self):
+        library = self.library_populator.new_library("GetAvailablePermissionTestLibrary")
+        library_id = library["id"]
+        role_id = self.library_populator.user_private_role_id()
+        # As we can manage this library our role will be available
+        current = self.library_populator.get_permissions(library_id, scope="available")
+        available_role_ids = [role["id"] for role in current["roles"]]
+        assert role_id in available_role_ids
+
+    def test_get_library_available_permissions_with_query(self):
+        library = self.library_populator.new_library("GetAvailablePermissionWithQueryTestLibrary")
+        library_id = library["id"]
+
+        with self._different_user():
+            email = self.library_populator.user_email()
+
+        # test at least 2 user roles should be available now
+        current = self.library_populator.get_permissions(library_id, scope="available")
+        available_role_ids = [role["id"] for role in current["roles"]]
+        assert len(available_role_ids) > 1
+
+        # test query for specific role/email
+        current = self.library_populator.get_permissions(library_id, scope="available", q=email)
+        available_role_emails = [role["name"] for role in current["roles"]]
+        assert current["total"] == 1
+        assert available_role_emails[0] == email
 
     def test_create_dataset_denied(self):
         library = self.library_populator.new_private_library("ForCreateDatasets")

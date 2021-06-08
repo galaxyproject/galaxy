@@ -72,6 +72,7 @@ google-api-python-client==1.12.8; python_version >= "2.7" and python_full_versio
 google-auth-httplib2==0.1.0; python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0"
 google-auth==1.30.0; python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.6.0"
 googleapis-common-protos==1.53.0; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.6.0" and python_version >= "3.6"
+greenlet==1.0.0; python_version >= "3.6" and python_full_version < "3.0.0" and python_version < "4.0" or python_full_version >= "3.6.0" and python_version >= "3.6" and python_version < "4.0"
 gunicorn==20.1.0; python_version >= "3.5"
 gxformat2==0.15.0
 h11==0.12.0; python_version >= "3.6"
@@ -143,7 +144,7 @@ prompt-toolkit==3.0.3; python_version >= "3.6"
 protobuf==3.15.8; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.6.0" and python_version >= "3.6"
 prov==1.5.1; python_version >= "3.6" and python_version < "4"
 psutil==5.8.0; (python_version >= "2.6" and python_full_version < "3.0.0") or (python_full_version >= "3.4.0")
-pulsar-galaxy-lib==0.14.5
+pulsar-galaxy-lib==0.14.6
 py==1.10.0; python_version >= "3.6" and python_full_version < "3.0.0" and implementation_name == "pypy" or python_full_version >= "3.4.0" and python_version >= "3.6" and implementation_name == "pypy"
 pyasn1-modules==0.2.8; python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.6.0"
 pyasn1==0.4.8; python_version >= "3.5" and python_version < "4"
@@ -176,7 +177,7 @@ pytest-pythonpath==0.7.3
 pytest-shard==0.1.2; python_version >= "3.6"
 pytest==6.2.3; python_version >= "3.6"
 python-dateutil==2.8.1; python_version >= "3.6" and python_full_version < "3.0.0" and python_version < "4" or python_version >= "3.6" and python_version < "4" and python_full_version >= "3.3.0"
-python-irodsclient==0.8.6
+python-irodsclient==0.9.0
 python-jose==3.2.0
 python-keystoneclient==4.1.1; python_version >= "3.6"
 python-neutronclient==7.2.1; python_version >= "3.6"
@@ -223,7 +224,7 @@ sphinxcontrib-jsmath==1.0.1; python_version >= "3.5"
 sphinxcontrib-qthelp==1.0.3; python_version >= "3.5"
 sphinxcontrib-serializinghtml==1.1.4; python_version >= "3.5"
 sqlalchemy-migrate==0.13.0
-sqlalchemy==1.3.24; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.4.0")
+sqlalchemy==1.4.17
 sqlitedict==1.7.0
 sqlparse==0.4.1; python_version >= "3.5"
 starlette-context==0.3.2; python_version >= "3.7"

@@ -14,9 +14,7 @@ from sqlalchemy import (
 
 from galaxy.model.migrate.versions.util import (
     add_column,
-    add_index,
     drop_column,
-    drop_index,
 )
 
 log = logging.getLogger(__name__)
@@ -28,9 +26,8 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    job_id_column = Column('job_id', Integer, ForeignKey('job.id'))
-    add_column(job_id_column, 'dataset', metadata)
-    add_index('ix_dataset_job_id', 'dataset', 'job_id', metadata)
+    job_id_column = Column('job_id', Integer, ForeignKey('job.id'), index=True)
+    add_column(job_id_column, 'dataset', metadata, index_name='ix_dataset_job_id')
 
 
 def downgrade(migrate_engine):
@@ -38,4 +35,3 @@ def downgrade(migrate_engine):
     metadata.reflect()
 
     drop_column('job_id', 'dataset', metadata)
-    drop_index('ix_dataset_job_id', 'dataset', 'job_id', metadata)

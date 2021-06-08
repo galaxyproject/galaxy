@@ -284,8 +284,8 @@ class GroupListGrid(grids.Grid):
 
     class UsersColumn(grids.GridColumn):
         def get_value(self, trans, grid, group):
-            if group.members:
-                return len(group.members)
+            if group.users:
+                return len(group.users)
             return 0
 
     # Grid definition
@@ -671,8 +671,8 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                                         .order_by(trans.app.model.User.table.c.email):
                 all_users.append((user.email, trans.security.encode_id(user.id)))
             for group in trans.sa_session.query(trans.app.model.Group) \
-                                         .filter(trans.app.model.Group.table.c.deleted == false()) \
-                                         .order_by(trans.app.model.Group.table.c.name):
+                                         .filter(trans.app.model.Group.deleted == false()) \
+                                         .order_by(trans.app.model.Group.name):
                 all_groups.append((group.name, trans.security.encode_id(group.id)))
             default_options = [('No', 'no')]
             for type_ in trans.app.model.DefaultQuotaAssociation.types:
@@ -753,8 +753,8 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     in_users.append(trans.security.encode_id(user.id))
                 all_users.append((user.email, trans.security.encode_id(user.id)))
             for group in trans.sa_session.query(trans.app.model.Group) \
-                                         .filter(trans.app.model.Group.table.c.deleted == false()) \
-                                         .order_by(trans.app.model.Group.table.c.name):
+                                         .filter(trans.app.model.Group.deleted == false()) \
+                                         .order_by(trans.app.model.Group.name):
                 if group in [x.group for x in quota.groups]:
                     in_groups.append(trans.security.encode_id(group.id))
                 all_groups.append((group.name, trans.security.encode_id(group.id)))
@@ -941,8 +941,8 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                                         .order_by(trans.app.model.User.table.c.email):
                 all_users.append((user.email, trans.security.encode_id(user.id)))
             for group in trans.sa_session.query(trans.app.model.Group) \
-                                         .filter(trans.app.model.Group.table.c.deleted == false()) \
-                                         .order_by(trans.app.model.Group.table.c.name):
+                                         .filter(trans.app.model.Group.deleted == false()) \
+                                         .order_by(trans.app.model.Group.name):
                 all_groups.append((group.name, trans.security.encode_id(group.id)))
             return {
                 'title': 'Create Role',
@@ -967,7 +967,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             in_groups = [trans.sa_session.query(trans.app.model.Group).get(trans.security.decode_id(x)) for x in util.listify(payload.get('in_groups'))]
             if not name or not description:
                 return self.message_exception(trans, 'Enter a valid name and a description.')
-            elif trans.sa_session.query(trans.app.model.Role).filter(trans.app.model.Role.table.c.name == name).first():
+            elif trans.sa_session.query(trans.app.model.Role).filter(trans.app.model.Role.name == name).first():
                 return self.message_exception(trans, 'Role names must be unique and a role with that name already exists, so choose another name.')
             elif None in in_users or None in in_groups:
                 return self.message_exception(trans, 'One or more invalid user/group id has been provided.')
@@ -985,7 +985,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     trans.sa_session.add(gra)
                 if auto_create_checked:
                     # Check if role with same name already exists
-                    if trans.sa_session.query(trans.app.model.Group).filter(trans.app.model.Group.table.c.name == name).first():
+                    if trans.sa_session.query(trans.app.model.Group).filter(trans.app.model.Group.name == name).first():
                         return self.message_exception(trans, 'A group with that name already exists, so choose another name or disable group creation.')
                     # Create the group
                     group = trans.app.model.Group(name=name)
@@ -1029,7 +1029,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             if not new_name:
                 return self.message_exception(trans, 'Enter a valid role name.')
             else:
-                existing_role = trans.sa_session.query(trans.app.model.Role).filter(trans.app.model.Role.table.c.name == new_name).first()
+                existing_role = trans.sa_session.query(trans.app.model.Role).filter(trans.app.model.Role.name == new_name).first()
                 if existing_role and existing_role.id != role.id:
                     return self.message_exception(trans, 'A role with that name already exists.')
                 else:
@@ -1059,8 +1059,8 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     in_users.append(trans.security.encode_id(user.id))
                 all_users.append((user.email, trans.security.encode_id(user.id)))
             for group in trans.sa_session.query(trans.app.model.Group) \
-                                         .filter(trans.app.model.Group.table.c.deleted == false()) \
-                                         .order_by(trans.app.model.Group.table.c.name):
+                                         .filter(trans.app.model.Group.deleted == false()) \
+                                         .order_by(trans.app.model.Group.name):
                 if group in [x.group for x in role.groups]:
                     in_groups.append(trans.security.encode_id(group.id))
                 all_groups.append((group.name, trans.security.encode_id(group.id)))
@@ -1196,7 +1196,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             if not new_name:
                 return self.message_exception(trans, 'Enter a valid group name.')
             else:
-                existing_group = trans.sa_session.query(trans.app.model.Group).filter(trans.app.model.Group.table.c.name == new_name).first()
+                existing_group = trans.sa_session.query(trans.app.model.Group).filter(trans.app.model.Group.name == new_name).first()
                 if existing_group and existing_group.id != group.id:
                     return self.message_exception(trans, 'A group with that name already exists.')
                 else:
@@ -1225,8 +1225,8 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     in_users.append(trans.security.encode_id(user.id))
                 all_users.append((user.email, trans.security.encode_id(user.id)))
             for role in trans.sa_session.query(trans.app.model.Role) \
-                                        .filter(trans.app.model.Role.table.c.deleted == false()) \
-                                        .order_by(trans.app.model.Role.table.c.name):
+                                        .filter(trans.app.model.Role.deleted == false()) \
+                                        .order_by(trans.app.model.Role.name):
                 if role in [x.role for x in group.roles]:
                     in_roles.append(trans.security.encode_id(role.id))
                 all_roles.append((role.name, trans.security.encode_id(role.id)))
@@ -1256,8 +1256,8 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                                         .order_by(trans.app.model.User.table.c.email):
                 all_users.append((user.email, trans.security.encode_id(user.id)))
             for role in trans.sa_session.query(trans.app.model.Role) \
-                                        .filter(trans.app.model.Role.table.c.deleted == false()) \
-                                        .order_by(trans.app.model.Role.table.c.name):
+                                        .filter(trans.app.model.Role.deleted == false()) \
+                                        .order_by(trans.app.model.Role.name):
                 all_roles.append((role.name, trans.security.encode_id(role.id)))
             return {
                 'title': 'Create Group',
@@ -1280,7 +1280,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             in_roles = [trans.sa_session.query(trans.app.model.Role).get(trans.security.decode_id(x)) for x in util.listify(payload.get('in_roles'))]
             if not name:
                 return self.message_exception(trans, 'Enter a valid name.')
-            elif trans.sa_session.query(trans.app.model.Group).filter(trans.app.model.Group.table.c.name == name).first():
+            elif trans.sa_session.query(trans.app.model.Group).filter(trans.app.model.Group.name == name).first():
                 return self.message_exception(trans, 'Group names must be unique and a group with that name already exists, so choose another name.')
             elif None in in_users or None in in_roles:
                 return self.message_exception(trans, 'One or more invalid user/role id has been provided.')
@@ -1298,7 +1298,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     trans.sa_session.add(gra)
                 if auto_create_checked:
                     # Check if role with same name already exists
-                    if trans.sa_session.query(trans.app.model.Role).filter(trans.app.model.Role.table.c.name == name).first():
+                    if trans.sa_session.query(trans.app.model.Role).filter(trans.app.model.Role.name == name).first():
                         return self.message_exception(trans, 'A role with that name already exists, so choose another name or disable role creation.')
                     # Create the role
                     role = trans.app.model.Role(name=name, description=f'Role for group {name}')
@@ -1483,8 +1483,8 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             all_roles = []
             in_groups = []
             all_groups = []
-            for role in trans.sa_session.query(trans.app.model.Role).filter(trans.app.model.Role.table.c.deleted == false()) \
-                    .order_by(trans.app.model.Role.table.c.name):
+            for role in trans.sa_session.query(trans.app.model.Role).filter(trans.app.model.Role.deleted == false()) \
+                    .order_by(trans.app.model.Role.name):
                 if role in [x.role for x in user.roles]:
                     in_roles.append(trans.security.encode_id(role.id))
                 if role.type != trans.app.model.Role.types.PRIVATE:
@@ -1493,8 +1493,8 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     # role, which should always be in in_roles.  The check above is added as an additional
                     # precaution, since for a period of time we were including private roles in the form fields.
                     all_roles.append((role.name, trans.security.encode_id(role.id)))
-            for group in trans.sa_session.query(trans.app.model.Group).filter(trans.app.model.Group.table.c.deleted == false()) \
-                    .order_by(trans.app.model.Group.table.c.name):
+            for group in trans.sa_session.query(trans.app.model.Group).filter(trans.app.model.Group.deleted == false()) \
+                    .order_by(trans.app.model.Group.name):
                 if group in [x.group for x in user.groups]:
                     in_groups.append(trans.security.encode_id(group.id))
                 all_groups.append((group.name, trans.security.encode_id(group.id)))

@@ -13,11 +13,6 @@ export default new VueRouter({
     base: `${getAppRoot()}admin/data_manager`,
     routes: [
         {
-            path: "/",
-            name: "DataManager",
-            component: DataManager,
-        },
-        {
             path: "/jobs/:id",
             name: "DataManagerJobs",
             component: DataManagerJobs,
@@ -36,8 +31,13 @@ export default new VueRouter({
             props: true,
         },
         {
+            path: "/",
+            name: "DataManager",
+            component: DataManager,
+        },
+        {
             path: "*",
-            redirect: "/",
+            redirect: { name: "DataManager" },
         },
     ],
 });

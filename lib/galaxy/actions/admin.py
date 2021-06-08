@@ -24,7 +24,7 @@ class AdminActions:
                 create_amount = False
         if not params.name or not params.description:
             raise ActionInputError("Enter a valid name and a description.")
-        elif self.sa_session.query(self.app.model.Quota).filter(self.app.model.Quota.table.c.name == params.name).first():
+        elif self.sa_session.query(self.app.model.Quota).filter(self.app.model.Quota.name == params.name).first():
             raise ActionInputError("Quota names must be unique and a quota with that name already exists, so choose another name.")
         elif not params.get('amount', None):
             raise ActionInputError("Enter a valid quota amount.")
@@ -68,7 +68,7 @@ class AdminActions:
     def _rename_quota(self, quota, params):
         if not params.name:
             raise ActionInputError('Enter a valid name.')
-        elif params.name != quota.name and self.sa_session.query(self.app.model.Quota).filter(self.app.model.Quota.table.c.name == params.name).first():
+        elif params.name != quota.name and self.sa_session.query(self.app.model.Quota).filter(self.app.model.Quota.name == params.name).first():
             raise ActionInputError('A quota with that name already exists.')
         else:
             old_name = quota.name

@@ -57,8 +57,7 @@ export default Backbone.View.extend({
             onclick: () => {
                 app.modal.show({
                     title: "Send visualization data for PDF creation",
-                    body:
-                        "Galaxy does not provide integrated PDF export scripts. You may click 'Continue' to create the PDF by using a 3rd party service (https://export.highcharts.com).",
+                    body: "Galaxy does not provide integrated PDF export scripts. You may click 'Continue' to create the PDF by using a 3rd party service (https://export.highcharts.com).",
                     buttons: {
                         Cancel: () => {
                             app.modal.hide();

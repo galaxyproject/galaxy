@@ -856,7 +856,7 @@ def launch_uvicorn(webapp_factory, prefix=DEFAULT_CONFIG_PREFIX, galaxy_config=N
     port = attempt_ports(port)
     gx_app = build_galaxy_app(galaxy_config)
 
-    gx_webapp = webapp_factory(
+    gx_wsgi_webapp = webapp_factory(
         galaxy_config['global_conf'],
         app=gx_app,
         use_translogger=False,
@@ -864,7 +864,7 @@ def launch_uvicorn(webapp_factory, prefix=DEFAULT_CONFIG_PREFIX, galaxy_config=N
         register_shutdown_at_exit=False
     )
     from galaxy.webapps.galaxy.fast_app import initialize_fast_app
-    app = initialize_fast_app(gx_webapp, gx_app)
+    app = initialize_fast_app(gx_wsgi_webapp, gx_app)
     server, port = uvicorn_serve(app, host=host, port=port)
     set_and_wait_for_http_target(prefix, host, port)
     log.info(f"Embedded uvicorn web server for {name} started at {host}:{port}")
@@ -909,6 +909,7 @@ class TestDriver:
     down. This is somewhat like a Python TestCase - but different
     because it is meant to provide a main() endpoint.
     """
+    __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
     def __init__(self):
         """Setup tracked resources."""

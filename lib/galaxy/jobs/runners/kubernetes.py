@@ -27,6 +27,7 @@ from galaxy.jobs.runners.util.pykube_util import (
     find_pod_object_by_name,
     find_service_object_by_name,
     galaxy_instance_id,
+    HTTPError,
     Ingress,
     ingress_object_dict,
     is_pod_unschedulable,
@@ -159,15 +160,24 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         job = Job(self._pykube_api, k8s_job_obj)
         try:
             job.create()
-            job_id = job.metadata.get('name')
-            # define job attributes in the AsyncronousJobState for follow-up
-            ajs.job_id = job_id
-            # store runner information for tracking if Galaxy restarts
-            job_wrapper.set_external_id(job_id)
-        except Exception as e:
-            log.exception("Error occurred while creating kubernetes job object")
-            raise e
+        except HTTPError:
+            log.exception("Kubernetes failed to create job, HTTP exception encountered")
+            ajs.runner_state = JobState.runner_states.UNKNOWN_ERROR
+            ajs.fail_message = "Kubernetes failed to create job."
+            self.mark_as_failed(ajs)
+            return
+        if not job.name:
+            log.exception(f"Kubernetes failed to create job, empty name encountered: [{job.obj}]")
+            ajs.runner_state = JobState.runner_states.UNKNOWN_ERROR
+            ajs.fail_message = "Kubernetes failed to create job."
+            self.mark_as_failed(ajs)
+            return
+        job_id = job.name
 
+        # define job attributes in the AsyncronousJobState for follow-up
+        ajs.job_id = job_id
+        # store runner information for tracking if Galaxy restarts
+        job_wrapper.set_external_id(job_id)
         self.monitor_queue.put(ajs)
 
     def __get_overridable_params(self, job_wrapper, param_key):

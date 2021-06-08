@@ -184,12 +184,12 @@ def _bam_to_sam(local_name, temp_name):
     temp_local = tempfile.NamedTemporaryFile(suffix='.sam', prefix='local_bam_converted_to_sam_')
     with tempfile.NamedTemporaryFile(suffix='.sam', prefix='history_bam_converted_to_sam_', delete=False) as temp:
         try:
-            pysam.view('-h', f'-o{temp_local.name}', local_name)
+            pysam.view('-h', '--no-PG', '-o', temp_local.name, local_name, catch_stdout=False)
         except Exception as e:
             msg = f"Converting local (test-data) BAM to SAM failed: {unicodify(e)}"
             raise Exception(msg)
         try:
-            pysam.view('-h', f'-o{temp.name}', temp_name)
+            pysam.view('-h', '--no-PG', '-o', temp.name, temp_name, catch_stdout=False)
         except Exception as e:
             msg = f"Converting history BAM to SAM failed: {unicodify(e)}"
             raise Exception(msg)
