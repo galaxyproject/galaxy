@@ -51,6 +51,7 @@ export default {
                 const matchedErrors = this.form.data.matchResponse(this.validationErrors);
                 for (const input_id in matchedErrors) {
                     this.form.highlight(input_id, matchedErrors[input_id]);
+                    break;
                 }
             }
         },
@@ -63,10 +64,12 @@ export default {
             }
         },
         formConfig() {
-            this.parseUpdate(this.formConfig);
-            if (this.initialErrors) {
-                this.parseErrors(this.formConfig);
-            }
+            this.$nextTick(() => {
+                this.form.update(this.formConfig);
+                if (this.initialErrors) {
+                    this.form.errors(this.formConfig);
+                }
+            });
         },
     },
     mounted() {
@@ -141,16 +144,6 @@ export default {
                     },
                 });
                 this.onChange();
-            });
-        },
-        parseUpdate(data) {
-            this.$nextTick(() => {
-                this.form.update(data);
-            });
-        },
-        parseErrors(data) {
-            this.$nextTick(() => {
-                this.form.errors(data);
             });
         },
     },

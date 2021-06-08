@@ -14,7 +14,7 @@
                 </p>
                 <pre>{{ errorContentPretty }}</pre>
             </div>
-            <ToolRecommendation v-if="showRecommendation" :tool-id="id" />
+            <ToolRecommendation v-if="showRecommendation" :tool-id="formConfig.id" />
             <ToolCard
                 v-if="showForm"
                 :id="formConfig.id"
@@ -198,7 +198,7 @@ export default {
             this.onUpdate();
         },
         onUpdate() {
-            updateTool(this.id, this.currentVersion, this.formData).then((data) => {
+            updateTool(this.formConfig.id, this.currentVersion, this.formData).then((data) => {
                 this.formConfig = data;
             });
         },
