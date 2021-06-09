@@ -37,6 +37,15 @@
       </output>
     </test>
     <test>
+      <param name="lineNum" value="1"/>
+      <param name="input" value="GRCm38mm10_chr5_34761740-34912521.fa"/>
+      <output name="out_file1">
+        <assert_contents>
+          <has_n_lines n="1"/>
+        </assert_contents>
+      </output>
+    </test>
+    <test>
       <param name="lineNum" value="10"/>
       <param name="input" value="1.bed"/>
       <param name="header" value="true"/>
