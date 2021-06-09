@@ -18,8 +18,6 @@ def test_CloudAuthz(model, session, user, user_authnz_token):
     with dbcleanup(session, cls):
         provider, config, description = 'a', 'b', 'c'
         obj = cls(user.id, provider, config, user_authnz_token.id, description)
-        obj.user = user
-        obj.authn = user_authnz_token
         obj_id = persist(session, obj)
 
         stmt = select(cls).filter(cls.id == obj_id)
@@ -34,8 +32,8 @@ def test_CloudAuthz(model, session, user, user_authnz_token):
         assert stored_obj.last_update
         assert stored_obj.last_activity
         assert stored_obj.create_time
-        assert stored_obj.user == user
-        assert stored_obj.authn == user_authnz_token
+        assert stored_obj.user.id == user.id
+        assert stored_obj.authn.id == user_authnz_token.id
 
 
 def test_CustosAuthnzToken(model, session, user):
@@ -81,10 +79,11 @@ def test_PageRevision(model, session, page):
         assert stored_obj.id == obj_id
         assert stored_obj.create_time
         assert stored_obj.update_time
-        assert stored_obj.page_id
+        assert stored_obj.page_id == page.id
         assert stored_obj.title is None
         assert stored_obj.content is None
         assert stored_obj.content_format == model.PageRevision.DEFAULT_CONTENT_FORMAT
+        assert stored_obj.page.id == page.id
 
 
 def test_PSAAssociation(model, session):
@@ -211,7 +210,7 @@ def testUserAction(model, session, user, galaxy_session):
         assert stored_obj.action == action
         assert stored_obj.context == context
         assert stored_obj.params == params
-        assert stored_obj.user == user
+        assert stored_obj.user.id == user.id
 
 
 def test_UserAddress(model, session, user):
@@ -251,7 +250,6 @@ def test_UserAuthnzToken(model, session, user, cloud_authz):
         provider, uid, extra_data, lifetime, assoc_type = get_random_string(), 'b', 'c', 1, 'd'
         obj = cls(provider, uid, extra_data, lifetime, assoc_type, user)
         obj.cloudauthz.append(cloud_authz)
-        obj.user = user
         obj_id = persist(session, obj)
 
         stmt = select(cls).filter(cls.id == obj_id)
@@ -263,7 +261,7 @@ def test_UserAuthnzToken(model, session, user, cloud_authz):
         assert stored_obj.extra_data == extra_data
         assert stored_obj.lifetime == lifetime
         assert stored_obj.assoc_type == assoc_type
-        assert stored_obj.user == user
+        assert stored_obj.user.id == user.id
         assert cloud_authz in stored_obj.cloudauthz
 
 
@@ -272,8 +270,8 @@ def test_VisualizationRevision(model, session, visualization):
     assert cls.__tablename__ == 'visualization_revision'
     assert has_index(cls.__table__, ('dbkey',))
     with dbcleanup(session, cls):
-        obj = cls()
-        obj.visualization = visualization
+        visualization, title, dbkey, config = visualization, 'a', 'b', 'c'
+        obj = cls(visualization, title, dbkey, config)
         obj_id = persist(session, obj)
 
         stmt = select(cls).filter(cls.id == obj_id)
@@ -281,10 +279,11 @@ def test_VisualizationRevision(model, session, visualization):
         assert stored_obj.id == obj_id
         assert stored_obj.create_time
         assert stored_obj.update_time
-        assert stored_obj.visualization_id
-        assert stored_obj.title is None
-        assert stored_obj.dbkey is None
-        assert stored_obj.config is None
+        assert stored_obj.visualization_id == visualization.id
+        assert stored_obj.title == title
+        assert stored_obj.dbkey == dbkey
+        assert stored_obj.config == config
+        assert stored_obj.visualization.id == visualization.id
 
 
 def test_WorkerProcess(model, session):
