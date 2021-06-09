@@ -179,7 +179,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
     @selenium_test
     def test_refresh_preserves_state(self):
         if self.is_beta_history():
-            raise pytest.skip("Beta History Panel does not preserve state")
+            raise pytest.skip("Beta History Panel does not preserve state xref https://github.com/galaxyproject/galaxy/issues/12119")
         self.perform_upload(self.get_filename("1.txt"))
         self.wait_for_history()
 

@@ -1218,10 +1218,7 @@ class NavigatesGalaxy(HasDriver):
 
     @retry_during_transitions
     def click_history_options(self):
-        if self.is_beta_history():
-            component = self.components.history_panel.options_button_icon_beta
-        else:
-            component = self.components.history_panel.options_button_icon
+        component = self.components.history_panel.options_button_icon
         component.wait_for_and_click()
 
     def click_history_option(self, option_label_or_component):
@@ -1232,7 +1229,7 @@ class NavigatesGalaxy(HasDriver):
             option_label = option_label_or_component
             # Click labelled option
             self.wait_for_visible(self.navigation.history_panel.options_menu)
-            menu_item_sizzle_selector = f"#history-options-button-menu > a:contains('{option_label}')"
+            menu_item_sizzle_selector = self.navigation.history_panel.options_menu_item(option_label=option_label).selector
             menu_selection_element = self.wait_for_sizzle_selector_clickable(menu_item_sizzle_selector)
             menu_selection_element.click()
         else:

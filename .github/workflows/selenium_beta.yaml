@@ -2,7 +2,7 @@ name: Selenium tests (beta history panel)
 on: [push, pull_request]
 env:
   GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
-  GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR: 'true'
+  GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR: 1
   GALAXY_TEST_SELENIUM_RETRIES: 1
   GALAXY_TEST_SELENIUM_BETA_HISTORY: 1
 jobs:

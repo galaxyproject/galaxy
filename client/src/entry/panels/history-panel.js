@@ -63,7 +63,7 @@ const HistoryPanel = Backbone.View.extend({
         this.buttonOptions = new Ui.ButtonLink({
             id: "history-options-button",
             title: _l("History options"),
-            cls: "panel-header-button",
+            cls: "panel-header-button menu-expand-button",
             target: "galaxy_main",
             icon: "fa fa-cog",
             href: `${this.root}root/history_options`,
@@ -72,7 +72,7 @@ const HistoryPanel = Backbone.View.extend({
 
         this.model = new Backbone.Model({
             // define components
-            cls: "history-right-panel",
+            cls: "history-right-panel history-details",
             title: _l("History"),
             buttons: panelHeaderButtons,
         });

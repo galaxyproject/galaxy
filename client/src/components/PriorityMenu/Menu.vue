@@ -14,7 +14,7 @@
             <div class="overflow" v-if="overflow.length">
                 <b-dropdown no-caret right variant="link" size="sm" boundary="window" toggle-class="p-1">
                     <template v-slot:button-content>
-                        <i class="fas fa-ellipsis-v priority-menu-expand" />
+                        <i class="fas fa-ellipsis-v priority-menu-expand menu-expand-button" />
                         <span class="sr-only">...</span>
                     </template>
                     <b-dropdown-item v-for="item in overflow" :key="item.key" v-bind="item.attrs" v-on="item.on">
