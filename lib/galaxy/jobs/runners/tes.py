@@ -45,21 +45,21 @@ class TESJobRunner(AsynchronousJobRunner):
         self._init_worker_threads()
 
     def _send_task(self, master_addr, task):
-        url = 'http://' + str(master_addr) + '/v1/tasks'
+        url = master_addr + "/v1/tasks"
         r = requests.post(url, json=task)
         data = r.json()
         job_id = data["id"]
         return job_id
 
     def _get_job(self, master_addr, job_id):
-        url = 'http://' + str(master_addr) + '/v1/tasks/' + str(job_id)
+        url = master_addr + "/v1/tasks/" + str(job_id)
         r = requests.get(url)
         print(r.text)
         return r.json()
 
     def _cancel_job(self, master_addr, job_id):
         # TODO TES doesn't actually shutdown running jobs.
-        url = "http://" + str(master_addr) + "/v1/tasks/" + str(job_id) + ":cancel"
+        url = master_addr + "/v1/tasks" + str(job_id) + ":cancel"
         r = requests.post(url)
 
     def queue_job(self, job_wrapper):
@@ -74,39 +74,49 @@ class TESJobRunner(AsynchronousJobRunner):
         job_destination = job_wrapper.job_destination
         galaxy_id_tag = job_wrapper.get_id_tag()
         master_addr = job_destination.params.get("tes_master_addr")
+        commands = job_wrapper.command_line
+        commands = commands.split()
+        working_directory = job_wrapper.working_directory
         # container = job_wrapper.tool.containers[0]
 
         # print '=' * 50
         # print job_wrapper.command_line
         # print
-
-        job_id = self._send_task(master_addr, {
+        script_path = commands[1][1:-1]
+        # script_path = "/home/vipulchhabra/Desktop/GSoC/funnel-linux-amd64-0.10.0/fasta_to_tabular_converter.py"
+        input_file = commands[2][9:-1]
+        output_file = commands[3][10:-1]
+        commands[1] = "/inputs/test.py"
+        commands[2] = "--input=/inputs/input.dat"
+        commands[3] = "--output=/outputs/output.dat"
+        execution_script = {
             "name": "Task Executors",
-            "description": "Demonstrates the most basic tasks.",
+            "description": job_wrapper.tool.description,
             "inputs": [
                 {
-                    "url": "s3://funnel-test/test.py",
+                    "url": script_path,
                     "path": "/inputs/test.py"
+                },
+                {
+                    "url": input_file,
+                    "path": "/inputs/input.dat"
                 }
             ],
             "outputs": [
                 {
-                    "url": "s3://funnel-test/output.txt",
-                    "path": "/outputs/hello-out.txt"
+                    "url": output_file,
+                    "path": "/outputs/output.dat"
                 }
             ],
             "executors": [
                 {
                     "image": "python",
-                    "command": [
-                        "python",
-                        "/inputs/test.py"
-                    ],
-                    "stdout": "/outputs/hello-out.txt"
-
+                    "command": commands,
                 }
             ]
-        })
+        }
+
+        job_id = self._send_task(master_addr, execution_script)
 
         job_state = TESJobState(
             job_id=job_id,
@@ -188,23 +198,22 @@ class TESJobRunner(AsynchronousJobRunner):
 
         return job_state
 
-    def stop_job(self, job):
+    def stop_job(self, job_wrapper):
         """Attempts to delete a task from the task queue"""
 
         # Possibly the job was deleted before it was fully started.
         # In this case, the job_id will be None. This seems to be a bug in Galaxy.
         # It's likely that the job was in fact submitted to TES, but the job_id
         # wasn't persisted to the monitor queue?
+        # TODO: This needs a thorough check why job Id is not coming with job_object
+        # and why this is getting called after the job completion
+        job = job_wrapper.get_job()
 
-        # job_id = job.job_runner_external_id
-        # if job_id is None:
-        #     return
+        job_id = job.job_runner_external_id
+        if job_id is None:
+            return
 
-        master_addr = job.destination_params.get("tes_master_addr")
-        # print '=' * 50
-        # print 'stop job'
-        # print job_id, master_addr
-        # print
+        master_addr = job.destination_params.get('tes_master_addr')
         self._cancel_job(master_addr, job_id)
         # TODO send cancel message to TES
 
