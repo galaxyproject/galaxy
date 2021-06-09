@@ -4,7 +4,7 @@ import io
 # The number of bytes to be read from a file/stream when searching for a
 # magic number.  No magic number is even close to this long, but given most
 # block devices read 4K chunks this is likely a moot point.
-BLOCK_SIZE=1024
+BLOCK_SIZE = 1024
 
 
 class MagicNumber:
@@ -39,14 +39,14 @@ class MagicNumberSniffer:
         self.root = TrieNode()
         this_dir = os.path.dirname(__file__)
         with open(os.path.join(this_dir, "magic-numbers.tsv")) as fp:
-            for line in fp.readlines():
+            for line in fp:
                 parts = line.split('\t')
                 number = MagicNumber(*parts)
                 self.add(number)
         with open(os.path.join(this_dir, "magic-numbers.txt")) as fp:
-            for line in fp.readlines():
+            for line in fp:
                 parts = line.split('\t')
-                bytes = ' '.join([ hex(ord(c)).replace('0x', '') for c in parts[0]])
+                bytes = ' '.join(hex(ord(c)).replace('0x', '') for c in parts[0])
                 number = MagicNumber(bytes, parts[1], parts[2])
                 self.add(number)
 
@@ -71,20 +71,13 @@ class MagicNumberSniffer:
             with open(path, 'rb') as f:
                 buff = f.read(BLOCK_SIZE)
         else:
-            f = io.BytesIO(path)
-            buff = f.read(BLOCK_SIZE)
+            buff = path
 
         p = 0  # pointer into the above buffer
 
         # Walk the search tree using the bytes in `buff` as the indices.
         current = self.root
-        while current is not None:
-            b = buff[p]
-            p += 1
-            if b == '':
-                # EOF
-                break
-            # print(f"ch: {hex(b)}")
+        for b in buff:
             child = current.children[b]
             if child is None:
                 break
