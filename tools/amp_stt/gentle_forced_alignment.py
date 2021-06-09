@@ -16,6 +16,7 @@ import mgm_utils
 
 def main():
 	(input_audio_file, input_transcript_file, json_file) = sys.argv[1:4]
+	exception = False
 	try:
 		# Create random temp names
 		tmpAudioName = str(uuid.uuid4())
@@ -48,7 +49,9 @@ def main():
 			print("Creating amp transcript output")
 			write_amp_json(temp_output_file, orig_transcript, json_file)
 	except Exception as e:
+		print("Exception")
 		print(e)
+		exception = True
 
 	if os.path.exists(temp_audio_file):
 	 	os.remove(temp_audio_file)
@@ -59,9 +62,15 @@ def main():
 	if os.path.exists(temp_output_file):
 		os.remove(temp_output_file)
 	
+	if exception == True:
+		print("Existing due to exception")
+		exit(1)
+
+	print("Return Code: " + str(r.returncode))
 	exit(r.returncode)
 
 def find_next_success(gentle_output, current_index):
+
 	for word_index in range(current_index, len(gentle_output["words"])):
 		word = gentle_output["words"][word_index]
 		# Make sure we have all the data
@@ -82,15 +91,55 @@ def write_amp_json(temp_gentle_output, original_transcript, amp_transcript_outpu
 		output["results"]["words"] = list()
 		previous_end = 0
 		last_success_index = 0
-		for word in gentle_output["words"]:
-			# Make sure we have all the data
-			if word["case"] == 'success':
-				previous_end = word["end"]
-				output["results"]["words"].append(
+		if "words" in gentle_output.keys():
+			for word in gentle_output["words"]:
+				# Make sure we have all the data
+				if word["case"] == 'success':
+					previous_end = word["end"]
+					output["results"]["words"].append(
+							{
+								"type": "pronunciation", 
+								"start": word["start"], 
+								"end": word["end"], 
+								"text": word["word"],
+								"score": {
+										"type": "confidence", 
+										"scoreValue": 1.0
+								} 
+							}
+						)
+				else:
+					word_index = gentle_output["words"].index(word)
+					next_success_index = find_next_success(gentle_output, word_index)
+					avg_time = 0
+					# If we found another success
+					if(next_success_index is not None and next_success_index > word_index):
+						# Average the times based on how many words in between
+						next_success_word = gentle_output["words"][next_success_index]
+						skips_ahead = (next_success_index - last_success_index)
+						avg_time = (next_success_word["start"] - previous_end)/skips_ahead
+						print("Averaging time from next success")
+					else:
+						duration = original_transcript["media"]["duration"]
+						skips_ahead = (len(gentle_output["words"]) - word_index) + 1
+						avg_time = (duration - previous_end)/skips_ahead
+						print("Averaging time from end of file")
+
+					if avg_time < 0:
+						avg_time = 0
+
+					# From the previous words end (last recorded), skip time ahead
+					time = previous_end + avg_time
+					previous_end = time
+					print(word["word"]  + " at index " + str(word_index))
+					print("Avg_time " + str(avg_time)  + " Skips ahead " + str(skips_ahead))
+
+					# Add the word to the results
+					output["results"]["words"].append(
 						{
 							"type": "pronunciation", 
-							"start": word["start"], 
-							"end": word["end"], 
+							"start": time, 
+							"end": time, 
 							"text": word["word"],
 							"score": {
 									"type": "confidence", 
@@ -98,43 +147,7 @@ def write_amp_json(temp_gentle_output, original_transcript, amp_transcript_outpu
 							} 
 						}
 					)
-			else:
-				word_index = gentle_output["words"].index(word)
-				next_success_index = find_next_success(gentle_output, word_index)
-				avg_time = 0
-				# If we found another success
-				if(next_success_index > word_index):
-					# Average the times based on how many words in between
-					next_success_word = gentle_output["words"][next_success_index]
-					skips_ahead = (next_success_index - last_success_index)
-					avg_time = (next_success_word["start"] - previous_end)/skips_ahead
-					print("Averaging time from next success")
-				else:
-					duration = original_transcript["results"]["duration"]
-					skips_ahead = (len(gentle_output["words"]) - word_index) + 1
-					avg_time = (duration - previous_end)/skips_ahead
-					print("Averaging time from end of file")
-				
-				# From the previous words end (last recorded), skip time ahead
-				time = previous_end + avg_time
-				previous_end = time
-				print(word["word"]  + " at index " + str(word_index))
-				print("Avg_time " + str(avg_time)  + " Skips ahead " + str(skips_ahead))
-
-				# Add the word to the results
-				output["results"]["words"].append(
-					{
-						"type": "pronunciation", 
-						"start": time, 
-						"end": time, 
-						"text": word["word"],
-						"score": {
-								"type": "confidence", 
-								"scoreValue": 1.0
-						} 
-					}
-				)
-			last_success_index = gentle_output["words"].index(word)
+				last_success_index = gentle_output["words"].index(word)
 								
 		mgm_utils.write_json_file(output, amp_transcript_output)
 		
