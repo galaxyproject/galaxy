@@ -368,6 +368,7 @@ def dbcleanup(session, cls):
 
 
 def dbcleanup_wrapper(session, obj):
+    persist(session, obj)
     with dbcleanup(session, type(obj)):
         yield obj
 
