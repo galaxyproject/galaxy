@@ -1,0 +1,15 @@
+CRAM	cram	cram files
+OXLI	oxli	oxli
+TRACK	trk	Track files for tracking things
+RIFF	wav	Why does our wav file use a different magic number?
+FCS3.1	fcs	FCS 3.1
+FCS3.0	fcs	FCS 3.0
+FCS2.0	fcs	FCS 2.0
+FCS1.0	fcs	FCS 1.0
+FCS	fcs	Unknown FCS version
+pstm	pretext Unknown.	Derived from sample.pretext in the test data.
+.sff	sff	Derived from the 1.sff file in the test data.
+BCF	bcf	BCF uncompressed. Derived from 1.bcf_uncompressed
+$HDT	hdt	Derived from 1.hdt
+mrtrix tracks	tck	Derived from fibers_sparse_top_6_lines.tck
+***tesr	tesr	tesr files

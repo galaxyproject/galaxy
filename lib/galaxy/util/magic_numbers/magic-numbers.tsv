@@ -1,0 +1,169 @@
+23 21		Script or data to be passed to the program following the shebang (#!).
+a1 b2 c3 d4	pcap	Libpcap File Format 
+d4 c3 b2 a1	pcap	Libpcap File Format 
+0a 0d 0d 0a	0	pcapng
+ed ab ee db	rpm	RedHat Package Manager (RPM) package 
+53 51 4c 69 74 65 20 66 6f 72 6d 61 74 20 33 00	0	sqlitedb sqlite db
+53 50 30 31	0	bin
+00	0	PIC PIF SEA YTR
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00	11	PDB
+BE BA FE CA	DBA	 Palm Desktop Calendar Archive
+00 01 42 44	0	DBA
+00 01 44 54	0	TDA
+54 44 46 24	0	TDF$
+54 44 45 46	0	TDEF
+00 01 00 00		Palm Desktop Data File ( Access format)
+00 00 01 00	0	ico
+66 74 79 70 33 67	4	3gp 3g2
+1F 9D	0	z tar.z
+1F A0	z tar.z	Compressed file (often tar zip)  
+42 41 43 4B 4D 49 4B 45 44 49 53 4B	0	bac
+42 5A 68	0	bz2
+47 49 46 38 37 61	0	gif
+47 49 46 38 39 61	0	gif
+49 49 2A 00	0	tif tiff
+4D 4D 00 2A	0	tif tiff
+49 49 2A 00 10 00 00 00 43 52	0	cr2
+80 2A 5F D7	0	cin
+52 4E 43 01	0	
+52 4E 43 02	0	
+53 44 50 58	0	dpx
+58 50 44 53	0	dpx
+76 2F 31 01	0	exr
+42 50 47 FB	0	bpg
+FF D8 FF DB	0	jpg jpeg
+FF D8 FF E0 00 10 4A 46 49 46 00 01	0	jpg jpeg
+FF D8 FF E1 ?? ?? 45 78 69 66 00 00	0	jpg jpeg
+46 4F 52 4D ?? ?? ?? ?? 49 4C 42 4D	0 any 	ilbm lbm ibm iff
+46 4F 52 4D ?? ?? ?? ?? 38 53 56 58	0 any 	8svx 8sv svx snd iff
+46 4F 52 4D ?? ?? ?? ?? 41 43 42 4D	0 any 	acbm iff
+46 4F 52 4D ?? ?? ?? ?? 41 4E 42 4D	0 any 	anbm iff
+46 4F 52 4D ?? ?? ?? ?? 41 4E 49 4D	0 any 	anim iff
+46 4F 52 4D ?? ?? ?? ?? 46 41 58 58	0 any 	faxx fax iff
+46 4F 52 4D ?? ?? ?? ?? 46 54 58 54	0 any 	ftxt iff
+46 4F 52 4D ?? ?? ?? ?? 53 4D 55 53	0 any 	smus smu mus iff
+46 4F 52 4D ?? ?? ?? ?? 43 4D 55 53	0 any 	cmus mus iff
+46 4F 52 4D ?? ?? ?? ?? 59 55 56 4E	0 any 	yuvn yuv iff
+46 4F 52 4D ?? ?? ?? ?? 46 41 4E 54	0 any 	iff
+46 4F 52 4D ?? ?? ?? ?? 41 49 46 46	0 any 	aiff aif aifc snd iff
+49 4E 44 58	0	idx
+4C 5A 49 50	0	lz
+4D 5A	0	exe dll
+50 4B 03 04	0	zip aar apk docx epub ipa jar kmz  maff  odp ods odt pk3 pk4 pptx usdz vsdx xlsx xpi
+50 4B 05 06	0	zip aar apk docx epub ipa jar kmz  maff  odp ods odt pk3 pk4 pptx usdz vsdx xlsx xpi
+50 4B 07 08	0	zip aar apk docx epub ipa jar kmz  maff  odp ods odt pk3 pk4 pptx usdz vsdx xlsx xpi
+52 61 72 21 1A 07 00	0	rar
+52 61 72 21 1A 07 01 00	0	rar
+5A 4D	0	exe
+7F 45 4C 46	0	
+89 50 4E 47 0D 0A 1A 0A	0	png
+C9	0	com
+CA FE BA BE	0	class
+EF BB BF	0	
+FE ED FA CE	0 0x1000 	
+FE ED FA CF	0 0x1000 	
+FE ED FE ED	0	
+CE FA ED FE	0	
+CF FA ED FE	0	
+FF FE	0	
+FF FE 00 00	0	
+25 21 50 53	0	ps
+49 54 53 46 03 00 00 00 60 00 00 00	0	chm
+30 26 B2 75 8E 66 CF 11 A6 D9 00 AA 00 62 CE 6C	0	asf wma wmv
+24 53 44 49 30 30 30 31	0	
+4F 67 67 53	0	ogg oga ogv
+38 42 50 53	0	psd
+52 49 46 46 ?? ?? ?? ?? 57 41 56 45	0	wav
+52 49 46 46 ?? ?? ?? ?? 41 56 49 20	0	avi
+FF FB	0	mp3
+FF F3	0	mp3
+FF F2	0	mp3
+49 44 33	0	mp3
+42 4D	0	bmp dib
+43 44 30 30 31	0x8001  	iso
+53 49 4D 50 4C 45 20 20	0	fits
+3D 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 54	0	fits
+66 4C 61 43	0	flac
+4D 54 68 64	0	mid midi
+D0 CF 11 E0 A1 B1 1A E1	0	doc xls ppt msg
+64 65 78 0A 30 33 35 00	0	dex
+4B 44 4D	0	vmdk
+43 72 32 34	0	crx
+41 47 44 33	0	fh8
+05 07 00 00 42 4F 42 4F 05 07 00 00 00 00 00 00 00 00 00 00 00 01	0	cwk
+06 07 E1 00 42 4F 42 4F 06 07 E1 00 00 00 00 00 00 00 00 00 00 01	0	cwk
+45 52 02 00 00 00	0	toast
+8B 45 52 02 00 00 00	0	toast
+78 01 73 0D 62 62 60	0	dmg
+78 61 72 21	0	xar
+50 4D 4F 43 43 4D 4F 43	0	dat
+4E 45 53 1A	0	nes
+75 73 74 61 72 00 30 30	0x101	tar
+75 73 74 61 72 20 20 00	0x101	tar
+4F 41 52 ??	0	oar
+74 6F 78 33	0	tox
+4D 4C 56 49	0	MLV
+44 43 4D 01 50 41 33 30	0	
+37 7A BC AF 27 1C	0	7z
+1F 8B	0	gz tar.gz
+FD 37 7A 58 5A 00	0	xz tar.xz
+04 22 4D 18	0	lz4
+4D 53 43 46	0	cab
+53 5A 44 44 88 F0 27 33	0	Various. (Replacing the last character of the original filename extension with an underscore, e.g. setup.exe becomes setup.ex_)
+46 4C 49 46	0	flif
+1A 45 DF A3	0	mkv mka mks mk3d webm
+4D 49 4C 20	0	stg
+41 54 26 54 46 4F 52 4D ?? ?? ?? ?? 44 4A 56	0	djvu djv
+30 82	0	der
+44 49 43 4D	0x80	dcm
+77 4F 46 46	0	woff
+77 4F 46 32	0	woff2
+00 61 73 6d	0	wasm
+cf 84 01	0	lep
+43 57 53	0	swf
+46 57 53	0	swf
+21 3C 61 72 63 68 3E	0	deb
+52 49 46 46 ?? ?? ?? ?? 57 45 42 50	0	webp
+27 05 19 56	0	
+7B 5C 72 74 66 31	0	rtf
+54 41 50 45	0	
+00 00 01 BA	0	m2p vob
+00 00 01 BA	0	mpg mpeg 
+00 00 01 B3	0	mpg mpeg
+78 01	0	zlib
+78 5E	0	zlib
+78 9C	0	zlib
+78 DA	0	zlib
+78 20	0	zlib
+78 7D	0	zlib
+78 BB	0	zlib
+78 F9	0	zlib
+62 76 78 32	0	lzfse
+4F 52 43	0	orc
+4F 62 6A 01	0	avro
+53 45 51 36	0	rc
+65 87 78 56	0	 p25  obt 
+55 55 aa aa	0	pcv
+78 56 34	0	 pbt  pdt  pea  peb  pet  pgt  pict  pjt  pkt  pmt 
+50 41 52 31	0	
+45 4D 58 32	0	ez2
+45 4D 55 33	0	ez3 iso 
+1B 4C 75 61	0	luac
+62 6F 6F 6B 00 00 00 00 6D 61 72 6B 00 00 00 00	alias	macOS file Alias ( Symbolic link )
+5B 5A 6F 6E 65 54 72 61 6E 73 66 65 72 5D	0	Identifier
+52 65 63 65 69 76 65 64	0	eml
+20 02 01 62 A0 1E AB 07 02 00 00 00	0	tde
+37 48 03 02 00 00 00 00 58 35 30 39 4B 45 59	0	kdb
+85 ?? ?? 03	0	pgp
+28 B5 2F FD	0	zst
+3A 29 0A	0	sml
+4A 6F 79 21		 Preferred Executable Format 
+31 0A 30 30	srt	 SubRip File
+00 00 00 0C 6A 50 20 20 0D 0A 87 0A	jp2	JPEG 2000
+54 00 00 00 56 45 4c 44	vel	Derived from test_charmm.vel
+54 00 00 00 43 4f 52 44	dcd	Derived from test_glucose_vacuum.dcd
+00 00 07 CB	xtc	https://manual.gromacs.org/documentation/5.1/user-guide/file-formats.html#xtc
+00 00 07 C9	trr	https://manual.gromacs.org/documentation/5.1/user-guide/file-formats.html#trr
+00 00 00 20 66 74 79 70	mp4	Video file (MP4)
+89 48 44 46	mz5 loom	HDF files
+ff ff fd	edr	https://manual.gromacs.org/documentation/5.1/user-guide/file-formats.html#edr
