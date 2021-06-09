@@ -6,7 +6,11 @@
   <requirements>
     <requirement type="package" version="8.31">coreutils</requirement>
   </requirements>
-  <command detect_errors="exit_code"><![CDATA[
+  <stdio>
+    <exit_code range="1:140"/>
+    <exit_code range="142:"/>
+  </stdio>
+  <command><![CDATA[
     set -eo pipefail;
     #if $header
       head -n 1 '$input' > '$out_file1' &&
