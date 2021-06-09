@@ -157,7 +157,8 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
 
         # If match specified a name use otherwise generate one from
         # designation.
-        primary_data.name = name
+        if name is not None:
+            primary_data.name = name
 
         # Copy metadata from one of the inputs if requested.
         if metadata_source_name:
