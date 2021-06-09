@@ -9,6 +9,16 @@
     <outputs>
         <data format="bam" name="output"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="cram" value="2.cram"/>
+            <output name="output" ftype="bam">
+                <assert_contents>
+                    <has_size value="57232"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
     <help>
     </help>
 </tool>
