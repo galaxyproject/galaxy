@@ -126,9 +126,9 @@ particular domain, as well as more organized release notes.
 - ``area/dependencies`` - Changes related to Python or JavaScript dependencies of Galaxy itself
 - ``area/documentation``
 - ``area/framework``
-- ``area/interactive-tools``
 - ``area/histories``
 - ``area/i18n`` - Internationalization and localization
+- ``area/interactive-tools``
 - ``area/jobs``
 - ``area/libraries`` - Change related to data libraries
 - ``area/objectstore``
