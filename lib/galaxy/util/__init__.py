@@ -101,7 +101,7 @@ defaultdict = collections.defaultdict
 
 
 def str_as_bool(string):
-    """ This is for training only."""
+    """ This is for training only. """
     if str(string) in ('true', 'yes', 'on', '1'):
         return True
     else:
