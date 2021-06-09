@@ -250,8 +250,8 @@ class JobContext(ModelPersistenceContext, BaseJobContext):
     def create_hdca(self, name, structure):
         history = self.job.history
         trans = self.work_context
-        collections_service = self.app.dataset_collection_manager
-        hdca = collections_service.precreate_dataset_collection_instance(
+        collection_manager = self.app.dataset_collection_manager
+        hdca = collection_manager.precreate_dataset_collection_instance(
             trans, history, name, structure=structure
         )
         return hdca
