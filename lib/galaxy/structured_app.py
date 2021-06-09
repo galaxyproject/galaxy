@@ -52,15 +52,8 @@ class MinimalApp(BasicApp):
 
 
 class MinimalManagerApp(MinimalApp):
-    is_webapp: bool  # is_webapp will be set to true when building WSGI app
-    new_installation: bool
-    tag_handler: GalaxyTagHandler
     file_sources: ConfiguredFileSources
     genome_builds: GenomeBuilds
-    model: GalaxyModelMapping
-    install_model: ModelMapping
-    security_agent: GalaxyRBACAgent
-    host_security_agent: HostAgent
     dataset_collections_service: Any  # 'galaxy.managers.collections.DatasetCollectionManager'
     history_manager: Any  # 'galaxy.managers.histories.HistoryManager'
     hda_manager: Any  # 'galaxy.managers.hdas.HDAManager'
