@@ -16,38 +16,47 @@
         <environment_variable name="API_KEY" inject="api_key" />
     </environment_variables>
     <command detect_errors="aggressive"><![CDATA[
-        #import re
-        export GALAXY_WORKING_DIR=`pwd` &&
-        mkdir -p ./jupyter/outputs/ &&
-        mkdir -p ./jupyter/data &&
+#import re
+#import random
+#import string
+export GALAXY_WORKING_DIR=`pwd` &&
+mkdir -p ./jupyter/outputs/ &&
+mkdir -p ./jupyter/data &&
 
-        #set $cleaned_name = re.sub('[^\w\-\.]', '_', str($input.element_identifier))
-        ln -sf '$input' './jupyter/data/${cleaned_name}' &&
+#set $cleaned_names = []
+#for $file in $input
+    #set $cleaned_name = re.sub('[^\w\-\.]', '_', str($file.element_identifier))
+    ## prevent overwriting data with a randomized suffix
+    #if $cleaned_name in $cleaned_names:
+        #set $cleaned_name = $cleaned_name + '_' + ''.join(random.choice(string.ascii_lowercase) for _ in range(3))
+    #end if
+    #set $cleaned_names += [$cleaned_name]
+    ln -sf '$file' './jupyter/data/${cleaned_name}' &&
+#end for
 
-        ## change into the directory where the notebooks are located
-        cd ./jupyter/ &&
-        export HOME=/home/jovyan/ &&
-        export PATH=/home/jovyan/.local/bin:\$PATH &&
+## change into the directory where the notebooks are located
+cd ./jupyter/ &&
+export HOME=/home/jovyan/ &&
+export PATH=/home/jovyan/.local/bin:\$PATH &&
 
-        #if $mode.mode_select == 'scratch':
-            ## copy default notebook
-            cp '$__tool_directory__/default_notebook.ipynb' ./ipython_galaxy_notebook.ipynb &&
-            jupyter trust ./ipython_galaxy_notebook.ipynb &&
-            jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True &&
-            cp ./ipython_galaxy_notebook.ipynb '$jupyter_notebook'
-
-        #else:
-            #set $cleaned_name = re.sub('[^\w\-\.]', '_', str($input.element_identifier))
-            cp '$mode.ipynb' ./${cleaned_name}.ipynb &&
-            jupyter trust ./${cleaned_name}.ipynb &&
-
-            #if $mode.run_it:
-                jupyter nbconvert --to notebook --execute --output ./ipython_galaxy_notebook.ipynb --allow-errors  ./*.ipynb &&
-            #else:
-                jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True &&
-            #end if
-            cp ./ipython_galaxy_notebook.ipynb '$jupyter_notebook'
-        #end if
+#if $mode.mode_select == 'scratch':
+    ## copy default notebook
+    cp '$__tool_directory__/default_notebook.ipynb' ./ipython_galaxy_notebook.ipynb &&
+    jupyter trust ./ipython_galaxy_notebook.ipynb &&
+    jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True &&
+    cp ./ipython_galaxy_notebook.ipynb '$jupyter_notebook'
+#else:
+    #set $noteboook_name = re.sub('[^\w\-\.]', '_', str($mode.ipynb.element_identifier))
+    cp '$mode.ipynb' ./${noteboook_name}.ipynb &&
+    jupyter trust ./${noteboook_name}.ipynb &&
+    #if $mode.run_it:
+        jupyter nbconvert --to notebook --execute --output ./ipython_galaxy_notebook.ipynb --allow-errors  ./*.ipynb &&
+        #set $noteboook_name = 'ipython_galaxy_notebook'
+    #else:
+        jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True &&
+    #end if
+    cp ./${noteboook_name}.ipynb '$jupyter_notebook'
+#end if
     ]]>
     </command>
     <inputs>
@@ -64,7 +73,7 @@
                     help="This option is useful in workflows when you just want to execute a notebook and not dive into the webfrontend."/>
             </when>
         </conditional>
-        <param name="input" type="data" optional="true" label="Include data into the environment"/>
+        <param name="input" multiple="true" type="data" optional="true" label="Include data into the environment"/>
 
     </inputs>
     <outputs>
