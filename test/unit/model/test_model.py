@@ -12,6 +12,22 @@ from sqlalchemy import (
 import galaxy.model.mapping as mapping
 
 
+def testAPIKeys(model, session, user):
+    cls = model.APIKeys
+    assert cls.__tablename__ == 'api_keys'
+    with dbcleanup(session, cls):
+        user_id, key = user.id, 'a'
+        obj = cls(user_id, key)
+        obj_id = persist(session, obj)
+
+        stmt = select(cls).filter(cls.id == obj_id)
+        stored_obj = session.execute(stmt).scalar_one()
+        assert stored_obj.id == obj_id
+        assert stored_obj.user_id == user_id
+        assert stored_obj.key == key
+        assert stored_obj.user.id == user.id
+
+
 def test_CloudAuthz(model, session, user, user_authnz_token):
     cls = model.CloudAuthz
     assert cls.__tablename__ == 'cloudauthz'
