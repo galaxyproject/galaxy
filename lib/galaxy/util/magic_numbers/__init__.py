@@ -1,5 +1,4 @@
 import os
-import io
 
 # The number of bytes to be read from a file/stream when searching for a
 # magic number.  No magic number is even close to this long, but given most
@@ -13,7 +12,7 @@ class MagicNumber:
     '''
     def __init__(self, number, extension, description):
         self.number = number
-        self.bytes = [ int(hex, 16) for hex in number.split() if hex != '??']
+        self.bytes = [int(hex, 16) for hex in number.split() if hex != '??']
         self.extension = extension.strip()
         self.description = description.strip()
 
@@ -22,8 +21,8 @@ class TrieNode:
     '''
     A node in the search tree.
 
-    If the formats list is not empty then the sequence of bytes that led to this
-    node is a known magic number.
+    If the formats list is not empty then the sequence of bytes that led to
+    this node is a known magic number.
     '''
     def __init__(self):
         self.children = [None] * 256
@@ -41,17 +40,17 @@ class MagicNumberSniffer:
         with open(os.path.join(this_dir, "magic-numbers.tsv")) as fp:
             for line in fp:
                 parts = line.split('\t')
-                number = MagicNumber(*parts)
-                self.add(number)
+                if len(parts) == 3:
+                    number = MagicNumber(parts[0], parts[1], parts[2])
+                    self._add(number)
         with open(os.path.join(this_dir, "magic-numbers.txt")) as fp:
             for line in fp:
                 parts = line.split('\t')
                 bytes = ' '.join(hex(ord(c)).replace('0x', '') for c in parts[0])
                 number = MagicNumber(bytes, parts[1], parts[2])
-                self.add(number)
+                self._add(number)
 
-
-    def add(self, number: MagicNumber):
+    def _add(self, number: MagicNumber):
         index = 0
         current = self.root
         while index < len(number.bytes):
@@ -65,15 +64,12 @@ class MagicNumberSniffer:
             index += 1
         current.formats.append(number)
 
-
-    def sniff(self, path, isFile=True):
-        if isFile:
+    def sniff(self, path, is_file=True):
+        if is_file:
             with open(path, 'rb') as f:
                 buff = f.read(BLOCK_SIZE)
         else:
             buff = path
-
-        p = 0  # pointer into the above buffer
 
         # Walk the search tree using the bytes in `buff` as the indices.
         current = self.root
@@ -88,4 +84,4 @@ class MagicNumberSniffer:
         return current.formats
 
 
-__all__ = [ 'MagicNumberSniffer', 'MagicNumber' ]
+__all__ = ['MagicNumberSniffer', 'MagicNumber']
