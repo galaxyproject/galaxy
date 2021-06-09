@@ -6858,9 +6858,16 @@ class UserAction(Base, RepresentById):
         self.context = context
 
 
-class APIKeys(RepresentById):
-    def __init__(self, id=None, user_id=None, key=None):
-        self.id = id
+class APIKeys(Base, RepresentById):
+    __tablename__ = 'api_keys'
+
+    id = Column('id', Integer, primary_key=True)
+    create_time = Column('create_time', DateTime, default=now)
+    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
+    key = Column('key', TrimmedString(32), index=True, unique=True)
+    user = relationship('User', back_populates='api_keys')
+
+    def __init__(self, user_id=None, key=None):
         self.user_id = user_id
         self.key = key
 

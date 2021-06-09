@@ -1431,13 +1431,6 @@ model.UserPreference.table = Table(
     Column("name", Unicode(255), index=True),
     Column("value", Text))
 
-model.APIKeys.table = Table(
-    "api_keys", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("key", TrimmedString(32), index=True, unique=True))
-
 CleanupEvent_table = Table("cleanup_event", metadata,
                            Column("id", Integer, primary_key=True),
                            Column("create_time", DateTime, default=now),
@@ -1505,8 +1498,6 @@ def simple_mapping(model, **kwds):
 
 
 mapper_registry.map_imperatively(model.UserPreference, model.UserPreference.table, properties={})
-
-mapper_registry.map_imperatively(model.APIKeys, model.APIKeys.table, properties={})
 
 mapper_registry.map_imperatively(model.FormValues, model.FormValues.table, properties=dict(
     form_definition=relation(model.FormDefinition,
@@ -1731,8 +1722,8 @@ mapper_registry.map_imperatively(model.User, model.User.table, properties=dict(
     values=relation(model.FormValues,
         primaryjoin=(model.User.table.c.form_values_id == model.FormValues.table.c.id)),
     api_keys=relation(model.APIKeys,
-        backref="user",
-        order_by=desc(model.APIKeys.table.c.create_time)),
+        back_populates="user",
+        order_by=desc(model.APIKeys.create_time)),
 ))
 
 mapper_registry.map_imperatively(model.PasswordResetToken, model.PasswordResetToken.table,
