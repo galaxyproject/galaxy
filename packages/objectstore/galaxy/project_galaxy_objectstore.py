@@ -1,4 +1,4 @@
-__version__ = "21.5.0rc1"
+__version__ = "21.5.0"
 
 PROJECT_NAME = "galaxy-objectstore"
 PROJECT_OWNER = PROJECT_USERAME = "galaxyproject"
