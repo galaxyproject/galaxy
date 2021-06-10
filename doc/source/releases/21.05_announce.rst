@@ -48,6 +48,51 @@ Upcoming Deprecation Notices
   We will update documentation and playbooks during the upcoming development cycle to
   enable a smooth transition.
 
+Configuration Changes
+=====================
+
+Added
+-----
+
+The following configuration options are new
+
+config/user_preferences_extra_conf.yml.sample
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  preferences.dropbox
+-  preferences.owncloud
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  mapping.galaxy.mapping.cache_dir
+-  mapping.galaxy.mapping.enable_celery_tasks
+-  mapping.galaxy.mapping.flush_per_n_datasets
+-  mapping.galaxy.mapping.matomo_server
+-  mapping.galaxy.mapping.matomo_site_id
+-  mapping.galaxy.mapping.plausible_domain
+-  mapping.galaxy.mapping.plausible_server
+-  mapping.galaxy.mapping.statsd_mock_calls
+
+Removed
+-------
+
+The following configuration options have been completely removed
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  mapping.galaxy.mapping.transfer_manager_port
+
+
+New Configuration Files
+-----------------------
+
+The following files are new, or recently converted to yaml
+
+-  ``config/file_sources_conf.yml.sample``
+
+
 Get Galaxy
 ==========
 
