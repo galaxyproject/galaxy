@@ -120,7 +120,7 @@ def load_at_time(path, revision=None):
 
 
 def main(old_revision, new_revision=None):
-    files_to_diff = glob.glob("config/*.yml.sample")
+    files_to_diff = glob.glob("config/*.yml.sample") + glob.glob('lib/galaxy/webapps/galaxy/*schema.yml')
     added = {}
     removed = {}
     changed = {}
@@ -138,13 +138,13 @@ def main(old_revision, new_revision=None):
 
             (a, r, c) = diff_files(old_contents, new_contents)
             if a:
-                added[file] = a
+                added[file] = sorted(a)
 
             if r:
-                removed[file] = r
+                removed[file] = sorted(r)
 
             if c:
-                changed[file] = c
+                changed[file] = sorted(c)
 
         except subprocess.CalledProcessError:
             new_files.append(file)
