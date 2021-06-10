@@ -1,5 +1,5 @@
 <template>
-    <b-form-checkbox v-model="currentValue" size="lg" switch @onChange="onChange" />
+    <b-form-checkbox v-model="currentValue" size="lg" switch @change="onChange" />
 </template>
 
 <script>
