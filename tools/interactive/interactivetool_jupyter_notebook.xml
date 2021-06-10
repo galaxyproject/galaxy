@@ -17,21 +17,13 @@
     </environment_variables>
     <command detect_errors="aggressive"><![CDATA[
         #import re
-        #import random
-        #import string
         export GALAXY_WORKING_DIR=`pwd` &&
         mkdir -p ./jupyter/outputs/ &&
         mkdir -p ./jupyter/data &&
 
-        #set $cleaned_names = []
-        #for $file in $input
-            #set $cleaned_name = re.sub('[^\w\-\.]', '_', str($file.element_identifier))
-            ## prevent overwriting data with a randomized suffix
-            #if $cleaned_name in $cleaned_names:
-                #set $cleaned_name = $cleaned_name + '_' + ''.join(random.choice(string.ascii_lowercase) for _ in range(3))
-            #end if
-            #set $cleaned_names += [$cleaned_name]
-            ln -sf '$file' './jupyter/data/${cleaned_name}' &&
+        #for $count, $file in enumerate($input):
+            #set $cleaned_name = str($count + 1) + '_' + re.sub('[^\w\-\.\s]', '_', str($file.element_identifier))
+            ln -sf '$file' './jupyter/data/${cleaned_name}.${file.ext}' &&
         #end for
 
         ## change into the directory where the notebooks are located
@@ -46,7 +38,7 @@
             jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True &&
             cp ./ipython_galaxy_notebook.ipynb '$jupyter_notebook'
         #else:
-            #set $noteboook_name = re.sub('[^\w\-\.]', '_', str($mode.ipynb.element_identifier))
+            #set $noteboook_name = re.sub('[^\w\-\.\s]', '_', str($mode.ipynb.element_identifier))
             cp '$mode.ipynb' ./${noteboook_name}.ipynb &&
             jupyter trust ./${noteboook_name}.ipynb &&
             #if $mode.run_it:
