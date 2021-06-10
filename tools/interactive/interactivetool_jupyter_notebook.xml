@@ -39,15 +39,15 @@
             cp ./ipython_galaxy_notebook.ipynb '$jupyter_notebook'
         #else:
             #set $noteboook_name = re.sub('[^\w\-\.\s]', '_', str($mode.ipynb.element_identifier))
-            cp '$mode.ipynb' ./${noteboook_name}.ipynb &&
-            jupyter trust ./${noteboook_name}.ipynb &&
+            cp '$mode.ipynb' './${noteboook_name}.ipynb' &&
+            jupyter trust './${noteboook_name}.ipynb' &&
             #if $mode.run_it:
                 jupyter nbconvert --to notebook --execute --output ./ipython_galaxy_notebook.ipynb --allow-errors  ./*.ipynb &&
                 #set $noteboook_name = 'ipython_galaxy_notebook'
             #else:
                 jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True &&
             #end if
-            cp ./${noteboook_name}.ipynb '$jupyter_notebook'
+            cp './${noteboook_name}.ipynb' '$jupyter_notebook'
         #end if
     ]]>
     </command>
