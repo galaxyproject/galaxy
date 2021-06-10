@@ -140,5 +140,5 @@ class DatasetCollectionsController(
 
     @property
     def __service(self) -> DatasetCollectionManager:
-        service = self.app.dataset_collections_service
+        service = self.app.dataset_collection_manager
         return service

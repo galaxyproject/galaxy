@@ -2110,7 +2110,7 @@ class DataToolParameter(BaseDataToolParameter):
 
     def _history_query(self, trans):
         assert self.multiple
-        dataset_collection_type_descriptions = trans.app.dataset_collections_service.collection_type_descriptions
+        dataset_collection_type_descriptions = trans.app.dataset_collection_manager.collection_type_descriptions
         # If multiple data parameter, treat like a list parameter.
         return history_query.HistoryQuery.from_collection_type("list", dataset_collection_type_descriptions)
 
@@ -2136,11 +2136,11 @@ class DataCollectionToolParameter(BaseDataToolParameter):
         return self._collection_types
 
     def _history_query(self, trans):
-        dataset_collection_type_descriptions = trans.app.dataset_collections_service.collection_type_descriptions
+        dataset_collection_type_descriptions = trans.app.dataset_collection_manager.collection_type_descriptions
         return history_query.HistoryQuery.from_parameter(self, dataset_collection_type_descriptions)
 
     def match_collections(self, trans, history, dataset_collection_matcher):
-        dataset_collections = trans.app.dataset_collections_service.history_dataset_collections(history, self._history_query(trans))
+        dataset_collections = trans.app.dataset_collection_manager.history_dataset_collections(history, self._history_query(trans))
 
         for dataset_collection_instance in dataset_collections:
             match = dataset_collection_matcher.hdca_match(dataset_collection_instance)

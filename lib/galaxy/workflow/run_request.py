@@ -322,7 +322,7 @@ def build_workflow_run_configs(trans, workflow, payload):
                     assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(trans.get_current_user_roles(), dataset)
                     content = history.add_dataset(dataset)
                 elif input_source == 'hdca':
-                    content = app.dataset_collections_service.get_dataset_collection_instance(trans, 'history', input_id)
+                    content = app.dataset_collection_manager.get_dataset_collection_instance(trans, 'history', input_id)
                 else:
                     raise exceptions.RequestParameterInvalidException(f"Unknown workflow input source '{input_source}' specified.")
                 if add_to_history and content.history != history:

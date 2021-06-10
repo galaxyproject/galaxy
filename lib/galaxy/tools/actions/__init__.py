@@ -192,7 +192,7 @@ class DefaultToolAction:
                             processed_dataset_dict[v] = processed_dataset
                     input_datasets[prefix + input.name + str(i + 1)] = processed_dataset or v
                 if conversion_required:
-                    collection_type_description = trans.app.dataset_collections_service.collection_type_descriptions.for_collection_type(collection.collection_type)
+                    collection_type_description = trans.app.dataset_collection_manager.collection_type_descriptions.for_collection_type(collection.collection_type)
                     collection_builder = CollectionBuilder(collection_type_description)
                     collection_builder.replace_elements_in_collection(
                         template_collection=collection,
@@ -472,7 +472,7 @@ class DefaultToolAction:
                     if completed_job and dataset_collection_elements and name in dataset_collection_elements:
                         # Output collection is mapped over and has already been copied from original job
                         continue
-                    collections_manager = app.dataset_collections_service
+                    collections_manager = app.dataset_collection_manager
                     element_identifiers = []
                     known_outputs = output.known_outputs(input_collections, collections_manager.type_registry)
                     # Just to echo TODO elsewhere - this should be restructured to allow
@@ -830,7 +830,7 @@ class OutputCollections:
 
     def create_collection(self, output, name, collection_type=None, completed_job=None, **element_kwds):
         input_collections = self.input_collections
-        collections_manager = self.trans.app.dataset_collections_service
+        collections_manager = self.trans.app.dataset_collection_manager
         collection_type = collection_type or output.structure.collection_type
         if collection_type is None:
             collection_type_source = output.structure.collection_type_source

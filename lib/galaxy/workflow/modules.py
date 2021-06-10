@@ -337,7 +337,7 @@ class WorkflowModule:
         )
         # Have implicit collections...
         if collections_to_match.has_collections():
-            collection_info = self.trans.app.dataset_collections_service.match_collections(
+            collection_info = self.trans.app.dataset_collection_manager.match_collections(
                 collections_to_match
             )
         else:
@@ -347,7 +347,7 @@ class WorkflowModule:
 
     def _find_collections_to_match(self, progress, step, all_inputs):
         collections_to_match = matching.CollectionsToMatch()
-        dataset_collection_type_descriptions = self.trans.app.dataset_collections_service.collection_type_descriptions
+        dataset_collection_type_descriptions = self.trans.app.dataset_collection_manager.collection_type_descriptions
 
         for input_dict in all_inputs:
             name = input_dict["name"]

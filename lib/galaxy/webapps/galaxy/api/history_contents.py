@@ -272,7 +272,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         return self.__collection_dict(trans, dataset_collection_instance, view=view, fuzzy_count=fuzzy_count)
 
     def __get_accessible_collection(self, trans, id, history_id):
-        return trans.app.dataset_collections_service.get_dataset_collection_instance(
+        return trans.app.dataset_collection_manager.get_dataset_collection_instance(
             trans=trans,
             instance_type="history",
             id=id
@@ -520,7 +520,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         """
         source = kwd.get("source", payload.get("source", "new_collection"))
 
-        service = trans.app.dataset_collections_service
+        service = trans.app.dataset_collection_manager
         if source == "new_collection":
             create_params = api_payload_to_create_params(payload)
             dataset_collection_instance = service.create(
@@ -751,7 +751,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
             self.hda_manager.stop_creating_job(hda)
 
     def __update_dataset_collection(self, trans, history_id, id, payload, **kwd):
-        return trans.app.dataset_collections_service.update(trans, "history", id, payload)
+        return trans.app.dataset_collection_manager.update(trans, "history", id, payload)
 
     # TODO: allow anonymous del/purge and test security on this
     @expose_api
@@ -797,7 +797,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
                 purge = util.string_as_bool(kwd['payload'].get('purge', purge))
                 recursive = util.string_as_bool(kwd['payload'].get('recursive', recursive))
 
-            trans.app.dataset_collections_service.delete(trans, "history", id, recursive=recursive, purge=purge)
+            trans.app.dataset_collection_manager.delete(trans, "history", id, recursive=recursive, purge=purge)
             return {'id': id, "deleted": True}
         else:
             return self.__handle_unknown_contents_type(trans, contents_type)
