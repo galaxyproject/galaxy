@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import os
 import argparse
 import glob
 import subprocess
@@ -143,6 +144,12 @@ def main(old_revision, new_revision=None):
     new_files = []
 
     for file in files_to_diff:
+        filename = file
+        if 'config_schema.yml' in file:
+            filename = 'config/galaxy.yml.sample:galaxy'
+        elif 'uwsgi_schema.yml' in file:
+            filename = 'config/galaxy.yml.sample:uwsgi'
+
         real_path = Path(file).resolve().relative_to(Path.cwd())
         try:
             old_contents = yaml.load(
@@ -154,13 +161,13 @@ def main(old_revision, new_revision=None):
 
             (a, r, c) = diff_files(old_contents, new_contents)
             if a:
-                added[file] = sorted(a)
+                added[filename] = sorted(a)
 
             if r:
-                removed[file] = sorted(r)
+                removed[filename] = sorted(r)
 
             if c:
-                changed[file] = sorted(c)
+                changed[filename] = sorted(c)
 
         except subprocess.CalledProcessError:
             new_files.append(file)
