@@ -104,6 +104,8 @@ Enhancements
   `Pull Request 11874`_
 .. enhancement_tag_workflows
 
+* Add failed-to-submit error handling for simplified workflow run form
+  `Pull Request 12124`_
 * Selenium test case for invocation grid + display.
   `Pull Request 11160`_
 * be more verbose on output filter errors
@@ -556,6 +558,10 @@ Fixes
   `Pull Request 11365`_
 .. bug_tag_workflows
 
+* Fix copying text in workflow editor
+  `Pull Request 12118`_
+* Make failure to save workflow dismissible
+  `Pull Request 12122`_
 * Allow trs_version to refer to name or id field
   `Pull Request 12021`_
 * Workflow editor null/zero fixes
