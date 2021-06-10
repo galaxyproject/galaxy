@@ -617,7 +617,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 continue
             if step.upgrade_messages:
                 has_upgrade_messages = True
-            if step.type == 'tool' or step.type is None:
+            if step.type in ('tool', 'subworkflow', None):
                 if step.module.version_changes:
                     step_version_changes.extend(step.module.version_changes)
                 step_errors = step.module.get_errors()
@@ -805,7 +805,7 @@ class WorkflowContentsManager(UsesAnnotations):
             # Fix any missing parameters
             upgrade_message_dict = module.check_and_update_state() or {}
             if hasattr(module, "version_changes") and module.version_changes:
-                upgrade_message_dict[module.tool.name] = "\n".join(module.version_changes)
+                upgrade_message_dict[module.get_name()] = "\n".join(module.version_changes)
             # Get user annotation.
             config_form = module.get_config_form(step=step)
             annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, step) or ''

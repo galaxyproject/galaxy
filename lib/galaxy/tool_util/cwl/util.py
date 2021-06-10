@@ -444,7 +444,6 @@ def output_to_cwl_json(
         return galaxy_output.history_content_id
     elif output_metadata["history_content_type"] == "dataset":
         ext = output_metadata["file_ext"]
-        assert output_metadata["state"] == "ok"
         if ext == "expression.json":
             dataset_dict = get_dataset(output_metadata)
             return dataset_dict_to_json_content(dataset_dict)
