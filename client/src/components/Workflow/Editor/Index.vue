@@ -357,7 +357,11 @@ export default {
                         this.refactorActions = actions;
                     })
                     .catch((response) => {
-                        this.onWorkflowError("Saving workflow failed, cannot apply requested changes...");
+                        this.onWorkflowError("Saving workflow failed, cannot apply requested changes...", response, {
+                            Ok: () => {
+                                this.hideModal();
+                            },
+                        });
                     });
             } else {
                 this.refactorActions = actions;
