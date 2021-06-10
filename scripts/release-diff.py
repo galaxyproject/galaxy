@@ -44,8 +44,24 @@ def diff_files(old, new):
     old_k = set(old_kv.keys())
     new_k = set(new_kv.keys())
 
-    added = new_k - old_k
-    removed = old_k - new_k
+    added = []
+    for item in (new_k - old_k):
+        parent = '.'.join(item.split('.')[0:-1])
+        if parent in new_k and parent not in old_k:
+            added.append(item)
+        else:
+            added.append(parent)
+    added = set(added)
+
+    removed = []
+    for item in (old_k - new_k):
+        parent = '.'.join(item.split('.')[0:-1])
+        if parent in old_k and parent not in new_k:
+            removed.append(item)
+        else:
+            removed.append(parent)
+    removed = set(removed)
+
     shared = old_k & new_k
     changed = [(k, old_kv[k], new_kv[k]) for k in shared if old_kv[k] != new_kv[k]]
 
