@@ -12,9 +12,9 @@ Highlights
   Galaxy release 21.09 will ship with a new web framework (`fastAPI <https://fastapi.tiangolo.com/>`__),
   `Celery <https://docs.celeryproject.org/en/stable/index.html>`__ task queue and process management using `circus <https://circus.readthedocs.io/en/latest/>`__. You can preview new stack now by running ``APP_WEBSERVER=dev ./run.sh``.
 
-**Celery for long running tasks**
+**Celery for background tasks**
   Galaxy can now run certain tasks in the background. The Celery workers are
-  currently not required, but if activated can perform certain long running tasks,
+  currently not required, but if activated can perform certain long-running tasks,
   such as creating history export archives. Celery tasks will bridge the gap between
   rapid requests that can be handled during a web request and jobs that require extensive
   and relatively slow setup. (`Pull Request 11789`_, `Pull Request 11772`_, `Pull Request 11720`_)

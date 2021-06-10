@@ -8,7 +8,7 @@ Highlights
 ===========================================================
 
 **¡Galaxy, ahora en español!**
-Thanks to Wendi Bacon (`Pull Request 11891`_), the spanish language translation of Galaxy has been finalised and merged, so if you prefer to use Galaxy in Spanish, now you can! This update will be part of an ongoing project from Spanish speakers within the Galaxy community to keep the Galaxy interface localisation up to date, and to produce some Spanish language training materials in the GTN.
+Thanks to Wendi Bacon (`Pull Request 11891`_), the Spanish language translation of Galaxy has been finalised and merged, so if you prefer to use Galaxy in Spanish, now you can! This update will be part of an ongoing project from Spanish speakers within the Galaxy community to keep the Galaxy interface localisation up to date, and to produce some Spanish language training materials in the GTN.
 
 .. figure:: images/21.05-espanol.png
    :alt: The shared data menu is shown, everything is in spanish. It reads "Datos compartidos" and lists items such as Bibliotecas de datos.
