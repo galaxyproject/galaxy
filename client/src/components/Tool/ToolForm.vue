@@ -35,8 +35,10 @@
                         :id="formConfig.id"
                         :inputs="inputs"
                         :validation-errors="validationErrors"
+                        :validation-scroll-to="validationScrollTo"
                         :form-config="formConfig"
                         @onChange="onChange"
+                        @onValidation="onValidation"
                     />
                     <FormElement
                         v-if="emailAllowed"
@@ -136,7 +138,9 @@ export default {
             entryPoints: [],
             jobDef: {},
             jobResponse: {},
-            validationErrors: {},
+            validationInternal: null,
+            validationScrollTo: null,
+            validationErrors: null,
             currentVersion: this.version,
         };
     },
@@ -193,6 +197,9 @@ export default {
         },
     },
     methods: {
+        onValidation(validationInternal) {
+            this.validationInternal = validationInternal;
+        },
         onChange(newData) {
             this.formData = newData;
             this.onUpdate();
@@ -230,6 +237,10 @@ export default {
             });
         },
         onExecute() {
+            if (this.validationInternal) {
+                this.validationScrollTo = this.validationInternal.slice();
+                return;
+            }
             this.showExecuting = true;
             const options = this.formData;
             const Galaxy = getGalaxyInstance();

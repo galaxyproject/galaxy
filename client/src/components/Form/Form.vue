@@ -27,6 +27,10 @@ export default {
             type: Boolean,
             default: false,
         },
+        validationScrollTo: {
+            type: Array,
+            default: null,
+        },
         validationErrors: {
             type: Object,
             default: null,
@@ -45,22 +49,17 @@ export default {
         id() {
             this.onRender();
         },
-        validationErrors() {
-            if (this.form) {
-                this.form.trigger("reset");
-                const matchedErrors = this.form.data.matchResponse(this.validationErrors);
-                for (const input_id in matchedErrors) {
-                    this.form.highlight(input_id, matchedErrors[input_id]);
-                    break;
-                }
-            }
+        validationScrollTo() {
+            this.onHighlight(this.validationScrollTo);
         },
         validation() {
-            if (this.form) {
-                this.form.trigger("reset");
-                if (this.validation) {
-                    this.form.highlight(this.validation[0], this.validation[1], true);
-                }
+            this.onHighlight(this.validation, true);
+            this.$emit("onValidation", this.validation);
+        },
+        validationErrors() {
+            const matchedErrors = Object.entries(this.form.data.matchResponse(this.validationErrors));
+            if (matchedErrors.length > 0) {
+                this.onHighlight(matchedErrors[0]);
             }
         },
         formConfig() {
@@ -145,6 +144,12 @@ export default {
                 });
                 this.onChange();
             });
+        },
+        onHighlight(validation, silent = false) {
+            this.form.trigger("reset");
+            if (validation && validation.length == 2) {
+                this.form.highlight(validation[0], validation[1], silent);
+            }
         },
     },
 };
