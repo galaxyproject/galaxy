@@ -13,9 +13,6 @@ Enhancements
 
 * Beta History scrolling behavior and polling efficiency tuning
   `Pull Request 11693`_
-
-.. feature
-
 * Add FastAPI routes for tours
   `Pull Request 11089`_
 * Add FastAPI routes for datatypes
@@ -50,12 +47,8 @@ Enhancements
   `Pull Request 11789`_
 * Allow importing histories through pages / reports
   `Pull Request 11863`_
-.. enhancement_tag_viz
-
 * Migrate api/genomes to fastapi
   `Pull Request 11241`_
-.. enhancement_tag_datatypes
-
 * Add FlowCytometry and MetaCyto datatypes
   (thanks to `@pcm32 <https://github.com/pcm32>`__).
   `Pull Request 9807`_
@@ -94,16 +87,12 @@ Enhancements
 * Add toml datatype
   (thanks to `@jj-umn <https://github.com/jj-umn>`__).
   `Pull Request 11909`_
-.. enhancement_tag_tools
-
 * grep, tail, head: add option to keep header
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 11859`_
 * add a bit of docs to the add tags tool
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 11874`_
-.. enhancement_tag_workflows
-
 * Add failed-to-submit error handling for simplified workflow run form
   `Pull Request 12124`_
 * Selenium test case for invocation grid + display.
@@ -122,8 +111,6 @@ Enhancements
   `Pull Request 11671`_
 * Switch default handler assignment to skip locked or transaction isolation if possible
   `Pull Request 11792`_
-.. enhancement_tag_ui
-
 * Client testing/linting updates and followup
   `Pull Request 11121`_
 * replaced global vue with test vue in unit tests
@@ -140,8 +127,6 @@ Enhancements
   `Pull Request 11883`_
 * Implement switch to history modal for beta history panel
   `Pull Request 11895`_
-.. enhancement_tag_jobs
-
 * Store job_id on Dataset table.
   `Pull Request 10222`_
 * Handle unschedulable jobs in k8s runner
@@ -179,8 +164,6 @@ Enhancements
 * improve three debug messages
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 11908`_
-.. enhancement_tag_admin
-
 * Add documentation on how to setup Pulsar's two-container job runner
   `Pull Request 11557`_
 * sortable columns in Admin->Users
@@ -188,8 +171,6 @@ Enhancements
   `Pull Request 11665`_
 * Create install database with create_db.sh
   `Pull Request 11753`_
-.. enhancement
-
 * Include more info on test input staging exception
   `Pull Request 11953`_
 * Add indexes on update_time columns used in ORDER BY clauses
@@ -443,8 +424,6 @@ Enhancements
 * expose copied_from_ldda_id on dataset api endpoint
   (thanks to `@scholtalbers <https://github.com/scholtalbers>`__).
   `Pull Request 11922`_
-.. small_enhancement
-
 * Fix remaining issues reported by bugbear; add it to flake8 reqs
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 11153`_
@@ -531,15 +510,8 @@ Enhancements
 Fixes
 -------------------------------
 
-.. major_bug
-
-
-.. bug_tag_viz
-
 * Shared visualization display fix
   `Pull Request 11906`_
-.. bug_tag_datatypes
-
 * remove duplicated qcml from datatypes_conf sample
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 11378`_
@@ -547,8 +519,6 @@ Fixes
   `Pull Request 11901`_
 * Use keep_original in pysam.tabix_index to not remove original data
   `Pull Request 11913`_
-.. bug_tag_tools
-
 * Open input file in read mode in liftover wrapper
   `Pull Request 12001`_
 * Resolve session problems, enabled pages and tags fastAPI routes
@@ -556,8 +526,6 @@ Fixes
 * Make filter work with file containing header
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 11365`_
-.. bug_tag_workflows
-
 * Fix copying text in workflow editor
   `Pull Request 12118`_
 * Make failure to save workflow dismissible
@@ -583,8 +551,6 @@ Fixes
   `Pull Request 11692`_
 * Fix workflow refactor schema parsing for pydantic 1.8.
   `Pull Request 11778`_
-.. bug_tag_ui
-
 * fix undefined error in ui-file-source
   (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
   `Pull Request 11586`_
@@ -594,8 +560,6 @@ Fixes
   `Pull Request 11850`_
 * Reposition history scroller during new updates
   `Pull Request 11879`_
-.. bug_tag_jobs
-
 * ITs on K8S tweaks and SSL
   (thanks to `@almahmoud <https://github.com/almahmoud>`__).
   `Pull Request 11947`_
@@ -637,15 +601,11 @@ Fixes
 * Handle resubmission before changing job state in CLI runner
   (thanks to `@pcm32 <https://github.com/pcm32>`__).
   `Pull Request 11886`_
-.. bug_tag_admin
-
 * fix broken docs links
   `Pull Request 11384`_
 * Add missing ssl keyword in nginx example [docs]
   (thanks to `@rhpvorderman <https://github.com/rhpvorderman>`__).
   `Pull Request 11633`_
-.. bug
-
 * Create history_audit table to avoid write deadlocks during history.update_time updates
   `Pull Request 11914`_
 * Fix `GET /api/datasets/` docs

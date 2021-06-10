@@ -51,6 +51,7 @@ Upcoming Deprecation Notices
 Configuration Changes
 =====================
 
+
 Added
 -----
 
@@ -73,6 +74,40 @@ config/galaxy.yml.sample:galaxy
 -  mapping.galaxy.mapping.plausible_domain
 -  mapping.galaxy.mapping.plausible_server
 -  mapping.galaxy.mapping.statsd_mock_calls
+
+
+Changed
+-------
+
+The following configuration options have been changed
+
+config/user_preferences_extra_conf.yml.sample
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  preferences.localization.inputs has changed from ::
+
+    [{'label': 'Prefered language',
+      'name': 'locale',
+      'options': [['Navigator default', 'auto'],
+                  ['Chinese', 'zh'],
+                  ['English', 'en'],
+                  ['French', 'fr'],
+                  ['Japanese', 'ja']],
+      'required': False,
+      'type': 'select'}]
+
+   to ::
+
+       [{'label': 'Prefered language',
+         'name': 'locale',
+         'options': [['Navigator default', 'auto'],
+                     ['中文', 'zh'],
+                     ['English', 'en'],
+                     ['Español', 'es'],
+                     ['Français', 'fr'],
+                     ['日本語', 'ja']],
+         'required': False,
+         'type': 'select'}]
 
 Removed
 -------

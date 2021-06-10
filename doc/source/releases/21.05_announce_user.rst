@@ -36,8 +36,6 @@ Thanks to `@dlal-group <https://github.com/dlal-group>`__, the SimText suite of 
 New Datatypes
 ===========================================================
 
-.. datatypes
-
 * Add FlowCytometry and MetaCyto datatypes
   (thanks to `@pcm32 <https://github.com/pcm32>`__).
   `Pull Request 9807`_
@@ -70,8 +68,6 @@ New Datatypes
 
 Builtin Tool Updates
 ===========================================================
-
-.. tools
 
 * The filter, grep, tail, and head tools all now support working with a file
   containing a header line (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
