@@ -20,7 +20,7 @@ describe("FormCard", () => {
         });
     });
 
-    it("check help text", async () => {
+    it("check props", async () => {
         const title = wrapper.find(".portlet-title-text > b");
         expect(title.text()).toBe("title");
         const description = wrapper.find(".portlet-title-text > span");
