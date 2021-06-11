@@ -67,7 +67,8 @@ class FoldersController(BaseGalaxyAPIController):
         :rtype:     dictionary
         :raises: RequestParameterMissingException
         """
-        return self.service.create(trans, encoded_parent_folder_id, payload)
+        create_payload = CreateLibraryFolderPayload(**payload)
+        return self.service.create(trans, encoded_parent_folder_id, create_payload)
 
     @expose_api
     def get_permissions(self, trans, encoded_folder_id, **kwd):
@@ -166,4 +167,5 @@ class FoldersController(BaseGalaxyAPIController):
 
         :raises: RequestParameterMissingException
         """
-        return self.service.update(trans, encoded_folder_id, payload)
+        update_payload = UpdateLibraryFolderPayload(**payload)
+        return self.service.update(trans, encoded_folder_id, update_payload)
