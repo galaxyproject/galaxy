@@ -343,6 +343,19 @@ def test_UserAuthnzToken(model, session, user, cloud_authz):
         assert cloud_authz in stored_obj.cloudauthz
 
 
+def test_UserGroupAssociation(model, session, user, group):
+    cls = model.UserGroupAssociation
+    assert cls.__tablename__ == 'user_group_association'
+    with dbcleanup(session, cls):
+        obj = cls(user, group)
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        assert stored_obj.id == obj_id
+        assert stored_obj.user == user
+        assert stored_obj.group == group
+
+
 def test_VisualizationRevision(model, session, visualization):
     cls = model.VisualizationRevision
     assert cls.__tablename__ == 'visualization_revision'

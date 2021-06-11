@@ -232,14 +232,6 @@ model.ImplicitlyConvertedDatasetAssociation.table = Table(
     Column("metadata_safe", Boolean, index=True, default=True),
     Column("type", TrimmedString(255)))
 
-model.UserGroupAssociation.table = Table(
-    "user_group_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("group_id", Integer, ForeignKey("galaxy_group.id"), index=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now))
-
 model.UserRoleAssociation.table = Table(
     "user_role_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -1651,6 +1643,7 @@ mapper_registry.map_imperatively(model.User, model.User.table, properties=dict(
     cloudauthz=relation(model.CloudAuthz, back_populates='user'),
     custos_auth=relation(model.CustosAuthnzToken, back_populates='user'),
     default_permissions=relation(model.DefaultUserPermissions, back_populates='user'),
+    groups=relation(model.UserGroupAssociation, back_populates='user'),
     histories=relation(model.History,
         backref="user",
         order_by=desc(model.History.update_time)),
@@ -1691,11 +1684,6 @@ mapper_registry.map_imperatively(model.PasswordResetToken, model.PasswordResetTo
 # Set up proxy so that this syntax is possible:
 # <user_obj>.preferences[pref_name] = pref_value
 model.User.preferences = association_proxy('_preferences', 'value', creator=model.UserPreference)  # type: ignore
-
-mapper_registry.map_imperatively(model.UserGroupAssociation, model.UserGroupAssociation.table, properties=dict(
-    user=relation(model.User, backref="groups"),
-    group=relation(model.Group, backref="users")
-))
 
 mapper_registry.map_imperatively(model.DefaultHistoryPermissions, model.DefaultHistoryPermissions.table, properties=dict(
     history=relation(model.History, backref="default_permissions"),
