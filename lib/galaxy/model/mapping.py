@@ -81,24 +81,6 @@ model.PasswordResetToken.table = Table(
     Column("expiration_time", DateTime),
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True))
 
-
-model.DynamicTool.table = Table(
-    "dynamic_tool", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("uuid", UUIDType()),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, index=True, default=now, onupdate=now),
-    Column("tool_id", Unicode(255)),
-    Column("tool_version", Unicode(255)),
-    Column("tool_format", Unicode(255)),
-    Column("tool_path", Unicode(255)),
-    Column("tool_directory", Unicode(255)),
-    Column("hidden", Boolean, default=True),
-    Column("active", Boolean, default=True),
-    Column("value", MutableJSONType),
-)
-
-
 model.History.table = Table(
     "history", metadata,
     Column("id", Integer, primary_key=True),
@@ -1516,8 +1498,6 @@ mapper_registry.map_imperatively(model.FormDefinitionCurrent, model.FormDefiniti
         primaryjoin=(model.FormDefinitionCurrent.table.c.latest_form_id == model.FormDefinition.table.c.id))
 ))
 
-simple_mapping(model.DynamicTool)
-
 simple_mapping(model.HistoryDatasetAssociation,
     dataset=relation(model.Dataset,
         primaryjoin=(model.Dataset.table.c.id == model.HistoryDatasetAssociation.table.c.dataset_id),
@@ -2188,8 +2168,8 @@ mapper_registry.map_imperatively(model.WorkflowStep, model.WorkflowStep.table, p
         primaryjoin=(model.Workflow.table.c.id == model.WorkflowStep.table.c.subworkflow_id),
         backref="parent_workflow_steps"),
     dynamic_tool=relation(model.DynamicTool,
-        primaryjoin=(model.DynamicTool.table.c.id == model.WorkflowStep.table.c.dynamic_tool_id),
-        backref="workflow_steps"),
+        primaryjoin=(model.DynamicTool.id == model.WorkflowStep.table.c.dynamic_tool_id),
+        back_populates="workflow_steps"),
     tags=relation(model.WorkflowStepTagAssociation,
         order_by=model.WorkflowStepTagAssociation.table.c.id,
         backref="workflow_steps"),

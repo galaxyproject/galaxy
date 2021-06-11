@@ -82,6 +82,39 @@ def test_CustosAuthnzToken(model, session, user):
         assert stored_obj.user == user
 
 
+def test_DynamicTool(model, session, workflow_step):
+    cls = model.DynamicTool
+    assert cls.__tablename__ == 'dynamic_tool'
+    with dbcleanup(session, cls):
+        tool_format = 'a'
+        tool_id = 'b'
+        tool_version = 'c'
+        tool_path = 'd'
+        tool_directory = 'e'
+        uuid = None
+        active = True
+        hidden = True
+        value = 'f'
+        obj = cls(tool_format, tool_id, tool_version, tool_path, tool_directory, uuid,
+                active, hidden, value)
+        obj.workflow_steps.append(workflow_step)
+        obj_id = persist(session, obj)
+
+        stmt = select(cls).filter(cls.id == obj_id)
+        stored_obj = session.execute(stmt).scalar_one()
+        assert stored_obj.id == obj_id
+        assert stored_obj.tool_format == tool_format
+        assert stored_obj.tool_id == tool_id
+        assert stored_obj.tool_version == tool_version
+        assert stored_obj.tool_path == tool_path
+        assert stored_obj.tool_directory == tool_directory
+        assert stored_obj.uuid
+        assert stored_obj.active == active
+        assert stored_obj.hidden == hidden
+        assert stored_obj.value == value
+        assert workflow_step in stored_obj.workflow_steps
+
+
 def test_PageRevision(model, session, page):
     cls = model.PageRevision
     assert cls.__tablename__ == 'page_revision'
@@ -369,6 +402,19 @@ def visualization(model, session, user):
     v = model.Visualization()
     v.user = user
     yield from dbcleanup_wrapper(session, v)
+
+
+@pytest.fixture
+def workflow(model, session):
+    w = model.Workflow()
+    yield from dbcleanup_wrapper(session, w)
+
+
+@pytest.fixture
+def workflow_step(model, session, workflow):
+    s = model.WorkflowStep()
+    s.workflow = workflow
+    yield from dbcleanup_wrapper(session, s)
 
 
 @contextmanager

@@ -80,6 +80,7 @@ import galaxy.util
 from galaxy.model.custom_types import (
     MutableJSONType,
     TrimmedString,
+    UUIDType,
 )
 from galaxy.model.item_attrs import get_item_annotation_str, UsesAnnotations
 from galaxy.model.orm.now import now
@@ -691,7 +692,23 @@ class PasswordResetToken(_HasTable):
         self.expiration_time = galaxy.model.orm.now.now() + timedelta(hours=24)
 
 
-class DynamicTool(Dictifiable, RepresentById):
+class DynamicTool(Base, Dictifiable, RepresentById):
+    __tablename__ = 'dynamic_tool'
+
+    id = Column('id', Integer, primary_key=True)
+    uuid = Column('uuid', UUIDType())
+    create_time = Column('create_time', DateTime, default=now)
+    update_time = Column('update_time', DateTime, index=True, default=now, onupdate=now)
+    tool_id = Column('tool_id', Unicode(255))
+    tool_version = Column('tool_version', Unicode(255))
+    tool_format = Column('tool_format', Unicode(255))
+    tool_path = Column('tool_path', Unicode(255))
+    tool_directory = Column('tool_directory', Unicode(255))
+    hidden = Column('hidden', Boolean, default=True)
+    active = Column('active', Boolean, default=True)
+    value = Column('value', MutableJSONType)
+    workflow_steps = relationship('WorkflowStep', back_populates='dynamic_tool')
+
     dict_collection_visible_keys = ('id', 'tool_id', 'tool_format', 'tool_version', 'uuid', 'active', 'hidden')
     dict_element_visible_keys = ('id', 'tool_id', 'tool_format', 'tool_version', 'uuid', 'active', 'hidden')
 
