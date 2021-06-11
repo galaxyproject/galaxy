@@ -82,6 +82,22 @@ def test_CustosAuthnzToken(model, session, user):
         assert stored_obj.user == user
 
 
+def test_DatasetPermissions(model, session, dataset, role):
+    cls = model.DatasetPermissions
+    assert cls.__tablename__ == 'dataset_permissions'
+    with dbcleanup(session, cls):
+        action = 'a'
+        obj = cls(action, dataset, role)
+        obj_id = persist(session, obj)
+
+        stmt = select(cls).filter(cls.id == obj_id)
+        stored_obj = session.execute(stmt).scalar_one()
+        assert stored_obj.id == obj_id
+        assert stored_obj.action == action
+        assert stored_obj.dataset == dataset
+        assert stored_obj.role == role
+
+
 def test_DefaultUserPermissions(model, session, user, role):
     cls = model.DefaultUserPermissions
     assert cls.__tablename__ == 'default_user_permissions'
@@ -386,6 +402,12 @@ def session(model):
 def cloud_authz(model, session, user, user_authnz_token):
     ca = model.CloudAuthz(user.id, 'a', 'b', user_authnz_token.id, 'c')
     yield from dbcleanup_wrapper(session, ca)
+
+
+@pytest.fixture
+def dataset(model, session):
+    d = model.Dataset()
+    yield from dbcleanup_wrapper(session, d)
 
 
 @pytest.fixture
