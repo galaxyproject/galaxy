@@ -920,12 +920,26 @@ class JobWrapper(HasResourceParameters):
             self.job_runner_mapper.cached_job_destination = JobDestination(from_job=job)
         # Wrapper holding the info required to restore and clean up from files used for setting metadata externally
         self.__external_output_metadata = None
-        self.__has_tasks = bool(job.tasks)
+        
+        # AMP customization: tmp work-around for DetachedInstanceError
+        try:
+          self.__has_tasks = bool(job.tasks)
+        except:
+          traceback.print_exc()
+          log.error("Caught DetachedInstanceError and set has_tasks to false: job.id = " + str(job.id) + " job.tool_id = " + str(job.tool_id))
+          print("Caught DetachedInstanceError and set has_tasks to false: job.id = " + str(job.id) + " job.tool_id = " + str(job.tool_id))
+          self.__has_tasks = False
+        # END AMP customization
 
         self.__commands_in_new_shell = True
         self.__user_system_pwent = None
         self.__galaxy_system_pwent = None
         self.__working_directory = None
+
+        # AMP customization: debug for DetachedInstanceError
+        log.info("Done with job init: job.id = " + str(job.id) + " job.tool_id = " + str(job.tool_id))
+        print("Done with job init: job.id = " + str(job.id) + " job.tool_id = " + str(job.tool_id))
+        # END AMP customization
 
     @property
     def external_output_metadata(self):
