@@ -2,12 +2,7 @@
 Manager and Serializer for Roles.
 """
 import logging
-from typing import List, Optional
 
-from pydantic import (
-    BaseModel,
-    Field,
-)
 from sqlalchemy import false
 from sqlalchemy.orm import exc as sqlalchemy_exceptions
 
@@ -17,33 +12,9 @@ from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.managers import base
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import Role
-from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.util import unicodify
 
 log = logging.getLogger(__name__)
-
-RoleIdField = Field(title="ID", description="Encoded ID of the role")
-RoleNameField = Field(title="Name", description="Name of the role")
-RoleDescriptionField = Field(title="Description", description="Description of the role")
-
-
-class BasicRoleModel(BaseModel):
-    id: EncodedDatabaseIdField = RoleIdField
-    name: str = RoleNameField
-    type: str = Field(title="Type", description="Type or category of the role")
-
-
-class RoleModel(BasicRoleModel):
-    description: str = RoleDescriptionField
-    url: str = Field(title="URL", description="URL for the role")
-    model_class: str = Field(title="Model class", description="Database model class (Role)")
-
-
-class RoleDefinitionModel(BaseModel):
-    name: str = RoleNameField
-    description: str = RoleDescriptionField
-    user_ids: Optional[List[EncodedDatabaseIdField]] = Field(title="User IDs", default=[])
-    group_ids: Optional[List[EncodedDatabaseIdField]] = Field(title="Group IDs", default=[])
 
 
 class RoleManager(base.ModelManager):
