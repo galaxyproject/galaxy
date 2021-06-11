@@ -1901,6 +1901,7 @@ class Group(Base, Dictifiable, RepresentById):
     name = Column('name', String(255), index=True, unique=True)
     deleted = Column('deleted', Boolean, index=True, default=False)
     roles = relationship('GroupRoleAssociation', back_populates='group')
+    users = relationship('UserGroupAssociation', back_populates='group')
 
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name']
@@ -1910,7 +1911,17 @@ class Group(Base, Dictifiable, RepresentById):
         self.deleted = False
 
 
-class UserGroupAssociation(RepresentById):
+class UserGroupAssociation(Base, RepresentById):
+    __tablename__ = 'user_group_association'
+
+    id = Column('id', Integer, primary_key=True)
+    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
+    group_id = Column('group_id', Integer, ForeignKey('galaxy_group.id'), index=True)
+    create_time = Column('create_time', DateTime, default=now)
+    update_time = Column('update_time', DateTime, default=now, onupdate=now)
+    user = relationship('User', back_populates='groups')
+    group = relationship('Group', back_populates='users')
+
     def __init__(self, user, group):
         self.user = user
         self.group = group
