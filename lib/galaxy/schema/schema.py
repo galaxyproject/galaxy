@@ -1807,7 +1807,6 @@ class LibraryPermissionAction(str, Enum):
     remove_restrictions = "remove_restrictions"  # name inconsistency? should be `make_public`?
 
 
-
 class LibraryPermissionsPayloadBase(BaseModel):
     class Config:
         use_enum_values = True  # When using .dict()
@@ -1833,7 +1832,6 @@ class LibraryPermissionsPayloadBase(BaseModel):
     )
 
 
-
 class LibraryPermissionsPayload(LibraryPermissionsPayloadBase):
     action: Optional[LibraryPermissionAction] = Field(
         ...,
@@ -1848,3 +1846,124 @@ class LibraryPermissionsPayload(LibraryPermissionsPayloadBase):
     )
 
 
+# Library Folders -----------------------------------------------------------------
+
+class LibraryFolderPermissionAction(str, Enum):
+    set_permissions = "set_permissions"
+
+
+FolderNameField: str = Field(
+    ...,
+    title="Name",
+    description="The name of the library folder.",
+)
+FolderDescriptionField: Optional[str] = Field(
+    "",
+    title="Description",
+    description="A detailed description of the library folder.",
+)
+
+
+class LibraryFolderPermissionsPayload(LibraryPermissionsPayloadBase):
+    action: Optional[LibraryFolderPermissionAction] = Field(
+        None,
+        title="Action",
+        description="Indicates what action should be performed on the library folder.",
+    )
+
+
+class LibraryFolderDetails(BaseModel):
+    model_class: str = ModelClassField("LibraryFolder")
+    id: EncodedDatabaseIdField = Field(
+        ...,
+        title="ID",
+        description="Encoded ID of the library folder.",
+    )
+    name: str = FolderNameField
+    description: Optional[str] = FolderDescriptionField
+    item_count: int = Field(
+        ...,
+        title="Item Count",
+        description="A detailed description of the library folder.",
+    )
+    parent_library_id: EncodedDatabaseIdField = Field(
+        ...,
+        title="Parent Library ID",
+        description="Encoded ID of the Library this folder belongs to.",
+    )
+    parent_id: Optional[EncodedDatabaseIdField] = Field(
+        None,
+        title="Parent Folder ID",
+        description="Encoded ID of the parent folder. Empty if it's the root folder.",
+    )
+    genome_build: str = GenomeBuildField
+    update_time: datetime = UpdateTimeField
+    deleted: bool = Field(
+        ...,
+        title="Deleted",
+        description="Whether this folder is marked as deleted.",
+    )
+    library_path: List[str] = Field(
+        [],
+        title="Path",
+        description="The list of folder names composing the path to this folder.",
+    )
+
+
+class CreateLibraryFolderPayload(BaseModel):
+    name: str = FolderNameField
+    description: Optional[str] = FolderDescriptionField
+
+
+class UpdateLibraryFolderPayload(BaseModel):
+    name: Optional[str] = Field(
+        default=None,
+        title="Name",
+        description="The new name of the library folder.",
+    )
+    description: Optional[str] = Field(
+        default=None,
+        title="Description",
+        description="The new description of the library folder.",
+    )
+
+
+class LibraryAvailablePermissions(BaseModel):
+    roles: List[BasicRoleModel] = Field(
+        ...,
+        title="Roles",
+        description="A list available roles that can be assigned to a particular permission.",
+    )
+    page: int = Field(
+        ...,
+        title="Page",
+        description="Current page .",
+    )
+    page_limit: int = Field(
+        ...,
+        title="Page Limit",
+        description="Maximum number of items per page.",
+    )
+    total: int = Field(
+        ...,
+        title="Total",
+        description="Total number of items",
+    )
+
+
+class LibraryFolderCurrentPermissions(BaseModel):
+    modify_folder_role_list: List[RoleNameIdTuple] = Field(
+        ...,
+        title="Modify Role List",
+        description="A list containing pairs of role names and corresponding encoded IDs which can modify the Library folder.",
+    )
+    manage_folder_role_list: List[RoleNameIdTuple] = Field(
+        ...,
+        title="Manage Role List",
+        description="A list containing pairs of role names and corresponding encoded IDs which can manage the Library folder.",
+    )
+    add_library_item_role_list: List[RoleNameIdTuple] = Field(
+        ...,
+        title="Add Role List",
+        description="A list containing pairs of role names and corresponding encoded IDs which can add items to the Library folder.",
+    )
