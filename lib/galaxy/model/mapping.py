@@ -248,14 +248,6 @@ model.UserRoleAssociation.table = Table(
     Column("create_time", DateTime, default=now),
     Column("update_time", DateTime, default=now, onupdate=now))
 
-model.GroupRoleAssociation.table = Table(
-    "group_role_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("group_id", Integer, ForeignKey("galaxy_group.id"), index=True),
-    Column("role_id", Integer, ForeignKey("role.id"), index=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now))
-
 model.UserQuotaAssociation.table = Table(
     "user_quota_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -1722,11 +1714,6 @@ mapper_registry.map_imperatively(model.UserRoleAssociation, model.UserRoleAssoci
             & (model.UserRoleAssociation.table.c.role_id == model.Role.id)
             & not_(model.Role.name == model.User.table.c.email))
     )
-))
-
-mapper_registry.map_imperatively(model.GroupRoleAssociation, model.GroupRoleAssociation.table, properties=dict(
-    group=relation(model.Group, backref="roles"),
-    role=relation(model.Role, backref="groups")
 ))
 
 mapper_registry.map_imperatively(model.UserQuotaAssociation, model.UserQuotaAssociation.table, properties=dict(

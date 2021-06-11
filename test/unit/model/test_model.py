@@ -147,6 +147,20 @@ def test_DynamicTool(model, session, workflow_step):
         assert workflow_step in stored_obj.workflow_steps
 
 
+def test_GroupRoleAssociation(model, session, group, role):
+    cls = model.GroupRoleAssociation
+    assert cls.__tablename__ == 'group_role_association'
+    with dbcleanup(session, cls):
+        obj = cls(group, role)
+        obj_id = persist(session, obj)
+
+        stmt = select(cls).filter(cls.id == obj_id)
+        stored_obj = session.execute(stmt).scalar_one()
+        assert stored_obj.id == obj_id
+        assert stored_obj.group == group
+        assert stored_obj.role == role
+
+
 def test_PageRevision(model, session, page):
     cls = model.PageRevision
     assert cls.__tablename__ == 'page_revision'
@@ -414,6 +428,12 @@ def dataset(model, session):
 def galaxy_session(model, session, user):
     s = model.GalaxySession()
     yield from dbcleanup_wrapper(session, s)
+
+
+@pytest.fixture
+def group(model, session):
+    g = model.Group()
+    yield from dbcleanup_wrapper(session, g)
 
 
 @pytest.fixture
