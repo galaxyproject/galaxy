@@ -280,15 +280,6 @@ model.DefaultQuotaAssociation.table = Table(
     Column("type", String(32), index=True, unique=True),
     Column("quota_id", Integer, ForeignKey("quota.id"), index=True))
 
-model.DatasetPermissions.table = Table(
-    "dataset_permissions", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("action", TEXT),
-    Column("dataset_id", Integer, ForeignKey("dataset.id"), index=True),
-    Column("role_id", Integer, ForeignKey("role.id"), index=True))
-
 model.LibraryPermissions.table = Table(
     "library_permissions", metadata,
     Column("id", Integer, primary_key=True),
@@ -1528,6 +1519,7 @@ simple_mapping(model.HistoryDatasetAssociation,
 )
 
 simple_mapping(model.Dataset,
+    actions=relation(model.DatasetPermissions, back_populates='dataset'),
     job=relation(model.Job, primaryjoin=(model.Dataset.table.c.job_id == model.Job.table.c.id)),
     active_history_associations=relation(model.HistoryDatasetAssociation,
         primaryjoin=(
@@ -1749,11 +1741,6 @@ mapper_registry.map_imperatively(model.GroupQuotaAssociation, model.GroupQuotaAs
 
 mapper_registry.map_imperatively(model.DefaultQuotaAssociation, model.DefaultQuotaAssociation.table, properties=dict(
     quota=relation(model.Quota, backref="default")
-))
-
-mapper_registry.map_imperatively(model.DatasetPermissions, model.DatasetPermissions.table, properties=dict(
-    dataset=relation(model.Dataset, backref="actions"),
-    role=relation(model.Role, backref="dataset_actions")
 ))
 
 mapper_registry.map_imperatively(model.LibraryPermissions, model.LibraryPermissions.table, properties=dict(

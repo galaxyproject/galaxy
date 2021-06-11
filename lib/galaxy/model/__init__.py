@@ -2369,6 +2369,7 @@ class Role(Base, Dictifiable, RepresentById):
     description = Column('description', TEXT)
     type = Column('type', String(40), index=True)
     deleted = Column('deleted', Boolean, index=True, default=False)
+    dataset_actions = relationship('DatasetPermissions', back_populates='role')
 
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name', 'description', 'type']
@@ -2462,7 +2463,17 @@ class DefaultQuotaAssociation(Dictifiable, RepresentById):
         self.quota = quota
 
 
-class DatasetPermissions(RepresentById):
+class DatasetPermissions(Base, RepresentById):
+    __tablename__ = 'dataset_permissions'
+    id = Column('id', Integer, primary_key=True)
+    create_time = Column('create_time', DateTime, default=now)
+    update_time = Column('update_time', DateTime, default=now, onupdate=now)
+    action = Column('action', TEXT)
+    dataset_id = Column('dataset_id', Integer, ForeignKey('dataset.id'), index=True)
+    role_id = Column('role_id', Integer, ForeignKey("role.id"), index=True)
+    dataset = relationship('Dataset', back_populates='actions')
+    role = relationship('Role', back_populates='dataset_actions')
+
     def __init__(self, action, dataset, role=None, role_id=None):
         self.action = action
         self.dataset = dataset
