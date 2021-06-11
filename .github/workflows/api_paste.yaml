@@ -12,6 +12,7 @@ jobs:
         python-version: ['3.7']
     services:
       postgres:
+        # Run tests on the oldest Galaxy-supported version
         image: postgres:9.6
         env:
           POSTGRES_USER: postgres
