@@ -1895,11 +1895,12 @@ class DeferredJob(RepresentById):
 class Group(Base, Dictifiable, RepresentById):
     __tablename__ = 'galaxy_group'
 
-    id = Column("id", Integer, primary_key=True)
-    create_time = Column("create_time", DateTime, default=now)
-    update_time = Column("update_time", DateTime, default=now, onupdate=now)
-    name = Column("name", String(255), index=True, unique=True)
-    deleted = Column("deleted", Boolean, index=True, default=False)
+    id = Column('id', Integer, primary_key=True)
+    create_time = Column('create_time', DateTime, default=now)
+    update_time = Column('update_time', DateTime, default=now, onupdate=now)
+    name = Column('name', String(255), index=True, unique=True)
+    deleted = Column('deleted', Boolean, index=True, default=False)
+    roles = relationship('GroupRoleAssociation', back_populates='group')
 
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name']
@@ -2353,7 +2354,17 @@ class UserRoleAssociation(RepresentById):
         self.role = role
 
 
-class GroupRoleAssociation(RepresentById):
+class GroupRoleAssociation(Base, RepresentById):
+    __tablename__ = 'group_role_association'
+
+    id = Column('id', Integer, primary_key=True)
+    group_id = Column('group_id', Integer, ForeignKey('galaxy_group.id'), index=True)
+    role_id = Column('role_id', Integer, ForeignKey('role.id'), index=True)
+    create_time = Column('create_time', DateTime, default=now)
+    update_time = Column('update_time', DateTime, default=now, onupdate=now)
+    group = relationship('Group', back_populates='roles')
+    role = relationship('Role', back_populates='groups')
+
     def __init__(self, group, role):
         self.group = group
         self.role = role
@@ -2370,6 +2381,7 @@ class Role(Base, Dictifiable, RepresentById):
     type = Column('type', String(40), index=True)
     deleted = Column('deleted', Boolean, index=True, default=False)
     dataset_actions = relationship('DatasetPermissions', back_populates='role')
+    groups = relationship('GroupRoleAssociation', back_populates='role')
 
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name', 'description', 'type']
@@ -2465,6 +2477,7 @@ class DefaultQuotaAssociation(Dictifiable, RepresentById):
 
 class DatasetPermissions(Base, RepresentById):
     __tablename__ = 'dataset_permissions'
+
     id = Column('id', Integer, primary_key=True)
     create_time = Column('create_time', DateTime, default=now)
     update_time = Column('update_time', DateTime, default=now, onupdate=now)
@@ -2525,6 +2538,7 @@ class LibraryDatasetDatasetAssociationPermissions(RepresentById):
 
 class DefaultUserPermissions(Base, RepresentById):
     __tablename__ = 'default_user_permissions'
+
     id = Column('id', Integer, primary_key=True)
     user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
     action = Column('action', TEXT)
