@@ -327,13 +327,6 @@ model.LibraryDatasetDatasetAssociationPermissions.table = Table(
         nullable=True, index=True),
     Column("role_id", Integer, ForeignKey("role.id"), index=True))
 
-model.DefaultUserPermissions.table = Table(
-    "default_user_permissions", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("action", TEXT),
-    Column("role_id", Integer, ForeignKey("role.id"), index=True))
-
 model.DefaultHistoryPermissions.table = Table(
     "default_history_permissions", metadata,
     Column("id", Integer, primary_key=True),
@@ -1673,6 +1666,7 @@ mapper_registry.map_imperatively(model.User, model.User.table, properties=dict(
         order_by=desc(model.UserAddress.update_time)),
     cloudauthz=relation(model.CloudAuthz, back_populates='user'),
     custos_auth=relation(model.CustosAuthnzToken, back_populates='user'),
+    default_permissions=relation(model.DefaultUserPermissions, back_populates='user'),
     histories=relation(model.History,
         backref="user",
         order_by=desc(model.History.update_time)),
@@ -1717,11 +1711,6 @@ model.User.preferences = association_proxy('_preferences', 'value', creator=mode
 mapper_registry.map_imperatively(model.UserGroupAssociation, model.UserGroupAssociation.table, properties=dict(
     user=relation(model.User, backref="groups"),
     group=relation(model.Group, backref="users")
-))
-
-mapper_registry.map_imperatively(model.DefaultUserPermissions, model.DefaultUserPermissions.table, properties=dict(
-    user=relation(model.User, backref="default_permissions"),
-    role=relation(model.Role)
 ))
 
 mapper_registry.map_imperatively(model.DefaultHistoryPermissions, model.DefaultHistoryPermissions.table, properties=dict(

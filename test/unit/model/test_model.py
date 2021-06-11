@@ -82,6 +82,22 @@ def test_CustosAuthnzToken(model, session, user):
         assert stored_obj.user == user
 
 
+def test_DefaultUserPermissions(model, session, user, role):
+    cls = model.DefaultUserPermissions
+    assert cls.__tablename__ == 'default_user_permissions'
+    with dbcleanup(session, cls):
+        action = 'a'
+        obj = cls(user, action, role)
+        obj_id = persist(session, obj)
+
+        stmt = select(cls).filter(cls.id == obj_id)
+        stored_obj = session.execute(stmt).scalar_one()
+        assert stored_obj.id == obj_id
+        assert stored_obj.user == user
+        assert stored_obj.action == action
+        assert stored_obj.role == role
+
+
 def test_DynamicTool(model, session, workflow_step):
     cls = model.DynamicTool
     assert cls.__tablename__ == 'dynamic_tool'
@@ -383,6 +399,12 @@ def page(model, session, user):
     p = model.Page()
     p.user = user
     yield from dbcleanup_wrapper(session, p)
+
+
+@pytest.fixture
+def role(model, session):
+    r = model.Role()
+    yield from dbcleanup_wrapper(session, r)
 
 
 @pytest.fixture

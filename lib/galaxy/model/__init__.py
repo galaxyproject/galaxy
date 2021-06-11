@@ -2512,7 +2512,15 @@ class LibraryDatasetDatasetAssociationPermissions(RepresentById):
         self.role = role
 
 
-class DefaultUserPermissions(RepresentById):
+class DefaultUserPermissions(Base, RepresentById):
+    __tablename__ = 'default_user_permissions'
+    id = Column('id', Integer, primary_key=True)
+    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
+    action = Column('action', TEXT)
+    role_id = Column('role_id', Integer, ForeignKey('role.id'), index=True)
+    user = relationship('User', back_populates='default_permissions')
+    role = relationship('Role')
+
     def __init__(self, user, action, role):
         self.user = user
         self.action = action
