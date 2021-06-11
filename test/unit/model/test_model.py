@@ -20,8 +20,7 @@ def testAPIKeys(model, session, user):
         obj = cls(user_id, key)
         obj_id = persist(session, obj)
 
-        stmt = select(cls).filter(cls.id == obj_id)
-        stored_obj = session.execute(stmt).scalar_one()
+        stored_obj = get_stored_obj(session, cls, obj_id)
         assert stored_obj.id == obj_id
         assert stored_obj.user_id == user_id
         assert stored_obj.key == key
@@ -36,8 +35,7 @@ def test_CloudAuthz(model, session, user, user_authnz_token):
         obj = cls(user.id, provider, config, user_authnz_token.id, description)
         obj_id = persist(session, obj)
 
-        stmt = select(cls).filter(cls.id == obj_id)
-        stored_obj = session.execute(stmt).scalar_one()
+        stored_obj = get_stored_obj(session, cls, obj_id)
         assert stored_obj.id == obj_id
         assert stored_obj.user_id == user.id
         assert stored_obj.provider == provider
@@ -69,8 +67,7 @@ def test_CustosAuthnzToken(model, session, user):
             expiration_time, refresh_expiration_time)
         obj_id = persist(session, obj)
 
-        stmt = select(cls).filter(cls.id == obj_id)
-        stored_obj = session.execute(stmt).scalar_one()
+        stored_obj = get_stored_obj(session, cls, obj_id)
         assert stored_obj.id == obj_id
         assert stored_obj.external_user_id == external_user_id
         assert stored_obj.provider == provider
@@ -90,8 +87,7 @@ def test_DatasetPermissions(model, session, dataset, role):
         obj = cls(action, dataset, role)
         obj_id = persist(session, obj)
 
-        stmt = select(cls).filter(cls.id == obj_id)
-        stored_obj = session.execute(stmt).scalar_one()
+        stored_obj = get_stored_obj(session, cls, obj_id)
         assert stored_obj.id == obj_id
         assert stored_obj.action == action
         assert stored_obj.dataset == dataset
@@ -106,8 +102,7 @@ def test_DefaultUserPermissions(model, session, user, role):
         obj = cls(user, action, role)
         obj_id = persist(session, obj)
 
-        stmt = select(cls).filter(cls.id == obj_id)
-        stored_obj = session.execute(stmt).scalar_one()
+        stored_obj = get_stored_obj(session, cls, obj_id)
         assert stored_obj.id == obj_id
         assert stored_obj.user == user
         assert stored_obj.action == action
@@ -132,8 +127,7 @@ def test_DynamicTool(model, session, workflow_step):
         obj.workflow_steps.append(workflow_step)
         obj_id = persist(session, obj)
 
-        stmt = select(cls).filter(cls.id == obj_id)
-        stored_obj = session.execute(stmt).scalar_one()
+        stored_obj = get_stored_obj(session, cls, obj_id)
         assert stored_obj.id == obj_id
         assert stored_obj.tool_format == tool_format
         assert stored_obj.tool_id == tool_id
@@ -154,8 +148,7 @@ def test_GroupRoleAssociation(model, session, group, role):
         obj = cls(group, role)
         obj_id = persist(session, obj)
 
-        stmt = select(cls).filter(cls.id == obj_id)
-        stored_obj = session.execute(stmt).scalar_one()
+        stored_obj = get_stored_obj(session, cls, obj_id)
         assert stored_obj.id == obj_id
         assert stored_obj.group == group
         assert stored_obj.role == role
@@ -169,8 +162,7 @@ def test_PageRevision(model, session, page):
         obj.page = page
         obj_id = persist(session, obj)
 
-        stmt = select(cls).filter(cls.id == obj_id)
-        stored_obj = session.execute(stmt).scalar_one()
+        stored_obj = get_stored_obj(session, cls, obj_id)
         assert stored_obj.id == obj_id
         assert stored_obj.create_time
         assert stored_obj.update_time
@@ -189,8 +181,7 @@ def test_PSAAssociation(model, session):
         obj = cls(server_url, handle, secret, issued, lifetime, assoc_type)
         obj_id = persist(session, obj)
 
-        stmt = select(cls).filter(cls.id == obj_id)
-        stored_obj = session.execute(stmt).scalar_one()
+        stored_obj = get_stored_obj(session, cls, obj_id)
         assert stored_obj.id == obj_id
         assert stored_obj.server_url == server_url
         assert stored_obj.handle == handle
@@ -209,8 +200,7 @@ def test_PSACode(model, session):
         obj = cls(email, code)
         obj_id = persist(session, obj)
 
-        stmt = select(cls).filter(cls.id == obj_id)
-        stored_obj = session.execute(stmt).scalar_one()
+        stored_obj = get_stored_obj(session, cls, obj_id)
         assert stored_obj.id == obj_id
         assert stored_obj.email == email
         assert stored_obj.code == code
@@ -224,8 +214,7 @@ def test_PSANonce(model, session):
         obj = cls(server_url, timestamp, salt)
         obj_id = persist(session, obj)
 
-        stmt = select(cls).filter(cls.id == obj_id)
-        stored_obj = session.execute(stmt).scalar_one()
+        stored_obj = get_stored_obj(session, cls, obj_id)
         assert stored_obj.id == obj_id
         assert stored_obj.server_url
         assert stored_obj.timestamp == timestamp
@@ -240,8 +229,7 @@ def test_PSAPartial(model, session):
         obj = cls(token, data, next_step, backend)
         obj_id = persist(session, obj)
 
-        stmt = select(cls).filter(cls.id == obj_id)
-        stored_obj = session.execute(stmt).scalar_one()
+        stored_obj = get_stored_obj(session, cls, obj_id)
         assert stored_obj.id == obj_id
         assert stored_obj.token == token
         assert stored_obj.data == data
@@ -257,8 +245,7 @@ def test_Quota(model, session):
         obj = cls(name, description)
         obj_id = persist(session, obj)
 
-        stmt = select(cls).filter(cls.id == obj_id)
-        stored_obj = session.execute(stmt).scalar_one()
+        stored_obj = get_stored_obj(session, cls, obj_id)
         assert stored_obj.id == obj_id
         assert stored_obj.create_time
         assert stored_obj.update_time
@@ -277,8 +264,7 @@ def test_Role(model, session):
         obj = cls(name, description)
         obj_id = persist(session, obj)
 
-        stmt = select(cls).filter(cls.id == obj_id)
-        stored_obj = session.execute(stmt).scalar_one()
+        stored_obj = get_stored_obj(session, cls, obj_id)
         assert stored_obj.id == obj_id
         assert stored_obj.create_time
         assert stored_obj.update_time
@@ -296,8 +282,7 @@ def testUserAction(model, session, user, galaxy_session):
         obj = cls(user, galaxy_session.id, action, params, context)
         obj_id = persist(session, obj)
 
-        stmt = select(cls).filter(cls.id == obj_id)
-        stored_obj = session.execute(stmt).scalar_one()
+        stored_obj = get_stored_obj(session, cls, obj_id)
         assert stored_obj.id == obj_id
         assert stored_obj.create_time
         assert stored_obj.user_id == user.id
@@ -317,8 +302,7 @@ def test_UserAddress(model, session, user):
         obj = cls(user, desc, name, institution, address, city, state, postal_code, country, phone)
         obj_id = persist(session, obj)
 
-        stmt = select(cls).filter(cls.id == obj_id)
-        stored_obj = session.execute(stmt).scalar_one()
+        stored_obj = get_stored_obj(session, cls, obj_id)
         assert stored_obj.id == obj_id
         assert stored_obj.create_time
         assert stored_obj.update_time
@@ -347,8 +331,7 @@ def test_UserAuthnzToken(model, session, user, cloud_authz):
         obj.cloudauthz.append(cloud_authz)
         obj_id = persist(session, obj)
 
-        stmt = select(cls).filter(cls.id == obj_id)
-        stored_obj = session.execute(stmt).scalar_one()
+        stored_obj = get_stored_obj(session, cls, obj_id)
         assert stored_obj.id == obj_id
         assert stored_obj.user_id == user.id
         assert stored_obj.uid == uid
@@ -369,8 +352,7 @@ def test_VisualizationRevision(model, session, visualization):
         obj = cls(visualization, title, dbkey, config)
         obj_id = persist(session, obj)
 
-        stmt = select(cls).filter(cls.id == obj_id)
-        stored_obj = session.execute(stmt).scalar_one()
+        stored_obj = get_stored_obj(session, cls, obj_id)
         assert stored_obj.id == obj_id
         assert stored_obj.create_time
         assert stored_obj.update_time
@@ -390,8 +372,7 @@ def test_WorkerProcess(model, session):
         obj = cls(server_name, hostname)
         obj_id = persist(session, obj)
 
-        stmt = select(cls).filter(cls.id == obj_id)
-        stored_obj = session.execute(stmt).scalar_one()
+        stored_obj = get_stored_obj(session, cls, obj_id)
         assert stored_obj.id == obj_id
         assert stored_obj.server_name == server_name
         assert stored_obj.hostname == hostname
@@ -520,6 +501,11 @@ def has_index(table, fields):
         col_names = {c.name for c in index.columns}
         if set(fields) == col_names:
             return True
+
+
+def get_stored_obj(session, cls, obj_id):
+    stmt = select(cls).filter(cls.id == obj_id)
+    return session.execute(stmt).scalar_one()
 
 
 def get_random_string():
