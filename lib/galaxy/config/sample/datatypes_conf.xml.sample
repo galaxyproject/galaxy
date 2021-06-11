@@ -52,7 +52,7 @@
     <datatype extension="bed" type="galaxy.datatypes.interval:Bed" display_in_upload="true" description="BED format provides a flexible way to define the data lines that are displayed in an annotation track. BED lines have three required columns and nine additional optional columns. The three required columns are chrom, chromStart and chromEnd." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Bed">
       <converter file="bed_to_gff_converter.xml" target_datatype="gff"/>
       <converter file="bed_to_bgzip_converter.xml" target_datatype="bgzip"/>
-      <converter file="bed_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
+      <converter file="interval_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
       <converter file="bed_gff_or_vcf_to_bigwig_converter.xml" target_datatype="bigwig"/>
       <converter file="bed_to_fli_converter.xml" target_datatype="fli"/>
       <!-- <display file="ucsc/interval_as_bed.xml" /> -->
@@ -358,8 +358,8 @@
     <datatype extension="mtx" type="galaxy.datatypes.tabular:MatrixMarket" display_in_upload="true"/>
     <datatype extension="cmap" type="galaxy.datatypes.tabular:CMAP" display_in_upload="true" description="The Bionano Genomics cmap format provides location information for label sites within a genome map or an in silico digestion of a reference or sequence data. A CMAP file contains two sections, header and the map information block" description_url="https://bionanogenomics.com/wp-content/uploads/2017/03/30039-CMAP-File-Format-Specification-Sheet.pdf" />
     <datatype extension="encodepeak" type="galaxy.datatypes.interval:ENCODEPeak" display_in_upload="true">
-      <converter file="encodepeak_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
-      <converter file="encodepeak_to_bgzip_converter.xml" target_datatype="bgzip"/>
+      <converter file="interval_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
+      <converter file="interval_to_bgzip_converter.xml" target_datatype="bgzip"/>
       <converter file="bed_gff_or_vcf_to_bigwig_converter.xml" target_datatype="bigwig"/>
     </datatype>
     <datatype extension="pdf" type="galaxy.datatypes.images:Pdf" mimetype="application/pdf" display_in_upload="true"/>
@@ -415,7 +415,7 @@
     <datatype extension="vcf" type="galaxy.datatypes.tabular:Vcf" display_in_upload="true">
       <converter file="vcf_to_bgzip_converter.xml" target_datatype="bgzip"/>
       <converter file="vcf_to_vcf_bgzip_converter.xml" target_datatype="vcf_bgzip"/>
-      <converter file="vcf_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
+      <converter file="interval_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
       <converter file="bed_gff_or_vcf_to_bigwig_converter.xml" target_datatype="bigwig"/>
       <display file="ucsc/vcf.xml"/>
       <display file="igv/vcf.xml"/>
