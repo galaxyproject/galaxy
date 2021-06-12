@@ -253,7 +253,7 @@ class FoldersController(BaseGalaxyAPIController):
         return self.service.get_permissions(trans, encoded_folder_id, scope, page, page_limit, query)
 
     @expose_api
-    def set_permissions(self, trans, encoded_folder_id, payload, **kwd):
+    def set_permissions(self, trans, encoded_folder_id, payload: dict, **kwd):
         """
         POST /api/folders/{encoded_folder_id}/permissions
 
@@ -277,6 +277,8 @@ class FoldersController(BaseGalaxyAPIController):
         :rtype:     dictionary
         :raises: RequestParameterInvalidException, InsufficientPermissionsException, RequestParameterMissingException
         """
+        if payload:
+            payload.update(kwd)
         return self.service.set_permissions(trans, encoded_folder_id, payload)
 
     @expose_api
