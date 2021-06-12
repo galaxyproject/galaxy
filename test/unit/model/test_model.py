@@ -356,6 +356,19 @@ def test_UserGroupAssociation(model, session, user, group):
         assert stored_obj.group == group
 
 
+def test_UserQuotaAssociation(model, session, user, quota):
+    cls = model.UserQuotaAssociation
+    assert cls.__tablename__ == 'user_quota_association'
+    with dbcleanup(session, cls):
+        obj = cls(user, quota)
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        assert stored_obj.id == obj_id
+        assert stored_obj.user == user
+        assert stored_obj.quota == quota
+
+
 def test_VisualizationRevision(model, session, visualization):
     cls = model.VisualizationRevision
     assert cls.__tablename__ == 'visualization_revision'
@@ -435,6 +448,12 @@ def page(model, session, user):
     p = model.Page()
     p.user = user
     yield from dbcleanup_wrapper(session, p)
+
+
+@pytest.fixture
+def quota(model, session):
+    q = model.Quota(get_random_string(), 'b')
+    yield from dbcleanup_wrapper(session, q)
 
 
 @pytest.fixture

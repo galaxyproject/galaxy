@@ -2412,7 +2412,17 @@ class Role(Base, Dictifiable, RepresentById):
         self.deleted = deleted
 
 
-class UserQuotaAssociation(Dictifiable, RepresentById):
+class UserQuotaAssociation(Base, Dictifiable, RepresentById):
+    __tablename__ = 'user_quota_association'
+
+    id = Column('id', Integer, primary_key=True)
+    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
+    quota_id = Column("quota_id", Integer, ForeignKey("quota.id"), index=True)
+    create_time = Column('create_time', DateTime, default=now)
+    update_time = Column('update_time', DateTime, default=now, onupdate=now)
+    user = relationship('User', back_populates='quotas')
+    quota = relationship('Quota', back_populates='users')
+
     dict_element_visible_keys = ['user']
 
     def __init__(self, user, quota):
@@ -2439,6 +2449,7 @@ class Quota(Base, Dictifiable, RepresentById):
     bytes = Column('bytes', BigInteger)
     operation = Column('operation', String(8))
     deleted = Column('deleted', Boolean, index=True, default=False)
+    users = relationship('UserQuotaAssociation', back_populates='quota')
 
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name', 'description', 'bytes', 'operation', 'display_amount', 'default', 'users', 'groups']
