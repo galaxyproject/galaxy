@@ -240,14 +240,6 @@ model.UserRoleAssociation.table = Table(
     Column("create_time", DateTime, default=now),
     Column("update_time", DateTime, default=now, onupdate=now))
 
-model.GroupQuotaAssociation.table = Table(
-    "group_quota_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("group_id", Integer, ForeignKey("galaxy_group.id"), index=True),
-    Column("quota_id", Integer, ForeignKey("quota.id"), index=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now))
-
 model.DefaultQuotaAssociation.table = Table(
     "default_quota_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -1695,11 +1687,6 @@ mapper_registry.map_imperatively(model.UserRoleAssociation, model.UserRoleAssoci
             & (model.UserRoleAssociation.table.c.role_id == model.Role.id)
             & not_(model.Role.name == model.User.table.c.email))
     )
-))
-
-mapper_registry.map_imperatively(model.GroupQuotaAssociation, model.GroupQuotaAssociation.table, properties=dict(
-    group=relation(model.Group, backref="quotas"),
-    quota=relation(model.Quota, backref="groups")
 ))
 
 mapper_registry.map_imperatively(model.DefaultQuotaAssociation, model.DefaultQuotaAssociation.table, properties=dict(

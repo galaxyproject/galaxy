@@ -1900,6 +1900,7 @@ class Group(Base, Dictifiable, RepresentById):
     update_time = Column('update_time', DateTime, default=now, onupdate=now)
     name = Column('name', String(255), index=True, unique=True)
     deleted = Column('deleted', Boolean, index=True, default=False)
+    quotas = relationship('GroupQuotaAssociation', back_populates='group')
     roles = relationship('GroupRoleAssociation', back_populates='group')
     users = relationship('UserGroupAssociation', back_populates='group')
 
@@ -2417,7 +2418,7 @@ class UserQuotaAssociation(Base, Dictifiable, RepresentById):
 
     id = Column('id', Integer, primary_key=True)
     user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
-    quota_id = Column("quota_id", Integer, ForeignKey("quota.id"), index=True)
+    quota_id = Column('quota_id', Integer, ForeignKey('quota.id'), index=True)
     create_time = Column('create_time', DateTime, default=now)
     update_time = Column('update_time', DateTime, default=now, onupdate=now)
     user = relationship('User', back_populates='quotas')
@@ -2430,7 +2431,17 @@ class UserQuotaAssociation(Base, Dictifiable, RepresentById):
         self.quota = quota
 
 
-class GroupQuotaAssociation(Dictifiable, RepresentById):
+class GroupQuotaAssociation(Base, Dictifiable, RepresentById):
+    __tablename__ = 'group_quota_association'
+
+    id = Column('id', Integer, primary_key=True)
+    group_id = Column("group_id", Integer, ForeignKey("galaxy_group.id"), index=True)
+    quota_id = Column('quota_id', Integer, ForeignKey('quota.id'), index=True)
+    create_time = Column('create_time', DateTime, default=now)
+    update_time = Column('update_time', DateTime, default=now, onupdate=now)
+    group = relationship('Group', back_populates='quotas')
+    quota = relationship('Quota', back_populates='groups')
+
     dict_element_visible_keys = ['group']
 
     def __init__(self, group, quota):
@@ -2449,6 +2460,7 @@ class Quota(Base, Dictifiable, RepresentById):
     bytes = Column('bytes', BigInteger)
     operation = Column('operation', String(8))
     deleted = Column('deleted', Boolean, index=True, default=False)
+    groups = relationship('GroupQuotaAssociation', back_populates='quota')
     users = relationship('UserQuotaAssociation', back_populates='quota')
 
     dict_collection_visible_keys = ['id', 'name']
