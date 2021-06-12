@@ -2460,6 +2460,7 @@ class Quota(Base, Dictifiable, RepresentById):
     bytes = Column('bytes', BigInteger)
     operation = Column('operation', String(8))
     deleted = Column('deleted', Boolean, index=True, default=False)
+    default = relationship('DefaultQuotaAssociation', back_populates='quota')
     groups = relationship('GroupQuotaAssociation', back_populates='quota')
     users = relationship('UserQuotaAssociation', back_populates='quota')
 
@@ -2496,7 +2497,16 @@ class Quota(Base, Dictifiable, RepresentById):
             return galaxy.util.nice_size(self.bytes)
 
 
-class DefaultQuotaAssociation(Dictifiable, RepresentById):
+class DefaultQuotaAssociation(Base, Dictifiable, RepresentById):
+    __tablename__ = 'default_quota_association'
+
+    id = Column('id', Integer, primary_key=True)
+    create_time = Column('create_time', DateTime, default=now)
+    update_time = Column('update_time', DateTime, default=now, onupdate=now)
+    type = Column('type', String(32), index=True, unique=True)
+    quota_id = Column('quota_id', Integer, ForeignKey('quota.id'), index=True)
+    quota = relationship('Quota', back_populates='default')
+
     dict_element_visible_keys = ['type']
 
     class types(str, Enum):

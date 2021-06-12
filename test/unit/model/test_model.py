@@ -94,6 +94,20 @@ def test_DatasetPermissions(model, session, dataset, role):
         assert stored_obj.role == role
 
 
+def test_DefaultQuotaAssociation(model, session, quota):
+    cls = model.DefaultQuotaAssociation
+    assert cls.__tablename__ == 'default_quota_association'
+    with dbcleanup(session, cls):
+        type = cls.types.REGISTERED
+        obj = cls(type, quota)
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        assert stored_obj.id == obj_id
+        assert stored_obj.type == type
+        assert stored_obj.quota == quota
+
+
 def test_DefaultUserPermissions(model, session, user, role):
     cls = model.DefaultUserPermissions
     assert cls.__tablename__ == 'default_user_permissions'
