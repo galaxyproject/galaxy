@@ -1062,12 +1062,6 @@ model.Page.table = Table(
     Index('ix_page_slug', 'slug', mysql_length=200),
 )
 
-model.PageUserShareAssociation.table = Table(
-    "page_user_share_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("page_id", Integer, ForeignKey("page.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True))
-
 model.Visualization.table = Table(
     "visualization", metadata,
     Column("id", Integer, primary_key=True),
@@ -1633,6 +1627,7 @@ mapper_registry.map_imperatively(model.User, model.User.table, properties=dict(
     galaxy_sessions=relation(model.GalaxySession,
         backref="user",
         order_by=desc(model.GalaxySession.table.c.update_time)),
+    pages_shared_by_others=relation(model.PageUserShareAssociation, back_populates='user'),
     quotas=relation(model.UserQuotaAssociation, back_populates='user'),
     social_auth=relation(model.UserAuthnzToken, back_populates='user'),
     stored_workflow_menu_entries=relation(model.StoredWorkflowMenuEntry,
@@ -2309,17 +2304,14 @@ mapper_registry.map_imperatively(model.Page, model.Page.table, properties=dict(
     average_rating=column_property(
         select(func.avg(model.PageRatingAssociation.table.c.rating)).where(model.PageRatingAssociation.table.c.page_id == model.Page.table.c.id).scalar_subquery(),
         deferred=True
-    )
+    ),
+    users_shared_with=relation(model.PageUserShareAssociation, back_populates='page')
 ))
 
 # Set up proxy so that
 #   Page.users_shared_with
 # returns a list of users that page is shared with.
 model.Page.users_shared_with_dot_users = association_proxy('users_shared_with', 'user')  # type: ignore
-
-mapper_registry.map_imperatively(model.PageUserShareAssociation, model.PageUserShareAssociation.table,
-       properties=dict(user=relation(model.User, backref='pages_shared_by_others'),
-                       page=relation(model.Page, backref='users_shared_with')))
 
 mapper_registry.map_imperatively(model.Visualization, model.Visualization.table, properties=dict(
     user=relation(model.User),
