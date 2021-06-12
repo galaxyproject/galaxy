@@ -240,14 +240,6 @@ model.UserRoleAssociation.table = Table(
     Column("create_time", DateTime, default=now),
     Column("update_time", DateTime, default=now, onupdate=now))
 
-model.DefaultQuotaAssociation.table = Table(
-    "default_quota_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("type", String(32), index=True, unique=True),
-    Column("quota_id", Integer, ForeignKey("quota.id"), index=True))
-
 model.LibraryPermissions.table = Table(
     "library_permissions", metadata,
     Column("id", Integer, primary_key=True),
@@ -1687,10 +1679,6 @@ mapper_registry.map_imperatively(model.UserRoleAssociation, model.UserRoleAssoci
             & (model.UserRoleAssociation.table.c.role_id == model.Role.id)
             & not_(model.Role.name == model.User.table.c.email))
     )
-))
-
-mapper_registry.map_imperatively(model.DefaultQuotaAssociation, model.DefaultQuotaAssociation.table, properties=dict(
-    quota=relation(model.Quota, backref="default")
 ))
 
 mapper_registry.map_imperatively(model.LibraryPermissions, model.LibraryPermissions.table, properties=dict(
