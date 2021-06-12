@@ -141,6 +141,19 @@ def test_DynamicTool(model, session, workflow_step):
         assert workflow_step in stored_obj.workflow_steps
 
 
+def test_GroupQuotaAssociation(model, session, group, quota):
+    cls = model.GroupQuotaAssociation
+    assert cls.__tablename__ == 'group_quota_association'
+    with dbcleanup(session, cls):
+        obj = cls(group, quota)
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        assert stored_obj.id == obj_id
+        assert stored_obj.group == group
+        assert stored_obj.quota == quota
+
+
 def test_GroupRoleAssociation(model, session, group, role):
     cls = model.GroupRoleAssociation
     assert cls.__tablename__ == 'group_role_association'
