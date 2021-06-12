@@ -240,14 +240,6 @@ model.UserRoleAssociation.table = Table(
     Column("create_time", DateTime, default=now),
     Column("update_time", DateTime, default=now, onupdate=now))
 
-model.UserQuotaAssociation.table = Table(
-    "user_quota_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("quota_id", Integer, ForeignKey("quota.id"), index=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now))
-
 model.GroupQuotaAssociation.table = Table(
     "group_quota_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -1657,6 +1649,7 @@ mapper_registry.map_imperatively(model.User, model.User.table, properties=dict(
     galaxy_sessions=relation(model.GalaxySession,
         backref="user",
         order_by=desc(model.GalaxySession.table.c.update_time)),
+    quotas=relation(model.UserQuotaAssociation, back_populates='user'),
     social_auth=relation(model.UserAuthnzToken, back_populates='user'),
     stored_workflow_menu_entries=relation(model.StoredWorkflowMenuEntry,
         primaryjoin=(
@@ -1702,11 +1695,6 @@ mapper_registry.map_imperatively(model.UserRoleAssociation, model.UserRoleAssoci
             & (model.UserRoleAssociation.table.c.role_id == model.Role.id)
             & not_(model.Role.name == model.User.table.c.email))
     )
-))
-
-mapper_registry.map_imperatively(model.UserQuotaAssociation, model.UserQuotaAssociation.table, properties=dict(
-    user=relation(model.User, backref="quotas"),
-    quota=relation(model.Quota, backref="users")
 ))
 
 mapper_registry.map_imperatively(model.GroupQuotaAssociation, model.GroupQuotaAssociation.table, properties=dict(
