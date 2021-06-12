@@ -6637,7 +6637,15 @@ class PageRevision(Base, Dictifiable, RepresentById):
         return rval
 
 
-class PageUserShareAssociation(UserShareAssociation):
+class PageUserShareAssociation(Base, UserShareAssociation):
+    __tablename__ = 'page_user_share_association'
+
+    id = Column("id", Integer, primary_key=True)
+    page_id = Column("page_id", Integer, ForeignKey("page.id"), index=True)
+    user_id = Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True)
+    user = relationship('User', back_populates='pages_shared_by_others')
+    page = relationship('Page', back_populates='users_shared_with')
+
     def __init__(self):
         self.page = None
         self.user = None

@@ -200,6 +200,21 @@ def test_PageRevision(model, session, page):
         assert stored_obj.page.id == page.id
 
 
+def test_PageUserShareAssociation(model, session, page, user):
+    cls = model.PageUserShareAssociation
+    assert cls.__tablename__ == 'page_user_share_association'
+    with dbcleanup(session, cls):
+        obj = cls()
+        obj.page = page
+        obj.user = user
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        assert stored_obj.id == obj_id
+        assert stored_obj.page == page
+        assert stored_obj.user == user
+
+
 def test_PSAAssociation(model, session):
     cls = model.PSAAssociation
     assert cls.__tablename__ == 'psa_association'
