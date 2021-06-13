@@ -90,6 +90,44 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         self.assert_wf_name_is(name)
 
     @selenium_test
+    def test_optional_select_data_field(self):
+        editor = self.components.workflow_editor
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+  select_from_dataset_optional:
+    tool_id: select_from_dataset_optional
+    state:
+      select_single: null
+      """)
+        self.workflow_index_open()
+        self.workflow_index_click_option("Edit")
+        editor = self.components.workflow_editor
+        node = editor.node._(label="select_from_dataset_optional")
+        node.title.wait_for_and_click()
+        self.components.tool_form.parameter_checkbox(parameter='select_single').wait_for_and_click()
+        self.components.tool_form.parameter_input(parameter='select_single').wait_for_and_send_keys('parameter value')
+        self.assert_has_changes_and_save()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        workflow = self.workflow_populator.download_workflow(workflow_id)
+        tool_state = json.loads(workflow['steps']['0']['tool_state'])
+        assert tool_state['select_single'] == 'parameter value'
+        # Disable optional button, resets value to null
+        self.components.tool_form.parameter_checkbox(parameter='select_single').wait_for_and_click()
+        self.assert_has_changes_and_save()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        workflow = self.workflow_populator.download_workflow(workflow_id)
+        tool_state = json.loads(workflow['steps']['0']['tool_state'])
+        assert tool_state['select_single'] is None
+        # Enable button but don't provide a value
+        self.components.tool_form.parameter_checkbox(parameter='select_single').wait_for_and_click()
+        self.assert_has_changes_and_save()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        workflow = self.workflow_populator.download_workflow(workflow_id)
+        tool_state = json.loads(workflow['steps']['0']['tool_state'])
+        assert tool_state['select_single'] == ""
+
+    @selenium_test
     def test_data_input(self):
         editor = self.components.workflow_editor
 

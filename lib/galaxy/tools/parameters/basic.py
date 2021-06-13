@@ -930,6 +930,7 @@ class SelectToolParameter(ToolParameter):
             if self.optional and self.tool.profile < 18.09:
                 # Covers optional parameters with default values that reference other optional parameters.
                 # These will have a value but no legal_values.
+                # See https://github.com/galaxyproject/tools-iuc/pull/1842#issuecomment-394083768 for context.
                 return None
             raise ParameterValueError("requires a value, but no legal values defined", self.name, is_dynamic=self.is_dynamic)
         if isinstance(value, list):

@@ -152,6 +152,64 @@ export var Hidden = Backbone.View.extend({
     },
 });
 
+export var NullableText = Input.extend({
+    initialize: function (options) {
+        this.model =
+            (options && options.model) ||
+            new Backbone.Model({
+                type: "text",
+                placeholder: "",
+                disabled: false,
+                readonly: false,
+                visible: true,
+                cls: "",
+                area: false,
+                color: null,
+                style: null,
+                value: null,
+            }).set(options);
+        // Add button that determines whether an optional value should be defined
+        this.optional_button = new Switch({
+            id: `optional-switch-${this.model.id}`,
+        });
+        // Determine true/false value of button based on initial value
+        this.optional_button.model.set("value", this.model.get("value") === null ? "false" : "true");
+        this.toggleButton();
+        this.optional_button.setElement(
+            $(`<div>Set value for this optional select field ?</div>`).append(this.optional_button.$el)
+        );
+        this.tagName = this.model.get("area") ? "textarea" : "input";
+        this.setElement($(`<${this.tagName}/>`));
+        this.listenTo(this.model, "change", this.render, this);
+        this.listenTo(this.optional_button.model, "change", this.toggleButton, this);
+        this.render();
+    },
+    render: function () {
+        Input.prototype.render.call(this);
+        this.optional_button.$el.insertBefore(this.$el);
+    },
+    toggleButton: function () {
+        const setOptional = this.optional_button.model.get("value");
+        if (setOptional === "true") {
+            // Enable text field, set value to `""` if the value is falsy and trigger _onchange
+            this.model.set("disabled", false);
+            !this.model.get("value") && this.model.set("value", "") && this._onchange();
+        } else {
+            // Set text field to disabled, set model value to null and trigger _onchange
+            this.model.set("disabled", true);
+            this.model.set("value", null);
+            this._onchange();
+        }
+    },
+    value: function (new_val) {
+        const setOptional = this.optional_button.model.get("value");
+        if (setOptional === "true") {
+            new_val != undefined && this.model.set("value", typeof new_val === "string" ? new_val : "");
+        }
+        return this.model.get("value");
+    },
+});
+
 /** Creates an input element which switches between select and text field */
 export var TextSelect = Backbone.View.extend({
     initialize: function (options) {
@@ -267,6 +325,7 @@ export default {
     Radio: Options.Radio,
     Switch: Switch,
     Select: Select,
+    NullableText: NullableText,
     TextSelect: TextSelect,
     Hidden: Hidden,
     Slider: Slider,
