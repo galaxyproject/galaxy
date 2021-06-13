@@ -55,9 +55,11 @@
             :loading="!invocationAndJobTerminal"
             class="jobs-progress"
         />
-        <span v-if="invocationAndJobTerminal">
-            <a class="bco-json" :href="bcoJSON"><b>Download BioCompute Object</b></a>
-        </span>
+        <workflow-invocation-biocompute
+            v-if="invocation"
+            :invocation="invocation.id"
+            :invocation-and-job-terminal="invocationAndJobTerminal"
+        />
         <workflow-invocation-details
             v-if="invocation"
             :invocation="invocation"
@@ -69,6 +71,7 @@
 import { cancelWorkflowScheduling } from "./services";
 import { getRootFromIndexLink } from "onload";
 import WorkflowInvocationDetails from "./WorkflowInvocationDetails";
+import WorkflowInvocationBiocompute from "./WorkflowInvocationBiocompute"
 
 import JOB_STATES_MODEL from "mvc/history/job-states-model";
 import mixin from "components/JobStates/mixin";
@@ -82,6 +85,7 @@ export default {
     components: {
         ProgressBar,
         WorkflowInvocationDetails,
+        WorkflowInvocationBiocompute,
     },
     mixins: [mixin],
     props: {
