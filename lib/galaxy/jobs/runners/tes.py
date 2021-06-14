@@ -19,6 +19,12 @@ log = logging.getLogger(__name__)
 
 __all__ = ('TESJobRunner', )
 
+GENERIC_REMOTE_ERROR = "Failed to communicate with remote job server."
+FAILED_REMOTE_ERROR = "Remote job server indicated a problem running or monitoring this job."
+LOST_REMOTE_ERROR = "Remote job server could not determine this job's state."
+
+DEFAULT_GALAXY_URL = "http://localhost:8080"
+
 
 class TESJobState(AsynchronousJobState):
     def __init__(self, **kwargs):
@@ -40,7 +46,9 @@ class TESJobRunner(AsynchronousJobRunner):
     def __init__(self, app, nworkers, **kwargs):
         """Initialize this job runner and start the monitor thread"""
         super(TESJobRunner, self).__init__(app, nworkers, **kwargs)
-        print("Here")
+        self.container_workdir = "/tmp"
+        # self.tes_url = tes_url
+        # self.tes_client = tes.HTTPClient(url=self.tes_url)
         self._init_monitor_thread()
         self._init_worker_threads()
 
@@ -130,15 +138,15 @@ class TESJobRunner(AsynchronousJobRunner):
 
     def _concat_job_log(self, data, key):
         s = ''
-        for i, log in enumerate(data['logs']):
-            s += 'Step #{}\n'.format(i)
-            s += log.get(key, '')
+        # for i, log in enumerate(data['logs']):
+        #     s += 'Step #{}\n'.format(i)
+        #     s += log.get(key, '')
         return s
 
     def _concat_exit_codes(self, data):
         # TODO TES doesn't actually return the exit code yet
         return '0'
-        return ','.join([str(l['exitcode']) for l in data['logs']])
+        # return ','.join([str(l['exitcode']) for l in data['logs']])
 
     def check_watched_item(self, job_state):
         """
@@ -155,6 +163,12 @@ class TESJobRunner(AsynchronousJobRunner):
         job_complete = state == "COMPLETE"
         job_failed = "ERROR" in state
 
+        # run_results = client.full_status()
+        # remote_metadata_directory = run_results.get("metadata_directory", None)
+        # stdout = run_results.get('stdout', '')
+        # stderr = run_results.get('stderr', '')
+        # exit_code = run_results.get('returncode', None)
+        # job_metrics_directory = os.path.join(job_wrapper.working_directory, "metadata")
         # print '=' * 50
         # print state, job_state.running, data
 
@@ -175,17 +189,17 @@ class TESJobRunner(AsynchronousJobRunner):
 
         if job_complete:
             if job_state.job_wrapper.get_state() != model.Job.states.DELETED:
-                #external_metadata = not asbool( job_state.job_wrapper.job_destination.params.get( "embed_metadata_in_job", True) )
+                # external_metadata = not asbool( job_state.job_wrapper.job_destination.params.get( "embed_metadata_in_job", True) )
                 # if external_metadata:
-                #self._handle_metadata_externally( job_state.job_wrapper, resolve_requirements=True )
-                # with open(job_state.output_file, 'w') as fh:
-                #     fh.write(self._concat_job_log(data, 'stdout'))
+                # self._handle_metadata_externally( job_state.job_wrapper, resolve_requirements=True )
+                with open(job_state.output_file, 'w') as fh:
+                    fh.write(self._concat_job_log(data, 'stdout'))
 
-                # with open(job_state.error_file, 'w') as fh:
-                #     fh.write(self._concat_job_log(data, 'stderr'))
+                with open(job_state.error_file, 'w') as fh:
+                    fh.write(self._concat_job_log(data, 'stderr'))
 
-                # with open(job_state.exit_code_file, 'w') as fh:
-                #     fh.write(self._concat_exit_codes(data))
+                with open(job_state.exit_code_file, 'w') as fh:
+                    fh.write(self._concat_exit_codes(data))
 
                 log.debug("(%s/%s) job has completed" % (galaxy_id_tag, job_id))
                 self.mark_as_finished(job_state)
