@@ -6,6 +6,7 @@ from selenium.webdriver.common.keys import Keys
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_NESTED_SIMPLE,
     WORKFLOW_OPTIONAL_TRUE_INPUT_COLLECTION,
+    WORKFLOW_SELECT_FROM_OPTIONAL_DATASET,
     WORKFLOW_SIMPLE_CAT_TWICE,
     WORKFLOW_SIMPLE_MAPPING,
     WORKFLOW_WITH_INVALID_STATE,
@@ -92,14 +93,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
     @selenium_test
     def test_optional_select_data_field(self):
         editor = self.components.workflow_editor
-        workflow_id = self.workflow_populator.upload_yaml_workflow("""
-class: GalaxyWorkflow
-steps:
-  select_from_dataset_optional:
-    tool_id: select_from_dataset_optional
-    state:
-      select_single: null
-      """)
+        workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SELECT_FROM_OPTIONAL_DATASET)
         self.workflow_index_open()
         self.workflow_index_click_option("Edit")
         editor = self.components.workflow_editor
