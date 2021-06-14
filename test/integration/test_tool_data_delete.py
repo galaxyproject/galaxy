@@ -61,7 +61,10 @@ class AdminToolDataIntegrationTestCase(integration_util.IntegrationTestCase):
         self.assertEquals(len(updated_fields), original_count + 1)
         new_field = updated_fields[-1]
         url = self._api_url(f"tool_data/testbeta?key={self.galaxy_interactor.api_key}")
-        delete_response = delete(url, data=json.dumps({"values": "\t".join(new_field)}))
+
+        # TODO remove the headers here, use the interactor _delete method and add json parameter to it
+        delete_response = delete(url, data=json.dumps({"values": "\t".join(new_field)}), headers={'Content-Type': 'application/json'})
+
         delete_response.raise_for_status()
         time.sleep(2)
         show_response = self._get("tool_data/testbeta")
