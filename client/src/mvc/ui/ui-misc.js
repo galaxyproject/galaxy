@@ -215,7 +215,8 @@ export var TextSelect = Backbone.View.extend({
     initialize: function (options) {
         this.select = new options.SelectClass.View(options);
         this.model = this.select.model;
-        this.text = new Input({
+        const textInputClass = options.optional ? NullableText : Input;
+        this.text = new textInputClass({
             onchange: this.model.get("onchange"),
         });
         this.on("change", () => {
