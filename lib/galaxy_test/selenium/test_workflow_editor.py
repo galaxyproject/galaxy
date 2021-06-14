@@ -409,6 +409,8 @@ steps:
     def test_editor_subworkflow_tool_upgrade_message(self):
         workflow_populator = self.workflow_populator
         embedded_workflow = yaml.safe_load(WORKFLOW_WITH_OLD_TOOL_VERSION)
+        # Create invalid tool state
+        embedded_workflow['steps']['mul_versions']['state']['inttest'] = 'Invalid'
         outer_workflow = yaml.safe_load("""
 class: GalaxyWorkflow
 inputs:
@@ -425,6 +427,7 @@ steps:
         self.workflow_index_click_option("Edit")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_modal_has_text("Using version '0.2' instead of version '0.0.1'")
+        self.assert_modal_has_text("parameter 'inttest': an integer or workflow parameter is required")
         self.screenshot("workflow_editor_subworkflow_tool_upgrade")
         self.components.workflow_editor.modal_button_continue.wait_for_and_click()
         self.assert_has_changes_and_save()
