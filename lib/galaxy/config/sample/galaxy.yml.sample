@@ -809,6 +809,10 @@ galaxy:
   # 0 to disable password expiration.
   #password_expiration_period: 0
 
+  # Allow users to manage their account data, change passwords or delete
+  # their accounts.
+  #enable_account_interface: true
+
   # Galaxy Session Timeout This provides a timeout (in minutes) after
   # which a user will have to log back in. A duration of 0 disables this
   # feature.
