@@ -440,16 +440,6 @@ class ExportsHistoryMixin:
         return job
 
 
-class ImportsHistoryMixin:
-
-    def queue_history_import(self, trans, archive_type, archive_source):
-        # Run job to do import.
-        history_imp_tool = trans.app.toolbox.get_tool('__IMPORT_HISTORY__')
-        incoming = {'__ARCHIVE_SOURCE__': archive_source, '__ARCHIVE_TYPE__': archive_type}
-        job, _ = history_imp_tool.execute(trans, incoming=incoming)
-        return job
-
-
 class UsesLibraryMixinItems(SharableItemSecurityMixin):
 
     def get_library_folder(self, trans, id, check_ownership=False, check_accessible=True):

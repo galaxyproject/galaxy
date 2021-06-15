@@ -42,7 +42,6 @@ from galaxy.webapps.base.controller import (
     BaseUIController,
     ERROR,
     ExportsHistoryMixin,
-    ImportsHistoryMixin,
     INFO,
     SharableMixin,
     SUCCESS,
@@ -237,7 +236,7 @@ class HistoryAllPublishedGrid(grids.Grid):
 
 
 class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesItemRatings,
-                        ExportsHistoryMixin, ImportsHistoryMixin):
+                        ExportsHistoryMixin):
     history_manager: histories.HistoryManager = depends(histories.HistoryManager)
     history_export_view: histories.HistoryExportView = depends(histories.HistoryExportView)
     history_serializer: histories.HistorySerializer = depends(histories.HistorySerializer)

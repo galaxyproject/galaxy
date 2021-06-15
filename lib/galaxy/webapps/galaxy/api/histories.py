@@ -36,14 +36,13 @@ from galaxy.web import (
 )
 from galaxy.webapps.base.controller import (
     ExportsHistoryMixin,
-    ImportsHistoryMixin,
 )
 from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
 
 
-class HistoriesController(BaseGalaxyAPIController, ExportsHistoryMixin, ImportsHistoryMixin):
+class HistoriesController(BaseGalaxyAPIController, ExportsHistoryMixin):
     citations_manager: citations.CitationsManager = depends(citations.CitationsManager)
     user_manager: users.UserManager = depends(users.UserManager)
     workflow_manager: workflows.WorkflowsManager = depends(workflows.WorkflowsManager)
@@ -353,7 +352,7 @@ class HistoriesController(BaseGalaxyAPIController, ExportsHistoryMixin, ImportsH
                 archive_type = "file"
             else:
                 raise exceptions.MessageException("Please provide a url or file.")
-            job = self.queue_history_import(trans, archive_type=archive_type, archive_source=archive_source)
+            job = self.manager.queue_history_import(trans, archive_type=archive_type, archive_source=archive_source)
             job_dict = job.to_dict()
             job_dict["message"] = f"Importing history from source '{archive_source}'. This history will be visible when the import is complete."
             return trans.security.encode_all_ids(job_dict)
