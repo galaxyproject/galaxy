@@ -34,15 +34,12 @@ from galaxy.web import (
     expose_api_anonymous_and_sessionless,
     expose_api_raw,
 )
-from galaxy.webapps.base.controller import (
-    ExportsHistoryMixin,
-)
 from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
 
 
-class HistoriesController(BaseGalaxyAPIController, ExportsHistoryMixin):
+class HistoriesController(BaseGalaxyAPIController):
     citations_manager: citations.CitationsManager = depends(citations.CitationsManager)
     user_manager: users.UserManager = depends(users.UserManager)
     workflow_manager: workflows.WorkflowsManager = depends(workflows.WorkflowsManager)
@@ -513,7 +510,7 @@ class HistoriesController(BaseGalaxyAPIController, ExportsHistoryMixin):
             include_deleted = kwds.get("include_deleted", False)
             directory_uri = kwds.get("directory_uri", None)
             file_name = kwds.get("file_name", None)
-            job = self.queue_history_export(
+            job = self.manager.queue_history_export(
                 trans,
                 history,
                 gzip=gzip,
@@ -556,7 +553,7 @@ class HistoriesController(BaseGalaxyAPIController, ExportsHistoryMixin):
         ``download_url``.
         """
         jeha = self.history_export_view.get_ready_jeha(trans, id, jeha_id)
-        return self.serve_ready_history_export(trans, jeha)
+        return self.manager.serve_ready_history_export(trans, jeha)
 
     @expose_api
     def get_custom_builds_metadata(self, trans, id, payload=None, **kwd):
