@@ -1573,6 +1573,7 @@ class BaseDatasetCollectionPopulator:
             if contents:
                 new_kwds["content"] = contents[i]
             datasets.append(self.dataset_populator.new_dataset(history_id, **new_kwds))
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         return datasets
 
     def wait_for_dataset_collection(self, create_payload, assert_ok=False, timeout=DEFAULT_TIMEOUT):
