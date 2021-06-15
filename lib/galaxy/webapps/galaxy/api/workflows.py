@@ -1082,7 +1082,6 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
             if tag.user_tname not in keywords:
                 keywords.append(tag.user_tname)
 
-        metrics = {}
         tools, input_subdomain, output_subdomain, pipeline_steps, software_prerequisites = [], [], [], [], []
         for step in workflow_invocation.steps:
             if step.workflow_step.type == 'tool':
@@ -1090,7 +1089,7 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
                 for wo in step.workflow_step.workflow_outputs:
                     workflow_outputs_list.add(wo.output_name)
                 for job in step.jobs:
-                    metrics[i] = summarize_job_metrics(trans, job)
+                    
                     for job_input in job.input_datasets:
                         if hasattr(job_input.dataset, 'dataset_id'):
                             encoded_dataset_id = trans.security.encode_id(job_input.dataset.dataset_id)
@@ -1159,7 +1158,6 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
                         'access_time': step.workflow_step.update_time.isoformat(),
                     }
                     input_subdomain.append(input_obj)
-
             if step.workflow_step.type == 'data_collection_input' and step.output_dataset_collections:
                 for output_dataset_collection_association in step.output_dataset_collections:
                     encoded_dataset_id = trans.security.encode_id(output_dataset_collection_association.dataset_collection_id)
@@ -1281,6 +1279,62 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         trans.response.headers["Content-Disposition"] = f'attachment; filename="bco_{invocation_id}.json"'
         trans.response.set_content_type("application/json")
         return format_return_as_json(ret_dict, pretty=True)
+
+    def _generate_invocation_metrics(self, trans, invocation_id, **kwd):
+        """
+        build a dictionary of invocation metrics
+        """
+        decoded_workflow_invocation_id = self.decode_id(invocation_id)
+        workflow_invocation = self.workflow_manager.get_invocation(trans, decoded_workflow_invocation_id)
+        history = workflow_invocation.history
+
+        metrics, h_metrics = {}, {}
+        h_contents = self.history_contents_manager.contained(history)
+
+        for i, step in enumerate(workflow_invocation.steps):
+            if step.workflow_step.type == 'tool':
+                tool_id = step.workflow_step.tool_id.split('/')[-2:]
+                for job in step.jobs:
+                    job_metrics = summarize_job_metrics(trans, job)
+                    metrics[i] = {
+                        'tool_name': tool_id[0],
+                        'tool_version': tool_id[1],
+                        'galaxy_slots': '',
+                        'runtime_seconds': '',
+                        'job_inputs': [],
+                        'job_outputs': []
+                    }
+                    for value in [x for x in job_metrics if x['name'] == 'galaxy_slots']:
+                        metrics[i]['galaxy_slots'] = value['raw_value']
+                    for value in [x for x in job_metrics if x['name'] == 'runtime_seconds']:
+                        metrics[i]['runtime_seconds'] = value['raw_value']
+                    for job_input in job.input_datasets:
+                        if hasattr(job_input.dataset, 'dataset_id'):
+                            for h in [x for x in h_contents if x.dataset_id == job_input.dataset.id]:
+                                h_metrics = {
+                                    'total_size': int(h.dataset.total_size),
+                                    'uuid': str(h.dataset.uuid),
+                                    'job_input_name': job_input.name
+                                }
+                                metrics[i]['job_inputs'].append(h_metrics)
+                    for job_output in job.output_datasets:
+                        if hasattr(job_output.dataset, 'dataset_id'):
+                            for h in [x for x in h_contents if x.dataset_id == job_output.dataset.id]:
+                                h_metrics = {
+                                    'total_size': int(h.dataset.total_size),
+                                    'uuid': str(h.dataset.uuid),
+                                    'job_output_name': job_output.name
+                                }
+                                metrics[i]['job_outputs'].append(h_metrics)
+        return metrics
+
+    @expose_api
+    def export_invocation_metrics(self, trans, invocation_id, **kwd):
+        '''
+        GET /api/invocations/{invocations_id}/invocation_metrics
+        Return a dictionary with metrics from a workflow invocation. 
+        '''
+        return self._generate_invocation_metrics(trans, invocation_id, **kwd)
 
     @expose_api
     def invocation_step(self, trans, invocation_id, step_id, **kwd):
