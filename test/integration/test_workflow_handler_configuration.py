@@ -302,3 +302,16 @@ class ExplicitWorkflowHandlersOffTestCase(BaseWorkflowHandlerConfigurationTestCa
 
     def test_app_is_not_workflow_scheduler(self):
         assert not self.is_app_workflow_scheduler
+
+
+class ExplicitWorkflowHandlersOffPoolTestCase(BaseWorkflowHandlerConfigurationTestCase):
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["workflow_schedulers_config_file"] = config_file(WORKFLOW_SCHEDULERS_CONFIG_TEMPLATE, assign_with=cls.assign_with)
+        config["server_name"] = "handler0"  # Configured as a job handler but not a workflow handler.
+        config["attach_to_pools"] = ["job-handlers"]
+
+    def test_app_is_not_workflow_scheduler(self):
+        assert not self.is_app_workflow_scheduler
