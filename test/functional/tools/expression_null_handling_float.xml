@@ -1,0 +1,22 @@
+<tool name="expression_null_handling_float" id="expression_null_handling_float"
+	  version="0.1.0" tool_type="expression">
+    <expression type="ecma5.1">
+        {return {'float_out': $job.float_input};}
+    </expression>
+    <inputs>
+        <param type="float" label="Float input." name="float_input" optional="true" />
+    </inputs>
+    <outputs>
+        <output type="float" name="float_out" from="float_out" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="float_input" value_json="7.2" />
+            <output name="float_out" value_json="7.2" />
+        </test>
+        <test>
+            <param name="float_input" value_json="null" />
+            <output name="float_out" value_json="null" />
+        </test>
+    </tests>
+</tool>

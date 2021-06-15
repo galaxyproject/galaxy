@@ -5,7 +5,6 @@ import sys
 from string import Template
 
 import markupsafe
-from six import text_type
 
 from galaxy.util import nice_size, unicodify
 
@@ -78,11 +77,11 @@ def get_env_var_values(install_environment):
 
 def get_file_type_str(changeset_revision, file_type):
     if file_type == 'zip':
-        file_type_str = '%s.zip' % changeset_revision
+        file_type_str = f'{changeset_revision}.zip'
     elif file_type == 'bz2':
-        file_type_str = '%s.tar.bz2' % changeset_revision
+        file_type_str = f'{changeset_revision}.tar.bz2'
     elif file_type == 'gz':
-        file_type_str = '%s.tar.gz' % changeset_revision
+        file_type_str = f'{changeset_revision}.tar.gz'
     else:
         file_type_str = ''
     return file_type_str
@@ -114,8 +113,8 @@ def remove_dir(dir):
 def size_string(raw_text, size=MAX_DISPLAY_SIZE):
     """Return a subset of a string (up to MAX_DISPLAY_SIZE) translated to a safe string for display in a browser."""
     if raw_text and len(raw_text) >= size:
-        large_str = '\nFile contents truncated because file size is larger than maximum viewing size of %s\n' % nice_size(size)
-        raw_text = '%s%s' % (raw_text[0:size], large_str)
+        large_str = f'\nFile contents truncated because file size is larger than maximum viewing size of {nice_size(size)}\n'
+        raw_text = f'{raw_text[0:size]}{large_str}'
     return raw_text or ''
 
 
@@ -142,8 +141,8 @@ def to_html_string(text):
         try:
             text = unicodify(text)
         except UnicodeDecodeError as e:
-            return "Error decoding string: %s" % str(e)
-        text = text_type(markupsafe.escape(text))
+            return f"Error decoding string: {str(e)}"
+        text = str(markupsafe.escape(text))
         text = text.replace('\n', '<br/>')
         text = text.replace('    ', '&nbsp;&nbsp;&nbsp;&nbsp;')
         text = text.replace(' ', '&nbsp;')

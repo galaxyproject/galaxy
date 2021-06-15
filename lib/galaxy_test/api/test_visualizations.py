@@ -5,6 +5,7 @@ from requests import (
     put
 )
 
+from galaxy_test.api.sharable import SharingApiTests
 from galaxy_test.base.api_asserts import assert_has_keys
 from ._framework import ApiTestCase
 
@@ -19,7 +20,13 @@ REVISION_KEYS = [
 ]
 
 
-class VisualizationsApiTestCase(ApiTestCase):
+class VisualizationsApiTestCase(ApiTestCase, SharingApiTests):
+
+    api_name = "visualizations"
+
+    def create(self, _: str) -> str:
+        viz_id, _ = self._create_viz()
+        return viz_id
 
     def test_index_and_show(self):
         self._create_viz()  # to ensure on exists to index
@@ -46,16 +53,22 @@ class VisualizationsApiTestCase(ApiTestCase):
         response = self._raw_create_viz(config="3 = nime")
         self._assert_status_code_is(response, 400)
 
+    def test_sharing(self):
+        viz_id, _ = self._create_viz()
+        sharing_response = self._get(f"visualizations/{viz_id}/sharing")
+        self._assert_status_code_is(sharing_response, 200)
+        self._assert_has_keys(sharing_response.json(), "title", "importable", "id", "username_and_slug", "published", "users_shared_with")
+
     def test_update_title(self):
         viz_id, viz = self._create_viz()
-        update_url = self._api_url("visualizations/%s" % viz_id, use_key=True)
+        update_url = self._api_url(f"visualizations/{viz_id}", use_key=True)
         response = put(update_url, {"title": "New Name"})
         self._assert_status_code_is(response, 200)
         updated_viz = self._show_viz(viz_id)
         assert updated_viz["title"] == "New Name"
 
     def _show_viz(self, viz_id, assert_ok=True):
-        show_response = self._get("visualizations/%s" % viz_id)
+        show_response = self._get(f"visualizations/{viz_id}")
         if assert_ok:
             self._assert_status_code_is(show_response, 200)
 
@@ -70,7 +83,7 @@ class VisualizationsApiTestCase(ApiTestCase):
         uuid_str = str(uuid.uuid4())
 
         title = title if title is not None else 'Test Visualization'
-        slug = slug if slug is not None else 'test-visualization-%s' % uuid_str
+        slug = slug if slug is not None else f'test-visualization-{uuid_str}'
         config = config if config is not None else json.dumps({
             "x": 10,
             "y": 12,

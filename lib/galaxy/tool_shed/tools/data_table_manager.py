@@ -9,7 +9,7 @@ from galaxy.util.tool_shed import xml_util
 log = logging.getLogger(__name__)
 
 
-class ShedToolDataTableManager(object):
+class ShedToolDataTableManager:
 
     def __init__(self, app):
         self.app = app
@@ -65,7 +65,7 @@ class ShedToolDataTableManager(object):
         repository is being installed or reinstalled.
         """
         missing_data_table_entry = False
-        for index, repository_tools_tup in enumerate(repository_tools_tups):
+        for repository_tools_tup in repository_tools_tups:
             tup_path, guid, repository_tool = repository_tools_tup
             if repository_tool.params_with_missing_data_table_entry:
                 missing_data_table_entry = True
@@ -118,7 +118,7 @@ class ShedToolDataTableManager(object):
 
     def install_tool_data_tables(self, tool_shed_repository, tool_index_sample_files):
         TOOL_DATA_TABLE_FILE_NAME = 'tool_data_table_conf.xml'
-        TOOL_DATA_TABLE_FILE_SAMPLE_NAME = '%s.sample' % (TOOL_DATA_TABLE_FILE_NAME)
+        TOOL_DATA_TABLE_FILE_SAMPLE_NAME = f'{TOOL_DATA_TABLE_FILE_NAME}.sample'
         SAMPLE_SUFFIX = '.sample'
         SAMPLE_SUFFIX_OFFSET = -len(SAMPLE_SUFFIX)
         target_dir, tool_path, relative_target_dir = self.get_target_install_dir(tool_shed_repository)
@@ -145,7 +145,8 @@ class ShedToolDataTableManager(object):
                 for elem in tree.getroot():
                     # Append individual table elems or other elemes, but not tables elems.
                     if elem.tag == 'tables':
-                        for table_elem in elems:
+                        # TODO: this code need to be revised
+                        for _table_elem in elems:
                             elems.append(elem)
                     else:
                         elems.append(elem)

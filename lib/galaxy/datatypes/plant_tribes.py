@@ -18,7 +18,7 @@ class Smat(Text):
         try:
             return dataset.peek
         except Exception:
-            return "ESTScan scores matrices (%s)" % (nice_size(dataset.get_size()))
+            return f"ESTScan scores matrices ({nice_size(dataset.get_size())})"
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
@@ -103,14 +103,14 @@ class PlantTribesKsComponents(Tabular):
         try:
             return dataset.peek
         except Exception:
-            return "Significant components in the Ks distribution (%s)" % (nice_size(dataset.get_size()))
+            return f"Significant components in the Ks distribution ({nice_size(dataset.get_size())})"
 
     def set_meta(self, dataset, **kwd):
         """
         Set the number of significant components in the Ks distribution.
         The dataset will always be on the order of less than 10 lines.
         """
-        super(PlantTribesKsComponents, self).set_meta(dataset, **kwd)
+        super().set_meta(dataset, **kwd)
         significant_components = []
         with open(dataset.file_name) as fh:
             for i, line in enumerate(fh):
@@ -133,7 +133,7 @@ class PlantTribesKsComponents(Tabular):
             if (dataset.metadata.number_comp == 1):
                 dataset.blurb = "1 significant component"
             else:
-                dataset.blurb = "%s significant components" % dataset.metadata.number_comp
+                dataset.blurb = f"{dataset.metadata.number_comp} significant components"
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'

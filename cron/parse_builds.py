@@ -4,7 +4,6 @@ Connects to the URL specified and outputs builds available at that
 DSN in tabular format.  UCSC Main gateway is used as default.
 build   description
 """
-from __future__ import print_function
 
 import sys
 import xml.etree.ElementTree as ElementTree

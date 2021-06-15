@@ -1,7 +1,6 @@
 """
 Migration script to add imported column for jobs table.
 """
-from __future__ import print_function
 
 import logging
 
@@ -23,7 +22,7 @@ def upgrade(migrate_engine):
     c = Column("imported", Boolean, default=False, index=True)
     add_column(c, Jobs_table, metadata, index_name="ix_job_imported")
     try:
-        migrate_engine.execute("UPDATE job SET imported=%s" % engine_false(migrate_engine))
+        migrate_engine.execute(f"UPDATE job SET imported={engine_false(migrate_engine)}")
     except Exception:
         log.exception("Updating column 'imported' of table 'job' failed.")
 

@@ -91,7 +91,7 @@ def main(argv=None):
     from galaxy.model import mapping
     mapping.init("/tmp", "sqlite:///:memory:", create_tables=True, object_store=object_store)
 
-    with open(args.objects, "r") as f:
+    with open(args.objects) as f:
         targets = yaml.safe_load(f)
         if not isinstance(targets, list):
             targets = [targets]

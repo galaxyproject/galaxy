@@ -1,12 +1,10 @@
-from __future__ import absolute_import
-
 import base64
 import json
 import logging
+from html.parser import HTMLParser
+from http.client import HTTPConnection
 
 from markupsafe import escape
-from six.moves.html_parser import HTMLParser
-from six.moves.http_client import HTTPConnection
 from sqlalchemy import and_
 from sqlalchemy.orm import eagerload, joinedload, lazyload, undefer
 from sqlalchemy.sql import expression
@@ -16,7 +14,11 @@ from galaxy import (
     util,
     web
 )
-from galaxy.managers import workflows
+from galaxy.managers.sharable import SlugBuilder
+from galaxy.managers.workflows import (
+    MissingToolsException,
+    WorkflowUpdateOptions,
+)
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.model.mapping import desc
 from galaxy.security.validate_user_input import validate_publicname
@@ -42,8 +44,7 @@ from galaxy.workflow.extract import (
 )
 from galaxy.workflow.modules import (
     load_module_sections,
-    module_factory,
-    WorkflowModuleInjector
+    module_factory
 )
 from galaxy.workflow.render import (
     STANDALONE_SVG_TEMPLATE,
@@ -181,6 +182,7 @@ class SingleTagContentsParser(HTMLParser):
 class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, UsesItemRatings):
     stored_list_grid = StoredWorkflowListGrid()
     published_list_grid = StoredWorkflowAllPublishedGrid()
+    slug_builder = SlugBuilder()
 
     @web.expose
     @web.require_login("use Galaxy workflows")
@@ -203,7 +205,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         Render workflow main page (management of existing workflows)
         """
         # Take care of proxy prefix in url as well
-        redirect_url = url_for('/') + 'workflow'
+        redirect_url = f"{url_for('/')}workflow"
         return trans.response.send_redirect(redirect_url)
 
     @web.expose
@@ -255,6 +257,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         stored_workflow.annotation = self.get_item_annotation_str(trans.sa_session, stored_workflow.user, stored_workflow)
         for step in stored_workflow.latest_workflow.steps:
             step.annotation = self.get_item_annotation_str(trans.sa_session, stored_workflow.user, step)
+        user_is_owner = True if trans.user == stored_workflow.user else False
         # Get rating data.
         user_item_rating = 0
         if trans.get_user():
@@ -264,8 +267,13 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             else:
                 user_item_rating = 0
         ave_item_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, stored_workflow)
-        return trans.fill_template_mako("workflow/display.mako", item=stored_workflow, item_data=stored_workflow.latest_workflow.steps,
-                                        user_item_rating=user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings)
+        return trans.fill_template_mako("workflow/display.mako",
+                                        item=stored_workflow,
+                                        item_data=stored_workflow.latest_workflow.steps,
+                                        user_item_rating=user_item_rating,
+                                        ave_item_rating=ave_item_rating,
+                                        num_ratings=num_ratings,
+                                        user_is_owner=user_is_owner)
 
     @web.expose
     def get_item_content_async(self, trans, id):
@@ -296,14 +304,14 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
                                     .first()
             if not other:
                 mtype = "error"
-                msg = ("User '%s' does not exist" % escape(email))
+                msg = f"User '{escape(email)}' does not exist"
             elif other == trans.get_user():
                 mtype = "error"
                 msg = ("You cannot share a workflow with yourself")
             elif trans.sa_session.query(model.StoredWorkflowUserShareAssociation) \
                     .filter_by(user=other, stored_workflow=stored).count() > 0:
                 mtype = "error"
-                msg = ("Workflow already shared with '%s'" % escape(email))
+                msg = f"Workflow already shared with '{escape(email)}'"
             else:
                 share = model.StoredWorkflowUserShareAssociation()
                 share.stored_workflow = stored
@@ -311,7 +319,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
                 session = trans.sa_session
                 session.add(share)
                 session.flush()
-                trans.set_message("Workflow '%s' shared with user '%s'" % (escape(stored.name), escape(other.email)))
+                trans.set_message(f"Workflow '{escape(stored.name)}' shared with user '{escape(other.email)}'")
                 return trans.response.send_redirect(url_for(controller='workflow', action='sharing', id=id))
         return trans.fill_template("/ind_share_base.mako",
                                    message=msg,
@@ -388,16 +396,16 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         # Set referer message.
         referer = trans.request.referer
         if referer:
-            referer_message = "<a href='%s'>return to the previous page</a>" % escape(referer)
+            referer_message = f"<a href='{escape(referer)}'>return to the previous page</a>"
         else:
-            referer_message = "<a href='%s'>go to Galaxy's start page</a>" % url_for('/')
+            referer_message = f"<a href='{url_for('/')}'>go to Galaxy's start page</a>"
 
         # Do import.
         stored = self.get_stored_workflow(trans, id, check_ownership=False)
         if stored.importable is False:
-            return trans.show_error_message("The owner of this workflow has disabled imports via this link.<br>You can %s" % referer_message, use_panels=True)
+            return trans.show_error_message(f"The owner of this workflow has disabled imports via this link.<br>You can {referer_message}", use_panels=True)
         elif stored.deleted:
-            return trans.show_error_message("You can't import this workflow because it has been deleted.<br>You can %s" % referer_message, use_panels=True)
+            return trans.show_error_message(f"You can't import this workflow because it has been deleted.<br>You can {referer_message}", use_panels=True)
         self._import_shared_workflow(trans, stored)
 
         # Redirect to load galaxy frames.
@@ -465,7 +473,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         # TODO: user should be able to embed any item he has access to. see display_by_username_and_slug for security code.
         stored = self.get_stored_workflow(trans, id)
         if stored:
-            return "Embedded Workflow '%s'" % stored.name
+            return f"Embedded Workflow '{stored.name}'"
 
     @web.expose
     @web.json
@@ -512,9 +520,9 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         # Copy.
         new_stored = model.StoredWorkflow()
         if (save_as_name):
-            new_stored.name = '%s' % save_as_name
+            new_stored.name = f'{save_as_name}'
         else:
-            new_stored.name = "Copy of %s" % stored.name
+            new_stored.name = f"Copy of {stored.name}"
         new_stored.latest_workflow = stored.latest_workflow
         # Copy annotation.
         annotation_obj = self.get_item_annotation_obj(trans.sa_session, stored.user, stored)
@@ -522,31 +530,31 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             self.add_item_annotation(trans.sa_session, trans.get_user(), new_stored, annotation_obj.annotation)
         new_stored.copy_tags_from(trans.user, stored)
         if not owner:
-            new_stored.name += " shared by %s" % stored.user.email
+            new_stored.name += f" shared by {stored.user.email}"
         new_stored.user = user
         # Persist
         session = trans.sa_session
         session.add(new_stored)
         session.flush()
         # Display the management page
-        message = 'Created new workflow with name: %s' % escape(new_stored.name)
+        message = f'Created new workflow with name: {escape(new_stored.name)}'
         trans.set_message(message)
-        return_url = url_for('/') + 'workflow?status=done&message=%s' % escape(message)
+        return_url = f"{url_for('/')}workflow?status=done&message={escape(message)}"
         trans.response.send_redirect(return_url)
 
     @web.legacy_expose_api
     def create(self, trans, payload=None, **kwd):
         if trans.request.method == 'GET':
             return {
-                'title'  : 'Create Workflow',
-                'inputs' : [{
-                    'name'  : 'workflow_name',
-                    'label' : 'Name',
-                    'value' : 'Unnamed workflow'
+                'title': 'Create Workflow',
+                'inputs': [{
+                    'name': 'workflow_name',
+                    'label': 'Name',
+                    'value': 'Unnamed workflow'
                 }, {
-                    'name'  : 'workflow_annotation',
-                    'label' : 'Annotation',
-                    'help'  : 'A description of the workflow; annotation is shown alongside shared or published workflows.'
+                    'name': 'workflow_annotation',
+                    'label': 'Annotation',
+                    'help': 'A description of the workflow; annotation is shown alongside shared or published workflows.'
                 }]}
         else:
             user = trans.get_user()
@@ -558,7 +566,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             stored_workflow = model.StoredWorkflow()
             stored_workflow.name = workflow_name
             stored_workflow.user = user
-            self.create_item_slug(trans.sa_session, stored_workflow)
+            self.slug_builder.create_item_slug(trans.sa_session, stored_workflow)
             # And the first (empty) workflow revision
             workflow = model.Workflow()
             workflow.name = workflow_name
@@ -571,7 +579,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             session = trans.sa_session
             session.add(stored_workflow)
             session.flush()
-            return {'id': trans.security.encode_id(stored_workflow.id), 'message': 'Workflow %s has been created.' % workflow_name}
+            return {'id': trans.security.encode_id(stored_workflow.id), 'message': f'Workflow {workflow_name} has been created.'}
 
     @web.json
     def save_workflow_as(self, trans, workflow_name, workflow_data, workflow_annotation="", from_tool_form=False):
@@ -581,11 +589,11 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         """
         user = trans.get_user()
         if workflow_name is not None:
-            workflow_contents_manager = workflows.WorkflowContentsManager(trans.app)
+            workflow_contents_manager = self.app.workflow_contents_manager
             stored_workflow = model.StoredWorkflow()
             stored_workflow.name = workflow_name
             stored_workflow.user = user
-            self.create_item_slug(trans.sa_session, stored_workflow)
+            self.slug_builder.create_item_slug(trans.sa_session, stored_workflow)
             workflow = model.Workflow()
             workflow.name = workflow_name
             workflow.stored_workflow = stored_workflow
@@ -598,15 +606,18 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             session = trans.sa_session
             session.add(stored_workflow)
             session.flush()
-
+            workflow_update_options = WorkflowUpdateOptions(
+                update_stored_workflow_attributes=False,  # taken care of above
+                from_tool_form=from_tool_form,
+            )
             try:
                 workflow, errors = workflow_contents_manager.update_workflow_from_raw_description(
                     trans,
                     stored_workflow,
                     workflow_data,
-                    from_tool_form=from_tool_form,
+                    workflow_update_options,
                 )
-            except workflows.MissingToolsException as e:
+            except MissingToolsException as e:
                 return dict(
                     name=e.workflow.name,
                     message=("This workflow includes missing or invalid tools. "
@@ -631,25 +642,32 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         trans.sa_session.add(stored)
         trans.sa_session.flush()
         # Display the management page
-        message = "Workflow deleted: %s" % escape(stored.name)
+        message = f"Workflow deleted: {escape(stored.name)}"
         trans.set_message(message)
-        return trans.response.send_redirect(url_for('/') + 'workflow?status=done&message=%s' % escape(message))
+        return trans.response.send_redirect(f"{url_for('/')}workflow?status=done&message={escape(message)}")
 
     @web.expose
     @web.require_login("edit workflows")
-    def editor(self, trans, id=None, version=None):
+    def editor(self, trans, id=None, workflow_id=None, version=None):
         """
         Render the main workflow editor interface. The canvas is embedded as
         an iframe (necessary for scrolling to work properly), which is
         rendered by `editor_canvas`.
         """
         if not id:
+            if workflow_id:
+                workflow = trans.sa_session.query(model.Workflow).get(trans.security.decode_id(workflow_id))
+                stored_workflow = workflow.stored_workflow
+                self.security_check(trans, stored_workflow, True, False)
+                stored_workflow_id = trans.security.encode_id(stored_workflow.id)
+                return trans.response.send_redirect(f'{url_for("/")}workflow/editor?id={stored_workflow_id}')
+
             error("Invalid workflow id")
         stored = self.get_stored_workflow(trans, id)
         # The following query loads all user-owned workflows,
         # So that they can be copied or inserted in the workflow editor.
         workflows = trans.sa_session.query(model.StoredWorkflow) \
-            .filter_by(user=trans.user, deleted=False) \
+            .filter_by(user=trans.user, deleted=False, hidden=False) \
             .order_by(desc(model.StoredWorkflow.table.c.update_time)) \
             .options(joinedload('latest_workflow').joinedload('steps')) \
             .all()
@@ -660,7 +678,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
 
         # create workflow module models
         module_sections = []
-        for section_name, module_section in load_module_sections(trans).items():
+        for module_section in load_module_sections(trans).values():
             module_sections.append({
                 "title": module_section.get("title"),
                 "name": module_section.get("name"),
@@ -674,7 +692,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         # create data manager tool models
         data_managers = []
         if trans.user_is_admin and trans.app.data_managers.data_managers:
-            for data_manager_id, data_manager_val in trans.app.data_managers.data_managers.items():
+            for data_manager_val in trans.app.data_managers.data_managers.values():
                 tool = data_manager_val.tool
                 if not tool.hidden:
                     data_managers.append({
@@ -687,10 +705,10 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
 
         # create workflow models
         workflows = [{
-            'id'                  : trans.security.encode_id(workflow.id),
-            'latest_id'           : trans.security.encode_id(workflow.latest_workflow.id),
-            'step_count'          : len(workflow.latest_workflow.steps),
-            'name'                : workflow.name
+            'id': trans.security.encode_id(workflow.id),
+            'latest_id': trans.security.encode_id(workflow.latest_workflow.id),
+            'step_count': len(workflow.latest_workflow.steps),
+            'name': workflow.name
         } for workflow in workflows if workflow.id != stored.id]
 
         # identify item tags
@@ -701,15 +719,15 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
 
         # build workflow editor model
         editor_config = {
-            'id'                      : trans.security.encode_id(stored.id),
-            'name'                    : stored.name,
-            'tags'                    : item_tag_names,
-            'version'                 : version,
-            'annotation'              : self.get_item_annotation_str(trans.sa_session, trans.user, stored),
-            'toolbox'                 : trans.app.toolbox.to_dict(trans),
-            'moduleSections'          : module_sections,
-            'dataManagers'            : data_managers,
-            'workflows'               : workflows
+            'id': trans.security.encode_id(stored.id),
+            'name': stored.name,
+            'tags': item_tag_names,
+            'initialVersion': version,
+            'annotation': self.get_item_annotation_str(trans.sa_session, trans.user, stored),
+            'toolbox': trans.app.toolbox.to_dict(trans),
+            'moduleSections': module_sections,
+            'dataManagers': data_managers,
+            'workflows': workflows
         }
 
         # parse to mako
@@ -724,7 +742,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         """
         trans.workflow_building_mode = workflow_building_modes.ENABLED
         stored = self.get_stored_workflow(trans, id, check_ownership=True, check_accessible=False)
-        workflow_contents_manager = workflows.WorkflowContentsManager(trans.app)
+        workflow_contents_manager = self.app.workflow_contents_manager
         return workflow_contents_manager.workflow_to_dict(trans, stored, style="editor", version=version)
 
     @web.expose
@@ -758,8 +776,8 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         request = unicodify(request_raw.strip(), 'utf-8')
 
         # Do request and get result.
-        auth_header = base64.b64encode('%s:%s' % (myexp_username, myexp_password))
-        headers = {"Content-type": "text/xml", "Accept": "text/xml", "Authorization": "Basic %s" % auth_header}
+        auth_header = base64.b64encode(f'{myexp_username}:{myexp_password}')
+        headers = {"Content-type": "text/xml", "Accept": "text/xml", "Authorization": f"Basic {auth_header}"}
         myexp_url = trans.app.config.myexperiment_target_url
         conn = HTTPConnection(myexp_url)
         # NOTE: blocks web thread.
@@ -772,12 +790,12 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         parser = SingleTagContentsParser('id')
         parser.feed(response_data)
         myexp_workflow_id = parser.tag_content
-        workflow_list_str = " <br>Return to <a href='%s'>workflow list." % url_for(controller='workflows', action='list')
+        workflow_list_str = f" <br>Return to <a href='{url_for(controller='workflows', action='list')}'>workflow list."
         if myexp_workflow_id:
             return trans.show_message(
-                """Workflow '%s' successfully exported to myExperiment. <br/>
-                <a href="http://%s/workflows/%s">Click here to view the workflow on myExperiment</a> %s
-                """ % (stored.name, myexp_url, myexp_workflow_id, workflow_list_str),
+                """Workflow '{}' successfully exported to myExperiment. <br/>
+                <a href="http://{}/workflows/{}">Click here to view the workflow on myExperiment</a> {}
+                """.format(stored.name, myexp_url, myexp_workflow_id, workflow_list_str),
                 use_panels=True)
         else:
             return trans.show_error_message(
@@ -819,7 +837,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             return "Workflow cannot be exported due to missing tools."
         sname = stored.name
         sname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in sname)[0:150]
-        trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy-Workflow-%s.ga"' % (sname)
+        trans.response.headers["Content-Disposition"] = f'attachment; filename="Galaxy-Workflow-{sname}.ga"'
         trans.response.set_content_type('application/galaxy-archive')
         return stored_dict
 
@@ -863,69 +881,6 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
     def get_item(self, trans, id):
         return self.get_stored_workflow(trans, id)
 
-    @web.expose
-    def tag_outputs(self, trans, id, **kwargs):
-        stored = self.get_stored_workflow(trans, id, check_ownership=False)
-        user = trans.get_user()
-        if stored.user != user:
-            if trans.sa_session.query(model.StoredWorkflowUserShareAssociation) \
-                    .filter_by(user=user, stored_workflow=stored).count() == 0:
-                error("Workflow is not owned by or shared with current user")
-        # Get the latest revision
-        workflow = stored.latest_workflow
-        # It is possible for a workflow to have 0 steps
-        if len(workflow.steps) == 0:
-            error("Workflow cannot be tagged for outputs because it does not have any steps")
-        if workflow.has_cycles:
-            error("Workflow cannot be tagged for outputs because it contains cycles")
-        if workflow.has_errors:
-            error("Workflow cannot be tagged for outputs because of validation errors in some steps")
-        # Build the state for each step
-        errors = {}
-        has_upgrade_messages = False
-        # has_errors is never used
-        # has_errors = False
-        if kwargs:
-            # If kwargs were provided, the states for each step should have
-            # been POSTed
-            for step in workflow.steps:
-                if step.type == 'tool':
-                    # Extract just the output flags for this step.
-                    p = "%s|otag|" % step.id
-                    l = len(p)
-                    outputs = [k[l:] for (k, v) in kwargs.items() if k.startswith(p)]
-                    if step.workflow_outputs:
-                        for existing_output in step.workflow_outputs:
-                            if existing_output.output_name not in outputs:
-                                trans.sa_session.delete(existing_output)
-                            else:
-                                outputs.remove(existing_output.output_name)
-                    for outputname in outputs:
-                        m = model.WorkflowOutput(workflow_step_id=int(step.id), output_name=outputname)
-                        trans.sa_session.add(m)
-        # Prepare each step
-        trans.sa_session.flush()
-        module_injector = WorkflowModuleInjector(trans)
-        for step in workflow.steps:
-            step.upgrade_messages = {}
-            # Contruct modules
-            module_injector.inject(step)
-            if step.upgrade_messages:
-                has_upgrade_messages = True
-            if step.type == 'tool' or step.type is None:
-                # Error dict
-                if step.tool_errors:
-                    errors[step.id] = step.tool_errors
-        # Render the form
-        return trans.fill_template(
-            "workflow/tag_outputs.mako",
-            steps=workflow.steps,
-            workflow=stored,
-            has_upgrade_messages=has_upgrade_messages,
-            errors=errors,
-            incoming=kwargs
-        )
-
     def _workflow_to_svg_canvas(self, trans, stored):
         workflow = stored.latest_workflow
         workflow_canvas = WorkflowCanvas()
@@ -951,9 +906,9 @@ def _build_workflow_on_str(instance_ds_names):
     if num_multi_inputs == 0:
         return ""
     elif num_multi_inputs == 1:
-        return " on %s" % instance_ds_names[0]
+        return f" on {instance_ds_names[0]}"
     else:
-        return " on %s and %s" % (", ".join(instance_ds_names[0:-1]), instance_ds_names[-1])
+        return f" on {', '.join(instance_ds_names[0:-1])} and {instance_ds_names[-1]}"
 
 
 def _expand_multiple_inputs(kwargs):
@@ -1026,7 +981,7 @@ def _split_inputs(kwargs):
         input_val = kwargs[input_key]
         if isinstance(input_val, list):
             input_base = input_key[:-len("|input")]
-            mode_key = "%s|multi_mode" % input_base
+            mode_key = f"{input_base}|multi_mode"
             mode = kwargs.get(mode_key, "matched")
             if mode == "matched":
                 matched_multi_inputs[input_key] = input_val

@@ -9,9 +9,9 @@ from sqlalchemy import (
     Table
 )
 from sqlalchemy.exc import NoSuchTableError
-from sqlalchemy_utils import create_database, database_exists
 
 from galaxy.model import mapping
+from galaxy.model.database_utils import create_database, database_exists
 
 log = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ migrate_repository_directory = os.path.abspath(os.path.dirname(__file__)).replac
 migrate_repository = repository.Repository(migrate_repository_directory)
 
 
-def create_or_verify_database(url, galaxy_config_file, engine_options={}, app=None, map_install_models=False):
+def create_or_verify_database(url, galaxy_config_file, engine_options=None, app=None, map_install_models=False):
     """
     Check that the database is use-able, possibly creating it if empty (this is
     the only time we automatically create tables, otherwise we force the
@@ -32,18 +32,19 @@ def create_or_verify_database(url, galaxy_config_file, engine_options={}, app=No
     4) Database versioned but out of date --> fail with informative message, user must run "sh manage_db.sh upgrade"
     """
     # Create the base database if it doesn't yet exist.
+    engine_options = engine_options or {}
     new_database = not database_exists(url)
     if new_database:
         template = app and getattr(app.config, "database_template", None)
         encoding = app and getattr(app.config, "database_encoding", None)
         create_kwds = {}
 
-        message = "Creating database for URI [%s]" % url
+        message = f"Creating database for URI [{url}]"
         if template:
-            message += " from template [%s]" % template
+            message += f" from template [{template}]"
             create_kwds["template"] = template
         if encoding:
-            message += " with encoding [%s]" % encoding
+            message += f" with encoding [{encoding}]"
             create_kwds["encoding"] = encoding
         log.info(message)
         create_database(url, **create_kwds)
@@ -62,12 +63,13 @@ def create_or_verify_database(url, galaxy_config_file, engine_options={}, app=No
         migrate_to_current_version(engine, db_schema)
 
     def migrate_from_scratch():
-        log.info("Creating new database from scratch, skipping migrations")
-        current_version = migrate_repository.version().version
-        mapping.init(file_path='/tmp', url=url, map_install_models=map_install_models, create_tables=True)
-        schema.ControlledSchema.create(engine, migrate_repository, version=current_version)
-        db_schema = schema.ControlledSchema(engine, migrate_repository)
-        assert db_schema.version == current_version
+        if not os.environ.get("GALAXY_TEST_FORCE_DATABASE_MIGRATION"):
+            log.info("Creating new database from scratch, skipping migrations")
+            current_version = migrate_repository.version().version
+            mapping.init(file_path='/tmp', url=url, map_install_models=map_install_models, create_tables=True)
+            schema.ControlledSchema.create(engine, migrate_repository, version=current_version)
+            db_schema = schema.ControlledSchema(engine, migrate_repository)
+            assert db_schema.version == current_version
         migrate()
         if app:
             # skips the tool migration process.
@@ -123,16 +125,20 @@ def create_or_verify_database(url, galaxy_config_file, engine_options={}, app=No
     if migrate_repository.versions.latest != db_schema.version:
         config_arg = ''
         if galaxy_config_file and os.path.abspath(os.path.join(os.getcwd(), 'config', 'galaxy.ini')) != galaxy_config_file:
-            config_arg = ' -c %s' % galaxy_config_file.replace(os.path.abspath(os.getcwd()), '.')
+            config_arg = f" -c {galaxy_config_file.replace(os.path.abspath(os.getcwd()), '.')}"
         expect_msg = "Your database has version '%d' but this code expects version '%d'" % (db_schema.version, migrate_repository.versions.latest)
         instructions = ""
         if db_schema.version > migrate_repository.versions.latest:
             instructions = "To downgrade the database schema you have to checkout the Galaxy version that you were running previously. "
             cmd_msg = "sh manage_db.sh%s downgrade %d" % (config_arg, migrate_repository.versions.latest)
         else:
-            cmd_msg = "sh manage_db.sh%s upgrade" % config_arg
-        backup_msg = "Please backup your database and then migrate the database schema by running '%s'." % cmd_msg
-        raise Exception("%s. %s%s" % (expect_msg, instructions, backup_msg))
+            cmd_msg = f"sh manage_db.sh{config_arg} upgrade"
+        backup_msg = f"Please backup your database and then migrate the database schema by running '{cmd_msg}'."
+        allow_future_database = os.environ.get("GALAXY_ALLOW_FUTURE_DATABASE", False)
+        if db_schema.version > migrate_repository.versions.latest and allow_future_database:
+            log.warning("WARNING: Database is from the future, but GALAXY_ALLOW_FUTURE_DATABASE is set, so Galaxy will continue to start.")
+        else:
+            raise Exception(f"{expect_msg}. {instructions}{backup_msg}")
     else:
         log.info("At database version %d" % db_schema.version)
 
@@ -142,14 +148,14 @@ def migrate_to_current_version(engine, schema):
     try:
         changeset = schema.changeset(None)
     except Exception as e:
-        log.error("Problem determining migration changeset for engine [%s]" % engine)
+        log.error(f"Problem determining migration changeset for engine [{engine}]")
         raise e
     for ver, change in changeset:
         nextver = ver + changeset.step
-        log.info('Migrating %s -> %s... ' % (ver, nextver))
+        log.info(f'Migrating {ver} -> {nextver}... ')
         old_stdout = sys.stdout
 
-        class FakeStdout(object):
+        class FakeStdout:
             def __init__(self):
                 self.buffer = []
 

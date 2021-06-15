@@ -4,7 +4,6 @@
 See doc/source/admin/grt.rst for more detailed usage information.
 """
 import argparse
-import io
 import json
 import logging
 import os
@@ -47,7 +46,7 @@ def _init(args):
 
 def kw_metrics(job):
     return {
-        '%s_%s' % (metric.plugin, metric.metric_name): metric.metric_value
+        f'{metric.plugin}_{metric.metric_name}': metric.metric_value
         for metric in job.metrics
     }
 
@@ -100,7 +99,7 @@ def main(argv):
     REPORT_BASE = os.path.join(REPORT_DIR, REPORT_IDENTIFIER)
 
     if os.path.exists(CHECK_POINT_FILE):
-        with open(CHECK_POINT_FILE, 'r') as handle:
+        with open(CHECK_POINT_FILE) as handle:
             last_job_sent = int(handle.read())
     else:
         last_job_sent = -1
@@ -133,7 +132,7 @@ def main(argv):
         if end_job_id - last_job_sent > args.max_records:
             end_job_id = last_job_sent + args.max_records
 
-    annotate('endpoint_end', 'Processing jobs (%s, %s]' % (last_job_sent, end_job_id))
+    annotate('endpoint_end', f'Processing jobs ({last_job_sent}, {end_job_id}]')
 
     # Remember the last job sent.
     if end_job_id == last_job_sent:
@@ -146,8 +145,8 @@ def main(argv):
     blacklisted_tools = config['sanitization']['tools']
 
     annotate('export_jobs_start', 'Exporting Jobs')
-    with io.open(REPORT_BASE + '.jobs.tsv', 'w', encoding='utf-8') as handle_job:
-        handle_job.write(u'\t'.join(('id', 'tool_id', 'tool_version', 'state', 'create_time')) + '\n')
+    with open(REPORT_BASE + '.jobs.tsv', 'w', encoding='utf-8') as handle_job:
+        handle_job.write('\t'.join(('id', 'tool_id', 'tool_version', 'state', 'create_time')) + '\n')
         for offset_start in range(last_job_sent, end_job_id, args.batch_size):
             logging.debug("Processing %s:%s", offset_start, min(end_job_id, offset_start + args.batch_size))
             for job in sa_session.query(model.Job.id, model.Job.user_id, model.Job.tool_id, model.Job.tool_version, model.Job.state, model.Job.create_time) \
@@ -178,8 +177,8 @@ def main(argv):
     annotate('export_jobs_end')
 
     annotate('export_datasets_start', 'Exporting Datasets')
-    with io.open(REPORT_BASE + '.datasets.tsv', 'w', encoding='utf-8') as handle_datasets:
-        handle_datasets.write(u'\t'.join(('job_id', 'dataset_id', 'extension', 'file_size', 'param_name', 'type')) + '\n')
+    with open(REPORT_BASE + '.datasets.tsv', 'w', encoding='utf-8') as handle_datasets:
+        handle_datasets.write('\t'.join(('job_id', 'dataset_id', 'extension', 'file_size', 'param_name', 'type')) + '\n')
         for offset_start in range(last_job_sent, end_job_id, args.batch_size):
             logging.debug("Processing %s:%s", offset_start, min(end_job_id, offset_start + args.batch_size))
 
@@ -258,8 +257,8 @@ def main(argv):
     annotate('export_datasets_end')
 
     annotate('export_metric_num_start', 'Exporting Metrics (Numeric)')
-    with io.open(REPORT_BASE + '.metric_num.tsv', 'w', encoding='utf-8') as handle_metric_num:
-        handle_metric_num.write(u'\t'.join(('job_id', 'plugin', 'name', 'value')) + '\n')
+    with open(REPORT_BASE + '.metric_num.tsv', 'w', encoding='utf-8') as handle_metric_num:
+        handle_metric_num.write('\t'.join(('job_id', 'plugin', 'name', 'value')) + '\n')
         for offset_start in range(last_job_sent, end_job_id, args.batch_size):
             logging.debug("Processing %s:%s", offset_start, min(end_job_id, offset_start + args.batch_size))
             for metric in sa_session.query(model.JobMetricNumeric.job_id, model.JobMetricNumeric.plugin, model.JobMetricNumeric.metric_name, model.JobMetricNumeric.metric_value) \

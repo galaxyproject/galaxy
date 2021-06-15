@@ -1,16 +1,15 @@
 """
 Model objects for docker objects
 """
-from __future__ import absolute_import
 
 import logging
+import shlex
 
 try:
     import docker
 except ImportError:
     from galaxy.util.bunch import Bunch
     docker = Bunch(errors=Bunch(NotFound=None))
-from six.moves import shlex_quote
 
 from galaxy.containers import (
     Container,
@@ -25,13 +24,13 @@ from galaxy.util import (
 
 CPUS_LABEL = '_galaxy_cpus'
 IMAGE_LABEL = '_galaxy_image'
-CPUS_CONSTRAINT = 'node.labels.' + CPUS_LABEL
-IMAGE_CONSTRAINT = 'node.labels.' + IMAGE_LABEL
+CPUS_CONSTRAINT = f"node.labels.{CPUS_LABEL}"
+IMAGE_CONSTRAINT = f"node.labels.{IMAGE_LABEL}"
 
 log = logging.getLogger(__name__)
 
 
-class DockerAttributeContainer(object):
+class DockerAttributeContainer:
 
     def __init__(self, members=None):
         if members is None:
@@ -86,7 +85,7 @@ class DockerVolume(ContainerVolume):
         Docker volume syntax.
         """
         if not as_str:
-            raise ValueError("Failed to parse Docker volume from %s" % as_str)
+            raise ValueError(f"Failed to parse Docker volume from {as_str}")
         parts = as_str.split(":", 2)
         kwds = dict(host_path=parts[0])
         if len(parts) == 1:
@@ -107,10 +106,10 @@ class DockerVolume(ContainerVolume):
     def __str__(self):
         volume_str = ":".join(filter(lambda x: x is not None, (self.host_path, self.path, self.mode)))
         if "$" not in volume_str:
-            volume_for_cmd_line = shlex_quote(volume_str)
+            volume_for_cmd_line = shlex.quote(volume_str)
         else:
             # e.g. $_GALAXY_JOB_TMP_DIR:$_GALAXY_JOB_TMP_DIR:rw so don't single quote.
-            volume_for_cmd_line = '"%s"' % volume_str
+            volume_for_cmd_line = f'"{volume_str}"'
         return volume_for_cmd_line
 
     def to_native(self):
@@ -121,7 +120,7 @@ class DockerVolume(ContainerVolume):
 class DockerContainer(Container):
 
     def __init__(self, interface, id, name=None, inspect=None):
-        super(DockerContainer, self).__init__(interface, id, name=name)
+        super().__init__(interface, id, name=name)
         self._inspect = inspect
 
     @classmethod
@@ -186,7 +185,7 @@ class DockerContainer(Container):
 class DockerService(Container):
 
     def __init__(self, interface, id, name=None, image=None, inspect=None):
-        super(DockerService, self).__init__(interface, id, name=name)
+        super().__init__(interface, id, name=name)
         self._image = image
         self._inspect = inspect
         self._env = {}
@@ -375,7 +374,7 @@ class DockerService(Container):
         self.constraint_add(IMAGE_LABEL, '==', self.image)
 
 
-class DockerServiceConstraint(object):
+class DockerServiceConstraint:
 
     def __init__(self, name=None, op=None, value=None):
         self._name = name
@@ -394,10 +393,10 @@ class DockerServiceConstraint(object):
         return hash((self._name, self._op, self._value))
 
     def __repr__(self):
-        return '%s(%s%s%s)' % (self.__class__.__name__, self._name, self._op, self._value)
+        return f'{self.__class__.__name__}({self._name}{self._op}{self._value})'
 
     def __str__(self):
-        return '%s%s%s' % (self._name, self._op, self._value)
+        return f'{self._name}{self._op}{self._value}'
 
     @staticmethod
     def split_constraint_string(constraint_str):
@@ -407,7 +406,7 @@ class DockerServiceConstraint(object):
             if len(t[0]) < len(constraint[0]):
                 constraint = t
         if constraint[0] == constraint_str:
-            raise Exception('Unable to parse constraint string: %s' % constraint_str)
+            raise Exception(f'Unable to parse constraint string: {constraint_str}')
         return [x.strip() for x in constraint]
 
     @classmethod
@@ -451,7 +450,7 @@ class DockerServiceConstraints(DockerAttributeContainer):
         return DockerNodeLabels(members=[x.label for x in self.members])
 
 
-class DockerNode(object):
+class DockerNode:
 
     def __init__(self, interface, id=None, name=None, status=None,
                  availability=None, manager=False, inspect=None):
@@ -509,7 +508,7 @@ class DockerNode(object):
 
     @property
     def state(self):
-        return ('%s-%s' % (self._status, self._availability)).lower()
+        return (f'{self._status}-{self._availability}').lower()
 
     @property
     def cpus(self):
@@ -581,7 +580,7 @@ class DockerNode(object):
         self._interface.node_update(self.id, availability='drain')
 
 
-class DockerNodeLabel(object):
+class DockerNodeLabel:
 
     def __init__(self, name=None, value=None):
         self._name = name
@@ -598,10 +597,10 @@ class DockerNodeLabel(object):
         return hash((self._name, self._value))
 
     def __repr__(self):
-        return '%s(%s: %s)' % (self.__class__.__name__, self._name, self._value)
+        return f'{self.__class__.__name__}({self._name}: {self._value})'
 
     def __str__(self):
-        return '%s: %s' % (self._name, self._value)
+        return f'{self._name}: {self._value}'
 
     @property
     def name(self):
@@ -613,12 +612,12 @@ class DockerNodeLabel(object):
 
     @property
     def constraint_string(self):
-        return 'node.labels.{name}=={value}'.format(name=self.name, value=self.value)
+        return f'node.labels.{self.name}=={self.value}'
 
     @property
     def constraint(self):
         return DockerServiceConstraint(
-            name='node.labels.{name}'.format(name=self.name),
+            name=f'node.labels.{self.name}',
             op='==',
             value=self.value
         )
@@ -640,7 +639,7 @@ class DockerNodeLabels(DockerAttributeContainer):
         return DockerServiceConstraints(members=[x.constraint for x in self.members])
 
 
-class DockerTask(object):
+class DockerTask:
 
     # these are the possible *current* state terminal states
     terminal_states = (
@@ -677,7 +676,7 @@ class DockerTask(object):
         service = service or interface.service(id=t.get('ServiceID'))
         node = node or interface.node(id=t.get('NodeID'))
         if service:
-            name = service.name + '.' + str(t['Slot'])
+            name = f"{service.name}.{str(t['Slot'])}"
         else:
             name = t['ID']
         image = t['Spec']['ContainerSpec']['Image'].split('@', 1)[0],  # remove pin
@@ -745,7 +744,7 @@ class DockerTask(object):
 
     @property
     def state(self):
-        return ('%s-%s' % (self._desired_state, self._state)).lower()
+        return (f'{self._desired_state}-{self._state}').lower()
 
     @property
     def current_state(self):

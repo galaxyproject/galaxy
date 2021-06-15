@@ -14,7 +14,7 @@ assertion_module_names = ['text', 'tabular', 'xml', 'hdf5', 'archive', 'size']
 # <MODULE_NAME> to the list of assertion module names defined above.
 assertion_modules = []
 for assertion_module_name in assertion_module_names:
-    full_assertion_module_name = 'galaxy.tool_util.verify.asserts.' + assertion_module_name
+    full_assertion_module_name = f"galaxy.tool_util.verify.asserts.{assertion_module_name}"
     try:
         # Dynamically import module
         __import__(full_assertion_module_name)
@@ -33,14 +33,14 @@ def verify_assertions(data, assertion_description_list):
 
 def verify_assertion(data, assertion_description):
     tag = assertion_description["tag"]
-    assert_function_name = "assert_" + tag
+    assert_function_name = f"assert_{tag}"
     assert_function = None
     for assertion_module in assertion_modules:
         if hasattr(assertion_module, assert_function_name):
             assert_function = getattr(assertion_module, assert_function_name)
 
     if assert_function is None:
-        errmsg = "Unable to find test function associated with XML tag '%s'. Check your tool file syntax." % tag
+        errmsg = f"Unable to find test function associated with XML tag '{tag}'. Check your tool file syntax."
         raise AssertionError(errmsg)
 
     assert_function_args = getfullargspec(assert_function).args

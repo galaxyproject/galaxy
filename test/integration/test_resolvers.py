@@ -7,7 +7,7 @@ from galaxy_test.base.populators import (
 )
 from galaxy_test.driver import integration_util
 
-GNUPLOT = {u'version': u'4.6', u'type': u'package', u'name': u'gnuplot'}
+GNUPLOT = {'version': '4.6', 'type': 'package', 'name': 'gnuplot'}
 
 
 class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase):
@@ -159,7 +159,7 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase):
         if 'dependency_type' not in response:
             raise Exception("Response [%s] did not contain key 'dependency_type'" % response)
         dependency_type = response['dependency_type']
-        assert dependency_type == type, "Dependency type [%s] not the expected value [%s]" % (dependency_type, type)
+        assert dependency_type == type, f"Dependency type [{dependency_type}] not the expected value [{type}]"
         if 'exact' not in response:
             raise Exception("Response [%s] did not contain key 'exact'" % response)
         assert response['exact'] is exact

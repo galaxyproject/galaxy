@@ -5,13 +5,16 @@ import os
 import shutil
 import tarfile
 import tempfile
-from json import dump, dumps, load
+from json import (
+    dump,
+    dumps,
+    load,
+)
 from uuid import uuid4
 
-import six
 from bdbag import bdbag_api as bdb
 from boltons.iterutils import remap
-from sqlalchemy.orm import eagerload_all
+from sqlalchemy.orm import joinedload
 from sqlalchemy.sql import expression
 
 from galaxy.exceptions import MalformedContents, ObjectNotFound
@@ -20,6 +23,7 @@ from galaxy.util import FILENAME_VALID_CHARS
 from galaxy.util import in_directory
 from galaxy.util.bunch import Bunch
 from galaxy.util.path import safe_walk
+from ..custom_types import json_encoder
 from ..item_attrs import add_item_annotation, get_item_annotation_str
 from ... import model
 
@@ -33,7 +37,7 @@ ATTRS_FILENAME_LIBRARIES = 'libraries_attrs.txt'
 GALAXY_EXPORT_VERSION = "2"
 
 
-class ImportOptions(object):
+class ImportOptions:
 
     def __init__(self, allow_edit=False, allow_library_creation=False, allow_dataset_object_edit=None):
         self.allow_edit = allow_edit
@@ -43,7 +47,7 @@ class ImportOptions(object):
         self.allow_dataset_object_edit = allow_dataset_object_edit
 
 
-class SessionlessContext(object):
+class SessionlessContext:
 
     def __init__(self):
         self.objects = []
@@ -65,8 +69,7 @@ class SessionlessContext(object):
         return Bunch(find=find)
 
 
-@six.add_metaclass(abc.ABCMeta)
-class ModelImportStore(object):
+class ModelImportStore(metaclass=abc.ABCMeta):
 
     def __init__(self, import_options=None, app=None, user=None, object_store=None):
         if object_store is None:
@@ -75,7 +78,7 @@ class ModelImportStore(object):
         self.object_store = object_store
         self.app = app
         if app is not None:
-            self.sa_session = app.model.context.current
+            self.sa_session = app.model.session
             self.sessionless = False
         else:
             self.sa_session = SessionlessContext()
@@ -116,7 +119,6 @@ class ModelImportStore(object):
         and a history may contain multiple objects with the same 'hid'.
         """
 
-    @abc.abstractproperty
     def trust_hid(self, obj_attrs):
         """Trust HID when importing objects into a new History."""
 
@@ -128,7 +130,7 @@ class ModelImportStore(object):
             history_properties = self.new_history_properties()
             history_name = history_properties.get('name')
             if history_name:
-                history_name = 'imported from archive: %s' % history_name
+                history_name = f'imported from archive: {history_name}'
             else:
                 history_name = 'unnamed imported history'
 
@@ -310,13 +312,13 @@ class ModelImportStore(object):
                         # Do security check and move/copy dataset data.
                         archive_path = os.path.abspath(os.path.join(self.archive_dir, file_name))
                         if os.path.islink(archive_path):
-                            raise MalformedContents("Invalid dataset path: %s" % archive_path)
+                            raise MalformedContents(f"Invalid dataset path: {archive_path}")
 
                         temp_dataset_file_name = \
                             os.path.realpath(archive_path)
 
                         if not in_directory(temp_dataset_file_name, self.archive_dir):
-                            raise MalformedContents("Invalid dataset path: %s" % temp_dataset_file_name)
+                            raise MalformedContents(f"Invalid dataset path: {temp_dataset_file_name}")
 
                     if not file_name or not os.path.exists(temp_dataset_file_name):
                         dataset_instance.state = dataset_instance.states.DISCARDED
@@ -333,13 +335,13 @@ class ModelImportStore(object):
                         if dataset_extra_files_path:
                             dir_name = dataset_instance.dataset.extra_files_path_name
                             dataset_extra_files_path = os.path.join(self.archive_dir, dataset_extra_files_path)
-                            for root, dirs, files in safe_walk(dataset_extra_files_path):
+                            for root, _dirs, files in safe_walk(dataset_extra_files_path):
                                 extra_dir = os.path.join(dir_name, root.replace(dataset_extra_files_path, '', 1).lstrip(os.path.sep))
                                 extra_dir = os.path.normpath(extra_dir)
                                 for extra_file in files:
                                     source = os.path.join(root, extra_file)
                                     if not in_directory(source, self.archive_dir):
-                                        raise MalformedContents("Invalid dataset path: %s" % source)
+                                        raise MalformedContents(f"Invalid dataset path: {source}")
                                     self.object_store.update_from_file(
                                         dataset_instance.dataset, extra_dir=extra_dir,
                                         alt_name=extra_file, file_name=source,
@@ -368,7 +370,11 @@ class ModelImportStore(object):
                         assert 'id' in dataset_attrs
                         object_import_tracker.hdas_by_id[dataset_attrs['id']] = dataset_instance
                 else:
-                    object_import_tracker.lddas_by_key[dataset_attrs[object_key]] = dataset_instance
+                    if object_key in dataset_attrs:
+                        object_import_tracker.lddas_by_key[dataset_attrs[object_key]] = dataset_instance
+                    else:
+                        assert 'id' in dataset_attrs
+                        object_import_tracker.lddas_by_key[dataset_attrs['id']] = dataset_instance
 
     def _import_libraries(self, object_import_tracker):
         object_key = self.object_key
@@ -446,12 +452,12 @@ class ModelImportStore(object):
                             if hda_key in hdas_by_key:
                                 hda = hdas_by_key[hda_key]
                             else:
-                                raise KeyError("Failed to find exported hda with key [%s] of type [%s] in [%s]" % (hda_key, object_key, hdas_by_key))
+                                raise KeyError(f"Failed to find exported hda with key [{hda_key}] of type [{object_key}] in [{hdas_by_key}]")
                         else:
                             hda_id = hda_attrs["id"]
                             hdas_by_id = object_import_tracker.hdas_by_id
                             if hda_id not in hdas_by_id:
-                                raise Exception("Failed to find HDA with id [%s] in [%s]" % (hda_id, hdas_by_id))
+                                raise Exception(f"Failed to find HDA with id [{hda_id}] in [{hdas_by_id}]")
                             hda = hdas_by_id[hda_id]
                         dce.hda = hda
                     elif 'child_collection' in element_attrs:
@@ -484,29 +490,32 @@ class ModelImportStore(object):
             return dc
 
         for collection_attrs in collections_attrs:
-            dc = import_collection(collection_attrs["collection"])
-            if 'id' in collection_attrs and self.import_options.allow_edit and not self.sessionless:
-                hdca = self.sa_session.query(model.HistoryDatasetCollectionAssociation).get(collection_attrs["id"])
-                # TODO: edit attributes...
-            else:
-                hdca = model.HistoryDatasetCollectionAssociation(collection=dc,
-                                                                 visible=True,
-                                                                 name=collection_attrs['display_name'],
-                                                                 implicit_output_name=collection_attrs.get("implicit_output_name"))
-                self._attach_raw_id_if_editing(hdca, collection_attrs)
-
-                hdca.history = history
-                if new_history and self.trust_hid(collection_attrs):
-                    hdca.hid = collection_attrs['hid']
+            if 'collection' in collection_attrs:
+                dc = import_collection(collection_attrs["collection"])
+                if 'id' in collection_attrs and self.import_options.allow_edit and not self.sessionless:
+                    hdca = self.sa_session.query(model.HistoryDatasetCollectionAssociation).get(collection_attrs["id"])
+                    # TODO: edit attributes...
                 else:
-                    object_import_tracker.requires_hid.append(hdca)
+                    hdca = model.HistoryDatasetCollectionAssociation(collection=dc,
+                                                                     visible=True,
+                                                                     name=collection_attrs['display_name'],
+                                                                     implicit_output_name=collection_attrs.get("implicit_output_name"))
+                    self._attach_raw_id_if_editing(hdca, collection_attrs)
 
-            self._session_add(hdca)
-            if object_key in collection_attrs:
-                object_import_tracker.hdcas_by_key[collection_attrs[object_key]] = hdca
+                    hdca.history = history
+                    if new_history and self.trust_hid(collection_attrs):
+                        hdca.hid = collection_attrs['hid']
+                    else:
+                        object_import_tracker.requires_hid.append(hdca)
+
+                self._session_add(hdca)
+                if object_key in collection_attrs:
+                    object_import_tracker.hdcas_by_key[collection_attrs[object_key]] = hdca
+                else:
+                    assert 'id' in collection_attrs
+                    object_import_tracker.hdcas_by_id[collection_attrs['id']] = hdca
             else:
-                assert 'id' in collection_attrs
-                object_import_tracker.hdcas_by_id[collection_attrs['id']] = hdca
+                import_collection(collection_attrs)
 
     def _attach_raw_id_if_editing(self, obj, attrs):
         if self.sessionless and 'id' in attrs and self.import_options.allow_edit:
@@ -624,7 +633,7 @@ class ModelImportStore(object):
             if input_key in object_import_tracker.hdcas_by_key:
                 hdca = object_import_tracker.hdcas_by_key[input_key]
             if input_key in object_import_tracker.hdca_copied_from_sinks:
-                hdca = object_import_tracker.hdca_copied_from_sinks[input_key]
+                hdca = object_import_tracker.hdcas_by_key[object_import_tracker.hdca_copied_from_sinks[input_key]]
             return hdca
 
         def _find_dce(input_key):
@@ -741,7 +750,7 @@ def _copied_from_object_key(copied_from_chain, objects_by_key):
     return copied_from_object_key
 
 
-class ObjectImportTracker(object):
+class ObjectImportTracker:
     """Keep track of new and existing imported objects.
 
     Needed to re-establish connections and such in multiple passes.
@@ -763,7 +772,8 @@ class ObjectImportTracker(object):
 
 
 def get_import_model_store_for_directory(archive_dir, **kwd):
-    assert os.path.isdir(archive_dir)
+    if not os.path.isdir(archive_dir):
+        raise Exception(f"Could not find import model store for directory [{archive_dir}] (full path [{os.path.abspath(archive_dir)}])")
     if os.path.exists(os.path.join(archive_dir, ATTRS_FILENAME_EXPORT)):
         return DirectoryImportModelStoreLatest(archive_dir, **kwd)
     else:
@@ -784,7 +794,7 @@ class BaseDirectoryImportModelStore(ModelImportStore):
     def datasets_properties(self):
         datasets_attrs_file_name = os.path.join(self.archive_dir, ATTRS_FILENAME_DATASETS)
         datasets_attrs = load(open(datasets_attrs_file_name))
-        provenance_file_name = datasets_attrs_file_name + ".provenance"
+        provenance_file_name = f"{datasets_attrs_file_name}.provenance"
 
         if os.path.exists(provenance_file_name):
             provenance_attrs = load(open(provenance_file_name))
@@ -810,23 +820,24 @@ class BaseDirectoryImportModelStore(ModelImportStore):
 
     def jobs_properties(self):
         jobs_attr_file_name = os.path.join(self.archive_dir, ATTRS_FILENAME_JOBS)
-        jobs_attrs = load(open(jobs_attr_file_name))
-        return jobs_attrs
+        try:
+            return load(open(jobs_attr_file_name))
+        except FileNotFoundError:
+            return []
 
     def implicit_collection_jobs_properties(self):
         implicit_collection_jobs_attrs_file_name = os.path.join(self.archive_dir, ATTRS_FILENAME_IMPLICIT_COLLECTION_JOBS)
-        if os.path.exists(implicit_collection_jobs_attrs_file_name):
-            implicit_collection_jobs_attrs = load(open(implicit_collection_jobs_attrs_file_name))
-        else:
-            implicit_collection_jobs_attrs = []
-        return implicit_collection_jobs_attrs
+        try:
+            return load(open(implicit_collection_jobs_attrs_file_name))
+        except FileNotFoundError:
+            return []
 
 
 class DirectoryImportModelStore1901(BaseDirectoryImportModelStore):
     object_key = 'hid'
 
     def __init__(self, archive_dir, **kwd):
-        super(DirectoryImportModelStore1901, self).__init__(**kwd)
+        super().__init__(**kwd)
         archive_dir = os.path.realpath(archive_dir)
 
         # Bioblend previous to 17.01 exported histories with an extra subdir.
@@ -875,7 +886,7 @@ class DirectoryImportModelStoreLatest(BaseDirectoryImportModelStore):
     object_key = 'encoded_id'
 
     def __init__(self, archive_dir, **kwd):
-        super(DirectoryImportModelStoreLatest, self).__init__(**kwd)
+        super().__init__(**kwd)
         archive_dir = os.path.realpath(archive_dir)
         self.archive_dir = archive_dir
         if self.defines_new_history():
@@ -973,11 +984,10 @@ class BagArchiveImportModelStore(DirectoryImportModelStoreLatest):
         # Why this line though...?
         archive_dir = os.path.join(archive_dir, os.listdir(archive_dir)[0])
         bdb.revert_bag(archive_dir)
-        super(BagArchiveImportModelStore, self).__init__(archive_dir, **kwd)
+        super().__init__(archive_dir, **kwd)
 
 
-@six.add_metaclass(abc.ABCMeta)
-class ModelExportStore(object):
+class ModelExportStore(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def export_history(self, history, include_hidden=False, include_deleted=False):
@@ -1002,7 +1012,7 @@ class ModelExportStore(object):
 
 class DirectoryModelExportStore(ModelExportStore):
 
-    def __init__(self, export_directory, app=None, for_edit=False, serialize_dataset_objects=None, export_files=None, strip_metadata_files=True):
+    def __init__(self, export_directory, app=None, for_edit=False, serialize_dataset_objects=None, export_files=None, strip_metadata_files=True, serialize_jobs=True):
         """
         :param export_directory: path to export directory. Will be created if it does not exist.
         :param app: Galaxy App or app-like object. Must be provided if `for_edit` and/or `serialize_dataset_objects` are True
@@ -1010,6 +1020,7 @@ class DirectoryModelExportStore(ModelExportStore):
         :param serialize_dataset_objects: If True will encode IDs using the host secret. Defaults `for_edit`.
         :param export_files: How files should be exported, can be 'symlink', 'copy' or None, in which case files
                              will not be serialized.
+        :param serialize_jobs: Include job data in model export. Not needed for set_metadata script.
         """
         if not os.path.exists(export_directory):
             os.makedirs(export_directory)
@@ -1022,6 +1033,7 @@ class DirectoryModelExportStore(ModelExportStore):
             sessionless = True
             security = IdEncodingHelper(id_secret="randomdoesntmatter")
 
+        self.serialize_jobs = serialize_jobs
         self.sessionless = sessionless
         self.security = security
 
@@ -1106,7 +1118,7 @@ class DirectoryModelExportStore(ModelExportStore):
                 file_list = []
 
             if len(file_list):
-                arcname = os.path.join(dir_name, 'extra_files_path_%s' % dataset_hid)
+                arcname = os.path.join(dir_name, f'extra_files_path_{dataset_hid}')
                 add(extra_files_path, os.path.join(export_directory, arcname))
                 as_dict['extra_files_path'] = arcname
             else:
@@ -1129,7 +1141,7 @@ class DirectoryModelExportStore(ModelExportStore):
         with open(history_attrs_filename, 'w') as history_attrs_out:
             dump(history_attrs, history_attrs_out)
 
-        sa_session = app.model.context.current
+        sa_session = app.model.session
 
         # Write collections' attributes (including datasets list) to file.
         query = (sa_session.query(model.HistoryDatasetCollectionAssociation)
@@ -1160,7 +1172,7 @@ class DirectoryModelExportStore(ModelExportStore):
         query = (sa_session.query(model.HistoryDatasetAssociation)
                  .filter(model.HistoryDatasetAssociation.history == history)
                  .join("dataset")
-                 .options(eagerload_all("dataset.actions"))
+                 .options(joinedload("dataset").joinedload("actions"))
                  .order_by(model.HistoryDatasetAssociation.hid)
                  .filter(model.Dataset.purged == expression.false()))
         datasets = query.all()
@@ -1215,146 +1227,31 @@ class DirectoryModelExportStore(ModelExportStore):
 
         datasets_attrs = []
         provenance_attrs = []
-        for dataset_id, (dataset, include_files) in self.included_datasets.items():
+        for dataset, include_files in self.included_datasets.values():
             if include_files:
                 datasets_attrs.append(dataset)
             else:
                 provenance_attrs.append(dataset)
 
+        def to_json(attributes):
+            return json_encoder.encode([a.serialize(self.security, self.serialization_options) for a in attributes])
+
         datasets_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_DATASETS)
         with open(datasets_attrs_filename, 'w') as datasets_attrs_out:
-            dump(list(map(lambda d: d.serialize(self.security, self.serialization_options), datasets_attrs)), datasets_attrs_out)
+            datasets_attrs_out.write(to_json(datasets_attrs))
 
-        with open(datasets_attrs_filename + ".provenance", 'w') as provenance_attrs_out:
-            dump(list(map(lambda d: d.serialize(self.security, self.serialization_options), provenance_attrs)), provenance_attrs_out)
+        with open(f"{datasets_attrs_filename}.provenance", 'w') as provenance_attrs_out:
+            provenance_attrs_out.write(to_json(provenance_attrs))
 
         libraries_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_LIBRARIES)
-        with open(libraries_attrs_filename, 'w') as librariess_attrs_out:
-            dump(list(map(lambda d: d.serialize(self.security, self.serialization_options), self.included_libraries)), librariess_attrs_out)
+        with open(libraries_attrs_filename, 'w') as libraries_attrs_out:
+            libraries_attrs_out.write(to_json(self.included_libraries))
 
         collections_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_COLLECTIONS)
         with open(collections_attrs_filename, 'w') as collections_attrs_out:
-            dump(list(map(lambda d: d.serialize(self.security, self.serialization_options), self.collections_attrs)), collections_attrs_out)
+            collections_attrs_out.write(to_json(self.collections_attrs))
 
-        #
-        # Write jobs attributes file.
-        #
-
-        # Get all jobs associated with included HDAs.
-        jobs_dict = {}
-        implicit_collection_jobs_dict = {}
-
-        def record_associated_jobs(obj):
-            # Get the job object.
-            job = None
-            for assoc in obj.creating_job_associations:
-                job = assoc.job
-                break
-            if not job:
-                # No viable job.
-                return
-
-            jobs_dict[job.id] = job
-            icja = job.implicit_collection_jobs_association
-            if icja:
-                implicit_collection_jobs = icja.implicit_collection_jobs
-                implicit_collection_jobs_dict[implicit_collection_jobs.id] = implicit_collection_jobs
-
-        for hda_id, (hda, include_files) in self.included_datasets.items():
-            # Get the associated job, if any. If this hda was copied from another,
-            # we need to find the job that created the origial hda
-            job_hda = hda
-            while job_hda.copied_from_history_dataset_association:  # should this check library datasets as well?
-                job_hda = job_hda.copied_from_history_dataset_association
-            if not job_hda.creating_job_associations:
-                # No viable HDA found.
-                continue
-
-            record_associated_jobs(job_hda)
-
-        for hdca in self.included_collections:
-            record_associated_jobs(hdca)
-
-        # Get jobs' attributes.
         jobs_attrs = []
-        for id, job in jobs_dict.items():
-            # Don't attempt to serialize jobs for editing... yet at least.
-            if self.serialization_options.for_edit:
-                continue
-
-            job_attrs = job.serialize(self.security, self.serialization_options)
-
-            # -- Get input, output datasets. --
-
-            input_dataset_mapping = {}
-            output_dataset_mapping = {}
-            input_dataset_collection_mapping = {}
-            input_dataset_collection_element_mapping = {}
-            output_dataset_collection_mapping = {}
-            implicit_output_dataset_collection_mapping = {}
-
-            for assoc in job.input_datasets:
-                # Optional data inputs will not have a dataset.
-                if assoc.dataset:
-                    name = assoc.name
-                    if name not in input_dataset_mapping:
-                        input_dataset_mapping[name] = []
-
-                    input_dataset_mapping[name].append(self.exported_key(assoc.dataset))
-
-            for assoc in job.output_datasets:
-                # Optional data inputs will not have a dataset.
-                if assoc.dataset:
-                    name = assoc.name
-                    if name not in output_dataset_mapping:
-                        output_dataset_mapping[name] = []
-
-                    output_dataset_mapping[name].append(self.exported_key(assoc.dataset))
-
-            for assoc in job.input_dataset_collections:
-                # Optional data inputs will not have a dataset.
-                if assoc.dataset_collection:
-                    name = assoc.name
-                    if name not in input_dataset_collection_mapping:
-                        input_dataset_collection_mapping[name] = []
-
-                    input_dataset_collection_mapping[name].append(self.exported_key(assoc.dataset_collection))
-
-            for assoc in job.input_dataset_collection_elements:
-                if assoc.dataset_collection_element:
-                    name = assoc.name
-                    if name not in input_dataset_collection_element_mapping:
-                        input_dataset_collection_element_mapping[name] = []
-
-                    input_dataset_collection_element_mapping[name].append(self.exported_key(assoc.dataset_collection_element))
-
-            for assoc in job.output_dataset_collection_instances:
-                # Optional data outputs will not have a dataset.
-                if assoc.dataset_collection_instance:
-                    name = assoc.name
-                    if name not in output_dataset_collection_mapping:
-                        output_dataset_collection_mapping[name] = []
-
-                    output_dataset_collection_mapping[name].append(self.exported_key(assoc.dataset_collection_instance))
-
-            for assoc in job.output_dataset_collections:
-                if assoc.dataset_collection:
-                    name = assoc.name
-
-                    if name not in implicit_output_dataset_collection_mapping:
-                        implicit_output_dataset_collection_mapping[name] = []
-
-                    implicit_output_dataset_collection_mapping[name].append(self.exported_key(assoc.dataset_collection))
-
-            job_attrs['input_dataset_mapping'] = input_dataset_mapping
-            job_attrs['input_dataset_collection_mapping'] = input_dataset_collection_mapping
-            job_attrs['input_dataset_collection_element_mapping'] = input_dataset_collection_element_mapping
-            job_attrs['output_dataset_mapping'] = output_dataset_mapping
-            job_attrs['output_dataset_collection_mapping'] = output_dataset_collection_mapping
-            job_attrs['implicit_output_dataset_collection_mapping'] = implicit_output_dataset_collection_mapping
-
-            jobs_attrs.append(job_attrs)
-
         for job_id, job_output_dataset_associations in self.job_output_dataset_associations.items():
             output_dataset_mapping = {}
             for name, dataset in job_output_dataset_associations.items():
@@ -1363,22 +1260,141 @@ class DirectoryModelExportStore(ModelExportStore):
                 output_dataset_mapping[name].append(self.exported_key(dataset))
             jobs_attrs.append({"id": job_id, 'output_dataset_mapping': output_dataset_mapping})
 
-        icjs_attrs = []
-        for icj_id, icj in implicit_collection_jobs_dict.items():
-            icj_attrs = icj.serialize(self.security, self.serialization_options)
-            icjs_attrs.append(icj_attrs)
+        if self.serialize_jobs:
 
-        jobs_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_JOBS)
-        with open(jobs_attrs_filename, 'w') as jobs_attrs_out:
-            dump(jobs_attrs, jobs_attrs_out)
+            #
+            # Write jobs attributes file.
+            #
 
-        icjs_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_IMPLICIT_COLLECTION_JOBS)
-        with open(icjs_attrs_filename, 'w') as icjs_attrs_out:
-            dump(icjs_attrs, icjs_attrs_out)
+            # Get all jobs associated with included HDAs.
+            jobs_dict = {}
+            implicit_collection_jobs_dict = {}
+
+            def record_associated_jobs(obj):
+                # Get the job object.
+                job = None
+                for assoc in getattr(obj, 'creating_job_associations', []):
+                    # For mapped over jobs obj could be DatasetCollection, which has no creating_job_association
+                    job = assoc.job
+                    break
+                if not job:
+                    # No viable job.
+                    return
+
+                jobs_dict[job.id] = job
+                icja = job.implicit_collection_jobs_association
+                if icja:
+                    implicit_collection_jobs = icja.implicit_collection_jobs
+                    implicit_collection_jobs_dict[implicit_collection_jobs.id] = implicit_collection_jobs
+
+            for hda, _include_files in self.included_datasets.values():
+                # Get the associated job, if any. If this hda was copied from another,
+                # we need to find the job that created the origial hda
+                job_hda = hda
+                while job_hda.copied_from_history_dataset_association:  # should this check library datasets as well?
+                    job_hda = job_hda.copied_from_history_dataset_association
+                if not job_hda.creating_job_associations:
+                    # No viable HDA found.
+                    continue
+
+                record_associated_jobs(job_hda)
+
+            for hdca in self.included_collections:
+                record_associated_jobs(hdca)
+
+            # Get jobs' attributes.
+            for job in jobs_dict.values():
+                if self.serialization_options.for_edit:
+                    continue
+                job_attrs = job.serialize(self.security, self.serialization_options)
+
+                # -- Get input, output datasets. --
+
+                input_dataset_mapping = {}
+                output_dataset_mapping = {}
+                input_dataset_collection_mapping = {}
+                input_dataset_collection_element_mapping = {}
+                output_dataset_collection_mapping = {}
+                implicit_output_dataset_collection_mapping = {}
+
+                for assoc in job.input_datasets:
+                    # Optional data inputs will not have a dataset.
+                    if assoc.dataset:
+                        name = assoc.name
+                        if name not in input_dataset_mapping:
+                            input_dataset_mapping[name] = []
+
+                        input_dataset_mapping[name].append(self.exported_key(assoc.dataset))
+
+                for assoc in job.output_datasets:
+                    # Optional data inputs will not have a dataset.
+                    if assoc.dataset:
+                        name = assoc.name
+                        if name not in output_dataset_mapping:
+                            output_dataset_mapping[name] = []
+
+                        output_dataset_mapping[name].append(self.exported_key(assoc.dataset))
+
+                for assoc in job.input_dataset_collections:
+                    # Optional data inputs will not have a dataset.
+                    if assoc.dataset_collection:
+                        name = assoc.name
+                        if name not in input_dataset_collection_mapping:
+                            input_dataset_collection_mapping[name] = []
+
+                        input_dataset_collection_mapping[name].append(self.exported_key(assoc.dataset_collection))
+
+                for assoc in job.input_dataset_collection_elements:
+                    if assoc.dataset_collection_element:
+                        name = assoc.name
+                        if name not in input_dataset_collection_element_mapping:
+                            input_dataset_collection_element_mapping[name] = []
+
+                        input_dataset_collection_element_mapping[name].append(self.exported_key(assoc.dataset_collection_element))
+
+                for assoc in job.output_dataset_collection_instances:
+                    # Optional data outputs will not have a dataset.
+                    if assoc.dataset_collection_instance:
+                        name = assoc.name
+                        if name not in output_dataset_collection_mapping:
+                            output_dataset_collection_mapping[name] = []
+
+                        output_dataset_collection_mapping[name].append(self.exported_key(assoc.dataset_collection_instance))
+
+                for assoc in job.output_dataset_collections:
+                    if assoc.dataset_collection:
+                        name = assoc.name
+
+                        if name not in implicit_output_dataset_collection_mapping:
+                            implicit_output_dataset_collection_mapping[name] = []
+
+                        implicit_output_dataset_collection_mapping[name].append(self.exported_key(assoc.dataset_collection))
+
+                job_attrs['input_dataset_mapping'] = input_dataset_mapping
+                job_attrs['input_dataset_collection_mapping'] = input_dataset_collection_mapping
+                job_attrs['input_dataset_collection_element_mapping'] = input_dataset_collection_element_mapping
+                job_attrs['output_dataset_mapping'] = output_dataset_mapping
+                job_attrs['output_dataset_collection_mapping'] = output_dataset_collection_mapping
+                job_attrs['implicit_output_dataset_collection_mapping'] = implicit_output_dataset_collection_mapping
+
+                jobs_attrs.append(job_attrs)
+
+            icjs_attrs = []
+            for icj in implicit_collection_jobs_dict.values():
+                icj_attrs = icj.serialize(self.security, self.serialization_options)
+                icjs_attrs.append(icj_attrs)
+
+            icjs_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_IMPLICIT_COLLECTION_JOBS)
+            with open(icjs_attrs_filename, 'w') as icjs_attrs_out:
+                icjs_attrs_out.write(json_encoder.encode(icjs_attrs))
 
         export_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_EXPORT)
         with open(export_attrs_filename, 'w') as export_attrs_out:
             dump({"galaxy_export_version": GALAXY_EXPORT_VERSION}, export_attrs_out)
+
+        jobs_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_JOBS)
+        with open(jobs_attrs_filename, 'w') as jobs_attrs_out:
+            jobs_attrs_out.write(json_encoder.encode(jobs_attrs))
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_type is None:
@@ -1394,10 +1410,10 @@ class TarModelExportStore(DirectoryModelExportStore):
         self.gzip = gzip
         self.out_file = out_file
         temp_output_dir = tempfile.mkdtemp()
-        super(TarModelExportStore, self).__init__(temp_output_dir, **kwds)
+        super().__init__(temp_output_dir, **kwds)
 
     def _finalize(self):
-        super(TarModelExportStore, self)._finalize()
+        super()._finalize()
         tar_export_directory(self.export_directory, self.out_file, self.gzip)
         shutil.rmtree(self.export_directory)
 
@@ -1406,10 +1422,10 @@ class BagDirectoryModelExportStore(DirectoryModelExportStore):
 
     def __init__(self, out_directory, **kwds):
         self.out_directory = out_directory
-        super(BagDirectoryModelExportStore, self).__init__(out_directory, **kwds)
+        super().__init__(out_directory, **kwds)
 
     def _finalize(self):
-        super(BagDirectoryModelExportStore, self)._finalize()
+        super()._finalize()
         bdb.make_bag(self.out_directory)
 
 
@@ -1420,10 +1436,10 @@ class BagArchiveModelExportStore(BagDirectoryModelExportStore):
         self.bag_archiver = bag_archiver
         self.out_file = out_file
         temp_output_dir = tempfile.mkdtemp()
-        super(BagArchiveModelExportStore, self).__init__(temp_output_dir, **kwds)
+        super().__init__(temp_output_dir, **kwds)
 
     def _finalize(self):
-        super(BagArchiveModelExportStore, self)._finalize()
+        super()._finalize()
         rval = bdb.archive_bag(self.export_directory, self.bag_archiver)
         shutil.move(rval, self.out_file)
         shutil.rmtree(self.export_directory)
@@ -1444,7 +1460,7 @@ def get_export_dataset_filename(name, ext, hid):
     Builds a filename for a dataset using its name an extension.
     """
     base = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in name)
-    return base + "_%s.%s" % (hid, ext)
+    return f"{base}_{hid}.{ext}"
 
 
 def imported_store_for_metadata(directory, object_store=None):

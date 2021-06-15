@@ -14,9 +14,9 @@ import os.path
 import re
 import string
 import time
-from collections import OrderedDict
 from glob import glob
 from tempfile import NamedTemporaryFile
+from typing import List
 
 import refgenconf
 import requests
@@ -37,7 +37,7 @@ TOOL_DATA_TABLE_CONF_XML = """<?xml version="1.0"?>
 """
 
 
-class ToolDataPathFiles(object):
+class ToolDataPathFiles:
 
     def __init__(self, tool_data_path):
         self.tool_data_path = os.path.abspath(tool_data_path)
@@ -66,7 +66,7 @@ class ToolDataPathFiles(object):
             return os.path.exists(path)
 
 
-class ToolDataTableManager(object):
+class ToolDataTableManager:
     """Manages a collection of tool data tables"""
 
     def __init__(self, tool_data_path, config_filename=None, tool_data_table_config_path_set=None, other_config_dict=None):
@@ -159,7 +159,7 @@ class ToolDataTableManager(object):
                                                      tool_data_path=tool_data_path,
                                                      from_shed_config=True)
         except Exception as e:
-            error_message = 'Error attempting to parse file %s: %s' % (str(os.path.split(config_filename)[1]), util.unicodify(e))
+            error_message = f'Error attempting to parse file {str(os.path.split(config_filename)[1])}: {util.unicodify(e)}'
             log.debug(error_message, exc_info=True)
             table_elems = []
         if persist:
@@ -184,7 +184,7 @@ class ToolDataTableManager(object):
         try:
             try:
                 tree = util.parse_xml(full_path)
-            except (OSError, IOError) as e:
+            except OSError as e:
                 if e.errno == errno.ENOENT:
                     with open(full_path, 'w') as fh:
                         fh.write(TOOL_DATA_TABLE_CONF_XML)
@@ -239,12 +239,13 @@ class ToolDataTableManager(object):
         return list(table_names)
 
 
-class ToolDataTable(object):
+class ToolDataTable:
+    type_key: str
 
     @classmethod
     def from_elem(cls, table_elem, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=None):
         table_type = table_elem.get('type', 'tabular')
-        assert table_type in tool_data_table_types, "Unknown data table type '%s'" % table_type
+        assert table_type in tool_data_table_types, f"Unknown data table type '{table_type}'"
         return tool_data_table_types[table_type](table_elem, tool_data_path, from_shed_config=from_shed_config, filename=filename, tool_data_path_files=tool_data_path_files, other_config_dict=other_config_dict)
 
     def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None, other_config_dict=None):
@@ -254,7 +255,7 @@ class ToolDataTable(object):
         self.empty_field_values = {}
         self.allow_duplicate_entries = util.asbool(config_element.get('allow_duplicate_entries', True))
         self.here = filename and os.path.dirname(filename)
-        self.filenames = OrderedDict()
+        self.filenames = {}
         self.tool_data_path = tool_data_path
         self.tool_data_path_files = tool_data_path_files
         self.other_config_dict = other_config_dict or {}
@@ -262,7 +263,7 @@ class ToolDataTable(object):
         # increment this variable any time a new entry is added, or when the table is totally reloaded
         # This value has no external meaning, and does not represent an abstract version of the underlying data
         self._loaded_content_version = 1
-        self._load_info = ([config_element, tool_data_path], {'from_shed_config': from_shed_config, 'tool_data_path_files': self.tool_data_path_files, 'other_config_dict': other_config_dict})
+        self._load_info = ([config_element, tool_data_path], {'from_shed_config': from_shed_config, 'tool_data_path_files': self.tool_data_path_files, 'other_config_dict': other_config_dict, 'filename': filename})
         self._merged_load_info = []
 
     def _update_version(self, version=None):
@@ -313,7 +314,9 @@ class ToolDataTable(object):
 class TabularToolDataTable(ToolDataTable, Dictifiable):
     """
     Data stored in a tabular / separated value format on disk, allows multiple
-    files to be merged but all must have the same column definitions::
+    files to be merged but all must have the same column definitions:
+
+    .. code-block:: xml
 
         <table type="tabular" name="test">
             <column name='...' index = '...' />
@@ -327,7 +330,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
     type_key = 'tabular'
 
     def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None, other_config_dict=None):
-        super(TabularToolDataTable, self).__init__(config_element, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=other_config_dict)
+        super().__init__(config_element, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=other_config_dict)
         self.config_element = config_element
         self.data = []
         self.configure_and_load(config_element, tool_data_path, from_shed_config)
@@ -356,7 +359,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                 # Handle URLs as files
                 filename = file_element.get('url', None)
                 if filename:
-                    tmp_file = NamedTemporaryFile(prefix='TTDT_URL_%s-' % self.name, mode='w')
+                    tmp_file = NamedTemporaryFile(prefix=f'TTDT_URL_{self.name}-', mode='w')
                     try:
                         tmp_file.write(requests.get(filename, timeout=url_timeout).text)
                     except Exception as e:
@@ -391,7 +394,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                 filename = os.path.join(tool_data_path, filename)
             if self.tool_data_path_files.exists(filename):
                 found = True
-            else:
+            elif not os.path.isabs(filename):
                 # Since the path attribute can include a hard-coded path to a specific directory
                 # (e.g., <file path="tool-data/cg_crr_files.loc" />) which may not be the same value
                 # as self.tool_data_path, we'll parse the path to get the filename and see if it is
@@ -402,9 +405,9 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                     if self.tool_data_path_files.exists(corrected_filename):
                         filename = corrected_filename
                         found = True
-                    elif not from_shed_config and self.tool_data_path_files.exists("%s.sample" % corrected_filename):
-                        log.info("Could not find tool data %s, reading sample" % corrected_filename)
-                        filename = "%s.sample" % corrected_filename
+                    elif not from_shed_config and self.tool_data_path_files.exists(f"{corrected_filename}.sample"):
+                        log.info(f"Could not find tool data {corrected_filename}, reading sample")
+                        filename = f"{corrected_filename}.sample"
                         found = True
 
             errors = []
@@ -419,7 +422,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                 # warnings about missing location files that would otherwise be
                 # empty and we don't care about unless the admin chooses to
                 # populate them.
-                log.warning("Cannot find index file '%s' for tool data table '%s'" % (filename, self.name))
+                log.warning(f"Cannot find index file '{filename}' for tool data table '{self.name}'")
 
             if filename not in self.filenames or not self.filenames[filename]['found']:
                 self.filenames[filename] = dict(found=found, filename=filename, from_shed_config=from_shed_config, tool_data_path=tool_data_path,
@@ -431,7 +434,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                 tmp_file.close()
 
     def merge_tool_data_table(self, other_table, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd):
-        assert self.columns == other_table.columns, "Merging tabular data tables with non matching columns is not allowed: %s:%s != %s:%s" % (self.name, self.columns, other_table.name, other_table.columns)
+        assert self.columns == other_table.columns, f"Merging tabular data tables with non matching columns is not allowed: {self.name}:{self.columns} != {other_table.name}:{other_table.columns}"
         # merge filename info
         for filename, info in other_table.filenames.items():
             if filename not in self.filenames:
@@ -649,7 +652,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                 log.debug("Persisting changes to file: %s", filename)
                 try:
                     data_table_fh = open(filename, 'r+b')
-                except IOError as e:
+                except OSError as e:
                     log.warning('Error opening data table file (%s) with r+b, assuming file does not exist and will open as wb: %s', filename, e)
                     data_table_fh = open(filename, 'wb')
                 if os.stat(filename).st_size != 0:
@@ -658,7 +661,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                     last_char = data_table_fh.read(1)
                     if last_char not in [b'\n', b'\r']:
                         data_table_fh.write(b'\n')
-                fields = "%s\n" % self.separator.join(fields)
+                fields = f"{self.separator.join(fields)}\n"
                 data_table_fh.write(fields.encode('utf-8'))
         return not is_error
 
@@ -671,7 +674,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                 values = self._replace_field_separators(values)
                 self.filter_file_fields(filename, values)
             else:
-                log.warning("Cannot find index file '%s' for tool data table '%s'" % (filename, self.name))
+                log.warning(f"Cannot find index file '{filename}' for tool data table '{self.name}'")
 
         self.reload_from_files()
 
@@ -734,7 +737,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
         return util.xml_to_string(self.config_element)
 
     def to_dict(self, view='collection'):
-        rval = super(TabularToolDataTable, self).to_dict()
+        rval = super().to_dict()
         if view == 'element':
             rval['columns'] = sorted(self.columns.keys(), key=lambda x: self.columns[x])
             rval['fields'] = self.get_fields()
@@ -743,7 +746,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
 
 class TabularToolDataField(Dictifiable):
 
-    dict_collection_visible_keys = []
+    dict_collection_visible_keys: List[str] = []
 
     def __init__(self, data):
         self.data = data
@@ -761,10 +764,10 @@ class TabularToolDataField(Dictifiable):
         return path
 
     def clean_base_dir(self, path):
-        return re.sub("^" + self.get_base_dir() + r"/*", "", path)
+        return re.sub(f"^{self.get_base_dir()}/*", "", path)
 
     def get_files(self):
-        return glob(self.get_base_path() + "*")
+        return glob(f"{self.get_base_path()}*")
 
     def get_filesize_map(self, rm_base_dir=False):
         out = {}
@@ -784,7 +787,7 @@ class TabularToolDataField(Dictifiable):
         return sha1.hexdigest()
 
     def to_dict(self):
-        rval = super(TabularToolDataField, self).to_dict()
+        rval = super().to_dict()
         rval['name'] = self.data['value']
         rval['fields'] = self.data
         rval['base_dir'] = self.get_base_dir(),
@@ -796,20 +799,23 @@ class TabularToolDataField(Dictifiable):
 class RefgenieToolDataTable(TabularToolDataTable):
     """
     Data stored in refgenie
-    <table name="all_fasta" type="refgenie" asset="fasta" >
-        <file path="refgenie.yml" />
-        <field name="value" template="true">${__REFGENIE_UUID__}</field>
-        <field name="dbkey" template="true">${__REFGENIE_GENOME__}</field>
-        <field name="name" template="true">${__REFGENIE_DISPLAY_NAME__}</field>
-        <field name="path" template="true">${__REFGENIE_ASSET__}</field>
-    </table>
+
+    .. code-block:: xml
+
+        <table name="all_fasta" type="refgenie" asset="fasta" >
+            <file path="refgenie.yml" />
+            <field name="value" template="true">${__REFGENIE_UUID__}</field>
+            <field name="dbkey" template="true">${__REFGENIE_GENOME__}</field>
+            <field name="name" template="true">${__REFGENIE_DISPLAY_NAME__}</field>
+            <field name="path" template="true">${__REFGENIE_ASSET__}</field>
+        </table>
     """
     dict_collection_visible_keys = ['name']
 
     type_key = 'refgenie'
 
     def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None, other_config_dict=None):
-        super(RefgenieToolDataTable, self).__init__(config_element, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=other_config_dict)
+        super().__init__(config_element, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=other_config_dict)
         self.config_element = config_element
         self.data = []
         self.configure_and_load(config_element, tool_data_path, from_shed_config)
@@ -817,7 +823,7 @@ class RefgenieToolDataTable(TabularToolDataTable):
     def configure_and_load(self, config_element, tool_data_path, from_shed_config=False, url_timeout=10):
         self.rg_asset = config_element.get('asset', None)
         assert self.rg_asset, ValueError('You must specify an asset attribute.')
-        super(RefgenieToolDataTable, self).configure_and_load(config_element, tool_data_path, from_shed_config=from_shed_config, url_timeout=url_timeout)
+        super().configure_and_load(config_element, tool_data_path, from_shed_config=from_shed_config, url_timeout=url_timeout)
 
     def parse_column_spec(self, config_element):
         self.columns = {}
@@ -856,8 +862,8 @@ class RefgenieToolDataTable(TabularToolDataTable):
                 if asset != self.rg_asset:
                     continue
                 digest = rgc.id(genome, asset, tag=tag)
-                uuid = 'refgenie:%s/%s:%s@%s' % (genome, self.rg_asset, tag, digest)
-                display_name = description or '%s/%s' % (genome, tagged_asset)
+                uuid = f'refgenie:{genome}/{self.rg_asset}:{tag}@{digest}'
+                display_name = description or f'{genome}/{tagged_asset}'
 
                 def _seek_key(key):
                     return rgc.seek(genome, asset, tag_name=tag, seek_key=key)
@@ -887,7 +893,11 @@ class RefgenieToolDataTable(TabularToolDataTable):
         return rval
 
     def _remove_entry(self, values):
-        raise NotImplementedError("Not supported")
+
+        log.warning("Deletion from refgenie-backed '%s' data table is not supported, will only try to delete from .loc files", self.name)
+
+        # Update every non-refgenie files
+        super()._remove_entry(values)
 
 
 def expand_here_template(content, here=None):
@@ -897,4 +907,4 @@ def expand_here_template(content, here=None):
 
 
 # Registry of tool data types by type_key
-tool_data_table_types = dict([(cls.type_key, cls) for cls in [TabularToolDataTable, RefgenieToolDataTable]])
+tool_data_table_types = {cls.type_key: cls for cls in [TabularToolDataTable, RefgenieToolDataTable]}

@@ -1,7 +1,6 @@
 """
 Migration script to add the new_repo_alert column to the galaxy_user table.
 """
-from __future__ import print_function
 
 import logging
 import sys
@@ -37,7 +36,7 @@ def upgrade(migrate_engine):
             default_false = "false"
         else:
             log.debug("unknown migrate_engine dialect")
-        migrate_engine.execute("UPDATE galaxy_user SET new_repo_alert=%s" % default_false)
+        migrate_engine.execute(f"UPDATE galaxy_user SET new_repo_alert={default_false}")
     except Exception:
         log.exception("Adding new_repo_alert column to the galaxy_user table failed.")
 

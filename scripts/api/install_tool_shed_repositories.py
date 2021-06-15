@@ -35,7 +35,7 @@ def main(options):
         revision_data['tool_shed_url'] = options.tool_shed_url.rstrip('/')
         revision_data['name'] = options.name
         revision_data['owner'] = options.owner
-        revision_url = '%s%s' % (options.local_url.rstrip('/'), '/api/tool_shed_repositories/get_latest_installable_revision')
+        revision_url = '{}{}'.format(options.local_url.rstrip('/'), '/api/tool_shed_repositories/get_latest_installable_revision')
         latest_installable_revision = submit(options.api,
                                              revision_url,
                                              revision_data,
@@ -49,7 +49,7 @@ def main(options):
         data['install_repository_dependencies'] = options.install_repository_dependencies
     if options.install_tool_dependencies:
         data['install_tool_dependencies'] = options.install_tool_dependencies
-    submit(options.api, '%s%s' % (options.local_url.rstrip('/'), '/api/tool_shed_repositories/new/install_repository_revision'), data)
+    submit(options.api, '{}{}'.format(options.local_url.rstrip('/'), '/api/tool_shed_repositories/new/install_repository_revision'), data)
 
 
 if __name__ == '__main__':

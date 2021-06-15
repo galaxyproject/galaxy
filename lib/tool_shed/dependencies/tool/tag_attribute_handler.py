@@ -4,7 +4,7 @@ import logging
 log = logging.getLogger(__name__)
 
 
-class TagAttributeHandler(object):
+class TagAttributeHandler:
 
     def __init__(self, app, rdd, unpopulate):
         self.app = app

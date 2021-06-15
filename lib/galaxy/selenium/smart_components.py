@@ -4,7 +4,7 @@ from .components import (
 )
 
 
-class SmartComponent(object):
+class SmartComponent:
     """Wrap a Component with driver aware methods.
 
     Allows smarter selectors that know how to wait for themselves, test themselves,
@@ -30,7 +30,7 @@ class SmartComponent(object):
             return simple_object
 
 
-class SmartTarget(object):
+class SmartTarget:
     """Wrap a Target with driver aware methods.
     """
 
@@ -96,5 +96,5 @@ class SmartTarget(object):
     def has_class(self, class_name):
         return class_name in self._has_driver.driver.find_element(*self._target.element_locator).get_attribute("class")
 
-    def wait_for_and_send_keys(self, text):
-        self.wait_for_visible().send_keys(text)
+    def wait_for_and_send_keys(self, *text):
+        self.wait_for_visible().send_keys(*text)

@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # Dan Blankenberg
-from __future__ import print_function
 
 import os
 import sys
@@ -30,7 +29,7 @@ def __main__():
         for file in files:
             if file[-5:] == ".info":
                 tmp_dict = {}
-                info_file = open(os.path.join(this_base_dir, file), 'r')
+                info_file = open(os.path.join(this_base_dir, file))
                 info = info_file.readlines()
                 info_file.close()
                 for line in info:
@@ -68,7 +67,7 @@ def __main__():
             print("Skipping", build)
             # continue
 
-        loc_out.write("seq %s %s\n" % (build, seq_path))
+        loc_out.write(f"seq {build} {seq_path}\n")
 
         # Print org info
 
@@ -79,7 +78,7 @@ def __main__():
             nib_out_file = os.path.join(seq_path, "%s.nib " % chr['chromosome'])
             # create nibs using faToNib binary
             # TODO: when bx supports writing nib, use it here instead
-            command = "faToNib %s %s" % (fasta_file, nib_out_file)
+            command = f"faToNib {fasta_file} {nib_out_file}"
             os.system(command)
 
     loc_out.close()

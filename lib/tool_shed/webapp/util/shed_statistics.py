@@ -2,7 +2,7 @@ from time import gmtime
 from time import strftime
 
 
-class ShedCounter(object):
+class ShedCounter:
     def __init__(self, model):
         # TODO: Enhance the ShedCounter to retrieve information from the db instead of displaying what's currently in memory.
         self.model = model

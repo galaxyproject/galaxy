@@ -5,8 +5,7 @@ from abc import (
     abstractmethod
 )
 
-import six
-
+from galaxy.managers import workflows
 from galaxy.managers.markdown_util import (
     internal_galaxy_markdown_to_pdf,
     ready_galaxy_markdown_for_export,
@@ -14,8 +13,7 @@ from galaxy.managers.markdown_util import (
 )
 
 
-@six.add_metaclass(ABCMeta)
-class WorkflowReportGeneratorPlugin(object):
+class WorkflowReportGeneratorPlugin(metaclass=ABCMeta):
     """
     """
 
@@ -35,19 +33,25 @@ class WorkflowReportGeneratorPlugin(object):
         """
 
 
-@six.add_metaclass(ABCMeta)
-class WorkflowMarkdownGeneratorPlugin(WorkflowReportGeneratorPlugin):
+class WorkflowMarkdownGeneratorPlugin(WorkflowReportGeneratorPlugin, metaclass=ABCMeta):
     """WorkflowReportGeneratorPlugin that generates markdown as base report."""
 
     def generate_report_json(self, trans, invocation, runtime_report_config_json=None):
         """
         """
+        workflow_manager = workflows.WorkflowsManager(trans.app)
+        workflow_encoded_id = trans.app.security.encode_id(invocation.workflow_id)
+        workflow = workflow_manager.get_stored_accessible_workflow(trans, workflow_encoded_id, by_stored_id=False)
         internal_markdown = self._generate_internal_markdown(trans, invocation, runtime_report_config_json=runtime_report_config_json)
         export_markdown, extra_rendering_data = ready_galaxy_markdown_for_export(trans, internal_markdown)
         rval = {
             "render_format": "markdown",  # Presumably the frontend could render things other ways.
             "markdown": export_markdown,
             "invocation_markdown": export_markdown,
+            "model_class": "Report",
+            "id": trans.app.security.encode_id(invocation.workflow_id),
+            "username": trans.user.username,
+            "title": workflow.name,
         }
         rval.update(extra_rendering_data)
         return rval

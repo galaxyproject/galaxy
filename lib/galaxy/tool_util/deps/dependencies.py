@@ -3,7 +3,7 @@ from galaxy.util import bunch
 from .mulled.mulled_build import DEFAULT_CHANNELS
 
 
-class AppInfo(object):
+class AppInfo:
 
     def __init__(
         self,
@@ -35,12 +35,14 @@ class AppInfo(object):
         self.mulled_channels = mulled_channels
 
 
-class ToolInfo(object):
+class ToolInfo:
     # TODO: Introduce tool XML syntax to annotate the optional environment
     # variables they can consume (e.g. JVM options, license keys, etc..)
     # and add these to env_path_through
 
-    def __init__(self, container_descriptions=None, requirements=None, requires_galaxy_python_environment=False, env_pass_through=["GALAXY_SLOTS"], guest_ports=None, tool_id=None, tool_version=None, profile=-1):
+    def __init__(self, container_descriptions=None, requirements=None, requires_galaxy_python_environment=False, env_pass_through=None, guest_ports=None, tool_id=None, tool_version=None, profile=-1):
+        if env_pass_through is None:
+            env_pass_through = ["GALAXY_SLOTS", "GALAXY_MEMORY_MB", "GALAXY_MEMORY_MB_PER_SLOT"]
         if container_descriptions is None:
             container_descriptions = []
         if requirements is None:
@@ -55,7 +57,7 @@ class ToolInfo(object):
         self.profile = profile
 
 
-class JobInfo(object):
+class JobInfo:
 
     def __init__(
         self, working_directory, tool_directory, job_directory, tmp_directory, home_directory, job_directory_type,
@@ -70,7 +72,7 @@ class JobInfo(object):
         self.job_directory_type = job_directory_type  # "galaxy" or "pulsar"
 
 
-class DependenciesDescription(object):
+class DependenciesDescription:
     """ Capture (in a readily serializable way) context related a tool
     dependencies - both the tool's listed requirements and the tool shed
     related context required to resolve dependencies via the
@@ -80,7 +82,10 @@ class DependenciesDescription(object):
     other potential remote execution mechanisms.
     """
 
-    def __init__(self, requirements=[], installed_tool_dependencies=[]):
+    def __init__(self, requirements=None, installed_tool_dependencies=None):
+        requirements = requirements or ToolRequirements()
+        if installed_tool_dependencies is None:
+            installed_tool_dependencies = []
         self.requirements = requirements
         # tool shed installed tool dependencies...
         self.installed_tool_dependencies = installed_tool_dependencies

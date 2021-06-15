@@ -7,10 +7,10 @@ import inspect
 import os
 import re
 import sys
+from typing import Callable, Dict, List, Optional, Union
+from urllib.parse import unquote
 
 import pkg_resources
-from six import iteritems
-from six.moves.urllib.parse import unquote
 
 from galaxy.util.getargspec import getfullargspec
 from galaxy.util.properties import NicerConfigParser
@@ -32,12 +32,8 @@ def print_(template, *args, **kwargs):
     sys.stdout.writelines(template)
 
 
-if sys.version_info < (3, 0):
-    def reraise(t, e, tb):
-        exec('raise t, e, tb', dict(t=t, e=e, tb=tb))
-else:
-    def reraise(t, e, tb):
-        exec('raise e from tb', dict(e=e, tb=tb))
+def reraise(t, e, tb):
+    exec('raise e from tb', dict(e=e, tb=tb))
 
 # ---- from paste.deploy.util ----------------------------------------
 
@@ -58,9 +54,9 @@ def fix_type_error(exc_info, callable, varargs, kwargs):
     """
     if exc_info is None:
         exc_info = sys.exc_info()
-    if (exc_info[0] != TypeError or
-            str(exc_info[1]).find('argument') == -1 or
-            getattr(exc_info[1], '_type_error_fixed', False)):
+    if (exc_info[0] != TypeError
+            or str(exc_info[1]).find('argument') == -1
+            or getattr(exc_info[1], '_type_error_fixed', False)):
         return exc_info
     exc_info[1]._type_error_fixed = True
     argspec = inspect.formatargspec(*getfullargspec(callable))
@@ -69,9 +65,9 @@ def fix_type_error(exc_info, callable, varargs, kwargs):
         args += ', '
     if kwargs:
         kwargs = sorted(kwargs.keys())
-        args += ', '.join('%s=...' % n for n in kwargs)
-    gotspec = '(%s)' % args
-    msg = '%s; got %s, wanted %s' % (exc_info[1], gotspec, argspec)
+        args += ', '.join(f'{n}=...' for n in kwargs)
+    gotspec = f'({args})'
+    msg = f'{exc_info[1]}; got {gotspec}, wanted {argspec}'
     exc_info[1].args = (msg,)
     return exc_info
 
@@ -79,7 +75,7 @@ def fix_type_error(exc_info, callable, varargs, kwargs):
 def _short_repr(v):
     v = repr(v)
     if len(v) > 12:
-        v = v[:8] + '...' + v[-4:]
+        v = f"{v[:8]}...{v[-4:]}"
     return v
 
 
@@ -116,7 +112,7 @@ def lookup_object(spec):
 
 
 def import_string(s):
-    return pkg_resources.EntryPoint.parse("x=" + s).load(False)
+    return pkg_resources.EntryPoint.parse(f"x={s}").load(False)
 
 
 def _aslist(obj):
@@ -149,11 +145,11 @@ def _flatten(lst):
 ############################################################
 
 
-class _ObjectType(object):
+class _ObjectType:
 
-    name = None
-    egg_protocols = None
-    config_prefixes = None
+    name: Optional[str] = None
+    egg_protocols: Optional[List[Union[str, List[str]]]] = None
+    config_prefixes: Optional[List[Union[List[str], str]]] = None
 
     def __init__(self):
         # Normalize these variables:
@@ -161,7 +157,7 @@ class _ObjectType(object):
         self.config_prefixes = [_aslist(p) for p in _aslist(self.config_prefixes)]
 
     def __repr__(self):
-        return '<%s protocols=%r prefixes=%r>' % (
+        return '<{} protocols={!r} prefixes={!r}>'.format(
             self.name, self.egg_protocols, self.config_prefixes)
 
     def invoke(self, context):
@@ -187,7 +183,7 @@ class _App(_ObjectType):
         elif context.protocol == 'paste.app_factory':
             return fix_call(context.object, context.global_conf, **context.local_conf)
         else:
-            assert 0, "Protocol %r unknown" % context.protocol
+            assert 0, f"Protocol {context.protocol!r} unknown"
 
 
 APP = _App()
@@ -210,7 +206,7 @@ class _Filter(_ObjectType):
                                 **context.local_conf)
             return filter_wrapper
         else:
-            assert 0, "Protocol %r unknown" % context.protocol
+            assert 0, f"Protocol {context.protocol!r} unknown"
 
 
 FILTER = _Filter()
@@ -233,7 +229,7 @@ class _Server(_ObjectType):
                                 **context.local_conf)
             return server_wrapper
         else:
-            assert 0, "Protocol %r unknown" % context.protocol
+            assert 0, f"Protocol {context.protocol!r} unknown"
 
 
 SERVER = _Server()
@@ -309,7 +305,7 @@ def appconfig(uri, name=None, relative_to=None, global_conf=None):
     return context.config()
 
 
-_loaders = {}
+_loaders: Dict[str, Callable] = {}
 
 
 def loadobj(object_type, uri, name=None, relative_to=None,
@@ -331,13 +327,12 @@ def loadcontext(object_type, uri, name=None, relative_to=None,
     if name is None:
         name = 'main'
     if ':' not in uri:
-        raise LookupError("URI has no scheme: %r" % uri)
+        raise LookupError(f"URI has no scheme: {uri!r}")
     scheme, path = uri.split(':', 1)
     scheme = scheme.lower()
     if scheme not in _loaders:
         raise LookupError(
-            "URI scheme not known: %r (from %s)"
-            % (scheme, ', '.join(_loaders.keys())))
+            f"URI scheme not known: {scheme!r} (from {', '.join(_loaders.keys())})")
     return _loaders[scheme](
         object_type,
         uri, path, name=name, relative_to=relative_to,
@@ -358,7 +353,7 @@ def _loadconfig(object_type, uri, path, name, relative_to,
         if relative_to.endswith('/'):
             path = relative_to + path
         else:
-            path = relative_to + '/' + path
+            path = f"{relative_to}/{path}"
     if path.startswith('///'):
         path = path[2:]
     path = unquote(path)
@@ -394,7 +389,7 @@ _loaders['call'] = _loadfunc
 ############################################################
 
 
-class _Loader(object):
+class _Loader:
 
     def get_app(self, name=None, global_conf=None):
         return self.app_context(
@@ -445,7 +440,7 @@ class ConfigLoader(_Loader):
             self.parser.read_file(f)
 
     def update_defaults(self, new_defaults, overwrite=True):
-        for key, value in iteritems(new_defaults):
+        for key, value in new_defaults.items():
             if not overwrite and key in self.parser._defaults:
                 continue
             self.parser._defaults[key] = value
@@ -544,7 +539,7 @@ class ConfigLoader(_Loader):
                 # This will work with 'server' and 'filter', otherwise it
                 # could fail but there is an error message already for
                 # bad protocols
-                context.protocol = 'paste.%s_factory' % section_protocol
+                context.protocol = f'paste.{section_protocol}_factory'
 
         return context
 
@@ -558,11 +553,10 @@ class ConfigLoader(_Loader):
                     break
         if len(possible) > 1:
             raise LookupError(
-                "Multiple protocols given in section %r: %s"
-                % (section, possible))
+                f"Multiple protocols given in section {section!r}: {possible}")
         if not possible:
             raise LookupError(
-                "No loader given in section %r" % section)
+                f"No loader given in section {section!r}")
         found_protocol, found_expr = possible[0]
         del local_conf[found_protocol]
         value = import_string(found_expr)
@@ -652,7 +646,7 @@ class ConfigLoader(_Loader):
                 found.append(name_prefix)
             name = 'main'
         for section in sections:
-            if section.startswith(name_prefix + ':'):
+            if section.startswith(f"{name_prefix}:"):
                 if section[len(name_prefix) + 1:].strip() == name:
                     found.append(section)
         return found
@@ -741,7 +735,7 @@ class FuncLoader(_Loader):
         )
 
 
-class LoaderContext(object):
+class LoaderContext:
 
     def __init__(self, obj, object_type, protocol,
                  global_conf, local_conf, loader,
@@ -774,4 +768,3 @@ class AttrDict(dict):
     """
     A dictionary that can be assigned to.
     """
-    pass

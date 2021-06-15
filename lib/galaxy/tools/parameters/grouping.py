@@ -1,14 +1,10 @@
 """
 Constructs for grouping tool parameters
 """
+import io
 import logging
 import os
 import unicodedata
-
-from six import (
-    StringIO,
-    text_type
-)
 
 from galaxy.datatypes import sniff
 from galaxy.exceptions import (
@@ -26,6 +22,7 @@ from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.expressions import ExpressionContext
 
 log = logging.getLogger(__name__)
+URI_PREFIXES = [f"{x}://" for x in ["http", "https", "ftp", "file", "gxfiles", "gximport", "gxuserimport", "gxftp"]]
 
 
 class Group(Dictifiable):
@@ -60,7 +57,7 @@ class Group(Dictifiable):
         raise TypeError("Not implemented")
 
     def to_dict(self, trans):
-        group_dict = super(Group, self).to_dict()
+        group_dict = super().to_dict()
         return group_dict
 
 
@@ -71,7 +68,7 @@ class Repeat(Group):
 
     def __init__(self):
         Group.__init__(self)
-        self.title = None
+        self._title = None
         self.inputs = None
         self.help = None
         self.default = 0
@@ -79,11 +76,19 @@ class Repeat(Group):
         self.max = None
 
     @property
+    def title(self):
+        return self._title or self.name
+
+    @title.setter
+    def title(self, value):
+        self._title = value
+
+    @property
     def title_plural(self):
         return inflector.pluralize(self.title)
 
     def label(self):
-        return "Repeat (%s)" % self.title
+        return f"Repeat ({self.title})"
 
     def value_to_basic(self, value, app, use_security=False):
         rval = []
@@ -131,7 +136,7 @@ class Repeat(Group):
         return rval
 
     def to_dict(self, trans):
-        repeat_dict = super(Repeat, self).to_dict(trans)
+        repeat_dict = super().to_dict(trans)
 
         def input_to_dict(input):
             return input.to_dict(trans)
@@ -157,7 +162,7 @@ class Section(Group):
         return inflector.pluralize(self.title)
 
     def label(self):
-        return "Section (%s)" % self.title
+        return f"Section ({self.title})"
 
     def value_to_basic(self, value, app, use_security=False):
         rval = {}
@@ -185,7 +190,7 @@ class Section(Group):
         return rval
 
     def to_dict(self, trans):
-        section_dict = super(Section, self).to_dict(trans)
+        section_dict = super().to_dict(trans)
 
         def input_to_dict(input):
             return input.to_dict(trans)
@@ -223,7 +228,7 @@ class UploadDataset(Group):
                     filenames.append(composite_file.get('ftp_files', [])[0])
             dataset_name = os.path.commonprefix(filenames).rstrip('.') or None
         if dataset_name is None:
-            dataset_name = 'Uploaded Composite Dataset (%s)' % self.get_file_type(context)
+            dataset_name = f'Uploaded Composite Dataset ({self.get_file_type(context)})'
         return dataset_name
 
     def get_file_base_name(self, context):
@@ -261,7 +266,7 @@ class UploadDataset(Group):
         return inflector.pluralize(self.title)
 
     def group_title(self, context):
-        return "%s (%s)" % (self.title, context.get(self.file_type_name, self.default_file_type))
+        return f"{self.title} ({context.get(self.file_type_name, self.default_file_type)})"
 
     def title_by_index(self, trans, index, context):
         d_type = self.get_datatype(trans, context)
@@ -269,9 +274,9 @@ class UploadDataset(Group):
             if i == index:
                 rval = composite_name
                 if composite_file.description:
-                    rval = "%s (%s)" % (rval, composite_file.description)
+                    rval = f"{rval} ({composite_file.description})"
                 if composite_file.optional:
-                    rval = "%s [optional]" % rval
+                    rval = f"{rval} [optional]"
                 return rval
         if index < self.get_file_count(trans, context):
             return "Extra primary file"
@@ -349,12 +354,12 @@ class UploadDataset(Group):
         def get_url_paste_urls_or_filename(group_incoming, override_name=None, override_info=None):
             url_paste_file = group_incoming.get('url_paste', None)
             if url_paste_file is not None:
-                url_paste = open(url_paste_file, 'r').read()
+                url_paste = open(url_paste_file).read()
 
                 def start_of_url(content):
-                    start_of_url_paste = content.lstrip()[0:8].lower()
+                    start_of_url_paste = content.lstrip()[0:10].lower()
                     looks_like_url = False
-                    for url_prefix in ["http://", "https://", "ftp://", "file://"]:
+                    for url_prefix in URI_PREFIXES:
                         if start_of_url_paste.startswith(url_prefix):
                             looks_like_url = True
                             break
@@ -422,14 +427,14 @@ class UploadDataset(Group):
             elif ftp_files is not None and trans.user is not None:  # look for files uploaded via FTP
                 user_ftp_dir = trans.user_ftp_dir
                 assert not os.path.islink(user_ftp_dir), "User FTP directory cannot be a symbolic link"
-                for (dirpath, dirnames, filenames) in os.walk(user_ftp_dir):
+                for dirpath, _dirnames, filenames in os.walk(user_ftp_dir):
                     for filename in filenames:
                         for ftp_filename in ftp_files:
                             if ftp_filename == filename:
                                 path = relpath(os.path.join(dirpath, filename), user_ftp_dir)
                                 if not os.path.islink(os.path.join(dirpath, filename)):
-                                    ftp_data_file = {'local_filename' : os.path.abspath(os.path.join(user_ftp_dir, path)),
-                                                     'filename' : os.path.basename(path)}
+                                    ftp_data_file = {'local_filename': os.path.abspath(os.path.join(user_ftp_dir, path)),
+                                                     'filename': os.path.basename(path)}
                                     purge = getattr(trans.app.config, 'ftp_upload_purge', True)
                                     file_bunch = get_data_file_filename(
                                         ftp_data_file,
@@ -500,20 +505,20 @@ class UploadDataset(Group):
             if ftp_files is not None:
                 # Normalize input paths to ensure utf-8 encoding is normal form c.
                 # This allows for comparison when the filesystem uses a different encoding than the browser.
-                ftp_files = [unicodedata.normalize('NFC', f) for f in ftp_files if isinstance(f, text_type)]
+                ftp_files = [unicodedata.normalize('NFC', f) for f in ftp_files if isinstance(f, str)]
                 if trans.user is None:
-                    log.warning('Anonymous user passed values in ftp_files: %s' % ftp_files)
+                    log.warning(f'Anonymous user passed values in ftp_files: {ftp_files}')
                     ftp_files = []
                     # TODO: warning to the user (could happen if session has become invalid)
                 else:
                     user_ftp_dir = trans.user_ftp_dir
                     assert not os.path.islink(user_ftp_dir), "User FTP directory cannot be a symbolic link"
-                    for (dirpath, dirnames, filenames) in os.walk(user_ftp_dir):
+                    for dirpath, _dirnames, filenames in os.walk(user_ftp_dir):
                         for filename in filenames:
                             path = relpath(os.path.join(dirpath, filename), user_ftp_dir)
                             if not os.path.islink(os.path.join(dirpath, filename)):
                                 # Normalize filesystem paths
-                                if isinstance(path, text_type):
+                                if isinstance(path, str):
                                     valid_files.append(unicodedata.normalize('NFC', path))
                                 else:
                                     valid_files.append(path)
@@ -522,11 +527,11 @@ class UploadDataset(Group):
                 ftp_files = []
             for ftp_file in ftp_files:
                 if ftp_file not in valid_files:
-                    log.warning('User passed an invalid file path in ftp_files: %s' % ftp_file)
+                    log.warning(f'User passed an invalid file path in ftp_files: {ftp_file}')
                     continue
                     # TODO: warning to the user (could happen if file is already imported)
-                ftp_data_file = {'local_filename' : os.path.abspath(os.path.join(user_ftp_dir, ftp_file)),
-                                 'filename' : os.path.basename(ftp_file)}
+                ftp_data_file = {'local_filename': os.path.abspath(os.path.join(user_ftp_dir, ftp_file)),
+                                 'filename': os.path.basename(ftp_file)}
                 purge = getattr(trans.app.config, 'ftp_upload_purge', True)
                 file_bunch = get_data_file_filename(ftp_data_file, override_name=name, override_info=info, purge=purge)
                 if file_bunch.path:
@@ -568,7 +573,7 @@ class UploadDataset(Group):
             dataset.tags = None
             # load metadata
             files_metadata = context.get(self.metadata_ref, {})
-            metadata_name_substition_default_dict = dict((composite_file.substitute_name_with_metadata, d_type.metadata_spec[composite_file.substitute_name_with_metadata].default) for composite_file in d_type.composite_files.values() if composite_file.substitute_name_with_metadata)
+            metadata_name_substition_default_dict = {composite_file.substitute_name_with_metadata: d_type.metadata_spec[composite_file.substitute_name_with_metadata].default for composite_file in d_type.composite_files.values() if composite_file.substitute_name_with_metadata}
             for meta_name, meta_spec in d_type.metadata_spec.items():
                 if meta_spec.set_in_upload:
                     if meta_name in files_metadata:
@@ -579,7 +584,7 @@ class UploadDataset(Group):
             dataset.name = self.get_composite_dataset_name(context)
             if dataset.datatype.composite_type == 'auto_primary_file':
                 # replace sniff here with just creating an empty file
-                temp_name = sniff.stream_to_file(StringIO(d_type.generate_primary_file(dataset)), prefix='upload_auto_primary_file')
+                temp_name = sniff.stream_to_file(io.StringIO(d_type.generate_primary_file(dataset)), prefix='upload_auto_primary_file')
                 dataset.primary_file = temp_name
                 dataset.to_posix_lines = True
                 dataset.auto_decompress = True
@@ -605,7 +610,7 @@ class UploadDataset(Group):
             for i, group_incoming in enumerate(groups_incoming[writable_files_offset:]):
                 key = keys[i + writable_files_offset]
                 if not force_composite and group_incoming is None and not writable_files[list(writable_files.keys())[keys.index(key)]].optional:
-                    dataset.warnings.append("A required composite file (%s) was not specified." % (key))
+                    dataset.warnings.append(f"A required composite file ({key}) was not specified.")
                     dataset.composite_files[key] = None
                 else:
                     file_bunch, warnings = get_one_filename(group_incoming)
@@ -617,7 +622,7 @@ class UploadDataset(Group):
                     elif not force_composite:
                         dataset.composite_files[key] = None
                         if not writable_files[list(writable_files.keys())[keys.index(key)]].optional:
-                            dataset.warnings.append("A required composite file (%s) was not specified." % (key))
+                            dataset.warnings.append(f"A required composite file ({key}) was not specified.")
             return [dataset]
         else:
             rval = []
@@ -648,7 +653,7 @@ class Conditional(Group):
 
     @property
     def label(self):
-        return "Conditional (%s)" % self.name
+        return f"Conditional ({self.name})"
 
     def get_current_case(self, value):
         # Convert value to user representation
@@ -703,7 +708,7 @@ class Conditional(Group):
         return rval
 
     def to_dict(self, trans):
-        cond_dict = super(Conditional, self).to_dict(trans)
+        cond_dict = super().to_dict(trans)
 
         def nested_to_dict(input):
             return input.to_dict(trans)
@@ -721,7 +726,7 @@ class ConditionalWhen(Dictifiable):
         self.inputs = None
 
     def to_dict(self, trans):
-        when_dict = super(ConditionalWhen, self).to_dict()
+        when_dict = super().to_dict()
 
         def input_to_dict(input):
             return input.to_dict(trans)

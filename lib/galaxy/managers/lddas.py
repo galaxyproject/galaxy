@@ -3,6 +3,7 @@ import logging
 from galaxy import model, util
 from galaxy.managers import base as manager_base
 from galaxy.managers.datasets import DatasetAssociationManager
+from galaxy.structured_app import MinimalManagerApp
 
 log = logging.getLogger(__name__)
 
@@ -13,11 +14,10 @@ class LDDAManager(DatasetAssociationManager):
     """
     model_class = model.LibraryDatasetDatasetAssociation
 
-    def __init__(self, app):
+    def __init__(self, app: MinimalManagerApp):
         """
         Set up and initialize other managers needed by lddas.
         """
-        pass
 
     def get(self, trans, id, check_accessible=True):
         return manager_base.get_object(trans, id,
@@ -45,7 +45,7 @@ class LDDAManager(DatasetAssociationManager):
                 else:
                     invalid_access_roles_ids.append(role_id)
             if len(invalid_access_roles_ids) > 0:
-                log.warning("The following roles could not be added to the dataset access permission: " + str(invalid_access_roles_ids))
+                log.warning(f"The following roles could not be added to the dataset access permission: {str(invalid_access_roles_ids)}")
 
             access_permission = dict(access=valid_access_roles)
             trans.app.security_agent.set_dataset_permission(dataset, access_permission)
@@ -61,7 +61,7 @@ class LDDAManager(DatasetAssociationManager):
             else:
                 invalid_manage_roles_ids.append(role_id)
         if len(invalid_manage_roles_ids) > 0:
-            log.warning("The following roles could not be added to the dataset manage permission: " + str(invalid_manage_roles_ids))
+            log.warning(f"The following roles could not be added to the dataset manage permission: {str(invalid_manage_roles_ids)}")
         manage_permission = {trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS: valid_manage_roles}
         trans.app.security_agent.set_dataset_permission(dataset, manage_permission)
 
@@ -76,6 +76,6 @@ class LDDAManager(DatasetAssociationManager):
             else:
                 invalid_modify_roles_ids.append(role_id)
         if len(invalid_modify_roles_ids) > 0:
-            log.warning("The following roles could not be added to the dataset modify permission: " + str(invalid_modify_roles_ids))
+            log.warning(f"The following roles could not be added to the dataset modify permission: {str(invalid_modify_roles_ids)}")
         modify_permission = {trans.app.security_agent.permitted_actions.LIBRARY_MODIFY: valid_modify_roles}
         trans.app.security_agent.set_library_item_permission(library_dataset, modify_permission)

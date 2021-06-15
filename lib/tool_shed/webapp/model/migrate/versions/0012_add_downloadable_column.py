@@ -1,7 +1,6 @@
 """
 Migration script to add the downloadable column to the repository_metadata table.
 """
-from __future__ import print_function
 
 import logging
 import sys
@@ -35,7 +34,7 @@ def upgrade(migrate_engine):
             default_true = "1"
         elif migrate_engine.name in ['postgresql', 'postgres']:
             default_true = "true"
-        migrate_engine.execute("UPDATE repository_metadata SET downloadable=%s" % default_true)
+        migrate_engine.execute(f"UPDATE repository_metadata SET downloadable={default_true}")
     except Exception:
         log.exception("Adding downloadable column to the repository_metadata table failed.")
 

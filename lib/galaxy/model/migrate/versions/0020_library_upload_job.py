@@ -5,7 +5,6 @@ added to the job table, and library_folder/output_library_datasets relations
 are added to the Job object.  An index is also added to the dataset.state
 column.
 """
-from __future__ import print_function
 
 import logging
 

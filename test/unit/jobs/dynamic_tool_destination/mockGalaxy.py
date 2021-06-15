@@ -2,7 +2,7 @@ from collections import namedtuple
 
 
 # Job mock and helpers=======================================
-class Job(object):
+class Job:
     def __init__(self):
         self.input_datasets = []
         self.input_library_datasets = []
@@ -22,17 +22,17 @@ class Job(object):
         return self.parameters
 
 
-class InputDataset(object):
+class InputDataset:
     def __init__(self, name, dataset):
         self.name = name
         self.dataset = dataset
 
 
-class NotAFile(object):
+class NotAFile:
     pass
 
 
-class Dataset(object):
+class Dataset:
     def __init__(self, file_name, file_ext, value):
         self.file_name = file_name
         self.datatype = Datatype(file_ext)
@@ -44,13 +44,13 @@ class Dataset(object):
         return self.metadata
 
 
-class Datatype(object):
+class Datatype:
     def __init__(self, file_ext):
         self.file_ext = file_ext
 
 
 # Tool mock and helpers=========================================
-class Tool(object):
+class Tool:
     def __init__(self, id):
         self.old_id = id
         self.installed_tool_dependencies = []
@@ -59,7 +59,7 @@ class Tool(object):
         self.installed_tool_dependencies.append(dependency)
 
 
-class ToolDependency(object):
+class ToolDependency:
     def __init__(self, name, dir_name):
         self.name = name
         self.dir_name = dir_name
@@ -69,12 +69,12 @@ class ToolDependency(object):
 
 
 # App mock=======================================================
-class App(object):
+class App:
     def __init__(self, tool_id, params):
         self.job_config = JobConfig(tool_id, params)
 
 
-class JobConfig(object):
+class JobConfig:
     def __init__(self, tool_id, params):
         self.info = namedtuple('info', ['id', 'nativeSpec', 'runner'])
         self.tool_id = tool_id
@@ -102,7 +102,7 @@ class JobMappingException(Exception):
     pass
 
 
-class JobDestination(object):
+class JobDestination:
     def __init__(self, **kwd):
         self.id = kwd.get('id')
         self.nativeSpec = kwd.get('params')['nativeSpecification']

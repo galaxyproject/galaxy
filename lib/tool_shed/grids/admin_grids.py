@@ -4,7 +4,7 @@ from markupsafe import escape
 from sqlalchemy import and_
 
 from galaxy.web.framework.helpers import time_ago
-from galaxy.webapps.reports.framework import grids
+from galaxy.web.legacy_framework import grids
 from tool_shed.grids.repository_grids import CategoryGrid, RepositoryGrid
 from tool_shed.util import hg_util
 from tool_shed.webapp import model
@@ -364,8 +364,6 @@ class AdminRepositoryGrid(RepositoryGrid):
                                           allow_multiple=False,
                                           condition=(lambda item: item.deleted),
                                           async_compatible=False))
-    standard_filters = []
-    default_filter = {}
 
     def build_initial_query(self, trans, **kwd):
         return trans.sa_session.query(model.Repository) \
@@ -500,9 +498,6 @@ class RepositoryMetadataGrid(grids.Grid):
                                       allow_popup=True,
                                       async_compatible=False,
                                       confirm="Repository metadata records cannot be recovered after they are deleted. Click OK to delete the selected items.")]
-    standard_filters = []
-    default_filter = {}
-    use_paging = False
 
     def build_initial_query(self, trans, **kwd):
         return trans.sa_session.query(model.RepositoryMetadata) \

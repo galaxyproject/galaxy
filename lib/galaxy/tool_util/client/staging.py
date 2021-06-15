@@ -8,7 +8,6 @@ import json
 import logging
 import os
 
-import six
 import yaml
 
 from galaxy.tool_util.cwl.util import (
@@ -24,10 +23,11 @@ log = logging.getLogger(__name__)
 UPLOAD_TOOL_ID = "upload1"
 LOAD_TOOLS_FROM_PATH = True
 DEFAULT_USE_FETCH_API = True
+DEFAULT_FILE_TYPE = "auto"
+DEFAULT_DBKEY = "?"
 
 
-@six.add_metaclass(abc.ABCMeta)
-class StagingInterace(object):
+class StagingInterace(metaclass=abc.ABCMeta):
     """Client that parses a job input and populates files into the Galaxy API.
 
     Abstract class that must override _post (and optionally other things such
@@ -57,7 +57,7 @@ class StagingInterace(object):
     def _handle_job(self, job_response):
         """Implementer can decide if to wait for job(s) individually or not here."""
 
-    def stage(self, tool_or_workflow, history_id, job=None, job_path=None, use_path_paste=LOAD_TOOLS_FROM_PATH):
+    def stage(self, tool_or_workflow, history_id, job=None, job_path=None, use_path_paste=LOAD_TOOLS_FROM_PATH, to_posix_lines=True):
         files_attached = [False]
 
         def upload_func_fetch(upload_target):
@@ -70,15 +70,19 @@ class StagingInterace(object):
                 else:
                     files_attached[0] = True
                     path = uri[len("file://"):]
-                    upload_payload["__files"]["files_%s|file_data" % index] = self._attach_file(path)
+                    upload_payload["__files"][f"files_{index}|file_data"] = self._attach_file(path)
                     return {"src": "files"}
 
             fetch_payload = None
             if isinstance(upload_target, FileUploadTarget):
                 file_path = upload_target.path
+                file_type = upload_target.properties.get('filetype', None) or DEFAULT_FILE_TYPE
+                dbkey = upload_target.properties.get('dbkey', None) or DEFAULT_DBKEY
                 fetch_payload = _fetch_payload(
                     history_id,
-                    file_type=upload_target.properties.get('filetype', None) or "auto",
+                    file_type=file_type,
+                    dbkey=dbkey,
+                    to_posix_lines=to_posix_lines,
                 )
                 name = _file_path_to_name(file_path)
                 if file_path is not None:
@@ -101,9 +105,11 @@ class StagingInterace(object):
                 fetch_payload["targets"][0]["elements"][0]["name"] = name
             elif isinstance(upload_target, FileLiteralTarget):
                 fetch_payload = _fetch_payload(history_id)
+                # For file literals - take them as is - never convert line endings.
                 fetch_payload["targets"][0]["elements"][0].update({
                     "src": "pasted",
-                    "paste_content": upload_target.contents
+                    "paste_content": upload_target.contents,
+                    "to_posix_lines": False,
                 })
                 tags = upload_target.properties.get("tags")
                 if tags:
@@ -140,9 +146,12 @@ class StagingInterace(object):
 
             if isinstance(upload_target, FileUploadTarget):
                 file_path = upload_target.path
+                file_type = upload_target.properties.get('filetype', None) or DEFAULT_FILE_TYPE
+                dbkey = upload_target.properties.get('dbkey', None) or DEFAULT_DBKEY
                 upload_payload = _upload_payload(
                     history_id,
-                    file_type=upload_target.properties.get('filetype', None) or "auto",
+                    file_type=file_type,
+                    to_posix_lines=dbkey,
                 )
                 name = _file_path_to_name(file_path)
                 upload_payload["inputs"]["files_0|auto_decompress"] = False
@@ -162,13 +171,14 @@ class StagingInterace(object):
 
                 if upload_target.composite_data:
                     for i, composite_data in enumerate(upload_target.composite_data):
-                        upload_payload["inputs"]["files_%s|type" % i] = "upload_dataset"
+                        upload_payload["inputs"][f"files_{i}|type"] = "upload_dataset"
                         _attach_file(upload_payload, composite_data, index=i)
 
-                self._log("upload_payload is %s" % upload_payload)
+                self._log(f"upload_payload is {upload_payload}")
                 return self._tools_post(upload_payload, files_attached=files_attached[0])
             elif isinstance(upload_target, FileLiteralTarget):
-                payload = _upload_payload(history_id, file_type="auto", auto_decompress=False)
+                # For file literals - take them as is - never convert line endings.
+                payload = _upload_payload(history_id, file_type="auto", auto_decompress=False, to_posix_lines=False)
                 payload["inputs"]["files_0|url_paste"] = upload_target.contents
                 return self._tools_post(payload)
             elif isinstance(upload_target, DirectoryUploadTarget):
@@ -208,9 +218,9 @@ class StagingInterace(object):
 
         if job_path is not None:
             assert job is None
-            with open(job_path, "r") as f:
+            with open(job_path) as f:
                 job = yaml.safe_load(f)
-            job_dir = os.path.dirname(job_path)
+            job_dir = os.path.dirname(os.path.abspath(job_path))
         else:
             assert job is not None
             # Figure out what "." should be here instead.
@@ -266,7 +276,7 @@ def _file_path_to_name(file_path):
     return name
 
 
-def _upload_payload(history_id, tool_id=UPLOAD_TOOL_ID, file_type="auto", dbkey="?", **kwd):
+def _upload_payload(history_id, tool_id=UPLOAD_TOOL_ID, file_type=DEFAULT_FILE_TYPE, dbkey=DEFAULT_DBKEY, **kwd):
     """Adapted from bioblend tools client."""
     payload = {}
     payload["history_id"] = history_id
@@ -286,9 +296,10 @@ def _upload_payload(history_id, tool_id=UPLOAD_TOOL_ID, file_type="auto", dbkey=
     return payload
 
 
-def _fetch_payload(history_id, file_type="auto", dbkey="?", **kwd):
+def _fetch_payload(history_id, file_type=DEFAULT_FILE_TYPE, dbkey=DEFAULT_DBKEY, **kwd):
     element = {
         "ext": file_type,
+        "dbkey": dbkey,
     }
     for arg in ['to_posix_lines', 'space_to_tab']:
         if arg in kwd:

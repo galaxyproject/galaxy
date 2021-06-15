@@ -16,7 +16,7 @@ def main():
     (options, args) = parser.parse_args()
     input_fname, output_fname = args
     slots = os.getenv('GALAXY_SLOTS', 1)
-    pysam.sort("-@%s" % slots, '-o', output_fname, '-O', 'bam', '-T', '.', input_fname)
+    pysam.sort(f"-@{slots}", '-o', output_fname, '-O', 'bam', '-T', '.', input_fname)
 
 
 if __name__ == "__main__":

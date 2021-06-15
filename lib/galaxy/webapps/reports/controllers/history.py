@@ -1,4 +1,3 @@
-import collections
 import logging
 
 import sqlalchemy as sa
@@ -27,9 +26,9 @@ def int_to_octet(size):
         size /= 1000.
         no_unit += 1
     try:
-        return "%.2f %s" % (size, units[no_unit])
+        return f"{size:.2f} {units[no_unit]}"
     except IndexError:
-        return "%.0f %s" % (size * ((no_unit - len(units) + 1) * 1000.), units[-1])
+        return f"{size * ((no_unit - len(units) + 1) * 1000.0):.0f} {units[-1]}"
 
 
 class History(BaseUIController):
@@ -90,10 +89,10 @@ class History(BaseUIController):
         # execute requests, replace None fields by "Unknown"
         # transform lists to dict with email as key and
         # number of (history/dataset)/size of history as value
-        histories = dict([(_.email if _.email is not None else "Unknown", int(_.history))
-                          for _ in histories.execute()])
-        datasets = dict([(_.email if _.email is not None else "Unknown", (int(_.dataset), int(_.size)))
-                         for _ in datasets.execute()])
+        histories = {_.email if _.email is not None else "Unknown": int(_.history)
+                     for _ in histories.execute()}
+        datasets = {_.email if _.email is not None else "Unknown": (int(_.dataset), int(_.size))
+                    for _ in datasets.execute()}
 
         sort_keys = (
             lambda v: v[0].lower(),
@@ -111,7 +110,7 @@ class History(BaseUIController):
             users = users[:user_cutoff]
 
         # to keep ordered
-        data = collections.OrderedDict()
+        data = {}
         for user in users:
             dataset = datasets.get(user, [0, 0])
             history = histories.get(user, 0)
@@ -172,8 +171,7 @@ class History(BaseUIController):
         possible_status = {"ok": 0, "upload": 1, "paused": 2, "queued": 3, "error": 4, "discarded": 5}
         number_of_possible_status = len(possible_status) + 1  # + 1 to handle unknown status!
 
-        # to keep ordered
-        datas = collections.OrderedDict()
+        datas = {}
         for no, name in enumerate(names):
             if name not in datas:
                 if user_cutoff > 0:

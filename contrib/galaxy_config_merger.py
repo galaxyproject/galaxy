@@ -23,13 +23,11 @@ THE ORIGINAL WORK IS WITH YOU.
 
 Script for merging specific local Galaxy config galaxy.ini.cri with default Galaxy galaxy.ini.sample
 '''
-from __future__ import print_function
 
+import configparser
 import logging
 import optparse
 import sys
-
-from six.moves import configparser
 
 
 def main():
@@ -51,12 +49,12 @@ def main():
 
     config_sample = configparser.RawConfigParser()
     config_sample.read(options.sample)
-    config_sample_content = open(options.sample, 'r').read()
+    config_sample_content = open(options.sample).read()
 
     config = configparser.RawConfigParser()
     config.read(options.config)
 
-    logging.info("Merging your own config file %s into the sample one %s." % (options.config, options.sample))
+    logging.info(f"Merging your own config file {options.config} into the sample one {options.sample}.")
     logging.info("---------- DIFFERENCE ANALYSIS BEGIN ----------")
     for section in config.sections():
         if not config_sample.has_section(section):
@@ -65,13 +63,13 @@ def main():
             for (name, value) in config.items(section):
                 if not config_sample.has_option(section, name):
                     if not "#%s" % name in config_sample_content:
-                        logging.warning("-MISSING- section [%s] option '%s' not found in sample file. It will be ignored." % (section, name))
+                        logging.warning(f"-MISSING- section [{section}] option '{name}' not found in sample file. It will be ignored.")
                     else:
-                        logging.info("-notset- section [%s] option '%s' not set in sample file. It will be added." % (section, name))
+                        logging.info(f"-notset- section [{section}] option '{name}' not set in sample file. It will be added.")
                         config_sample.set(section, name, value)
                 else:
                     if not config_sample.get(section, name) == value:
-                        logging.info("- diff - section [%s] option '%s' has different value ('%s':'%s'). It will be modified." % (section, name, config_sample.get(section, name), value))
+                        logging.info("- diff - section [{}] option '{}' has different value ('{}':'{}'). It will be modified.".format(section, name, config_sample.get(section, name), value))
                         config_sample.set(section, name, value)
     logging.info("---------- DIFFERENCE ANALYSIS END   ----------")
 

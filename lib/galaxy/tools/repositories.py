@@ -9,7 +9,7 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.dbkeys import GenomeBuilds
 
 
-class ValidationContext(object):
+class ValidationContext:
     """Minimal App object for tool validation."""
 
     def __init__(self, app_name,
@@ -29,6 +29,7 @@ class ValidationContext(object):
         self.temporary_path = tempfile.mkdtemp(prefix='tool_validation_')
         self.config.tool_data_table_config = os.path.join(self.temporary_path, 'tool_data_table_conf.xml')
         self.config.shed_tool_data_table_config = os.path.join(self.temporary_path, 'shed_tool_data_table_conf.xml')
+        self.config.interactivetools_enable = True
         self.tool_data_tables = tool_data_tables
         self.tool_shed_registry = Bunch(tool_sheds={})
         self.datatypes_registry = registry
@@ -39,6 +40,7 @@ class ValidationContext(object):
         # not appear to be an issue with the len_file_path config option.
         self.config.builds_file_path = None
         self.genome_builds = GenomeBuilds(self)
+        self.job_search = None
 
     def __enter__(self):
         return self

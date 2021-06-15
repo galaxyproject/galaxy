@@ -1,6 +1,5 @@
-*.test.js
-galaxy/scripts/qunit
-galaxy/scripts/mocha
-galaxy/scripts/libs
-galaxy/scripts/nls
-galaxy/scripts/legacy
+src/qunit
+src/mocha
+src/libs
+src/nls
+src/legacy

@@ -10,7 +10,7 @@ from galaxy.model.orm.now import now
 log = logging.getLogger(__name__)
 
 
-class DatabaseHeartbeat(object):
+class DatabaseHeartbeat:
 
     def __init__(self, application_stack, heartbeat_interval=60):
         self.application_stack = application_stack
@@ -25,7 +25,7 @@ class DatabaseHeartbeat(object):
 
     @property
     def sa_session(self):
-        return self.application_stack.app.model.context
+        return self.application_stack.app.model.session
 
     @property
     def server_name(self):
@@ -34,7 +34,7 @@ class DatabaseHeartbeat(object):
 
     def start(self):
         if not self.active:
-            self.thread = threading.Thread(target=self.send_database_heartbeat, name="database_heartbeart_%s.thread" % self.server_name)
+            self.thread = threading.Thread(target=self.send_database_heartbeat, name=f"database_heartbeart_{self.server_name}.thread")
             self.thread.daemon = True
             self.active = True
             self.thread.start()
@@ -56,7 +56,7 @@ class DatabaseHeartbeat(object):
         if last_seen_seconds is None:
             last_seen_seconds = self.heartbeat_interval
         seconds_ago = now() - datetime.timedelta(seconds=last_seen_seconds)
-        return self.sa_session.query(WorkerProcess).filter(WorkerProcess.table.c.update_time > seconds_ago).all()
+        return self.sa_session.query(WorkerProcess).filter(WorkerProcess.update_time > seconds_ago).all()
 
     def add_change_callback(self, callback):
         self._observers.append(callback)
@@ -90,7 +90,7 @@ class DatabaseHeartbeat(object):
         # We only want a single process watching the various config files on the file system.
         # We just pick the max server name for simplicity
         is_config_watcher = self.server_name == max(
-            (p.server_name for p in self.get_active_processes(self.heartbeat_interval + 1)))
+            p.server_name for p in self.get_active_processes(self.heartbeat_interval + 1))
         if is_config_watcher != self.is_config_watcher:
             self.is_config_watcher = is_config_watcher
 

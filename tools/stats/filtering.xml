@@ -1,4 +1,4 @@
-<tool id="Filter1" name="Filter" version="1.1.0">
+<tool id="Filter1" name="Filter" version="1.1.1">
   <description>data on any column using simple expressions</description>
   <edam_operations>
     <edam_operation>operation_0335</edam_operation>

@@ -1,11 +1,9 @@
 """Generic I/O and shell processing code used by Galaxy tool dependencies."""
 import logging
 import os
+import shlex
 import subprocess
 import sys as _sys
-
-import six
-from six.moves import shlex_quote
 
 from galaxy.util import (
     unicodify,
@@ -39,13 +37,11 @@ def redirect_aware_commmunicate(p, sys=_sys):
         if out:
             # We don't unicodify in Python2 because sys.stdout may be a
             # cStringIO.StringIO object, which does not accept Unicode strings
-            if not six.PY2:
-                out = unicodify(out)
+            out = unicodify(out)
             sys.stdout.write(out)
             out = None
         if err:
-            if not six.PY2:
-                err = unicodify(err)
+            err = unicodify(err)
             sys.stderr.write(err)
             err = None
     return out, err
@@ -72,7 +68,7 @@ def shell_process(cmds, env=None, **kwds):
     """
     sys = kwds.get("sys", _sys)
     popen_kwds = dict()
-    if isinstance(cmds, six.string_types):
+    if isinstance(cmds, str):
         log.warning("Passing program arguments as a string may be a security hazard if combined with untrusted input")
         popen_kwds['shell'] = True
     if kwds.get("stdout", None) is None and redirecting_io(sys=sys):
@@ -103,11 +99,11 @@ def argv_to_str(command_argv, quote=True):
 
     If None appears in the command list it is simply excluded.
 
-    Arguments are quoted with shlex_quote. That said, this method is not meant to be
+    Arguments are quoted with shlex.quote(). That said, this method is not meant to be
     used in security critical paths of code and should not be used to sanitize
     code.
     """
-    map_func = shlex_quote if quote else lambda x: x
+    map_func = shlex.quote if quote else lambda x: x
     return " ".join(map_func(c) for c in command_argv if c is not None)
 
 

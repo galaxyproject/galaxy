@@ -4,8 +4,8 @@ In general there are utilities available for Conda building and parsing that are
 and should be utilized when available but that are only available in conda channels and not in
 PyPI. This module serves as a PyPI capable interface to these utilities.
 """
-import collections
 import os
+from collections.abc import Hashable
 
 import yaml
 
@@ -21,14 +21,14 @@ except ImportError:
     parse = None
 
 
-class _Memoized(object):
+class _Memoized:
 
     def __init__(self, func):
         self.func = func
         self.cache = {}
 
     def __call__(self, *args):
-        if not isinstance(args, collections.Hashable):
+        if not isinstance(args, Hashable):
             # uncacheable. a list, for instance.
             # better to not cache than blow up.
             return self.func(*args)
@@ -86,7 +86,7 @@ def raw_metadata(recipe_dir):
     return meta
 
 
-class _MetaData(object):
+class _MetaData:
 
     def __init__(self, input_dir):
         self.meta = raw_metadata(input_dir)

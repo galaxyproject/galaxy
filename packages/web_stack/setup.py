@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 import ast
 import os
@@ -14,7 +13,7 @@ SOURCE_DIR = "galaxy"
 _version_re = re.compile(r'__version__\s+=\s+(.*)')
 
 project_short_name = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
-with open('%s/project_galaxy_%s.py' % (SOURCE_DIR, project_short_name), 'rb') as f:
+with open(f'{SOURCE_DIR}/project_galaxy_{project_short_name}.py', 'rb') as f:
     init_contents = f.read().decode('utf-8')
 
     def get_var(var_name):
@@ -87,11 +86,11 @@ setup(
         'Topic :: Software Development :: Code Generators',
         'Topic :: Software Development :: Testing',
         'Natural Language :: English',
-        "Programming Language :: Python :: 2",
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3.5',
+        "Programming Language :: Python :: 3",
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
     ],
     test_suite=TEST_DIR,
     tests_require=test_requirements

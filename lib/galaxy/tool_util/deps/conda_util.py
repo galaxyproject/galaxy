@@ -4,13 +4,12 @@ import json
 import logging
 import os
 import re
+import shlex
 import shutil
 import sys
 import tempfile
 
 import packaging.version
-import six
-from six.moves import shlex_quote
 
 from galaxy.util import (
     commands,
@@ -227,12 +226,12 @@ class CondaContext(installable.InstallableContext):
         env = {}
         if self.condarc_override:
             env["CONDARC"] = self.condarc_override
-        cmd_string = ' '.join(map(shlex_quote, cmd))
+        cmd_string = ' '.join(map(shlex.quote, cmd))
         kwds = dict()
         try:
             if stdout_path:
                 kwds['stdout'] = open(stdout_path, 'w')
-                cmd_string += " > '%s'" % stdout_path
+                cmd_string += f" > '{stdout_path}'"
             conda_exec_home = env['HOME'] = tempfile.mkdtemp(prefix='conda_exec_home_')  # We don't want to pollute ~/.conda, which may not even be writable
             log.debug("Executing command: %s", cmd_string)
             return self.shell_exec(cmd, env=env, **kwds)
@@ -357,31 +356,30 @@ def installed_conda_targets(conda_context):
             yield CondaTarget(unversioned_match.group(1))
 
 
-@six.python_2_unicode_compatible
-class CondaTarget(object):
+class CondaTarget:
 
     def __init__(self, package, version=None, channel=None):
         if SHELL_UNSAFE_PATTERN.search(package) is not None:
-            raise ValueError("Invalid package [%s] encountered." % package)
+            raise ValueError(f"Invalid package [{package}] encountered.")
         self.package = package
         if version and SHELL_UNSAFE_PATTERN.search(version) is not None:
-            raise ValueError("Invalid version [%s] encountered." % version)
+            raise ValueError(f"Invalid version [{version}] encountered.")
         self.version = version
         if channel and SHELL_UNSAFE_PATTERN.search(channel) is not None:
-            raise ValueError("Invalid version [%s] encountered." % channel)
+            raise ValueError(f"Invalid version [{channel}] encountered.")
         self.channel = channel
 
     def __str__(self):
-        attributes = "package=%s" % self.package
+        attributes = f"package={self.package}"
         if self.version is not None:
-            attributes = "%s,version=%s" % (self.package, self.version)
+            attributes = f"{self.package},version={self.version}"
         else:
-            attributes = "%s,unversioned" % self.package
+            attributes = f"{self.package},unversioned"
 
         if self.channel:
             attributes = "%s,channel=%s" % self.channel
 
-        return "CondaTarget[%s]" % attributes
+        return f"CondaTarget[{attributes}]"
 
     __repr__ = __str__
 
@@ -390,7 +388,7 @@ class CondaTarget(object):
         """ Return a package specifier as consumed by conda install/create.
         """
         if self.version:
-            return "%s=%s" % (self.package, self.version)
+            return f"{self.package}={self.version}"
         else:
             return self.package
 
@@ -401,9 +399,9 @@ class CondaTarget(object):
         a fixed and predictable name given package and version.
         """
         if self.version:
-            return "__%s@%s" % (self.package, self.version)
+            return f"__{self.package}@{self.version}"
         else:
-            return "__%s@_uv_" % (self.package)
+            return f"__{self.package}@_uv_"
 
     def __hash__(self):
         return hash((self.package, self.version, self.channel))
@@ -430,15 +428,15 @@ def hash_conda_packages(conda_packages, conda_target=None):
 # shell makes sense for planemo, in Galaxy this should just execute
 # these commands as Python
 def install_conda(conda_context, force_conda_build=False):
-    f, script_path = tempfile.mkstemp(suffix=".sh", prefix="conda_install")
-    os.close(f)
+    with tempfile.NamedTemporaryFile(suffix=".sh", prefix="conda_install", delete=False) as temp:
+        script_path = temp.name
     download_cmd = commands.download_command(conda_link(), to=script_path)
     install_cmd = ['bash', script_path, '-b', '-p', conda_context.conda_prefix]
     package_targets = [
-        "conda=%s" % CONDA_VERSION,
+        f"conda={CONDA_VERSION}",
     ]
     if force_conda_build or conda_context.use_local:
-        package_targets.append("conda-build=%s" % CONDA_BUILD_VERSION)
+        package_targets.append(f"conda-build={CONDA_BUILD_VERSION}")
     log.info("Installing conda, this may take several minutes.")
     try:
         exit_code = conda_context.shell_exec(download_cmd)

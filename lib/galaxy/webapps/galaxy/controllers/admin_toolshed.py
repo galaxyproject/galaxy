@@ -3,7 +3,6 @@ import logging
 import os
 from functools import wraps
 
-from six import string_types
 from sqlalchemy import or_
 
 import tool_shed.repository_types.util as rt_util
@@ -57,10 +56,10 @@ class AdminToolshed(AdminGalaxy):
         repository = repository_util.get_installed_tool_shed_repository(trans.app, repository_id)
         try:
             trans.app.installed_repository_manager.activate_repository(repository)
-            message = 'The <b>%s</b> repository has been activated.' % escape(repository.name)
+            message = f'The <b>{escape(repository.name)}</b> repository has been activated.'
             status = 'done'
         except Exception as e:
-            error_message = "Error activating repository %s: %s" % (escape(repository.name), unicodify(e))
+            error_message = f"Error activating repository {escape(repository.name)}: {unicodify(e)}"
             log.exception(error_message)
             message = '%s.<br/>You may be able to resolve this by uninstalling and then reinstalling the repository.  Click <a href="%s">here</a> to uninstall the repository.' \
                 % (error_message, web.url_for(controller='admin_toolshed', action='deactivate_or_uninstall_repository', id=trans.security.encode_id(repository.id)))
@@ -124,7 +123,7 @@ class AdminToolshed(AdminGalaxy):
                                                                     action='reselect_tool_panel_section',
                                                                     **kwd))
             else:
-                message = "Unable to get latest revision for repository <b>%s</b> from " % escape(str(repository.name))
+                message = f"Unable to get latest revision for repository <b>{escape(str(repository.name))}</b> from "
                 message += "the Tool Shed, so repository re-installation is not possible at this time."
                 status = "error"
                 return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
@@ -292,11 +291,11 @@ class AdminToolshed(AdminGalaxy):
             if installed_tool_dependency.status == trans.app.install_model.ToolDependency.installation_status.ERROR:
                 text = unicodify(installed_tool_dependency.error_message)
                 if text is not None:
-                    err_msg += '  %s' % text
+                    err_msg += f'  {text}'
         if err_msg:
             message += err_msg
             status = 'error'
-        message += "Installed tool dependencies: %s" % ', '.join(td.name for td in installed_tool_dependencies)
+        message += f"Installed tool dependencies: {', '.join(td.name for td in installed_tool_dependencies)}"
         td_ids = [trans.security.encode_id(td.id) for td in tool_shed_repository.tool_dependencies]
         return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
                                                         action='manage_tool_dependencies',
@@ -324,7 +323,7 @@ class AdminToolshed(AdminGalaxy):
                 url = util.build_url(tool_shed_url, pathspec=pathspec, params=params)
                 latest_downloadable_revision = json.loads(raw_text)
                 if latest_downloadable_revision == hg_util.INITIAL_CHANGELOG_HASH:
-                    return trans.show_error_message('Error retrieving the latest downloadable revision for this repository via the url <b>%s</b>.' % url)
+                    return trans.show_error_message(f'Error retrieving the latest downloadable revision for this repository via the url <b>{url}</b>.')
                 else:
                     # Make sure the latest changeset_revision of the repository has not already been installed.
                     # Updates to installed repository revisions may have occurred, so make sure to locate the
@@ -340,7 +339,7 @@ class AdminToolshed(AdminGalaxy):
                         message = 'Revision <b>%s</b> of repository <b>%s</b> owned by <b>%s</b> has already been installed.' % \
                             (latest_downloadable_revision, name, owner)
                         if current_changeset_revision != latest_downloadable_revision:
-                            message += '  The current changeset revision is <b>%s</b>.' % current_changeset_revision
+                            message += f'  The current changeset revision is <b>{current_changeset_revision}</b>.'
                         return trans.show_error_message(message)
                     else:
                         # Install the latest downloadable revision of the repository.
@@ -352,7 +351,7 @@ class AdminToolshed(AdminGalaxy):
                         url = util.build_url(tool_shed_url, pathspec=pathspec, params=params)
                         return trans.response.send_redirect(url)
             else:
-                return trans.show_error_message('Cannot locate installed tool shed repository with encoded id <b>%s</b>.' % str(repository_id))
+                return trans.show_error_message(f'Cannot locate installed tool shed repository with encoded id <b>{str(repository_id)}</b>.')
         else:
             return trans.show_error_message('The request parameters did not include the required encoded <b>id</b> of installed repository.')
 
@@ -547,7 +546,7 @@ class AdminToolshed(AdminGalaxy):
         clause_list = []
         for tsr_id in tsr_ids:
             clause_list.append(trans.install_model.ToolShedRepository.table.c.id == tsr_id)
-        query = trans.install_model.context.current.query(trans.install_model.ToolShedRepository).filter(or_(*clause_list))
+        query = trans.install_model.session.query(trans.install_model.ToolShedRepository).filter(or_(*clause_list))
         return trans.fill_template('admin/tool_shed_repository/monitor_repository_installation.mako',
                                    tool_shed_repositories=tool_shed_repositories,
                                    query=query,
@@ -620,10 +619,10 @@ class AdminToolshed(AdminGalaxy):
                     # The Tool Shed cannot handle the get_repository_id request, so the code must be older than the
                     # 04/2014 Galaxy release when it was introduced.  It will be safest to error out and let the
                     # Tool Shed admin update the Tool Shed to a later release.
-                    message = 'The updates available for the repository <b>%s</b> ' % escape(str(repository.name))
+                    message = f'The updates available for the repository <b>{escape(str(repository.name))}</b> '
                     message += 'include newly defined repository or tool dependency definitions, and attempting '
                     message += 'to update the repository resulted in the following error.  Contact the Tool Shed '
-                    message += 'administrator if necessary.<br/>%s' % unicodify(e)
+                    message += f'administrator if necessary.<br/>{unicodify(e)}'
                     return trans.show_error_message(message)
                 changeset_revisions = updating_to_changeset_revision
             else:
@@ -917,7 +916,7 @@ class AdminToolshed(AdminGalaxy):
         repo_info_dicts = []
         repo_info_dict = kwd.get('repo_info_dict', None)
         if repo_info_dict:
-            if isinstance(repo_info_dict, string_types):
+            if isinstance(repo_info_dict, str):
                 repo_info_dict = encoding_util.tool_shed_decode(repo_info_dict)
         else:
             # Entering this else block occurs only if the tool_shed_repository does not include any valid tools.
@@ -979,7 +978,7 @@ class AdminToolshed(AdminGalaxy):
         clause_list = []
         for tsr_id in tsr_ids:
             clause_list.append(trans.install_model.ToolShedRepository.table.c.id == tsr_id)
-        query = trans.install_model.context.current.query(trans.install_model.ToolShedRepository) \
+        query = trans.install_model.session.query(trans.install_model.ToolShedRepository) \
                                            .filter(or_(*clause_list))
         return trans.fill_template('admin/tool_shed_repository/monitor_repository_installation.mako',
                                    encoded_kwd=encoded_kwd,
@@ -1117,7 +1116,7 @@ class AdminToolshed(AdminGalaxy):
                 message += "different section in the tool panel.  "
                 status = 'warning'
             else:
-                message += "The tools contained in your <b>%s</b> repository were last loaded into the tool panel outside of any sections.  " % escape(tool_shed_repository.name)
+                message += f"The tools contained in your <b>{escape(tool_shed_repository.name)}</b> repository were last loaded into the tool panel outside of any sections.  "
                 message += "Uncheck the <b>No changes</b> check box and select a tool panel section to load the tools into that section.  "
                 status = 'warning'
         else:
@@ -1203,9 +1202,9 @@ class AdminToolshed(AdminGalaxy):
                 uninstalled, error_message = tool_dependency_util.remove_tool_dependency(trans.app, tool_dependency)
                 if error_message:
                     errors = True
-                    message = '%s  %s' % (message, error_message)
+                    message = f'{message}  {error_message}'
             if errors:
-                message = "Error attempting to uninstall tool dependencies: %s" % message
+                message = f"Error attempting to uninstall tool dependencies: {message}"
                 status = 'error'
             else:
                 message = "These tool dependencies have been uninstalled: %s" % \
@@ -1246,7 +1245,7 @@ class AdminToolshed(AdminGalaxy):
                                                               refresh=True)
         if changeset_revision and latest_changeset_revision and latest_ctx_rev:
             if changeset_revision == latest_changeset_revision:
-                message = "The installed repository named '%s' is current, there are no updates available.  " % name
+                message = f"The installed repository named '{name}' is current, there are no updates available.  "
             else:
                 irm = install_manager.InstallRepositoryManager(trans.app)
                 install_dependencies, irmm_metadata_dict = irm.update_tool_shed_repository(
@@ -1286,7 +1285,7 @@ class AdminToolshed(AdminGalaxy):
                 message = "The installed repository named '%s' has been updated to change set revision '%s'.  " % \
                     (name, latest_changeset_revision)
         else:
-            message = "The latest changeset revision could not be retrieved for the installed repository named '%s'.  " % name
+            message = f"The latest changeset revision could not be retrieved for the installed repository named '{name}'.  "
             status = 'error'
         return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
                                                         action='manage_repository',

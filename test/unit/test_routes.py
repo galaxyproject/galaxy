@@ -1,3 +1,5 @@
+from routes import request_config
+
 from galaxy.util.bunch import Bunch
 from galaxy.web import url_for
 from galaxy.webapps.base.webapp import WebApplication
@@ -25,8 +27,11 @@ def test_galaxy_routes():
     test_webapp = TestWebapp(app)
 
     galaxy_buildapp.populate_api_routes(test_webapp, app)
-
-    assert_url_is(url_for("api_key_retrieval"), "/api/authenticate/baseauth")
+    config = request_config()
+    config.host = "usegalaxy.org"
+    config.protocol = "https"
+    assert_url_is(url_for("api_key_retrieval", qualified=True), "https://usegalaxy.org/api/authenticate/baseauth")
+    assert_url_is(url_for("/tool_runner/biomart", qualified=True), "https://usegalaxy.org/tool_runner/biomart")
 
     # Test previously problematic tool ids with slashes.
     test_webapp.assert_maps(
@@ -108,4 +113,4 @@ def test_galaxy_routes():
 
 
 def assert_url_is(actual, expected):
-    assert actual == expected, "Expected URL [%s] but obtained [%s]" % (expected, actual)
+    assert actual == expected, f"Expected URL [{expected}] but obtained [{actual}]"

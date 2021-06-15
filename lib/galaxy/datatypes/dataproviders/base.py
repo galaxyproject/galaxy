@@ -9,8 +9,7 @@ Base class(es) for all DataProviders.
 
 import logging
 from collections import deque
-
-import six
+from typing import Dict
 
 from . import exceptions
 
@@ -64,25 +63,27 @@ class HasSettings(type):
 
 
 # ----------------------------------------------------------------------------- base classes
-@six.add_metaclass(HasSettings)
-class DataProvider(six.Iterator):
+class DataProvider(metaclass=HasSettings):
     """
     Base class for all data providers. Data providers:
-        (a) have a source (which must be another file-like object)
-        (b) implement both the iterator and context manager interfaces
-        (c) do not allow write methods
-            (but otherwise implement the other file object interface methods)
+
+    - have a source (which must be another file-like object)
+    - implement both the iterator and context manager interfaces
+    - do not allow write methods (but otherwise implement the other file object interface methods)
+
     """
     # a definition of expected types for keyword arguments sent to __init__
     #   useful for controlling how query string dictionaries can be parsed into correct types for __init__
     #   empty in this base class
-    settings = {}
+    settings: Dict[str, str] = {}
 
     def __init__(self, source, **kwargs):
-        """
+        """Sets up a data provider, validates supplied source.
+
         :param source: the source that this iterator will loop over.
-            (Should implement the iterable interface and ideally have the
-            context manager interface as well)
+                       (Should implement the iterable interface and ideally have the
+                       context manager interface as well)
+
         """
         self.source = self.validate_source(source)
 
@@ -131,8 +132,7 @@ class DataProvider(six.Iterator):
     def __iter__(self):
         # it's generators all the way up, Timmy
         with self:
-            for datum in self.source:
-                yield datum
+            yield from self.source
 
     def __next__(self):
         return next(self.source)
@@ -160,7 +160,7 @@ class DataProvider(six.Iterator):
         """
         # we need to protect against recursion (in __getattr__) if self.source hasn't been set
         source_str = str(self.source) if hasattr(self, 'source') else ''
-        return '%s(%s)' % (self.__class__.__name__, str(source_str))
+        return f'{self.__class__.__name__}({str(source_str)})'
 
 
 class FilteredDataProvider(DataProvider):
@@ -181,8 +181,8 @@ class FilteredDataProvider(DataProvider):
         :param filter_fn: a lambda or function that will be passed a datum and
             return either the (optionally modified) datum or None.
         """
-        super(FilteredDataProvider, self).__init__(source, **kwargs)
-        self.filter_fn = filter_fn if hasattr(filter_fn, '__call__') else None
+        super().__init__(source, **kwargs)
+        self.filter_fn = filter_fn if callable(filter_fn) else None
         # count how many data we got from the source
         self.num_data_read = 0
         # how many valid data have we gotten from the source
@@ -192,7 +192,7 @@ class FilteredDataProvider(DataProvider):
         self.num_data_returned = 0
 
     def __iter__(self):
-        parent_gen = super(FilteredDataProvider, self).__iter__()
+        parent_gen = super().__iter__()
         for datum in parent_gen:
             self.num_data_read += 1
             datum = self.filter(datum)
@@ -227,7 +227,7 @@ class LimitedOffsetDataProvider(FilteredDataProvider):
     """
     # define the expected types of these __init__ arguments so they can be parsed out from query strings
     settings = {
-        'limit' : 'int',
+        'limit': 'int',
         'offset': 'int'
     }
 
@@ -237,7 +237,7 @@ class LimitedOffsetDataProvider(FilteredDataProvider):
         :param offset:  the number of data to skip before providing.
         :param limit:   the final number of data to provide.
         """
-        super(LimitedOffsetDataProvider, self).__init__(source, **kwargs)
+        super().__init__(source, **kwargs)
 
         # how many valid data to skip before we start outputing data - must be positive
         #   (diff to support neg. indeces - must be pos.)
@@ -257,7 +257,7 @@ class LimitedOffsetDataProvider(FilteredDataProvider):
         if self.limit is not None and self.limit <= 0:
             return
 
-        parent_gen = super(LimitedOffsetDataProvider, self).__iter__()
+        parent_gen = super().__iter__()
         for datum in parent_gen:
             self.num_data_returned -= 1
 
@@ -310,6 +310,5 @@ class MultiSourceDataProvider(DataProvider):
             except exceptions.InvalidDataProviderSource:
                 continue
 
-            parent_gen = super(MultiSourceDataProvider, self).__iter__()
-            for datum in parent_gen:
-                yield datum
+            parent_gen = super().__iter__()
+            yield from parent_gen

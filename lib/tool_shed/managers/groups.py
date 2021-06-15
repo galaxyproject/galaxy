@@ -18,13 +18,13 @@ log = logging.getLogger(__name__)
 
 
 # =============================================================================
-class GroupManager(object):
+class GroupManager:
     """
     Interface/service object for interacting with TS groups.
     """
 
     def __init__(self, *args, **kwargs):
-        super(GroupManager, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def get(self, trans, decoded_group_id=None, name=None):
         """
@@ -34,7 +34,7 @@ class GroupManager(object):
         :type   decoded_group_id:       int
 
         :returns:   the requested group
-        :rtype:     Group
+        :rtype:     tool_shed.model.Group
         """
         if decoded_group_id is None and name is None:
             raise RequestParameterInvalidException('You must supply either ID or a name of the group.')
@@ -60,7 +60,7 @@ class GroupManager(object):
             raise ItemAccessibilityException('Only administrators can create groups.')
         else:
             if self.get(trans, name=name):
-                raise Conflict('Group with the given name already exists. Name: ' + str(name))
+                raise Conflict(f"Group with the given name already exists. Name: {str(name)}")
             # TODO add description field to the model
             group = trans.app.model.Group(name=name)
             trans.sa_session.add(group)

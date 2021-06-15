@@ -1,10 +1,13 @@
 <?xml version="1.0"?>
 <tool name="YeastMine" id="yeastmine" tool_type="data_source" version="1.0.0">
     <description>server</description>
+    <edam_operations>
+        <edam_operation>operation_0224</edam_operation>
+    </edam_operations>
     <command><![CDATA[
 python '$__tool_directory__/data_source.py' '$output' $__app__.config.output_size_limit
     ]]></command>
-    <inputs action="http://yeastmine.yeastgenome.org/yeastmine/begin.do" check_values="false" method="get"> 
+    <inputs action="http://yeastmine.yeastgenome.org/yeastmine/begin.do" check_values="false" method="get">
         <display>go to yeastMine server $GALAXY_URL</display>
     </inputs>
     <request_param_translation>

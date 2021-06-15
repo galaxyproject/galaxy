@@ -9,7 +9,7 @@ from tool_shed.util import repository_util
 log = logging.getLogger(__name__)
 
 
-class ToolVersionManager(object):
+class ToolVersionManager:
 
     def __init__(self, app):
         self.app = app

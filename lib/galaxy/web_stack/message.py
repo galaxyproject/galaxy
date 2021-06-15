@@ -1,16 +1,15 @@
 """Web Application Stack worker messaging
 """
-from __future__ import absolute_import
 
 import json
 import logging
-
-import six
+import types
+from typing import Optional, Tuple
 
 log = logging.getLogger(__name__)
 
 
-class ApplicationStackMessageDispatcher(object):
+class ApplicationStackMessageDispatcher:
     def __init__(self):
         self.__funcs = {}
 
@@ -48,7 +47,7 @@ class ApplicationStackMessageDispatcher(object):
 
 
 class ApplicationStackMessage(dict):
-    target = None
+    target: Optional[str] = None  # type: ignore
     default_handler = None
     _validate_kwargs = ('target',)
 
@@ -77,7 +76,7 @@ class ApplicationStackMessage(dict):
 
     def _validate_items(self, obj, items, name):
         for item in items:
-            assert item in obj, "Missing '%s' message %s" % (item, name)
+            assert item in obj, f"Missing '{item}' message {name}"
 
     def validate(self):
         self._validate_items(self, self.validate_kwargs, 'argument')
@@ -91,33 +90,33 @@ class ApplicationStackMessage(dict):
 
         This could also be implemented as a mixin class.
         """
-        assert self.default_handler is not None, '%s has no default handler method, cannot bind' % self.__class__.__name__
-        setattr(obj, name, six.create_bound_method(self.default_handler, obj))
+        assert self.default_handler is not None, f'{self.__class__.__name__} has no default handler method, cannot bind'
+        setattr(obj, name, types.MethodType(self.default_handler, obj))
         log.debug("Bound default message handler '%s.%s' to %s", self.__class__.__name__, self.default_handler.__name__,
                   getattr(obj, name))
 
-    @property
+    @property  # type: ignore
     def target(self):
         return self['target']
 
-    @target.setter
+    @target.setter  # type: ignore
     def set_target(self, target):
         self['target'] = target
 
 
 class ParamMessage(ApplicationStackMessage):
     _validate_kwargs = ('params',)
-    _validate_params = ()
-    _exclude_params = ()
+    _validate_params: Tuple[str, ...] = ()
+    _exclude_params: Tuple[str, ...] = ()
 
     def __init__(self, target=None, params=None, **kwargs):
-        super(ParamMessage, self).__init__(target=target)
+        super().__init__(target=target)
         self['params'] = params or {}
         for k, v in kwargs.items():
             self['params'][k] = v
 
     def validate(self):
-        super(ParamMessage, self).validate()
+        super().validate()
         self._validate_items(self['params'], self.validate_params, 'parameters')
 
     @property
@@ -128,7 +127,7 @@ class ParamMessage(ApplicationStackMessage):
         return d
 
     @params.setter
-    def set_params(self, params):
+    def params(self, params):
         self['params'] = params
 
 
@@ -140,12 +139,12 @@ class TaskMessage(ParamMessage):
     def default_handler(self, msg):
         """Can be bound to an instance of any class that has message handling methods named like `_handle_{task}_method`
         """
-        name = '_handle_{task}_msg'.format(task=msg.task)
+        name = f'_handle_{msg.task}_msg'
         assert name in dir(self), "{cls} has no method _handle_{task}_msg, cannot handle message: {msg}".format(
             cls=self.__class__.__name__,
             task=msg.task,
             msg=msg)
-        getattr(self, '_handle_%s_msg' % msg.task)(**msg.params)
+        getattr(self, f'_handle_{msg.task}_msg')(**msg.params)
 
     @property
     def task(self):

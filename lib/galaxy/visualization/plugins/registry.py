@@ -7,7 +7,6 @@ Lower level of visualization framework which does three main things:
 import logging
 import os
 import weakref
-from collections import OrderedDict
 
 from galaxy.exceptions import ObjectNotFound
 from galaxy.util import (
@@ -22,7 +21,7 @@ from galaxy.visualization.plugins import (
 log = logging.getLogger(__name__)
 
 
-class VisualizationsRegistry(object):
+class VisualizationsRegistry:
     """
     Main responsibilities are:
         - discovering visualization plugins in the filesystem
@@ -51,7 +50,7 @@ class VisualizationsRegistry(object):
         """
         Set up the manager and load all visualization plugins.
 
-        :type   app:        UniverseApplication
+        :type   app:        galaxy.app.UniverseApplication
         :param  app:        the application (and its configuration) using this manager
         :type   base_url:   string
         :param  base_url:   url to prefix all plugin urls with
@@ -66,7 +65,7 @@ class VisualizationsRegistry(object):
         self.additional_template_paths = []
         self.directories = []
         self.skip_bad_plugins = skip_bad_plugins
-        self.plugins = OrderedDict()
+        self.plugins = {}
         self.directories = config_directories_from_setting(directories_setting, app.config.root)
         self._load_configuration()
         self._load_plugins()
@@ -107,8 +106,6 @@ class VisualizationsRegistry(object):
         """
         Search ``self.directories`` for potential plugins, load them, and cache
         in ``self.plugins``.
-        :rtype:                 OrderedDict
-        :returns:               ``self.plugins``
         """
         for plugin_path in self._find_plugins():
             try:
@@ -166,7 +163,7 @@ class VisualizationsRegistry(object):
             return False
         if 'config' not in os.listdir(plugin_path):
             return False
-        expected_config_filename = '%s.xml' % (os.path.split(plugin_path)[1])
+        expected_config_filename = f'{os.path.split(plugin_path)[1]}.xml'
         if not os.path.isfile(os.path.join(plugin_path, 'config', expected_config_filename)):
             return False
         return True
@@ -183,7 +180,7 @@ class VisualizationsRegistry(object):
         """
         plugin_name = os.path.split(plugin_path)[1]
         # TODO: this is the standard/older way to config
-        config_file = os.path.join(plugin_path, 'config', (plugin_name + '.xml'))
+        config_file = os.path.join(plugin_path, 'config', (f"{plugin_name}.xml"))
         if os.path.exists(config_file):
             config = self.config_parser.parse_file(config_file)
             if config is not None:
@@ -191,7 +188,7 @@ class VisualizationsRegistry(object):
                 plugin = self._build_plugin(plugin_name, plugin_path, config)
                 return plugin
         else:
-            raise ObjectNotFound('Visualization XML not found: %s.' % config_file)
+            raise ObjectNotFound(f'Visualization XML not found: {config_file}.')
 
     def _build_plugin(self, plugin_name, plugin_path, config):
         # TODO: as builder not factory
@@ -221,12 +218,14 @@ class VisualizationsRegistry(object):
         Wrap to throw error if plugin not in registry.
         """
         if key not in self.plugins:
-            raise ObjectNotFound('Unknown or invalid visualization: ' + key)
+            raise ObjectNotFound(f"Unknown or invalid visualization: {key}")
         return self.plugins[key]
 
-    def get_plugins(self):
+    def get_plugins(self, embeddable=None):
         result = []
         for plugin in self.plugins.values():
+            if embeddable and not plugin.config.get('embeddable'):
+                continue
             result.append(plugin.to_dict())
         return sorted(result, key=lambda k: k.get('html'))
 

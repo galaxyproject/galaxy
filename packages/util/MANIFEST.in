@@ -1,3 +1,4 @@
-include *.rst LICENSE
+include *.rst *.txt LICENSE
 include galaxy/util/docutils_template.txt
+include galaxy/util/rules_dsl_spec.yml
 include galaxy/exceptions/error_codes.json

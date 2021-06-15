@@ -3,9 +3,9 @@ import logging
 import os
 import tarfile
 from collections import namedtuple
+from io import StringIO
 from time import strftime
 
-from six import StringIO
 from sqlalchemy import and_, false
 from webob.compat import cgi_FieldStorage
 
@@ -17,7 +17,6 @@ from galaxy.exceptions import (
     ActionInputError,
     ConfigDoesNotAllowException,
     InsufficientPermissionsException,
-    MalformedId,
     ObjectNotFound,
     RequestParameterInvalidException,
     RequestParameterMissingException
@@ -82,7 +81,7 @@ class RepositoriesController(BaseAPIController):
             raise HTTPBadRequest(detail="Missing required parameter 'owner'.")
         repository = repository_util.get_repository_by_name_and_owner(self.app, name, owner)
         if repository is None:
-            error_message = 'Cannot locate repository with name %s and owner %s,' % (str(name), str(owner))
+            error_message = f'Cannot locate repository with name {str(name)} and owner {str(owner)},'
             log.debug(error_message)
             response_dict['status'] = 'error'
             response_dict['message'] = error_message
@@ -117,7 +116,7 @@ class RepositoriesController(BaseAPIController):
             repository = repository_util.get_repository_by_name_and_owner(self.app, name, owner, eagerload_columns=eagerload_columns)
             if repository is None:
                 trans.response.status = 404
-                return {'status': 'error', 'message': 'No repository named %s found with owner %s' % (name, owner)}
+                return {'status': 'error', 'message': f'No repository named {name} found with owner {owner}'}
         elif tsr_id is not None:
             repository = repository_util.get_repository_in_tool_shed(self.app, tsr_id, eagerload_columns=eagerload_columns)
         else:
@@ -136,63 +135,70 @@ class RepositoriesController(BaseAPIController):
         :param owner: the owner of the Repository
         :param changeset_revision: the changeset_revision of the RepositoryMetadata object associated with the Repository
 
-        Returns a list of the following dictionaries::
-        - a dictionary defining the Repository.  For example:
-        {
-            "deleted": false,
-            "deprecated": false,
-            "description": "add_column hello",
-            "id": "f9cad7b01a472135",
-            "long_description": "add_column hello",
-            "name": "add_column",
-            "owner": "test",
-            "private": false,
-            "times_downloaded": 6,
-            "url": "/api/repositories/f9cad7b01a472135",
-            "user_id": "f9cad7b01a472135"
-        }
-        - a dictionary defining the Repository revision (RepositoryMetadata).  For example:
-        {
-            "changeset_revision": "3a08cc21466f",
-            "downloadable": true,
-            "has_repository_dependencies": false,
-            "has_repository_dependencies_only_if_compiling_contained_td": false,
-            "id": "f9cad7b01a472135",
-            "includes_datatypes": false,
-            "includes_tool_dependencies": false,
-            "includes_tools": true,
-            "includes_tools_for_display_in_tool_panel": true,
-            "includes_workflows": false,
-            "malicious": false,
-            "repository_id": "f9cad7b01a472135",
-            "url": "/api/repository_revisions/f9cad7b01a472135",
-            "valid_tools": [{u'add_to_tool_panel': True,
-                u'description': u'data on any column using simple expressions',
-                u'guid': u'localhost:9009/repos/enis/sample_repo_1/Filter1/2.2.0',
-                u'id': u'Filter1',
-                u'name': u'Filter',
-                u'requirements': [],
-                u'tests': [{u'inputs': [[u'input', u'1.bed'], [u'cond', u"c1=='chr22'"]],
-                  u'name': u'Test-1',
-                  u'outputs': [[u'out_file1', u'filter1_test1.bed']],
-                  u'required_files': [u'1.bed', u'filter1_test1.bed']}],
-                u'tool_config': u'database/community_files/000/repo_1/filtering.xml',
-                u'tool_type': u'default',
-                u'version': u'2.2.0',
-                u'version_string_cmd': None}]
-        }
-        - a dictionary including the additional information required to install the repository.  For example:
-        {
-            "add_column": [
-                "add_column hello",
-                "http://test@localhost:9009/repos/test/add_column",
-                "3a08cc21466f",
-                "1",
-                "test",
-                {},
-                {}
-            ]
-        }
+        Returns a list of the following dictionaries
+
+        - a dictionary defining the Repository.  For example::
+
+            {
+                "deleted": false,
+                "deprecated": false,
+                "description": "add_column hello",
+                "id": "f9cad7b01a472135",
+                "long_description": "add_column hello",
+                "name": "add_column",
+                "owner": "test",
+                "private": false,
+                "times_downloaded": 6,
+                "url": "/api/repositories/f9cad7b01a472135",
+                "user_id": "f9cad7b01a472135"
+            }
+
+        - a dictionary defining the Repository revision (RepositoryMetadata).  For example::
+
+            {
+                "changeset_revision": "3a08cc21466f",
+                "downloadable": true,
+                "has_repository_dependencies": false,
+                "has_repository_dependencies_only_if_compiling_contained_td": false,
+                "id": "f9cad7b01a472135",
+                "includes_datatypes": false,
+                "includes_tool_dependencies": false,
+                "includes_tools": true,
+                "includes_tools_for_display_in_tool_panel": true,
+                "includes_workflows": false,
+                "malicious": false,
+                "repository_id": "f9cad7b01a472135",
+                "url": "/api/repository_revisions/f9cad7b01a472135",
+                "valid_tools": [{u'add_to_tool_panel': True,
+                    u'description': u'data on any column using simple expressions',
+                    u'guid': u'localhost:9009/repos/enis/sample_repo_1/Filter1/2.2.0',
+                    u'id': u'Filter1',
+                    u'name': u'Filter',
+                    u'requirements': [],
+                    u'tests': [{u'inputs': [[u'input', u'1.bed'], [u'cond', u"c1=='chr22'"]],
+                    u'name': u'Test-1',
+                    u'outputs': [[u'out_file1', u'filter1_test1.bed']],
+                    u'required_files': [u'1.bed', u'filter1_test1.bed']}],
+                    u'tool_config': u'database/community_files/000/repo_1/filtering.xml',
+                    u'tool_type': u'default',
+                    u'version': u'2.2.0',
+                    u'version_string_cmd': None}]
+            }
+
+        - a dictionary including the additional information required to install the repository.  For example::
+
+            {
+                "add_column": [
+                    "add_column hello",
+                    "http://test@localhost:9009/repos/test/add_column",
+                    "3a08cc21466f",
+                    "1",
+                    "test",
+                    {},
+                    {}
+                ]
+            }
+
         """
         # Example URL:
         # http://<xyz>/api/repositories/get_repository_revision_install_info?name=<n>&owner=<o>&changeset_revision=<cr>
@@ -200,7 +206,7 @@ class RepositoriesController(BaseAPIController):
             # Get the repository information.
             repository = repository_util.get_repository_by_name_and_owner(self.app, name, owner, eagerload_columns=['downloadable_revisions'])
             if repository is None:
-                log.debug('Cannot locate repository %s owned by %s' % (str(name), str(owner)))
+                log.debug(f'Cannot locate repository {str(name)} owned by {str(owner)}')
                 return {}, {}, {}
             encoded_repository_id = trans.security.encode_id(repository.id)
             repository_dict = repository.to_dict(view='element',
@@ -333,7 +339,7 @@ class RepositoriesController(BaseAPIController):
             callback = kwd.get('callback', 'callback')
             search_results = self._search(trans, q, page, page_size)
             if return_jsonp:
-                response = str('%s(%s);' % (callback, json.dumps(search_results)))
+                response = str(f'{callback}({json.dumps(search_results)});')
             else:
                 response = json.dumps(search_results)
             return response
@@ -372,7 +378,7 @@ class RepositoriesController(BaseAPIController):
                         metadata_dict['tool_dependencies'] = {}
                     if metadata.includes_tools:
                         metadata_dict['tools'] = metadata.metadata['tools']
-                    all_metadata['%s:%s' % (int(changeset), changehash)] = metadata_dict
+                    all_metadata[f'{int(changeset)}:{changehash}'] = metadata_dict
             if repository_found is not None:
                 all_metadata['current_changeset'] = repository_found[0]
                 # all_metadata[ 'found_changesets' ] = repository_found
@@ -468,7 +474,7 @@ class RepositoriesController(BaseAPIController):
             raise HTTPBadRequest(detail="Missing required parameter 'owner'.")
         repository = repository_util.get_repository_by_name_and_owner(self.app, name, owner)
         if repository is None:
-            error_message = 'Cannot locate repository with name %s and owner %s,' % (str(name), str(owner))
+            error_message = f'Cannot locate repository with name {str(name)} and owner {str(owner)},'
             log.debug(error_message)
             response_dict['status'] = 'error'
             response_dict['message'] = error_message
@@ -523,19 +529,21 @@ class RepositoriesController(BaseAPIController):
         in-memory list of repository ids that have been processed is maintained.
 
         :param key: the API key of the Tool Shed user.
+        :param my_writable (optional):
+            if the API key is associated with an admin user in the Tool Shed, setting this param value
+            to True will restrict resetting metadata to only repositories that are writable by the user
+            in addition to those repositories of type tool_dependency_definition.  This param is ignored
+            if the current user is not an admin user, in which case this same restriction is automatic.
 
-        The following parameters can optionally be included in the payload.
-        :param my_writable (optional): if the API key is associated with an admin user in the Tool Shed, setting this param value
-                                       to True will restrict resetting metadata to only repositories that are writable by the user
-                                       in addition to those repositories of type tool_dependency_definition.  This param is ignored
-                                       if the current user is not an admin user, in which case this same restriction is automatic.
         :param encoded_ids_to_skip (optional): a list of encoded repository ids for repositories that should not be processed.
-        :param skip_file (optional): A local file name that contains the encoded repository ids associated with repositories to skip.
-                                     This param can be used as an alternative to the above encoded_ids_to_skip.
+        :param skip_file (optional):
+            A local file name that contains the encoded repository ids associated with repositories to skip.
+            This param can be used as an alternative to the above encoded_ids_to_skip.
+
         """
 
         def handle_repository(trans, rmm, repository, results):
-            log.debug("Resetting metadata on repository %s" % str(repository.name))
+            log.debug(f"Resetting metadata on repository {str(repository.name)}")
             try:
                 rmm.set_repository(repository)
                 rmm.reset_all_metadata_on_repository_in_tool_shed()
@@ -555,7 +563,7 @@ class RepositoriesController(BaseAPIController):
                 message = "Error resetting metadata on repository %s owned by %s: %s" % \
                     (str(repository.name), str(repository.user.username), util.unicodify(e))
                 results['unsuccessful_count'] += 1
-            status = '%s : %s' % (str(repository.name), message)
+            status = f'{str(repository.name)} : {message}'
             results['repository_status'].append(status)
             return results
         rmm = repository_metadata_manager.RepositoryMetadataManager(app=self.app,
@@ -645,7 +653,7 @@ class RepositoriesController(BaseAPIController):
                 message = "Error resetting metadata on repository %s owned by %s: %s" % \
                     (str(repository.name), str(repository.user.username), util.unicodify(e))
                 results['status'] = 'error'
-            status = '%s : %s' % (str(repository.name), message)
+            status = f'{str(repository.name)} : {message}'
             results['repository_status'].append(status)
             return results
 
@@ -653,7 +661,7 @@ class RepositoriesController(BaseAPIController):
         if repository_id is not None:
             repository = repository_util.get_repository_in_tool_shed(self.app, repository_id)
             start_time = strftime("%Y-%m-%d %H:%M:%S")
-            log.debug("%s...resetting metadata on repository %s" % (start_time, str(repository.name)))
+            log.debug(f"{start_time}...resetting metadata on repository {str(repository.name)}")
             results = handle_repository(trans, start_time, repository)
             stop_time = strftime("%Y-%m-%d %H:%M:%S")
             results['stop_time'] = stop_time
@@ -675,11 +683,6 @@ class RepositoriesController(BaseAPIController):
 
         :raises:  ObjectNotFound, MalformedId
         """
-        try:
-            trans.security.decode_id(id)
-        except Exception:
-            raise MalformedId('The given id is invalid.')
-
         repository = repository_util.get_repository_in_tool_shed(self.app, id)
         if repository is None:
             raise ObjectNotFound('Unable to locate repository for the given id.')
@@ -797,10 +800,6 @@ class RepositoriesController(BaseAPIController):
 
         :not found:  Empty dictionary.
         """
-        try:
-            trans.security.decode_id(id)
-        except Exception:
-            raise MalformedId('The given id is invalid.')
         recursive = util.asbool(kwd.get('recursive', 'True'))
         all_metadata = {}
         repository = repository_util.get_repository_in_tool_shed(self.app, id, eagerload_columns=['downloadable_revisions'])
@@ -820,7 +819,7 @@ class RepositoriesController(BaseAPIController):
                 metadata_dict['tool_dependencies'] = {}
             if metadata.includes_tools:
                 metadata_dict['tools'] = metadata.metadata['tools']
-            all_metadata['%s:%s' % (int(changeset), changehash)] = metadata_dict
+            all_metadata[f'{int(changeset)}:{changehash}'] = metadata_dict
         return all_metadata
 
     @expose_api
@@ -831,14 +830,15 @@ class RepositoriesController(BaseAPIController):
 
         :param id: the encoded id of the Repository object
 
-        :param payload: dictionary structure containing::
+        :param payload: dictionary structure containing
+
             'name':                  repo's name (optional)
             'synopsis':              repo's synopsis (optional)
             'description':           repo's description (optional)
             'remote_repository_url': repo's remote repo (optional)
             'homepage_url':          repo's homepage url (optional)
-            'category_ids':          list of existing encoded TS category ids
-                                     the updated repo should be associated with (optional)
+            'category_ids':          list of existing encoded TS category ids the updated repo should be associated with (optional)
+
         :type payload: dict
 
         :returns:   detailed repository information
@@ -884,19 +884,19 @@ class RepositoriesController(BaseAPIController):
     @expose_api
     def create(self, trans, **kwd):
         """
-        create( self, trans, payload, **kwd )
-        * POST /api/repositories:
-            Creates a new repository.
-            Only ``name`` and ``synopsis`` parameters are required.
+        POST /api/repositories:
 
-        :param payload: dictionary structure containing::
+        Creates a new repository.
+        Only ``name`` and ``synopsis`` parameters are required.
+
+        :param payload: dictionary structure containing
+
             'name':                  new repo's name (required)
             'synopsis':              new repo's synopsis (required)
             'description':           new repo's description (optional)
             'remote_repository_url': new repo's remote repo (optional)
             'homepage_url':          new repo's homepage url (optional)
-            'category_ids[]':        list of existing encoded TS category ids
-                                     the new repo should be associated with (optional)
+            'category_ids[]':        list of existing encoded TS category ids the new repo should be associated with (optional)
             'type':                  new repo's type, defaults to ``unrestricted`` (optional)
 
         :type payload: dict
@@ -966,9 +966,9 @@ class RepositoriesController(BaseAPIController):
 
         repository = repository_util.get_repository_in_tool_shed(self.app, id)
 
-        if not (trans.user_is_admin or
-                self.app.security_agent.user_can_administer_repository(trans.user, repository) or
-                self.app.security_agent.can_push(self.app, trans.user, repository)):
+        if not (trans.user_is_admin
+                or self.app.security_agent.user_can_administer_repository(trans.user, repository)
+                or self.app.security_agent.can_push(self.app, trans.user, repository)):
             trans.response.status = 400
             return {
                 "err_msg": "You do not have permission to update this repository.",

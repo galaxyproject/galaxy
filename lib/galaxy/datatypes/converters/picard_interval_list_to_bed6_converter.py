@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # Dan Blankenberg
-from __future__ import print_function
 
 import sys
 
@@ -24,7 +23,7 @@ def __main__():
                 else:
                     try:
                         elems = line.split('\t')
-                        out.write('%s\t%s\t%s\t%s\t0\t%s\n' % (elems[0], int(elems[1]) - 1, elems[2], elems[4], elems[3]))
+                        out.write(f'{elems[0]}\t{int(elems[1]) - 1}\t{elems[2]}\t{elems[4]}\t0\t{elems[3]}\n')
                     except Exception as e:
                         print(e)
                         skipped_lines += 1

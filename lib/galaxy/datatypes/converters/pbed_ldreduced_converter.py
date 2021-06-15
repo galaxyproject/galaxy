@@ -1,6 +1,5 @@
 # converter for ldreduced rgenetics datatype
 # used for grr and eigenstrat - shellfish if we get around to it
-from __future__ import print_function
 
 import os
 import subprocess
@@ -32,24 +31,23 @@ def timenow():
     return time.strftime('%d/%m/%Y %H:%M:%S', time.localtime(time.time()))
 
 
-def pruneLD(plinktasks=[], cd='./', vclbase=[]):
+def pruneLD(plinktasks=None, cd='./', vclbase=None):
     """
     """
-    fplog, plog = tempfile.mkstemp()
-    alog = []
-    alog.append('## Rgenetics: http://rgenetics.org Galaxy Tools rgQC.py Plink pruneLD runner\n')
-    for task in plinktasks:  # each is a list
-        vcl = vclbase + task
-        with open(plog, 'w') as sto:
-            subprocess.check_call(vcl, stdout=sto, stderr=sto, cwd=cd)
-        try:
-            lplog = open(plog, 'r').readlines()
-            lplog = [elem for elem in lplog if elem.find('Pruning SNP') == -1]
-            alog += lplog
-            alog.append('\n')
-            os.unlink(plog)  # no longer needed
-        except Exception:
-            alog.append('### %s Strange - no std out from plink when running command line\n%s\n' % (timenow(), ' '.join(vcl)))
+    plinktasks = plinktasks or []
+    vclbase = vclbase or []
+    alog = ['## Rgenetics: http://rgenetics.org Galaxy Tools rgQC.py Plink pruneLD runner\n']
+    with tempfile.NamedTemporaryFile(mode='r+') as plog:
+        for task in plinktasks:  # each is a list
+            vcl = vclbase + task
+            subprocess.check_call(vcl, stdout=plog, stderr=plog, cwd=cd)
+            try:
+                plog.seek(0)
+                lplog = [elem for elem in plog.readlines() if elem.find('Pruning SNP') == -1]
+                alog += lplog
+                alog.append('\n')
+            except Exception:
+                alog.append(f"### {timenow()} Strange - no std out from plink when running command line\n{' '.join(vcl)}\n")
     return alog
 
 
@@ -61,8 +59,8 @@ def makeLDreduced(basename, infpath=None, outfpath=None, plinke='plink', forcere
     inbase = os.path.join(infpath)
     plinktasks = []
     vclbase = [plinke, '--noweb']
-    plinktasks += [['--bfile', inbase, '--indep-pairwise %s %s %s' % (winsize, winmove, r2thresh), '--out %s' % outbase],
-                   ['--bfile', inbase, '--extract %s.prune.in --make-bed --out %s' % (outbase, outbase)]]
+    plinktasks += [['--bfile', inbase, f'--indep-pairwise {winsize} {winmove} {r2thresh}', f'--out {outbase}'],
+                   ['--bfile', inbase, f'--extract {outbase}.prune.in --make-bed --out {outbase}']]
     vclbase = [plinke, '--noweb']
     pruneLD(plinktasks=plinktasks, cd=outfpath, vclbase=vclbase)
 
@@ -100,12 +98,12 @@ def main():
     flist = os.listdir(outfilepath)
     with open(outhtmlname, 'w') as f:
         f.write(galhtmlprefix % prog)
-        s1 = '## Rgenetics: http://rgenetics.org Galaxy Tools %s %s' % (prog, timenow())  # becomes info
-        s2 = 'Input %s, winsize=%s, winmove=%s, r2thresh=%s' % (base_name, winsize, winmove, r2thresh)
-        print('%s %s' % (s1, s2))
-        f.write('<div>%s\n%s\n<ol>' % (s1, s2))
-        for i, data in enumerate(flist):
-            f.write('<li><a href="%s">%s</a></li>\n' % (os.path.split(data)[-1], os.path.split(data)[-1]))
+        s1 = f'## Rgenetics: http://rgenetics.org Galaxy Tools {prog} {timenow()}'  # becomes info
+        s2 = f'Input {base_name}, winsize={winsize}, winmove={winmove}, r2thresh={r2thresh}'
+        print(f'{s1} {s2}')
+        f.write(f'<div>{s1}\n{s2}\n<ol>')
+        for data in flist:
+            f.write(f'<li><a href="{os.path.split(data)[-1]}">{os.path.split(data)[-1]}</a></li>\n')
         f.write("</div></body></html>")
 
 

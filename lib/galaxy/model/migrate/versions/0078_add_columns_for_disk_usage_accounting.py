@@ -3,7 +3,6 @@ Migration script to add 'total_size' column to the dataset table, 'purged'
 column to the HDA table, and 'disk_usage' column to the User and GalaxySession
 tables.
 """
-from __future__ import print_function
 
 import logging
 

@@ -5,7 +5,6 @@ Import one or more exported workflows contained within a specified tool shed rep
 Here is a working example of how to use this script to repair a repository installed into Galaxy.
 python ./import_workflows_from_installed_tool_shed_repository.py -a 22be3b -l http://localhost:8763/ -n workflow_with_tools -o test -r ef45bb64237e -u http://localhost:9009/
 """
-from __future__ import print_function
 
 import argparse
 
@@ -38,7 +37,7 @@ def main(options):
             break
     if tool_shed_repository_id:
         # Get the list of exported workflows contained in the installed repository.
-        url = '%s%s' % (base_galaxy_url, '/api/tool_shed_repositories/%s/exported_workflows' % str(tool_shed_repository_id))
+        url = '{}{}'.format(base_galaxy_url, '/api/tool_shed_repositories/%s/exported_workflows' % str(tool_shed_repository_id))
         exported_workflows = display(api_key, url, return_formatted=False)
         if exported_workflows:
             # Import all of the workflows in the list of exported workflows.
@@ -47,7 +46,7 @@ def main(options):
             # data[ 'index' ] = 0
             # and change the url to be ~/import_workflow (singular).  For example,
             # url = '%s%s' % ( base_galaxy_url, '/api/tool_shed_repositories/%s/import_workflow' % str( tool_shed_repository_id ) )
-            url = '%s%s' % (base_galaxy_url, '/api/tool_shed_repositories/%s/import_workflows' % str(tool_shed_repository_id))
+            url = '{}{}'.format(base_galaxy_url, '/api/tool_shed_repositories/%s/import_workflows' % str(tool_shed_repository_id))
             submit(options.api, url, data)
     else:
         print("Invalid tool_shed / name / owner / changeset_revision.")

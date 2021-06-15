@@ -2,20 +2,19 @@
 If the current installed Python version is not supported, prints an error
 message to stderr and returns 1
 """
-from __future__ import print_function
 
 import sys
 
 
 def check_python():
-    if sys.version_info[:2] >= (3, 5):
+    if sys.version_info[:2] >= (3, 6):
         # supported
         return
     else:
         version_string = '.'.join(str(_) for _ in sys.version_info[:3])
         msg = """\
 ERROR: Your Python version is: %s
-Galaxy is currently supported on Python >=3.5 .
+Galaxy is currently supported on Python >=3.6 .
 To run Galaxy, please install a supported Python version.
 If a supported version is already installed but is not your default,
 https://docs.galaxyproject.org/en/latest/admin/python.html contains instructions

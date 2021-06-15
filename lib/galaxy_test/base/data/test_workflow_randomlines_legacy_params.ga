@@ -1,0 +1,55 @@
+{
+    "a_galaxy_workflow": "true",
+    "annotation": "",
+    "format-version": "0.1",
+    "name": "randomlines",
+    "steps": {
+        "0": {
+            "annotation": "",
+            "content_id": "random_lines1",
+            "errors": null,
+            "id": 0,
+            "input_connections": {},
+            "inputs": [
+                {
+                    "description": "runtime parameter for tool Select random lines",
+                    "name": "input"
+                }
+            ],
+            "label": null,
+            "name": "Select random lines",
+            "outputs": [
+                {
+                    "name": "out_file1",
+                    "type": "input"
+                }
+            ],
+            "position": {
+                "bottom": 403,
+                "height": 112,
+                "left": 910.5,
+                "right": 1110.5,
+                "top": 291,
+                "width": 200,
+                "x": 910.5,
+                "y": 291
+            },
+            "post_job_actions": {},
+            "tool_id": "random_lines1",
+            "tool_state": "{\"input\": {\"__class__\": \"RuntimeValue\"}, \"num_lines\": \"${num}\", \"seed_source\": {\"seed_source_selector\": \"set_seed\", \"__current_case__\": 1, \"seed\": \"${seed}\"}, \"__page__\": null, \"__rerun_remap_job_id__\": null}",
+            "tool_version": "2.0.2",
+            "type": "tool",
+            "uuid": "98e6ac0a-98bb-4e9e-9e1f-4013ceba2408",
+            "workflow_outputs": [
+                {
+                    "label": null,
+                    "output_name": "out_file1",
+                    "uuid": "740450eb-cff1-44fc-b01d-05a133b16af7"
+                }
+            ]
+        }
+    },
+    "tags": [],
+    "uuid": "a3b70490-9ea0-4291-b4ed-48f90b7aef91",
+    "version": 2
+}

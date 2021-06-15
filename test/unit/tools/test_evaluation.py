@@ -9,7 +9,8 @@ from galaxy.model import (
     HistoryDatasetAssociation,
     Job,
     JobParameter,
-    JobToInputDatasetAssociation
+    JobToInputDatasetAssociation,
+    JobToOutputDatasetAssociation,
 )
 from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tools.evaluation import ToolEvaluator
@@ -102,7 +103,7 @@ class ToolEvaluatorTestCase(TestCase, UsesApp):
         # evaluate in cheetah templates as 'None'.
         select_xml = XML('''<param name="input1" type="data" optional="true"></param>''')
         parameter = DataToolParameter(self.tool, select_xml)
-        self.job.parameters = [JobParameter(name="input1", value=u'null')]
+        self.job.parameters = [JobParameter(name="input1", value='null')]
         self.tool.set_params({"input1": parameter})
         self.tool._command_line = "prog1 --opt_input='${input1}'"
         self._set_compute_environment()
@@ -129,7 +130,7 @@ class ToolEvaluatorTestCase(TestCase, UsesApp):
             output_paths=[DatasetPath(2, '/galaxy/files/dataset_2.dat', false_path=job_path_2)],
         )
         command_line, extra_filenames, _ = self.evaluator.build()
-        self.assertEqual(command_line, "bwa --thresh=4 --in=%s --out=%s" % (job_path_1, job_path_2))
+        self.assertEqual(command_line, f"bwa --thresh=4 --in={job_path_1} --out={job_path_2}")
 
     def test_configfiles_evaluation(self):
         self.tool.config_files.append(("conf1", None, "$thresh"))
@@ -142,7 +143,7 @@ class ToolEvaluatorTestCase(TestCase, UsesApp):
         # Verify config file written into working directory.
         self.assertEqual(os.path.join(self.test_directory, "configs", config_basename), config_filename)
         # Verify config file contents are evaluated against parameters.
-        assert open(config_filename, "r").read() == "4"
+        assert open(config_filename).read() == "4"
         self.assertEqual(command_line, "prog1 %s" % config_filename)
 
     def test_arbitrary_path_rewriting_wrapped(self):
@@ -196,47 +197,53 @@ class ToolEvaluatorTestCase(TestCase, UsesApp):
         self._set_compute_environment()
         _, extra_filenames, _ = self.evaluator.build()
         config_filename = extra_filenames[0]
-        self.assertEqual(open(config_filename, "r").read(), value)
+        self.assertEqual(open(config_filename).read(), value)
 
     def _set_compute_environment(self, **kwds):
         if "working_directory" not in kwds:
             kwds["working_directory"] = self.test_directory
         if "new_file_path" not in kwds:
             kwds["new_file_path"] = self.app.config.new_file_path
-        self.evaluator.set_compute_environment(TestComputeEnvironment(**kwds))
+        self.evaluator.set_compute_environment(ComputeEnvironment(**kwds))
         assert "exec_before_job" in self.tool.hooks_called
 
     def _setup_test_bwa_job(self):
-        self.job.input_datasets = [self._job_dataset('input1', '/galaxy/files/dataset_1.dat')]
-        self.job.output_datasets = [self._job_dataset('output1', '/galaxy/files/dataset_2.dat')]
 
-    def _job_dataset(self, name, path):
-        metadata = dict()
-        hda = HistoryDatasetAssociation(name=name, metadata=metadata)
-        hda.dataset = Dataset(id=123, external_filename=path)
-        hda.dataset.metadata = dict()
-        hda.children = []
-        jida = JobToInputDatasetAssociation(name=name, dataset=hda)
-        return jida
+        def hda(id, name, path):
+            hda = HistoryDatasetAssociation(name=name, metadata=dict())
+            hda.dataset = Dataset(id=id, external_filename=path)
+            hda.dataset.metadata = dict()
+            hda.children = []
+            return hda
+
+        id, name, path = 111, 'input1', '/galaxy/files/dataset_1.dat'
+        self.job.input_datasets = [JobToInputDatasetAssociation(name=name, dataset=hda(id, name, path))]
+
+        id, name, path = 112, 'output1', '/galaxy/files/dataset_2.dat'
+        self.job.output_datasets = [JobToOutputDatasetAssociation(name=name, dataset=hda(id, name, path))]
 
 
 class MockHistoryDatasetAssociation(HistoryDatasetAssociation):
 
     def __init__(self, **kwds):
         self._metadata = dict()
-        super(MockHistoryDatasetAssociation, self).__init__(**kwds)
+        super().__init__(**kwds)
 
 
-class TestComputeEnvironment(SimpleComputeEnvironment):
+class ComputeEnvironment(SimpleComputeEnvironment):
 
     def __init__(
         self,
         new_file_path,
         working_directory,
-        input_paths=['/galaxy/files/dataset_1.dat'],
-        output_paths=['/galaxy/files/dataset_2.dat'],
+        input_paths=None,
+        output_paths=None,
         unstructured_path_rewrites=None
     ):
+        if input_paths is None:
+            input_paths = ['/galaxy/files/dataset_1.dat']
+        if output_paths is None:
+            output_paths = ['/galaxy/files/dataset_2.dat']
         self._new_file_path = new_file_path
         self._working_directory = working_directory
         self._input_paths = input_paths
@@ -282,7 +289,7 @@ class TestComputeEnvironment(SimpleComputeEnvironment):
         return TEST_GALAXY_URL
 
 
-class MockTool(object):
+class MockTool:
 
     def __init__(self, app):
         self.profile = 16.01

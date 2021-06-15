@@ -1,7 +1,6 @@
 """
 Migration script to add the metadata, update_available and includes_datatypes columns to the tool_shed_repository table.
 """
-from __future__ import print_function
 
 import logging
 
@@ -29,18 +28,18 @@ def upgrade(migrate_engine):
     metadata.reflect()
 
     ToolShedRepository_table = Table("tool_shed_repository", metadata, autoload=True)
-    c = Column("metadata", JSONType(), nullable=True)
+    c = Column("metadata", JSONType, nullable=True)
     add_column(c, ToolShedRepository_table, metadata)
     c = Column("includes_datatypes", Boolean, index=True, default=False)
     add_column(c, ToolShedRepository_table, metadata, index_name="ix_tool_shed_repository_includes_datatypes")
     try:
-        migrate_engine.execute("UPDATE tool_shed_repository SET includes_datatypes=%s" % engine_false(migrate_engine))
+        migrate_engine.execute(f"UPDATE tool_shed_repository SET includes_datatypes={engine_false(migrate_engine)}")
     except Exception:
         log.exception("Updating column 'includes_datatypes' of table 'tool_shed_repository' failed.")
     c = Column("update_available", Boolean, default=False)
     add_column(c, ToolShedRepository_table, metadata)
     try:
-        migrate_engine.execute("UPDATE tool_shed_repository SET update_available=%s" % engine_false(migrate_engine))
+        migrate_engine.execute(f"UPDATE tool_shed_repository SET update_available={engine_false(migrate_engine)}")
     except Exception:
         log.exception("Updating column 'update_available' of table 'tool_shed_repository' failed.")
 

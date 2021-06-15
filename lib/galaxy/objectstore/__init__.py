@@ -12,13 +12,8 @@ import random
 import shutil
 import threading
 import time
-from collections import OrderedDict
 
 import yaml
-try:
-    from sqlalchemy.orm import object_session
-except ImportError:
-    object_session = None
 
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.util import (
@@ -39,7 +34,7 @@ NO_SESSION_ERROR_MESSAGE = "Attempted to 'create' object store entity in configu
 log = logging.getLogger(__name__)
 
 
-class ObjectStore(object, metaclass=abc.ABCMeta):
+class ObjectStore(metaclass=abc.ABCMeta):
 
     """ObjectStore interface.
 
@@ -175,11 +170,33 @@ class ObjectStore(object, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def get_object_url(self, obj, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False):
         """
-        Return the URL for direct acces if supported, otherwise return None.
+        Return the URL for direct access if supported, otherwise return None.
 
         Note: need to be careful to not bypass dataset security with this.
         """
         raise NotImplementedError()
+
+    @abc.abstractmethod
+    def get_concrete_store_name(self, obj):
+        """Return a display name or title of the objectstore corresponding to obj.
+
+        To accommodate nested objectstores, obj is passed in so this metadata can
+        be returned for the ConcreteObjectStore corresponding to the object.
+
+        If the dataset is in a new or discarded state and an object_store_id has not
+        yet been set, this may return ``None``.
+        """
+
+    @abc.abstractmethod
+    def get_concrete_store_description_markdown(self, obj):
+        """Return a longer description of how data 'obj' is stored.
+
+        To accommodate nested objectstores, obj is passed in so this metadata can
+        be returned for the ConcreteObjectStore corresponding to the object.
+
+        If the dataset is in a new or discarded state and an object_store_id has not
+        yet been set, this may return ``None``.
+        """
 
     @abc.abstractmethod
     def get_store_usage_percent(self):
@@ -218,8 +235,8 @@ class BaseObjectStore(ObjectStore):
         extra_dirs = {}
         extra_dirs['job_work'] = config.jobs_directory
         extra_dirs['temp'] = config.new_file_path
-        extra_dirs.update(dict(
-            (e['type'], e['path']) for e in config_dict.get('extra_dirs', [])))
+        extra_dirs.update({
+            e['type']: e['path'] for e in config_dict.get('extra_dirs', [])})
         self.extra_dirs = extra_dirs
 
     def shutdown(self):
@@ -260,14 +277,18 @@ class BaseObjectStore(ObjectStore):
 
     def _get_object_id(self, obj):
         if hasattr(obj, self.store_by):
-            return getattr(obj, self.store_by)
+            obj_id = getattr(obj, self.store_by)
+            if obj_id is None:
+                obj.flush()
+                return obj.id
+            return obj_id
         else:
             # job's don't have uuids, so always use ID in this case when creating
             # job working directories.
             return obj.id
 
     def _invoke(self, delegate, obj=None, **kwargs):
-        return self.__getattribute__("_" + delegate)(obj=obj, **kwargs)
+        return self.__getattribute__(f"_{delegate}")(obj=obj, **kwargs)
 
     def exists(self, obj, **kwargs):
         return self._invoke('exists', obj, **kwargs)
@@ -295,6 +316,12 @@ class BaseObjectStore(ObjectStore):
 
     def get_object_url(self, obj, **kwargs):
         return self._invoke('get_object_url', obj, **kwargs)
+
+    def get_concrete_store_name(self, obj):
+        return self._invoke('get_concrete_store_name', obj)
+
+    def get_concrete_store_description_markdown(self, obj):
+        return self._invoke('get_concrete_store_description_markdown', obj)
 
     def get_store_usage_percent(self):
         return self._invoke('get_store_usage_percent')
@@ -325,13 +352,23 @@ class ConcreteObjectStore(BaseObjectStore):
         """
         if config_dict is None:
             config_dict = {}
-        super(ConcreteObjectStore, self).__init__(config=config, config_dict=config_dict, **kwargs)
+        super().__init__(config=config, config_dict=config_dict, **kwargs)
         self.store_by = config_dict.get("store_by", None) or getattr(config, "object_store_store_by", "id")
+        self.name = config_dict.get("name", None)
+        self.description = config_dict.get("description", None)
 
     def to_dict(self):
-        rval = super(ConcreteObjectStore, self).to_dict()
+        rval = super().to_dict()
         rval["store_by"] = self.store_by
+        rval["name"] = self.name
+        rval["description"] = self.description
         return rval
+
+    def _get_concrete_store_name(self, obj):
+        return self.name
+
+    def _get_concrete_store_description_markdown(self, obj):
+        return self.description
 
     def _get_store_by(self, obj):
         return self.store_by
@@ -371,8 +408,8 @@ class DiskObjectStore(ConcreteObjectStore):
         :type extra_dirs: dict
         :param extra_dirs: Keys are string, values are directory paths.
         """
-        super(DiskObjectStore, self).__init__(config, config_dict)
-        self.file_path = config_dict.get("files_dir") or config.file_path
+        super().__init__(config, config_dict)
+        self.file_path = os.path.abspath(config_dict.get("files_dir") or config.file_path)
 
     @classmethod
     def parse_xml(clazz, config_xml):
@@ -382,9 +419,14 @@ class DiskObjectStore(ConcreteObjectStore):
             store_by = config_xml.attrib.get('store_by', None)
             if store_by is not None:
                 config_dict['store_by'] = store_by
+            name = config_xml.attrib.get('name', None)
+            if name is not None:
+                config_dict['name'] = name
             for e in config_xml:
                 if e.tag == 'files_dir':
                     config_dict["files_dir"] = e.get('path')
+                elif e.tag == 'description':
+                    config_dict["description"] = e.text
                 else:
                     extra_dirs.append({"type": e.get('type'), "path": e.get('path')})
 
@@ -392,7 +434,7 @@ class DiskObjectStore(ConcreteObjectStore):
         return config_dict
 
     def to_dict(self):
-        as_dict = super(DiskObjectStore, self).to_dict()
+        as_dict = super().to_dict()
         as_dict["files_dir"] = self.file_path
         return as_dict
 
@@ -474,8 +516,8 @@ class DiskObjectStore(ConcreteObjectStore):
                     rel_path = os.path.join(rel_path, extra_dir)
             path = os.path.join(base, rel_path)
         if not dir_only:
-            assert obj_id is not None, "The effective dataset identifier consumed by object store [%s] must be set before a path can be constructed." % (self.store_by)
-            path = os.path.join(path, alt_name if alt_name else "dataset_%s.dat" % obj_id)
+            assert obj_id is not None, f"The effective dataset identifier consumed by object store [{self.store_by}] must be set before a path can be constructed."
+            path = os.path.join(path, alt_name if alt_name else f"dataset_{obj_id}.dat")
         return os.path.abspath(path)
 
     def _exists(self, obj, **kwargs):
@@ -538,12 +580,12 @@ class DiskObjectStore(ConcreteObjectStore):
                 os.remove(path)
                 return True
         except OSError as ex:
-            log.critical('%s delete error %s' % (self.__get_filename(obj, **kwargs), ex))
+            log.critical(f'{self.__get_filename(obj, **kwargs)} delete error {ex}')
         return False
 
     def _get_data(self, obj, start=0, count=-1, **kwargs):
         """Override `ObjectStore`'s stub; retrieve data directly from disk."""
-        data_file = open(self._get_filename(obj, **kwargs), 'r')  # Should be rb?
+        data_file = open(self._get_filename(obj, **kwargs))  # Should be rb?
         data_file.seek(start)
         content = data_file.read(count)
         data_file.close()
@@ -583,8 +625,8 @@ class DiskObjectStore(ConcreteObjectStore):
                     path = self._get_filename(obj, **kwargs)
                     shutil.copy(file_name, path)
                     umask_fix_perms(path, self.config.umask, 0o666)
-            except IOError as ex:
-                log.critical('Error copying %s to %s: %s' % (file_name, self.__get_filename(obj, **kwargs), ex))
+            except OSError as ex:
+                log.critical(f'Error copying {file_name} to {self.__get_filename(obj, **kwargs)}: {ex}')
                 raise ex
 
     def _get_object_url(self, obj, **kwargs):
@@ -611,14 +653,14 @@ class NestedObjectStore(BaseObjectStore):
 
     def __init__(self, config, config_xml=None):
         """Extend `ObjectStore`'s constructor."""
-        super(NestedObjectStore, self).__init__(config)
+        super().__init__(config)
         self.backends = {}
 
     def shutdown(self):
         """For each backend, shuts them down."""
         for store in self.backends.values():
             store.shutdown()
-        super(NestedObjectStore, self).shutdown()
+        super().shutdown()
 
     def _exists(self, obj, **kwargs):
         """Determine if the `obj` exists in any of the backends."""
@@ -663,6 +705,12 @@ class NestedObjectStore(BaseObjectStore):
         """For the first backend that has this `obj`, get its URL."""
         return self._call_method('_get_object_url', obj, None, False, **kwargs)
 
+    def _get_concrete_store_name(self, obj):
+        return self._call_method('_get_concrete_store_name', obj, None, False)
+
+    def _get_concrete_store_description_markdown(self, obj):
+        return self._call_method('_get_concrete_store_description_markdown', obj, None, False)
+
     def _get_store_by(self, obj):
         return self._call_method('_get_store_by', obj, None, False)
 
@@ -670,7 +718,7 @@ class NestedObjectStore(BaseObjectStore):
         try:
             # there are a few objects in python that don't have __class__
             obj_id = self._get_object_id(obj)
-            return '{}({}={})'.format(obj.__class__.__name__, self.store_by, obj_id)
+            return f'{obj.__class__.__name__}({self.store_by}={obj_id})'
         except AttributeError:
             return str(obj)
 
@@ -713,7 +761,7 @@ class DistributedObjectStore(NestedObjectStore):
         :param fsmon: If True, monitor the file system for free space,
             removing backends when they get too full.
         """
-        super(DistributedObjectStore, self).__init__(config, config_dict)
+        super().__init__(config, config_dict)
 
         self.backends = {}
         self.weighted_backend_ids = []
@@ -800,7 +848,7 @@ class DistributedObjectStore(NestedObjectStore):
         return clazz(config, config_dict, fsmon=fsmon)
 
     def to_dict(self):
-        as_dict = super(DistributedObjectStore, self).to_dict()
+        as_dict = super().to_dict()
         as_dict["global_max_percent_full"] = self.global_max_percent_full
         backends = []
         for backend_id, backend in self.backends.items():
@@ -814,7 +862,7 @@ class DistributedObjectStore(NestedObjectStore):
 
     def shutdown(self):
         """Shut down. Kill the free space monitor if there is one."""
-        super(DistributedObjectStore, self).shutdown()
+        super().shutdown()
         if self.sleeper is not None:
             self.sleeper.wake()
 
@@ -839,7 +887,6 @@ class DistributedObjectStore(NestedObjectStore):
                     raise ObjectInvalid('objectstore.create, could not generate '
                                         'obj.object_store_id: %s, kwargs: %s'
                                         % (str(obj), str(kwargs)))
-                _create_object_in_session(obj)
                 log.debug("Selected backend '%s' for creation of %s %s"
                           % (obj.object_store_id, obj.__class__.__name__, obj.id))
             else:
@@ -872,7 +919,6 @@ class DistributedObjectStore(NestedObjectStore):
                 log.warning('%s object with ID %s found in backend object store with ID %s'
                             % (obj.__class__.__name__, obj.id, id))
                 obj.object_store_id = id
-                _create_object_in_session(obj)
                 return id
         return None
 
@@ -888,10 +934,10 @@ class HierarchicalObjectStore(NestedObjectStore):
     store_type = 'hierarchical'
 
     def __init__(self, config, config_dict, fsmon=False):
-        """The default contructor. Extends `NestedObjectStore`."""
-        super(HierarchicalObjectStore, self).__init__(config, config_dict)
+        """The default constructor. Extends `NestedObjectStore`."""
+        super().__init__(config, config_dict)
 
-        backends = OrderedDict()
+        backends = {}
         for order, backend_def in enumerate(config_dict["backends"]):
             backends[order] = build_object_store_from_config(config, config_dict=backend_def, fsmon=fsmon)
 
@@ -910,7 +956,7 @@ class HierarchicalObjectStore(NestedObjectStore):
         return {"backends": backends_list}
 
     def to_dict(self):
-        as_dict = super(HierarchicalObjectStore, self).to_dict()
+        as_dict = super().to_dict()
         backends = []
         for backend in self.backends.values():
             backend_as_dict = backend.to_dict()
@@ -996,7 +1042,7 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None, config_
                 config_xml = parse_xml(config.object_store_config_file).getroot()
                 store = config_xml.get('type')
             else:
-                with open(config_file, "rt") as f:
+                with open(config_file) as f:
                     config_dict = yaml.safe_load(f)
                 from_object = 'dict'
                 store = config_dict.get('type')
@@ -1010,7 +1056,7 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None, config_
 
     objectstore_class, objectstore_constructor_kwds = type_to_object_store_class(store, fsmon=fsmon)
     if objectstore_class is None:
-        log.error("Unrecognized object store definition: {0}".format(store))
+        log.error(f"Unrecognized object store definition: {store}")
 
     if from_object == 'xml':
         return objectstore_class.from_xml(config=config, config_xml=config_xml, **objectstore_constructor_kwds)
@@ -1042,18 +1088,18 @@ def convert_bytes(bytes):
 
     if bytes >= 1099511627776:
         terabytes = bytes / 1099511627776
-        size = '%.2fTB' % terabytes
+        size = f'{terabytes:.2f}TB'
     elif bytes >= 1073741824:
         gigabytes = bytes / 1073741824
-        size = '%.2fGB' % gigabytes
+        size = f'{gigabytes:.2f}GB'
     elif bytes >= 1048576:
         megabytes = bytes / 1048576
-        size = '%.2fMB' % megabytes
+        size = f'{megabytes:.2f}MB'
     elif bytes >= 1024:
         kilobytes = bytes / 1024
-        size = '%.2fKB' % kilobytes
+        size = f'{kilobytes:.2f}KB'
     else:
-        size = '%.2fb' % bytes
+        size = f'{bytes:.2f}b'
     return size
 
 
@@ -1071,23 +1117,15 @@ def config_to_dict(config):
     }
 
 
-def _create_object_in_session(obj):
-    session = object_session(obj) if object_session is not None else None
-    if session is not None:
-        object_session(obj).add(obj)
-        object_session(obj).flush()
-    else:
-        raise Exception(NO_SESSION_ERROR_MESSAGE)
-
-
-class ObjectStorePopulator(object):
+class ObjectStorePopulator:
     """ Small helper for interacting with the object store and making sure all
     datasets from a job end up with the same object_store_id.
     """
 
-    def __init__(self, app):
+    def __init__(self, app, user):
         self.object_store = app.object_store
         self.object_store_id = None
+        self.user = user
 
     def set_object_store_id(self, data):
         # Create an empty file immediately.  The first dataset will be

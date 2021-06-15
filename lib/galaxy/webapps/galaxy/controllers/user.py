@@ -4,13 +4,9 @@ Contains the user interface in the Universe class
 
 import logging
 from datetime import datetime, timedelta
+from urllib.parse import unquote
 
 from markupsafe import escape
-from six.moves.urllib.parse import unquote
-from sqlalchemy import (
-    func,
-    or_
-)
 from sqlalchemy.orm.exc import NoResultFound
 
 from galaxy import (
@@ -24,6 +20,7 @@ from galaxy.security.validate_user_input import (
     validate_email,
     validate_publicname
 )
+from galaxy.structured_app import StructuredApp
 from galaxy.web import expose_api_anonymous_and_sessionless
 from galaxy.web import url_for
 from galaxy.webapps.base.controller import (
@@ -31,6 +28,7 @@ from galaxy.webapps.base.controller import (
     CreatesApiKeysMixin,
     UsesFormDefinitionsMixin
 )
+from ..api import depends
 
 log = logging.getLogger(__name__)
 
@@ -40,11 +38,11 @@ def _filtered_registration_params_dict(payload):
 
 
 class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
+    user_manager: users.UserManager = depends(users.UserManager)
     installed_len_files = None
 
-    def __init__(self, app):
-        super(User, self).__init__(app)
-        self.user_manager = users.UserManager(app)
+    def __init__(self, app: StructuredApp):
+        super().__init__(app)
 
     def __handle_role_and_group_auto_creation(self, trans, user, roles, auto_create_roles=False,
                                               auto_create_groups=False, auto_assign_roles_to_groups_only=False):
@@ -68,7 +66,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                 # only create a group if not existing yet
                 try:
                     group = self.sa_session.query(trans.app.model.Group).filter(
-                        trans.app.model.Group.table.c.name == role_name).first()
+                        trans.app.model.Group.name == role_name).first()
                 except NoResultFound:
                     group = self.model.Group(name=role_name)
                     self.sa_session.add(group)
@@ -88,7 +86,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         try:
             autoreg = trans.app.auth_manager.check_auto_registration(trans, login, password)
         except Conflict as conflict:
-            return "Auto-registration failed, {}".format(conflict), None
+            return f"Auto-registration failed, {conflict}", None
         user = None
         if autoreg["auto_reg"]:
             email = autoreg["email"]
@@ -112,16 +110,17 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                         auto_create_roles=autoreg["auto_create_roles"],
                         auto_assign_roles_to_groups_only=autoreg["auto_assign_roles_to_groups_only"])
             else:
-                message = "Auto-registration failed, contact your local Galaxy administrator. %s" % message
+                message = f"Auto-registration failed, contact your local Galaxy administrator. {message}"
         else:
             message = "No such user or invalid password."
         return message, user
 
     @expose_api_anonymous_and_sessionless
-    def login(self, trans, payload={}, **kwd):
+    def login(self, trans, payload=None, **kwd):
+        payload = payload or {}
         return self.__validate_login(trans, payload, **kwd)
 
-    def __validate_login(self, trans, payload={}, **kwd):
+    def __validate_login(self, trans, payload=None, **kwd):
         '''Handle Galaxy Log in'''
         if not payload:
             payload = kwd
@@ -134,15 +133,8 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         status = None
         if not login or not password:
             return self.message_exception(trans, "Please specify a username and password.")
-        user = trans.sa_session.query(trans.app.model.User).filter(or_(
-            trans.app.model.User.table.c.email == login,
-            trans.app.model.User.table.c.username == login
-        )).first()
-        if not user and login.lower() != login:
-            user = trans.sa_session.query(trans.app.model.User).filter(
-                func.lower(trans.app.model.User.table.c.email) == login.lower()
-            ).first()
-        log.debug("trans.app.config.auth_config_file: %s" % trans.app.config.auth_config_file)
+        user = self.user_manager.get_user_by_identity(login)
+        log.debug(f"trans.app.config.auth_config_file: {trans.app.config.auth_config_file}")
         if user is None:
             message, user = self.__autoregistration(trans, login, password)
             if message:
@@ -150,12 +142,12 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         elif user.deleted:
             message = "This account has been marked deleted, contact your local Galaxy administrator to restore the account."
             if trans.app.config.error_email_to is not None:
-                message += " Contact: %s." % trans.app.config.error_email_to
+                message += f" Contact: {trans.app.config.error_email_to}."
             return self.message_exception(trans, message, sanitize=False)
         elif user.external:
             message = "This account was created for use with an external authentication method, contact your local Galaxy administrator to activate it."
             if trans.app.config.error_email_to is not None:
-                message += " Contact: %s." % trans.app.config.error_email_to
+                message += f" Contact: {trans.app.config.error_email_to}."
             return self.message_exception(trans, message, sanitize=False)
         elif not trans.app.auth_manager.check_password(user, password):
             return self.message_exception(trans, "Invalid password.")
@@ -180,7 +172,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
             if pw_expires and user.last_password_change < datetime.today() - timedelta(days=pw_expires.days / 10):
                 # If password is about to expire, modify message to state that.
                 expiredate = datetime.today() - user.last_password_change + pw_expires
-                return {"message": "Your password will expire in %s day(s)." % expiredate.days, "status": "warning"}
+                return {"message": f"Your password will expire in {expiredate.days} day(s).", "status": "warning"}
         return {"message": "Success.", "redirect": self.__get_redirect_url(redirect)}
 
     @web.expose
@@ -200,17 +192,17 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         """
         if email is None:  # User is coming from outside registration form, load email from trans
             if not trans.user:
-                trans.show_error_message("No session found, cannot send activation email.")
+                return "No session found, cannot send activation email.", None
             email = trans.user.email
         if username is None:  # User is coming from outside registration form, load email from trans
             username = trans.user.username
         is_activation_sent = self.user_manager.send_activation_email(trans, email, username)
         if is_activation_sent:
-            message = 'This account has not been activated yet. The activation link has been sent again. Please check your email address <b>%s</b> including the spam/trash folder. <a target="_top" href="%s">Return to the home page</a>.' % (escape(email), url_for('/'))
+            message = f"This account has not been activated yet. The activation link has been sent again. Please check your email address <b>{escape(email)}</b> including the spam/trash folder. <a target=\"_top\" href=\"{url_for('/')}\">Return to the home page</a>."
         else:
-            message = 'This account has not been activated yet but we are unable to send the activation link. Please contact your local Galaxy administrator. <a target="_top" href="%s">Return to the home page</a>.' % url_for('/')
+            message = f"This account has not been activated yet but we are unable to send the activation link. Please contact your local Galaxy administrator. <a target=\"_top\" href=\"{url_for('/')}\">Return to the home page</a>."
             if trans.app.config.error_email_to is not None:
-                message += ' Error contact: %s.' % trans.app.config.error_email_to
+                message += f' Error contact: {trans.app.config.error_email_to}.'
         return message, is_activation_sent
 
     def is_outside_grace_period(self, trans, create_time):
@@ -224,23 +216,31 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         return (time_difference > delta or activation_grace_period == 0)
 
     @web.expose
+    @web.json
     def logout(self, trans, logout_all=False, **kwd):
         message = trans.check_csrf_token(kwd)
         if message:
             return self.message_exception(trans, message)
         if trans.user:
-            # Queue a quota recalculation (async) task -- this takes a
-            # while sometimes, so we don't want to block on logout.
-            send_local_control_task(trans.app,
-                                    "recalculate_user_disk_usage",
-                                    kwargs={"user_id": trans.security.encode_id(trans.user.id)})
+            if trans.app.config.enable_celery_tasks:
+                # Queue a quota recalculation (async) task -- this takes a
+                # while sometimes, so we don't want to block on logout.
+                from galaxy.celery.tasks import recalculate_user_disk_usage
+                recalculate_user_disk_usage.delay(user_id=trans.user.id)
+            else:
+                send_local_control_task(trans.app,
+                                        "recalculate_user_disk_usage",
+                                        kwargs={"user_id": trans.security.encode_id(trans.user.id)})
         # Since logging an event requires a session, we'll log prior to ending the session
         trans.log_event("User logged out")
         trans.handle_user_logout(logout_all=logout_all)
-        return {"message": "Success."}
+        success_response = {"message": "Success."}  # This is a little weird as a response.
+        if trans.app.config.use_remote_user and trans.app.config.remote_user_logout_href:
+            success_response["redirect_uri"] = trans.app.config.remote_user_logout_href
+        return success_response
 
     @expose_api_anonymous_and_sessionless
-    def create(self, trans, payload={}, **kwd):
+    def create(self, trans, payload=None, **kwd):
         if not payload:
             payload = kwd
         message = trans.check_csrf_token(payload)
@@ -288,7 +288,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         return
 
     @expose_api_anonymous_and_sessionless
-    def change_password(self, trans, payload={}, **kwd):
+    def change_password(self, trans, payload=None, **kwd):
         """
         Allows to change own password.
 
@@ -300,6 +300,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
             * password:         new password
             * confirm:          new password (confirmation)
         """
+        payload = payload or {}
         user, message = self.user_manager.change_password(trans, **payload)
         if user is None:
             return self.message_exception(trans, message)
@@ -307,8 +308,9 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         return {"message": "Password has been changed."}
 
     @expose_api_anonymous_and_sessionless
-    def reset_password(self, trans, payload={}, **kwd):
+    def reset_password(self, trans, payload=None, **kwd):
         """Reset the user's password. Send an email with token that allows a password change."""
+        payload = payload or {}
         message = self.user_manager.send_reset_email(trans, payload)
         if message:
             return self.message_exception(trans, message)

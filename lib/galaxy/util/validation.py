@@ -2,14 +2,13 @@
 
 TODO: Refactor BaseController references to similar methods to use this module.
 """
-from six import string_types
 
 from galaxy import exceptions
 from galaxy.util.sanitize_html import sanitize_html
 
 
 def validate_and_sanitize_basestring(key, val):
-    if not isinstance(val, string_types):
+    if not isinstance(val, str):
         raise exceptions.RequestParameterInvalidException('%s must be a string or unicode: %s'
                                                           % (key, str(type(val))))
     return sanitize_html(val)

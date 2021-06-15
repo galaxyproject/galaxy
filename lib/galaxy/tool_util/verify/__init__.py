@@ -3,7 +3,7 @@
 import difflib
 import filecmp
 import hashlib
-import io
+import json
 import logging
 import os
 import os.path
@@ -62,7 +62,7 @@ def verify(
         try:
             verify_assertions(output_content, attributes["assert_list"])
         except AssertionError as err:
-            errmsg = '%s different than expected\n' % (item_label)
+            errmsg = f'{item_label} different than expected\n'
             errmsg += unicodify(err)
             raise AssertionError(errmsg)
 
@@ -82,14 +82,32 @@ def verify(
         try:
             _verify_checksum(output_content, expected_checksum_type, expected_checksum)
         except AssertionError as err:
-            errmsg = '%s different than expected\n' % (item_label)
+            errmsg = f'{item_label} different than expected\n'
             errmsg += unicodify(err)
             raise AssertionError(errmsg)
 
     if attributes is None:
         attributes = {}
 
-    if filename is not None:
+    # expected object might be None, so don't pull unless available
+    has_expected_object = 'object' in attributes
+    if has_expected_object:
+        assert filename is None
+        expected_object = attributes.get('object')
+        actual_object = json.loads(output_content)
+
+        expected_object_type = type(expected_object)
+        actual_object_type = type(actual_object)
+
+        if expected_object_type != actual_object_type:
+            message = f"Type mismatch between expected object ({expected_object_type}) and actual object ({actual_object_type})"
+            raise AssertionError(message)
+
+        if expected_object != actual_object:
+            message = f"Expected object ({expected_object}) does not match actual object ({actual_object})"
+            raise AssertionError(message)
+
+    elif filename is not None:
         temp_name = make_temp_fname(fname=filename)
         with open(temp_name, 'wb') as f:
             f.write(output_content)
@@ -139,10 +157,10 @@ def verify(
             elif compare == "contains":
                 files_contains(local_name, temp_name, attributes=attributes)
             else:
-                raise Exception('Unimplemented Compare type: %s' % compare)
+                raise Exception(f'Unimplemented Compare type: {compare}')
         except AssertionError as err:
-            errmsg = '%s different than expected, difference (using %s):\n' % (item_label, compare)
-            errmsg += "( %s v. %s )\n" % (local_name, temp_name)
+            errmsg = f'{item_label} different than expected, difference (using {compare}):\n'
+            errmsg += f"( {local_name} v. {temp_name} )\n"
             errmsg += unicodify(err)
             raise AssertionError(errmsg)
         finally:
@@ -158,31 +176,30 @@ def verify(
 def make_temp_fname(fname=None):
     """Safe temp name - preserve the file extension for tools that interpret it."""
     suffix = os.path.split(fname)[-1]  # ignore full path
-    fd, temp_prefix = tempfile.mkstemp(prefix='tmp', suffix=suffix)
-    return temp_prefix
+    with tempfile.NamedTemporaryFile(prefix='tmp', suffix=suffix, delete=False) as temp:
+        return temp.name
 
 
 def _bam_to_sam(local_name, temp_name):
     temp_local = tempfile.NamedTemporaryFile(suffix='.sam', prefix='local_bam_converted_to_sam_')
-    fd, temp_temp = tempfile.mkstemp(suffix='.sam', prefix='history_bam_converted_to_sam_')
-    os.close(fd)
-    try:
-        pysam.view('-h', '-o%s' % temp_local.name, local_name)
-    except Exception as e:
-        msg = "Converting local (test-data) BAM to SAM failed: %s" % unicodify(e)
-        raise Exception(msg)
-    try:
-        pysam.view('-h', '-o%s' % temp_temp, temp_name)
-    except Exception as e:
-        msg = "Converting history BAM to SAM failed: %s" % unicodify(e)
-        raise Exception(msg)
+    with tempfile.NamedTemporaryFile(suffix='.sam', prefix='history_bam_converted_to_sam_', delete=False) as temp:
+        try:
+            pysam.view('-h', '--no-PG', '-o', temp_local.name, local_name, catch_stdout=False)
+        except Exception as e:
+            msg = f"Converting local (test-data) BAM to SAM failed: {unicodify(e)}"
+            raise Exception(msg)
+        try:
+            pysam.view('-h', '--no-PG', '-o', temp.name, temp_name, catch_stdout=False)
+        except Exception as e:
+            msg = f"Converting history BAM to SAM failed: {unicodify(e)}"
+            raise Exception(msg)
     os.remove(temp_name)
-    return temp_local, temp_temp
+    return temp_local, temp.name
 
 
 def _verify_checksum(data, checksum_type, expected_checksum_value):
     if checksum_type not in ["md5", "sha1", "sha256", "sha512"]:
-        raise Exception("Unimplemented hash algorithm [%s] encountered." % checksum_type)
+        raise Exception(f"Unimplemented hash algorithm [{checksum_type}] encountered.")
 
     h = hashlib.new(checksum_type)
     h.update(data)
@@ -236,8 +253,8 @@ def files_diff(file1, file2, attributes=None):
                 is_pdf = True
                 # Replace non-Unicode characters using unicodify(),
                 # difflib.unified_diff doesn't work on list of bytes
-                history_data = [unicodify(l) for l in get_fileobj(file2, mode='rb', compressed_formats=compressed_formats)]
-                local_file = [unicodify(l) for l in get_fileobj(file1, mode='rb', compressed_formats=compressed_formats)]
+                history_data = [unicodify(line) for line in get_fileobj(file2, mode='rb', compressed_formats=compressed_formats)]
+                local_file = [unicodify(line) for line in get_fileobj(file1, mode='rb', compressed_formats=compressed_formats)]
             else:
                 raise AssertionError("Binary data detected, not displaying diff")
         if attributes.get('sort', False):
@@ -295,9 +312,9 @@ def files_re_match(file1, file2, attributes=None):
     join_char = ''
     to_strip = os.linesep
     try:
-        with io.open(file2, encoding='utf-8') as fh:
+        with open(file2, encoding='utf-8') as fh:
             history_data = fh.readlines()
-        with io.open(file1, encoding='utf-8') as fh:
+        with open(file1, encoding='utf-8') as fh:
             local_file = fh.readlines()
     except UnicodeDecodeError:
         join_char = b''
@@ -319,7 +336,7 @@ def files_re_match(file1, file2, attributes=None):
         data_line = data_line.rstrip(to_strip)
         if not re.match(regex_line, data_line):
             line_diff_count += 1
-            diffs.append('Regular Expression: %s, Data file: %s\n' % (regex_line, data_line))
+            diffs.append(f'Regular Expression: {regex_line}, Data file: {data_line}\n')
     if line_diff_count > lines_diff:
         raise AssertionError("Regular expression did not match data file (allowed variants=%i):\n%s" % (lines_diff, "".join(diffs)))
 
@@ -328,9 +345,9 @@ def files_re_match_multiline(file1, file2, attributes=None):
     """Check the contents of 2 files for differences using re.match in multiline mode."""
     join_char = ''
     try:
-        with io.open(file2, encoding='utf-8') as fh:
+        with open(file2, encoding='utf-8') as fh:
             history_data = fh.readlines()
-        with io.open(file1, encoding='utf-8') as fh:
+        with open(file1, encoding='utf-8') as fh:
             local_file = fh.read()
     except UnicodeDecodeError:
         join_char = b''
@@ -352,9 +369,9 @@ def files_contains(file1, file2, attributes=None):
     # TODO: allow forcing ordering of contains
     to_strip = os.linesep
     try:
-        with io.open(file2, encoding='utf-8') as fh:
+        with open(file2, encoding='utf-8') as fh:
             history_data = fh.read()
-        with io.open(file1, encoding='utf-8') as fh:
+        with open(file1, encoding='utf-8') as fh:
             local_file = fh.readlines()
     except UnicodeDecodeError:
         to_strip = os.linesep.encode('utf-8')
@@ -371,4 +388,4 @@ def files_contains(file1, file2, attributes=None):
         if contains not in history_data:
             line_diff_count += 1
         if line_diff_count > lines_diff:
-            raise AssertionError("Failed to find '%s' in history data. (lines_diff=%i):\n" % (contains, lines_diff))
+            raise AssertionError("Failed to find '%s' in history data. (lines_diff=%i)" % (contains, lines_diff))

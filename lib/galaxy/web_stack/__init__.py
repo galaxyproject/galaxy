@@ -1,11 +1,13 @@
 """Web application stack operations
 """
-from __future__ import absolute_import
 
 import inspect
 import json
 import logging
+import multiprocessing
 import os
+from typing import Callable, Dict, FrozenSet, List, Optional, Tuple, Type
+from urllib.request import install_opener
 
 # The uwsgi module is automatically injected by the parent uwsgi process and only exists that way.  If anything works,
 # this is a uwsgi-managed process.
@@ -15,7 +17,6 @@ except ImportError:
     uwsgi = None
 
 import yaml
-from six import string_types
 
 from galaxy.util import unicodify
 from galaxy.util.facts import get_facts
@@ -43,12 +44,12 @@ class UWSGILogFilter(logging.Filter):
         return True
 
 
-class ApplicationStack(object):
-    name = None
-    prohibited_middleware = frozenset()
+class ApplicationStack:
+    name: Optional[str] = None
+    prohibited_middleware: FrozenSet[str] = frozenset()
     transport_class = ApplicationStackTransport
-    log_filter_class = ApplicationStackLogFilter
-    log_format = '%(name)s %(levelname)s %(asctime)s %(message)s'
+    log_filter_class: Type[logging.Filter] = ApplicationStackLogFilter
+    log_format = '%(name)s %(levelname)s %(asctime)s [pN:%(processName)s,p:%(process)d,tN:%(threadName)s] %(message)s'
     # TODO: this belongs in the pool configuration
     server_name_template = '{server_name}'
     default_app_name = 'main'
@@ -69,15 +70,49 @@ class ApplicationStack(object):
         self.app = app
         self.config = config or (app and app.config)
         self.running = False
+        self._supports_returning = None
+        self._supports_skip_locked = None
+        self._preferred_handler_assignment_method = None
+        multiprocessing.current_process().name = getattr(self.config, 'server_name', 'main')
         if app:
             log.debug("%s initialized", self.__class__.__name__)
+
+    def supports_returning(self):
+        if self._supports_returning is None:
+            job_table = self.app.model.Job.table
+            stmt = job_table.update().where(job_table.c.id == -1).returning(job_table.c.id)
+            try:
+                self.app.model.session.execute(stmt)
+                self._supports_returning = True
+            except Exception:
+                self._supports_returning = False
+        return self._supports_returning
+
+    def supports_skip_locked(self):
+        if self._supports_skip_locked is None:
+            job_table = self.app.model.Job.table
+            stmt = job_table.select().where(job_table.c.id == -1).with_for_update(skip_locked=True)
+            try:
+                self.app.model.session.execute(stmt)
+                self._supports_skip_locked = True
+            except Exception:
+                self._supports_skip_locked = False
+        return self._supports_skip_locked
+
+    def get_preferred_handler_assignment_method(self):
+        if self._preferred_handler_assignment_method is None:
+            if self.app.application_stack.supports_skip_locked():
+                self._preferred_handler_assignment_method = HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED
+            else:
+                log.debug("Database does not support WITH FOR UPDATE statement, cannot use DB-SKIP-LOCKED handler assignment")
+                self._preferred_handler_assignment_method = HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION
+        return self._preferred_handler_assignment_method
 
     def _set_default_job_handler_assignment_methods(self, job_config, base_pool):
         """Override in subclasses to set default job handler assignment methods if not explicitly configured by the administrator.
 
         Called once per job_config.
         """
-        pass
 
     def _init_job_handler_assignment_methods(self, job_config, base_pool):
         if not job_config.handler_assignment_methods_configured:
@@ -89,8 +124,8 @@ class ApplicationStack(object):
         for pool_name in self.configured_pools:
             if pool_name == base_pool:
                 tag = job_config.DEFAULT_HANDLER_TAG
-            elif pool_name.startswith(base_pool + '.'):
-                tag = pool_name.replace(base_pool + '.', '', 1)
+            elif pool_name.startswith(f"{base_pool}."):
+                tag = pool_name.replace(f"{base_pool}.", '', 1)
             else:
                 continue
             # Pools are hierarchical (so that you can have e.g. workflow schedulers use the job handlers pool if no
@@ -122,7 +157,7 @@ class ApplicationStack(object):
         pass
 
     def log_startup(self):
-        log.info("Galaxy server instance '%s' is running" % self.config.server_name)
+        log.info(f"Galaxy server instance '{self.config.server_name}' is running")
 
     def start(self):
         # TODO: with a stack config the pools could be parsed here
@@ -146,7 +181,7 @@ class ApplicationStack(object):
         return {}
 
     def has_base_pool(self, pool_name):
-        return self.has_pool(pool_name) or any([pool.startswith(pool_name + '.') for pool in self.configured_pools])
+        return self.has_pool(pool_name) or any([pool.startswith(f"{pool_name}.") for pool in self.configured_pools])
 
     def has_pool(self, pool_name):
         return pool_name in self.configured_pools
@@ -164,8 +199,9 @@ class ApplicationStack(object):
         return facts
 
     def set_postfork_server_name(self, app):
-        app.config.server_name = self.server_name_template.format(**self.facts)
-        log.debug('server_name set to: %s', app.config.server_name)
+        new_server_name = self.server_name_template.format(**self.facts)
+        multiprocessing.current_process().name = app.config.server_name = new_server_name
+        log.debug('server_name set to: %s', new_server_name)
 
     def register_message_handler(self, func, name=None):
         pass
@@ -182,7 +218,7 @@ class ApplicationStack(object):
 
 class MessageApplicationStack(ApplicationStack):
     def __init__(self, app=None, config=None):
-        super(MessageApplicationStack, self).__init__(app=app, config=config)
+        super().__init__(app=app, config=config)
         self.use_messaging = False
         self.dispatcher = ApplicationStackMessageDispatcher()
         self.transport = self.transport_class(app, stack=self, dispatcher=self.dispatcher)
@@ -191,7 +227,7 @@ class MessageApplicationStack(ApplicationStack):
         self.transport.init_late_prefork()
 
     def start(self):
-        super(MessageApplicationStack, self).start()
+        super().start()
         if self.use_messaging and not self.running:
             self.transport.start()
             self.running = True
@@ -234,10 +270,10 @@ class UWSGIApplicationStack(MessageApplicationStack):
     })
     transport_class = UWSGIFarmMessageTransport
     log_filter_class = UWSGILogFilter
-    log_format = '%(name)s %(levelname)s %(asctime)s [p:%(process)s,w:%(worker_id)s,m:%(mule_id)s] [%(threadName)s] %(message)s'
+    log_format = '%(name)s %(levelname)s %(asctime)s [pN:%(processName)s,p:%(process)d,w:%(worker_id)s,m:%(mule_id)s,tN:%(threadName)s] %(message)s'
     server_name_template = '{server_name}.{pool_name}.{instance_id}'
 
-    postfork_functions = []
+    postfork_functions: List[Tuple[Callable, List, Dict]] = []
 
     localhost_addrs = ('127.0.0.1', '[::1]')
     bind_all_addrs = ('', '0.0.0.0', '[::]')
@@ -270,16 +306,16 @@ class UWSGIApplicationStack(MessageApplicationStack):
                 val = unicodify(uwsgi.opt.get('shared-socket', [])[int(val.split('=')[1])])
             proto = opt if opt != 'socket' else 'uwsgi'
             if proto == 'uwsgi' and ':' not in val:
-                return 'uwsgi://' + val
+                return f"uwsgi://{val}"
             else:
-                proto = proto + '://'
+                proto = f"{proto}://"
                 host, port = val.rsplit(':', 1)
-                port = ':' + port.split(',', 1)[0]
+                port = f":{port.split(',', 1)[0]}"
             if host in UWSGIApplicationStack.bind_all_addrs:
                 host = UWSGIApplicationStack.localhost_addrs[0]
             return proto + host + port
         except (IndexError, AttributeError):
-            return '%s %s' % (opt, val)
+            return f'{opt} {val}'
 
     @staticmethod
     def _socket_opts():
@@ -346,11 +382,11 @@ class UWSGIApplicationStack(MessageApplicationStack):
         # be configured by the admin. This allows us to keep track of how many such farms are configured.
         self._lock_farms = set()
 
-        super(UWSGIApplicationStack, self).__init__(app=app, config=config)
+        super().__init__(app=app, config=config)
 
     def _set_default_job_handler_assignment_methods(self, job_config, base_pool):
         # Disable DB_SELF if a valid farm (pool) is configured. Use mule messaging unless the job_config doesn't allow
-        # it (e.g. workflow scheduling manager), in which case, use DB_PREASSIGN.
+        # it (e.g. workflow scheduling manager), in which case, use DB-SKIP-LOCKED or DB-TRANSACTION-ISOLATION.
         #
         # TODO MULTIPOOL: if there is no default in any base_pool (and no job_config.default_handler_id) then don't
         # remove DB_SELF
@@ -359,7 +395,7 @@ class UWSGIApplicationStack(MessageApplicationStack):
         if (HANDLER_ASSIGNMENT_METHODS.UWSGI_MULE_MESSAGE not in job_config.UNSUPPORTED_HANDLER_ASSIGNMENT_METHODS):
             add_method = HANDLER_ASSIGNMENT_METHODS.UWSGI_MULE_MESSAGE
         else:
-            add_method = HANDLER_ASSIGNMENT_METHODS.DB_PREASSIGN
+            add_method = self.get_preferred_handler_assignment_method()
             remove_methods.append(HANDLER_ASSIGNMENT_METHODS.UWSGI_MULE_MESSAGE)
         log.debug("%s: No job handler assignment methods were configured but a uWSGI farm named '%s' exists,"
                   " automatically enabling the '%s' assignment method", conf_class_name, base_pool, add_method)
@@ -375,17 +411,17 @@ class UWSGIApplicationStack(MessageApplicationStack):
                   ', '.join(job_config.handler_assignment_methods))
 
     def _init_job_handler_assignment_methods(self, job_config, base_pool):
-        super(UWSGIApplicationStack, self)._init_job_handler_assignment_methods(job_config, base_pool)
+        super()._init_job_handler_assignment_methods(job_config, base_pool)
         # Determine if stack messaging should be enabled
         if HANDLER_ASSIGNMENT_METHODS.UWSGI_MULE_MESSAGE in job_config.handler_assignment_methods:
             self.use_messaging = True
 
     def _init_job_handler_subpools(self, job_config, base_pool):
-        super(UWSGIApplicationStack, self)._init_job_handler_subpools(job_config, base_pool)
+        super()._init_job_handler_subpools(job_config, base_pool)
         # Count the required number of uWSGI locks
         if job_config.use_messaging:
             for pool_name in self.configured_pools:
-                if (pool_name == base_pool or pool_name.startswith(base_pool + '.')):
+                if (pool_name == base_pool or pool_name.startswith(f"{base_pool}.")):
                     self._lock_farms.add(pool_name)
 
     @property
@@ -462,7 +498,7 @@ class UWSGIApplicationStack(MessageApplicationStack):
         return instance_id
 
     def log_startup(self):
-        msg = ["Galaxy server instance '%s' is running" % self.config.server_name]
+        msg = [f"Galaxy server instance '{self.config.server_name}' is running"]
         # Log the next messages when the first worker finishes starting. This
         # may not be the first to finish (so Galaxy could be serving already),
         # but it's a good approximation and gives the correct root_pid below
@@ -474,7 +510,7 @@ class UWSGIApplicationStack(MessageApplicationStack):
             root_pid = uwsgi.masterpid() or os.getpid()
             msg.append('Starting server in PID %d.' % root_pid)
             for s in UWSGIApplicationStack._serving_on():
-                msg.append('serving on ' + s)
+                msg.append(f"serving on {s}")
             if len(msg) == 1:
                 msg.append('serving on unknown URL')
         log.info('\n'.join(msg))
@@ -484,7 +520,7 @@ class UWSGIApplicationStack(MessageApplicationStack):
         if self._is_mule and self._farm_name:
             # used by main.py to send a shutdown message on termination
             os.environ['_GALAXY_UWSGI_FARM_NAMES'] = ','.join(self._farms)
-        super(UWSGIApplicationStack, self).start()
+        super().start()
 
     def in_pool(self, pool_name):
         if not self._is_mule:
@@ -500,7 +536,7 @@ class UWSGIApplicationStack(MessageApplicationStack):
 
     @property
     def facts(self):
-        facts = super(UWSGIApplicationStack, self).facts
+        facts = super().facts
         if not self._is_mule:
             facts.update({
                 'pool_name': 'web',
@@ -515,7 +551,7 @@ class UWSGIApplicationStack(MessageApplicationStack):
         return facts
 
     def shutdown(self):
-        super(UWSGIApplicationStack, self).shutdown()
+        super().shutdown()
 
 
 class PasteApplicationStack(ApplicationStack):
@@ -533,21 +569,13 @@ class WeblessApplicationStack(ApplicationStack):
         # isolation if it doesn't, or DB_PREASSIGN if the job_config doesn't allow either.
         conf_class_name = job_config.__class__.__name__
         remove_methods = [HANDLER_ASSIGNMENT_METHODS.DB_SELF]
-        dialect = self.app.model.session.bind.dialect
-        if ((dialect.name == 'postgresql' and dialect.server_version_info >= (9, 5))
-                or (dialect.name == 'mysql' and dialect.server_version_info >= (8, 0, 1))):
-            add_method = HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED
-        else:
-            add_method = HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION
-        if add_method in job_config.UNSUPPORTED_HANDLER_ASSIGNMENT_METHODS:
-            remove_methods.append(add_method)
-            add_method = HANDLER_ASSIGNMENT_METHODS.DB_PREASSIGN
+        add_method = self.get_preferred_handler_assignment_method()
         log.debug("%s: No job handler assignment methods were configured but this server is configured to attach to the"
                   " '%s' pool, automatically enabling the '%s' assignment method", conf_class_name, base_pool, add_method)
         for m in remove_methods:
             try:
                 job_config.handler_assignment_methods.remove(m)
-                log.debug("%s: Removed '%s' from handler assignment methods due to use of mules", conf_class_name, m)
+                log.debug("%s: Removed '%s' from handler assignment methods due to use of --attach-to-pool", conf_class_name, m)
             except ValueError:
                 pass
         if add_method not in job_config.handler_assignment_methods:
@@ -556,7 +584,7 @@ class WeblessApplicationStack(ApplicationStack):
                   ', '.join(job_config.handler_assignment_methods))
 
     def __init__(self, app=None, config=None):
-        super(WeblessApplicationStack, self).__init__(app=app, config=config)
+        super().__init__(app=app, config=config)
         if self.app and self.config and self.config.attach_to_pools:
             log.debug("Will attach to pool(s): %s", ', '.join(self.config.attach_to_pools))
 
@@ -571,7 +599,7 @@ class WeblessApplicationStack(ApplicationStack):
         return (self.config.server_name,) if self.in_pool(pool_name) else None
 
 
-def application_stack_class():
+def application_stack_class() -> Type[ApplicationStack]:
     """Returns the correct ApplicationStack class for the stack under which
     this Galaxy process is running.
     """
@@ -585,7 +613,7 @@ def application_stack_class():
     return WeblessApplicationStack
 
 
-def application_stack_instance(app=None, config=None):
+def application_stack_instance(app=None, config=None) -> ApplicationStack:
     stack_class = application_stack_class()
     return stack_class(app=app, config=config)
 
@@ -612,7 +640,7 @@ def get_stack_facts(config=None):
 
 def _uwsgi_configured_mules():
     mules = uwsgi.opt.get('mule', [])
-    return [mules] if isinstance(mules, string_types) or mules is True else mules
+    return [mules] if isinstance(mules, str) or mules is True else mules
 
 
 def _do_uwsgi_postfork():
@@ -627,7 +655,6 @@ def _do_uwsgi_postfork():
 
 
 def _mule_fixup():
-    from six.moves.urllib.request import install_opener
     install_opener(None)
 
 

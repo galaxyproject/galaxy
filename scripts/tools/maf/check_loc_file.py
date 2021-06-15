@@ -1,7 +1,6 @@
 # Dan Blankenberg
 # This script checks maf_index.loc file for inconsistencies between what is listed as available and what is really available.
 # Make sure that required dependencies (e.g. galaxy_root/lib) are included in your PYTHONPATH
-from __future__ import print_function
 
 import sys
 

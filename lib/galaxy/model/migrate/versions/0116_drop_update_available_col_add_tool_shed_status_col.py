@@ -1,7 +1,6 @@
 """
 Migration script to drop the update_available Boolean column and replace it with the tool_shed_status JSONType column in the tool_shed_repository table.
 """
-from __future__ import print_function
 
 import logging
 
@@ -45,6 +44,6 @@ def downgrade(migrate_engine):
     c = Column("update_available", Boolean, default=False)
     add_column(c, ToolShedRepository_table, metadata)
     try:
-        migrate_engine.execute("UPDATE tool_shed_repository SET update_available=%s" % engine_false(migrate_engine))
+        migrate_engine.execute(f"UPDATE tool_shed_repository SET update_available={engine_false(migrate_engine)}")
     except Exception:
         log.exception("Updating column 'update_available' of table 'tool_shed_repository' failed.")

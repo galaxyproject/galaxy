@@ -10,12 +10,11 @@ from galaxy.util import string_as_bool
 log = logging.getLogger(__name__)
 
 
-class AuthManager(object):
+class AuthManager:
 
-    def __init__(self, app):
-        self.__app = app
-        self.redact_username_in_logs = app.config.redact_username_in_logs
-        self.authenticators = get_authenticators(app.config.auth_config_file, app.config.auth_config_file_set)
+    def __init__(self, config):
+        self.redact_username_in_logs = config.redact_username_in_logs
+        self.authenticators = get_authenticators(config.auth_config_file, config.is_set('auth_config_file'))
 
     def check_registration_allowed(self, email, username, password):
         """Checks if the provided email/username is allowed to register."""
@@ -57,7 +56,7 @@ class AuthManager(object):
         }
         for provider, options in self.active_authenticators(email, username, password):
             if provider is None:
-                log.debug("Unable to find module: %s" % options)
+                log.debug(f"Unable to find module: {options}")
             else:
                 options['no_password_check'] = no_password_check
                 auth_results = provider.authenticate(email, username, password, options)
@@ -77,7 +76,7 @@ class AuthManager(object):
         """Checks the username/email and password using auth providers."""
         for provider, options in self.active_authenticators(user.email, user.username, password):
             if provider is None:
-                log.debug("Unable to find module: %s" % options)
+                log.debug(f"Unable to find module: {options}")
             else:
                 auth_result = provider.authenticate_user(user, password, options)
                 if auth_result is True:
@@ -92,7 +91,7 @@ class AuthManager(object):
         """
         for provider, options in self.active_authenticators(user.email, user.username, current_password):
             if provider is None:
-                log.debug("Unable to find module: %s" % options)
+                log.debug(f"Unable to find module: {options}")
             else:
                 auth_result = provider.authenticate_user(user, current_password, options)
                 if auth_result is True:

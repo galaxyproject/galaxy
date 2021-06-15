@@ -88,9 +88,9 @@ def get_installed_repository_by_name_owner(repository_name, owner, return_multip
 
 def get_private_role(user):
     for role in user.all_roles():
-        if role.name == user.email and role.description == 'Private Role for %s' % user.email:
+        if role.name == user.email and role.description == f'Private Role for {user.email}':
             return role
-    raise AssertionError("Private role not found for user '%s'" % user.email)
+    raise AssertionError(f"Private role not found for user '{user.email}'")
 
 
 def get_role(user, role_name):
@@ -133,7 +133,7 @@ def get_repository_reviews(repository_id, reviewer_user_id=None, changeset_revis
 def get_reviews_ordered_by_changeset_revision(repository_id, changelog_tuples, reviewer_user_id=None):
     reviews = get_repository_reviews(repository_id, reviewer_user_id=reviewer_user_id)
     ordered_reviews = []
-    for ctx_rev, changeset_hash in changelog_tuples:
+    for _ctx_rev, changeset_hash in changelog_tuples:
         for review in reviews:
             if str(review.changeset_revision) == str(changeset_hash):
                 ordered_reviews.append(review)
@@ -205,9 +205,9 @@ def ga_refresh(obj):
 
 def get_galaxy_private_role(user):
     for role in user.all_roles():
-        if role.name == user.email and role.description == 'Private Role for %s' % user.email:
+        if role.name == user.email and role.description == f'Private Role for {user.email}':
             return role
-    raise AssertionError("Private role not found for user '%s'" % user.email)
+    raise AssertionError(f"Private role not found for user '{user.email}'")
 
 
 def get_galaxy_user(email):

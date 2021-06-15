@@ -3,13 +3,15 @@ Backup resolvers for when dependencies can not be loaded from the database.
 Mainly suited for testing stage.
 
 Ideally all dependencies will be stored in the database
-    when a tool is added from a Tool Shed.
+when a tool is added from a Tool Shed.
+
 That should remain the preferred way of locating dependencies.
 
 In cases where that is not possible
-    for example during testing this resolver can act as a backup.
+for example during testing this resolver can act as a backup.
+
 This resolver looks not just for manually added dependencies
-    but also ones added from a Tool Shed.
+but also ones added from a Tool Shed.
 
 This tool is still under development so the default behaviour could change.
 It has been tested when placed in the same directory as galaxy_packages.py
@@ -35,7 +37,7 @@ from .galaxy_packages import BaseGalaxyPackageDependencyResolver
 log = logging.getLogger(__name__)
 
 MANUAL = "manual"
-PREFERRED_OWNERS = MANUAL + ",iuc,devteam"
+PREFERRED_OWNERS = f"{MANUAL},iuc,devteam"
 
 
 class UnlinkedToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResolver):
@@ -43,7 +45,7 @@ class UnlinkedToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResol
     resolver_type = "unlinked_tool_shed_packages"
 
     def __init__(self, dependency_manager, **kwds):
-        super(UnlinkedToolShedPackageDependencyResolver, self).__init__(dependency_manager, **kwds)
+        super().__init__(dependency_manager, **kwds)
         # Provide a list of preferred owners whose dependency to use
         self.preferred_owners = kwds.get('preferred_owners', PREFERRED_OWNERS).split(",")
         # Option to ignore owner and just use last modified time
@@ -82,7 +84,7 @@ class UnlinkedToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResol
                 for owner in listdir(path):
                     owner_path = join(path, owner)
                     for package_name in listdir(owner_path):
-                        if package_name.lower().startswith("package_" + name.lower()):
+                        if package_name.lower().startswith(f"package_{name.lower()}"):
                             package_path = join(owner_path, package_name)
                             for revision in listdir(package_path):
                                 revision_path = join(package_path, revision)

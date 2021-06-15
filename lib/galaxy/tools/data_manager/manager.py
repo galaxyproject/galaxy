@@ -2,11 +2,10 @@ import errno
 import json
 import logging
 import os
-from collections import OrderedDict
-
-from six import string_types
+from typing import Dict
 
 from galaxy import util
+from galaxy.structured_app import MinimalManagerApp
 from galaxy.tools.data import TabularToolDataTable
 from galaxy.util.template import fill_template
 
@@ -17,11 +16,14 @@ VALUE_TRANSLATION_FUNCTIONS = dict(abspath=os.path.abspath)
 DEFAULT_VALUE_TRANSLATION_TYPE = 'template'
 
 
-class DataManagers(object):
-    def __init__(self, app, xml_filename=None):
+class DataManagers:
+    data_managers: Dict[str, 'DataManager']
+    managed_data_tables: Dict[str, 'DataManager']
+
+    def __init__(self, app: MinimalManagerApp, xml_filename=None):
         self.app = app
-        self.data_managers = OrderedDict()
-        self.managed_data_tables = OrderedDict()
+        self.data_managers = {}
+        self.managed_data_tables = {}
         self.tool_path = None
         self._reload_count = 0
         self.filename = xml_filename or self.app.config.data_manager_config_file
@@ -32,23 +34,23 @@ class DataManagers(object):
         if self.app.config.shed_data_manager_config_file:
             try:
                 self.load_from_xml(self.app.config.shed_data_manager_config_file, store_tool_path=True)
-            except (OSError, IOError) as exc:
-                if exc.errno != errno.ENOENT or self.app.config.shed_data_manager_config_file_set:
+            except OSError as exc:
+                if exc.errno != errno.ENOENT or self.app.config.is_set('shed_data_manager_config_file'):
                     raise
 
     def load_from_xml(self, xml_filename, store_tool_path=True):
         try:
             tree = util.parse_xml(xml_filename)
-        except (IOError, OSError) as e:
-            if e.errno != errno.ENOENT or self.app.config.data_manager_config_file_set:
+        except OSError as e:
+            if e.errno != errno.ENOENT or self.app.config.is_set('data_manager_config_file'):
                 raise
             return  # default config option and it doesn't exist, which is fine
         except Exception as e:
-            log.error('There was an error parsing your Data Manager config file "%s": %s' % (xml_filename, e))
+            log.error(f'There was an error parsing your Data Manager config file "{xml_filename}": {e}')
             return  # we are not able to load any data managers
         root = tree.getroot()
         if root.tag != 'data_managers':
-            log.error('A data managers configuration must have a "data_managers" tag as the root. "%s" is present' % (root.tag))
+            log.error(f'A data managers configuration must have a "data_managers" tag as the root. "{root.tag}" is present')
             return
         if store_tool_path:
             tool_path = root.get('tool_path', None)
@@ -67,7 +69,7 @@ class DataManagers(object):
     def load_manager_from_elem(self, data_manager_elem, tool_path=None, add_manager=True):
         try:
             data_manager = DataManager(self, data_manager_elem, tool_path=tool_path)
-        except IOError as e:
+        except OSError as e:
             if e.errno == errno.ENOENT:
                 # File does not exist
                 return None
@@ -76,12 +78,12 @@ class DataManagers(object):
             return None
         if add_manager:
             self.add_manager(data_manager)
-        log.debug('Loaded Data Manager: %s' % (data_manager.id))
+        log.debug(f'Loaded Data Manager: {data_manager.id}')
         return data_manager
 
     def add_manager(self, data_manager):
         if data_manager.id in self.data_managers:
-            log.warning("A data manager has been defined twice: %s " % (data_manager.id))
+            log.warning(f"A data manager has been defined twice: {data_manager.id} ")
         self.data_managers[data_manager.id] = data_manager
         for data_table_name in data_manager.data_tables.keys():
             if data_table_name not in self.managed_data_tables:
@@ -112,7 +114,7 @@ class DataManagers(object):
                         del self.managed_data_tables[data_table_name]
 
 
-class DataManager(object):
+class DataManager:
     GUID_TYPE = 'data_manager'
     DEFAULT_VERSION = "0.0.1"
 
@@ -124,7 +126,7 @@ class DataManager(object):
         self.version = self.DEFAULT_VERSION
         self.guid = None
         self.tool = None
-        self.data_tables = OrderedDict()
+        self.data_tables = {}
         self.output_ref_by_data_table = {}
         self.move_by_data_table_column = {}
         self.value_translation_by_data_table_column = {}
@@ -134,7 +136,7 @@ class DataManager(object):
             self.load_from_element(elem, tool_path or self.data_managers.tool_path)
 
     def load_from_element(self, elem, tool_path):
-        assert elem.tag == 'data_manager', 'A data manager configuration must have a "data_manager" tag as the root. "%s" is present' % (elem.tag)
+        assert elem.tag == 'data_manager', f'A data manager configuration must have a "data_manager" tag as the root. "{elem.tag}" is present'
         self.declared_id = elem.get('id')
         self.guid = elem.get('guid')
         path = elem.get('tool_file')
@@ -144,7 +146,7 @@ class DataManager(object):
 
         if path is None:
             tool_elem = elem.find('tool')
-            assert tool_elem is not None, "Error loading tool for data manager. Make sure that a tool_file attribute or a tool tag set has been defined:\n%s" % (util.xml_to_string(elem))
+            assert tool_elem is not None, f"Error loading tool for data manager. Make sure that a tool_file attribute or a tool tag set has been defined:\n{util.xml_to_string(elem)}"
             path = tool_elem.get("file")
             tool_guid = tool_elem.get("guid")
             # need to determine repository info so that dependencies will work correctly
@@ -159,7 +161,7 @@ class DataManager(object):
                 shed_conf = self.data_managers.app.toolbox.get_shed_config_dict_by_filename(shed_conf_file)
                 if shed_conf:
                     tool_path = shed_conf.get("tool_path", tool_path)
-        assert path is not None, "A tool file path could not be determined:\n%s" % (util.xml_to_string(elem))
+        assert path is not None, f"A tool file path could not be determined:\n{util.xml_to_string(elem)}"
         self.load_tool(os.path.join(tool_path, path),
                        guid=tool_guid,
                        data_manager_id=self.id,
@@ -172,7 +174,7 @@ class DataManager(object):
             data_table_name = data_table_elem.get("name")
             assert data_table_name is not None, "A name is required for a data table entry"
             if data_table_name not in self.data_tables:
-                self.data_tables[data_table_name] = OrderedDict()
+                self.data_tables[data_table_name] = {}
             output_elem = data_table_elem.find('output')
             if output_elem is not None:
                 for column_elem in output_elem.findall('column'):
@@ -199,9 +201,9 @@ class DataManager(object):
                                     if value_translation in VALUE_TRANSLATION_FUNCTIONS:
                                         value_translation = VALUE_TRANSLATION_FUNCTIONS[value_translation]
                                     else:
-                                        raise ValueError("Unsupported value translation function: '%s'" % (value_translation))
+                                        raise ValueError(f"Unsupported value translation function: '{value_translation}'")
                                 else:
-                                    assert value_translation_type == DEFAULT_VALUE_TRANSLATION_TYPE, ValueError("Unsupported value translation type: '%s'" % (value_translation_type))
+                                    assert value_translation_type == DEFAULT_VALUE_TRANSLATION_TYPE, ValueError(f"Unsupported value translation type: '{value_translation_type}'")
                                 self.value_translation_by_data_table_column[data_table_name][data_table_coumn_name].append(value_translation)
 
                     for move_elem in column_elem.findall('move'):
@@ -255,7 +257,7 @@ class DataManager(object):
             try:
                 output_dict = json.loads(open(output_dataset.file_name).read())
             except Exception as e:
-                log.warning('Error reading DataManagerTool json for "%s": %s' % (output_name, e))
+                log.warning(f'Error reading DataManagerTool json for "{output_name}": {e}')
                 continue
             data_manager_dicts[output_name] = output_dict
             for key, value in output_dict.items():
@@ -268,7 +270,7 @@ class DataManager(object):
         for data_table_name in self.data_tables.keys():
             data_table_values = data_tables_dict.pop(data_table_name, None)
             if not data_table_values:
-                log.warning('No values for data table "%s" were returned by the data manager "%s".' % (data_table_name, self.id))
+                log.warning(f'No values for data table "{data_table_name}" were returned by the data manager "{self.id}".')
                 continue  # next data table
             data_table_remove_values = None
             if isinstance(data_table_values, dict):
@@ -280,10 +282,10 @@ class DataManager(object):
 
             data_table = self.data_managers.app.tool_data_tables.get(data_table_name, None)
             if data_table is None:
-                log.error('The data manager "%s" returned an unknown data table "%s" with new entries "%s". These entries will not be created. Please confirm that an entry for "%s" exists in your "%s" file.' % (self.id, data_table_name, data_table_values, data_table_name, 'tool_data_table_conf.xml'))
+                log.error(f"The data manager \"{self.id}\" returned an unknown data table \"{data_table_name}\" with new entries \"{data_table_values}\". These entries will not be created. Please confirm that an entry for \"{data_table_name}\" exists in your \"tool_data_table_conf.xml\" file.")
                 continue  # next table name
             if not isinstance(data_table, SUPPORTED_DATA_TABLE_TYPES):
-                log.error('The data manager "%s" returned an unsupported data table "%s" with type "%s" with new entries "%s". These entries will not be created. Please confirm that the data table is of a supported type (%s).' % (self.id, data_table_name, type(data_table), data_table_values, SUPPORTED_DATA_TABLE_TYPES))
+                log.error(f'The data manager "{self.id}" returned an unsupported data table "{data_table_name}" with type "{type(data_table)}" with new entries "{data_table_values}". These entries will not be created. Please confirm that the data table is of a supported type ({SUPPORTED_DATA_TABLE_TYPES}).')
                 continue  # next table name
             output_ref_values = {}
             if data_table_name in self.output_ref_by_data_table:
@@ -298,7 +300,7 @@ class DataManager(object):
                 data_table_remove_values = [data_table_remove_values] if data_table_remove_values else []
             for data_table_row in data_table_values:
                 data_table_value = dict(**data_table_row)  # keep original values here
-                for name, value in data_table_row.items():  # FIXME: need to loop through here based upon order listed in data_manager config
+                for name in data_table_row.keys():  # FIXME: need to loop through here based upon order listed in data_manager config
                     if name in output_ref_values:
                         self.process_move(data_table_name, name, output_ref_values[name].extra_files_path, **data_table_value)
                         data_table_value[name] = self.process_value_translation(data_table_name, name, **data_table_value)
@@ -340,7 +342,7 @@ class DataManager(object):
             for data_table_name, data_table_values in data_tables_dict.items():
                 # tool returned extra data table entries, but data table was not declared in data manager
                 # do not add these values, but do provide messages
-                log.warning('The data manager "%s" returned an undeclared data table "%s" with new entries "%s". These entries will not be created. Please confirm that an entry for "%s" exists in your "%s" file.' % (self.id, data_table_name, data_table_values, data_table_name, self.data_managers.filename))
+                log.warning(f'The data manager "{self.id}" returned an undeclared data table "{data_table_name}" with new entries "{data_table_values}". These entries will not be created. Please confirm that an entry for "{data_table_name}" exists in your "{self.data_managers.filename}" file.')
 
     def process_move(self, data_table_name, column_name, source_base_path, relative_symlinks=False, **kwd):
         if data_table_name in self.move_by_data_table_column and column_name in self.move_by_data_table_column[data_table_name]:
@@ -381,7 +383,7 @@ class DataManager(object):
         value = kwd.get(column_name)
         if data_table_name in self.value_translation_by_data_table_column and column_name in self.value_translation_by_data_table_column[data_table_name]:
             for value_translation in self.value_translation_by_data_table_column[data_table_name][column_name]:
-                if isinstance(value_translation, string_types):
+                if isinstance(value_translation, str):
                     value = fill_template(value_translation, GALAXY_DATA_MANAGER_DATA_PATH=self.data_managers.app.config.galaxy_data_manager_data_path, **kwd).strip()
                 else:
                     value = value_translation(value)

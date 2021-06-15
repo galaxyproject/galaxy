@@ -41,7 +41,7 @@ class ObjectStoreJobsIntegrationTestCase(BaseObjectStoreIntegrationTestCase):
         cls._configure_object_store(DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE, config)
 
     def setUp(self):
-        super(ObjectStoreJobsIntegrationTestCase, self).setUp()
+        super().setUp()
         with self.dataset_populator.test_history() as history_id:
             hda1 = self.dataset_populator.new_dataset(history_id, content=TEST_INPUT_FILES_CONTENT)
             create_10_inputs = {

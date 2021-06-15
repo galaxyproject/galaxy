@@ -19,7 +19,7 @@ from galaxy.web import url_for
 log = logging.getLogger(__name__)
 
 
-class ServesTemplatesPluginMixin(object):
+class ServesTemplatesPluginMixin:
     """
     An object that renders (mako) template files from the server.
     """
@@ -74,7 +74,7 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
         self.base_url = '/'.join((base_url, self.name)) if base_url else self.name
         self.static_path = self._get_static_path(self.path)
         if self.static_path and os.path.exists(os.path.join(self.static_path, 'logo.png')):
-            self.config['logo'] = self.static_path + '/logo.png'
+            self.config['logo'] = f"{self.static_path}/logo.png"
         template_cache_dir = context.get('template_cache_dir', None)
         additional_template_paths = context.get('additional_template_paths', [])
         self._set_up_template_plugin(template_cache_dir, additional_template_paths=additional_template_paths)
@@ -108,18 +108,18 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
 
     def to_dict(self):
         return {
-            'name'          : self.name,
-            'html'          : self.config.get('name'),
-            'description'   : self.config.get('description'),
-            'logo'          : self.config.get('logo'),
-            'title'         : self.config.get('title'),
-            'target'        : self.config.get('render_target', 'galaxy_main'),
-            'embeddable'    : self.config.get('embeddable', False),
-            'entry_point'   : self.config.get('entry_point'),
-            'settings'      : self.config.get('settings'),
-            'groups'        : self.config.get('groups'),
-            'specs'         : self.config.get('specs'),
-            'href'          : self._get_url()
+            'name': self.name,
+            'html': self.config.get('name'),
+            'description': self.config.get('description'),
+            'logo': self.config.get('logo'),
+            'title': self.config.get('title'),
+            'target': self.config.get('render_target', 'galaxy_main'),
+            'embeddable': self.config.get('embeddable'),
+            'entry_point': self.config.get('entry_point'),
+            'settings': self.config.get('settings'),
+            'groups': self.config.get('groups'),
+            'specs': self.config.get('specs'),
+            'href': self._get_url()
         }
 
     def _get_url(self):
@@ -132,7 +132,7 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
             match = path.split('/config/')[-1]
             return os.path.join('./static', match, 'static')
         else:
-            log.debug('Visualization has no static path: %s.' % path)
+            log.debug(f'Visualization has no static path: {path}.')
 
     def _get_saved_visualization_config(self, visualization, revision=None, **kwargs):
         """
@@ -234,7 +234,7 @@ class InteractiveEnvironmentPlugin(VisualizationPlugin):
     def __init__(self, app, path, name, config, context=None, **kwargs):
         # TODO: this is a hack until we can get int envs seperated from the vis reg and into their own framework
         context['base_url'] = 'interactive_environments'
-        super(InteractiveEnvironmentPlugin, self).__init__(app, path, name, config, context=context, **kwargs)
+        super().__init__(app, path, name, config, context=context, **kwargs)
 
     def _error_template(self, trans):
         return trans.fill_template('message.mako',
@@ -305,10 +305,10 @@ class ScriptVisualizationPlugin(VisualizationPlugin):
         template.
         """
         render_vars['embedded'] = self._parse_embedded(embedded)
-        render_vars['static_url'] = url_for('/%s/' % self.static_path)
+        render_vars['static_url'] = url_for(f'/{self.static_path}/')
         render_vars.update(vars={})
         render_vars.update({
-            "script_attributes" : self.config['entry_point']['attr']
+            "script_attributes": self.config['entry_point']['attr']
         })
         template_filename = os.path.join(self.MAKO_TEMPLATE)
         return trans.fill_template(template_filename, template_lookup=self.template_lookup, **render_vars)
@@ -335,5 +335,5 @@ class StaticFileVisualizationPlugin(VisualizationPlugin):
 
         static_file_path = self.config['entry_point']['file']
         static_file_path = os.path.join(self.path, static_file_path)
-        with open(static_file_path, 'r') as outfile:
+        with open(static_file_path) as outfile:
             return outfile.read()

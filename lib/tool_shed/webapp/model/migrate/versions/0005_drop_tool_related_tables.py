@@ -3,7 +3,6 @@ Drops the tool, tool_category_association, event, tool_event_association, tool_r
 tool_tag_association and tool_annotation_association tables since they are no longer used in the
 next-gen tool shed.
 """
-from __future__ import print_function
 
 import datetime
 import logging

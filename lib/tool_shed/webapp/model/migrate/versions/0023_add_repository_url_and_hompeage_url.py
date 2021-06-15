@@ -2,7 +2,6 @@
 Migration script to add the remote_repository_url and homepage_url
 columns to the repository table.
 """
-from __future__ import print_function
 
 import logging
 import sys

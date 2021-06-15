@@ -4,8 +4,6 @@ import threading
 import time
 import traceback
 
-from six import iteritems
-
 
 def get_current_thread_object_dict():
     """
@@ -55,7 +53,7 @@ class Heartbeat(threading.Thread):
             pid=self.pid
         )
         fname, ext = os.path.splitext(self.fname)
-        self.fname_nonsleeping = fname + '.nonsleeping' + ext
+        self.fname_nonsleeping = f"{fname}.nonsleeping{ext}"
         wait = self.period
         if self.period <= 0:
             wait = 60
@@ -82,15 +80,15 @@ class Heartbeat(threading.Thread):
         self.open_logs()
         try:
             # Print separator with timestamp
-            self.file.write("Traceback dump for all threads at %s:\n\n" % time.asctime())
+            self.file.write(f"Traceback dump for all threads at {time.asctime()}:\n\n")
             # Print the thread states
             threads = get_current_thread_object_dict()
-            for thread_id, frame in iteritems(sys._current_frames()):
+            for thread_id, frame in sys._current_frames().items():
                 if thread_id in threads:
                     object = repr(threads[thread_id])
                 else:
                     object = "<No Thread object>"
-                self.file.write("Thread %s, %s:\n\n" % (thread_id, object))
+                self.file.write(f"Thread {thread_id}, {object}:\n\n")
                 traceback.print_stack(frame, file=self.file)
                 self.file.write("\n")
             self.file.write("End dump\n\n")
@@ -159,10 +157,10 @@ class Heartbeat(threading.Thread):
         return stack_frames[-1]
 
     def print_nonsleeping(self, threads_object_dict):
-        self.file_nonsleeping.write("Non-Sleeping threads at %s:\n\n" % time.asctime())
+        self.file_nonsleeping.write(f"Non-Sleeping threads at {time.asctime()}:\n\n")
         all_threads_are_sleeping = True
         threads = get_current_thread_object_dict()
-        for thread_id, frame in iteritems(sys._current_frames()):
+        for thread_id, frame in sys._current_frames().items():
             if thread_id in threads:
                 object = repr(threads[thread_id])
             else:

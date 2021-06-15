@@ -2,7 +2,6 @@ import logging
 import sqlite3
 
 
-from six import string_types
 from sqlalchemy import or_
 
 
@@ -18,7 +17,7 @@ log = logging.getLogger(__name__)
 DATABASE_TABLE_NAME = 'gxitproxy'
 
 
-class InteractiveToolSqlite(object):
+class InteractiveToolSqlite:
 
     def __init__(self, sqlite_filename, encode_id):
         self.sqlite_filename = sqlite_filename
@@ -29,9 +28,9 @@ class InteractiveToolSqlite(object):
             conn = sqlite3.connect(self.sqlite_filename)
             try:
                 c = conn.cursor()
-                select = '''SELECT token, host, port, info
-                            FROM %s
-                            WHERE key=? and key_type=?''' % (DATABASE_TABLE_NAME)
+                select = f'''SELECT token, host, port, info
+                            FROM {DATABASE_TABLE_NAME}
+                            WHERE key=? and key_type=?'''
                 c.execute(select, (key, key_type,))
                 try:
                     token, host, port, info = c.fetchone()
@@ -73,7 +72,7 @@ class InteractiveToolSqlite(object):
                                   )''' % (DATABASE_TABLE_NAME))
                 except Exception:
                     pass
-                delete = '''DELETE FROM %s WHERE key=? and key_type=?''' % (DATABASE_TABLE_NAME)
+                delete = f'''DELETE FROM {DATABASE_TABLE_NAME} WHERE key=? and key_type=?'''
                 c.execute(delete, (key, key_type,))
                 insert = '''INSERT INTO %s
                             (key, key_type, token, host, port, info)
@@ -96,12 +95,12 @@ class InteractiveToolSqlite(object):
         with external resources. Remove entries that match all provided key=values
         """
         assert kwd, ValueError("You must provide some values to key upon")
-        delete = 'DELETE FROM %s WHERE' % (DATABASE_TABLE_NAME)
+        delete = f'DELETE FROM {DATABASE_TABLE_NAME} WHERE'
         value_list = []
         for i, (key, value) in enumerate(kwd.items()):
             if i != 0:
                 delete += ' and'
-            delete += ' %s=?' % (key)
+            delete += f' {key}=?'
             value_list.append(value)
         with FileLock(self.sqlite_filename):
             conn = sqlite3.connect(self.sqlite_filename)
@@ -128,7 +127,7 @@ class InteractiveToolSqlite(object):
         return self.remove(key=self.encode_id(entry_point.id), key_type=entry_point.__class__.__name__.lower())
 
 
-class InteractiveToolManager(object):
+class InteractiveToolManager:
     """
     Manager for dealing with InteractiveTools
     """
@@ -144,7 +143,7 @@ class InteractiveToolManager(object):
     def create_entry_points(self, job, tool, entry_points=None, flush=True):
         entry_points = entry_points or tool.ports
         for entry in entry_points:
-            ep = self.model.InteractiveToolEntryPoint(job=job, tool_port=entry['port'], entry_url=entry['url'], name=entry['name'])
+            ep = self.model.InteractiveToolEntryPoint(job=job, tool_port=entry['port'], entry_url=entry['url'], name=entry['name'], requires_domain=entry['requires_domain'])
             self.sa_session.add(ep)
         if flush:
             self.sa_session.flush()
@@ -194,7 +193,7 @@ class InteractiveToolManager(object):
 
         def build_and_apply_filters(query, objects, filter_func):
             if objects is not None:
-                if isinstance(objects, string_types):
+                if isinstance(objects, str):
                     query = query.filter(filter_func(objects))
                 elif isinstance(objects, list):
                     t = []
@@ -229,20 +228,15 @@ class InteractiveToolManager(object):
         return True
 
     def stop(self, trans, entry_point):
-        try:
-            self.remove_entry_point(entry_point)
-            job = entry_point.job
-            if not job.finished:
-                log.debug('Stopping Job: %s for InteractiveToolEntryPoint: %s', job, entry_point)
-                job.mark_deleted(trans.app.config.track_jobs_in_database)
-                # This self.job_manager.stop(job) does nothing without changing job.state, manually or e.g. with .mark_deleted()
-                self.job_manager.stop(job)
-                trans.sa_session.add(job)
-                trans.sa_session.flush()
-        except Exception as e:
-            log.debug('Unable to stop job for InteractiveToolEntryPoint (%s): %s', entry_point, e)
-            return False
-        return True
+        self.remove_entry_point(entry_point)
+        job = entry_point.job
+        if not job.finished:
+            log.debug('Stopping Job: %s for InteractiveToolEntryPoint: %s', job, entry_point)
+            job.mark_stopped(trans.app.config.track_jobs_in_database)
+            # This self.job_manager.stop(job) does nothing without changing job.state, manually or e.g. with .mark_deleted()
+            self.job_manager.stop(job)
+            trans.sa_session.add(job)
+            trans.sa_session.flush()
 
     def remove_entry_points(self, entry_points):
         if entry_points:
@@ -264,12 +258,38 @@ class InteractiveToolManager(object):
             entry_point_encoded_id = trans.security.encode_id(entry_point.id)
             entry_point_class = entry_point.__class__.__name__.lower()
             entry_point_prefix = self.app.config.interactivetools_prefix
-            interactivetools_proxy_host = self.app.config.interactivetools_proxy_host or request_host
-            rval = '%s//%s-%s.%s.%s.%s/' % (protocol, entry_point_encoded_id,
-                    entry_point.token, entry_point_class, entry_point_prefix, interactivetools_proxy_host)
+            if entry_point.requires_domain:
+                rval = f'{protocol}//{self.get_entry_point_subdomain(trans, entry_point)}.{request_host}/'
+            else:
+                rval = self.app.url_for(f'/{entry_point_prefix}/access/{entry_point_class}/{entry_point_encoded_id}/{entry_point.token}/')
             if entry_point.entry_url:
-                rval = '%s/%s' % (rval.rstrip('/'), entry_point.entry_url.lstrip('/'))
+                rval = f"{rval.rstrip('/')}/{entry_point.entry_url.lstrip('/')}"
             return rval
+
+    def get_entry_point_subdomain(self, trans, entry_point):
+        entry_point_encoded_id = trans.security.encode_id(entry_point.id)
+        entry_point_class = entry_point.__class__.__name__.lower()
+        entry_point_prefix = self.app.config.interactivetools_prefix
+        entry_point_token = entry_point.token
+        if self.app.config.interactivetools_shorten_url:
+            return f'{entry_point_encoded_id}-{entry_point_token[:10]}.{entry_point_prefix}'
+        return f'{entry_point_encoded_id}-{entry_point_token}.{entry_point_class}.{entry_point_prefix}'
+
+    def get_entry_point_path(self, trans, entry_point):
+        entry_point_encoded_id = trans.security.encode_id(entry_point.id)
+        entry_point_class = entry_point.__class__.__name__.lower()
+        entry_point_prefix = self.app.config.interactivetools_prefix
+        rval = "/"
+        if not entry_point.requires_domain:
+            if self.app.config.interactivetools_shorten_url:
+                rval = self.app.url_for(f'/{entry_point_prefix}/{entry_point_encoded_id}/{entry_point.token[:10]}/')
+            else:
+                rval = self.app.url_for(f'/{entry_point_prefix}/access/{entry_point_class}/{entry_point_encoded_id}/{entry_point.token}/')
+        if entry_point.entry_url:
+            rval = f"{rval.rstrip('/')}/{entry_point.entry_url.lstrip('/')}"
+        if rval[0] != "/":
+            rval = f'/{rval}'
+        return rval
 
     def access_entry_point_target(self, trans, entry_point_id):
         entry_point = trans.sa_session.query(model.InteractiveToolEntryPoint).get(entry_point_id)

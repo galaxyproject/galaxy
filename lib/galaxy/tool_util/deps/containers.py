@@ -38,7 +38,7 @@ ALL_CONTAINER_TYPES = [DOCKER_CONTAINER_TYPE, SINGULARITY_CONTAINER_TYPE]
 ResolvedContainerDescription = collections.namedtuple('ResolvedContainerDescription', ['container_resolver', 'container_description'])
 
 
-class ContainerFinder(object):
+class ContainerFinder:
 
     def __init__(self, app_info, mulled_resolution_cache=None):
         self.app_info = app_info
@@ -124,44 +124,41 @@ class ContainerFinder(object):
         return NULL_CONTAINER
 
     def resolution_cache(self):
-        cache = ResolutionCache()
-        if self.container_registry.mulled_resolution_cache is not None:
-            cache.mulled_resolution_cache = self.container_registry.mulled_resolution_cache
-        return cache
+        return self.container_registry.get_resolution_cache()
 
     def __overridden_container_id(self, container_type, destination_info):
         if not self.__container_type_enabled(container_type, destination_info):
             return None
-        if "%s_container_id_override" % container_type in destination_info:
-            return destination_info.get("%s_container_id_override" % container_type)
-        if "%s_image_override" % container_type in destination_info:
+        if f"{container_type}_container_id_override" in destination_info:
+            return destination_info.get(f"{container_type}_container_id_override")
+        if f"{container_type}_image_override" in destination_info:
             return self.__build_container_id_from_parts(container_type, destination_info, mode="override")
 
     def __build_container_id_from_parts(self, container_type, destination_info, mode):
         repo = ""
         owner = ""
-        repo_key = "%s_repo_%s" % (container_type, mode)
-        owner_key = "%s_owner_%s" % (container_type, mode)
+        repo_key = f"{container_type}_repo_{mode}"
+        owner_key = f"{container_type}_owner_{mode}"
         if repo_key in destination_info:
-            repo = destination_info[repo_key] + "/"
+            repo = f"{destination_info[repo_key]}/"
         if owner_key in destination_info:
-            owner = destination_info[owner_key] + "/"
-        cont_id = repo + owner + destination_info["%s_image_%s" % (container_type, mode)]
-        tag_key = "%s_tag_%s" % (container_type, mode)
+            owner = f"{destination_info[owner_key]}/"
+        cont_id = repo + owner + destination_info[f"{container_type}_image_{mode}"]
+        tag_key = f"{container_type}_tag_{mode}"
         if tag_key in destination_info:
-            cont_id += ":" + destination_info[tag_key]
+            cont_id += f":{destination_info[tag_key]}"
         return cont_id
 
     def __default_container_id(self, container_type, destination_info):
         if not self.__container_type_enabled(container_type, destination_info):
             return None
-        key = "%s_default_container_id" % container_type
+        key = f"{container_type}_default_container_id"
         # Also allow docker_image...
         if key not in destination_info:
-            key = "%s_image" % container_type
+            key = f"{container_type}_image"
         if key in destination_info:
             return destination_info.get(key)
-        elif "%s_image_default" % container_type in destination_info:
+        elif f"{container_type}_image_default" in destination_info:
             return self.__build_container_id_from_parts(container_type, destination_info, mode="default")
         return None
 
@@ -177,16 +174,16 @@ class ContainerFinder(object):
         return CONTAINER_CLASSES[container_type](container_id, self.app_info, tool_info, destination_info, job_info, container_description)
 
     def __container_type_enabled(self, container_type, destination_info):
-        return asbool(destination_info.get("%s_enabled" % container_type, False))
+        return asbool(destination_info.get(f"{container_type}_enabled", False))
 
 
-class NullContainerFinder(object):
+class NullContainerFinder:
 
     def find_container(self, tool_info, destination_info, job_info):
         return []
 
 
-class ContainerRegistry(object):
+class ContainerRegistry:
     """Loop through enabled ContainerResolver plugins and find first match."""
 
     def __init__(self, app_info, mulled_resolution_cache=None):
@@ -225,14 +222,26 @@ class ContainerRegistry(object):
                 CachedMulledSingularityContainerResolver(self.app_info, namespace="local"),
                 MulledDockerContainerResolver(self.app_info, namespace="biocontainers"),
                 MulledSingularityContainerResolver(self.app_info, namespace="biocontainers"),
-                BuildMulledDockerContainerResolver(self.app_info),
-                BuildMulledSingularityContainerResolver(self.app_info),
             ])
+            # BuildMulledDockerContainerResolver and BuildMulledSingularityContainerResolver both need the docker daemon to build images.
+            # If docker is not available, we don't load them.
+            build_mulled_docker_container_resolver = BuildMulledDockerContainerResolver(self.app_info)
+            if build_mulled_docker_container_resolver.cli_available:
+                default_resolvers.extend([
+                    build_mulled_docker_container_resolver,
+                    BuildMulledSingularityContainerResolver(self.app_info),
+                ])
         return default_resolvers
 
     def __resolvers_dict(self):
         import galaxy.tool_util.deps.container_resolvers
         return plugin_config.plugins_dict(galaxy.tool_util.deps.container_resolvers, 'resolver_type')
+
+    def get_resolution_cache(self):
+        cache = ResolutionCache()
+        if self.mulled_resolution_cache is not None:
+            cache.mulled_resolution_cache = self.mulled_resolution_cache
+        return cache
 
     def find_best_container_description(self, enabled_container_types, tool_info, **kwds):
         """Yield best container description of supplied types matching tool info."""
@@ -243,7 +252,8 @@ class ContainerRegistry(object):
             return None
         return None if resolved_container_description is None else resolved_container_description.container_description
 
-    def resolve(self, enabled_container_types, tool_info, index=None, resolver_type=None, install=True, resolution_cache=None):
+    def resolve(self, enabled_container_types, tool_info, index=None, resolver_type=None, install=True, resolution_cache=None, session=None):
+        resolution_cache = resolution_cache or self.get_resolution_cache()
         for i, container_resolver in enumerate(self.container_resolvers):
             if index is not None and i != index:
                 continue
@@ -258,8 +268,8 @@ class ContainerRegistry(object):
             if not install and container_resolver.builds_on_resolution:
                 continue
 
-            container_description = container_resolver.resolve(enabled_container_types, tool_info, resolution_cache=resolution_cache)
-            log.info("Checking with container resolver [%s] found description [%s]" % (container_resolver, container_description))
+            container_description = container_resolver.resolve(enabled_container_types, tool_info, install=install, resolution_cache=resolution_cache, session=session)
+            log.info(f"Checking with container resolver [{container_resolver}] found description [{container_description}]")
             if container_description:
                 assert container_description.type in enabled_container_types
                 return ResolvedContainerDescription(container_resolver, container_description)

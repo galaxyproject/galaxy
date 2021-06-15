@@ -1,6 +1,5 @@
 import logging
 import uuid
-from collections import OrderedDict
 
 from galaxy import model
 from galaxy.util import ExecutionTimer
@@ -106,15 +105,16 @@ def __invoke(trans, workflow, workflow_run_config, workflow_invocation=None, pop
     return outputs, invoker.workflow_invocation
 
 
-def queue_invoke(trans, workflow, workflow_run_config, request_params={}, populate_state=True):
+def queue_invoke(trans, workflow, workflow_run_config, request_params=None, populate_state=True, flush=True):
+    request_params = request_params or {}
     if populate_state:
         modules.populate_module_and_state(trans, workflow, workflow_run_config.param_map, allow_tool_state_corrections=workflow_run_config.allow_tool_state_corrections)
     workflow_invocation = workflow_run_config_to_request(trans, workflow_run_config, workflow)
     workflow_invocation.workflow = workflow
-    return trans.app.workflow_scheduling_manager.queue(workflow_invocation, request_params)
+    return trans.app.workflow_scheduling_manager.queue(workflow_invocation, request_params, flush=flush)
 
 
-class WorkflowInvoker(object):
+class WorkflowInvoker:
 
     def __init__(self, trans, workflow, workflow_run_config, workflow_invocation=None, progress=None):
         self.trans = trans
@@ -158,7 +158,7 @@ class WorkflowInvoker(object):
         config = self.trans.app.config
         maximum_duration = getattr(config, "maximum_workflow_invocation_duration", -1)
         if maximum_duration > 0 and workflow_invocation.seconds_since_created > maximum_duration:
-            log.debug("Workflow invocation [%s] exceeded maximum number of seconds allowed for scheduling [%s], failing." % (workflow_invocation.id, maximum_duration))
+            log.debug(f"Workflow invocation [{workflow_invocation.id}] exceeded maximum number of seconds allowed for scheduling [{maximum_duration}], failing.")
             workflow_invocation.state = model.WorkflowInvocation.states.FAILED
             # All jobs ran successfully, so we can save now
             self.trans.sa_session.add(workflow_invocation)
@@ -173,7 +173,12 @@ class WorkflowInvoker(object):
 
         remaining_steps = self.progress.remaining_steps()
         delayed_steps = False
+        max_jobs_per_iteration_reached = False
         for (step, workflow_invocation_step) in remaining_steps:
+            max_jobs_to_schedule = self.progress.maximum_jobs_to_schedule_or_none
+            if max_jobs_to_schedule is not None and max_jobs_to_schedule <= 0:
+                max_jobs_per_iteration_reached = True
+                break
             step_delayed = False
             step_timer = ExecutionTimer()
             try:
@@ -206,9 +211,9 @@ class WorkflowInvoker(object):
                 raise
 
             if not step_delayed:
-                log.debug("Workflow step %s of invocation %s invoked %s" % (step.id, workflow_invocation.id, step_timer))
+                log.debug(f"Workflow step {step.id} of invocation {workflow_invocation.id} invoked {step_timer}")
 
-        if delayed_steps:
+        if delayed_steps or max_jobs_per_iteration_reached:
             state = model.WorkflowInvocation.states.READY
         else:
             state = model.WorkflowInvocation.states.SCHEDULED
@@ -236,11 +241,11 @@ class WorkflowInvoker(object):
 
         # No steps created yet - have to delay evaluation.
         if not step_invocation:
-            delayed_why = "depends on step [%s] but that step has not been invoked yet" % output_id
+            delayed_why = f"depends on step [{output_id}] but that step has not been invoked yet"
             raise modules.DelayedWorkflowEvaluation(why=delayed_why)
 
         if step_invocation.state != 'scheduled':
-            delayed_why = "depends on step [%s] job has not finished scheduling yet" % output_id
+            delayed_why = f"depends on step [{output_id}] job has not finished scheduling yet"
             raise modules.DelayedWorkflowEvaluation(delayed_why)
 
         for job_assoc in step_invocation.jobs:
@@ -248,7 +253,7 @@ class WorkflowInvoker(object):
             if job:
                 # At least one job in incomplete.
                 if not job.finished:
-                    delayed_why = "depends on step [%s] but one or more jobs created from that step have not finished yet" % output_id
+                    delayed_why = f"depends on step [{output_id}] but one or more jobs created from that step have not finished yet"
                     raise modules.DelayedWorkflowEvaluation(why=delayed_why)
 
                 if job.state != job.states.OK:
@@ -270,10 +275,10 @@ class WorkflowInvoker(object):
 STEP_OUTPUT_DELAYED = object()
 
 
-class WorkflowProgress(object):
+class WorkflowProgress:
 
     def __init__(self, workflow_invocation, inputs_by_step_id, module_injector, param_map, jobs_per_scheduling_iteration=-1):
-        self.outputs = OrderedDict()
+        self.outputs = {}
         self.module_injector = module_injector
         self.workflow_invocation = workflow_invocation
         self.inputs_by_step_id = inputs_by_step_id
@@ -346,32 +351,26 @@ class WorkflowProgress(object):
             raise Exception(message)
         step_outputs = self.outputs[output_step_id]
         if step_outputs is STEP_OUTPUT_DELAYED:
-            delayed_why = "dependent step [%s] delayed, so this step must be delayed" % output_step_id
+            delayed_why = f"dependent step [{output_step_id}] delayed, so this step must be delayed"
             raise modules.DelayedWorkflowEvaluation(why=delayed_why)
         output_name = connection.output_name
         try:
             replacement = step_outputs[output_name]
         except KeyError:
-            replacement = self.inputs_by_step_id.get(output_step_id)
-            if connection.output_step.type == 'parameter_input' and output_step_id is not None:
-                # FIXME: parameter_input step outputs should be properly recorded as step outputs, but for now we can
-                # short-circuit and just pick the input value
-                pass
-            else:
-                # Must resolve.
-                template = "Workflow evaluation problem - failed to find output_name %s in step_outputs %s"
-                message = template % (output_name, step_outputs)
-                raise Exception(message)
+            # Must resolve.
+            template = "Workflow evaluation problem - failed to find output_name %s in step_outputs %s"
+            message = template % (output_name, step_outputs)
+            raise Exception(message)
         if isinstance(replacement, model.HistoryDatasetCollectionAssociation):
             if not replacement.collection.populated:
-                if not replacement.collection.waiting_for_elements:
+                if not replacement.waiting_for_elements:
                     # If we are not waiting for elements, there was some
                     # problem creating the collection. Collection will never
                     # be populated.
                     # TODO: consider distinguish between cancelled and failed?
                     raise modules.CancelWorkflowEvaluation()
 
-                delayed_why = "dependent collection [%s] not yet populated with datasets" % replacement.id
+                delayed_why = f"dependent collection [{replacement.id}] not yet populated with datasets"
                 raise modules.DelayedWorkflowEvaluation(why=delayed_why)
 
         data_inputs = (model.HistoryDatasetAssociation, model.HistoryDatasetCollectionAssociation, model.DatasetCollection)
@@ -400,7 +399,7 @@ class WorkflowProgress(object):
         output_name = workflow_output.output_name
         step_outputs = self.outputs[step.id]
         if step_outputs is STEP_OUTPUT_DELAYED:
-            delayed_why = "depends on workflow output [%s] but that output has not been created yet" % output_name
+            delayed_why = f"depends on workflow output [{output_name}] but that output has not been created yet"
             raise modules.DelayedWorkflowEvaluation(why=delayed_why)
         else:
             return step_outputs[output_name]
@@ -428,21 +427,25 @@ class WorkflowProgress(object):
 
     def set_step_outputs(self, invocation_step, outputs, already_persisted=False):
         step = invocation_step.workflow_step
+        if invocation_step.output_value:
+            outputs[invocation_step.output_value.workflow_output.output_name] = invocation_step.output_value.value
         self.outputs[step.id] = outputs
         if not already_persisted:
+            workflow_outputs_by_name = {wo.output_name: wo for wo in step.workflow_outputs}
             for output_name, output_object in outputs.items():
                 if hasattr(output_object, "history_content_type"):
                     invocation_step.add_output(output_name, output_object)
                 else:
-                    # This is a problem, this non-data, non-collection output
-                    # won't be recovered on a subsequent workflow scheduling
-                    # iteration. This seems to have been a pre-existing problem
-                    # prior to #4584 though.
-                    pass
+                    # Add this non-data, non workflow-output output to the workflow outputs.
+                    # This is required for recovering the output in the next scheduling iteration,
+                    # and should be replaced with a WorkflowInvocationStepOutputValue ASAP.
+                    if not workflow_outputs_by_name.get(output_name) and not output_object == modules.NO_REPLACEMENT:
+                        workflow_output = model.WorkflowOutput(step, output_name=output_name)
+                        step.workflow_outputs.append(workflow_output)
             for workflow_output in step.workflow_outputs:
                 output_name = workflow_output.output_name
                 if output_name not in outputs:
-                    message = "Failed to find expected workflow output [%s] in step outputs [%s]" % (output_name, outputs)
+                    message = f"Failed to find expected workflow output [{output_name}] in step outputs [{outputs}]"
                     # raise KeyError(message)
                     # Pre-18.01 we would have never even detected this output wasn't configured
                     # and even in 18.01 we don't have a way to tell the user something bad is
@@ -463,7 +466,7 @@ class WorkflowProgress(object):
 
     def mark_step_outputs_delayed(self, step, why=None):
         if why:
-            message = "Marking step %s outputs of invocation %s delayed (%s)" % (step.id, self.workflow_invocation.id, why)
+            message = f"Marking step {step.id} outputs of invocation {self.workflow_invocation.id} delayed ({why})"
             log.debug(message)
         self.outputs[step.id] = STEP_OUTPUT_DELAYED
 
@@ -471,7 +474,7 @@ class WorkflowProgress(object):
         workflow_invocation = self.workflow_invocation
         subworkflow_invocation = workflow_invocation.get_subworkflow_invocation_for_step(step)
         if subworkflow_invocation is None:
-            raise Exception("Failed to find persisted workflow invocation for step [%s]" % step.id)
+            raise Exception(f"Failed to find persisted workflow invocation for step [{step.id}]")
         return subworkflow_invocation
 
     def subworkflow_invoker(self, trans, step, use_cached_job=False):

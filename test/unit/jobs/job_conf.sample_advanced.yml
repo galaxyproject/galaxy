@@ -231,8 +231,8 @@ runners:
     username: username
     # Password to access Mesos cluster.
     password: password
-    # True to communicate with Chronos over HTTPS; false otherwise
-    insecure: true
+    # False to communicate with Chronos over HTTPS; true otherwise
+    insecure: false
 
   # Pulsar runners (see more at https://pulsar.readthedocs.io/)
   pulsar_rest:
@@ -294,6 +294,17 @@ runners:
     galaxy_url: http://docker.for.mac.localhost:8080
     amqp_url: amqp://guest:guest@localhost:5672//
 
+    # Limits can be applied the same way as in the standard KubernetesJobRunner,
+    # but these are applied uniformly to each container in the pod:
+    #requests_cpu: 500m
+    #requests_memory: 500Mi
+    #limits_cpu: 2
+    #limits_memory: 2Gi
+
+    # They can also be applied separately for the pulsar and tool containers:
+    #pulsar_limits_cpu: 1
+    #tool_limits_cpu: 4
+
   pulsar_legacy:
     # Pulsar job runner with default parameters matching those
     # of old LWR job runner. If your Pulsar server is running on a
@@ -327,7 +338,44 @@ runners:
     #app: {}
     #pulsar_config: path/to/pulsar/app.yml
 
+# Job handler configuration - for a full discussion of job handlers, see the documentation at:
+#     https://docs.galaxyproject.org/en/latest/admin/scaling.html
 handling:
+  # For more documentation on handler assignment methods, see the documentation under:
+  #     https://docs.galaxyproject.org/en/latest/admin/scaling.html#job-handler-assignment-methods
+  #
+  # How jobs should be assigned to handlers. The value is a list that will be tried in order. The default depends on
+  # whether any handlers and a job handler "pool" (such as uWSGI mules in a `job-handlers` farm) are configured. Valid
+  # methods are explained in detail in the documentation referenced above and have the values:
+  #
+  # - `mem-self` - In-memory Self Assignment
+  # - `db-self`- Database Self Assignment
+  # - `db-preassign` - Database Preassignment
+  # - `uwsgi-mule-message` - uWSGI Mule Messaging
+  # - `db-transaction-isolation` - Database Transaction Isolation
+  # - `db-skip-locked` - Database SKIP LOCKED
+  #
+  #assign:
+  #  - db-skip-locked
+
+  # Limit the number of jobs that a handler will self-assign per jobs-ready-to-run check loop iteration. This only
+  # applies for methods that cause handlers to self-assign multiple jobs at once (db-skip-locked,
+  # db-transaction-isolation) and the value is an integer > 0. Default is to grab as many jobs ready to run as possible.
+  #max_grab: 8
+
+  # Handlers query for and dispatch jobs ready to run in a loop. If the number of jobs in the `new` state grows very
+  # large but they cannot be dispatched due to user concurrency limits, checking all of these jobs on every iteration
+  # can drastically slow down job throughput as each pending job is checked and then deferred due to limits. This option
+  # limits the number of jobs per user are returned by the query on each iteration. By default it is set to 100. Setting
+  # this lower can improve throughput for other users when one user submits thousands of independent jobs.
+  #
+  # Be aware that anonymous users are treated as a single user by this algorithm.
+  #ready_window_size: 100
+
+  # An ID or tag of the handler(s) that should handle any jobs not assigned to a specific handler (which is probably
+  # most of them). If unset, the default is any untagged handlers plus any handlers in the `job-handlers` (no tag) pool.
+  #default: handler0
+
   processes:
     handler0:
     handler1:
@@ -934,12 +982,12 @@ execution:
 
       # Directory which is mounted to the container and is parent of
       # the  `job_working_directory`, `file_path`, `new_file_path`
-      # directories. Directories of the data used by tools are
-      # included as well.
-      volumes: /directory/
+      # directories. Other directories of the data used by tools
+      # can be mounted as well, separated by commas.
+      volumes: host_path:container_path:mode
 
       # Number of retries to attempt if a command returns a non-zero status
-      max_retries: 2
+      max_retries: 0
 
 # Tools can be configured to use specific destinations or handlers,
 # identified by either the "id" or "tags" attribute.  If assigned to

@@ -8,11 +8,11 @@ class Newick_Parser(Base_Parser):
     It is necessarily more complex because this parser is later extended by Nexus for parsing newick as well.."""
 
     def __init__(self):
-        super(Newick_Parser, self).__init__()
+        super().__init__()
 
     def parseFile(self, filePath):
         """Parses a newick file to obtain the string inside. Returns: jsonableDict"""
-        with open(filePath, "r") as newickFile:
+        with open(filePath) as newickFile:
             newickString = newickFile.read()
             newickString = newickString.replace("\n", "").replace("\r", "")
             return [self.parseData(newickString)], "Success"
@@ -43,7 +43,7 @@ class Newick_Parser(Base_Parser):
         """elements separated by comma could be empty"""
 
         if string.find("(") != -1:
-            raise Exception("Tree is not well form, location: " + string)
+            raise Exception(f"Tree is not well form, location: {string}")
 
         childrenString = string.split(",")
         childrenNodes = []
@@ -94,7 +94,7 @@ class Newick_Parser(Base_Parser):
                         if enclosingSymbol == ")" or enclosingSymbol == ":" or enclosingSymbol == ",":
                             termToReplace = newickString[end:j]
 
-                            newString += newickString[start : end] + nameMap[termToReplace]  # + "'"  "'" +
+                            newString += newickString[start:end] + nameMap[termToReplace]  # + "'"  "'" +
                             start = j
                             break
 
@@ -159,7 +159,7 @@ class Newick_Parser(Base_Parser):
                         lenOfPreceedingInternalNodeString = 0
 
                     # recussive call to make the internal claude
-                    childSubString = string[i + 1 : j]
+                    childSubString = string[i + 1:j]
                     InternalNode.addChildNode(self.parseNode(childSubString, depth + 1))
 
                     nodes.append(InternalNode)  # we append the internal node later to preserve order

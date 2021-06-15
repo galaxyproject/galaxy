@@ -1,7 +1,6 @@
 """
 Adds the tool_rating_association table, enabling tools to be rated along with review comments.
 """
-from __future__ import print_function
 
 import datetime
 import logging

@@ -404,8 +404,8 @@ class BasicComposite(Text):
 These files can be specified on the command line in the following fashion:
 
 ```xml
-<command>someTool.sh '$input1' '${os.path.join(input1.extra_files_path, 'results.txt')}'
-'${os.path.join(input1.extra_files_path, 'results.dat')}' '$output1'</command>
+<command>someTool.sh '$input1' '${os.path.join($input1.extra_files_path, 'results.txt')}'
+'${os.path.join($input1.extra_files_path, 'results.dat')}' '$output1'</command>
 ```
 
 If a tool is aware of the file names for a datatype, then only `input1.extra_files_path` needs to be provided.
@@ -443,7 +443,7 @@ class AutoPrimaryComposite(Text):
 
 These files can be specified on the command line in the following fashion:
 ```xml
-<command>someTool.sh ${os.path.join(input1.extra_files_path, 'results.txt')} ${os.path.join(input1.extra_files_path, 'results.dat')} $output1</command>
+<command>someTool.sh ${os.path.join($input1.extra_files_path, 'results.txt')} ${os.path.join($input1.extra_files_path, 'results.dat')} $output1</command>
 ```
 
 
@@ -457,7 +457,6 @@ class Lped(Text):
 
     composite_type = 'auto_primary_file'
     file_ext="lped"
-    allow_datatype_change = False
 
 
     def __init__(self, **kwd):
@@ -477,11 +476,11 @@ class Lped(Text):
         return "\n".join(rval)
 ```
 
-The file specified as `%s.ped` is found at `os.path.join(input1.extra_files_path, '%s.ped' % input1.metadata.base_name)`.
+The file specified as `%s.ped` is found at `${os.path.join($input1.extra_files_path, '%s.ped' % input1.metadata.base_name)}`.
 
 It should be noted that changing the datatype of datasets which use this substitution method will cause an error if the metadata parameter 'base_name' does not exist in a datatype that the dataset is set to. This is because the value within 'base_name' will be lost -- if the datatype is set back to the original datatype, the default metadata value will be used and the filenames might not match the basename.
 
-To prevent this from occurring, set `allow_datatype_change` to `False`. The dataset's datatype will not be able to be changed.
+For this reason, users are not allowed to change the datatype of dataset between a composite datatype and any other datatype. This can be enforced by setting the `allow_datatype_change` attribute of a datatype class to `False`.
 
 ## Galaxy Tool Shed - Data Types
 

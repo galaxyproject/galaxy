@@ -5,7 +5,7 @@ Objects with No values
 from galaxy.model.metadata import MetadataCollection
 
 
-class RecursiveNone(object):
+class RecursiveNone:
     def __str__(self):
         return "None"
 

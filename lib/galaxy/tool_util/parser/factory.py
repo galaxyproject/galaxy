@@ -1,5 +1,4 @@
 """Constructors for concrete tool and input source objects."""
-from __future__ import absolute_import
 
 import logging
 
@@ -35,7 +34,7 @@ def get_tool_source(config_file=None, xml_tree=None, enable_beta_formats=True, t
 
     if config_file.endswith(".yml"):
         log.info("Loading tool from YAML - this is experimental - tool will not function in future.")
-        with open(config_file, "r") as f:
+        with open(config_file) as f:
             as_dict = ordered_load(f)
             return YamlToolSource(as_dict, source_path=config_file)
     elif config_file.endswith(".json") or config_file.endswith(".cwl"):
@@ -54,7 +53,7 @@ def get_tool_source_from_representation(tool_format, tool_representation):
             tool_representation["version"] = "1.0.0"  # Don't require version for embedded tools.
         return YamlToolSource(tool_representation)
     else:
-        raise Exception("Unknown tool representation format [%s]." % tool_format)
+        raise Exception(f"Unknown tool representation format [{tool_format}].")
 
 
 def get_input_source(content):

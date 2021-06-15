@@ -6,7 +6,6 @@ import json
 import logging
 import os.path
 import shutil
-from collections import OrderedDict
 
 from galaxy.util import (
     hash_util,
@@ -94,7 +93,7 @@ def build_dependency_manager(app_config_dict=None, resolution_config_dict=None, 
     return dependency_manager
 
 
-class DependencyManager(object):
+class DependencyManager:
     """
     A DependencyManager attempts to resolve named and versioned dependencies by
     searching for them under a list of directories. Directories should be
@@ -158,7 +157,7 @@ class DependencyManager(object):
             explicit_resolver_options = {}
         default = resolver.config_options.get(key)
         config_prefix = resolver.resolver_type
-        global_key = "%s_%s" % (config_prefix, key)
+        global_key = f"{config_prefix}_{key}"
         value = explicit_resolver_options.get(key, CONFIG_VAL_NOT_FOUND)
         if value is CONFIG_VAL_NOT_FOUND:
             value = self.get_app_option(global_key, default)
@@ -201,7 +200,7 @@ class DependencyManager(object):
 
     def _requirements_to_dependencies_dict(self, requirements, search=False, **kwds):
         """Build simple requirements to dependencies dict for resolution."""
-        requirement_to_dependency = OrderedDict()
+        requirement_to_dependency = {}
         index = kwds.get('index')
         install = kwds.get('install', False)
         resolver_type = kwds.get('resolver_type')
@@ -233,7 +232,7 @@ class DependencyManager(object):
             if container_type is not None and getattr(resolver, "container_type", None) != container_type:
                 continue
 
-            _requirement_to_dependency = OrderedDict([(k, v) for k, v in requirement_to_dependency.items() if not isinstance(v, NullDependency)])
+            _requirement_to_dependency = {k: v for k, v in requirement_to_dependency.items() if not isinstance(v, NullDependency)}
 
             if len(_requirement_to_dependency) == len(resolvable_requirements):
                 # Shortcut - resolution complete.
@@ -299,7 +298,7 @@ class DependencyManager(object):
         return any(map(lambda r: isinstance(r, ToolShedPackageDependencyResolver), self.dependency_resolvers))
 
     def find_dep(self, name, version=None, type='package', **kwds):
-        log.debug('Find dependency %s version %s' % (name, version))
+        log.debug(f'Find dependency {name} version {version}')
         requirements = ToolRequirements([ToolRequirement(name=name, version=version, type=type)])
         dep_dict = self._requirements_to_dependencies_dict(requirements, **kwds)
         if len(dep_dict) > 0:
@@ -351,7 +350,7 @@ class CachedDependencyManager(DependencyManager):
     cached = True
 
     def __init__(self, default_base_path, **kwd):
-        super(CachedDependencyManager, self).__init__(default_base_path=default_base_path, **kwd)
+        super().__init__(default_base_path=default_base_path, **kwd)
         self.tool_dependency_cache_dir = self.get_app_option("tool_dependency_cache_dir") or os.path.join(default_base_path, "_cache")
 
     def build_cache(self, requirements, **kwds):
@@ -363,7 +362,7 @@ class CachedDependencyManager(DependencyManager):
                 try:
                     shutil.rmtree(hashed_dependencies_dir)
                 except Exception:
-                    log.warning("Could not delete cached dependencies directory '%s'" % hashed_dependencies_dir)
+                    log.warning(f"Could not delete cached dependencies directory '{hashed_dependencies_dir}'")
                     raise
             else:
                 log.debug("Cached dependencies directory '%s' already exists, skipping build", hashed_dependencies_dir)

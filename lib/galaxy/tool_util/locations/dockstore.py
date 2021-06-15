@@ -1,9 +1,7 @@
-try:
-    import requests
-except ImportError:
-    requests = None
+from urllib.parse import quote
+
+import requests
 import yaml
-from six.moves.urllib.parse import quote
 
 from ..locations import (
     ToolLocationResolver,
@@ -21,36 +19,36 @@ class DockStoreResolver(ToolLocationResolver):
             tool_id, version = tool_id.split(":", 1)
         else:
             tool_id, version = tool_id, "latest"
-        tmp_path = self._temp_path(uri_like + ".cwl")
+        tmp_path = self._temp_path(f"{uri_like}.cwl")
         cwl_str = _Ga4ghToolClient().get_tool_cwl(tool_id, version=version, as_string=True)
         with open(tmp_path, "wb") as f:
             f.write(cwl_str)
         return tmp_path
 
 
-class _Ga4ghToolClient(object):
+class _Ga4ghToolClient:
 
     def __init__(self, base_url="https://www.dockstore.org:8443/api"):
         self.base_url = base_url
 
     def get_tools(self):
-        return self._requests.get("%s/ga4gh/v1/tools" % self.base_url)
+        return self._requests.get(f"{self.base_url}/ga4gh/v1/tools")
 
     def get_tool(self, tool_id):
-        url = "%s/ga4gh/v1/tools/%s" % (self.base_url, quote(tool_id, safe=''))
+        url = f"{self.base_url}/ga4gh/v1/tools/{quote(tool_id, safe='')}"
         return self._requests.get(url)
 
     def get_tool_version(self, tool_id, version="latest"):
-        url = "%s/ga4gh/v1/tools/%s/versions/%s" % (self.base_url, quote(tool_id, safe=''), version)
+        url = f"{self.base_url}/ga4gh/v1/tools/{quote(tool_id, safe='')}/versions/{version}"
         return self._requests.get(url)
 
     def get_tool_descriptor(self, tool_id, version="latest", tool_type="CWL"):
-        url = "%s/ga4gh/v1/tools/%s/versions/%s/%s/descriptor" % (self.base_url, quote(tool_id, safe=''), version, tool_type)
+        url = f"{self.base_url}/ga4gh/v1/tools/{quote(tool_id, safe='')}/versions/{version}/{tool_type}/descriptor"
         return self._requests.get(url)
 
     def get_tool_cwl(self, tool_id, version="latest", as_string=False):
         tool_type = "CWL"
-        url = "%s/ga4gh/v1/tools/%s/versions/%s/%s/descriptor" % (self.base_url, quote(tool_id, safe=''), version, tool_type)
+        url = f"{self.base_url}/ga4gh/v1/tools/{quote(tool_id, safe='')}/versions/{version}/{tool_type}/descriptor"
         descriptor_response = self._requests.get(url)
         descriptor_str = descriptor_response.json()["descriptor"]
         if as_string:

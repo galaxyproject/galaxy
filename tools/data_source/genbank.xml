@@ -1,5 +1,8 @@
 <tool id="genbank" name="Connect to Genbank" version="1.0.0">
     <!--  <description>queries genbank</description> -->
+    <edam_operations>
+        <edam_operation>operation_0224</edam_operation>
+    </edam_operations>
     <command><![CDATA[
 python '$__tool_directory__/genbank.py' $mode '$text' '$output'
     ]]></command>

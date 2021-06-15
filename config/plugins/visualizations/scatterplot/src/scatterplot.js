@@ -4,8 +4,8 @@ import "./jqglobals";
 import * as Backbone from "backbone";
 import * as d3 from "d3";
 import * as _ from "underscore";
-import "../../../../../client/galaxy/scripts/ui/peek-column-selector";
-import "../../../../../client/galaxy/scripts/ui/pagination";
+import "../../../../../client/src/ui/peek-column-selector";
+import "../../../../../client/src/ui/pagination";
 import "jquery-ui-bundle";
 import "bootstrap";
 

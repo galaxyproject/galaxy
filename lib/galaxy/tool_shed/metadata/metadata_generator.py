@@ -36,7 +36,7 @@ from galaxy.web import url_for
 log = logging.getLogger(__name__)
 
 
-class MetadataGenerator(object):
+class MetadataGenerator:
 
     def __init__(self, app, repository=None, changeset_revision=None, repository_clone_url=None,
                  shed_config_dict=None, relative_install_dir=None, repository_files_dir=None,
@@ -100,7 +100,7 @@ class MetadataGenerator(object):
         self.updating_installed_repository = updating_installed_repository
         self.persist = persist
         self.invalid_file_tups = []
-        self.sa_session = app.model.context.current
+        self.sa_session = app.model.session
         self.NOT_TOOL_CONFIGS = [suc.DATATYPES_CONFIG_FILENAME,
                                  REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
                                  TOOL_DEPENDENCY_DEFINITION_FILENAME,
@@ -153,7 +153,7 @@ class MetadataGenerator(object):
             tool_file = data_manager_elem.get('tool_file', None)
             data_manager_id = data_manager_elem.get('id', None)
             if data_manager_id is None:
-                log.error('Data Manager entry is missing id attribute in "%s".' % (data_manager_config_filename))
+                log.error(f'Data Manager entry is missing id attribute in "{data_manager_config_filename}".')
                 invalid_data_managers.append({'index': i,
                                               'error_message': 'Data Manager entry is missing id attribute'})
                 continue
@@ -163,7 +163,7 @@ class MetadataGenerator(object):
             guid = self.generate_guid_for_object(DataManager.GUID_TYPE, data_manager_id, version)
             data_tables = []
             if tool_file is None:
-                log.error('Data Manager entry is missing tool_file attribute in "%s".' % (data_manager_config_filename))
+                log.error(f'Data Manager entry is missing tool_file attribute in "{data_manager_config_filename}".')
                 invalid_data_managers.append({'index': i,
                                               'error_message': 'Data Manager entry is missing tool_file attribute'})
                 continue
@@ -172,7 +172,7 @@ class MetadataGenerator(object):
                 for data_table_elem in data_manager_elem.findall('data_table'):
                     data_table_name = data_table_elem.get('name', None)
                     if data_table_name is None:
-                        log.error('Data Manager data_table entry is missing name attribute in "%s".' % (data_manager_config_filename))
+                        log.error(f'Data Manager data_table entry is missing name attribute in "{data_manager_config_filename}".')
                         invalid_data_managers.append({'index': i,
                                                       'error_message': 'Data Manager entry is missing name attribute'})
                         bad_data_table = True
@@ -185,7 +185,7 @@ class MetadataGenerator(object):
             tool_metadata_tool_file = os.path.join(repo_files_directory, data_manager_metadata_tool_file)
             tool = tools.get(tool_metadata_tool_file, None)
             if tool is None:
-                log.error("Unable to determine tools metadata for '%s'." % (data_manager_metadata_tool_file))
+                log.error(f"Unable to determine tools metadata for '{data_manager_metadata_tool_file}'.")
                 invalid_data_managers.append({'index': i,
                                               'error_message': 'Unable to determine tools metadata'})
                 continue
@@ -196,7 +196,7 @@ class MetadataGenerator(object):
                                               'tool_config_file': data_manager_metadata_tool_file,
                                               'data_tables': data_tables,
                                               'tool_guid': tool['guid']}
-            log.debug('Loaded Data Manager tool_files: %s' % (tool_file))
+            log.debug(f'Loaded Data Manager tool_files: {tool_file}')
         return metadata_dict
 
     def generate_datatypes_metadata(self, tv, repository_files_dir, datatypes_config, metadata_dict):
@@ -296,7 +296,7 @@ class MetadataGenerator(object):
 
     def generate_guid_for_object(self, guid_type, obj_id, version):
         tmp_url = remove_protocol_and_user_from_clone_url(self.repository_clone_url)
-        return '%s/%s/%s/%s' % (tmp_url, guid_type, obj_id, version)
+        return f'{tmp_url}/{guid_type}/{obj_id}/{version}'
 
     def generate_metadata_for_changeset_revision(self):
         """
@@ -565,7 +565,7 @@ class MetadataGenerator(object):
                                                     self.handle_repository_elem(repository_elem=sub_action_elem,
                                                                                 only_if_compiling_contained_td=True)
         if requirements_dict:
-            dependency_key = '%s/%s' % (package_name, package_version)
+            dependency_key = f'{package_name}/{package_version}'
             if repository_dependency_is_valid:
                 valid_tool_dependencies_dict[dependency_key] = requirements_dict
             else:
@@ -643,7 +643,7 @@ class MetadataGenerator(object):
                 required_files = []
                 for required_file in ttb.required_files:
                     value, extra = required_file
-                    required_files.append((value))
+                    required_files.append(value)
                 inputs = []
                 for param_name, values in ttb.inputs.items():
                     # Handle improperly defined or strange test parameters and values.
@@ -663,7 +663,7 @@ class MetadataGenerator(object):
                                 # Nested required files are being populated correctly,
                                 # not sure we need the value here to be anything else?
                                 collection_type = values.collection_type
-                                metadata_display_value = "%s collection" % collection_type
+                                metadata_display_value = f"{collection_type} collection"
                                 inputs.append((param_name, metadata_display_value))
                             else:
                                 try:
@@ -727,7 +727,7 @@ class MetadataGenerator(object):
             return metadata_dict, error_message
         root = tree.getroot()
 
-        class RecurserValueStore(object):
+        class RecurserValueStore:
             pass
         rvs = RecurserValueStore()
         rvs.valid_tool_dependencies_dict = {}
@@ -766,7 +766,7 @@ class MetadataGenerator(object):
                                  only_if_compiling_contained_td,
                                  message)
                             invalid_repository_dependency_tups.append(repository_dependency_tup)
-                            error_messages.append('%s  %s' % (error_message, message))
+                            error_messages.append(f'{error_message}  {message}')
                 elif elem.tag == 'set_environment':
                     rvs.valid_tool_dependencies_dict = \
                         self.generate_environment_dependency_metadata(elem, rvs.valid_tool_dependencies_dict)
@@ -839,7 +839,7 @@ class MetadataGenerator(object):
             work_dir = repository_files_dir
         sample_file_metadata_paths = []
         sample_file_copy_paths = []
-        for root, dirs, files in os.walk(repository_files_dir):
+        for root, _dirs, files in os.walk(repository_files_dir):
             if root.find('.hg') < 0:
                 for name in files:
                     if name.endswith('.sample'):
@@ -956,7 +956,7 @@ class MetadataGenerator(object):
                     # installed tool shed repository.
                     error_message = "Ignoring invalid repository dependency definition for tool shed %s, name %s, owner %s, " % \
                         (toolshed, name, owner)
-                    error_message += "changeset revision %s." % changeset_revision
+                    error_message += f"changeset revision {changeset_revision}."
                     log.debug(error_message)
                     is_valid = False
                     return repository_dependency_tup, is_valid, error_message
@@ -970,7 +970,7 @@ class MetadataGenerator(object):
                 except Exception:
                     error_message = "Ignoring repository dependency definition for tool shed %s, name %s, owner %s, " % \
                         (toolshed, name, owner)
-                    error_message += "changeset revision %s because the owner is invalid." % changeset_revision
+                    error_message += f"changeset revision {changeset_revision} because the owner is invalid."
                     log.debug(error_message)
                     is_valid = False
                     return repository_dependency_tup, is_valid, error_message
@@ -982,7 +982,7 @@ class MetadataGenerator(object):
                 except Exception:
                     error_message = "Ignoring repository dependency definition for tool shed %s, name %s, owner %s, " % \
                         (toolshed, name, owner)
-                    error_message += "changeset revision %s because the name is invalid.  " % changeset_revision
+                    error_message += f"changeset revision {changeset_revision} because the name is invalid.  "
                     log.debug(error_message)
                     is_valid = False
                     return repository_dependency_tup, is_valid, error_message
@@ -1013,7 +1013,7 @@ class MetadataGenerator(object):
                     if not found:
                         error_message = "Ignoring repository dependency definition for tool shed %s, name %s, owner %s, " % \
                             (toolshed, name, owner)
-                        error_message += "changeset revision %s because the changeset revision is invalid.  " % changeset_revision
+                        error_message += f"changeset revision {changeset_revision} because the changeset revision is invalid.  "
                         log.debug(error_message)
                         is_valid = False
                         return repository_dependency_tup, is_valid, error_message
@@ -1121,9 +1121,9 @@ class MetadataGenerator(object):
 def _get_readme_file_names(repository_name):
     """Return a list of file names that will be categorized as README files for the received repository_name."""
     readme_files = ['readme', 'read_me', 'install']
-    valid_filenames = ['%s.txt' % f for f in readme_files]
-    valid_filenames.extend(['%s.rst' % f for f in readme_files])
+    valid_filenames = [f'{f}.txt' for f in readme_files]
+    valid_filenames.extend([f'{f}.rst' for f in readme_files])
     valid_filenames.extend(readme_files)
-    valid_filenames.append('%s.txt' % repository_name)
-    valid_filenames.append('%s.rst' % repository_name)
+    valid_filenames.append(f'{repository_name}.txt')
+    valid_filenames.append(f'{repository_name}.rst')
     return valid_filenames

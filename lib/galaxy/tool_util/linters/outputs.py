@@ -17,7 +17,7 @@ def lint_output(tool_xml, lint_ctx):
 
     for output in list(outputs[0]):
         if output.tag not in ["data", "collection"]:
-            lint_ctx.warn("Unknown element found in outputs [%s]" % output.tag)
+            lint_ctx.warn(f"Unknown element found in outputs [{output.tag}]")
             continue
         num_outputs += 1
         if "name" not in output.attrib:
@@ -27,10 +27,10 @@ def lint_output(tool_xml, lint_ctx):
                 lint_ctx.warn("Tool output name [%s] is not a valid Cheetah placeholder.", output.attrib["name"])
 
         format_set = False
+        if __check_format(output, lint_ctx):
+            format_set = True
         if output.tag == "data":
-            if __check_format(output, lint_ctx):
-                format_set = True
-            elif "auto_format" in output.attrib and output.attrib["auto_format"]:
+            if "auto_format" in output.attrib and output.attrib["auto_format"]:
                 format_set = True
 
         elif output.tag == "collection":
@@ -43,24 +43,29 @@ def lint_output(tool_xml, lint_ctx):
         for sub in output:
             if __check_pattern(sub):
                 format_set = True
-            elif __check_format(sub, lint_ctx):
+            elif __check_format(sub, lint_ctx, allow_ext=True):
                 format_set = True
 
         if not format_set:
-            lint_ctx.warn("Tool %s output %s doesn't define an output format." % (output.tag, output.attrib.get("name", "with missing name")))
+            lint_ctx.warn(f"Tool {output.tag} output {output.attrib.get('name', 'with missing name')} doesn't define an output format.")
 
     lint_ctx.info("%d outputs found.", num_outputs)
 
 
-def __check_format(node, lint_ctx):
+def __check_format(node, lint_ctx, allow_ext=False):
     """
     check if format/ext attribute is set in a given node
     issue a warning if the value is input
     return true (node defines format/ext) / false (else)
     """
-    fmt = node.attrib.get("format", node.attrib.get("ext", None))
+    fmt = None
+    # if allowed (e.g. for discover_datasets), ext takes precedence over format
+    if allow_ext:
+        fmt = node.attrib.get("ext")
+    if fmt is None:
+        fmt = node.attrib.get("format")
     if fmt == "input":
-        lint_ctx.warn("Using format='input' on %s, format_source attribute is less ambiguous and should be used instead." % node.tag)
+        lint_ctx.warn(f"Using format='input' on {node.tag}, format_source attribute is less ambiguous and should be used instead.")
     return fmt is not None
 
 

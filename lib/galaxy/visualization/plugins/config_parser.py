@@ -1,8 +1,8 @@
 import logging
 
-from six import string_types
 
 import galaxy.model
+from galaxy.util import asbool
 from galaxy.util.xml_macros import load
 
 log = logging.getLogger(__name__)
@@ -13,10 +13,9 @@ class ParsingException(ValueError):
     An exception class for errors that occur during parsing of the visualizations
     framework configuration XML file.
     """
-    pass
 
 
-class VisualizationsConfigParser(object):
+class VisualizationsConfigParser:
     """
     Class that parses a visualizations configuration XML file.
 
@@ -69,13 +68,10 @@ class VisualizationsConfigParser(object):
             log.info('Visualizations plugin disabled: %s. Skipping...', returned['name'])
             return None
 
-        # record the embeddable flag - defaults to false
-        #   this is a design by contract promise that the visualization can be rendered inside another page
-        #   often by rendering only a DOM fragment. Since this is an advanced feature that requires a bit more
-        #   work from the creator's side - it defaults to False
-        returned['embeddable'] = False
+        # record the embeddable flag - defaults to true
+        returned['embeddable'] = True
         if 'embeddable' in xml_tree.attrib:
-            returned['embeddable'] = xml_tree.attrib.get('embeddable', False) == 'true'
+            returned['embeddable'] = asbool(xml_tree.attrib.get('embeddable'))
 
         # a (for now) text description of what the visualization does
         description = xml_tree.find('description')
@@ -141,8 +137,8 @@ class VisualizationsConfigParser(object):
         # render_target: where in the browser to open the rendered visualization
         # defaults to: galaxy_main
         render_target = xml_tree.find('render_target')
-        if((render_target is not None and render_target.text) and
-                (render_target.text in self.VALID_RENDER_TARGETS)):
+        if((render_target is not None and render_target.text)
+                and (render_target.text in self.VALID_RENDER_TARGETS)):
             returned['render_target'] = render_target.text
         else:
             returned['render_target'] = 'galaxy_main'
@@ -168,7 +164,7 @@ class VisualizationsConfigParser(object):
     def parse_entry_point(self, xml_tree):
         """
         Parse the config file for an appropriate entry point: a mako template, a script tag,
-        or an html file, returning as dictionary with: `type`, `file`, and `attr`ibutes of
+        or an html file, returning as dictionary with: ``type``, ``file``, and ``attr`` (-ibutes) of
         the element.
         """
         # (older) mako-only syntax: the template to use in rendering the visualization
@@ -176,9 +172,9 @@ class VisualizationsConfigParser(object):
         if template is not None and template.text:
             log.info('template syntax is deprecated: use entry_point instead')
             return {
-                'type' : 'mako',
-                'file' : template.text,
-                'attr' : {}
+                'type': 'mako',
+                'file': template.text,
+                'attr': {}
             }
 
         # need one of the two: (the deprecated) template or entry_point
@@ -190,16 +186,16 @@ class VisualizationsConfigParser(object):
         entry_point_attrib = dict(entry_point.attrib)
         entry_point_type = entry_point_attrib.pop('entry_point_type', 'mako')
         if entry_point_type not in self.ALLOWED_ENTRY_POINT_TYPES:
-            raise ParsingException('Unknown entry_point type: ' + entry_point_type)
+            raise ParsingException(f"Unknown entry_point type: {entry_point_type}")
         return {
-            'type' : entry_point_type,
-            'file' : entry_point.text,
-            'attr' : entry_point_attrib
+            'type': entry_point_type,
+            'file': entry_point.text,
+            'attr': entry_point_attrib
         }
 
 
 # -------------------------------------------------------------------
-class DataSourceParser(object):
+class DataSourceParser:
     """
     Component class of VisualizationsConfigParser that parses data_source elements
     within visualization elements.
@@ -259,7 +255,7 @@ class DataSourceParser(object):
 
         if xml_tree.text not in self.ALLOWED_MODEL_CLASSES:
             # log.debug( 'available data_source model_classes: %s' %( str( self.ALLOWED_MODEL_CLASSES ) ) )
-            raise ParsingException('Invalid data_source model_class: %s' % (xml_tree.text))
+            raise ParsingException(f'Invalid data_source model_class: {xml_tree.text}')
 
         # look up the model from the model module returning an empty data_source if not found
         model_class = getattr(galaxy.model, xml_tree.text, None)
@@ -299,8 +295,8 @@ class DataSourceParser(object):
             test_type = test_elem.get('type', 'eq')
             test_result = test_elem.text.strip() if test_elem.text else None
             if not test_type or not test_result:
-                log.warning('Skipping test. Needs both type attribute and text node to be parsed: ' +
-                          '%s, %s' % (test_type, test_elem.text))
+                log.warning('Skipping test. Needs both type attribute and text node to be parsed: '
+                          + f'{test_type}, {test_elem.text}')
                 continue
             test_result = test_result.strip()
 
@@ -308,7 +304,7 @@ class DataSourceParser(object):
             # TODO: too dangerous - constrain these to some allowed list
             # TODO: does this err if no test_attr - it should...
             test_attr = test_elem.get('test_attr')
-            test_attr = test_attr.split(self.ATTRIBUTE_SPLIT_CHAR) if isinstance(test_attr, string_types) else []
+            test_attr = test_attr.split(self.ATTRIBUTE_SPLIT_CHAR) if isinstance(test_attr, str) else []
             # log.debug( 'test_type: %s, test_attr: %s, test_result: %s', test_type, test_attr, test_result )
 
             # build a lambda function that gets the desired attribute to test
@@ -326,8 +322,8 @@ class DataSourceParser(object):
             elif test_type == 'has_dataprovider':
                 # does the object itself have a datatype attr and does that datatype have the given dataprovider
                 def test_fn(o, result):
-                    return (hasattr(getter(o), 'has_dataprovider') and
-                            getter(o).has_dataprovider(result))
+                    return (hasattr(getter(o), 'has_dataprovider')
+                            and getter(o).has_dataprovider(result))
 
             elif test_type == 'has_attribute':
                 # does the object itself have attr in 'result' (no equivalence checking)
@@ -344,10 +340,10 @@ class DataSourceParser(object):
                     return str(getter(o)) == result
 
             tests.append({
-                'type'          : test_type,
-                'result'        : test_result,
-                'result_type'   : test_result_type,
-                'fn'            : test_fn
+                'type': test_type,
+                'result': test_result,
+                'result_type': test_result_type,
+                'fn': test_fn
             })
 
         return tests
@@ -436,7 +432,7 @@ class DictParser(dict):
                 self.update({element.tag: element.text})
 
 
-class ParamParser(object):
+class ParamParser:
     """
     Component class of VisualizationsConfigParser that parses param elements
     within visualization elements.
@@ -515,5 +511,5 @@ class ParamModifierParser(ParamParser):
         modifies = element.get('modifies')
         if not modifies:
             raise ParsingException('param_modifier entry requires a target param key (attribute "modifies")')
-        returned = super(ParamModifierParser, self).parse(element)
+        returned = super().parse(element)
         return returned

@@ -3,7 +3,7 @@ Containers for Tool Dependencies
 ================================
 
 Galaxy tools (also called wrappers) are able to use Conda packages
-(see more information in our `Galaxy Conda documentation`_) and Docker containers as dependency resolvers.
+(see more information in our :doc:`Galaxy Conda documentation <../conda_faq>`) and Docker containers as dependency resolvers.
 The IUC_ recommends to use Conda packages as the primary dependency resolver, mainly because Docker is not
 available on every (HPC-) system. Conda on the other hand can be installed by Galaxy and maintained
 entirely in user-space. Nevertheless, Docker and containers in general have some unique features and
@@ -159,7 +159,6 @@ Containers, once generated, should be tested. This can be achieved by affixing `
 
    $ mulled-singularity-testing --container-list list.txt --filepath /tmp/sing/ --installation /usr/local/bin/singularity --logfile test-output.txt
 
-.. _Galaxy Conda documentation: ./conda_faq.rst
 .. _IUC: https://galaxyproject.org/iuc/
 .. _container annotation:  https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/catDocker.xml#L4
 .. _BioContainers: https://github.com/biocontainers

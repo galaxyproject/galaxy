@@ -11,19 +11,38 @@ import shutil
 import sys
 from json import dump, load, loads
 
-from six.moves.urllib.request import urlopen
-
 from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry
 from galaxy.datatypes.upload_util import handle_upload, UploadProblemException
 from galaxy.util import (
     bunch,
+    is_url,
     safe_makedirs,
     unicodify
 )
 from galaxy.util.compression_utils import CompressedFile
 
 assert sys.version_info[:2] >= (2, 7)
+
+
+_file_sources = None
+
+
+def get_file_sources():
+    global _file_sources
+    if _file_sources is None:
+        from galaxy.files import ConfiguredFileSources
+        file_sources = None
+        if os.path.exists("file_sources.json"):
+            file_sources_as_dict = None
+            with open("file_sources.json") as f:
+                file_sources_as_dict = load(f)
+            if file_sources_as_dict is not None:
+                file_sources = ConfiguredFileSources.from_dict(file_sources_as_dict)
+        if file_sources is None:
+            ConfiguredFileSources.from_dict([])
+        _file_sources = file_sources
+    return _file_sources
 
 
 def file_err(msg, dataset):
@@ -43,7 +62,7 @@ def file_err(msg, dataset):
 def safe_dict(d):
     """Recursively clone JSON structure with unicode dictionary keys."""
     if isinstance(d, dict):
-        return dict([(unicodify(k), safe_dict(v)) for k, v in d.items()])
+        return {unicodify(k): safe_dict(v) for k, v in d.items()}
     elif isinstance(d, list):
         return [safe_dict(x) for x in d]
     else:
@@ -90,7 +109,7 @@ def add_file(dataset, registry, output_path):
 
     # Base on the check_upload_content Galaxy config option and on by default, this enables some
     # security related checks on the uploaded content, but can prevent uploads from working in some cases.
-    check_content = dataset.get('check_content' , True)
+    check_content = dataset.get('check_content', True)
 
     # auto_decompress is a request flag that can be swapped off to prevent Galaxy from automatically
     # decompressing archive files before sniffing.
@@ -102,16 +121,13 @@ def add_file(dataset, registry, output_path):
 
     if dataset.type == 'url':
         try:
-            dataset.path = sniff.stream_url_to_file(dataset.path)
+            dataset.path = sniff.stream_url_to_file(dataset.path, file_sources=get_file_sources())
         except Exception as e:
             raise UploadProblemException('Unable to fetch %s\n%s' % (dataset.path, unicodify(e)))
 
     # See if we have an empty file
     if not os.path.exists(dataset.path):
         raise UploadProblemException('Uploaded temporary file (%s) does not exist.' % dataset.path)
-
-    if check_content and not os.path.getsize(dataset.path) > 0:
-        raise UploadProblemException('The uploaded file (%s) is empty' % dataset.path)
 
     stdout, ext, datatype, is_binary, converted_path = handle_upload(
         registry=registry,
@@ -181,24 +197,25 @@ def add_composite_file(dataset, registry, output_path, files_path):
         datatype = registry.get_datatype_by_extension(dataset.file_type)
 
     def to_path(path_or_url):
-        is_url = path_or_url.find('://') != -1  # todo fixme
-        if is_url:
+        isa_url = is_url(path_or_url)
+        file_sources = get_file_sources()
+        if isa_url or file_sources and file_sources.looks_like_uri(path_or_url):
             try:
-                temp_name = sniff.stream_to_file(urlopen(path_or_url), prefix='url_paste')
+                temp_name = sniff.stream_url_to_file(path_or_url, file_sources=file_sources)
             except Exception as e:
                 raise UploadProblemException('Unable to fetch %s\n%s' % (path_or_url, unicodify(e)))
 
-            return temp_name, is_url
+            return temp_name, isa_url
 
-        return path_or_url, is_url
+        return path_or_url, isa_url
 
     def make_files_path():
         safe_makedirs(files_path)
 
     def stage_file(name, composite_file_path, is_binary=False):
         dp = composite_file_path['path']
-        path, is_url = to_path(dp)
-        if is_url:
+        path, isa_url = to_path(dp)
+        if isa_url:
             dataset.path = path
             dp = path
 

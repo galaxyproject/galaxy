@@ -10,7 +10,7 @@ from tool_shed.webapp import model
 log = logging.getLogger(__name__)
 
 
-class Registry(object):
+class Registry:
 
     def __init__(self, app):
         log.debug("Loading the repository registry...")
@@ -347,7 +347,7 @@ class Registry(object):
 
     @property
     def sa_session(self):
-        return self.app.model.context.current
+        return self.app.model.session
 
     def unload_certified_level_one_repository_and_suite_tuple(self, repository):
         # The received repository has been determined to be level one certified.

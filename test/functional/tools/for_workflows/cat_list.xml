@@ -1,10 +1,10 @@
-<tool id="cat_list" name="Concatenate multiple datasets (for test workflows)">
-    <description>tail-to-head</description>
-    <command>
-        cat #for $q in $input1# $q #end for# > $out_file1
-    </command>
+<tool id="cat_list" name="Concatenate multiple datasets (for test workflows)" version="1.0.0">
+    <description></description>
+    <command><![CDATA[
+cat #for $q in $input1# '$q' #end for# > '$out_file1'
+    ]]></command>
     <inputs>
-        <param name="input1" type="data" label="Concatenate Dataset" multiple="true" />
+        <param name="input1" type="data" multiple="true" label="Concatenate Dataset" />
     </inputs>
     <outputs>
         <data name="out_file1" format="input" metadata_source="input1"/>

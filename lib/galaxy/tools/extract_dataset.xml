@@ -1,11 +1,14 @@
 <tool id="__EXTRACT_DATASET__"
       name="Extract Dataset"
-      version="1.0.0"
+      version="1.0.1"
       tool_type="extract_element">
   <description>from a list</description>
   <type class="ExtractDatasetCollectionTool" module="galaxy.tools" />
   <action module="galaxy.tools.actions.model_operations"
           class="ModelOperationToolAction"/>
+  <edam_operations>
+    <edam_operation>operation_3695</edam_operation>
+  </edam_operations>
   <inputs>
     <param type="data_collection" collection_type="list,paired" name="input" label="Input List" />
     <conditional name="which">
@@ -13,7 +16,7 @@
         <option value="first">The first dataset</option>
         <option value="by_identifier">Select by element identifier</option>
         <option value="by_index">Select by index</option>
-      </param>      
+      </param>
       <when value="first" />
       <when value="by_identifier">
         <param name="identifier" label="Element identifier:" type="text">

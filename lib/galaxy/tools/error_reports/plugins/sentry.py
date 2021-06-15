@@ -7,7 +7,7 @@ from . import ErrorPlugin
 
 log = logging.getLogger(__name__)
 
-ERROR_TEMPLATE = u"""Galaxy Job Error: {tool_id} v{tool_version}
+ERROR_TEMPLATE = """Galaxy Job Error: {tool_id} v{tool_version}
 
 Command Line:
 {command_line}
@@ -119,7 +119,7 @@ class SentryPlugin(ErrorPlugin):
                 extra=extra,
                 message=unicodify(error_message),
             )
-            return ('Submitted bug report to Sentry. Your guru meditation number is %s' % response, 'success')
+            return (f'Submitted bug report to Sentry. Your guru meditation number is {response}', 'success')
 
 
 __all__ = ('SentryPlugin', )

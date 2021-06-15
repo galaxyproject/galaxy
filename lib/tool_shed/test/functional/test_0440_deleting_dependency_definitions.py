@@ -22,6 +22,7 @@ bwa_tool_dependency_repository_long_description = "NT space mapping with BWA"
 
 '''
 Simple repository dependencies:
+
 1. Create and populate column_maker_0440 so that it has an installable revision 0.
 2. Create and populate convert_chars_0440 so that it has an installable revision 0.
 3. Add a valid simple repository_dependencies.xml to convert_chars_0440 that points to the installable revision of column_maker_0440.
@@ -29,6 +30,7 @@ Simple repository dependencies:
 5. Delete repository_dependencies.xml from convert_chars_0440, and make sure convert_chars_0440 now has two installable revisions: 1 and 2
 
 Complex repository dependencies:
+
 1. Create and populate bwa_package_0440 so that it has a valid tool dependency definition and an installable revision 0.
 2. Create and populate bwa_base_0440 so that it has an installable revision 0.
 3. Add a valid complex repository dependency tool_dependencies.xml to bwa_base_0440 that points to the installable revision 0 of bwa_package_0440.
@@ -36,11 +38,13 @@ Complex repository dependencies:
 5. Delete tool_dependencies.xml from bwa_base_0440, and make sure bwa_base_0440 now has two installable revisions: 1 and 2
 
 Tool dependencies:
+
 1. Create and populate bwa_tool_dependency_0440 so that it has a valid tool dependency definition and an installable revision 0.
 2. Delete tool_dependencies.xml from bwa_tool_dependency_0440, and make sure that bwa_tool_dependency_0440 still has
    a single installable revision 0.
 3. Add the same tool_dependencies.xml file to bwa_tool_dependency_0440, and make sure that bwa_tool_dependency_0440
    still has a single installable revision 0.
+
 '''
 
 
@@ -55,11 +59,11 @@ class TestDeletedDependencies(ShedTwillTestCase):
         """
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
+        assert test_user_1 is not None, f'Problem retrieving user with email {common.test_user_1_email} from the database'
         self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.admin_email, username=common.admin_username)
         admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
+        assert admin_user is not None, f'Problem retrieving user with email {common.admin_email} from the database'
         self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_column_maker_repository(self):
@@ -319,7 +323,7 @@ class TestDeletedDependencies(ShedTwillTestCase):
         # Check that the new tip does not have a metadata revision.
         metadata_record = self.get_repository_metadata_by_changeset_revision(repository, new_changeset_revision)
         # If a changeset revision does not have metadata, the above method will return None.
-        assert metadata_record is None, 'The tip revision of %s should not have metadata, but metadata was found.' % repository.name
+        assert metadata_record is None, f'The tip revision of {repository.name} should not have metadata, but metadata was found.'
         # Verify that the new changeset revision is not downloadable.
         assert len(repository.downloadable_revisions) == 1, 'Repository %s has %d downloadable revisions, expected 1.' % \
             (repository.name, len(repository.downloadable_revisions))

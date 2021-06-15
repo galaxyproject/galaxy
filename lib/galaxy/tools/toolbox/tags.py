@@ -6,7 +6,6 @@ from abc import (
     abstractmethod
 )
 
-import six
 
 log = logging.getLogger(__name__)
 
@@ -21,8 +20,7 @@ def tool_tag_manager(app):
         return NullToolTagManager()
 
 
-@six.add_metaclass(ABCMeta)
-class AbstractToolTagManager(object):
+class AbstractToolTagManager(metaclass=ABCMeta):
 
     @abstractmethod
     def reset_tags(self):
@@ -51,7 +49,7 @@ class PersistentToolTagManager(AbstractToolTagManager):
         self.sa_session = app.model.context
 
     def reset_tags(self):
-        log.info("removing all tool tag associations (" + str(self.sa_session.query(self.app.model.ToolTagAssociation).count()) + ")")
+        log.info(f"removing all tool tag associations ({str(self.sa_session.query(self.app.model.ToolTagAssociation).count())})")
         self.sa_session.query(self.app.model.ToolTagAssociation).delete()
         self.sa_session.flush()
 

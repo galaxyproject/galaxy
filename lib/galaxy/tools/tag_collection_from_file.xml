@@ -6,6 +6,9 @@
     <type class="TagFromFileTool" module="galaxy.tools" />
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>
+    <edam_operations>
+        <edam_operation>operation_3096</edam_operation>
+    </edam_operations>
     <inputs>
         <param type="data_collection" name="input" label="Input Collection" help="A tabular file indicating how to tag collection elements."/>
         <param type="data" name="tags" format="tabular" label="Tag collection elements according to this file"/>
@@ -34,13 +37,13 @@
                     <assert_contents>
                         <has_text_matching expression="^This is a line of text.\n$" />
                     </assert_contents>
-                    <metadata name="tags" value="alias:f,alias:r1,name:forward,orientation:forward,zoo" />
+                    <metadata name="tags" value="alias:f,alias:r1,group:sample1,name:forward,orientation:forward,zoo" />
                 </element>
                 <element name="reverse">
                     <assert_contents>
                         <has_text_matching expression="^This is a different line of text.\n$" />
                     </assert_contents>
-                    <metadata name="tags" value="alias:r,alias:r2,name:reverse,orientation:reverse" />
+                    <metadata name="tags" value="alias:r,alias:r2,group:sample2,name:reverse,orientation:reverse" />
                 </element>
             </output_collection>
         </test>
@@ -63,13 +66,13 @@
                         <assert_contents>
                             <has_text_matching expression="^This is a line of text.\n$" />
                         </assert_contents>
-                        <metadata name="tags" value="alias:f,alias:r1,name:forward,orientation:forward" />
+                        <metadata name="tags" value="alias:f,alias:r1,group:sample1,name:forward,orientation:forward" />
                     </element>
                     <element name="reverse">
                         <assert_contents>
                             <has_text_matching expression="^This is a different line of text.\n$" />
                         </assert_contents>
-                        <metadata name="tags" value="alias:r,alias:r2,name:reverse,orientation:reverse" />
+                        <metadata name="tags" value="alias:r,alias:r2,group:sample2,name:reverse,orientation:reverse" />
                     </element>
                 </element>
             </output_collection>
@@ -87,5 +90,12 @@
 
         This tool will create new history datasets from your collection
         but your quota usage will not increase.
+
+        In order to create
+        
+        - name tags prefix the tag name with "#" or "name:"
+        - group tags prefix the tag name with "group:"
+
+
     ]]></help>
 </tool>

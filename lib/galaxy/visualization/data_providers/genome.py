@@ -8,11 +8,10 @@ import os
 import random
 import re
 import sys
-import tempfile
 from contextlib import contextmanager
 from json import loads
+from typing import Dict, Union
 
-import packaging.version
 import pysam
 from bx.bbi.bigbed_file import BigBedFile
 from bx.bbi.bigwig_file import BigWigFile
@@ -27,7 +26,9 @@ from galaxy.visualization.data_providers.cigar import get_ref_based_read_seq_and
 # Utility functions.
 #
 
-PYSAM_INDEX_SYMLINK_NECESSARY = packaging.version.parse(pysam.__version__) <= packaging.version.parse('0.13.0')
+# pysam 0.16.0.1 emits logs containing the word 'Error', this can confuse the stdout/stderr checkers.
+# Can be be removed once https://github.com/pysam-developers/pysam/issues/939 is resolved.
+pysam.set_verbosity(0)
 
 
 def float_nan(n):
@@ -81,7 +82,7 @@ class FeatureLocationIndexDataProvider(BaseDataProvider):
 
     def get_data(self, query):
         # Init.
-        textloc_file = open(self.converted_dataset.file_name, 'r')
+        textloc_file = open(self.converted_dataset.file_name)
         line_len = int(textloc_file.readline())
         file_len = os.path.getsize(self.converted_dataset.file_name)
         query = query.lower()
@@ -126,7 +127,7 @@ class GenomeDataProvider(BaseDataProvider):
     format (0-based, half-open coordinates) for both queries and returned data.
     """
 
-    dataset_type = None
+    dataset_type: str
 
     """
     Mapping from column name to payload data; this mapping is used to create
@@ -135,14 +136,14 @@ class GenomeDataProvider(BaseDataProvider):
 
     col_name_data_attr_mapping = {4 : { index: 5, name: 'Score' } }
     """
-    col_name_data_attr_mapping = {}
+    col_name_data_attr_mapping: Dict[Union[str, int], Dict] = {}
 
     def __init__(self, converted_dataset=None, original_dataset=None, dependencies=None,
                  error_max_vals="Only the first %i %s in this region are displayed."):
-        super(GenomeDataProvider, self).__init__(converted_dataset=converted_dataset,
-                                                 original_dataset=original_dataset,
-                                                 dependencies=dependencies,
-                                                 error_max_vals=error_max_vals)
+        super().__init__(converted_dataset=converted_dataset,
+                         original_dataset=original_dataset,
+                         dependencies=dependencies,
+                         error_max_vals=error_max_vals)
 
     def write_data_to_file(self, regions, filename):
         """
@@ -270,7 +271,7 @@ class GenomeDataProvider(BaseDataProvider):
 #
 
 
-class FilterableMixin(object):
+class FilterableMixin:
     def get_filters(self):
         """ Returns a dataset's filters. """
         # Get filters.
@@ -318,23 +319,15 @@ class TabixDataProvider(GenomeDataProvider, FilterableMixin):
     Tabix index data provider for the Galaxy track browser.
     """
 
-    col_name_data_attr_mapping = {4: {'index': 4, 'name': 'Score'}}
+    col_name_data_attr_mapping: Dict[Union[str, int], Dict] = {4: {'index': 4, 'name': 'Score'}}
 
     @contextmanager
     def open_data_file(self):
         # We create a symlink to the index file. This is
         # required until https://github.com/pysam-developers/pysam/pull/586 is merged.
-        if PYSAM_INDEX_SYMLINK_NECESSARY:
-            fd, index_path = tempfile.mkstemp(suffix='.tbi')
-            os.close(fd)
-            os.unlink(index_path)
-            os.symlink(self.converted_dataset.file_name, index_path)
-        else:
-            index_path = self.converted_dataset.file_name
+        index_path = self.converted_dataset.file_name
         with pysam.TabixFile(self.dependencies['bgzip'].file_name, index=index_path) as f:
             yield f
-        if PYSAM_INDEX_SYMLINK_NECESSARY:
-            os.unlink(index_path)
 
     def get_iterator(self, data_file, chrom, start, end, **kwargs):
         # chrom must be a string, start/end integers.
@@ -362,7 +355,7 @@ class TabixDataProvider(GenomeDataProvider, FilterableMixin):
                 # Write data in region.
                 iterator = self.get_iterator(data_file, region.chrom, region.start, region.end)
                 for line in iterator:
-                    out.write("%s\n" % line)
+                    out.write(f"{line}\n")
 
 #
 # -- Interval data providers --
@@ -447,7 +440,6 @@ class IntervalTabixDataProvider(TabixDataProvider, IntervalDataProvider):
     """
     Provides data from a BED file indexed via tabix.
     """
-    pass
 
 
 #
@@ -540,14 +532,13 @@ class BedDataProvider(GenomeDataProvider):
                 with self.open_data_file() as data_file:
                     iterator = self.get_iterator(data_file, chrom, start, end)
                     for line in iterator:
-                        out.write("%s\n" % line)
+                        out.write(f"{line}\n")
 
 
 class BedTabixDataProvider(TabixDataProvider, BedDataProvider):
     """
     Provides data from a BED file indexed via tabix.
     """
-    pass
 
 
 class RawBedDataProvider(BedDataProvider):
@@ -595,6 +586,7 @@ class VcfDataProvider(GenomeDataProvider):
 
     Payload format: An array of entries for each locus in the file. Each array
     has the following entries:
+
         1. GUID (unused)
         2. location (0-based)
         3. reference base(s)
@@ -603,10 +595,11 @@ class VcfDataProvider(GenomeDataProvider):
         6. whether variant passed filter
         7. sample genotypes -- a single string with samples separated by commas; empty string
            denotes the reference genotype
-        8-end: allele counts for each alternative
+        8. allele counts for each alternative
+
     """
 
-    col_name_data_attr_mapping = {'Qual': {'index': 6, 'name': 'Qual'}}
+    col_name_data_attr_mapping: Dict[Union[str, int], Dict] = {'Qual': {'index': 6, 'name': 'Qual'}}
 
     dataset_type = 'variant'
 
@@ -687,7 +680,7 @@ class VcfDataProvider(GenomeDataProvider):
                 alleles_seen = {}
                 has_alleles = False
 
-                for i, sample in enumerate(samples_data):
+                for sample in samples_data:
                     # Parse and count alleles.
                     genotype = sample.split(':')[0]
                     has_alleles = False
@@ -738,7 +731,7 @@ class VcfDataProvider(GenomeDataProvider):
                 # Write data in region.
                 iterator = self.get_iterator(data_file, region.chrom, region.start, region.end)
                 for line in iterator:
-                    out.write("%s\n" % line)
+                    out.write(f"{line}\n")
 
 
 class VcfTabixDataProvider(TabixDataProvider, VcfDataProvider):
@@ -849,7 +842,7 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
                     return None
 
             # Write reads in region.
-            for i, read in enumerate(data):
+            for read in data:
                 new_bamfile.write(read)
 
         # Cleanup.
@@ -1099,9 +1092,9 @@ class SamDataProvider(BamDataProvider):
 
     def __init__(self, converted_dataset=None, original_dataset=None, dependencies=None):
         """ Create SamDataProvider. """
-        super(SamDataProvider, self).__init__(converted_dataset=converted_dataset,
-                                              original_dataset=original_dataset,
-                                              dependencies=dependencies)
+        super().__init__(converted_dataset=converted_dataset,
+                         original_dataset=original_dataset,
+                         dependencies=dependencies)
 
         # To use BamDataProvider, original dataset must be BAM and
         # converted dataset must be BAI. Use BAI from BAM metadata.
@@ -1277,7 +1270,7 @@ class IntervalIndexDataProvider(GenomeDataProvider, FilterableMixin):
                 chrom = region.chrom
                 start = region.start
                 end = region.end
-                for start, end, offset in index.find(chrom, start, end):
+                for _start, _end, offset in index.find(chrom, start, end):
                     source.seek(offset)
 
                     # HACK: write differently depending on original dataset format.
@@ -1414,7 +1407,7 @@ class GtfTabixDataProvider(TabixDataProvider):
         # and then create a generic GFFDataProvider that can be used with both
         # raw and tabix datasets.
         features = {}
-        for count, line in enumerate(iterator):
+        for line in iterator:
             line_attrs = parse_gff_attributes(line.split('\t')[8])
             transcript_id = line_attrs['transcript_id']
             if transcript_id in features:
@@ -1632,8 +1625,9 @@ class ChromatinInteractionsTabixDataProvider(TabixDataProvider, ChromatinInterac
 #
 
 
-def package_gff_feature(feature, no_detail=False, filter_cols=[]):
+def package_gff_feature(feature, no_detail=False, filter_cols=None):
     """ Package a GFF feature in an array for data providers. """
+    filter_cols = filter_cols or []
     feature = convert_gff_coords_to_bed(feature)
 
     # No detail means only start, end.

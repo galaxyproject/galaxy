@@ -20,7 +20,7 @@ RAVEN_IMPORT_MESSAGE = ('The Python raven package is required to use this '
                         'feature, please install it')
 
 
-class Sentry(object):
+class Sentry:
     """
     A WSGI middleware which will attempt to capture any
     uncaught exceptions and send them to Sentry.
@@ -49,8 +49,7 @@ class Sentry(object):
             raise
 
         try:
-            for event in iterable:
-                yield event
+            yield from iterable
         except Exception:
             self.handle_exception(environ)
             raise
@@ -71,7 +70,7 @@ class Sentry(object):
             headers['Cookie'] = 'redacted'
         cak = environ.get('controller_action_key', None) or environ.get('PATH_INFO', "NOPATH").strip('/').replace('/', '.')
         event_id = self.client.captureMessage(
-            "SLOREQ: %s" % cak,
+            f"SLOREQ: {cak}",
             data={
                 'sentry.interfaces.Http': {
                     'method': environ.get('REQUEST_METHOD'),

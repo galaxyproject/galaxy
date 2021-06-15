@@ -1,0 +1,13 @@
+{
+    "id": "FOO_HDA_ID",
+    "hid": 32,
+    "create_time": "2020-09-28T15:54:04.803756",
+    "name": "Add column on data 31",
+    "file_size": 93,
+    "file_ext": "txt",
+    "metadata_dbkey": "?",
+    "dataset_id": "201592c8e20dac24",
+    "history_id": "6fc9fbb81c497f69",
+    "uuid": "5e89abe4-e8f7-468a-9ef1-d4e322183fa5",
+    "file_name": "/home/oleg/galaxy/database/objects/5/e/8/dataset_5e89abe4-e8f7-468a-9ef1-d4e322183fa5.dat"
+}

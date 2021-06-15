@@ -88,7 +88,7 @@ def generate_tool_guid(repository_clone_url, tool):
     <tool shed host>/repos/<repository owner>/<repository name>/<tool id>/<tool version>
     """
     tmp_url = common_util.remove_protocol_and_user_from_clone_url(repository_clone_url)
-    return '%s/%s/%s' % (tmp_url, tool.id, tool.version)
+    return f'{tmp_url}/{tool.id}/{tool.version}'
 
 
 def get_ctx_rev(app, tool_shed_url, name, owner, changeset_revision):
@@ -131,7 +131,7 @@ def get_next_prior_import_or_install_required_dict_entry(prior_required_dict, pr
             return key
     # Return the first key / value pair that is not yet processed.  Hopefully this is all that is necessary
     # at this point.
-    for key, value in prior_required_dict.items():
+    for key in prior_required_dict.keys():
         if key in processed_tsr_ids:
             continue
         return key
@@ -144,7 +144,7 @@ def get_tool_panel_config_tool_path_install_dir(app, repository):
     defined in a single shed-related tool panel config.
     """
     tool_shed = common_util.remove_port_from_tool_shed_url(str(repository.tool_shed))
-    relative_install_dir = '%s/repos/%s/%s/%s' % (tool_shed,
+    relative_install_dir = '{}/repos/{}/{}/{}'.format(tool_shed,
                                                   str(repository.owner),
                                                   str(repository.name),
                                                   str(repository.installed_changeset_revision))
@@ -157,7 +157,7 @@ def get_tool_panel_config_tool_path_install_dir(app, repository):
 
 def get_user(app, id):
     """Get a user from the database by id."""
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     return sa_session.query(app.model.User).get(app.security.decode_id(id))
 
 
@@ -174,10 +174,10 @@ def set_image_paths(app, text, encoded_repository_id=None, tool_shed_repository=
     """
     if text:
         if repository_util.is_tool_shed_client(app) and encoded_repository_id:
-            route_to_images = 'admin_toolshed/static/images/%s' % encoded_repository_id
+            route_to_images = f'admin_toolshed/static/images/{encoded_repository_id}'
         elif encoded_repository_id:
             # We're in the tool shed.
-            route_to_images = '/repository/static/images/%s' % encoded_repository_id
+            route_to_images = f'/repository/static/images/{encoded_repository_id}'
         elif tool_shed_repository and tool_id and tool_version:
             route_to_images = 'shed_tool_static/{shed}/{owner}/{repo}/{tool}/{version}'.format(
                 shed=tool_shed_repository.tool_shed,

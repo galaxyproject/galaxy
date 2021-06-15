@@ -1,7 +1,6 @@
 """
 Adds the repository, repository_rating_association and repository_category_association tables.
 """
-from __future__ import print_function
 
 import datetime
 import logging

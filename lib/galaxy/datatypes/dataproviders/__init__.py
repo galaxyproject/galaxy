@@ -1,4 +1,3 @@
-
 # TODO: ---- This is a work in progress ----
 """
 Dataproviders are iterators with context managers that provide data to some
