@@ -29,7 +29,7 @@
                 <PriorityMenuItem
                     key="share"
                     title="Share or Publish"
-                    icon="fas fa-handshake"
+                    icon="fas fa-share-alt"
                     @click="backboneRoute('/histories/sharing', { id: history.id })"
                 />
                 <PriorityMenuItem
