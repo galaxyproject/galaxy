@@ -1089,7 +1089,6 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
                 for wo in step.workflow_step.workflow_outputs:
                     workflow_outputs_list.add(wo.output_name)
                 for job in step.jobs:
-                    
                     for job_input in job.input_datasets:
                         if hasattr(job_input.dataset, 'dataset_id'):
                             encoded_dataset_id = trans.security.encode_id(job_input.dataset.dataset_id)
@@ -1332,7 +1331,7 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
     def export_invocation_metrics(self, trans, invocation_id, **kwd):
         '''
         GET /api/invocations/{invocations_id}/invocation_metrics
-        Return a dictionary with metrics from a workflow invocation. 
+        Return a dictionary with metrics from a workflow invocation.
         '''
         return self._generate_invocation_metrics(trans, invocation_id, **kwd)
 

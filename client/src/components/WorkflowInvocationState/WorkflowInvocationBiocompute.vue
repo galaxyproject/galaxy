@@ -6,7 +6,7 @@
                 <details class="invocation-biocompute-object-export">
                     <summary><b>Export BioCompute Object</b></summary>
                      <div>
-                         <form v-on:submit.prevent="submitForm">
+                         <form @:submit.prevent="submitForm">
                              <div class="form-group">
                                  <label for="fetch">BCO DB Root URL</label>
                                  <input type="text" 
@@ -52,7 +52,7 @@
 <script>
 
 import { getRootFromIndexLink } from "onload";
-import { mapGetters, mapActions } from "vuex";
+import { mapGetters } from "vuex";
 import axios from "axios";
 
 const getUrl = (path) => getRootFromIndexLink() + path;
@@ -60,6 +60,7 @@ const getUrl = (path) => getRootFromIndexLink() + path;
 export default {
     props: {
         invocation: {
+            type: String,
             required: true,
         },
     },
