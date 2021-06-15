@@ -24,7 +24,12 @@
             icon="fas fa-save"
             @click="backboneRoute('/histories/list')"
         />
-        <PriorityMenuItem key="clear-history-cache" title="Clear Cache" icon="fa fa-refresh" @click.stop="clearCache" />
+        <PriorityMenuItem
+            key="clear-history-cache"
+            title="Refresh History"
+            icon="fa fa-sync"
+            @click.stop="clearCache"
+        />
         <PriorityMenuItem
             key="use-legacy-history"
             title="Return to legacy history panel"
