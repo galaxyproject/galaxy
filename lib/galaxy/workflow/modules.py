@@ -470,7 +470,8 @@ class SubWorkflowModule(WorkflowModule):
 
     def check_and_update_state(self):
         states = (m.check_and_update_state() for m in self.get_modules())
-        return [upgrade_message for upgrade_message in states if upgrade_message] or None
+        # TODO: key ("Step N:") is not currently consumed in UI
+        return {f"Step {i + 1}": upgrade_message for i, upgrade_message in enumerate(states) if upgrade_message} or None
 
     def get_errors(self, **kwargs):
         errors = (module.get_errors(include_tool_id=True) for module in self.get_modules())
