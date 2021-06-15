@@ -6874,48 +6874,48 @@ class LibraryDatasetCollectionAnnotationAssociation(RepresentById):
 
 # Item rating classes.
 class ItemRatingAssociation:
-    def __init__(self, id=None, user=None, item=None, rating=0):
-        self.id = id
+    def __init__(self, user, item, rating=0):
         self.user = user
-        self.item = item
         self.rating = rating
+        self._set_item(item)
 
-    def set_item(self, item):
+    def _set_item(self, item):
         """ Set association's item. """
+        raise NotImplementedError()
 
 
 class HistoryRatingAssociation(ItemRatingAssociation, RepresentById):
-    def set_item(self, history):
+    def _set_item(self, history):
         self.history = history
 
 
 class HistoryDatasetAssociationRatingAssociation(ItemRatingAssociation, RepresentById):
-    def set_item(self, history_dataset_association):
+    def _set_item(self, history_dataset_association):
         self.history_dataset_association = history_dataset_association
 
 
 class StoredWorkflowRatingAssociation(ItemRatingAssociation, RepresentById):
-    def set_item(self, stored_workflow):
+    def _set_item(self, stored_workflow):
         self.stored_workflow = stored_workflow
 
 
 class PageRatingAssociation(ItemRatingAssociation, RepresentById):
-    def set_item(self, page):
+    def _set_item(self, page):
         self.page = page
 
 
 class VisualizationRatingAssociation(ItemRatingAssociation, RepresentById):
-    def set_item(self, visualization):
+    def _set_item(self, visualization):
         self.visualization = visualization
 
 
 class HistoryDatasetCollectionRatingAssociation(ItemRatingAssociation, RepresentById):
-    def set_item(self, dataset_collection):
+    def _set_item(self, dataset_collection):
         self.dataset_collection = dataset_collection
 
 
 class LibraryDatasetCollectionRatingAssociation(ItemRatingAssociation, RepresentById):
-    def set_item(self, dataset_collection):
+    def _set_item(self, dataset_collection):
         self.dataset_collection = dataset_collection
 
 

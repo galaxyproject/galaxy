@@ -43,10 +43,7 @@ class UsesItemRatings:
         if not item_rating:
             # User has not yet rated item; create rating.
             item_rating_assoc_class = self._get_item_rating_assoc_class(item, webapp_model=webapp_model)
-            item_rating = item_rating_assoc_class()
-            item_rating.user = user
-            item_rating.set_item(item)
-            item_rating.rating = rating
+            item_rating = item_rating_assoc_class(user, item, rating)
             db_session.add(item_rating)
             db_session.flush()
         elif item_rating.rating != rating:
