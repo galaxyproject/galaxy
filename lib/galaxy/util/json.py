@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 import math
@@ -55,7 +56,7 @@ def safe_loads(arg):
         if loaded is not None and not isinstance(loaded, Iterable):
             loaded = arg
     except (TypeError, ValueError):
-        loaded = arg
+        loaded = copy.deepcopy(arg)
     return loaded
 
 
