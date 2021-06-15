@@ -128,7 +128,10 @@ class DatasetsApiTestCase(ApiTestCase):
             'item_class': 'HistoryDatasetAssociation',
             'item_tags': ['cool:tag_a', 'cool:tag_b', 'tag_c', 'name:tag_d', '#tag_e'],
         })
-        put_response = self._put("tags", payload)
+
+        # TODO remove the headers here and add json parameter to _put method
+        put_response = self._put("tags", data=payload, headers={'Content-Type': 'application/json'})
+
         self._assert_status_code_is_ok(put_response)
         updated_hda = self._get(
             f"histories/{self.history_id}/contents/{hda_id}").json()
