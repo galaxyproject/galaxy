@@ -12,7 +12,7 @@ from galaxy_test.base.ssh_util import generate_ssh_keys
 from galaxy_test.driver import integration_util
 from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
 
-RemoteConnection = collections.namedtuple('remote_connection', ['hostname', 'username', 'port', 'private_key', 'public_key'])
+RemoteConnection = collections.namedtuple('RemoteConnection', ['hostname', 'username', 'port', 'private_key', 'public_key'])
 
 
 def start_ssh_docker(container_name, jobs_directory, port=10022, image='agaveapi/slurm'):
@@ -22,7 +22,7 @@ def start_ssh_docker(container_name, jobs_directory, port=10022, image='agaveapi
                           '-h',
                           'localhost',
                           '-p',
-                          '{port}:22'.format(port=port),
+                          f'{port}:22',
                           '-d',
                           '--name',
                           container_name,
@@ -31,7 +31,7 @@ def start_ssh_docker(container_name, jobs_directory, port=10022, image='agaveapi
                           '-v',
                           "{jobs_directory}:{jobs_directory}".format(jobs_directory=jobs_directory),
                           "-v",
-                          "{public_key_file}:/home/testuser/.ssh/authorized_keys".format(public_key_file=ssh_keys.public_key_file),
+                          f"{ssh_keys.public_key_file}:/home/testuser/.ssh/authorized_keys",
                           '--ulimit',
                           'nofile=2048:2048',
                           image]
@@ -87,12 +87,12 @@ class BaseCliIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
         cls.remote_connection = start_ssh_docker(container_name=cls.container_name,
                                                  jobs_directory=cls.jobs_directory,
                                                  image=cls.image)
-        super(BaseCliIntegrationTestCase, cls).setUpClass()
+        super().setUpClass()
 
     @classmethod
     def tearDownClass(cls):
         stop_ssh_docker(cls.container_name, cls.remote_connection)
-        super(BaseCliIntegrationTestCase, cls).tearDownClass()
+        super().tearDownClass()
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -108,21 +108,21 @@ class BaseCliIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
         assert job_env.some_env == '42'
 
 
-class TorqueSetup(object):
+class TorqueSetup:
     job_plugin = 'Torque'
     image = 'mvdbeek/galaxy-integration-docker-images:torque_latest'
 
 
-class SlurmSetup(object):
+class SlurmSetup:
     job_plugin = 'Slurm'
     image = 'mvdbeek/galaxy-integration-docker-images:slurm_latest'
 
 
-class ParamikoShell(object):
+class ParamikoShell:
     shell_plugin = 'ParamikoShell'
 
 
-class SecureShell(object):
+class SecureShell:
     shell_plugin = 'SecureShell'
 
 

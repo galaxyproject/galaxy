@@ -36,7 +36,7 @@ def build_command(
     include_metadata=False,
     include_work_dir_outputs=True,
     create_tool_working_directory=True,
-    remote_command_params={},
+    remote_command_params=None,
     remote_job_directory=None,
     stdout_file=None,
     stderr_file=None,
@@ -50,6 +50,7 @@ def build_command(
         - command line taken from job wrapper
         - commands to set metadata (if include_metadata is True)
     """
+    remote_command_params = remote_command_params or {}
     shell = job_wrapper.shell
     base_command_line = job_wrapper.get_command_line()
     # job_id = job_wrapper.job_id
@@ -123,7 +124,7 @@ def build_command(
 
     if include_metadata and job_wrapper.requires_setting_metadata:
         working_directory = remote_job_directory or job_wrapper.working_directory
-        commands_builder.append_command("cd '%s'" % working_directory)
+        commands_builder.append_command(f"cd '{working_directory}'")
         __handle_metadata(commands_builder, job_wrapper, runner, remote_command_params)
 
     return commands_builder.build()
@@ -155,7 +156,7 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
         tool_commands,
     )
     write_script(local_container_script, script_contents, config)
-    commands = "{} {}".format(shell, local_container_script)
+    commands = f"{shell} {local_container_script}"
     # TODO: Cleanup for_pulsar hack.
     # - Integrate Pulsar sending tool_stdout/tool_stderr back
     #   https://github.com/galaxyproject/pulsar/pull/202
@@ -166,11 +167,11 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
     #   https://github.com/galaxyproject/galaxy/pull/8449
     for_pulsar = False
     if 'script_directory' in remote_command_params:
-        commands = "{} {}".format(shell, join(remote_command_params['script_directory'], script_name))
+        commands = f"{shell} {join(remote_command_params['script_directory'], script_name)}"
         for_pulsar = True
     if not for_pulsar:
         commands += " > ../outputs/tool_stdout 2> ../outputs/tool_stderr"
-    log.info("Built script [{}] for tool command [{}]".format(local_container_script, tool_commands))
+    log.info(f"Built script [{local_container_script}] for tool command [{tool_commands}]")
     return commands
 
 
@@ -236,14 +237,16 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
     metadata_command = metadata_command.strip()
     if metadata_command:
         # Place Galaxy and its dependencies in environment for metadata regardless of tool.
-        metadata_command = "{}{}".format(SETUP_GALAXY_FOR_METADATA, metadata_command)
+        metadata_command = f"{SETUP_GALAXY_FOR_METADATA}{metadata_command}"
         commands_builder.capture_return_code()
         commands_builder.append_command(metadata_command)
 
 
 def __copy_if_exists_command(work_dir_output):
     source_file, destination = work_dir_output
-    return "if [ -f {} ] ; then cp {} {} ; fi".format(source_file, source_file, destination)
+    if '?' in source_file or '*' in source_file:
+        source_file = source_file.replace('*', '"*"').replace('?', '"?"')
+    return f'\nif [ -f "{source_file}" ] ; then cp "{source_file}" "{destination}" ; fi'
 
 
 class CommandsBuilder:
@@ -262,9 +265,7 @@ class CommandsBuilder:
 
     def prepend_command(self, command, sep=";"):
         if command:
-            self.commands = "{}{} {}".format(command,
-                                         sep,
-                                         self.commands)
+            self.commands = f"{command}{sep} {self.commands}"
         return self
 
     def prepend_commands(self, commands):
@@ -272,9 +273,7 @@ class CommandsBuilder:
 
     def append_command(self, command, sep=';'):
         if command:
-            self.commands = "{}{} {}".format(self.commands,
-                                          sep,
-                                          command)
+            self.commands = f"{self.commands}{sep} {command}"
         return self
 
     def append_commands(self, commands):
@@ -287,8 +286,7 @@ trap 'rm "$out" "$err"' EXIT
 tee -a stdout.log < "$out" &
 tee -a stderr.log < "$err" >&2 &""",
                              sep="")
-        self.append_command("> '{stdout_file}' 2> '{stderr_file}'".format(stdout_file=stdout_file,
-                                                                          stderr_file=stderr_file),
+        self.append_command(f"> '{stdout_file}' 2> '{stderr_file}'",
                             sep="")
 
     def capture_return_code(self):

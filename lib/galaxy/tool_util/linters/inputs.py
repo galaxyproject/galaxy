@@ -1,7 +1,21 @@
+
 """This module contains a linting functions for tool inputs."""
 from galaxy.util import string_as_bool
 from ._util import is_datasource, is_valid_cheetah_placeholder
 from ..parser.util import _parse_name
+
+FILTER_TYPES = [
+    'data_meta',
+    'param_value',
+    'static_value',
+    'regexp',
+    'unique_value',
+    'multiple_splitter',
+    'attribute_value_splitter',
+    'add_value',
+    'remove_value',
+    'sort_by',
+]
 
 
 def lint_inputs(tool_xml, lint_ctx):
@@ -12,39 +26,100 @@ def lint_inputs(tool_xml, lint_ctx):
     for param in inputs:
         num_inputs += 1
         param_attrib = param.attrib
-        has_errors = False
-        if "type" not in param_attrib:
-            lint_ctx.error("Found param input with no type specified.")
-            has_errors = True
         if "name" not in param_attrib and "argument" not in param_attrib:
             lint_ctx.error("Found param input with no name specified.")
-            has_errors = True
-
-        if has_errors:
             continue
-
-        param_type = param_attrib["type"]
         param_name = _parse_name(param_attrib.get("name"), param_attrib.get("argument"))
 
+        if "type" not in param_attrib:
+            lint_ctx.error(f"Param input [{param_name}] input with no type specified.")
+            continue
+        param_type = param_attrib["type"]
+
         if not is_valid_cheetah_placeholder(param_name):
-            lint_ctx.warn("Param input [%s] is not a valid Cheetah placeholder.", param_name)
+            lint_ctx.warn(f"Param input [{param_name}] is not a valid Cheetah placeholder.")
 
         if param_type == "data":
             if "format" not in param_attrib:
-                lint_ctx.warn("Param input [%s] with no format specified - 'data' format will be assumed.", param_name)
-
-        if param_type == "select":
+                lint_ctx.warn(f"Param input [{param_name}] with no format specified - 'data' format will be assumed.")
+        elif param_type == "select":
+            # get dynamic/statically defined options
             dynamic_options = param.get("dynamic_options", None)
-            if dynamic_options is None:
-                dynamic_options = param.find("options")
+            options = param.findall("./options")
+            filters = param.findall("./options/filter")
+            select_options = param.findall('./option')
 
-            select_options = _find_with_attribute(param, 'option', 'value')
+            if dynamic_options is not None:
+                lint_ctx.warn(f"Select parameter [{param_name}] uses deprecated 'dynamic_options' attribute.")
+
+            # check if options are defined by exactly one possibility
+            if (dynamic_options is not None) + (len(options) > 0) + (len(select_options) > 0) != 1:
+                lint_ctx.error(f"Select parameter [{param_name}] options have to be defined by either 'option' children elements, a 'options' element or the 'dynamic_options' attribute.")
+
+            # lint dynamic options
+            if len(options) == 1:
+                filters = options[0].findall("./filter")
+                # lint filters
+                filter_adds_options = False
+                for f in filters:
+                    ftype = f.get("type", None)
+                    if ftype is None:
+                        lint_ctx.error(f"Select parameter [{param_name}] contains filter without type.")
+                        continue
+                    if ftype not in FILTER_TYPES:
+                        lint_ctx.error(f"Select parameter [{param_name}] contains filter with unknown type '{ftype}'.")
+                        continue
+                    if ftype in ['add_value', 'data_meta']:
+                        filter_adds_options = True
+                    # TODO more linting of filters
+
+                from_file = options[0].get("from_file", None)
+                from_parameter = options[0].get("from_parameter", None)
+                from_dataset = options[0].get("from_dataset", None)
+                from_data_table = options[0].get("from_data_table", None)
+                if (from_file is None and from_parameter is None
+                        and from_dataset is None and from_data_table is None
+                        and not filter_adds_options):
+                    lint_ctx.error(f"Select parameter [{param_name}] options tag defines no options. Use 'from_dataset', 'from_data_table', or a filter that adds values.")
+
+                if from_file is not None:
+                    lint_ctx.warn(f"Select parameter [{param_name}] options uses deprecated 'from_file' attribute.")
+                if from_parameter is not None:
+                    lint_ctx.warn(f"Select parameter [{param_name}] options uses deprecated 'from_parameter' attribute.")
+
+                if from_dataset is not None and from_data_table is not None:
+                    lint_ctx.error(f"Select parameter [{param_name}] options uses 'from_dataset' and 'from_data_table' attribute.")
+
+                if options[0].get("meta_file_key", None) is not None and from_dataset is None:
+                    lint_ctx.error(f"Select parameter [{param_name}] 'meta_file_key' is only compatible with 'from_dataset'.")
+
+                if options[0].get("options_filter_attribute", None) is not None:
+                    lint_ctx.warn(f"Select parameter [{param_name}] options uses deprecated 'options_filter_attribute' attribute.")
+
+                if options[0].get("transform_lines", None) is not None:
+                    lint_ctx.warn(f"Select parameter [{param_name}] options uses deprecated 'transform_lines' attribute.")
+
+            elif len(options) > 1:
+                lint_ctx.error(f"Select parameter [{param_name}] contains multiple options elements")
+
+            # lint statically defined options
             if any(['value' not in option.attrib for option in select_options]):
-                lint_ctx.error("Option without value")
+                lint_ctx.error(f"Select parameter [{param_name}] has option without value")
+            if len(set([option.text.strip() for option in select_options])) != len(select_options):
+                lint_ctx.error(f"Select parameter [{param_name}] has multiple options with the same text content")
+            if len(set([option.attrib.get("value") for option in select_options])) != len(select_options):
+                lint_ctx.error(f"Select parameter [{param_name}] has multiple options with the same value")
 
-            if dynamic_options is None and len(select_options) == 0:
-                message = "No options defined for select [%s]" % param_name
-                lint_ctx.warn(message)
+            if param_attrib.get("display") == "checkboxes":
+                if not string_as_bool(param_attrib.get("multiple", "false")):
+                    lint_ctx.error(f'Select [{param_name}] `display="checkboxes"` is incompatible with `multiple="false"`, remove the `display` attribute')
+                if not string_as_bool(param_attrib.get("optional", "false")):
+                    lint_ctx.error(f'Select [{param_name}] `display="checkboxes"` is incompatible with `optional="false"`, remove the `display` attribute')
+            if param_attrib.get("display") == "radio":
+                if string_as_bool(param_attrib.get("multiple", "false")):
+                    lint_ctx.error(f'Select [{param_name}] display="radio" is incompatible with multiple="true"')
+                if string_as_bool(param_attrib.get("optional", "false")):
+                    lint_ctx.error(f'Select [{param_name}] display="radio" is incompatible with optional="true"')
 
         # TODO: Validate type, much more...
 
@@ -58,11 +133,11 @@ def lint_inputs(tool_xml, lint_ctx):
             continue
         first_param = conditional.find("param")
         if first_param is None:
-            lint_ctx.error("Conditional '%s' has no child <param>" % conditional_name)
+            lint_ctx.error(f"Conditional [{conditional_name}] has no child <param>")
             continue
         first_param_type = first_param.get('type')
         if first_param_type not in ['select', 'boolean']:
-            lint_ctx.warn("Conditional '%s' first param should have type=\"select\" /> or type=\"boolean\"" % conditional_name)
+            lint_ctx.warn(f'Conditional [{conditional_name}] first param should have type="select" /> or type="boolean"')
             continue
 
         if first_param_type == 'select':
@@ -75,32 +150,32 @@ def lint_inputs(tool_xml, lint_ctx):
             ]
 
         if string_as_bool(first_param.get('optional', False)):
-            lint_ctx.warn("Conditional test parameter cannot be optional")
+            lint_ctx.warn(f"Conditional [{conditional_name}] test parameter cannot be optional")
 
         whens = conditional.findall('./when')
         if any('value' not in when.attrib for when in whens):
-            lint_ctx.error("When without value")
+            lint_ctx.error(f"Conditional [{conditional_name}] when without value")
 
         when_ids = [w.get('value') for w in whens]
 
         for option_id in option_ids:
             if option_id not in when_ids:
-                lint_ctx.warn("No <when /> block found for {} option '{}' inside conditional '{}'".format(first_param_type, option_id, conditional_name))
+                lint_ctx.warn(f"Conditional [{conditional_name}] no <when /> block found for {first_param_type} option '{option_id}'")
 
         for when_id in when_ids:
             if when_id not in option_ids:
                 if first_param_type == 'select':
-                    lint_ctx.warn("No <option /> found for when block '{}' inside conditional '{}'".format(when_id, conditional_name))
+                    lint_ctx.warn(f"Conditional [{conditional_name}] no <option /> found for when block '{when_id}'")
                 else:
-                    lint_ctx.warn("No truevalue/falsevalue found for when block '{}' inside conditional '{}'".format(when_id, conditional_name))
+                    lint_ctx.warn(f"Conditional [{conditional_name}] no truevalue/falsevalue found for when block '{when_id}'")
 
     if datasource:
         for datasource_tag in ('display', 'uihints'):
             if not any([param.tag == datasource_tag for param in inputs]):
-                lint_ctx.info("%s tag usually present in data sources" % datasource_tag)
+                lint_ctx.info(f"{datasource_tag} tag usually present in data sources")
 
     if num_inputs:
-        lint_ctx.info("Found %d input parameters.", num_inputs)
+        lint_ctx.info(f"Found {num_inputs} input parameters.")
     else:
         if datasource:
             lint_ctx.info("No input parameters, OK for data sources")
@@ -120,7 +195,7 @@ def lint_repeats(tool_xml, lint_ctx):
 
 def _find_with_attribute(element, tag, attribute, test_value=None):
     rval = []
-    for el in (element.findall('./%s' % tag) or []):
+    for el in (element.findall(f'./{tag}') or []):
         if attribute not in el.attrib:
             continue
         value = el.attrib[attribute]

@@ -1,14 +1,15 @@
+from typing import Optional
+
 from galaxy.managers.context import (
-    ProvidesAppContext,
     ProvidesHistoryContext,
-    ProvidesUserContext
 )
+from galaxy.model import History
 
 
-class WorkRequestContext(ProvidesAppContext, ProvidesUserContext, ProvidesHistoryContext):
+class WorkRequestContext(ProvidesHistoryContext):
     """ Stripped down implementation of Galaxy web transaction god object for
     work request handling outside of web threads - uses mix-ins shared with
-    GalaxyWebTransaction to provide app, user, and history context convience
+    GalaxyWebTransaction to provide app, user, and history context convenience
     methods - but nothing related to HTTP handling, mako views, etc....
 
     Things that only need app shouldn't be consuming trans - but there is a
@@ -18,22 +19,28 @@ class WorkRequestContext(ProvidesAppContext, ProvidesUserContext, ProvidesHistor
     objects.
     """
 
-    def __init__(self, app, user=None, history=None, workflow_building_mode=False):
-        self.app = app
-        self.security = app.security
+    def __init__(self, app, user=None, history=None, workflow_building_mode=False, qualified_url_builder=None):
+        self._app = app
         self.__user = user
         self.__user_current_roles = None
         self.__history = history
-        self.api_inherit_admin = False
+        self._qualified_url_builder = qualified_url_builder
         self.workflow_building_mode = workflow_building_mode
+
+    @property
+    def app(self):
+        return self._app
+
+    @property
+    def qualified_url_builder(self):
+        return self._qualified_url_builder
 
     def get_history(self, create=False):
         return self.__history
 
-    def set_history(self):
-        raise NotImplementedError("Cannot change histories from a work request context.")
-
-    history = property(get_history, set_history)
+    @property
+    def history(self):
+        return self.get_history()
 
     def get_user(self):
         """Return the current user if logged in or None."""
@@ -49,3 +56,23 @@ class WorkRequestContext(ProvidesAppContext, ProvidesUserContext, ProvidesHistor
         raise NotImplementedError("Cannot change users from a work request context.")
 
     user = property(get_user, set_user)
+
+
+class SessionRequestContext(WorkRequestContext):
+    """Like WorkRequestContext, but provides access to galaxy session and session."""
+    def __init__(self, **kwargs):
+        self.galaxy_session = kwargs.pop('galaxy_session', None)
+        super().__init__(**kwargs)
+
+    def get_galaxy_session(self):
+        return self.galaxy_session
+
+
+def proxy_work_context_for_history(trans: ProvidesHistoryContext, history: Optional[History] = None, workflow_building_mode=False):
+    """Create a WorkContext for supplied context with potentially different history.
+
+    This provides semi-structured access to a transaction/work context with a supplied target
+    history that is different from the user's current history (which also might change during
+    the request).
+    """
+    return WorkRequestContext(app=trans.app, user=trans.user, history=history or trans.history, qualified_url_builder=trans.qualified_url_builder, workflow_building_mode=workflow_building_mode)

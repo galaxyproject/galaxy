@@ -19,7 +19,6 @@ class BowtieIndex(Html):
     MetadataElement(name="sequence_space", desc="sequence_space for this index set", default='unknown', set_in_upload=True, readonly=True)
 
     composite_type = 'auto_primary_file'
-    allow_datatype_change = False
 
     def generate_primary_file(self, dataset=None):
         """
@@ -34,10 +33,10 @@ class BowtieIndex(Html):
         """
         bn = dataset.metadata.base_name
         flist = os.listdir(dataset.extra_files_path)
-        rval = ['<html><head><title>Files for Composite Dataset %s</title></head><p/>Comprises the following files:<p/><ul>' % (bn)]
-        for i, fname in enumerate(flist):
+        rval = [f'<html><head><title>Files for Composite Dataset {bn}</title></head><p/>Comprises the following files:<p/><ul>']
+        for fname in flist:
             sfname = os.path.split(fname)[-1]
-            rval.append('<li><a href="{}">{}</a>'.format(sfname, sfname))
+            rval.append(f'<li><a href="{sfname}">{sfname}</a>')
         rval.append('</ul></html>')
         with open(dataset.file_name, 'w') as f:
             f.write("\n".join(rval))
@@ -45,8 +44,8 @@ class BowtieIndex(Html):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = "Bowtie index file (%s)" % (dataset.metadata.sequence_space)
-            dataset.blurb = "%s space" % (dataset.metadata.sequence_space)
+            dataset.peek = f"Bowtie index file ({dataset.metadata.sequence_space})"
+            dataset.blurb = f"{dataset.metadata.sequence_space} space"
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'

@@ -4,7 +4,6 @@ import QuotaMeter from "mvc/user/user-quotameter";
 import { getGalaxyInstance } from "app";
 import Masthead from "../components/Masthead/Masthead";
 import { mountVueComponent } from "../utils/mountVueComponent";
-import { getAppRoot } from "onload/loadConfig";
 
 export class MastheadState {
     // Used to be a Backbone View - not pretty but keep all window wide listeners,
@@ -19,6 +18,7 @@ export class MastheadState {
         // add quota meter to masthead
         Galaxy.quotaMeter = this.quotaMeter = new QuotaMeter.UserQuotaMeter({
             model: Galaxy.user,
+            quotaUrl: Galaxy.config.quota_url,
         });
 
         // loop through beforeunload functions if the user attempts to unload the page
@@ -51,8 +51,7 @@ export function mountMasthead(el, options, mastheadState) {
             brand: options.brand,
             brandLink: options.logo_url,
             brandImage: options.logo_src,
-            appRoot: getAppRoot(),
-            galaxy: getGalaxyInstance(),
+            brandImageSecondary: options.logo_src_secondary,
             menuOptions: options,
         },
         el

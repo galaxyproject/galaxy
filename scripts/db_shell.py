@@ -13,14 +13,11 @@
 # You can also use this script as a library, for instance see https://gist.github.com/1979583
 # TODO: This script overlaps a lot with manage_db.py and create_db.py,
 # these should maybe be refactored to remove duplication.
-from __future__ import print_function
 
 import datetime
 import decimal
 import os.path
 import sys
-
-from six import string_types
 
 # Setup DB scripting environment
 from sqlalchemy import *  # noqa
@@ -35,9 +32,6 @@ from galaxy.model import *  # noqa
 from galaxy.model import set_datatypes_registry  # More explicit than `*` import
 from galaxy.model.mapping import init
 from galaxy.model.orm.scripts import get_config
-
-if sys.version_info > (3,):
-    long = int
 
 registry = Registry()
 registry.load_datatypes()
@@ -71,7 +65,7 @@ def printquery(statement, bind=None):
                 self, bindparam, within_columns_clause=False,
                 literal_binds=False, **kwargs
         ):
-            return super(LiteralCompiler, self).render_literal_bindparam(
+            return super().render_literal_bindparam(
                 bindparam,
                 within_columns_clause=within_columns_clause,
                 literal_binds=literal_binds,
@@ -88,12 +82,12 @@ def printquery(statement, bind=None):
             of the DBAPI.
 
             """
-            if isinstance(value, string_types):
+            if isinstance(value, str):
                 value = value.replace("'", "''")
                 return "'%s'" % value
             elif value is None:
                 return "NULL"
-            elif isinstance(value, (float, int, long)):
+            elif isinstance(value, (float, int)):
                 return repr(value)
             elif isinstance(value, decimal.Decimal):
                 return str(value)

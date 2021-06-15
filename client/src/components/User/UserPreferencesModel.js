@@ -33,15 +33,6 @@ export const getUserPreferencesModel = () => {
             submit_icon: "fa-trash",
             shouldRender: config.enable_oidc,
         },
-        communication: {
-            title: _l("Change Communication Settings"),
-            id: "edit-preferences-communication",
-            description: _l("Enable or disable the communication feature to chat with other users."),
-            url: `api/users/${Galaxy.user.id}/communication/inputs`,
-            icon: "fa-comments-o",
-            redirect: "user",
-            shouldRender: !!config.enable_communication_server,
-        },
         permissions: {
             title: _l("Set Dataset Permissions for New Histories"),
             id: "edit-preferences-permissions",
@@ -51,12 +42,14 @@ export const getUserPreferencesModel = () => {
             icon: "fa-users",
             submit_title: "Save Permissions",
             redirect: "user",
+            shouldRender: !config.single_user,
         },
         make_data_private: {
             title: _l("Make All Data Private"),
             id: "edit-preferences-make-data-private",
             description: _l("Click here to make all data private."),
             icon: "fa-lock",
+            shouldRender: !config.single_user,
         },
         api_key: {
             title: _l("Manage API Key"),
@@ -95,7 +88,7 @@ export const getUserPreferencesModel = () => {
             id: "edit-preferences-sign-out",
             description: _l("Click here to sign out of all sessions."),
             icon: "fa-sign-out",
-            shouldRender: !!Galaxy.session_csrf_token,
+            shouldRender: !!Galaxy.session_csrf_token && !config.single_user,
         },
     };
 };

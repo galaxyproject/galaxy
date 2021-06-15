@@ -1,29 +1,34 @@
-import { mount } from "@vue/test-utils";
+import { shallowMount, createLocalVue } from "@vue/test-utils";
 import Index from "./Index";
-import { __RewireAPI__ as rewire } from "./Index";
-import Vue from "vue";
+
+jest.mock("app");
+
+import { getAppRoot } from "onload/loadConfig";
+jest.mock("onload/loadConfig");
+getAppRoot.mockImplementation(() => "/");
+
+import { Services } from "../services";
+jest.mock("../services");
+
+Services.mockImplementation(() => {
+    return {
+        async getRepository(toolshedUrl, repositoryId) {
+            expect(toolshedUrl).toBe("toolshedUrl");
+            expect(repositoryId).toBe("id");
+            return [];
+        },
+        async getInstalledRepositoriesByName(name, owner) {
+            expect(name).toBe("name");
+            expect(owner).toBe("owner");
+            return [];
+        },
+    };
+});
 
 describe("RepositoryDetails", () => {
-    beforeEach(() => {
-        rewire.__Rewire__(
-            "Services",
-            class {
-                async getRepository(toolshedUrl, repositoryId) {
-                    expect(toolshedUrl).toBe("toolshedUrl");
-                    expect(repositoryId).toBe("id");
-                    return [];
-                }
-                async getInstalledRepositoriesByName(name, owner) {
-                    expect(name).toBe("name");
-                    expect(owner).toBe("owner");
-                    return [];
-                }
-            }
-        );
-    });
-
     it("test repository details index", async () => {
-        const wrapper = mount(Index, {
+        const localVue = createLocalVue();
+        const wrapper = shallowMount(Index, {
             propsData: {
                 repo: {
                     id: "id",
@@ -33,16 +38,12 @@ describe("RepositoryDetails", () => {
                 },
                 toolshedUrl: "toolshedUrl",
             },
-            stubs: {
-                RepositoryDetails: true,
-                InstallationSettings: true,
-                RepositoryTools: true,
-            },
+            localVue,
         });
         expect(wrapper.find(".loading-message").text()).toBe("Loading repository details...");
-        await Vue.nextTick();
+        await localVue.nextTick();
         expect(wrapper.findAll(".alert").length).toBe(0);
-        await Vue.nextTick();
+        await localVue.nextTick();
         expect(wrapper.findAll(".alert").length).toBe(0);
     });
 });

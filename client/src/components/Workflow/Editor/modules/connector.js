@@ -30,21 +30,13 @@ class Connector {
     }
     connect(t1, t2) {
         this.outputHandle = t1;
-        if (this.outputHandle) {
-            this.outputHandle.connect(this);
-        }
+        this.outputHandle?.connect(this);
         this.inputHandle = t2;
-        if (this.inputHandle) {
-            this.inputHandle.connect(this);
-        }
+        this.inputHandle?.connect(this);
     }
     destroy() {
-        if (this.outputHandle) {
-            this.outputHandle.disconnect(this);
-        }
-        if (this.inputHandle) {
-            this.inputHandle.disconnect(this);
-        }
+        this.outputHandle?.disconnect(this);
+        this.inputHandle?.disconnect(this);
         this.canvas.remove();
     }
     destroyIfInvalid(warn) {

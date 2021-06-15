@@ -31,8 +31,9 @@ import TrsSearch from "components/Workflow/TrsSearch.vue";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools.vue";
 import WorkflowList from "components/Workflow/WorkflowList.vue";
 import HistoryImport from "components/HistoryImport.vue";
+import { HistoryExport } from "components/HistoryExport/index";
 import HistoryView from "components/HistoryView.vue";
-import WorkflowInvocationReport from "components/WorkflowInvocationReport.vue";
+import WorkflowInvocationReport from "components/Workflow/InvocationReport.vue";
 import WorkflowRun from "components/Workflow/Run/WorkflowRun.vue";
 import RecentInvocations from "components/User/RecentInvocations.vue";
 import ToolsView from "components/ToolsView/ToolsView.vue";
@@ -42,19 +43,21 @@ import PluginList from "components/PluginList.vue";
 import QueryStringParsing from "utils/query-string-parsing";
 import DatasetError from "mvc/dataset/dataset-error";
 import DatasetEditAttributes from "mvc/dataset/dataset-edit-attributes";
-import Citations from "components/Citations.vue";
+import Citations from "components/Citation/Citations.vue";
 import DisplayStructure from "components/DisplayStructured.vue";
 import { CloudAuth } from "components/User/CloudAuth";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
-import Vue from "vue";
-import store from "store";
+import Confirmation from "components/login/Confirmation.vue";
+import Libraries from "components/Libraries";
+import { mountVueComponent } from "utils/mountVueComponent";
 
 /** Routes */
-export const getAnalysisRouter = (Galaxy) =>
-    Router.extend({
+export const getAnalysisRouter = (Galaxy) => {
+    return Router.extend({
         routes: {
             "(/)(#)(_=_)": "home",
             "(/)root*": "home",
+            "(/)login/confirm": "show_new_user_confirmation",
             "(/)tools/view": "show_tools_view",
             "(/)tools/json": "show_tools_json",
             "(/)tours(/)(:tour_id)": "show_tours",
@@ -84,6 +87,7 @@ export const getAnalysisRouter = (Galaxy) =>
             "(/)histories(/)rename(/)": "show_histories_rename",
             "(/)histories(/)sharing(/)": "show_histories_sharing",
             "(/)histories(/)import(/)": "show_histories_import",
+            "(/)histories(/)(:history_id)(/)export(/)": "show_history_export",
             "(/)histories(/)permissions(/)": "show_histories_permissions",
             "(/)histories/view": "show_history_view",
             "(/)histories/show_structure": "show_history_structure",
@@ -93,6 +97,7 @@ export const getAnalysisRouter = (Galaxy) =>
             "(/)datasets/edit": "show_dataset_edit_attributes",
             "(/)datasets/error": "show_dataset_error",
             "(/)interactivetool_entry_points(/)list": "show_interactivetool_list",
+            "(/)libraries*path": "show_library_folder",
         },
 
         require_login: ["show_user", "show_user_form", "show_workflows", "show_cloud_auth", "show_external_ids"],
@@ -102,14 +107,15 @@ export const getAnalysisRouter = (Galaxy) =>
             return (Galaxy.user && Galaxy.user.id) || this.require_login.indexOf(name) == -1;
         },
 
-        _display_vue_helper: function (component, propsData = {}, active_tab = null) {
-            const instance = Vue.extend(component);
+        _display_vue_helper: function (component, propsData = {}, active_tab = null, noPadding = false) {
             const container = document.createElement("div");
             if (active_tab) {
                 container.active_tab = active_tab;
             }
-            this.page.display(container);
-            new instance({ store, propsData }).$mount(container);
+            this.page.display(container, noPadding);
+
+            const mountFn = mountVueComponent(component);
+            return mountFn(propsData, container);
         },
 
         show_tours: function (tour_id) {
@@ -118,6 +124,10 @@ export const getAnalysisRouter = (Galaxy) =>
             } else {
                 this.page.display(new Tours.ToursView());
             }
+        },
+
+        show_new_user_confirmation: function () {
+            this._display_vue_helper(Confirmation);
         },
 
         show_user: function () {
@@ -137,6 +147,12 @@ export const getAnalysisRouter = (Galaxy) =>
 
         show_interactivetool_list: function () {
             this._display_vue_helper(InteractiveTools);
+        },
+
+        show_library_folder: function () {
+            this.page.toolPanel?.component.hide(0);
+            this.page.panels.right.hide();
+            this._display_vue_helper(Libraries);
         },
 
         show_cloud_auth: function () {
@@ -196,7 +212,7 @@ export const getAnalysisRouter = (Galaxy) =>
 
         show_workflow_invocation_report: function () {
             const invocationId = QueryStringParsing.get("id");
-            this._display_vue_helper(WorkflowInvocationReport, { invocationId: invocationId });
+            this._display_vue_helper(WorkflowInvocationReport, { invocationId: invocationId }, null, true);
         },
 
         show_workflow_invocations: function () {
@@ -237,6 +253,12 @@ export const getAnalysisRouter = (Galaxy) =>
             this._display_vue_helper(HistoryImport);
         },
 
+        show_history_export: function (history_id) {
+            this._display_vue_helper(HistoryExport, {
+                historyId: history_id,
+            });
+        },
+
         show_tools_view: function () {
             this.page.toolPanel?.component.hide();
             this.page.panels.right.hide();
@@ -273,9 +295,14 @@ export const getAnalysisRouter = (Galaxy) =>
         },
 
         show_pages_create: function () {
+            let url = "page/create";
+            const invocation_id = QueryStringParsing.get("invocation_id");
+            if (invocation_id) {
+                url += `?invocation_id=${invocation_id}`;
+            }
             this.page.display(
                 new FormWrapper.View({
-                    url: "page/create",
+                    url: url,
                     redirect: "pages/list",
                     active_tab: "user",
                 })
@@ -314,6 +341,9 @@ export const getAnalysisRouter = (Galaxy) =>
                     url: "workflow/create",
                     redirect: "workflow/editor",
                     active_tab: "workflow",
+                    submit_title: "Create",
+                    submit_icon: "fa-check",
+                    cancel_redirect: "workflows/list",
                 })
             );
         },
@@ -329,9 +359,13 @@ export const getAnalysisRouter = (Galaxy) =>
         show_workflows_trs_import: function () {
             const queryTrsServer = QueryStringParsing.get("trs_server");
             const queryTrsId = QueryStringParsing.get("trs_id");
+            const queryTrsVersionId = QueryStringParsing.get("trs_version");
+            const isRun = QueryStringParsing.get("run_form") === "true";
             const propsData = {
                 queryTrsServer,
                 queryTrsId,
+                queryTrsVersionId,
+                isRun,
             };
             this._display_vue_helper(TrsImport, propsData);
         },
@@ -423,3 +457,4 @@ export const getAnalysisRouter = (Galaxy) =>
             this._display_vue_helper(WorkflowRun, props, "workflow");
         },
     });
+};

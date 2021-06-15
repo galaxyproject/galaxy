@@ -2,7 +2,6 @@
 Provides utilities for working with GFF files.
 """
 import copy
-from collections import OrderedDict
 
 from bx.intervals.io import GenomicInterval, GenomicIntervalReader, MissingFieldError, NiceReaderWrapper, ParseError
 from bx.tabular.io import Comment, Header
@@ -58,9 +57,10 @@ class GFFFeature(GFFInterval):
     """
 
     def __init__(self, reader, chrom_col=0, feature_col=2, start_col=3, end_col=4,
-                 strand_col=6, score_col=5, default_strand='.', fix_strand=False, intervals=[],
+                 strand_col=6, score_col=5, default_strand='.', fix_strand=False, intervals=None,
                  raw_size=0):
         # Use copy so that first interval and feature do not share fields.
+        intervals = intervals or []
         GFFInterval.__init__(self, reader, copy.deepcopy(intervals[0].fields), chrom_col, feature_col,
                              start_col, end_col, strand_col, score_col, default_strand,
                              fix_strand=fix_strand)
@@ -167,7 +167,7 @@ class GFFReaderWrapper(NiceReaderWrapper):
         def handle_parse_error(e):
             """ Actions to take when ParseError found. """
             if self.outstream:
-                if self.print_delegate and hasattr(self.print_delegate, "__call__"):
+                if self.print_delegate and callable(self.print_delegate):
                     self.print_delegate(self.outstream, e, self)
             self.skipped += 1
             # no reason to stuff an entire bad file into memmory
@@ -371,12 +371,12 @@ def parse_gff3_attributes(attr_str):
     for tag_value_pair in attributes_list:
         pair = tag_value_pair.strip().split("=")
         if len(pair) == 1:
-            raise Exception("Attribute '%s' does not contain a '='" % tag_value_pair)
+            raise Exception(f"Attribute '{tag_value_pair}' does not contain a '='")
         if pair == '':
             continue
         tag = pair[0].strip()
         if tag == '':
-            raise Exception("Empty tag in attribute '%s'" % tag_value_pair)
+            raise Exception(f"Empty tag in attribute '{tag_value_pair}'")
         value = pair[1].strip()
         attributes[tag] = value
     return attributes
@@ -424,12 +424,12 @@ def read_unordered_gtf(iterator, strict=False):
         # transcripts with same ID on different chromosomes; this occurs in some popular
         # datasources, such as RefGenes in UCSC.
         def key_fn(fields):
-            return fields[0] + '_' + get_transcript_id(fields)
+            return f"{fields[0]}_{get_transcript_id(fields)}"
 
     # Aggregate intervals by transcript_id and collect comments.
-    feature_intervals = OrderedDict()
+    feature_intervals = {}
     comments = []
-    for count, line in enumerate(iterator):
+    for line in iterator:
         if line.startswith('#'):
             comments.append(Comment(line))
             continue
@@ -444,7 +444,7 @@ def read_unordered_gtf(iterator, strict=False):
 
     # Create features.
     chroms_features = {}
-    for count, intervals in enumerate(feature_intervals.values()):
+    for intervals in feature_intervals.values():
         # Sort intervals by start position.
         intervals.sort(key=lambda _: _.start)
         feature = GFFFeature(None, intervals=intervals)

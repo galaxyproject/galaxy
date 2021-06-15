@@ -13,33 +13,27 @@ from galaxy import (
     util,
     web
 )
-from galaxy.managers.visualizations import (
-    VisualizationManager,
-    VisualizationSerializer
-)
+from galaxy.managers.sharable import SharingPayload
+from galaxy.managers.visualizations import VisualizationsService
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.web import expose_api
 from galaxy.webapps.base.controller import (
-    BaseAPIController,
-    SharableMixin,
     UsesVisualizationMixin
 )
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
+from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
 
 
-class VisualizationsController(BaseAPIController, UsesVisualizationMixin, SharableMixin, UsesAnnotations):
+class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, UsesAnnotations):
     """
     RESTful controller for interactions with visualizations.
     """
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.manager = VisualizationManager(app)
-        self.serializer = VisualizationSerializer(app)
+    service: VisualizationsService = depends(VisualizationsService)
 
     @expose_api
-    def index(self, trans, **kwargs):
+    def index(self, trans: GalaxyWebTransaction, **kwargs):
         """
         GET /api/visualizations:
         """
@@ -65,7 +59,7 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
         return rval
 
     @expose_api
-    def show(self, trans, id, **kwargs):
+    def show(self, trans: GalaxyWebTransaction, id: str, **kwargs):
         """
         GET /api/visualizations/{viz_id}
         """
@@ -90,7 +84,7 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
         return dictionary
 
     @expose_api
-    def create(self, trans, payload, **kwargs):
+    def create(self, trans: GalaxyWebTransaction, payload: dict, **kwargs):
         """
         POST /api/visualizations
         creates a new visualization using the given payload
@@ -101,7 +95,7 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
         rval = None
 
         if 'import_id' in payload:
-            import_id = payload('import_id')
+            import_id = payload['import_id']
             visualization = self.import_visualization(trans, import_id, user=trans.user)
 
         else:
@@ -118,12 +112,12 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
             except ValueError as val_err:
                 raise exceptions.RequestParameterMissingException(str(val_err))
 
-        rval = {'id' : trans.security.encode_id(visualization.id)}
+        rval = {'id': trans.security.encode_id(visualization.id)}
 
         return rval
 
     @expose_api
-    def update(self, trans, id, payload, **kwargs):
+    def update(self, trans: GalaxyWebTransaction, id: str, payload: dict, **kwargs):
         """
         PUT /api/visualizations/{encoded_visualization_id}
         """
@@ -145,17 +139,27 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
         config = payload.get('config', visualization.latest_revision.config)
 
         latest_config = visualization.latest_revision.config
-        if((title != visualization.latest_revision.title) or
-                (dbkey != visualization.latest_revision.dbkey) or
-                (json.dumps(config) != json.dumps(latest_config))):
+        if((title != visualization.latest_revision.title)
+                or (dbkey != visualization.latest_revision.dbkey)
+                or (json.dumps(config) != json.dumps(latest_config))):
             revision = self.add_visualization_revision(trans, visualization, config, title, dbkey)
-            rval = {'id' : id, 'revision' : revision.id}
+            rval = {'id': id, 'revision': revision.id}
 
         # allow updating vis title
         visualization.title = title
         trans.sa_session.flush()
 
         return rval
+
+    @expose_api
+    def sharing(self, trans, id, payload=None, **kwd):
+        """
+        * GET/POST /api/pages/{id}/sharing
+            View/modify sharing options for the page with the given id.
+        """
+        if payload:
+            payload = SharingPayload(**payload)
+        return self.service.sharing(trans, id, payload)
 
     def _validate_and_parse_payload(self, payload):
         """
@@ -183,30 +187,30 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
             # TODO: validate types in VALID_TYPES/registry names at the mixin/model level?
             if key == 'type':
                 if not isinstance(val, str):
-                    raise ValidationError('{} must be a string or unicode: {}'.format(key, str(type(val))))
+                    raise ValidationError(f'{key} must be a string or unicode: {str(type(val))}')
                 val = util.sanitize_html.sanitize_html(val)
             elif key == 'config':
                 if not isinstance(val, dict):
-                    raise ValidationError('{} must be a dictionary: {}'.format(key, str(type(val))))
+                    raise ValidationError(f'{key} must be a dictionary: {str(type(val))}')
 
             elif key == 'annotation':
                 if not isinstance(val, str):
-                    raise ValidationError('{} must be a string or unicode: {}'.format(key, str(type(val))))
+                    raise ValidationError(f'{key} must be a string or unicode: {str(type(val))}')
                 val = util.sanitize_html.sanitize_html(val)
 
             # these are keys that actually only be *updated* at the revision level and not here
             #   (they are still valid for create, tho)
             elif key == 'title':
                 if not isinstance(val, str):
-                    raise ValidationError('{} must be a string or unicode: {}'.format(key, str(type(val))))
+                    raise ValidationError(f'{key} must be a string or unicode: {str(type(val))}')
                 val = util.sanitize_html.sanitize_html(val)
             elif key == 'slug':
                 if not isinstance(val, str):
-                    raise ValidationError('{} must be a string: {}'.format(key, str(type(val))))
+                    raise ValidationError(f'{key} must be a string: {str(type(val))}')
                 val = util.sanitize_html.sanitize_html(val)
             elif key == 'dbkey':
                 if not isinstance(val, str):
-                    raise ValidationError('{} must be a string or unicode: {}'.format(key, str(type(val))))
+                    raise ValidationError(f'{key} must be a string or unicode: {str(type(val))}')
                 val = util.sanitize_html.sanitize_html(val)
 
             elif key not in valid_but_uneditable_keys:

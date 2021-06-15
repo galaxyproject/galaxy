@@ -49,7 +49,7 @@ class InstrumentPlugin(metaclass=ABCMeta):
         """ Provide a common pattern for naming files used by instrumentation
         plugins - to ease their staging out of remote job directories.
         """
-        return "{}_{}_{}".format(INSTRUMENT_FILE_PREFIX, self.plugin_type, name)
+        return f"{INSTRUMENT_FILE_PREFIX}_{self.plugin_type}_{name}"
 
     def _instrument_file_path(self, job_directory, name):
         return os.path.join(job_directory, self._instrument_file_name(name))

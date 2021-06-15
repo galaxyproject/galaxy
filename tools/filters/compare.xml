@@ -1,6 +1,9 @@
 <tool id="comp1" name="Compare two Datasets" version="1.0.2">
   <description>to find common or distinct rows</description>
   <command interpreter="python">joinWrapper.py $input1 $input2 $field1 $field2 $mode $out_file1</command>
+  <edam_operations>
+    <edam_operation>operation_3695</edam_operation>
+  </edam_operations>
   <inputs>
     <param format="tabular" name="input1" type="data" label="Compare"/>
     <param name="field1" label="Using column" type="data_column" data_ref="input1">
@@ -55,7 +58,7 @@ This tool finds lines in one dataset that HAVE or DO NOT HAVE a common field wit
 
 If this is **First dataset**::
 
-  chr1 10 20 geneA 
+  chr1 10 20 geneA
   chr1 50 80 geneB
   chr5 10 40 geneL
 
@@ -68,7 +71,7 @@ and this is **Second dataset**::
 
 Finding lines of the **First dataset** whose 4th column matches the 1st column of the **Second dataset** yields::
 
-  chr1 10 20 geneA 
+  chr1 10 20 geneA
   chr1 50 80 geneB
 
 Conversely, using option **Non Matching rows of First dataset** on the same fields will yield::

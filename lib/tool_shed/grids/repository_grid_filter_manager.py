@@ -17,16 +17,16 @@ class RepositoryGridFilterManager:
     def get_grid_title(self, trans, trailing_string='', default=''):
         filter = self.get_filter(trans)
         if filter == self.filters.CERTIFIED_LEVEL_ONE:
-            return "Certified 1 Repositories %s" % trailing_string
+            return f"Certified 1 Repositories {trailing_string}"
         if filter == self.filters.CERTIFIED_LEVEL_TWO:
-            return "Certified 2 Repositories %s" % trailing_string
+            return f"Certified 2 Repositories {trailing_string}"
         if filter == self.filters.CERTIFIED_LEVEL_ONE_SUITES:
-            return "Certified 1 Repository Suites %s" % trailing_string
+            return f"Certified 1 Repository Suites {trailing_string}"
         if filter == self.filters.CERTIFIED_LEVEL_TWO_SUITES:
-            return "Certified 2 Repository Suites %s" % trailing_string
+            return f"Certified 2 Repository Suites {trailing_string}"
         if filter == self.filters.SUITES:
-            return "Repository Suites %s" % trailing_string
-        return "{} {}".format(default, trailing_string)
+            return f"Repository Suites {trailing_string}"
+        return f"{default} {trailing_string}"
 
     def get_filter(self, trans):
         filter = trans.get_cookie(name='toolshedrepogridfilter')
@@ -35,7 +35,7 @@ class RepositoryGridFilterManager:
     def is_valid_filter(self, filter):
         if filter is None:
             return True
-        for valid_key, valid_filter in self.filters.items():
+        for valid_filter in self.filters.values():
             if filter == valid_filter:
                 return True
         return False

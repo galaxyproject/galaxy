@@ -24,6 +24,7 @@ class PagesTestCase(SeleniumTestCase):
         slug = self._get_random_name(prefix="pageslug")
         self.tool_set_value("title", name)
         self.tool_set_value("slug", slug)
+        self.tool_set_value("content_format", "HTML", expected_type="select")
         self.screenshot("pages_create_form")
 
         # Sometimes 'submit' button not yet hooked up?

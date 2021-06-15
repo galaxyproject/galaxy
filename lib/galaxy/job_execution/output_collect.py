@@ -4,7 +4,6 @@ import logging
 import operator
 import os
 import re
-from collections import OrderedDict
 from tempfile import NamedTemporaryFile
 
 import galaxy.model
@@ -120,7 +119,11 @@ def collect_dynamic_outputs(
                 collection_type_description = COLLECTION_TYPE_DESCRIPTION_FACTORY.for_collection_type(collection_type)
                 structure = UninitializedTree(collection_type_description)
                 hdca = job_context.create_hdca(name, structure)
-            persist_elements_to_hdca(job_context, elements, hdca, collector=DEFAULT_DATASET_COLLECTOR)
+            error_message = unnamed_output_dict.get("error_message")
+            if error_message:
+                hdca.collection.handle_population_failed(error_message)
+            else:
+                persist_elements_to_hdca(job_context, elements, hdca, collector=DEFAULT_DATASET_COLLECTOR)
         elif destination_type == "hdas":
             persist_hdas(elements, job_context, final_job_state=job_context.final_job_state)
 
@@ -169,15 +172,29 @@ class BaseJobContext:
         pass
 
     def find_files(self, output_name, collection, dataset_collectors):
-        filenames = OrderedDict()
+        filenames = {}
         for discovered_file in discover_files(output_name, self.tool_provided_metadata, dataset_collectors, self.job_working_directory, collection):
             filenames[discovered_file.path] = discovered_file
         return filenames
 
+    def get_job_id(self):
+        return None  # overwritten in subclasses
+
 
 class JobContext(ModelPersistenceContext, BaseJobContext):
 
-    def __init__(self, tool, tool_provided_metadata, job, job_working_directory, permission_provider, metadata_source_provider, input_dbkey, object_store, final_job_state):
+    def __init__(
+            self,
+            tool,
+            tool_provided_metadata,
+            job,
+            job_working_directory,
+            permission_provider,
+            metadata_source_provider,
+            input_dbkey,
+            object_store,
+            final_job_state,
+            flush_per_n_datasets=None):
         self.tool = tool
         self.metadata_source_provider = metadata_source_provider
         self.permission_provider = permission_provider
@@ -189,6 +206,7 @@ class JobContext(ModelPersistenceContext, BaseJobContext):
         self.tool_provided_metadata = tool_provided_metadata
         self.object_store = object_store
         self.final_job_state = final_job_state
+        self.flush_per_n_datasets = flush_per_n_datasets
 
     @property
     def work_context(self):
@@ -232,8 +250,8 @@ class JobContext(ModelPersistenceContext, BaseJobContext):
     def create_hdca(self, name, structure):
         history = self.job.history
         trans = self.work_context
-        collections_service = self.app.dataset_collections_service
-        hdca = collections_service.precreate_dataset_collection_instance(
+        collection_manager = self.app.dataset_collection_manager
+        hdca = collection_manager.precreate_dataset_collection_instance(
             trans, history, name, structure=structure
         )
         return hdca
@@ -296,6 +314,9 @@ class JobContext(ModelPersistenceContext, BaseJobContext):
     def job_id(self):
         return self.job.id
 
+    def get_job_id(self):
+        return self.job.id
+
 
 class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
 
@@ -309,6 +330,7 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
         self.import_store = import_store
         self.input_dbkey = input_dbkey
         self.final_job_state = final_job_state
+        self.flush_per_n_datasets = None
 
     def output_collection_def(self, name):
         tool_as_dict = self.metadata_params["tool"]
@@ -352,8 +374,10 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
             self.export_store.collection_datasets[collection_dataset.id] = True
 
     def add_output_dataset_association(self, name, dataset_instance):
-        job_id = self.metadata_params["job_id_tag"]
-        self.export_store.add_job_output_dataset_associations(job_id, name, dataset_instance)
+        self.export_store.add_job_output_dataset_associations(self.get_job_id(), name, dataset_instance)
+
+    def get_job_id(self):
+        return self.metadata_params["job_id_tag"]
 
 
 def collect_primary_datasets(job_context, output, input_ext):
@@ -369,7 +393,7 @@ def collect_primary_datasets(job_context, output, input_ext):
         output_def = job_context.output_def(name)
         if output_def is not None:
             dataset_collectors = [dataset_collector(description) for description in output_def.dataset_collector_descriptions]
-        filenames = OrderedDict()
+        filenames = {}
         for discovered_file in discover_files(name, job_context.tool_provided_metadata, dataset_collectors, job_working_directory, outdata):
             filenames[discovered_file.path] = discovered_file
         for filename_index, (filename, discovered_file) in enumerate(filenames.items()):
@@ -377,26 +401,29 @@ def collect_primary_datasets(job_context, output, input_ext):
             fields_match = discovered_file.match
             if not fields_match:
                 # Before I guess pop() would just have thrown an IndexError
-                raise Exception("Problem parsing metadata fields for file %s" % filename)
+                raise Exception(f"Problem parsing metadata fields for file {filename}")
             designation = fields_match.designation
-            if filename_index == 0 and extra_file_collector.assign_primary_output and output_index == 0:
-                new_outdata_name = fields_match.name or "{} ({})".format(outdata.name, designation)
-                outdata.dataset.external_filename = None  # resets filename_override
-                # Move data from temp location to dataset location
-                job_context.object_store.update_from_file(outdata.dataset, file_name=filename, create=True)
-                primary_output_assigned = True
-                continue
-            if name not in primary_datasets:
-                primary_datasets[name] = OrderedDict()
-            visible = fields_match.visible
             ext = fields_match.ext
             if ext == "input":
                 ext = input_ext
             dbkey = fields_match.dbkey
             if dbkey == INPUT_DBKEY_TOKEN:
                 dbkey = job_context.input_dbkey
+            if filename_index == 0 and extra_file_collector.assign_primary_output and output_index == 0:
+                new_outdata_name = fields_match.name or f"{outdata.name} ({designation})"
+                outdata.change_datatype(ext)
+                outdata.dbkey = dbkey
+                outdata.designation = designation
+                outdata.dataset.external_filename = None  # resets filename_override
+                # Move data from temp location to dataset location
+                job_context.object_store.update_from_file(outdata.dataset, file_name=filename, create=True)
+                primary_output_assigned = True
+                continue
+            if name not in primary_datasets:
+                primary_datasets[name] = {}
+            visible = fields_match.visible
             # Create new primary dataset
-            new_primary_name = fields_match.name or "{} ({})".format(outdata.name, designation)
+            new_primary_name = fields_match.name or f"{outdata.name} ({designation})"
             info = outdata.info
 
             # TODO: should be able to disambiguate files in different directories...
@@ -413,9 +440,10 @@ def collect_primary_datasets(job_context, output, input_ext):
                 info=info,
                 init_from=outdata,
                 dataset_attributes=new_primary_datasets_attributes,
+                creating_job_id=job_context.get_job_id() if job_context else None
             )
             # Associate new dataset with job
-            job_context.add_output_dataset_association('__new_primary_file_{}|{}__'.format(name, designation), primary_data)
+            job_context.add_output_dataset_association(f'__new_primary_file_{name}|{designation}__', primary_data)
 
             if new_primary_datasets_attributes:
                 extra_files_path = new_primary_datasets_attributes.get('extra_files', None)
@@ -472,10 +500,11 @@ def walk_over_extra_files(target_dir, extra_file_collector, job_working_director
     if os.path.isdir(directory):
         for filename in os.listdir(directory):
             path = os.path.join(directory, filename)
-            if os.path.isdir(path) and extra_file_collector.recurse:
-                # The current directory is already validated, so use that as the next job_working_directory when recursing
-                for match in walk_over_extra_files(filename, extra_file_collector, directory, matchable):
-                    yield match
+            if os.path.isdir(path):
+                if extra_file_collector.recurse:
+                    # The current directory is already validated, so use that as the next job_working_directory when recursing
+                    for match in walk_over_extra_files(filename, extra_file_collector, directory, matchable):
+                        yield match
             else:
                 match = extra_file_collector.match(matchable, filename, path=path)
                 if match:
@@ -574,14 +603,14 @@ def read_exit_code_from(exit_code_file, id_tag):
         exit_code = int(exit_code_str)
     except ValueError:
         galaxy_id_tag = id_tag
-        log.warning("({}) Exit code '{}' invalid. Using 0.".format(galaxy_id_tag, exit_code_str))
+        log.warning(f"({galaxy_id_tag}) Exit code '{exit_code_str}' invalid. Using 0.")
         exit_code = 0
 
     return exit_code
 
 
 def default_exit_code_file(files_dir, id_tag):
-    return os.path.join(files_dir, 'galaxy_%s.ec' % id_tag)
+    return os.path.join(files_dir, f'galaxy_{id_tag}.ec')
 
 
 def collect_extra_files(object_store, dataset, job_working_directory):
@@ -593,7 +622,7 @@ def collect_extra_files(object_store, dataset, job_working_directory):
         # automatically creates them.  However, empty directories will
         # not be created in the object store at all, which might be a
         # problem.
-        for root, dirs, files in os.walk(temp_file_path):
+        for root, _dirs, files in os.walk(temp_file_path):
             extra_dir = root.replace(os.path.join(job_working_directory, "working"), '', 1).lstrip(os.path.sep)
             for f in files:
                 object_store.update_from_file(

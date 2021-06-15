@@ -1,6 +1,8 @@
 import Backbone from "backbone";
 import Utils from "utils/utils";
 import { Visualization } from "mvc/visualization/visualization-model";
+const MATCH_GROUP = /^groups_([0-9]+)\|([\w]+)/;
+
 export default Backbone.Model.extend({
     defaults: {
         title: "",
@@ -31,7 +33,26 @@ export default Backbone.Model.extend({
         });
         this.settings.clear();
         this.groups.reset();
-        this.groups.add({ id: Utils.uid() });
+        const paramsString = window.location.search;
+        const searchParams = new URLSearchParams(paramsString);
+        const groups = {};
+        for (const [k, v] of searchParams.entries()) {
+            const matched_groups = k.match(MATCH_GROUP);
+            if (matched_groups) {
+                const group_id = matched_groups[1];
+                const group_key = matched_groups[2];
+                groups[group_id] = groups[group_id] || {};
+                groups[group_id][group_key] = v;
+                groups[group_id].id = group_id;
+            } else {
+                this.settings.set(k, v);
+            }
+        }
+        if (Object.keys(groups).length > 0) {
+            this.groups.set(Object.values(groups));
+        } else {
+            this.groups.add({ id: Utils.uid() });
+        }
     },
 
     state: function (value, info) {

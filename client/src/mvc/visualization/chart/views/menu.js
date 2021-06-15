@@ -6,7 +6,7 @@ import Screenshot from "mvc/visualization/chart/components/screenshot";
 export default Backbone.View.extend({
     initialize: function (app) {
         this.app = app;
-        this.model = new Backbone.Model({ visible: true });
+        this.model = new Backbone.Model({ visible: false });
         this.execute_button = new Ui.Button({
             icon: "fa-check-square",
             tooltip: "Confirm",
@@ -57,8 +57,7 @@ export default Backbone.View.extend({
             onclick: () => {
                 app.modal.show({
                     title: "Send visualization data for PDF creation",
-                    body:
-                        "Galaxy does not provide integrated PDF export scripts. You may click 'Continue' to create the PDF by using a 3rd party service (https://export.highcharts.com).",
+                    body: "Galaxy does not provide integrated PDF export scripts. You may click 'Continue' to create the PDF by using a 3rd party service (https://export.highcharts.com).",
                     buttons: {
                         Cancel: () => {
                             app.modal.hide();

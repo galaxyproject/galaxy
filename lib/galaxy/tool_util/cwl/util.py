@@ -45,7 +45,7 @@ def output_properties(path=None, content=None, basename=None, pseduo_location=Fa
             contents = f.read(1024 * 1024)
     finally:
         f.close()
-    properties["checksum"] = "sha1$%s" % checksum.hexdigest()
+    properties["checksum"] = f"sha1${checksum.hexdigest()}"
     properties["size"] = filesize
     set_basename_and_derived_properties(properties, basename)
     _handle_pseudo_location(properties, pseduo_location)
@@ -78,7 +78,7 @@ def abs_path(path_or_uri, relative_to):
 
 def path_or_uri_to_uri(path_or_uri):
     if "://" not in path_or_uri:
-        return "file://%s" % path_or_uri
+        return f"file://{path_or_uri}"
     else:
         return path_or_uri
 
@@ -171,6 +171,8 @@ def galactic_job_json(
             return replacement_record(value)
 
     def replacement_file(value):
+        if value.get('galaxy_id'):
+            return {"src": "hda", "id": str(value['galaxy_id'])}
         file_path = value.get("location", None) or value.get("path", None)
         # format to match output definitions in tool, where did filetype come from?
         filetype = value.get("filetype", None) or value.get("format", None)
@@ -178,6 +180,8 @@ def galactic_job_json(
         kwd = {}
         if "tags" in value:
             kwd["tags"] = value.get("tags")
+        if "dbkey" in value:
+            kwd["dbkey"] = value.get("dbkey")
         if composite_data_raw:
             composite_data = []
             for entry in composite_data_raw:
@@ -208,7 +212,7 @@ def galactic_job_json(
             }
             for secondary_file in secondary_files:
                 secondary_file_path = secondary_file.get("location", None) or secondary_file.get("path", None)
-                assert secondary_file_path, "Invalid secondaryFile entry found [%s]" % secondary_file
+                assert secondary_file_path, f"Invalid secondaryFile entry found [{secondary_file}]"
                 full_secondary_file_path = os.path.join(test_data_directory, secondary_file_path)
                 basename = secondary_file.get("basename") or os.path.basename(secondary_file_path)
                 order.append(unicodify(basename))
@@ -278,6 +282,8 @@ def galactic_job_json(
         return collection_element_identifiers
 
     def replacement_collection(value):
+        if value.get('galaxy_id'):
+            return {"src": "hdca", "id": str(value['galaxy_id'])}
         assert "collection_type" in value
         collection_type = value["collection_type"]
         elements = to_elements(value, collection_type)
@@ -328,12 +334,13 @@ def _ensure_file_exists(file_path):
 
 class FileLiteralTarget:
 
-    def __init__(self, contents, **kwargs):
+    def __init__(self, contents, path=None, **kwargs):
         self.contents = contents
         self.properties = kwargs
+        self.path = path
 
     def __str__(self):
-        return "FileLiteralTarget[path={}] with {}".format(self.path, self.properties)
+        return f"FileLiteralTarget[contents={self.contents}] with {self.properties}"
 
 
 class FileUploadTarget:
@@ -345,16 +352,17 @@ class FileUploadTarget:
         self.properties = kwargs
 
     def __str__(self):
-        return "FileUploadTarget[path={}] with {}".format(self.path, self.properties)
+        return f"FileUploadTarget[path={self.path}] with {self.properties}"
 
 
 class ObjectUploadTarget:
 
     def __init__(self, the_object):
         self.object = the_object
+        self.properties = {}
 
     def __str__(self):
-        return "ObjectUploadTarget[object=%s]" % self.object
+        return f"ObjectUploadTarget[object={self.object} with {self.properties}]"
 
 
 class DirectoryUploadTarget:
@@ -363,7 +371,7 @@ class DirectoryUploadTarget:
         self.tar_path = tar_path
 
     def __str__(self):
-        return "DirectoryUploadTarget[tar_path=%s]" % self.tar_path
+        return f"DirectoryUploadTarget[tar_path={self.tar_path}]"
 
 
 GalaxyOutput = namedtuple("GalaxyOutput", ["history_id", "history_content_type", "history_content_id", "metadata"])
@@ -378,7 +386,7 @@ def tool_response_to_output(tool_response, history_id, output_id):
         if output_collection["output_name"] == output_id:
             return GalaxyOutput(history_id, "dataset_collection", output_collection["id"], None)
 
-    raise Exception("Failed to find output with label [%s]" % output_id)
+    raise Exception(f"Failed to find output with label [{output_id}]")
 
 
 def invocation_to_output(invocation, history_id, output_id):
@@ -388,8 +396,11 @@ def invocation_to_output(invocation, history_id, output_id):
     elif output_id in invocation["output_collections"]:
         collection = invocation["output_collections"][output_id]
         galaxy_output = GalaxyOutput(history_id, "dataset_collection", collection["id"], None)
+    elif output_id in invocation["output_values"]:
+        output_value = invocation["output_values"][output_id]
+        galaxy_output = GalaxyOutput(None, "raw_value", output_value, None)
     else:
-        raise Exception("Failed to find output with label [{}] in [{}]".format(output_id, invocation))
+        raise Exception(f"Failed to find output with label [{output_id}] in [{invocation}]")
 
     return galaxy_output
 
@@ -429,9 +440,10 @@ def output_to_cwl_json(
             with open(dataset_dict["path"]) as f:
                 return json.safe_load(f)
 
-    if output_metadata["history_content_type"] == "dataset":
+    if galaxy_output.history_content_type == "raw_value":
+        return galaxy_output.history_content_id
+    elif output_metadata["history_content_type"] == "dataset":
         ext = output_metadata["file_ext"]
-        assert output_metadata["state"] == "ok"
         if ext == "expression.json":
             dataset_dict = get_dataset(output_metadata)
             return dataset_dict_to_json_content(dataset_dict)

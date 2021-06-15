@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import glob
 import os
 import shutil
@@ -25,7 +23,7 @@ def stage_static(f):
         else:
             shutil.copy(src, dest)
     except Exception:
-        print("Error copying '%s' to '%s'" % (src, dest))
+        print(f"Error copying '{src}' to '{dest}'")
         raise
 
 

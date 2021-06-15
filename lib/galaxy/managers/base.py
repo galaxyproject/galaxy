@@ -28,13 +28,16 @@ attribute change to a model object.
 import datetime
 import logging
 import re
+from typing import Callable, Dict, List, Optional, Set, Type
 
 import routes
 import sqlalchemy
+from sqlalchemy.orm.scoping import scoped_session
 
 from galaxy import exceptions
 from galaxy import model
 from galaxy.model import tool_shed_install
+from galaxy.structured_app import BasicApp, MinimalManagerApp
 from galaxy.util import namedtuple
 
 log = logging.getLogger(__name__)
@@ -61,7 +64,7 @@ def security_check(trans, item, check_ownership=False, check_accessible=False):
         if not trans.user:
             raise exceptions.ItemOwnershipException("Must be logged in to manage Galaxy items", type='error')
         if item.user != trans.user:
-            raise exceptions.ItemOwnershipException("%s is not owned by the current user" % item.__class__.__name__, type='error')
+            raise exceptions.ItemOwnershipException(f"{item.__class__.__name__} is not owned by the current user", type='error')
 
     # Verify accessible:
     #   if it's part of a lib - can they access via security
@@ -69,10 +72,10 @@ def security_check(trans, item, check_ownership=False, check_accessible=False):
     if check_accessible:
         if type(item) in (trans.app.model.LibraryFolder, trans.app.model.LibraryDatasetDatasetAssociation, trans.app.model.LibraryDataset):
             if not trans.app.security_agent.can_access_library_item(trans.get_current_user_roles(), item, trans.user):
-                raise exceptions.ItemAccessibilityException("%s is not accessible to the current user" % item.__class__.__name__, type='error')
+                raise exceptions.ItemAccessibilityException(f"{item.__class__.__name__} is not accessible to the current user", type='error')
         else:
             if (item.user != trans.user) and (not item.importable) and (trans.user not in item.users_shared_with_dot_users):
-                raise exceptions.ItemAccessibilityException("%s is not accessible to the current user" % item.__class__.__name__, type='error')
+                raise exceptions.ItemAccessibilityException(f"{item.__class__.__name__} is not accessible to the current user", type='error')
     return item
 
 
@@ -85,19 +88,15 @@ def get_class(class_name):
         item_class = tool_shed_install.ToolShedRepository
     else:
         if not hasattr(model, class_name):
-            raise exceptions.MessageException("Item class '%s' not available." % class_name)
+            raise exceptions.MessageException(f"Item class '{class_name}' not available.")
         item_class = getattr(model, class_name)
     return item_class
 
 
 def decode_id(app, id):
-    try:
-        # note: use str - occasionally a fully numeric id will be placed in post body and parsed as int via JSON
-        #   resulting in error for valid id
-        return app.security.decode_id(str(id))
-    except (ValueError, TypeError):
-        msg = "Malformed id ( %s ) specified, unable to decode" % (str(id))
-        raise exceptions.MalformedId(msg, id=str(id))
+    # note: use str - occasionally a fully numeric id will be placed in post body and parsed as int via JSON
+    #   resulting in error for valid id
+    return app.security.decode_id(str(id))
 
 
 def get_object(trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None):
@@ -114,8 +113,8 @@ def get_object(trans, id, class_name, check_ownership=False, check_accessible=Fa
         item = trans.sa_session.query(item_class).get(decoded_id)
         assert item is not None
     except Exception:
-        log.exception("Invalid {} id ( {} ) specified.".format(class_name, id))
-        raise exceptions.MessageException("Invalid {} id ( {} ) specified".format(class_name, id), type="error")
+        log.exception(f"Invalid {class_name} id ( {id} ) specified.")
+        raise exceptions.MessageException(f"Invalid {class_name} id ( {id} ) specified", type="error")
 
     if check_ownership or check_accessible:
         security_check(trans, item, check_ownership, check_accessible)
@@ -155,13 +154,14 @@ class ModelManager:
     Provides common queries and CRUD operations as a (hopefully) light layer
     over the ORM.
     """
-    model_class = object
-    foreign_key_name = None
+    model_class: type = object
+    foreign_key_name: str
+    app: BasicApp
 
-    def __init__(self, app):
+    def __init__(self, app: BasicApp):
         self.app = app
 
-    def session(self):
+    def session(self) -> scoped_session:
         return self.app.model.context
 
     def _session_setattr(self, item, attr, val, fn=None, flush=True):
@@ -267,9 +267,9 @@ class ModelManager:
         try:
             return query.one()
         except sqlalchemy.orm.exc.NoResultFound:
-            raise exceptions.ObjectNotFound(self.model_class.__name__ + ' not found')
+            raise exceptions.ObjectNotFound(f"{self.model_class.__name__} not found")
         except sqlalchemy.orm.exc.MultipleResultsFound:
-            raise exceptions.InconsistentDatabase('found more than one ' + self.model_class.__name__)
+            raise exceptions.InconsistentDatabase(f"found more than one {self.model_class.__name__}")
 
     def _one_or_none(self, query):
         """
@@ -480,11 +480,11 @@ class HasAModelManager:
     """
 
     #: the class used to create this serializer's generically accessible model_manager
-    model_manager_class = None
+    model_manager_class: Type[object]
     # examples where this doesn't really work are ConfigurationSerializer (no manager)
     # and contents (2 managers)
 
-    def __init__(self, app, manager=None, **kwargs):
+    def __init__(self, app: MinimalManagerApp, manager=None, **kwargs):
         self._manager = manager
 
     @property
@@ -493,7 +493,7 @@ class HasAModelManager:
         # PRECONDITION: assumes self.app is assigned elsewhere
         if not self._manager:
             # TODO: pass this serializer to it
-            self._manager = self.model_manager_class(self.app)
+            self._manager = self.app[self.model_manager_class]
             # this will error for unset model_manager_class'es
         return self._manager
 
@@ -535,8 +535,10 @@ class ModelSerializer(HasAModelManager):
     """
     #: 'service' to use for getting urls - use class var to allow overriding when testing
     url_for = staticmethod(routes.url_for)
+    default_view: Optional[str]
+    views: Dict[str, List[str]]
 
-    def __init__(self, app, **kwargs):
+    def __init__(self, app: MinimalManagerApp, **kwargs):
         """
         Set up serializer map, any additional serializable keys, and views here.
         """
@@ -547,9 +549,9 @@ class ModelSerializer(HasAModelManager):
         #   this allows us to: 'mention' the key without adding the default serializer
         # TODO: we may want to eventually error if a key is requested
         #   that is in neither serializable_keyset or serializers
-        self.serializable_keyset = set()
+        self.serializable_keyset: Set[str] = set()
         # a map of dictionary keys to the functions (often lambdas) that create the values for those keys
-        self.serializers = {}
+        self.serializers: Dict[str, Callable] = {}
         # add subclass serializers defined there
         self.add_serializers()
         # update the keyset by the serializers (removing the responsibility from subclasses)
@@ -566,9 +568,9 @@ class ModelSerializer(HasAModelManager):
         the attribute.
         """
         self.serializers.update({
-            'id'            : self.serialize_id,
-            'create_time'   : self.serialize_date,
-            'update_time'   : self.serialize_date,
+            'id': self.serialize_id,
+            'create_time': self.serialize_date,
+            'update_time': self.serialize_date,
         })
 
     def add_view(self, view_name, key_list, include_keys_from=None):
@@ -620,7 +622,7 @@ class ModelSerializer(HasAModelManager):
             return self.serializers[original_key]
         if original_key in self.serializable_keyset:
             return lambda i, k, **c: self.default_serializer(i, original_key, **c)
-        raise KeyError('serializer not found for remap: ' + original_key)
+        raise KeyError(f"serializer not found for remap: {original_key}")
 
     def default_serializer(self, item, key, **context):
         """
@@ -707,15 +709,15 @@ class ModelDeserializer(HasAModelManager):
     """
     # TODO:?? a larger question is: which should be first? Deserialize then validate - or - validate then deserialize?
 
-    def __init__(self, app, validator=None, **kwargs):
+    def __init__(self, app: MinimalManagerApp, validator=None, **kwargs):
         """
         Set up deserializers and validator.
         """
         super().__init__(app, **kwargs)
         self.app = app
 
-        self.deserializers = {}
-        self.deserializable_keyset = set()
+        self.deserializers: Dict[str, Callable] = {}
+        self.deserializable_keyset: Set[str] = set()
         self.add_deserializers()
         # a sub object that can validate incoming values
         self.validate = validator or ModelValidator(self.app)
@@ -802,7 +804,7 @@ class ModelValidator(HasAModelManager):
         :raises exceptions.RequestParameterInvalidException: if not an instance.
         """
         if not isinstance(val, types):
-            msg = 'must be a type: %s' % (str(types))
+            msg = f'must be a type: {str(types)}'
             raise exceptions.RequestParameterInvalidException(msg, key=key, val=val)
         return val
 
@@ -893,12 +895,12 @@ class ModelFilterParser(HasAModelManager):
     # (as the model informs how the filter params are parsed)
     # I have no great idea where this 'belongs', so it's here for now
 
-    #: model class
-    model_class = None
-    subcontainer_model_class = None
+    model_class: type
     parsed_filter = parsed_filter
+    orm_filter_parsers: Dict[str, Dict]
+    fn_filter_parsers: Dict[str, Dict]
 
-    def __init__(self, app, **kwargs):
+    def __init__(self, app: MinimalManagerApp, **kwargs):
         """
         Set up serializer map, any additional serializable keys, and views here.
         """
@@ -926,12 +928,12 @@ class ModelFilterParser(HasAModelManager):
         # note: these are the default filters for all models
         self.orm_filter_parsers.update({
             # (prob.) applicable to all models
-            'id'            : {'op': ('in')},
-            'encoded_id'    : {'column' : 'id', 'op': ('in'), 'val': self.parse_id_list},
+            'id': {'op': ('in')},
+            'encoded_id': {'column': 'id', 'op': ('in'), 'val': self.parse_id_list},
             # dates can be directly passed through the orm into a filter (no need to parse into datetime object)
-            'extension'     : {'op': ('eq', 'like', 'in')},
-            'create_time'   : {'op': ('le', 'ge', 'lt', 'gt'), 'val': self.parse_date},
-            'update_time'   : {'op': ('le', 'ge', 'lt', 'gt'), 'val': self.parse_date},
+            'extension': {'op': ('eq', 'like', 'in')},
+            'create_time': {'op': ('le', 'ge', 'lt', 'gt'), 'val': self.parse_date},
+            'update_time': {'op': ('le', 'ge', 'lt', 'gt'), 'val': self.parse_date},
         })
 
     def parse_filters(self, filter_tuple_list):
@@ -1051,7 +1053,7 @@ class ModelFilterParser(HasAModelManager):
         # correct op_string to usable function key
         fn_name = op_string
         if op_string in self.UNDERSCORED_OPS:
-            fn_name = '__' + op_string + '__'
+            fn_name = f"__{op_string}__"
         elif op_string == 'in':
             fn_name = 'in_'
 
@@ -1065,9 +1067,9 @@ class ModelFilterParser(HasAModelManager):
     # ---- preset fn_filters: dictionaries of standard filter ops for standard datatypes
     def string_standard_ops(self, key):
         return {
-            'op' : {
-                'eq'        : lambda i, v: v == getattr(i, key),
-                'contains'  : lambda i, v: v in getattr(i, key),
+            'op': {
+                'eq': lambda i, v: v == getattr(i, key),
+                'contains': lambda i, v: v in getattr(i, key),
             }
         }
 
@@ -1082,7 +1084,7 @@ class ModelFilterParser(HasAModelManager):
             return True
         if bool_string in ('False', False):
             return False
-        raise ValueError('invalid boolean: ' + str(bool_string))
+        raise ValueError(f"invalid boolean: {str(bool_string)}")
 
     def parse_id_list(self, id_list_string, sep=','):
         """

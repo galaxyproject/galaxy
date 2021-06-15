@@ -5,7 +5,6 @@ Repair a specified repository revision previously installed into Galaxy.
 Here is a working example of how to use this script to repair a repository installed into Galaxy.
 ./repair_tool_shed_repository.py --api <api key> --local <galaxy base url> --url http://testtoolshed.g2.bx.psu.edu --name gregs_filter --owner greg --revision f28d5018f9cb
 """
-from __future__ import print_function
 
 import argparse
 
@@ -26,7 +25,7 @@ def main(options):
     base_galaxy_url = options.local_url.rstrip('/')
     base_tool_shed_url = options.tool_shed_url.rstrip('/')
     cleaned_tool_shed_url = clean_url(base_tool_shed_url)
-    installed_tool_shed_repositories_url = '%s/api/%s' % (base_galaxy_url, 'tool_shed_repositories')
+    installed_tool_shed_repositories_url = '{}/api/{}'.format(base_galaxy_url, 'tool_shed_repositories')
     data = {}
     data['tool_shed_url'] = cleaned_tool_shed_url
     data['name'] = options.name
@@ -43,7 +42,7 @@ def main(options):
             tool_shed_repository_id = installed_tool_shed_repository['id']
             break
     if tool_shed_repository_id:
-        url = '%s%s' % (base_galaxy_url, '/api/tool_shed_repositories/%s/repair_repository_revision' % str(tool_shed_repository_id))
+        url = '{}{}'.format(base_galaxy_url, '/api/tool_shed_repositories/%s/repair_repository_revision' % str(tool_shed_repository_id))
         submit(options.api, url, data)
     else:
         print("Invalid tool_shed / name / owner / changeset_revision.")

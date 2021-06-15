@@ -6,15 +6,11 @@ export const getPathDestination = async (history_dataset_id, path) => {
     const services = new Services({ root: getAppRoot() });
 
     const computePathDestination = (pathDestination) => {
-        if (pathDestination.datasetContent[0].class === "Directory")
-            pathDestination.datasetRootDir = datasetContent[0].path;
-        else return;
-
         if (path === undefined || path === "undefined") {
             return pathDestination;
         }
 
-        const filepath = `${pathDestination.datasetRootDir}/${path}`;
+        const filepath = path;
 
         const datasetEntry = datasetContent.find((datasetEntry) => {
             return filepath === datasetEntry.path;

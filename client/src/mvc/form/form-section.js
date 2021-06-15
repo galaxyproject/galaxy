@@ -89,9 +89,11 @@ var View = Backbone.View.extend({
                             break;
                         }
                     }
-                    if (i == selectedCase && nonhidden) {
+                    if (i == selectedCase) {
                         const selectedView = self.elements[input_def.id + "_" + i];
                         selectedView.renderOnce();
+                    }
+                    if (i == selectedCase && nonhidden) {
                         section_row.fadeIn("fast");
                     } else {
                         section_row.hide();
@@ -156,7 +158,7 @@ var View = Backbone.View.extend({
 
     /** Add a customized section */
     _addSection: function (input_def) {
-        const section = new View(this.app, { inputs: input_def.inputs, skip_render: true });
+        const section = new View(this.app, { inputs: input_def.inputs });
         var portlet = new Portlet.View({
             title: input_def.title || input_def.name,
             cls: "ui-portlet-section",

@@ -9,6 +9,7 @@ from sqlalchemy.sql.expression import null
 from galaxy.exceptions import HandlerAssignmentError, ToolExecutionError
 from galaxy.jobs import handler, NoopQueue
 from galaxy.model import Job
+from galaxy.structured_app import MinimalManagerApp
 from galaxy.web_stack.message import JobHandlerMessage
 
 log = logging.getLogger(__name__)
@@ -18,7 +19,9 @@ class JobManager:
     """
     Highest level interface to job management.
     """
-    def __init__(self, app):
+    job_handler: handler.JobHandlerI
+
+    def __init__(self, app: MinimalManagerApp):
         self.app = app
         self.job_lock = False
         if self.app.is_job_handler:
@@ -54,7 +57,7 @@ class JobManager:
 
         Due to the nature of some handler assignment methods which are wholly DB-based, the enqueue method will flush
         the job. Callers who create the job typically should not flush the job before handing it off to ``enqueue()``.
-        If a job handler cannot be assigned, :exception:`ToolExecutionError` is raised.
+        If a job handler cannot be assigned, py:class:`ToolExecutionError` is raised.
 
         :param job:     Job to enqueue.
         :type job:      Instance of :class:`galaxy.model.Job`.
@@ -62,7 +65,7 @@ class JobManager:
         :type tool:     Instance of :class:`galaxy.tools.Tool`.
 
         :raises ToolExecutionError: if a handler was unable to be assigned.
-        returns: str or None -- Handler ID, tag, or pool assigned to the job.
+        :returns: str or None -- Handler ID, tag, or pool assigned to the job.
         """
         tool_id = None
         configured_handler = None
@@ -70,7 +73,7 @@ class JobManager:
             tool_id = tool.id
             configured_handler = tool.get_configured_job_handler(job.params)
             if configured_handler is not None:
-                p = " (with job params: %s)" % str(job.params) if job.params else ""
+                p = f" (with job params: {str(job.params)})" if job.params else ""
                 log.debug("(%s) Configured job handler for tool '%s'%s is: %s", job.log_str(), tool_id, p, configured_handler)
         queue_callback = partial(self._queue_callback, job, tool_id)
         message_callback = partial(self._message_callback, job)
@@ -110,7 +113,7 @@ class NoopManager:
         pass
 
 
-class NoopHandler:
+class NoopHandler(handler.JobHandlerI):
     """
     Implements the JobHandler interface but does nothing
     """

@@ -31,7 +31,7 @@ class BaseWrapperTestCase(UsesApp):
         job.user = User()
         job.object_store_id = "foo"
         self.model_objects = {Job: {345: job}}
-        self.app.model.context = MockContext(self.model_objects)
+        self.app.model.session = MockContext(self.model_objects)
 
         self.app.toolbox = MockToolbox(MockTool(self))
         self.working_directory = os.path.join(self.test_directory, "working")
@@ -78,7 +78,7 @@ class JobWrapperTestCase(BaseWrapperTestCase, TestCase):
 class TaskWrapperTestCase(BaseWrapperTestCase, TestCase):
 
     def setUp(self):
-        super(TaskWrapperTestCase, self).setUp()
+        super().setUp()
         self.task = Task(self.job, self.working_directory, "prepare_bwa_job.sh")
         self.task.id = 4
         self.model_objects[Task] = {4: self.task}
@@ -91,7 +91,7 @@ class TaskWrapperTestCase(BaseWrapperTestCase, TestCase):
             assert wrapper.write_version_cmd is None
 
 
-class MockEvaluator(object):
+class MockEvaluator:
 
     def __init__(self, app, tool, job, local_working_directory):
         self.app = app
@@ -107,14 +107,14 @@ class MockEvaluator(object):
         return TEST_COMMAND, [], []
 
 
-class MockJobQueue(object):
+class MockJobQueue:
 
     def __init__(self, app):
         self.app = app
         self.dispatcher = MockJobDispatcher(app)
 
 
-class MockJobDispatcher(object):
+class MockJobDispatcher:
 
     def __init__(self, app):
         pass
@@ -123,7 +123,7 @@ class MockJobDispatcher(object):
         pass
 
 
-class MockContext(object):
+class MockContext:
 
     def __init__(self, model_objects):
         self.expunged_all = False
@@ -144,7 +144,7 @@ class MockContext(object):
         self.created_objects.append(object)
 
 
-class MockQuery(object):
+class MockQuery:
 
     def __init__(self, class_objects):
         self.class_objects = class_objects
@@ -156,7 +156,7 @@ class MockQuery(object):
         return self.class_objects.get(id, None)
 
 
-class MockTool(object):
+class MockTool:
 
     def __init__(self, app):
         self.version_string_cmd = TEST_VERSION_COMMAND
@@ -169,7 +169,7 @@ class MockTool(object):
         return TEST_DEPENDENCIES_COMMANDS
 
 
-class MockToolbox(object):
+class MockToolbox:
 
     def __init__(self, test_tool):
         self.test_tool = test_tool
@@ -183,7 +183,7 @@ class MockToolbox(object):
         return tool
 
 
-class MockObjectStore(object):
+class MockObjectStore:
 
     def __init__(self, working_directory):
         self.working_directory = working_directory

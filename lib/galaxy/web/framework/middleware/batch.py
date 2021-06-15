@@ -2,6 +2,7 @@
 Batch API middleware
 
 Adds a single route to the installation that:
+
   1. accepts a POST call containing a JSON array of 'http-like' JSON
      dictionaries.
   2. Each dictionary describes a single API call within the batch and is routed
@@ -23,10 +24,10 @@ import io
 import json
 import logging
 import re
+from urllib.parse import urlparse
 
 import routes
 import webob.exc
-from six.moves.urllib.parse import urlparse
 
 from galaxy.util import (
     smart_str,
@@ -40,24 +41,28 @@ class BatchMiddleware:
     """
     Adds a URL endpoint for processing batch API calls formatted as a JSON
     array of JSON dictionaries. These dictionaries are in the form:
-    [
-        {
-            "url": "/api/histories",
-            "type": "POST",
-            "body": "{ \"name\": \"New History Name\" }"
-        },
-        ...
-    ]
+
+    .. code-block: json
+
+        [
+            {
+                "url": "/api/histories",
+                "type": "POST",
+                "body": "{ \"name\": \"New History Name\" }"
+            },
+            ...
+        ]
 
     where:
+
       * `url` is the url for the API call to be made including any query string
       * `type` is the HTTP method used (e.g. 'POST', 'PUT') - defaults to 'GET'
       * `body` is the text body of the request (optional)
       * `contentType` content-type request header (defaults to application/json)
     """
     DEFAULT_CONFIG = {
-        'route' : '/api/batch',
-        'allowed_routes' : [
+        'route': '/api/batch',
+        'allowed_routes': [
             r'^api\/users.*',
             r'^api\/histories.*',
             r'^api\/jobs.*',
@@ -99,7 +104,7 @@ class BatchMiddleware:
 
         batch_response_body = smart_str(json.dumps(responses))
         start_response('200 OK', [
-            ('Content-Length', len(batch_response_body)),
+            ('Content-Length', str(len(batch_response_body))),
             ('Content-Type', 'application/json'),
         ])
         return [batch_response_body]
@@ -121,9 +126,9 @@ class BatchMiddleware:
 
     def _disallowed_route_response(self, route):
         return dict(status=403, headers=self._default_headers(), body={
-            'err_msg'   : 'Disallowed route used for batch operation',
-            'route'     : route,
-            'allowed'   : self.config['allowed_routes']
+            'err_msg': 'Disallowed route used for batch operation',
+            'route': route,
+            'allowed': self.config['allowed_routes']
         })
 
     def _build_request_environ(self, original_environ, request):
@@ -179,8 +184,8 @@ class BatchMiddleware:
     def _default_headers(self):
         return {
             'x-frame-options': 'SAMEORIGIN',
-            'content-type'   : 'application/json',
-            'cache-control'  : 'max-age=0,no-cache,no-store'
+            'content-type': 'application/json',
+            'cache-control': 'max-age=0,no-cache,no-store'
         }
 
     def handle_exception(self, environ):

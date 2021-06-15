@@ -1,0 +1,79 @@
+@import "theme/blue.scss";
+@import "scss/mixins.scss";
+
+.content-item {
+    outline: none;
+    border-bottom: 1px solid white;
+    &:focus-within {
+        box-shadow: inset 0 0 1em 0.25em rgba(255, 255, 255, 0.25);
+    }
+}
+
+// Nav across the top of the content item
+.content-item .content-top-menu {
+    /* a fixed-height is important for proper
+    functioning of the PriorityMenuItem dropdown since
+    it relies on flexbox and overflow */
+    min-height: 2em;
+
+    cursor: pointer;
+
+    // flex parent
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    // error, clock, etc.
+    .content-status-indicators {
+        // d-flex mr-1 align-items-center
+        display: flex;
+        align-items: center;
+    
+        &:blank {
+            display: none;
+        }
+    }
+
+    // name & labelling
+    .content-title {
+
+        // flex child
+        flex-grow: 1;
+        overflow: hidden;
+
+        .hid {
+            color: adjust-color($text-color, $alpha: -0.6);
+            font-size: 80%;
+            user-select: none;
+            display: inline-block;
+            text-align: right;
+            min-width: 0.25rem;
+            &:not(:empty)::after {
+                content: ":";
+            }
+        }
+        .name {
+            font-weight: 700;
+        }
+    }
+
+    // priority menu on right side
+    .content-item-menu {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+}
+
+// Setting a max-width here limits the number of icons that
+// will show. The priority menu is css awayre
+
+.content-item.collapsed .content-item-menu {
+    max-width: 90px;
+}
+
+// .content-menu button:hover,
+// .content-menu .show > button.dropdown-toggle {
+//     background-color: transparent;
+//     border-color: transparent;
+// }

@@ -23,6 +23,12 @@ def test_conda_resolution():
             auto_install=True,
             use_path_exec=False,  # For the test ensure this is always a clean install
         )
+        resolver.read_only = True
+        req = ToolRequirement(name="samtools", version=None, type="package")
+        dependency = resolver.resolve(req, job_directory=job_dir)
+        assert dependency.shell_commands() is None
+
+        resolver.read_only = False
         req = ToolRequirement(name="samtools", version=None, type="package")
         dependency = resolver.resolve(req, job_directory=job_dir)
         assert dependency.shell_commands() is not None

@@ -42,9 +42,9 @@ class GalaxyPackageDependency(Dependency):
     def shell_commands(self):
         base_path = self.path
         if self.type == 'package' and self.script is None:
-            commands = 'PACKAGE_BASE={}; export PACKAGE_BASE; PATH="{}/bin:$PATH"; export PATH'.format(base_path, base_path)
+            commands = f'PACKAGE_BASE={base_path}; export PACKAGE_BASE; PATH="{base_path}/bin:$PATH"; export PATH'
         else:
-            commands = 'PACKAGE_BASE={}; export PACKAGE_BASE; . {}'.format(base_path, self.script)
+            commands = f'PACKAGE_BASE={base_path}; export PACKAGE_BASE; . {self.script}'
         return commands
 
 

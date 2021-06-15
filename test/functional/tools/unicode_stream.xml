@@ -1,23 +1,25 @@
 <tool id="unicode_stream" name="unicode_stream" version="0.1.0">
     <description>
     </description>
-    <version_command>echo "\x00"</version_command>
+    <version_command><![CDATA[
+echo "\x00"
+    ]]></version_command>
     <command detect_errors="exit_code"><![CDATA[
 #if $include_null:
-    echo "\x00" > $out_file1;
+    echo "\x00" > '$out_file1' &&
 #end if
-echo '$input1' >> '$out_file1';
-cat '$cf';
-echo "\x00";
->&2 cat '$cf';
-sh -c "exit $exit"
+echo '$input1' >> '$out_file1' &&
+cat '$cf' &&
+echo "\x00" &&
+>&2 cat '$cf' &&
+sh -c 'exit $exit'
     ]]></command>
     <configfiles>
         <configfile name="cf">ვეპხის ტყაოსანი შოთა რუსთაველი</configfile>
     </configfiles>
     <inputs>
         <param name="input1" type="text" label="Input">
-            <sanitizer sanitize="False" />
+            <sanitizer sanitize="false" />
         </param>
         <param name="exit" type="integer" value="0" label="Exit Code" />
         <param name="include_null" type="boolean" label="Include unicode null in output?"/>

@@ -8,7 +8,6 @@ API example script for deleting workflows
 Example calls:
 python workflow_delete.py <api_key> <galaxy_url>/api/workflows/<workflow id> True
 """
-from __future__ import print_function
 
 import os
 import sys

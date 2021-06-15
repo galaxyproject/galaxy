@@ -46,8 +46,9 @@ class User(BaseUser):
         return trans.fill_template('/webapps/tool_shed/user/index.mako', cntrller=cntrller)
 
     @web.expose
-    def login(self, trans, refresh_frames=[], **kwd):
+    def login(self, trans, refresh_frames=None, **kwd):
         '''Handle Galaxy Log in'''
+        refresh_frames = refresh_frames or []
         referer = trans.request.referer or ''
         redirect = self.__get_redirect_url(kwd.get('redirect', referer).strip())
         redirect_url = ''  # always start with redirect_url being empty
@@ -71,7 +72,7 @@ class User(BaseUser):
                 status = "error"
             elif response.get("expired_user"):
                 change_password_url = url_for(controller='user', action='change_password', id=response.get("expired_user"))
-                message = "{}<br>Click <a href='{}'>here</a> to change your password.".format(response.get("message"), change_password_url)
+                message = f"{response.get('message')}<br>Click <a href='{change_password_url}'>here</a> to change your password."
                 status = "warning"
             else:
                 success = True
@@ -97,7 +98,8 @@ class User(BaseUser):
                                    active_view="user")
 
     @web.expose
-    def create(self, trans, cntrller='user', redirect_url='', refresh_frames=[], **kwd):
+    def create(self, trans, cntrller='user', redirect_url='', refresh_frames=None, **kwd):
+        refresh_frames = refresh_frames or []
         params = util.Params(kwd)
         # If the honeypot field is not empty we are dealing with a bot.
         honeypot_field = params.get('bear_field', '')
@@ -123,7 +125,7 @@ class User(BaseUser):
         if not trans.app.config.allow_user_creation and not trans.user_is_admin:
             message = 'User registration is disabled.  Please contact your local Galaxy administrator for an account.'
             if trans.app.config.error_email_to is not None:
-                message += ' Contact: %s' % trans.app.config.error_email_to
+                message += f' Contact: {trans.app.config.error_email_to}'
             status = 'error'
         else:
             # check user is allowed to register
@@ -176,7 +178,7 @@ class User(BaseUser):
             # subscribe user to email list
             if trans.app.config.smtp_server is None:
                 status = "error"
-                message = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed because mail is not configured for this Galaxy instance. <br>Please contact your local Galaxy administrator."
+                message = f"Now logged in as {user.email}. However, subscribing to the mailing list has failed because mail is not configured for this Galaxy instance. <br>Please contact your local Galaxy administrator."
             else:
                 body = 'Join Mailing list.\n'
                 to = trans.app.config.mailing_join_addr
@@ -187,7 +189,7 @@ class User(BaseUser):
                 except Exception:
                     log.exception('Subscribing to the mailing list has failed.')
                     status = "warning"
-                    message = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed."
+                    message = f"Now logged in as {user.email}. However, subscribing to the mailing list has failed."
         if status != "error":
             if not is_admin:
                 # The handle_user_login() method has a call to the history_set_default_permissions() method
@@ -198,15 +200,15 @@ class User(BaseUser):
             if trans.app.config.user_activation_on:
                 is_activation_sent = self.user_manager.send_activation_email(trans, email, username)
                 if is_activation_sent:
-                    message = 'Now logged in as {}.<br>Verification email has been sent to your email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.<br><a target="_top" href="{}">Return to the home page.</a>'.format(escape(user.email), url_for('/'))
+                    message = f"Now logged in as {escape(user.email)}.<br>Verification email has been sent to your email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.<br><a target=\"_top\" href=\"{url_for('/')}\">Return to the home page.</a>"
                 else:
                     status = "error"
                     message = 'Unable to send activation email, please contact your local Galaxy administrator.'
                     if trans.app.config.error_email_to is not None:
-                        message += ' Contact: %s' % trans.app.config.error_email_to
+                        message += f' Contact: {trans.app.config.error_email_to}'
         else:
             # User activation is OFF, proceed without sending the activation email.
-            message = 'Now logged in as {}.<br><a target="_top" href="{}">Return to the home page.</a>'.format(escape(user.email), url_for('/'))
+            message = f"Now logged in as {escape(user.email)}.<br><a target=\"_top\" href=\"{url_for('/')}\">Return to the home page.</a>"
         return message, status, user, status is None
 
     @web.expose
@@ -241,13 +243,13 @@ class User(BaseUser):
                                         token=prt.token, qualified=True)
                     body = PASSWORD_RESET_TEMPLATE % (host, prt.expiration_time.strftime(trans.app.config.pretty_datetime_format),
                                                       reset_url)
-                    frm = trans.app.config.email_from or 'galaxy-no-reply@' + host
+                    frm = trans.app.config.email_from or f"galaxy-no-reply@{host}"
                     subject = 'Galaxy Password Reset'
                     try:
                         util.send_mail(frm, email, subject, body, trans.app.config)
                         trans.sa_session.add(reset_user)
                         trans.sa_session.flush()
-                        trans.log_event("User reset password: %s" % email)
+                        trans.log_event(f"User reset password: {email}")
                     except Exception:
                         log.exception('Unable to reset password.')
         return trans.fill_template('/webapps/tool_shed/user/reset_password.mako',
@@ -264,7 +266,7 @@ class User(BaseUser):
         else:
             user = trans.user
         if not user:
-            raise AssertionError("The user id (%s) is not valid" % str(user_id))
+            raise AssertionError(f"The user id ({str(user_id)}) is not valid")
         email = util.restore_text(params.get('email', user.email))
         username = util.restore_text(params.get('username', ''))
         if not username:
@@ -360,7 +362,7 @@ class User(BaseUser):
                     # The user's private role name must match the user's login ( email )
                     private_role = trans.app.security_agent.get_private_user_role(user)
                     private_role.name = email
-                    private_role.description = 'Private role for ' + email
+                    private_role.description = f"Private role for {email}"
                     # Change the email itself
                     user.email = email
                     trans.sa_session.add_all((user, private_role))
@@ -375,7 +377,7 @@ class User(BaseUser):
                         else:
                             message = 'Unable to send activation email, please contact your local Galaxy administrator.'
                             if trans.app.config.error_email_to is not None:
-                                message += ' Contact: %s' % trans.app.config.error_email_to
+                                message += f' Contact: {trans.app.config.error_email_to}'
                 if (user.username != username):
                     user.username = username
                     trans.sa_session.add(user)
@@ -455,7 +457,7 @@ class User(BaseUser):
 
     def __validate(self, trans, email, password, confirm, username):
         if username in ['repos']:
-            return "The term '%s' is a reserved word in the Tool Shed, so it cannot be used as a public user name." % username
+            return f"The term '{username}' is a reserved word in the Tool Shed, so it cannot be used as a public user name."
         message = "\n".join((validate_email(trans, email),
                              validate_password(trans, password, confirm),
                              validate_publicname(trans, username))).rstrip()

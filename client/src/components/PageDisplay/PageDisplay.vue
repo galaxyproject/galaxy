@@ -1,5 +1,5 @@
 <template>
-    <markdown :markdown-config="markdownConfig" :export-link="exportUrl"> </markdown>
+    <markdown :markdown-config="markdownConfig" :export-link="exportUrl" @onEdit="onEdit" />
 </template>
 
 <script>
@@ -18,11 +18,14 @@ export default {
         },
     },
     computed: {
-        dataUrl: function () {
-            return getAppRoot() + `api/pages/${this.pageId}`;
+        dataUrl() {
+            return `${getAppRoot()}api/pages/${this.pageId}`;
         },
-        exportUrl: function () {
-            return this.dataUrl + ".pdf";
+        exportUrl() {
+            return `${this.dataUrl}.pdf`;
+        },
+        editUrl() {
+            return `${getAppRoot()}page/edit_content?id=${this.pageId}`;
         },
     },
     data() {
@@ -30,19 +33,22 @@ export default {
             markdownConfig: {},
         };
     },
-    created: function () {
-        this.ajaxCall();
+    created() {
+        this.getContent().then((data) => {
+            this.markdownConfig = { ...data, markdown: data.content };
+        });
     },
     methods: {
-        ajaxCall: function () {
-            axios
-                .get(this.dataUrl)
-                .then((response) => {
-                    this.markdownConfig = { ...response.data, markdown: response.data.content };
-                })
-                .catch((e) => {
-                    console.error(e);
-                });
+        onEdit() {
+            window.location = this.editUrl;
+        },
+        async getContent() {
+            try {
+                const response = await axios.get(this.dataUrl);
+                return response.data;
+            } catch (e) {
+                return `Failed to retrieve content. ${e}`;
+            }
         },
     },
 };

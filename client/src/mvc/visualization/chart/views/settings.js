@@ -24,6 +24,7 @@ export default Backbone.View.extend({
                 type: "boolean",
                 label: "Use multi-panels",
                 help: "Would you like to separate your data into individual panels?",
+                value: false,
             });
         } else {
             this.chart.settings.set("__use_panels", panel_option == "yes" ? "true" : "false");

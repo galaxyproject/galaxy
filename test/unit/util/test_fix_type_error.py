@@ -1,11 +1,6 @@
-import six
-
 from galaxy.util.pastescript.loadwsgi import fix_type_error
 
-if six.PY2:
-    argtype = ' keyword'
-else:
-    argtype = ''
+argtype = ''
 EXP_STRING = "a_func() got multiple values for%s argument 'kwarg'; got (1, 2, kwarg=...), wanted (argone, kwarg=True)" % argtype
 
 

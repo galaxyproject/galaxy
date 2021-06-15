@@ -46,10 +46,10 @@ def getMissval(inped=''):
     missval = None
     while missval is None:  # doggedly continue until we solve the mystery
         try:
-            l = f.readline()
+            line = f.readline()
         except Exception:
             break
-        ll = l.split()[6:]  # ignore pedigree stuff
+        ll = line.split()[6:]  # ignore pedigree stuff
         for c in ll:
             if commonmissvals.get(c, None):
                 missval = c
@@ -64,12 +64,12 @@ def getMissval(inped=''):
 def rgConv(inpedfilepath, outhtmlname, outfilepath, plink):
     """
     """
-    pedf = '%s.ped' % inpedfilepath
+    pedf = f'{inpedfilepath}.ped'
     basename = os.path.split(inpedfilepath)[-1]  # get basename
     outroot = os.path.join(outfilepath, basename)
     missval = getMissval(inped=pedf)
     if not missval:
-        print('### lped_to_pbed_converter.py cannot identify missing value in %s' % pedf)
+        print(f'### lped_to_pbed_converter.py cannot identify missing value in {pedf}')
         missval = '0'
     subprocess.check_call([plink, '--noweb', '--file', inpedfilepath,
                            '--make-bed', '--out', outroot,
@@ -99,11 +99,11 @@ def main():
     flist = os.listdir(outfilepath)
     with open(outhtmlname, 'w') as f:
         f.write(galhtmlprefix % prog)
-        s = '## Rgenetics: http://rgenetics.org Galaxy Tools {} {}'.format(prog, timenow())  # becomes info
+        s = f'## Rgenetics: http://rgenetics.org Galaxy Tools {prog} {timenow()}'  # becomes info
         print(s)
-        f.write('<div>%s\n<ol>' % (s))
-        for i, data in enumerate(flist):
-            f.write('<li><a href="{}">{}</a></li>\n'.format(os.path.split(data)[-1], os.path.split(data)[-1]))
+        f.write(f'<div>{s}\n<ol>')
+        for data in flist:
+            f.write(f'<li><a href="{os.path.split(data)[-1]}">{os.path.split(data)[-1]}</a></li>\n')
         f.write("</ol></div></div></body></html>")
 
 

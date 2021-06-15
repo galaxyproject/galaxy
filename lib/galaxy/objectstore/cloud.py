@@ -117,7 +117,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
 
     @staticmethod
     def _get_connection(provider, credentials):
-        log.debug("Configuring `{}` Connection".format(provider))
+        log.debug(f"Configuring `{provider}` Connection")
         if provider == "aws":
             config = {"aws_access_key": credentials["access_key"],
                       "aws_secret_key": credentials["secret_key"]}
@@ -132,7 +132,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
             config = {"gcp_service_creds_file": credentials["credentials_file"]}
             connection = CloudProviderFactory().create_provider(ProviderList.GCP, config)
         else:
-            raise Exception("Unsupported provider `{}`.".format(provider))
+            raise Exception(f"Unsupported provider `{provider}`.")
 
         # Ideally it would be better to assert if the connection is
         # authorized to perform operations required by ObjectStore
@@ -215,7 +215,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
             elif provider == "google":
                 cre = auth_element.get("credentials_file")
                 if not os.path.isfile(cre):
-                    msg = "The following file specified for GCP credentials not found: {}".format(cre)
+                    msg = f"The following file specified for GCP credentials not found: {cre}"
                     log.error(msg)
                     raise OSError(msg)
                 if cre is None:
@@ -223,7 +223,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
                 config["auth"] = {
                     "credentials_file": cre}
             else:
-                msg = "Unsupported provider `{}`.".format(provider)
+                msg = f"Unsupported provider `{provider}`."
                 log.error(msg)
                 raise Exception(msg)
 
@@ -321,7 +321,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
         except Exception:
             # These two generic exceptions will be replaced by specific exceptions
             # once proper exceptions are exposed by CloudBridge.
-            log.exception("Could not get bucket '{}'".format(bucket_name))
+            log.exception(f"Could not get bucket '{bucket_name}'")
         raise Exception
 
     def _fix_permissions(self, rel_path):
@@ -366,10 +366,10 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
             return os.path.join(base, rel_path)
 
         # S3 folders are marked by having trailing '/' so add it now
-        rel_path = '%s/' % rel_path
+        rel_path = f'{rel_path}/'
 
         if not dir_only:
-            rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % self._get_object_id(obj))
+            rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
         return rel_path
 
     def _get_cache_path(self, rel_path):
@@ -439,7 +439,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
                 log.debug("Parallel pulled key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
                 ncores = multiprocessing.cpu_count()
                 url = key.generate_url(7200)
-                ret_code = subprocess.call("axel -a -n {} '{}'".format(ncores, url))
+                ret_code = subprocess.call(f"axel -a -n {ncores} '{url}'")
                 if ret_code == 0:
                     return True
             else:
@@ -568,7 +568,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
                 os.makedirs(cache_dir)
 
             if not dir_only:
-                rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % self._get_object_id(obj))
+                rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
                 open(os.path.join(self.staging_path, rel_path), 'w').close()
                 self._push_to_os(rel_path, from_string='')
 

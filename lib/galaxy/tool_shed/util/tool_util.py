@@ -100,11 +100,11 @@ def generate_message_for_invalid_tools(app, invalid_file_tups, repository, metad
         tip_rev = str(repository.tip())
     if not displaying_invalid_tool:
         if metadata_dict:
-            message += "Metadata may have been defined for some items in revision '%s'.  " % tip_rev
-            message += "Correct the following problems if necessary and reset metadata.%s" % new_line
+            message += f"Metadata may have been defined for some items in revision '{tip_rev}'.  "
+            message += f"Correct the following problems if necessary and reset metadata.{new_line}"
         else:
-            message += "Metadata cannot be defined for revision '%s' so this revision cannot be automatically " % tip_rev
-            message += "installed into a local Galaxy instance.  Correct the following problems and reset metadata.%s" % new_line
+            message += f"Metadata cannot be defined for revision '{tip_rev}' so this revision cannot be automatically "
+            message += f"installed into a local Galaxy instance.  Correct the following problems and reset metadata.{new_line}"
     for itc_tup in invalid_file_tups:
         tool_file, exception_msg = itc_tup
         if exception_msg.find('No such file or directory') >= 0:
@@ -112,7 +112,7 @@ def generate_message_for_invalid_tools(app, invalid_file_tups, repository, metad
             missing_file_items = exception_items[7].split('/')
             missing_file = missing_file_items[-1].rstrip('\'')
             if missing_file.endswith('.loc'):
-                sample_ext = '%s.sample' % missing_file
+                sample_ext = f'{missing_file}.sample'
             else:
                 sample_ext = missing_file
             correction_msg = "This file refers to a missing file %s%s%s.  " % \
@@ -124,7 +124,7 @@ def generate_message_for_invalid_tools(app, invalid_file_tups, repository, metad
                 correction_msg = exception_msg
             else:
                 correction_msg = exception_msg.replace('<br/>', new_line).replace('<b>', bold_start).replace('</b>', bold_end)
-        message += "{}{}{} - {}{}".format(bold_start, tool_file, bold_end, correction_msg, new_line)
+        message += f"{bold_start}{tool_file}{bold_end} - {correction_msg}{new_line}"
     return message
 
 
@@ -151,7 +151,7 @@ def handle_missing_index_file(app, tool_path, sample_files, repository_tools_tup
     generated select lists that depend on a .loc file.  This method is not called
     from the tool shed, but from Galaxy when a repository is being installed.
     """
-    for index, repository_tools_tup in enumerate(repository_tools_tups):
+    for repository_tools_tup in repository_tools_tups:
         tup_path, guid, repository_tool = repository_tools_tup
         params_with_missing_index_file = repository_tool.params_with_missing_index_file
         for param in params_with_missing_index_file:
@@ -161,7 +161,7 @@ def handle_missing_index_file(app, tool_path, sample_files, repository_tools_tup
                 # The repository must contain the required xxx.loc.sample file.
                 for sample_file in sample_files:
                     sample_file_name = basic_util.strip_path(sample_file)
-                    if sample_file_name == '%s.sample' % missing_file_name:
+                    if sample_file_name == f'{missing_file_name}.sample':
                         target_path = copy_sample_file(app, os.path.join(tool_path, sample_file))
                         if options.tool_data_table and options.tool_data_table.missing_index_file:
                             options.tool_data_table.handle_found_index_file(target_path)
@@ -233,7 +233,7 @@ def panel_entry_per_tool(tool_section_dict):
         return False
     if len(tool_section_dict) != 3:
         return True
-    for k, v in tool_section_dict:
+    for k in tool_section_dict.keys():
         if k not in ['id', 'version', 'name']:
             return True
     return False

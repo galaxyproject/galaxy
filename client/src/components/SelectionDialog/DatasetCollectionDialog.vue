@@ -3,7 +3,7 @@
         :error-message="errorMessage"
         :options-show="optionsShow"
         :modal-show="modalShow"
-        :hide-modal="() => (modalShow = false)"
+        :hide-modal="onCancel"
     >
         <template v-slot:search>
             <data-dialog-search v-model="filter" />
@@ -54,6 +54,12 @@ export default {
         clicked: function (record) {
             this.modalShow = false;
             this.callback(record);
+            this.$emit("onOk", record);
+        },
+        /** Called when the modal is hidden */
+        onCancel() {
+            this.modalShow = false;
+            this.$emit("onCancel");
         },
         /** Performs server request to retrieve data records **/
         load: function () {

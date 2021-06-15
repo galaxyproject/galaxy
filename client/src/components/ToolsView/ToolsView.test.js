@@ -1,6 +1,6 @@
 import ToolsView from "./ToolsView";
-import { mount, createLocalVue } from "@vue/test-utils";
-import _l from "utils/localization";
+import { mount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 import flushPromises from "flush-promises";
 
 // test response
@@ -9,15 +9,17 @@ import testCitation from "./testData/citation";
 import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
 
+jest.mock("app");
+
 describe("ToolsView/ToolsView.vue", () => {
-    const localVue = createLocalVue();
-    localVue.filter("localize", (value) => _l(value));
+    const localVue = getLocalVue();
+
     let wrapper;
     let axiosMock;
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
-        wrapper = mount(ToolsView);
+        wrapper = mount(ToolsView, { localVue });
         axiosMock.onGet("/api/tools?tool_help=True").reply(200, testToolsListResponse);
         axiosMock.onGet(new RegExp(`./*/citations`)).reply(200, testCitation);
         await flushPromises();
@@ -32,7 +34,7 @@ describe("ToolsView/ToolsView.vue", () => {
     });
 
     it("should return defined number of tools", async () => {
-        expect(wrapper.vm.getToolsNumber() === 84).toBeTruthy();
+        expect(wrapper.vm.getToolsNumber() === 5).toBeTruthy();
     });
 
     it("should render only specific number of tools, equal to current buffer", async () => {
@@ -69,7 +71,6 @@ describe("ToolsView/ToolsView.vue", () => {
 
         infoButton.trigger("click");
         await flushPromises();
-
         expect(infoButton.attributes("aria-expanded") === "true").toBeTruthy();
         expect(citation.element).toBeVisible();
     });

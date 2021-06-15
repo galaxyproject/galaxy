@@ -26,15 +26,15 @@ class Node:
             self.children += child
 
     def __str__(self):
-        return self.name + " id:" + str(self.id) + ", depth: " + str(self.depth)
+        return f"{self.name} id:{str(self.id)}, depth: {str(self.depth)}"
 
     def toJson(self):
         """Converts the data in the node to a dict representation of json"""
         thisJson = {
-            "name"      : self.name,
-            "id"        : self.id,
-            "depth"     : self.depth,
-            "dist"      : self.length
+            "name": self.name,
+            "id": self.id,
+            "depth": self.depth,
+            "dist": self.length
         }
         thisJson = self.addChildrenToJson(thisJson)
         thisJson = self.addMiscToJson(thisJson)

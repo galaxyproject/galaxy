@@ -1,4 +1,3 @@
-import os
 import tempfile
 from abc import (
     ABCMeta,
@@ -20,6 +19,5 @@ class ToolLocationResolver(metaclass=ABCMeta):
 
     def _temp_path(self, uri_like):
         """Create an abstraction for this so we can configure and cache later."""
-        handle, filename = tempfile.mkstemp(suffix=uri_like.split("/")[-1])
-        os.close(handle)
-        return filename
+        with tempfile.NamedTemporaryFile(suffix=uri_like.split("/")[-1], delete=False) as temp:
+            return temp.name

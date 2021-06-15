@@ -19,9 +19,7 @@
             </span>
             <display-raw :object="dependencyResolver" />
         </span>
-        <span v-else>
-            no dependency resolver
-        </span>
+        <span v-else> no dependency resolver </span>
     </span>
 </template>
 <script>

@@ -141,7 +141,7 @@ export class TrsSearchService {
                     new Observable((observer) => {
                         return new AxiosSubscriber(
                             observer,
-                            `/api/trs_search?query=${query}&trs_server=${this._trsServer}`
+                            `${getAppRoot()}api/trs_search?query=${query}&trs_server=${this._trsServer}`
                         );
                     }),
                 ];

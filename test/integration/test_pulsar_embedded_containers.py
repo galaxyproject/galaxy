@@ -26,14 +26,14 @@ class BaseEmbeddedPulsarContainerIntegrationTestCase(integration_util.Integratio
         disable_dependency_resolution(config)
 
     def setUp(self):
-        super(BaseEmbeddedPulsarContainerIntegrationTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.history_id = self.dataset_populator.new_history()
 
     @classmethod
     def setUpClass(cls):
         skip_if_container_type_unavailable(cls)
-        super(BaseEmbeddedPulsarContainerIntegrationTestCase, cls).setUpClass()
+        super().setUpClass()
 
 
 class EmbeddedSingularityPulsarIntegrationTestCase(BaseEmbeddedPulsarContainerIntegrationTestCase, MulledJobTestCases):
@@ -46,3 +46,10 @@ class EmbeddedSingularityPulsarIntegrationTestCase(BaseEmbeddedPulsarContainerIn
 class EmbeddedDockerPulsarIntegrationTestCase(BaseEmbeddedPulsarContainerIntegrationTestCase, MulledJobTestCases):
     job_config_file = EMBEDDED_PULSAR_JOB_CONFIG_FILE_DOCKER
     container_type = 'docker'
+
+
+instance = integration_util.integration_module_instance(EmbeddedSingularityPulsarIntegrationTestCase)
+
+test_tools = integration_util.integration_tool_runner([
+    "tool_directory_docker",
+])

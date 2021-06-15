@@ -33,7 +33,7 @@ def add_ui_controllers(webapp, app):
     for fname in os.listdir(controller_dir):
         if not fname.startswith("_") and fname.endswith(".py"):
             name = fname[:-3]
-            module_name = "galaxy.webapps.reports.controllers." + name
+            module_name = f"galaxy.webapps.reports.controllers.{name}"
             module = __import__(module_name)
             for comp in module_name.split(".")[1:]:
                 module = getattr(module, comp)
@@ -44,9 +44,10 @@ def add_ui_controllers(webapp, app):
                     webapp.add_ui_controller(name, T(app))
 
 
-def app_factory(global_conf, load_app_kwds={}, **kwargs):
+def app_factory(global_conf, load_app_kwds=None, **kwargs):
     """Return a wsgi application serving the root object"""
     # Create the Galaxy application unless passed in
+    load_app_kwds = load_app_kwds or {}
     kwargs = load_app_properties(
         kwds=kwargs,
         **load_app_kwds

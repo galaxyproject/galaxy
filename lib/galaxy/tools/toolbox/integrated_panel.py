@@ -61,7 +61,7 @@ class ManagesIntegratedToolPanelMixin:
         if tracking_directory:
             if not os.path.exists(tracking_directory):
                 os.makedirs(tracking_directory)
-            name = "integrated_tool_panel_%.10f.xml" % time.time()
+            name = f"integrated_tool_panel_{time.time():.10f}.xml"
             filename = os.path.join(tracking_directory, name)
         else:
             filename = destination
@@ -74,46 +74,46 @@ $INTEGRATED_TOOL_PANEL
 </toolbox>
 """)
         integrated_tool_panel = []
-        for key, item_type, item in self._integrated_tool_panel.panel_items_iter():
+        for _, item_type, item in self._integrated_tool_panel.panel_items_iter():
             if item:
                 if item_type == panel_item_types.TOOL:
-                    integrated_tool_panel.append('    <tool id="%s" />\n' % item.id)
+                    integrated_tool_panel.append(f'    <tool id="{item.id}" />\n')
                 elif item_type == panel_item_types.WORKFLOW:
-                    integrated_tool_panel.append('    <workflow id="%s" />\n' % item.id)
+                    integrated_tool_panel.append(f'    <workflow id="{item.id}" />\n')
                 elif item_type == panel_item_types.LABEL:
                     label_id = item.id or ''
                     label_text = item.text or ''
                     label_version = item.version or ''
-                    integrated_tool_panel.append('    <label id="{}" text="{}" version="{}" />\n'.format(label_id, label_text, label_version))
+                    integrated_tool_panel.append(f'    <label id="{label_id}" text="{label_text}" version="{label_version}" />\n')
                 elif item_type == panel_item_types.SECTION:
                     section_id = item.id or ''
                     section_name = item.name or ''
                     section_version = item.version or ''
-                    integrated_tool_panel.append('    <section id="{}" name="{}" version="{}">\n'.format(escape(section_id), escape(section_name), section_version))
-                    for section_key, section_item_type, section_item in item.panel_items_iter():
+                    integrated_tool_panel.append(f'    <section id="{escape(section_id)}" name="{escape(section_name)}" version="{section_version}">\n')
+                    for _section_key, section_item_type, section_item in item.panel_items_iter():
                         if section_item_type == panel_item_types.TOOL:
                             if section_item:
-                                integrated_tool_panel.append('        <tool id="%s" />\n' % section_item.id)
+                                integrated_tool_panel.append(f'        <tool id="{section_item.id}" />\n')
                         elif section_item_type == panel_item_types.WORKFLOW:
                             if section_item:
-                                integrated_tool_panel.append('        <workflow id="%s" />\n' % section_item.id)
+                                integrated_tool_panel.append(f'        <workflow id="{section_item.id}" />\n')
                         elif section_item_type == panel_item_types.LABEL:
                             if section_item:
                                 label_id = section_item.id or ''
                                 label_text = section_item.text or ''
                                 label_version = section_item.version or ''
-                                integrated_tool_panel.append('        <label id="{}" text="{}" version="{}" />\n'.format(label_id, label_text, label_version))
+                                integrated_tool_panel.append(f'        <label id="{label_id}" text="{label_text}" version="{label_version}" />\n')
                     integrated_tool_panel.append('    </section>\n')
-        tool_panel_description = '\n    '.join(l for l in INTEGRATED_TOOL_PANEL_DESCRIPTION.split("\n") if l)
+        tool_panel_description = '\n    '.join(line for line in INTEGRATED_TOOL_PANEL_DESCRIPTION.split("\n") if line)
         tp_string = template.substitute(INTEGRATED_TOOL_PANEL_DESCRIPTION=tool_panel_description,
                                         INTEGRATED_TOOL_PANEL='\n'.join(integrated_tool_panel))
         with RenamedTemporaryFile(filename, mode='w') as f:
             f.write(tp_string)
         if tracking_directory:
-            with open(filename + ".stack", "w") as f:
+            with open(f"{filename}.stack", "w") as f:
                 f.write(''.join(traceback.format_stack()))
-            shutil.copy(filename, filename + ".copy")
-            shutil.move(filename + ".copy", destination)
+            shutil.copy(filename, f"{filename}.copy")
+            shutil.move(f"{filename}.copy", destination)
         try:
             os.chmod(destination, RW_R__R__)
         except OSError:

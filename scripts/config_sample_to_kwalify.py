@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import sys
 
 
@@ -13,7 +11,7 @@ def main():
     except KeyError:
         sample = "config/galaxy.ini.sample"
 
-    for line in open(sample, "r"):
+    for line in open(sample):
         is_app_main = line.startswith('[app:main]')
         if not found_app_main and not is_app_main:
             continue

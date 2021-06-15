@@ -12,7 +12,7 @@ class FailJobWhenToolUnavailableTestCase(integration_util.IntegrationTestCase):
     require_admin_user = True
 
     def setUp(self):
-        super(FailJobWhenToolUnavailableTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
         self.history_id = self.dataset_populator.new_history()

@@ -55,15 +55,3 @@ def get_components_from_key(key):
         # For backward compatibility to the 12/20/12 Galaxy release we have to return the following, and callers
         # must handle exceptions.
         return toolshed_base_url, repository_name, repository_owner, changeset_revision
-
-
-def print_folders(pad, folder):
-    # For debugging...
-    pad_str = ''
-    for i in range(1, pad):
-        pad_str += ' '
-    print('{}id: {} key: {}'.format(pad_str, str(folder.id), folder.key))
-    for repository_dependency in folder.repository_dependencies:
-        print('    {}{}'.format(pad_str, repository_dependency.listify))
-    for sub_folder in folder.folders:
-        print_folders(pad + 5, sub_folder)

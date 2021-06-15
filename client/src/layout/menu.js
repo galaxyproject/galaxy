@@ -1,54 +1,79 @@
 import axios from "axios";
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
-import { CommunicationServerView } from "layout/communication-server-view";
 
-export function logoutClick() {
+const POST_LOGOUT_URL = "root/login?is_logout_redirect=true";
+
+/**
+ * Handles user logout.  Invalidates the current session, checks to see if we
+ * need to log out of OIDC too, and goes to our POST_LOGOUT_URL (or some other
+ * configured redirect). */
+export function userLogout(logoutAll = false) {
     const galaxy = getGalaxyInstance();
     const session_csrf_token = galaxy.session_csrf_token;
-    const url = `${galaxy.root}user/logout?session_csrf_token=${session_csrf_token}`;
+    const url = `${galaxy.root}user/logout?session_csrf_token=${session_csrf_token}&logout_all=${logoutAll}`;
     axios
         .get(url)
-        .then(() => {
+        .then((response) => {
             if (galaxy.user) {
                 galaxy.user.clearSessionStorage();
             }
             // Check if we need to logout of OIDC IDP
             if (galaxy.config.enable_oidc) {
+                const provider = localStorage.getItem("galaxy-provider");
+                if (provider) {
+                    localStorage.removeItem("galaxy-provider");
+                    return axios.get(`${galaxy.root}authnz/logout?provider=${provider}`);
+                }
                 return axios.get(`${galaxy.root}authnz/logout`);
             } else {
-                return {};
+                // Otherwise pass through the initial logout response
+                return response;
             }
         })
         .then((response) => {
-            if (response.data && response.data.redirect_uri) {
+            if (response.data?.redirect_uri) {
                 window.top.location.href = response.data.redirect_uri;
             } else {
-                window.top.location.href = `${galaxy.root}root/login?is_logout_redirect=true`;
+                window.top.location.href = `${galaxy.root}${POST_LOGOUT_URL}`;
             }
         });
 }
 
+/** User logout with 'log out all sessions' flag set.  This will invalidate all
+ * active sessions a user might have. */
+export function userLogoutAll() {
+    return userLogout(true);
+}
+
+/** Purely clientside logout, dumps session and redirects without invalidating
+ * serverside. Currently only used when marking an account deleted -- any
+ * subsequent navigation after the deletion API request would fail otherwise */
+export function userLogoutClient() {
+    const galaxy = getGalaxyInstance();
+    galaxy.user?.clearSessionStorage();
+    window.top.location.href = `${galaxy.root}${POST_LOGOUT_URL}`;
+}
+
 export function fetchMenu(options = {}) {
     const Galaxy = getGalaxyInstance();
+    const { version_minor, version_major } = Galaxy.config;
+    const { release_doc_base_url } = options;
+    const versionUserDocumentationUrl =
+        version_minor == "dev"
+            ? "https://docs.galaxyproject.org/en/latest/releases/index.html"
+            : `${release_doc_base_url}${version_major}/releases/${version_major}_announce_user.html`;
+
     const menu = [];
-
-    //
-    // Chat server tab
-    //
-    const extendedNavItem = new CommunicationServerView();
-    menu.push(extendedNavItem.render());
-
     //
     // Analyze data tab.
     //
     menu.push({
         id: "analysis",
-        title: _l("Analyze Data"),
         url: "",
-        tooltip: _l("Analysis home view"),
+        tooltip: _l("Tools and Current History"),
+        icon: "fa-home",
     });
-
     //
     // Workflow tab.
     //
@@ -89,38 +114,49 @@ export function fetchMenu(options = {}) {
     //
     // 'Shared Items' or Libraries tab.
     //
-    menu.push({
-        id: "shared",
-        title: _l("Shared Data"),
-        url: "javascript:void(0)",
-        tooltip: _l("Access published resources"),
-        menu: [
-            {
-                title: _l("Data Libraries"),
-                url: "library/list",
-            },
-            {
-                title: _l("Histories"),
-                url: "histories/list_published",
-                target: "__use_router__",
-            },
-            {
-                title: _l("Workflows"),
-                url: "workflows/list_published",
-                target: "__use_router__",
-            },
-            {
-                title: _l("Visualizations"),
-                url: "visualizations/list_published",
-                target: "__use_router__",
-            },
-            {
-                title: _l("Pages"),
-                url: "pages/list_published",
-                target: "__use_router__",
-            },
-        ],
-    });
+    if (Galaxy.config.single_user) {
+        // Single user can still use libraries, especially as we may grow that
+        // functionality as a representation for external data.  The rest is
+        // hidden though.
+        menu.push({
+            title: _l("Data Libraries"),
+            url: "libraries",
+            id: "libraries",
+        });
+    } else {
+        menu.push({
+            id: "shared",
+            title: _l("Shared Data"),
+            url: "javascript:void(0)",
+            tooltip: _l("Access published resources"),
+            menu: [
+                {
+                    title: _l("Data Libraries"),
+                    url: "libraries",
+                },
+                {
+                    title: _l("Histories"),
+                    url: "histories/list_published",
+                    target: "__use_router__",
+                },
+                {
+                    title: _l("Workflows"),
+                    url: "workflows/list_published",
+                    target: "__use_router__",
+                },
+                {
+                    title: _l("Visualizations"),
+                    url: "visualizations/list_published",
+                    target: "__use_router__",
+                },
+                {
+                    title: _l("Pages"),
+                    url: "pages/list_published",
+                    target: "__use_router__",
+                },
+            ],
+        });
+    }
 
     //
     // Admin.
@@ -178,6 +214,11 @@ export function fetchMenu(options = {}) {
                 title: _l("Interactive Tours"),
                 url: "tours",
             },
+            {
+                title: _l("Galaxy Version: " + Galaxy.config.version_major),
+                url: versionUserDocumentationUrl,
+                target: "_blank",
+            },
         ],
     };
     if (options.terms_url) {
@@ -229,7 +270,7 @@ export function fetchMenu(options = {}) {
             menu: [
                 {
                     title: `${_l("Logged in as")} ${Galaxy.user.get("email")}`,
-                    class: "dropdown-item disabled",
+                    disabled: true,
                 },
                 {
                     title: _l("Preferences"),
@@ -241,10 +282,11 @@ export function fetchMenu(options = {}) {
                     url: "custom_builds",
                     target: "__use_router__",
                 },
+                { divider: true },
                 {
                     title: _l("Logout"),
-                    divider: true,
-                    onclick: logoutClick,
+                    onclick: userLogout,
+                    hidden: Galaxy.config.single_user,
                 },
                 {
                     title: _l("Datasets"),
@@ -260,6 +302,7 @@ export function fetchMenu(options = {}) {
                     title: _l("Histories shared with me"),
                     url: "histories/list_shared",
                     target: "__use_router__",
+                    hidden: Galaxy.config.single_user,
                 },
                 {
                     title: _l("Pages"),
@@ -281,7 +324,7 @@ export function fetchMenu(options = {}) {
             });
         }
         if (Galaxy.config.interactivetools_enable) {
-            userTab.menu[userTab.menu.length - 1].divider = true;
+            userTab.menu.push({ divider: true });
             userTab.menu.push({
                 title: _l("Active InteractiveTools"),
                 url: "interactivetool_entry_points/list",
@@ -290,6 +333,5 @@ export function fetchMenu(options = {}) {
         }
     }
     menu.push(userTab);
-
     return menu;
 }

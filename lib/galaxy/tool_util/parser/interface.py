@@ -4,7 +4,6 @@ from abc import (
     abstractmethod
 )
 
-
 from .util import _parse_name
 
 NOT_IMPLEMENTED_MESSAGE = "Galaxy tool format does not yet support this tool feature."
@@ -111,7 +110,8 @@ class ToolSource(metaclass=ABCMeta):
         return ["TMPDIR", "TMP", "TEMP"]
 
     def parse_docker_env_pass_through(self):
-        return ["GALAXY_SLOTS", "HOME", "_GALAXY_JOB_HOME_DIR", "_GALAXY_JOB_TMP_DIR"] + self.parse_tmp_directory_vars()
+        return ["GALAXY_SLOTS", "GALAXY_MEMORY_MB", "GALAXY_MEMORY_MB_PER_SLOT", "HOME",
+                "_GALAXY_JOB_HOME_DIR", "_GALAXY_JOB_TMP_DIR"] + self.parse_tmp_directory_vars()
 
     @abstractmethod
     def parse_interpreter(self):
@@ -222,10 +222,21 @@ class ToolSource(metaclass=ABCMeta):
         """
 
     @abstractmethod
+    def parse_license(self):
+        """Return license corresponding to tool wrapper."""
+
+    @abstractmethod
     def parse_python_template_version(self):
         """
         Return minimum python version that the tool template has been developed against.
         """
+
+    def parse_creator(self):
+        """Return list of metadata relating to creator/author of tool.
+
+        Result should be list of schema.org data model Person or Organization objects.
+        """
+        return []
 
     @property
     def macro_paths(self):
@@ -247,9 +258,9 @@ class ToolSource(metaclass=ABCMeta):
     def __str__(self):
         source_path = self.source_path
         if source_path:
-            as_str = '{}[{}]'.format(self.__class__.__name__, source_path)
+            as_str = f'{self.__class__.__name__}[{source_path}]'
         else:
-            as_str = '%s[In-memory]' % (self.__class__.__name__)
+            as_str = f'{self.__class__.__name__}[In-memory]'
         return as_str
 
 
@@ -362,6 +373,7 @@ class InputSource(metaclass=ABCMeta):
 
 
 class TestCollectionDef:
+    __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
     def __init__(self, attrib, name, collection_type, elements):
         self.attrib = attrib
@@ -416,7 +428,7 @@ class TestCollectionDef:
 
         def element_from_dict(element_dict):
             if "element_definition" not in element_dict:
-                raise Exception("Invalid element_dict %s" % element_dict)
+                raise Exception(f"Invalid element_dict {element_dict}")
             element_def = element_dict["element_definition"]
             if element_def.get("model_class", None) == "TestCollectionDef":
                 element_def = TestCollectionDef.from_dict(element_def)
@@ -441,6 +453,7 @@ class TestCollectionDef:
 
 
 class TestCollectionOutputDef:
+    __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
     def __init__(self, name, attrib, element_tests):
         self.name = name

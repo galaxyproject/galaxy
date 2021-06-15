@@ -79,10 +79,15 @@ def validate_and_normalize_targets(trans, payload):
         validate_datatype_extension(datatypes_registry=trans.app.datatypes_registry, ext=item.get('ext'))
 
         # Normalize file:// URLs into paths.
-        if item["src"] == "url" and item["url"].startswith("file://"):
-            item["src"] = "path"
-            item["path"] = item["url"][len("file://"):]
-            del item["path"]
+        if item["src"] == "url":
+            if "url" not in item:
+                raise RequestParameterInvalidException("src specified as 'url' but 'url' not specified")
+
+            url = item["url"]
+            if url.startswith("file://"):
+                item["src"] = "path"
+                item["path"] = url[len("file://"):]
+                del item["url"]
 
         if "in_place" in item:
             raise RequestParameterInvalidException("in_place cannot be set in the upload request")
@@ -166,7 +171,7 @@ def validate_and_normalize_targets(trans, payload):
                 looks_like_url = True
 
             if not looks_like_url:
-                raise RequestParameterInvalidException("Invalid URL [%s] found in src definition." % url)
+                raise RequestParameterInvalidException(f"Invalid URL [{url}] found in src definition.")
 
             validate_url(url, trans.app.config.fetch_url_allowlist_ips)
             item["in_place"] = run_as_real_user
@@ -186,13 +191,13 @@ def validate_and_normalize_targets(trans, payload):
 def _handle_invalid_link_data_only_type(item):
     link_data_only = item.get("link_data_only", False)
     if link_data_only:
-        raise RequestParameterInvalidException("link_data_only is invalid for src type [%s]" % item.get("src"))
+        raise RequestParameterInvalidException(f"link_data_only is invalid for src type [{item.get('src')}]")
 
 
 def _handle_invalid_link_data_only_elements_type(item):
     link_data_only = item.get("link_data_only", False)
     if link_data_only and item.get("elements_from", False) in ELEMENTS_FROM_TRANSIENT_TYPES:
-        raise RequestParameterInvalidException("link_data_only is invalid for derived elements from [%s]" % item.get("elements_from"))
+        raise RequestParameterInvalidException(f"link_data_only is invalid for derived elements from [{item.get('elements_from')}]")
 
 
 def _for_each_src(f, obj):
@@ -202,5 +207,5 @@ def _for_each_src(f, obj):
     if isinstance(obj, dict):
         if "src" in obj:
             f(obj)
-        for key, value in obj.items():
+        for value in obj.values():
             _for_each_src(f, value)

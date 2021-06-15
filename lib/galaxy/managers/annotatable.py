@@ -20,7 +20,7 @@ def _match_by_user(item, user):
 
 class AnnotatableManagerMixin:
     #: class of AnnotationAssociation (e.g. HistoryAnnotationAssociation)
-    annotation_assoc = None
+    annotation_assoc: type
 
     def annotation(self, item):
         """
@@ -103,7 +103,13 @@ class AnnotatableFilterMixin:
         return val in owner_annotation
 
     def _add_parsers(self):
-        self.fn_filter_parsers.update({
-            'annotation'    : {'op': {'has': self.filter_annotation_contains,
-                                      'contains': self.filter_annotation_contains}},
-        })
+        self.fn_filter_parsers.update(
+            {
+                'annotation': {
+                    'op': {
+                        'has': self.filter_annotation_contains,
+                        'contains': self.filter_annotation_contains,
+                    },
+                },
+            }
+        )

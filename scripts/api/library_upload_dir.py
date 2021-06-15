@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 
 import argparse
 import os
@@ -8,7 +7,7 @@ import sys
 from bioblend import galaxy
 
 
-class Uploader(object):
+class Uploader:
 
     def __init__(self, url, api, library_id, folder_id, should_link,
                  non_local):
@@ -132,7 +131,7 @@ class Uploader(object):
             # So that we can check if it really needs to be uploaded.
             already_uploaded = memo_key in self.memo_path.keys()
             fid = self.memoized_path(basepath, base_folder=self.folder_id)
-            print('[%s/%s] %s/%s uploaded=%s' % (idx + 1, len(all_files), fid, fname, already_uploaded))
+            print('[{}/{}] {}/{} uploaded={}'.format(idx + 1, len(all_files), fid, fname, already_uploaded))
 
             if not already_uploaded:
                 if self.non_local:

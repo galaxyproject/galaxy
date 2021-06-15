@@ -42,7 +42,7 @@ def __main__():
     for spec in species:
         file_out.write(">" + spec + "\n")
         try:
-            for start_block in maf.Reader(open(input_filename, 'r')):
+            for start_block in maf.Reader(open(input_filename)):
                 for block in maf_utilities.iter_blocks_split_by_species(start_block):
                     block.remove_all_gap_columns()  # remove extra gaps
                     component = block.get_component_by_src_start(spec)  # blocks only have one occurrence of a particular species, so this is safe

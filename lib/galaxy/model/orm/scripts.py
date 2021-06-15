@@ -85,13 +85,13 @@ def get_config(argv, use_argparse=True, cwd=None):
     Read sys.argv and parse out repository of migrations and database url.
 
     >>> import os
-    >>> from six.moves.configparser import SafeConfigParser
+    >>> from configparser import ConfigParser
     >>> from shutil import rmtree
     >>> from tempfile import mkdtemp
     >>> config_dir = mkdtemp()
     >>> os.makedirs(os.path.join(config_dir, 'config'))
     >>> def write_ini(path, property, value):
-    ...     p = SafeConfigParser()
+    ...     p = ConfigParser()
     ...     p.add_section('app:main')
     ...     p.set('app:main', property, value)
     ...     with open(os.path.join(config_dir, 'config', path), 'w') as f: p.write(f)
@@ -132,12 +132,13 @@ def get_config(argv, use_argparse=True, cwd=None):
             config_section = None
     properties = load_app_properties(config_file=config_file, config_prefix=config_override, config_section=config_section)
 
-    if ("%sdatabase_connection" % config_prefix) in properties:
-        db_url = properties["%sdatabase_connection" % config_prefix]
+    if (f"{config_prefix}database_connection") in properties:
+        db_url = properties[f"{config_prefix}database_connection"]
     else:
-        db_url = "sqlite:///%s?isolation_level=IMMEDIATE" % os.path.join(get_data_dir(properties), default_sqlite_file)
+        db_url = f"sqlite:///{os.path.join(get_data_dir(properties), default_sqlite_file)}?isolation_level=IMMEDIATE"
+    install_database_connection = properties.get('install_database_connection')
 
-    return dict(db_url=db_url, repo=repo, config_file=config_file, database=database)
+    return dict(db_url=db_url, repo=repo, config_file=config_file, database=database, install_database_connection=install_database_connection)
 
 
 def manage_db():

@@ -9,6 +9,7 @@ import re
 import subprocess
 import sys
 import tempfile
+from typing import Union
 
 
 def stop_err(msg):
@@ -25,16 +26,12 @@ def safe_bed_file(infile):
     https://lists.soe.ucsc.edu/pipermail/genome/2007-May/013561.html
     """
     fix_pat = re.compile("^(track|browser)")
-    (fd, fname) = tempfile.mkstemp()
-    in_handle = open(infile)
-    out_handle = open(fname, "w")
-    for line in in_handle:
-        if fix_pat.match(line):
-            line = "#" + line
-        out_handle.write(line)
-    in_handle.close()
-    out_handle.close()
-    return fname
+    with tempfile.NamedTemporaryFile(mode='w', delete=False) as out_handle, open(infile, 'r') as in_handle:
+        for line in in_handle:
+            if fix_pat.match(line):
+                line = "#" + line
+            out_handle.write(line)
+    return out_handle.name
 
 
 if len(sys.argv) < 9:
@@ -49,7 +46,7 @@ infile_type = sys.argv[6]
 gff_option = ""
 if infile_type == "gff":
     gff_option = "-gff "
-minMatch = sys.argv[7]
+minMatch: Union[str, float] = sys.argv[7]
 multiple = int(sys.argv[8])
 multiple_option = ""
 if multiple:
@@ -76,9 +73,8 @@ try:
     # have to nest try-except in try-finally to handle 2.4
     try:
         proc = subprocess.Popen(args=cmd_line, shell=True, stderr=subprocess.PIPE)
-        returncode = proc.wait()
-        stderr = proc.stderr.read()
-        if returncode != 0:
+        stderr = proc.communicate()[1]
+        if proc.returncode != 0:
             raise Exception(stderr)
     except Exception as e:
         raise Exception('Exception caught attempting conversion: ' + str(e))

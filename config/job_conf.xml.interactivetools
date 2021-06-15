@@ -15,6 +15,7 @@
           <param id="docker_net">bridge</param>
           <param id="docker_auto_rm">true</param>
           <param id="require_container">true</param>
+          <param id="container_monitor">true</param>
           <param id="docker_set_user"></param>
           <!-- InteractiveTools do need real hostnames or URLs to work - simply specifying IPs will not work.
                If you develop interactive tools on your 'localhost' and don't have a proper domain name

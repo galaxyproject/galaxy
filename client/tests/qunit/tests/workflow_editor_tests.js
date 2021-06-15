@@ -35,6 +35,7 @@ const nodeData = {
 class Node {
     constructor(attr = {}) {
         this.element = attr.element;
+        this.postJobActions = {};
         this.inputTerminals = {};
         this.outputTerminals = {};
     }
@@ -326,7 +327,7 @@ QUnit.test("Collection output can connect to same collection input type", functi
         datatypes: "txt",
         collection_type: "list",
     });
-    outputTerminal.node = {};
+    outputTerminal.node = {postJobActions: {}};
     assert.ok(
         inputTerminal.canAccept(outputTerminal).canAccept,
         "Input terminal " + inputTerminal + " can not accept " + outputTerminal
@@ -385,7 +386,7 @@ QUnit.module("Node unit test", {
             postJobActions: {},
             label: "New Label",
         };
-        this.node.updateData(data);
+        this.node.setNode(data);
     },
 });
 
@@ -501,7 +502,6 @@ QUnit.test("update_field_data preserves connectors", function (assert) {
 
 QUnit.test("update_field_data destroys old terminals", function (assert) {
     const node = this.node;
-    const node_changed_spy = sinon.spy(this.node, "onChange");
     const data = {
         inputs: [
             { name: "input1", extensions: ["data"] },
@@ -514,8 +514,9 @@ QUnit.test("update_field_data destroys old terminals", function (assert) {
         const old_input_terminal = node.inputTerminals.willDisappear;
         const destroy_spy = sinon.spy(old_input_terminal, "destroy");
         this.update_field_data_with_new_input();
-        assert.ok(destroy_spy.called);
-        assert.ok(node_changed_spy.called);
+        Vue.nextTick(() => {
+            assert.ok(destroy_spy.called);
+        })
     });
 });
 
@@ -532,7 +533,7 @@ QUnit.module("Node view", {
             inputs: [{ name: "TestName", extensions: [inputType] }],
             outputs: [],
         };
-        this.node.updateData(data);
+        this.node.setNode(data);
         Vue.nextTick(() => {
             const terminal = this.node.inputTerminals["TestName"];
             const inputEl = $("<div>")[0];
@@ -562,7 +563,7 @@ QUnit.module("Node view", {
             inputs: [{ name: "TestName", extensions: [inputType], multiple: true }],
             outputs: [],
         };
-        this.node.updateData(data);
+        this.node.setNode(data);
         Vue.nextTick(() => {
             const terminal = this.node.inputTerminals["TestName"];
             const inputEl = $("<div>")[0];
@@ -632,7 +633,7 @@ QUnit.test("replacing terminal on data multiple input update preserves collectio
             inputs: [{ name: "TestName", extensions: ["txt"], multiple: true }],
             outputs: [],
         };
-        this.node.updateData(data);
+        this.node.setNode(data);
         Vue.nextTick(() => {
             assert.ok(!connector_destroy_spy.called);
         });
@@ -648,7 +649,7 @@ QUnit.test("replacing mapped terminal on data collection input update preserves 
             inputs: [{ name: "TestName", extensions: ["txt"], input_type: "dataset_collection" }],
             outputs: [],
         };
-        node.updateData(data);
+        node.setNode(data);
         Vue.nextTick(() => {
             assert.ok(connector.inputHandle === terminal);
         });
@@ -664,7 +665,7 @@ QUnit.test("replacing terminal on data input destroys invalid connections", func
             inputs: [{ name: "TestName", extensions: ["bam"] }],
             outputs: [],
         };
-        node.updateData(data);
+        node.setNode(data);
         Vue.nextTick(() => {
             $(node.element).find(".input-terminal")[0].terminal;
             assert.ok(connector_destroy_spy.called);
@@ -681,7 +682,7 @@ QUnit.test("replacing terminal on data input with collection changes mapping vie
             inputs: [{ name: "TestName", extensions: ["txt"], input_type: "dataset_collection" }],
             outputs: [],
         };
-        node.updateData(data);
+        node.setNode(data);
         Vue.nextTick(() => {
             // Input type changed to dataset_collection - old connections are reset.
             // Would be nice to preserve these connections and make them map over.
@@ -695,14 +696,14 @@ QUnit.test("replacing terminal on data collection input with simple input change
     assert
 ) {
     const node = this.node;
-    node.inputs.push({ name: "TestName", extensions: ["txt"] });
+    node.inputs.push({ name: "TestName", extensions: ["txt"], input_type: "parameter" });
     this.connectAttachedMappedOutput((connector) => {
         const connector_destroy_spy = sinon.spy(connector, "destroy");
         const data = {
             inputs: [{ name: "TestName", extensions: ["txt"], input_type: "dataset" }],
             outputs: [],
         };
-        node.updateData(data);
+        node.setNode(data);
         Vue.nextTick(() => {
             $(node.element).find(".input-terminal")[0].terminal;
             assert.ok(connector_destroy_spy.called);

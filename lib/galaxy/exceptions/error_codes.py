@@ -3,6 +3,7 @@
 See the file error_codes.json for actual error code descriptions.
 """
 from json import loads
+from typing import Dict
 
 from pkg_resources import resource_string
 
@@ -45,6 +46,9 @@ def _from_dict(entry):
 
 
 error_codes_json = unicodify(resource_string(__name__, 'error_codes.json'))
+error_codes_by_name: Dict[str, ErrorCode] = {}
+
 for entry in loads(error_codes_json):
     name, error_code_obj = _from_dict(entry)
     globals()[name] = error_code_obj
+    error_codes_by_name[name] = error_code_obj

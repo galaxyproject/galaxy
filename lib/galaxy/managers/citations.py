@@ -5,12 +5,14 @@ import requests
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 
+from galaxy.structured_app import BasicApp
+
 log = logging.getLogger(__name__)
 
 
 class CitationsManager:
 
-    def __init__(self, app):
+    def __init__(self, app: BasicApp) -> None:
         self.app = app
         self.doi_cache = DoiCache(app.config)
 
@@ -44,7 +46,7 @@ class DoiCache:
         self._cache = CacheManager(**parse_cache_config_options(cache_opts)).get_cache('doi')
 
     def _raw_get_bibtex(self, doi):
-        doi_url = "https://doi.org/" + doi
+        doi_url = f"https://doi.org/{doi}"
         headers = {'Accept': 'application/x-bibtex'}
         req = requests.get(doi_url, headers=headers)
         req.encoding = req.apparent_encoding
@@ -62,12 +64,12 @@ def parse_citation(elem, citation_manager):
     citation_type = elem.attrib.get('type', None)
     citation_class = CITATION_CLASSES.get(citation_type, None)
     if not citation_class:
-        log.warning("Unknown or unspecified citation type: %s" % citation_type)
+        log.warning(f"Unknown or unspecified citation type: {citation_type}")
         return None
     try:
         citation = citation_class(elem, citation_manager)
     except Exception as e:
-        raise Exception("Invalid citation of type '{}' with content '{}': {}".format(citation_type, elem.text, e))
+        raise Exception(f"Invalid citation of type '{citation_type}' with content '{elem.text}': {e}")
     return citation
 
 
@@ -102,7 +104,7 @@ class BaseCitation:
                 content=self.to_bibtex(),
             )
         else:
-            raise Exception("Unknown citation format %s" % citation_format)
+            raise Exception(f"Unknown citation format {citation_format}")
 
     def equals(self, other_citation):
         if self.has_doi() and other_citation.has_doi():

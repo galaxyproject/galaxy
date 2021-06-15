@@ -3,7 +3,6 @@ Contains OpenID provider functionality
 """
 import logging
 import os
-from collections import OrderedDict
 
 
 from galaxy.util import parse_xml, string_as_bool
@@ -31,7 +30,7 @@ class OpenIDProvider:
             op_endpoint_url = op_endpoint_url.text
         never_associate_with_user = string_as_bool(provider_elem.get('never_associate_with_user', 'False'))
         assert (provider_id and provider_name and op_endpoint_url), Exception("OpenID Provider improperly configured")
-        assert provider_id not in RESERVED_PROVIDER_IDS, Exception('Specified OpenID Provider uses a reserved id: %s' % (provider_id))
+        assert provider_id not in RESERVED_PROVIDER_IDS, Exception(f'Specified OpenID Provider uses a reserved id: {provider_id}')
         sreg_required = []
         sreg_optional = []
         use_for = {}
@@ -109,27 +108,27 @@ class OpenIDProviders:
         try:
             return cls.from_elem(parse_xml(filename).getroot())
         except Exception as e:
-            log.error('Failed to load OpenID Providers: %s' % (e))
+            log.error(f'Failed to load OpenID Providers: {e}')
             return cls()
 
     @classmethod
     def from_elem(cls, xml_root):
         oid_elem = xml_root
-        providers = OrderedDict()
+        providers = {}
         for elem in oid_elem.findall('provider'):
             try:
                 provider = OpenIDProvider.from_file(os.path.join('lib/galaxy/openid', elem.get('file')))
                 providers[provider.id] = provider
-                log.debug('Loaded OpenID provider: {} ({})'.format(provider.name, provider.id))
+                log.debug(f'Loaded OpenID provider: {provider.name} ({provider.id})')
             except Exception as e:
-                log.error('Failed to add OpenID provider: %s' % (e))
+                log.error(f'Failed to add OpenID provider: {e}')
         return cls(providers)
 
     def __init__(self, providers=None):
         if providers:
             self.providers = providers
         else:
-            self.providers = OrderedDict()
+            self.providers = {}
         self._banned_identifiers = [provider.op_endpoint_url for provider in self.providers.values() if provider.never_associate_with_user]
 
     def __iter__(self):

@@ -35,7 +35,7 @@
                 aria-label="Disconnect External Identity"
                 title="Disconnect External Identity"
                 v-for="item in items"
-                :key="item.provider"
+                :key="item.email"
                 class="d-block mt-3"
             >
                 Disconnect {{ item.provider.charAt(0).toUpperCase() + item.provider.slice(1) }} - {{ item.email }}
@@ -79,16 +79,7 @@
 
         <div class="external-subheading" v-if="enable_oidc">
             <h3>Connect Other External Identities</h3>
-            <b-button
-                v-for="(idp_info, idp) in oidc_idps"
-                :key="idp"
-                class="d-block mt-3"
-                @click="submitOIDCLogin(idp)"
-            >
-                <i :class="idp_info['icon']" />
-                Sign in with
-                {{ idp.charAt(0).toUpperCase() + idp.slice(1) }}
-            </b-button>
+            <external-login :login_page="false" />
         </div>
     </section>
 </template>
@@ -97,17 +88,18 @@
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { getGalaxyInstance } from "app";
-import { getAppRoot } from "onload";
 import svc from "./service";
-import axios from "axios";
-import { logoutClick } from "layout/menu";
+import { userLogout } from "layout/menu";
+import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
+    components: {
+        ExternalLogin,
+    },
     data() {
         const galaxy = getGalaxyInstance();
-        const oidc_idps = galaxy.config.oidc;
         return {
             items: [],
             showHelp: true,
@@ -115,10 +107,7 @@ export default {
             doomedItem: null,
             errorMessage: null,
             enable_oidc: galaxy.config.enable_oidc,
-            oidc_idps: oidc_idps,
-            cilogon_idps: [],
-            selected: "",
-            cilogonSelected: false,
+            cilogonOrCustos: null,
         };
     },
     computed: {
@@ -191,47 +180,10 @@ export default {
         disconnectAndReset() {
             // Disconnects the user's final ext id and logouts of current session
             this.disconnectID();
-            logoutClick();
+            userLogout();
         },
         removeItem(item) {
             this.items = this.items.filter((o) => o != item);
-        },
-        submitOIDCLogin(idp) {
-            svc.saveIdentity(idp)
-                .then((response) => {
-                    if (response.data.redirect_uri) {
-                        window.location = response.data.redirect_uri;
-                    }
-                })
-                .catch((error) => {
-                    this.messageVariant = "danger";
-                    const message = error.response.data && error.response.data.err_msg;
-                    this.messageText = message || "Login failed for an unknown reason.";
-                });
-        },
-        getCILogonIdps() {
-            const rootUrl = getAppRoot();
-            axios.get(`${rootUrl}authnz/get_cilogon_idps`).then((response) => {
-                this.cilogon_idps = response.data;
-                //List is originally sorted by OrganizationName which can be different from DisplayName
-                this.cilogon_idps.sort((a, b) => (a.DisplayName > b.DisplayName ? 1 : -1));
-            });
-        },
-        submitCILogon: function () {
-            const rootUrl = getAppRoot();
-
-            axios
-                .post(`${rootUrl}authnz/cilogon/login/?idphint=${this.selected}`)
-                .then((response) => {
-                    if (response.data.redirect_uri) {
-                        window.location = response.data.redirect_uri;
-                    }
-                })
-                .catch((error) => {
-                    this.messageVariant = "danger";
-                    const message = error.response.data && error.response.data.err_msg;
-                    this.messageText = message || "Login failed for an unknown reason.";
-                });
         },
         setError(msg) {
             return (err) => {
@@ -241,7 +193,7 @@ export default {
         },
     },
     created() {
-        this.loadIdentities(), this.getCILogonIdps();
+        this.loadIdentities();
     },
 };
 </script>

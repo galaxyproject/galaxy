@@ -4,6 +4,7 @@ Universe configuration builder.
 # absolute_import needed for tool_shed package.
 
 import collections
+import configparser
 import errno
 import ipaddress
 import logging
@@ -18,16 +19,17 @@ import tempfile
 import threading
 import time
 from datetime import timedelta
+from typing import Dict, Optional, Set
 
 import yaml
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
-from six.moves import configparser
 
 from galaxy.config.schema import AppSchema
 from galaxy.containers import parse_containers_config
 from galaxy.exceptions import ConfigurationError
 from galaxy.model import mapping
+from galaxy.model.database_utils import database_exists
 from galaxy.model.tool_shed_install.migrate.check import create_or_verify_database as tsi_create_or_verify_database
 from galaxy.util import (
     ExecutionTimer,
@@ -47,7 +49,7 @@ from galaxy.web_stack import (
     get_stack_facts,
     register_postfork_function
 )
-from ..version import VERSION_MAJOR
+from ..version import VERSION_MAJOR, VERSION_MINOR
 
 log = logging.getLogger(__name__)
 
@@ -65,6 +67,14 @@ LOGGING_CONFIG_DEFAULT = {
             'level': 'WARN',
             'qualname': 'paste.httpserver.ThreadPool',
         },
+        'sqlalchemy_json.track': {
+            'level': 'WARN',
+            'qualname': 'sqlalchemy_json.track',
+        },
+        'urllib3.connectionpool': {
+            'level': 'WARN',
+            'qualname': 'urllib3.connectionpool',
+        },
         'routes.middleware': {
             'level': 'WARN',
             'qualname': 'routes.middleware',
@@ -73,9 +83,9 @@ LOGGING_CONFIG_DEFAULT = {
             'level': 'INFO',
             'qualname': 'amqp',
         },
-        'dogpile': {
-            'level': 'WARN',
-            'qualname': 'dogpile',
+        'botocore': {
+            'level': 'INFO',
+            'qualname': 'botocore',
         },
     },
     'filters': {
@@ -108,13 +118,14 @@ def find_root(kwargs):
 class BaseAppConfiguration:
     # Override in subclasses (optional): {KEY: config option, VALUE: deprecated directory name}
     # If VALUE == first directory in a user-supplied path that resolves to KEY, it will be stripped from that path
-    renamed_options = None
-    deprecated_dirs = None
-    add_sample_file_to_defaults = None  # for these options, add sample config files to their defaults
-    listify_options = None  # values for these options are processed as lists of values
+    renamed_options: Optional[Dict[str, str]] = None
+    deprecated_dirs: Dict[str, str] = {}
+    paths_to_check_against_root: Set[str] = set()  # backward compatibility: if resolved path doesn't exist, try resolving w.r.t root
+    add_sample_file_to_defaults: Set[str] = set()  # for these options, add sample config files to their defaults
+    listify_options: Set[str] = set()  # values for these options are processed as lists of values
 
     def __init__(self, **kwargs):
-        self._process_renamed_options(kwargs)
+        self._preprocess_kwargs(kwargs)
         self._kwargs = kwargs  # Save these as a record of explicitly set options
         self.config_dict = kwargs
         self.root = find_root(kwargs)
@@ -127,6 +138,10 @@ class BaseAppConfiguration:
         self._resolve_paths()  # Overwrite attribute values with resolved paths
         self._postprocess_paths_to_resolve()  # Any steps that need to happen after paths are resolved
 
+    def _preprocess_kwargs(self, kwargs):
+        self._process_renamed_options(kwargs)
+        self._fix_postgresql_dburl(kwargs)
+
     def _process_renamed_options(self, kwargs):
         """Update kwargs to set any unset renamed options to values of old-named options, if set.
 
@@ -137,12 +152,31 @@ class BaseAppConfiguration:
                 if old in kwargs and new not in kwargs:
                     kwargs[new] = kwargs[old]
 
+    def _fix_postgresql_dburl(self, kwargs):
+        """
+        Fix deprecated database URLs (postgres... >> postgresql...)
+        https://docs.sqlalchemy.org/en/14/changelog/changelog_14.html#change-3687655465c25a39b968b4f5f6e9170b
+        """
+        old_dialect, new_dialect = 'postgres', 'postgresql'
+        old_prefixes = (f'{old_dialect}:', f'{old_dialect}+')  # check for postgres://foo and postgres+driver//foo
+        offset = len(old_dialect)
+        keys = ('database_connection', 'install_database_connection')
+        for key in keys:
+            if key in kwargs:
+                value = kwargs[key]
+                for prefix in old_prefixes:
+                    if value.startswith(prefix):
+                        value = f'{new_dialect}{value[offset:]}'
+                        kwargs[key] = value
+                        log.warning('PostgreSQL database URLs of the form "postgres://" have been '
+                            'deprecated. Please use "postgresql://".')
+
     def is_set(self, key):
         """Check if a configuration option has been explicitly set."""
         # NOTE: This will check all supplied keyword arguments, including those not in the schema.
         # To check only schema options, change the line below to `if property not in self._raw_config:`
         if key not in self._raw_config:
-            log.warning("Configuration option does not exist: '%s'" % key)
+            log.warning(f"Configuration option does not exist: '{key}'")
         return key in self._kwargs
 
     def resolve_path(self, path):
@@ -223,7 +257,7 @@ class BaseAppConfiguration:
             for key in self.add_sample_file_to_defaults:
                 if not self.is_set(key):
                     defaults = listify(getattr(self, key), do_strip=True)
-                    sample = '%s.sample' % defaults[-1]  # if there are multiple defaults, use last as template
+                    sample = f'{defaults[-1]}.sample'  # if there are multiple defaults, use last as template
                     sample = self._in_sample_dir(sample)  # resolve w.r.t sample_dir
                     defaults.append(sample)
                     setattr(self, key, defaults)
@@ -263,26 +297,46 @@ class BaseAppConfiguration:
     def _path_exists(self, path):  # factored out so we can mock it in tests
         return os.path.exists(path)
 
+    def _set_alt_paths(self, option, *alt_paths):
+        # If `option` is not set, check *alt_paths. Set `option` to first path that exists and return it.
+        if not self.is_set(option):
+            for path in alt_paths:
+                if self._path_exists(path):
+                    setattr(self, option, path)
+                    return path
+
     def _update_raw_config_from_kwargs(self, kwargs):
 
         def convert_datatype(key, value):
             datatype = self.schema.app_schema[key].get('type')
             # check for `not None` explicitly (value can be falsy)
             if value is not None and datatype in type_converters:
-                return type_converters[datatype](value)
+                # convert value or each item in value to type `datatype`
+                f = type_converters[datatype]
+                if isinstance(value, list):
+                    return [f(item) for item in value]
+                else:
+                    return f(value)
             return value
 
         def strip_deprecated_dir(key, value):
             resolves_to = self.schema.paths_to_resolve.get(key)
-            if resolves_to:  # value is a path that will be resolved
-                first_dir = value.split(os.sep)[0]  # get first directory component
-                if first_dir == self.deprecated_dirs.get(resolves_to):  # first_dir is deprecated for this option
-                    ignore = first_dir + os.sep
-                    log.warning(
-                        "Paths for the '%s' option are now relative to '%s', remove the leading '%s' "
-                        "to suppress this warning: %s", key, resolves_to, ignore, value
-                    )
-                    return value[len(ignore):]
+            if resolves_to:  # value contains paths that will be resolved
+                paths = listify(value, do_strip=True)
+                for i, path in enumerate(paths):
+                    first_dir = path.split(os.sep)[0]  # get first directory component
+                    if first_dir == self.deprecated_dirs.get(resolves_to):  # first_dir is deprecated for this option
+                        ignore = first_dir + os.sep
+                        log.warning(
+                            "Paths for the '%s' option are now relative to '%s', remove the leading '%s' "
+                            "to suppress this warning: %s", key, resolves_to, ignore, path
+                        )
+                        paths[i] = path[len(ignore):]
+
+                # return list or string, depending on type of `value`
+                if isinstance(value, list):
+                    return paths
+                return ','.join(paths)
             return value
 
         type_converters = {'bool': string_as_bool, 'int': int, 'float': float, 'str': str}
@@ -302,7 +356,7 @@ class BaseAppConfiguration:
             if not hasattr(self, key):
                 setattr(self, key, value)
             elif key not in base_configs:
-                raise ConfigurationError("Attempting to override existing attribute '%s'" % key)
+                raise ConfigurationError(f"Attempting to override existing attribute '{key}'")
 
     def _resolve_paths(self):
 
@@ -328,7 +382,7 @@ class BaseAppConfiguration:
         for key in self.schema.paths_to_resolve:
             value = getattr(self, key)
             # Check if value is a list or should be listified; if so, listify and resolve each item separately.
-            if type(value) == list or (self.listify_options and key in self.listify_options):
+            if type(value) is list or (self.listify_options and key in self.listify_options):
                 saved_values = listify(getattr(self, key), do_strip=True)  # listify and save original value
                 setattr(self, key, '_')  # replace value with temporary placeholder
                 resolve(key)  # resolve temporary value (`_` becomes `parent-path/_`)
@@ -338,6 +392,39 @@ class BaseAppConfiguration:
                 setattr(self, key, resolved_paths)  # set config.key to a list of resolved paths
             else:
                 resolve(key)
+            # Check options that have been set and may need to be resolved w.r.t. root
+            if self.is_set(key) and self.paths_to_check_against_root and key in self.paths_to_check_against_root:
+                self._check_against_root(key)
+
+    def _check_against_root(self, key):
+
+        def get_path(current_path, initial_path):
+            # if path does not exist and was set as relative:
+            if not self._path_exists(current_path) and not os.path.isabs(initial_path):
+                new_path = self._in_root_dir(initial_path)
+                if self._path_exists(new_path):  # That's a bingo!
+                    resolves_to = self.schema.paths_to_resolve.get(key)
+                    log.warning(
+                        "Paths for the '{0}' option should be relative to '{1}'. To suppress this warning, "
+                        "move '{0}' into '{1}', or set it's value to an absolute path.".format(key, resolves_to)
+                    )
+                    return new_path
+            return current_path
+
+        current_value = getattr(self, key)  # resolved path or list of resolved paths
+        if type(current_value) is list:
+            initial_paths = listify(self._raw_config[key], do_strip=True)  # initial unresolved paths
+            updated_paths = []
+            # check and, if needed, update each path in the list
+            for current_path, initial_path in zip(current_value, initial_paths):
+                path = get_path(current_path, initial_path)
+                updated_paths.append(path)  # add to new list regardless of whether path has changed or not
+            setattr(self, key, updated_paths)  # update: one or more paths may have changed
+        else:
+            initial_path = self._raw_config[key]  # initial unresolved path
+            path = get_path(current_value, initial_path)
+            if path != current_value:
+                setattr(self, key, path)  # update if path has changed
 
     def _in_root_dir(self, path):
         return self._in_dir(self.root, path)
@@ -368,14 +455,11 @@ class CommonConfigurationMixin:
     @admin_users.setter
     def admin_users(self, value):
         self._admin_users = value
-        if value:
-            self.admin_users_list = [u.strip() for u in value.split(',') if u]
-        else:  # provide empty list for convenience (check membership, etc.)
-            self.admin_users_list = []
+        self.admin_users_list = listify(value)
 
     def is_admin_user(self, user):
         """Determine if the provided user is listed in `admin_users`."""
-        return user is not None and user.email in self.admin_users_list
+        return user and (user.email in self.admin_users_list or user.bootstrap_admin_user)
 
     @property
     def sentry_dsn_public(self):
@@ -402,7 +486,7 @@ class CommonConfigurationMixin:
             try:
                 os.makedirs(path)
             except Exception as e:
-                raise ConfigurationError("Unable to create missing directory: {}\n{}".format(path, unicodify(e)))
+                raise ConfigurationError(f"Unable to create missing directory: {path}\n{unicodify(e)}")
 
 
 class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
@@ -417,6 +501,39 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     }
     default_config_file_name = 'galaxy.yml'
     deprecated_dirs = {'config_dir': 'config', 'data_dir': 'database'}
+
+    paths_to_check_against_root = {
+        'auth_config_file',
+        'build_sites_config_file',
+        'containers_config_file',
+        'data_manager_config_file',
+        'datatypes_config_file',
+        'dependency_resolvers_config_file',
+        'error_report_file',
+        'job_config_file',
+        'job_metrics_config_file',
+        'job_resource_params_file',
+        'local_conda_mapping_file',
+        'migrated_tools_config',
+        'modules_mapping_files',
+        'object_store_config_file',
+        'oidc_backends_config_file',
+        'oidc_config_file',
+        'shed_data_manager_config_file',
+        'shed_tool_config_file',
+        'shed_tool_data_table_config',
+        'tool_destinations_config_file',
+        'tool_sheds_config_file',
+        'user_preferences_extra_conf_path',
+        'workflow_resource_params_file',
+        'workflow_schedulers_config_file',
+        'markdown_export_css',
+        'markdown_export_css_pages',
+        'markdown_export_css_invocation_reports',
+        'file_path',
+        'tool_data_table_config_path',
+        'tool_config_file',
+    }
 
     add_sample_file_to_defaults = {
         'build_sites_config_file',
@@ -437,7 +554,11 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self._process_config(kwargs)
 
     def _load_schema(self):
-        return AppSchema(GALAXY_CONFIG_SCHEMA_PATH, GALAXY_APP_NAME)
+        # Schemas are symlinked to the root of the galaxy-app package
+        config_schema_path = os.path.join(os.path.dirname(__file__), os.pardir, 'config_schema.yml')
+        if os.path.exists(GALAXY_CONFIG_SCHEMA_PATH):
+            config_schema_path = GALAXY_CONFIG_SCHEMA_PATH
+        return AppSchema(config_schema_path, GALAXY_APP_NAME)
 
     def _override_tempdir(self, kwargs):
         if string_as_bool(kwargs.get("override_tempdir", "True")):
@@ -454,12 +575,13 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.gid = os.getgid()  # if running under newgrp(1) we'll need to fix the group of data created on the cluster
 
         self.version_major = VERSION_MAJOR
+        self.version_minor = VERSION_MINOR
 
         # Database related configuration
         self.check_migrate_databases = kwargs.get('check_migrate_databases', True)
         if not self.database_connection:  # Provide default if not supplied by user
             db_path = self._in_data_dir('universe.sqlite')
-            self.database_connection = 'sqlite:///%s?isolation_level=IMMEDIATE' % db_path
+            self.database_connection = f'sqlite:///{db_path}?isolation_level=IMMEDIATE'
         self.database_engine_options = get_database_engine_options(kwargs)
         self.database_create_tables = string_as_bool(kwargs.get('database_create_tables', 'True'))
         self.database_encoding = kwargs.get('database_encoding')  # Create new databases with this encoding
@@ -541,11 +663,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             log.warning("preserve_python_environment set to unknown value [%s], defaulting to legacy_only")
             self.preserve_python_environment = "legacy_only"
         self.nodejs_path = kwargs.get("nodejs_path")
-        # Older default container cache path, I don't think anyone is using it anymore and it wasn't documented - we
-        # should probably drop the backward compatiblity to save the path check.
-        self.container_image_cache_path = self._in_data_dir(kwargs.get("container_image_cache_path", "container_images"))
-        if not os.path.exists(self.container_image_cache_path):
-            self.container_image_cache_path = self._in_root_dir(kwargs.get("container_image_cache_path", self._in_data_dir("container_cache")))
+        self.container_image_cache_path = self._in_data_dir(kwargs.get("container_image_cache_path", "container_cache"))
         self.output_size_limit = int(kwargs.get('output_size_limit', 0))
         # activation_email was used until release_15.03
         activation_email = kwargs.get('activation_email')
@@ -554,9 +672,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.email_domain_blocklist_content = self._load_list_from_file(self._in_config_dir(self.email_domain_blocklist_file)) if self.email_domain_blocklist_file else None
         self.email_domain_allowlist_content = self._load_list_from_file(self._in_config_dir(self.email_domain_allowlist_file)) if self.email_domain_allowlist_file else None
 
-        self.persistent_communication_rooms = listify(self.persistent_communication_rooms, do_strip=True)
-        # The transfer manager and deferred job queue
-        self.enable_beta_job_managers = string_as_bool(kwargs.get('enable_beta_job_managers', 'False'))
         # These are not even beta - just experiments - don't use them unless
         # you want yours tools to be broken in the future.
         self.enable_beta_tool_formats = string_as_bool(kwargs.get('enable_beta_tool_formats', 'False'))
@@ -634,14 +749,12 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         # Configuration options for taking advantage of nginx features
         if self.nginx_upload_store:
             self.nginx_upload_store = os.path.abspath(self.nginx_upload_store)
+
         self.object_store = kwargs.get('object_store', 'disk')
         self.object_store_check_old_style = string_as_bool(kwargs.get('object_store_check_old_style', False))
         self.object_store_cache_path = self._in_root_dir(kwargs.get("object_store_cache_path", self._in_data_dir("object_store_cache")))
-        if self.object_store_store_by is None:
-            self.object_store_store_by = 'id'
-            if not self.is_set('file_path') and self.file_path.endswith('objects'):
-                self.object_store_store_by = 'uuid'
-        assert self.object_store_store_by in ['id', 'uuid'], "Invalid value for object_store_store_by [%s]" % self.object_store_store_by
+        self._configure_dataset_storage()
+
         # Handle AWS-specific config options for backward compatibility
         if kwargs.get('aws_access_key') is not None:
             self.os_access_key = kwargs.get('aws_access_key')
@@ -702,16 +815,16 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             self.amqp_internal_connection = kwargs.get('amqp_internal_connection')
             # TODO Get extra amqp args as necessary for ssl
         elif 'database_connection' in kwargs:
-            self.amqp_internal_connection = "sqlalchemy+" + self.database_connection
+            self.amqp_internal_connection = f"sqlalchemy+{self.database_connection}"
         else:
-            self.amqp_internal_connection = "sqlalchemy+sqlite:///%s?isolation_level=IMMEDIATE" % self._in_data_dir("control.sqlite")
+            self.amqp_internal_connection = f"sqlalchemy+sqlite:///{self._in_data_dir('control.sqlite')}?isolation_level=IMMEDIATE"
         self.pretty_datetime_format = expand_pretty_datetime_format(self.pretty_datetime_format)
         try:
             with open(self.user_preferences_extra_conf_path) as stream:
                 self.user_preferences_extra = yaml.safe_load(stream)
         except Exception:
             if self.is_set('user_preferences_extra_conf_path'):
-                log.warning('Config file (%s) could not be found or is malformed.' % self.user_preferences_extra_conf_path)
+                log.warning(f'Config file ({self.user_preferences_extra_conf_path}) could not be found or is malformed.')
             self.user_preferences_extra = {'preferences': {}}
 
         # Experimental: This will not be enabled by default and will hide
@@ -727,15 +840,13 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         ie_dirs = self.interactive_environment_plugins_directory
         self.gie_dirs = [d.strip() for d in (ie_dirs.split(",") if ie_dirs else [])]
         if ie_dirs:
-            self.visualization_plugins_directory += ",%s" % ie_dirs
+            self.visualization_plugins_directory += f",{ie_dirs}"
 
         self.proxy_session_map = self.dynamic_proxy_session_map
         self.manage_dynamic_proxy = self.dynamic_proxy_manage  # Set to false if being launched externally
 
         # InteractiveTools propagator mapping file
         self.interactivetools_map = self._in_root_dir(kwargs.get("interactivetools_map", self._in_data_dir("interactivetools_map.sqlite")))
-        self.interactivetools_prefix = kwargs.get("interactivetools_prefix", "interactivetool")
-        self.interactivetools_proxy_host = kwargs.get("interactivetool_proxy_host", None)
 
         self.containers_conf = parse_containers_config(self.containers_config_file)
 
@@ -778,6 +889,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             }
 
         log_destination = kwargs.get("log_destination")
+        galaxy_daemon_log_destination = os.environ.get('GALAXY_DAEMON_LOG')
         if log_destination == "stdout":
             LOGGING_CONFIG_DEFAULT['handlers']['console'] = {
                 'class': 'logging.StreamHandler',
@@ -791,9 +903,29 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                 'class': 'logging.FileHandler',
                 'formatter': 'stack',
                 'level': 'DEBUG',
-                'filename': kwargs['log_destination'],
+                'filename': log_destination,
                 'filters': ['stack']
             }
+        if galaxy_daemon_log_destination:
+            LOGGING_CONFIG_DEFAULT['handlers']['files'] = {
+                'class': 'logging.FileHandler',
+                'formatter': 'stack',
+                'level': 'DEBUG',
+                'filename': galaxy_daemon_log_destination,
+                'filters': ['stack']
+            }
+            LOGGING_CONFIG_DEFAULT['root']['handlers'].append('files')
+
+    def _configure_dataset_storage(self):
+        # The default for `file_path` has changed in 20.05; we may need to fall back to the old default
+        self._set_alt_paths('file_path', self._in_data_dir('files'))  # this is called BEFORE guessing id/uuid
+        ID, UUID = 'id', 'uuid'
+        if self.is_set('object_store_store_by'):
+            assert self.object_store_store_by in [ID, UUID], f"Invalid value for object_store_store_by [{self.object_store_store_by}]"
+        elif os.path.basename(self.file_path) == 'objects':
+            self.object_store_store_by = UUID
+        else:
+            self.object_store_store_by = ID
 
     def _load_list_from_file(self, filepath):
         with open(filepath) as f:
@@ -806,6 +938,13 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         if "HOST_IP" in self.galaxy_infrastructure_url:
             self.galaxy_infrastructure_url = string.Template(self.galaxy_infrastructure_url).safe_substitute({
                 'HOST_IP': socket.gethostbyname(socket.gethostname())
+            })
+        if "GALAXY_WEB_PORT" in self.galaxy_infrastructure_url:
+            port = os.environ.get('GALAXY_WEB_PORT')
+            if not port:
+                raise Exception('$GALAXY_WEB_PORT set in galaxy_infrastructure_url, but environment variable not set')
+            self.galaxy_infrastructure_url = string.Template(self.galaxy_infrastructure_url).safe_substitute({
+                'GALAXY_WEB_PORT': port
             })
         if "UWSGI_PORT" in self.galaxy_infrastructure_url:
             import uwsgi
@@ -850,14 +989,14 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         tool_configs = self.tool_configs
         for path in tool_configs:
             if not os.path.exists(path) and path not in (self.shed_tool_config_file, self.migrated_tools_config):
-                raise ConfigurationError("Tool config file not found: %s" % path)
+                raise ConfigurationError(f"Tool config file not found: {path}")
         for datatypes_config in listify(self.datatypes_config):
             if not os.path.isfile(datatypes_config):
-                raise ConfigurationError("Datatypes config file not found: %s" % datatypes_config)
+                raise ConfigurationError(f"Datatypes config file not found: {datatypes_config}")
         # Check for deprecated options.
         for key in self.config_dict.keys():
             if key in self.deprecated_options:
-                log.warning("Config option '%s' is deprecated and will be removed in a future release.  Please consult the latest version of the sample configuration file." % key)
+                log.warning(f"Config option '{key}' is deprecated and will be removed in a future release.  Please consult the latest version of the sample configuration file.")
 
     @staticmethod
     def _parse_allowed_origin_hostnames(allowed_origin_hostnames):
@@ -892,7 +1031,7 @@ def reload_config_options(current_config):
             if current_config._raw_config[option] != modified_config[option]:
                 current_config._raw_config[option] = modified_config[option]
                 setattr(current_config, option, modified_config[option])
-                log.info('Reloaded %s' % option)
+                log.info(f'Reloaded {option}')
 
 
 def get_database_engine_options(kwargs, model_prefix=''):
@@ -911,7 +1050,7 @@ def get_database_engine_options(kwargs, model_prefix=''):
         'pool_threadlocal': string_as_bool,
         'server_side_cursors': string_as_bool
     }
-    prefix = "%sdatabase_engine_option_" % model_prefix
+    prefix = f"{model_prefix}database_engine_option_"
     prefix_len = len(prefix)
     rval = {}
     for key, value in kwargs.items():
@@ -1165,7 +1304,7 @@ class ConfiguresGalaxyMixin:
         else:
             from galaxy.model.tool_shed_install import mapping as install_mapping
             install_db_url = self.config.install_database_connection
-            log.info("Install database using its own connection %s" % install_db_url)
+            log.info(f"Install database using its own connection {install_db_url}")
             self.install_model = install_mapping.init(install_db_url,
                                                       install_database_options)
 
@@ -1174,7 +1313,6 @@ class ConfiguresGalaxyMixin:
             signal.signal(sig, handler)
 
     def _wait_for_database(self, url):
-        from sqlalchemy_utils import database_exists
         attempts = self.config.database_wait_attempts
         pause = self.config.database_wait_sleep
         for i in range(1, attempts):

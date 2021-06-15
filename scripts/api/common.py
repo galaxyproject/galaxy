@@ -1,14 +1,15 @@
 """
 Common methods used by the API sample scripts.
 """
-from __future__ import print_function
 
 import json
 import logging
 import sys
-
-from six.moves.urllib.error import HTTPError
-from six.moves.urllib.request import Request, urlopen
+from urllib.error import HTTPError
+from urllib.request import (
+    Request,
+    urlopen,
+)
 
 log = logging.getLogger(__name__)
 
@@ -85,14 +86,21 @@ def display(api_key, url, return_formatted=True):
         print('Collection Members')
         print('------------------')
         for n, i in enumerate(r):
-            # All collection members should have a name in the response.
-            # url is optional
-            if 'url' in i:
-                print('#%d: %s' % (n + 1, i.pop('url')))
-            if 'name' in i:
-                print('  name: %s' % i.pop('name'))
-            for k, v in i.items():
-                print('  %s: %s' % (k, v))
+            if isinstance(i, str):
+                print('  %s' % i)
+            else:
+                # All collection members should have a name in the response.
+                # url is optional
+                if 'url' in i:
+                    print('#%d: %s' % (n + 1, i.pop('url')))
+                if 'name' in i:
+                    print('  name: %s' % i.pop('name'))
+                try:
+                    for k, v in i.items():
+                        print('  %s: %s' % (k, v))
+                except AttributeError:
+                    for item in i:
+                        print(item)
         print('')
         print('%d element(s) in collection' % len(r))
     elif type(r) == dict:
@@ -100,7 +108,7 @@ def display(api_key, url, return_formatted=True):
         print('Member Information')
         print('------------------')
         for k, v in r.items():
-            print('%s: %s' % (k, v))
+            print(f'{k}: {v}')
     elif type(r) == str:
         print(r)
     else:
@@ -137,7 +145,7 @@ def submit(api_key, url, data, return_formatted=True):
                 if 'name' in i:
                     print('  name: %s' % i.pop('name'))
                 for k, v in i.items():
-                    print('  %s: %s' % (k, v))
+                    print(f'  {k}: {v}')
             else:
                 print(i)
     else:

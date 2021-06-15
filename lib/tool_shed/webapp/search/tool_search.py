@@ -13,6 +13,7 @@ from whoosh.qparser import MultifieldParser
 
 from galaxy import exceptions
 from galaxy.exceptions import ObjectNotFound
+from galaxy.util import unicodify
 
 log = logging.getLogger(__name__)
 
@@ -48,10 +49,10 @@ class ToolSearch:
                 # http://en.wikipedia.org/wiki/Okapi_BM25
                 # __Basically__ the higher number the bigger weight.
                 tool_weighting = scoring.BM25F(field_B={
-                                               'name_B' : boosts.tool_name_boost,
-                                               'description_B' : boosts.tool_description_boost,
-                                               'help_B' : boosts.tool_help_boost,
-                                               'repo_owner_username_B' : boosts.tool_repo_owner_username_boost})
+                                               'name_B': boosts.tool_name_boost,
+                                               'description_B': boosts.tool_description_boost,
+                                               'help_B': boosts.tool_help_boost,
+                                               'repo_owner_username_B': boosts.tool_repo_owner_username_boost})
                 searcher = index.searcher(weighting=tool_weighting)
 
                 parser = MultifieldParser([
@@ -60,16 +61,16 @@ class ToolSearch:
                     'help',
                     'repo_owner_username'], schema=schema)
 
-                user_query = parser.parse('*' + search_term + '*')
+                user_query = parser.parse(f"*{search_term}*")
 
                 try:
                     hits = searcher.search_page(user_query, page, pagelen=page_size, terms=True)
                 except ValueError:
                     raise ObjectNotFound('The requested page does not exist.')
 
-                log.debug('searching tools for: #' + str(search_term))
-                log.debug('total hits: ' + str(len(hits)))
-                log.debug('scored hits: ' + str(hits.scored_length()))
+                log.debug(f"searching tools for: #{str(search_term)}")
+                log.debug(f"total hits: {str(len(hits))}")
+                log.debug(f"scored hits: {str(hits.scored_length())}")
                 results = {}
                 results['total_results'] = str(len(hits))
                 results['page'] = str(page)
@@ -82,7 +83,8 @@ class ToolSearch:
                     hit_dict['repo_name'] = hit.get('repo_name')
                     hit_dict['name'] = hit.get('name')
                     hit_dict['description'] = hit.get('description')
-                    results['hits'].append({'tool': hit_dict, 'matched_terms': hit.matched_terms(), 'score': hit.score})
+                    matched_terms = {k: unicodify(v) for k, v in hit.matched_terms()}
+                    results['hits'].append({'tool': hit_dict, 'matched_terms': matched_terms, 'score': hit.score})
                 return results
             finally:
                 searcher.close()

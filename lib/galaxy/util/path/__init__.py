@@ -4,11 +4,12 @@
 import errno
 import imp
 import logging
+import shlex
 from functools import partial
 try:
     from grp import getgrgid
 except ImportError:
-    getgrgid = None
+    getgrgid = None  # type: ignore
 from itertools import starmap
 from operator import getitem
 from os import (
@@ -31,10 +32,11 @@ from os.path import (
     relpath,
     sep as separator,
 )
+from pathlib import Path
 try:
     from pwd import getpwuid
 except ImportError:
-    getpwuid = None
+    getpwuid = None  # type: ignore
 
 
 import galaxy.util
@@ -154,7 +156,7 @@ def safe_walk(path, allowlist=None):
         _prefix = partial(join, dirpath)
 
         prune = False
-        for index, dname in enumerate(dirnames):
+        for dname in dirnames:
             if not _check(join(dirpath, dname)):
                 prune = True
                 break
@@ -162,7 +164,7 @@ def safe_walk(path, allowlist=None):
             dirnames = map(basename, filter(_check, map(_prefix, dirnames)))
 
         prune = False
-        for index, filename in enumerate(filenames):
+        for filename in filenames:
             if not _check(join(dirpath, filename)):
                 prune = True
                 break
@@ -203,7 +205,7 @@ def __path_permission_for_user(path, username):
     :type username:     string
     :param username:    a username matching the systems username
     """
-    if getpwuid is None:
+    if getpwuid is None or getgrgid is None:
         raise NotImplementedError("This functionality is not implemented for Windows.")
 
     group_id_of_file = stat(path).st_gid
@@ -322,7 +324,7 @@ class Extensions(dict):
     The first item in the sequence should match the key and is the "canonicalization".
     """
     def __missing__(self, key):
-        for k, v in self.items():
+        for v in self.values():
             if key in v:
                 self[key] = v
                 return v
@@ -338,6 +340,30 @@ extensions = Extensions({
     'json': ['json'],
     'yaml': ['yaml', 'yml'],
 })
+
+
+def external_chown(path, pwent, external_chown_script, description="file"):
+    """
+    call the external chown script to change
+    the user and group of the given path, and additional description
+    of the file/path for the log message can be given
+
+    return True in case of success
+    """
+    try:
+        if not external_chown_script:
+            raise ValueError('external_chown_script is not defined')
+        if Path(path).owner() == pwent[0]:
+            return True
+
+        cmd = shlex.split(external_chown_script)
+        cmd.extend([path, pwent[0], str(pwent[3])])
+        log.debug(f"Changing ownership of {path} with: {' '.join(map(shlex.quote, cmd))}")
+        galaxy.util.commands.execute(cmd)
+        return True
+    except galaxy.util.commands.CommandLineException as e:
+        log.warning(f'Changing ownership of {description} {path} failed: {galaxy.util.unicodify(e)}')
+        return False
 
 
 def __listify(item):

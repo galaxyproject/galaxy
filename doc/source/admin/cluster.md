@@ -2,7 +2,7 @@
 
 Galaxy is designed to run jobs on your local system by default, but it can be configured to run jobs on a cluster.  The front-end Galaxy application runs on a single server as usual, but tools are run on cluster nodes instead.
 
-A [general reference for the job configuration file](jobs.md) is also available.
+A [general reference for the job configuration file](./jobs.md) is also available.
 
 ## Distributed Resources Managers
 
@@ -70,7 +70,7 @@ You may also find that attribute caching in your filesystem causes problems with
 
 ## Runner Configuration
 
-**This documentation covers configuration of the various runner plugins, not how to distribute jobs to the various plugins.** Consult the [job configuration file documentation](jobs.md) for full details on the correct syntax, and for instructions on how to configure tools to actually use the runners explained below.
+**This documentation covers configuration of the various runner plugins, not how to distribute jobs to the various plugins.** Consult the [job configuration file documentation](./jobs.md) for full details on the correct syntax, and for instructions on how to configure tools to actually use the runners explained below.
 
 ### Local
 

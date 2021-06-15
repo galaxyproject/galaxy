@@ -22,7 +22,7 @@ class RBACAgent:
     permitted_actions = Bunch()
 
     def associate_components(self, **kwd):
-        raise Exception('No valid method of associating provided components: %s' % kwd)
+        raise Exception(f'No valid method of associating provided components: {kwd}')
 
     def associate_user_role(self, user, role):
         raise Exception('No valid method of associating a user with a role')
@@ -52,7 +52,7 @@ class RBACAgent:
         return list(self.permitted_actions.__dict__.values())
 
     def get_item_actions(self, action, item):
-        raise Exception('No valid method of retrieving action ({}) for item {}.'.format(action, item))
+        raise Exception(f'No valid method of retrieving action ({action}) for item {item}.')
 
     def get_private_user_role(self, user):
         raise Exception("Unimplemented Method")
@@ -96,7 +96,7 @@ class CommunityRBACAgent(RBACAgent):
                 return self.associate_group_role(kwd['group'], kwd['role'])
         elif 'repository' in kwd:
             return self.associate_repository_category(kwd['repository'], kwd['category'])
-        raise Exception('No valid method of associating provided components: %s' % kwd)
+        raise Exception(f'No valid method of associating provided components: {kwd}')
 
     def associate_group_role(self, group, role):
         assoc = self.model.GroupRoleAssociation(group, role)
@@ -124,7 +124,7 @@ class CommunityRBACAgent(RBACAgent):
 
     def create_private_user_role(self, user):
         # Create private role
-        role = self.model.Role(name=user.email, description='Private Role for ' + user.email, type=self.model.Role.types.PRIVATE)
+        role = self.model.Role(name=user.email, description=f"Private Role for {user.email}", type=self.model.Role.types.PRIVATE)
         self.sa_session.add(role)
         self.sa_session.flush()
         # Add user to role

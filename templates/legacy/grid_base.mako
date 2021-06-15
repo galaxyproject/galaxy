@@ -1,7 +1,6 @@
 <%!
-    import six
     from galaxy.util import unicodify
-    from galaxy.webapps.reports.framework.grids import TextColumn
+    from galaxy.web.legacy_framework.grids import TextColumn
 
     def inherit(context):
         kwargs = context.get( 'kwargs', {} )
@@ -210,7 +209,7 @@
                 value = column.get_value( trans, grid, item )
 
                 # Handle non-ascii chars.
-                if isinstance(value, six.binary_type):
+                if isinstance(value, bytes):
                     value = unicodify(value, 'utf-8')
                     value = value.replace('/', '//')
                 endif

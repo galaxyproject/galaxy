@@ -17,15 +17,16 @@ from galaxy.actions.admin import AdminActions
 from galaxy.exceptions import ActionInputError
 from galaxy.web.params import QuotaParamParser
 from galaxy.webapps.base.controller import (
-    BaseAPIController,
     url_for,
     UsesQuotaMixin
 )
+from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
 
 
-class QuotaAPIController(BaseAPIController, AdminActions, UsesQuotaMixin, QuotaParamParser):
+class QuotaAPIController(BaseGalaxyAPIController, AdminActions, UsesQuotaMixin, QuotaParamParser):
+
     @web.require_admin
     @web.legacy_expose_api
     def index(self, trans, deleted='False', **kwd):
@@ -39,10 +40,10 @@ class QuotaAPIController(BaseAPIController, AdminActions, UsesQuotaMixin, QuotaP
         query = trans.sa_session.query(trans.app.model.Quota)
         if deleted:
             route = 'deleted_quota'
-            query = query.filter(trans.app.model.Quota.table.c.deleted == true())
+            query = query.filter(trans.app.model.Quota.deleted == true())
         else:
             route = 'quota'
-            query = query.filter(trans.app.model.Quota.table.c.deleted == false())
+            query = query.filter(trans.app.model.Quota.deleted == false())
         for quota in query:
             item = quota.to_dict(value_mapper={'id': trans.security.encode_id})
             encoded_id = trans.security.encode_id(quota.id)

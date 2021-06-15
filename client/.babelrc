@@ -2,7 +2,7 @@
     "presets": ["@babel/preset-env"],
     "env": {
         "test": {
-            "plugins": ["@babel/plugin-transform-runtime", "rewire"]
+            "plugins": ["@babel/plugin-transform-runtime"]
         }
     }
 }

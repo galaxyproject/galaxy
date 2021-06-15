@@ -85,13 +85,13 @@ export default {
                 }, 250);
             }
         },
-        hide() {
+        hide(timeout = 250) {
             this.show = false;
             document.getElementById("center").style.transition = `${this.side} 200ms linear`;
             document.getElementById("center").style[this.side] = "0";
             setTimeout(() => {
                 document.getElementById("center").style.transition = "";
-            }, 250);
+            }, timeout);
         },
     },
 };

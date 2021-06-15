@@ -8,7 +8,7 @@ category_name = 'Test 1460 Data Manager'
 category_description = 'Test script 1460 for testing Data Managers'
 data_manager_repository_name = 'data_manager_1460'
 data_manager_repository_description = 'Repository that contains a Data Manager'
-data_manager_repository_long_description = '{}: {}'.format(data_manager_repository_name, data_manager_repository_description)
+data_manager_repository_long_description = f'{data_manager_repository_name}: {data_manager_repository_description}'
 data_manager_name = 'testing_data_manager'
 data_manager_tar_file = '1460_files/data_manager_files/test_data_manager.tar'
 
@@ -31,16 +31,16 @@ class TestDataManagers(ShedTwillTestCase):
         """Create necessary user accounts and login as an admin user."""
         self.login(email=common.admin_email, username=common.admin_username)
         admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
+        assert admin_user is not None, f'Problem retrieving user with email {common.admin_email} from the database'
         self.test_db_util.get_private_role(admin_user)
         self.create_category(name=category_name, description=category_description)
         self.login(email=common.test_user_2_email, username=common.test_user_2_name)
         test_user_2 = self.test_db_util.get_user(common.test_user_2_email)
-        assert test_user_2 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_2_email
+        assert test_user_2 is not None, f'Problem retrieving user with email {common.test_user_2_email} from the database'
         self.test_db_util.get_private_role(test_user_2)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
+        assert test_user_1 is not None, f'Problem retrieving user with email {common.test_user_1_email} from the database'
         self.test_db_util.get_private_role(test_user_1)
 
     def test_0010_create_data_manager_repository(self):
@@ -64,7 +64,7 @@ class TestDataManagers(ShedTwillTestCase):
                          valid_tools_only=True,
                          uncompress_file=True,
                          remove_repo_files_not_in_tar=False,
-                         commit_message='Populate %s with a data manager configuration.' % data_manager_repository_name,
+                         commit_message=f'Populate {data_manager_repository_name} with a data manager configuration.',
                          strings_displayed=[],
                          strings_not_displayed=[])
 

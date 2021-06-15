@@ -5,6 +5,7 @@ Mixins for Taggable model managers and serializers.
 # from galaxy import exceptions as galaxy_exceptions
 
 import logging
+from typing import Type
 
 from sqlalchemy import sql
 
@@ -20,7 +21,7 @@ def _tag_str_gen(item):
     for tag in item.tags:
         tag_str = tag.user_tname
         if tag.value is not None:
-            tag_str += ":" + tag.user_value
+            tag_str += f":{tag.user_value}"
         yield tag_str
 
 
@@ -45,8 +46,7 @@ def _tags_from_strings(item, tag_handler, new_tags_list, user=None):
 
 
 class TaggableManagerMixin:
-    #: class of TagAssociation (e.g. HistoryTagAssociation)
-    tag_assoc = None
+    tag_assoc: Type[model.ItemTagAssociation]
 
     # TODO: most of this can be done by delegating to the GalaxyTagHandler?
     def get_tags(self, item):
@@ -107,10 +107,10 @@ class TaggableFilterMixin:
                 return True
             class_name = model_class.__name__
             if class_name == 'HistoryDatasetCollectionAssociation':
-                # Unfortunately we were a little inconsistent with out naming scheme
+                # Unfortunately we were a little inconsistent with our naming scheme
                 class_name = 'HistoryDatasetCollection'
-            target_model = getattr(model, "%sTagAssociation" % class_name)
-            id_column = "%s_id" % target_model.table.name.rsplit('_tag_association')[0]
+            target_model = getattr(model, f"{class_name}TagAssociation")
+            id_column = f"{target_model.table.name.rsplit('_tag_association')[0]}_id"
             column = target_model.table.c.user_tname + ":" + target_model.table.c.user_value
             if op == 'eq':
                 if ':' not in val:

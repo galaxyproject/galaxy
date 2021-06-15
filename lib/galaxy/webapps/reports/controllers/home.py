@@ -37,10 +37,10 @@ class HomePage(BaseUIController, ReportQueryBuilder):
         )
 
         for job in recent_jobs.execute():
-            if(job.create_time >= start_days and
-               job.create_time < end_date_buffer):
-                if(job.create_time >= start_hours and
-                   job.create_time < end_date_buffer):
+            if(job.create_time >= start_days
+               and job.create_time < end_date_buffer):
+                if(job.create_time >= start_hours
+                   and job.create_time < end_date_buffer):
                     # Get the creation time for the jobs in the past day
                     end_day = end_date.day
                     start_day = job.create_time.day
@@ -71,10 +71,10 @@ class HomePage(BaseUIController, ReportQueryBuilder):
                 if(day < 30):
                     jc_dy_data[int(day)] += 1
 
-            if(job.update_time >= start_days and
-               job.update_time < end_date_buffer):
-                if(job.update_time >= start_hours and
-                   job.update_time < end_date_buffer):
+            if(job.update_time >= start_days
+               and job.update_time < end_date_buffer):
+                if(job.update_time >= start_hours
+                   and job.update_time < end_date_buffer):
                     # Get the time finishedfor the jobs in the past day
                     end_day = end_date.day
                     start_day = job.update_time.day

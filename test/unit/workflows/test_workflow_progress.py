@@ -2,7 +2,7 @@ import unittest
 
 from galaxy import model
 from galaxy.workflow.run import WorkflowProgress
-from .workflow_support import TestApp, yaml_to_model
+from .workflow_support import MockApp, yaml_to_model
 
 TEST_WORKFLOW_YAML = """
 steps:
@@ -64,7 +64,7 @@ UNSCHEDULED_STEP = object()
 class WorkflowProgressTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.app = TestApp()
+        self.app = MockApp()
         self.inputs_by_step_id = {}
         self.invocation = model.WorkflowInvocation()
         self.progress = {}
@@ -213,16 +213,16 @@ class WorkflowProgressTestCase(unittest.TestCase):
         )
 
 
-class MockModuleInjector(object):
+class MockModuleInjector:
 
     def __init__(self, progress):
         self.progress = progress
 
-    def inject(self, step, step_args={}):
+    def inject(self, step, step_args=None):
         step.module = MockModule(self.progress)
 
 
-class MockModule(object):
+class MockModule:
 
     def __init__(self, progress):
         self.progress = progress

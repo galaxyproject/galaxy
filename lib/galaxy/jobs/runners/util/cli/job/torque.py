@@ -1,15 +1,7 @@
 from logging import getLogger
 
-try:
-    from galaxy.model import Job
-    job_states = Job.states
-except ImportError:
-    # Not in Galaxy, map Galaxy job states to Pulsar ones.
-    from pulsar.util import enum
-    job_states = enum(RUNNING='running', OK='complete', QUEUED='queued')
-
 from galaxy.util import parse_xml_string
-from ..job import BaseJobExec
+from ..job import BaseJobExec, job_states
 
 log = getLogger(__name__)
 
@@ -59,20 +51,20 @@ class Torque(BaseJobExec):
                 log.warning(ERROR_MESSAGE_UNRECOGNIZED_ARG % k)
         template_pbsargs = ''
         for k, v in pbsargs.items():
-            template_pbsargs += '#PBS {} {}\n'.format(k, v)
+            template_pbsargs += f'#PBS {k} {v}\n'
         return dict(headers=template_pbsargs)
 
     def submit(self, script_file):
-        return 'qsub %s' % script_file
+        return f'qsub {script_file}'
 
     def delete(self, job_id):
-        return 'qdel %s' % job_id
+        return f'qdel {job_id}'
 
     def get_status(self, job_ids=None):
         return 'qstat -x'
 
     def get_single_status(self, job_id):
-        return 'qstat -f %s' % job_id
+        return f'qstat -f {job_id}'
 
     def parse_status(self, status, job_ids):
         # in case there's noise in the output, find the big blob 'o xml
@@ -86,7 +78,7 @@ class Torque(BaseJobExec):
             except Exception:
                 tree = None
         if tree is None:
-            log.warning('No valid qstat XML return from `qstat -x`, got the following: %s' % status)
+            log.warning(f'No valid qstat XML return from `qstat -x`, got the following: {status}')
             return None
         else:
             for job in tree.findall('Job'):
@@ -114,7 +106,7 @@ class Torque(BaseJobExec):
                 'C': job_states.OK
             }.get(state)
         except KeyError:
-            raise KeyError("Failed to map torque status code [%s] to job state." % state)
+            raise KeyError(f"Failed to map torque status code [{state}] to job state.")
 
 
 __all__ = ('Torque',)

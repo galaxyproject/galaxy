@@ -26,7 +26,7 @@ from .mulled_build import (
     target_str_to_targets,
 )
 KNOWN_FIELDS = ["targets", "image_build", "name_override", "base_image"]
-FALLBACK_LINE_TUPLE = collections.namedtuple("_Line", " ".join(KNOWN_FIELDS))
+FALLBACK_LINE_TUPLE = collections.namedtuple("FALLBACK_LINE_TUPLE", "targets image_build name_override base_image")
 
 
 def main(argv=None):
@@ -57,7 +57,7 @@ def generate_targets(target_source):
     """Generate all targets from TSV files in specified file or directory."""
     target_source = os.path.abspath(target_source)
     if os.path.isdir(target_source):
-        target_source_files = glob.glob(target_source + "/*.tsv")
+        target_source_files = glob.glob(f"{target_source}/*.tsv")
     else:
         target_source_files = [target_source]
 
@@ -79,12 +79,12 @@ def generate_targets(target_source):
 def tuple_from_header(header):
     fields = header[1:].split('\t')
     for field in fields:
-        assert field in KNOWN_FIELDS, "'{}' is not one of {}".format(field, KNOWN_FIELDS)
+        assert field in KNOWN_FIELDS, f"'{field}' is not one of {KNOWN_FIELDS}"
     # Make sure tuple contains all fields
     for field in KNOWN_FIELDS:
         if field not in fields:
             fields.append(field)
-    return collections.namedtuple("_Line", "%s" % " ".join(fields))
+    return collections.namedtuple("_Line", f"{' '.join(fields)}")
 
 
 def line_to_targets(line_str, line_tuple):
@@ -92,7 +92,7 @@ def line_to_targets(line_str, line_tuple):
     line_parts = line_str.split("\t")
     n_fields = len(line_tuple._fields)
     targets_column = line_tuple._fields.index('targets')
-    assert len(line_parts) <= n_fields, "Too many fields in line [{}], expect at most {} - targets, image build number, and name override.".format(line_str, n_fields)
+    assert len(line_parts) <= n_fields, f"Too many fields in line [{line_str}], expect at most {n_fields} - targets, image build number, and name override."
     line_parts += [None] * (n_fields - len(line_parts))
     line_parts[targets_column] = target_str_to_targets(line_parts[targets_column])
     return line_tuple(*line_parts)

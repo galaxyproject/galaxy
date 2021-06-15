@@ -68,7 +68,7 @@ class Configuration:
         # Check that required directories exist
         for path in self.root, self.template_path:
             if not os.path.isdir(path):
-                raise ConfigurationError("Directory does not exist: %s" % path)
+                raise ConfigurationError(f"Directory does not exist: {path}")
 
     @property
     def sentry_dsn_public(self):

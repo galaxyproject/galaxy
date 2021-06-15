@@ -50,7 +50,7 @@ class EnvManager:
         default_location = os.path.abspath(os.path.join(installation_directory, env_shell_file_name))
         if os.path.exists(default_location):
             return default_location
-        for root, dirs, files in os.walk(installation_directory):
+        for root, _dirs, files in os.walk(installation_directory):
             for name in files:
                 if name == env_shell_file_name:
                     return os.path.abspath(os.path.join(root, name))

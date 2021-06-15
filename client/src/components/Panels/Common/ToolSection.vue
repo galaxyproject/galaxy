@@ -1,7 +1,7 @@
 <template>
     <div v-if="isSection && hasElements" class="tool-panel-section">
         <div :class="['toolSectionTitle', `tool-menu-section-${sectionName}`]">
-            <a @click="toggleMenu" href="javascript:void(0)" role="button">
+            <a @click="toggleMenu()" href="javascript:void(0)" role="button">
                 <span class="name">
                     {{ this.name }}
                 </span>
@@ -85,15 +85,25 @@ export default {
             type: String,
             default: "default",
         },
+        expanded: {
+            type: Boolean,
+            default: false,
+        },
     },
     data() {
         return {
-            opened: this.checkFilter(),
+            opened: this.expanded || this.checkFilter(),
         };
     },
     watch: {
         queryFilter() {
             this.opened = this.checkFilter();
+        },
+        opened(newVal, oldVal) {
+            if (newVal !== oldVal) {
+                const currentState = newVal ? "opened" : "closed";
+                ariaAlert(`${this.name} tools menu ${currentState}`);
+            }
         },
     },
     computed: {
@@ -101,7 +111,7 @@ export default {
             return this.category.title || this.category.name;
         },
         isSection() {
-            return this.category.elems;
+            return this.category.elems !== undefined;
         },
         hasElements() {
             return this.category.elems && this.category.elems.length > 0;
@@ -117,11 +127,16 @@ export default {
         onOperation(tool, evt) {
             this.$emit("onOperation", tool, evt);
         },
-        toggleMenu() {
-            this.opened = !this.opened;
-            const currentState = this.opened ? "opened" : "closed";
-            ariaAlert(`${this.name} tools menu ${currentState}`);
+        toggleMenu(nextState = !this.opened) {
+            this.opened = nextState;
         },
+    },
+    created() {
+        this.eventHub.$on("openToolSection", (sectionId) => {
+            if (this.isSection && sectionId == this.category?.id) {
+                this.toggleMenu(true);
+            }
+        });
     },
 };
 </script>

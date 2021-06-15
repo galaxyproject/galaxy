@@ -7,6 +7,7 @@ import logging
 from galaxy import web
 from galaxy.openid.openid_manager import OpenIDManager
 from galaxy.openid.providers import OpenIDProviders
+from galaxy.structured_app import StructuredApp
 from galaxy.util import unicodify
 from galaxy.web import url_for
 from galaxy.webapps.base.controller import BaseUIController
@@ -16,7 +17,7 @@ log = logging.getLogger(__name__)
 
 class OpenID(BaseUIController):
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
         if app.config.enable_openid:
             self.openid_manager = OpenIDManager(app.config.openid_consumer_cache_path)
@@ -40,9 +41,9 @@ class OpenID(BaseUIController):
         try:
             request = consumer.begin(openid_provider_obj.op_endpoint_url)
             if request is None:
-                return trans.show_error_message("No OpenID services are available at %s." % openid_provider_obj.op_endpoint_url)
+                return trans.show_error_message(f"No OpenID services are available at {openid_provider_obj.op_endpoint_url}.")
         except Exception as e:
-            return trans.show_error_message("Failed to begin OpenID authentication: %s." % unicodify(e))
+            return trans.show_error_message(f"Failed to begin OpenID authentication: {unicodify(e)}.")
         if request is not None:
             self.openid_manager.add_sreg(trans, request, required=openid_provider_obj.sreg_required, optional=openid_provider_obj.sreg_optional)
             if request.shouldSendRedirect():
@@ -59,15 +60,15 @@ class OpenID(BaseUIController):
     @web.expose
     def openid_process(self, trans, **kwd):
         '''Handle's response from OpenID Providers'''
-        return_link = "Click <a href='%s'>here</a> to return." % url_for("/")
+        return_link = f"Click <a href='{url_for('/')}'>here</a> to return."
         if not trans.app.config.enable_openid:
-            return trans.show_error_message("OpenID authentication is not enabled in this instance of Galaxy. %s" % return_link)
+            return trans.show_error_message(f"OpenID authentication is not enabled in this instance of Galaxy. {return_link}")
         consumer = self.openid_manager.get_consumer(trans)
         info = consumer.complete(kwd, trans.request.url)
         openid_provider = kwd.get('openid_provider', None)
         if info.status == self.openid_manager.SUCCESS:
             openid_provider_obj = self.openid_providers.get(openid_provider)
             openid_provider_obj.post_authentication(trans, self.openid_manager, info)
-            return trans.show_message("Processed OpenID authentication. %s" % return_link)
+            return trans.show_message(f"Processed OpenID authentication. {return_link}")
         else:
-            return trans.show_error_message("Authentication via OpenID failed: {}. {}".format(info.message, return_link))
+            return trans.show_error_message(f"Authentication via OpenID failed: {info.message}. {return_link}")

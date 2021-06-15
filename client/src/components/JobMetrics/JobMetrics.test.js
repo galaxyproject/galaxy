@@ -99,7 +99,9 @@ describe("JobMetrics/JobMetrics.vue", () => {
 
             const estimates = {};
 
-            if (!wrapper.find("#aws-estimate").exists()) return false;
+            if (!wrapper.find("#aws-estimate").exists()) {
+                return false;
+            }
 
             estimates.cost = wrapper.find("#aws-estimate > b").text();
             estimates.vcpus = wrapper.find("#aws_vcpus").text();

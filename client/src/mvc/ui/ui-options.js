@@ -7,7 +7,6 @@ import Buttons from "mvc/ui/ui-buttons";
 
 var Base = Backbone.View.extend({
     initialize: function (options) {
-        var self = this;
         this.model =
             (options && options.model) ||
             new Backbone.Model({
@@ -19,14 +18,14 @@ var Base = Backbone.View.extend({
                 wait_text: "Please wait...",
                 multiple: false,
                 optional: false,
-                onchange: function () {},
+                onchange: () => {},
             }).set(options);
         this.listenTo(this.model, "change:value", this._changeValue, this);
         this.listenTo(this.model, "change:wait", this._changeWait, this);
         this.listenTo(this.model, "change:data", this._changeData, this);
         this.listenTo(this.model, "change:visible", this._changeVisible, this);
-        this.on("change", () => {
-            self.model.get("onchange")(self.value());
+        this.listenTo(this, "change", () => {
+            this.model.get("onchange")(this.value());
         });
         this.render();
     },
@@ -123,7 +122,7 @@ var Base = Backbone.View.extend({
             this._setValue(this.first());
         }
         if (this.all_button) {
-            this.all_button.value($.isArray(this._getValue()) ? this._getValue().length : 0, this.length());
+            this.all_button.value(Array.isArray(this._getValue()) ? this._getValue().length : 0, this.length());
         }
     },
 
@@ -172,7 +171,7 @@ var Base = Backbone.View.extend({
         if (new_value !== undefined) {
             this.$("input").prop("checked", false);
             if (new_value !== null) {
-                var values = $.isArray(new_value) ? new_value : [new_value];
+                var values = Array.isArray(new_value) ? new_value : [new_value];
                 _.each(values, (v) => {
                     self.$(`input[value="${v}"]`).first().prop("checked", true);
                 });
@@ -209,6 +208,7 @@ var BaseIcons = Base.extend({
         var id = Utils.uid();
         return $("<div/>")
             .addClass("ui-option")
+            .addClass(this.model.get("cls_option"))
             .append(
                 $("<input/>").attr({
                     id: id,
@@ -258,7 +258,7 @@ RadioButton.View = Base.extend({
 
     /** Template for a single option */
     _templateOption: function (pair) {
-        var $el = $("<label/>").addClass("btn btn-secondary m-0").attr("role", "button");
+        var $el = $("<label/>").attr("role", "button");
         if (pair.icon) {
             $el.append(
                 $("<i/>")
@@ -284,7 +284,7 @@ RadioButton.View = Base.extend({
 
     /** Main template function */
     _template: function () {
-        return $("<div/>").addClass("btn-group ui-radiobutton");
+        return $("<div/>").addClass("ui-radiobutton");
     },
 });
 

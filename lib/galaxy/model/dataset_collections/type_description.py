@@ -66,7 +66,7 @@ class CollectionTypeDescription:
             subcollection_type = subcollection_type.collection_type
 
         if not self.has_subcollections_of_type(subcollection_type):
-            raise ValueError("Cannot compute effective subcollection type of {} over {}".format(subcollection_type, self))
+            raise ValueError(f"Cannot compute effective subcollection type of {subcollection_type} over {self}")
 
         return self.collection_type[:-(len(subcollection_type) + 1)]
 
@@ -97,7 +97,7 @@ class CollectionTypeDescription:
 
     def subcollection_type_description(self):
         if not self.__has_subcollections:
-            raise ValueError("Cannot generate subcollection type description for flat type %s" % self.collection_type)
+            raise ValueError(f"Cannot generate subcollection type description for flat type {self.collection_type}")
         subcollection_type = self.collection_type.split(":", 1)[1]
         return self.collection_type_description_factory.for_collection_type(subcollection_type)
 
@@ -123,7 +123,7 @@ class CollectionTypeDescription:
         return self.collection_type_description_factory.for_collection_type(collection_type)
 
     def __str__(self):
-        return "CollectionTypeDescription[%s]" % self.collection_type
+        return f"CollectionTypeDescription[{self.collection_type}]"
 
 
 def map_over_collection_type(mapped_over_collection_type, target_collection_type):
@@ -136,7 +136,7 @@ def map_over_collection_type(mapped_over_collection_type, target_collection_type
         if hasattr(target_collection_type, 'collection_type'):
             target_collection_type = target_collection_type.collection_type
 
-        return "{}:{}".format(mapped_over_collection_type, target_collection_type)
+        return f"{mapped_over_collection_type}:{target_collection_type}"
 
 
 COLLECTION_TYPE_DESCRIPTION_FACTORY = CollectionTypeDescriptionFactory()

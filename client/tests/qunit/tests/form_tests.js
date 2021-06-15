@@ -39,7 +39,7 @@ QUnit.test("tool-form", function (assert) {
 
     var form = toolform.form;
     assert.ok(
-        form.$(".portlet-title-text").html() == "<b>_name</b> _description (Galaxy Version _version)",
+        form.$(".portlet-title-text").html() == `<b itemprop="name">_name</b> <span itemprop="description">_description</span> (Galaxy Version _version)`,
         "Title correct"
     );
     var tour_ids = [];
@@ -62,14 +62,6 @@ QUnit.test("tool-form", function (assert) {
     assert.ok(
         JSON.stringify(mapped_ids) == '["a","b|c","b|i","b|j","k_0|l","k_0|m|n","k_0|m|s","k_0|m|t"]',
         "Remapped tour ids correct"
-    );
-    var dropdown = form.$("#menu > .dropdown-menu");
-    assert.ok(dropdown.children().length == 2, "Found two menu items");
-    dropdown.find(".fa-info-circle").parent().click();
-    assert.ok(
-        form.$(".alert").html() ===
-            '<span>This tool requires req_name_a (Version req_version_a) and req_name_b (Version req_version_b). Click <a target="_blank" href="https://galaxyproject.org/tools/requirements/">here</a> for more information.</span>',
-        "Check requirements message"
     );
     assert.ok(form.$(".form-repeat-delete").css("display") == "none", "Delete button disabled");
     var $add = form.$(".form-repeat-add");

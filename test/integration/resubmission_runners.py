@@ -1,4 +1,5 @@
 import time
+from typing import List
 
 from galaxy import model
 from galaxy.jobs.runners import (
@@ -60,13 +61,13 @@ class AssertionJobRunner(LocalJobRunner):
                 self._fail_job_local(job_wrapper, "Job completed too quickly")
                 return
 
-        super(AssertionJobRunner, self).queue_job(job_wrapper)
+        super().queue_job(job_wrapper)
 
 
 class FailOnlyFirstJobRunner(LocalJobRunner):
     """Job runner that knows about test cases and checks final state assumptions."""
 
-    tests_seen = []
+    tests_seen: List[str] = []
 
     def queue_job(self, job_wrapper):
         resource_parameters = job_wrapper.get_resource_parameters()
@@ -77,7 +78,7 @@ class FailOnlyFirstJobRunner(LocalJobRunner):
             return
 
         if test_name in self.tests_seen:
-            super(FailOnlyFirstJobRunner, self).queue_job(job_wrapper)
+            super().queue_job(job_wrapper)
         else:
             self.tests_seen.append(test_name)
             self._fail_job_local(job_wrapper, "Failing first attempt")

@@ -12,7 +12,7 @@ def main():
     parser.add_argument('target', metavar='FILE', type=str,
                         help='file describing data library to fetch')
     args = parser.parse_args()
-    with open(args.target, "r") as f:
+    with open(args.target) as f:
         target = yaml.safe_load(f)
 
     histories_url = args.url + "/api/histories"

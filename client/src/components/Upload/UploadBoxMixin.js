@@ -10,6 +10,8 @@ import UploadFtp from "mvc/upload/upload-ftp";
 import LazyLimited from "mvc/lazy/lazy-limited";
 import { findExtension } from "./utils";
 import { filesDialog } from "utils/data";
+import { getAppRoot } from "onload";
+import axios from "axios";
 
 const localize = _l;
 
@@ -27,6 +29,14 @@ export default {
             type: Number,
             default: null,
         },
+        selectable: {
+            type: Boolean,
+            default: false,
+        },
+        hasCallback: {
+            type: Boolean,
+            default: false,
+        },
     },
     computed: {
         btnFilesTitle() {
@@ -37,7 +47,11 @@ export default {
             }
         },
         remoteFiles() {
-            return this.fileSourcesConfigured || this.ftpUploadSite;
+            // this needs to be true for the tests to pass
+            return !!this.fileSourcesConfigured || !!this.ftpUploadSite;
+        },
+        btnCloseTitle() {
+            return this.hasCallback ? "Cancel" : "Close";
         },
     },
     methods: {
@@ -72,20 +86,19 @@ export default {
                 }
             });
             if (list.length > 0) {
-                $.uploadpost({
-                    data: this.app.toData(list),
-                    url: this.app.uploadPath,
-                    success: (message) => {
+                const data = this.app.toFetchData(list, this.history_id);
+                axios
+                    .post("api/tools/fetch", data)
+                    .then((message) => {
                         list.forEach((model) => {
                             this._eventSuccess(model.id, message);
                         });
-                    },
-                    error: (message) => {
+                    })
+                    .catch((message) => {
                         list.forEach((model) => {
-                            self._eventError(model.id, message);
+                            this._eventError(model.id, message);
                         });
-                    },
-                });
+                    });
             }
         },
         renderNewModel: function (model) {
@@ -229,6 +242,7 @@ export default {
                                     name: ftp_file.path,
                                     size: ftp_file.size,
                                     path: ftp_file.path,
+                                    uri: ftp_file.uri,
                                 },
                             ]);
                         },
@@ -259,7 +273,7 @@ export default {
             return $(this.$refs.uploadTable);
         },
         extensionDetails(extension) {
-            return findExtension(this.effectiveExtensions, extension);
+            return findExtension(this.app.effectiveExtensions, extension);
         },
         initExtensionInfo() {
             $(this.$refs.footerExtensionInfo)
@@ -326,6 +340,11 @@ export default {
             });
             const models = allHids.map((hid) => Galaxy.currHistoryPanel.collection.getByHid(hid));
             return models;
+        },
+        getRequestUrl: function (items, history_id) {
+            var data = this.app.toData(items, history_id);
+            const appRoot = getAppRoot();
+            return data.fetchRequest ? `${appRoot}api/tools/fetch` : this.app.uploadPath;
         },
     },
 };

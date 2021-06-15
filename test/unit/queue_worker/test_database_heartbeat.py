@@ -10,7 +10,7 @@ import galaxy.web_stack as stack
 @pytest.fixture
 def heartbeat_app(database_app):
 
-    class QueueWorker(object):
+    class QueueWorker:
 
         def send_control_task(self, *args, **kwargs):
             return
@@ -59,7 +59,7 @@ def test_database_heartbeat(heartbeat_app):
 
 def wait_for_assertion(assert_f):
     assertion_error = None
-    for i in range(10):
+    for _ in range(10):
         try:
             v = assert_f()
             return v

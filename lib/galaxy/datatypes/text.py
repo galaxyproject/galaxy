@@ -6,10 +6,9 @@ import json
 import logging
 import os
 import re
+import shlex
 import subprocess
 import tempfile
-
-from six.moves import shlex_quote
 
 from galaxy.datatypes.data import get_file_peek, Text
 from galaxy.datatypes.metadata import MetadataElement, MetadataParameter
@@ -106,7 +105,7 @@ class Json(Text):
         try:
             return dataset.peek
         except Exception:
-            return "JSON file (%s)" % (nice_size(dataset.get_size()))
+            return f"JSON file ({nice_size(dataset.get_size())})"
 
 
 class ExpressionJson(Json):
@@ -118,19 +117,25 @@ class ExpressionJson(Json):
     def set_meta(self, dataset, **kwd):
         """
         """
-        json_type = "null"
-        with open(dataset.file_name) as f:
-            obj = json.load(f)
-            if isinstance(obj, int):
-                json_type = "int"
-            elif isinstance(obj, float):
-                json_type = "float"
-            elif isinstance(obj, list):
-                json_type = "list"
-            elif isinstance(obj, dict):
-                json_type = "object"
-
-        dataset.metadata.json_type = json_type
+        if dataset.has_data():
+            json_type = "null"
+            file_path = dataset.file_name
+            try:
+                with open(file_path) as f:
+                    obj = json.load(f)
+                    if isinstance(obj, int):
+                        json_type = "int"
+                    elif isinstance(obj, float):
+                        json_type = "float"
+                    elif isinstance(obj, list):
+                        json_type = "list"
+                    elif isinstance(obj, dict):
+                        json_type = "object"
+            except json.decoder.JSONDecodeError:
+                with open(file_path) as f:
+                    contents = f.read(512)
+                raise Exception(f"Invalid JSON encountered {contents}")
+            dataset.metadata.json_type = json_type
 
 
 @build_sniff_from_prefix
@@ -178,10 +183,10 @@ class Ipynb(Json):
             try:
                 cmd = ['jupyter', 'nbconvert', '--to', 'html', '--template', 'full', dataset.file_name, '--output', ofilename]
                 subprocess.check_call(cmd)
-                ofilename = '%s.html' % ofilename
+                ofilename = f'{ofilename}.html'
             except subprocess.CalledProcessError:
                 ofilename = dataset.file_name
-                log.exception('Command "%s" failed. Could not convert the Jupyter Notebook to HTML, defaulting to plain text.', ' '.join(map(shlex_quote, cmd)))
+                log.exception('Command "%s" failed. Could not convert the Jupyter Notebook to HTML, defaulting to plain text.', ' '.join(map(shlex.quote, cmd)))
             return open(ofilename, mode='rb')
 
     def set_meta(self, dataset, **kwd):
@@ -465,7 +470,7 @@ class Arff(Text):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "Attribute-Relation File Format (ARFF)"
-            dataset.blurb += ", {} comments, {} attributes".format(dataset.metadata.comment_lines, dataset.metadata.columns)
+            dataset.blurb += f", {dataset.metadata.comment_lines} comments, {dataset.metadata.columns} attributes"
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
@@ -561,7 +566,7 @@ class SnpEffDb(Text):
     MetadataElement(name="annotation", default=[], desc="Annotation Names", readonly=True, visible=True, no_value=[], optional=True)
 
     def __init__(self, **kwd):
-        Text.__init__(self, **kwd)
+        super().__init__(**kwd)
 
     # The SnpEff version line was added in SnpEff version 4.1
     def getSnpeffVersionFromFile(self, path):
@@ -578,7 +583,7 @@ class SnpEffDb(Text):
         return snpeff_version
 
     def set_meta(self, dataset, **kwd):
-        Text.set_meta(self, dataset, **kwd)
+        super().set_meta(dataset, **kwd)
         data_dir = dataset.extra_files_path
         # search data_dir/genome_version for files
         regulation_pattern = 'regulation_(.+).bin'
@@ -612,12 +617,12 @@ class SnpEffDb(Text):
             dataset.metadata.annotation = annotations
             try:
                 with open(dataset.file_name, 'w') as fh:
-                    fh.write("%s\n" % genome_version if genome_version else 'Genome unknown')
-                    fh.write("%s\n" % snpeff_version if snpeff_version else 'SnpEff version unknown')
+                    fh.write(f"{genome_version}\n" if genome_version else 'Genome unknown')
+                    fh.write(f"{snpeff_version}\n" if snpeff_version else 'SnpEff version unknown')
                     if annotations:
-                        fh.write("annotations: %s\n" % ','.join(annotations))
+                        fh.write(f"annotations: {','.join(annotations)}\n")
                     if regulations:
-                        fh.write("regulations: %s\n" % ','.join(regulations))
+                        fh.write(f"regulations: {','.join(regulations)}\n")
             except Exception:
                 pass
 
@@ -630,7 +635,6 @@ class SnpSiftDbNSFP(Text):
     MetadataElement(name="annotation", default=[], desc="Annotation Names", readonly=True, visible=True, no_value=[])
     file_ext = "snpsiftdbnsfp"
     composite_type = 'auto_primary_file'
-    allow_datatype_change = False
     """
     ## The dbNSFP file is a tabular file with 1 header line
     ## The first 4 columns are required to be: chrom	pos	ref	alt
@@ -644,12 +648,9 @@ class SnpSiftDbNSFP(Text):
     """
 
     def __init__(self, **kwd):
-        Text.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.add_composite_file('%s.gz', description='dbNSFP bgzip', substitute_name_with_metadata='reference_name', is_binary=True)
         self.add_composite_file('%s.gz.tbi', description='Tabix Index File', substitute_name_with_metadata='reference_name', is_binary=True)
-
-    def init_meta(self, dataset, copy_from=None):
-        Text.init_meta(self, dataset, copy_from=copy_from)
 
     def generate_primary_file(self, dataset=None):
         """
@@ -662,7 +663,7 @@ class SnpSiftDbNSFP(Text):
         """
         cannot do this until we are setting metadata
         """
-        annotations = "dbNSFP Annotations: %s\n" % ','.join(dataset.metadata.annotation)
+        annotations = f"dbNSFP Annotations: {','.join(dataset.metadata.annotation)}\n"
         with open(dataset.file_name, 'a') as f:
             if dataset.metadata.bgzip:
                 bn = dataset.metadata.bgzip
@@ -694,8 +695,8 @@ class SnpSiftDbNSFP(Text):
 
         def set_peek(self, dataset, is_multi_byte=False):
             if not dataset.dataset.purged:
-                dataset.peek = '{} :  {}'.format(dataset.metadata.reference_name, ','.join(dataset.metadata.annotation))
-                dataset.blurb = '%s' % dataset.metadata.reference_name
+                dataset.peek = f"{dataset.metadata.reference_name} :  {','.join(dataset.metadata.annotation)}"
+                dataset.blurb = f'{dataset.metadata.reference_name}'
             else:
                 dataset.peek = 'file does not exist'
                 dataset.blurb = 'file purged from disc'
@@ -778,6 +779,8 @@ class Gfa1(Text):
         >>> fname = get_test_fname('big.gfa1')
         >>> Gfa1().sniff(fname)
         True
+        >>> Gfa2().sniff(fname)
+        False
         """
         found_valid_lines = False
         for line in iter_headers(file_prefix, "\t"):
@@ -803,6 +806,51 @@ class Gfa1(Text):
                 int(line[5])
             elif line[0] == 'P':
                 if len(line) < 4:
+                    return False
+            else:
+                return False
+            found_valid_lines = True
+        return found_valid_lines
+
+
+@build_sniff_from_prefix
+class Gfa2(Text):
+    """
+    Graphical Fragment Assembly (GFA) 2.0
+
+    https://github.com/GFA-spec/GFA-spec/blob/master/GFA2.md
+    """
+    file_ext = "gfa2"
+
+    def sniff_prefix(self, file_prefix):
+        """
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('sample.gfa2')
+        >>> Gfa2().sniff(fname)
+        True
+        >>> Gfa1().sniff(fname)
+        False
+        """
+        found_valid_lines = False
+        for line in iter_headers(file_prefix, "\t"):
+            if line[0].startswith('#'):
+                continue
+            if line[0] == 'H':
+                return len(line) >= 2 and line[1] == 'VN:Z:2.0'
+            elif line[0] == 'S':
+                if len(line) < 3:
+                    return False
+            elif line[0] == 'F':
+                if len(line) < 8:
+                    return False
+            elif line[0] == 'E':
+                if len(line) < 9:
+                    return False
+            elif line[0] == 'G':
+                if len(line) < 6:
+                    return False
+            elif line[0] == 'O' or line[0] == 'U':
+                if len(line) < 3:
                     return False
             else:
                 return False

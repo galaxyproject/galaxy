@@ -85,7 +85,7 @@ def test_kwargs_relative_path(mock_init):
     assert config.path3 == 'my-other-files'  # no change
 
 
-def test_kwargs_ablsolute_path(mock_init):
+def test_kwargs_absolute_path(mock_init):
     # Expected: use value from kwargs, do NOT resolve
     new_path1 = '/foo1/bar'
     new_path2 = '/foo2/bar'
@@ -105,6 +105,13 @@ def test_kwargs_relative_path_old_prefix(mock_init):
     assert config.path1 == 'my-config/foo1/bar'  # stripped of old prefix, resolved
     assert config.path2 == 'my-data/foo2/bar'  # stripped of old prefix, resolved
     assert config.path3 == 'my-other-files'  # no change
+
+
+def test_kwargs_relative_path_old_prefix_csv_value(mock_init):
+    # Expect: use value from kwargs, split at commas, then for each path strip
+    # spaces, strip old prefix if needed, and resolve if needed
+    config = BaseAppConfiguration(path4='old-config/foo/file1 , /foo1/bar,  foo/file3')
+    assert config.path4 == ['my-config/foo/file1', '/foo1/bar', 'my-config/foo/file3']
 
 
 def test_kwargs_relative_path_old_prefix_for_other_option(mock_init):
@@ -198,5 +205,75 @@ def test_kwargs_listify(mock_init, monkeypatch):
     new_path4 = 'new1, new2'
     config = BaseAppConfiguration(path4=new_path4)
 
-    assert config._raw_config['path4'] == 'new1, new2'
+    assert config._raw_config['path4'] == 'new1,new2'
     assert config.path4 == ['my-config/new1', 'my-config/new2']
+
+
+def test_kwargs_as_list_listify(mock_init, monkeypatch):
+    # Expected: use values from kwargs; each value resolved and listified
+    new_path4 = ['new1', 'new2']
+    config = BaseAppConfiguration(path4=new_path4)
+
+    assert config._raw_config['path4'] == ['new1', 'new2']
+    assert config.path4 == ['my-config/new1', 'my-config/new2']
+
+
+@pytest.fixture
+def mock_check_against_root(mock_init, monkeypatch):
+
+    def path_exists(_, path):
+        return True if path == 'root/foo' else False
+
+    monkeypatch.setattr(BaseAppConfiguration, '_path_exists', path_exists)
+    monkeypatch.setattr(BaseAppConfiguration, '_in_root_dir', lambda _, path: 'root/%s' % path)
+    monkeypatch.setattr(BaseAppConfiguration, 'paths_to_check_against_root', {'path1', 'path4'})
+
+
+def test_check_against_root_single_path(mock_check_against_root):
+    # 1. Set path1='foo'
+    # 2. It is resolved to 'my-config/foo'
+    # 3. path1 is in paths to check against root
+    # 4. 'my-config/foo' does not exist, so 'foo' is re-resolved w.r.t root
+    # 5. 'root/foo' exists, so config.path1 is set to 'root/foo'
+    config = BaseAppConfiguration(path1='foo')
+
+    assert config.path1 == 'root/foo'
+
+
+def test_check_against_root_list_of_paths(mock_check_against_root):
+    # 1. Set path4='foo, bar'
+    # 2. It is resolved to ['my-config/foo', 'my-config/bar']
+    # 3. path4 is in paths to check against root
+    # 4. both paths do not exist, so both are re-resolved w.r.t root
+    # 5. 'root/foo' exists, so config.path4 is set to ['root/foo', 'my-config/bar']
+    config = BaseAppConfiguration(path4='foo, bar')
+
+    assert config.path4 == ['root/foo', 'my-config/bar']
+
+
+def test_set_alt_paths(mock_init, monkeypatch):
+
+    def path_exists(_, path):
+        return True if path == 'foo' else False
+
+    monkeypatch.setattr(BaseAppConfiguration, '_path_exists', path_exists)
+
+    def reset_to_initial_default():
+        config.path1 = 'my-config/my-config-files'
+
+    config = BaseAppConfiguration()
+
+    # default does not exist, one alt path exists
+    assert config.path1 == 'my-config/my-config-files'
+    config._set_alt_paths('path1', 'foo')
+    assert config.path1 == 'foo'
+
+    # default does not exist, 2 alt paths passed, second exists
+    reset_to_initial_default()
+    config._set_alt_paths('path1', 'invalid', 'foo')
+    assert config.path1 == 'foo'
+
+    # default does not exist, alt paths do not exist
+    reset_to_initial_default()
+    config._set_alt_paths('path1', 'invalid', 'invalid-2')
+    assert config.path1 == 'my-config/my-config-files'

@@ -6,17 +6,15 @@ import logging
 import sys
 import tempfile
 
+import requests
+
 from .mulled_list import get_singularity_containers
 from .util import build_target, v2_image_name
 
 try:
     from conda.cli.python_api import run_command
 except ImportError:
-    run_command = None
-try:
-    import requests
-except ImportError:
-    requests = None
+    run_command = None  # type: ignore
 
 try:
     from whoosh.fields import Schema
@@ -25,7 +23,7 @@ try:
     from whoosh.index import create_in
     from whoosh.qparser import QueryParser
 except ImportError:
-    Schema = TEXT = STORED = create_in = QueryParser = None
+    Schema = TEXT = STORED = create_in = QueryParser = None  # type: ignore
 
 QUAY_API_URL = 'https://quay.io/api/v1/repository'
 
@@ -79,7 +77,7 @@ class QuaySearch():
 
                 # get all repositories with suggested keywords
                 for suggestion in suggestions:
-                    search_string = "*%s*" % suggestion
+                    search_string = f"*{suggestion}*"
                     query = QueryParser(
                         "title", self.index.schema).parse(search_string)
                     results_tmp = searcher.search(query)
@@ -99,7 +97,7 @@ class QuaySearch():
         Function downloads additional information from quay.io to
         get the tag-field which includes the version number.
         """
-        url = "{}/{}/{}".format(QUAY_API_URL, self.organization, repository_string)
+        url = f"{QUAY_API_URL}/{self.organization}/{repository_string}"
         r = requests.get(url, headers={'Accept-encoding': 'gzip'})
 
         json_decoder = json.JSONDecoder()
@@ -120,13 +118,15 @@ class CondaSearch():
         Function takes search_string variable and returns results from the bioconda channel in JSON format
 
         """
+        if run_command is None:
+            raise Exception(f"Invalid search destination. {deps_error_message('conda')}")
         raw_out, err, exit_code = run_command(
             'search', '-c',
             self.channel,
             search_string,
             use_exception_handler=True)
         if exit_code != 0:
-            logging.info('Search failed with: %s' % err)
+            logging.info(f'Search failed with: {err}')
             return []
         return [{'package': n.split()[0], 'version': n.split()[1], 'build': n.split()[2]} for n in raw_out.split('\n')[2:-1]]
 
@@ -141,7 +141,7 @@ class GitHubSearch():
         Takes search_string variable and return results from the bioconda-recipes github repository in JSON format
         """
         response = requests.get(
-            "https://api.github.com/search/code?q=%s+in:path+repo:bioconda/bioconda-recipes+path:recipes" % search_string).json()
+            f"https://api.github.com/search/code?q={search_string}+in:path+repo:bioconda/bioconda-recipes+path:recipes").json()
         return response
 
     def process_json(self, json, search_string):
@@ -160,7 +160,7 @@ class GitHubSearch():
         """
         Check if a recipe exists in bioconda-recipes which matches search_string exactly
         """
-        if requests.get("https://api.github.com/repos/bioconda/bioconda-recipes/contents/recipes/%s" % search_string).status_code == 200:
+        if requests.get(f"https://api.github.com/repos/bioconda/bioconda-recipes/contents/recipes/{search_string}").status_code == 200:
             return True
         else:
             return False
@@ -184,7 +184,7 @@ def get_package_hash(packages, versions):
     if versions:
         hash_results['version_hash'] = package_hash.split(':')[1]
 
-    r = requests.get("https://quay.io/api/v1/repository/biocontainers/%s" % hash_results['package_hash'])
+    r = requests.get(f"https://quay.io/api/v1/repository/biocontainers/{hash_results['package_hash']}")
     if r.status_code == 200:
         hash_results['container_present'] = True
         if versions:  # now test if the version hash is listed in the repository tags
@@ -228,18 +228,18 @@ def readable_output(json, organization='biocontainers', channel='bioconda'):
         sys.stdout.write("The query returned the following result(s).\n")
         # put quay, conda etc results as lists in lines
         lines = [['LOCATION', 'NAME', 'VERSION', 'COMMAND\n']]
-        for search_string, results in json.get('quay', {}).items():
+        for results in json.get('quay', {}).values():
             for result in results:
                 lines.append(['quay', result['package'], result['version'], 'docker pull quay.io/%s/%s:%s\n' %
                               (organization, result['package'], result['version'])])  # NOT a real solution
-        for search_string, results in json.get('conda', {}).items():
+        for results in json.get('conda', {}).values():
             for result in results:
-                lines.append(['conda', result['package'], '{}--{}'.format(result['version'], result['build']),
-                              'conda install -c {} {}={}={}\n'.format(channel, result['package'], result['version'], result['build'])])
-        for search_string, results in json.get('singularity', {}).items():
+                lines.append(['conda', result['package'], f"{result['version']}--{result['build']}",
+                              f"conda install -c {channel} {result['package']}={result['version']}={result['build']}\n"])
+        for results in json.get('singularity', {}).values():
             for result in results:
                 lines.append(['singularity', result['package'], result['version'],
-                              'wget https://depot.galaxyproject.org/singularity/{}:{}\n'.format(result['package'], result['version'])])
+                              f"wget https://depot.galaxyproject.org/singularity/{result['package']}:{result['version']}\n"])
 
         col_width0, col_width1, col_width2 = (max(len(
             line[n]) for line in lines) + 2 for n in (0, 1, 2))  # def max col widths for the output
@@ -256,7 +256,7 @@ def readable_output(json, organization='biocontainers', channel='bioconda'):
         lines = [['QUERY', 'LOCATION\n']]
         for recipe in json['github_recipe_present']['recipes']:
             lines.append(
-                [recipe, "https://api.github.com/repos/bioconda/bioconda-recipes/contents/recipes/%s\n" % recipe])
+                [recipe, f"https://api.github.com/repos/bioconda/bioconda-recipes/contents/recipes/{recipe}\n"])
 
         col_width0 = max(len(line[0]) for line in lines) + 2
 
@@ -272,7 +272,7 @@ def readable_output(json, organization='biocontainers', channel='bioconda'):
         for search_string, results in json.get('github', {}).items():
             for result in results:
                 lines.append([search_string, result['name'],
-                              'https://github.com/bioconda/bioconda-recipes/tree/master/%s\n' % result['path']])
+                              f"https://github.com/bioconda/bioconda-recipes/tree/master/{result['path']}\n"])
 
         # def max col widths for the output
         col_width0, col_width1 = (
@@ -283,15 +283,22 @@ def readable_output(json, organization='biocontainers', channel='bioconda'):
                 (line[0].ljust(col_width0), line[1].ljust(col_width1), line[2])))  # output
 
 
+def deps_error_message(package):
+    return f"Required dependency [{package}] is not installed. Run 'pip install galaxy-tool-util[mulled]'."
+
+
 def main(argv=None):
     if Schema is None:
-        sys.stdout.write(
-            "Required dependencies are not installed. Run 'pip install Whoosh'.\n")
+        sys.stdout.write(deps_error_message("Whoosh"))
         return
+
+    destination_defaults = ['quay', 'singularity', 'github']
+    if run_command is not None:
+        destination_defaults.append('conda')
 
     parser = argparse.ArgumentParser(
         description='Searches in a given quay organization for a repository')
-    parser.add_argument('-d', '--destination', dest='search_dest', nargs='+', default=['quay', 'conda', 'singularity'],
+    parser.add_argument('-d', '--destination', dest='search_dest', nargs='+', default=destination_defaults,
                         help="Choose where to search. Options are 'conda', 'quay', 'singularity' and 'github'. If no option are given, all will be searched.")
     parser.add_argument('-o', '--organization', dest='organization_string', default="biocontainers",
                         help='Change quay organization to search; default is biocontainers.')

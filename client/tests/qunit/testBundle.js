@@ -9,7 +9,6 @@ import "./tests/metrics_logger_tests";
 // form_tests seems to need to come before something - maybe multiple things
 import "./tests/form_tests";
 
-import "./tests/list_of_pairs_collection_creator_tests";
 import "./tests/workflow_editor_tests";
 import "./tests/graph_tests";
 import "./tests/job_dag_tests";

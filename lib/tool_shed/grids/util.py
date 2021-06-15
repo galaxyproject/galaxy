@@ -109,7 +109,7 @@ def get_latest_downloadable_repository_metadata(trans, repository):
     """
     Return the latest downloadable repository_metadata record for the received repository.  This will
     return repositories of type unrestricted as well as types repository_suite_definition and
-     tool_dependency_definition.
+    tool_dependency_definition.
     """
     encoded_repository_id = trans.security.encode_id(repository.id)
     repo = repository.hg_repo
@@ -148,7 +148,7 @@ def get_latest_repository_metadata(trans, repository):
     """
     Return the latest repository_metadata record for the received repository if it exists.  This will
     return repositories of type unrestricted as well as types repository_suite_definition and
-     tool_dependency_definition.
+    tool_dependency_definition.
     """
     encoded_repository_id = trans.security.encode_id(repository.id)
     repo = repository.hg_repo

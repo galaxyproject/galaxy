@@ -118,10 +118,10 @@ def __main__():
     output = open(output_file, "w")
 
     if options.geneBED:
-        region_enumerator = maf_utilities.line_enumerator(open(interval_file, "r").readlines())
+        region_enumerator = maf_utilities.line_enumerator(open(interval_file).readlines())
     else:
         region_enumerator = enumerate(bx.intervals.io.NiceReaderWrapper(
-            open(interval_file, 'r'), chrom_col=chr_col, start_col=start_col,
+            open(interval_file), chrom_col=chr_col, start_col=start_col,
             end_col=end_col, strand_col=strand_col, fix_strand=True,
             return_header=False, return_comments=False))
 

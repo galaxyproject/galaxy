@@ -83,7 +83,7 @@ def __main__():
                 ii += 1
             while True:
                 all_done = True
-                for j, k in enumerate(subprocess_dict.keys()):
+                for j in range(len(subprocess_dict)):
                     if subprocess_dict['sp' + str(j + 1)].wait() != 0:
                         err = subprocess_dict['sp' + str(j + 1)].communicate()[1]
                         if err is not None:
@@ -158,7 +158,7 @@ def __main__():
 
             while True:
                 all_done = True
-                for j, k in enumerate(subprocess_dict.keys()):
+                for j in range(len(subprocess_dict)):
                     if subprocess_dict['sp' + str(j + 1)].wait() != 0:
                         err = subprocess_dict['sp' + str(j + 1)].communicate()[1]
                         if err is not None:

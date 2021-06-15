@@ -157,6 +157,7 @@ class Terminal extends EventEmitter {
         }
         if (!this.mapOver.equal(val)) {
             this.mapOver = val;
+            this.node.mapOver = output_val;
             Object.values(this.node.outputTerminals).forEach((outputTerminal) => {
                 outputTerminal.setMapOver(output_val);
             });
@@ -589,18 +590,14 @@ class BaseOutputTerminal extends Terminal {
         super(attr);
         this.datatypes = attr.datatypes;
         this.optional = attr.optional;
-        this.force_datatype = attr.force_datatype;
+    }
+    get force_datatype() {
+        const changeOutputDatatype = this.node.postJobActions["ChangeDatatypeAction" + this.name];
+        return changeOutputDatatype ? changeOutputDatatype.action_arguments["newtype"] : null;
     }
     update(output) {
         this.datatypes = output.datatypes || output.extensions;
         this.optional = output.optional;
-        this.force_datatype = output.force_datatype;
-        const changeOutputDatatype = this.node.postJobActions["ChangeOutputDatatype" + output.name];
-        if (changeOutputDatatype) {
-            this.node.outputTerminals[output.name].force_datatype = changeOutputDatatype.action_arguments["newtype"];
-        } else {
-            this.node.outputTerminals[output.name].force_datatype = null;
-        }
     }
 }
 

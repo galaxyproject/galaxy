@@ -3,6 +3,7 @@ import os
 import subprocess
 import time
 from string import Template
+from typing import Any, Dict
 
 from pkg_resources import resource_string
 
@@ -42,7 +43,7 @@ DEFAULT_INTEGRITY_CHECK = True
 DEFAULT_INTEGRITY_COUNT = 35
 DEFAULT_INTEGRITY_SLEEP = .25
 REQUIRED_TEMPLATE_PARAMS = ['working_directory', 'command', 'exit_code_path']
-OPTIONAL_TEMPLATE_PARAMS = {
+OPTIONAL_TEMPLATE_PARAMS: Dict[str, Any] = {
     'galaxy_lib': None,
     'galaxy_virtual_env': None,
     'headers': '',
@@ -79,7 +80,7 @@ def job_script(template=DEFAULT_JOB_FILE_TEMPLATE, **kwds):
     >>> script.startswith('#!/bin/bash\\n\\n#PBS -test\\n')
     True
     >>> script = job_script(working_directory='wd', command='uptime', exit_code_path='ec', slots_statement='GALAXY_SLOTS="$SLURM_JOB_NUM_NODES"')
-    >>> script.find('GALAXY_SLOTS="$SLURM_JOB_NUM_NODES"\\nexport GALAXY_SLOTS\\n') > 0
+    >>> script.find('GALAXY_SLOTS="$SLURM_JOB_NUM_NODES"\\n') > 0
     True
     >>> script = job_script(working_directory='wd', command='uptime', exit_code_path='ec', memory_statement='GALAXY_MEMORY_MB="32768"')
     >>> script.find('GALAXY_MEMORY_MB="32768"\\n') > 0
@@ -152,7 +153,7 @@ def _handle_script_integrity(path, config):
         time.sleep(sleep_amt)
 
     if not script_integrity_verified:
-        raise Exception("Failed to write job script '%s', could not verify job script integrity." % path)
+        raise Exception(f"Failed to write job script '{path}', could not verify job script integrity.")
 
 
 __all__ = (

@@ -28,7 +28,7 @@
             <type>color</type>
         </input>
         <input>
-            <label>Data point labels</label>
+            <label>Column of data point labels</label>
             <name>tooltip</name>
             <type>data_column</type>
             <is_label>true</is_label>
@@ -45,14 +45,14 @@
     <xml name="groups_bar">
         <input>
             <name>x</name>
-            <label>Values for x-axis</label>
+            <label>Column of x-axis values</label>
             <type>data_column</type>
             <is_label>true</is_label>
             <is_auto>true</is_auto>
         </input>
         <input>
             <name>y</name>
-            <label>Values for y-axis</label>
+            <label>Column of y-axis values</label>
             <type>data_column</type>
             <is_numeric>true</is_numeric>
         </input>

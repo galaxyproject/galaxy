@@ -4,9 +4,9 @@ By default, jobs in Galaxy are run locally on the server on which the Galaxy app
 
 This document is a reference for the job configuration file. [Detailed documentation](cluster.md) is provided for configuring Galaxy to work with a variety of Distributed Resource Managers (DRMs) such as TORQUE, Grid Engine, LSF, and HTCondor.  Additionally, a wide range of infrastructure decisions and configuration changes should be made when running Galaxy as a production service, as one is likely doing if using a cluster.  It is highly recommended that the [production server documentation](production.md) and [cluster configuration documentation](cluster.md) be read before making changes to the job configuration.
 
-**The most up-to-date details of advanced job configuration features can be found in the [sample job_conf.xml](https://github.com/galaxyproject/galaxy/blob/dev/config/job_conf.xml.sample_advanced) found in the Galaxy distribution.**
+**The most up-to-date details of advanced job configuration features can be found in the [sample job_conf.xml](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/job_conf.xml.sample_advanced) found in the Galaxy distribution.**
 
-Configuration of where to run jobs is performed in the `job_conf.xml` file in `$GALAXY_ROOT/config/`.  The path to the config file can be overridden by setting the value of `job_config_file` in `config/galaxy.yml`.  Sample configurations are provided at `galaxy-dist/config/job_conf.xml.sample_basic` and `galaxy-dist/config/job_conf.xml.sample_advanced`.  The job configuration file is not required - if it does not exist, a default configuration that runs jobs on the local system (with a maximum of 4 concurrent jobs) will be used.  `job_conf.xml.sample_basic` provides a configuration identical to the default configuration if no `job_conf.xml` exists.
+Configuration of where to run jobs is performed in the `job_conf.xml` file in `$GALAXY_ROOT/config/`.  The path to the config file can be overridden by setting the value of `job_config_file` in `config/galaxy.yml`.  Sample configurations are provided at `config/job_conf.xml.sample_basic` and `config/job_conf.xml.sample_advanced`.  The job configuration file is not required - if it does not exist, a default configuration that runs jobs on the local system (with a maximum of 4 concurrent jobs) will be used.  `job_conf.xml.sample_basic` provides a configuration identical to the default configuration if no `job_conf.xml` exists.
 
 ## job_conf.xml Syntax
 
@@ -116,7 +116,7 @@ destination
 
 Galaxy can be configured to run jobs in container runtimes. Currently the two supported runtimes are [Docker](https://www.docker.com) and [Singularity](https://www.sylabs.io/). Each ``<destination>`` can enable container support
 with ``<param id="docker_enabled">true</param>`` and/or ``<param id="singularity_enabled">true</param>``, as documented
-in the [advanced sample job_conf.xml](https://github.com/galaxyproject/galaxy/blob/dev/config/job_conf.xml.sample_advanced).
+in the [advanced sample job_conf.xml](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/job_conf.xml.sample_advanced).
 In the case of Docker, containers are run using **sudo** unless ``<param id="docker_sudo">false</param>`` is specified, thus
 the user that Galaxy runs as should be able to run ``sudo docker`` without a password prompt for Docker containers to
 work.
@@ -126,12 +126,59 @@ The images used for containers can either be specified explicitely in the ``<des
 tool requirements of the Galaxy tool being executed. In this latter case the image is specified by the
 tool using a ``<container>`` tag in the ``<requirements>`` section.
 
+### Running jobs on a Kubernetes cluster via Pulsar
+
+In order to dispatch jobs to a Kubernetes (K8s) cluster via Pulsar, 
+Pulsar implements a "two-container" architecture per pod, where 
+one container stages job execution environment (`pulsar-container`)
+and another container encompasses tool's executables (`tool-container`).
+
+Note that this architecture is experimental and under active development, 
+it is increasingly improved and it will soon be production-grade ready.
+
+In order to setup Galaxy to use the "two-container" architecture, you may 
+take the following steps: 
+
+1. In the `galaxy.yml` set the following attributes: 
+
+- `job_config_file: job_conf.yml`
+- Appropriately configure `galaxy_infrastructure_url`; for example, 
+set it as the following on macOS: 
+`galaxy_infrastructure_url: 'http://host.docker.internal:$UWSGI_PORT'`
+
+2. In the `job_conf.yml` set the following runners and execution attributes appropriately: 
+
+```yaml
+runners:
+  local:
+    load: galaxy.jobs.runners.local:LocalJobRunner
+    workers: 1
+  pulsar_k8s:
+    load: galaxy.jobs.runners.pulsar:PulsarKubernetesJobRunner
+    amqp_url: amqp://guest:guest@localhost:5672//
+
+execution:
+  default: pulsar_k8s_environment
+  environments:
+    pulsar_k8s_environment:
+      k8s_config_path: ~/.kube/config
+      k8s_galaxy_instance_id: any-dns-friendly-random-str
+      k8s_namespace: default
+      runner: pulsar_k8s
+      docker_enabled: true
+      docker_default_container_id: busybox:ubuntu-14.04
+      pulsar_app_config:
+        message_queue_url: 'amqp://guest:guest@host.docker.internal:5672//'
+    local_environment:
+      runner: local
+```
+
 ### Macros
 
 The job configuration XML file may contain any number of macro definitions using the same
 XML macro syntax used by [Galaxy tools](https://planemo.readthedocs.io/en/latest/writing_advanced.html#macros-reusable-elements).
 
-See [Pull Request #362](https://github.com/galaxyproject/galaxy/pull/362) for implementation details and the [advanced sample job_conf.xml](https://github.com/galaxyproject/galaxy/blob/dev/config/job_conf.xml.sample_advanced) for examples.
+See [Pull Request #362](https://github.com/galaxyproject/galaxy/pull/362) for implementation details and the [advanced sample job_conf.xml](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/job_conf.xml.sample_advanced) for examples.
 
 ## Mapping Tools To Destinations
 
@@ -174,7 +221,7 @@ The two most generic and useful dynamic destination types are `python` and `dtd`
 
 #### Dynamic Destination Mapping (DTD method)
 
-DTD is a special dynamic job destination type that builds up rules given a YAML-based DSL - see `config/tool_destinations.yml.sample` (on [Github](https://github.com/galaxyproject/galaxy/blob/dev/config/tool_destinations.yml.sample)) for a syntax description, examples, and a description of how to validate and debug this file.
+DTD is a special dynamic job destination type that builds up rules given a YAML-based DSL - see `config/tool_destinations.yml.sample` (on [Github](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/tool_destinations.yml.sample)) for a syntax description, examples, and a description of how to validate and debug this file.
 
 To define and use rules, copy this sample file to `config/tool_destinations.yml` and add your rules. Anything routed with a `dynamic` runner of type `dtd` will then use this file (such as the destination defined with the following XML block in `job_conf.xml`).
 

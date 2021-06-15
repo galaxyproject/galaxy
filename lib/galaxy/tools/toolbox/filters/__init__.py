@@ -44,7 +44,7 @@ class FilterFactory:
                     elif name == 'toolbox_label_filters':
                         category = "label"
                     if category:
-                        validate = getattr(trans.app.config, 'user_tool_%s_filters' % category, [])
+                        validate = getattr(trans.app.config, f'user_tool_{category}_filters', [])
                         self.__init_filters(category, user_filters, filters, validate=validate)
         if kwds.get("trackster", False):
             filters["tool"].append(_has_trackster_conf)
@@ -78,7 +78,7 @@ class FilterFactory:
     def _import_filter(self, module_name, function_name):
         function_name = function_name.strip()
         for base_module in self.__base_modules:
-            full_module_name = "{}.{}".format(base_module, module_name.strip())
+            full_module_name = f"{base_module}.{module_name.strip()}"
             try:
                 __import__(full_module_name)
             except ImportError:

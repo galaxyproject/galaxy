@@ -1,16 +1,5 @@
 import logging
-
-import six
-
-
-class TraceLogger:
-
-    def __init__(self, name):
-        self.name = name
-
-    def log(**kwargs):
-        raise TypeError("Abstract Method")
-
+import types
 
 # Add custom "TRACE" log level for ludicrous verbosity.
 LOGLV_TRACE = 5
@@ -24,5 +13,5 @@ def trace(self, message, *args, **kws):
 
 def get_logger(name=None):
     logger = logging.getLogger(name)
-    logger.trace = six.create_bound_method(trace, logger)
+    logger.trace = types.MethodType(trace, logger)
     return logger

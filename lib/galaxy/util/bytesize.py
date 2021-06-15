@@ -41,7 +41,7 @@ class ByteSize:
         new_value = int(self.value / SUFFIX_TO_BYTES[unit])
         if not as_string:
             return new_value
-        return "{value}{suffix}".format(value=new_value, suffix=unit)
+        return f"{new_value}{unit}"
 
 
 def parse_bytesize(value):
@@ -62,7 +62,7 @@ def parse_bytesize(value):
         try:
             value = float(value)
         except ValueError:
-            raise ValueError("{value} is not a valid integer or float value".format(value=value))
+            raise ValueError(f"{value} is not a valid integer or float value")
     if found_suffix:
         value = value * SUFFIX_TO_BYTES[found_suffix]
     return value

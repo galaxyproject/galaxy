@@ -456,7 +456,7 @@ def __assert_foo_exported(commands):
     command = ["bash", "-c", "%s; echo \"$FOO\"" % "".join(commands)]
     process = Popen(command, stdout=PIPE)
     output = process.communicate()[0].strip()
-    assert output == b'bar', "Command %s exports FOO as %s, not bar" % (command, output)
+    assert output == b'bar', f"Command {command} exports FOO as {output}, not bar"
 
 
 def __setup_galaxy_package_dep(base_path, name, version, contents=""):
@@ -750,7 +750,8 @@ def __dependency_manager_for_config(app_config, resolution_config=None):
     return dm
 
 
-class _SimpleDependencyManager(object):
+class _SimpleDependencyManager:
+    default_base_path = None
 
     def get_resolver_option(self, resolver, key, explicit_resolver_options=None):
         if explicit_resolver_options is None:

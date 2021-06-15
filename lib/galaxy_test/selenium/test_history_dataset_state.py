@@ -32,7 +32,7 @@ class HistoryDatasetStateTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         item.dbkey_button.wait_for_and_click()
         toolhelp_title_text = item.toolhelp_title.wait_for_visible().text
         # assert tool helptext
-        assert EXPECTED_TOOLHELP_TITLE_TEXT == toolhelp_title_text, "Toolhelp title [%s] was not expected text [%s]." % (
+        assert EXPECTED_TOOLHELP_TITLE_TEXT == toolhelp_title_text, "Toolhelp title [{}] was not expected text [{}].".format(
             EXPECTED_TOOLHELP_TITLE_TEXT, toolhelp_title_text)
 
         self.screenshot("history_panel_dataset_expanded")
@@ -63,10 +63,14 @@ class HistoryDatasetStateTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         # Expand HDA and wait for details to show up.
         return self.history_panel_click_item_title(hid=hid, wait=True)
 
-    def _assert_title_buttons(self, hid, expected_buttons=['display', 'edit', 'delete']):
+    def _assert_title_buttons(self, hid, expected_buttons=None):
+        if expected_buttons is None:
+            expected_buttons = ['display', 'edit', 'delete']
         self._assert_buttons(hid, expected_buttons)
 
-    def _assert_action_buttons(self, hid, expected_buttons=["info", "download"]):
+    def _assert_action_buttons(self, hid, expected_buttons=None):
+        if expected_buttons is None:
+            expected_buttons = ["info", "download"]
         self._assert_buttons(hid, expected_buttons)
 
     def _assert_buttons(self, hid, expected_buttons):
@@ -76,10 +80,10 @@ class HistoryDatasetStateTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
             # ensure old tooltip expired,
             # no tooltip appeared before the 1st element
             if i > 0:
-                previous_button = item_button["%s_button" % expected_buttons[i - 1]].wait_for_visible()
+                previous_button = item_button[f"{expected_buttons[i - 1]}_button"].wait_for_visible()
                 if previous_button.get_attribute("aria-describedby") is not None:
                     # wait for tooltip to disappear
                     self.components._.tooltip_balloon.wait_for_absent()
 
-            button = item_button["%s_button" % expected_button]
+            button = item_button[f"{expected_button}_button"]
             self.assert_tooltip_text(button.wait_for_visible(), BUTTON_TOOLTIPS[expected_button])

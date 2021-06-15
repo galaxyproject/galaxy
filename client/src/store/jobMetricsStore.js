@@ -9,10 +9,12 @@ import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 
 const getters = {
-    getJobMetricsByDatasetId: (state) => (datasetId, datasetType = "hda") => {
-        const jobMetricsObject = datasetType == "hda" ? state.jobMetricsByHdaId : state.jobMetricsByLddaId;
-        return jobMetricsObject[datasetId] || [];
-    },
+    getJobMetricsByDatasetId:
+        (state) =>
+        (datasetId, datasetType = "hda") => {
+            const jobMetricsObject = datasetType == "hda" ? state.jobMetricsByHdaId : state.jobMetricsByLddaId;
+            return jobMetricsObject[datasetId] || [];
+        },
     getJobMetricsByJobId: (state) => (jobId) => {
         return state.jobMetricsByJobId[jobId] || [];
     },

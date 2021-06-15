@@ -7,6 +7,7 @@ import binascii
 import collections
 import errno
 import importlib
+import itertools
 import json
 import os
 import random
@@ -20,6 +21,7 @@ import tempfile
 import textwrap
 import threading
 import time
+import typing
 import unicodedata
 import xml.dom.minidom
 from datetime import datetime
@@ -28,13 +30,19 @@ from email.mime.text import MIMEText
 from functools import partial
 from hashlib import md5
 from os.path import relpath
+from urllib.parse import (
+    urlencode,
+    urlparse,
+    urlsplit,
+    urlunsplit,
+)
 
 import requests
 try:
     import grp
 except ImportError:
     # For Pulsar on Windows (which does not use the function that uses grp)
-    grp = None
+    grp = None  # type: ignore
 from boltons.iterutils import (
     default_enter,
     remap,
@@ -44,13 +52,9 @@ try:
     from lxml import etree
 except ImportError:
     LXML_AVAILABLE = False
-    import xml.etree.ElementTree as etree
+    import xml.etree.ElementTree as etree  # type: ignore
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
-from six.moves import (
-    xrange
-)
-from six.moves.urllib import parse as urlparse
 
 try:
     import docutils.core as docutils_core
@@ -157,13 +161,13 @@ def directory_hash_id(id):
     ['1', '3', '5']
     """
     s = str(id)
-    l = len(s)
+    len_s = len(s)
     # Shortcut -- ids 0-999 go under ../000/
-    if l < 4:
+    if len_s < 4:
         return ["000"]
     if not is_uuid(s):
         # Pad with zeros until a multiple of three
-        padded = ((3 - len(s) % 3) * "0") + s
+        padded = ((3 - len_s % 3) * "0") + s
         # Drop the last three digits -- 1000 files per directory
         padded = padded[:-3]
         # Break into chunks of three
@@ -208,6 +212,21 @@ def file_reader(fp, chunk_size=CHUNK_SIZE):
             break
         yield data
     fp.close()
+
+
+def chunk_iterable(it: typing.Iterable, size: int = 1000):
+    """
+    Break an iterable into chunks of ``size`` elements.
+
+    >>> list(chunk_iterable([1, 2, 3, 4, 5, 6, 7], 3))
+    [(1, 2, 3), (4, 5, 6), (7,)]
+    """
+    it = iter(it)
+    while True:
+        p = tuple(itertools.islice(it, size))
+        if not p:
+            break
+        yield p
 
 
 def unique_id(KEY_SIZE=128):
@@ -278,7 +297,7 @@ def xml_to_string(elem, pretty=False):
     except TypeError as e:
         # we assume this is a comment
         if hasattr(elem, 'text'):
-            return "<!-- %s -->\n" % elem.text
+            return f"<!-- {elem.text} -->\n"
         else:
             raise e
     if xml_str and pretty:
@@ -321,7 +340,7 @@ def xml_element_to_dict(elem):
                 rval[elem.tag][key] = value
     if elem.attrib:
         for key, value in elem.attrib.items():
-            rval[elem.tag]["@%s" % key] = value
+            rval[elem.tag][f"@{key}"] = value
 
     if elem.text:
         text = elem.text.strip()
@@ -441,7 +460,7 @@ def shrink_string_by_size(value, size, join_by="..", left_larger=True, beginning
                 left_index += 1
             else:
                 right_index += 1
-        value = "{}{}{}".format(value[:left_index], join_by, value[-right_index:])
+        value = f"{value[:left_index]}{join_by}{value[-right_index:]}"
     return value
 
 
@@ -593,7 +612,7 @@ def sanitize_param(value, valid_characters=valid_chars, character_map=mapped_cha
     elif isinstance(value, list):
         return [sanitize_text(x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character) for x in value]
     else:
-        raise Exception('Unknown parameter type (%s)' % (type(value)))
+        raise Exception(f'Unknown parameter type ({type(value)})')
 
 
 valid_filename_chars = set(string.ascii_letters + string.digits + '_.')
@@ -656,7 +675,7 @@ def mask_password_from_url(url):
     >>> mask_password_from_url( 'amqp://localhost')
     'amqp://localhost'
     """
-    split = urlparse.urlsplit(url)
+    split = urlsplit(url)
     if split.password:
         if url.count(split.password) == 1:
             url = url.replace(split.password, "********")
@@ -664,8 +683,8 @@ def mask_password_from_url(url):
             # This can manipulate the input other than just masking password,
             # so the previous string replace method is preferred when the
             # password doesn't appear twice in the url
-            split = split._replace(netloc=split.netloc.replace("{}:{}".format(split.username, split.password), '%s:********' % split.username))
-            url = urlparse.urlunsplit(split)
+            split = split._replace(netloc=split.netloc.replace(f"{split.username}:{split.password}", f'{split.username}:********'))
+            url = urlunsplit(split)
     return url
 
 
@@ -727,7 +746,7 @@ def in_directory(file, directory, local_path_module=os.path):
     False
     """
     if local_path_module != os.path:
-        _safe_contains = importlib.import_module('galaxy.util.path.%s' % local_path_module.__name__).safe_contains
+        _safe_contains = importlib.import_module(f'galaxy.util.path.{local_path_module.__name__}').safe_contains
     else:
         directory = os.path.realpath(directory)
         _safe_contains = safe_contains
@@ -817,7 +836,7 @@ class Params:
                 # changed to not require this and NEVER_SANITIZE should be
                 # removed.
                 if (value is not None and key not in self.NEVER_SANITIZE
-                        and True not in [key.endswith("|%s" % nonsanitize_parameter) for
+                        and True not in [key.endswith(f"|{nonsanitize_parameter}") for
                                          nonsanitize_parameter in self.NEVER_SANITIZE]):
                     self.__dict__[key] = sanitize_param(value)
                 else:
@@ -846,7 +865,7 @@ class Params:
         return self.__dict__.get(key, default)
 
     def __str__(self):
-        return '%s' % self.__dict__
+        return f'{self.__dict__}'
 
     def __len__(self):
         return len(self.__dict__)
@@ -932,7 +951,7 @@ def asbool(obj):
         elif obj in falsy:
             return False
         else:
-            raise ValueError("String is not true/false: %r" % obj)
+            raise ValueError(f"String is not true/false: {obj!r}")
     return bool(obj)
 
 
@@ -956,7 +975,7 @@ def string_as_bool_or_none(string):
     string = str(string).lower()
     if string in ('true', 'yes', 'on'):
         return True
-    elif string == 'none':
+    elif string in ['none', 'null']:
         return None
     else:
         return False
@@ -1013,40 +1032,36 @@ def roundify(amount, sfs=2):
         return amount[0:sfs] + '0' * (len(amount) - sfs)
 
 
-def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', strip_null=False):
+def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', strip_null=False, log_exception=True):
     """
     Returns a Unicode string or None.
 
     >>> assert unicodify(None) is None
-    >>> assert unicodify('simple string') == u'simple string'
-    >>> assert unicodify(3) == u'3'
-    >>> assert unicodify(bytearray([115, 116, 114, 196, 169, 195, 177, 103])) == u'strĩñg'
-    >>> assert unicodify(Exception(u'strĩñg')) == u'strĩñg'
-    >>> assert unicodify('cómplǐcḁtëd strĩñg') == u'cómplǐcḁtëd strĩñg'
-    >>> s = u'cómplǐcḁtëd strĩñg'; assert unicodify(s) == s
-    >>> s = u'lâtín strìñg'; assert unicodify(s.encode('latin-1'), 'latin-1') == s
-    >>> s = u'lâtín strìñg'; assert unicodify(s.encode('latin-1')) == u'l\ufffdt\ufffdn str\ufffd\ufffdg'
-    >>> s = u'lâtín strìñg'; assert unicodify(s.encode('latin-1'), error='ignore') == u'ltn strg'
+    >>> assert unicodify('simple string') == 'simple string'
+    >>> assert unicodify(3) == '3'
+    >>> assert unicodify(bytearray([115, 116, 114, 196, 169, 195, 177, 103])) == 'strĩñg'
+    >>> assert unicodify(Exception('strĩñg')) == 'strĩñg'
+    >>> assert unicodify('cómplǐcḁtëd strĩñg') == 'cómplǐcḁtëd strĩñg'
+    >>> s = 'cómplǐcḁtëd strĩñg'; assert unicodify(s) == s
+    >>> s = 'lâtín strìñg'; assert unicodify(s.encode('latin-1'), 'latin-1') == s
+    >>> s = 'lâtín strìñg'; assert unicodify(s.encode('latin-1')) == 'l\ufffdt\ufffdn str\ufffd\ufffdg'
+    >>> s = 'lâtín strìñg'; assert unicodify(s.encode('latin-1'), error='ignore') == 'ltn strg'
     """
     if value is None:
         return value
     try:
         if isinstance(value, bytearray):
             value = bytes(value)
-        elif not isinstance(value, str) and not isinstance(value, bytes):
-            # In Python 2, value is not an instance of basestring (i.e. str or unicode)
-            # In Python 3, value is not an instance of bytes or str
-            try:
-                value = str(value)
-            except Exception:
-                value = str(value)
-        # Now in Python 2, value is an instance of basestring, but may be not unicode
-        # Now in Python 3, value is an instance of bytes or str
+        elif not isinstance(value, (str, bytes)):
+            value = str(value)
+        # Now value is an instance of bytes or str
         if not isinstance(value, str):
             value = str(value, encoding, error)
     except Exception as e:
-        msg = "Value '{}' could not be coerced to Unicode: {}('{}')".format(value, type(e).__name__, e)
-        raise Exception(msg)
+        if log_exception:
+            msg = f"Value '{repr(value)}' could not be coerced to Unicode: {type(e).__name__}('{e}')"
+            log.exception(msg)
+        raise
     if strip_null:
         return value.replace('\0', '')
     return value
@@ -1066,19 +1081,16 @@ def smart_str(s, encoding=DEFAULT_ENCODING, strings_only=False, errors='strict')
     >>> assert smart_str(3, strings_only=True) == 3
     >>> s = b'a bytes string'; assert smart_str(s) == s
     >>> s = bytearray(b'a bytes string'); assert smart_str(s) == s
-    >>> assert smart_str(u'a simple unicode string') == b'a simple unicode string'
-    >>> assert smart_str(u'à strange ünicode ڃtring') == b'\\xc3\\xa0 strange \\xc3\\xbcnicode \\xda\\x83tring'
+    >>> assert smart_str('a simple unicode string') == b'a simple unicode string'
+    >>> assert smart_str('à strange ünicode ڃtring') == b'\\xc3\\xa0 strange \\xc3\\xbcnicode \\xda\\x83tring'
     >>> assert smart_str(b'\\xc3\\xa0n \\xc3\\xabncoded utf-8 string', encoding='latin-1') == b'\\xe0n \\xebncoded utf-8 string'
     >>> assert smart_str(bytearray(b'\\xc3\\xa0n \\xc3\\xabncoded utf-8 string'), encoding='latin-1') == b'\\xe0n \\xebncoded utf-8 string'
     """
     if strings_only and isinstance(s, (type(None), int)):
         return s
-    if not isinstance(s, str) and not isinstance(s, (bytes, bytearray)):
-        # In Python 2, s is not an instance of basestring or bytearray
-        # In Python 3, s is not an instance of str, bytes or bytearray
+    if not isinstance(s, (str, bytes, bytearray)):
         s = str(s)
-    # Now in Python 2, value is an instance of basestring or bytearray
-    # Now in Python 3, value is an instance of str, bytes or bytearray
+    # Now s is an instance of str, bytes or bytearray
     if not isinstance(s, (bytes, bytearray)):
         return s.encode(encoding, errors)
     elif s and encoding != DEFAULT_ENCODING:
@@ -1090,19 +1102,6 @@ def smart_str(s, encoding=DEFAULT_ENCODING, strings_only=False, errors='strict')
 def strip_control_characters(s):
     """Strip unicode control characters from a string."""
     return "".join(c for c in unicodify(s) if unicodedata.category(c) != "Cc")
-
-
-def strip_control_characters_nested(item):
-    """Recursively strips control characters from lists, dicts, tuples."""
-
-    def visit(path, key, value):
-        if isinstance(key, str):
-            key = strip_control_characters(key)
-        if isinstance(value, str):
-            value = strip_control_characters(value)
-        return key, value
-
-    return remap(item, visit)
 
 
 def object_to_string(obj):
@@ -1164,8 +1163,8 @@ class ParamsWithSpecs(collections.defaultdict):
 
 
 def compare_urls(url1, url2, compare_scheme=True, compare_hostname=True, compare_path=True):
-    url1 = urlparse.urlparse(url1)
-    url2 = urlparse.urlparse(url2)
+    url1 = urlparse(url1)
+    url2 = urlparse(url2)
     if compare_scheme and url1.scheme and url2.scheme and url1.scheme != url2.scheme:
         return False
     if compare_hostname and url1.hostname and url2.hostname and url1.hostname != url2.hostname:
@@ -1173,64 +1172,6 @@ def compare_urls(url1, url2, compare_scheme=True, compare_hostname=True, compare
     if compare_path and url1.path and url2.path and url1.path != url2.path:
         return False
     return True
-
-
-def read_dbnames(filename):
-    """ Read build names from file """
-    class DBNames(list):
-        default_value = "?"
-        default_name = "unspecified (?)"
-    db_names = DBNames()
-    try:
-        ucsc_builds = {}
-        man_builds = []  # assume these are integers
-        name_to_db_base = {}
-        if filename is None:
-            # Should only be happening with the galaxy.tools.parameters.basic:GenomeBuildParameter docstring unit test
-            filename = os.path.join('tool-data', 'shared', 'ucsc', 'builds.txt.sample')
-        for line in open(filename):
-            try:
-                if line[0:1] == "#":
-                    continue
-                fields = line.replace("\r", "").replace("\n", "").split("\t")
-                # Special case of unspecified build is at top of list
-                if fields[0] == "?":
-                    db_names.insert(0, (fields[0], fields[1]))
-                    continue
-                try:  # manual build (i.e. microbes)
-                    int(fields[0])
-                    man_builds.append((fields[1], fields[0]))
-                except Exception:  # UCSC build
-                    db_base = fields[0].rstrip('0123456789')
-                    if db_base not in ucsc_builds:
-                        ucsc_builds[db_base] = []
-                        name_to_db_base[fields[1]] = db_base
-                    # we want to sort within a species numerically by revision number
-                    build_rev = re.compile(r'\d+$')
-                    try:
-                        build_rev = int(build_rev.findall(fields[0])[0])
-                    except Exception:
-                        build_rev = 0
-                    ucsc_builds[db_base].append((build_rev, fields[0], fields[1]))
-            except Exception:
-                continue
-        sort_names = sorted(name_to_db_base.keys())
-        for name in sort_names:
-            db_base = name_to_db_base[name]
-            ucsc_builds[db_base].sort()
-            ucsc_builds[db_base].reverse()
-            ucsc_builds[db_base] = [(build, name) for _, build, name in ucsc_builds[db_base]]
-            db_names = DBNames(db_names + ucsc_builds[db_base])
-        if len(db_names) > 1 and len(man_builds) > 0:
-            db_names.append((db_names.default_value, '----- Additional Species Are Below -----'))
-        man_builds.sort()
-        man_builds = [(build, name) for name, build in man_builds]
-        db_names = DBNames(db_names + man_builds)
-    except Exception as e:
-        log.error("ERROR: Unable to read builds file: %s", unicodify(e))
-    if len(db_names) < 1:
-        db_names = DBNames([(db_names.default_value, db_names.default_name)])
-    return db_names
 
 
 def read_build_sites(filename, check_builds=True):
@@ -1292,7 +1233,7 @@ def mkstemp_ln(src, prefix='mkstemp_ln_'):
     """
     dir = os.path.dirname(src)
     names = tempfile._get_candidate_names()
-    for _ in xrange(tempfile.TMP_MAX):
+    for _ in range(tempfile.TMP_MAX):
         name = next(names)
         file = os.path.join(dir, prefix + name)
         try:
@@ -1397,7 +1338,7 @@ def nice_size(size):
             size = size / float(1024 ** ind)
             if word == 'bytes':  # No decimals for bytes
                 return "%s%d bytes" % (prefix, size)
-            return "{}{:.1f} {}".format(prefix, size, word)
+            return f"{prefix}{size:.1f} {word}"
     return '??? bytes'
 
 
@@ -1426,7 +1367,7 @@ def size_to_bytes(size):
     size_re = re.compile(r'(?P<number>(\d+(\.\d*)?|\.\d+)(e[+-]?\d+)?)\s*(?P<multiple>[eptgmk]?(b|bytes?)?)?$')
     size_match = size_re.match(size.lower())
     if size_match is None:
-        raise ValueError("Could not parse string '%s'" % size)
+        raise ValueError(f"Could not parse string '{size}'")
     number = float(size_match.group("number"))
     multiple = size_match.group("multiple")
     if multiple == "" or multiple.startswith('b'):
@@ -1444,7 +1385,7 @@ def size_to_bytes(size):
     elif multiple.startswith('e'):
         return int(number * 1024 ** 6)
     else:
-        raise ValueError("Unknown multiplier '{}' in '{}'".format(multiple, size))
+        raise ValueError(f"Unknown multiplier '{multiple}' in '{size}'")
 
 
 def send_mail(frm, to, subject, body, config, html=None):
@@ -1563,8 +1504,8 @@ def safe_str_cmp(a, b):
     return rv == 0
 
 
-galaxy_root_path = os.path.join(__path__[0], os.pardir, os.pardir, os.pardir)
-galaxy_samples_path = os.path.join(__path__[0], os.pardir, 'config', 'sample')
+galaxy_root_path = os.path.join(__path__[0], os.pardir, os.pardir, os.pardir)  # type: ignore
+galaxy_samples_path = os.path.join(__path__[0], os.pardir, 'config', 'sample')  # type: ignore
 
 
 def galaxy_directory():
@@ -1656,22 +1597,22 @@ def build_url(base_url, port=80, scheme='http', pathspec=None, params=None, dose
         params = dict()
     if pathspec is None:
         pathspec = []
-    parsed_url = urlparse.urlparse(base_url)
+    parsed_url = urlparse(base_url)
     if scheme != 'http':
         parsed_url.scheme = scheme
-    assert parsed_url.scheme in ('http', 'https', 'ftp'), 'Invalid URL scheme: %s' % scheme
+    assert parsed_url.scheme in ('http', 'https', 'ftp'), f'Invalid URL scheme: {scheme}'
     if port != 80:
         url = '%s://%s:%d/%s' % (parsed_url.scheme, parsed_url.netloc.rstrip('/'), int(port), parsed_url.path)
     else:
-        url = '{}://{}/{}'.format(parsed_url.scheme, parsed_url.netloc.rstrip('/'), parsed_url.path.lstrip('/'))
+        url = f"{parsed_url.scheme}://{parsed_url.netloc.rstrip('/')}/{parsed_url.path.lstrip('/')}"
     if len(pathspec) > 0:
-        url = '{}/{}'.format(url.rstrip('/'), '/'.join(pathspec))
+        url = f"{url.rstrip('/')}/{'/'.join(pathspec)}"
     if parsed_url.query:
         for query_parameter in parsed_url.query.split('&'):
             key, value = query_parameter.split('=')
             params[key] = value
     if params:
-        url += '?%s' % urlparse.urlencode(params, doseq=doseq)
+        url += f'?{urlencode(params, doseq=doseq)}'
     return url
 
 
@@ -1686,6 +1627,23 @@ def url_get(base_url, auth=None, pathspec=None, params=None, max_retries=5, back
     return response.text
 
 
+def is_url(uri, allow_list=None):
+    """
+    Check if uri is (most likely) an URL, more precisely the function checks
+    if uri starts with a scheme from the allow list (defaults to "http://",
+    "https://", "ftp://")
+    >>> is_url('https://zenodo.org/record/4104428/files/UCSC-hg38-chr22-Coding-Exons.bed')
+    True
+    >>> is_url('file:///some/path')
+    False
+    >>> is_url('/some/path')
+    False
+    """
+    if allow_list is None:
+        allow_list = ("http://", "https://", "ftp://")
+    return any(uri.startswith(scheme) for scheme in allow_list)
+
+
 def download_to_file(url, dest_file_path, timeout=30, chunk_size=2 ** 20):
     """Download a URL to a file in chunks."""
     with requests.get(url, timeout=timeout, stream=True) as r, open(dest_file_path, 'wb') as f:
@@ -1694,7 +1652,7 @@ def download_to_file(url, dest_file_path, timeout=30, chunk_size=2 ** 20):
                 f.write(chunk)
 
 
-class classproperty(object):
+class classproperty:
 
     def __init__(self, f):
         self.f = f
@@ -1729,7 +1687,7 @@ class ExecutionTimer:
         self.begin = time.time()
 
     def __str__(self):
-        return "(%0.3f ms)" % (self.elapsed * 1000)
+        return f"({self.elapsed * 1000:0.3f} ms)"
 
     @property
     def elapsed(self):
@@ -1752,7 +1710,7 @@ class StructuredExecutionTimer:
             message = string.Template(self.template).safe_substitute(kwd)
         else:
             message = self.template
-        log_message = message + " (%0.3f ms)" % (self.elapsed * 1000)
+        log_message = message + f" ({self.elapsed * 1000:0.3f} ms)"
         return log_message
 
     @property

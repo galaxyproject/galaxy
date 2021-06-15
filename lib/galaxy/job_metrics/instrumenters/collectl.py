@@ -42,13 +42,13 @@ class CollectlFormatter(formatting.JobMetricFormatter):
         else:
             _, stat_type, resource_type = key.split("_", 2)
             if resource_type.startswith("Vm"):
-                value_str = "%s KB" % int(value)
+                value_str = f"{int(value)} KB"
             elif resource_type in ["RSYS", "WSYS"] and stat_type in ["count", "max", "sum"]:
                 value_str = "%d (# system calls)" % int(value)
             else:
                 value_str = str(value)
             resource_title = FORMATTED_RESOURCE_TITLES.get(resource_type, resource_type)
-            return ("{} ({})".format(resource_title, stat_type), value_str)
+            return (f"{resource_title} ({stat_type})", value_str)
 
 
 class CollectlPlugin(InstrumentPlugin):
@@ -63,7 +63,7 @@ class CollectlPlugin(InstrumentPlugin):
         self.__configure_subsystems(kwargs)
         saved_logs_path = kwargs.get("saved_logs_path", "")
         if "app" in kwargs:
-            log.debug("Found path for saved logs: %s" % saved_logs_path)
+            log.debug(f"Found path for saved logs: {saved_logs_path}")
             saved_logs_path = kwargs["app"].config.resolve_path(saved_logs_path)
         self.saved_logs_path = saved_logs_path
         self.__configure_collectl_recorder_args(kwargs)
@@ -82,7 +82,7 @@ class CollectlPlugin(InstrumentPlugin):
         commands = []
         # Capture PID of process so we can walk its ancestors when building
         # statistics for the whole job.
-        commands.append('''echo "$$" > '%s' ''' % self.__pid_file(job_directory))
+        commands.append(f'''echo "$$" > '{self.__pid_file(job_directory)}' ''')
         # Run collectl in record mode to capture process and system level
         # statistics according to supplied subsystems.
         commands.append(self.__collectl_record_command(job_directory))
@@ -99,10 +99,10 @@ class CollectlPlugin(InstrumentPlugin):
         pid = open(self.__pid_file(job_directory)).read().strip()
         contents = os.listdir(job_directory)
         try:
-            rel_path = filter(self._is_instrumented_collectl_log, contents)[0]
+            rel_path = next(iter(filter(self._is_instrumented_collectl_log, contents)))
             path = os.path.join(job_directory, rel_path)
         except IndexError:
-            message = "Failed to find collectl log in directory {}, files were {}".format(job_directory, contents)
+            message = f"Failed to find collectl log in directory {job_directory}, files were {contents}"
             raise Exception(message)
 
         properties = dict(
@@ -123,7 +123,7 @@ class CollectlPlugin(InstrumentPlugin):
             # Run collectl in playback and generate statistics of interest
             summary_statistics = self.__summarize_process_data(pid, path)
             for statistic, value in summary_statistics:
-                properties["process_%s" % "_".join(statistic)] = value
+                properties[f"process_{'_'.join(statistic)}"] = value
 
         return properties
 
@@ -190,10 +190,7 @@ class CollectlPlugin(InstrumentPlugin):
             redirect_to = self._instrument_file_path(job_directory, "program_output")
         else:
             redirect_to = "/dev/null"
-        return "{} > {} 2>&1 &".format(
-            collectl_cli.build_command_line(),
-            redirect_to,
-        )
+        return f"{collectl_cli.build_command_line()} > {redirect_to} 2>&1 &"
 
     def __pid_file(self, job_directory):
         return self._instrument_file_path(job_directory, "pid")

@@ -61,15 +61,15 @@ options (listed below) default to 'None' if omitted
     invalid_starts = []
 
     if options.input_txt:
-        infile = open(options.input_txt, 'r')
+        infile = open(options.input_txt)
     else:
         infile = sys.stdin
 
     if options.ignore and options.ignore != "None":
-        invalid_starts = set(
+        invalid_starts = {
             chr(int(c)) if options.ascii else c
             for c in options.ignore.split(',')
-        )
+        }
 
     for i, line in enumerate(infile):
         line = line.rstrip('\r\n')

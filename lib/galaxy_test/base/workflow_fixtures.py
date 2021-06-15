@@ -2,6 +2,11 @@ WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES = """
 class: GalaxyWorkflow
 doc: |
   Simple workflow that no-op cats a file and then selects 10 random lines.
+creator:
+  - class: Person
+    name: John Chilton
+    email: jmchilton@gmail.com
+    identifier: https://orcid.org/0000-0002-6794-0756
 inputs:
   the_input:
     type: data
@@ -52,14 +57,91 @@ steps:
 """
 
 
+# Throwing a bunch of broken steps in to get a really long modal and sure it
+# is scrollable.
 WORKFLOW_WITH_INVALID_STATE = """
 class: GalaxyWorkflow
 inputs:
   input1: data
 steps:
-  mul_versions:
+  mul_versions_1:
     tool_id: multiple_versions
     tool_version: "0.0.1"
+    state:
+      inttest: "moocow"
+  'another bad step':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step2':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step3':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step4':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step5':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step6':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step7':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step8':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step9':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step10':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step11':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step12':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step13':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step14':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
     state:
       inttest: "moocow"
 """
@@ -293,6 +375,45 @@ steps:
       inner_input: outer_input
 """
 
+WORKFLOW_NESTED_WITH_MULTIPLE_VERSIONS_TOOL = """
+class: GalaxyWorkflow
+inputs:
+  outer_input: data
+outputs:
+  outer_output:
+    outputSource: cat/out_file1
+steps:
+  tool_update_step:
+    tool_id: multiple_versions
+    tool_version: '0.1'
+    in:
+      input1: outer_input
+  nested_workflow:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        inner_input: data
+      outputs:
+        workflow_output:
+          outputSource: random_lines/out_file1
+      steps:
+        random_lines:
+          tool_id: random_lines1
+          state:
+            num_lines: 1
+            input:
+              $link: inner_input
+            seed_source:
+              seed_source_selector: set_seed
+              seed: asdf
+    in:
+      inner_input: tool_update_step/out_file1
+  cat:
+    tool_id: cat1
+    in:
+      input1: nested_workflow/workflow_output
+      queries_0|input2: nested_workflow/workflow_output
+"""
 
 WORKFLOW_WITH_OUTPUT_ACTIONS = """
 class: GalaxyWorkflow

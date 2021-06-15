@@ -1,2 +1,2 @@
-pytest
+pytest<6.1
 responses

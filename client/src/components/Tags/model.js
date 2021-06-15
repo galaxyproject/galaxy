@@ -49,7 +49,9 @@ function TagModel(props = {}) {
     Object.defineProperty(this, "valid", {
         enumerable: false,
         get: function () {
-            if (!this.text.length) return false;
+            if (!this.text.length) {
+                return false;
+            }
             return this.text != "name:";
         },
     });

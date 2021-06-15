@@ -1,9 +1,15 @@
 import json
 import logging
+import typing
 
 from boltons.iterutils import remap
+from pydantic import (
+    BaseModel,
+    Field,
+)
 from sqlalchemy import and_, false, func, or_
 from sqlalchemy.orm import aliased
+from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.sql import select
 
 from galaxy import model
@@ -16,6 +22,8 @@ from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
+from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.structured_app import StructuredApp
 from galaxy.util import (
     defaultdict,
     ExecutionTimer,
@@ -23,6 +31,10 @@ from galaxy.util import (
 )
 
 log = logging.getLogger(__name__)
+
+
+class JobLock(BaseModel):
+    active: bool = Field(title="Job lock status", description="If active, jobs will not dispatch")
 
 
 def get_path_key(path_tuple):
@@ -38,7 +50,7 @@ def get_path_key(path_tuple):
             # we remove the last 2 items of the path tuple (values and list index)
             return path_key
         if path_key:
-            path_key = "{}{}{}".format(path_key, sep, p)
+            path_key = f"{path_key}{sep}{p}"
         else:
             path_key = p
     return path_key
@@ -46,15 +58,22 @@ def get_path_key(path_tuple):
 
 class JobManager:
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         self.app = app
         self.dataset_manager = DatasetManager(app)
+
+    def job_lock(self) -> JobLock:
+        return JobLock(active=self.app.job_manager.job_lock)
+
+    def update_job_lock(self, job_lock: JobLock):
+        self.app.queue_worker.send_control_task('admin_job_lock', kwargs={'job_lock': job_lock.active}, get_response=True)
+        return self.job_lock()
 
     def get_accessible_job(self, trans, decoded_job_id):
         job = trans.sa_session.query(trans.app.model.Job).filter(trans.app.model.Job.id == decoded_job_id).first()
         if job is None:
             raise ObjectNotFound()
-        belongs_to_user = (job.user == trans.user) if job.user else (job.session_id == trans.get_galaxy_session().id)
+        belongs_to_user = (job.user_id == trans.user.id) if job.user_id and trans.user else (job.session_id == trans.get_galaxy_session().id)
         if not trans.user_is_admin and not belongs_to_user:
             # Check access granted via output datasets.
             if not job.output_datasets:
@@ -68,7 +87,7 @@ class JobManager:
     def stop(self, job, message=None):
         if not job.finished:
             job.mark_deleted(self.app.config.track_jobs_in_database)
-            self.app.model.context.current.flush()
+            self.app.model.session.flush()
             self.app.job_manager.stop(job, message=message)
             return True
         else:
@@ -77,13 +96,19 @@ class JobManager:
 
 class JobSearch:
     """Search for jobs using tool inputs or other jobs"""
-    def __init__(self, app):
-        self.app = app
-        self.sa_session = app.model.context
-        self.hda_manager = HDAManager(app)
-        self.dataset_collection_manager = DatasetCollectionManager(app)
-        self.ldda_manager = LDDAManager(app)
-        self.decode_id = self.app.security.decode_id
+    def __init__(
+        self,
+        sa_session: scoped_session,
+        hda_manager: HDAManager,
+        dataset_collection_manager: DatasetCollectionManager,
+        ldda_manager: LDDAManager,
+        id_encoding_helper: IdEncodingHelper,
+    ):
+        self.sa_session = sa_session
+        self.hda_manager = hda_manager
+        self.dataset_collection_manager = dataset_collection_manager
+        self.ldda_manager = ldda_manager
+        self.decode_id = id_encoding_helper.decode_id
 
     def by_tool_input(self, trans, tool_id, tool_version, param=None, param_dump=None, job_state='ok'):
         """Search for jobs producing same results using the 'inputs' part of a tool POST."""
@@ -228,7 +253,7 @@ class JobSearch:
                     name_condition = []
                     if identifier:
                         data_conditions.append(and_(model.Job.id == d.job_id,
-                                             d.name.in_({"%s|__identifier__" % _ for _ in k}),
+                                             d.name.in_({f"{_}|__identifier__" for _ in k}),
                                              d.value == json.dumps(identifier)))
                     else:
                         stmt = stmt.where(e.name == c.name)
@@ -368,6 +393,32 @@ class JobSearch:
         return None
 
 
+def view_show_job(trans, job, full: bool) -> typing.Dict:
+    is_admin = trans.user_is_admin
+    job_dict = trans.app.security.encode_all_ids(job.to_dict('element', system_details=is_admin), True)
+    if trans.app.config.expose_dataset_path and 'command_line' not in job_dict:
+        job_dict['command_line'] = job.command_line
+    if full:
+        job_dict.update(dict(
+            tool_stdout=job.tool_stdout,
+            tool_stderr=job.tool_stderr,
+            job_stdout=job.job_stdout,
+            job_stderr=job.job_stderr,
+            stderr=job.stderr,
+            stdout=job.stdout,
+            job_messages=job.job_messages
+        ))
+
+        if is_admin:
+            if job.user:
+                job_dict['user_email'] = job.user.email
+            else:
+                job_dict['user_email'] = None
+
+            job_dict['job_metrics'] = summarize_job_metrics(trans, job)
+    return job_dict
+
+
 def invocation_job_source_iter(sa_session, invocation_id):
     # TODO: Handle subworkflows.
     join = model.WorkflowInvocationStep.table.join(
@@ -411,7 +462,7 @@ def fetch_job_states(sa_session, job_source_ids, job_source_types):
                     implicit_collection_job_ids.add(invocation_step_source_id)
             workflow_invocations_job_sources[job_source_id] = workflow_invocation_job_sources
         else:
-            raise RequestParameterInvalidException("Invalid job source type %s found." % job_source_type)
+            raise RequestParameterInvalidException(f"Invalid job source type {job_source_type} found.")
 
     job_summaries = {}
     implicit_collection_jobs_summaries = {}
@@ -570,7 +621,9 @@ def summarize_destination_params(trans, job):
     destination_params = {'Runner': job.job_runner_name,
                           'Runner Job ID': job.job_runner_external_id,
                           'Handler': job.handler}
-    destination_params.update(job.destination_params)
+    job_destination_params = job.destination_params
+    if job_destination_params:
+        destination_params.update(job_destination_params)
     return destination_params
 
 
@@ -586,7 +639,7 @@ def summarize_job_parameters(trans, job):
 
         rval = []
 
-        for input_index, input in enumerate(input_params.values()):
+        for input in input_params.values():
             if input.name in param_values:
                 if input.type == "repeat":
                     for i in range(len(param_values[input.name])):
@@ -608,10 +661,10 @@ def summarize_job_parameters(trans, job):
                     else:
                         rval.append(dict(text=input.name, depth=depth, notes="The previously used value is no longer valid.", error=True))
                 elif input.type == "upload_dataset":
-                    rval.append(dict(text=input.group_title(param_values), depth=depth, value="%s uploaded datasets" % len(param_values[input.name])))
+                    rval.append(dict(text=input.group_title(param_values), depth=depth, value=f"{len(param_values[input.name])} uploaded datasets"))
                 elif input.type == "data":
                     value = []
-                    for i, element in enumerate(listify(param_values[input.name])):
+                    for element in listify(param_values[input.name]):
                         if element.history_content_type == "dataset":
                             hda = element
                             encoded_id = trans.security.encode_id(hda.id)

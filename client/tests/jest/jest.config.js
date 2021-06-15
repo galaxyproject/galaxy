@@ -84,7 +84,7 @@ module.exports = {
     },
 
     // An array of regexp pattern strings, matched against all module paths before considered 'visible' to the module loader
-    // modulePathIgnorePatterns: [],
+    modulePathIgnorePatterns: ["<rootDir>/src/.*/__mocks__"],
 
     // Activates notifications for test results
     // notify: false,
@@ -118,7 +118,7 @@ module.exports = {
     rootDir: path.join(__dirname, "../../"),
 
     // A list of paths to directories that Jest should use to search for files in
-    roots: ["<rootDir>/src", "<rootDir>/tests/jest/standalone/"],
+    roots: ["<rootDir>/src", "<rootDir>/tests/jest/standalone/", "<rootDir>/docs/"],
 
     // Allows you to use a custom runner instead of Jest's default test runner
     // runner: "jest-runner",

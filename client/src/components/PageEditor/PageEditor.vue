@@ -1,34 +1,22 @@
 <template>
-    <span>
-        <div class="unified-panel-header" unselectable="on">
-            <div class="unified-panel-header-inner">
-                Page Editor: {{ title }}
-                <a
-                    id="save-button"
-                    class="btn btn-secondary fa fa-save float-right"
-                    href="javascript:void(0)"
-                    @click="saveContent"
-                ></a>
-                <a
-                    id="view-button"
-                    class="btn btn-secondary fa fa-eye float-right"
-                    href="javascript:void(0)"
-                    @click="viewContent"
-                ></a>
-            </div>
-        </div>
-        <page-editor-html :page-id="pageId" :content="content" v-if="contentFormat == 'html'" ref="contentEditor" />
-        <page-editor-markdown
-            :page-id="pageId"
-            :initial-content="content"
-            v-if="contentFormat == 'markdown'"
-            ref="contentEditor"
-        />
-    </span>
+    <LoadingSpan v-if="loading" message="Loading Page" class="m-3" />
+    <page-editor-markdown
+        v-else-if="contentFormat == 'markdown'"
+        :title="title"
+        :page-id="pageId"
+        :public-url="publicUrl"
+        :content="content"
+        :content-data="contentData"
+    />
+    <page-editor-html v-else :title="title" :page-id="pageId" :public-url="publicUrl" :content="content" />
 </template>
 
 <script>
+import axios from "axios";
+import { Toast } from "ui/toast";
 import { getAppRoot } from "onload/loadConfig";
+import { rethrowSimple } from "utils/simple-error";
+import LoadingSpan from "components/LoadingSpan";
 import PageEditorHtml from "./PageEditorHtml";
 import PageEditorMarkdown from "./PageEditorMarkdown";
 
@@ -38,40 +26,46 @@ export default {
             required: true,
             type: String,
         },
-        publicUrl: {
-            required: true,
-            type: String,
-        },
-        content: {
-            type: String,
-        },
-        contentFormat: {
-            type: String,
-            default: "html",
-        },
-        title: {
-            type: String,
-        },
     },
-    computed: {},
-    methods: {
-        saveContent: function () {
-            this.$refs.contentEditor.saveContent();
-        },
-        viewContent: function () {
-            // TODO: Future iteration, contentEditor should have an entry point that can decide
-            // if it has changed content.
-            const r = window.confirm(
-                "This will leave the current page editor, if you have unsaved changes they will be lost. Do you wish to continue?"
-            );
-            if (r === true) {
-                window.location = `${getAppRoot()}${this.publicUrl}`;
-            }
-        },
+    data() {
+        return {
+            title: null,
+            contentFormat: null,
+            contentData: null,
+            content: null,
+            publicUrl: null,
+            loading: true,
+        };
     },
     components: {
         PageEditorHtml,
         PageEditorMarkdown,
+        LoadingSpan,
+    },
+    created() {
+        this.getPage(this.pageId)
+            .then((data) => {
+                this.publicUrl = `${getAppRoot()}u/${data.username}/p/${data.slug}`;
+                this.content = data.content;
+                this.contentFormat = data.content_format;
+                this.contentData = data;
+                this.title = data.title;
+                this.loading = false;
+            })
+            .catch((error) => {
+                Toast.error(`Failed to load page: ${error}`);
+            });
+    },
+    methods: {
+        /** Page data request helper **/
+        async getPage(id) {
+            try {
+                const { data } = await axios.get(`${getAppRoot()}api/pages/${id}`);
+                return data;
+            } catch (e) {
+                rethrowSimple(e);
+            }
+        },
     },
 };
 </script>

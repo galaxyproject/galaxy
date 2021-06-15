@@ -6,6 +6,9 @@
   <type class="MergeCollectionTool" module="galaxy.tools" />
   <action module="galaxy.tools.actions.model_operations"
           class="ModelOperationToolAction"/>
+  <edam_operations>
+    <edam_operation>operation_2409</edam_operation>
+  </edam_operations>
   <macros>
       <xml name="suffix_param">
           <param name="suffix_pattern" label="Use the follow suffix pattern:" help="Describe the suffix pattern to use when joing element name and data copy number. For instance, the default is '_#', which will produce _1 as the first suffix used." value="_#" type="text">
@@ -63,7 +66,7 @@
             <option value="keep_first" selected="true">Keep first instance</option>
             <option value="keep_last">Keep last instance</option>
             <option value="fail">Fail collection creation</option>
-          </param>      
+          </param>
           <when value="suffix_conflict">
             <expand macro="suffix_param" />
           </when>
@@ -93,7 +96,7 @@
                 <element name="forward" value="simple_line.txt" />
                 <element name="reverse" value="simple_line_alternative.txt" />
               </collection>
-            </element>          
+            </element>
           </collection>
         </param>
       </repeat>
@@ -105,7 +108,7 @@
                 <element name="forward" value="simple_line.txt" />
                 <element name="reverse" value="simple_line_alternative.txt" />
               </collection>
-            </element>           
+            </element>
           </collection>
         </param>
       </repeat>
@@ -125,7 +128,7 @@
           <element name="reverse">
             <expand macro="assert_is_simple_line_alternative" />
           </element>
-        </element>        
+        </element>
       </output_collection>
     </test>
     <test>
@@ -137,7 +140,7 @@
       <repeat name="inputs">
         <param name="input">
           <expand macro="test_collecton_simple_then_alternative" />
-        </param>      
+        </param>
       </repeat>
       <expand macro="advanced_section" duplicate_handling="suffix_every" suffix_pattern="__#" />
       <output_collection name="output" type="list">
@@ -160,7 +163,7 @@
           <assert_contents>
             <has_text_matching expression="^This is a different line of text.\n$"/>
           </assert_contents>
-        </element>                
+        </element>
       </output_collection>
     </test>
     <test>
@@ -175,7 +178,7 @@
             <element name="sample3" value ="simple_line.txt"/>
             <element name="sample4" value ="simple_line_alternative.txt"/>
           </collection>
-        </param>      
+        </param>
       </repeat>
       <expand macro="advanced_section" duplicate_handling="suffix_every" suffix_pattern="__#" />
       <output_collection name="output" type="list">
@@ -190,7 +193,7 @@
         </element>
         <element name="sample4__2">
             <expand macro="assert_is_simple_line_alternative" />
-        </element>                
+        </element>
       </output_collection>
     </test>
     <test>
@@ -203,7 +206,7 @@
       <repeat name="inputs">
         <param name="input">
           <expand macro="test_collecton_simple_then_alternative" />
-        </param>      
+        </param>
       </repeat>
       <output_collection name="output" type="list">
         <element name="sample1">
@@ -217,7 +220,7 @@
         </element>
         <element name="sample2-2">
             <expand macro="assert_is_simple_line_alternative" />
-        </element>                
+        </element>
       </output_collection>
     </test>
     <test>
@@ -229,7 +232,7 @@
       <repeat name="inputs">
         <param name="input">
           <expand macro="test_collection_alternative_then_simple" />
-        </param>      
+        </param>
       </repeat>
       <output_collection name="output" type="list">
         <element name="sample1">
@@ -273,7 +276,7 @@
   <help><![CDATA[
 
 This tool takes two lists and creates a single unified list.
-    
+
 .. class:: infomark
 
 This tool will create new history datasets for your collection but your quota usage will not increase.

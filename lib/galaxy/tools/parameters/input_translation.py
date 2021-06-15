@@ -105,5 +105,5 @@ class ToolInputTranslator:
                         sep = translator.append_param.first_separator
                     else:
                         sep = translator.append_param.separator
-                    value += '{}{}{}{}'.format(sep, param_name, translator.append_param.join_str, param_value)
+                    value += f'{sep}{param_name}{translator.append_param.join_str}{param_value}'
             params.update({galaxy_name: value})

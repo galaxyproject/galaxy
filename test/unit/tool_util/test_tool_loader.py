@@ -9,7 +9,9 @@ from .sample_data import SIMPLE_MACRO, SIMPLE_TOOL_WITH_MACRO
 
 def test_loader():
 
-    class TestToolDirectory(object):
+    class TestToolDirectory:
+        __test__ = False  # Prevent pytest from discovering this class (issue #12071)
+
         def __init__(self):
             self.temp_directory = mkdtemp()
 

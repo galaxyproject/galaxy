@@ -17,7 +17,7 @@ try:
     from boto.s3.connection import S3Connection
     from boto.s3.key import Key
 except ImportError:
-    boto = None
+    boto = None  # type: ignore
 
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.util import (
@@ -69,7 +69,7 @@ def parse_config_xml(config_xml):
         tag, attrs = 'extra_dir', ('type', 'path')
         extra_dirs = config_xml.findall(tag)
         if not extra_dirs:
-            msg = 'No {tag} element in XML tree'.format(tag=tag)
+            msg = f'No {tag} element in XML tree'
             log.error(msg)
             raise Exception(msg)
         extra_dirs = [{k: e.get(k) for k in attrs} for e in extra_dirs]
@@ -207,7 +207,11 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
 
     def _configure_connection(self):
         log.debug("Configuring S3 Connection")
-        self.conn = S3Connection(self.access_key, self.secret_key)
+        # If access_key is empty use default credential chain
+        if self.access_key:
+            self.conn = S3Connection(self.access_key, self.secret_key)
+        else:
+            self.conn = S3Connection()
 
     @classmethod
     def parse_xml(clazz, config_xml):
@@ -342,10 +346,10 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
             return os.path.join(base, rel_path)
 
         # S3 folders are marked by having trailing '/' so add it now
-        rel_path = '%s/' % rel_path
+        rel_path = f'{rel_path}/'
 
         if not dir_only:
-            rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % self._get_object_id(obj))
+            rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
         return rel_path
 
     def _get_cache_path(self, rel_path):
@@ -437,7 +441,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
                 log.debug("Parallel pulled key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
                 ncores = multiprocessing.cpu_count()
                 url = key.generate_url(7200)
-                ret_code = subprocess.call(['axel', '-a', '-n', ncores, url])
+                ret_code = subprocess.call(['axel', '-a', '-n', str(ncores), url])
                 if ret_code == 0:
                     return True
             else:
@@ -568,7 +572,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
             # self._push_to_os(s3_dir, from_string='')
             # If instructed, create the dataset in cache & in S3
             if not dir_only:
-                rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % self._get_object_id(obj))
+                rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
                 open(os.path.join(self.staging_path, rel_path), 'w').close()
                 self._push_to_os(rel_path, from_string='')
 

@@ -2,11 +2,11 @@
 import contextlib
 import json
 import os
-import tarfile
+import zipfile
+from io import BytesIO
 
 import pytest
 from requests import get
-from six import BytesIO
 
 from galaxy.util import galaxy_root_path
 from galaxy_test.base import rules_test_data
@@ -69,7 +69,7 @@ class TestsTools:
     def _run_cat(self, history_id, inputs, assert_ok=False, **kwargs):
         return self._run('cat', history_id, inputs, assert_ok=assert_ok, **kwargs)
 
-    def _run(self, tool_id=None, history_id=None, inputs=None, tool_uuid=None, assert_ok=False, tool_version=None, use_cached_job=False, wait_for_job=False):
+    def _run(self, tool_id=None, history_id=None, inputs=None, tool_uuid=None, assert_ok=False, tool_version=None, use_cached_job=False, wait_for_job=False, input_format='legacy'):
         if inputs is None:
             inputs = {}
         if tool_id is None:
@@ -78,6 +78,7 @@ class TestsTools:
             tool_id=tool_id,
             inputs=inputs,
             history_id=history_id,
+            input_format=input_format,
         )
         if tool_uuid:
             payload['tool_uuid'] = tool_uuid
@@ -139,7 +140,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
 
     @skip_without_tool("test_sam_to_bam_conversions")
     def test_requirements(self):
-        requirements_response = self._get("tools/%s/requirements" % "test_sam_to_bam_conversions", admin=True)
+        requirements_response = self._get(f"tools/{'test_sam_to_bam_conversions'}/requirements", admin=True)
         self._assert_status_code_is_ok(requirements_response)
         requirements = requirements_response.json()
         assert len(requirements) == 1, requirements
@@ -150,7 +151,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
     def test_show_repeat(self):
         tool_info = self._show_valid_tool("cat1")
         parameters = tool_info["inputs"]
-        assert len(parameters) == 2, "Expected two inputs - got [%s]" % parameters
+        assert len(parameters) == 2, f"Expected two inputs - got [{parameters}]"
         assert parameters[0]["name"] == "input1"
         assert parameters[1]["name"] == "queries"
 
@@ -206,6 +207,16 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         assert output["inherit_format"] is True
 
     @skip_without_tool("test_data_source")
+    def test_data_source_build_request(self):
+        with self.dataset_populator.test_history() as history_id:
+            build = self.dataset_populator.build_tool_state("test_data_source", history_id)
+            galaxy_url_param = build["inputs"][0]
+            assert galaxy_url_param["name"] == "GALAXY_URL"
+            galaxy_url = galaxy_url_param["value"]
+            assert galaxy_url.startswith("http")
+            assert galaxy_url.endswith("tool_runner?tool_id=ratmine")
+
+    @skip_without_tool("test_data_source")
     def test_data_source_ok_request(self):
         with self.dataset_populator.test_history() as history_id:
             payload = self.dataset_populator.run_tool_payload(
@@ -257,7 +268,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             payload = self.dataset_populator.run_tool_payload(
                 tool_id="test_data_source",
                 inputs={
-                    "URL": "file://%s" % os.path.join(os.getcwd(), "README.rst"),
+                    "URL": f"file://{os.path.join(os.getcwd(), 'README.rst')}",
                     "URL_method": "get",
                     "data_type": "bed",
                 },
@@ -279,7 +290,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         data = dict(io_details=True)
         if tool_version:
             data['tool_version'] = tool_version
-        tool_show_response = self._get("tools/%s" % tool_id, data=data)
+        tool_show_response = self._get(f"tools/{tool_id}", data=data)
         self._assert_status_code_is(tool_show_response, 200)
         tool_info = tool_show_response.json()
         self._assert_has_keys(tool_info, "inputs", "outputs", "panel_section_id")
@@ -287,17 +298,25 @@ class ToolsTestCase(ApiTestCase, TestsTools):
 
     @skip_without_tool("composite_output")
     def test_test_data_filepath_security(self):
-        test_data_response = self._get("tools/%s/test_data_path?filename=../CONTRIBUTORS.md" % "composite_output", admin=True)
+        test_data_response = self._get(f"tools/{'composite_output'}/test_data_path?filename=../CONTRIBUTORS.md", admin=True)
         assert test_data_response.status_code == 404, test_data_response.text
 
     @skip_without_tool("composite_output")
     def test_test_data_admin_security(self):
-        test_data_response = self._get("tools/%s/test_data_path?filename=../CONTRIBUTORS.md" % "composite_output")
+        test_data_response = self._get(f"tools/{'composite_output'}/test_data_path?filename=../CONTRIBUTORS.md")
         assert test_data_response.status_code == 403, test_data_response.text
+
+    @skip_without_tool("dbkey_filter_multi_input")
+    def test_data_table_requirement_annotated(self):
+        test_data_response = self._get(f"tools/{'dbkey_filter_multi_input'}/test_data")
+        assert test_data_response.status_code == 200
+        test_case = test_data_response.json()[0]
+        assert test_case['required_data_tables'][0] == 'test_fasta_indexes'
+        assert len(test_case['required_loc_files']) == 0
 
     @skip_without_tool("composite_output")
     def test_test_data_composite_output(self):
-        test_data_response = self._get("tools/%s/test_data" % "composite_output")
+        test_data_response = self._get(f"tools/{'composite_output'}/test_data")
         assert test_data_response.status_code == 200
         test_data = test_data_response.json()
         assert len(test_data) == 1
@@ -308,17 +327,19 @@ class ToolsTestCase(ApiTestCase, TestsTools):
 
     @skip_without_tool("collection_two_paired")
     def test_test_data_collection_two_paired(self):
-        test_data_response = self._get("tools/%s/test_data" % "collection_two_paired")
+        test_data_response = self._get(f"tools/{'collection_two_paired'}/test_data")
         assert test_data_response.status_code == 200
         test_data = test_data_response.json()
         assert len(test_data) == 2
         test_case = test_data[0]
+        assert len(test_case['required_data_tables']) == 0
+        assert len(test_case['required_loc_files']) == 0
         self._assert_has_keys(test_case, "inputs", "outputs", "output_collections", "required_files")
         assert len(test_case["inputs"]) == 3, test_case
 
     @skip_without_tool("collection_nested_test")
     def test_test_data_collection_nested(self):
-        test_data_response = self._get("tools/%s/test_data" % "collection_nested_test")
+        test_data_response = self._get(f"tools/{'collection_nested_test'}/test_data")
         assert test_data_response.status_code == 200
         test_data = test_data_response.json()
         assert len(test_data) == 2
@@ -326,30 +347,45 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         self._assert_has_keys(test_case, "inputs", "outputs", "output_collections", "required_files")
         assert len(test_case["inputs"]) == 1, test_case
 
+    @skip_without_tool("expression_null_handling_1")
+    def test_test_data_null_boolean_inputs(self):
+        test_data_response = self._get(f"tools/{'expression_null_handling_1'}/test_data")
+        assert test_data_response.status_code == 200
+        test_data = test_data_response.json()
+        assert len(test_data) == 3
+        test_case = test_data[2]
+        self._assert_has_keys(test_case, "inputs", "outputs", "output_collections", "required_files")
+        inputs = test_case["inputs"]
+        assert len(inputs) == 1, test_case
+        assert "bool_input" in inputs, inputs
+        assert inputs["bool_input"] is None, inputs
+
     @skip_without_tool("simple_constructs_y")
     def test_test_data_yaml_tools(self):
-        test_data_response = self._get("tools/%s/test_data" % "simple_constructs_y")
+        test_data_response = self._get(f"tools/{'simple_constructs_y'}/test_data")
         assert test_data_response.status_code == 200
         test_data = test_data_response.json()
         assert len(test_data) == 3
 
     @skip_without_tool("cat1")
     def test_test_data_download(self):
-        test_data_response = self._get("tools/%s/test_data_download?filename=1.bed" % "cat1")
+        test_data_response = self._get(f"tools/{'cat1'}/test_data_download?filename=1.bed")
         assert test_data_response.status_code == 200, test_data_response.text.startswith('chr')
 
     @skip_without_tool("composite_output")
     def test_test_data_downloads_security(self):
-        test_data_response = self._get("tools/%s/test_data_download?filename=../CONTRIBUTORS.md" % "composite_output")
+        test_data_response = self._get(f"tools/{'composite_output'}/test_data_download?filename=../CONTRIBUTORS.md")
         assert test_data_response.status_code == 404, test_data_response.text
 
     @skip_without_tool("composite_output")
     def test_test_data_download_composite(self):
-        test_data_response = self._get("tools/%s/test_data_download?filename=velveth_test1" % "composite_output")
+        test_data_response = self._get(f"tools/{'composite_output'}/test_data_download?filename=velveth_test1")
         assert test_data_response.status_code == 200
-        with tarfile.open(fileobj=BytesIO(test_data_response.content)) as tar_contents:
-            namelist = tar_contents.getnames()
-            assert len(namelist) == 5
+        with zipfile.ZipFile(BytesIO(test_data_response.content)) as contents:
+            namelist = contents.namelist()
+        assert len(namelist) == 6
+        expected_names = {'velveth_test1/Roadmaps', 'velveth_test1/output.html', 'velveth_test1/Sequences', 'velveth_test1/Log', 'velveth_test1/output/', 'velveth_test1/output/1'}
+        assert set(namelist) == expected_names
 
     def test_unzip_collection(self):
         with self.dataset_populator.test_history() as history_id:
@@ -376,11 +412,21 @@ class ToolsTestCase(ApiTestCase, TestsTools):
 
     def test_unzip_nested(self):
         with self.dataset_populator.test_history() as history_id:
-            hdca_list_id = self.__build_nested_list(history_id)
+            response = self.dataset_collection_populator.upload_collection(history_id, "list:paired", elements=[
+                {
+                    "name": "test0",
+                    "elements": [
+                        {"src": "pasted", "paste_content": "123\n", "name": "forward", "ext": "txt", "tags": ["#foo"]},
+                        {"src": "pasted", "paste_content": "456\n", "name": "reverse", "ext": "txt", "tags": ["#bar"]},
+                    ]
+                }
+            ])
+            self._assert_status_code_is(response, 200)
+            hdca_id = response.json()["outputs"][0]["id"]
             inputs = {
                 "input": {
                     'batch': True,
-                    'values': [{'src': 'hdca', 'map_over_type': 'paired', 'id': hdca_list_id}],
+                    'values': [{'src': 'hdca', 'map_over_type': 'paired', 'id': hdca_id}],
                 }
             }
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
@@ -553,6 +599,12 @@ class ToolsTestCase(ApiTestCase, TestsTools):
     def test_apply_rules_4(self):
         self._apply_rules_and_check(rules_test_data.EXAMPLE_4)
 
+    def test_apply_rules_5(self):
+        self._apply_rules_and_check(rules_test_data.EXAMPLE_5)
+
+    def test_apply_rules_6(self):
+        self._apply_rules_and_check(rules_test_data.EXAMPLE_6)
+
     @skip_without_tool("multi_select")
     def test_multi_select_as_list(self):
         with self.dataset_populator.test_history() as history_id:
@@ -639,7 +691,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         dataset_details = []
         for output in [outputs_one, outputs_two, outputs_three]:
             output_id = output['outputs'][0]['id']
-            dataset_details.append(self._get("datasets/%s" % output_id).json())
+            dataset_details.append(self._get(f"datasets/{output_id}").json())
         filenames = [dd['file_name'] for dd in dataset_details]
         assert len(filenames) == 3, filenames
         assert len(set(filenames)) <= 2, filenames
@@ -668,7 +720,21 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             self.assertEqual(len(outputs), 1)
             output1 = outputs[0]
             output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
-            self.assertEqual(output1_content.strip(), "Version " + version)
+            self.assertEqual(output1_content.strip(), f"Version {version}")
+
+    @skip_without_tool("multiple_versions")
+    @uses_test_history(require_new=False)
+    def test_test_by_versions(self, history_id):
+        test_data_response = self._get(f"tools/{'multiple_versions'}/test_data")
+        test_data_response.raise_for_status()
+        test_data_dicts = test_data_response.json()
+        assert len(test_data_dicts) == 1
+        assert test_data_dicts[0]["tool_version"] == "0.2"
+
+        test_data_response = self._get(f"tools/{'multiple_versions'}/test_data?tool_version=*")
+        test_data_response.raise_for_status()
+        test_data_dicts = test_data_response.json()
+        assert len(test_data_dicts) == 3
 
     @skip_without_tool("multiple_versions")
     @uses_test_history(require_new=False)
@@ -758,7 +824,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         private_element_id = first_element_dataset_id(private_output_response.json()["output_collections"][0])
 
         def _dataset_accessible(dataset_id):
-            contents_response = self._get("histories/{}/contents/{}".format(history_id, dataset_id)).json()
+            contents_response = self._get(f"histories/{history_id}/contents/{dataset_id}").json()
             return "name" in contents_response
 
         with self._different_user():
@@ -902,7 +968,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         self.assertEqual(output_collection["name"], "Table split on first column")
         self.dataset_populator.wait_for_job(create["jobs"][0]["id"], assert_ok=True)
 
-        get_collection_response = self._get("dataset_collections/%s" % output_collection["id"], data={"instance_type": "history"})
+        get_collection_response = self._get(f"dataset_collections/{output_collection['id']}", data={"instance_type": "history"})
         self._assert_status_code_is(get_collection_response, 200)
 
         output_collection = get_collection_response.json()
@@ -925,7 +991,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         }
         create = self._run("collection_creates_dynamic_nested", history_id, inputs, assert_ok=False, wait_for_job=True)
         self._assert_status_code_is(create, 200)
-        collection = self._get("dataset_collections/%s" % create.json()["output_collections"][0]["id"], data={"instance_type": "history"}).json()
+        collection = self._get(f"dataset_collections/{create.json()['output_collections'][0]['id']}", data={"instance_type": "history"}).json()
         assert collection['element_count'] == 3
         for nested_collection in collection['elements']:
             nested_collection = nested_collection['object']
@@ -1171,7 +1237,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         tool_test_dicts = [{
             "inputs": {
                 "input": ["simple_line.txt"],
-                "index": ["hg18"],
+                "index": ["hg18_value"],
             },
             "outputs": {},
             "required_files": [['simple_line.txt', {'value': 'simple_line.txt', 'dbkey': 'hg18'}]],
@@ -1189,7 +1255,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         tool_test_dicts = [{
             "inputs": {
                 "input": ["simple_line.txt"],
-                "index": ["hg18"],
+                "index": ["hg18_value"],
             },
             "outputs": {},
             "required_files": [['simple_line.txt', {'value': 'simple_line.txt', 'dbkey': 'hgnot18'}]],
@@ -1394,6 +1460,21 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         self.assertEqual(len(implicit_collections), 3)
         self._check_implicit_collection_populated(create)
 
+    @skip_without_tool("output_filter_with_input_optional")
+    @uses_test_history(require_new=False)
+    def test_map_over_with_output_filter_on_optional_input(self, history_id):
+        hdca_id = self.dataset_collection_populator.create_list_in_history(history_id, contents=["myinputs"]).json()["id"]
+        inputs = {
+            "input_1": {'batch': True, 'values': [{'src': 'hdca', 'id': hdca_id}]},
+        }
+        create = self._run('output_filter_with_input_optional', history_id, inputs).json()
+        jobs = create['jobs']
+        implicit_collections = create['implicit_collections']
+        self.assertEqual(len(jobs), 1)
+        self.dataset_populator.wait_for_job(jobs[0]["id"], assert_ok=True)
+        self.assertEqual(len(implicit_collections), 1)
+        self._check_implicit_collection_populated(create)
+
     @skip_without_tool("output_filter_with_input")
     @uses_test_history(require_new=False)
     def test_map_over_with_output_filter_one_filtered(self, history_id):
@@ -1446,7 +1527,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         self.assertEqual(implicit_collections[0]['collection_type'], 'list:list:paired')
         self.assertEqual(implicit_collections[0]['elements'][0]['object']['element_count'], None)
         self.dataset_populator.wait_for_job(create["jobs"][0]["id"], assert_ok=True)
-        hdca = self._get("histories/{}/contents/dataset_collections/{}".format(history_id, implicit_collections[0]['id'])).json()
+        hdca = self._get(f"histories/{history_id}/contents/dataset_collections/{implicit_collections[0]['id']}").json()
         self.assertEqual(hdca['elements'][0]['object']['elements'][0]['object']['elements'][0]['element_identifier'], 'forward')
 
     def _bed_list(self, history_id):
@@ -1503,7 +1584,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
     @uses_test_history(require_new=False)
     def test_list_selectable_in_multidata_input(self, history_id):
         self.dataset_collection_populator.create_list_in_history(history_id, contents=["123", "456"])
-        build = self._post("tools/identifier_multiple/build?history_id=%s" % history_id).json()
+        build = self.dataset_populator.build_tool_state("identifier_multiple", history_id)
         assert len(build['inputs'][0]['options']['hdca']) == 1
 
     @skip_without_tool("identifier_multiple")
@@ -1548,12 +1629,64 @@ class ToolsTestCase(ApiTestCase, TestsTools):
 
     @skip_without_tool("identifier_in_conditional")
     @uses_test_history(require_new=False)
+    def test_identifier_map_over_multiple_input_in_conditional_new_payload_form(self, history_id):
+        hdca_id = self._build_pair(history_id, ["123", "456"])
+        inputs = {
+            "outer_cond": {
+                'multi_input': True,
+                "input1": {
+                    'id': hdca_id, 'src': 'hdca'
+                },
+            },
+        }
+        create_response = self._run("identifier_in_conditional", history_id, inputs, input_format='21.01')
+        self._assert_status_code_is(create_response, 200)
+        create = create_response.json()
+        outputs = create['outputs']
+        jobs = create['jobs']
+        implicit_collections = create['implicit_collections']
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(len(outputs), 1)
+        self.assertEqual(len(implicit_collections), 0)
+        output1 = outputs[0]
+        output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
+        self.assertEqual(output1_content.strip(), "forward\nreverse")
+
+    @skip_without_tool("identifier_multiple_in_repeat")
+    @uses_test_history(require_new=False)
+    def test_identifier_multiple_reduce_in_repeat_new_payload_form(self, history_id):
+        hdca_id = self._build_pair(history_id, ["123", "456"])
+        inputs = {
+            "the_repeat": [
+                {
+                    "the_data": {
+                        "input1": {
+                            'src': 'hdca', 'id': hdca_id
+                        }
+                    }
+                }
+            ],
+        }
+        create_response = self._run("identifier_multiple_in_repeat", history_id, inputs, input_format='21.01')
+        self._assert_status_code_is(create_response, 200)
+        create = create_response.json()
+        outputs = create['outputs']
+        jobs = create['jobs']
+        implicit_collections = create['implicit_collections']
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(len(outputs), 1)
+        self.assertEqual(len(implicit_collections), 0)
+        output1 = outputs[0]
+        output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
+        self.assertEqual(output1_content.strip(), "forward\nreverse")
+
+    @skip_without_tool("identifier_in_conditional")
+    @uses_test_history(require_new=False)
     def test_identifier_map_over_input_in_conditional(self, history_id):
         hdca_id = self._build_pair(history_id, ["123", "456"])
         inputs = {
             "outer_cond|input1": {'batch': True, 'values': [{'src': 'hdca', 'id': hdca_id}]},
             "outer_cond|multi_input": False,
-
         }
         create_response = self._run("identifier_in_conditional", history_id, inputs)
         self._assert_status_code_is(create_response, 200)
@@ -2031,8 +2164,8 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             hdca1_id = self._build_pair(history_id, ["123\n", "456\n"])
             hdca2_id = self.dataset_collection_populator.create_list_in_history(history_id).json()["id"]
             inputs = {
-                "f1": "__collection_reduce__|%s" % hdca1_id,
-                "f2": "__collection_reduce__|%s" % hdca2_id,
+                "f1": f"__collection_reduce__|{hdca1_id}",
+                "f2": f"__collection_reduce__|{hdca2_id}",
             }
             self._check_simple_reduce_job(history_id, inputs)
 
@@ -2126,7 +2259,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         with self.dataset_populator.test_history() as history_id:
             hdca1_id = self._build_pair(history_id, ["123\n", "456\n"])
             inputs = {
-                "outer_repeat_0|f1": "__collection_reduce__|%s" % hdca1_id,
+                "outer_repeat_0|f1": f"__collection_reduce__|{hdca1_id}",
             }
             create = self._run("multi_data_repeat", history_id, inputs, assert_ok=True)
             outputs = create['outputs']

@@ -41,6 +41,7 @@ New Visualizations
    :alt: Chimera visualisation
 
 .. visualizations
+
 * Editor as visualization
   (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
   `Pull Request 9531`_
@@ -52,6 +53,7 @@ New Datatypes
 ===========================================================
 
 .. datatypes
+
 * new data types for OpenMS
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 8109`_
@@ -87,6 +89,7 @@ Builtin Tool Updates
 ===========================================================
 
 .. tools
+
 * Remove deprecated ``interpreter`` attribute from tools ``<command>``
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 9490`_

@@ -90,7 +90,7 @@ class ToolConfWatcher:
     def shutdown(self):
         if self._active:
             self._active = False
-            if self.thread.isAlive():
+            if self.thread.is_alive():
                 self.exit.set()
                 self.thread.join()
             self.thread = None

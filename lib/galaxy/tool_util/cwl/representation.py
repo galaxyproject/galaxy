@@ -1,15 +1,14 @@
 """ This module is responsible for converting between Galaxy's tool
 input description and the CWL description for a job json. """
 
-import collections
 import json
 import logging
 import os
-
+from enum import Enum
+from typing import Any, NamedTuple, Optional
 
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.util import safe_makedirs, string_as_bool
-from galaxy.util.bunch import Bunch
 from .util import set_basename_and_derived_properties
 
 
@@ -19,17 +18,18 @@ NOT_PRESENT = object()
 
 NO_GALAXY_INPUT = object()
 
-INPUT_TYPE = Bunch(
-    DATA="data",
-    INTEGER="integer",
-    FLOAT="float",
-    TEXT="text",
-    BOOLEAN="boolean",
-    SELECT="select",
-    FIELD="field",
-    CONDITIONAL="conditional",
-    DATA_COLLECTON="data_collection",
-)
+
+class INPUT_TYPE(str, Enum):
+    DATA = "data"
+    INTEGER = "integer"
+    FLOAT = "float"
+    TEXT = "text"
+    BOOLEAN = "boolean"
+    SELECT = "select"
+    FIELD = "field"
+    CONDITIONAL = "conditional"
+    DATA_COLLECTON = "data_collection"
+
 
 # There are two approaches to mapping CWL tool state to Galaxy tool state
 # one is to map CWL types to compound Galaxy tool parameters combinations
@@ -50,7 +50,18 @@ USE_FIELD_TYPES = True
 #     easier to manage in someways.
 USE_STEP_PARAMETERS = USE_FIELD_TYPES
 
-TypeRepresentation = collections.namedtuple("TypeRepresentation", ["name", "galaxy_param_type", "label", "collection_type"])
+
+class TypeRepresentation(NamedTuple):
+    name: str
+    galaxy_param_type: Any
+    label: str
+    collection_type: Optional[str]
+
+    @property
+    def uses_param(self):
+        return self.galaxy_param_type is not NO_GALAXY_INPUT
+
+
 TYPE_REPRESENTATIONS = [
     TypeRepresentation("null", NO_GALAXY_INPUT, "no input", None),
     TypeRepresentation("integer", INPUT_TYPE.INTEGER, "an integer", None),
@@ -67,7 +78,6 @@ TYPE_REPRESENTATIONS = [
     TypeRepresentation("field", INPUT_TYPE.FIELD, "arbitrary JSON structure", None),
 ]
 FIELD_TYPE_REPRESENTATION = TYPE_REPRESENTATIONS[-1]
-TypeRepresentation.uses_param = lambda self: self.galaxy_param_type is not NO_GALAXY_INPUT
 
 if not USE_FIELD_TYPES:
     CWL_TYPE_TO_REPRESENTATIONS = {
@@ -103,8 +113,8 @@ def type_representation_from_name(type_representation_name):
     for type_representation in TYPE_REPRESENTATIONS:
         if type_representation.name == type_representation_name:
             return type_representation
-
-    assert False
+    else:
+        raise ValueError(f"No type representation for {type_representation_name}")
 
 
 def type_descriptions_for_field_types(field_types):
@@ -116,9 +126,9 @@ def type_descriptions_for_field_types(field_types):
         try:
             type_representation_names_for_field_type = CWL_TYPE_TO_REPRESENTATIONS.get(field_type)
         except TypeError:
-            raise Exception("Failed to convert field_type %s" % field_type)
+            raise Exception(f"Failed to convert field_type {field_type}")
         if type_representation_names_for_field_type is None:
-            raise Exception("Failed to convert type %s" % field_type)
+            raise Exception(f"Failed to convert type {field_type}")
         type_representation_names.update(type_representation_names_for_field_type)
     type_representations = []
     for type_representation in TYPE_REPRESENTATIONS:
@@ -149,7 +159,7 @@ def dataset_wrapper_to_file_json(inputs_dir, dataset_wrapper):
         for secondary_file_name in os.listdir(secondary_files_path):
             secondary_file_path = os.path.join(secondary_files_path, secondary_file_name)
             target = os.path.join(inputs_dir, secondary_file_name)
-            log.info("linking [{}] to [{}]".format(secondary_file_path, target))
+            log.info(f"linking [{secondary_file_path}] to [{target}]")
             os.symlink(secondary_file_path, target)
             is_dir = os.path.isdir(os.path.realpath(secondary_file_path))
             secondary_files.append({"class": "File" if not is_dir else "Directory", "location": target})
@@ -199,7 +209,7 @@ def collection_wrapper_to_array(inputs_dir, wrapped_value):
 
 
 def collection_wrapper_to_record(inputs_dir, wrapped_value):
-    rval = collections.OrderedDict()
+    rval = {}
     for key, value in wrapped_value.items():
         rval[key] = dataset_wrapper_to_file_json(inputs_dir, value)
     return rval
@@ -284,7 +294,7 @@ def to_cwl_job(tool, param_dict, local_working_directory):
                 array_value.append(simple_value(only_input, instance[input_name[:-len("_repeat")]]))
             input_json[input_name[:-len("_repeat")]] = array_value
         elif input.type == "conditional":
-            assert input_name in param_dict, "No value for {} in {}".format(input_name, param_dict)
+            assert input_name in param_dict, f"No value for {input_name} in {param_dict}"
             current_case = param_dict[input_name]["_cwl__type_"]
             if str(current_case) != "null":  # str because it is a wrapped...
                 case_index = input.get_current_case(current_case)
@@ -306,7 +316,7 @@ def to_cwl_job(tool, param_dict, local_working_directory):
             type_description_name = type_descriptions[0].name
             input_json[input_name] = simple_value(input, param_dict[input_name], type_description_name)
 
-    log.debug("Galaxy Tool State is CWL State is %s" % input_json)
+    log.debug(f"Galaxy Tool State is CWL State is {input_json}")
     return input_json
 
 
@@ -332,8 +342,8 @@ def to_galaxy_parameters(tool, as_dict):
                 continue
 
             only_input = next(iter(input.inputs.values()))
-            for index, value in enumerate(as_dict_value):
-                key = "{}_repeat_0|{}".format(input_name, only_input.name)
+            for value in as_dict_value:
+                key = f"{input_name}_repeat_0|{only_input.name}"
                 galaxy_value = from_simple_value(only_input, value)
                 galaxy_request[key] = galaxy_value
         elif galaxy_input_type == "conditional":
@@ -374,20 +384,20 @@ def to_galaxy_parameters(tool, as_dict):
                         as_dict_value, type(as_dict_value), case_strings
                     )
                 )
-            galaxy_request["%s|_cwl__type_" % input_name] = type_representation_name
+            galaxy_request[f"{input_name}|_cwl__type_"] = type_representation_name
             if type_representation_name != "null":
                 current_case_index = input.get_current_case(type_representation_name)
                 current_case_inputs = input.cases[current_case_index].inputs
                 current_case_input = current_case_inputs["_cwl__value_"]
                 galaxy_value = from_simple_value(current_case_input, as_dict_value, type_representation_name)
-                galaxy_request["%s|_cwl__value_" % input_name] = galaxy_value
+                galaxy_request[f"{input_name}|_cwl__value_"] = galaxy_value
         elif as_dict_value is NOT_PRESENT:
             continue
         else:
             galaxy_value = from_simple_value(input, as_dict_value)
             galaxy_request[input_name] = galaxy_value
 
-    log.info("Converted galaxy_request is %s" % galaxy_request)
+    log.info(f"Converted galaxy_request is {galaxy_request}")
     return galaxy_request
 
 

@@ -1,5 +1,5 @@
 <template>
-    <div ref="form"></div>
+    <div ref="form" />
 </template>
 
 <script>

@@ -13,10 +13,11 @@ from webob.exc import (
 )
 
 from galaxy import (
-    managers,
     web
 )
+from galaxy.managers.histories import HistoryManager, HistorySerializer
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.structured_app import StructuredApp
 from galaxy.util import (
     FILENAME_VALID_CHARS,
     listify,
@@ -24,6 +25,7 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.webapps.base import controller
+from ..api import depends
 
 log = logging.getLogger(__name__)
 
@@ -33,11 +35,11 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
     """
     Controller class that maps to the url root of Galaxy (i.e. '/').
     """
+    history_manager: HistoryManager = depends(HistoryManager)
+    history_serializer: HistorySerializer = depends(HistorySerializer)
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
-        self.history_manager = managers.histories.HistoryManager(app)
-        self.history_serializer = managers.histories.HistorySerializer(app)
 
     @web.expose
     def default(self, trans, target1=None, target2=None, **kwd):
@@ -84,9 +86,9 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         """
         # directly redirect to oidc provider if 1) enable_oidc is True, 2)
         # there is only one oidc provider, 3) auth_conf.xml has no authenticators
-        if (trans.app.config.enable_oidc and
-                len(trans.app.config.oidc) == 1 and
-                len(trans.app.auth_manager.authenticators) == 0
+        if (trans.app.config.enable_oidc
+                and len(trans.app.config.oidc) == 1
+                and len(trans.app.auth_manager.authenticators) == 0
                 and is_logout_redirect is False):
             provider = next(iter(trans.app.config.oidc.keys()))
             success, message, redirect_uri = trans.app.authnz_manager.authenticate(provider, trans)
@@ -144,7 +146,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         elif tool.help:
             yield tool.help
         else:
-            yield "No additional help available for tool '%s'" % tool.name
+            yield f"No additional help available for tool '{tool.name}'"
         yield "</body></html>"
 
     # ---- Dataset display / editing ----------------------------------------
@@ -164,7 +166,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             try:
                 hid = int(hid)
             except ValueError:
-                return "hid '%s' is invalid" % str(hid)
+                return f"hid '{str(hid)}' is invalid"
             history = trans.get_history()
             for dataset in history.datasets:
                 if dataset.hid == hid:
@@ -178,20 +180,20 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             try:
                 data = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(id)
             except Exception:
-                return "Dataset id '%s' is invalid" % str(id)
+                return f"Dataset id '{str(id)}' is invalid"
         if data:
             current_user_roles = trans.get_current_user_roles()
             if trans.app.security_agent.can_access_dataset(current_user_roles, data.dataset):
                 trans.response.set_content_type(data.get_mime())
                 if tofile:
                     fStat = os.stat(data.file_name)
-                    trans.response.headers['Content-Length'] = int(fStat.st_size)
+                    trans.response.headers['Content-Length'] = str(fStat.st_size)
                     if toext[0:1] != ".":
-                        toext = "." + toext
+                        toext = f".{toext}"
                     fname = data.name
                     fname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in fname)[0:150]
-                    trans.response.headers["Content-Disposition"] = 'attachment; filename="GalaxyHistoryItem-{}-[{}]{}"'.format(data.hid, fname, toext)
-                trans.log_event("Display dataset id: %s" % str(id))
+                    trans.response.headers["Content-Disposition"] = f'attachment; filename="GalaxyHistoryItem-{data.hid}-[{fname}]{toext}"'
+                trans.log_event(f"Display dataset id: {str(id)}")
                 try:
                     return open(data.file_name, 'rb')
                 except Exception:
@@ -199,7 +201,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             else:
                 return "You are not allowed to access this dataset"
         else:
-            return "No dataset with id '%s'" % str(id)
+            return f"No dataset with id '{str(id)}'"
 
     @web.expose
     def display_as(self, trans, id=None, display_app=None, **kwd):
@@ -214,7 +216,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             current_user_roles = trans.get_current_user_roles()
             if authz_method == 'rbac' and trans.app.security_agent.can_access_dataset(current_user_roles, data):
                 trans.response.set_content_type(data.get_mime())
-                trans.log_event("Formatted dataset id {} for display at {}".format(str(id), display_app))
+                trans.log_event(f"Formatted dataset id {str(id)} for display at {display_app}")
                 return data.as_display_type(display_app, **kwd)
             elif authz_method == 'display_at' and trans.app.host_security_agent.allow_action(trans.request.remote_addr,
                                                                                              data.permitted_actions.DATASET_ACCESS,
@@ -244,7 +246,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             dataset.deleted = True
             dataset.clear_associated_files()
         trans.sa_session.flush()
-        trans.log_event("History id %s cleared" % (str(history.id)))
+        trans.log_event(f"History id {str(history.id)} cleared")
         trans.response.send_redirect(web.url_for("/index"))
 
     @web.expose
@@ -262,7 +264,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             if import_history.user_id == user.id:
                 return trans.show_error_message("You cannot import your own history.")
             new_history = import_history.copy(target_user=trans.user)
-            new_history.name = "imported: " + new_history.name
+            new_history.name = f"imported: {new_history.name}"
             new_history.user_id = user.id
             galaxy_session = trans.get_galaxy_session()
             try:
@@ -276,13 +278,13 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             trans.sa_session.flush()
             if not user_history.datasets:
                 trans.set_history(new_history)
-            trans.log_event("History imported, id: {}, name: '{}': ".format(str(new_history.id), new_history.name))
+            trans.log_event(f"History imported, id: {str(new_history.id)}, name: '{new_history.name}': ")
             return trans.show_ok_message("""
                 History "{}" has been imported. Click <a href="{}">here</a>
                 to begin.""".format(new_history.name, web.url_for('/')))
         elif not user_history.datasets or confirm:
             new_history = import_history.copy()
-            new_history.name = "imported: " + new_history.name
+            new_history.name = f"imported: {new_history.name}"
             new_history.user_id = None
             galaxy_session = trans.get_galaxy_session()
             try:
@@ -295,7 +297,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             trans.sa_session.add(new_history)
             trans.sa_session.flush()
             trans.set_history(new_history)
-            trans.log_event("History imported, id: {}, name: '{}': ".format(str(new_history.id), new_history.name))
+            trans.log_event(f"History imported, id: {str(new_history.id)}, name: '{new_history.name}': ")
             return trans.show_ok_message("""
                 History "{}" has been imported. Click <a href="{}">here</a>
                 to begin.""".format(new_history.name, web.url_for('/')))
@@ -310,7 +312,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         and refresh the history panel.
         """
         trans.new_history(name=name)
-        trans.log_event("Created new History, id: %s." % str(trans.history.id))
+        trans.log_event(f"Created new History, id: {str(trans.history.id)}.")
         return trans.show_message("New history created", refresh_frames=['history'])
 
     @web.expose
@@ -349,9 +351,9 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             data.set_peek()
             trans.sa_session.flush()
             trans.log_event("Added dataset %d to history %d" % (data.id, trans.history.id))
-            return trans.show_ok_message("Dataset " + str(data.hid) + " added to history " + str(history_id) + ".")
+            return trans.show_ok_message(f"Dataset {str(data.hid)} added to history {str(history_id)}.")
         except Exception as e:
-            msg = "Failed to add dataset to history: %s" % unicodify(e)
+            msg = f"Failed to add dataset to history: {unicodify(e)}"
             log.error(msg)
             trans.log_event(msg)
             return trans.show_error_message("Adding File to History has Failed")
@@ -383,7 +385,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
     def bucket_proxy(self, trans, bucket=None, **kwd):
         if bucket:
             trans.response.set_content_type('text/xml')
-            b_list_xml = requests.get('http://s3.amazonaws.com/%s/' % bucket)
+            b_list_xml = requests.get(f'http://s3.amazonaws.com/{bucket}/')
             return b_list_xml.text
         raise Exception("You must specify a bucket")
 
@@ -394,11 +396,11 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         """
         rval = ""
         for k in trans.request.headers:
-            rval += "{}: {} <br/>".format(k, trans.request.headers[k])
+            rval += f"{k}: {trans.request.headers[k]} <br/>"
         for k in kwd:
-            rval += "{}: {} <br/>".format(k, kwd[k])
+            rval += f"{k}: {kwd[k]} <br/>"
             if isinstance(kwd[k], cgi_FieldStorage):
-                rval += "-> %s" % kwd[k].file.read()
+                rval += f"-> {kwd[k].file.read()}"
         return rval
 
     @web.json

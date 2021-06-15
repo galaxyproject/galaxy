@@ -56,7 +56,7 @@ class CustomDatatypeLoader:
                 datatype_file_name = elem.get('name', None)
                 if datatype_file_name:
                     # Find the file in the installed repository.
-                    for root, dirs, files in os.walk(relative_install_dir):
+                    for root, _dirs, files in os.walk(relative_install_dir):
                         if root.find('.hg') < 0:
                             for name in files:
                                 if name == datatype_file_name:
@@ -113,7 +113,7 @@ class CustomDatatypeLoader:
                     converter_config = converter.get('file', None)
                     if converter_config:
                         converter_config_file_name = strip_path(converter_config)
-                        for root, dirs, files in os.walk(relative_install_dir):
+                        for root, _dirs, files in os.walk(relative_install_dir):
                             if root.find('.hg') < 0:
                                 for name in files:
                                     if name == converter_config_file_name:
@@ -130,7 +130,7 @@ class CustomDatatypeLoader:
                     display_config = display_app.get('file', None)
                     if display_config:
                         display_config_file_name = strip_path(display_config)
-                        for root, dirs, files in os.walk(relative_install_dir):
+                        for root, _dirs, files in os.walk(relative_install_dir):
                             if root.find('.hg') < 0:
                                 for name in files:
                                     if name == display_config_file_name:

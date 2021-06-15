@@ -117,7 +117,7 @@ export default {
             return [
                 {
                     text: "Data Managers",
-                    to: "/",
+                    to: { name: "DataManager" },
                 },
                 {
                     text: this.dataManager["name"] + " ( " + this.dataManager["description"] + " )",

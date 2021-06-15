@@ -1,10 +1,13 @@
-import collections
-import copy
 import json
 import logging
 import math
 import random
 import string
+from collections.abc import (
+    Iterable,
+    Mapping,
+    Sequence,
+)
 
 
 from ..util import unicodify
@@ -24,9 +27,9 @@ def swap_inf_nan(val):
     if isinstance(val, str):
         # basestring first, because it's a sequence and would otherwise get caught below.
         return val
-    elif isinstance(val, collections.Sequence):
+    elif isinstance(val, Sequence):
         return [swap_inf_nan(v) for v in val]
-    elif isinstance(val, collections.Mapping):
+    elif isinstance(val, Mapping):
         return {swap_inf_nan(k): swap_inf_nan(v) for (k, v) in val.items()}
     elif isinstance(val, float):
         if math.isnan(val):
@@ -49,7 +52,7 @@ def safe_loads(arg):
     """
     try:
         loaded = json.loads(arg)
-        if loaded is not None and not isinstance(loaded, collections.Iterable):
+        if loaded is not None and not isinstance(loaded, Iterable):
             loaded = arg
     except (TypeError, ValueError):
         loaded = arg
@@ -66,7 +69,7 @@ def safe_dumps(*args, **kwargs):
     try:
         dumped = json.dumps(*args, allow_nan=False, **kwargs)
     except ValueError:
-        obj = swap_inf_nan(copy.deepcopy(args[0]))
+        obj = swap_inf_nan(args[0])
         dumped = json.dumps(obj, allow_nan=False, **kwargs)
     if kwargs.get('escape_closing_tags', True):
         return dumped.replace('</', '<\\/')
@@ -99,7 +102,7 @@ def validate_jsonrpc_request(request, regular_methods, notification_methods):
         assert 'jsonrpc' in request, \
             'This server requires JSON-RPC 2.0 and no "jsonrpc" member was sent with the Request object as per the JSON-RPC 2.0 Specification.'
         assert request['jsonrpc'] == '2.0', \
-            'Requested JSON-RPC version "%s" != required version "2.0".' % request['jsonrpc']
+            f"Requested JSON-RPC version \"{request['jsonrpc']}\" != required version \"2.0\"."
         assert 'method' in request, 'No "method" member was sent with the Request object'
     except AssertionError as e:
         return False, request, jsonrpc_response(request=request,
@@ -112,10 +115,10 @@ def validate_jsonrpc_request(request, regular_methods, notification_methods):
         return False, request, jsonrpc_response(request=request,
                                                 error=dict(code=-32601,
                                                            message='Method not found',
-                                                           data='Valid methods are: %s' % ', '.join(regular_methods + notification_methods)))
+                                                           data=f"Valid methods are: {', '.join(regular_methods + notification_methods)}"))
     try:
         if request['method'] in regular_methods:
-            assert 'id' in request, 'No "id" member was sent with the Request object and the requested method "%s" is not a notification method' % request['method']
+            assert 'id' in request, f"No \"id\" member was sent with the Request object and the requested method \"{request['method']}\" is not a notification method"
     except AssertionError as e:
         return False, request, jsonrpc_response(request=request,
                                                 error=dict(code=-32600,
@@ -143,13 +146,13 @@ def validate_jsonrpc_response(response, id=None):
                 'The "message" member of the "error" object in the Response is missing.'
     except Exception:
         log.exception('Response was not valid JSON-RPC')
-        log.debug('Response was: %s' % response)
+        log.debug(f'Response was: {response}')
         return False, response
     if id is not None:
         try:
             assert 'id' in response and response['id'] == id
         except Exception:
-            log.error('The response id "{}" does not match the request id "{}"'.format(response['id'], id))
+            log.error(f"The response id \"{response['id']}\" does not match the request id \"{id}\"")
             return False, response
     return True, response
 

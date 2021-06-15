@@ -3,37 +3,8 @@ import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import Utils from "utils/utils";
-import Form from "mvc/form/form-view";
 import ToolFormBase from "mvc/tool/tool-form-base";
 import WorkflowIcons from "components/Workflow/icons";
-
-/** Default form wrapper for non-tool modules in the workflow editor. */
-export class DefaultForm {
-    constructor(options) {
-        const self = this;
-        const node = options.node;
-        this.workflow = options.workflow;
-        _addLabelAnnotation(this, node);
-        this.form = new Form({
-            ...node.config_form,
-            icon: WorkflowIcons[node.type],
-            cls: "ui-portlet-section",
-            onchange() {
-                axios
-                    .post(`${getAppRoot()}api/workflows/build_module`, {
-                        id: node.id,
-                        type: node.type,
-                        content_id: node.content_id,
-                        inputs: self.form.data.create(),
-                    })
-                    .then((response) => {
-                        const data = response.data;
-                        node.updateData(data);
-                    });
-            },
-        });
-    }
-}
 
 /** Tool form wrapper for the workflow editor. */
 export class ToolForm {
@@ -85,7 +56,7 @@ export class ToolForm {
         Utils.deepeach(inputs, (input) => {
             if (input.type) {
                 if (["data", "data_collection"].indexOf(input.type) != -1) {
-                    input.type = "hidden";
+                    input.hiddenInWorkflow = true;
                     input.info = `Data input '${input.name}' (${Utils.textify(input.extensions)})`;
                     input.value = { __class__: "RuntimeValue" };
                 } else if (!input.fixed) {
@@ -114,15 +85,20 @@ function _addLabelAnnotation(self, node) {
     const workflow = self.workflow;
     const inputs = node.config_form.inputs;
     inputs.unshift({
+        skipOnClone: true,
         type: "text",
         name: "__annotation",
-        label: "Annotation",
+        label: "Step Annotation",
         fixed: true,
         value: node.annotation,
         area: true,
+        onchange: function (new_annotation) {
+            node.setAnnotation(new_annotation);
+        },
         help: "Add an annotation or notes to this step. Annotations are available when a workflow is viewed.",
     });
     inputs.unshift({
+        skipOnClone: true,
         type: "text",
         name: "__label",
         label: "Label",
@@ -130,6 +106,7 @@ function _addLabelAnnotation(self, node) {
         help: _l("Add a step label."),
         fixed: true,
         onchange: function (new_label) {
+            node.setLabel(new_label);
             let duplicate = false;
             for (const i in workflow.nodes) {
                 const n = workflow.nodes[i];
@@ -138,13 +115,13 @@ function _addLabelAnnotation(self, node) {
                     break;
                 }
             }
+            self.form.data.create();
             const input_id = self.form.data.match("__label");
             const input_element = self.form.element_list[input_id];
             input_element.model.set(
                 "error_text",
                 duplicate && "Duplicate label. Please fix this before saving the workflow."
             );
-            self.form.trigger("change");
         },
     });
 }
@@ -231,6 +208,7 @@ function _makeSection(self, node, output) {
     const activeOutput = node.activeOutputs.get(output.name);
     const inputTitle = output.label || output.name;
     const inputConfig = {
+        skipOnClone: true,
         title: `Configure Output: '${inputTitle}'`,
         type: "section",
         flat: true,
@@ -243,7 +221,8 @@ function _makeSection(self, node, output) {
                 help: "This will provide a short name to describe the output - this must be unique across workflows.",
                 fixed: true,
                 onchange: (newLabel) => {
-                    const oldLabel = node.labelOutput(output, newLabel);
+                    self.form.data.create();
+                    const oldLabel = node.labelOutput(output.name, newLabel);
                     const input_id = self.form.data.match(`__label__${output.name}`);
                     const input_element = self.form.element_list[input_id];
                     if (oldLabel) {
@@ -274,7 +253,7 @@ function _makeSection(self, node, output) {
                 options: extensions,
                 help: "This action will change the datatype of the output to the indicated datatype.",
                 onchange: function (datatype) {
-                    node.changeOutputDatatype(output, datatype);
+                    node.changeOutputDatatype(output.name, datatype);
                 },
             },
             {
@@ -365,6 +344,7 @@ function _addSections(self, node) {
             payload: {
                 host: window.location.host,
             },
+            skipOnClone: true,
         });
         inputs.push({
             name: `pja__${outputFirst.name}__DeleteIntermediatesAction`,
@@ -372,8 +352,8 @@ function _addSections(self, node) {
             type: "boolean",
             value: String(Boolean(postJobActions[`DeleteIntermediatesAction${outputFirst.name}`])),
             ignore: "false",
-            help:
-                "Upon completion of this step, delete non-starred outputs from completed workflow steps if they are no longer required as inputs.",
+            help: "Upon completion of this step, delete non-starred outputs from completed workflow steps if they are no longer required as inputs.",
+            skipOnClone: true,
         });
         for (const output of node.outputs) {
             inputs.push(_makeSection(self, node, output));

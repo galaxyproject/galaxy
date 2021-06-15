@@ -47,8 +47,8 @@ def upgrade(migrate_engine):
         viz_rev_id = viz['viz_rev_id']
         if viz[Visualization_revision_table.c.config]:
             dbkey = loads(viz[Visualization_revision_table.c.config]).get('dbkey', "").replace("'", "\\'")
-            migrate_engine.execute("UPDATE visualization_revision SET dbkey='{}' WHERE id={}".format(dbkey, viz_rev_id))
-            migrate_engine.execute("UPDATE visualization SET dbkey='{}' WHERE id={}".format(dbkey, viz_id))
+            migrate_engine.execute(f"UPDATE visualization_revision SET dbkey='{dbkey}' WHERE id={viz_rev_id}")
+            migrate_engine.execute(f"UPDATE visualization SET dbkey='{dbkey}' WHERE id={viz_id}")
 
 
 def downgrade(migrate_engine):

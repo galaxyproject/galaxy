@@ -1,12 +1,10 @@
 #!/usr/bin/env python
-from __future__ import print_function
 
 import logging
 import optparse
 import os
 import sys
-
-from six.moves.configparser import ConfigParser
+from configparser import ConfigParser
 
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, 'lib'))
 sys.path.insert(1, os.path.join(os.path.dirname(__file__)))
@@ -24,7 +22,7 @@ from bootstrap_util import admin_user_info  # noqa: I100,I201
 log = logging.getLogger(__name__)
 
 
-class BootstrapApplication(object):
+class BootstrapApplication:
     """
     Creates a basic Tool Shed application in order to discover the database connection and use SQL
     to create a user and API key.

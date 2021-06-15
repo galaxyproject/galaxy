@@ -1,35 +1,33 @@
 import ipaddress
 import logging
 import os
-import shlex
 import socket
 import tempfile
-from collections import OrderedDict
+from io import StringIO
 from json import dump, dumps
 from urllib.parse import urlparse
 
-from six import StringIO
-from sqlalchemy.orm import eagerload_all
+from sqlalchemy.orm import joinedload
 from webob.compat import cgi_FieldStorage
 
 from galaxy import datatypes, util
 from galaxy.exceptions import (
     ConfigDoesNotAllowException,
-    ObjectInvalid,
     RequestParameterInvalidException,
 )
 from galaxy.model import tags
 from galaxy.util import (
-    commands,
+    is_url,
     unicodify
 )
+from galaxy.util.path import external_chown
 
 log = logging.getLogger(__name__)
 
 
 def validate_datatype_extension(datatypes_registry, ext):
     if ext and ext not in ('auto', 'data') and not datatypes_registry.get_datatype_by_extension(ext):
-        raise RequestParameterInvalidException("Requested extension '%s' unknown, cannot upload dataset." % ext)
+        raise RequestParameterInvalidException(f"Requested extension '{ext}' unknown, cannot upload dataset.")
 
 
 def validate_url(url, ip_allowlist):
@@ -190,7 +188,7 @@ def __new_history_upload(trans, uploaded_dataset, history=None, state=None):
     else:
         hda.state = hda.states.QUEUED
     trans.sa_session.flush()
-    history.add_dataset(hda, genome_build=uploaded_dataset.dbkey)
+    history.add_dataset(hda, genome_build=uploaded_dataset.dbkey, quota=False)
     permissions = trans.app.security_agent.history_get_default_permissions(history)
     trans.app.security_agent.set_all_dataset_permissions(hda.dataset, permissions)
     trans.sa_session.flush()
@@ -320,22 +318,6 @@ def create_paramfile(trans, uploaded_datasets):
     """
     Create the upload tool's JSON "param" file.
     """
-    def _chown(path):
-        try:
-            # get username from email/username
-            pwent = trans.user.system_user_pwent(trans.app.config.real_system_username)
-            cmd = shlex.split(trans.app.config.external_chown_script)
-            cmd.extend([path, pwent[0], str(pwent[3])])
-        except Exception as e:
-            log.debug('Failed to construct command to change ownership %s' %
-                      unicodify(e))
-        log.debug('Changing ownership of {} with: {}'.format(path, ' '.join(cmd)))
-        try:
-            commands.execute(cmd)
-        except commands.CommandLineException as e:
-            log.warning('Changing ownership of uploaded file %s failed: %s',
-                        path, unicodify(e))
-
     tool_params = []
     json_file_path = None
     for uploaded_dataset in uploaded_datasets:
@@ -397,8 +379,10 @@ def create_paramfile(trans, uploaded_datasets):
             # TODO: This will have to change when we start bundling inputs.
             # Also, in_place above causes the file to be left behind since the
             # user cannot remove it unless the parent directory is writable.
-            if link_data_only == 'copy_files' and trans.app.config.external_chown_script:
-                _chown(uploaded_dataset.path)
+            if link_data_only == 'copy_files' and trans.user and trans.app.config.external_chown_script and not is_url(uploaded_dataset.path):
+                external_chown(uploaded_dataset.path,
+                               trans.user.system_user_pwent(trans.app.config.real_system_username),
+                               trans.app.config.external_chown_script, description="uploaded file")
         tool_params.append(params)
     with tempfile.NamedTemporaryFile(mode="w", prefix='upload_params_', delete=False) as fh:
         json_file_path = fh.name
@@ -447,14 +431,6 @@ def create_job(trans, params, tool, json_file_path, outputs, folder=None, histor
                 job.add_output_library_dataset(output_name, dataset)
             else:
                 job.add_output_dataset(output_name, dataset)
-            # Create an empty file immediately
-            if not dataset.dataset.external_filename and trans.app.config.legacy_eager_objectstore_initialization:
-                dataset.dataset.object_store_id = object_store_id
-                try:
-                    trans.app.object_store.create(dataset.dataset)
-                except ObjectInvalid:
-                    raise Exception('Unable to create output dataset: object store is full')
-                object_store_id = dataset.dataset.object_store_id
 
         trans.sa_session.add(output_object)
 
@@ -467,8 +443,8 @@ def create_job(trans, params, tool, json_file_path, outputs, folder=None, histor
 
     # Queue the job for execution
     trans.app.job_manager.enqueue(job, tool=tool)
-    trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
-    output = OrderedDict()
+    trans.log_event(f"Added job to the job queue, id: {str(job.id)}", tool_id=job.tool_id)
+    output = {}
     for i, v in enumerate(outputs):
         if not hasattr(output_object, "collection_type"):
             output['output%i' % i] = v
@@ -481,6 +457,6 @@ def active_folders(trans, folder):
     # performance of the mapper.  This query also eagerloads the permissions on each folder.
     return trans.sa_session.query(trans.app.model.LibraryFolder) \
                            .filter_by(parent=folder, deleted=False) \
-                           .options(eagerload_all("actions")) \
+                           .options(joinedload("actions")) \
                            .order_by(trans.app.model.LibraryFolder.table.c.name) \
                            .all()

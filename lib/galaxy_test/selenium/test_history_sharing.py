@@ -13,14 +13,14 @@ class HistorySharingTestCase(SeleniumTestCase):
     def test_sharing_valid(self):
         user1_email, user2_email, history_id = self.setup_two_users_with_one_shared_history()
         self.submit_login(user2_email, retries=VALID_LOGIN_RETRIES)
-        response = self.api_get("histories/%s" % history_id, raw=True)
+        response = self.api_get(f"histories/{history_id}", raw=True)
         assert response.status_code == 200, response.text
 
     @selenium_test
     def test_sharing_valid_by_id(self):
         user1_email, user2_email, history_id = self.setup_two_users_with_one_shared_history(share_by_id=True)
         self.submit_login(user2_email, retries=VALID_LOGIN_RETRIES)
-        response = self.api_get("histories/%s" % history_id, raw=True)
+        response = self.api_get(f"histories/{history_id}", raw=True)
         assert response.status_code == 200, response.text
 
     @selenium_test
@@ -37,7 +37,7 @@ class HistorySharingTestCase(SeleniumTestCase):
 
         self.logout_if_needed()
         self.submit_login(user2_email, retries=VALID_LOGIN_RETRIES)
-        response = self.api_get("histories/%s" % history_id, raw=True)
+        response = self.api_get(f"histories/{history_id}", raw=True)
         assert response.status_code == 403
 
     @selenium_test
@@ -51,7 +51,7 @@ class HistorySharingTestCase(SeleniumTestCase):
         self.logout_if_needed()
 
         self.register(user2_email)
-        response = self.api_get("histories/%s" % history_id, raw=True)
+        response = self.api_get(f"histories/{history_id}", raw=True)
         assert response.status_code == 403
 
     @selenium_test
@@ -120,5 +120,5 @@ class HistorySharingTestCase(SeleniumTestCase):
         if assert_valid:
             self.assert_no_error_message()
 
-            xpath = '//td[contains(text(), "%s")]' % user_email
+            xpath = f'//td[contains(text(), "{user_email}")]'
             self.wait_for_xpath_visible(xpath)

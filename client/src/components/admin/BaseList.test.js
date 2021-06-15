@@ -1,6 +1,8 @@
 import { mount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 import BaseList from "./BaseList";
-import Vue from "vue";
+
+const localVue = getLocalVue();
 
 describe("Categories", () => {
     const getter = async () => {
@@ -31,8 +33,9 @@ describe("Categories", () => {
                 getter: getter,
                 setter: setter,
             },
+            localVue,
         });
-        await Vue.nextTick();
+        await wrapper.vm.$nextTick();
         expect(wrapper.find(".card-header").text()).toContain("There are 2");
         const th = wrapper.findAll("th");
         expect(th.length).toBe(3);

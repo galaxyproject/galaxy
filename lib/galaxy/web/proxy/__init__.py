@@ -59,7 +59,7 @@ class ProxyManager:
     def setup_proxy(self, trans, host=DEFAULT_PROXY_TO_HOST, port=None, proxy_prefix="", route_name="", container_ids=None, container_interface=None):
         if self.manage_dynamic_proxy:
             log.info("Attempting to start dynamic proxy process")
-            log.debug("Cmd: " + ' '.join(self.lazy_process.command_and_args))
+            log.debug(f"Cmd: {' '.join(self.lazy_process.command_and_args)}")
             self.lazy_process.start_process()
 
         if container_ids is None:
@@ -70,7 +70,7 @@ class ProxyManager:
         self.proxy_ipc.handle_requests(
             authentication,
             proxy_requests,
-            '/%s' % route_name,
+            f'/{route_name}',
             container_ids,
             container_interface,
         )
@@ -83,7 +83,7 @@ class ProxyManager:
         if not self.dynamic_proxy_external_proxy:
             proxy_url = '%s://%s:%d' % (scheme, host, self.dynamic_proxy_bind_port)
         else:
-            proxy_url = '{}://{}{}'.format(scheme, host, proxy_prefix)
+            proxy_url = f'{scheme}://{host}{proxy_prefix}'
         return {
             'proxy_url': proxy_url,
             'proxied_port': proxy_requests.port,
@@ -94,7 +94,7 @@ class ProxyManager:
         authentication = AuthenticationToken(trans)
         for k in kwargs.keys():
             if k not in self.valid_update_keys:
-                raise Exception("Invalid proxy request update key: %s" % k)
+                raise Exception(f"Invalid proxy request update key: {k}")
         return self.proxy_ipc.update_requests(authentication, **kwargs)
 
     def query_proxy(self, trans):
@@ -328,14 +328,14 @@ class RestGolangProxyIpc:
 
     def __init__(self, config):
         self.config = config
-        self.api_url = 'http://127.0.0.1:{}/api?api_key={}'.format(self.config.dynamic_proxy_bind_port, self.config.dynamic_proxy_golang_api_key)
+        self.api_url = f'http://127.0.0.1:{self.config.dynamic_proxy_bind_port}/api?api_key={self.config.dynamic_proxy_golang_api_key}'
 
     def handle_requests(self, authentication, proxy_requests, route_name, container_ids, container_interface, sleep=1):
         """Make a POST request to the GO proxy to register a route
         """
         values = {
             'FrontendPath': route_name,
-            'BackendAddr': "{}:{}".format(proxy_requests.host, proxy_requests.port),
+            'BackendAddr': f"{proxy_requests.host}:{proxy_requests.port}",
             'AuthorizedCookie': authentication.cookie_value,
             'ContainerIds': container_ids,
         }
@@ -347,7 +347,7 @@ class RestGolangProxyIpc:
         except requests.exceptions.ConnectionError as err:
             log.exception(err)
             if sleep > 5:
-                excp = "Could not contact proxy after %s seconds" % sum(range(sleep + 1))
+                excp = f"Could not contact proxy after {sum(range(sleep + 1))} seconds"
                 raise Exception(excp)
             time.sleep(sleep)
             self.handle_requests(authentication, proxy_requests, route_name, container_ids, container_interface, sleep=sleep + 1)

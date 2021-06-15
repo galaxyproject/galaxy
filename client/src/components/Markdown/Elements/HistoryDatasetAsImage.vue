@@ -1,14 +1,21 @@
 <template>
-    <div class="w-50 p-2 float-left">
-        <b-card nobody body-class="p-1">
-            <b-img :src="imageUrl" fluid />
-        </b-card>
+    <div>
+        <DatasetAsImage :path="args.path" :history_dataset_id="args.history_dataset_id" />
     </div>
 </template>
 
 <script>
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
 import { getAppRoot } from "onload/loadConfig";
+import DatasetAsImage from "components/Dataset/DatasetAsImage/DatasetAsImage";
+
+Vue.use(BootstrapVue);
+
 export default {
+    components: {
+        DatasetAsImage,
+    },
     props: {
         args: {
             type: Object,

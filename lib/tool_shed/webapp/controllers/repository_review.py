@@ -1,5 +1,4 @@
 import logging
-from collections import OrderedDict
 
 from sqlalchemy import (
     and_,
@@ -49,12 +48,12 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
         encoded_review_id = kwd['id']
         review = review_util.get_review(trans.app, encoded_review_id)
         if kwd.get('approve_repository_review_button', False):
-            approved_select_field_name = '{}{}approved'.format(encoded_review_id, STRSEP)
+            approved_select_field_name = f'{encoded_review_id}{STRSEP}approved'
             approved_select_field_value = str(kwd[approved_select_field_name])
             review.approved = approved_select_field_value
             trans.sa_session.add(review)
             trans.sa_session.flush()
-            message = 'Approved value <b>%s</b> saved for this revision.' % escape(approved_select_field_value)
+            message = f'Approved value <b>{escape(approved_select_field_value)}</b> saved for this revision.'
         repository_id = trans.security.encode_id(review.repository_id)
         changeset_revision = review.changeset_revision
         return trans.response.send_redirect(web.url_for(controller='repository_review',
@@ -124,7 +123,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                 component = trans.app.model.Component(name=name, description=description)
                 trans.sa_session.add(component)
                 trans.sa_session.flush()
-                message = "Component '%s' has been created" % escape(component.name)
+                message = f"Component '{escape(component.name)}' has been created"
                 status = 'done'
                 trans.response.send_redirect(web.url_for(controller='repository_review',
                                                          action='manage_components',
@@ -154,7 +153,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                                                                                       repository_id=repository_id,
                                                                                       changeset_revision=changeset_revision,
                                                                                       user_id=trans.security.encode_id(trans.user.id)):
-                    message = "You have already created a review for revision <b>{}</b> of repository <b>{}</b>.".format(changeset_revision, escape(repository.name))
+                    message = f"You have already created a review for revision <b>{changeset_revision}</b> of repository <b>{escape(repository.name)}</b>."
                     status = "error"
                 else:
                     # See if there are any reviews for previous changeset revisions that the user can copy.
@@ -221,7 +220,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                 component.description = new_description
                 trans.sa_session.add(component)
                 trans.sa_session.flush()
-                message = "The information has been saved for the component named <b>%s</b>" % escape(component.name)
+                message = f"The information has been saved for the component named <b>{escape(component.name)}</b>"
                 status = 'done'
                 return trans.response.send_redirect(web.url_for(controller='repository_review',
                                                                 action='manage_components',
@@ -240,7 +239,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
         status = kwd.get('status', 'done')
         review_id = kwd.get('id', None)
         review = review_util.get_review(trans.app, review_id)
-        components_dict = OrderedDict()
+        components_dict = {}
         for component in review_util.get_components(trans.app):
             components_dict[component.name] = dict(component=component, component_review=None)
         repository = review.repository
@@ -254,7 +253,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                     components_dict[component_name] = component_review_dict
         # Handle a Save button click.
         save_button_clicked = False
-        save_buttons = ['{}{}review_button'.format(comp_name, STRSEP) for comp_name in components_dict.keys()]
+        save_buttons = [f'{comp_name}{STRSEP}review_button' for comp_name in components_dict.keys()]
         save_buttons.append('revision_approved_button')
         for save_button in save_buttons:
             if save_button in kwd:
@@ -280,8 +279,8 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                 rating = 0
                 private = False
                 for k, v in kwd.items():
-                    if k.startswith('{}{}'.format(component_name, STRSEP)):
-                        component_review_attr = k.replace('{}{}'.format(component_name, STRSEP), '')
+                    if k.startswith(f'{component_name}{STRSEP}'):
+                        component_review_attr = k.replace(f'{component_name}{STRSEP}', '')
                         if component_review_attr == 'component_id':
                             component_id = str(v)
                         elif component_review_attr == 'comment':
@@ -340,9 +339,9 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                         component_review_dict['component_review'] = component_review
                         components_dict[component_name] = component_review_dict
             if revision_approved_setting_changed:
-                message += 'Approved value <b>%s</b> saved for this revision.<br/>' % review.approved
+                message += f'Approved value <b>{review.approved}</b> saved for this revision.<br/>'
             if saved_component_names:
-                message += 'Reviews were saved for components: %s' % ', '.join(saved_component_names)
+                message += f"Reviews were saved for components: {', '.join(saved_component_names)}"
             if not revision_approved_setting_changed and not saved_component_names:
                 message += 'No changes were made to this review, so nothing was saved.'
         if review and review.approved:
@@ -389,6 +388,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
     def manage_repositories_ready_for_review(self, trans, **kwd):
         """
         A repository is ready to be reviewed if one of the following conditions is met:
+
         1) It contains no tools
         2) It contains tools the tools_functionally_correct flag is set to True.  This implies that the repository metadata revision was installed and tested
            by the Tool Shed's install and test framework.
@@ -486,7 +486,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
             repo = repository.hg_repo
             metadata_revision_hashes = [metadata_revision.changeset_revision for metadata_revision in repository.metadata_revisions]
             reviewed_revision_hashes = [review.changeset_revision for review in repository.reviews]
-            reviews_dict = OrderedDict()
+            reviews_dict = {}
             for changeset in hg_util.get_reversed_changelog_changesets(repo):
                 changeset_revision = str(repo[changeset])
                 if changeset_revision in metadata_revision_hashes or changeset_revision in reviewed_revision_hashes:
@@ -567,7 +567,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                                                                 **kwd))
         # The user may not be the current user.  The value of the received id is the encoded user id.
         user = suc.get_user(trans.app, kwd['id'])
-        self.repository_reviews_by_user_grid.title = "All repository revision reviews for user '%s'" % user.username
+        self.repository_reviews_by_user_grid.title = f"All repository revision reviews for user '{user.username}'"
         return self.repository_reviews_by_user_grid(trans, **kwd)
 
     @web.expose

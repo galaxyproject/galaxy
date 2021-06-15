@@ -45,7 +45,7 @@ class ToolValidator(GalaxyToolValidator):
     def concat_messages(self, msg1, msg2):
         if msg1:
             if msg2:
-                message = '{}  {}'.format(msg1, msg2)
+                message = f'{msg1}  {msg2}'
             else:
                 message = msg1
         elif msg2:
@@ -60,7 +60,7 @@ class ToolValidator(GalaxyToolValidator):
         directory to which dest_path refers.
         """
         sample_files = []
-        for root, dirs, files in os.walk(repo_files_dir):
+        for root, _dirs, files in os.walk(repo_files_dir):
             if root.find('.hg') < 0:
                 for name in files:
                     if name.endswith('.sample'):

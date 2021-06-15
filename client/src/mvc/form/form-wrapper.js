@@ -35,6 +35,16 @@ var View = Backbone.View.extend({
                     errors: options.errors,
                     inputs: options.inputs,
                     buttons: {
+                        cancel:
+                            options.cancel_redirect &&
+                            new Ui.Button({
+                                tooltip: options.cancel_tooltip,
+                                title: options.cancel_title || "Cancel",
+                                icon: options.cancel_icon || "fa-times",
+                                onclick: function () {
+                                    window.location = `${getAppRoot()}${options.cancel_redirect}`;
+                                },
+                            }),
                         submit: new Ui.Button({
                             tooltip: options.submit_tooltip,
                             title: options.submit_title || "Save",
@@ -79,7 +89,7 @@ var View = Backbone.View.extend({
                     };
                 }
                 if (self.redirect) {
-                    window.location = `${getAppRoot() + self.redirect}?${$.param(params)}`;
+                    window.location = `${getAppRoot()}${self.redirect}?${$.param(params)}`;
                 } else {
                     form.data.matchModel(response, (input, input_id) => {
                         form.field_list[input_id].value(input.value);

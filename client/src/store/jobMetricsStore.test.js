@@ -11,7 +11,7 @@ describe("store/jobMetricsStore.js", () => {
 
     test("should simply return fetched metrics list for job ID", () => {
         const state = {
-            jobMetricsByJobId: { "123": [{ plugin: "core", value: 123 }] },
+            jobMetricsByJobId: { 123: [{ plugin: "core", value: 123 }] },
         };
         const metrics = jobMetricsStore.getters.getJobMetricsByJobId(state)("123");
         expect(metrics.length == 1).toBeTruthy();

@@ -1,34 +1,43 @@
 import Vuex from "vuex";
-import { mount, createLocalVue } from "@vue/test-utils";
-import { createStore } from "../../store";
+import { shallowMount, createLocalVue } from "@vue/test-utils";
+import createCache from "vuex-cache";
 import JobDestinationParams from "./JobDestinationParams";
 import jobDestinationResponse from "./testData/jobDestinationResponse";
 
 const JOB_ID = "foo_job_id";
 
-describe("JobDestinationParams/JobDestinationParams.vue", () => {
-    const localVue = createLocalVue();
-    localVue.use(Vuex);
+const localVue = createLocalVue();
+localVue.use(Vuex);
 
-    const responseKeys = Object.keys(jobDestinationResponse);
-
-    let testStore;
-    let wrapper;
-
-    beforeEach(async () => {
-        testStore = createStore();
-        const propsData = {
-            jobId: JOB_ID,
-        };
-        wrapper = mount(JobDestinationParams, {
-            store: testStore,
-            propsData,
-            localVue,
-            computed: {
-                jobDestinationParams() {
+const testStore = new Vuex.Store({
+    plugins: [createCache()],
+    modules: {
+        jobDestinationParametersStore: {
+            actions: {
+                fetchJobDestinationParams: jest.fn(),
+            },
+            getters: {
+                jobDestinationParams: (state) => (job_id) => {
                     return jobDestinationResponse;
                 },
             },
+        },
+    },
+});
+
+describe("JobDestinationParams/JobDestinationParams.vue", () => {
+    const responseKeys = Object.keys(jobDestinationResponse);
+
+    let wrapper;
+
+    beforeEach(async () => {
+        const propsData = {
+            jobId: JOB_ID,
+        };
+        wrapper = shallowMount(JobDestinationParams, {
+            store: testStore,
+            propsData,
+            localVue,
         });
         expect(responseKeys.length > 0).toBeTruthy();
     });

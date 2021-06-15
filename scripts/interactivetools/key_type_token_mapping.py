@@ -77,8 +77,8 @@ def key_type_token_mapper(key, key_type, token, route_extra, url):
     # print 'key %s key_type %s token %s route_extra %s url %s\n' % (key, key_type, token, route_extra, url)
     if key and key_type and token:
         # sqlite3.ProgrammingError: SQLite objects created in a thread can only be used in that same thread. The object was created in thread id x and this is thread id y.
-        # So try upto 2 times
-        for i in range(2):
+        # So try up to 2 times
+        for _ in range(2):
             # Order by rowid gives us the last row added
             try:
                 row = db_conn.execute("SELECT host, port FROM %s WHERE key=? AND key_type=? AND token=? ORDER BY rowid DESC LIMIT 1" % (DATABASE_TABLE_NAME), (key, key_type, token)).fetchone()

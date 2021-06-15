@@ -5,22 +5,22 @@ import string
 import tempfile
 import time
 from json import loads
+from urllib.parse import (
+    quote_plus,
+    urlencode,
+    urlparse,
+)
 
 import requests
 import twill.commands as tc
 from mercurial import commands, hg, ui
-from six.moves.urllib.parse import (
-    quote_plus,
-    urlencode,
-    urlparse
-)
 from twill.utils import ResultWrapper
 
 import galaxy.model.tool_shed_install as galaxy_model
 import galaxy.util
 from galaxy.security import idencoding
 from galaxy.util import smart_str, unicodify
-from galaxy_test.base.api_util import get_master_api_key
+from galaxy_test.base.api_util import get_admin_api_key
 from galaxy_test.driver.testcase import DrivenFunctionalTestCase
 from tool_shed.util import (
     hg_util,
@@ -50,10 +50,10 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         self.tool_shed_test_tmp_dir = os.environ.get('TOOL_SHED_TEST_TMP_DIR', None)
         self.host = os.environ.get('TOOL_SHED_TEST_HOST')
         self.port = os.environ.get('TOOL_SHED_TEST_PORT')
-        self.url = "http://{}:{}".format(self.host, self.port)
+        self.url = f"http://{self.host}:{self.port}"
         self.galaxy_host = os.environ.get('GALAXY_TEST_HOST')
         self.galaxy_port = os.environ.get('GALAXY_TEST_PORT')
-        self.galaxy_url = "http://{}:{}".format(self.galaxy_host, self.galaxy_port)
+        self.galaxy_url = f"http://{self.galaxy_host}:{self.galaxy_port}"
         self.shed_tool_data_table_conf = os.environ.get('TOOL_SHED_TEST_TOOL_DATA_TABLE_CONF')
         self.file_dir = os.environ.get('TOOL_SHED_TEST_FILE_DIR', None)
         self.tool_data_path = os.environ.get('GALAXY_TEST_TOOL_DATA_PATH')
@@ -64,7 +64,9 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
 
     """Class of FunctionalTestCase geared toward HTML interactions using the Twill library."""
 
-    def check_for_strings(self, strings_displayed=[], strings_not_displayed=[]):
+    def check_for_strings(self, strings_displayed=None, strings_not_displayed=None):
+        strings_displayed = strings_displayed or []
+        strings_not_displayed = strings_not_displayed or []
         if strings_displayed:
             for check_str in strings_displayed:
                 self.check_page_for_string(check_str)
@@ -86,7 +88,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         page = unicodify(self.last_page())
         if page.find(patt) == -1:
             fname = self.write_temp_file(page)
-            errmsg = "no match to '{}'\npage content written to '{}'\npage: [[{}]]".format(patt, fname, page)
+            errmsg = f"no match to '{patt}'\npage content written to '{fname}'\npage: [[{page}]]"
             raise AssertionError(errmsg)
 
     def check_string_not_in_page(self, patt):
@@ -94,7 +96,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         page = self.last_page()
         if page.find(patt) != -1:
             fname = self.write_temp_file(page)
-            errmsg = "string ({}) incorrectly displayed in page.\npage content written to '{}'".format(patt, fname)
+            errmsg = f"string ({patt}) incorrectly displayed in page.\npage content written to '{fname}'"
             raise AssertionError(errmsg)
 
     # Functions associated with user accounts
@@ -118,7 +120,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         except AssertionError:
             try:
                 # May have created the account in a previous test run...
-                self.check_page_for_string("User with email '%s' already exists." % email)
+                self.check_page_for_string(f"User with email '{email}' already exists.")
                 previously_created = True
             except AssertionError:
                 try:
@@ -158,7 +160,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
                 'use_panels': False
             }
             self.visit_url('/user/login', params=params)
-            self.submit_form('login', 'login_button', login=email, redirect=redirect, password=password)
+            self.submit_form(button='login_button', login=email, redirect=redirect, password=password)
 
     def logout(self):
         self.visit_url("/user/logout")
@@ -168,16 +170,16 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         """Shows form, helpful for debugging new tests"""
         return tc.browser.forms
 
-    def submit_form(self, form_no=0, button="runtool_btn", form=None, **kwd):
+    def submit_form(self, form_no=-1, button="runtool_btn", form=None, **kwd):
         """Populates and submits a form from the keyword arguments."""
         # An HTMLForm contains a sequence of Controls.  Supported control classes are:
         # TextControl, FileControl, ListControl, RadioControl, CheckboxControl, SelectControl,
         # SubmitControl, ImageControl
         if form is None:
-            for i, form in enumerate(self.showforms()):
-                if i == form_no:
-                    break
-        assert form, "No form to submit found"
+            try:
+                form = self.showforms()[form_no]
+            except IndexError:
+                raise ValueError("No form to submit found")
         controls = {c.name: c for c in form.inputs}
         form_name = form.get('name')
         for control_name, control_value in kwd.items():
@@ -195,20 +197,22 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
                 pass
         tc.submit(button)
 
-    def visit_url(self, url, params=None, doseq=False, allowed_codes=[200]):
+    def visit_url(self, url, params=None, doseq=False, allowed_codes=None):
+        if allowed_codes is None:
+            allowed_codes = [200]
         if params is None:
             params = dict()
         parsed_url = urlparse(url)
         if len(parsed_url.netloc) == 0:
-            url = 'http://{}:{}{}'.format(self.host, self.port, parsed_url.path)
+            url = f'http://{self.host}:{self.port}{parsed_url.path}'
         else:
-            url = '{}://{}{}'.format(parsed_url.scheme, parsed_url.netloc, parsed_url.path)
+            url = f'{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}'
         if parsed_url.query:
             for query_parameter in parsed_url.query.split('&'):
                 key, value = query_parameter.split('=')
                 params[key] = value
         if params:
-            url += '?%s' % urlencode(params, doseq=doseq)
+            url += f'?{urlencode(params, doseq=doseq)}'
         new_url = tc.go(url)
         return_code = tc.browser.code
         assert return_code in allowed_codes, 'Invalid HTTP return code %s, allowed codes: %s' % \
@@ -225,7 +229,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
             'operation': 'create'
         }
         self.visit_url('/repository_review/create_component', params=params)
-        self.submit_form(1, 'create_component_button', **kwd)
+        self.submit_form(button='create_component_button', **kwd)
 
     def assign_admin_role(self, repository, user):
         # As elsewhere, twill limits the possibility of submitting the form, this time due to not executing the javascript
@@ -314,7 +318,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
 
     def check_galaxy_repository_tool_panel_section(self, repository, expected_tool_panel_section):
         metadata = repository.metadata
-        assert 'tools' in metadata, 'Tools not found in repository metadata: %s' % metadata
+        assert 'tools' in metadata, f'Tools not found in repository metadata: {metadata}'
         # If integrated_tool_panel.xml is to be tested, this test method will need to be enhanced to handle tools
         # from the same repository in different tool panel sections. Getting the first tool guid is ok, because
         # currently all tools contained in a single repository will be loaded into the same tool panel section.
@@ -377,7 +381,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         repository_metadata = self.get_repository_metadata_by_changeset_revision(repository, changeset_revision)
         metadata = repository_metadata.metadata
         if 'tools' not in metadata:
-            raise AssertionError('No tools in {} revision {}.'.format(repository.name, changeset_revision))
+            raise AssertionError(f'No tools in {repository.name} revision {changeset_revision}.')
         for tool_dict in metadata['tools']:
             tool_id = tool_dict['id']
             tool_xml = tool_dict['tool_config']
@@ -397,7 +401,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         '''Load the invalid tool page for each invalid tool associated with this changeset revision and verify the received error messages.'''
         repository_metadata = self.get_repository_metadata_by_changeset_revision(repository, changeset_revision)
         metadata = repository_metadata.metadata
-        assert 'invalid_tools' in metadata, 'Metadata for changeset revision %s does not define invalid tools' % changeset_revision
+        assert 'invalid_tools' in metadata, f'Metadata for changeset revision {changeset_revision} does not define invalid tools'
         for tool_xml in metadata['invalid_tools']:
             self.load_invalid_tool_page(repository,
                                         tool_xml=tool_xml,
@@ -421,16 +425,16 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
             raise AssertionError(errmsg)
 
     def clone_repository(self, repository, destination_path):
-        url = '{}/repos/{}/{}'.format(self.url, repository.user.username, repository.name)
+        url = f'{self.url}/repos/{repository.user.username}/{repository.name}'
         success, message = hg_util.clone_repository(url, destination_path, self.get_repository_tip(repository))
         assert success is True, message
 
     def commit_and_push(self, repository, hgrepo, options, username, password):
-        url = 'http://{}:{}@{}:{}/repos/{}/{}'.format(username, password, self.host, self.port, repository.user.username, repository.name)
+        url = f'http://{username}:{password}@{self.host}:{self.port}/repos/{repository.user.username}/{repository.name}'
         commands.commit(ui.ui(), hgrepo, **options)
         #  Try pushing multiple times as it transiently fails on Jenkins.
         #  TODO: Figure out why that happens
-        for i in range(5):
+        for _ in range(5):
             try:
                 commands.push(ui.ui(), hgrepo, dest=url)
             except Exception as e:
@@ -447,13 +451,13 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
                 'operation': 'create'
             }
             self.visit_url('/admin/manage_categories', params=params)
-            self.submit_form(form_no=1, button="create_category_button", **kwd)
+            self.submit_form(button="create_category_button", **kwd)
             category = test_db_util.get_category_by_name(kwd['name'])
         return category
 
     def create_repository_dependency(self,
                                      repository=None,
-                                     repository_tuples=[],
+                                     repository_tuples=None,
                                      filepath=None,
                                      prior_installation_required=False,
                                      complex=False,
@@ -461,14 +465,15 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
                                      version=None,
                                      strings_displayed=None,
                                      strings_not_displayed=None):
+        repository_tuples = repository_tuples or []
         repository_names = []
         if complex:
             filename = 'tool_dependencies.xml'
             self.generate_complex_dependency_xml(filename=filename, filepath=filepath, repository_tuples=repository_tuples, package=package, version=version)
         else:
-            for toolshed_url, name, owner, changeset_revision in repository_tuples:
+            for _, name, _, _ in repository_tuples:
                 repository_names.append(name)
-            dependency_description = '{} depends on {}.'.format(repository.name, ', '.join(repository_names))
+            dependency_description = f"{repository.name} depends on {', '.join(repository_names)}."
             filename = 'repository_dependencies.xml'
             self.generate_simple_dependency_xml(repository_tuples=repository_tuples,
                                                 filename=filename,
@@ -481,7 +486,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
                          valid_tools_only=False,
                          uncompress_file=False,
                          remove_repo_files_not_in_tar=False,
-                         commit_message='Uploaded dependency on %s.' % ', '.join(repository_names),
+                         commit_message=f"Uploaded dependency on {', '.join(repository_names)}.",
                          strings_displayed=None,
                          strings_not_displayed=None)
 
@@ -524,12 +529,15 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
 
     def deactivate_repository(self, installed_repository, strings_displayed=None, strings_not_displayed=None):
         encoded_id = self.security.encode_id(installed_repository.id)
-        api_key = get_master_api_key()
-        response = requests.delete(self.galaxy_url + "/api/tool_shed_repositories/" + encoded_id, data={'remove_from_disk': False, 'key': api_key})
+        api_key = get_admin_api_key()
+        response = requests.delete(f"{self.galaxy_url}/api/tool_shed_repositories/{encoded_id}", data={'remove_from_disk': False, 'key': api_key})
         assert response.status_code != 403, response.content
 
-    def delete_files_from_repository(self, repository, filenames=[], strings_displayed=['were deleted from the repository'], strings_not_displayed=None):
+    def delete_files_from_repository(self, repository, filenames=None, strings_displayed=None, strings_not_displayed=None):
+        filenames = filenames or []
         files_to_delete = []
+        if strings_displayed is None:
+            strings_displayed = ['were deleted from the repository']
         basepath = self.get_repo_path(repository)
         repository_files = self.get_repository_file_list(repository=repository, base_path=basepath, current_path=None)
         # Verify that the files to delete actually exist in the repository.
@@ -564,7 +572,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
             if not isinstance(data_manager_names, list):
                 data_manager_names = [data_manager_names]
             for data_manager_name in data_manager_names:
-                assert data_manager_name in data_managers, "The requested Data Manager '%s' was not found in repository metadata." % data_manager_name
+                assert data_manager_name in data_managers, f"The requested Data Manager '{data_manager_name}' was not found in repository metadata."
         else:
             data_manager_name = list(data_managers.keys())
         for data_manager_name in data_manager_names:
@@ -598,7 +606,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def display_repository_clone_page(self, owner_name, repository_name, strings_displayed=None, strings_not_displayed=None):
-        url = '/repos/{}/{}'.format(owner_name, repository_name)
+        url = f'/repos/{owner_name}/{repository_name}'
         self.visit_url(url)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
@@ -611,7 +619,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         else:
             relative_path = basepath
         repository_file_list = self.get_repository_file_list(repository=repository, base_path=relative_path, current_path=None)
-        assert filename in repository_file_list, 'File {} not found in the repository under {}.'.format(filename, relative_path)
+        assert filename in repository_file_list, f'File {filename} not found in the repository under {relative_path}.'
         params = dict(file_path=os.path.join(relative_path, filename), repository_id=self.security.encode_id(repository.id))
         url = '/repository/get_file_contents'
         self.visit_url(url, params=params)
@@ -629,7 +637,9 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         self.visit_url('/repository_review/repository_reviews_by_user', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
-    def edit_repository_categories(self, repository, categories_to_add=[], categories_to_remove=[], restore_original=True):
+    def edit_repository_categories(self, repository, categories_to_add=None, categories_to_remove=None, restore_original=True):
+        categories_to_add = categories_to_add or []
+        categories_to_remove = categories_to_remove or []
         params = {
             'id': self.security.encode_id(repository.id)
         }
@@ -637,22 +647,22 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         strings_displayed = []
         strings_not_displayed = []
         for category in categories_to_add:
-            tc.fv("2", "category_id", '+%s' % category)
-            strings_displayed.append("selected>%s" % category)
+            tc.fv("2", "category_id", f'+{category}')
+            strings_displayed.append(f"selected>{category}")
         for category in categories_to_remove:
-            tc.fv("2", "category_id", '-%s' % category)
-            strings_not_displayed.append("selected>%s" % category)
+            tc.fv("2", "category_id", f'-{category}')
+            strings_not_displayed.append(f"selected>{category}")
         tc.submit("manage_categories_button")
         self.check_for_strings(strings_displayed, strings_not_displayed)
         if restore_original:
             strings_displayed = []
             strings_not_displayed = []
             for category in categories_to_remove:
-                tc.fv("2", "category_id", '+%s' % category)
-                strings_displayed.append("selected>%s" % category)
+                tc.fv("2", "category_id", f'+{category}')
+                strings_displayed.append(f"selected>{category}")
             for category in categories_to_add:
-                tc.fv("2", "category_id", '-%s' % category)
-                strings_not_displayed.append("selected>%s" % category)
+                tc.fv("2", "category_id", f'-{category}')
+                strings_not_displayed.append(f"selected>{category}")
             tc.submit("manage_categories_button")
             self.check_for_strings(strings_displayed, strings_not_displayed)
 
@@ -694,12 +704,12 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
 
     def expect_repo_created_strings(self, name):
         return [
-            'Repository <b>%s</b>' % name,
-            'Repository <b>%s</b> has been created' % name,
+            f'Repository <b>{name}</b>',
+            f'Repository <b>{name}</b> has been created',
         ]
 
     def fetch_repository_metadata(self, repository, strings_displayed=None, strings_not_displayed=None):
-        url = '/api/repositories/%s/metadata' % self.security.encode_id(repository.id)
+        url = f'/api/repositories/{self.security.encode_id(repository.id)}/metadata'
         self.visit_url(url)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
@@ -709,15 +719,15 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         for label, contents in review_contents_dict.items():
             if contents:
                 changed = True
-                kwd['%s__ESEP__comment' % label] = contents['comment']
-                kwd['%s__ESEP__rating' % label] = contents['rating']
+                kwd[f'{label}__ESEP__comment'] = contents['comment']
+                kwd[f'{label}__ESEP__rating'] = contents['rating']
                 if 'private' in contents:
-                    kwd['%s__ESEP__private' % label] = contents['private']
-                kwd['%s__ESEP__approved' % label] = contents['approved']
+                    kwd[f'{label}__ESEP__private'] = contents['private']
+                kwd[f'{label}__ESEP__approved'] = contents['approved']
             else:
-                kwd['%s__ESEP__approved' % label] = 'not_applicable'
+                kwd[f'{label}__ESEP__approved'] = 'not_applicable'
         self.check_for_strings(strings_displayed, strings_not_displayed)
-        self.submit_form(1, 'Workflows__ESEP__review_button', **kwd)
+        self.submit_form(button='Workflows__ESEP__review_button', **kwd)
         if changed:
             strings_displayed.append('Reviews were saved')
         self.check_for_strings(strings_displayed, strings_not_displayed)
@@ -787,7 +797,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
                                                                changeset_revision=changeset_revision,
                                                                prior_installation_required=prior_installation_value))
         if dependency_description:
-            description = ' description="%s"' % dependency_description
+            description = f' description="{dependency_description}"'
         else:
             description = dependency_description
         template_parser = string.Template(common.new_repository_dependencies_xml)
@@ -796,7 +806,8 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         full_path = os.path.join(filepath, filename)
         open(full_path, 'w').write(repository_dependency_xml)
 
-    def generate_temp_path(self, test_script_path, additional_paths=[]):
+    def generate_temp_path(self, test_script_path, additional_paths=None):
+        additional_paths = additional_paths or []
         temp_path = os.path.join(self.tool_shed_test_tmp_dir, test_script_path, os.sep.join(additional_paths))
         if not os.path.exists(temp_path):
             os.makedirs(temp_path)
@@ -837,7 +848,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
 
     def get_repositories_category_api(self, categories, strings_displayed=None, strings_not_displayed=None):
         for category in categories:
-            url = '/api/categories/%s/repositories' % self.security.encode_id(category.id)
+            url = f'/api/categories/{self.security.encode_id(category.id)}/repositories'
             self.visit_url(url)
             self.check_for_strings(strings_displayed, strings_not_displayed)
 
@@ -860,18 +871,18 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         repository = test_db_util.get_repository_by_name_and_owner(kwd['name'], owner)
         if repository is None:
             self.visit_url('/repository/create_repository')
-            self.submit_form(1, 'create_repository_button', **kwd)
+            self.submit_form(button='create_repository_button', **kwd)
             self.check_for_strings(strings_displayed, strings_not_displayed)
             repository = test_db_util.get_repository_by_name_and_owner(kwd['name'], owner)
         return repository
 
     def get_repo_path(self, repository):
         # An entry in the hgweb.config file looks something like: repos/test/mira_assembler = database/community_files/000/repo_123
-        lhs = "repos/{}/{}".format(repository.user.username, repository.name)
+        lhs = f"repos/{repository.user.username}/{repository.name}"
         try:
             return self.hgweb_config_manager.get_entry(lhs)
         except Exception:
-            raise Exception("Entry for repository {} missing in hgweb config file {}.".format(lhs, self.hgweb_config_manager.hgweb_config))
+            raise Exception(f"Entry for repository {lhs} missing in hgweb config file {self.hgweb_config_manager.hgweb_config}.")
 
     def get_repository_changelog_tuples(self, repository):
         repo = self.get_hg_repo(self.get_repo_path(repository))
@@ -954,7 +965,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
     def get_tool_panel_section_from_api(self, metadata):
         tool_metadata = metadata['tools']
         tool_guid = quote_plus(tool_metadata[0]['guid'], safe='')
-        api_url = '/api/tools/%s' % tool_guid
+        api_url = f'/api/tools/{tool_guid}'
         self.visit_galaxy_url(api_url)
         tool_dict = loads(self.last_page())
         tool_panel_section = tool_dict['panel_section_name']
@@ -963,7 +974,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
     def get_tool_panel_section_from_repository_metadata(self, metadata):
         tool_metadata = metadata['tools']
         tool_guid = tool_metadata[0]['guid']
-        assert 'tool_panel_section' in metadata, 'Tool panel section not found in metadata: %s' % metadata
+        assert 'tool_panel_section' in metadata, f'Tool panel section not found in metadata: {metadata}'
         tool_panel_section_metadata = metadata['tool_panel_section']
         # tool_section_dict = dict( tool_config=guids_and_configs[ guid ],
         #                           id=section_id,
@@ -991,20 +1002,21 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
                       role_members_edit_button='Save')
         url = '/admin/manage_users_and_groups_for_role'
         self.visit_url(url, params)
-        strings_displayed = ["Role '%s' has been updated" % role.name]
+        strings_displayed = [f"Role '{role.name}' has been updated"]
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def grant_write_access(self,
                            repository,
-                           usernames=[],
+                           usernames=None,
                            strings_displayed=None,
                            strings_not_displayed=None,
                            post_submit_strings_displayed=None,
                            post_submit_strings_not_displayed=None):
+        usernames = usernames or []
         self.display_manage_repository_page(repository)
         self.check_for_strings(strings_displayed, strings_not_displayed)
         for username in usernames:
-            tc.fv("user_access", "allow_push", '+%s' % username)
+            tc.fv("user_access", "allow_push", f'+{username}')
         tc.submit('user_access_button')
         self.check_for_strings(post_submit_strings_displayed, post_submit_strings_not_displayed)
 
@@ -1081,12 +1093,12 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
             )
             tc.browser.result = ResultWrapper(r)
         else:
-            assert len(submit_button) == 1, 'Expected to find a single submit button, found {} ({})'.format(len(submit_button), ','.join(submit_button))
+            assert len(submit_button) == 1, f"Expected to find a single submit button, found {len(submit_button)} ({','.join(submit_button)})"
             submit_button = submit_button[0]
             self.submit_form(form=form, button=submit_button, **kwds)
         self.check_for_strings(post_submit_strings_displayed, strings_not_displayed)
         repository_ids = self.initiate_installation_process(new_tool_panel_section_label=new_tool_panel_section_label)
-        log.debug('Waiting for the installation of repository IDs: %s' % str(repository_ids))
+        log.debug(f'Waiting for the installation of repository IDs: {str(repository_ids)}')
         self.wait_for_repository_installation(repository_ids)
 
     def load_citable_url(self,
@@ -1097,16 +1109,18 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
                          encoded_repository_id,
                          strings_displayed=None,
                          strings_not_displayed=None,
-                         strings_displayed_in_iframe=[],
-                         strings_not_displayed_in_iframe=[]):
-        url = '{}/view/{}'.format(self.url, username)
+                         strings_displayed_in_iframe=None,
+                         strings_not_displayed_in_iframe=None):
+        strings_displayed_in_iframe = strings_displayed_in_iframe or []
+        strings_not_displayed_in_iframe = strings_not_displayed_in_iframe or []
+        url = f'{self.url}/view/{username}'
         # If repository name is passed in, append that to the url.
         if repository_name:
-            url += '/%s' % repository_name
+            url += f'/{repository_name}'
         if changeset_revision:
             # Changeset revision should never be provided unless repository name also is.
             assert repository_name is not None, 'Changeset revision is present, but repository name is not - aborting.'
-            url += '/%s' % changeset_revision
+            url += f'/{changeset_revision}'
         self.visit_url(url)
         self.check_for_strings(strings_displayed, strings_not_displayed)
         # Now load the page that should be displayed inside the iframe and check for strings.
@@ -1244,18 +1258,18 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
 
     def reset_installed_repository_metadata(self, repository):
         encoded_id = self.security.encode_id(repository.id)
-        api_key = get_master_api_key()
-        response = requests.post(self.galaxy_url + "/api/tool_shed_repositories/reset_metadata_on_selected_installed_repositories", data={'repository_ids': [encoded_id], 'key': api_key})
+        api_key = get_admin_api_key()
+        response = requests.post(f"{self.galaxy_url}/api/tool_shed_repositories/reset_metadata_on_selected_installed_repositories", data={'repository_ids': [encoded_id], 'key': api_key})
         assert response.status_code != 403, response.content
 
     def reset_metadata_on_selected_repositories(self, repository_ids):
         self.visit_url('/admin/reset_metadata_on_selected_repositories_in_tool_shed')
         kwd = dict(repository_ids=repository_ids)
-        self.submit_form(form_no=1, button="reset_metadata_on_selected_repositories_button", **kwd)
+        self.submit_form(button="reset_metadata_on_selected_repositories_button", **kwd)
 
     def reset_metadata_on_selected_installed_repositories(self, repository_ids):
-        api_key = get_master_api_key()
-        response = requests.post(self.galaxy_url + "/api/tool_shed_repositories/reset_metadata_on_selected_installed_repositories", data={'repository_ids': repository_ids, 'key': api_key})
+        api_key = get_admin_api_key()
+        response = requests.post(f"{self.galaxy_url}/api/tool_shed_repositories/reset_metadata_on_selected_installed_repositories", data={'repository_ids': repository_ids, 'key': api_key})
         assert response.status_code != 403, response.content
 
     def reset_repository_metadata(self, repository):
@@ -1286,8 +1300,9 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         }
         self.visit_url('/repository/manage_repository', params=params)
 
-    def search_for_valid_tools(self, search_fields={}, exact_matches=False, strings_displayed=None, strings_not_displayed=None, from_galaxy=False):
+    def search_for_valid_tools(self, search_fields=None, exact_matches=False, strings_displayed=None, strings_not_displayed=None, from_galaxy=False):
         params = {}
+        search_fields = search_fields or {}
         if from_galaxy:
             params['galaxy_url'] = self.galaxy_url
         for field_name, search_string in search_fields.items():
@@ -1321,7 +1336,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         form_id = form.attrib.get('id')
         controls = [control for control in form.inputs if str(control.name) == field_name]
         if len(controls) > 0:
-            log.debug('Setting field {} of form {} to {}.'.format(field_name, form_id, str(field_value)))
+            log.debug(f'Setting field {field_name} of form {form_id} to {str(field_value)}.')
             tc.formvalue(form_id, field_name, str(field_value))
             kwd[field_name] = str(field_value)
         else:
@@ -1344,27 +1359,6 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         tc.submit("malicious_button")
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
-    def set_skip_tool_tsts_flag(self, repository, flag_value, reason, changeset_revision=None):
-        if changeset_revision is None:
-            changeset_revision = self.get_repository_tip(repository)
-        self.display_manage_repository_page(repository, changeset_revision=changeset_revision)
-        form = tc.browser.form('skip_tool_tests')
-        assert form is not None, 'Could not find form skip_tool_tests.'
-        for control in form.inputs:
-            control_name = str(control.name)
-            if control_name == 'skip_tool_tests' and control.type == 'checkbox':
-                checkbox = control.get()
-                checkbox.selected = flag_value
-            elif control_name == 'skip_tool_tests_comment':
-                tc.browser.clicked(form, control)
-                tc.formvalue('skip_tool_tests', control_name, reason)
-        kwd = dict()
-        self.submit_form('skip_tool_tests', 'skip_tool_tests_button', **kwd)
-        if flag_value is True:
-            self.check_for_strings(strings_displayed=['Tools in this revision will not be tested by the automated test framework'])
-        else:
-            self.check_for_strings(strings_displayed=['Tools in this revision will be tested by the automated test framework'])
-
     def tip_has_metadata(self, repository):
         tip = self.get_repository_tip(repository)
         return test_db_util.get_repository_metadata_by_repository_id_changeset_revision(repository.id, tip)
@@ -1381,8 +1375,8 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
 
     def uninstall_repository(self, installed_repository, strings_displayed=None, strings_not_displayed=None):
         encoded_id = self.security.encode_id(installed_repository.id)
-        api_key = get_master_api_key()
-        response = requests.delete(self.galaxy_url + "/api/tool_shed_repositories/" + encoded_id, data={'remove_from_disk': True, 'key': api_key})
+        api_key = get_admin_api_key()
+        response = requests.delete(f"{self.galaxy_url}/api/tool_shed_repositories/{encoded_id}", data={'remove_from_disk': True, 'key': api_key})
         assert response.status_code != 403, response.content
 
     def update_installed_repository(self, installed_repository, strings_displayed=None, strings_not_displayed=None):
@@ -1396,8 +1390,8 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def update_tool_shed_status(self):
-        api_key = get_master_api_key()
-        response = requests.get(self.galaxy_url + "/api/tool_shed_repositories/check_for_updates?key=" + api_key)
+        api_key = get_admin_api_key()
+        response = requests.get(f"{self.galaxy_url}/api/tool_shed_repositories/check_for_updates?key={api_key}")
         assert response.status_code != 403, response.content
 
     def upload_file(self,
@@ -1491,24 +1485,26 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         tc.submit("upload_button")
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
-    def verify_installed_repositories(self, installed_repositories=[], uninstalled_repositories=[]):
+    def verify_installed_repositories(self, installed_repositories=None, uninstalled_repositories=None):
+        installed_repositories = installed_repositories or []
+        uninstalled_repositories = uninstalled_repositories or []
         for repository_name, repository_owner in installed_repositories:
             galaxy_repository = test_db_util.get_installed_repository_by_name_owner(repository_name, repository_owner)
             if galaxy_repository:
                 assert galaxy_repository.status == 'Installed', \
-                    'Repository {} should be installed, but is {}'.format(repository_name, galaxy_repository.status)
+                    f'Repository {repository_name} should be installed, but is {galaxy_repository.status}'
 
     def verify_installed_repository_metadata_unchanged(self, name, owner):
         installed_repository = test_db_util.get_installed_repository_by_name_owner(name, owner)
         metadata = installed_repository.metadata
         self.reset_installed_repository_metadata(installed_repository)
         new_metadata = installed_repository.metadata
-        assert metadata == new_metadata, 'Metadata for installed repository %s differs after metadata reset.' % name
+        assert metadata == new_metadata, f'Metadata for installed repository {name} differs after metadata reset.'
 
     def verify_installed_repository_no_tool_panel_section(self, repository):
         '''Verify that there is no 'tool_panel_section' entry in the repository metadata.'''
         metadata = repository.metadata
-        assert 'tool_panel_section' not in metadata, 'Tool panel section incorrectly found in metadata: %s' % metadata
+        assert 'tool_panel_section' not in metadata, f'Tool panel section incorrectly found in metadata: {metadata}'
 
     def verify_installed_repository_data_table_entries(self, required_data_table_entries):
         # The value of the received required_data_table_entries will be something like: [ 'sam_fa_indexes' ]
@@ -1547,14 +1543,14 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
                     # rather than allowing the location to be a configurable setting like the tool shed requires.
                     file_path = file_elem.get('path', None)
                     # The value of file_path will be something like: "tool-data/all_fasta.loc"
-                    assert file_path is not None, 'The "path" attribute is missing for the %s entry.' % required_data_table_entry
+                    assert file_path is not None, f'The "path" attribute is missing for the {required_data_table_entry} entry.'
                     # The following test is probably not necesary, but the tool-data directory should exist!
                     galaxy_tool_data_dir, loc_file_name = os.path.split(file_path)
-                    assert galaxy_tool_data_dir is not None, 'The hard-coded Galaxy tool-data directory is missing for the %s entry.' % required_data_table_entry
+                    assert galaxy_tool_data_dir is not None, f'The hard-coded Galaxy tool-data directory is missing for the {required_data_table_entry} entry.'
                     assert os.path.exists(galaxy_tool_data_dir), 'The Galaxy tool-data directory does not exist.'
                     # Make sure the loc_file_name was correctly copied into the configured directory location.
                     configured_file_location = os.path.join(self.tool_data_path, loc_file_name)
-                    assert os.path.isfile(configured_file_location), 'The expected copied file "%s" is missing.' % configured_file_location
+                    assert os.path.isfile(configured_file_location), f'The expected copied file "{configured_file_location}" is missing.'
                     # We've found the value of the required_data_table_entry in data_tables, which is the parsed
                     # shed_tool_data_table_conf.xml, so all is well!
                     break
@@ -1562,7 +1558,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
                 break
         # We better have an entry like: <table comment_char="#" name="sam_fa_indexes"> in our parsed data_tables
         # or we know that the repository was not correctly installed!
-        assert found, 'No entry for {} in {}.'.format(required_data_table_entry, self.shed_tool_data_table_conf)
+        assert found, f'No entry for {required_data_table_entry} in {self.shed_tool_data_table_conf}.'
 
     def verify_repository_reviews(self, repository, reviewer=None, strings_displayed=None, strings_not_displayed=None):
         changeset_revision = self.get_repository_tip(repository)
@@ -1600,10 +1596,12 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
             new_metadata[metadata.changeset_revision] = metadata.metadata
         # Python's dict comparison recursively compares sorted key => value pairs and returns true if any key or value differs,
         # or if the number of keys differs.
-        assert old_metadata == new_metadata, 'Metadata changed after reset on repository %s.' % repository.name
+        assert old_metadata == new_metadata, f'Metadata changed after reset on repository {repository.name}.'
 
-    def visit_galaxy_url(self, url, params=None, doseq=False, allowed_codes=[200]):
-        url = '{}{}'.format(self.galaxy_url, url)
+    def visit_galaxy_url(self, url, params=None, doseq=False, allowed_codes=None):
+        if allowed_codes is None:
+            allowed_codes = [200]
+        url = f'{self.galaxy_url}{url}'
         self.visit_url(url, params=params, doseq=doseq, allowed_codes=allowed_codes)
 
     def wait_for_repository_installation(self, repository_ids):

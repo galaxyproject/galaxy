@@ -19,7 +19,7 @@ class WorkflowSyncTestCase(integration_util.IntegrationTestCase):
     require_admin_user = True
 
     def setUp(self):
-        super(WorkflowSyncTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
 
@@ -32,7 +32,7 @@ class WorkflowSyncTestCase(integration_util.IntegrationTestCase):
         workflow_id = self.workflow_populator.import_workflow_from_path(workflow_path)
         with self.workflow_populator.export_for_update(workflow_id) as workflow_object:
             workflow_object["annotation"] = "new annotation"
-        with open(workflow_path, "r") as f:
+        with open(workflow_path) as f:
             data = yaml.safe_load(f)
             assert data["doc"] == "new annotation"
 
@@ -42,7 +42,7 @@ class WorkflowSyncTestCase(integration_util.IntegrationTestCase):
         workflow_id = self.workflow_populator.import_workflow_from_path(workflow_path)
         with self.workflow_populator.export_for_update(workflow_id) as workflow_object:
             workflow_object["annotation"] = "new annotation"
-        with open(workflow_path, "r") as f:
+        with open(workflow_path) as f:
             data = json.load(f)
             assert data["annotation"] == "new annotation"
 

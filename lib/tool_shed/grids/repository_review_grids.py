@@ -3,7 +3,7 @@ import logging
 from markupsafe import escape
 from sqlalchemy import and_, false, null, or_, true
 
-from galaxy.webapps.reports.framework import grids
+from galaxy.web.legacy_framework import grids
 from tool_shed.grids.repository_grids import RepositoryGrid
 from tool_shed.util import hg_util, metadata_util
 from tool_shed.webapp import model
@@ -37,15 +37,11 @@ class ComponentGrid(grids.Grid):
                           key="Component.description",
                           attach_popup=False)
     ]
-    default_filter = {}
     global_actions = [
         grids.GridAction("Add new component",
                          dict(controller='repository_review', action='manage_components', operation='create'))
     ]
-    operations = []
-    standard_filters = []
     num_rows_per_page = 50
-    use_paging = False
 
 
 class RepositoriesWithReviewsGrid(RepositoryGrid):
@@ -90,9 +86,10 @@ class RepositoriesWithReviewsGrid(RepositoryGrid):
             rval = ''
             if repository.reviewers:
                 for user in repository.reviewers:
-                    rval += '<a class="view-info" href="repository_reviews_by_user?id=%s">' % trans.security.encode_id(user.id)
-                    rval += '%s</a> | ' % user.username
-                rval = rval.rstrip(' | ')
+                    rval += f'<a class="view-info" href="repository_reviews_by_user?id={trans.security.encode_id(user.id)}">'
+                    rval += f'{user.username}</a> | '
+                if rval[-3:] == ' | ':
+                    rval = rval[:-3]
             return rval
 
     class RatingColumn(grids.TextColumn):
@@ -103,11 +100,11 @@ class RepositoriesWithReviewsGrid(RepositoryGrid):
                 if review.rating:
                     for index in range(1, 6):
                         rval += '<input '
-                        rval += 'name="star1-%s" ' % trans.security.encode_id(review.id)
+                        rval += f'name="star1-{trans.security.encode_id(review.id)}" '
                         rval += 'type="radio" '
                         rval += 'class="community_rating_star star" '
                         rval += 'disabled="disabled" '
-                        rval += 'value="%s" ' % str(review.rating)
+                        rval += f'value="{str(review.rating)}" '
                         if review.rating > (index - 0.5) and review.rating < (index + 0.5):
                             rval += 'checked="checked" '
                         rval += '/>'
@@ -120,7 +117,7 @@ class RepositoriesWithReviewsGrid(RepositoryGrid):
             rval = ''
             for review in repository.reviews:
                 if review.approved:
-                    rval += '%s<br/>' % review.approved
+                    rval += f'{review.approved}<br/>'
             return rval
 
     title = "All reviewed repositories"
@@ -299,7 +296,7 @@ class RepositoryReviewsByUserGrid(grids.Grid):
                                                         review.changeset_revision,
                                                         include_date=True,
                                                         include_hash=False)
-            rval += '?id={}">{}</a>'.format(encoded_review_id, revision_label)
+            rval += f'?id={encoded_review_id}">{revision_label}</a>'
             return rval
 
     class RatingColumn(grids.TextColumn):
@@ -308,11 +305,11 @@ class RepositoryReviewsByUserGrid(grids.Grid):
             if review.rating:
                 for index in range(1, 6):
                     rval = '<input '
-                    rval += 'name="star1-%s" ' % trans.security.encode_id(review.id)
+                    rval += f'name="star1-{trans.security.encode_id(review.id)}" '
                     rval += 'type="radio" '
                     rval += 'class="community_rating_star star" '
                     rval += 'disabled="disabled" '
-                    rval += 'value="%s" ' % str(review.rating)
+                    rval += f'value="{str(review.rating)}" '
                     if review.rating > (index - 0.5) and review.rating < (index + 0.5):
                         rval += 'checked="checked" '
                     rval += '/>'
@@ -337,18 +334,13 @@ class RepositoryReviewsByUserGrid(grids.Grid):
         RevisionColumn("Revision", attach_popup=False),
         RatingColumn("Rating", attach_popup=False),
     ]
-    # Override these
-    default_filter = {}
-    global_actions = []
     operations = [
         grids.GridOperation("Inspect repository revisions",
                             allow_multiple=False,
                             condition=(lambda item: not item.deleted),
                             async_compatible=False)
     ]
-    standard_filters = []
     num_rows_per_page = 50
-    use_paging = False
 
     def build_initial_query(self, trans, **kwd):
         user_id = trans.security.decode_id(kwd['id'])

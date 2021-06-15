@@ -1,21 +1,20 @@
 /**
  * Endpoint for mounting job parameters from non-Vue environment.
  */
-import $ from "jquery";
-import Vue from "vue";
 import JobParameters from "./JobParameters.vue";
+import { mountVueComponent } from "utils/mountVueComponent";
 
 export const mountJobParameters = (propsData = {}) => {
-    $(".job-parameters").each((index, el) => {
-        const jobId = $(el).attr("job_id");
-        const datasetId = $(el).attr("dataset_id");
-        const param = $(el).attr("param");
-        const datasetType = $(el).attr("dataset_type") || "hda";
-        const component = Vue.extend(JobParameters);
+    const elements = document.querySelectorAll(".job-parameters");
+    Array.prototype.forEach.call(elements, function (el, i) {
+        const jobId = el.getAttribute("job_id");
+        const datasetId = el.getAttribute("dataset_id");
+        const param = el.getAttribute("param") || undefined;
+        const datasetType = el.getAttribute("dataset_type") || "hda";
         propsData.jobId = jobId;
         propsData.datasetId = datasetId;
         propsData.param = param;
         propsData.datasetType = datasetType;
-        return new component({ propsData: propsData }).$mount(el);
+        mountVueComponent(JobParameters)(propsData, el);
     });
 };

@@ -76,7 +76,6 @@ class ExpectedValues:
             'mulled_channels': listify_strip,
             'object_store_store_by': 'uuid',
             'password_expiration_period': timedelta,
-            'persistent_communication_rooms': listify_strip,
             'pretty_datetime_format': expand_pretty_datetime_format,
             'statsd_host': '',  # TODO: do we need '' as the default?
             'tool_config_file': listify_strip,
@@ -100,10 +99,12 @@ class ExpectedValues:
         self._expected_paths = {
             'admin_tool_recommendations_path': self._in_config_dir('tool_recommendations_overwrite.yml'),
             'auth_config_file': self._in_config_dir('auth_conf.xml'),
+            'beta_edam_toolbox_ontology_path': self._in_data_dir('EDAM.tsv'),
             'build_sites_config_file': self._in_sample_dir('build_sites.yml.sample'),
             'builds_file_path': self._in_root_dir('tool-data/shared/ucsc/builds.txt'),
-            'citation_cache_data_dir': self._in_data_dir('citations/data'),
-            'citation_cache_lock_dir': self._in_data_dir('citations/locks'),
+            'cache_dir': self._in_data_dir('cache'),
+            'citation_cache_data_dir': self._in_cache_dir('citations/data'),
+            'citation_cache_lock_dir': self._in_cache_dir('citations/locks'),
             'cluster_files_directory': self._in_data_dir('pbs'),
             'config_dir': self._in_config_dir(),
             'containers_config_file': self._in_config_dir('containers_conf.yml'),
@@ -130,20 +131,20 @@ class ExpectedValues:
             'markdown_export_css_pages': self._in_config_dir('markdown_export_pages.css'),
             'migrated_tools_config': self._in_managed_config_dir('migrated_tools_conf.xml'),
             'modules_mapping_files': self._in_config_dir('environment_modules_mapping.yml'),
-            'mulled_resolution_cache_data_dir': self._in_data_dir('mulled/data'),
-            'mulled_resolution_cache_lock_dir': self._in_data_dir('mulled/locks'),
+            'mulled_resolution_cache_data_dir': self._in_cache_dir('mulled/data'),
+            'mulled_resolution_cache_lock_dir': self._in_cache_dir('mulled/locks'),
             'new_file_path': self._in_data_dir('tmp'),
             'object_store_config_file': self._in_config_dir('object_store_conf.xml'),
             'oidc_backends_config_file': self._in_config_dir('oidc_backends_config.xml'),
             'oidc_config_file': self._in_config_dir('oidc_config.xml'),
-            'openid_consumer_cache_path': self._in_data_dir('openid_consumer_cache'),
+            'openid_consumer_cache_path': self._in_cache_dir('openid_consumer_cache'),
             'sanitize_allowlist_file': self._in_managed_config_dir('sanitize_allowlist.txt'),
             'shed_data_manager_config_file': self._in_managed_config_dir('shed_data_manager_conf.xml'),
             'shed_tool_config_file': self._in_managed_config_dir('shed_tool_conf.xml'),
             'shed_tool_data_path': self._in_root_dir('tool-data'),
             'shed_tool_data_table_config': self._in_managed_config_dir('shed_tool_data_table_conf.xml'),
-            'template_cache_path': self._in_data_dir('compiled_templates'),
-            'tool_cache_data_dir': self._in_data_dir('tool_cache'),
+            'template_cache_path': self._in_cache_dir('compiled_templates'),
+            'tool_cache_data_dir': self._in_cache_dir('tool_cache'),
             'tool_config_file': self._in_sample_dir('tool_conf.xml.sample'),
             'tool_data_path': self._in_root_dir('tool-data'),
             'tool_data_table_config_path': self._in_sample_dir('tool_data_table_conf.xml.sample'),
@@ -170,6 +171,9 @@ class ExpectedValues:
 
     def _in_config_dir(self, path=None):
         return self._in_dir(self._config.config_dir, path)
+
+    def _in_cache_dir(self, path=None):
+        return self._in_dir(self._config.cache_dir, path)
 
     def _in_data_dir(self, path=None):
         return self._in_dir(self._config.data_dir, path)
@@ -198,13 +202,13 @@ class ExpectedValues:
         return value
 
     def get_expected_database_connection(self, value):
-        return 'sqlite:///{}/universe.sqlite?isolation_level=IMMEDIATE'.format(self._config.data_dir)
+        return f'sqlite:///{self._config.data_dir}/universe.sqlite?isolation_level=IMMEDIATE'
 
     def get_expected_ftp_upload_dir_template(self, value):
         return '${ftp_upload_dir}%s${ftp_upload_dir_identifier}' % os.path.sep
 
     def get_expected_amqp_internal_connection(self, value):
-        return 'sqlalchemy+sqlite:///{}/control.sqlite?isolation_level=IMMEDIATE'.format(self._config.data_dir)
+        return f'sqlalchemy+sqlite:///{self._config.data_dir}/control.sqlite?isolation_level=IMMEDIATE'
 
 
 def get_config_data():

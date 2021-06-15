@@ -148,7 +148,7 @@ def __main__():
     skipped_lines = 0
     first_skipped_line = 0
     out = open(output_name, 'w')
-    for i, feature in enumerate(GFFReaderWrapper(open(input_name))):
+    for i, feature in enumerate(GFFReaderWrapper(open(input_name))):  # noqa: B007
         if not isinstance(feature, GenomicInterval):
             continue
         count = 0

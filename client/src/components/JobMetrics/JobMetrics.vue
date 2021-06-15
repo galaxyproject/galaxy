@@ -70,7 +70,9 @@ export default {
             return this.aws_estimate && this.aws_estimate.toUpperCase() === "true".toUpperCase();
         },
         awsEstimate: function () {
-            if (!this.isAwsEstimate) return;
+            if (!this.isAwsEstimate) {
+                return;
+            }
 
             const aws = {};
             this.jobMetrics.forEach((metric) => {
@@ -88,15 +90,21 @@ export default {
                 }
             });
 
-            if (aws.memory) aws.memory /= 1024;
+            if (aws.memory) {
+                aws.memory /= 1024;
+            }
             // if memory was not specified, assign the smallest amount (we judge based on CPU-count only)
-            else aws.memory = 0.5;
+            else {
+                aws.memory = 0.5;
+            }
 
             // ec2 is already pre-sorted
             aws.instance = ec2.find((ec) => {
                 return ec.mem >= aws.memory && ec.vcpus >= aws.vcpus;
             });
-            if (aws.instance === undefined) return;
+            if (aws.instance === undefined) {
+                return;
+            }
             aws.price = ((aws.seconds * aws.instance.price) / 3600).toFixed(2);
             return aws;
         },
