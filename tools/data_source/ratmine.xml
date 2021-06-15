@@ -6,10 +6,13 @@
 -->
 <tool name="Ratmine" id="ratmine" tool_type="data_source" version="1.0.0">
     <description>server</description>
+    <edam_operations>
+        <edam_operation>operation_0224</edam_operation>
+    </edam_operations>
     <command><![CDATA[
 python '$__tool_directory__/data_source.py' '$output' $__app__.config.output_size_limit
     ]]></command>
-    <inputs action="http://ratmine.mcw.edu/ratmine/begin.do" check_values="false" method="get"> 
+    <inputs action="http://ratmine.mcw.edu/ratmine/begin.do" check_values="false" method="get">
         <display>go to Ratmine server $GALAXY_URL</display>
         <param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=ratmine" />
     </inputs>

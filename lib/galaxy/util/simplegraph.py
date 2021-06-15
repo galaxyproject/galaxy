@@ -3,10 +3,8 @@ Fencepost-simple graph structure implementation.
 """
 # Currently (2013.7.12) only used in easing the parsing of graph datatype data.
 
-from collections import OrderedDict
 
-
-class SimpleGraphNode(object):
+class SimpleGraphNode:
     """
     Node representation.
     """
@@ -23,7 +21,7 @@ class SimpleGraphNode(object):
         self.data = data
 
 
-class SimpleGraphEdge(object):
+class SimpleGraphEdge:
     """
     Edge representation.
     """
@@ -42,7 +40,7 @@ class SimpleGraphEdge(object):
         self.data = data
 
 
-class SimpleGraph(object):
+class SimpleGraph:
     """
     Each node is unique (by id) and stores its own index in the node list/odict.
     Each edge is represented as two indeces into the node list/odict.
@@ -58,7 +56,7 @@ class SimpleGraph(object):
 
     def __init__(self, nodes=None, edges=None):
         # use an odict so that edge indeces actually match the final node list indeces
-        self.nodes = nodes or OrderedDict()
+        self.nodes = nodes or {}
         self.edges = edges or []
 
     def add_node(self, node_id, **data):

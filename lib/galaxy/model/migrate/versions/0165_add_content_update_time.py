@@ -2,15 +2,14 @@
 Adds timestamps to hdca table. Adds triggers to dataset, hda, hdca tables
 to update history.update_time when contents are changed.
 """
-from __future__ import print_function
 
 import logging
 
 from sqlalchemy import Column, DateTime, MetaData, Table
 
+from galaxy.model.migrate.triggers.history_update_time_field import drop_timestamp_triggers, install_timestamp_triggers
 from galaxy.model.migrate.versions.util import add_column, drop_column
 from galaxy.model.orm.now import now
-from galaxy.model.triggers import drop_timestamp_triggers, install_timestamp_triggers
 
 log = logging.getLogger(__name__)
 metadata = MetaData()

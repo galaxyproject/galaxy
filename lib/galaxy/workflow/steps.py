@@ -44,11 +44,11 @@ def order_workflow_steps(steps):
 
 def edgelist_for_workflow_steps(steps):
     """
-    Create a list of tuples representing edges between ``WorkflowSteps`` based
-    on associated ``WorkflowStepConnection``s
+    Create a list of tuples representing edges between ``WorkflowStep`` s based
+    on associated ``WorkflowStepConnection`` s
     """
     edges = []
-    steps_to_index = dict((step, i) for i, step in enumerate(steps))
+    steps_to_index = {step: i for i, step in enumerate(steps)}
     for step in steps:
         edges.append((steps_to_index[step], steps_to_index[step]))
         for conn in step.input_connections:

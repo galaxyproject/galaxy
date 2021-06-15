@@ -30,12 +30,12 @@ class HistoryPanelTestCase(SeleniumTestCase):
         assert "New History Name" in self.history_panel_name()
 
     @selenium_test
-    def test_history_rename_cancel_with_click(self):
+    def test_history_rename_confirm_with_click(self):
         editable_text_input_element = self.history_panel_click_to_rename()
         editable_text_input_element.send_keys("New History Name")
         self.click_center()
         self.assert_absent(self.navigation.history_panel.selectors.name_edit_input)
-        assert "New History Name" not in self.history_panel_name()
+        assert "New History Name" in self.history_panel_name()
 
     @selenium_test
     def test_history_rename_cancel_with_escape(self):
@@ -128,14 +128,14 @@ class HistoryPanelTestCase(SeleniumTestCase):
             current_tags = self.components.history_panel.tags
             current_tags.wait_for_visible()
             assert [tag.text for tag in
-                    current_tags.all()] == expected_tags, "tags [%s] are not the same as expected [%s]" % (current_tags, expected_tags)
+                    current_tags.all()] == expected_tags, f"tags [{current_tags}] are not the same as expected [{expected_tags}]"
 
         def clear_tags(expected_tags_size):
 
             close_tag_buttons = self.components.history_panel.tag_close_btn.all()
             current_tags_size = len(close_tag_buttons)
 
-            assert expected_tags_size == current_tags_size, "there are more tags than expected! current %s, expected %s" % (
+            assert expected_tags_size == current_tags_size, "there are more tags than expected! current {}, expected {}".format(
                 current_tags_size, expected_tags_size)
             for close_btn in reversed(close_tag_buttons):
                 close_btn.click()

@@ -4,8 +4,9 @@ galaxy-util
 galaxy-web-stack
 MarkupSafe
 paste
+pydantic<1.8
 requests
 Routes
 six
-SQLAlchemy
+SQLAlchemy>=1.4.18,<2
 WebOb

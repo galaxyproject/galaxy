@@ -1,7 +1,6 @@
 """
 Interfaces to containerization software
 """
-from __future__ import absolute_import
 
 import errno
 import inspect
@@ -15,11 +14,9 @@ from abc import (
     abstractmethod,
     abstractproperty
 )
-from collections import namedtuple
+from typing import Any, Dict, NamedTuple, Optional, Type
 
 import yaml
-from six import string_types, with_metaclass
-from six.moves import shlex_quote
 
 from galaxy.exceptions import ContainerCLIError
 from galaxy.util.submodules import import_submodules
@@ -31,21 +28,15 @@ DEFAULT_CONF = {'_default_': {'type': DEFAULT_CONTAINER_TYPE}}
 log = logging.getLogger(__name__)
 
 
-class ContainerPort(namedtuple('ContainerPort', ('port', 'protocol', 'hostaddr', 'hostport'))):
-    """Named tuple representing ports published by a container, with attributes:
-
-    :ivar       port:       Port number (inside the container)
-    :vartype    port:       int
-    :ivar       protocol:   Port protocol, either ``tcp`` or ``udp``
-    :vartype    protocol:   str
-    :ivar       hostaddr:   Address or hostname where the published port can be accessed
-    :vartype    hostaddr:   str
-    :ivar       hostport:   Published port number on which the container can be accessed
-    :vartype    hostport:   int
-    """
+class ContainerPort(NamedTuple):
+    """Named tuple representing ports published by a container, with attributes"""
+    port: int  # Port number (inside the container)
+    protocol: str  # Port protocol, either ``tcp`` or ``udp``
+    hostaddr: str  # Address or hostname where the published port can be accessed
+    hostport: int  # Published port number on which the container can be accessed
 
 
-class ContainerVolume(with_metaclass(ABCMeta, object)):
+class ContainerVolume(metaclass=ABCMeta):
 
     valid_modes = frozenset({"ro", "rw"})
 
@@ -54,7 +45,7 @@ class ContainerVolume(with_metaclass(ABCMeta, object)):
         self.host_path = host_path
         self.mode = mode
         if mode and not self.mode_is_valid:
-            raise ValueError("Invalid container volume mode: %s" % mode)
+            raise ValueError(f"Invalid container volume mode: {mode}")
 
     @abstractmethod
     def from_str(cls, as_str):
@@ -79,15 +70,18 @@ class ContainerVolume(with_metaclass(ABCMeta, object)):
         return self.mode in self.valid_modes
 
 
-class Container(with_metaclass(ABCMeta, object)):
+class Container(metaclass=ABCMeta):
 
     def __init__(self, interface, id, name=None, **kwargs):
-        """:param   interface:  Container interface for the given container type
+        """
+
+        :param      interface:  Container interface for the given container type
         :type       interface:  :class:`ContainerInterface` subclass instance
         :param      id:         Container identifier
         :type       id:         str
         :param      name:       Container name
         :type       name:       str
+
         """
         self._interface = interface
         self._id = id
@@ -120,7 +114,7 @@ class Container(with_metaclass(ABCMeta, object)):
         """Attribute for accessing details of ports published by the container.
 
         :returns:   Port details
-        :rtype:     list of :class:`ContainerPort`s
+        :rtype:     list of :class:`ContainerPort` s
         """
 
     @abstractproperty
@@ -167,15 +161,15 @@ class Container(with_metaclass(ABCMeta, object)):
         return None
 
 
-class ContainerInterface(with_metaclass(ABCMeta, object)):
+class ContainerInterface(metaclass=ABCMeta):
 
-    container_type = None
-    container_class = None
-    volume_class = None
-    conf_defaults = {
+    container_type: Optional[str] = None
+    container_class: Optional[Type[Container]] = None
+    volume_class = Optional[Type[ContainerVolume]]
+    conf_defaults: Dict[str, Optional[Any]] = {
         'name_prefix': 'galaxy_',
     }
-    option_map = {}
+    option_map: Dict[str, Dict] = {}
     publish_port_list_required = False
     supports_volumes = True
 
@@ -191,7 +185,7 @@ class ContainerInterface(with_metaclass(ABCMeta, object)):
         self.validate_config()
 
     def _normalize_command(self, command):
-        if isinstance(command, string_types):
+        if isinstance(command, str):
             command = shlex.split(command)
         return command
 
@@ -211,7 +205,7 @@ class ContainerInterface(with_metaclass(ABCMeta, object)):
         return opttype
 
     def _guess_kwopt_flag(self, opt):
-        return '--%s' % opt.replace('_', '-')
+        return f"--{opt.replace('_', '-')}"
 
     def _stringify_kwopts(self, kwopts):
         opts = []
@@ -225,48 +219,48 @@ class ContainerInterface(with_metaclass(ABCMeta, object)):
                 }
                 log.warning("option '%s' not in %s.option_map, guessing flag '%s' type '%s'",
                             opt, self.__class__.__name__, optdef['flag'], optdef['type'])
-            opts.append(getattr(self, '_stringify_kwopt_' + optdef['type'])(optdef['flag'], val))
+            opts.append(getattr(self, f"_stringify_kwopt_{optdef['type']}")(optdef['flag'], val))
         return ' '.join(opts)
 
     def _stringify_kwopt_boolean(self, flag, val):
         """
         """
-        return '{flag}={value}'.format(flag=flag, value=str(val).lower())
+        return f'{flag}={str(val).lower()}'
 
     def _stringify_kwopt_string(self, flag, val):
         """
         """
-        return '{flag} {value}'.format(flag=flag, value=shlex_quote(str(val)))
+        return f'{flag} {shlex.quote(str(val))}'
 
     def _stringify_kwopt_list(self, flag, val):
         """
         """
-        if isinstance(val, string_types):
+        if isinstance(val, str):
             return self._stringify_kwopt_string(flag, val)
-        return ' '.join('{flag} {value}'.format(flag=flag, value=shlex_quote(str(v))) for v in val)
+        return ' '.join(f'{flag} {shlex.quote(str(v))}' for v in val)
 
     def _stringify_kwopt_list_of_kvpairs(self, flag, val):
         """
         """
-        l = []
+        kwopt_list = []
         if isinstance(val, list):
             # ['foo=bar', 'baz=quux']
-            l = val
+            kwopt_list = val
         else:
             # {'foo': 'bar', 'baz': 'quux'}
             for k, v in dict(val).items():
-                l.append('{k}={v}'.format(k=k, v=v))
-        return self._stringify_kwopt_list(flag, l)
+                kwopt_list.append(f'{k}={v}')
+        return self._stringify_kwopt_list(flag, kwopt_list)
 
     def _stringify_kwopt_list_of_kovtrips(self, flag, val):
         """
         """
-        if isinstance(val, string_types):
+        if isinstance(val, str):
             return self._stringify_kwopt_string(flag, val)
-        l = []
+        kwopt_list = []
         for k, o, v in val:
-            l.append('{k}{o}{v}'.format(k=k, o=o, v=v))
-        return self._stringify_kwopt_list(flag, l)
+            kwopt_list.append(f'{k}{o}{v}')
+        return self._stringify_kwopt_list(flag, kwopt_list)
 
     def _run_command(self, command, verbose=False):
         if verbose:
@@ -277,8 +271,8 @@ class ContainerInterface(with_metaclass(ABCMeta, object)):
         if p.returncode == 0:
             return stdout.strip()
         else:
-            msg = "Command '{}' returned non-zero exit status {}".format(command, p.returncode)
-            log.error(msg + ': ' + stderr.strip())
+            msg = f"Command '{command}' returned non-zero exit status {p.returncode}"
+            log.error(f"{msg}: {stderr.strip()}")
             raise ContainerCLIError(
                 msg,
                 stdout=stdout.strip(),
@@ -326,7 +320,7 @@ class ContainerInterfaceConfig(dict):
         try:
             return self[name]
         except KeyError:
-            raise AttributeError("'%s' object has no attribute '%s'" % (self.__class__.__name__, name))
+            raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
 
     def get(self, name, default=None):
         try:
@@ -352,7 +346,7 @@ def build_container_interfaces(containers_config_file, containers_conf=None):
     interfaces = {}
     for k, conf in containers_conf.items():
         container_type = conf.get('type', DEFAULT_CONTAINER_TYPE)
-        assert container_type in interface_classes, "unknown container interface type: %s" % container_type
+        assert container_type in interface_classes, f"unknown container interface type: {container_type}"
         interfaces[k] = interface_classes[container_type](conf, k, containers_config_file)
     return interfaces
 
@@ -370,7 +364,7 @@ def parse_containers_config(containers_config_file):
         with open(containers_config_file) as fh:
             c = yaml.safe_load(fh)
             conf.update(c.get('containers', {}))
-    except (OSError, IOError) as exc:
+    except OSError as exc:
         if exc.errno == errno.ENOENT:
             log.debug("config file '%s' does not exist, running with default config", containers_config_file)
         else:
@@ -383,7 +377,7 @@ def _get_interface_modules():
     modules = import_submodules(sys.modules[__name__])
     for module in modules:
         module_names = [getattr(module, _) for _ in dir(module)]
-        classes = [_ for _ in module_names if inspect.isclass(_) and
-            not _ == ContainerInterface and issubclass(_, ContainerInterface)]
+        classes = [_ for _ in module_names if inspect.isclass(_)
+            and not _ == ContainerInterface and issubclass(_, ContainerInterface)]
         interfaces.extend(classes)
-    return dict((x.container_type, x) for x in interfaces)
+    return {x.container_type: x for x in interfaces}

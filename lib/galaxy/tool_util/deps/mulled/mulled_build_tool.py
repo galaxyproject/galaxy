@@ -15,9 +15,9 @@ from .mulled_build import (
     add_build_arguments,
     add_single_image_arguments,
     args_to_mull_targets_kwds,
-    build_target,
     mull_targets,
 )
+from .util import build_target
 
 
 def main(argv=None):

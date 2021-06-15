@@ -11,7 +11,7 @@ from galaxy import util
 log = logging.getLogger(__name__)
 
 
-class ToolOutputActionGroup(object):
+class ToolOutputActionGroup:
     """
     Manages a set of tool output dataset actions directives
     """
@@ -27,7 +27,7 @@ class ToolOutputActionGroup(object):
                 elif elem.tag == "action":
                     self.actions.append(ToolOutputAction.from_elem(self, elem))
                 else:
-                    log.debug("Unknown ToolOutputAction tag specified: %s" % elem.tag)
+                    log.debug(f"Unknown ToolOutputAction tag specified: {elem.tag}")
 
     def apply_action(self, output_dataset, other_values):
         for action in self.actions:
@@ -57,7 +57,7 @@ class ToolOutputActionConditionalWhen(ToolOutputActionGroup):
         raise TypeError("When type not implemented")
 
     def __init__(self, parent, config_elem, value):
-        super(ToolOutputActionConditionalWhen, self).__init__(parent, config_elem)
+        super().__init__(parent, config_elem)
         self.value = value
 
     def is_case(self, output_dataset, other_values):
@@ -66,13 +66,13 @@ class ToolOutputActionConditionalWhen(ToolOutputActionGroup):
     def get_ref(self, output_dataset, other_values):
         ref = other_values
         for ref_name in self.parent.name:
-            assert ref_name in ref, "Required dependency '%s' not found in incoming values" % ref_name
+            assert ref_name in ref, f"Required dependency '{ref_name}' not found in incoming values"
             ref = ref.get(ref_name)
         return ref
 
     def apply_action(self, output_dataset, other_values):
         if self.is_case(output_dataset, other_values):
-            return super(ToolOutputActionConditionalWhen, self).apply_action(output_dataset, other_values)
+            return super().apply_action(output_dataset, other_values)
 
 
 class ValueToolOutputActionConditionalWhen(ToolOutputActionConditionalWhen):
@@ -87,7 +87,7 @@ class DatatypeIsInstanceToolOutputActionConditionalWhen(ToolOutputActionConditio
     tag = "when datatype_isinstance"
 
     def __init__(self, parent, config_elem, value):
-        super(DatatypeIsInstanceToolOutputActionConditionalWhen, self).__init__(parent, config_elem, value)
+        super().__init__(parent, config_elem, value)
         self.value = type(self.tool.app.datatypes_registry.get_datatype_by_extension(value))
 
     def is_case(self, output_dataset, other_values):
@@ -95,7 +95,7 @@ class DatatypeIsInstanceToolOutputActionConditionalWhen(ToolOutputActionConditio
         return isinstance(ref.datatype, self.value)
 
 
-class ToolOutputActionConditional(object):
+class ToolOutputActionConditional:
     tag = "conditional"
 
     def __init__(self, parent, config_elem):
@@ -116,7 +116,7 @@ class ToolOutputActionConditional(object):
         return self.parent.tool
 
 
-class ToolOutputAction(object):
+class ToolOutputAction:
     tag = "action"
 
     @classmethod
@@ -140,7 +140,7 @@ class ToolOutputAction(object):
         return self.parent.tool
 
 
-class ToolOutputActionOption(object):
+class ToolOutputActionOption:
     tag = "object"
 
     @classmethod
@@ -179,7 +179,7 @@ class FromFileToolOutputActionOption(ToolOutputActionOption):
     tag = "from_file"
 
     def __init__(self, parent, elem):
-        super(FromFileToolOutputActionOption, self).__init__(parent, elem)
+        super().__init__(parent, elem)
         self.name = elem.get('name', None)
         assert self.name is not None, "Required 'name' attribute missing from FromFileToolOutputActionOption"
         self.column = elem.get('column', None)
@@ -203,7 +203,7 @@ class FromFileToolOutputActionOption(ToolOutputActionOption):
             if options:
                 return str(options[self.offset][self.column])
         except Exception as e:
-            log.debug("Error in FromFileToolOutputActionOption get_value: %s" % e)
+            log.debug(f"Error in FromFileToolOutputActionOption get_value: {e}")
         return None
 
 
@@ -211,7 +211,7 @@ class FromParamToolOutputActionOption(ToolOutputActionOption):
     tag = "from_param"
 
     def __init__(self, parent, elem):
-        super(FromParamToolOutputActionOption, self).__init__(parent, elem)
+        super().__init__(parent, elem)
         self.name = elem.get('name', None)
         assert self.name is not None, "Required 'name' attribute missing from FromFileToolOutputActionOption"
         self.name = self.name.split('.')
@@ -226,7 +226,7 @@ class FromParamToolOutputActionOption(ToolOutputActionOption):
     def get_value(self, other_values):
         value = other_values
         for ref_name in self.name:
-            assert ref_name in value, "Required dependency '%s' not found in incoming values" % ref_name
+            assert ref_name in value, f"Required dependency '{ref_name}' not found in incoming values"
             value = value.get(ref_name)
         for attr_name in self.param_attribute:
             # if the value is a list from a repeat tag you can access the first element of the repeat with
@@ -252,7 +252,7 @@ class FromParamToolOutputActionOption(ToolOutputActionOption):
             if options:
                 return str(options[self.offset][self.column])
         except Exception as e:
-            log.debug("Error in FromParamToolOutputActionOption get_value: %s" % e)
+            log.debug(f"Error in FromParamToolOutputActionOption get_value: {e}")
         return None
 
 
@@ -261,7 +261,7 @@ class FromDataTableOutputActionOption(ToolOutputActionOption):
 
     # TODO: allow accessing by column 'name' not just index
     def __init__(self, parent, elem):
-        super(FromDataTableOutputActionOption, self).__init__(parent, elem)
+        super().__init__(parent, elem)
         self.name = elem.get('name', None)
         assert self.name is not None, "Required 'name' attribute missing from FromDataTableOutputActionOption"
         self.missing_tool_data_table_name = None
@@ -287,7 +287,7 @@ class FromDataTableOutputActionOption(ToolOutputActionOption):
             if options:
                 return str(options[self.offset][self.column])
         except Exception as e:
-            log.debug("Error in FromDataTableOutputActionOption get_value: %s" % e)
+            log.debug(f"Error in FromDataTableOutputActionOption get_value: {e}")
         return None
 
 
@@ -295,7 +295,7 @@ class MetadataToolOutputAction(ToolOutputAction):
     tag = "metadata"
 
     def __init__(self, parent, elem):
-        super(MetadataToolOutputAction, self).__init__(parent, elem)
+        super().__init__(parent, elem)
         self.name = elem.get('name', None)
         assert self.name is not None, "Required 'name' attribute missing from MetadataToolOutputAction"
 
@@ -311,7 +311,7 @@ class FormatToolOutputAction(ToolOutputAction):
     tag = "format"
 
     def __init__(self, parent, elem):
-        super(FormatToolOutputAction, self).__init__(parent, elem)
+        super().__init__(parent, elem)
         self.default = elem.get('default', None)
 
     def apply_action(self, output_dataset, other_values):
@@ -322,7 +322,7 @@ class FormatToolOutputAction(ToolOutputAction):
             output_dataset.extension = value
 
 
-class ToolOutputActionOptionFilter(object):
+class ToolOutputActionOptionFilter:
     tag = "filter"
 
     @classmethod
@@ -347,7 +347,7 @@ class ParamValueToolOutputActionOptionFilter(ToolOutputActionOptionFilter):
     tag = "param_value"
 
     def __init__(self, parent, elem):
-        super(ParamValueToolOutputActionOptionFilter, self).__init__(parent, elem)
+        super().__init__(parent, elem)
         self.ref = elem.get('ref', None)
         if self.ref:
             self.ref = self.ref.split('.')
@@ -368,7 +368,7 @@ class ParamValueToolOutputActionOptionFilter(ToolOutputActionOptionFilter):
             # find ref value
             value = other_values
             for ref_name in self.ref:
-                assert ref_name in value, "Required dependency '%s' not found in incoming values" % ref_name
+                assert ref_name in value, f"Required dependency '{ref_name}' not found in incoming values"
                 value = value.get(ref_name)
             for attr_name in self.param_attribute:
                 value = getattr(value, attr_name)
@@ -391,7 +391,7 @@ class InsertColumnToolOutputActionOptionFilter(ToolOutputActionOptionFilter):
     tag = "insert_column"
 
     def __init__(self, parent, elem):
-        super(InsertColumnToolOutputActionOptionFilter, self).__init__(parent, elem)
+        super().__init__(parent, elem)
         self.ref = elem.get('ref', None)
         if self.ref:
             self.ref = self.ref.split('.')
@@ -407,7 +407,7 @@ class InsertColumnToolOutputActionOptionFilter(ToolOutputActionOptionFilter):
             # find ref value
             value = other_values
             for ref_name in self.ref:
-                assert ref_name in value, "Required dependency '%s' not found in incoming values" % ref_name
+                assert ref_name in value, f"Required dependency '{ref_name}' not found in incoming values"
                 value = value.get(ref_name)
             value = str(value)
         else:
@@ -431,7 +431,7 @@ class MultipleSplitterFilter(ToolOutputActionOptionFilter):
     tag = "multiple_splitter"
 
     def __init__(self, parent, elem):
-        super(MultipleSplitterFilter, self).__init__(parent, elem)
+        super().__init__(parent, elem)
         self.column = elem.get('column', None)
         assert self.column is not None, "Required 'column' attribute missing from MultipleSplitterFilter"
         self.column = int(self.column)
@@ -449,7 +449,7 @@ class ColumnStripFilter(ToolOutputActionOptionFilter):
     tag = "column_strip"
 
     def __init__(self, parent, elem):
-        super(ColumnStripFilter, self).__init__(parent, elem)
+        super().__init__(parent, elem)
         self.column = elem.get('column', None)
         assert self.column is not None, "Required 'column' attribute missing from ColumnStripFilter"
         self.column = int(self.column)
@@ -466,7 +466,7 @@ class ColumnReplaceFilter(ToolOutputActionOptionFilter):
     tag = "column_replace"
 
     def __init__(self, parent, elem):
-        super(ColumnReplaceFilter, self).__init__(parent, elem)
+        super().__init__(parent, elem)
         self.old_column = elem.get('old_column', None)
         self.old_value = elem.get("old_value", None)
         self.new_value = elem.get("new_value", None)
@@ -499,7 +499,7 @@ class MetadataValueFilter(ToolOutputActionOptionFilter):
     tag = "metadata_value"
 
     def __init__(self, parent, elem):
-        super(MetadataValueFilter, self).__init__(parent, elem)
+        super().__init__(parent, elem)
         self.ref = elem.get('ref', None)
         assert self.ref is not None, "Required 'ref' attribute missing from MetadataValueFilter"
         self.ref = self.ref.split('.')
@@ -514,7 +514,7 @@ class MetadataValueFilter(ToolOutputActionOptionFilter):
     def filter_options(self, options, other_values):
         ref = other_values
         for ref_name in self.ref:
-            assert ref_name in ref, "Required dependency '%s' not found in incoming values" % ref_name
+            assert ref_name in ref, f"Required dependency '{ref_name}' not found in incoming values"
             ref = ref.get(ref_name)
         value = str(getattr(ref.metadata, self.name))
         rval = []
@@ -528,7 +528,7 @@ class BooleanFilter(ToolOutputActionOptionFilter):
     tag = "boolean"
 
     def __init__(self, parent, elem):
-        super(BooleanFilter, self).__init__(parent, elem)
+        super().__init__(parent, elem)
         self.column = elem.get('column', None)
         assert self.column is not None, "Required 'column' attribute missing from BooleanFilter"
         self.column = int(self.column)
@@ -552,7 +552,7 @@ class StringFunctionFilter(ToolOutputActionOptionFilter):
     tag = "string_function"
 
     def __init__(self, parent, elem):
-        super(StringFunctionFilter, self).__init__(parent, elem)
+        super().__init__(parent, elem)
         self.column = elem.get('column', None)
         assert self.column is not None, "Required 'column' attribute missing from StringFunctionFilter"
         self.column = int(self.column)
@@ -601,7 +601,7 @@ def parse_cast_attribute(cast):
 def parse_compare_type(compare):
     if compare is None:
         compare = 'eq'
-    assert compare in compare_types, "Invalid compare type specified: %s" % compare
+    assert compare in compare_types, f"Invalid compare type specified: {compare}"
     return compare_types[compare]
 
 

@@ -1,9 +1,6 @@
-from __future__ import print_function
-
+import configparser
 import os
 import sys
-
-from six.moves import configparser
 
 import galaxy.config
 from galaxy.tool_shed.galaxy_install import (
@@ -24,7 +21,7 @@ class MigrateToolsApplication(galaxy.config.ConfiguresGalaxyMixin):
             sys.argv.pop(pos)
             galaxy_config_file = sys.argv.pop(pos)
         if not os.path.exists(galaxy_config_file):
-            print("Galaxy config file does not exist (hint: use '-c config.ini' for non-standard locations): %s" % galaxy_config_file)
+            print(f"Galaxy config file does not exist (hint: use '-c config.ini' for non-standard locations): {galaxy_config_file}")
             sys.exit(1)
         config_parser = configparser.ConfigParser({'here': os.getcwd()})
         config_parser.read(galaxy_config_file)
@@ -69,7 +66,7 @@ class MigrateToolsApplication(galaxy.config.ConfiguresGalaxyMixin):
 
     @property
     def sa_session(self):
-        return self.model.context.current
+        return self.model.session
 
     def shutdown(self):
         self.object_store.shutdown()

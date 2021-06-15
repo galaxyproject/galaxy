@@ -1,7 +1,7 @@
 import pytest
 
 from galaxy import config
-from galaxy.config import GalaxyAppConfiguration
+from galaxy.config import BaseAppConfiguration
 from galaxy.config import reload_config_options
 from galaxy.config.schema import AppSchema
 
@@ -17,15 +17,13 @@ MOCK_SCHEMA = {
 
 
 def get_schema(app_mapping):
-    return {'mapping': {'galaxy': {'mapping': app_mapping}}}
+    return {'mapping': {'_': {'mapping': app_mapping}}}
 
 
 @pytest.fixture
 def mock_init(monkeypatch):
-
+    monkeypatch.setattr(BaseAppConfiguration, '_load_schema', lambda a: AppSchema(None, '_'))
     monkeypatch.setattr(AppSchema, '_read_schema', lambda a, b: get_schema(MOCK_SCHEMA))
-    monkeypatch.setattr(GalaxyAppConfiguration, '_process_config', lambda a, b: None)
-    monkeypatch.setattr(GalaxyAppConfiguration, '_override_tempdir', lambda a, b: None)
 
 
 def test_update_property(mock_init, monkeypatch):
@@ -36,7 +34,7 @@ def test_update_property(mock_init, monkeypatch):
     # edits to config file: R2, N1 modified
     monkeypatch.setattr(config, 'read_properties_from_file', lambda _: {R1: 1, R2: 42, N1: 99})
 
-    appconfig = GalaxyAppConfiguration()
+    appconfig = BaseAppConfiguration()
 
     assert getattr(appconfig, R1) == 1
     assert getattr(appconfig, R2) == 2
@@ -61,7 +59,7 @@ def test_overwrite_reloadable_attribute(mock_init, monkeypatch):
     # edits to config file: R2 modified
     monkeypatch.setattr(config, 'read_properties_from_file', lambda _: {R1: 1, R2: 42})
 
-    appconfig = GalaxyAppConfiguration()
+    appconfig = BaseAppConfiguration()
 
     assert getattr(appconfig, R1) == 1
     assert getattr(appconfig, R2) == 2
@@ -83,7 +81,7 @@ def test_cant_delete_property(mock_init, monkeypatch):
     # edits to config file: R2, N2 deleted
     monkeypatch.setattr(config, 'read_properties_from_file', lambda _: {R1: 1, N1: 3})
 
-    appconfig = GalaxyAppConfiguration()
+    appconfig = BaseAppConfiguration()
 
     assert getattr(appconfig, R1) == 1
     assert getattr(appconfig, R2) == 2

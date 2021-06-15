@@ -47,7 +47,7 @@ TWO_OUTPUTS = '''<tool id="test_tool" name="Test Tool">
 def test_on_text_for_names():
     def assert_on_text_is(expected, *names):
         on_text = on_text_for_names(names)
-        assert on_text == expected, "Wrong on text value %s, expected %s" % (on_text, expected)
+        assert on_text == expected, f"Wrong on text value {on_text}, expected {expected}"
 
     assert_on_text_is("data 1", "data 1")
     assert_on_text_is("data 1 and data 2", "data 1", "data 2")
@@ -117,7 +117,7 @@ class DefaultToolActionTestCase(unittest.TestCase, tools_support.UsesApp, tools_
             self._simple_execute()
         except UserActivationRequiredException:
             return
-        assert False, "Tool execution succeeded for inactive user!"
+        raise AssertionError("Tool execution succeeded for inactive user!")
 
     def __add_dataset(self, state='ok'):
         hda = model.HistoryDatasetAssociation()
@@ -134,7 +134,7 @@ class DefaultToolActionTestCase(unittest.TestCase, tools_support.UsesApp, tools_
         if incoming is None:
             incoming = dict(param1="moo")
         self._init_tool(contents)
-        job, out_data, _, _ = self.action.execute(
+        job, out_data, _, = self.action.execute(
             tool=self.tool,
             trans=self.trans,
             history=self.history,
@@ -193,7 +193,9 @@ def test_determine_output_format():
     __assert_output_format_is("fastqsolexa", change_on_metadata_output, [("i1", "txt"), ("i2", "txt")])
 
 
-def __assert_output_format_is(expected, output, input_extensions=[], param_context=[], add_collection=False):
+def __assert_output_format_is(expected, output, input_extensions=None, param_context=None, add_collection=False):
+    input_extensions = input_extensions or {}
+    param_context = param_context or {}
     inputs = {}
     last_ext = "data"
     i = 1
@@ -218,7 +220,7 @@ def __assert_output_format_is(expected, output, input_extensions=[], param_conte
         input_collections["hdcai"] = [(hc1, False)]
 
     actual_format = determine_output_format(output, param_context, inputs, input_collections, last_ext)
-    assert actual_format == expected, "Actual format %s, does not match expected %s" % (actual_format, expected)
+    assert actual_format == expected, f"Actual format {actual_format}, does not match expected {expected}"
 
 
 def quick_output(format, format_source=None, change_format_xml=None):
@@ -232,7 +234,7 @@ def quick_output(format, format_source=None, change_format_xml=None):
     return test_output
 
 
-class MockTrans(object):
+class MockTrans:
 
     def __init__(self, app, history, user=None):
         self.app = app
@@ -268,7 +270,7 @@ class MockTrans(object):
         pass
 
 
-class MockObjectStore(object):
+class MockObjectStore:
 
     def __init__(self):
         self.created_datasets = []

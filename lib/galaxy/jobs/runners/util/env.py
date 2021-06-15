@@ -1,4 +1,3 @@
-
 RAW_VALUE_BY_DEFAULT = False
 
 
@@ -24,13 +23,13 @@ def env_to_statement(env):
     '''
     source_file = env.get('file', None)
     if source_file:
-        return '. %s' % __escape(source_file, env)
+        return f'. {__escape(source_file, env)}'
     execute = env.get('execute', None)
     if execute:
         return execute
     name = env['name']
     value = __escape(env['value'], env)
-    return '%s=%s; export %s' % (name, value, name)
+    return f'{name}={value}; export {name}'
 
 
 def __escape(value, env):

@@ -29,7 +29,6 @@ Examples
 # 2 days:
 % ./runtime_stats.py -c galaxy.ini --like -m $((2 * 60)) -M $((2 * 24 * 60 * 60)) 'tophat2'
 """
-from __future__ import print_function
 
 import argparse
 import os
@@ -136,7 +135,7 @@ def query(tool_id=None, user=None, like=None, source='metrics',
 
     connect_arg_str = ''
     for k, v in connect_args.items():
-        connect_arg_str += '%s=%s' % (k, v)
+        connect_arg_str += f'{k}={v}'
 
     pc = psycopg2.connect(connect_arg_str)
     cur = pc.cursor()
@@ -149,7 +148,7 @@ def query(tool_id=None, user=None, like=None, source='metrics',
                 field = 'username'
             else:
                 field = 'email'
-            sql = 'SELECT id FROM galaxy_user WHERE %s = %s' % (field, '%s')
+            sql = 'SELECT id FROM galaxy_user WHERE {} = {}'.format(field, '%s')
             cur.execute(sql, (user,))
             if debug:
                 print('Executed:')

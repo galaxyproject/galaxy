@@ -3,7 +3,6 @@ This script creates a request.folder_id column which is a foreign
 key to the library_folder table. This also adds a 'type' and 'layout' column
 to the form_definition table.
 """
-from __future__ import print_function
 
 import logging
 
@@ -39,7 +38,7 @@ def upgrade(migrate_engine):
     FormDefinition_table = Table("form_definition", metadata, autoload=True)
     col = Column("type", TrimmedString(255), index=True)
     add_column(col, FormDefinition_table, metadata, index_name='ix_form_definition_type')
-    col = Column("layout", JSONType())
+    col = Column("layout", JSONType)
     add_column(col, FormDefinition_table, metadata)
 
 

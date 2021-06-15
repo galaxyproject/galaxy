@@ -10,7 +10,7 @@ from galaxy_test.base.populators import (
 from galaxy_test.driver import integration_util
 
 
-class CancelsJob(object):
+class CancelsJob:
 
     def _setup_cat_data_and_sleep(self, history_id):
         hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3")
@@ -38,7 +38,7 @@ class LocalJobCancellationTestCase(CancelsJob, integration_util.IntegrationTestC
     framework_tool_and_types = True
 
     def setUp(self):
-        super(LocalJobCancellationTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
     def test_cancel_job_with_admin_message(self):
@@ -91,7 +91,7 @@ class LocalJobCancellationTestCase(CancelsJob, integration_util.IntegrationTestC
 
             state = None
             # Now make sure the job becomes complete.
-            for i in range(100):
+            for _ in range(100):
                 sa_session.refresh(job)
                 state = job.state
                 if state == app.model.Job.states.DELETED:
@@ -99,12 +99,12 @@ class LocalJobCancellationTestCase(CancelsJob, integration_util.IntegrationTestC
                 time.sleep(.1)
 
             # Now make sure the pid is actually killed.
-            for i in range(100):
+            for _ in range(100):
                 if not pid_exists:
                     break
                 pid_exists = psutil.pid_exists(external_id)
                 time.sleep(.1)
 
-            final_state = "pid exists? %s, final db job state %s" % (pid_exists, state)
+            final_state = f"pid exists? {pid_exists}, final db job state {state}"
             assert state == app.model.Job.states.DELETED, final_state
             assert not pid_exists, final_state

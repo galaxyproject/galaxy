@@ -1,15 +1,14 @@
-from __future__ import print_function
-
 import json
 import os
 
 from galaxy_test.base.populators import uses_test_history
 from galaxy_test.base.workflow_fixtures import (
+    WORKFLOW_PARAMETER_INPUT_INTEGER_DEFAULT,
     WORKFLOW_RUNTIME_PARAMETER_SIMPLE,
     WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES,
     WORKFLOW_SIMPLE_CAT_TWICE,
     WORKFLOW_WITH_OUTPUT_ACTIONS,
-    WORKFLOW_WITH_OUTPUTS
+    WORKFLOW_WITH_OUTPUTS,
 )
 from .test_workflows import BaseWorkflowsApiTestCase
 
@@ -19,7 +18,7 @@ WORKFLOWS_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 class WorkflowsFromYamlApiTestCase(BaseWorkflowsApiTestCase):
 
     def setUp(self):
-        super(WorkflowsFromYamlApiTestCase, self).setUp()
+        super().setUp()
 
     def _upload_and_download(self, yaml_workflow, **kwds):
         style = None
@@ -73,7 +72,7 @@ input1: "hello world"
 
     def test_outputs(self):
         workflow_id = self._upload_yaml_workflow(WORKFLOW_WITH_OUTPUTS, round_trip_format_conversion=True)
-        workflow = self._get("workflows/%s/download" % workflow_id).json()
+        workflow = self._get(f"workflows/{workflow_id}/download").json()
         self.assertEqual(workflow["steps"]["1"]["workflow_outputs"][0]["output_name"], "out_file1")
         self.assertEqual(workflow["steps"]["1"]["workflow_outputs"][0]["label"], "wf_output_1")
         workflow = self.workflow_populator.download_workflow(workflow_id, style="format2")
@@ -136,7 +135,7 @@ steps:
         assert subworkflow_connection["input_subworkflow_step_id"] == 0
 
         workflow_reupload_id = self.import_workflow(workflow)["id"]
-        workflow_reupload = self._get("workflows/%s/download" % workflow_reupload_id).json()
+        workflow_reupload = self._get(f"workflows/{workflow_reupload_id}/download").json()
         by_label = self._steps_by_label(workflow_reupload)
         subworkflow_step = by_label["nested_workflow"]
         assert subworkflow_step["type"] == "subworkflow"
@@ -321,6 +320,14 @@ test_data:
         )
         content = self.dataset_populator.get_history_dataset_content(history_id)
         self.assertEqual(content, "hello world\nhello world 2\n")
+
+    def test_parameter_default_rep(self):
+        workflow = self._upload_and_download(WORKFLOW_PARAMETER_INPUT_INTEGER_DEFAULT)
+        int_input = self._steps_by_label(workflow)["int_input"]
+        int_input_state = json.loads(int_input["tool_state"])
+        assert int_input_state["default"] == 3
+        assert int_input_state["optional"] is True
+        assert int_input_state["parameter_type"] == "integer"
 
     def _steps_by_label(self, workflow_as_dict):
         by_label = {}

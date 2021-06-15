@@ -1,14 +1,17 @@
 <tool id="__BUILD_LIST__"
       name="Build List"
-      version="1.0.0"
+      version="1.1.0"
       tool_type="build_list">
   <description>from one or more datasets</description>
   <type class="BuildListCollectionTool" module="galaxy.tools" />
   <action module="galaxy.tools.actions.model_operations"
           class="ModelOperationToolAction"/>
+  <edam_operations>
+    <edam_operation>operation_2409</edam_operation>
+  </edam_operations>
   <inputs>
     <repeat name="datasets" title="Dataset">
-      <param type="data" name="input" label="Input Dataset" />
+      <param type="data" name="input" optional="true" label="Input Dataset" />
     </repeat>
   </inputs>
   <outputs>
@@ -33,6 +36,12 @@ This tool will create a new collection from your history datasets but your quota
               <has_text_matching expression="^This is a line of text.\n$"/>
           </assert_contents>
         </element>
+      </output_collection>
+    </test>
+    <test>
+      <repeat name="datasets">
+      </repeat>
+      <output_collection name="output" type="list" count="0">
       </output_collection>
     </test>
   </tests>

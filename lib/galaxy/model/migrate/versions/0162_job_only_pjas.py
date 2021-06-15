@@ -2,7 +2,6 @@
 Migration script to allow null workflow_step for PostJobActions.
 This enables using PJAs with individual job executions.
 """
-from __future__ import print_function
 
 import logging
 

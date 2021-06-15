@@ -5,6 +5,7 @@ from datetime import (
     datetime,
     timedelta
 )
+from typing import Any, Mapping, TYPE_CHECKING
 
 import tool_shed.repository_types.util as rt_util
 from galaxy import util
@@ -23,16 +24,25 @@ from tool_shed.util.hgweb_config import hgweb_config_manager
 
 log = logging.getLogger(__name__)
 
-WEAK_HG_REPO_CACHE = weakref.WeakKeyDictionary()
+WEAK_HG_REPO_CACHE: Mapping['Repository', Any] = weakref.WeakKeyDictionary()
+
+if TYPE_CHECKING:
+    from sqlalchemy.schema import Table
+
+    class _HasTable:
+        table: Table
+else:
+    _HasTable = object
 
 
-class APIKeys(object):
+class APIKeys(_HasTable):
     pass
 
 
-class User(Dictifiable):
+class User(Dictifiable, _HasTable):
     dict_collection_visible_keys = ['id', 'username']
     dict_element_visible_keys = ['id', 'username']
+    bootstrap_admin_user = False
 
     def __init__(self, email=None, password=None):
         self.email = email
@@ -70,12 +80,12 @@ class User(Dictifiable):
     def set_password_cleartext(self, cleartext):
         message = validate_password_str(cleartext)
         if message:
-            raise Exception("Invalid password: %s" % message)
+            raise Exception(f"Invalid password: {message}")
         """Set 'self.password' to the digest of 'cleartext'."""
         self.password = new_secure_hash(text_type=cleartext)
 
 
-class PasswordResetToken(object):
+class PasswordResetToken(_HasTable):
     def __init__(self, user, token=None):
         if token:
             self.token = token
@@ -85,7 +95,7 @@ class PasswordResetToken(object):
         self.expiration_time = now() + timedelta(hours=24)
 
 
-class Group(Dictifiable):
+class Group(Dictifiable, _HasTable):
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name']
 
@@ -94,7 +104,7 @@ class Group(Dictifiable):
         self.deleted = False
 
 
-class Role(Dictifiable):
+class Role(Dictifiable, _HasTable):
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name', 'description', 'type']
     private_id = None
@@ -120,31 +130,31 @@ class Role(Dictifiable):
         return False
 
 
-class UserGroupAssociation(object):
+class UserGroupAssociation(_HasTable):
     def __init__(self, user, group):
         self.user = user
         self.group = group
 
 
-class UserRoleAssociation(object):
+class UserRoleAssociation(_HasTable):
     def __init__(self, user, role):
         self.user = user
         self.role = role
 
 
-class GroupRoleAssociation(object):
+class GroupRoleAssociation(_HasTable):
     def __init__(self, group, role):
         self.group = group
         self.role = role
 
 
-class RepositoryRoleAssociation(object):
+class RepositoryRoleAssociation(_HasTable):
     def __init__(self, repository, role):
         self.repository = repository
         self.role = role
 
 
-class GalaxySession(object):
+class GalaxySession(_HasTable):
 
     def __init__(self,
                  id=None,
@@ -169,11 +179,11 @@ class GalaxySession(object):
         self.last_action = last_action or datetime.now()
 
 
-class Repository(Dictifiable):
+class Repository(Dictifiable, _HasTable):
     dict_collection_visible_keys = ['id', 'name', 'type', 'remote_repository_url', 'homepage_url', 'description', 'user_id', 'private', 'deleted',
                                     'times_downloaded', 'deprecated', 'create_time']
     dict_element_visible_keys = ['id', 'name', 'type', 'remote_repository_url', 'homepage_url', 'description', 'long_description', 'user_id', 'private',
-                                 'deleted', 'times_downloaded', 'deprecated', 'create_time', 'ratings', 'reviews', 'reviewers']
+                                 'deleted', 'times_downloaded', 'deprecated', 'create_time']
     file_states = Bunch(NORMAL='n',
                         NEEDS_MERGING='m',
                         MARKED_FOR_REMOVAL='r',
@@ -211,7 +221,7 @@ class Repository(Dictifiable):
 
     @property
     def admin_role(self):
-        admin_role_name = '%s_%s_admin' % (str(self.name), str(self.user.username))
+        admin_role_name = f'{str(self.name)}_{str(self.user.username)}_admin'
         for rra in self.roles:
             role = rra.role
             if str(role.name) == admin_role_name:
@@ -221,7 +231,7 @@ class Repository(Dictifiable):
 
     def allow_push(self):
         hgrc_file = hg_util.get_hgrc_path(self.repo_path())
-        with open(hgrc_file, 'r') as fh:
+        with open(hgrc_file) as fh:
             for line in fh.read().splitlines():
                 if line.startswith('allow_push = '):
                     return line[len('allow_push = '):]
@@ -293,7 +303,7 @@ class Repository(Dictifiable):
     def revision(self):
         repo = self.hg_repo
         tip_ctx = repo[repo.changelog.tip()]
-        return "%s:%s" % (str(tip_ctx.rev()), str(tip_ctx))
+        return f"{str(tip_ctx.rev())}:{str(tip_ctx)}"
 
     def set_allow_push(self, usernames, remove_auth=''):
         allow_push = util.listify(self.allow_push())
@@ -303,17 +313,17 @@ class Repository(Dictifiable):
             for username in util.listify(usernames):
                 if username not in allow_push:
                     allow_push.append(username)
-        allow_push = '%s\n' % ','.join(allow_push)
+        allow_push = f"{','.join(allow_push)}\n"
         # Why doesn't the following work?
         # repo.ui.setconfig('web', 'allow_push', allow_push)
         repo_dir = self.repo_path()
         hgrc_file = hg_util.get_hgrc_path(repo_dir)
-        with open(hgrc_file, 'r') as fh:
+        with open(hgrc_file) as fh:
             lines = fh.readlines()
         with open(hgrc_file, 'w') as fh:
             for line in lines:
                 if line.startswith('allow_push'):
-                    fh.write('allow_push = %s' % allow_push)
+                    fh.write(f'allow_push = {allow_push}')
                 else:
                     fh.write(line)
 
@@ -322,13 +332,13 @@ class Repository(Dictifiable):
         return str(repo[repo.changelog.tip()])
 
     def to_dict(self, view='collection', value_mapper=None):
-        rval = super(Repository, self).to_dict(view=view, value_mapper=value_mapper)
+        rval = super().to_dict(view=view, value_mapper=value_mapper)
         if 'user_id' in rval:
             rval['owner'] = self.user.username
         return rval
 
 
-class RepositoryMetadata(Dictifiable):
+class RepositoryMetadata(Dictifiable, _HasTable):
     dict_collection_visible_keys = ['id', 'repository_id', 'numeric_revision', 'changeset_revision', 'malicious', 'downloadable', 'missing_test_components',
                                     'has_repository_dependencies', 'includes_datatypes', 'includes_tools', 'includes_tool_dependencies',
                                     'includes_tools_for_display_in_tool_panel', 'includes_workflows']
@@ -372,7 +382,7 @@ class RepositoryMetadata(Dictifiable):
         return []
 
 
-class RepositoryReview(Dictifiable):
+class RepositoryReview(Dictifiable, _HasTable):
     dict_collection_visible_keys = ['id', 'repository_id', 'changeset_revision', 'user_id', 'rating', 'deleted']
     dict_element_visible_keys = ['id', 'repository_id', 'changeset_revision', 'user_id', 'rating', 'deleted']
     approved_states = Bunch(NO='no', YES='yes')
@@ -385,7 +395,7 @@ class RepositoryReview(Dictifiable):
         self.deleted = deleted
 
 
-class ComponentReview(Dictifiable):
+class ComponentReview(Dictifiable, _HasTable):
     dict_collection_visible_keys = ['id', 'repository_review_id', 'component_id', 'private', 'approved', 'rating', 'deleted']
     dict_element_visible_keys = ['id', 'repository_review_id', 'component_id', 'private', 'approved', 'rating', 'deleted']
     approved_states = Bunch(NO='no', YES='yes', NA='not_applicable')
@@ -400,14 +410,14 @@ class ComponentReview(Dictifiable):
         self.deleted = deleted
 
 
-class Component(object):
+class Component(_HasTable):
 
     def __init__(self, name=None, description=None):
         self.name = name
         self.description = description
 
 
-class ItemRatingAssociation(object):
+class ItemRatingAssociation(_HasTable):
 
     def __init__(self, id=None, user=None, item=None, rating=0, comment=''):
         self.id = id
@@ -418,16 +428,15 @@ class ItemRatingAssociation(object):
 
     def set_item(self, item):
         """ Set association's item. """
-        pass
 
 
-class RepositoryRatingAssociation(ItemRatingAssociation):
+class RepositoryRatingAssociation(ItemRatingAssociation, _HasTable):
 
     def set_item(self, repository):
         self.repository = repository
 
 
-class Category(Dictifiable):
+class Category(Dictifiable, _HasTable):
     dict_collection_visible_keys = ['id', 'name', 'description', 'deleted']
     dict_element_visible_keys = ['id', 'name', 'description', 'deleted']
 
@@ -437,14 +446,14 @@ class Category(Dictifiable):
         self.deleted = deleted
 
 
-class RepositoryCategoryAssociation(object):
+class RepositoryCategoryAssociation(_HasTable):
 
     def __init__(self, repository=None, category=None):
         self.repository = repository
         self.category = category
 
 
-class Tag(object):
+class Tag(_HasTable):
 
     def __init__(self, id=None, type=None, parent_id=None, name=None):
         self.id = id
@@ -456,7 +465,7 @@ class Tag(object):
         return "Tag(id=%s, type=%i, parent_id=%s, name=%s)" % (self.id, self.type, self.parent_id, self.name)
 
 
-class ItemTagAssociation(object):
+class ItemTagAssociation(_HasTable):
 
     def __init__(self, id=None, user=None, item_id=None, tag_id=None, user_tname=None, value=None):
         self.id = id
@@ -468,7 +477,7 @@ class ItemTagAssociation(object):
         self.user_value = None
 
 
-class PostJobAction(object):
+class PostJobAction(_HasTable):
 
     def __init__(self, action_type, workflow_step, output_name=None, action_arguments=None):
         self.action_type = action_type
@@ -477,15 +486,15 @@ class PostJobAction(object):
         self.workflow_step = workflow_step
 
 
-class StoredWorkflowAnnotationAssociation(object):
+class StoredWorkflowAnnotationAssociation(_HasTable):
     pass
 
 
-class WorkflowStepAnnotationAssociation(object):
+class WorkflowStepAnnotationAssociation(_HasTable):
     pass
 
 
-class Workflow(object):
+class Workflow(_HasTable):
 
     def __init__(self):
         self.user = None
@@ -495,7 +504,7 @@ class Workflow(object):
         self.steps = []
 
 
-class WorkflowStep(object):
+class WorkflowStep(_HasTable):
 
     def __init__(self):
         self.id = None
@@ -526,7 +535,7 @@ class WorkflowStep(object):
         return connections
 
 
-class WorkflowStepInput(object):
+class WorkflowStepInput(_HasTable):
 
     def __init__(self):
         self.id = None
@@ -534,7 +543,7 @@ class WorkflowStepInput(object):
         self.connections = []
 
 
-class WorkflowStepConnection(object):
+class WorkflowStepConnection:
 
     def __init__(self):
         self.output_step = None

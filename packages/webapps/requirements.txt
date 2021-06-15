@@ -1,3 +1,6 @@
 galaxy-app
 Cheetah3
 Mako
+fastapi
+fastapi-utils
+starlette

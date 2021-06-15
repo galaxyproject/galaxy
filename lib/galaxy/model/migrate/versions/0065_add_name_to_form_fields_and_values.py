@@ -3,7 +3,6 @@ Migration script to add 'name' attribute to the JSON dict which describes
 a form definition field and the form values in the database. In the 'form_values'
 table, the 'content' column is now a JSON dict instead of a list.
 """
-from __future__ import print_function
 
 import logging
 from json import (
@@ -104,7 +103,7 @@ def downgrade(migrate_engine):
         fields_list = loads(str(row[2]))
         if fields_list:
             values_list = []
-            for field_index, field in enumerate(fields_list):
+            for field in fields_list:
                 field_name = field['name']
                 field_value = values_dict[field_name]
                 values_list.append(field_value)
@@ -120,7 +119,7 @@ def downgrade(migrate_engine):
             continue
         fields_list = loads(_sniffnfix_pg9_hex(fields))
         if len(fields_list):
-            for index, field in enumerate(fields_list):
+            for field in fields_list:
                 if 'name' in field:
                     del field['name']
             if migrate_engine.name == 'mysql':

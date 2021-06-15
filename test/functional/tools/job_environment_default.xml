@@ -1,16 +1,18 @@
 <tool id="job_environment_default" name="job_environment_default" version="0.1.0" profile="18.01">
     <requirements>
-      <container type="docker">busybox:ubuntu-14.04</container>
+        <container type="docker">busybox:ubuntu-14.04</container>
     </requirements>
     <command detect_errors="exit_code"><![CDATA[
-      echo 'Writing environment properties to output files.';
-      (>&2 echo 'Example tool stderr output.');
-      echo `id -u` > '$user_id';
-      echo `id -g` > '$group_id';
-      echo `pwd` > '$pwd';
-      echo "\$HOME" > '$home';
-      echo "\$TMP"  > '$tmp';
-      echo "\$SOME_ENV_VAR" > '$some_env_var';
+echo 'Writing environment properties to output files.' &&
+(>&2 echo 'Example tool stderr output.') &&
+echo \$(id -u) > '$user_id' &&
+echo \$(id -g) > '$group_id' &&
+echo \$(pwd) > '$pwd' &&
+echo "\$HOME" > '$home' &&
+echo "\$TMP"  > '$tmp' &&
+echo "\$SOME_ENV_VAR" > '$some_env_var' &&
+touch "\$_GALAXY_JOB_TMP_DIR/tmp_test" &&
+touch "\$HOME/home_test"
     ]]></command>
     <inputs>
     </inputs>
@@ -22,6 +24,8 @@
         <data name="tmp" format="txt" label="tmp" />
         <data name="some_env_var" format="txt" label="env_var" />
     </outputs>
+    <tests>
+    </tests>
     <help>
     </help>
 </tool>

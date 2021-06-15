@@ -2,17 +2,21 @@
 Support for generating the options for a SelectToolParameter dynamically (based
 on the values of other parameters or other aspects of the current state)
 """
+import copy
 import logging
 import os
 import re
+from io import StringIO
 
-from six import StringIO
-
-import galaxy.tools
 from galaxy.model import (
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
+    MetadataFile,
     User
+)
+from galaxy.tools.wrappers import (
+    DatasetFilenameWrapper,
+    DatasetListWrapper
 )
 from galaxy.util import string_as_bool
 from . import validation
@@ -20,7 +24,7 @@ from . import validation
 log = logging.getLogger(__name__)
 
 
-class Filter(object):
+class Filter:
     """
     A filter takes the current options list and modifies it.
     """
@@ -158,8 +162,20 @@ class DataMetaFilter(Filter):
         return self.ref_name
 
     def filter_options(self, options, trans, other_values):
+        def _add_meta(meta_value, m):
+            if isinstance(m, list):
+                meta_value |= set(m)
+            elif isinstance(m, dict):
+                meta_value |= {f"{k},{v}" for k, v in m.items()}
+            elif isinstance(m, str) and os.path.isfile(m):
+                with open(m) as fh:
+                    for line in fh:
+                        meta_value.add(line)
+            else:
+                meta_value.add(m)
+
         def compare_meta_value(file_value, dataset_value):
-            if isinstance(dataset_value, list):
+            if isinstance(dataset_value, set):
                 if self.multiple:
                     file_value = file_value.split(self.separator)
                     for value in dataset_value:
@@ -170,36 +186,31 @@ class DataMetaFilter(Filter):
             if self.multiple:
                 return dataset_value in file_value.split(self.separator)
             return file_value == dataset_value
-        ref = other_values.get(self.ref_name, None)
-        if isinstance(ref, HistoryDatasetCollectionAssociation):
-            ref = ref.to_hda_representative(self.multiple)
-        is_data = isinstance(ref, galaxy.tools.wrappers.DatasetFilenameWrapper)
-        is_data_list = isinstance(ref, galaxy.tools.wrappers.DatasetListWrapper) or isinstance(ref, list)
-        is_data_or_data_list = is_data or is_data_list
-        if not isinstance(ref, HistoryDatasetAssociation) and not is_data_or_data_list:
-            return []  # not a valid dataset
 
-        # get the metadata value. for lists (of data sets) and collections
-        # the meta data value of all elements is determined if its the same
-        # for all, if different are found the filter returns an empty list
-        if is_data_list:
-            meta_value = None
-            for single_ref in ref:
-                this_meta_value = single_ref.metadata.get(self.key, None)
-                if this_meta_value == meta_value:
-                    continue
-                elif meta_value is None:
-                    meta_value = this_meta_value
-                else:
-                    # Different values with mismatching metadata, return []
-                    return []
-        else:
-            meta_value = ref.metadata.get(self.key, None)
+        try:
+            ref = _get_ref_data(other_values, self.ref_name)
+        except KeyError:  # no such dataset
+            log.warning(f"could not filter by metadata: {self.ref_name} unknown")
+            return []
+        except ValueError:  # not a valid dataset
+            log.warning(f"could not filter by metadata: {self.ref_name} not a data or collection parameter")
+            return []
+        # get the metadata value.
+        # - for lists: (of data sets) and collections the meta data values of all
+        #   elements is determined
+        # - for data sets: the meta data value
+        # in both cases only meta data that is set (i.e. differs from the no_value)
+        # is considered
+        meta_value = set()
+        for r in ref:
+            if not r.metadata.element_is_set(self.key):
+                continue
+            _add_meta(meta_value, r.metadata.get(self.key))
 
         # if no meta data value could be determined just return a copy
         # of the original options
-        if meta_value is None:
-            return [(disp_name, optval, selected) for disp_name, optval, selected in options]
+        if len(meta_value) == 0:
+            return copy.deepcopy(options)
 
         if self.column is not None:
             rval = []
@@ -210,13 +221,11 @@ class DataMetaFilter(Filter):
         else:
             if not self.dynamic_option.columns:
                 self.dynamic_option.columns = {
-                    "name" : 0,
-                    "value" : 1,
-                    "selected" : 2
+                    "name": 0,
+                    "value": 1,
+                    "selected": 2
                 }
                 self.dynamic_option.largest_index = 2
-            if not isinstance(meta_value, list):
-                meta_value = [meta_value]
             for value in meta_value:
                 options.append((value, value, False))
             return options
@@ -462,7 +471,7 @@ class RemoveValueFilter(Filter):
                 data_ref = other_values.get(self.meta_ref)
                 if isinstance(data_ref, HistoryDatasetCollectionAssociation):
                     data_ref = data_ref.to_hda_representative()
-                if not isinstance(data_ref, HistoryDatasetAssociation) and not isinstance(data_ref, galaxy.tools.wrappers.DatasetFilenameWrapper):
+                if not isinstance(data_ref, HistoryDatasetAssociation) and not isinstance(data_ref, DatasetFilenameWrapper):
                     return options  # cannot modify options
                 value = data_ref.metadata.get(self.metadata_key, None)
         # Default to the second column (i.e. 1) since this used to work only on options produced by the data_meta filter
@@ -502,7 +511,7 @@ filter_types = dict(data_meta=DataMetaFilter,
                     sort_by=SortByColumnFilter)
 
 
-class DynamicOptions(object):
+class DynamicOptions:
     """Handles dynamically generated SelectToolParameter options"""
 
     def __init__(self, elem, tool_param):
@@ -555,6 +564,7 @@ class DynamicOptions(object):
                     else:
                         self.missing_index_file = data_file
             elif dataset_file is not None:
+                self.meta_file_key = elem.get('meta_file_key', None)
                 self.dataset_ref_name = dataset_file
                 self.has_dataset_dependencies = True
                 self.converter_safe = False
@@ -593,7 +603,7 @@ class DynamicOptions(object):
     @property
     def missing_tool_data_table_name(self):
         if not self.tool_data_table:
-            log.warning("Data table named '%s' is required by tool but not configured" % self.tool_data_table_name)
+            log.warning(f"Data table named '{self.tool_data_table_name}' is required by tool but not configured")
             return self.tool_data_table_name
         return None
 
@@ -630,7 +640,7 @@ class DynamicOptions(object):
                             name = "a configuration file"
                         # Perhaps this should be an error, but even a warning is useful.
                         log.warning("Inconsistent number of fields (%i vs %i) in %s using separator %r, check line: %r" %
-                                  (field_count, len(fields), name, self.separator, line))
+                                    (field_count, len(fields), name, self.separator, line))
                     rval.append(fields)
         return rval
 
@@ -650,20 +660,39 @@ class DynamicOptions(object):
 
     def get_fields(self, trans, other_values):
         if self.dataset_ref_name:
-            dataset = other_values.get(self.dataset_ref_name, None)
-            if not dataset or not hasattr(dataset, 'file_name'):
-                return []  # no valid dataset in history
-            # Ensure parsing dynamic options does not consume more than a megabyte worth memory.
-            path = dataset.file_name
-            if os.path.getsize(path) < 1048576:
-                with open(path) as fh:
-                    options = self.parse_file_fields(fh)
-            else:
-                # Pass just the first megabyte to parse_file_fields.
-                log.warning("Attempting to load options from large file, reading just first megabyte")
-                with open(path, 'r') as fh:
-                    contents = fh.read(1048576)
-                options = self.parse_file_fields(StringIO(contents))
+            try:
+                datasets = _get_ref_data(other_values, self.dataset_ref_name)
+            except KeyError:  # no such dataset
+                log.warning(f"could not create dynamic options from_dataset: {self.dataset_ref_name} unknown")
+                return []
+            except ValueError:  # not a valid dataset
+                log.warning(f"could not create dynamic options from_dataset: {self.dataset_ref_name} not a data or collection parameter")
+                return []
+
+            options = []
+            meta_file_key = self.meta_file_key
+            for dataset in datasets:
+                if meta_file_key:
+                    dataset = getattr(dataset.metadata, meta_file_key, None)
+                    if not isinstance(dataset, MetadataFile):
+                        log.warning(f"The meta_file_key `{meta_file_key}` was invalid or the referred object was not a valid file type metadata!")
+                        continue
+                    if getattr(dataset, 'purged', False) or getattr(dataset, 'deleted', False):
+                        log.warning(f"The metadata file inferred from key `{meta_file_key}` was deleted!")
+                        continue
+                if not hasattr(dataset, 'file_name'):
+                    continue
+                # Ensure parsing dynamic options does not consume more than a megabyte worth memory.
+                path = dataset.file_name
+                if os.path.getsize(path) < 1048576:
+                    with open(path) as fh:
+                        options += self.parse_file_fields(fh)
+                else:
+                    # Pass just the first megabyte to parse_file_fields.
+                    log.warning("Attempting to load options from large file, reading just first megabyte")
+                    with open(path) as fh:
+                        contents = fh.read(1048576)
+                    options += self.parse_file_fields(StringIO(contents))
         elif self.tool_data_table:
             options = self.tool_data_table.get_fields()
         elif self.file_fields:
@@ -693,7 +722,7 @@ class DynamicOptions(object):
         if isinstance(field_name, int):
             field_index = field_name
         else:
-            assert field_name in self.columns, "Requested '%s' column missing from column def" % field_name
+            assert field_name in self.columns, f"Requested '{field_name}' column missing from column def"
             field_index = self.columns[field_name]
         if not isinstance(value, list):
             value = [value]
@@ -724,3 +753,19 @@ class DynamicOptions(object):
             return self.columns[column_spec]
         # Int?
         return int(column_spec)
+
+
+def _get_ref_data(other_values, ref_name):
+    """
+    get the list of data sets from ref_name
+    - a KeyError is raised if no such element exists
+    - a ValueError is raised if the element is not of the type DatasetFilenameWrapper, HistoryDatasetAssociation, DatasetListWrapper, HistoryDatasetCollectionAssociation, list
+    """
+    ref = other_values[ref_name]
+    if not isinstance(ref, (DatasetFilenameWrapper, HistoryDatasetAssociation, DatasetListWrapper, HistoryDatasetCollectionAssociation, list)):
+        raise ValueError
+    if isinstance(ref, (DatasetFilenameWrapper, HistoryDatasetAssociation)):
+        ref = [ref]
+    elif isinstance(ref, HistoryDatasetCollectionAssociation):
+        ref = ref.to_hda_representative(multiple=True)
+    return ref

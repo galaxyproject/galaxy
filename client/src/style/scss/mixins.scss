@@ -1,0 +1,104 @@
+//$fa-font-path: "~font-awesome/fonts/";
+//@import "~font-awesome/scss/font-awesome.scss";
+//@import "~font-awesome/scss/_mixins";
+$fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
+@import "~@fortawesome/fontawesome-free/scss/fontawesome";
+@import "~@fortawesome/fontawesome-free/scss/_variables";
+
+// Utility mixin expands to container edges
+@mixin fill() {
+    position: relative;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+@mixin absfill() {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+// Centers object inside parent
+// position parent container relative or absolute
+@mixin absCenter() {
+    position: absolute;
+    display: block;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+// animates max-height and visibility hidden by default, add .active to show
+// boxHeight must be larger than the expected maximum height of the element
+// or it will be clipped
+
+@mixin shutterFade($boxHeight: 100px) {
+    max-height: 0px;
+    visibility: hidden;
+    opacity: 0;
+    transition-duration: 0.35s;
+    transition-property: visibility, opacity, max-height;
+    transition-timing-function: ease;
+
+    &.active {
+        max-height: $boxHeight;
+        visibility: visible;
+        opacity: 1;
+    }
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+@mixin scrollMe() {
+    overflow-x: hidden;
+    overflow-y: scroll;
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+// top selector fixed, bottom list scrolls
+@mixin scrollingListLayout($fixedTop, $listRegion) {
+    @include fill();
+
+    display: flex;
+    flex-direction: column;
+
+    & #{$fixedTop} {
+        flex-grow: 0;
+    }
+
+    & #{$listRegion} {
+        flex-grow: 1;
+        @include scrollMe();
+    }
+}
+
+// Removes browser formatting of lists
+
+@mixin list_reset() {
+    list-style: none;
+    padding: 0 0 0 0;
+    margin: 0 0 0 0;
+}
+
+// font awesome as a mixin
+// icon variables come from ~font-awesome/scss/_variables.scss
+
+@mixin fontawesome($icon) {
+    @include fa-icon();
+    &:before {
+        content: $icon;
+    }
+    span {
+        // Span for text readers
+        // <a><span>Label</span></a>
+        @include sr-only();
+    }
+}

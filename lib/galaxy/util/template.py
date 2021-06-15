@@ -1,13 +1,12 @@
 """Entry point for the usage of Cheetah templating within Galaxy."""
-from __future__ import absolute_import
 
-import sys
 import traceback
 from lib2to3.refactor import RefactoringTool
 
 import packaging.version
 from Cheetah.Compiler import Compiler
 from Cheetah.NameMapper import NotFound
+from Cheetah.Parser import ParseError
 from Cheetah.Template import Template
 from past.translation import myfixes
 
@@ -15,11 +14,8 @@ from . import unicodify
 
 # Skip libpasteurize fixers, which make sure code is py2 and py3 compatible.
 # This is not needed, we only translate code on py3.
-if sys.version_info.major > 2:
-    myfixes = [f for f in myfixes if not f.startswith('libpasteurize')]
-    refactoring_tool = RefactoringTool(myfixes, {'print_function': True})
-else:
-    myfixes = refactoring_tool = None
+myfixes = [f for f in myfixes if not f.startswith('libpasteurize')]
+refactoring_tool = RefactoringTool(myfixes, {'print_function': True})
 
 
 class FixedModuleCodeCompiler(Compiler):
@@ -36,8 +32,7 @@ def create_compiler_class(module_code):
     class CustomCompilerClass(FixedModuleCodeCompiler):
         pass
 
-    setattr(CustomCompilerClass, 'module_code', module_code)
-
+    CustomCompilerClass.module_code = module_code
     return CustomCompilerClass
 
 
@@ -61,14 +56,32 @@ def fill_template(template_text,
         context = kwargs
     if isinstance(python_template_version, str):
         python_template_version = packaging.version.parse(python_template_version)
-    klass = Template.compile(source=template_text, compilerClass=compiler_class)
+    try:
+        klass = Template.compile(source=template_text, compilerClass=compiler_class)
+    except ParseError as e:
+        # Might happen on invalid syntax within a cheetah statement, like `#if $smxsize <> 128.0`
+        if first_exception is None:
+            first_exception = e
+        if python_template_version.release[0] < 3 and retry > 0:
+            module_code = Template.compile(source=template_text, compilerClass=compiler_class, returnAClass=False).decode('utf-8')
+            module_code = futurize_preprocessor(module_code)
+            compiler_class = create_compiler_class(module_code)
+            return fill_template(
+                template_text=template_text,
+                context=context,
+                retry=retry - 1,
+                compiler_class=compiler_class,
+                first_exception=first_exception,
+                python_template_version=python_template_version,
+            )
+        raise first_exception or e
     t = klass(searchList=[context])
     try:
-        return unicodify(t)
+        return unicodify(t, log_exception=False)
     except NotFound as e:
         if first_exception is None:
             first_exception = e
-        if refactoring_tool and python_template_version.release[0] < 3 and retry > 0:
+        if python_template_version.release[0] < 3 and retry > 0:
             tb = e.__traceback__
             last_stack = traceback.extract_tb(tb)[-1]
             if last_stack.name == '<listcomp>':
@@ -78,7 +91,7 @@ def fill_template(template_text,
                 # list comprehensions, as this has never worked for dict or set comprehensions or
                 # generator expressions in Cheetah.
                 var_not_found = e.args[0].split("'")[1]
-                replace_str = 'VFFSL(SL,"%s",True)' % var_not_found
+                replace_str = f'VFFSL(SL,"{var_not_found}",True)'
                 lineno = last_stack.lineno - 1
                 module_code = t._CHEETAH_generatedModuleCode.splitlines()
                 module_code[lineno] = module_code[lineno].replace(replace_str, var_not_found)
@@ -95,7 +108,7 @@ def fill_template(template_text,
     except Exception as e:
         if first_exception is None:
             first_exception = e
-        if sys.version_info.major > 2 and python_template_version.release[0] < 3 and not futurized:
+        if python_template_version.release[0] < 3 and not futurized:
             # Possibly an error caused by attempting to run python 2
             # template code on python 3. Run the generated module code
             # through futurize and hope for the best.

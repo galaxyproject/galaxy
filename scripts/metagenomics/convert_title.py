@@ -3,7 +3,6 @@
 convert nt and wgs data (fasta format) to giNumber_seqLen
 run formatdb in the command line: gunzip -c nt.gz |formatdb -i stdin -p F -n "nt.chunk" -v 2000
 """
-from __future__ import print_function
 
 import sys
 
@@ -13,7 +12,7 @@ if __name__ == '__main__':
     invalid_lines = 0
     gi = None
 
-    for i, line in enumerate(sys.stdin):
+    for line in sys.stdin:
         line = line.rstrip('\r\n')
         if line.startswith('>'):
             if len_seq > 0:

@@ -17,7 +17,7 @@ def upload_tar(trans, rdah, tdah, repository, tar, uploaded_file, upload_point, 
     if check_results.invalid:
         tar.close()
         uploaded_file.close()
-        message = '%s Invalid paths were: %s' % (
+        message = '{} Invalid paths were: {}'.format(
             ' '.join(check_results.errors), ', '.join(check_results.invalid))
         return False, message, [], '', undesirable_dirs_removed, undesirable_files_removed
     else:

@@ -15,6 +15,9 @@ import os
 import random
 import string
 import tempfile
+import time
+
+import yaml
 
 from galaxy.jobs.runners.util.pykube_util import (
     Job,
@@ -116,11 +119,9 @@ def job_config(template_str, jobs_directory):
 @integration_util.skip_unless_amqp()
 @integration_util.skip_if_github_workflow()
 class BaseKubernetesStagingTest(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases):
-    # Test leverages $UWSGI_PORT in job code, need to set this up.
-    require_uwsgi = True
 
     def setUp(self):
-        super(BaseKubernetesStagingTest, self).setUp()
+        super().setUp()
         self.dataset_populator = KubernetesDatasetPopulator(self.galaxy_interactor)
         self.history_id = self.dataset_populator.new_history()
 
@@ -128,7 +129,7 @@ class BaseKubernetesStagingTest(BaseJobEnvironmentIntegrationTestCase, MulledJob
     def setUpClass(cls):
         # realpath for docker deployed in a VM on Mac, also done in driver_util.
         cls.jobs_directory = os.path.realpath(tempfile.mkdtemp())
-        super(BaseKubernetesStagingTest, cls).setUpClass()
+        super().setUpClass()
 
 
 class KubernetesStagingContainerIntegrationTestCase(CancelsJob, BaseKubernetesStagingTest):
@@ -146,8 +147,8 @@ class KubernetesStagingContainerIntegrationTestCase(CancelsJob, BaseKubernetesSt
 
     @property
     def instance_id(self):
-        import yaml
-        config = yaml.load(open(self.job_config_file, "r"))
+        with open(self.job_config_file) as fh:
+            config = yaml.safe_load(fh)
         return config["execution"]["environments"]["pulsar_k8s_environment"]["k8s_galaxy_instance_id"]
 
     @skip_without_tool("cat_data_and_sleep")
@@ -161,7 +162,6 @@ class KubernetesStagingContainerIntegrationTestCase(CancelsJob, BaseKubernetesSt
             delete_response = self.dataset_populator.cancel_job(job_id)
             assert delete_response.json() is True
 
-            import time
             time.sleep(5)
 
             assert self._active_kubernetes_jobs == 0
@@ -206,7 +206,7 @@ class KubernetesDependencyResolutionIntegrationTestCase(BaseKubernetesStagingTes
 
 
 def set_infrastucture_url(config):
-    infrastructure_url = "http://%s:$UWSGI_PORT" % GALAXY_TEST_KUBERNETES_INFRASTRUCTURE_HOST
+    infrastructure_url = "http://%s:$GALAXY_WEB_PORT" % GALAXY_TEST_KUBERNETES_INFRASTRUCTURE_HOST
     config["galaxy_infrastructure_url"] = infrastructure_url
 
 

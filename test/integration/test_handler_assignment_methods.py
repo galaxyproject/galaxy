@@ -8,7 +8,7 @@ SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 HANDLER_TEMPLATE_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "handler_template_job_conf.xml")
 
 
-class WritesConfig(object):
+class WritesConfig:
 
     def _with_handlers_config(self, assign_with=None, default=None, handlers=None):
         handlers = handlers or []
@@ -25,7 +25,7 @@ class WritesConfig(object):
 
     def __write_config_from(self, path, template=None):
         template = template or {}
-        self.__write_config(open(path, "r").read().format(**template))
+        self.__write_config(open(path).read().format(**template))
 
     def __write_config(self, contents):
         with open(self._app.config.job_config_file, "w") as f:
@@ -49,7 +49,7 @@ class DBPreassignHandlerAssignmentMethodIntegrationTestCase(BaseHandlerAssignmen
 
     def setUp(self):
         self._with_handlers_config(assign_with='db-preassign', handlers=[{'id': 'main'}])
-        super(DBPreassignHandlerAssignmentMethodIntegrationTestCase, self).setUp()
+        super().setUp()
 
     def test_handler_assignment(self):
         tool_id = 'config_vars'
@@ -60,7 +60,7 @@ class DBTransactionIsolationHandlerAssignmentMethodIntegrationTestCase(BaseHandl
 
     def setUp(self):
         self._with_handlers_config(assign_with='db-transaction-isolation', handlers=[{'id': 'main'}])
-        super(DBTransactionIsolationHandlerAssignmentMethodIntegrationTestCase, self).setUp()
+        super().setUp()
 
     def test_handler_assignment(self):
         self._skip_unless_postgres()
@@ -72,7 +72,7 @@ class DBSkipLockedHandlerAssignmentMethodIntegrationTestCase(BaseHandlerAssignme
 
     def setUp(self):
         self._with_handlers_config(assign_with='db-skip-locked', handlers=[{'id': 'main'}])
-        super(DBSkipLockedHandlerAssignmentMethodIntegrationTestCase, self).setUp()
+        super().setUp()
 
     def test_handler_assignment(self):
         self._skip_unless_postgres()

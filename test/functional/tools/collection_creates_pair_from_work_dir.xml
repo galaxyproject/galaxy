@@ -1,0 +1,29 @@
+<tool id="collection_creates_pair_from_work_dir" name="collection_creates_pair_from_work_dir" version="1.0.0">
+    <command><![CDATA[
+echo 'Hello World ${input1}' > forward
+    ]]></command>
+    <inputs>
+        <param name="input1" type="integer" value="42" />
+    </inputs>
+    <outputs>
+        <collection name="paired_output" type="paired" label="Output Pair">
+            <data name="forward" format="txt" from_work_dir="forward" />
+            <data name="reverse" format_source="txt" from_work_dir="reverse" />
+        </collection>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input1" value="34" />
+            <output_collection name="paired_output" type="paired">
+                <element name="forward">
+                    <assert_contents>
+                        <has_text_matching expression="^Hello World 34\n$" />
+                    </assert_contents>
+                </element>
+                <element name="reverse" checksum="sha1$da39a3ee5e6b4b0d3255bfef95601890afd80709" />
+            </output_collection>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

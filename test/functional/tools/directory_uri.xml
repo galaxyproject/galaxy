@@ -1,0 +1,17 @@
+<tool id="directory_uri" name="directory_uri" version="1.0.0">
+    <command><![CDATA[
+        python '$__tool_directory__/directory_uri_copy_to.py'
+            --file_sources '$file_sources'
+            --directory_uri '$d_uri'
+    ]]></command>
+    <inputs>
+        <param type="directory_uri" name="d_uri" label="Directory URI" />
+    </inputs>
+    <outputs>
+    </outputs>
+    <configfiles>
+        <file_sources name="file_sources" />
+    </configfiles>
+    <tests>
+    </tests>
+</tool>

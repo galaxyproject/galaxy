@@ -1,8 +1,10 @@
 """Abstraction around cwltool and related libraries for loading a CWL artifact."""
 import os
+import tempfile
 from collections import namedtuple
 
 from .cwltool_deps import (
+    _has_relax_path_checks_flag,
     default_loader,
     ensure_cwltool_available,
     load_tool,
@@ -15,7 +17,7 @@ ResolvedProcessDefinition = namedtuple("ResolvedProcessDefinition", ["loading_co
 REWRITE_EXPRESSIONS = False
 
 
-class SchemaLoader(object):
+class SchemaLoader:
 
     def __init__(self, strict=True, validate=True):
         self._strict = strict
@@ -32,19 +34,39 @@ class SchemaLoader(object):
         loading_context.do_validate = self._validate
         loading_context.loader = self.raw_document_loader
         loading_context.do_update = True
+        if _has_relax_path_checks_flag():
+            loading_context.relax_path_checks = True
         return loading_context
 
     def raw_process_reference(self, path, loading_context=None):
-        path = os.path.abspath(path)
-        uri = "file://" + path
-        loading_context = loading_context or self.loading_context()
-        if REWRITE_EXPRESSIONS and not uri.endswith(".galaxy"):
-            galaxy_path = os.path.abspath(path) + ".galaxy"
-            from cwl_utils import etools_to_clt
-            etools_to_clt.main([path, galaxy_path])
-            galaxy_uri = "file://" + galaxy_path
-            uri = galaxy_uri
-        loading_context, process_object, uri = load_tool.fetch_document(uri, loadingContext=loading_context)
+        with tempfile.TemporaryDirectory() as output_dir:
+            suffix = ''
+            if '#' in path:
+                path, suffix = path.split('#')
+            print(f""" -------
+
+{open(path).read()}
+
+            -------
+            """)
+            processed_path = os.path.join(output_dir, os.path.basename(path))
+            path = os.path.abspath(path)
+            uri = f"file://{path}"
+            loading_context = loading_context or self.loading_context()
+            if REWRITE_EXPRESSIONS:
+                from cwl_utils import cwl_v1_0_expression_refactor
+                exit_code = cwl_v1_0_expression_refactor.main([output_dir, path, '--skip-some1', '--skip-some2'])
+                if exit_code == 0:
+                    uri = f"file://{processed_path}"
+                    print(f""" -------
+
+{open(processed_path).read()}
+
+            -------
+                    """)
+            if suffix:
+                uri = f"{uri}#{suffix}"
+            loading_context, process_object, uri = load_tool.fetch_document(uri, loadingContext=loading_context)
         return RawProcessReference(loading_context, process_object, uri)
 
     def raw_process_reference_for_object(self, process_object, uri=None, loading_context=None):

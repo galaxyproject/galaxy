@@ -5,12 +5,22 @@ from abc import (
     ABCMeta,
     abstractmethod
 )
+from enum import Enum
 
-import six
+try:
+    from galaxy.model import Job
+    job_states = Job.states
+except ImportError:
+
+    # Not in Galaxy, map Galaxy job states to Pulsar ones.
+    class job_states(str, Enum):  # type: ignore
+        RUNNING = 'running'
+        OK = 'complete'
+        QUEUED = 'queued'
+        ERROR = "failed"
 
 
-@six.add_metaclass(ABCMeta)
-class BaseJobExec(object):
+class BaseJobExec(metaclass=ABCMeta):
 
     @abstractmethod
     def __init__(self, **params):
@@ -73,3 +83,9 @@ class BaseJobExec(object):
         Parses the failure reason, assigning it against a
         """
         return None
+
+
+__all__ = (
+    'BaseJobExec',
+    'job_states',
+)

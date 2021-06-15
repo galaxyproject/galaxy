@@ -16,10 +16,9 @@
 # code here, stripping out uneeded functionality.
 
 # All top level imports from each package moved here and organized
-from __future__ import absolute_import
-from __future__ import print_function
 
 import atexit
+import configparser
 import errno
 import grp
 import logging
@@ -35,9 +34,9 @@ import sys
 import textwrap
 import threading
 import time
+from gettext import gettext as _
 from logging.config import fileConfig
-
-from six.moves import configparser
+from typing import Optional
 
 from .loadwsgi import loadapp, loadserver
 
@@ -51,11 +50,6 @@ A subclass of ``optparse.OptionParser`` that allows boolean long
 options (like ``--verbose``) to also take arguments (like
 ``--verbose=true``).  Arguments *must* use ``=``.
 """
-
-try:
-    _ = optparse._
-except AttributeError:
-    from gettext import gettext as _
 
 
 class BoolOptionParser(optparse.OptionParser):
@@ -135,31 +129,31 @@ class BadCommand(Exception):
     message = property(_get_message, _set_message)
 
 
-class NoDefault(object):
+class NoDefault:
     pass
 
 
 # run and invoke methods moved below ServeCommand
-class Command(object):
+class Command:
 
     def __init__(self, name):
         self.command_name = name
 
     max_args = None
     max_args_error = 'You must provide no more than %(max_args)s arguments'
-    min_args = None
+    min_args: Optional[int] = None
     min_args_error = 'You must provide at least %(min_args)s arguments'
     required_args = None
     # If this command takes a configuration file, set this to 1 or -1
     # Then if invoked through #! the config file will be put into the positional
     # arguments -- at the beginning with 1, at the end with -1
-    takes_config_file = None
+    takes_config_file: Optional[int] = None
 
     # Grouped in help messages by this:
     group_name = ''
 
     required_args = ()
-    description = None
+    description: Optional[str] = None
     usage = ''
     hidden = False
     # This is the default verbosity level; --quiet subtracts,
@@ -208,8 +202,7 @@ class Command(object):
                 self.args.append(filename)
             else:
                 assert 0, (
-                    "Value takes_config_file must be None, 1, or -1 (not %r)"
-                    % take)
+                    f"Value takes_config_file must be None, 1, or -1 (not {take!r})")
 
         if os.environ.get('PASTE_DEFAULT_QUIET'):
             self.verbose = 0
@@ -226,7 +219,7 @@ class Command(object):
         for var_name, option_name in self.required_args:
             if not getattr(self.options, var_name, None):
                 raise BadCommand(
-                    'You must provide the option %s' % option_name)
+                    f'You must provide the option {option_name}')
         result = self.command()
         if result is None:
             return self.return_code
@@ -235,11 +228,10 @@ class Command(object):
 
     def parse_args(self, args):
         if self.usage:
-            usage = ' ' + self.usage
+            usage = f" {self.usage}"
         else:
             usage = ''
-        self.parser.usage = "%%prog [options]%s\n%s" % (
-            usage, self.summary)
+        self.parser.usage = f"%prog [options]{usage}\n{self.summary}"
         self.parser.prog = self._prog_name()
         if self.description:
             desc = self.description
@@ -248,7 +240,7 @@ class Command(object):
         self.options, self.args = self.parser.parse_args(args)
 
     def _prog_name(self):
-        return '%s %s' % (os.path.basename(sys.argv[0]), self.command_name)
+        return f'{os.path.basename(sys.argv[0])} {self.command_name}'
 
     ########################################
     # Utility methods
@@ -262,7 +254,7 @@ class Command(object):
         else:
             return ' ' * (length - len(s)) + s
 
-    def standard_parser(cls, verbose=True,
+    def _standard_parser(cls, verbose=True,
                         interactive=False,
                         no_interactive=False,
                         simulate=False,
@@ -312,7 +304,7 @@ class Command(object):
                               help="Overwrite files (warnings will be emitted for non-matching files otherwise)")
         return parser
 
-    standard_parser = classmethod(standard_parser)
+    standard_parser = classmethod(_standard_parser)
 
     def quote_first_command_arg(self, arg):
         """
@@ -343,8 +335,7 @@ class Command(object):
         for arg in args:
             if '=' not in arg:
                 raise BadCommand(
-                    'Variable assignment %r invalid (no "=")'
-                    % arg)
+                    f'Variable assignment {arg!r} invalid (no "=")')
             name, value = arg.split('=', 1)
             result[name] = value
         return result
@@ -380,8 +371,7 @@ class NotFoundCommand(Command):
         print('Known commands:')
         longest = max([len(n) for n, c in commands])
         for name, command in commands:
-            print('  %s  %s' % (self.pad(name, length=longest),
-                                command.load().summary))
+            print(f'  {self.pad(name, length=longest)}  {command.load().summary}')
         return 2
 
 
@@ -402,7 +392,7 @@ class ServeCommand(Command):
     usage = 'CONFIG_FILE [start|stop|restart|status] [var=value]'
     takes_config_file = 1
     summary = "Serve the described application"
-    description = """\
+    description: Optional[str] = """\
     This command serves a web application that uses a paste.deploy
     configuration file for the server and application.
 
@@ -520,8 +510,8 @@ class ServeCommand(Command):
                 cmd = None
                 restvars = self.args[:]
 
-        if (getattr(self.options, 'daemon', False) and
-                getattr(self.options, 'reload', False)):
+        if (getattr(self.options, 'daemon', False)
+                and getattr(self.options, 'reload', False)):
             raise BadCommand('The --daemon and --reload options may not be used together')
 
         jython_monitor = False
@@ -554,7 +544,7 @@ class ServeCommand(Command):
 
         if cmd not in (None, 'start', 'stop', 'restart', 'status'):
             raise BadCommand(
-                'Error: must give start|stop|restart (not %s)' % cmd)
+                f'Error: must give start|stop|restart (not {cmd})')
 
         if cmd == 'status' or self.options.show_status:
             return self.show_status()
@@ -577,7 +567,7 @@ class ServeCommand(Command):
         app_name = self.options.app_name
         vars = self.parse_vars(restvars)
         if not self._scheme_re.search(app_spec):
-            app_spec = 'config:' + app_spec
+            app_spec = f"config:{app_spec}"
         server_name = self.options.server_name
         if self.options.server:
             server_spec = 'egg:PasteScript'
@@ -597,8 +587,8 @@ class ServeCommand(Command):
         if self.options.log_file:
             try:
                 writeable_log_file = open(self.options.log_file, 'a')
-            except IOError as ioe:
-                msg = 'Error: Unable to write to log file: %s' % ioe
+            except OSError as ioe:
+                msg = f'Error: Unable to write to log file: {ioe}'
                 raise BadCommand(msg)
             writeable_log_file.close()
 
@@ -606,8 +596,8 @@ class ServeCommand(Command):
         if self.options.pid_file:
             try:
                 writeable_pid_file = open(self.options.pid_file, 'a')
-            except IOError as ioe:
-                msg = 'Error: Unable to write to pid file: %s' % ioe
+            except OSError as ioe:
+                msg = f'Error: Unable to write to pid file: {ioe}'
                 raise BadCommand(msg)
             writeable_pid_file.close()
 
@@ -659,14 +649,14 @@ class ServeCommand(Command):
                 if self.verbose > 1:
                     raise
                 if str(e):
-                    msg = ' ' + str(e)
+                    msg = f" {str(e)}"
                 else:
                     msg = ''
-                print('Exiting%s (-v to see traceback)' % msg)
+                print(f'Exiting{msg} (-v to see traceback)')
             except AttributeError as e:
                 # Capturing bad error response from paste
                 if str(e) == "'WSGIThreadPoolServer' object has no attribute 'thread_pool'":
-                    raise socket.error(98, 'Address already in use')
+                    raise OSError(98, 'Address already in use')
                 else:
                     raise AttributeError(e)
 
@@ -724,7 +714,7 @@ class ServeCommand(Command):
     def record_pid(self, pid_file):
         pid = os.getpid()
         if self.verbose > 1:
-            print('Writing PID %s to %s' % (pid, pid_file))
+            print(f'Writing PID {pid} to {pid_file}')
         f = open(pid_file, 'w')
         f.write(str(pid))
         f.close()
@@ -733,19 +723,19 @@ class ServeCommand(Command):
     def stop_daemon(self):
         pid_file = self.options.pid_file or 'paster.pid'
         if not os.path.exists(pid_file):
-            print('No PID file exists in %s' % pid_file)
+            print(f'No PID file exists in {pid_file}')
             return 1
         pid = read_pidfile(pid_file)
         if not pid:
-            print("Not a valid PID file in %s" % pid_file)
+            print(f"Not a valid PID file in {pid_file}")
             return 1
         pid = live_pidfile(pid_file)
         if not pid:
-            print("PID in %s is not valid (deleting)" % pid_file)
+            print(f"PID in {pid_file} is not valid (deleting)")
             try:
                 os.unlink(pid_file)
-            except (OSError, IOError) as e:
-                print("Could not delete: %s" % e)
+            except OSError as e:
+                print(f"Could not delete: {e}")
                 return 2
             return 1
         for _i in range(10):
@@ -754,7 +744,7 @@ class ServeCommand(Command):
             os.kill(pid, signal.SIGTERM)
             time.sleep(1)
         else:
-            print("failed to kill web process %s" % pid)
+            print(f"failed to kill web process {pid}")
             return 3
         if os.path.exists(pid_file):
             os.unlink(pid_file)
@@ -763,17 +753,17 @@ class ServeCommand(Command):
     def show_status(self):
         pid_file = self.options.pid_file or 'paster.pid'
         if not os.path.exists(pid_file):
-            print('No PID file %s' % pid_file)
+            print(f'No PID file {pid_file}')
             return 1
         pid = read_pidfile(pid_file)
         if not pid:
-            print('No PID in file %s' % pid_file)
+            print(f'No PID in file {pid_file}')
             return 1
         pid = live_pidfile(pid_file)
         if not pid:
-            print('PID %s in %s is not running' % (pid, pid_file))
+            print(f'PID {pid} in {pid_file} is not running')
             return 1
-        print('Server running in PID %s' % pid)
+        print(f'Server running in PID {pid}')
         return 0
 
     def restart_with_reloader(self):
@@ -808,7 +798,7 @@ class ServeCommand(Command):
                 if proc is not None and hasattr(os, 'kill'):
                     try:
                         os.kill(proc.pid, signal.SIGTERM)
-                    except (OSError, IOError):
+                    except OSError:
                         pass
 
             if reloader:
@@ -832,7 +822,7 @@ class ServeCommand(Command):
                     entry = grp.getgrnam(group)
                 except KeyError:
                     raise BadCommand(
-                        "Bad group: %r; no such group exists" % group)
+                        f"Bad group: {group!r}; no such group exists")
                 gid = entry.gr_gid
         try:
             uid = int(user)
@@ -842,12 +832,12 @@ class ServeCommand(Command):
                 entry = pwd.getpwnam(user)
             except KeyError:
                 raise BadCommand(
-                    "Bad username: %r; no such user exists" % user)
+                    f"Bad username: {user!r}; no such user exists")
             if not gid:
                 gid = entry.pw_gid
             uid = entry.pw_uid
         if self.verbose > 0:
-            print('Changing user to %s:%s (%s:%s)' % (
+            print('Changing user to {}:{} ({}:{})'.format(
                 user, group or '(unknown)', uid, gid))
         if hasattr(os, 'initgroups'):
             os.initgroups(user, gid)
@@ -860,7 +850,7 @@ class ServeCommand(Command):
             os.setuid(uid)
 
 
-class LazyWriter(object):
+class LazyWriter:
 
     """
     File-like object that opens a file lazily when it is first written
@@ -921,7 +911,7 @@ def read_pidfile(filename):
             content = f.read()
             f.close()
             return int(content.strip())
-        except (ValueError, IOError):
+        except (ValueError, OSError):
             return None
     else:
         return None
@@ -944,24 +934,24 @@ def _remove_pid_file(written_pid, filename, verbosity):
         pass
     else:
         if pid_in_file != current_pid:
-            print("PID file %s contains %s, not expected PID %s" % (
+            print("PID file {} contains {}, not expected PID {}".format(
                 filename, pid_in_file, current_pid))
             return
     if verbosity > 0:
-        print("Removing PID file %s" % filename)
+        print(f"Removing PID file {filename}")
     try:
         os.unlink(filename)
         return
     except OSError as e:
         # Record, but don't give traceback
-        print("Cannot remove PID file: %s" % e)
+        print(f"Cannot remove PID file: {e}")
     # well, at least lets not leave the invalid PID around...
     try:
         f = open(filename, 'w')
         f.write('')
         f.close()
     except OSError as e:
-        print('Stale PID left in file: %s (%e)' % (filename, e))
+        print(f'Stale PID left in file: {filename} ({e:e})')
     else:
         print('Stale PID removed')
 
@@ -987,7 +977,7 @@ def _cleanup_ports(bound_addresses, maxtries=30, sleeptime=2):
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             try:
                 sock.connect(bound_address)
-            except socket.error as e:
+            except OSError as e:
                 if e.errno != errno.ECONNREFUSED:
                     raise
                 break
@@ -1031,8 +1021,8 @@ commands = {
 
 
 def run(args=None):
-    if (not args and len(sys.argv) >= 2 and os.environ.get('_') and
-            sys.argv[0] != os.environ['_'] and os.environ['_'] == sys.argv[1]):
+    if (not args and len(sys.argv) >= 2 and os.environ.get('_')
+            and sys.argv[0] != os.environ['_'] and os.environ['_'] == sys.argv[1]):
         # probably it's an exe execution
         args = ['exe', os.environ['_']] + sys.argv[2:]
     if args is None:
@@ -1042,7 +1032,7 @@ def run(args=None):
     if options.do_help:
         args = ['help'] + args
     if not args:
-        print('Usage: %s COMMAND' % sys.argv[0])
+        print(f'Usage: {sys.argv[0]} COMMAND')
         args = ['help']
     command_name = args[0]
     if command_name not in commands:

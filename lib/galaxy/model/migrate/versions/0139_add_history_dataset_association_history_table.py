@@ -1,7 +1,6 @@
 """
 Migration script to add the history_dataset_association_history table.
 """
-from __future__ import print_function
 
 import datetime
 import logging
@@ -36,7 +35,7 @@ HistoryDatasetAssociationHistory_table = Table(
     Column("version", Integer, index=True),
     Column("name", TrimmedString(255)),
     Column("extension", TrimmedString(64)),
-    Column("metadata", MetadataType(), key='_metadata'),
+    Column("metadata", MetadataType, key='_metadata'),
     Column("extended_metadata_id", Integer, ForeignKey("extended_metadata.id"), index=True),
 )
 

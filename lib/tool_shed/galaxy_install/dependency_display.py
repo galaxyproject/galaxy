@@ -15,7 +15,7 @@ from tool_shed.utility_containers import utility_container_manager
 log = logging.getLogger(__name__)
 
 
-class DependencyDisplayer(object):
+class DependencyDisplayer:
 
     def __init__(self, app):
         self.app = app
@@ -70,7 +70,7 @@ class DependencyDisplayer(object):
                             only_if_compiling_contained_td, error = \
                             common_util.parse_repository_dependency_tuple(repository_dependency_tup, contains_error=True)
                         if error:
-                            message += '%s  ' % str(error)
+                            message += f'{str(error)}  '
             else:
                 # The complete dependency hierarchy could not be determined for a repository being installed into
                 # Galaxy.  This is likely due to invalid repository dependency definitions, so we'll get them from
@@ -110,10 +110,10 @@ class DependencyDisplayer(object):
         if metadata_dict:
             invalid_tool_dependencies = metadata_dict.get('invalid_tool_dependencies', None)
             if invalid_tool_dependencies:
-                for td_key, requirement_dict in invalid_tool_dependencies.items():
+                for requirement_dict in invalid_tool_dependencies.values():
                     error = requirement_dict.get('error', None)
                     if error:
-                        message = '%s  ' % str(error)
+                        message = f'{str(error)}  '
         return message
 
     def generate_message_for_orphan_tool_dependencies(self, repository, metadata_dict):
@@ -322,7 +322,7 @@ class DependencyDisplayer(object):
                     tool_dependencies_root_folder.folders.append(tool_dependencies_folder)
                     new_containers_dict['tool_dependencies'] = tool_dependencies_root_folder
             except Exception as e:
-                log.debug("Exception in merge_containers_dicts_for_new_install: %s" % str(e))
+                log.debug(f"Exception in merge_containers_dicts_for_new_install: {str(e)}")
             finally:
                 lock.release()
         return new_containers_dict

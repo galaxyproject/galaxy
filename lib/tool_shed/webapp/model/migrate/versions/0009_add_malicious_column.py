@@ -1,7 +1,6 @@
 """
 Migration script to add the malicious column to the repository_metadata table.
 """
-from __future__ import print_function
 
 import logging
 import sys
@@ -35,7 +34,7 @@ def upgrade(migrate_engine):
             default_false = "0"
         elif migrate_engine.name in ['postgresql', 'postgres']:
             default_false = "false"
-        migrate_engine.execute("UPDATE repository_metadata SET malicious=%s" % default_false)
+        migrate_engine.execute(f"UPDATE repository_metadata SET malicious={default_false}")
     except Exception:
         log.exception("Adding malicious column to the repository_metadata table failed.")
 

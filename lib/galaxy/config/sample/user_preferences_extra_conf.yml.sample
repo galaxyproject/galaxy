@@ -41,14 +41,14 @@ preferences:
               required: False
 
     use_cached_job:
-      description: Do you want to be able to re-use previously run jobs ?
-      inputs:
-        - name: use_cached_job_checkbox
-          label: Do you want to be able to re-use  equivalent jobs ?
-          type: boolean
-          checked: false
-          value: false
-          help: If you select yes, you will be able to select for each tool and workflow run if you would like to use this feature.
+        description: Do you want to be able to re-use previously run jobs ?
+        inputs:
+            - name: use_cached_job_checkbox
+              label: Do you want to be able to re-use  equivalent jobs ?
+              type: boolean
+              checked: false
+              value: false
+              help: If you select yes, you will be able to select for each tool and workflow run if you would like to use this feature.
 
     localization:
         description: Localization
@@ -59,7 +59,38 @@ preferences:
               required: False
               options:
                   - [Navigator default, auto]
-                  - [Chinese, zh]
+                  - [中文, zh]
                   - [English, en]
-                  - [French, fr]
-                  - [Japanese, ja]
+                  - [Español, es]
+                  - [Français, fr]
+                  - [日本語, ja]
+
+    # Used in file_sources_conf.yml
+    dropbox:
+        description: Your Dropbox account
+        inputs:
+            - name: access_token
+              label: Dropbox access token
+              type: password
+              required: False
+
+    # Used in file_sources_conf.yml
+    owncloud:
+        description: Your External OwnCloud account
+        inputs:
+            - name: url
+              label: Server Domain (e.g. https://myowncloud.org)
+              type: text
+              required: False
+            - name: root
+              label: Server Path (should end with /remote.php/webdav, e.g. /a/sub/path/remote.php/webdav)
+              type: text
+              required: False
+            - name: username
+              label: Username
+              type: text
+              required: False
+            - name: password
+              label: Password
+              type:  password
+              required: False

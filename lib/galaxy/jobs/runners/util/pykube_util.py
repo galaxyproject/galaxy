@@ -2,19 +2,24 @@
 import logging
 import os
 import re
-import uuid
 
 try:
     from pykube.config import KubeConfig
     from pykube.http import HTTPClient
     from pykube.objects import (
         Job,
-        Pod
+        Pod,
+        Service,
+        Ingress,
     )
+    from pykube.exceptions import HTTPError
 except ImportError as exc:
     KubeConfig = None
+    Ingress = None
     Job = None
     Pod = None
+    Service = None
+    HTTPError = None
     K8S_IMPORT_MESSAGE = ('The Python pykube package is required to use '
                           'this feature, please install it or correct the '
                           'following error:\nImportError %s' % str(exc))
@@ -22,6 +27,8 @@ except ImportError as exc:
 log = logging.getLogger(__name__)
 
 DEFAULT_JOB_API_VERSION = "batch/v1"
+DEFAULT_SERVICE_API_VERSION = "v1"
+DEFAULT_INGRESS_API_VERSION = "extensions/v1beta1"
 DEFAULT_NAMESPACE = "default"
 INSTANCE_ID_INVALID_MESSAGE = ("Galaxy instance [%s] is either too long "
                                "(>20 characters) or it includes non DNS "
@@ -46,18 +53,9 @@ def pykube_client_from_dict(params):
     return pykube_client
 
 
-def produce_unique_k8s_job_name(app_prefix=None, instance_id=None, job_id=None):
-    if job_id is None:
-        job_id = str(uuid.uuid4())
-
-    job_name = ""
-    if app_prefix:
-        job_name += "%s-" % app_prefix
-
-    if instance_id and len(instance_id) > 0:
-        job_name += "%s-" % instance_id
-
-    return job_name + job_id
+def produce_k8s_job_prefix(app_prefix=None, instance_id=None):
+    job_name_elems = [app_prefix or "", instance_id or ""]
+    return '-'.join(elem for elem in job_name_elems if elem)
 
 
 def pull_policy(params):
@@ -68,27 +66,37 @@ def pull_policy(params):
     return None
 
 
+def find_service_object_by_name(pykube_api, service_name, namespace=None):
+    if not service_name:
+        raise ValueError("service name must not be empty")
+    return Service.objects(pykube_api).filter(field_selector={"metadata.name": service_name}, namespace=namespace)
+
+
+def find_ingress_object_by_name(pykube_api, ingress_name, namespace=None):
+    if not ingress_name:
+        raise ValueError("ingress name must not be empty")
+    return Ingress.objects(pykube_api).filter(field_selector={"metadata.name": ingress_name}, namespace=namespace)
+
+
 def find_job_object_by_name(pykube_api, job_name, namespace=None):
-    return _find_object_by_name(Job, pykube_api, job_name, namespace=namespace)
+    if not job_name:
+        raise ValueError("job name must not be empty")
+    return Job.objects(pykube_api).filter(field_selector={"metadata.name": job_name}, namespace=namespace)
 
 
-def find_pod_object_by_name(pykube_api, pod_name, namespace=None):
-    return _find_object_by_name(Pod, pykube_api, pod_name, namespace=namespace)
+def find_pod_object_by_name(pykube_api, job_name, namespace=None):
+    return Pod.objects(pykube_api).filter(selector=f"job-name={job_name}", namespace=namespace)
 
 
-def _find_object_by_name(clazz, pykube_api, object_name, namespace=None):
-    filter_kwd = dict(selector="app=%s" % object_name)
-    if namespace is not None:
-        filter_kwd["namespace"] = namespace
+def is_pod_unschedulable(pykube_api, pod, namespace=None):
+    is_unschedulable = bool(len([c for c in pod.obj['status']['conditions'] if c.get("reason") == "Unschedulable"]))
+    if pod.obj['status']['phase'] == "Pending" and is_unschedulable:
+        return True
 
-    objs = clazz.objects(pykube_api).filter(**filter_kwd)
-    obj = None
-    if len(objs.response['items']) > 0:
-        obj = clazz(pykube_api, objs.response['items'][0])
-    return obj
+    return False
 
 
-def stop_job(job, cleanup="always"):
+def delete_job(job, cleanup="always"):
     job_failed = (job.obj['status']['failed'] > 0
                   if 'failed' in job.obj['status'] else False)
     # Scale down the job just in case even if cleanup is never
@@ -106,20 +114,74 @@ def stop_job(job, cleanup="always"):
         job.api.raise_for_status(r)
 
 
-def job_object_dict(params, job_name, spec):
+def delete_ingress(ingress, cleanup="always", job_failed=False):
+    api_delete = cleanup == "always"
+    if not api_delete and cleanup == "onsuccess" and not job_failed:
+        api_delete = True
+    if api_delete:
+        delete_options = {
+            "apiVersion": "v1",
+            "kind": "DeleteOptions",
+            "propagationPolicy": "Background"
+        }
+        r = ingress.api.delete(json=delete_options, **ingress.api_kwargs())
+        ingress.api.raise_for_status(r)
+
+
+def delete_service(service, cleanup="always", job_failed=False):
+    api_delete = cleanup == "always"
+    if not api_delete and cleanup == "onsuccess" and not job_failed:
+        api_delete = True
+    if api_delete:
+        delete_options = {
+            "apiVersion": "v1",
+            "kind": "DeleteOptions",
+            "propagationPolicy": "Background"
+        }
+        r = service.api.delete(json=delete_options, **service.api_kwargs())
+        service.api.raise_for_status(r)
+
+
+def job_object_dict(params, job_prefix, spec):
     k8s_job_obj = {
         "apiVersion": params.get('k8s_job_api_version', DEFAULT_JOB_API_VERSION),
         "kind": "Job",
         "metadata": {
-                # metadata.name is the name of the pod resource created, and must be unique
-                # http://kubernetes.io/docs/user-guide/configuring-containers/
-                "name": job_name,
+                "generateName": f"{job_prefix}-",
                 "namespace": params.get('k8s_namespace', DEFAULT_NAMESPACE),
-                "labels": {"app": job_name}
         },
         "spec": spec,
     }
     return k8s_job_obj
+
+
+def service_object_dict(params, service_name, spec):
+    k8s_service_obj = {
+        "apiVersion": params.get('k8s_service_api_version', DEFAULT_SERVICE_API_VERSION),
+        "kind": "Service",
+        "metadata": {
+                "name": service_name,
+                "namespace": params.get('k8s_namespace', DEFAULT_NAMESPACE),
+        },
+    }
+    k8s_service_obj["metadata"].update(spec.pop("metadata", {}))
+    k8s_service_obj.update(spec)
+    return k8s_service_obj
+
+
+def ingress_object_dict(params, ingress_name, spec):
+    k8s_ingress_obj = {
+        "apiVersion": params.get('k8s_ingress_api_version', DEFAULT_INGRESS_API_VERSION),
+        "kind": "Ingress",
+        "metadata": {
+                "name": ingress_name,
+                "namespace": params.get('k8s_namespace', DEFAULT_NAMESPACE),
+            # TODO: Add default annotations
+        },
+    }
+    k8s_ingress_obj["metadata"].update(spec.pop("metadata", {}))
+    k8s_ingress_obj.update(spec)
+    return k8s_ingress_obj
 
 
 def galaxy_instance_id(params):
@@ -145,15 +207,27 @@ def galaxy_instance_id(params):
 
 __all__ = (
     "DEFAULT_JOB_API_VERSION",
+    "DEFAULT_SERVICE_API_VERSION",
+    "DEFAULT_INGRESS_API_VERSION",
     "ensure_pykube",
+    "find_service_object_by_name",
+    "find_ingress_object_by_name",
     "find_job_object_by_name",
     "find_pod_object_by_name",
     "galaxy_instance_id",
+    "HTTPError",
+    "is_pod_unschedulable",
     "Job",
+    "Service",
+    "Ingress",
     "job_object_dict",
+    "service_object_dict",
+    "ingress_object_dict",
     "Pod",
-    "produce_unique_k8s_job_name",
+    "produce_k8s_job_prefix",
     "pull_policy",
     "pykube_client_from_dict",
-    "stop_job",
+    "delete_job",
+    "delete_service",
+    "delete_ingress",
 )

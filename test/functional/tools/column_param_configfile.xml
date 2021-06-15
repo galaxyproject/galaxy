@@ -1,10 +1,10 @@
-<tool id="column_param_configfile" name="Column Param into configfile" >
-  <command detect_errors="exit_code"><![CDATA[
-    python $check_inputs inputs.json
-  ]]></command>
-  <configfiles>
-    <inputs name="inputs" filename="inputs.json" />
-      <configfile name="check_inputs"><![CDATA[
+<tool id="column_param_configfile" name="Column Param into configfile" version="1.0.0">
+    <command detect_errors="exit_code"><![CDATA[
+python '$check_inputs' inputs.json
+    ]]></command>
+    <configfiles>
+        <inputs name="inputs" filename="inputs.json" />
+        <configfile name="check_inputs"><![CDATA[
 import json
 import sys
 
@@ -19,25 +19,25 @@ assert_equals(as_dict["col_mult"], [1,2,3])
 with open("$output1", "w") as f:
     f.write("okay\n")
 ]]></configfile>
-  </configfiles>
-  <inputs>
-    <param type="data" format="tabular" name="input1" label="Input 1" />
-    <param name="col" type="data_column" data_ref="input1" label="Column to Use"/>
-    <param name="col_mult" type="data_column" data_ref="input1" label="Columns to Use" multiple="true"/>
-  </inputs>
-  <outputs>
-    <data name="output1" format="data" />
-  </outputs>
-  <tests>
-    <test>
-      <param name="input1" value="11.tabular" />
-      <param name="col" value="11" />
-      <param name="col_mult" value="1,2,3" />
-      <output name="output1">
-        <assert_contents>
-          <has_line line="okay" />
-        </assert_contents>
-      </output>
-    </test>
-  </tests>
+    </configfiles>
+    <inputs>
+        <param name="input1" type="data" format="tabular" label="Input 1" />
+        <param name="col" type="data_column" data_ref="input1" label="Column to Use"/>
+        <param name="col_mult" type="data_column" data_ref="input1" label="Columns to Use" multiple="true"/>
+    </inputs>
+    <outputs>
+        <data name="output1" format="data" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input1" value="11.tabular" />
+            <param name="col" value="11" />
+            <param name="col_mult" value="1,2,3" />
+            <output name="output1">
+                <assert_contents>
+                    <has_line line="okay" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
 </tool>

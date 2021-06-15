@@ -22,11 +22,11 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
+        assert test_user_1 is not None, f'Problem retrieving user with email {common.test_user_1_email} from the database'
         self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.admin_email, username=common.admin_username)
         admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
+        assert admin_user is not None, f'Problem retrieving user with email {common.admin_email} from the database'
         self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_bwa_package_repository(self):
@@ -45,7 +45,7 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
             old_tool_dependency = self.get_filename(os.path.join('bwa', 'complex', 'tool_dependencies.xml'))
             new_tool_dependency_path = self.generate_temp_path('test_1100', additional_paths=['tool_dependency'])
             xml_filename = os.path.abspath(os.path.join(new_tool_dependency_path, 'tool_dependencies.xml'))
-            open(xml_filename, 'w').write(open(old_tool_dependency, 'r')
+            open(xml_filename, 'w').write(open(old_tool_dependency)
                                      .read().replace('__PATH__', self.get_filename('bwa/complex')))
             self.upload_file(repository,
                              filename=xml_filename,
@@ -196,7 +196,7 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
             old_tool_dependency = self.get_filename(os.path.join('bwa', 'complex', 'readme', 'tool_dependencies.xml'))
             new_tool_dependency_path = self.generate_temp_path('test_1100', additional_paths=['tool_dependency'])
             xml_filename = os.path.abspath(os.path.join(new_tool_dependency_path, 'tool_dependencies.xml'))
-            open(xml_filename, 'w').write(open(old_tool_dependency, 'r')
+            open(xml_filename, 'w').write(open(old_tool_dependency)
                                      .read().replace('__PATH__', self.get_filename('bwa/complex')))
             self.upload_file(tool_repository,
                              filename=xml_filename,
@@ -256,13 +256,13 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
         env_sh_path = self.get_env_sh_path(tool_dependency_name='bwa',
                                            tool_dependency_version='0.5.9',
                                            repository=base_repository)
-        assert os.path.exists(env_sh_path), 'env.sh was not generated in %s for this dependency.' % env_sh_path
-        contents = open(env_sh_path, 'r').read()
+        assert os.path.exists(env_sh_path), f'env.sh was not generated in {env_sh_path} for this dependency.'
+        contents = open(env_sh_path).read()
         if tool_repository.installed_changeset_revision not in contents:
             raise AssertionError('Installed changeset revision %s not found in env.sh.\nContents of env.sh: %s' %
                                  (tool_repository.installed_changeset_revision, contents))
         if 'package_bwa_0_5_9_0100' not in contents:
-            raise AssertionError('Repository name package_bwa_0_5_9_0100 not found in env.sh.\nContents of env.sh: %s' % contents)
+            raise AssertionError(f'Repository name package_bwa_0_5_9_0100 not found in env.sh.\nContents of env.sh: {contents}')
 
     def test_0060_verify_tool_dependency_uninstallation(self):
         '''Uninstall the package_bwa_0_5_9_0100 repository.'''
@@ -279,4 +279,4 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
                                    tool_repository.name,
                                    tool_repository.installed_changeset_revision,
                                    'env.sh')
-        assert os.path.exists(env_sh_path), 'Path %s does not exist after deactivating the repository that generated it.' % env_sh_path
+        assert os.path.exists(env_sh_path), f'Path {env_sh_path} does not exist after deactivating the repository that generated it.'

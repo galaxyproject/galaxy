@@ -8,13 +8,21 @@ drmaa
 statsd
 docker
 azure-storage==0.32.0
-python-irodsclient==0.8.3
+python-irodsclient==1.0.0
 python-ldap==3.2.0
 python-pam
 galaxycloudrunner
 
+# For file sources plugins
+fs.webdavfs>=0.4.2  # type: webdav
+fs.dropboxfs  # type: dropbox
+fs.sshfs  # type: ssh
+fs-s3fs  # type: s3
+s3fs  # type: s3fs
+fs.anvilfs # type: anvil
+
 # Chronos client
-chronos-python==0.38.0
+chronos-python==1.2.1
 
 # Kubernetes job runner
 pykube==0.15.0
@@ -30,5 +38,4 @@ pygithub
 influxdb
 
 # Deep learning packages for tool recommendation
-keras==2.2.4
-tensorflow==1.15.2
+tensorflow==2.5.0

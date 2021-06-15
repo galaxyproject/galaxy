@@ -6,6 +6,9 @@
     <type class="FilterFromFileTool" module="galaxy.tools" />
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>
+    <edam_operations>
+        <edam_operation>operation_3695</edam_operation>
+    </edam_operations>
     <inputs>
         <param type="data_collection" name="input" label="Input Collection" help="A list whose elements will be filtered."/>
         <conditional name="how">
@@ -78,13 +81,13 @@
         </test>
     </tests>
     <help><![CDATA[
-    
+
 .. class:: infomark
 
-        This tool will take an input list and a text file with  
+        This tool will take an input list and a text file with
         names (i.e. identifiers). It will split the input list into
         two new lists - one filtered to contain only the list members
-        whose names are listed in the text file, and one containing 
+        whose names are listed in the text file, and one containing
         all the other elements.
 
         This tool will create new history datasets from your collection

@@ -20,7 +20,7 @@ def build_repository_type_select_field(trans, repository=None, name='repository_
     else:
         selected_type = None
     repository_type_select_field = SelectField(name=name)
-    for type_label, type_class in trans.app.repository_types_registry.repository_types_by_label.items():
+    for type_class in trans.app.repository_types_registry.repository_types_by_label.values():
         option_label = str(type_class.label)
         option_value = str(type_class.type)
         if selected_type and selected_type == option_value:

@@ -16,7 +16,7 @@ class JobRecoveryBeforeHandledIntegerationTestCase(integration_util.IntegrationT
     framework_tool_and_types = True
 
     def setUp(self):
-        super(JobRecoveryBeforeHandledIntegerationTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.history_id = self.dataset_populator.new_history()
 
@@ -45,7 +45,7 @@ class JobRecoveryAfterHandledIntegerationTestCase(integration_util.IntegrationTe
     framework_tool_and_types = True
 
     def setUp(self):
-        super(JobRecoveryAfterHandledIntegerationTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
     @classmethod

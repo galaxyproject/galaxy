@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import copy
 import os
 from collections import namedtuple
@@ -59,12 +57,12 @@ class Node(dictobj.DictionaryObject):
       >>> assert node._items == {'text': 'a', 'id': 5, 'state': dictobj.DictionaryObject({'opened': True}), 'children': dictobj.MutableDictionaryObject({}), 'li_attr': dictobj.DictionaryObject({'id': 5}), 'icon': 'folder'}
       >>> assert node.jsonData() == {'text': 'a', 'state': {'opened': True}, 'id': 5, 'li_attr': {'id': 5}, 'icon': 'folder'}
     """
-    super(Node, self).__init__()
+    super().__init__()
 
     children = kwargs.get('children', {})
     if len([key for key in children if not isinstance(children[key], Node)]):
       raise TypeError(
-        "One or more children were not instances of '%s'" % Node.__name__)
+        f"One or more children were not instances of '{Node.__name__}'")
     if 'children' in kwargs:
       del kwargs['children']
     self._items['children'] = dictobj.MutableDictionaryObject(children)
@@ -110,9 +108,9 @@ class JSTree(dictobj.DictionaryObject):
     """
     if len([p for p in paths if not isinstance(p, Path)]):
       raise TypeError(
-        "All paths must be instances of '%s'" % Path.__name__)
+        f"All paths must be instances of '{Path.__name__}'")
 
-    super(JSTree, self).__init__()
+    super().__init__()
 
     root = Node('', None, **kwargs)
     for path in sorted(paths):
@@ -143,7 +141,7 @@ class JSTree(dictobj.DictionaryObject):
     s = fmt % (" " * depth * spacing, root.text)
     for child in root.children:
       child = root.children[child]
-      s += "\n%s" % self.pretty(child, depth + 1, spacing)
+      s += f"\n{self.pretty(child, depth + 1, spacing)}"
     return s
 
   def jsonData(self):

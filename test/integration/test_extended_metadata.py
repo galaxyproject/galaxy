@@ -6,6 +6,7 @@ TEST_TOOL_IDS = [
     "multi_output",
     "multi_output_configured",
     "multi_output_assign_primary",
+    "multi_output_assign_primary_ext_dbkey",
     "multi_output_recurse",
     "tool_provided_metadata_1",
     "tool_provided_metadata_2",

@@ -11,20 +11,20 @@ the exception and displays an error page.
 """
 import sys
 import traceback
+from io import StringIO
+from typing import cast
 
 import markupsafe
-import six
 from paste import (
     request,
     wsgilib
 )
 from paste.exceptions import collector, formatter, reporter
-from six.moves import cStringIO as StringIO
 
 __all__ = ('ErrorMiddleware', 'handle_exception')
 
 
-class _NoDefault(object):
+class _NoDefault:
     def __repr__(self):
         return '<NoDefault>'
 
@@ -32,7 +32,7 @@ class _NoDefault(object):
 NoDefault = _NoDefault()
 
 
-class ErrorMiddleware(object):
+class ErrorMiddleware:
 
     """
     Error handling middleware
@@ -113,10 +113,10 @@ class ErrorMiddleware(object):
             show_exceptions_in_wsgi_errors = converters.asbool(global_conf.get('show_exceptions_in_wsgi_errors'))
         self.debug_mode = converters.asbool(debug)
         if error_email is None:
-            error_email = (global_conf.get('error_email') or
-                           global_conf.get('admin_email') or
-                           global_conf.get('webmaster_email') or
-                           global_conf.get('sysadmin_email'))
+            error_email = (global_conf.get('error_email')
+                           or global_conf.get('admin_email')
+                           or global_conf.get('webmaster_email')
+                           or global_conf.get('sysadmin_email'))
         self.error_email = converters.aslist(error_email)
         self.error_log = error_log
         self.show_exceptions_in_wsgi_errors = show_exceptions_in_wsgi_errors
@@ -199,7 +199,7 @@ class ErrorMiddleware(object):
             environ=environ)
 
 
-class ResponseStartChecker(object):
+class ResponseStartChecker:
     def __init__(self, start_response):
         self.start_response = start_response
         self.response_started = False
@@ -211,7 +211,7 @@ class ResponseStartChecker(object):
         return self.start_response(*args)
 
 
-class CatchingIter(six.Iterator):
+class CatchingIter:
 
     """
     A wrapper around the application iterator that will catch
@@ -252,8 +252,7 @@ class CatchingIter(six.Iterator):
                 exc_info, self.environ)
             if close_response is not None:
                 response += (
-                    '<hr noshade>Error in .close():<br>%s'
-                    % close_response)
+                    f'<hr noshade>Error in .close():<br>{close_response}')
 
             if not self.start_checker.response_started:
                 self.start_checker('500 Internal Server Error',
@@ -281,7 +280,7 @@ class CatchingIter(six.Iterator):
             return close_response
 
 
-class Supplement(object):
+class Supplement:
 
     """
     This is a supplement used to display standard WSGI information in
@@ -398,7 +397,7 @@ def handle_exception(exc_info, error_stream, html=True,
         else:
             reported = True
     else:
-        error_stream.write('Error - %s: %s\n' % (
+        error_stream.write('Error - {}: {}\n'.format(
             exc_data.exception_type, exc_data.exception_value))
     if html:
         if debug_mode and simple_html_error:
@@ -423,14 +422,14 @@ def handle_exception(exc_info, error_stream, html=True,
             extra = "<p><b>The error has been logged to our team.</b>"
             if 'sentry_event_id' in environ:
                 extra += " If you want to contact us about this error, please reference the following<br><br>"
-                extra += "<b><large>GURU MEDITATION: #" + environ['sentry_event_id'] + "</large></b>"
+                extra += f"<b><large>GURU MEDITATION: #{environ['sentry_event_id']}</large></b>"
             extra += "</p>"
             return_error = error_template('', msg, extra)
     else:
         return_error = None
     if not reported and error_stream:
         err_report = formatter.format_text(exc_data, show_hidden_frames=True)
-        err_report += '\n' + '-' * 60 + '\n'
+        err_report += f"\n{'-' * 60}\n"
         error_stream.write(err_report)
     if extra_data:
         error_stream.write(extra_data)
@@ -445,10 +444,10 @@ def send_report(rep, exc_data, html=True):
         traceback.print_exc(file=output)
         if html:
             return """
-            <p>Additionally an error occurred while sending the %s report:
+            <p>Additionally an error occurred while sending the {} report:
 
-            <pre>%s</pre>
-            </p>""" % (
+            <pre>{}</pre>
+            </p>""".format(
                 markupsafe.escape(str(rep)), output.getvalue())
         else:
             return (
@@ -464,11 +463,11 @@ def error_template(head_html, exception, extra):
     <html>
     <head>
     <style type="text/css">
-    body { color: #303030; background: #dfe5f9; font-family:"Lucida Grande",verdana,arial,helvetica,sans-serif; font-size:12px; line-height:16px; }
-    .content { max-width: 720px; margin: auto; margin-top: 50px; }
+    body {{ color: #303030; background: #dfe5f9; font-family:"Lucida Grande",verdana,arial,helvetica,sans-serif; font-size:12px; line-height:16px; }}
+    .content {{ max-width: 720px; margin: auto; margin-top: 50px; }}
     </style>
     <title>Internal Server Error</title>
-    %s
+    {}
     </head>
     <body>
     <div class="content">
@@ -476,21 +475,21 @@ def error_template(head_html, exception, extra):
 
     <h2>Galaxy was unable to successfully complete your request</h2>
 
-    <p>%s</p>
+    <p>{}</p>
 
     This may be an intermittent problem due to load or other unpredictable factors, reloading the page may address the problem.
 
-    %s
+    {}
     </div>
     </body>
-    </html>''' % (head_html, exception, extra)
+    </html>'''.format(head_html, exception, extra)
 
 
 def make_error_middleware(app, global_conf, **kw):
     return ErrorMiddleware(app, global_conf=global_conf, **kw)
 
 
-doc_lines = ErrorMiddleware.__doc__.splitlines(True)
+doc_lines = cast(str, ErrorMiddleware.__doc__).splitlines(True)
 for i in range(len(doc_lines)):
     if doc_lines[i].strip().startswith('Settings'):
         make_error_middleware.__doc__ = ''.join(doc_lines[i:])

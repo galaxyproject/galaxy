@@ -36,11 +36,11 @@ def with_mock_tool(func):
 def selectwrapper(tool, value, multiple=False, optional=False):
     optional = 'optional="true"' if optional else ''
     multiple = 'multiple="true"' if multiple else ''
-    xml = XML('''<param name="blah" type="select" %s %s>
+    xml = XML('''<param name="blah" type="select" {} {}>
         <option value="x">I am X</option>
         <option value="y" selected="true">I am Y</option>
         <option value="z">I am Z</option>
-    </param>''' % (multiple, optional))
+    </param>'''.format(multiple, optional))
     parameter = SelectToolParameter(tool, xml)
     return SelectToolParameterWrapper(parameter, value)
 
@@ -204,7 +204,7 @@ def test_dataset_wrapper_false_path():
     assert wrapper.file_name == new_path
 
 
-class MockComputeEnvironment(object):
+class MockComputeEnvironment:
 
     def __init__(self, false_path, false_extra_files_path=None):
         self.false_path = false_path
@@ -273,7 +273,7 @@ MOCK_DATASET_EXTRA_FILES_PATH = "/galaxy/database/files/001/dataset_123.dat"
 MOCK_DATASET_EXT = "bam"
 
 
-class MockDataset(object):
+class MockDataset:
 
     def __init__(self):
         self.metadata = MetadataSpecCollection({})
@@ -283,14 +283,14 @@ class MockDataset(object):
         self.tags = []
 
 
-class MockTool(object):
+class MockTool:
 
     def __init__(self, app):
         self.app = app
         self.options = Bunch(sanitize=False)
 
 
-class MockApp(object):
+class MockApp:
 
     def __init__(self, test_directory):
         self.config = Bunch(tool_data_path=test_directory)

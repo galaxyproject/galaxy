@@ -20,7 +20,7 @@ SHED_DATA_MANAGER_CONF_XML = """<?xml version="1.0"?>
 """
 
 
-class DataManagerHandler(object):
+class DataManagerHandler:
 
     def __init__(self, app):
         self.app = app
@@ -40,7 +40,7 @@ class DataManagerHandler(object):
         """
         data_managers_path = self.data_managers_path
         if data_managers_path:
-            root_str = '<?xml version="1.0"?><data_managers tool_path="%s"></data_managers>' % data_managers_path
+            root_str = f'<?xml version="1.0"?><data_managers tool_path="{data_managers_path}"></data_managers>'
         else:
             root_str = '<?xml version="1.0"?><data_managers></data_managers>'
         root = parse_xml_string(root_str)
@@ -63,7 +63,7 @@ class DataManagerHandler(object):
             # Load existing data managers.
             try:
                 tree, error_message = parse_xml(shed_data_manager_conf_filename, check_exists=False)
-            except (OSError, IOError) as exc:
+            except OSError as exc:
                 if exc.errno == errno.ENOENT:
                     with open(shed_data_manager_conf_filename, 'w') as fh:
                         fh.write(SHED_DATA_MANAGER_CONF_XML)
@@ -93,16 +93,16 @@ class DataManagerHandler(object):
                         continue
                     data_manager_dict = metadata_dict['data_manager'].get('data_managers', {}).get(data_manager_id, None)
                     if data_manager_dict is None:
-                        log.error("Data manager metadata is not defined properly for '%s'." % (data_manager_id))
+                        log.error(f"Data manager metadata is not defined properly for '{data_manager_id}'.")
                         continue
                     guid = data_manager_dict.get('guid', None)
                     if guid is None:
-                        log.error("Data manager guid '%s' is not set in metadata for '%s'." % (guid, data_manager_id))
+                        log.error(f"Data manager guid '{guid}' is not set in metadata for '{data_manager_id}'.")
                         continue
                     elem.set('guid', guid)
                     tool_guid = data_manager_dict.get('tool_guid', None)
                     if tool_guid is None:
-                        log.error("Data manager tool guid '%s' is not set in metadata for '%s'." % (tool_guid, data_manager_id))
+                        log.error(f"Data manager tool guid '{tool_guid}' is not set in metadata for '{data_manager_id}'.")
                         continue
                     tool_dict = repository_tools_by_guid.get(tool_guid, None)
                     if tool_dict is None:
@@ -116,7 +116,7 @@ class DataManagerHandler(object):
                         continue
                     tool_config_filename = tool_dict.get('tool_config_filename', None)
                     if tool_config_filename is None:
-                        log.error("Data manager metadata is missing 'tool_config_file' for '%s'." % (data_manager_id))
+                        log.error(f"Data manager metadata is missing 'tool_config_file' for '{data_manager_id}'.")
                         continue
                     elem.set('shed_conf_file', shed_config_dict['config_filename'])
                     if elem.get('tool_file', None) is not None:
@@ -137,7 +137,7 @@ class DataManagerHandler(object):
                 elif elem.tag is etree.Comment:
                     pass
                 else:
-                    log.warning("Encountered unexpected element '%s':\n%s" % (elem.tag, xml_to_string(elem)))
+                    log.warning(f"Encountered unexpected element '{elem.tag}':\n{xml_to_string(elem)}")
                 config_elems.append(elem)
                 data_manager_config_has_changes = True
             # Persist the altered shed_data_manager_config file.
@@ -155,7 +155,7 @@ class DataManagerHandler(object):
             tree, error_message = parse_xml(shed_data_manager_conf_filename)
             if tree:
                 root = tree.getroot()
-                assert root.tag == 'data_managers', 'The file provided (%s) for removing data managers from is not a valid data manager xml file.' % (shed_data_manager_conf_filename)
+                assert root.tag == 'data_managers', f'The file provided ({shed_data_manager_conf_filename}) for removing data managers from is not a valid data manager xml file.'
                 guids = [data_manager_dict.get('guid') for data_manager_dict in metadata_dict.get('data_manager', {}).get('data_managers', {}).values() if 'guid' in data_manager_dict]
                 load_old_data_managers_by_guid = {}
                 data_manager_config_has_changes = False

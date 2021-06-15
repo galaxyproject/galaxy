@@ -22,10 +22,8 @@ def create_base_test(connection, amqp_type, amqp_connection=None):
 
 @pytest.fixture()
 def sqlite_connection(request):
-    fd, path = tempfile.mkstemp()
-    os.close(fd)
-    request.addfinalizer(lambda: os.remove(path))
-    return 'sqlite:////%s' % path
+    with tempfile.NamedTemporaryFile() as temp:
+        yield f'sqlite:////{temp.name}'
 
 
 @pytest.fixture()

@@ -7,7 +7,7 @@ from .resolvers import (
 )
 
 
-class DependencyResolversView(object):
+class DependencyResolversView:
     """ Provide a RESTfulish/JSONy interface to a galaxy.tool_util.deps.DependencyResolver
     object. This can be adapted by the Galaxy web framework or other web apps.
     """
@@ -144,8 +144,10 @@ class DependencyResolversView(object):
         False if not successful
         """
         resolver = self._dependency_resolver(index)
-        if not hasattr(resolver, "install_dependency"):
-            raise exceptions.NotImplemented()
+        if resolver.read_only:
+            raise exceptions.RequestParameterInvalidException("Attempted to install on a read_only dependency resolver.")
+        if resolver.disabled:
+            raise exceptions.RequestParameterInvalidException("Attempted to install on a disabled dependency resolver.")
 
         name, version, type, extra_kwds = self._parse_dependency_info(payload)
         return resolver.install_dependency(
@@ -198,7 +200,7 @@ class DependencyResolversView(object):
         """
         List index for all active resolvers that have the 'install_dependency' attribute.
         """
-        return [index for index, resolver in enumerate(self._dependency_resolvers) if hasattr(resolver, "install_dependency") and not resolver.disabled]
+        return [index for index, resolver in enumerate(self._dependency_resolvers) if not resolver.read_only and not resolver.disabled]
 
     @property
     def uninstallable_resolvers(self):
@@ -315,7 +317,7 @@ class DependencyResolversView(object):
             return "OK"
 
 
-class ContainerResolutionView(object):
+class ContainerResolutionView:
     """
     """
 
@@ -333,6 +335,7 @@ class ContainerResolutionView(object):
             'install': False,
             'enabled_container_types': ['docker', 'singularity'],
             'resolution_cache': kwds.get("resolution_cache"),
+            'session': kwds.get('session'),
         }
 
         if 'index' in kwds:

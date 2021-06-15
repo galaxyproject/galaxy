@@ -96,7 +96,7 @@ def main():
         for vc, variants in vcf_file:
             num_ins = 0
             num_dels = 0
-            for variant_name, variant_text in variants:
+            for _variant_name, variant_text in variants:
                 if 'D' in variant_text:
                     num_dels = max(num_dels, int(variant_text[1:]))
                 elif 'I' in variant_text:

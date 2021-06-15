@@ -13,14 +13,13 @@
     </command>
     <inputs>
         <param format="data" name="input1" type="data" label="Text file"/>
-        <param name="algorithms" type="select" multiple="True" display="checkboxes" label="Choose the algorithms">
+        <param name="algorithms" type="select" optional="false" multiple="true" display="checkboxes" label="Choose the algorithms">
           <option value="md5"/>
           <option value="sha1"/>
           <option value="sha224"/>
           <option value="sha256"/>
           <option value="sha384"/>
           <option value="sha512"/>
-          <validator type="no_options" message="You must select at least one algorithm." />
         </param>
     </inputs>
     <outputs>

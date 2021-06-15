@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # Dan Blankenberg
-from __future__ import print_function
 
 import os
 import sys
@@ -21,7 +20,7 @@ def __main__():
         for file in files:
             if file[-5:] == ".info":
                 tmp_dict = {}
-                info_file = open(os.path.join(this_base_dir, file), 'r')
+                info_file = open(os.path.join(this_base_dir, file))
                 info = info_file.readlines()
                 info_file.close()
                 for line in info:
@@ -53,8 +52,8 @@ def __main__():
         chrs = []
         for chrom in org['chrs']:
             chrom = org['chrs'][chrom]
-            chrs.append("%s=%s" % (chrom['chromosome'], chrom['length']))
-        print("%s\t%s\t%s" % (build, org['name'], ",".join(chrs)))
+            chrs.append("{}={}".format(chrom['chromosome'], chrom['length']))
+        print("{}\t{}\t{}".format(build, org['name'], ",".join(chrs)))
 
 
 if __name__ == "__main__":

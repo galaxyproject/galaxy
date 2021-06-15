@@ -1,25 +1,26 @@
-<tool id="job_properties" name="Test Job Properties">
+<tool id="job_properties" name="Test Job Properties" version="1.0.0">
     <stdio>
         <exit_code range="127" level="fatal" description="Failing exit code." />
     </stdio>
     <version_command>echo 'v1.1'</version_command>
     <command><![CDATA[
-        #if $thebool
-            echo "The bool is true" &&
-            echo "The bool is really true" 1>&2 &&
-            echo "This is a line of text." > '$out_file1' &&
-            cp '$out_file1' '$one' &&
-            cp '$out_file1' '$two'
-        #else
-            echo "The bool is not true" &&
-            echo "The bool is very not true" 1>&2 &&
-            echo "This is a different line of text." > '$out_file1' &&
-            sh -c "exit 2"
-        #end if
-        #if $failbool
-            ; sh -c "exit 127"
-        #end if
-
+#if $thebool
+    echo 'The bool is true' &&
+    echo 'The bool is really true' 1>&2 &&
+    echo 'This is a line of text.' > '$out_file1' &&
+    cp '$out_file1' '$one' &&
+    cp '$out_file1' '$two'
+#else
+    echo 'The bool is not true' &&
+    echo 'The bool is very not true' 1>&2 &&
+    echo 'This is a different line of text.' > '$out_file1' &&
+    sh -c 'exit 2'
+#end if
+#if $failbool
+    ## use ';' to concatenate commands so that the next one is run independently
+    ## of the exit code of the previous one
+    ; exit 127
+#end if
     ]]></command>
     <inputs>
         <param name="thebool" type="boolean" label="The boolean property" />

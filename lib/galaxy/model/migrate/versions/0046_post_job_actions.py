@@ -1,7 +1,6 @@
 """
 Migration script to create tables for handling post-job actions.
 """
-from __future__ import print_function
 
 import logging
 

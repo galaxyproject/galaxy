@@ -2,8 +2,8 @@
 Contains functionality needed in every web interface
 """
 import logging
+from typing import Any, Optional
 
-from six import string_types
 from sqlalchemy import true
 from webob.exc import (
     HTTPBadRequest,
@@ -26,6 +26,7 @@ from galaxy.managers import (
     users,
     workflows
 )
+from galaxy.managers.sharable import SlugBuilder
 from galaxy.model import (
     ExtendedMetadata,
     ExtendedMetadataIndex,
@@ -53,7 +54,7 @@ log = logging.getLogger(__name__)
 SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
 
 
-class BaseController(object):
+class BaseController:
     """
     Base class for Galaxy web application controllers.
     """
@@ -167,7 +168,7 @@ class BaseUIController(BaseController):
             raise       # handled in the caller
         except Exception:
             log.exception("Exception in get_object check for %s %s:", class_name, str(id))
-            raise Exception('Server error retrieving %s id ( %s ).' % (class_name, str(id)))
+            raise Exception(f'Server error retrieving {class_name} id ( {str(id)} ).')
 
     def message_exception(self, trans, message, sanitize=True):
         trans.response.status = 400
@@ -182,7 +183,7 @@ class BaseAPIController(BaseController):
                                              check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted)
 
         except exceptions.ItemDeletionException as e:
-            raise HTTPBadRequest(detail="Invalid %s id ( %s ) specified: %s" % (class_name, str(id), util.unicodify(e)))
+            raise HTTPBadRequest(detail=f"Invalid {class_name} id ( {str(id)} ) specified: {util.unicodify(e)}")
         except exceptions.MessageException as e:
             raise HTTPBadRequest(detail=e.err_msg)
         except Exception as e:
@@ -210,11 +211,11 @@ class BaseAPIController(BaseController):
                 invalid.append(item)
         for item in util.listify(payload.get('in_groups', [])):
             try:
-                new_in_groups.append(get_id(item, trans.app.model.Group, trans.app.model.Group.table.c.name))
+                new_in_groups.append(get_id(item, trans.app.model.Group, trans.app.model.Group.name))
             except Exception:
                 invalid.append(item)
         if invalid:
-            msg = "The following value(s) for associated users and/or groups could not be parsed: %s." % ', '.join(invalid)
+            msg = f"The following value(s) for associated users and/or groups could not be parsed: {', '.join(invalid)}."
             msg += "  Valid values are email addresses of users, names of groups, or IDs of both."
             raise Exception(msg)
         payload['in_users'] = list(map(str, new_in_users))
@@ -226,7 +227,7 @@ class BaseAPIController(BaseController):
     def _parse_serialization_params(self, kwd, default_view):
         view = kwd.get('view', None)
         keys = kwd.get('keys')
-        if isinstance(keys, string_types):
+        if isinstance(keys, str):
             keys = keys.split(',')
         return dict(view=view, keys=keys, default_view=default_view)
 
@@ -251,7 +252,7 @@ class JSAppLauncher(BaseUIController):
                            'total_disk_usage', 'nice_total_disk_usage', 'quota_percent', 'preferences')
 
     def __init__(self, app):
-        super(JSAppLauncher, self).__init__(app)
+        super().__init__(app)
         self.user_manager = users.UserManager(app)
         self.user_serializer = users.CurrentUserSerializer(app)
         self.config_serializer = configuration.ConfigSerializer(app)
@@ -292,24 +293,24 @@ class JSAppLauncher(BaseUIController):
         """
         root = root or web.url_for('/')
         js_options = {
-            'root'               : root,
-            'user'               : self.user_serializer.serialize(trans.user, self.USER_BOOTSTRAP_KEYS, trans=trans),
-            'config'             : self._get_site_configuration(trans),
-            'params'             : dict(trans.request.params),
-            'session_csrf_token' : trans.session_csrf_token,
+            'root': root,
+            'user': self.user_serializer.serialize(trans.user, self.USER_BOOTSTRAP_KEYS, trans=trans),
+            'config': self._get_site_configuration(trans),
+            'params': dict(trans.request.params),
+            'session_csrf_token': trans.session_csrf_token,
         }
         return js_options
 
     def _get_extended_config(self, trans):
         config = {
-            'active_view'                   : 'analysis',
-            'enable_cloud_launch'           : trans.app.config.get_bool('enable_cloud_launch', False),
-            'enable_webhooks'               : True if trans.app.webhooks_registry.webhooks else False,
-            'toolbox'                       : trans.app.toolbox.to_dict(trans),
-            'message_box_visible'           : trans.app.config.message_box_visible,
-            'show_inactivity_warning'       : trans.app.config.user_activation_on and trans.user and not trans.user.active,
-            'tool_shed_urls'                : list(trans.app.tool_shed_registry.tool_sheds.values()) if trans.app.tool_shed_registry else [],
-            'tool_dynamic_configs'          : list(trans.app.toolbox.dynamic_conf_filenames())
+            'active_view': 'analysis',
+            'enable_cloud_launch': trans.app.config.get_bool('enable_cloud_launch', False),
+            'enable_webhooks': True if trans.app.webhooks_registry.webhooks else False,
+            'toolbox': trans.app.toolbox.to_dict(trans),
+            'message_box_visible': trans.app.config.message_box_visible,
+            'show_inactivity_warning': trans.app.config.user_activation_on and trans.user and not trans.user.active,
+            'tool_shed_urls': list(trans.app.tool_shed_registry.tool_sheds.values()) if trans.app.tool_shed_registry else [],
+            'tool_dynamic_configs': list(trans.app.toolbox.dynamic_conf_filenames())
         }
 
         # TODO: move to user
@@ -339,18 +340,17 @@ class JSAppLauncher(BaseUIController):
             log.exception(exc)
             return {}
 
-    def template(self, trans, app_name, entry_fn='app', options=None, bootstrapped_data=None, masthead=True, **additional_options):
+    def template(self, trans, app_name: str, entry_fn: str = 'app', options=None, bootstrapped_data: Optional[dict] = None, masthead: Optional[bool] = True, **additional_options):
         """
         Render and return the single page mako template that starts the app.
 
-        `app_name` (string): the first portion of the webpack bundle to as the app.
-        `entry_fn` (string): the name of the window-scope function that starts the
-            app. Defaults to 'app'.
-        `bootstrapped_data` (dict): (optional) update containing any more data
-            the app may need.
-        `masthead` (boolean): (optional, default=True) include masthead elements in
-            the initial page dom.
-        `additional_options` (kwargs): update to the options sent to the app.
+        :param app_name: the first portion of the webpack bundle to as the app.
+        :param entry_fn: the name of the window-scope function that starts the
+                         app. Defaults to 'app'.
+        :param bootstrapped_data: update containing any more data
+                                  the app may need.
+        :param masthead: include masthead elements in the initial page dom.
+        :param additional_options: update to the options sent to the app.
         """
         options = options or self._get_js_options(trans)
         options.update(additional_options)
@@ -364,7 +364,7 @@ class JSAppLauncher(BaseUIController):
         )
 
 
-class Datatype(object):
+class Datatype:
     """Used for storing in-memory list of datatypes currently in the datatypes registry."""
 
     def __init__(self, extension, dtype, type_extension, mimetype, display_in_upload):
@@ -379,7 +379,7 @@ class Datatype(object):
 #
 
 
-class CreatesApiKeysMixin(object):
+class CreatesApiKeysMixin:
     """
     Mixing centralizing logic for creating API keys for user objects.
 
@@ -390,7 +390,7 @@ class CreatesApiKeysMixin(object):
         return api_keys.ApiKeyManager(trans.app).create_api_key(user)
 
 
-class SharableItemSecurityMixin(object):
+class SharableItemSecurityMixin:
     """ Mixin for handling security for sharable items. """
 
     def security_check(self, trans, item, check_ownership=False, check_accessible=False):
@@ -398,7 +398,7 @@ class SharableItemSecurityMixin(object):
         return managers_base.security_check(trans, item, check_ownership=check_ownership, check_accessible=check_accessible)
 
 
-class ExportsHistoryMixin(object):
+class ExportsHistoryMixin:
 
     def serve_ready_history_export(self, trans, jeha):
         assert jeha.ready
@@ -406,22 +406,20 @@ class ExportsHistoryMixin(object):
             trans.response.set_content_type('application/x-gzip')
         else:
             trans.response.set_content_type('application/x-tar')
-        disposition = 'attachment; filename="%s"' % jeha.export_name
+        disposition = f'attachment; filename="{jeha.export_name}"'
         trans.response.headers["Content-Disposition"] = disposition
         archive = trans.app.object_store.get_filename(jeha.dataset)
         return open(archive, mode='rb')
 
-    def queue_history_export(self, trans, history, gzip=True, include_hidden=False, include_deleted=False):
+    def queue_history_export(self, trans, history, gzip=True, include_hidden=False, include_deleted=False, directory_uri=None, file_name=None):
         # Convert options to booleans.
-        if isinstance(gzip, string_types):
+        if isinstance(gzip, str):
             gzip = (gzip in ['True', 'true', 'T', 't'])
-        if isinstance(include_hidden, string_types):
+        if isinstance(include_hidden, str):
             include_hidden = (include_hidden in ['True', 'true', 'T', 't'])
-        if isinstance(include_deleted, string_types):
+        if isinstance(include_deleted, str):
             include_deleted = (include_deleted in ['True', 'true', 'T', 't'])
 
-        # Run job to do export.
-        history_exp_tool = trans.app.toolbox.get_tool('__EXPORT_HISTORY__')
         params = {
             'history_to_export': history,
             'compress': gzip,
@@ -429,25 +427,27 @@ class ExportsHistoryMixin(object):
             'include_deleted': include_deleted
         }
 
-        history_exp_tool.execute(trans, incoming=params, history=history, set_output_hid=True)
+        if directory_uri is None:
+            export_tool_id = '__EXPORT_HISTORY__'
+        else:
+            params['directory_uri'] = directory_uri
+            params['file_name'] = file_name or None
+            export_tool_id = '__EXPORT_HISTORY_TO_URI__'
+
+        # Run job to do export.
+        history_exp_tool = trans.app.toolbox.get_tool(export_tool_id)
+        job, _ = history_exp_tool.execute(trans, incoming=params, history=history, set_output_hid=True)
+        return job
 
 
-class ImportsHistoryMixin(object):
+class ImportsHistoryMixin:
 
     def queue_history_import(self, trans, archive_type, archive_source):
         # Run job to do import.
         history_imp_tool = trans.app.toolbox.get_tool('__IMPORT_HISTORY__')
-        incoming = {'__ARCHIVE_SOURCE__' : archive_source, '__ARCHIVE_TYPE__' : archive_type}
-        history_imp_tool.execute(trans, incoming=incoming)
-
-
-class UsesLibraryMixin(object):
-
-    def get_library(self, trans, id, check_ownership=False, check_accessible=True):
-        l = self.get_object(trans, id, 'Library')
-        if check_accessible and not (trans.user_is_admin or trans.app.security_agent.can_access_library(trans.get_current_user_roles(), l)):
-            error("LibraryFolder is not accessible to the current user")
-        return l
+        incoming = {'__ARCHIVE_SOURCE__': archive_source, '__ARCHIVE_TYPE__': archive_type}
+        job, _ = history_imp_tool.execute(trans, incoming=incoming)
+        return job
 
 
 class UsesLibraryMixinItems(SharableItemSecurityMixin):
@@ -476,8 +476,8 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
     def can_current_user_add_to_library_item(self, trans, item):
         if not trans.user:
             return False
-        return (trans.user_is_admin or
-                trans.app.security_agent.can_add_library_item(trans.get_current_user_roles(), item))
+        return (trans.user_is_admin
+                or trans.app.security_agent.can_add_library_item(trans.get_current_user_roles(), item))
 
     def check_user_can_add_to_library_item(self, trans, item, check_accessible=True):
         """
@@ -526,7 +526,7 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
         ``library_contents.create`` will branch to this if called with 'from_hda_id'
         in its payload.
         """
-        log.debug('_copy_hda_to_library_folder: %s' % (str((from_hda_id, folder_id, ldda_message))))
+        log.debug(f'_copy_hda_to_library_folder: {str((from_hda_id, folder_id, ldda_message))}')
         # PRECONDITION: folder_id has already been altered to remove the folder prefix ('F')
         # TODO: allow name and other, editable ldda attrs?
         if ldda_message:
@@ -640,6 +640,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
     """
     Mixin for controllers that use Visualization objects.
     """
+    slug_builder = SlugBuilder()
 
     def get_visualization(self, trans, id, check_ownership=True, check_accessible=False):
         """
@@ -736,10 +737,10 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         # TODO: deleted
         # TODO: importable
         return {
-            'id'        : visualization.id,
-            'title'     : visualization.title,
-            'type'      : visualization.type,
-            'dbkey'     : visualization.dbkey,
+            'id': visualization.id,
+            'title': visualization.title,
+            'type': visualization.type,
+            'dbkey': visualization.dbkey,
         }
 
     def get_visualization_dict(self, visualization):
@@ -750,15 +751,15 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         """
         return {
             'model_class': 'Visualization',
-            'id'         : visualization.id,
-            'title'      : visualization.title,
-            'type'       : visualization.type,
-            'user_id'    : visualization.user.id,
-            'dbkey'      : visualization.dbkey,
-            'slug'       : visualization.slug,
+            'id': visualization.id,
+            'title': visualization.title,
+            'type': visualization.type,
+            'user_id': visualization.user.id,
+            'dbkey': visualization.dbkey,
+            'slug': visualization.slug,
             # to_dict only the latest revision (allow older to be fetched elsewhere)
-            'latest_revision' : self.get_visualization_revision_dict(visualization.latest_revision),
-            'revisions' : [r.id for r in visualization.revisions],
+            'latest_revision': self.get_visualization_revision_dict(visualization.latest_revision),
+            'revisions': [r.id for r in visualization.revisions],
         }
 
     def get_visualization_revision_dict(self, revision):
@@ -767,12 +768,12 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         NOTE: that encoding ids isn't done here should happen at the caller level.
         """
         return {
-            'model_class'      : 'VisualizationRevision',
-            'id'               : revision.id,
-            'visualization_id' : revision.visualization.id,
-            'title'            : revision.title,
-            'dbkey'            : revision.dbkey,
-            'config'           : revision.config,
+            'model_class': 'VisualizationRevision',
+            'id': revision.id,
+            'visualization_id': revision.visualization.id,
+            'title': revision.title,
+            'dbkey': revision.dbkey,
+            'config': revision.config,
         }
 
     def import_visualization(self, trans, id, user=None):
@@ -799,16 +800,17 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
 
         # copy vis and alter title
         # TODO: need to handle custom db keys.
-        imported_visualization = visualization.copy(user=user, title="imported: " + visualization.title)
+        imported_visualization = visualization.copy(user=user, title=f"imported: {visualization.title}")
         trans.sa_session.add(imported_visualization)
         trans.sa_session.flush()
         return imported_visualization
 
     def create_visualization(self, trans, type, title="Untitled Visualization", slug=None,
-                             dbkey=None, annotation=None, config={}, save=True):
+                             dbkey=None, annotation=None, config=None, save=True):
         """
         Create visualiation and first revision.
         """
+        config = config or {}
         visualization = self._create_visualization(trans, title, type, dbkey, slug, annotation, save)
         # TODO: handle this error structure better either in _create or here
         if isinstance(visualization, dict):
@@ -942,7 +944,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
 
         # -- Get tool definition and add input values from job. --
         tool_dict = tool.to_dict(trans, io_details=True)
-        tool_param_values = dict([(p.name, p.value) for p in job.parameters])
+        tool_param_values = {p.name: p.value for p in job.parameters}
         tool_param_values = tool.params_from_strings(tool_param_values, trans.app, ignore_errors=True)
 
         # Only get values for simple inputs for now.
@@ -984,7 +986,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
                     "dataset": trans.security.encode_dict_ids(dataset.to_dict()),
                     "prefs": prefs,
                     "mode": track_dict.get('mode', 'Auto'),
-                    "filters": track_dict.get('filters', {'filters' : track_data_provider.get_filters()}),
+                    "filters": track_dict.get('filters', {'filters': track_data_provider.get_filters()}),
                     "tool": self.get_tool_def(trans, dataset),
                     "tool_state": track_dict.get('tool_state', {})
                 }
@@ -1011,7 +1013,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
                 encoded_dbkey = dbkey
                 user = visualization.user
                 if 'dbkeys' in user.preferences and str(dbkey) in user.preferences['dbkeys']:
-                    encoded_dbkey = "%s:%s" % (user.username, dbkey)
+                    encoded_dbkey = f"{user.username}:{dbkey}"
                 return encoded_dbkey
 
             # Set tracks.
@@ -1056,7 +1058,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             "name": dataset.name,
             "dataset": trans.security.encode_dict_ids(dataset.to_dict()),
             "prefs": {},
-            "filters": {'filters' : track_data_provider.get_filters()},
+            "filters": {'filters': track_data_provider.get_filters()},
             "tool": self.get_tool_def(trans, dataset),
             "tool_state": {}
         }
@@ -1078,15 +1080,15 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         try:
             dataset_id = trans.security.decode_id(dataset_id)
         except (AttributeError, TypeError):
-            raise HTTPBadRequest("Invalid dataset id: %s." % str(dataset_id))
+            raise HTTPBadRequest(f"Invalid dataset id: {str(dataset_id)}.")
 
         try:
             data = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(int(dataset_id))
         except Exception:
-            raise HTTPBadRequest("Invalid dataset id: %s." % str(dataset_id))
+            raise HTTPBadRequest(f"Invalid dataset id: {str(dataset_id)}.")
 
         if not data:
-            raise HTTPBadRequest("Invalid dataset id: %s." % str(dataset_id))
+            raise HTTPBadRequest(f"Invalid dataset id: {str(dataset_id)}.")
 
         if check_ownership:
             # Verify ownership.
@@ -1094,7 +1096,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             if not user:
                 error("Must be logged in to manage Galaxy items")
             if data.history.user != user:
-                error("%s is not owned by current user" % data.__class__.__name__)
+                error(f"{data.__class__.__name__} is not owned by current user")
 
         if check_accessible:
             current_user_roles = trans.get_current_user_roles()
@@ -1103,8 +1105,8 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
                 error("You are not allowed to access this dataset")
 
             if check_state and data.state == trans.model.Dataset.states.UPLOAD:
-                return trans.show_error_message("Please wait until this dataset finishes uploading " +
-                                                "before attempting to view it.")
+                return trans.show_error_message("Please wait until this dataset finishes uploading "
+                                                + "before attempting to view it.")
         return data
 
     # -- Helper functions --
@@ -1130,7 +1132,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         if slug:
             visualization.slug = slug
         else:
-            self.create_item_slug(trans.sa_session, visualization)
+            self.slug_builder.create_item_slug(trans.sa_session, visualization)
         if annotation:
             annotation = sanitize_html(annotation)
             # TODO: if this is to stay in the mixin, UsesAnnotations should be added to the superclasses
@@ -1203,6 +1205,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
 
 class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
     """ Mixin for controllers that use StoredWorkflow objects. """
+    slug_builder = SlugBuilder()
 
     def get_stored_workflow(self, trans, id, check_ownership=True, check_accessible=False):
         """ Get a StoredWorkflow from the database by id, verifying ownership. """
@@ -1217,7 +1220,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
 
             # Older workflows may be missing slugs, so set them here.
             if not workflow.slug:
-                self.create_item_slug(trans.sa_session, workflow)
+                self.slug_builder.create_item_slug(trans.sa_session, workflow)
                 trans.sa_session.flush()
 
         return workflow
@@ -1235,11 +1238,12 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
         """ Imports a shared workflow """
         # Copy workflow.
         imported_stored = model.StoredWorkflow()
-        imported_stored.name = "imported: " + stored.name
-        workflow = stored.latest_workflow.copy()
+        imported_stored.name = f"imported: {stored.name}"
+        workflow = stored.latest_workflow.copy(user=trans.user)
         workflow.stored_workflow = imported_stored
         imported_stored.latest_workflow = workflow
         imported_stored.user = trans.user
+        imported_stored.copy_tags_from(stored.user, stored)
         # Save new workflow.
         session = trans.sa_session
         session.add(imported_stored)
@@ -1253,25 +1257,6 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
         session.flush()
         return imported_stored
 
-    def _workflow_from_dict(self, trans, data, source=None, add_to_menu=False, publish=False, exact_tools=True, fill_defaults=False, from_tool_form=False):
-        """
-        Creates a workflow from a dict. Created workflow is stored in the database and returned.
-        """
-        # TODO: replace this method with direct access to manager.
-        workflow_contents_manager = workflows.WorkflowContentsManager(self.app)
-        raw_workflow_description = workflow_contents_manager.ensure_raw_description(data)
-        created_workflow = workflow_contents_manager.build_workflow_from_raw_description(
-            trans,
-            raw_workflow_description,
-            source=source,
-            add_to_menu=add_to_menu,
-            publish=publish,
-            exact_tools=exact_tools,
-            fill_defaults=fill_defaults,
-            from_tool_form=from_tool_form,
-        )
-        return created_workflow.stored_workflow, created_workflow.missing_tools
-
     def _workflow_to_dict(self, trans, stored):
         """
         Converts a workflow to a dict of attributes suitable for exporting.
@@ -1283,7 +1268,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
         )
 
 
-class UsesFormDefinitionsMixin(object):
+class UsesFormDefinitionsMixin:
     """Mixin for controllers that use Galaxy form objects."""
 
     def get_all_forms(self, trans, all_versions=False, filter=None, form_type='All'):
@@ -1307,15 +1292,15 @@ class UsesFormDefinitionsMixin(object):
         # Save a form_builder field object
         params = util.Params(kwd)
         if isinstance(field_obj, trans.model.UserAddress):
-            field_obj.desc = util.restore_text(params.get('%s_short_desc' % widget_name, ''))
-            field_obj.name = util.restore_text(params.get('%s_name' % widget_name, ''))
-            field_obj.institution = util.restore_text(params.get('%s_institution' % widget_name, ''))
-            field_obj.address = util.restore_text(params.get('%s_address' % widget_name, ''))
-            field_obj.city = util.restore_text(params.get('%s_city' % widget_name, ''))
-            field_obj.state = util.restore_text(params.get('%s_state' % widget_name, ''))
-            field_obj.postal_code = util.restore_text(params.get('%s_postal_code' % widget_name, ''))
-            field_obj.country = util.restore_text(params.get('%s_country' % widget_name, ''))
-            field_obj.phone = util.restore_text(params.get('%s_phone' % widget_name, ''))
+            field_obj.desc = util.restore_text(params.get(f'{widget_name}_short_desc', ''))
+            field_obj.name = util.restore_text(params.get(f'{widget_name}_name', ''))
+            field_obj.institution = util.restore_text(params.get(f'{widget_name}_institution', ''))
+            field_obj.address = util.restore_text(params.get(f'{widget_name}_address', ''))
+            field_obj.city = util.restore_text(params.get(f'{widget_name}_city', ''))
+            field_obj.state = util.restore_text(params.get(f'{widget_name}_state', ''))
+            field_obj.postal_code = util.restore_text(params.get(f'{widget_name}_postal_code', ''))
+            field_obj.country = util.restore_text(params.get(f'{widget_name}_country', ''))
+            field_obj.phone = util.restore_text(params.get(f'{widget_name}_phone', ''))
             trans.sa_session.add(field_obj)
             trans.sa_session.flush()
 
@@ -1351,11 +1336,12 @@ class UsesFormDefinitionsMixin(object):
         return values
 
 
-class SharableMixin(object):
+class SharableMixin:
     """ Mixin for a controller that manages an item that can be shared. """
 
-    manager = None
-    serializer = None
+    manager: Any = None
+    serializer: Any = None
+    slug_builder = SlugBuilder()
 
     # -- Implemented methods. --
 
@@ -1380,110 +1366,7 @@ class SharableMixin(object):
             Does not flush/commit changes, however. Item must have name, user,
             importable, and slug attributes. """
         item.importable = True
-        self.create_item_slug(sa_session, item)
-
-    def create_item_slug(self, sa_session, item):
-        """ Create/set item slug. Slug is unique among user's importable items
-            for item's class. Returns true if item's slug was set/changed; false
-            otherwise.
-        """
-        cur_slug = item.slug
-
-        # Setup slug base.
-        if cur_slug is None or cur_slug == "":
-            # Item can have either a name or a title.
-            if hasattr(item, 'name'):
-                item_name = item.name
-            elif hasattr(item, 'title'):
-                item_name = item.title
-            slug_base = util.ready_name_for_url(item_name.lower())
-        else:
-            slug_base = cur_slug
-
-        # Using slug base, find a slug that is not taken. If slug is taken,
-        # add integer to end.
-        new_slug = slug_base
-        count = 1
-        # Ensure unique across model class and user and don't include this item
-        # in the check in case it has previously been assigned a valid slug.
-        while sa_session.query(item.__class__).filter(item.__class__.user == item.user, item.__class__.slug == new_slug, item.__class__.id != item.id).count() != 0:
-            # Slug taken; choose a new slug based on count. This approach can
-            # handle numerous items with the same name gracefully.
-            new_slug = '%s-%i' % (slug_base, count)
-            count += 1
-
-        # Set slug and return.
-        item.slug = new_slug
-        return item.slug == cur_slug
-
-    @web.legacy_expose_api
-    def sharing(self, trans, id, payload=None, **kwd):
-        skipped = False
-        class_name = self.manager.model_class.__name__
-        item = self.get_object(trans, id, class_name, check_ownership=True, check_accessible=True, deleted=False)
-        if payload and payload.get("action"):
-            action = payload.get("action")
-            if action == "make_accessible_via_link":
-                self._make_item_accessible(trans.sa_session, item)
-                if hasattr(item, "has_possible_members") and item.has_possible_members and payload.get("make_members_public", False):
-                    shared, skipped = self._make_members_public(trans, item)
-            elif action == "make_accessible_and_publish":
-                self._make_item_accessible(trans.sa_session, item)
-                if hasattr(item, "has_possible_members") and item.has_possible_members and payload.get("make_members_public", False):
-                    shared, skipped = self._make_members_public(trans, item)
-                item.published = True
-            elif action == "publish":
-                if item.importable:
-                    item.published = True
-                    if hasattr(item, "has_possible_members") and item.has_possible_members and payload.get("make_members_public", False):
-                        shared, skipped = self._make_members_public(trans, item)
-                else:
-                    raise exceptions.MessageException("%s not importable." % class_name)
-            elif action == "disable_link_access":
-                item.importable = False
-            elif action == "unpublish":
-                item.published = False
-            elif action == "disable_link_access_and_unpublish":
-                item.importable = item.published = False
-            elif action == "unshare_user":
-                user = trans.sa_session.query(trans.app.model.User).get(self.decode_id(payload.get("user_id")))
-                class_name_lc = class_name.lower()
-                ShareAssociation = getattr(trans.app.model, "%sUserShareAssociation" % class_name)
-                usas = trans.sa_session.query(ShareAssociation).filter_by(**{"user": user, class_name_lc: item}).all()
-                if not usas:
-                    raise exceptions.MessageException("%s was not shared with user." % class_name)
-                for usa in usas:
-                    trans.sa_session.delete(usa)
-            trans.sa_session.add(item)
-            trans.sa_session.flush()
-        if item.importable and not item.slug:
-            self._make_item_accessible(trans.sa_session, item)
-        item_dict = self.serializer.serialize_to_view(item,
-            user=trans.user, trans=trans, default_view="sharing")
-        item_dict["users_shared_with"] = [{"id": self.app.security.encode_id(a.user.id), "email": a.user.email} for a in item.users_shared_with]
-        if skipped:
-            item_dict["skipped"] = True
-        return item_dict
-
-    def _make_members_public(self, trans, item):
-        """ Make the non-purged datasets in history public
-        Performs pemissions check.
-        """
-        # TODO eventually we should handle more classes than just History
-        skipped = False
-        for hda in item.activatable_datasets:
-            dataset = hda.dataset
-            if not trans.app.security_agent.dataset_is_public(dataset):
-                if trans.app.security_agent.can_manage_dataset(trans.user.all_roles(), dataset):
-                    try:
-                        trans.app.security_agent.make_dataset_public(hda.dataset)
-                    except Exception:
-                        log.warning("Unable to make dataset with id: %s public", dataset.id)
-                        skipped = True
-                else:
-                    log.warning("User without permissions tried to make dataset with id: %s public", dataset.id)
-                    skipped = True
-        return item, skipped
+        self.slug_builder.create_item_slug(sa_session, item)
 
     # -- Abstract methods. --
 
@@ -1515,7 +1398,7 @@ class SharableMixin(object):
         raise NotImplementedError()
 
 
-class UsesQuotaMixin(object):
+class UsesQuotaMixin:
 
     def get_quota(self, trans, id, check_ownership=False, check_accessible=False, deleted=None):
         return self.get_object(trans, id, 'Quota', check_ownership=False, check_accessible=False, deleted=deleted)
@@ -1523,7 +1406,7 @@ class UsesQuotaMixin(object):
 
 class UsesTagsMixin(SharableItemSecurityMixin):
 
-    def get_tag_handler(self, trans):
+    def get_tag_handler(self, trans) -> tags.GalaxyTagHandler:
         return trans.app.tag_handler
 
     def _get_user_tags(self, trans, item_class_name, id):
@@ -1553,7 +1436,7 @@ class UsesTagsMixin(SharableItemSecurityMixin):
     def _get_item_tag_assoc(self, trans, item_class_name, id, tag_name):
         user = trans.user
         tagged_item = self._get_tagged_item(trans, item_class_name, id)
-        log.debug("In get_item_tag_assoc with tagged_item %s" % tagged_item)
+        log.debug(f"In get_item_tag_assoc with tagged_item {tagged_item}")
         return self.get_tag_handler(trans)._get_item_tag_assoc(user, tagged_item, tag_name)
 
     def set_tags_from_list(self, trans, item, new_tags_list, user=None):
@@ -1588,7 +1471,7 @@ class UsesTagsMixin(SharableItemSecurityMixin):
 
         # boil the tag tuples down into a sorted list of DISTINCT name:val strings
         tags = all_tags_query.distinct().all()
-        tags = [((name + ':' + val) if val else name) for name, val in tags]
+        tags = [(f"{name}:{val}" if val else name) for name, val in tags]
         return sorted(tags)
 
 
@@ -1669,25 +1552,14 @@ class UsesExtendedMetadataMixin(SharableItemSecurityMixin):
         """
         if isinstance(meta, dict):
             for a in meta:
-                for path, value in self._scan_json_block(meta[a], prefix + "/" + a):
-                    yield path, value
+                yield from self._scan_json_block(meta[a], f"{prefix}/{a}")
         elif isinstance(meta, list):
             for i, a in enumerate(meta):
-                for path, value in self._scan_json_block(a, prefix + "[%d]" % (i)):
-                    yield path, value
+                yield from self._scan_json_block(a, prefix + "[%d]" % (i))
         else:
             # BUG: Everything is cast to string, which can lead to false positives
             # for cross type comparisions, ie "True" == True
-            yield prefix, ("%s" % (meta)).encode("utf8", errors='replace')
-
-
-class ControllerUnavailable(Exception):
-    """
-    Deprecated: `BaseController` used to be available under the name `Root`
-    """
-    pass
-
-# ---- Utility methods -------------------------------------------------------
+            yield prefix, (f"{meta}").encode("utf8", errors='replace')
 
 
 def sort_by_attr(seq, attr):

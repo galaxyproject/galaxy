@@ -24,14 +24,10 @@ def get_dataset(filename, index_attr='bam_index', dataset_id=1, has_data=True):
 
 @contextmanager
 def get_tmp_path(should_exist=False, suffix=''):
-    _, path = tempfile.mkstemp(suffix=suffix)
-    if not should_exist:
-        os.remove(path)
-    yield path
-    try:
-        os.remove(path)
-    except Exception:
-        pass
+    with tempfile.NamedTemporaryFile(suffix=suffix) as temp:
+        if not should_exist:
+            os.remove(temp.name)
+        yield temp.name
 
 
 @contextmanager

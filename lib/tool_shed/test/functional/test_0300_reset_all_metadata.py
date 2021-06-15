@@ -50,11 +50,11 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
+        assert test_user_1 is not None, f'Problem retrieving user with email {common.test_user_1_email} from the database'
         self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.admin_email, username=common.admin_username)
         admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
+        assert admin_user is not None, f'Problem retrieving user with email {common.admin_email} from the database'
         self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_filtering_repository(self):
@@ -559,7 +559,7 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
                                                             category_id=self.security.encode_id(category_0060.id),
                                                             strings_displayed=[])
         if self.repository_is_new(workflow_repository):
-            workflow = open(self.get_filename('filtering_workflow/Workflow_for_0060_filter_workflow_repository.ga'), 'r').read()
+            workflow = open(self.get_filename('filtering_workflow/Workflow_for_0060_filter_workflow_repository.ga')).read()
             workflow = workflow.replace('__TEST_TOOL_SHED_URL__', self.url.replace('http://', ''))
             workflow_filepath = self.generate_temp_path('test_0360', additional_paths=['filtering_workflow'])
             if not os.path.exists(workflow_filepath):
@@ -600,4 +600,4 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
             for metadata in self.get_repository_metadata(repository):
                 new_metadata[self.security.encode_id(repository.id)][metadata.changeset_revision] = metadata.metadata
             if old_metadata[self.security.encode_id(repository.id)] != new_metadata[self.security.encode_id(repository.id)]:
-                raise AssertionError('Metadata changed after reset for repository %s.' % repository.name)
+                raise AssertionError(f'Metadata changed after reset for repository {repository.name}.')

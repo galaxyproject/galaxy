@@ -7,7 +7,6 @@ import logging
 from galaxy import model
 from galaxy.exceptions import (
     InternalServerError,
-    MalformedId
 )
 from galaxy.managers import base
 from galaxy.managers import sharable
@@ -20,9 +19,6 @@ class CloudAuthzManager(sharable.SharableModelManager):
     model_class = model.CloudAuthz
     foreign_key_name = 'cloudauthz'
 
-    def __init__(self, app, *args, **kwargs):
-        super(CloudAuthzManager, self).__init__(app, *args, **kwargs)
-
 
 class CloudAuthzsSerializer(base.ModelSerializer):
     """
@@ -31,7 +27,7 @@ class CloudAuthzsSerializer(base.ModelSerializer):
     model_manager_class = CloudAuthzManager
 
     def __init__(self, app, **kwargs):
-        super(CloudAuthzsSerializer, self).__init__(app, **kwargs)
+        super().__init__(app, **kwargs)
         self.cloudauthzs_manager = self.manager
 
         self.default_view = 'summary'
@@ -49,23 +45,23 @@ class CloudAuthzsSerializer(base.ModelSerializer):
         ])
 
     def add_serializers(self):
-        super(CloudAuthzsSerializer, self).add_serializers()
+        super().add_serializers()
 
         # Arguments of the following lambda functions:
         # i  : an instance of galaxy.model.CloudAuthz.
         # k  : serialized dictionary key (e.g., 'model_class', 'provider').
         # **c: a dictionary containing 'trans' and 'user' objects.
         self.serializers.update({
-            'id'           : lambda i, k, **c: self.app.security.encode_id(i.id),
-            'model_class'  : lambda *a, **c: 'CloudAuthz',
-            'user_id'      : lambda i, k, **c: self.app.security.encode_id(i.user_id),
-            'provider'     : lambda i, k, **c: str(i.provider),
-            'config'       : lambda i, k, **c: i.config,
-            'authn_id'     : lambda i, k, **c: self.app.security.encode_id(i.authn_id),
-            'last_update'  : lambda i, k, **c: str(i.last_update),
+            'id': lambda i, k, **c: self.app.security.encode_id(i.id),
+            'model_class': lambda *a, **c: 'CloudAuthz',
+            'user_id': lambda i, k, **c: self.app.security.encode_id(i.user_id),
+            'provider': lambda i, k, **c: str(i.provider),
+            'config': lambda i, k, **c: i.config,
+            'authn_id': lambda i, k, **c: self.app.security.encode_id(i.authn_id) if i.authn_id else None,
+            'last_update': lambda i, k, **c: str(i.last_update),
             'last_activity': lambda i, k, **c: str(i.last_activity),
-            'create_time'  : lambda i, k, **c: str(i.create_time),
-            'description'  : lambda i, k, **c: str(i.description)
+            'create_time': lambda i, k, **c: str(i.create_time),
+            'description': lambda i, k, **c: str(i.description)
         })
 
 
@@ -77,7 +73,7 @@ class CloudAuthzsDeserializer(base.ModelDeserializer):
     model_manager_class = CloudAuthzManager
 
     def add_deserializers(self):
-        super(CloudAuthzsDeserializer, self).add_deserializers()
+        super().add_deserializers()
         self.deserializers.update({
             'authn_id': self.deserialize_and_validate_authn_id,
             'provider': self.default_deserializer,
@@ -106,11 +102,7 @@ class CloudAuthzsDeserializer(base.ModelDeserializer):
         :return:        decoded authentication ID.
         """
 
-        try:
-            decoded_authn_id = self.app.security.decode_id(val)
-        except Exception:
-            log.debug("cannot decode authz_id `" + str(val) + "`")
-            raise MalformedId("Invalid `authz_id` {}!".format(val))
+        decoded_authn_id = self.app.security.decode_id(val, object_name='authz')
 
         trans = context.get("trans")
         if trans is None:

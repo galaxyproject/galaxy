@@ -17,7 +17,7 @@ class ToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResolver, Use
     resolves_simple_dependencies = False
 
     def __init__(self, dependency_manager, **kwds):
-        super(ToolShedPackageDependencyResolver, self).__init__(dependency_manager, **kwds)
+        super().__init__(dependency_manager, **kwds)
 
     def _find_dep_versioned(self, name, version, type='package', **kwds):
         installed_tool_dependency = self._get_installed_dependency(name, type, version=version, **kwds)

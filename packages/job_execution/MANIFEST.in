@@ -1,2 +1,2 @@
-include *.rst LICENSE
+include *.rst *.txt LICENSE
 

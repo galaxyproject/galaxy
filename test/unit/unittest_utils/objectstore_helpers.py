@@ -1,10 +1,10 @@
 import os
+from io import StringIO
 from shutil import rmtree
 from string import Template
 from tempfile import mkdtemp
 
 import yaml
-from six import StringIO
 
 from galaxy import objectstore
 from galaxy.util import XML
@@ -29,7 +29,8 @@ extra_dirs:
 """
 
 
-class TestConfig(object):
+class Config:
+
     def __init__(self, config_str=DISK_TEST_CONFIG, clazz=None, store_by="id"):
         self.temp_directory = mkdtemp()
         if config_str.startswith("<"):
@@ -62,7 +63,7 @@ class TestConfig(object):
         return path
 
 
-class MockConfig(object):
+class MockConfig:
 
     def __init__(self, temp_directory, config_file, store_by="id"):
         self.file_path = temp_directory

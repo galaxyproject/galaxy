@@ -1,8 +1,7 @@
 import os
 import tempfile
 from contextlib import contextmanager
-
-import mock
+from unittest import mock
 
 from galaxy import model
 from galaxy.managers.jobs import JobManager
@@ -17,11 +16,17 @@ from .base import BaseTestCase
 class BaseExportTestCase(BaseTestCase):
 
     def setUp(self):
-        super(BaseExportTestCase, self).setUp()
+        super().setUp()
         self.app.hda_manager = mock.MagicMock()
         self.app.workflow_manager = mock.MagicMock()
         self.app.history_manager = mock.MagicMock()
-        self.app.dataset_collections_service = mock.MagicMock()
+        self.app.dataset_collection_manager = mock.MagicMock()
+
+    def _new_history(self):
+        history = model.History()
+        history.id = 1
+        history.name = "New History"
+        return history
 
     def _new_hda(self, contents=None):
         hda = model.HistoryDatasetAssociation()
@@ -41,6 +46,12 @@ class BaseExportTestCase(BaseTestCase):
         return invocation
 
     @contextmanager
+    def _expect_get_history(self, history):
+        self.app.history_manager.get_accessible.return_value = history
+        yield
+        self.app.history_manager.get_accessible.assert_called_once_with(history.id, self.trans.user)
+
+    @contextmanager
     def _expect_get_hda(self, hda, hda_id=1):
         self.app.hda_manager.get_accessible.return_value = hda
         yield
@@ -56,21 +67,20 @@ class BaseExportTestCase(BaseTestCase):
 
         collection = model.DatasetCollection()
         collection.id = 1
-        elements = []
         element_forward = model.DatasetCollectionElement(
+            collection=collection,
             element=hda_forward,
             element_index=0,
             element_identifier="forward",
         )
         element_forward.id = 1
         element_reverse = model.DatasetCollectionElement(
+            collection=collection,
             element=hda_reverse,
             element_index=0,
             element_identifier="reverse",
         )
         element_reverse.id = 2
-        elements = [element_forward, element_reverse]
-        collection.elements = elements
         collection.collection_type = "paired"
         return collection
 
@@ -78,11 +88,11 @@ class BaseExportTestCase(BaseTestCase):
 class ToBasicMarkdownTestCase(BaseExportTestCase):
 
     def setUp(self):
-        super(ToBasicMarkdownTestCase, self).setUp()
+        super().setUp()
         self.test_dataset_path = None
 
     def tearDown(self):
-        super(ToBasicMarkdownTestCase, self).tearDown()
+        super().tearDown()
         if self.test_dataset_path is not None:
             os.remove(self.test_dataset_path)
 
@@ -129,6 +139,17 @@ history_dataset_peek(history_dataset_id=1)
         with self._expect_get_hda(hda):
             result = self._to_basic(example)
         assert '\n*No Dataset Peek Available*\n' in result
+
+    def test_history_link(self):
+        history = self._new_history()
+        example = """# Example
+```galaxy
+history_link(history_id=1)
+```
+"""
+        with self._expect_get_history(history):
+            result = self._to_basic(example)
+        assert '\n    New History\n\n' in result
 
     def test_history_display_binary(self):
         hda = self._new_hda()
@@ -202,7 +223,7 @@ history_dataset_type(history_dataset_id=1)
         hdca.collection = self._new_pair_collection()
         hdca.id = 1
 
-        self.trans.app.dataset_collections_service.get_dataset_collection_instance.return_value = hdca
+        self.trans.app.dataset_collection_manager.get_dataset_collection_instance.return_value = hdca
         example = """# Example
 ```galaxy
 history_dataset_collection_display(history_dataset_collection_id=1)
@@ -350,7 +371,7 @@ history_dataset_display(history_dataset_id=2)
         hdca.history_id = 1
         hdca.collection_id = hdca.collection.id
 
-        self.trans.app.dataset_collections_service.get_dataset_collection_instance.return_value = hdca
+        self.trans.app.dataset_collection_manager.get_dataset_collection_instance.return_value = hdca
         example = """# Example
 ```galaxy
 history_dataset_collection_display(history_dataset_collection_id=1)

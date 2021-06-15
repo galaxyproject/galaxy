@@ -20,18 +20,18 @@ def main(argv):
     mod_path = os.path.join(PROJECT_DIRECTORY, source_dir, PROJECT_MODULE_FILENAME)
     if not DEV_RELEASE:
         history_path = os.path.join(PROJECT_DIRECTORY, "HISTORY.rst")
-        history = open(history_path, "r").read()
+        history = open(history_path).read()
         today = datetime.datetime.today()
         today_str = today.strftime('%Y-%m-%d')
         history = history.replace(".dev0", " (%s)" % today_str)
         open(history_path, "w").write(history)
-        mod = open(mod_path, "r").read()
+        mod = open(mod_path).read()
         mod = re.sub(r"__version__ = '[\d\.]*\.dev\d+'",
                     "__version__ = '%s'" % version,
                     mod)
         mod = open(mod_path, "w").write(mod)
-    tag = "galaxy-%s-%s" % (PROJECT_NAME, version)
-    shell(["git", "commit", "-m", "Version %s of %s (tag %s)." % (version, PROJECT_NAME, tag),
+    tag = f"galaxy-{PROJECT_NAME}-{version}"
+    shell(["git", "commit", "-m", f"Version {version} of {PROJECT_NAME} (tag {tag}).",
            "HISTORY.rst", mod_path])
     shell(["git", "tag", tag])
 

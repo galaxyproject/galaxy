@@ -7,7 +7,6 @@ migrated_tools_conf.xml for tools outside tool panel sections as well as tools i
 layout of the local tool_conf.xml file.  Entries will not be created in migrated_tools_conf.xml for tools included in the tool
 shed repository but not defined in tool_conf.xml.
 """
-from __future__ import print_function
 
 import os
 import sys
@@ -26,8 +25,8 @@ def main():
     else:
         plural = 's'
         file_names = ', '.join(non_shed_tool_confs)
-    msg = "\nThe installation process is finished.  All tools associated with this migration that were defined in your file%s named\n" % plural
-    msg += "%s, have been removed.  You may now start your Galaxy server.\n" % file_names
+    msg = f"\nThe installation process is finished.  All tools associated with this migration that were defined in your file{plural} named\n"
+    msg += f"{file_names}, have been removed.  You may now start your Galaxy server.\n"
     print(msg)
     app.shutdown()
     sys.exit(0)

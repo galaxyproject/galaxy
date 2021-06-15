@@ -1,6 +1,5 @@
 import os
-
-from mock import MagicMock
+from unittest.mock import MagicMock
 
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
@@ -19,7 +18,7 @@ from ..tools.test_toolbox import (
 class ToolShedRepoBaseTestCase(BaseToolBoxTestCase):
 
     def setUp(self):
-        super(ToolShedRepoBaseTestCase, self).setUp()
+        super().setUp()
         self._init_dynamic_tool_conf()
         self.app.config.tool_configs = self.config_files
         self.app.config.manage_dependency_relationships = False
@@ -32,7 +31,7 @@ class ToolShedRepoBaseTestCase(BaseToolBoxTestCase):
 class InstallRepositoryManagerTestCase(ToolShedRepoBaseTestCase):
 
     def setUp(self):
-        super(InstallRepositoryManagerTestCase, self).setUp()
+        super().setUp()
         self.irm = InstallRepositoryManager(self.app)
         self.app.config.enable_tool_shed_check = False
         self.app.update_repository_manager = UpdateRepositoryManager(self.app)
@@ -83,7 +82,7 @@ class InstallRepositoryManagerTestCase(ToolShedRepoBaseTestCase):
 class InstalledRepositoryManagerTestCase(ToolShedRepoBaseTestCase):
 
     def setUp(self):
-        super(InstalledRepositoryManagerTestCase, self).setUp()
+        super().setUp()
         self.irm = InstalledRepositoryManager(self.app)
 
     def test_uninstall_repository(self):

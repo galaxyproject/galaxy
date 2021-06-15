@@ -5,10 +5,8 @@ import sys
 from migrate.versioning import repository, schema
 from sqlalchemy import create_engine, MetaData, Table
 from sqlalchemy.exc import NoSuchTableError
-from sqlalchemy_utils import (
-    create_database,
-    database_exists,
-)
+
+from galaxy.model.database_utils import create_database, database_exists
 
 log = logging.getLogger(__name__)
 
@@ -17,7 +15,7 @@ migrate_repository_directory = os.path.dirname(__file__).replace(os.getcwd() + o
 migrate_repository = repository.Repository(migrate_repository_directory)
 
 
-def create_or_verify_database(url, engine_options={}):
+def create_or_verify_database(url, engine_options=None):
     """
     Check that the database is use-able, possibly creating it if empty (this is
     the only time we automatically create tables, otherwise we force the
@@ -29,9 +27,10 @@ def create_or_verify_database(url, engine_options={}):
     4) Database versioned but out of date --> fail with informative message, user must run "sh manage_db.sh upgrade"
 
     """
+    engine_options = engine_options or {}
     # Create engine and metadata
     if not database_exists(url):
-        message = "Creating database for URI [%s]" % url
+        message = f"Creating database for URI [{url}]"
         log.info(message)
         create_database(url)
 
@@ -80,10 +79,10 @@ def migrate_to_current_version(engine, schema):
     changeset = schema.changeset(None)
     for ver, change in changeset:
         nextver = ver + changeset.step
-        log.info('Migrating %s -> %s... ' % (ver, nextver))
+        log.info(f'Migrating {ver} -> {nextver}... ')
         old_stdout = sys.stdout
 
-        class FakeStdout(object):
+        class FakeStdout:
             def __init__(self):
                 self.buffer = []
 

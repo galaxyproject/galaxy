@@ -1,7 +1,6 @@
 import json
-import tarfile
-
-from six import BytesIO
+import zipfile
+from io import BytesIO
 
 from galaxy_test.base.api_asserts import assert_object_id_error
 from galaxy_test.base.populators import DatasetCollectionPopulator, DatasetPopulator, skip_if_github_down
@@ -11,7 +10,7 @@ from ._framework import ApiTestCase
 class DatasetCollectionApiTestCase(ApiTestCase):
 
     def setUp(self):
-        super(DatasetCollectionApiTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
         self.history_id = self.dataset_populator.new_history()
@@ -100,12 +99,12 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         assert len(returned_dce) == 3, dataset_collection
         create_response = self._download_dataset_collection(history_id=self.history_id, hdca_id=dataset_collection['id'])
         self._assert_status_code_is(create_response, 200)
-        tar_contents = tarfile.open(fileobj=BytesIO(create_response.content))
-        namelist = tar_contents.getnames()
-        assert len(namelist) == 3, "Expected 3 elements in [%s]" % namelist
+        archive = zipfile.ZipFile(BytesIO(create_response.content))
+        namelist = archive.namelist()
+        assert len(namelist) == 3, f"Expected 3 elements in [{namelist}]"
         collection_name = dataset_collection['name']
         for element, zip_path in zip(returned_dce, namelist):
-            assert "%s/%s.%s" % (collection_name, element['element_identifier'], element['object']['file_ext']) == zip_path
+            assert f"{collection_name}/{element['element_identifier']}.{element['object']['file_ext']}" == zip_path
 
     def test_pair_download(self):
         fetch_response = self.dataset_collection_populator.create_pair_in_history(self.history_id, direct_upload=True).json()
@@ -115,12 +114,12 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         hdca_id = dataset_collection['id']
         create_response = self._download_dataset_collection(history_id=self.history_id, hdca_id=hdca_id)
         self._assert_status_code_is(create_response, 200)
-        tar_contents = tarfile.open(fileobj=BytesIO(create_response.content))
-        namelist = tar_contents.getnames()
-        assert len(namelist) == 2, "Expected 2 elements in [%s]" % namelist
+        archive = zipfile.ZipFile(BytesIO(create_response.content))
+        namelist = archive.namelist()
+        assert len(namelist) == 2, f"Expected 2 elements in [{namelist}]"
         collection_name = dataset_collection['name']
         for element, zip_path in zip(returned_dce, namelist):
-            assert "%s/%s.%s" % (collection_name, element['element_identifier'], element['object']['file_ext']) == zip_path
+            assert f"{collection_name}/{element['element_identifier']}.{element['object']['file_ext']}" == zip_path
 
     def test_list_pair_download(self):
         fetch_response = self.dataset_collection_populator.create_list_of_pairs_in_history(self.history_id).json()
@@ -131,12 +130,12 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         pair = returned_dce[0]
         create_response = self._download_dataset_collection(history_id=self.history_id, hdca_id=dataset_collection['id'])
         self._assert_status_code_is(create_response, 200)
-        tar_contents = tarfile.open(fileobj=BytesIO(create_response.content))
-        namelist = tar_contents.getnames()
-        assert len(namelist) == 2, "Expected 2 elements in [%s]" % namelist
+        archive = zipfile.ZipFile(BytesIO(create_response.content))
+        namelist = archive.namelist()
+        assert len(namelist) == 2, f"Expected 2 elements in [{namelist}]"
         pair_collection_name = pair['element_identifier']
         for element, zip_path in zip(pair['object']['elements'], namelist):
-            assert "%s/%s/%s.%s" % (list_collection_name, pair_collection_name, element['element_identifier'], element['object']['file_ext']) == zip_path
+            assert f"{list_collection_name}/{pair_collection_name}/{element['element_identifier']}.{element['object']['file_ext']}" == zip_path
 
     def test_list_list_download(self):
         dataset_collection = self.dataset_collection_populator.create_list_of_list_in_history(self.history_id).json()
@@ -145,9 +144,9 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         assert len(returned_dce) == 1, dataset_collection
         create_response = self._download_dataset_collection(history_id=self.history_id, hdca_id=dataset_collection['id'])
         self._assert_status_code_is(create_response, 200)
-        tar_contents = tarfile.open(fileobj=BytesIO(create_response.content))
-        namelist = tar_contents.getnames()
-        assert len(namelist) == 3, "Expected 3 elements in [%s]" % namelist
+        archive = zipfile.ZipFile(BytesIO(create_response.content))
+        namelist = archive.namelist()
+        assert len(namelist) == 3, f"Expected 3 elements in [{namelist}]"
 
     def test_list_list_list_download(self):
         dataset_collection = self.dataset_collection_populator.create_list_of_list_in_history(self.history_id, collection_type='list:list:list').json()
@@ -156,9 +155,9 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         assert len(returned_dce) == 1, dataset_collection
         create_response = self._download_dataset_collection(history_id=self.history_id, hdca_id=dataset_collection['id'])
         self._assert_status_code_is(create_response, 200)
-        tar_contents = tarfile.open(fileobj=BytesIO(create_response.content))
-        namelist = tar_contents.getnames()
-        assert len(namelist) == 3, "Expected 3 elements in [%s]" % namelist
+        archive = zipfile.ZipFile(BytesIO(create_response.content))
+        namelist = archive.namelist()
+        assert len(namelist) == 3, f"Expected 3 elements in [{namelist}]"
 
     def test_hda_security(self):
         element_identifiers = self.dataset_collection_populator.pair_identifiers(self.history_id)
@@ -255,15 +254,34 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         assert element0["element_identifier"] == "4.bed"
         assert element0["object"]["file_size"] == 61
 
+    @skip_if_github_down
+    def test_upload_collection_failed_expansion_url(self):
+        targets = [{
+            "destination": {"type": "hdca"},
+            "elements_from": "bagit",
+            "collection_type": "list",
+            "src": "url",
+            "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+        }]
+        payload = {
+            "history_id": self.history_id,
+            "targets": json.dumps(targets),
+            "__files": {"files_0|file_data": open(self.test_data_resolver.get_filename("4.bed"))},
+        }
+        self.dataset_populator.fetch(payload, assert_ok=False, wait=True)
+        hdca = self._assert_one_collection_created_in_history()
+        assert hdca["populated"] is False
+        assert "bagit.txt" in hdca["populated_state_message"], hdca
+
     def _assert_one_collection_created_in_history(self):
-        contents_response = self._get("histories/%s/contents/dataset_collections" % self.history_id)
+        contents_response = self._get(f"histories/{self.history_id}/contents/dataset_collections")
         self._assert_status_code_is(contents_response, 200)
         contents = contents_response.json()
         assert len(contents) == 1
         hdca = contents[0]
         assert hdca["history_content_type"] == "dataset_collection"
         hdca_id = hdca["id"]
-        collection_response = self._get("histories/%s/contents/dataset_collections/%s" % (self.history_id, hdca_id))
+        collection_response = self._get(f"histories/{self.history_id}/contents/dataset_collections/{hdca_id}")
         self._assert_status_code_is(collection_response, 200)
         return collection_response.json()
 
@@ -274,7 +292,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         return dataset_collection
 
     def _download_dataset_collection(self, history_id, hdca_id):
-        return self._get("histories/%s/contents/dataset_collections/%s/download" % (history_id, hdca_id))
+        return self._get(f"histories/{history_id}/contents/dataset_collections/{hdca_id}/download")
 
     def test_collection_contents_security(self):
         # request contents on an hdca that doesn't belong to user
@@ -289,9 +307,20 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         response = self._get(contents_url)
         self._assert_status_code_is(response, 200)
         fake_collection_id = '5d7db0757a2eb7ef'
-        fake_contents_url = '/api/dataset_collections/%s/contents/%s' % (hdca['id'], fake_collection_id)
+        fake_contents_url = f"/api/dataset_collections/{hdca['id']}/contents/{fake_collection_id}"
         error_response = self._get(fake_contents_url)
         assert_object_id_error(error_response)
+
+    def test_show_dataset_collection(self):
+        fetch_response = self.dataset_collection_populator.create_list_in_history(self.history_id, direct_upload=True).json()
+        dataset_collection = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
+        returned_dce = dataset_collection["elements"]
+        assert len(returned_dce) == 3, dataset_collection
+        hdca_id = dataset_collection['id']
+        dataset_collection_url = f"/api/dataset_collections/{hdca_id}"
+        dataset_collection = self._get(dataset_collection_url).json()
+        assert dataset_collection['id'] == hdca_id
+        assert dataset_collection['collection_type'] == 'list'
 
     def test_show_dataset_collection_contents(self):
         # Get contents_url from history contents, use it to show the first level
@@ -318,12 +347,12 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         hdca, root_contents_url = self._create_collection_contents_pair()
 
         # check limit
-        limited_contents = self._get(root_contents_url + '?limit=1').json()
+        limited_contents = self._get(f"{root_contents_url}?limit=1").json()
         assert len(limited_contents) == 1
         assert limited_contents[0]['element_index'] == 0
 
         # check offset
-        offset_contents = self._get(root_contents_url + '?offset=1').json()
+        offset_contents = self._get(f"{root_contents_url}?offset=1").json()
         assert len(offset_contents) == 1
         assert offset_contents[0]['element_index'] == 1
 
@@ -344,7 +373,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
 
     def _get_contents_url_for_hdca(self, hdca):
         # look up the history contents using optional serialization key
-        history_contents_url = "histories/%s/contents?v=dev&view=summary&keys=contents_url" % (self.history_id)
+        history_contents_url = f"histories/{self.history_id}/contents?v=dev&view=summary&keys=contents_url"
         json = self._get(history_contents_url).json()
 
         # filter out the collection we just made id = hdca.id

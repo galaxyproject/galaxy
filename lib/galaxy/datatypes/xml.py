@@ -4,6 +4,8 @@ XML format classes
 import logging
 import re
 
+from galaxy import util
+from galaxy.datatypes.metadata import MetadataElement
 from . import (
     data,
     dataproviders,
@@ -56,13 +58,13 @@ class GenericXml(data.Text):
         """
         return file_prefix.startswith('<?xml ')
 
+    @staticmethod
     def merge(split_files, output_file):
         """Merging multiple XML files is non-trivial and must be done in subclasses."""
         if len(split_files) > 1:
             raise NotImplementedError("Merging multiple XML files is non-trivial and must be implemented for each XML type")
         # For one file only, use base class method (move/copy)
         data.Text.merge(split_files, output_file)
-    merge = staticmethod(merge)
 
     @dataproviders.decorators.dataprovider_factory('xml', dataproviders.hierarchy.XMLDataProvider.settings)
     def xml_dataprovider(self, dataset, **settings):
@@ -98,6 +100,76 @@ class CisML(GenericXml):
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
+
+
+class Dzi(GenericXml):
+    """
+    Deep zoom image format, see
+    https://github.com/openseadragon/openseadragon/wiki/The-DZI-File-Format
+    """
+
+    # General elements.
+    MetadataElement(name="base_name", desc="Base name for this dataset", default='DeepZoomImage', readonly=True, set_in_upload=True)
+    MetadataElement(name="format", desc="File format of the tiles", default=None, readonly=True, visible=True, no_value=None)
+    MetadataElement(name="tile_size", desc="Size of tiles", default=None, readonly=True, visible=True, no_value=None)
+    # Collection elements.
+    MetadataElement(name="max_level", desc="Max pyramid level", default=None, readonly=True, optional=True, visible=True, no_value=None)
+    MetadataElement(name="quality", desc="Quality", default=None, readonly=True, optional=True, visible=True, no_value=None)
+    # Image elements.
+    MetadataElement(name="height", desc="Size height", default=None, readonly=True, optional=True, visible=True, no_value=None)
+    MetadataElement(name="overlap", desc="Overlap of all four sides of tiles", default=None, readonly=True, optional=True, visible=True, no_value=None)
+    MetadataElement(name="width", desc="Size width", default=None, readonly=True, optional=True, visible=True, no_value=None)
+
+    file_ext = 'dzi'
+
+    def __init__(self, **kwd):
+        super().__init__(**kwd)
+
+    def set_meta(self, dataset, **kwd):
+        tree = util.parse_xml(dataset.file_name)
+        root = tree.getroot()
+        dataset.metadata.format = root.get('Format')
+        dataset.metadata.tile_size = root.get('TileSize')
+        # DeepZoom image files can include
+        # xml namespace attributes.
+        if root.tag.find('Collection') >= 0:
+            dataset.metadata.max_level = root.get('MaxLevel')
+            dataset.metadata.quality = root.get('Quality')
+        elif root.tag.find('Image') >= 0:
+            dataset.metadata.overlap = root.get('Overlap')
+        for elem in root:
+            if elem.tag.find('Size') >= 0:
+                dataset.metadata.width = elem.get('Width')
+                dataset.metadata.height = elem.get('Height')
+
+    def get_visualizations(self, dataset):
+        """ Returns a list of visualizations for datatype"""
+        return ['openseadragon']
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.blurb = "Deep Zoom Image"
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disc'
+
+    def sniff_prefix(self, file_prefix):
+        """
+        Checking for keyword - 'Collection' or 'Image' in the first 200 lines.
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('1.dzi')
+        >>> Dzi().sniff(fname)
+        True
+        >>> fname = get_test_fname('megablast_xml_parser_test1.blastxml')
+        >>> Dzi().sniff(fname)
+        False
+        """
+        for line in file_prefix.line_iterator():
+            line = line.lower()
+            if line.find('<collection') >= 0 or line.find('<image') >= 0:
+                return True
+        return False
 
 
 class Phyloxml(GenericXml):

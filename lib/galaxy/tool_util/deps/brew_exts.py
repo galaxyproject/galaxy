@@ -19,7 +19,6 @@
 # htslib@1.1
 # % brew vdeps samtools 0.1.19
 
-from __future__ import print_function
 
 import argparse
 import contextlib
@@ -47,13 +46,13 @@ RELAXED = False
 BREW_ARGS = []
 
 
-class BrewContext(object):
+class BrewContext:
 
     def __init__(self, args=None):
         ensure_brew_on_path(args)
         raw_config = brew_execute(["config"])
-        config_lines = [l.strip().split(":", 1) for l in raw_config.split("\n") if l]
-        config = dict([(p[0].strip(), p[1].strip()) for p in config_lines])
+        config_lines = [line.strip().split(":", 1) for line in raw_config.split("\n") if line]
+        config = {p[0].strip(): p[1].strip() for p in config_lines}
         # unset if "/usr/local" -> https://github.com/Homebrew/homebrew/blob/master/Library/Homebrew/cmd/config.rb
         homebrew_prefix = config.get("HOMEBREW_PREFIX", "/usr/local")
         homebrew_cellar = config.get("HOMEBREW_CELLAR", os.path.join(homebrew_prefix, "Cellar"))
@@ -61,7 +60,7 @@ class BrewContext(object):
         self.homebrew_cellar = homebrew_cellar
 
 
-class RecipeContext(object):
+class RecipeContext:
 
     @staticmethod
     def from_args(args, brew_context=None):
@@ -97,7 +96,7 @@ class RecipeContext(object):
             assert len(parts) == 3
             parts = recipe.split("/")
             username = parts[0]
-            repository = "homebrew-%s" % parts[1]
+            repository = f"homebrew-{parts[1]}"
 
         path = os.path.join(username, repository)
         return path
@@ -164,7 +163,9 @@ class CommandLineException(Exception):
         return self.message
 
 
-def versioned_install(recipe_context, package=None, version=None, installed_deps=[]):
+def versioned_install(recipe_context, package=None, version=None, installed_deps=None):
+    if installed_deps is None:
+        installed_deps = []
     if package is None:
         package = recipe_context.recipe
         version = recipe_context.version
@@ -246,7 +247,7 @@ def commit_for_version(recipe_context, package, version):
                 if mapping[0] == version:
                     commit = mapping[1]
     if commit is None:
-        raise Exception("Failed to find commit for version %s" % version)
+        raise Exception(f"Failed to find commit for version {version}")
     return commit
 
 
@@ -255,7 +256,7 @@ def print_versioned_deps(recipe_context, recipe, version):
     for dep in deps:
         val = dep['name']
         if dep['versioned']:
-            val += "@%s" % dep['version']
+            val += f"@{dep['version']}"
         print(val)
 
 
@@ -267,8 +268,8 @@ def load_versioned_deps(cellar_path, relaxed=None):
         if RELAXED:
             return []
         else:
-            raise IOError("Could not locate versioned receipt file: {}".format(v_metadata_path))
-    with open(v_metadata_path, "r") as f:
+            raise OSError(f"Could not locate versioned receipt file: {v_metadata_path}")
+    with open(v_metadata_path) as f:
         metadata = json.load(f)
     return metadata['deps']
 
@@ -333,7 +334,7 @@ def build_env_actions(deps, cellar_root, cellar_path, relaxed=None, custom_only=
             ld_path_appends.append(lib_path)
         env_path = os.path.join(cellar_path, "platform_environment.json")
         if os.path.exists(env_path):
-            with open(env_path, "r") as f:
+            with open(env_path) as f:
                 env_metadata = json.load(f)
                 if "actions" in env_metadata:
                     def to_action(desc):
@@ -355,7 +356,7 @@ def build_env_actions(deps, cellar_root, cellar_path, relaxed=None, custom_only=
     return actions
 
 
-class EnvAction(object):
+class EnvAction:
 
     def __init__(self, keg_root, action_description):
         self.variable = action_description["variable"]
@@ -393,7 +394,7 @@ class EnvAction(object):
             template = '''${variable}="$$${variable}:${value}"'''
         return [
             self.__eval(template),
-            "export %s" % self.variable
+            f"export {self.variable}"
         ]
 
 
@@ -476,9 +477,9 @@ def extended_brew_info(recipe):
         if line.startswith("From: "):
             extra_info["from_url"] = line[len("From: "):].strip()
         for dep_type in ["Build", "Required", "Recommended", "Optional"]:
-            if line.startswith("%s: " % dep_type):
-                key = "%s_dependencies" % dep_type.lower()
-                raw_val = line[len("%s: " % dep_type):]
+            if line.startswith(f"{dep_type}: "):
+                key = f"{dep_type.lower()}_dependencies"
+                raw_val = line[len(f"{dep_type}: "):]
                 extra_info[key].extend(raw_val.split(", "))
     return extra_info
 
@@ -495,7 +496,7 @@ def brew_versions_info(package, tap_path):
 
     # TODO: Also use tags.
     stdout = brew_execute(["versions", package])
-    version_parts = [l for l in stdout.split("\n") if l and "git checkout" in l]
+    version_parts = [line for line in stdout.split("\n") if line and "git checkout" in line]
     version_parts = map(lambda l: WHITESPACE_PATTERN.split(l), version_parts)
     info = [(p[0], p[3], versioned(p[4])) for p in version_parts]
     return info
@@ -512,7 +513,7 @@ def __action(sys):
 def recipe_cellar_path(cellar_path, recipe, version):
     recipe_base = recipe.split("/")[-1]
     recipe_base_path = os.path.join(cellar_path, recipe_base, version)
-    revision_paths = glob.glob(recipe_base_path + "_*")
+    revision_paths = glob.glob(f"{recipe_base_path}_*")
     if revision_paths:
         revisions = map(lambda x: int(x.rsplit("_", 1)[-1]), revision_paths)
         max_revision = max(revisions)
@@ -529,7 +530,7 @@ def ensure_brew_on_path(args):
 
     def ensure_on_path(brew):
         if brew != brew_on_path:
-            os.environ["PATH"] = "%s:%s" % (os.path.dirname(brew), os.environ["PATH"])
+            os.environ["PATH"] = f"{os.path.dirname(brew)}:{os.environ['PATH']}"
 
     default_brew_path = os.path.join(DEFAULT_HOMEBREW_ROOT, "bin", "brew")
     if args and args.brew:
@@ -546,8 +547,8 @@ def ensure_brew_on_path(args):
 def which(file):
     # http://stackoverflow.com/questions/5226958/which-equivalent-function-in-python
     for path in os.environ["PATH"].split(":"):
-        if os.path.exists(path + "/" + file):
-            return path + "/" + file
+        if os.path.exists(f"{path}/{file}"):
+            return f"{path}/{file}"
 
     return None
 

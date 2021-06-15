@@ -4,7 +4,6 @@
 # eg lped/eigen/fbat/snpmatrix all to pbed
 # and pbed to lped/eigen/fbat/snpmatrix ?
 # that's a lot of converters
-from __future__ import print_function
 
 import os
 import subprocess
@@ -66,11 +65,11 @@ def main():
     flist = os.listdir(outfilepath)
     with open(outhtmlname, 'w') as f:
         f.write(galhtmlprefix % prog)
-        s = '## Rgenetics: http://bitbucket.org/rgalaxy Galaxy Tools %s %s' % (prog, timenow())  # becomes info
+        s = f'## Rgenetics: http://bitbucket.org/rgalaxy Galaxy Tools {prog} {timenow()}'  # becomes info
         print(s)
-        f.write('<div>%s\n<ol>' % (s))
-        for i, data in enumerate(flist):
-            f.write('<li><a href="%s">%s</a></li>\n' % (os.path.split(data)[-1], os.path.split(data)[-1]))
+        f.write(f'<div>{s}\n<ol>')
+        for data in flist:
+            f.write(f'<li><a href="{os.path.split(data)[-1]}">{os.path.split(data)[-1]}</a></li>\n')
         f.write("</ol></div></div></body></html>")
 
 

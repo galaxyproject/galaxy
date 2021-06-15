@@ -1,3 +1,5 @@
+import pytest
+
 from galaxy import model
 from galaxy.tools.parameters import basic
 from galaxy.util import bunch
@@ -8,21 +10,15 @@ class SelectToolParameterTestCase(BaseParameterTestCase):
 
     def test_validated_values(self):
         self.options_xml = '''<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>'''
-        try:
+        with pytest.raises(ValueError) as exc_info:
             self.param.from_json("42", self.trans, {"input_bam": model.HistoryDatasetAssociation()})
-        except ValueError as err:
-            assert str(err) == "parameter 'my_name': an invalid option ('42') was selected (valid options: ?)"
-            return
-        assert False
+            assert str(exc_info.value) == "parameter 'my_name': requires a value, but no legal values defined"
 
     def test_validated_values_missing_dependency(self):
         self.options_xml = '''<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>'''
-        try:
+        with pytest.raises(ValueError) as exc_info:
             self.param.from_json("42", self.trans)
-        except ValueError as err:
-            assert str(err) == "parameter 'my_name': requires a value, but no legal values defined"
-            return
-        assert False
+            assert str(exc_info.value) == "parameter 'my_name': requires a value, but no legal values defined"
 
     def test_unvalidated_values(self):
         self.options_xml = '''<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>'''
@@ -31,12 +27,9 @@ class SelectToolParameterTestCase(BaseParameterTestCase):
 
     def test_validated_datasets(self):
         self.options_xml = '''<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>'''
-        try:
+        with pytest.raises(ValueError) as exc_info:
             self.param.from_json(model.HistoryDatasetAssociation(), self.trans, {"input_bam": None})
-        except ValueError as err:
-            assert str(err) == "parameter 'my_name': requires a value, but no legal values defined"
-            return
-        assert False
+            assert str(exc_info.value) == "parameter 'my_name': requires a value, but no legal values defined"
 
     def test_unvalidated_datasets(self):
         self.options_xml = '''<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>'''
@@ -59,7 +52,7 @@ class SelectToolParameterTestCase(BaseParameterTestCase):
     # TODO: Good deal of overlap here with DataToolParameterTestCase,
     # refactor.
     def setUp(self):
-        super(SelectToolParameterTestCase, self).setUp()
+        super().setUp()
         self.test_history = model.History()
         self.app.model.context.add(self.test_history)
         self.app.model.context.flush()
@@ -98,7 +91,7 @@ class SelectToolParameterTestCase(BaseParameterTestCase):
         return self._param
 
 
-class MockToolDataTable(object):
+class MockToolDataTable:
 
     def __init__(self):
         self.columns = dict(

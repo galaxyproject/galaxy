@@ -12,7 +12,7 @@ from . import utility_container_manager
 log = logging.getLogger(__name__)
 
 
-class FailedTest(object):
+class FailedTest:
     """Failed tool tests object"""
 
     def __init__(self, id=None, stderr=None, test_id=None, tool_id=None, tool_version=None, traceback=None):
@@ -24,7 +24,7 @@ class FailedTest(object):
         self.traceback = traceback
 
 
-class InvalidRepositoryDependency(object):
+class InvalidRepositoryDependency:
     """Invalid repository dependency definition object"""
 
     def __init__(self, id=None, toolshed=None, repository_name=None, repository_owner=None, changeset_revision=None,
@@ -39,7 +39,7 @@ class InvalidRepositoryDependency(object):
         self.error = error
 
 
-class InvalidToolDependency(object):
+class InvalidToolDependency:
     """Invalid tool dependency definition object"""
 
     def __init__(self, id=None, name=None, version=None, type=None, error=None):
@@ -50,7 +50,7 @@ class InvalidToolDependency(object):
         self.error = error
 
 
-class MissingTestComponent(object):
+class MissingTestComponent:
     """Missing tool test components object"""
 
     def __init__(self, id=None, missing_components=None, tool_guid=None, tool_id=None, tool_version=None):
@@ -61,7 +61,7 @@ class MissingTestComponent(object):
         self.tool_version = tool_version
 
 
-class NotTested(object):
+class NotTested:
     """NotTested object"""
 
     def __init__(self, id=None, reason=None):
@@ -69,7 +69,7 @@ class NotTested(object):
         self.reason = reason
 
 
-class PassedTest(object):
+class PassedTest:
     """Passed tool tests object"""
 
     def __init__(self, id=None, test_id=None, tool_id=None, tool_version=None):
@@ -79,7 +79,7 @@ class PassedTest(object):
         self.tool_version = tool_version
 
 
-class RepositoryInstallationError(object):
+class RepositoryInstallationError:
     """Repository installation error object"""
 
     def __init__(self, id=None, tool_shed=None, name=None, owner=None, changeset_revision=None, error_message=None):
@@ -91,7 +91,7 @@ class RepositoryInstallationError(object):
         self.error_message = error_message
 
 
-class RepositorySuccessfulInstallation(object):
+class RepositorySuccessfulInstallation:
     """Repository installation object"""
 
     def __init__(self, id=None, tool_shed=None, name=None, owner=None, changeset_revision=None):
@@ -102,7 +102,7 @@ class RepositorySuccessfulInstallation(object):
         self.changeset_revision = changeset_revision
 
 
-class ToolDependencyInstallationError(object):
+class ToolDependencyInstallationError:
     """Tool dependency installation error object"""
 
     def __init__(self, id=None, type=None, name=None, version=None, error_message=None):
@@ -113,7 +113,7 @@ class ToolDependencyInstallationError(object):
         self.error_message = error_message
 
 
-class ToolDependencySuccessfulInstallation(object):
+class ToolDependencySuccessfulInstallation:
     """Tool dependency installation object"""
 
     def __init__(self, id=None, type=None, name=None, version=None, installation_directory=None):
@@ -159,7 +159,7 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
                                                                                          changeset_revision,
                                                                                          prior_installation_required,
                                                                                          only_if_compiling_contained_td)
-                label = "Repository <b>%s</b> revision <b>%s</b> owned by <b>%s</b>" % (name, changeset_revision, owner)
+                label = f"Repository <b>{name}</b> revision <b>{changeset_revision}</b> owned by <b>{owner}</b>"
                 folder = utility_container_manager.Folder(id=folder_id,
                                                           key=key,
                                                           label=label,
@@ -195,7 +195,7 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
                                                  label=label,
                                                  parent=invalid_tool_dependencies_root_folder)
             invalid_tool_dependencies_root_folder.folders.append(invalid_tool_dependencies_folder)
-            for td_key, requirements_dict in invalid_tool_dependencies_dict.items():
+            for requirements_dict in invalid_tool_dependencies_dict.values():
                 folder_id += 1
                 invalid_tool_dependency_id += 1
                 try:
@@ -209,7 +209,7 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
                     version = 'unknown'
                     error = str(e)
                 key = self.generate_tool_dependencies_key(name, version, type)
-                label = "Version <b>%s</b> of the <b>%s</b> <b>%s</b>" % (version, name, type)
+                label = f"Version <b>{version}</b> of the <b>{name}</b> <b>{type}</b>"
                 folder = utility_container_manager.Folder(id=folder_id,
                                                           key=key,
                                                           label=label,
@@ -357,4 +357,4 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
         return containers_dict
 
     def generate_tool_dependencies_key(self, name, version, type):
-        return '%s%s%s%s%s' % (str(name), container_util.STRSEP, str(version), container_util.STRSEP, str(type))
+        return f'{str(name)}{container_util.STRSEP}{str(version)}{container_util.STRSEP}{str(type)}'

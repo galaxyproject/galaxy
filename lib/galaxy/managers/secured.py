@@ -7,7 +7,7 @@ Owned models can be modified and deleted.
 from galaxy import exceptions
 
 
-class AccessibleManagerMixin(object):
+class AccessibleManagerMixin:
     """
     A security interface to check if a User can read/view an item's.
 
@@ -40,7 +40,7 @@ class AccessibleManagerMixin(object):
         """
         if self.is_accessible(item, user, **kwargs):
             return item
-        raise exceptions.ItemAccessibilityException("%s is not accessible by user" % (self.model_class.__name__))
+        raise exceptions.ItemAccessibilityException(f"{self.model_class.__name__} is not accessible by user")
 
     # TODO:?? are these even useful?
     def list_accessible(self, user, **kwargs):
@@ -65,7 +65,7 @@ class AccessibleManagerMixin(object):
         # return filter( lambda item: self.is_accessible( trans, item, user ), items )
 
 
-class OwnableManagerMixin(object):
+class OwnableManagerMixin:
     """
     A security interface to check if a User is an item's owner.
 
@@ -100,7 +100,7 @@ class OwnableManagerMixin(object):
         """
         if self.is_owner(item, user, **kwargs):
             return item
-        raise exceptions.ItemOwnershipException("%s is not owned by user" % (self.model_class.__name__))
+        raise exceptions.ItemOwnershipException(f"{self.model_class.__name__} is not owned by user")
 
     def list_owned(self, user, **kwargs):
         """

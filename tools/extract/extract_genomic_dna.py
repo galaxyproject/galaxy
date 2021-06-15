@@ -260,7 +260,7 @@ def __main__():
             sequence = reverse_complement(sequence)
 
         if output_format == "fasta":
-            l = len(sequence)
+            len_sequence = len(sequence)
             c = 0
             if gff_format:
                 start, end = gff_util.convert_bed_coords_to_gff([start, end])
@@ -270,8 +270,8 @@ def __main__():
                 fout.write(">%s %s\n" % (meta_data, name))
             else:
                 fout.write(">%s\n" % meta_data)
-            while c < l:
-                b = min(c + 50, l)
+            while c < len_sequence:
+                b = min(c + 50, len_sequence)
                 fout.write("%s\n" % str(sequence[c:b]))
                 c = b
         else:  # output_format == "interval"

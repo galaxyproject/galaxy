@@ -4,7 +4,6 @@ Classes related to parameter validation.
 import logging
 import re
 
-from six import string_types
 
 from galaxy import (
     model,
@@ -14,7 +13,7 @@ from galaxy import (
 log = logging.getLogger(__name__)
 
 
-class Validator(object):
+class Validator:
     """
     A validator checks that a value meets some conditions OR raises ValueError
     """
@@ -127,7 +126,7 @@ class ExpressionValidator(Validator):
         try:
             evalresult = eval(self.expression, dict(value=value))
         except Exception:
-            log.debug("Validator %s could not be evaluated on %s" % (self.expression, str(value)), exc_info=True)
+            log.debug(f"Validator {self.expression} could not be evaluated on {str(value)}", exc_info=True)
             raise ValueError(message)
         if not(evalresult):
             raise ValueError(message)
@@ -184,7 +183,7 @@ class InRangeValidator(Validator):
             op1 = '>'
         if self.exclude_max:
             op2 = '<'
-        self.message = message or "Value must be %s %s and %s %s" % (op1, self_min_str, op2, self_max_str)
+        self.message = message or f"Value must be {op1} {self_min_str} and {op2} {self_max_str}"
 
     def validate(self, value, trans=None):
         if self.exclude_min:
@@ -394,13 +393,13 @@ class MetadataInFileColumnValidator(Validator):
     def from_element(cls, param, elem):
         filename = elem.get("filename", None)
         if filename:
-            filename = "%s/%s" % (param.tool.app.config.tool_data_path, filename.strip())
+            filename = f"{param.tool.app.config.tool_data_path}/{filename.strip()}"
         metadata_name = elem.get("metadata_name", None)
         if metadata_name:
             metadata_name = metadata_name.strip()
         metadata_column = int(elem.get("metadata_column", 0))
         split = elem.get("split", "\t")
-        message = elem.get("message", "Value for metadata %s was not found in %s." % (metadata_name, filename))
+        message = elem.get("message", f"Value for metadata {metadata_name} was not found in {filename}.")
         line_startswith = elem.get("line_startswith", None)
         if line_startswith:
             line_startswith = line_startswith.strip()
@@ -440,7 +439,7 @@ class ValueInDataTableColumnValidator(Validator):
             column = int(column)
         except ValueError:
             pass
-        message = elem.get("message", "Value was not found in %s." % (table_name))
+        message = elem.get("message", f"Value was not found in {table_name}.")
         line_startswith = elem.get("line_startswith", None)
         if line_startswith:
             line_startswith = line_startswith.strip()
@@ -451,7 +450,7 @@ class ValueInDataTableColumnValidator(Validator):
         self.valid_values = []
         self._data_table_content_version = None
         self._tool_data_table = tool_data_table
-        if isinstance(column, string_types):
+        if isinstance(column, str):
             column = tool_data_table.columns[column]
         self._column = column
         self._load_values()
@@ -480,7 +479,7 @@ class ValueNotInDataTableColumnValidator(ValueInDataTableColumnValidator):
     """
 
     def __init__(self, tool_data_table, metadata_column, message="Value already present.", line_startswith=None):
-        super(ValueNotInDataTableColumnValidator, self).__init__(tool_data_table, metadata_column, message, line_startswith)
+        super().__init__(tool_data_table, metadata_column, message, line_startswith)
 
     def validate(self, value, trans=None):
         try:
@@ -510,7 +509,7 @@ class MetadataInDataTableColumnValidator(Validator):
             metadata_column = int(metadata_column)
         except ValueError:
             pass
-        message = elem.get("message", "Value for metadata %s was not found in %s." % (metadata_name, table_name))
+        message = elem.get("message", f"Value for metadata {metadata_name} was not found in {table_name}.")
         line_startswith = elem.get("line_startswith", None)
         if line_startswith:
             line_startswith = line_startswith.strip()
@@ -522,7 +521,7 @@ class MetadataInDataTableColumnValidator(Validator):
         self.valid_values = []
         self._data_table_content_version = None
         self._tool_data_table = tool_data_table
-        if isinstance(metadata_column, string_types):
+        if isinstance(metadata_column, str):
             metadata_column = tool_data_table.columns[metadata_column]
         self._metadata_column = metadata_column
         self._load_values()
@@ -582,7 +581,7 @@ class MetadataInRangeValidator(InRangeValidator):
 
     def __init__(self, metadata_name, message, range_min, range_max, exclude_min=False, exclude_max=False):
         self.metadata_name = metadata_name
-        super(MetadataInRangeValidator, self).__init__(message, range_min, range_max, exclude_min, exclude_max)
+        super().__init__(message, range_min, range_max, exclude_min, exclude_max)
 
     def validate(self, value, trans=None):
         if value:
@@ -591,10 +590,10 @@ class MetadataInRangeValidator(InRangeValidator):
             try:
                 value_to_check = float(value.metadata.spec[self.metadata_name].param.to_string(value.metadata.get(self.metadata_name)))
             except KeyError:
-                raise ValueError('{} Metadata missing'.format(self.metadata_name))
+                raise ValueError(f'{self.metadata_name} Metadata missing')
             except ValueError:
-                raise ValueError('{} must be a float or an integer'.format(self.metadata_name))
-            super(MetadataInRangeValidator, self).validate(value_to_check, trans)
+                raise ValueError(f'{self.metadata_name} must be a float or an integer')
+            super().validate(value_to_check, trans)
 
 
 validator_types = dict(

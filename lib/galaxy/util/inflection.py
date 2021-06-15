@@ -10,7 +10,7 @@
 import re
 
 
-class Inflector(object):
+class Inflector:
     """
     Inflector for pluralizing and singularizing English nouns.
     """
@@ -109,9 +109,9 @@ class Inflector(object):
         for form_a, form_b in self.IRREGULAR_WORDS.items():
             if not pluralize:
                 form_a, form_b = form_b, form_a
-            match = re.search('(' + form_a + ')$', word, re.IGNORECASE)
+            match = re.search(f"({form_a})$", word, re.IGNORECASE)
             if match:
-                return re.sub('(?i)' + form_a + '$', match.expand('\\1')[0] + form_b[1:], word)
+                return re.sub(f"(?i){form_a}$", match.expand('\\1')[0] + form_b[1:], word)
 
     def _apply_rules(self, rules, word):
         for pattern, replacement in rules:

@@ -8,7 +8,6 @@ import os
 import shutil
 import tempfile
 import threading
-from collections import OrderedDict
 
 from galaxy import util
 from galaxy.tool_shed.galaxy_install import install_manager
@@ -39,7 +38,7 @@ MIGRATED_TOOLS_CONF_XML = """<?xml version="1.0"?>
 """
 
 
-class ToolMigrationManager(object):
+class ToolMigrationManager:
 
     def __init__(self, app, latest_migration_script_number, tool_shed_install_config, migrated_tools_config,
                  install_dependencies):
@@ -69,7 +68,7 @@ class ToolMigrationManager(object):
         # setting from migrated_tools_config.
         try:
             tree, error_message = parse_xml(migrated_tools_config)
-        except (IOError, OSError) as exc:
+        except OSError as exc:
             if exc.errno == errno.ENOENT:
                 with open(migrated_tools_config, 'w') as fh:
                     fh.write(MIGRATED_TOOLS_CONF_XML.format(shed_tools_dir=self.app.config.shed_tools_dir))
@@ -113,7 +112,7 @@ class ToolMigrationManager(object):
                     # tool_shed_accessible to True so that the value of migrate_tools.version can
                     # be correctly set in the database.
                     tool_shed_accessible = True
-                    missing_tool_configs_dict = OrderedDict()
+                    missing_tool_configs_dict = {}
                 if tool_shed_accessible:
                     if len(self.proprietary_tool_confs) == 1:
                         plural = ''
@@ -387,7 +386,7 @@ class ToolMigrationManager(object):
         entries are automatically added to the reserved migrated_tools_conf.xml file as part of the migration process.
         """
         tool_configs_to_filter = []
-        tool_panel_dict_for_display = OrderedDict()
+        tool_panel_dict_for_display = {}
         if self.tool_path:
             repo_install_dir = os.path.join(self.tool_path, relative_install_dir)
         else:
@@ -410,9 +409,10 @@ class ToolMigrationManager(object):
                     #                   id: <ToolSection id>,
                     #                   version : <ToolSection version>,
                     #                   name : <TooSection name>}]}
+                    # TODO: this code need to be revised
                     for k, v in tool_panel_dict_for_tool_config.items():
                         tool_panel_dict_for_display[k] = v
-                        for tool_panel_dict in v:
+                        for _tool_panel_dict in v:
                             # Keep track of tool config file names associated with entries that have been made to the
                             # migrated_tools_conf.xml file so they can be eliminated from all non-shed-related tool panel configs.
                             if tool_config not in tool_configs_to_filter:
@@ -642,7 +642,7 @@ class ToolMigrationManager(object):
     def __iscloned(self, clone_dir):
         full_path = os.path.abspath(clone_dir)
         if os.path.exists(full_path):
-            for root, dirs, files in os.walk(full_path):
+            for _root, dirs, _files in os.walk(full_path):
                 if '.hg' in dirs:
                     # Assume that the repository has been installed if we find a .hg directory.
                     return True

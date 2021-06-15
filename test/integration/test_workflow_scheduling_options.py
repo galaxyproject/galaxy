@@ -16,7 +16,7 @@ class MaximumWorkflowInvocationDurationTestCase(integration_util.IntegrationTest
     framework_tool_and_types = True
 
     def setUp(self):
-        super(MaximumWorkflowInvocationDurationTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
 
@@ -24,7 +24,7 @@ class MaximumWorkflowInvocationDurationTestCase(integration_util.IntegrationTest
     def handle_galaxy_config_kwds(cls, config):
         config["maximum_workflow_invocation_duration"] = 20
 
-    def do_test(self):
+    def test(self):
         workflow = self.workflow_populator.load_workflow_from_resource("test_workflow_pause")
         workflow_id = self.workflow_populator.create_workflow(workflow)
         history_id = self.dataset_populator.new_history()
@@ -52,7 +52,7 @@ class MaximumWorkflowJobsPerSchedulingIterationTestCase(integration_util.Integra
     framework_tool_and_types = True
 
     def setUp(self):
-        super(MaximumWorkflowJobsPerSchedulingIterationTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
@@ -61,7 +61,7 @@ class MaximumWorkflowJobsPerSchedulingIterationTestCase(integration_util.Integra
     def handle_galaxy_config_kwds(cls, config):
         config["maximum_workflow_jobs_per_scheduling_iteration"] = 1
 
-    def do_test(self):
+    def test_collection_explicit_and_implicit(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
 steps:
@@ -73,11 +73,11 @@ steps:
   - tool_id: collection_paired_test
     state:
       f1:
-        $link: 1#paired_output
+        $link: 1/paired_output
   - tool_id: cat_list
     state:
       input1:
-        $link: 2#out1
+        $link: 2/out1
 """)
         with self.dataset_populator.test_history() as history_id:
             hdca1 = self.dataset_collection_populator.create_list_in_history(history_id, contents=["a\nb\nc\nd\n", "e\nf\ng\nh\n"]).json()
@@ -89,3 +89,40 @@ steps:
             self.workflow_populator.wait_for_workflow(history_id, workflow_id, invocation_id)
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             self.assertEqual("a\nc\nb\nd\ne\ng\nf\nh\n", self.dataset_populator.get_history_dataset_content(history_id, hid=0))
+
+    def test_scheduling_rounds(self):
+        with self.dataset_populator.test_history() as history_id:
+            invocation_response = self.workflow_populator.run_workflow("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+  text_input: text
+steps:
+  first_cat:
+    tool_id: cat1
+    in:
+      input1: input1
+  second_cat:
+    tool_id: cat1
+    in:
+      input1: first_cat/out_file1
+  collection_creates_dynamic_list_of_pairs:
+    tool_id: collection_creates_dynamic_list_of_pairs
+    in:
+      file: second_cat/out_file1
+  count_multi_file:
+    tool_id: count_multi_file
+    in:
+      input1: collection_creates_dynamic_list_of_pairs/list_output
+outputs:
+  wf_output_1:
+    outputSource: collection_creates_dynamic_list_of_pairs/list_output
+""", test_data="""
+input1:
+  value: 1.fasta
+  type: File
+  name: fasta1
+text_input: foo
+""", history_id=history_id)
+            invocation = self._get("/invocations/{}".format(invocation_response.invocation_id)).json()
+            assert 'wf_output_1' in invocation['output_collections']

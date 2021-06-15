@@ -4,7 +4,6 @@ entries in the 'datatx_info' column in the 'request_type' table. It also deletes
 column in the 'request_type' table and adds a foreign key to the 'sequencer' table. The
 actual contents of the datatx_info column are stored as form_values.
 """
-from __future__ import print_function
 
 import logging
 from json import dumps, loads
@@ -31,12 +30,12 @@ metadata = MetaData()
 
 
 def get_latest_id(migrate_engine, table):
-    result = migrate_engine.execute("select id from %s order by id desc" % table)
+    result = migrate_engine.execute(f"select id from {table} order by id desc")
     row = result.fetchone()
     if row:
         return row[0]
     else:
-        raise Exception('Unable to get the latest id in the %s table.' % table)
+        raise Exception(f'Unable to get the latest id in the {table} table.')
 
 
 def create_sequencer_form_definition(migrate_engine):
@@ -46,7 +45,7 @@ def create_sequencer_form_definition(migrate_engine):
     dict in the request_type table
     '''
     # create new form_definition_current in the db
-    cmd = "INSERT INTO form_definition_current VALUES ( %s, %s, %s, %s, %s )" % (
+    cmd = "INSERT INTO form_definition_current VALUES ( {}, {}, {}, {}, {} )".format(
         nextval(migrate_engine, 'form_definition_current'),
         localtimestamp(migrate_engine),
         localtimestamp(migrate_engine),
@@ -137,7 +136,7 @@ def add_sequencer(migrate_engine, sequencer_index, sequencer_form_definition_id,
                     'field_2': sequencer_info.get('password', ''),
                     'field_3': sequencer_info.get('data_dir', ''),
                     'field_4': sequencer_info.get('rename_dataset', '')})
-    cmd = "INSERT INTO form_values VALUES ( %s, %s, %s, %s, '%s' )" % (nextval(migrate_engine, 'form_values'),
+    cmd = "INSERT INTO form_values VALUES ( {}, {}, {}, {}, '{}' )".format(nextval(migrate_engine, 'form_values'),
                                                                        localtimestamp(migrate_engine),
                                                                        localtimestamp(migrate_engine),
                                                                        sequencer_form_definition_id,
@@ -149,7 +148,7 @@ def add_sequencer(migrate_engine, sequencer_index, sequencer_form_definition_id,
     desc = ''
     version = ''
     sequencer_type_id = 'simple_unknown_sequencer'
-    cmd = "INSERT INTO sequencer VALUES ( %s, %s, %s, '%s', '%s', '%s', '%s', %s, %s, %s )" % (
+    cmd = "INSERT INTO sequencer VALUES ( {}, {}, {}, '{}', '{}', '{}', '{}', {}, {}, {} )".format(
         nextval(migrate_engine, 'sequencer'),
         localtimestamp(migrate_engine),
         localtimestamp(migrate_engine),
@@ -222,7 +221,7 @@ def downgrade(migrate_engine):
 
     RequestType_table = Table("request_type", metadata, autoload=True)
     # create the 'datatx_info' column
-    col = Column("datatx_info", JSONType())
+    col = Column("datatx_info", JSONType)
     add_column(col, RequestType_table, metadata)
     # restore the datatx_info column data in the request_type table with data from
     # the sequencer and the form_values table

@@ -64,7 +64,7 @@ class PAM(AuthProvider):
         auto_register_email = None
         force_fail = False
         if not options['redact_username_in_logs']:
-            log.debug("use username: {} use email {} email {} username {}".format(options.get('login-use-username'), options.get('login-use-email', False), email, username))
+            log.debug(f"use username: {options.get('login-use-username')} use email {options.get('login-use-email', False)} email {email} username {username}")
         # check email based login first because if email exists in Galaxy DB
         # we will be given the "public name" as username
         if string_as_bool(options.get('login-use-email', False)) and email is not None:
@@ -95,7 +95,7 @@ class PAM(AuthProvider):
                 elif options.get('maildomain', None) is not None:
                     # we can register a user with this username and mail domain
                     # if auto registration is enabled
-                    auto_register_email = '{}@{}'.format(username, options['maildomain'])
+                    auto_register_email = f"{username}@{options['maildomain']}"
                 auto_register_username = username
             else:
                 log.debug('PAM authenticate: username login selected but no username provided')
@@ -109,23 +109,23 @@ class PAM(AuthProvider):
 
         pam_service = options.get('pam-service', 'galaxy')
         use_helper = string_as_bool(options.get('use-external-helper', False))
-        log.debug("PAM auth: will use external helper: {}".format(use_helper))
+        log.debug(f"PAM auth: will use external helper: {use_helper}")
         authenticated = False
         if use_helper:
             authentication_helper = options.get('authentication-helper-script', '/bin/false').strip()
-            log.debug("PAM auth: external helper script: {}".format(authentication_helper))
+            log.debug(f"PAM auth: external helper script: {authentication_helper}")
             if not authentication_helper.startswith('/'):
                 # don't accept relative path
                 authenticated = False
             else:
-                auth_cmd = shlex.split('/usr/bin/sudo -n {}'.format(authentication_helper))
-                log.debug("PAM auth: external helper cmd: {}".format(auth_cmd))
-                message = '{}\n{}\n{}\n'.format(pam_service, pam_username, password)
+                auth_cmd = shlex.split(f'/usr/bin/sudo -n {authentication_helper}')
+                log.debug(f"PAM auth: external helper cmd: {auth_cmd}")
+                message = f'{pam_service}\n{pam_username}\n{password}\n'
                 try:
                     output = commands.execute(auth_cmd, input=message)
                 except commands.CommandLineException as e:
                     if e.stderr != '':
-                        log.debug("PAM auth: external authentication script had errors: status {} error {}".format(e.returncode, e.stderr))
+                        log.debug(f"PAM auth: external authentication script had errors: status {e.returncode} error {e.stderr}")
                     output = e.stdout
                 if output.strip() == 'True':
                     authenticated = True
@@ -142,10 +142,10 @@ class PAM(AuthProvider):
             authenticated = p_auth.authenticate(pam_username, password, service=pam_service)
 
         if authenticated:
-            log.debug('PAM authentication successful for {}'.format('redacted' if options['redact_username_in_logs'] else pam_username))
+            log.debug(f"PAM authentication successful for {'redacted' if options['redact_username_in_logs'] else pam_username}")
             return True, auto_register_email, auto_register_username
         else:
-            log.debug('PAM authentication failed for {}'.format('redacted' if options['redact_username_in_logs'] else pam_username))
+            log.debug(f"PAM authentication failed for {'redacted' if options['redact_username_in_logs'] else pam_username}")
             return False, '', ''
 
     def authenticate_user(self, user, password, options):

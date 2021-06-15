@@ -3,31 +3,24 @@ A simple WSGI application/framework.
 """
 import io
 import logging
-import os.path
+import os
 import socket
 import tarfile
 import tempfile
 import time
 import types
+from http.cookies import CookieError, SimpleCookie
+from importlib import import_module
 
 import routes
-import six
 import webob.compat
+import webob.cookies
 import webob.exc
 import webob.exc as httpexceptions  # noqa: F401
 # We will use some very basic HTTP/wsgi utilities from the paste library
 from paste.response import HeaderDict
-from six.moves.http_cookies import (
-    CookieError,
-    SimpleCookie
-)
 
 from galaxy.util import smart_str
-
-try:
-    file_types = (file, io.IOBase)
-except NameError:
-    file_types = (io.IOBase, )
 
 log = logging.getLogger(__name__)
 
@@ -41,11 +34,11 @@ def __resource_with_deleted(self, member_name, collection_name, **kwargs):
     as resource() with the addition of standardized routes for handling
     elements in Galaxy's "deleted but not really deleted" fashion.
     """
-    collection_path = kwargs.get('path_prefix', '') + '/' + collection_name + '/deleted'
-    member_path = collection_path + '/{id}'
-    self.connect('deleted_' + collection_name, collection_path, controller=collection_name, action='index', deleted=True, conditions=dict(method=['GET']))
-    self.connect('deleted_' + member_name, member_path, controller=collection_name, action='show', deleted=True, conditions=dict(method=['GET']))
-    self.connect('undelete_deleted_' + member_name, member_path + '/undelete', controller=collection_name, action='undelete',
+    collection_path = f"{kwargs.get('path_prefix', '')}/{collection_name}/deleted"
+    member_path = f"{collection_path}/{{id}}"
+    self.connect(f"deleted_{collection_name}", collection_path, controller=collection_name, action='index', deleted=True, conditions=dict(method=['GET']))
+    self.connect(f"deleted_{member_name}", member_path, controller=collection_name, action='show', deleted=True, conditions=dict(method=['GET']))
+    self.connect(f"undelete_deleted_{member_name}", f"{member_path}/undelete", controller=collection_name, action='undelete',
                  conditions=dict(method=['POST']))
     self.resource(member_name, collection_name, **kwargs)
 
@@ -53,7 +46,7 @@ def __resource_with_deleted(self, member_name, collection_name, **kwargs):
 routes.Mapper.resource_with_deleted = __resource_with_deleted
 
 
-class WebApplication(object):
+class WebApplication:
     """
     A simple web application which maps requests to objects using routes,
     and to methods on those objects in the CherryPy style. Thus simple
@@ -153,7 +146,7 @@ class WebApplication(object):
         controller_name = map_match.pop('controller', None)
         controller = controllers.get(controller_name, None)
         if controller is None:
-            raise webob.exc.HTTPNotFound("No controller for " + path_info)
+            raise webob.exc.HTTPNotFound(f"No controller for {path_info}")
         # Resolve action method on controller
         # This is the easiest way to make the controller/action accessible for
         # url_for invocations.  Specifically, grids.
@@ -162,18 +155,18 @@ class WebApplication(object):
         if method is None and not use_default:
             # Skip default, we do this, for example, when we want to fail
             # through to another mapper.
-            raise webob.exc.HTTPNotFound("No action for " + path_info)
+            raise webob.exc.HTTPNotFound(f"No action for {path_info}")
         if method is None:
             # no matching method, we try for a default
             method = getattr(controller, 'default', None)
         if method is None:
-            raise webob.exc.HTTPNotFound("No action for " + path_info)
+            raise webob.exc.HTTPNotFound(f"No action for {path_info}")
         # Is the method exposed
         if not getattr(method, 'exposed', False):
-            raise webob.exc.HTTPNotFound("Action not exposed for " + path_info)
+            raise webob.exc.HTTPNotFound(f"Action not exposed for {path_info}")
         # Is the method callable
         if not callable(method):
-            raise webob.exc.HTTPNotFound("Action not callable for " + path_info)
+            raise webob.exc.HTTPNotFound(f"Action not callable for {path_info}")
         return (controller_name, controller, action, method)
 
     def handle_request(self, environ, start_response, body_renderer=None):
@@ -190,7 +183,7 @@ class WebApplication(object):
             environ['is_api_request'] = False
             controllers = self.controllers
         if map_match is None:
-            raise webob.exc.HTTPNotFound("No route for " + path_info)
+            raise webob.exc.HTTPNotFound(f"No route for {path_info}")
         self.trace(path_info=path_info, map_match=map_match)
         # Setup routes
         rc = routes.request_config()
@@ -214,7 +207,7 @@ class WebApplication(object):
                 raise
         trans.controller = controller_name
         trans.action = action
-        environ['controller_action_key'] = "%s.%s.%s" % ('api' if environ['is_api_request'] else 'web', controller_name, action or 'default')
+        environ['controller_action_key'] = f"{'api' if environ['is_api_request'] else 'web'}.{controller_name}.{action or 'default'}"
         # Combine mapper args and query string / form args and call
         kwargs = trans.request.params.mixed()
         kwargs.update(map_match)
@@ -241,7 +234,7 @@ class WebApplication(object):
             start_response(trans.response.wsgi_status(),
                            trans.response.wsgi_headeritems())
             return body
-        elif isinstance(body, file_types):
+        elif isinstance(body, io.IOBase):
             # Stream the file back to the browser
             return send_file(start_response, trans, body)
         else:
@@ -267,7 +260,7 @@ class WebApplication(object):
         return False
 
 
-class WSGIEnvironmentProperty(object):
+class WSGIEnvironmentProperty:
     """
     Descriptor that delegates a property to a key in the environ member of the
     associated object (provides property style access to keys in the WSGI
@@ -284,7 +277,7 @@ class WSGIEnvironmentProperty(object):
         return obj.environ.get(self.key, self.default)
 
 
-class LazyProperty(object):
+class LazyProperty:
     """
     Property that replaces itself with a calculated value the first time
     it is used.
@@ -304,7 +297,7 @@ class LazyProperty(object):
 lazy_property = LazyProperty
 
 
-class DefaultWebTransaction(object):
+class DefaultWebTransaction:
     """
     Wraps the state of a single web transaction (request/response cycle).
 
@@ -336,8 +329,6 @@ def _make_file(self, binary=None):
     # tempfiles.  Necessary for externalizing the upload tool.  It's a little hacky
     # but for performance reasons it's way better to use Paste's tempfile than to
     # create a new one and copy.
-    if six.PY2:
-        return tempfile.NamedTemporaryFile(delete=False)
     if self._binary_file or self.length >= 0:
         return tempfile.NamedTemporaryFile("wb+", delete=False)
     else:
@@ -350,7 +341,7 @@ def _read_lines(self):
     # Adapt `self.__file = None` to Python name mangling of class-private attributes.
     # We need to patch the original FieldStorage class attribute, not the cgi_FieldStorage
     # class.
-    setattr(self, '_FieldStorage__file', None)
+    self._FieldStorage__file = None
     if self.outerboundary:
         self.read_lines_to_outerboundary()
     else:
@@ -378,14 +369,14 @@ class Request(webob.Request):
     def remote_host(self):
         try:
             return socket.gethostbyname(self.remote_addr)
-        except socket.error:
+        except OSError:
             return self.remote_addr
 
     @lazy_property
     def remote_hostname(self):
         try:
             return socket.gethostbyaddr(self.remote_addr)[0]
-        except socket.error:
+        except OSError:
             return self.remote_addr
 
     @lazy_property
@@ -393,7 +384,8 @@ class Request(webob.Request):
         cookies = SimpleCookie()
         cookie_header = self.environ.get("HTTP_COOKIE")
         if cookie_header:
-            galaxy_cookies = "; ".join(x.strip() for x in cookie_header.split('; ') if x.startswith('galaxy'))
+            all_cookies = webob.cookies.parse_cookie(cookie_header)
+            galaxy_cookies = {k.decode(): v.decode() for k, v in all_cookies if k.startswith(b'galaxy')}
             if galaxy_cookies:
                 try:
                     cookies.load(galaxy_cookies)
@@ -403,7 +395,7 @@ class Request(webob.Request):
 
     @lazy_property
     def base(self):
-        return (self.scheme + "://" + self.host)
+        return (f"{self.scheme}://{self.host}")
 
     # @lazy_property
     # def params( self ):
@@ -433,7 +425,7 @@ class Request(webob.Request):
     # path_info = WSGIEnvironmentProperty( 'PATH_INFO' )
 
 
-class Response(object):
+class Response:
     """
     Describes an HTTP response. Currently very simple since the actual body
     of the request is handled separately.
@@ -470,7 +462,7 @@ class Response(object):
         """
         result = self.headers.headeritems()
         # Add cookie to header
-        for name, crumb in self.cookies.items():
+        for crumb in self.cookies.values():
             header, value = str(crumb).split(': ', 1)
             result.append((header, value))
         return result
@@ -498,10 +490,10 @@ def send_file(start_response, trans, body):
     if base:
         trans.response.headers['X-Accel-Redirect'] = \
             base + os.path.abspath(body.name)
-        body = [""]
+        body = [b""]
     elif apache_xsendfile:
         trans.response.headers['X-Sendfile'] = os.path.abspath(body.name)
-        body = [""]
+        body = [b""]
     # Fall back on sending the file in chunks
     else:
         body = iterate_file(body)
@@ -531,3 +523,14 @@ def flatten(seq):
                 yield smart_str(y)
         else:
             yield smart_str(x)
+
+
+def walk_controller_modules(package_name):
+    package = import_module(package_name)
+    controller_dir = package.__path__[0]
+    for fname in os.listdir(controller_dir):
+        if not(fname.startswith("_")) and fname.endswith(".py"):
+            name = fname[:-3]
+            module_name = f"{package_name}.{name}"
+            module = import_module(module_name)
+            yield name, module

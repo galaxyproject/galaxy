@@ -3,16 +3,13 @@ ISA datatype
 
 See https://github.com/ISA-tools
 """
-from __future__ import print_function
 
-import io
 import json
 import logging
 import os
 import os.path
 import re
 import shutil
-import sys
 import tempfile
 
 # Imports isatab after turning off warnings inside logger settings to avoid pandas warning making uploads fail.
@@ -50,21 +47,12 @@ logger = logging.getLogger(__name__)
 ################################################################
 
 
-def utf8_text_file_open(path):
-    if sys.version_info[0] < 3:
-        fp = open(path, 'rb')
-    else:
-        fp = open(path, 'r', newline='', encoding='utf8')
-    return fp
-
-
 # ISA class {{{1
 ################################################################
 
 class _Isa(data.Data):
     """ Base class for implementing ISA datatypes """
     composite_type = 'auto_primary_file'
-    allow_datatype_change = False
     is_binary = True
     _main_file_regex = None
 
@@ -78,7 +66,7 @@ class _Isa(data.Data):
     ################################################################
 
     def __init__(self, main_file_regex, **kwd):
-        super(_Isa, self).__init__(**kwd)
+        super().__init__(**kwd)
         self._main_file_regex = main_file_regex
 
         # Add the archive file as the only composite file
@@ -162,7 +150,7 @@ class _Isa(data.Data):
             raise RuntimeError("Unable to find the main file within the 'files_path' folder")
 
         # Read first lines of main file
-        with io.open(main_file, encoding='utf-8') as f:
+        with open(main_file, encoding='utf-8') as f:
             data = []
             for line in f:
                 if len(data) < _MAX_LINES_HISTORY_PEEK:
@@ -191,11 +179,11 @@ class _Isa(data.Data):
                 line = line.strip()
                 if not line:
                     continue
-                out.append('<tr><td>%s</td></tr>' % escape(util.unicodify(line, 'utf-8')))
+                out.append(f"<tr><td>{escape(util.unicodify(line, 'utf-8'))}</td></tr>")
             out.append('</table>')
             out = "".join(out)
         except Exception as exc:
-            out = "Can't create peek: %s" % util.unicodify(exc)
+            out = f"Can't create peek: {util.unicodify(exc)}"
         return out
 
     # Generate primary file {{{2
@@ -210,7 +198,7 @@ class _Isa(data.Data):
             if hasattr(dataset, "extra_files_path"):
                 rval.append('<div>ISA Dataset composed of the following files:<p/><ul>')
                 for cmp_file in os.listdir(dataset.extra_files_path):
-                    rval.append('<li><a href="%s" type="text/plain">%s</a></li>' % (cmp_file, escape(cmp_file)))
+                    rval.append(f'<li><a href="{cmp_file}" type="text/plain">{escape(cmp_file)}</a></li>')
                 rval.append('</ul></div></html>')
             else:
                 rval.append('<div>ISA Dataset is empty!<p/><ul>')
@@ -264,7 +252,7 @@ class _Isa(data.Data):
 
         # if it is not required a preview use the default behaviour of `display_data`
         if not preview:
-            return super(_Isa, self).display_data(trans, dataset, preview, filename, to_ext, **kwd)
+            return super().display_data(trans, dataset, preview, filename, to_ext, **kwd)
 
         # prepare the preview of the ISA dataset
         investigation = self._get_investigation(dataset)
@@ -277,30 +265,30 @@ class _Isa(data.Data):
                    </body></html>"""
         else:
             html = '<html><body>'
-            html += '<h1>{0} {1}</h1>'.format(investigation.title, investigation.identifier)
+            html += f'<h1>{investigation.title} {investigation.identifier}</h1>'
 
             # Loop on all studies
             for study in investigation.studies:
-                html += '<h2>Study %s</h2>' % study.identifier
-                html += '<h3>%s</h3>' % study.title
-                html += '<p>%s</p>' % study.description
-                html += '<p>Submitted the %s</p>' % study.submission_date
-                html += '<p>Released on %s</p>' % study.public_release_date
+                html += f'<h2>Study {study.identifier}</h2>'
+                html += f'<h3>{study.title}</h3>'
+                html += f'<p>{study.description}</p>'
+                html += f'<p>Submitted the {study.submission_date}</p>'
+                html += f'<p>Released on {study.public_release_date}</p>'
 
-                html += '<p>Experimental factors used: %s</p>' % ', '.join(x.name for x in study.factors)
+                html += f"<p>Experimental factors used: {', '.join(x.name for x in study.factors)}</p>"
 
                 # Loop on all assays of this study
                 for assay in study.assays:
-                    html += '<h3>Assay %s</h3>' % assay.filename
-                    html += '<p>Measurement type: %s</p>' % assay.measurement_type.term  # OntologyAnnotation
-                    html += '<p>Technology type: %s</p>' % assay.technology_type.term    # OntologyAnnotation
-                    html += '<p>Technology platform: %s</p>' % assay.technology_platform
+                    html += f'<h3>Assay {assay.filename}</h3>'
+                    html += f'<p>Measurement type: {assay.measurement_type.term}</p>'  # OntologyAnnotation
+                    html += f'<p>Technology type: {assay.technology_type.term}</p>'    # OntologyAnnotation
+                    html += f'<p>Technology platform: {assay.technology_platform}</p>'
                     if assay.data_files is not None:
                         html += '<p>Data files:</p>'
                         html += '<ul>'
                         for data_file in assay.data_files:
                             if data_file.filename != '':
-                                html += '<li>' + escape(util.unicodify(str(data_file.filename), 'utf-8')) + ' - ' + escape(util.unicodify(str(data_file.label), 'utf-8')) + '</li>'
+                                html += f"<li>{escape(util.unicodify(str(data_file.filename), 'utf-8'))} - {escape(util.unicodify(str(data_file.label), 'utf-8'))}</li>"
                         html += '</ul>'
 
             html += '</body></html>'
@@ -322,7 +310,7 @@ class IsaTab(_Isa):
     ################################################################
 
     def __init__(self, **kwd):
-        super(IsaTab, self).__init__(main_file_regex=INVESTIGATION_FILE_REGEX, **kwd)
+        super().__init__(main_file_regex=INVESTIGATION_FILE_REGEX, **kwd)
 
     # Make investigation instance {{{2
     ################################################################
@@ -332,8 +320,8 @@ class IsaTab(_Isa):
         # Parse ISA-Tab investigation file
         parser = isatab_meta.InvestigationParser()
         isa_dir = os.path.dirname(filename)
-        fp = utf8_text_file_open(filename)
-        parser.parse(fp)
+        with open(filename, newline='', encoding='utf8') as fp:
+            parser.parse(fp)
         for study in parser.isa.studies:
             s_parser = isatab_meta.LazyStudySampleTableParser(parser.isa)
             s_parser.parse(os.path.join(isa_dir, study.filename))
@@ -355,7 +343,7 @@ class IsaJson(_Isa):
     ################################################################
 
     def __init__(self, **kwd):
-        super(IsaJson, self).__init__(main_file_regex=JSON_FILE_REGEX, **kwd)
+        super().__init__(main_file_regex=JSON_FILE_REGEX, **kwd)
 
     # Make investigation instance {{{2
     ################################################################
@@ -363,7 +351,7 @@ class IsaJson(_Isa):
     def _make_investigation_instance(self, filename):
 
         # Parse JSON file
-        fp = utf8_text_file_open(filename)
-        isa = isajson.load(fp)
+        with open(filename, newline='', encoding='utf8') as fp:
+            isa = isajson.load(fp)
 
         return isa

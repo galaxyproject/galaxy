@@ -127,4 +127,21 @@ class ManageInformationTestCase(SeleniumTestCase):
         element.send_keys(new_input_text)
 
     def get_address_input_field(self, address_form, input_field_label):
-        return address_form.find_element_by_css_selector("[data-label='" + input_field_label + "'] > input")
+        return address_form.find_element_by_css_selector(f"[data-label='{input_field_label}'] > input")
+
+
+class DeleteCurrentAccountTestCase(SeleniumTestCase):
+
+    @selenium_test
+    def test_delete_account(self):
+        email = self._get_random_email()
+        self.register(email)
+        self.navigate_to_user_preferences()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.components.preferences.delete_account.wait_for_and_click()
+        delete_confirmation_field = self.components.preferences.delete_account_input.wait_for_visible()
+        delete_confirmation_field.send_keys(email)
+        self.components.preferences.delete_account_ok_btn.wait_for_and_click()
+        self.submit_login(email=email, assert_valid=False)
+        self.assert_error_message(contains='This account has been marked deleted, contact your local Galaxy'
+                                           ' administrator to restore the account.')

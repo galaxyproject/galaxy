@@ -63,11 +63,13 @@ Enhancements
   `Pull Request 9562`_
 * Datasource tool for SRA manifest
   `Pull Request 9613`_, `Pull Request 9892`_
+
 .. enhancement_tag_viz
 
 * Skip visualization build, if no changes were registered
   (thanks to `@OlegZharkov <https://github.com/OlegZharkov>`__).
   `Pull Request 9634`_
+
 .. enhancement_tag_datatypes
 
 * Add tpr datatype
@@ -82,6 +84,7 @@ Enhancements
 * Sniffer for multi-member zip archives
   (thanks to `@lecorguille <https://github.com/lecorguille>`__).
   `Pull Request 9595`_
+
 .. enhancement_tag_tools
 
 * Followup to shed tool static fixes
@@ -94,6 +97,7 @@ Enhancements
   `Pull Request 9547`_
 * Fix ITs to work in remote Kubernetes
   `Pull Request 9614`_
+
 .. enhancement_tag_workflows
 
 * Fix galaxy_tool_util for composite file input testing in workflows.
@@ -104,10 +108,12 @@ Enhancements
   `Pull Request 9346`_
 * Allow anonymous downloading of public workflows
   `Pull Request 9736`_
+
 .. enhancement_tag_ui
 
 * MS Edge Fixes
   `Pull Request 9289`_
+
 .. enhancement_tag_jobs
 
 * Refactor more of jobs admin component toward API.
@@ -129,12 +135,14 @@ Enhancements
   `Pull Request 9553`_
 * Optimize setting external ID for jobs.
   `Pull Request 9691`_
+
 .. enhancement_tag_admin
 
 * Enable manual user activation
   `Pull Request 9143`_
 * Skip migration if uninitialized database exists
   `Pull Request 9491`_
+
 .. enhancement
 
 * Add Okta as OIDC authentication option
@@ -300,11 +308,12 @@ Enhancements
 * Feature/3937 advanced search tooltip
   (thanks to `@assuntad23 <https://github.com/assuntad23>`__).
   `Pull Request 9696`_
+
 .. small_enhancement
 
 * Rename function, params in ConfigSerializer
   `Pull Request 9247`_
-* Make ``str.join()``s more efficient
+* Make ``str.join()``\s more efficient
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 9258`_
 * Faster and cleaner set creation
@@ -367,6 +376,7 @@ Fixes
 
 * Update charts entrypoint inclusion of dist artifacts
   `Pull Request 9511`_
+
 .. bug_tag_datatypes
 
 * Python3 compatible SnpEff and SnpSift metadata detection
@@ -384,6 +394,7 @@ Fixes
   `Pull Request 9734`_
 * Fix disappearing datatypes after restart
   `Pull Request 9835`_
+
 .. bug_tag_tools
 
 * fix error in bundled tool: shrimp_color_wrapper
@@ -395,6 +406,7 @@ Fixes
 * Move some tools that no longer need galaxy on the PATH
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 9850`_
+
 .. bug_tag_workflows
 
 * Fix workflow list filtering dropdown
@@ -407,12 +419,14 @@ Fixes
   `Pull Request 9695`_
 * Input dataset module format filtering fix;
   `Pull Request 9884`_
+
 .. bug_tag_ui
 
 * fix for python3 and GEDA, was getting "Connection closed at byte 0"
   `Pull Request 9507`_
 * Checkbox bugfix
   `Pull Request 9667`_
+
 .. bug_tag_jobs
 
 * Fix none type exception in provided metadata handling.
@@ -449,6 +463,7 @@ Fixes
   `Pull Request 9833`_
 * Fix incorrect variable assignment
   `Pull Request 9907`_
+
 .. bug_tag_admin
 
 * Fix vue helper in admin router, fixes toolshed installation, avoids console errors
@@ -462,6 +477,7 @@ Fixes
 * Cannot find migrate directory for tools database
   (thanks to `@phac-nml <https://github.com/phac-nml>`__).
   `Pull Request 9699`_
+
 .. bug
 
 * Fix S3 issue discovered during admin training

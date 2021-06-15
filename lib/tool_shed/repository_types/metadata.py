@@ -3,7 +3,7 @@ import logging
 log = logging.getLogger(__name__)
 
 
-class Metadata(object):
+class Metadata:
 
     def __init__(self):
         self.type = None

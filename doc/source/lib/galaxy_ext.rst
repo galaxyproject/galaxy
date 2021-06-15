@@ -2,15 +2,15 @@ galaxy\_ext package
 ===================
 
 .. automodule:: galaxy_ext
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Subpackages
 -----------
 
 .. toctree::
+   :maxdepth: 4
 
-    galaxy_ext.expressions
-    galaxy_ext.metadata
-
+   galaxy_ext.expressions
+   galaxy_ext.metadata

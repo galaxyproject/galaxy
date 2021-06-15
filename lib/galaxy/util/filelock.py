@@ -14,7 +14,7 @@ class FileLockException(Exception):
     pass
 
 
-class FileLock(object):
+class FileLock:
     """ A file locking mechanism that has context-manager support so
         you can use it in a with statement. This should be relatively cross
         compatible as it doesn't rely on msvcrt or fcntl for the locking.
@@ -26,7 +26,7 @@ class FileLock(object):
         """
         self.is_locked = False
         full_path = os.path.abspath(file_name)
-        self.lockfile = "%s.lock" % full_path
+        self.lockfile = f"{full_path}.lock"
         self.file_name = full_path
         self.timeout = timeout
         self.delay = delay

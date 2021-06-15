@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import calendar
 import logging
 import re
@@ -16,14 +14,14 @@ from markupsafe import escape
 from sqlalchemy import and_, not_, or_
 
 from galaxy import model, util
+from galaxy.web.legacy_framework import grids
 from galaxy.webapps.base.controller import BaseUIController, web
 from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
-from galaxy.webapps.reports.framework import grids
 
 log = logging.getLogger(__name__)
 
 
-class Timer(object):
+class Timer:
     def __init__(self):
         self.start()
         self.stop()
@@ -116,7 +114,7 @@ class SpecifiedDateListGrid(grids.Grid):
     class StateColumn(grids.TextColumn):
 
         def get_value(self, trans, grid, job):
-            return '<div class="count-box state-color-%s">%s</div>' % (job.state, job.state)
+            return f'<div class="count-box state-color-{job.state}">{job.state}</div>'
 
         def filter(self, trans, user, query, column_filter):
             if column_filter == 'Unfinished':
@@ -219,7 +217,6 @@ class SpecifiedDateListGrid(grids.Grid):
                                               key="free-text-search",
                                               visible=False,
                                               filterable="standard"))
-    standard_filters = []
     default_filter = {'specified_date': 'All'}
     num_rows_per_page = 50
     use_paging = True

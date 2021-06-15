@@ -68,7 +68,7 @@ def check_file_contents_for_email_alerts(app):
     See if any admin users have chosen to receive email alerts when a repository is updated.
     If so, the file contents of the update must be checked for inappropriate content.
     """
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     admin_users = app.config.get("admin_users", "").split(",")
     for repository in sa_session.query(app.model.Repository) \
                                 .filter(app.model.Repository.table.c.email_alerts != null()):
@@ -82,9 +82,9 @@ def check_file_contents_for_email_alerts(app):
 def check_file_content_for_html_and_images(file_path):
     message = ''
     if checkers.check_html(file_path):
-        message = 'The file "%s" contains HTML content.\n' % str(file_path)
+        message = f'The file "{str(file_path)}" contains HTML content.\n'
     elif checkers.check_image(file_path):
-        message = 'The file "%s" contains image content.\n' % str(file_path)
+        message = f'The file "{str(file_path)}" contains image content.\n'
     return message
 
 
@@ -130,24 +130,23 @@ def get_upload_point(repository, **kwd):
 
 
 def handle_bz2(repository, uploaded_file_name):
-    fd, uncompressed = tempfile.mkstemp(prefix='repo_%d_upload_bunzip2_' % repository.id,
-                                        dir=os.path.dirname(uploaded_file_name),
-                                        text=False)
-    bzipped_file = bz2.BZ2File(uploaded_file_name, 'rb')
-    while 1:
-        try:
-            chunk = bzipped_file.read(basic_util.CHUNK_SIZE)
-        except IOError:
-            os.close(fd)
-            os.remove(uncompressed)
-            log.exception('Problem uncompressing bz2 data "%s"', uploaded_file_name)
-            return
-        if not chunk:
-            break
-        os.write(fd, chunk)
-    os.close(fd)
-    bzipped_file.close()
-    shutil.move(uncompressed, uploaded_file_name)
+    with tempfile.NamedTemporaryFile(
+        mode='wb',
+        prefix=f'repo_{repository.id}_upload_bunzip2_',
+        dir=os.path.dirname(uploaded_file_name),
+        delete=False,
+    ) as uncompressed, bz2.BZ2File(uploaded_file_name, 'rb') as bzipped_file:
+        while 1:
+            try:
+                chunk = bzipped_file.read(basic_util.CHUNK_SIZE)
+            except OSError:
+                os.remove(uncompressed.name)
+                log.exception(f'Problem uncompressing bz2 data "{uploaded_file_name}"')
+                return
+            if not chunk:
+                break
+            uncompressed.write(chunk)
+    shutil.move(uncompressed.name, uploaded_file_name)
 
 
 def handle_directory_changes(app, host, username, repository, full_path, filenames_in_archive, remove_repo_files_not_in_tar,
@@ -180,7 +179,7 @@ def handle_directory_changes(app, host, username, repository, full_path, filenam
             try:
                 hg_util.remove_file(repo_path, repo_file, force=True)
             except Exception as e:
-                log.debug("Error removing files using the mercurial API, so trying a different approach, the error was: %s" % str(e))
+                log.debug(f"Error removing files using the mercurial API, so trying a different approach, the error was: {str(e)}")
                 relative_selected_file = repo_file.split('repo_%d' % repository.id)[1].lstrip('/')
                 repo.dirstate.remove(relative_selected_file)
                 repo.dirstate.write()
@@ -230,24 +229,23 @@ def handle_directory_changes(app, host, username, repository, full_path, filenam
 
 
 def handle_gzip(repository, uploaded_file_name):
-    fd, uncompressed = tempfile.mkstemp(prefix='repo_%d_upload_gunzip_' % repository.id,
-                                        dir=os.path.dirname(uploaded_file_name),
-                                        text=False)
-    gzipped_file = gzip.GzipFile(uploaded_file_name, 'rb')
-    while 1:
-        try:
-            chunk = gzipped_file.read(basic_util.CHUNK_SIZE)
-        except IOError:
-            os.close(fd)
-            os.remove(uncompressed)
-            log.exception('Problem uncompressing gz data "%s"', uploaded_file_name)
-            return
-        if not chunk:
-            break
-        os.write(fd, chunk)
-    os.close(fd)
-    gzipped_file.close()
-    shutil.move(uncompressed, uploaded_file_name)
+    with tempfile.NamedTemporaryFile(
+        mode='wb',
+        prefix=f'repo_{repository.id}_upload_gunzip_',
+        dir=os.path.dirname(uploaded_file_name),
+        delete=False
+    ) as uncompressed, gzip.GzipFile(uploaded_file_name, 'rb') as gzipped_file:
+        while 1:
+            try:
+                chunk = gzipped_file.read(basic_util.CHUNK_SIZE)
+            except OSError:
+                os.remove(uncompressed.name)
+                log.exception(f'Problem uncompressing gz data "{uploaded_file_name}"')
+                return
+            if not chunk:
+                break
+            uncompressed.write(chunk)
+    shutil.move(uncompressed.name, uploaded_file_name)
 
 
 def uncompress(repository, uploaded_file_name, uploaded_file_filename, isgzip=False, isbz2=False):

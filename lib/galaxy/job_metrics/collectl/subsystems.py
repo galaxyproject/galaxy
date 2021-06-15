@@ -7,11 +7,8 @@ from abc import (
     abstractmethod
 )
 
-import six
 
-
-@six.add_metaclass(ABCMeta)
-class CollectlSubsystem(object):
+class CollectlSubsystem(metaclass=ABCMeta):
     """ Class providing an abstraction of collectl subsytems.
     """
 
@@ -23,7 +20,7 @@ class CollectlSubsystem(object):
 
     @property
     @abstractmethod
-    def name(self, job_directory):
+    def name(self):
         """ High-level name for subsystem as consumed by this module.
         """
 
@@ -66,7 +63,7 @@ SUBSYSTEMS = [
     EnvironmentSubsystem(),
     MemorySubsystem(),
 ]
-SUBSYSTEM_DICT = dict([(s.name, s) for s in SUBSYSTEMS])
+SUBSYSTEM_DICT = {s.name: s for s in SUBSYSTEMS}
 
 
 def get_subsystem(name):

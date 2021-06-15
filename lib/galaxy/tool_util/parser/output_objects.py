@@ -1,5 +1,3 @@
-from collections import OrderedDict
-
 from galaxy.util.dictifiable import Dictifiable
 from .output_actions import ToolOutputActionGroup
 from .output_collection_def import dataset_collector_descriptions_from_output_dict
@@ -7,16 +5,17 @@ from .output_collection_def import dataset_collector_descriptions_from_output_di
 
 class ToolOutputBase(Dictifiable):
 
-    def __init__(self, name, label=None, filters=None, hidden=False):
-        super(ToolOutputBase, self).__init__()
+    def __init__(self, name, label=None, filters=None, hidden=False, from_expression=None):
+        super().__init__()
         self.name = name
         self.label = label
         self.filters = filters or []
         self.hidden = hidden
         self.collection = False
+        self.from_expression = from_expression
 
     def to_dict(self, view='collection', value_mapper=None, app=None):
-        return super(ToolOutputBase, self).to_dict(view=view, value_mapper=value_mapper)
+        return super().to_dict(view=view, value_mapper=value_mapper)
 
 
 class ToolOutput(ToolOutputBase):
@@ -24,7 +23,7 @@ class ToolOutput(ToolOutputBase):
     Represents an output datasets produced by a tool. For backward
     compatibility this behaves as if it were the tuple::
 
-      (format, metadata_source, parent)
+    (format, metadata_source, parent)
     """
 
     dict_collection_visible_keys = ['name', 'format', 'label', 'hidden', 'output_type', 'format_source',
@@ -32,8 +31,8 @@ class ToolOutput(ToolOutputBase):
 
     def __init__(self, name, format=None, format_source=None, metadata_source=None,
                  parent=None, label=None, filters=None, actions=None, hidden=False,
-                 implicit=False):
-        super(ToolOutput, self).__init__(name, label=label, filters=filters, hidden=hidden)
+                 implicit=False, from_expression=None):
+        super().__init__(name, label=label, filters=filters, hidden=hidden, from_expression=from_expression)
         self.output_type = "data"
         self.format = format
         self.format_source = format_source
@@ -65,7 +64,7 @@ class ToolOutput(ToolOutputBase):
         return iter((self.format, self.metadata_source, self.parent))
 
     def to_dict(self, view='collection', value_mapper=None, app=None):
-        as_dict = super(ToolOutput, self).to_dict(view=view, value_mapper=value_mapper, app=app)
+        as_dict = super().to_dict(view=view, value_mapper=value_mapper, app=app)
         format = self.format
         if format and format != "input" and app:
             edam_format = app.datatypes_registry.edam_formats.get(self.format)
@@ -101,7 +100,7 @@ class ToolExpressionOutput(ToolOutputBase):
 
     def __init__(self, name, output_type, from_expression,
                  label=None, filters=None, actions=None, hidden=False):
-        super(ToolExpressionOutput, self).__init__(name, label=label, filters=filters, hidden=hidden)
+        super().__init__(name, label=label, filters=filters, hidden=hidden)
         self.output_type = output_type  # JSON type...
         self.from_expression = from_expression
         self.format = "expression.json"  # galaxy.datatypes.text.ExpressionJson.file_ext
@@ -122,15 +121,17 @@ class ToolOutputCollection(ToolOutputBase):
     Represents a HistoryDatasetCollectionAssociation of output datasets produced
     by a tool.
 
-    <outputs>
-      <collection type="list" label="${tool.name} on ${on_string} fasta">
-        <discover_datasets pattern="__name__" ext="fasta" visible="True" directory="outputFiles" />
-      </collection>
-      <collection type="paired" label="${tool.name} on ${on_string} paired reads">
-        <data name="forward" format="fastqsanger" />
-        <data name="reverse" format="fastqsanger"/>
-      </collection>
-    <outputs>
+    .. code-block::
+
+        <outputs>
+        <collection type="list" label="${tool.name} on ${on_string} fasta">
+            <discover_datasets pattern="__name__" ext="fasta" visible="True" directory="outputFiles" />
+        </collection>
+        <collection type="paired" label="${tool.name} on ${on_string} paired reads">
+            <data name="forward" format="fastqsanger" />
+            <data name="reverse" format="fastqsanger"/>
+        </collection>
+        <outputs>
     """
     dict_collection_visible_keys = ['name', 'format', 'label', 'hidden', 'output_type', 'default_format',
                                     'default_format_source', 'default_metadata_source', 'inherit_format', 'inherit_metadata']
@@ -148,12 +149,12 @@ class ToolOutputCollection(ToolOutputBase):
         inherit_format=False,
         inherit_metadata=False
     ):
-        super(ToolOutputCollection, self).__init__(name, label=label, filters=filters, hidden=hidden)
+        super().__init__(name, label=label, filters=filters, hidden=hidden)
         self.output_type = "collection"
         self.collection = True
         self.default_format = default_format
         self.structure = structure
-        self.outputs = OrderedDict()
+        self.outputs = {}
 
         self.inherit_format = inherit_format
         self.inherit_metadata = inherit_metadata
@@ -173,7 +174,8 @@ class ToolOutputCollection(ToolOutputBase):
         else:
             collection_prototype = self.structure.collection_prototype(inputs, type_registry)
 
-            def prototype_dataset_element_to_output(element, parent_ids=[]):
+            def prototype_dataset_element_to_output(element, parent_ids=None):
+                parent_ids = parent_ids or []
                 name = element.element_identifier
                 format = self.default_format
                 if self.inherit_format:
@@ -194,7 +196,8 @@ class ToolOutputCollection(ToolOutputBase):
                     parent_ids=parent_ids,
                 )
 
-            def prototype_collection_to_output(collection_prototype, parent_ids=[]):
+            def prototype_collection_to_output(collection_prototype, parent_ids=None):
+                parent_ids = parent_ids or []
                 output_parts = []
                 for element in collection_prototype.elements:
                     element_parts = []
@@ -222,7 +225,7 @@ class ToolOutputCollection(ToolOutputBase):
         return self.structure.dataset_collector_descriptions
 
     def to_dict(self, view='collection', value_mapper=None, app=None):
-        as_dict = super(ToolOutputCollection, self).to_dict(view=view, value_mapper=value_mapper, app=app)
+        as_dict = super().to_dict(view=view, value_mapper=value_mapper, app=app)
         as_dict['structure'] = self.structure.to_dict()
         return as_dict
 
@@ -244,7 +247,7 @@ class ToolOutputCollection(ToolOutputBase):
         return rval
 
 
-class ToolOutputCollectionStructure(object):
+class ToolOutputCollectionStructure:
 
     def __init__(
         self,
@@ -299,9 +302,10 @@ class ToolOutputCollectionStructure(object):
         return structure
 
 
-class ToolOutputCollectionPart(object):
+class ToolOutputCollectionPart:
 
-    def __init__(self, output_collection_def, element_identifier, output_def, parent_ids=[]):
+    def __init__(self, output_collection_def, element_identifier, output_def, parent_ids=None):
+        parent_ids = parent_ids or []
         self.output_collection_def = output_collection_def
         self.element_identifier = element_identifier
         self.output_def = output_def
@@ -311,7 +315,7 @@ class ToolOutputCollectionPart(object):
     def effective_output_name(self):
         name = self.output_collection_def.name
         part_name = self.element_identifier
-        effective_output_name = "%s|__part__|%s" % (name, part_name)
+        effective_output_name = f"{name}|__part__|{part_name}"
         return effective_output_name
 
     @staticmethod

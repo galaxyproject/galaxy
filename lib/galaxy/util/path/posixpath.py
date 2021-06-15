@@ -1,6 +1,5 @@
 """Galaxy "safe" path functions forced to work with POSIX-style paths regardless of current platform
 """
-from __future__ import absolute_import
 
 import posixpath
 import sys

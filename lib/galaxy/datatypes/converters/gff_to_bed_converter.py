@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 
 import sys
 
@@ -27,7 +26,7 @@ def __main__():
                     #
                     # Replace any spaces in the name with underscores so UCSC will not complain
                     name = elems[2].replace(" ", "_")
-                    out.write("%s\t%s\t%s\t%s\t0\t%s\n" % (elems[0], start, elems[4], name, strand))
+                    out.write(f"{elems[0]}\t{start}\t{elems[4]}\t{name}\t0\t{strand}\n")
                 except Exception:
                     skipped_lines += 1
                     if not first_skipped_line:

@@ -34,7 +34,7 @@ class MarkdownWorkflowMarkdownReportGeneratorPlugin(WorkflowMarkdownGeneratorPlu
         reports_config = (invocation.workflow.reports_config or {}).copy()
         # TODO: more intelligent merge here.
         reports_config.update(runtime_report_config_json or {})
-        title = reports_config.get("title", "Workflow Execution Summary of %s" % invocation.workflow.stored_workflow.name)
+        title = reports_config.get("title", f"Workflow Execution Summary of {invocation.workflow.stored_workflow.name}")
         markdown = reports_config.get("markdown")
         if markdown is None:
             template_kwds = {"title": title}

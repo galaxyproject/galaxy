@@ -68,7 +68,7 @@ def main():
         asciitodelete = sys.argv[5]
         if asciitodelete:
             newinputfile = "input_cleaned.tsv"
-            with open(inputfile, 'r') as oldfile, open(newinputfile, 'w') as newfile:
+            with open(inputfile) as oldfile, open(newinputfile, 'w') as newfile:
                 asciitodelete = {chr(int(_)) for _ in asciitodelete.split(',')}
                 for line in oldfile:
                     if line[0] not in asciitodelete:

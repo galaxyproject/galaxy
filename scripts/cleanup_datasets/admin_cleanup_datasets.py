@@ -36,7 +36,6 @@ Email Template Variables:
 
 Author: Lance Parsons (lparsons@princeton.edu)
 """
-from __future__ import print_function
 
 import argparse
 import logging
@@ -134,7 +133,7 @@ def main():
         if os.path.exists(default_template):
             template_file = default_template
         elif os.path.exists(sample_template_file):
-            print("Copying %s to %s" % (sample_template_file, default_template))
+            print(f"Copying {sample_template_file} to {default_template}")
             shutil.copyfile(sample_template_file, default_template)
             template_file = default_template
         else:
@@ -264,8 +263,8 @@ def _get_tool_id_for_hda(app, hda_id):
         return None
     job = app.sa_session.query(app.model.Job).\
         join(app.model.JobToOutputDatasetAssociation).\
-        filter(app.model.JobToOutputDatasetAssociation.table.c.dataset_id ==
-               hda_id).first()
+        filter(app.model.JobToOutputDatasetAssociation.table.c.dataset_id
+               == hda_id).first()
     if job is not None:
         return job.tool_id
     else:

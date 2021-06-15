@@ -10,6 +10,7 @@ from galaxy import (
     util,
     web
 )
+from galaxy.security.validate_user_input import validate_email_str
 from galaxy.util import unicodify
 
 error_report_template = """
@@ -129,7 +130,7 @@ This is an automated message. Do not reply to this address.
 """
 
 
-class ErrorReporter(object):
+class ErrorReporter:
     def __init__(self, hda, app):
         # Get the dataset
         sa_session = app.model.context
@@ -140,7 +141,7 @@ class ErrorReporter(object):
                 assert hda is not None, ValueError("No HDA yet")
             except Exception:
                 hda = sa_session.query(model.HistoryDatasetAssociation).get(app.security.decode_id(hda_id))
-        assert isinstance(hda, model.HistoryDatasetAssociation), ValueError("Bad value provided for HDA (%s)." % (hda))
+        assert isinstance(hda, model.HistoryDatasetAssociation), ValueError(f"Bad value provided for HDA ({hda}).")
         self.hda = hda
         # Get the associated job
         self.job = hda.creating_job
@@ -180,12 +181,12 @@ class ErrorReporter(object):
             # user.)
             email_str = 'redacted'
             if user:
-                email_str += ' (user: %s)' % user.id
+                email_str += f' (user: {user.id})'
         else:
             if user:
-                email_str = "'%s'" % user.email
+                email_str = f"'{user.email}'"
                 if email and user.email != email:
-                    email_str += " (providing preferred contact email '%s')" % email
+                    email_str += f" (providing preferred contact email '{email}')"
             else:
                 email_str = "'%s'" % (email or 'anonymous')
 
@@ -237,23 +238,18 @@ class EmailErrorReporter(ErrorReporter):
     def _send_report(self, user, email=None, message=None, **kwd):
         smtp_server = self.app.config.smtp_server
         assert smtp_server, ValueError("Mail is not configured for this Galaxy instance")
-        to_address = self.app.config.error_email_to
-        assert to_address, ValueError("Error reporting has been disabled for this Galaxy instance")
+        to = self.app.config.error_email_to
+        assert to, ValueError("Error reporting has been disabled for this Galaxy instance")
 
-        frm = to_address
-        # Check email a bit
-        email = email or ''
-        email = email.strip()
-        parts = email.split()
-        if len(parts) == 1 and len(email) > 0 and self._can_access_dataset(user):
-            to = to_address + ", " + email
-        else:
-            to = to_address
-        subject = "Galaxy tool error report from %s" % email
+        frm = self.app.config.email_from
+        error_msg = validate_email_str(email)
+        if not error_msg and self._can_access_dataset(user):
+            to += f", {email.strip()}"
+        subject = f"Galaxy tool error report from {email}"
         try:
-            subject = "%s (%s)" % (subject, self.app.toolbox.get_tool(self.job.tool_id, self.job.tool_version).old_id)
+            subject = "{} ({})".format(
+                subject, self.app.toolbox.get_tool(self.job.tool_id, self.job.tool_version).old_id)
         except Exception:
             pass
 
-        # Send it
         return util.send_mail(frm, to, subject, self.report, self.app.config, html=self.html_report)

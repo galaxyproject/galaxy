@@ -8,7 +8,7 @@ from galaxy.util import Params
 log = logging.getLogger(__name__)
 
 
-class TourGenerator(object):
+class TourGenerator:
     def __init__(self, trans, tool_id, tool_version):
         self._trans = trans
         self._tool = self._trans.app.toolbox.get_tool(tool_id, tool_version)
@@ -44,7 +44,7 @@ class TourGenerator(object):
         }
 
         # Conditional datasets
-        for name, value in self._test.inputs.items():
+        for name in self._test.inputs.keys():
             if '|' in name:
                 input_name = name.split('|')[1]
                 if input_name in self._data_inputs.keys():
@@ -119,8 +119,8 @@ class TourGenerator(object):
 
         steps = [{
             'title': tour_name,
-            'content': 'This short tour will guide you through the <b>' +
-                       self._tool.name + '</b> tool.',
+            'content': 'This short tour will guide you through the <b>'
+                       + self._tool.name + '</b> tool.',
             'orphan': True
         }]
 
@@ -177,14 +177,14 @@ class TourGenerator(object):
                 if name in test_inputs:
                     hid = self._hids[name]
                     dataset = self._test.inputs[name][0]
-                    step['content'] = 'Select dataset: <b>%s: %s</b>' % (
+                    step['content'] = 'Select dataset: <b>{}: {}</b>'.format(
                         hid, dataset
                     )
                 else:
                     step['content'] = 'Select a dataset'
 
             elif input.type == 'conditional':
-                param_id = '%s|%s' % (input.name, input.test_param.name)
+                param_id = f'{input.name}|{input.test_param.name}'
                 step['title'] = input.test_param.label
                 step['element'] = '[tour_id="%s"]' % param_id
                 params = []
@@ -203,7 +203,7 @@ class TourGenerator(object):
                                 cases[key] = value.label
 
                     for case_id, case_title in cases.items():
-                        tour_id = '%s|%s' % (input.name, case_id)
+                        tour_id = f'{input.name}|{case_id}'
                         if tour_id in self._test.inputs.keys():
                             if case_id in self._data_inputs.keys():
                                 hid = self._hids[case_id]

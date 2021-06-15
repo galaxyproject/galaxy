@@ -3,12 +3,10 @@
 # Very simple example of using the API to run Data Managers
 # Script makes the naive assumption that dbkey==sequence id, which in many cases is not true nor desired
 # *** This script is not recommended for use as-is on a production server ***
-from __future__ import print_function
 
 import optparse
 import time
-
-from six.moves.urllib.parse import urljoin
+from urllib.parse import urljoin
 
 from common import get, post  # noqa: I100,I202
 
@@ -35,7 +33,7 @@ def run_tool(tool_id, history_id, params, api_key, galaxy_url, wait=True, sleep_
             for i, dataset_dict in enumerate(outputs):
                 if dataset_is_terminal(dataset_dict['id'], api_key=api_key, galaxy_url=galaxy_url):
                     finished_datasets.append(i)
-            for i in reversed(finished_datasets):
+            for _ in reversed(finished_datasets):
                 outputs.pop(0)
             if wait and outputs:
                 time.sleep(sleep_time)

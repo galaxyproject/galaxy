@@ -1,5 +1,8 @@
-<tool id="trimmer" name="Trim" version="0.0.1">
+<tool id="trimmer" name="Trim" version="0.0.2">
     <description>leading or trailing characters</description>
+    <requirements>
+        <requirement type="package" version="3.8">python</requirement>
+    </requirements>
     <command detect_errors="exit_code">
 <![CDATA[
 python '$__tool_directory__/trimmer.py' -a -f '$input1' -c $col -s $start -e $end -i '$ignore' $fastq > '$out_file1'
@@ -8,7 +11,7 @@ python '$__tool_directory__/trimmer.py' -a -f '$input1' -c $col -s $start -e $en
     <inputs>
         <param name="input1" type="data" format="tabular,txt" label="Input dataset" />
         <param name="col" type="integer" value="0" label="Trim this column only" help="0 = process entire line" />
-        <param name="start" type="integer" value="1" label="Trim from the beginning up to this position" help="Only positive positions allowed. 1 = do not trim the beginning"/>
+        <param name="start" type="integer" value="1" min="1" label="Trim from the beginning up to this position" help="Only positive positions allowed. 1 = do not trim the beginning"/>
         <param name="end" type="integer" value="0" label="Remove everything from this position to the end" help="Use negative position to indicate position starting from the end. 0 = do not trim the end"/>
         <param name="fastq" type="select" label="Is input dataset in FASTQ format?" help="If set to 'Yes', the tool will not trim evenly numbered lines (0, 2, 4, etc...). This allows for trimming the seq and qual lines, only if they are not spread over multiple lines (see warning below)">
             <option value="" selected="true">No</option>
@@ -69,7 +72,7 @@ python '$__tool_directory__/trimmer.py' -a -f '$input1' -c $col -s $start -e $en
     <help>
 **What it does**
 
-Trims specified number of characters from a dataset or its field (if dataset is tab-delimited).
+Trims specified number of characters from a dataset or a given column (if dataset is tab-delimited).
 
 -----
 
@@ -124,7 +127,7 @@ This tool can be used to trim sequences and quality strings in FASTQ datasets. T
   +
   II#IIIIIII$5+.(9IIIIIII$%*$G$A31I&amp;&amp;B
 
-cab done by setting **Remove everything from this position to the end** to 31::
+can be done by setting **Remove everything from this position to the end** to 31::
 
   @081017-and-081020:1:1:1715:1759
   GGACTCAGATAGTAATCCACGCTCCTTTAAA

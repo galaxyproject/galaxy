@@ -28,12 +28,13 @@ PASSWORD_MIN_LEN = 6
 
 def validate_email_str(email):
     """Validates a string containing an email address."""
-    message = ''
+    if not email:
+        return "No email address was provided."
     if not(VALID_EMAIL_RE.match(email)):
-        message = "The format of the email address is not correct."
+        return "The format of the email address is not correct."
     elif len(email) > EMAIL_MAX_LEN:
-        message = "Email address cannot be more than %d characters in length." % EMAIL_MAX_LEN
-    return message
+        return "Email address cannot be more than %d characters in length." % EMAIL_MAX_LEN
+    return ""
 
 
 def validate_password_str(password):
@@ -63,7 +64,7 @@ def validate_email(trans, email, user=None, check_dup=True, allow_empty=False):
     if message:
         pass
     elif check_dup and trans.sa_session.query(trans.app.model.User).filter(func.lower(trans.app.model.User.table.c.email) == email.lower()).first():
-        message = "User with email '%s' already exists." % email
+        message = f"User with email '{email}' already exists."
     #  If the allowlist is not empty filter out any domain not in the list and ignore blocklist.
     elif trans.app.config.email_domain_allowlist_content is not None:
         domain = extract_domain(email)

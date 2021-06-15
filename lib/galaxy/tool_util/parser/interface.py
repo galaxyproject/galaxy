@@ -4,16 +4,12 @@ from abc import (
     abstractmethod
 )
 
-import six
-
 from .util import _parse_name
 
 NOT_IMPLEMENTED_MESSAGE = "Galaxy tool format does not yet support this tool feature."
 
 
-@six.python_2_unicode_compatible
-@six.add_metaclass(ABCMeta)
-class ToolSource(object):
+class ToolSource(metaclass=ABCMeta):
     """ This interface represents an abstract source to parse tool
     information from.
     """
@@ -114,7 +110,8 @@ class ToolSource(object):
         return ["TMPDIR", "TMP", "TEMP"]
 
     def parse_docker_env_pass_through(self):
-        return ["GALAXY_SLOTS", "HOME", "_GALAXY_JOB_HOME_DIR", "_GALAXY_JOB_TMP_DIR"] + self.parse_tmp_directory_vars()
+        return ["GALAXY_SLOTS", "GALAXY_MEMORY_MB", "GALAXY_MEMORY_MB_PER_SLOT", "HOME",
+                "_GALAXY_JOB_HOME_DIR", "_GALAXY_JOB_TMP_DIR"] + self.parse_tmp_directory_vars()
 
     @abstractmethod
     def parse_interpreter(self):
@@ -225,10 +222,21 @@ class ToolSource(object):
         """
 
     @abstractmethod
+    def parse_license(self):
+        """Return license corresponding to tool wrapper."""
+
+    @abstractmethod
     def parse_python_template_version(self):
         """
         Return minimum python version that the tool template has been developed against.
         """
+
+    def parse_creator(self):
+        """Return list of metadata relating to creator/author of tool.
+
+        Result should be list of schema.org data model Person or Organization objects.
+        """
+        return []
 
     @property
     def macro_paths(self):
@@ -250,13 +258,13 @@ class ToolSource(object):
     def __str__(self):
         source_path = self.source_path
         if source_path:
-            as_str = u'%s[%s]' % (self.__class__.__name__, source_path)
+            as_str = f'{self.__class__.__name__}[{source_path}]'
         else:
-            as_str = u'%s[In-memory]' % (self.__class__.__name__)
+            as_str = f'{self.__class__.__name__}[In-memory]'
         return as_str
 
 
-class PagesSource(object):
+class PagesSource:
     """ Contains a list of Pages - each a list of InputSources -
     each item in the outer list representing a page of inputs.
     Pages are deprecated so ideally this outer list will always
@@ -271,8 +279,7 @@ class PagesSource(object):
         return True
 
 
-@six.add_metaclass(ABCMeta)
-class PageSource(object):
+class PageSource(metaclass=ABCMeta):
 
     def parse_display(self):
         return None
@@ -282,8 +289,7 @@ class PageSource(object):
         """ Return a list of InputSource objects. """
 
 
-@six.add_metaclass(ABCMeta)
-class InputSource(object):
+class InputSource(metaclass=ABCMeta):
     default_optional = False
 
     def elem(self):
@@ -366,7 +372,8 @@ class InputSource(object):
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
 
-class TestCollectionDef(object):
+class TestCollectionDef:
+    __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
     def __init__(self, attrib, name, collection_type, elements):
         self.attrib = attrib
@@ -421,7 +428,7 @@ class TestCollectionDef(object):
 
         def element_from_dict(element_dict):
             if "element_definition" not in element_dict:
-                raise Exception("Invalid element_dict %s" % element_dict)
+                raise Exception(f"Invalid element_dict {element_dict}")
             element_def = element_dict["element_definition"]
             if element_def.get("model_class", None) == "TestCollectionDef":
                 element_def = TestCollectionDef.from_dict(element_def)
@@ -445,7 +452,8 @@ class TestCollectionDef(object):
         return inputs
 
 
-class TestCollectionOutputDef(object):
+class TestCollectionOutputDef:
+    __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
     def __init__(self, name, attrib, element_tests):
         self.name = name

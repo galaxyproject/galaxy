@@ -2,7 +2,6 @@
 Migration script to add a deleted column to the following tables:
 library_info_association, library_folder_info_association, library_dataset_dataset_info_association.
 """
-from __future__ import print_function
 
 import logging
 
@@ -26,7 +25,7 @@ def upgrade(migrate_engine):
         assert c is LibraryInfoAssociation_table.c.deleted
     except Exception:
         log.exception("Adding column 'deleted' to 'library_info_association' table failed.")
-    cmd = "UPDATE library_info_association SET deleted = %s" % engine_false(migrate_engine)
+    cmd = f"UPDATE library_info_association SET deleted = {engine_false(migrate_engine)}"
     try:
         migrate_engine.execute(cmd)
     except Exception:
@@ -38,7 +37,7 @@ def upgrade(migrate_engine):
         assert c is LibraryFolderInfoAssociation_table.c.deleted
     except Exception:
         log.exception("Adding column 'deleted' to 'library_folder_info_association' table failed.")
-    cmd = "UPDATE library_folder_info_association SET deleted = %s" % engine_false(migrate_engine)
+    cmd = f"UPDATE library_folder_info_association SET deleted = {engine_false(migrate_engine)}"
     try:
         migrate_engine.execute(cmd)
     except Exception:
@@ -50,7 +49,7 @@ def upgrade(migrate_engine):
         assert c is LibraryDatasetDatasetInfoAssociation_table.c.deleted
     except Exception:
         log.exception("Adding column 'deleted' to 'library_dataset_dataset_info_association' table failed.")
-    cmd = "UPDATE library_dataset_dataset_info_association SET deleted = %s" % engine_false(migrate_engine)
+    cmd = f"UPDATE library_dataset_dataset_info_association SET deleted = {engine_false(migrate_engine)}"
     try:
         migrate_engine.execute(cmd)
     except Exception:

@@ -37,6 +37,12 @@ TWO_TO_THREE_TEMPLATE = """#set $a = [x for x in {'a': '1'}.iterkeys()][0]
 #set $c = [x for x in {'a': '1'}.itervalues()][0]
 $a $b $c"""
 
+INVALID_CHEETAH_SYNTAX = """#if 1 <> 1
+1 is not 1
+#else
+1 is 1
+#end if"""
+
 
 def test_fill_simple_template():
     template_str = str(fill_template(SIMPLE_TEMPLATE, {'a_list': [1, 2]}))
@@ -75,3 +81,8 @@ def test_gen_expr():
 def test_fix_template_two_to_three():
     template_str = fill_template(TWO_TO_THREE_TEMPLATE, python_template_version='2', retry=1)
     assert template_str == 'a a 1'
+
+
+def test_fix_template_invalid_cheetah():
+    template_str = fill_template(INVALID_CHEETAH_SYNTAX, python_template_version='2', retry=1)
+    assert template_str == "1 is 1\n"

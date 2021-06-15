@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 import ast
 import os
@@ -96,7 +95,12 @@ setup(
     include_package_data=True,
     install_requires=requirements,
     extras_require={
-        'condatesting': ['jinja2'],
+        'mulled': [
+            'conda',
+            'cytoolz',  # cytoolz is an undeclared dependency of the conda package on PyPI
+            'jinja2',
+            'Whoosh',
+        ],
     },
     license="AFL",
     zip_safe=False,
@@ -111,11 +115,11 @@ setup(
         'Topic :: Software Development :: Code Generators',
         'Topic :: Software Development :: Testing',
         'Natural Language :: English',
-        "Programming Language :: Python :: 2",
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3.5',
+        "Programming Language :: Python :: 3",
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
     ],
     test_suite=TEST_DIR,
     tests_require=test_requirements

@@ -5,7 +5,6 @@ Example calls:
 python workflow_execute.py <api_key> <galaxy_url>/api/workflows f2db41e1fa331b3e 'Test API History' '38=ldda=0qr350234d2d192f'
 python workflow_execute.py <api_key> <galaxy_url>/api/workflows f2db41e1fa331b3e 'hist_id=a912e9e5d84530d4' '38=hda=03501d7626bd192f'
 """
-from __future__ import print_function
 
 import os
 import sys

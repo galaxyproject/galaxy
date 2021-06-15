@@ -1,5 +1,4 @@
 """The module describes the ``github`` error plugin plugin."""
-from __future__ import absolute_import
 
 import logging
 import sys
@@ -43,7 +42,7 @@ class GithubPlugin(BaseGitPlugin):
                 base_url=self.github_api_url
             )
             # Connect to the default repository and fill up the issue cache for it
-            repo = self.github.get_repo('%s/%s' % (self.git_default_repo_owner, self.git_default_repo_name))
+            repo = self.github.get_repo(f'{self.git_default_repo_owner}/{self.git_default_repo_name}')
             self._fill_issue_cache(repo, "default")
 
             # We'll also cache labels which we'll use for tagging issues.
@@ -77,7 +76,7 @@ class GithubPlugin(BaseGitPlugin):
 
             # Connect to the repo
             if github_projecturl not in self.git_project_cache:
-                self.git_project_cache[github_projecturl] = self.github.get_repo('%s' % github_projecturl)
+                self.git_project_cache[github_projecturl] = self.github.get_repo(f'{github_projecturl}')
             gh_project = self.git_project_cache[github_projecturl]
 
             # Make sure we keep a cache of the issues, per tool in this case
@@ -85,7 +84,7 @@ class GithubPlugin(BaseGitPlugin):
                 self._fill_issue_cache(gh_project, issue_cache_key)
 
             # Retrieve label
-            label = self.get_label('%s/%s' % (unicodify(job.tool_id), unicodify(job.tool_version)), gh_project, issue_cache_key)
+            label = self.get_label(f'{unicodify(job.tool_id)}/{unicodify(job.tool_version)}', gh_project, issue_cache_key)
 
             # Generate information for the tool
             error_title = self._generate_error_title(job)

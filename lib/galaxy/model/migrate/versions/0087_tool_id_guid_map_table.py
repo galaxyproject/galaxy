@@ -1,7 +1,6 @@
 """
 Migration script to create the tool_id_guid_map table.
 """
-from __future__ import print_function
 
 import datetime
 import logging

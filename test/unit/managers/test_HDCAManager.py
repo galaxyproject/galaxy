@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import unittest
 
 from galaxy.managers import (
@@ -23,12 +22,12 @@ user3_data = dict(email='user3@user3.user3', username='user3', password=default_
 class HDCATestCase(BaseTestCase, CreatesCollectionsMixin):
 
     def set_up_managers(self):
-        super(HDCATestCase, self).set_up_managers()
-        self.hdca_manager = hdcas.HDCAManager(self.app)
-        self.hda_manager = hdas.HDAManager(self.app)
-        self.history_manager = HistoryManager(self.app)
-        self.dataset_manager = DatasetManager(self.app)
-        self.collection_manager = collections.DatasetCollectionManager(self.app)
+        super().set_up_managers()
+        self.hdca_manager = self.app[hdcas.HDCAManager]
+        self.hda_manager = self.app[hdas.HDAManager]
+        self.history_manager = self.app[HistoryManager]
+        self.dataset_manager = self.app[DatasetManager]
+        self.collection_manager = self.app[collections.DatasetCollectionManager]
 
     def _create_history(self, user_data=None, **kwargs):
         user_data = user_data or user2_data
@@ -55,7 +54,7 @@ class HDCATestCase(BaseTestCase, CreatesCollectionsMixin):
 # =============================================================================
 # web.url_for doesn't work well in the framework
 def testable_url_for(*a, **k):
-    return '(fake url): %s, %s' % (a, k)
+    return f'(fake url): {a}, {k}'
 
 
 hdcas.HDCASerializer.url_for = staticmethod(testable_url_for)
@@ -64,13 +63,13 @@ hdcas.HDCASerializer.url_for = staticmethod(testable_url_for)
 class HDCASerializerTestCase(HDCATestCase):
 
     def set_up_managers(self):
-        super(HDCASerializerTestCase, self).set_up_managers()
+        super().set_up_managers()
         self.hdca_serializer = hdcas.HDCASerializer(self.app)
 
     def test_views(self):
         serializer = self.hdca_serializer
         item = self._create_list_hdca([
-            dict(name=("hda-{0}".format(i)), hid=i) for i in range(5)
+            dict(name=(f"hda-{i}"), hid=i) for i in range(5)
         ])
 
         self.log('should have a summary view')
@@ -88,16 +87,16 @@ class HDCASerializerTestCase(HDCATestCase):
         self.log('should have a serializer for all serializable keys')
         for key in serializer.serializable_keyset:
             instantiated_attribute = getattr(item, key, None)
-            if not ((key in serializer.serializers) or
-                   (isinstance(instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS))):
-                self.fail('no serializer for: %s (%s)' % (key, instantiated_attribute))
+            if not ((key in serializer.serializers)
+                   or (isinstance(instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS))):
+                self.fail(f'no serializer for: {key} ({instantiated_attribute})')
         else:
             self.assertTrue(True, 'all serializable keys have a serializer')
 
     def test_views_and_keys(self):
         serializer = self.hdca_serializer
         item = self._create_list_hdca([
-            dict(name=("hda-{0}".format(i)), hid=i) for i in range(5)
+            dict(name=(f"hda-{i}"), hid=i) for i in range(5)
         ])
         summary_plus_key = ['elements']
         only_keys = ['id', 'populated_state_message']

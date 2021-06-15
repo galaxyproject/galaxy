@@ -12,7 +12,8 @@ AST_NODE_TYPE_WHITELIST = [
     'Expr', 'Load', 'Str', 'Num', 'BoolOp', 'Compare', 'And', 'Eq', 'NotEq',
     'Or', 'GtE', 'LtE', 'Lt', 'Gt', 'BinOp', 'Add', 'Div', 'Sub', 'Mult', 'Mod',
     'Pow', 'LShift', 'GShift', 'BitAnd', 'BitOr', 'BitXor', 'UnaryOp', 'Invert',
-    'Not', 'NotIn', 'In', 'Is', 'IsNot', 'List', 'Index', 'Subscript',
+    'Not', 'UAdd', 'USub', 'NotIn', 'In', 'Is', 'IsNot', 'List', 'Index',
+    'Subscript', 'Constant',
     # Further checks
     'Name', 'Call', 'Attribute',
 ]
@@ -72,6 +73,8 @@ def check_expression(text):
     >>> check_expression("'x' in [1,2,3]")
     True
     >>> check_expression("c3=='chr1' and c5>5")
+    True
+    >>> check_expression("c3=='chr1' and c5>-5 and c5<+5")  # Unary +/-
     True
     >>> check_expression("c3=='chr1' and d5>5")  # Invalid d5 reference
     False
@@ -143,7 +146,7 @@ def stop_err(msg):
 
 in_fname = sys.argv[1]
 out_fname = sys.argv[2]
-with open(sys.argv[3], "r") as f:
+with open(sys.argv[3]) as f:
     inputs = json.load(f)
 cond_text = inputs["cond"]
 try:
@@ -184,8 +187,8 @@ if not check_expression(cond_text):
     stop_err("Illegal/invalid in condition '%s'" % (cond_text))
 
 # Work out which columns are used in the filter (save using 1 based counting)
-used_cols = sorted(set(int(match.group()[1:])
-                   for match in re.finditer(r'c(\d)+', cond_text)))
+used_cols = sorted({int(match.group()[1:])
+                   for match in re.finditer(r'c(\d)+', cond_text)})
 largest_col_index = max(used_cols)
 
 # Prepare the column variable names and wrappers for column data types. Only

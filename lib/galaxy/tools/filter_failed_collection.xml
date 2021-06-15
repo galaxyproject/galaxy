@@ -6,6 +6,9 @@
     <type class="FilterFailedDatasetsTool" module="galaxy.tools" />
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>
+    <edam_operations>
+        <edam_operation>operation_3695</edam_operation>
+    </edam_operations>
     <inputs>
         <param type="data_collection" collection_type="list,list:paired" name="input" label="Input Collection" />
     </inputs>
@@ -36,7 +39,7 @@
     </tests>
     <help><![CDATA[
 
-This tool takes a dataset collection and filters out datasets in the failed state. This is useful for continuing a multi-sample analysis when one of more of the samples fails at some point.
+This tool takes a dataset collection and filters out datasets in the failed state. This is useful for continuing a multi-sample analysis when one or more of the samples fails at some point.
 
 .. class:: infomark
 

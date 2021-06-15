@@ -1,6 +1,5 @@
 import logging
 import os
-from collections import OrderedDict
 from json import dumps
 
 from galaxy.job_execution.datasets import DatasetPath
@@ -15,7 +14,7 @@ class SetMetadataToolAction(ToolAction):
     """Tool action used for setting external metadata on an existing dataset"""
     produces_real_jobs = False
 
-    def execute(self, tool, trans, incoming={}, set_output_hid=False, overwrite=True, history=None, job_params=None, **kwargs):
+    def execute(self, tool, trans, incoming=None, set_output_hid=False, overwrite=True, history=None, job_params=None, **kwargs):
         """
         Execute using a web transaction.
         """
@@ -23,20 +22,21 @@ class SetMetadataToolAction(ToolAction):
         session = trans.get_galaxy_session()
         session_id = session and session.id
         history_id = trans.history and trans.history.id
+        incoming = incoming or {}
         job, odict = self.execute_via_app(tool, trans.app, session_id,
                                           history_id, trans.user, incoming, set_output_hid,
                                           overwrite, history, job_params)
         # FIXME: can remove this when logging in execute_via_app method.
-        trans.log_event("Added set external metadata job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
+        trans.log_event(f"Added set external metadata job to the job queue, id: {str(job.id)}", tool_id=job.tool_id)
         return job, odict
 
     def execute_via_app(self, tool, app, session_id, history_id, user=None,
-                        incoming={}, set_output_hid=False, overwrite=True,
+                        incoming=None, set_output_hid=False, overwrite=True,
                         history=None, job_params=None):
         """
         Execute using application.
         """
-
+        incoming = incoming or {}
         for name, value in incoming.items():
             # Why are we looping here and not just using a fixed input name? Needed?
             if not name.startswith("input"):
@@ -85,7 +85,7 @@ class SetMetadataToolAction(ToolAction):
         job_working_dir = app.object_store.get_filename(job, base_dir='job_work', dir_only=True, extra_dir=str(job.id))
         datatypes_config = os.path.join(job_working_dir, 'registry.xml')
         app.datatypes_registry.to_xml_file(path=datatypes_config)
-        external_metadata_wrapper = get_metadata_compute_strategy(app.config, job.id)
+        external_metadata_wrapper = get_metadata_compute_strategy(app.config, job.id, tool_id=tool.id)
         output_datatasets_dict = {
             dataset_name: dataset,
         }
@@ -102,8 +102,9 @@ class SetMetadataToolAction(ToolAction):
                                                                      datatypes_config=datatypes_config,
                                                                      job_metadata=os.path.join(job_working_dir, 'working', tool.provided_metadata_file),
                                                                      include_command=False,
-                                                                     validate_outputs=validate_outputs,
                                                                      max_metadata_value_size=app.config.max_metadata_value_size,
+                                                                     validate_outputs=validate_outputs,
+                                                                     job=job,
                                                                      kwds={'overwrite': overwrite})
         incoming['__SET_EXTERNAL_METADATA_COMMAND_LINE__'] = cmd_line
         for name, value in tool.params_to_strings(incoming, app).items():
@@ -127,4 +128,4 @@ class SetMetadataToolAction(ToolAction):
         # clear e.g. converted files
         dataset.datatype.before_setting_metadata(dataset)
 
-        return job, OrderedDict()
+        return job, {}

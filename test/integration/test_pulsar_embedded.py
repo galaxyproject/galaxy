@@ -25,4 +25,5 @@ test_tools = integration_util.integration_tool_runner([
     "multi_data_param",
     "output_filter",
     "vcf_bgzip_test",
+    "environment_variables",
 ])

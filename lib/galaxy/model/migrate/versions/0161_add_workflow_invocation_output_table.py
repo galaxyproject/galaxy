@@ -1,7 +1,6 @@
 """
 Migration script to add a new workflow_invocation_output_parameter table to track output parameters.
 """
-from __future__ import print_function
 
 import logging
 

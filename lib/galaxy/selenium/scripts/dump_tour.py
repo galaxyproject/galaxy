@@ -27,7 +27,7 @@ def main(argv=None):
     driver_wrapper.run_tour(args.tour, tour_callback=callback)
 
 
-class DumpTourCallback(object):
+class DumpTourCallback:
 
     def __init__(self, driver_wrapper, output):
         self.driver_wrapper = driver_wrapper

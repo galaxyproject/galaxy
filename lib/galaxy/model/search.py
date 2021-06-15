@@ -27,6 +27,7 @@ select * from history where name='Unnamed history'
 import logging
 import re
 from json import dumps
+from typing import Dict
 
 import parsley
 from sqlalchemy import and_
@@ -59,7 +60,7 @@ from galaxy.model.tool_shed_install import ToolVersion
 log = logging.getLogger(__name__)
 
 
-class ViewField(object):
+class ViewField:
     """
     A ViewField defines a field in a view that filter operations can be applied to
     These filter operations are either handled with standard sqlalchemy filter calls,
@@ -88,8 +89,8 @@ class ViewField(object):
         self.id_decode = id_decode
 
 
-class ViewQueryBaseClass(object):
-    FIELDS = {}
+class ViewQueryBaseClass:
+    FIELDS: Dict[str, ViewField] = {}
     VIEW_NAME = "undefined"
 
     def __init__(self):
@@ -128,19 +129,19 @@ class ViewQueryBaseClass(object):
                     elif operator == "like":
                         self.query = self.query.filter(sqlalchemy_field_value.like(right))
                     else:
-                        raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
+                        raise GalaxyParseError(f"Invalid comparison operator: {operator}")
                 elif field.handler is not None:
                     field.handler(self, left, operator, right)
                 elif field.post_filter is not None:
                     self.post_filter.append([field.post_filter, left, operator, right])
                 else:
-                    raise GalaxyParseError("Unable to filter on field: %s" % (left))
+                    raise GalaxyParseError(f"Unable to filter on field: {left}")
 
             else:
-                raise GalaxyParseError("Unknown field: %s" % (left))
+                raise GalaxyParseError(f"Unknown field: {left}")
 
     def search(self, trans):
-        raise GalaxyParseError("Unable to search view: %s" % (self.VIEW_NAME))
+        raise GalaxyParseError(f"Unable to search view: {self.VIEW_NAME}")
 
     def get_results(self, force_query=False):
         if self.query is not None and (force_query or self.do_query):
@@ -164,7 +165,7 @@ def library_extended_metadata_filter(view, left, operator, right):
         view.query = view.query.join(ExtendedMetadata)
         view.state['extended_metadata_joined'] = True
     alias = aliased(ExtendedMetadataIndex)
-    field = "/%s" % ("/".join(left.split(".")[1:]))
+    field = f"/{'/'.join(left.split('.')[1:])}"
     view.query = view.query.filter(
         and_(
             ExtendedMetadata.id == alias.extended_metadata_id,
@@ -179,7 +180,7 @@ def ldda_parent_library_filter(item, left, operator, right):
         return right == item.library_dataset.folder.parent_library.id
     elif operator == '!=':
         return right != item.library_dataset.folder.parent_library.id
-    raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
+    raise GalaxyParseError(f"Invalid comparison operator: {operator}")
 
 
 class LibraryDatasetDatasetView(ViewQueryBaseClass):
@@ -221,16 +222,16 @@ def library_folder_parent_library_id_filter(item, left, operator, right):
         return item.parent_library.id == right
     if operator == '!=':
         return item.parent_library.id != right
-    raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
+    raise GalaxyParseError(f"Invalid comparison operator: {operator}")
 
 
 def library_path_filter(item, left, operator, right):
-    lpath = "/" + "/".join(item.library_path)
+    lpath = f"/{'/'.join(item.library_path)}"
     if operator == '=':
         return lpath == right
     if operator == '!=':
         return lpath != right
-    raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
+    raise GalaxyParseError(f"Invalid comparison operator: {operator}")
 
 
 class LibraryFolderView(ViewQueryBaseClass):
@@ -255,7 +256,7 @@ def library_dataset_name_filter(item, left, operator, right):
         return item.name == right
     if operator == '!=':
         return item.name != right
-    raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
+    raise GalaxyParseError(f"Invalid comparison operator: {operator}")
 
 
 class LibraryDatasetView(ViewQueryBaseClass):
@@ -301,7 +302,7 @@ def history_dataset_handle_tag(view, left, operator, right):
         if len(tmp) > 1:
             view.query = view.query.filter(tag_table.user_value == tmp[1])
     else:
-        raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
+        raise GalaxyParseError(f"Invalid comparison operator: {operator}")
 
 
 def history_dataset_extended_metadata_filter(view, left, operator, right):
@@ -310,7 +311,7 @@ def history_dataset_extended_metadata_filter(view, left, operator, right):
         view.query = view.query.join(ExtendedMetadata)
         view.state['extended_metadata_joined'] = True
     alias = aliased(ExtendedMetadataIndex)
-    field = "/%s" % ("/".join(left.split(".")[1:]))
+    field = f"/{'/'.join(left.split('.')[1:])}"
     view.query = view.query.filter(
         and_(
             ExtendedMetadata.id == alias.extended_metadata_id,
@@ -358,7 +359,7 @@ def history_handle_tag(view, left, operator, right):
         if len(tmp) > 1:
             view.query = view.query.filter(tag_table.user_value == tmp[1])
     else:
-        raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
+        raise GalaxyParseError(f"Invalid comparison operator: {operator}")
 
 
 def history_handle_annotation(view, left, operator, right):
@@ -375,7 +376,7 @@ def history_handle_annotation(view, left, operator, right):
             HistoryAnnotationAssociation.annotation.like(right)
         ))
     else:
-        raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
+        raise GalaxyParseError(f"Invalid comparison operator: {operator}")
 
 
 class HistoryView(ViewQueryBaseClass):
@@ -408,7 +409,7 @@ def workflow_tag_handler(view, left, operator, right):
         if len(tmp) > 1:
             view.query = view.query.filter(StoredWorkflowTagAssociation.user_value == tmp[1])
     else:
-        raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
+        raise GalaxyParseError(f"Invalid comparison operator: {operator}")
 
 
 class WorkflowView(ViewQueryBaseClass):
@@ -597,7 +598,7 @@ not_dquote = anything:x ?(x != '"') -> x
 """
 
 
-class GalaxyQuery(object):
+class GalaxyQuery:
     """
     This class represents a data structure of a compiled GQL query
     """
@@ -608,7 +609,7 @@ class GalaxyQuery(object):
         self.conditional = conditional
 
 
-class GalaxyQueryComparison(object):
+class GalaxyQueryComparison:
     """
     This class represents the data structure of the comparison arguments of a
     compiled GQL query (ie where name='Untitled History')
@@ -620,7 +621,7 @@ class GalaxyQueryComparison(object):
         self.right = right
 
 
-class GalaxyQueryAnd(object):
+class GalaxyQueryAnd:
     """
     This class represents the data structure of the comparison arguments of a
     compiled GQL query (ie where name='Untitled History')
@@ -636,7 +637,7 @@ class GalaxyParseError(Exception):
     pass
 
 
-class SearchQuery(object):
+class SearchQuery:
     def __init__(self, view, query):
         self.view = view
         self.query = query
@@ -666,7 +667,7 @@ class SearchQuery(object):
         return o
 
 
-class GalaxySearchEngine(object):
+class GalaxySearchEngine:
     """
     Primary class for searching. Parses GQL (Galaxy Query Language) queries and returns a 'SearchQuery' class
     """
@@ -685,4 +686,4 @@ class GalaxySearchEngine(object):
         if q.table_name in view_mapping:
             view = view_mapping[q.table_name]()
             return SearchQuery(view, q)
-        raise GalaxyParseError("No such table %s" % (q.table_name))
+        raise GalaxyParseError(f"No such table {q.table_name}")
