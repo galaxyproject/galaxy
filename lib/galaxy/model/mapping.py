@@ -1293,13 +1293,6 @@ model.LibraryDatasetCollectionAnnotationAssociation.table = Table(
 )
 
 # Ratings tables.
-model.VisualizationRatingAssociation.table = Table(
-    "visualization_rating_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("visualization_id", Integer, ForeignKey("visualization.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("rating", Integer, index=True))
-
 model.HistoryDatasetCollectionRatingAssociation.table = Table(
     "history_dataset_collection_rating_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -2302,10 +2295,10 @@ mapper_registry.map_imperatively(model.Visualization, model.Visualization.table,
         order_by=model.VisualizationAnnotationAssociation.table.c.id,
         backref="visualization"),
     ratings=relation(model.VisualizationRatingAssociation,
-        order_by=model.VisualizationRatingAssociation.table.c.id,
-        backref="visualization"),
+        order_by=model.VisualizationRatingAssociation.id,
+        back_populates="visualization"),
     average_rating=column_property(
-        select(func.avg(model.VisualizationRatingAssociation.table.c.rating)).where(model.VisualizationRatingAssociation.table.c.visualization_id == model.Visualization.table.c.id).scalar_subquery(),
+        select(func.avg(model.VisualizationRatingAssociation.rating)).where(model.VisualizationRatingAssociation.visualization_id == model.Visualization.table.c.id).scalar_subquery(),
         deferred=True
     )
 ))
@@ -2365,7 +2358,6 @@ def rating_mapping(rating_class, **kwds):
     simple_mapping(rating_class, **dict(user=relation(model.User), **kwds))
 
 
-rating_mapping(model.VisualizationRatingAssociation)
 rating_mapping(model.HistoryDatasetCollectionRatingAssociation)
 rating_mapping(model.LibraryDatasetCollectionRatingAssociation)
 

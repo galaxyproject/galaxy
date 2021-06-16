@@ -6957,7 +6957,16 @@ class PageRatingAssociation(ItemRatingAssociation, RepresentById):
         self.page = page
 
 
-class VisualizationRatingAssociation(_remove_ItemRatingAssociation, RepresentById):
+class VisualizationRatingAssociation(ItemRatingAssociation, RepresentById):
+    __tablename__ = 'visualization_rating_association'
+
+    id = Column('id', Integer, primary_key=True)
+    visualization_id = Column('visualization_id', Integer, ForeignKey('visualization.id'), index=True)
+    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
+    rating = Column('rating', Integer, index=True)
+    visualization = relationship('Visualization', back_populates='ratings')
+    user = relationship('User')
+
     def _set_item(self, visualization):
         self.visualization = visualization
 
