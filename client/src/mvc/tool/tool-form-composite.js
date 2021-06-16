@@ -98,7 +98,7 @@ var View = Backbone.View.extend({
                 },
             ],
         });
-        this._append(this.$el, this.history_form.$el);
+        //this._append(this.$el, this.history_form.$el);
     },
 
     /** Render Workflow Options */

@@ -2,7 +2,7 @@
     <div>
         <FormCard v-if="wpInputsAvailable" title="Workflow Parameters">
             <template v-slot:body>
-                <Form :inputs="wpInputsArray" />
+                <Form :inputs="wpInputs" />
             </template>
         </FormCard>
         <FormCard title="History Options">
@@ -10,11 +10,22 @@
                 <Form :inputs="historyInputs" />
             </template>
         </FormCard>
+        <FormCard v-if="cacheInputsAvailable" title="Job re-use Options">
+            <template v-slot:body>
+                <Form :inputs="cacheInputs" />
+            </template>
+        </FormCard>
+        <FormCard v-if="resourceInputsAvailable" title="Workflow Resource Options">
+            <template v-slot:body>
+                <Form :inputs="resourceInputs" />
+            </template>
+        </FormCard>
         <div ref="form" />
     </div>
 </template>
 
 <script>
+import { getGalaxyInstance } from "app";
 import ToolFormComposite from "mvc/tool/tool-form-composite";
 import Form from "components/Form/Form";
 import FormCard from "components/Form/FormCard";
@@ -65,11 +76,43 @@ export default {
         };
     },
     computed: {
-        wpInputsAvailable() {
-            return this.wpInputsArray.length > 0;
+        cacheInputsAvailable() {
+            const Galaxy = getGalaxyInstance();
+            var extra_user_preferences = {};
+            if (Galaxy.user.attributes.preferences && "extra_user_preferences" in Galaxy.user.attributes.preferences) {
+                extra_user_preferences = JSON.parse(Galaxy.user.attributes.preferences.extra_user_preferences);
+            }
+            return;
+            "use_cached_job|use_cached_job_checkbox" in extra_user_preferences
+                ? extra_user_preferences["use_cached_job|use_cached_job_checkbox"] === "true"
+                : false;
         },
-        wpInputsArray() {
-            return Object.keys(this.model.wpInputs).map((k) => this.model.wpInputs[k]);
+        cacheInputs() {
+            return [
+                {
+                    type: "conditional",
+                    name: "use_cached_job",
+                    test_param: {
+                        name: "check",
+                        label: "Attempt to reuse jobs with identical parameters?",
+                        type: "boolean",
+                        value: "false",
+                        help: "This may skip executing jobs that you have already run.",
+                    },
+                },
+            ];
+        },
+        resourceInputsAvailable() {
+            return this.resourceInputs.length > 0;
+        },
+        resourceInputs() {
+            return this.toArray(this.model.workflowResourceParameters);
+        },
+        wpInputsAvailable() {
+            return this.wpInputs.length > 0;
+        },
+        wpInputs() {
+            return this.toArray(this.model.wpInputs);
         },
     },
     mounted() {
@@ -90,6 +133,9 @@ export default {
         },
         handleInvocations(invocations) {
             this.$emit("submissionSuccess", invocations);
+        },
+        toArray(obj) {
+            return obj ? Object.keys(obj).map((k) => obj[k]) : [];
         },
     },
 };
