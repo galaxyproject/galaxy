@@ -6854,8 +6854,19 @@ class HistoryAnnotationAssociation(Base, RepresentById):
     user = relationship('User')
 
 
-class HistoryDatasetAssociationAnnotationAssociation(RepresentById):
-    pass
+class HistoryDatasetAssociationAnnotationAssociation(Base, RepresentById):
+    __tablename__ = 'history_dataset_association_annotation_association'
+    __table_args__ = (
+        Index('ix_history_dataset_anno_assoc_annotation', 'annotation', mysql_length=200),
+    )
+
+    id = Column('id', Integer, primary_key=True)
+    history_dataset_association_id = Column('history_dataset_association_id', Integer,
+        ForeignKey('history_dataset_association.id'), index=True)
+    user_id = Column('user_id', Integer, ForeignKey('galaxy_user.id'), index=True)
+    annotation = Column('annotation', TEXT)
+    hda = relationship('HistoryDatasetAssociation', back_populates='annotations')
+    user = relationship('User')
 
 
 class StoredWorkflowAnnotationAssociation(RepresentById):

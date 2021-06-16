@@ -200,6 +200,26 @@ def test_HistoryAnnotationAssociation(model, session, history, user):
         assert stored_obj.annotation == annotation
 
 
+def test_HistoryDatasetAssociationAnnotationAssociation(
+        model, session, history_dataset_association, user):
+    cls = model.HistoryDatasetAssociationAnnotationAssociation
+    assert cls.__tablename__ == 'history_dataset_association_annotation_association'
+    assert has_index(cls.__table__, ('annotation',))
+    with dbcleanup(session, cls):
+        annotation = 'a'
+        obj = cls()
+        obj.user = user
+        obj.hda = history_dataset_association
+        obj.annotation = annotation
+        obj_id = persist(session, obj)
+
+        stored_obj = get_stored_obj(session, cls, obj_id)
+        assert stored_obj.id == obj_id
+        assert stored_obj.hda == history_dataset_association
+        assert stored_obj.user == user
+        assert stored_obj.annotation == annotation
+
+
 def test_HistoryDatasetAssociationRatingAssociation(model, session, history_dataset_association, user):
     cls = model.HistoryDatasetAssociationRatingAssociation
     assert cls.__tablename__ == 'history_dataset_association_rating_association'
