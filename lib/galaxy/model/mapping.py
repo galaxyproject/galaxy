@@ -1293,13 +1293,6 @@ model.LibraryDatasetCollectionAnnotationAssociation.table = Table(
 )
 
 # Ratings tables.
-model.StoredWorkflowRatingAssociation.table = Table(
-    "stored_workflow_rating_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("stored_workflow_id", Integer, ForeignKey("stored_workflow.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("rating", Integer, index=True))
-
 model.PageRatingAssociation.table = Table(
     "page_rating_association", metadata,
     Column("id", Integer, primary_key=True),
@@ -2129,10 +2122,10 @@ mapper_registry.map_imperatively(model.StoredWorkflow, model.StoredWorkflow.tabl
         order_by=model.StoredWorkflowAnnotationAssociation.table.c.id,
         backref="stored_workflow"),
     ratings=relation(model.StoredWorkflowRatingAssociation,
-        order_by=model.StoredWorkflowRatingAssociation.table.c.id,
-        backref="stored_workflow"),
+        order_by=model.StoredWorkflowRatingAssociation.id,
+        back_populates="stored_workflow"),
     average_rating=column_property(
-        select(func.avg(model.StoredWorkflowRatingAssociation.table.c.rating)).where(model.StoredWorkflowRatingAssociation.table.c.stored_workflow_id == model.StoredWorkflow.table.c.id).scalar_subquery(),
+        select(func.avg(model.StoredWorkflowRatingAssociation.rating)).where(model.StoredWorkflowRatingAssociation.stored_workflow_id == model.StoredWorkflow.table.c.id).scalar_subquery(),
         deferred=True
     )
 ))
@@ -2379,7 +2372,6 @@ def rating_mapping(rating_class, **kwds):
     simple_mapping(rating_class, **dict(user=relation(model.User), **kwds))
 
 
-rating_mapping(model.StoredWorkflowRatingAssociation)
 rating_mapping(model.PageRatingAssociation)
 rating_mapping(model.VisualizationRatingAssociation)
 rating_mapping(model.HistoryDatasetCollectionRatingAssociation)
